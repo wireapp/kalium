@@ -7,6 +7,8 @@ import java.util.UUID;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Access {
+    private Cookie cookie;
+
     @JsonProperty("user")
     public UUID userId;
 
@@ -33,5 +35,13 @@ public class Access {
 
     public String getType() {
         return type;
+    }
+
+    public Cookie getCookie() {
+        return cookie;
+    }
+
+    public void setCookie(Cookie cookie) {
+        this.cookie = cookie;
     }
 }
