@@ -19,34 +19,17 @@
 package com.wire.xenon;
 
 import com.waz.model.Messages;
-import com.wire.xenon.models.*;
-import com.wire.xenon.models.otr.PreKey;
 import com.wire.xenon.backend.models.NewBot;
 import com.wire.xenon.backend.models.SystemMessage;
+import com.wire.xenon.models.*;
+import com.wire.xenon.models.otr.PreKey;
 import com.wire.xenon.tools.Logger;
-import com.wire.xenon.user.UserClient;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.UUID;
 
 public abstract class MessageHandlerBase {
-
-    /**
-     * @param newBot Initialization object for new Bot instance
-     *               -  id          : The unique user ID for the bot.
-     *               -  client      : The client ID for the bot.
-     *               -  origin      : The profile of the user who requested the bot, as it is returned from GET /bot/users.
-     *               -  conversation: The convId as seen by the bot and as returned from GET /bot/convId.
-     *               -  token       : The bearer token that the bot must use on inbound requests.
-     *               -  locale      : The preferred locale for the bot to use, in form of an IETF language tag.
-     * @return If TRUE is returned new bot instance is created for this conversation
-     * If FALSE is returned this service declines to create new bot instance for this conversation
-     */
-    @Deprecated
-    public boolean onNewBot(NewBot newBot) {
-        return true;
-    }
 
     /**
      * @param newBot       Initialization object for new Bot instance
@@ -237,7 +220,7 @@ public abstract class MessageHandlerBase {
 
     }
 
-    public void onNewTeamMember(UserClient userClient, UUID userId) {
+    public void onNewTeamMember(WireClient userClient, UUID userId) {
 
     }
 
