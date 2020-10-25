@@ -1,19 +1,23 @@
 package com.wire.xenon;
 
 import com.wire.bots.cryptobox.CryptoException;
+import com.wire.xenon.assets.IAsset;
 import com.wire.xenon.assets.IGeneric;
+import com.wire.xenon.backend.models.Conversation;
+import com.wire.xenon.backend.models.NewBot;
+import com.wire.xenon.backend.models.User;
 import com.wire.xenon.crypto.Crypto;
 import com.wire.xenon.exceptions.HttpException;
+import com.wire.xenon.models.AssetKey;
 import com.wire.xenon.models.otr.*;
-import com.wire.xenon.backend.models.NewBot;
 import com.wire.xenon.tools.Logger;
+import com.wire.xenon.tools.Util;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.UUID;
+import java.security.MessageDigest;
+import java.util.*;
 
-public class WireClientBase {
+public abstract class WireClientBase implements WireClient {
     protected final WireAPI api;
     protected final Crypto crypto;
     protected final NewBot state;
@@ -23,6 +27,41 @@ public class WireClientBase {
         this.api = api;
         this.crypto = crypto;
         this.state = state;
+    }
+
+    @Override
+    public void send(IGeneric message) throws Exception {
+        postGenericMessage(message);
+    }
+
+    @Override
+    public void send(IGeneric message, UUID userId) throws Exception {
+        postGenericMessage(message, userId);
+    }
+
+    @Override
+    public UUID getId() {
+        return state.id;
+    }
+
+    @Override
+    public String getDeviceId() {
+        return state.client;
+    }
+
+    @Override
+    public UUID getConversationId() {
+        return state.conversation.id;
+    }
+
+    @Override
+    public void close() throws IOException {
+        crypto.close();
+    }
+
+    @Override
+    public boolean isClosed() {
+        return crypto.isClosed();
     }
 
     /**
@@ -102,48 +141,115 @@ public class WireClientBase {
         }
     }
 
-    public void send(IGeneric message) throws Exception {
-        postGenericMessage(message);
+    @Override
+    public User getSelf() {
+        return api.getSelf();
     }
 
-    public void send(IGeneric message, UUID userId) throws Exception {
-        postGenericMessage(message, userId);
+    @Override
+    public Collection<User> getUsers(Collection<UUID> userIds) {
+        return api.getUsers(userIds);
     }
 
-    public UUID getId() {
-        return state.id;
+    @Override
+    public User getUser(UUID userId) {
+        Collection<User> users = api.getUsers(Collections.singleton(userId));
+        return users.iterator().next();
     }
 
-    public String getDeviceId() {
-        return state.client;
+    @Override
+    public Conversation getConversation() {
+        return api.getConversation();
     }
 
-    public UUID getConversationId() {
-        return state.conversation.id;
+    @Override
+    public void acceptConnection(UUID user) throws Exception {
+        api.acceptConnection(user);
     }
 
-    public void close() throws IOException {
-        crypto.close();
+    @Override
+    public void uploadPreKeys(ArrayList<PreKey> preKeys) throws IOException {
+        api.uploadPreKeys((preKeys));
     }
 
-    public boolean isClosed() {
-        return crypto.isClosed();
+    @Override
+    public ArrayList<Integer> getAvailablePrekeys() {
+        return api.getAvailablePrekeys(state.client);
+    }
+
+    @Override
+    public byte[] downloadProfilePicture(String assetKey) throws HttpException {
+        return api.downloadAsset(assetKey, null);
+    }
+
+    @Override
+    public AssetKey uploadAsset(IAsset asset) throws Exception {
+        return api.uploadAsset(asset);
     }
 
     public Recipients encrypt(byte[] content, Missing missing) throws CryptoException {
         return crypto.encrypt(missing, content);
     }
 
+    @Override
     public String decrypt(UUID userId, String clientId, String cypher) throws CryptoException {
         return crypto.decrypt(userId, clientId, cypher);
     }
 
+    @Override
     public PreKey newLastPreKey() throws CryptoException {
         return crypto.newLastPreKey();
     }
 
+    @Override
     public ArrayList<PreKey> newPreKeys(int from, int count) throws CryptoException {
         return crypto.newPreKeys(from, count);
+    }
+
+    @Override
+    public byte[] downloadAsset(String assetKey, String assetToken, byte[] sha256Challenge, byte[] otrKey)
+            throws Exception {
+        byte[] cipher = api.downloadAsset(assetKey, assetToken);
+        byte[] sha256 = MessageDigest.getInstance("SHA-256").digest(cipher);
+        if (!Arrays.equals(sha256, sha256Challenge))
+            throw new Exception("Failed sha256 check");
+
+        return Util.decrypt(otrKey, cipher);
+    }
+
+    @Override
+    public UUID getTeam() throws HttpException {
+        return api.getTeam();
+    }
+
+    @Override
+    public Conversation createConversation(String name, UUID teamId, List<UUID> users) throws HttpException {
+        return api.createConversation(name, teamId, users);
+    }
+
+    @Override
+    public Conversation createOne2One(UUID teamId, UUID userId) throws HttpException {
+        return api.createOne2One(teamId, userId);
+    }
+
+    @Override
+    public void leaveConversation(UUID userId) throws HttpException {
+        api.leaveConversation(userId);
+    }
+
+    @Override
+    public User addParticipants(UUID... userIds) throws HttpException {
+        return api.addParticipants(userIds);
+    }
+
+    @Override
+    public User addService(UUID serviceId, UUID providerId) throws HttpException {
+        return api.addService(serviceId, providerId);
+    }
+
+    @Override
+    public boolean deleteConversation(UUID teamId) throws HttpException {
+        return api.deleteConversation(teamId);
     }
 
     private Missing getAllDevices() throws HttpException {

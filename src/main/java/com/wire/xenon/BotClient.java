@@ -19,81 +19,39 @@
 package com.wire.xenon;
 
 import com.wire.xenon.assets.*;
-import com.wire.xenon.crypto.Crypto;
-import com.wire.xenon.exceptions.HttpException;
-import com.wire.xenon.models.AssetKey;
-import com.wire.xenon.models.otr.PreKey;
-import com.wire.xenon.backend.models.Conversation;
 import com.wire.xenon.backend.models.NewBot;
-import com.wire.xenon.backend.models.User;
+import com.wire.xenon.crypto.Crypto;
+import com.wire.xenon.models.AssetKey;
 import com.wire.xenon.tools.Util;
 
 import java.io.File;
-import java.io.IOException;
-import java.security.MessageDigest;
-import java.util.*;
+import java.util.UUID;
 
 /**
  *
  */
-public class BotClient extends WireClientBase implements WireClient {
+public class BotClient extends WireClientBase {
 
-    private final WireAPI api;
-
-    public BotClient(NewBot state, Crypto crypto, WireAPI api) {
+    public BotClient(WireAPI api, Crypto crypto, NewBot state) {
         super(api, crypto, state);
-        this.api = api;
     }
 
-    @Override
-    public UUID sendText(String txt) throws Exception {
-        MessageText generic = new MessageText(txt);
-        postGenericMessage(generic);
-        return generic.getMessageId();
-    }
-
-    @Override
-    public UUID sendText(String txt, long expires) throws Exception {
-        MessageEphemeral generic = new MessageEphemeral(expires)
-                .setText(txt);
-
-        postGenericMessage(generic);
-        return generic.getMessageId();
-    }
-
-    @Override
-    public UUID sendText(String txt, UUID mention) throws Exception {
+    public UUID sendTextWithMention(String txt, UUID mentionUserId) throws Exception {
         int offset = Util.mentionStart(txt);
         int len = Util.mentionLen(txt);
         MessageText generic = new MessageText(txt)
-                .addMention(mention, offset, len);
+                .addMention(mentionUserId, offset, len);
 
         postGenericMessage(generic);
         return generic.getMessageId();
     }
 
-    @Override
-    public UUID sendDirectText(String txt, UUID userId) throws Exception {
-        MessageText generic = new MessageText(txt);
-        postGenericMessage(generic, userId);
-        return generic.getMessageId();
-    }
-
-    @Override
     public UUID sendLinkPreview(String url, String title, IGeneric image) throws Exception {
         LinkPreview generic = new LinkPreview(url, title, image.createGenericMsg().getAsset());
         postGenericMessage(generic);
         return generic.getMessageId();
     }
 
-    @Override
-    public UUID sendDirectLinkPreview(String url, String title, IGeneric image, UUID userId) throws Exception {
-        LinkPreview msg = new LinkPreview(url, title, image.createGenericMsg().getAsset());
-        postGenericMessage(msg, userId);
-        return msg.getMessageId();
-    }
-
-    @Override
     public UUID sendPicture(byte[] bytes, String mimeType) throws Exception {
         Picture image = new Picture(bytes, mimeType);
 
@@ -105,33 +63,6 @@ public class BotClient extends WireClientBase implements WireClient {
         return image.getMessageId();
     }
 
-    @Override
-    public UUID sendDirectPicture(byte[] bytes, String mimeType, UUID userId) throws Exception {
-        Picture image = new Picture(bytes, mimeType);
-
-        AssetKey assetKey = uploadAsset(image);
-        image.setAssetKey(assetKey.key);
-        image.setAssetToken(assetKey.token);
-
-        postGenericMessage(image, userId);
-        return image.getMessageId();
-    }
-
-    @Override
-    @Deprecated //use send(IGeneric image)
-    public UUID sendPicture(IGeneric image) throws Exception {
-        postGenericMessage(image);
-        return image.getMessageId();
-    }
-
-    @Override
-    @Deprecated //use send(IGeneric image, UUID userId)
-    public UUID sendDirectPicture(IGeneric image, UUID userId) throws Exception {
-        postGenericMessage(image, userId);
-        return image.getMessageId();
-    }
-
-    @Override
     public UUID sendAudio(byte[] bytes, String name, String mimeType, long duration) throws Exception {
         AudioPreview preview = new AudioPreview(bytes, name, mimeType, duration);
         AudioAsset audioAsset = new AudioAsset(bytes, preview);
@@ -147,7 +78,6 @@ public class BotClient extends WireClientBase implements WireClient {
         return audioAsset.getMessageId();
     }
 
-    @Override
     public UUID sendVideo(byte[] bytes, String name, String mimeType, long duration, int h, int w) throws Exception {
         UUID messageId = UUID.randomUUID();
         VideoPreview preview = new VideoPreview(name, mimeType, duration, h, w, bytes.length, messageId);
@@ -164,7 +94,6 @@ public class BotClient extends WireClientBase implements WireClient {
         return asset.getMessageId();
     }
 
-    @Override
     public UUID sendFile(File f, String mime) throws Exception {
         UUID messageId = UUID.randomUUID();
         FileAssetPreview preview = new FileAssetPreview(f.getName(), mime, f.length(), messageId);
@@ -183,123 +112,4 @@ public class BotClient extends WireClientBase implements WireClient {
         return asset.getMessageId();
     }
 
-    @Override
-    public UUID sendDirectFile(File f, String mime, UUID userId) throws Exception {
-        UUID messageId = UUID.randomUUID();
-        FileAssetPreview preview = new FileAssetPreview(f.getName(), mime, f.length(), messageId);
-        FileAsset asset = new FileAsset(f, mime, messageId);
-
-        // post original
-        postGenericMessage(preview, userId);
-
-        // upload asset to backend
-        AssetKey assetKey = uploadAsset(asset);
-        asset.setAssetKey(assetKey.key);
-        asset.setAssetToken(assetKey.token);
-
-        // post remote asset message
-        postGenericMessage(asset, userId);
-        return asset.getMessageId();
-    }
-
-    @Override
-    @Deprecated
-    public UUID sendDirectFile(IGeneric preview, IGeneric asset, UUID userId) throws Exception {
-        // post original
-        postGenericMessage(preview, userId);
-
-        // post remote asset message
-        postGenericMessage(asset, userId);
-        return asset.getMessageId();
-    }
-
-    @Override
-    public UUID ping() throws Exception {
-        Ping generic = new Ping();
-        postGenericMessage(generic);
-        return generic.getMessageId();
-    }
-
-    @Override
-    public byte[] downloadAsset(String assetKey, String assetToken, byte[] sha256Challenge, byte[] otrKey)
-            throws Exception {
-        byte[] cipher = api.downloadAsset(assetKey, assetToken);
-        byte[] sha256 = MessageDigest.getInstance("SHA-256").digest(cipher);
-        if (!Arrays.equals(sha256, sha256Challenge))
-            throw new Exception("Failed sha256 check");
-
-        return Util.decrypt(otrKey, cipher);
-    }
-
-    @Override
-    public UUID sendReaction(UUID msgId, String emoji) throws Exception {
-        Reaction generic = new Reaction(msgId, emoji);
-        postGenericMessage(generic);
-        return generic.getMessageId();
-    }
-
-    @Override
-    public UUID deleteMessage(UUID msgId) throws Exception {
-        MessageDelete generic = new MessageDelete(msgId);
-        postGenericMessage(generic);
-        return generic.getMessageId();
-    }
-
-    @Override
-    public UUID editMessage(UUID replacingMessageId, String text) throws Exception {
-        MessageEdit generic = new MessageEdit(replacingMessageId, text);
-        postGenericMessage(generic);
-        return generic.getMessageId();
-    }
-
-    @Override
-    public User getSelf() {
-        return api.getSelf();
-    }
-
-    @Override
-    public Collection<User> getUsers(Collection<UUID> userIds) {
-        return api.getUsers(userIds);
-    }
-
-    @Override
-    public User getUser(UUID userId) {
-        Collection<User> users = api.getUsers(Collections.singleton(userId));
-        return users.iterator().next();
-    }
-
-    @Override
-    public Conversation getConversation() {
-        return api.getConversation();
-    }
-
-    @Override
-    public void acceptConnection(UUID user) {
-        // bots cannot accept connections
-    }
-
-    @Override
-    public void uploadPreKeys(ArrayList<PreKey> preKeys) throws IOException {
-        api.uploadPreKeys((preKeys));
-    }
-
-    @Override
-    public ArrayList<Integer> getAvailablePrekeys() {
-        return api.getAvailablePrekeys(state.client);
-    }
-
-    @Override
-    public byte[] downloadProfilePicture(String assetKey) throws HttpException {
-        return api.downloadAsset(assetKey, null);
-    }
-
-    @Override
-    public AssetKey uploadAsset(IAsset asset) throws Exception {
-        return api.uploadAsset(asset);
-    }
-
-    @Override
-    public void call(String content) throws Exception {
-        postGenericMessage(new Calling(content));
-    }
 }

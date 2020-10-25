@@ -21,173 +21,23 @@ package com.wire.xenon;
 import com.wire.bots.cryptobox.CryptoException;
 import com.wire.xenon.assets.IAsset;
 import com.wire.xenon.assets.IGeneric;
+import com.wire.xenon.backend.models.Conversation;
+import com.wire.xenon.backend.models.User;
 import com.wire.xenon.exceptions.HttpException;
 import com.wire.xenon.models.AssetKey;
 import com.wire.xenon.models.otr.PreKey;
-import com.wire.xenon.backend.models.Conversation;
-import com.wire.xenon.backend.models.User;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 
 /**
  * Thread safe class for postings into this conversation
  */
 public interface WireClient extends Closeable {
-    /**
-     * Post text in the conversation
-     *
-     * @param txt Plain text to be posted into this conversation
-     * @return MessageId
-     * @throws Exception
-     */
-    UUID sendText(String txt) throws Exception;
-
-    /**
-     * Post text into the conversation
-     *
-     * @param txt     Plain text to be posted into this conversation
-     * @param expires Time in milliseconds for this message to expire
-     * @return MessageId
-     * @throws Exception
-     */
-    UUID sendText(String txt, long expires) throws Exception;
-
-    /**
-     * Send text containing a mention to a user that is a participant of this conv
-     *
-     * @param txt     Plain text to be posted into this conversation
-     * @param mention UserId of another participant
-     * @return MessageId
-     * @throws Exception
-     */
-    UUID sendText(String txt, UUID mention) throws Exception;
-
-    /**
-     * Post text to specific user
-     *
-     * @param txt    Plain text to be posted into this conversation
-     * @param userId UserId of participant that should read this msg
-     * @return MessageId
-     * @throws Exception
-     */
-    UUID sendDirectText(String txt, UUID userId) throws Exception;
-
-    /**
-     * Post url with preview into the conversation
-     *
-     * @param url   Original url
-     * @param title Page title (see og:title)
-     * @param image Page preview image (og:image). Image must be previously uploaded
-     * @return MessageId
-     * @throws Exception
-     */
-    UUID sendLinkPreview(String url, String title, IGeneric image) throws Exception;
-
-    UUID sendDirectLinkPreview(String url, String title, IGeneric image, UUID userId) throws Exception;
-
-    /**
-     * Post picture
-     *
-     * @param bytes    Row image to be sent
-     * @param mimeType Mime type of the image.
-     * @return MessageId
-     * @throws Exception
-     */
-    UUID sendPicture(byte[] bytes, String mimeType) throws Exception;
-
-    UUID sendDirectPicture(byte[] bytes, String mimeType, UUID userId) throws Exception;
-
-    /**
-     * Post previously uploaded picture
-     *
-     * @param image Image that has been previously uploaded (@see uploadAsset)
-     * @return MessageId
-     * @throws Exception
-     */
-    @Deprecated
-    UUID sendPicture(IGeneric image) throws Exception;
-
-    @Deprecated
-    UUID sendDirectPicture(IGeneric image, UUID userId) throws Exception;
-
-    /**
-     * Post audio file
-     *
-     * @param bytes    Raw audio file
-     * @param name     Name of this content - this will be showed as title
-     * @param mimeType Mime Type of this content
-     * @param duration Duration in milliseconds
-     * @return MessageId
-     * @throws Exception
-     */
-    UUID sendAudio(byte[] bytes, String name, String mimeType, long duration) throws Exception;
-
-    /**
-     * Post video file
-     *
-     * @param bytes    Raw video file
-     * @param name     Name of this content - this will be showed as title
-     * @param mimeType Mime Type of this content
-     * @param duration Duration in milliseconds
-     * @return MessageId
-     * @throws Exception
-     */
-    UUID sendVideo(byte[] bytes, String name, String mimeType, long duration, int h, int w) throws Exception;
-
-    /**
-     * Post generic file up to 25MB as an attachment into this conversation.
-     *
-     * @param file File to be sent as attachment
-     * @param mime Mime type of this attachment
-     * @return MessageId
-     * @throws Exception
-     */
-    UUID sendFile(File file, String mime) throws Exception;
-
-    UUID sendDirectFile(File file, String mime, UUID userId) throws Exception;
-
-    UUID sendDirectFile(IGeneric preview, IGeneric asset, UUID userId) throws Exception;
-
-    /**
-     * Sends ping into conversation
-     *
-     * @return MessageId
-     * @throws Exception
-     */
-    UUID ping() throws Exception;
-
-    /**
-     * Post Like for a message
-     *
-     * @param msgId Message ID
-     * @param emoji Emoji - Should be '❤' for Like
-     * @return MessageId
-     * @throws Exception
-     */
-    UUID sendReaction(UUID msgId, String emoji) throws Exception;
-
-    /**
-     * Deletes previously posted message
-     *
-     * @param msgId Message ID
-     * @throws Exception
-     */
-    UUID deleteMessage(UUID msgId) throws Exception;
-
-    /**
-     * Post Like for a message
-     *
-     * @param replacingMessageId Message ID that is being edited
-     * @param text               New text
-     * @return MessageId
-     * @throws Exception
-     */
-    UUID editMessage(UUID replacingMessageId, String text) throws Exception;
 
     /**
      * Post a generic message into conversation
@@ -350,5 +200,18 @@ public interface WireClient extends Closeable {
      */
     AssetKey uploadAsset(IAsset asset) throws Exception;
 
-    void call(String content) throws Exception;
+    UUID getTeam() throws HttpException;
+
+    Conversation createConversation(String name, UUID teamId, List<UUID> users) throws HttpException;
+
+    Conversation createOne2One(UUID teamId, UUID userId) throws HttpException;
+
+    void leaveConversation(UUID userId) throws HttpException;
+
+    User addParticipants(UUID... userIds) throws HttpException;
+
+    User addService(UUID serviceId, UUID providerId) throws HttpException;
+
+    boolean deleteConversation(UUID teamId) throws HttpException;
+
 }
