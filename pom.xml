@@ -60,6 +60,13 @@
     </dependencies>
 
     <build>
+        <extensions>
+            <extension>
+                <groupId>io.packagecloud.maven.wagon</groupId>
+                <artifactId>maven-packagecloud-wagon</artifactId>
+                <version>0.0.6</version>
+            </extension>
+        </extensions>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -88,6 +95,33 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.0.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
+    <distributionManagement>
+        <repository>
+            <id>packagecloud-dkovacevic</id>
+            <url>
+                packagecloud+https://packagecloud.io/dkovacevic/xenon
+            </url>
+        </repository>
+        <snapshotRepository>
+            <id>packagecloud-dkovacevic</id>
+            <url>
+                packagecloud+https://packagecloud.io/dkovacevic/xenon
+            </url>
+        </snapshotRepository>
+    </distributionManagement>
 </project>
