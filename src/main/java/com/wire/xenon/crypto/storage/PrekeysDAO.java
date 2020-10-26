@@ -1,12 +1,12 @@
 package com.wire.xenon.crypto.storage;
 
 import com.wire.bots.cryptobox.PreKey;
-import org.skife.jdbi.v2.StatementContext;
-import org.skife.jdbi.v2.sqlobject.Bind;
-import org.skife.jdbi.v2.sqlobject.SqlQuery;
-import org.skife.jdbi.v2.sqlobject.SqlUpdate;
-import org.skife.jdbi.v2.sqlobject.customizers.RegisterMapper;
-import org.skife.jdbi.v2.tweak.ResultSetMapper;
+import org.jdbi.v3.core.mapper.ColumnMapper;
+import org.jdbi.v3.core.statement.StatementContext;
+import org.jdbi.v3.sqlobject.config.RegisterColumnMapper;
+import org.jdbi.v3.sqlobject.customizer.Bind;
+import org.jdbi.v3.sqlobject.statement.SqlQuery;
+import org.jdbi.v3.sqlobject.statement.SqlUpdate;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -19,17 +19,18 @@ public interface PrekeysDAO {
                @Bind("data") byte[] data);
 
     @SqlQuery("SELECT kid, data FROM Prekeys WHERE id = :id")
-    @RegisterMapper(_Mapper.class)
+    @RegisterColumnMapper(_Mapper.class)
     List<PreKey> get(@Bind("id") String id);
 
     @SqlUpdate("DELETE FROM Prekeys WHERE id = :id")
     int delete(@Bind("id") String id);
 
-    class _Mapper implements ResultSetMapper<PreKey> {
+    class _Mapper implements ColumnMapper<PreKey> {
+
         @Override
-        public PreKey map(int i, ResultSet rs, StatementContext statementContext) throws SQLException {
-            int kid = rs.getInt("kid");
-            byte[] data = rs.getBytes("data");
+        public PreKey map(ResultSet r, int columnNumber, StatementContext ctx) throws SQLException {
+            int kid = r.getInt("kid");
+            byte[] data = r.getBytes("data");
             return new PreKey(kid, data);
         }
     }

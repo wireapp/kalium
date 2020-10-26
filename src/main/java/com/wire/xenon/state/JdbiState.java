@@ -1,9 +1,9 @@
 package com.wire.xenon.state;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.wire.xenon.exceptions.MissingStateException;
 import com.wire.xenon.backend.models.NewBot;
-import org.skife.jdbi.v2.DBI;
+import com.wire.xenon.exceptions.MissingStateException;
+import org.jdbi.v3.core.Jdbi;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -14,7 +14,7 @@ public class JdbiState implements State {
     private final UUID botId;
     private final StatesDAO statesDAO;
 
-    public JdbiState(UUID botId, DBI jdbi) {
+    public JdbiState(UUID botId, Jdbi jdbi) {
         this.botId = botId;
         this.statesDAO = jdbi.onDemand(StatesDAO.class);
     }

@@ -3,7 +3,7 @@ package com.wire.xenon.crypto.storage;
 import com.wire.bots.cryptobox.IRecord;
 import com.wire.bots.cryptobox.IStorage;
 import com.wire.bots.cryptobox.PreKey;
-import org.skife.jdbi.v2.DBI;
+import org.jdbi.v3.core.Jdbi;
 
 import java.util.List;
 
@@ -12,7 +12,7 @@ public class JdbiStorage implements IStorage {
     private final IdentitiesDAO identitiesDAO;
     private final PrekeysDAO prekeysDAO;
 
-    public JdbiStorage(DBI jdbi) {
+    public JdbiStorage(Jdbi jdbi) {
         sessionsDAO = jdbi.onDemand(SessionsDAO.class);
         identitiesDAO = jdbi.onDemand(IdentitiesDAO.class);
         prekeysDAO = jdbi.onDemand(PrekeysDAO.class);
@@ -26,7 +26,8 @@ public class JdbiStorage implements IStorage {
 
     @Override
     public byte[] fetchIdentity(String id) {
-        return identitiesDAO.get(id);
+        final IdentitiesDAO._Identity identity = identitiesDAO.get(id);
+        return identity != null ? identity.data : null;
     }
 
     @Override
