@@ -11,6 +11,7 @@
     <properties>
         <cryptobox.version>0.3.0</cryptobox.version>
         <jackson.version>2.12.0-rc1</jackson.version>
+        <protobuf.version>3.13.0</protobuf.version>
     </properties>
 
     <repositories>
@@ -50,7 +51,7 @@
         <dependency>
             <artifactId>protobuf-java</artifactId>
             <groupId>com.google.protobuf</groupId>
-            <version>3.1.0</version>
+            <version>${protobuf.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jdbi</groupId>
@@ -79,7 +80,7 @@
             <plugin>
                 <groupId>com.github.os72</groupId>
                 <artifactId>protoc-jar-maven-plugin</artifactId>
-                <version>3.1.0.1</version>
+                <version>3.11.4</version>
                 <executions>
                     <execution>
                         <phase>generate-sources</phase>
@@ -87,7 +88,7 @@
                             <goal>run</goal>
                         </goals>
                         <configuration>
-                            <protocVersion>3.1.0</protocVersion>
+                            <protocVersion>${protobuf.version}</protocVersion>
                             <inputDirectories>
                                 <include>proto</include>
                             </inputDirectories>
@@ -98,7 +99,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
-                <version>3.0.1</version>
+                <version>3.2.1</version>
                 <executions>
                     <execution>
                         <id>attach-sources</id>
