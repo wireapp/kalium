@@ -26,7 +26,7 @@ public abstract class MessageResourceBase {
         UUID botId = client.getId();
 
         switch (payload.type) {
-            case "conversation.otr-message-add" -> {
+            case "conversation.otr-message-add":
                 UUID from = payload.from;
 
                 Logger.debug("conversation.otr-message-add: bot: %s from: %s:%s", botId, from, data.sender);
@@ -47,8 +47,8 @@ public abstract class MessageResourceBase {
                 }
 
                 handler.onEvent(client, from, message);
-            }
-            case "conversation.member-join" -> {
+                break;
+            case "conversation.member-join":
                 Logger.debug("conversation.member-join: bot: %s", botId);
 
                 // Check if this bot got added to the conversation
@@ -69,15 +69,15 @@ public abstract class MessageResourceBase {
                 systemMessage.users = data.userIds;
 
                 handler.onMemberJoin(client, systemMessage);
-            }
-            case "conversation.member-leave" -> {
+                break;
+            case "conversation.member-leave":
                 Logger.debug("conversation.member-leave: bot: %s", botId);
 
-                SystemMessage systemMessage = getSystemMessage(eventId, payload);
+                systemMessage = getSystemMessage(eventId, payload);
                 systemMessage.users = data.userIds;
 
                 // Check if this bot got removed from the conversation
-                List<UUID> participants = data.userIds;
+                participants = data.userIds;
                 if (participants.remove(botId)) {
                     handler.onBotRemoved(botId, systemMessage);
                     return;
@@ -86,18 +86,18 @@ public abstract class MessageResourceBase {
                 if (!participants.isEmpty()) {
                     handler.onMemberLeave(client, systemMessage);
                 }
-            }
-            case "conversation.delete" -> {
+                break;
+            case "conversation.delete":
                 Logger.debug("conversation.delete: bot: %s", botId);
-                SystemMessage systemMessage = getSystemMessage(eventId, payload);
+                systemMessage = getSystemMessage(eventId, payload);
 
                 // Cleanup
                 handler.onBotRemoved(botId, systemMessage);
-            }
-            case "conversation.create" -> {
+                break;
+            case "conversation.create":
                 Logger.debug("conversation.create: bot: %s", botId);
 
-                SystemMessage systemMessage = getSystemMessage(eventId, payload);
+                systemMessage = getSystemMessage(eventId, payload);
                 if (systemMessage.conversation.members != null) {
                     Member self = new Member();
                     self.id = botId;
@@ -105,15 +105,15 @@ public abstract class MessageResourceBase {
                 }
 
                 handler.onNewConversation(client, systemMessage);
-            }
-            case "conversation.rename" -> {
+                break;
+            case "conversation.rename":
                 Logger.debug("conversation.rename: bot: %s", botId);
 
-                SystemMessage systemMessage = getSystemMessage(eventId, payload);
+                systemMessage = getSystemMessage(eventId, payload);
 
                 handler.onConversationRename(client, systemMessage);
-            }
-            case "user.connection" -> {
+                break;
+            case "user.connection":
                 Payload.Connection connection = payload.connection;
                 Logger.debug("user.connection: bot: %s, from: %s to: %s status: %s",
                         botId,
@@ -125,7 +125,7 @@ public abstract class MessageResourceBase {
                 if (accepted) {
                     Conversation conversation = new Conversation();
                     conversation.id = connection.convId;
-                    SystemMessage systemMessage = new SystemMessage();
+                    systemMessage = new SystemMessage();
                     systemMessage.id = eventId;
                     systemMessage.from = connection.from;
                     systemMessage.type = payload.type;
@@ -133,8 +133,9 @@ public abstract class MessageResourceBase {
 
                     handler.onNewConversation(client, systemMessage);
                 }
-            }
-            default -> Logger.debug("Unknown event: %s", payload.type);
+                break;
+            default:
+                Logger.debug("Unknown event: %s", payload.type);
         }
     }
 
