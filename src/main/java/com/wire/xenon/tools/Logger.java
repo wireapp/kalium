@@ -33,18 +33,10 @@ public class Logger {
     }
 
     private final static java.util.logging.Logger LOGGER = java.util.logging.Logger.getLogger("com.wire.bots.logger");
-    private static AtomicInteger errorCount = new AtomicInteger();
-    private static AtomicInteger warningCount = new AtomicInteger();
+    private static final AtomicInteger errorCount = new AtomicInteger();
+    private static final AtomicInteger warningCount = new AtomicInteger();
 
     static {
-        java.util.logging.Logger.getLogger("org.apache.http.wire").setLevel(Level.SEVERE);
-        java.util.logging.Logger.getLogger("org.apache.http.headers").setLevel(Level.SEVERE);
-        System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.SimpleLog");
-        System.setProperty("org.apache.commons.logging.simplelog.showdatetime", "true");
-        System.setProperty("org.apache.commons.logging.simplelog.log.httpclient.wire", "ERROR");
-        System.setProperty("org.apache.commons.logging.simplelog.log.org.apache.http", "ERROR");
-        System.setProperty("org.apache.commons.logging.simplelog.log.org.apache.http.headers", "ERROR");
-
         for (Handler handler : LOGGER.getHandlers()) {
             handler.setFormatter(new BotFormatter());
         }
