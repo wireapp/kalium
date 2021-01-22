@@ -19,35 +19,43 @@
 package com.wire.xenon.assets;
 
 import com.waz.model.Messages;
+import com.wire.xenon.tools.Logger;
 
 import java.util.UUID;
 
 public class LinkPreview implements IGeneric {
     private final String url;
     private final String title;
-    private final Messages.Asset img;
-    private UUID messageId = UUID.randomUUID();
+    private final Picture thumbnail;
+    private final UUID messageId = UUID.randomUUID();
 
-    public LinkPreview(String url, String title, Messages.Asset img) {
+    public LinkPreview(String url, String title, Picture thumbnail) {
         this.url = url;
         this.title = title;
-        this.img = img;
+        this.thumbnail = thumbnail;
     }
 
     @Override
     public Messages.GenericMessage createGenericMsg() {
+        Messages.Asset preview = null;
+        try {
+            preview = thumbnail.createGenericMsg().getAsset();
+        } catch (Exception e) {
+            Logger.warning("LinkPreview: %s", e);
+        }
+
         // Legacy todo: remove it!
         Messages.Article article = Messages.Article.newBuilder()
                 .setTitle(title)
                 .setPermanentUrl(url)
-                .setImage(img)
+                .setImage(preview)
                 .build();
         // Legacy
 
         Messages.LinkPreview.Builder linkPreview = Messages.LinkPreview.newBuilder()
                 .setUrl(url)
                 .setUrlOffset(0)
-                .setImage(img)
+                .setImage(preview)
                 .setPermanentUrl(url)
                 .setTitle(title)
                 .setArticle(article);

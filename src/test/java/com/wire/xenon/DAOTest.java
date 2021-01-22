@@ -2,7 +2,6 @@ package com.wire.xenon;
 
 import com.wire.xenon.crypto.storage.IdentitiesDAO;
 import com.wire.xenon.state.StatesDAO;
-import org.apache.log4j.BasicConfigurator;
 import org.flywaydb.core.Flyway;
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.sqlobject.SqlObjectPlugin;
@@ -20,8 +19,6 @@ public class DAOTest {
 
     @BeforeClass
     public static void before() throws Exception {
-        BasicConfigurator.configure();
-
         Class<?> driverClass = Class.forName("org.postgresql.Driver");
         final Driver driver = (Driver) driverClass.newInstance();
         DriverManager.registerDriver(driver);
