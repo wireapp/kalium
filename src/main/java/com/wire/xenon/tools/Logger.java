@@ -64,8 +64,23 @@ public class Logger {
     }
 
     public static void error(String format, Object... args) {
+        // check if there's an exception in the objects
+        for (Object arg : args) {
+            if (arg instanceof Throwable) {
+                // if so log it as exception instead of a common format
+                exception(format, (Throwable) arg, args);
+                // break as counter and logger is handled in the exception
+                return;
+            }
+        }
+
         errorCount.incrementAndGet();
         LOGGER.severe(String.format(format, args));
+    }
+
+    public static void exception(String message, Throwable throwable, Object... args) {
+        errorCount.incrementAndGet();
+        LOGGER.log(Level.SEVERE, String.format(message, args), throwable);
     }
 
     public static void warning(String msg) {

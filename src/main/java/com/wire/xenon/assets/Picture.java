@@ -20,6 +20,7 @@ package com.wire.xenon.assets;
 
 import com.google.protobuf.ByteString;
 import com.waz.model.Messages;
+import com.wire.xenon.tools.Logger;
 import com.wire.xenon.tools.Util;
 
 import javax.imageio.ImageIO;
@@ -150,7 +151,7 @@ public class Picture implements IGeneric, IAsset {
                 random.nextBytes(iv);
                 encBytes = Util.encrypt(getOtrKey(), imageData, iv);
             } catch (Exception e) {
-                e.printStackTrace();
+                Logger.exception("It was not possible to encrypt picture.", e);
             }
         }
         return encBytes;

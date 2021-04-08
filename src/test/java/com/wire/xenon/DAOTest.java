@@ -5,8 +5,8 @@ import com.wire.xenon.state.StatesDAO;
 import org.flywaydb.core.Flyway;
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.sqlobject.SqlObjectPlugin;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.sql.Driver;
 import java.sql.DriverManager;
@@ -17,10 +17,10 @@ public class DAOTest {
     private static final Jdbi jdbi = Jdbi.create(url)
             .installPlugin(new SqlObjectPlugin());
 
-    @BeforeClass
+    @BeforeAll
     public static void before() throws Exception {
         Class<?> driverClass = Class.forName("org.postgresql.Driver");
-        final Driver driver = (Driver) driverClass.newInstance();
+        final Driver driver = (Driver) driverClass.getDeclaredConstructor().newInstance();
         DriverManager.registerDriver(driver);
 
         // Migrate DB if needed
