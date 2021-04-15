@@ -30,6 +30,9 @@ public class AudioMessage extends MessageAssetBase {
     @JsonProperty
     private long duration;
 
+    @JsonProperty
+    private byte[] levels;
+
     @JsonCreator
     public AudioMessage(@JsonProperty("messageId") UUID messageId,
                         @JsonProperty("conversationId") UUID convId,
@@ -41,6 +44,8 @@ public class AudioMessage extends MessageAssetBase {
     public AudioMessage(MessageAssetBase base, Messages.Asset.AudioMetaData audio) {
         super(base);
         setDuration(audio.getDurationInMillis());
+        if (audio.hasNormalizedLoudness())
+            levels = audio.getNormalizedLoudness().toByteArray();
     }
 
     public void setDuration(long duration) {
@@ -49,5 +54,13 @@ public class AudioMessage extends MessageAssetBase {
 
     public long getDuration() {
         return duration;
+    }
+
+    public byte[] getLevels() {
+        return levels;
+    }
+
+    public void setLevels(byte[] levels) {
+        this.levels = levels;
     }
 }
