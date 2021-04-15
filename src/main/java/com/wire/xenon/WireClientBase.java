@@ -268,6 +268,6 @@ public abstract class WireClientBase implements WireClient {
             OtrMessage msg = new OtrMessage(deviceId, new Recipients());
             devices = api.sendMessage(msg);
         }
-        return devices;
+        return devices != null ? devices : new Devices();
     }
 }

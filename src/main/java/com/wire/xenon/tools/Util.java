@@ -137,7 +137,7 @@ public class Util {
         return token1.equals(token2);
     }
 
-    private static String extractToken(String auth) {
+    public static String extractToken(String auth) {
         String[] split = auth.split(" ");
         return split.length == 1 ? split[0] : split[1];
     }
