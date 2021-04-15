@@ -40,13 +40,17 @@ public class AudioPreview implements IGeneric {
     private final int size;
     private final byte[] levels;
 
-    public AudioPreview(byte[] bytes, String name, String mimeType, long duration) {
+    public AudioPreview(byte[] bytes, String name, String mimeType, long duration, byte[] levels) {
         this.name = name;
         this.mimeType = mimeType;
         this.messageId = UUID.randomUUID();
         this.duration = duration;
         this.size = bytes.length;
-        this.levels = getNormalizedLoudness(new ByteArrayInputStream(bytes));
+        this.levels = levels;
+    }
+
+    public AudioPreview(byte[] bytes, String name, String mimeType, long duration) {
+        this(bytes, name, mimeType, duration, getNormalizedLoudness(new ByteArrayInputStream(bytes)));
     }
 
     private static byte[] getNormalizedLoudness(InputStream stream) {
@@ -82,7 +86,7 @@ public class AudioPreview implements IGeneric {
 
             return ret;
         } catch (Exception e) {
-            Logger.warning(e.getMessage());
+            Logger.warning("AudioPreview.getNormalizedLoudness: %s", e);
             return new byte[0];
         }
     }
