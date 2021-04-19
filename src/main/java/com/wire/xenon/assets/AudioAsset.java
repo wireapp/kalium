@@ -102,4 +102,12 @@ public class AudioAsset implements IGeneric, IAsset {
     public UUID getMessageId() {
         return messageId;
     }
+
+    public String getAssetKey() {
+        return assetKey;
+    }
+
+    public String getAssetToken() {
+        return assetToken;
+    }
 }

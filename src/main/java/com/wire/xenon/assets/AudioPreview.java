@@ -31,22 +31,21 @@ public class AudioPreview implements IGeneric {
     private final int size;
     private final byte[] levels;
 
-    public AudioPreview(byte[] bytes, String name, String mimeType, long duration, byte[] levels) {
+    public AudioPreview(String name, String mimeType, long duration, byte[] levels, int size) {
         this.name = name;
         this.mimeType = mimeType;
         this.messageId = UUID.randomUUID();
         this.duration = duration;
-        this.size = bytes.length;
+        this.size = size;
         this.levels = levels;
     }
 
-    public AudioPreview(byte[] bytes, String name, String mimeType, long duration) {
-        this(bytes, name, mimeType, duration, null);
+    public AudioPreview(String name, String mimeType, long duration, int size) {
+        this(name, mimeType, duration, null, size);
     }
 
     @Override
     public Messages.GenericMessage createGenericMsg() {
-
         Messages.Asset.AudioMetaData.Builder audio = Messages.Asset.AudioMetaData.newBuilder()
                 .setDurationInMillis(duration);
 
@@ -79,6 +78,14 @@ public class AudioPreview implements IGeneric {
 
     public String getMimeType() {
         return mimeType;
+    }
+
+    public long getDuration() {
+        return duration;
+    }
+
+    public byte[] getLevels() {
+        return levels;
     }
 
     @Override
