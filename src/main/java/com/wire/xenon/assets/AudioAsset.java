@@ -36,6 +36,9 @@ public class AudioAsset implements IGeneric, IAsset {
     private String assetKey;
     private String assetToken;
 
+    private String retention = "persistent";
+    private boolean readReceiptsEnabled = true;
+
     public AudioAsset(byte[] bytes, AudioPreview preview) throws Exception {
         this.messageId = preview.getMessageId();
         this.mimeType = preview.getMimeType();
@@ -62,6 +65,7 @@ public class AudioAsset implements IGeneric, IAsset {
 
         Messages.Asset asset = Messages.Asset.newBuilder()
                 .setUploaded(remote.build())
+                .setExpectsReadConfirmation(readReceiptsEnabled)
                 .build();
 
         return Messages.GenericMessage.newBuilder()
@@ -85,7 +89,7 @@ public class AudioAsset implements IGeneric, IAsset {
 
     @Override
     public String getRetention() {
-        return "volatile";
+        return retention;
     }
 
     @Override
@@ -109,5 +113,17 @@ public class AudioAsset implements IGeneric, IAsset {
 
     public String getAssetToken() {
         return assetToken;
+    }
+
+    public void setRetention(String retention) {
+        this.retention = retention;
+    }
+
+    public boolean isReadReceiptsEnabled() {
+        return readReceiptsEnabled;
+    }
+
+    public void setReadReceiptsEnabled(boolean readReceiptsEnabled) {
+        this.readReceiptsEnabled = readReceiptsEnabled;
     }
 }
