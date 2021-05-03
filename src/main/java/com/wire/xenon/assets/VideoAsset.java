@@ -20,86 +20,38 @@ package com.wire.xenon.assets;
 
 import com.google.protobuf.ByteString;
 import com.waz.model.Messages;
-import com.wire.xenon.tools.Util;
 
-import java.security.MessageDigest;
-import java.security.SecureRandom;
 import java.util.UUID;
 
-public class VideoAsset implements IGeneric, IAsset {
-    static private final SecureRandom random = new SecureRandom();
-
-    private final UUID messageId;
-    private final byte[] encBytes;
-    private final byte[] otrKey = new byte[32];
-    private final String mimeType;
-    private String assetKey;
-    private String assetToken;
+public class VideoAsset extends AssetBase {
 
     public VideoAsset(byte[] bytes, String mime, UUID messageId) throws Exception {
-        this.messageId = messageId;
-        this.mimeType = mime;
-
-        random.nextBytes(otrKey);
-
-        byte[] iv = new byte[16];
-        random.nextBytes(iv);
-
-        encBytes = Util.encrypt(otrKey, bytes, iv);
+        super(messageId, mime, bytes);
     }
 
     @Override
-    public Messages.GenericMessage createGenericMsg() throws Exception {
+    public Messages.GenericMessage createGenericMsg() {
         Messages.Asset.RemoteData.Builder remote = Messages.Asset.RemoteData.newBuilder()
-                .setOtrKey(ByteString.copyFrom(otrKey))
-                .setSha256(ByteString.copyFrom(MessageDigest.getInstance("SHA-256").digest(getEncryptedData())))
-                .setAssetId(assetKey);
+                .setOtrKey(ByteString.copyFrom(getOtrKey()))
+                .setSha256(ByteString.copyFrom(getSha256()));
 
         // Only set token on private assets
-        if (assetToken != null) {
-            remote.setAssetToken(assetToken);
+        if (getAssetToken() != null) {
+            remote.setAssetToken(getAssetToken());
+        }
+
+        if (getAssetKey() != null) {
+            remote.setAssetId(getAssetKey());
         }
 
         Messages.Asset asset = Messages.Asset.newBuilder()
                 .setUploaded(remote.build())
+                .setExpectsReadConfirmation(isReadReceiptsEnabled())
                 .build();
 
         return Messages.GenericMessage.newBuilder()
                 .setMessageId(getMessageId().toString())
                 .setAsset(asset)
                 .build();
-    }
-
-    public void setAssetKey(String assetKey) {
-        this.assetKey = assetKey;
-    }
-
-    public void setAssetToken(String assetToken) {
-        this.assetToken = assetToken;
-    }
-
-    @Override
-    public String getMimeType() {
-        return mimeType;
-    }
-
-    @Override
-    public String getRetention() {
-        return "volatile";
-    }
-
-    @Override
-    public byte[] getEncryptedData() {
-        return encBytes;
-    }
-
-    @Override
-    public boolean isPublic() {
-        return false;
-    }
-
-    @Override
-    public UUID getMessageId() {
-        return messageId;
     }
 }
