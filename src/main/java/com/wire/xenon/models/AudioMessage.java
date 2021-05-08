@@ -26,6 +26,7 @@ import com.waz.model.Messages;
 import java.util.UUID;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+@Deprecated
 public class AudioMessage extends MessageAssetBase {
     @JsonProperty
     private long duration;
@@ -34,11 +35,13 @@ public class AudioMessage extends MessageAssetBase {
     private byte[] levels;
 
     @JsonCreator
-    public AudioMessage(@JsonProperty("messageId") UUID messageId,
+    public AudioMessage(@JsonProperty("eventId") UUID eventId,
+                        @JsonProperty("messageId") UUID messageId,
                         @JsonProperty("conversationId") UUID convId,
                         @JsonProperty("clientId") String clientId,
-                        @JsonProperty("userId") UUID userId) {
-        super(messageId, convId, clientId, userId);
+                        @JsonProperty("userId") UUID userId,
+                        @JsonProperty("time") String time) {
+        super(eventId, messageId, convId, clientId, userId, time);
     }
 
     public AudioMessage(MessageAssetBase base, Messages.Asset.AudioMetaData audio) {

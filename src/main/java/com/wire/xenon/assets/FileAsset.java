@@ -36,6 +36,10 @@ public class FileAsset extends AssetBase {
         super(messageId, mimeType, bytes);
     }
 
+    public FileAsset(UUID messageId, String mimeType) {
+        super(messageId, mimeType);
+    }
+
     public FileAsset(String assetKey, String assetToken, byte[] sha256, byte[] otrKey, UUID messageId) {
         super(messageId, null);
         this.assetKey = assetKey;

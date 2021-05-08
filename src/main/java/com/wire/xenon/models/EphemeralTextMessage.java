@@ -30,11 +30,20 @@ public class EphemeralTextMessage extends TextMessage {
     private long expireAfterMillis;
 
     @JsonCreator
-    public EphemeralTextMessage(@JsonProperty("messageId") UUID messageId,
+    public EphemeralTextMessage(@JsonProperty("eventId") UUID eventId,
+                                @JsonProperty("messageId") UUID messageId,
                                 @JsonProperty("conversationId") UUID convId,
                                 @JsonProperty("clientId") String clientId,
-                                @JsonProperty("userId") UUID userId) {
-        super(messageId, convId, clientId, userId);
+                                @JsonProperty("userId") UUID userId,
+                                @JsonProperty("time") String time,
+                                @JsonProperty("expireAfterMillis") long expireAfterMillis
+    ) {
+        super(eventId, messageId, convId, clientId, userId, time);
+        this.expireAfterMillis = expireAfterMillis;
+    }
+
+    public EphemeralTextMessage(MessageBase msg) {
+        super(msg);
     }
 
     public long getExpireAfterMillis() {

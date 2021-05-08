@@ -30,11 +30,17 @@ public class EditedTextMessage extends TextMessage {
     private UUID replacingMessageId;
 
     @JsonCreator
-    public EditedTextMessage(@JsonProperty("messageId") UUID messageId,
+    public EditedTextMessage(@JsonProperty("eventId") UUID eventId,
+                             @JsonProperty("messageId") UUID messageId,
                              @JsonProperty("conversationId") UUID convId,
                              @JsonProperty("clientId") String clientId,
-                             @JsonProperty("userId") UUID userId) {
-        super(messageId, convId, clientId, userId);
+                             @JsonProperty("userId") UUID userId,
+                             @JsonProperty("time") String time) {
+        super(eventId, messageId, convId, clientId, userId, time);
+    }
+
+    public EditedTextMessage(MessageBase msg) {
+        super(msg);
     }
 
     public UUID getReplacingMessageId() {

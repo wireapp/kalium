@@ -33,11 +33,17 @@ public class ReactionMessage extends MessageBase {
     private UUID reactionMessageId;
 
     @JsonCreator
-    public ReactionMessage(@JsonProperty("messageId") UUID messageId,
+    public ReactionMessage(@JsonProperty("eventId") UUID eventId,
+                           @JsonProperty("messageId") UUID messageId,
                            @JsonProperty("conversationId") UUID convId,
                            @JsonProperty("clientId") String clientId,
-                           @JsonProperty("userId") UUID userId) {
-        super(messageId, convId, clientId, userId);
+                           @JsonProperty("userId") UUID userId,
+                           @JsonProperty("time") String time) {
+        super(eventId, messageId, convId, clientId, userId, time);
+    }
+
+    public ReactionMessage(MessageBase msgBase) {
+        super(msgBase);
     }
 
     public String getEmoji() {

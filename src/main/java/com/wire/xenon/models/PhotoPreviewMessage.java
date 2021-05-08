@@ -20,49 +20,66 @@ package com.wire.xenon.models;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.waz.model.Messages;
 
 import java.util.UUID;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ConfirmationMessage extends MessageBase {
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class PhotoPreviewMessage extends OriginMessage {
     @JsonProperty
-    private Type type;
+    private int height;
     @JsonProperty
-    private UUID confirmationMessageId;
+    private int width;
 
     @JsonCreator
-    public ConfirmationMessage(@JsonProperty("eventId") UUID eventId,
+    public PhotoPreviewMessage(@JsonProperty("eventId") UUID eventId,
                                @JsonProperty("messageId") UUID messageId,
                                @JsonProperty("conversationId") UUID convId,
                                @JsonProperty("clientId") String clientId,
                                @JsonProperty("userId") UUID userId,
-                               @JsonProperty("time") String time) {
+                               @JsonProperty("time") String time,
+                               @JsonProperty("mimeType") String mimeType,
+                               @JsonProperty("size") long size,
+                               @JsonProperty("name") String name,
+                               @JsonProperty("width") int width,
+                               @JsonProperty("height") int height) {
         super(eventId, messageId, convId, clientId, userId, time);
+
+        setMimeType(mimeType);
+        setName(name);
+        setSize(size);
+
+        setWidth(width);
+        setHeight(height);
     }
 
-    public ConfirmationMessage(MessageBase msg) {
+    public PhotoPreviewMessage(MessageBase msg, Messages.Asset.Original original) {
         super(msg);
+
+        setMimeType(original.getMimeType());
+        setSize(original.getSize());
+        setName(original.getName());
+
+        setWidth(original.getImage().getWidth());
+        setHeight(original.getImage().getHeight());
     }
 
-    public Type getType() {
-        return type;
+    public int getHeight() {
+        return height;
     }
 
-    public void setType(Type type) {
-        this.type = type;
+    public void setHeight(int height) {
+        this.height = height;
     }
 
-    public UUID getConfirmationMessageId() {
-        return confirmationMessageId;
+    public int getWidth() {
+        return width;
     }
 
-    public void setConfirmationMessageId(UUID confirmationMessageId) {
-        this.confirmationMessageId = confirmationMessageId;
-    }
-
-    public enum Type {
-        DELIVERED,
-        READ
+    public void setWidth(int width) {
+        this.width = width;
     }
 }

@@ -26,6 +26,7 @@ import com.waz.model.Messages;
 import java.util.UUID;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+@Deprecated
 public class VideoMessage extends MessageAssetBase {
     @JsonProperty
     private long duration;
@@ -35,11 +36,13 @@ public class VideoMessage extends MessageAssetBase {
     private int height;
 
     @JsonCreator
-    public VideoMessage(@JsonProperty("messageId") UUID messageId,
+    public VideoMessage(@JsonProperty("eventId") UUID eventId,
+                        @JsonProperty("messageId") UUID messageId,
                         @JsonProperty("conversationId") UUID convId,
                         @JsonProperty("clientId") String clientId,
-                        @JsonProperty("userId") UUID userId) {
-        super(messageId, convId, clientId, userId);
+                        @JsonProperty("userId") UUID userId,
+                        @JsonProperty("time") String time) {
+        super(eventId, messageId, convId, clientId, userId, time);
     }
 
     public VideoMessage(MessageAssetBase base, Messages.Asset.VideoMetaData video) {

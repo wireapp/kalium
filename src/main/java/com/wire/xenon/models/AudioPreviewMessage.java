@@ -21,48 +21,63 @@ package com.wire.xenon.models;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.waz.model.Messages;
 
 import java.util.UUID;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ConfirmationMessage extends MessageBase {
+public class AudioPreviewMessage extends OriginMessage {
     @JsonProperty
-    private Type type;
+    private long duration;
+
     @JsonProperty
-    private UUID confirmationMessageId;
+    private byte[] levels;
 
     @JsonCreator
-    public ConfirmationMessage(@JsonProperty("eventId") UUID eventId,
+    public AudioPreviewMessage(@JsonProperty("eventId") UUID eventId,
                                @JsonProperty("messageId") UUID messageId,
                                @JsonProperty("conversationId") UUID convId,
                                @JsonProperty("clientId") String clientId,
                                @JsonProperty("userId") UUID userId,
-                               @JsonProperty("time") String time) {
+                               @JsonProperty("time") String time,
+                               @JsonProperty("mimeType") String mimeType,
+                               @JsonProperty("size") long size,
+                               @JsonProperty("name") String name,
+                               @JsonProperty("duration") long duration,
+                               @JsonProperty("levels") byte[] levels) {
         super(eventId, messageId, convId, clientId, userId, time);
+
+        setMimeType(mimeType);
+        setName(name);
+        setSize(size);
+
+        setDuration(duration);
+        setLevels(levels);
     }
 
-    public ConfirmationMessage(MessageBase msg) {
+    public AudioPreviewMessage(MessageBase msg, Messages.Asset.Original original) {
         super(msg);
+
+        setMimeType(original.getMimeType());
+        setSize(original.getSize());
+        setName(original.getName());
+        setDuration(original.getAudio().getDurationInMillis());
+        setLevels(original.getAudio().getNormalizedLoudness().toByteArray());
     }
 
-    public Type getType() {
-        return type;
+    public long getDuration() {
+        return duration;
     }
 
-    public void setType(Type type) {
-        this.type = type;
+    public void setDuration(long duration) {
+        this.duration = duration;
     }
 
-    public UUID getConfirmationMessageId() {
-        return confirmationMessageId;
+    public byte[] getLevels() {
+        return levels;
     }
 
-    public void setConfirmationMessageId(UUID confirmationMessageId) {
-        this.confirmationMessageId = confirmationMessageId;
-    }
-
-    public enum Type {
-        DELIVERED,
-        READ
+    public void setLevels(byte[] levels) {
+        this.levels = levels;
     }
 }

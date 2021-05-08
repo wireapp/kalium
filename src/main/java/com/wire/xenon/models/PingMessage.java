@@ -27,10 +27,16 @@ import java.util.UUID;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PingMessage extends MessageBase {
     @JsonCreator
-    public PingMessage(@JsonProperty("messageId") UUID messageId,
+    public PingMessage(@JsonProperty("eventId") UUID eventId,
+                       @JsonProperty("messageId") UUID messageId,
                        @JsonProperty("conversationId") UUID convId,
                        @JsonProperty("clientId") String clientId,
-                       @JsonProperty("userId") UUID userId) {
-        super(messageId, convId, clientId, userId);
+                       @JsonProperty("userId") UUID userId,
+                       @JsonProperty("time") String time) {
+        super(eventId, messageId, convId, clientId, userId, time);
+    }
+
+    public PingMessage(MessageBase msgBase) {
+        super(msgBase);
     }
 }

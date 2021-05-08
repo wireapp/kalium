@@ -270,4 +270,24 @@ public abstract class MessageHandlerBase {
             Logger.error("validatePreKeys: bot: %s %s", client.getId(), e);
         }
     }
+
+    public void onPhotoPreview(WireClient client, PhotoPreviewMessage msg) {
+
+    }
+
+    public void onAssetData(WireClient client, RemoteMessage msg) {
+
+    }
+
+    public void onFilePreview(WireClient client, FilePreviewMessage msg) {
+
+    }
+
+    public void onAudioPreview(WireClient client, AudioPreviewMessage msg) {
+
+    }
+
+    public void onVideoPreview(WireClient client, VideoPreviewMessage msg) {
+
+    }
 }

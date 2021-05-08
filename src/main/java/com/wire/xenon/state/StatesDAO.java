@@ -7,7 +7,9 @@ import org.jdbi.v3.sqlobject.statement.SqlUpdate;
 import java.util.UUID;
 
 public interface StatesDAO {
-    @SqlUpdate("INSERT INTO States (botId, bot) VALUES (:botId, to_json(:bot::json)) ON CONFLICT (botId) DO UPDATE SET bot = EXCLUDED.bot")
+    @SqlUpdate("INSERT INTO States (botId, bot) " +
+            "VALUES (:botId, to_json(:bot::json)) " +
+            "ON CONFLICT (botId) DO UPDATE SET bot = EXCLUDED.bot")
     int insert(@Bind("botId") UUID botId,
                @Bind("bot") String bot);
 

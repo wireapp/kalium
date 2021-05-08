@@ -30,11 +30,17 @@ public class CallingMessage extends MessageBase {
     private String content;
 
     @JsonCreator
-    public CallingMessage(@JsonProperty("messageId") UUID messageId,
+    public CallingMessage(@JsonProperty("eventId") UUID eventId,
+                          @JsonProperty("messageId") UUID messageId,
                           @JsonProperty("conversationId") UUID convId,
                           @JsonProperty("clientId") String clientId,
-                          @JsonProperty("userId") UUID userId) {
-        super(messageId, convId, clientId, userId);
+                          @JsonProperty("userId") UUID userId,
+                          @JsonProperty("time") String time) {
+        super(eventId, messageId, convId, clientId, userId, time);
+    }
+
+    public CallingMessage(MessageBase msgBase) {
+        super(msgBase);
     }
 
     public String getContent() {

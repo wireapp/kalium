@@ -21,23 +21,35 @@ package com.wire.xenon.models;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.waz.model.Messages;
 
 import java.util.UUID;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-@Deprecated
-public class AttachmentMessage extends MessageAssetBase {
+public class FilePreviewMessage extends OriginMessage {
     @JsonCreator
-    public AttachmentMessage(@JsonProperty("eventId") UUID eventId,
-                             @JsonProperty("messageId") UUID messageId,
-                             @JsonProperty("conversationId") UUID convId,
-                             @JsonProperty("clientId") String clientId,
-                             @JsonProperty("userId") UUID userId,
-                             @JsonProperty("time") String time) {
+    public FilePreviewMessage(@JsonProperty("eventId") UUID eventId,
+                              @JsonProperty("messageId") UUID messageId,
+                              @JsonProperty("conversationId") UUID convId,
+                              @JsonProperty("clientId") String clientId,
+                              @JsonProperty("userId") UUID userId,
+                              @JsonProperty("time") String time,
+                              @JsonProperty("mimeType") String mimeType,
+                              @JsonProperty("size") long size,
+                              @JsonProperty("name") String name) {
         super(eventId, messageId, convId, clientId, userId, time);
+
+        setMimeType(mimeType);
+        setName(name);
+        setSize(size);
     }
 
-    public AttachmentMessage(MessageAssetBase base) {
-        super(base);
+
+    public FilePreviewMessage(MessageBase msg, Messages.Asset.Original original) {
+        super(msg);
+
+        setMimeType(original.getMimeType());
+        setSize(original.getSize());
+        setName(original.getName());
     }
 }

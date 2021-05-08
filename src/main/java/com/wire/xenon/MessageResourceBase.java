@@ -8,6 +8,7 @@ import com.wire.xenon.backend.models.Conversation;
 import com.wire.xenon.backend.models.Member;
 import com.wire.xenon.backend.models.Payload;
 import com.wire.xenon.backend.models.SystemMessage;
+import com.wire.xenon.models.MessageBase;
 import com.wire.xenon.tools.Logger;
 
 import java.util.Base64;
@@ -33,20 +34,19 @@ public abstract class MessageResourceBase {
 
                 GenericMessageProcessor processor = new GenericMessageProcessor(client, handler);
 
-                Messages.GenericMessage message = decrypt(client, payload);
+                Messages.GenericMessage genericMessage = decrypt(client, payload);
 
-                boolean process = processor.process(from,
-                        data.sender,
-                        payload.convId,
-                        payload.time,
-                        message);
+                final UUID messageId = UUID.fromString(genericMessage.getMessageId());
+                MessageBase msgBase = new MessageBase(eventId, messageId, payload.convId, data.sender, from, payload.time);
 
+                boolean process = processor.process(msgBase, genericMessage);
+
+                // todo remove this
                 if (process) {
-                    UUID messageId = UUID.fromString(message.getMessageId());
                     processor.cleanUp(messageId);
                 }
 
-                handler.onEvent(client, from, message);
+                handler.onEvent(client, from, genericMessage);
                 break;
             case "conversation.member-join":
                 Logger.debug("conversation.member-join: bot: %s", botId);
@@ -139,9 +139,9 @@ public abstract class MessageResourceBase {
         }
     }
 
-    private SystemMessage getSystemMessage(UUID messageId, Payload payload) {
+    private SystemMessage getSystemMessage(UUID eventId, Payload payload) {
         SystemMessage systemMessage = new SystemMessage();
-        systemMessage.id = messageId;
+        systemMessage.id = eventId;
         systemMessage.from = payload.from;
         systemMessage.time = payload.time;
         systemMessage.type = payload.type;

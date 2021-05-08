@@ -28,6 +28,7 @@ import java.util.UUID;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Deprecated
 public class ImageMessage extends MessageAssetBase {
     @JsonProperty
     private int height;
@@ -35,10 +36,12 @@ public class ImageMessage extends MessageAssetBase {
     private int width;
 
     @JsonCreator
-    public ImageMessage(@JsonProperty("messageId") UUID messageId,
+    public ImageMessage(@JsonProperty("eventId") UUID eventId,
+                        @JsonProperty("messageId") UUID messageId,
                         @JsonProperty("conversationId") UUID convId,
                         @JsonProperty("clientId") String clientId,
                         @JsonProperty("userId") UUID userId,
+                        @JsonProperty("time") String time,
                         @JsonProperty("assetKey") String assetKey,
                         @JsonProperty("assetToken") String assetToken,
                         @JsonProperty("otrKey") byte[] otrKey,
@@ -46,7 +49,7 @@ public class ImageMessage extends MessageAssetBase {
                         @JsonProperty("size") long size,
                         @JsonProperty("sha256") byte[] sha256,
                         @JsonProperty("name") String name) {
-        super(messageId, convId, clientId, userId, assetKey, assetToken, otrKey, mimeType, size, sha256, name);
+        super(eventId, messageId, convId, clientId, userId, time, assetKey, assetToken, otrKey, mimeType, size, sha256, name);
     }
 
     public ImageMessage(MessageAssetBase base, Messages.Asset.ImageMetaData image) {
@@ -55,8 +58,12 @@ public class ImageMessage extends MessageAssetBase {
         setWidth(image.getWidth());
     }
 
-    public ImageMessage(UUID msgId, UUID convId, String clientId, UUID userId) {
-        super(msgId, convId, clientId, userId);
+    public ImageMessage(UUID eventId, UUID msgId, UUID convId, String clientId, UUID userId, String time) {
+        super(eventId, msgId, convId, clientId, userId, time);
+    }
+
+    public ImageMessage(MessageBase msg) {
+        super(msg);
     }
 
     public int getHeight() {

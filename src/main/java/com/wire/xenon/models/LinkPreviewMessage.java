@@ -22,14 +22,13 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.waz.model.Messages;
 
 import java.util.UUID;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Deprecated
 public class LinkPreviewMessage extends ImageMessage {
-
     @JsonProperty
     private String summary;
     @JsonProperty
@@ -42,10 +41,12 @@ public class LinkPreviewMessage extends ImageMessage {
     private int urlOffset;
 
     @JsonCreator
-    public LinkPreviewMessage(@JsonProperty("messageId") UUID messageId,
+    public LinkPreviewMessage(@JsonProperty("eventId") UUID eventId,
+                              @JsonProperty("messageId") UUID messageId,
                               @JsonProperty("conversationId") UUID convId,
                               @JsonProperty("clientId") String clientId,
                               @JsonProperty("userId") UUID userId,
+                              @JsonProperty("time") String time,
                               @JsonProperty("assetKey") String assetKey,
                               @JsonProperty("assetToken") String assetToken,
                               @JsonProperty("otrKey") byte[] otrKey,
@@ -53,16 +54,11 @@ public class LinkPreviewMessage extends ImageMessage {
                               @JsonProperty("size") long size,
                               @JsonProperty("sha256") byte[] sha256,
                               @JsonProperty("name") String name) {
-        super(messageId, convId, clientId, userId, assetKey, assetToken, otrKey, mimeType, size, sha256, name);
+        super(eventId, messageId, convId, clientId, userId, time, assetKey, assetToken, otrKey, mimeType, size, sha256, name);
     }
 
-    public LinkPreviewMessage(MessageAssetBase base, Messages.Asset.ImageMetaData image) {
-        super(base, image);
-
-    }
-
-    public LinkPreviewMessage(UUID msgId, UUID convId, String clientId, UUID userId) {
-        super(msgId, convId, clientId, userId);
+    public LinkPreviewMessage(MessageBase msg) {
+        super(msg);
     }
 
     public String getSummary() {
