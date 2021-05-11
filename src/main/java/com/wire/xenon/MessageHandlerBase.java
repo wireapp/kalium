@@ -149,42 +149,6 @@ public abstract class MessageHandlerBase {
     }
 
     /**
-     * This method is called when an image is posted into the conversation
-     *
-     * @param client Thread safe wire client that can be used to post back to this conversation
-     * @param msg    Message containing image metadata
-     */
-    public void onImage(WireClient client, ImageMessage msg) {
-    }
-
-    /**
-     * This method is called when an audio recording is posted into the conversation
-     *
-     * @param client Thread safe wire client that can be used to post back to this conversation
-     * @param msg    Message containing audio metadata
-     */
-    public void onAudio(WireClient client, AudioMessage msg) {
-    }
-
-    /**
-     * This method is called when a video recording is posted into the conversation
-     *
-     * @param client Thread safe wire client that can be used to post back to this conversation
-     * @param msg    Message containing video metadata
-     */
-    public void onVideo(WireClient client, VideoMessage msg) {
-    }
-
-    /**
-     * This method is called when a file attachment is posted into the conversation
-     *
-     * @param client Thread safe wire client that can be used to post back to this conversation
-     * @param msg    Message containing file metadata
-     */
-    public void onAttachment(WireClient client, AttachmentMessage msg) {
-    }
-
-    /**
      * This is generic method that is called every time something is posted to this conversation.
      *
      * @param client         Thread safe wire client that can be used to post back to this conversation
@@ -225,10 +189,6 @@ public abstract class MessageHandlerBase {
     }
 
     public void onUserUpdate(UUID id, UUID userId) {
-
-    }
-
-    public void onVideoPreview(WireClient client, ImageMessage msg) {
 
     }
 

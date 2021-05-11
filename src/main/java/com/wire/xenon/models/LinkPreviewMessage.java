@@ -27,7 +27,6 @@ import java.util.UUID;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@Deprecated
 public class LinkPreviewMessage extends ImageMessage {
     @JsonProperty
     private String summary;

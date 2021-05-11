@@ -39,12 +39,7 @@ public abstract class MessageResourceBase {
                 final UUID messageId = UUID.fromString(genericMessage.getMessageId());
                 MessageBase msgBase = new MessageBase(eventId, messageId, payload.convId, data.sender, from, payload.time);
 
-                boolean process = processor.process(msgBase, genericMessage);
-
-                // todo remove this
-                if (process) {
-                    processor.cleanUp(messageId);
-                }
+                processor.process(msgBase, genericMessage);
 
                 handler.onEvent(client, from, genericMessage);
                 break;

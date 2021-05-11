@@ -24,14 +24,9 @@ import com.wire.xenon.WireClient;
 import com.wire.xenon.models.*;
 import com.wire.xenon.tools.Logger;
 
-import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class GenericMessageProcessor {
-    private final static ConcurrentHashMap<UUID, Messages.Asset.Original> originals = new ConcurrentHashMap<>();
-    private final static ConcurrentHashMap<UUID, Messages.Asset.RemoteData> remotes = new ConcurrentHashMap<>();
-
     private final WireClient client;
     private final MessageHandlerBase handler;
 
@@ -40,98 +35,76 @@ public class GenericMessageProcessor {
         this.handler = handler;
     }
 
-    public void cleanUp(UUID messageId) {
-        remotes.remove(messageId);
-        originals.remove(messageId);
-    }
-
     public boolean process(MessageBase msgBase, Messages.GenericMessage generic) {
-        final UUID messageId = msgBase.getMessageId();
-        final UUID conversationId = msgBase.getConversationId();
-        final String clientId = msgBase.getClientId();
-        final UUID eventId = msgBase.getEventId();
-        final String time = msgBase.getTime();
-        final UUID from = msgBase.getUserId();
+        Logger.debug("eventId: %s, msgId: %s, proto: %s",
+                msgBase.getEventId(),
+                msgBase.getMessageId(),
+                generic);
 
-        Messages.Asset asset = null;
+        // Text
+        if (generic.hasText()) {
+            Messages.Text text = generic.getText();
 
-        Logger.debug("eventId: %s, msgId: %s hasText: %s, hasAsset: %s",
-                eventId,
-                messageId,
-                generic.hasText(),
-                generic.hasAsset());
+            if (!text.getLinkPreviewList().isEmpty()) {
+                return handleLinkPreview(text, new LinkPreviewMessage(msgBase));
+            }
+
+            if (text.hasContent()) {
+                TextMessage msg = fromText(new TextMessage(msgBase), text);
+
+                handler.onText(client, msg);
+                return true;
+            }
+        }
 
         // Ephemeral messages
         if (generic.hasEphemeral()) {
             Messages.Ephemeral ephemeral = generic.getEphemeral();
 
-            if (ephemeral.hasText() && ephemeral.getText().hasContent()) {
-                EphemeralTextMessage msg = new EphemeralTextMessage(msgBase);
-                msg.setExpireAfterMillis(ephemeral.getExpireAfterMillis());
-                msg.setText(ephemeral.getText().getContent());
-                if (ephemeral.getText().hasQuote()) {
-                    final String quotedMessageId = ephemeral.getText().getQuote().getQuotedMessageId();
-                    msg.setQuotedMessageId(UUID.fromString(quotedMessageId));
-                }
-                for (Messages.Mention mention : ephemeral.getText().getMentionsList())
-                    msg.addMention(mention.getUserId(), mention.getStart(), mention.getLength());
+            if (ephemeral.hasText()) {
+                final Messages.Text text = ephemeral.getText();
 
-                handler.onText(client, msg);
-                return true;
+                if (text.hasContent()) {
+                    final EphemeralTextMessage msg = new EphemeralTextMessage(msgBase);
+                    fromText(msg, text);
+
+                    msg.setExpireAfterMillis(ephemeral.getExpireAfterMillis());
+
+                    handler.onText(client, msg);
+                    return true;
+                }
             }
 
             if (ephemeral.hasAsset()) {
-                asset = ephemeral.getAsset();
+                return handleAsset(msgBase, ephemeral.getAsset());
             }
         }
 
         // Edit message
-        if (generic.hasEdited() && generic.getEdited().hasText()) {
+        if (generic.hasEdited()) {
             Messages.MessageEdit edited = generic.getEdited();
-            EditedTextMessage msg = new EditedTextMessage(msgBase);
-            msg.setReplacingMessageId(UUID.fromString(edited.getReplacingMessageId()));
-            msg.setText(edited.getText().getContent());
 
-            for (Messages.Mention mention : edited.getText().getMentionsList())
-                msg.addMention(mention.getUserId(), mention.getStart(), mention.getLength());
+            if (edited.hasText()) {
+                final Messages.Text text = edited.getText();
 
-            handler.onEditText(client, msg);
-            return true;
+                if (text.hasContent()) {
+                    final EditedTextMessage msg = new EditedTextMessage(msgBase);
+                    fromText(msg, text);
+
+                    final UUID replacingMessageId = UUID.fromString(edited.getReplacingMessageId());
+                    msg.setReplacingMessageId(replacingMessageId);
+
+                    handler.onEditText(client, msg);
+                    return true;
+                }
+            }
         }
 
         if (generic.hasConfirmation()) {
             Messages.Confirmation confirmation = generic.getConfirmation();
             ConfirmationMessage msg = new ConfirmationMessage(msgBase);
 
-            return handleConfirmation(confirmation, msg, time);
-        }
-
-        // Text
-        if (generic.hasText()) {
-            Messages.Text text = generic.getText();
-            List<Messages.LinkPreview> linkPreviewList = text.getLinkPreviewList();
-
-            if (!linkPreviewList.isEmpty()) {
-                LinkPreviewMessage msg = new LinkPreviewMessage(msgBase);
-                String content = text.getContent();
-
-                return handleLinkPreview(linkPreviewList, content, msg, time);
-            }
-
-            if (text.hasContent()) {
-                TextMessage msg = new TextMessage(msgBase);
-                msg.setText(text.getContent());
-
-                if (text.hasQuote()) {
-                    final String quotedMessageId = text.getQuote().getQuotedMessageId();
-                    msg.setQuotedMessageId(UUID.fromString(quotedMessageId));
-                }
-                for (Messages.Mention mention : text.getMentionsList())
-                    msg.addMention(mention.getUserId(), mention.getStart(), mention.getLength());
-
-                handler.onText(client, msg);
-                return true;
-            }
+            return handleConfirmation(confirmation, msg);
         }
 
         if (generic.hasCalling()) {
@@ -158,7 +131,7 @@ public class GenericMessageProcessor {
             Messages.Reaction reaction = generic.getReaction();
             ReactionMessage msg = new ReactionMessage(msgBase);
 
-            return handleReaction(reaction, msg, time);
+            return handleReaction(reaction, msg);
         }
 
         if (generic.hasKnock()) {
@@ -168,88 +141,47 @@ public class GenericMessageProcessor {
             return true;
         }
 
-        // Assets
         if (generic.hasAsset()) {
-            asset = generic.getAsset();
-        }
-
-        if (asset != null) {
-            Logger.debug("eventId: %s, msgId: %s hasOriginal: %s, hasUploaded: %s, hasPreview: %s",
-                    eventId,
-                    messageId,
-                    asset.hasOriginal(),
-                    asset.hasUploaded(),
-                    asset.hasPreview());
-
-            if (asset.hasPreview()) {
-                ImageMessage msg = new ImageMessage(msgBase);
-
-                handleVideoPreview(asset.getPreview(), msg, time);  //todo is this legacy?
-            }
-
-            /// --- Obsolete ---
-            if (asset.hasUploaded()) {
-                remotes.put(messageId, asset.getUploaded());
-            }
-
-            if (asset.hasOriginal()) {
-                originals.put(messageId, asset.getOriginal());
-            }
-
-            Messages.Asset.Original original = originals.get(messageId);
-            Messages.Asset.RemoteData remoteData = remotes.get(messageId);
-
-            MessageAssetBase base = new MessageAssetBase(msgBase);
-            base.fromOrigin(original);
-            base.fromRemote(remoteData);
-            /// --- Obsolete ---
-
-            if (asset.hasOriginal()) {
-                original = asset.getOriginal();
-                if (original.hasImage()) {
-                    handler.onPhotoPreview(client, new PhotoPreviewMessage(msgBase, original));
-                } else if (original.hasAudio()) {
-                    handler.onAudioPreview(client, new AudioPreviewMessage(msgBase, original));
-                } else if (original.hasVideo()) {
-                    handler.onVideoPreview(client, new VideoPreviewMessage(msgBase, original));
-                } else {
-                    handler.onFilePreview(client, new FilePreviewMessage(msgBase, original));
-                }
-            }
-
-            if (asset.hasUploaded()) {
-                handler.onAssetData(client, new RemoteMessage(msgBase, asset.getUploaded()));
-            }
-
-            /// --- Obsolete ---
-            if (base.getAssetKey() != null) {
-                if (original != null) {
-                    if (original.hasImage()) {
-                        handler.onImage(client, new ImageMessage(base, original.getImage()));
-                        return true;
-                    }
-                    if (original.hasAudio()) {
-                        handler.onAudio(client, new AudioMessage(base, original.getAudio()));
-                        return true;
-                    }
-                    if (original.hasVideo()) {
-                        handler.onVideo(client, new VideoMessage(base, original.getVideo()));
-                        return true;
-                    }
-                }
-
-                {
-                    handler.onAttachment(client, new AttachmentMessage(base));
-                    return true;
-                }
-            }
-            /// --- Obsolete ---
+            return handleAsset(msgBase, generic.getAsset());
         }
 
         return false;
     }
 
-    private boolean handleConfirmation(Messages.Confirmation confirmation, ConfirmationMessage msg, String time) {
+    private TextMessage fromText(TextMessage textMessage, Messages.Text text) {
+        textMessage.setText(text.getContent());
+
+        if (text.hasQuote()) {
+            final String quotedMessageId = text.getQuote().getQuotedMessageId();
+            textMessage.setQuotedMessageId(UUID.fromString(quotedMessageId));
+        }
+        for (Messages.Mention mention : text.getMentionsList())
+            textMessage.addMention(mention.getUserId(), mention.getStart(), mention.getLength());
+        return textMessage;
+    }
+
+    private boolean handleAsset(MessageBase msgBase, Messages.Asset asset) {
+        if (asset.hasOriginal()) {
+            final Messages.Asset.Original original = asset.getOriginal();
+            if (original.hasImage()) {
+                handler.onPhotoPreview(client, new PhotoPreviewMessage(msgBase, original));
+            } else if (original.hasAudio()) {
+                handler.onAudioPreview(client, new AudioPreviewMessage(msgBase, original));
+            } else if (original.hasVideo()) {
+                handler.onVideoPreview(client, new VideoPreviewMessage(msgBase, original));
+            } else {
+                handler.onFilePreview(client, new FilePreviewMessage(msgBase, original));
+            }
+        }
+
+        if (asset.hasUploaded()) {
+            handler.onAssetData(client, new RemoteMessage(msgBase, asset.getUploaded()));
+        }
+
+        return true;
+    }
+
+    private boolean handleConfirmation(Messages.Confirmation confirmation, ConfirmationMessage msg) {
         String firstMessageId = confirmation.getFirstMessageId();
         Messages.Confirmation.Type type = confirmation.getType();
 
@@ -262,28 +194,32 @@ public class GenericMessageProcessor {
         return true;
     }
 
-    private boolean handleLinkPreview(List<Messages.LinkPreview> linkPreviewList, String content, LinkPreviewMessage msg, String time) {
-        for (Messages.LinkPreview link : linkPreviewList) {
-            Messages.Asset image = link.getImage();
+    private boolean handleLinkPreview(Messages.Text text, LinkPreviewMessage msg) {
+        for (Messages.LinkPreview link : text.getLinkPreviewList()) {
 
-            msg.fromOrigin(image.getOriginal());
-            msg.fromRemote(image.getUploaded());
+            if (text.hasContent()) {
+                Messages.Asset image = link.getImage();
 
-            msg.setHeight(image.getOriginal().getImage().getHeight());
-            msg.setWidth(image.getOriginal().getImage().getWidth());
+                msg.fromOrigin(image.getOriginal());
+                msg.fromRemote(image.getUploaded());
 
-            msg.setSummary(link.getSummary());
-            msg.setTitle(link.getTitle());
-            msg.setUrl(link.getUrl());
-            msg.setUrlOffset(link.getUrlOffset());
+                final Messages.Asset.ImageMetaData imageMetaData = image.getOriginal().getImage();
+                msg.setHeight(imageMetaData.getHeight());
+                msg.setWidth(imageMetaData.getWidth());
 
-            msg.setText(content);
-            handler.onLinkPreview(client, msg);
+                msg.setSummary(link.getSummary());
+                msg.setTitle(link.getTitle());
+                msg.setUrl(link.getUrl());
+                msg.setUrlOffset(link.getUrlOffset());
+
+                msg.setText(text.getContent());
+                handler.onLinkPreview(client, msg);
+            }
         }
         return true;
     }
 
-    private boolean handleReaction(Messages.Reaction reaction, ReactionMessage msg, String time) {
+    private boolean handleReaction(Messages.Reaction reaction, ReactionMessage msg) {
         if (reaction.hasEmoji()) {
             msg.setEmoji(reaction.getEmoji());
             msg.setReactionMessageId(UUID.fromString(reaction.getMessageId()));
@@ -291,19 +227,5 @@ public class GenericMessageProcessor {
             handler.onReaction(client, msg);
         }
         return true;
-    }
-
-    private void handleVideoPreview(Messages.Asset.Preview preview, ImageMessage msg, String time) {
-        if (preview.hasRemote()) {
-            msg.fromRemote(preview.getRemote());
-
-            msg.setHeight(preview.getImage().getHeight());
-            msg.setWidth(preview.getImage().getWidth());
-
-            msg.setSize(preview.getSize());
-            msg.setMimeType(preview.getMimeType());
-
-            handler.onVideoPreview(client, msg);
-        }
     }
 }
