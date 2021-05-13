@@ -38,7 +38,7 @@ jobs:
           status: ${{ job.status }}
           author_name: Xenon - test execution before release
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.WEBHOOK_CI }}
+          SLACK_WEBHOOK_URL: ${{ secrets.WEBHOOK_RELEASE }}
         if: failure()
 
   release:
