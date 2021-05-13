@@ -33,13 +33,14 @@ public class CryptoDatabase extends CryptoBase {
     private final CryptoDb box;
 
     /**
+     * <p>
      * Opens the CryptoBox using given directory path
      * The given directory must exist and be writable.
-     * <p/>
+     * </p>
      * Note: Do not create multiple OtrManagers that operate on the same or
      * overlapping directories. Doing so results in undefined behaviour.
      *
-     * @param botId Bot id
+     * @param botId   Bot id
      * @param storage Instance of a IStorage class
      */
     public CryptoDatabase(UUID botId, IStorage storage) throws CryptoException {

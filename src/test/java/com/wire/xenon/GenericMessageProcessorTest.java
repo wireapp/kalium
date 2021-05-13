@@ -3,7 +3,7 @@ package com.wire.xenon;
 import com.google.protobuf.ByteString;
 import com.waz.model.Messages;
 import com.wire.xenon.backend.GenericMessageProcessor;
-import com.wire.xenon.models.AudioMessage;
+import com.wire.xenon.models.AudioPreviewMessage;
 import com.wire.xenon.models.LinkPreviewMessage;
 import com.wire.xenon.models.MessageBase;
 import org.junit.jupiter.api.Test;
@@ -11,6 +11,8 @@ import org.junit.jupiter.api.Test;
 import java.util.Date;
 import java.util.Random;
 import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class GenericMessageProcessorTest {
 
@@ -148,23 +150,21 @@ public class GenericMessageProcessorTest {
     private static class MessageHandler extends MessageHandlerBase {
         @Override
         public void onLinkPreview(WireClient client, LinkPreviewMessage msg) {
-            assert msg.getTitle().equals(TITLE);
-            assert msg.getSummary().equals(SUMMARY);
-            assert msg.getUrl().equals(URL);
-            assert msg.getText().equals(CONTENT);
-            assert msg.getUrlOffset() == URL_OFFSET;
-
-            assert msg.getAssetKey().equals(ASSET_KEY);
-            assert msg.getWidth() == WIDTH;
-            assert msg.getHeight() == HEIGHT;
-            assert msg.getSize() == SIZE;
-            assert msg.getMimeType().equals(MIME_TYPE);
-            assert msg.getAssetToken().equals(ASSET_TOKEN);
+            assertEquals(TITLE, msg.getTitle());
+            assertEquals(SUMMARY, msg.getSummary());
+            assertEquals(URL, msg.getUrl());
+            assertEquals(URL_OFFSET, msg.getUrlOffset());
+            assertEquals(CONTENT, msg.getText());
+            assertEquals(WIDTH, msg.getWidth());
+            assertEquals(HEIGHT, msg.getHeight());
+            assertEquals(SIZE, msg.getSize());
+            assertEquals(MIME_TYPE, msg.getMimeType());
+            assertEquals(ASSET_TOKEN, msg.getAssetToken());
         }
 
         @Override
-        public void onAudio(WireClient client, AudioMessage msg) {
-            assert msg.getMimeType().equals(AUDIO_MIME_TYPE);
+        public void onAudioPreview(WireClient client, AudioPreviewMessage msg) {
+            assertEquals(AUDIO_MIME_TYPE, msg.getMimeType());
         }
     }
 }

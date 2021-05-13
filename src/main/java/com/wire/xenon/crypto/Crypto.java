@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.UUID;
 
 public interface Crypto extends Closeable {
-    public byte[] getIdentity() throws CryptoException;
+    byte[] getIdentity() throws CryptoException;
 
     byte[] getLocalFingerprint() throws CryptoException;
 
@@ -23,7 +23,7 @@ public interface Crypto extends Closeable {
     Recipients encrypt(PreKeys preKeys, byte[] content) throws CryptoException;
 
     /**
-     * Append cipher to {@param #msg} for each device using crypto box session. Ciphers for those devices that still
+     * Append cipher to {@code msg} for each device using crypto box session. Ciphers for those devices that still
      * don't have the session will be skipped and those must be encrypted using prekeys:
      *
      * @param missing List of device that are missing

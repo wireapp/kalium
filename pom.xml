@@ -6,37 +6,70 @@
 
     <groupId>com.wire</groupId>
     <artifactId>xenon</artifactId>
-    <version>1.2.0</version>
+    <version>1.3.1</version>
+
+    <name>Xenon</name>
+    <description>Base Wire Bots Library</description>
+    <url>https://wire.com/</url>
+
+    <licenses>
+        <license>
+            <name>GNU General Public License v3.0</name>
+            <url>https://www.gnu.org/licenses/gpl-3.0.en.html</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Dejan Kovacevic</name>
+            <email>dejan@wire.com</email>
+            <organization>Wire Swiss GmbH</organization>
+            <organizationUrl>https://wire.com</organizationUrl>
+            <timezone>UTC+01:00</timezone>
+        </developer>
+        <developer>
+            <name>Lukas Forst</name>
+            <email>lukas@wire.com</email>
+            <organization>Wire Swiss GmbH</organization>
+            <organizationUrl>https://wire.com</organizationUrl>
+            <timezone>UTC+01:00</timezone>
+        </developer>
+    </developers>
+
+    <scm>
+        <url>https://github.com/wireapp/xenon</url>
+    </scm>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
 
     <properties>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <cryptobox.version>0.3.0</cryptobox.version>
-        <jackson.version>2.12.2</jackson.version>
-        <protobuf.version>3.15.7</protobuf.version>
-        <jdbi.version>3.18.1</jdbi.version>
-        <maven.test.skip>true</maven.test.skip>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
-    </properties>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-    <repositories>
-        <repository>
-            <id>cryptobox4j</id>
-            <url>https://packagecloud.io/dkovacevic/cryptobox4j/maven2</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
+        <cryptobox.version>0.5.1</cryptobox.version>
+        <jackson.version>2.12.3</jackson.version>
+        <jdbi.version>3.20.0</jdbi.version>
+        <protobuf.version>3.16.0</protobuf.version>
+        <junit.version>5.7.1</junit.version>
+    </properties>
 
     <dependencies>
         <dependency>
-            <groupId>com.wire.bots</groupId>
-            <artifactId>cryptobox</artifactId>
-            <version>${cryptobox.version}</version>
+            <groupId>com.wire</groupId>
+            <artifactId>cryptobox4j</artifactId>
+            <version>0.5.1</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -54,8 +87,8 @@
             <version>2.0.1.Final</version>
         </dependency>
         <dependency>
-            <artifactId>protobuf-java</artifactId>
             <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
             <version>${protobuf.version}</version>
         </dependency>
         <dependency>
@@ -68,40 +101,44 @@
             <artifactId>jdbi3-sqlobject</artifactId>
             <version>${jdbi.version}</version>
         </dependency>
+        <!-- test dependencies -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <version>5.7.0</version>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.2.19</version>
+            <version>42.2.20</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
-            <version>7.7.2</version>
+            <version>7.8.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>1.7.30</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
 
+    <packaging>jar</packaging>
     <build>
-        <extensions>
-            <extension>
-                <groupId>io.packagecloud.maven.wagon</groupId>
-                <artifactId>maven-packagecloud-wagon</artifactId>
-                <version>0.0.6</version>
-            </extension>
-        </extensions>
+        <finalName>xenon</finalName>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.1</version>
-            </plugin>
+            <!-- for compiling the protobufs -->
             <plugin>
                 <groupId>com.github.os72</groupId>
                 <artifactId>protoc-jar-maven-plugin</artifactId>
@@ -121,6 +158,18 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>1.6.7</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <serverId>ossrh</serverId>
+                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
@@ -129,25 +178,51 @@
                     <execution>
                         <id>attach-sources</id>
                         <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
                             <goal>jar</goal>
                         </goals>
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>1.6</version>
+                <configuration>
+                    <!-- Prevent gpg from using pinentry programs -->
+                    <gpgArguments>
+                        <arg>--pinentry-mode</arg>
+                        <arg>loopback</arg>
+                    </gpgArguments>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- running the JUnit 5 tests -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.0.0-M5</version>
+            </plugin>
         </plugins>
     </build>
-    <distributionManagement>
-        <repository>
-            <id>packagecloud-dkovacevic</id>
-            <url>
-                packagecloud+https://packagecloud.io/dkovacevic/xenon
-            </url>
-        </repository>
-        <snapshotRepository>
-            <id>packagecloud-dkovacevic</id>
-            <url>
-                packagecloud+https://packagecloud.io/dkovacevic/xenon
-            </url>
-        </snapshotRepository>
-    </distributionManagement>
 </project>

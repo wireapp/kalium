@@ -98,7 +98,7 @@ public interface WireClient extends Closeable {
      *
      * @param userIds User IDs (UUID) that are being requested
      * @return Collection of user profiles (name, accent colour,...)
-     * @throws IOException
+     * @throws HttpException
      */
     Collection<User> getUsers(Collection<UUID> userIds) throws HttpException;
 
@@ -107,7 +107,7 @@ public interface WireClient extends Closeable {
      *
      * @param userId User ID (UUID) that are being requested
      * @return User profile (name, accent colour,...)
-     * @throws IOException
+     * @throws HttpException
      */
     User getUser(UUID userId) throws HttpException;
 
@@ -125,7 +125,7 @@ public interface WireClient extends Closeable {
      * accept/reject a connect request.
      *
      * @param user User ID as UUID
-     * @throws IOException
+     * @throws Exception
      */
     void acceptConnection(UUID user) throws Exception;
 
@@ -136,7 +136,7 @@ public interface WireClient extends Closeable {
      * @param clientId Sender's Client id
      * @param cypher   Encrypted, Base64 encoded string
      * @return Base64 encoded decrypted text
-     * @throws Exception
+     * @throws CryptoException
      */
     String decrypt(UUID userId, String clientId, String cypher) throws CryptoException;
 
@@ -144,7 +144,7 @@ public interface WireClient extends Closeable {
      * Invoked by the sdk. Called once when the conversation is created
      *
      * @return Last prekey
-     * @throws Exception
+     * @throws CryptoException
      */
     PreKey newLastPreKey() throws CryptoException;
 
@@ -155,7 +155,7 @@ public interface WireClient extends Closeable {
      * @param from  Starting offset
      * @param count Number of keys to generate
      * @return List of prekeys
-     * @throws Exception
+     * @throws CryptoException
      */
     ArrayList<PreKey> newPreKeys(int from, int count) throws CryptoException;
 
@@ -187,7 +187,7 @@ public interface WireClient extends Closeable {
      *
      * @param assetKey Asset key
      * @return Profile picture binary data
-     * @throws IOException
+     * @throws Exception
      */
     byte[] downloadProfilePicture(String assetKey) throws Exception;
 
@@ -213,5 +213,4 @@ public interface WireClient extends Closeable {
     User addService(UUID serviceId, UUID providerId) throws HttpException;
 
     boolean deleteConversation(UUID teamId) throws HttpException;
-
 }

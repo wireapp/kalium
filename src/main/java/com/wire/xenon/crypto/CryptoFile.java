@@ -39,15 +39,16 @@ public class CryptoFile extends CryptoBase {
     private final String root;
 
     /**
+     * <p>
      * Opens the CryptoBox using given directory path
      * The given directory must be writable.
-     * <p/>
+     * </p>
      * Note: Do not create multiple OtrManagers that operate on the same or
      * overlapping directories. Doing so results in undefined behaviour.
      *
      * @param rootDir The root storage directory of the box
      * @param botId   Bot id
-     * @throws Exception
+     * @throws CryptoException when crypto breaks
      */
     public CryptoFile(String rootDir, UUID botId) throws CryptoException {
         root = String.format("%s/%s", rootDir, botId);
@@ -63,6 +64,10 @@ public class CryptoFile extends CryptoBase {
     public void purge() throws IOException {
         box.close();
         Path rootPath = Paths.get(root);
+        if (!rootPath.toFile().exists()) return;
+
+        // we don't really care if the files were actually deleted or not
+        //noinspection ResultOfMethodCallIgnored
         Files.walk(rootPath, FileVisitOption.FOLLOW_LINKS)
                 .sorted(Comparator.reverseOrder())
                 .map(Path::toFile)

@@ -71,16 +71,17 @@ abstract class CryptoBase implements Crypto {
     }
 
     /**
+     * <p>
      * Generate a new batch of ephemeral prekeys.
-     * <p/>
-     * If <tt>start + num > 0xFFFE <tt/> the IDs wrap around and start
+     * </p>
+     * If {@code start + num {@literal >} 0xFFFE} the IDs wrap around and start
      * over at 0. Thus after any valid invocation of this method, the last generated
-     * prekey ID is always <tt>(start + num) % (0xFFFE + 1)</tt>. The caller
-     * can remember that ID and feed it back into {@link #newPreKeys} as the start
+     * prekey ID is always {@code (start + num) % (0xFFFE + 1)}. The caller
+     * can remember that ID and feed it back into this method as the start
      * ID when the next batch of ephemeral keys needs to be generated.
      *
-     * @param from  The ID (>= 0 and <= 0xFFFE) of the first prekey to generate.
-     * @param count The total number of prekeys to generate (> 0 and <= 0xFFFE).
+     * @param from  The ID ({@literal >}= 0 and {@literal <}= 0xFFFE) of the first prekey to generate.
+     * @param count The total number of prekeys to generate ({@literal >} 0 and {@literal <}= 0xFFFE).
      */
     @Override
     public ArrayList<PreKey> newPreKeys(int from, int count) throws CryptoException {
@@ -97,7 +98,7 @@ abstract class CryptoBase implements Crypto {
      *
      * @param preKeys Prekeys
      * @param content Plain text content
-     * @throws Exception throws Exception
+     * @throws CryptoException throws Exception
      */
     @Override
     public Recipients encrypt(PreKeys preKeys, byte[] content) throws CryptoException {
@@ -118,7 +119,7 @@ abstract class CryptoBase implements Crypto {
     }
 
     /**
-     * Append cipher to {@param #msg} for each device using crypto box session. Ciphers for those devices that still
+     * Append cipher to {@code msg} for each device using crypto box session. Ciphers for those devices that still
      * don't have the session will be skipped and those must be encrypted using prekeys:
      *
      * @param missing List of device that are missing
@@ -147,7 +148,7 @@ abstract class CryptoBase implements Crypto {
      * @param clientId Sender's Client id
      * @param cypher   Encrypted, Base64 encoded string
      * @return Decrypted Base64 encoded string
-     * @throws Exception throws Exception
+     * @throws CryptoException throws Exception
      */
     @Override
     public String decrypt(UUID userId, String clientId, String cypher) throws CryptoException {
