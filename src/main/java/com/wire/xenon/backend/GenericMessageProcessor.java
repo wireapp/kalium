@@ -36,10 +36,7 @@ public class GenericMessageProcessor {
     }
 
     public boolean process(MessageBase msgBase, Messages.GenericMessage generic) {
-        Logger.debug("eventId: %s, msgId: %s, proto: %s",
-                msgBase.getEventId(),
-                msgBase.getMessageId(),
-                generic);
+        Logger.debug("proto: { %s }", generic);
 
         // Text
         if (generic.hasText()) {

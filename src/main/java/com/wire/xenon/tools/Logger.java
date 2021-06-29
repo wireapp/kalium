@@ -68,7 +68,7 @@ public class Logger {
         for (Object arg : args) {
             if (arg instanceof Throwable) {
                 // if so log it as exception instead of a common format
-                exception(format, (Throwable) arg, args);
+                exception((Throwable) arg, format, args);
                 // break as counter and logger is handled in the exception
                 return;
             }
@@ -78,7 +78,13 @@ public class Logger {
         LOGGER.severe(String.format(format, args));
     }
 
+    @Deprecated
     public static void exception(String message, Throwable throwable, Object... args) {
+        errorCount.incrementAndGet();
+        LOGGER.log(Level.SEVERE, String.format(message, args), throwable);
+    }
+
+    public static void exception(Throwable throwable, String message, Object... args) {
         errorCount.incrementAndGet();
         LOGGER.log(Level.SEVERE, String.format(message, args), throwable);
     }

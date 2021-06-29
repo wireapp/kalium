@@ -207,9 +207,9 @@ public abstract class WireClientBase implements WireClient {
     }
 
     @Override
-    public byte[] downloadAsset(String assetKey, String assetToken, byte[] sha256Challenge, byte[] otrKey)
+    public byte[] downloadAsset(String assetId, String assetToken, byte[] sha256Challenge, byte[] otrKey)
             throws Exception {
-        byte[] cipher = api.downloadAsset(assetKey, assetToken);
+        byte[] cipher = api.downloadAsset(assetId, assetToken);
         byte[] sha256 = MessageDigest.getInstance("SHA-256").digest(cipher);
         if (!Arrays.equals(sha256, sha256Challenge))
             throw new Exception("Failed sha256 check");
