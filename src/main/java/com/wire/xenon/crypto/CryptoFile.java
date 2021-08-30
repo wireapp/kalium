@@ -55,6 +55,22 @@ public class CryptoFile extends CryptoBase {
         box = CryptoBox.open(root);
     }
 
+    /**
+     * <p>
+     * Opens the CryptoBox using given directory path
+     * The given directory must be writable.
+     * </p>
+     * Note: Do not create multiple OtrManagers that operate on the same or
+     * overlapping directories. Doing so results in undefined behaviour.
+     *
+     * @param root The root storage directory of the box
+     * @throws CryptoException when crypto breaks
+     */
+    public CryptoFile(String root) throws CryptoException {
+        this.root = root;
+        box = CryptoBox.open(root);
+    }
+
     @Override
     public ICryptobox box() {
         return box;
