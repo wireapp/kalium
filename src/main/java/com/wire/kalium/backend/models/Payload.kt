@@ -17,34 +17,41 @@
 //
 package com.wire.kalium.backend.models
 
-import java.util.UUID
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import javax.validation.constraints.NotNull
+import com.fasterxml.jackson.annotation.JsonProperty
+import java.util.*
 
+/**
+ * TODO: Remove Jackson, remove lateinits, replace vars with vals
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 class Payload {
+    /**
+     * TODO: Replace String with something type-safe.
+     *   Maybe an Enum? What are the possible values of this status? Bad discoverability too.
+     *   Currently known: pending, accepted
+     **/
     @JsonProperty
-    var type: @NotNull String? = null
+    lateinit var type: String
 
     @JsonProperty("conversation")
-    var convId: UUID? = null
+    lateinit var convId: UUID
 
     @JsonProperty
-    var from: @NotNull UUID? = null
+    lateinit var from: UUID
 
     @JsonProperty
-    var time: @NotNull String? = null
+    lateinit var time: String
 
     @JsonProperty
-    var data: @NotNull Data? = null
+    lateinit var data: Data
 
     @JsonProperty
     var team: UUID? = null
 
     // User Mode
     @JsonProperty
-    var connection: Connection? = null
+    lateinit var connection: Connection
 
     @JsonProperty
     var user: User? = null
@@ -52,16 +59,16 @@ class Payload {
     @JsonIgnoreProperties(ignoreUnknown = true)
     class Data {
         @JsonProperty
-        var sender: @NotNull String? = null
+        lateinit var sender: String
 
         @JsonProperty
-        var recipient: @NotNull String? = null
+        lateinit var recipient: String
 
         @JsonProperty
-        var text: String? = null
+        lateinit var text: String
 
         @JsonProperty("user_ids")
-        var userIds: MutableList<UUID?>? = null
+        lateinit var userIds: MutableList<UUID>
 
         @JsonProperty
         var name: String? = null
@@ -86,17 +93,22 @@ class Payload {
     // User Mode
     @JsonIgnoreProperties(ignoreUnknown = true)
     class Connection {
+        /**
+         * TODO: Replace String with something type-safe.
+         *   Maybe an Enum? What are the possible values of this status? Bad discoverability too.
+         *   Currently known: pending, accepted
+         **/
         @JsonProperty
-        var status: String? = null
+        lateinit var status: String
 
         @JsonProperty
-        var from: UUID? = null
+        lateinit var from: UUID
 
         @JsonProperty
-        var to: UUID? = null
+        lateinit var to: UUID
 
         @JsonProperty("conversation")
-        var convId: UUID? = null
+        lateinit var convId: UUID
     }
 
     // User Mode
@@ -122,6 +134,6 @@ class Payload {
     @JsonIgnoreProperties(ignoreUnknown = true)
     class Members {
         @JsonProperty
-        var others: MutableList<Member?>? = null
+        lateinit var others: MutableList<Member>
     }
 }
