@@ -11,17 +11,19 @@ import java.util.*
 
 interface Crypto : Closeable {
     @Throws(CryptoException::class)
-    open fun getIdentity(): ByteArray?
-    @Throws(CryptoException::class)
-    open fun getLocalFingerprint(): ByteArray?
-    @Throws(CryptoException::class)
-    open fun newLastPreKey(): PreKey?
+    open fun getIdentity(): ByteArray
 
     @Throws(CryptoException::class)
-    open fun newPreKeys(from: Int, count: Int): ArrayList<PreKey?>?
+    open fun getLocalFingerprint(): ByteArray
 
     @Throws(CryptoException::class)
-    open fun encrypt(preKeys: PreKeys, content: ByteArray): Recipients?
+    open fun newLastPreKey(): PreKey
+
+    @Throws(CryptoException::class)
+    open fun newPreKeys(from: Int, count: Int): ArrayList<PreKey>
+
+    @Throws(CryptoException::class)
+    open fun encrypt(preKeys: PreKeys, content: ByteArray): Recipients
 
     /**
      * Append cipher to `msg` for each device using crypto box session. Ciphers for those devices that still
@@ -43,7 +45,7 @@ interface Crypto : Closeable {
      * @throws CryptoException throws CryptoException
      */
     @Throws(CryptoException::class)
-    open fun decrypt(userId: UUID?, clientId: String?, cypher: String?): String?
+    open fun decrypt(userId: UUID, clientId: String, cypher: String): String
     open fun isClosed(): Boolean
     @Throws(IOException::class)
     open fun purge()

@@ -32,12 +32,12 @@ abstract class CryptoBase : Crypto {
     abstract fun box(): ICryptobox
 
     @Throws(CryptoException::class)
-    override fun getIdentity(): ByteArray? {
+    override fun getIdentity(): ByteArray {
         return box().getIdentity()
     }
 
     @Throws(CryptoException::class)
-    override fun getLocalFingerprint(): ByteArray? {
+    override fun getLocalFingerprint(): ByteArray {
         return box().getLocalFingerprint()
     }
 
@@ -45,7 +45,7 @@ abstract class CryptoBase : Crypto {
      * Generate a new last prekey.
      */
     @Throws(CryptoException::class)
-    override fun newLastPreKey(): PreKey? {
+    override fun newLastPreKey(): PreKey {
         return toPreKey(box().newLastPreKey())
     }
 
@@ -64,8 +64,8 @@ abstract class CryptoBase : Crypto {
      * @param count The total number of prekeys to generate (&gt; 0 and &lt;= 0xFFFE).
      */
     @Throws(CryptoException::class)
-    override fun newPreKeys(from: Int, count: Int): ArrayList<PreKey?>? {
-        val ret = ArrayList<PreKey?>(count)
+    override fun newPreKeys(from: Int, count: Int): ArrayList<PreKey> {
+        val ret = ArrayList<PreKey>(count)
         for (k in box().newPreKeys(from, count)) {
             val prekey = toPreKey(k)
             ret.add(prekey)
@@ -81,7 +81,7 @@ abstract class CryptoBase : Crypto {
      * @throws CryptoException throws Exception
      */
     @Throws(CryptoException::class)
-    override fun encrypt(preKeys: PreKeys, content: ByteArray): Recipients? {
+    override fun encrypt(preKeys: PreKeys, content: ByteArray): Recipients {
         val recipients = Recipients()
         for (userId in preKeys.keys) {
             val clients = preKeys.getValue(userId)
@@ -131,7 +131,7 @@ abstract class CryptoBase : Crypto {
      * @throws CryptoException throws Exception
      */
     @Throws(CryptoException::class)
-    override fun decrypt(userId: UUID?, clientId: String?, cypher: String?): String? {
+    override fun decrypt(userId: UUID, clientId: String, cypher: String): String {
         val decode = Base64.getDecoder().decode(cypher)
         val id = createId(userId, clientId)
         val cryptobox = box()
