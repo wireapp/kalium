@@ -24,55 +24,32 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonCreator
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-class AudioPreviewMessage : OriginMessage {
-    @JsonProperty
-    private var duration: Long = 0
-
-    @JsonProperty
-    private var levels: ByteArray?
-
-    @JsonCreator
-    constructor(
-        @JsonProperty("eventId") eventId: UUID?,
-        @JsonProperty("messageId") messageId: UUID?,
-        @JsonProperty("conversationId") convId: UUID?,
-        @JsonProperty("clientId") clientId: String?,
-        @JsonProperty("userId") userId: UUID?,
-        @JsonProperty("time") time: String?,
-        @JsonProperty("mimeType") mimeType: String?,
+class AudioPreviewMessage @JsonCreator constructor(
+        @JsonProperty("duration") val duration: Long,
+        @JsonProperty("levels") val levels: ByteArray,
+        @JsonProperty("eventId") eventId: UUID,
+        @JsonProperty("messageId") messageId: UUID,
+        @JsonProperty("conversationId") convId: UUID,
+        @JsonProperty("clientId") clientId: String,
+        @JsonProperty("userId") userId: UUID,
+        @JsonProperty("time") time: String,
+        @JsonProperty("mimeType") mimeType: String,
         @JsonProperty("size") size: Long,
-        @JsonProperty("name") name: String?,
-        @JsonProperty("duration") duration: Long,
-        @JsonProperty("levels") levels: ByteArray?
-    ) : super(eventId, messageId, convId, clientId, userId, time) {
-        setMimeType(mimeType)
-        setName(name)
-        setSize(size)
-        setDuration(duration)
-        setLevels(levels)
-    }
+        @JsonProperty("name") name: String
+) : OriginMessage(mimeType = mimeType, name = name, size = size, eventId = eventId, msgId = messageId, conversationId = convId, clientId = clientId, userId = userId, time = time) {
 
-    constructor(msg: MessageBase?, original: Original?) : super(msg) {
-        mimeType = original.getMimeType()
-        size = original.getSize()
-        name = original.getName()
-        setDuration(original.getAudio().durationInMillis)
-        setLevels(original.getAudio().normalizedLoudness.toByteArray())
-    }
-
-    fun getDuration(): Long {
-        return duration
-    }
-
-    fun setDuration(duration: Long) {
-        this.duration = duration
-    }
-
-    fun getLevels(): ByteArray? {
-        return levels
-    }
-
-    fun setLevels(levels: ByteArray?) {
-        this.levels = levels
-    }
+    constructor(msg: MessageBase, original: Original) :
+            this(
+                    duration = original.audio.durationInMillis,
+                    levels = original.audio.normalizedLoudness.toByteArray(),
+                    eventId = msg.eventId,
+                    messageId = msg.messageId,
+                    convId = msg.conversationId,
+                    clientId = msg.clientId,
+                    userId = msg.userId,
+                    time = msg.time,
+                    mimeType = original.mimeType,
+                    size = original.size,
+                    name = original.name
+            )
 }
