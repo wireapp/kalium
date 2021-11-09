@@ -10,7 +10,8 @@ import com.wire.kalium.backend.models.Payload
 import com.wire.kalium.backend.models.SystemMessage
 import com.wire.kalium.models.MessageBase
 import com.wire.kalium.tools.Logger
-import java.util.*
+import java.util.Base64
+import java.util.UUID
 
 abstract class BaseEventProcessor(private val handler: MessageHandler) : EventProcessor {
 
