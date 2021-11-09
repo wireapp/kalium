@@ -18,8 +18,4 @@
 
 package com.wire.kalium.models
 
-class AssetKey {
-    var id: String? = null
-    var token: String? = null
-    var expires: String? = null
-}
+data class AssetKey(val id: String, val token: String, val expires: String)

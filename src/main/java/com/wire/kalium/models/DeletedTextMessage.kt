@@ -23,28 +23,24 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonCreator
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-class DeletedTextMessage : MessageBase {
-    @JsonProperty
-    private var deletedMessageId: UUID? = null
+class DeletedTextMessage @JsonCreator constructor(
+        @JsonProperty val deletedMessageId: UUID,
+        @JsonProperty("eventId") eventId: UUID,
+        @JsonProperty("messageId") messageId: UUID,
+        @JsonProperty("conversationId") convId: UUID,
+        @JsonProperty("clientId") clientId: String,
+        @JsonProperty("userId") userId: UUID,
+        @JsonProperty("time") time: String
+) : MessageBase(eventId = eventId, messageId = messageId, conversationId = convId, clientId = clientId, userId = userId, time = time) {
 
-    @JsonCreator
-    constructor(
-        @JsonProperty("eventId") eventId: UUID?,
-        @JsonProperty("messageId") messageId: UUID?,
-        @JsonProperty("conversationId") convId: UUID?,
-        @JsonProperty("clientId") clientId: String?,
-        @JsonProperty("userId") userId: UUID?,
-        @JsonProperty("time") time: String?
-    ) : super(eventId, messageId, convId, clientId, userId, time) {
-    }
-
-    constructor(msgBase: MessageBase?) : super(msgBase) {}
-
-    fun getDeletedMessageId(): UUID? {
-        return deletedMessageId
-    }
-
-    fun setDeletedMessageId(deletedMessageId: UUID?) {
-        this.deletedMessageId = deletedMessageId
-    }
+    constructor(_deletedMessageId: UUID, msgBase: MessageBase) :
+            this(
+                    deletedMessageId = _deletedMessageId,
+                    eventId = msgBase.eventId,
+                    messageId = msgBase.messageId,
+                    convId = msgBase.conversationId,
+                    clientId = msgBase.clientId,
+                    userId = msgBase.userId,
+                    time = msgBase.time
+            )
 }

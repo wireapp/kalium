@@ -23,28 +23,25 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonCreator
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-class CallingMessage : MessageBase {
-    @JsonProperty
-    private var content: String? = null
+class CallingMessage @JsonCreator constructor(
+        @JsonProperty val content: String,
+        @JsonProperty("eventId") eventId: UUID,
+        @JsonProperty("messageId") messageId: UUID,
+        @JsonProperty("conversationId") convId: UUID,
+        @JsonProperty("clientId") clientId: String,
+        @JsonProperty("userId") userId: UUID,
+        @JsonProperty("time") time: String
+) : MessageBase(eventId = eventId, messageId = messageId, conversationId = convId, clientId = clientId, userId = userId, time = time) {
 
-    @JsonCreator
-    constructor(
-        @JsonProperty("eventId") eventId: UUID?,
-        @JsonProperty("messageId") messageId: UUID?,
-        @JsonProperty("conversationId") convId: UUID?,
-        @JsonProperty("clientId") clientId: String?,
-        @JsonProperty("userId") userId: UUID?,
-        @JsonProperty("time") time: String?
-    ) : super(eventId, messageId, convId, clientId, userId, time) {
-    }
+    constructor(content: String, msgBase: MessageBase) :
+            this(
+                    content = content,
+                    eventId = msgBase.eventId,
+                    messageId = msgBase.messageId,
+                    convId = msgBase.conversationId,
+                    clientId = msgBase.clientId,
+                    userId = msgBase.userId,
+                    time = msgBase.time
+            )
 
-    constructor(msgBase: MessageBase?) : super(msgBase) {}
-
-    fun getContent(): String? {
-        return content
-    }
-
-    fun setContent(content: String?) {
-        this.content = content
-    }
 }

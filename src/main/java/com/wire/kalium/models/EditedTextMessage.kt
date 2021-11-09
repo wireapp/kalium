@@ -21,30 +21,52 @@ import java.util.UUID
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonCreator
+import java.util.ArrayList
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-class EditedTextMessage : TextMessage {
-    @JsonProperty
-    private var replacingMessageId: UUID? = null
+class EditedTextMessage @JsonCreator constructor(
+        @JsonProperty val replacingMessageId: UUID,
+        @JsonProperty text: String,
+        @JsonProperty quotedMessageId: UUID,
+        @JsonProperty quotedMessageSha256: ByteArray,
+        @JsonProperty mentions: ArrayList<Mention>,
+        @JsonProperty("eventId") eventId: UUID,
+        @JsonProperty("messageId") messageId: UUID,
+        @JsonProperty("conversationId") convId: UUID,
+        @JsonProperty("clientId") clientId: String,
+        @JsonProperty("userId") userId: UUID,
+        @JsonProperty("time") time: String
+) : TextMessage(
+        text = text,
+        quotedMessageId = quotedMessageId,
+        quotedMessageSha256 = quotedMessageSha256,
+        mentions = mentions,
+        eventId = eventId,
+        messageId = messageId,
+        convId = convId,
+        clientId = clientId,
+        userId = userId,
+        time = time
+) {
 
-    @JsonCreator
     constructor(
-        @JsonProperty("eventId") eventId: UUID?,
-        @JsonProperty("messageId") messageId: UUID?,
-        @JsonProperty("conversationId") convId: UUID?,
-        @JsonProperty("clientId") clientId: String?,
-        @JsonProperty("userId") userId: UUID?,
-        @JsonProperty("time") time: String?
-    ) : super(eventId, messageId, convId, clientId, userId, time) {
-    }
-
-    constructor(msg: MessageBase?) : super(msg) {}
-
-    fun getReplacingMessageId(): UUID? {
-        return replacingMessageId
-    }
-
-    fun setReplacingMessageId(replacingMessageId: UUID?) {
-        this.replacingMessageId = replacingMessageId
-    }
+            _replacingMessageId: UUID,
+            _text: String,
+            _quotedMessageId: UUID,
+            _quotedMessageSha256: ByteArray,
+            _mentions: ArrayList<Mention>,
+            msg: MessageBase
+    ) : this(
+            replacingMessageId = _replacingMessageId,
+            text = _text,
+            quotedMessageId = _quotedMessageId,
+            quotedMessageSha256 = _quotedMessageSha256,
+            mentions = _mentions,
+            eventId = msg.eventId,
+            messageId = msg.messageId,
+            convId = msg.conversationId,
+            clientId = msg.clientId,
+            userId = msg.userId,
+            time = msg.time
+    )
 }
