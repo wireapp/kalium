@@ -15,7 +15,7 @@ import java.util.*
 abstract class BaseEventHandler(private val handler: MessageHandler) : EventHandler {
 
     @Throws(Exception::class)
-    override fun handleMessage(eventId: UUID, payload: Payload, client: WireClient) {
+    override fun handleEvent(eventId: UUID, payload: Payload, client: WireClient) {
         val data = payload.data
         val botId = client.getId()
         Logger.debug("New event of type: '${payload.type}'; Content: $payload")
