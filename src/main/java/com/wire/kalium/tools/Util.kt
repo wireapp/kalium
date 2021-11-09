@@ -89,11 +89,15 @@ object Util {
 
     @Throws(IOException::class)
     fun readFile(f: File?): String? {
-        FileInputStream(f).use { fis ->
-            val data = ByteArray(f.length() as Int)
-            fis.read(data)
-            return String(data, StandardCharsets.UTF_8)
+        f?.let {
+            FileInputStream(it).use { fis ->
+                val data = ByteArray(it.length() as Int)
+                fis.read(data)
+                return String(data, StandardCharsets.UTF_8)
+            }
         }
+
+        return null
     }
 
     @Throws(IOException::class)
@@ -103,38 +107,52 @@ object Util {
 
     @Throws(NoSuchAlgorithmException::class)
     fun calcMd5(bytes: ByteArray?): String? {
-        val md = MessageDigest.getInstance("MD5")
-        md.update(bytes, 0, bytes.size)
-        val hash = md.digest()
-        val byteArray = Base64.getEncoder().encode(hash)
-        return String(byteArray)
+        bytes?.let {
+            val md = MessageDigest.getInstance("MD5")
+            md.update(bytes, 0, it.size)
+            val hash = md.digest()
+            val byteArray = Base64.getEncoder().encode(hash)
+            return String(byteArray)
+        }
+
+        return null
     }
 
     fun digest(md: MessageDigest?, bytes: ByteArray?): String? {
-        md.update(bytes, 0, bytes.size)
-        val hash = md.digest()
-        val byteArray = Base64.getEncoder().encode(hash)
-        return String(byteArray)
+        md?.let { messageDigest ->
+            bytes?.let {
+                messageDigest.update(it, 0, it.size)
+                val hash = messageDigest.digest()
+                val byteArray = Base64.getEncoder().encode(hash)
+                return String(byteArray)
+            }
+        }
+
+        return null
     }
 
     @Throws(NoSuchAlgorithmException::class, InvalidKeyException::class)
     fun getHmacSHA1(payload: String?, secret: String?): String? {
         val hmac = Mac.getInstance(HMAC_SHA_1)
-        hmac.init(SecretKeySpec(secret.toByteArray(StandardCharsets.UTF_8), HMAC_SHA_1))
-        val bytes = hmac.doFinal(payload.toByteArray(StandardCharsets.UTF_8))
+        hmac.init(SecretKeySpec(secret?.toByteArray(StandardCharsets.UTF_8), HMAC_SHA_1))
+        val bytes = hmac.doFinal(payload?.toByteArray(StandardCharsets.UTF_8))
         return String.format("%040x", BigInteger(1, bytes))
     }
 
     @Throws(IOException::class)
     fun toByteArray(input: InputStream?): ByteArray? {
-        ByteArrayOutputStream().use { output ->
-            var n: Int
-            val buffer = ByteArray(1024 * 4)
-            while (-1 != input.read(buffer).also { n = it }) {
-                output.write(buffer, 0, n)
+        input?.let { inputStream ->
+            ByteArrayOutputStream().use { output ->
+                var n: Int
+                val buffer = ByteArray(1024 * 4)
+                while (-1 != inputStream.read(buffer).also { n = it }) {
+                    output.write(buffer, 0, n)
+                }
+                return output.toByteArray()
             }
-            return output.toByteArray()
         }
+
+        return null
     }
 
     fun compareAuthorizations(auth1: String?, auth2: String?): Boolean {
@@ -145,15 +163,19 @@ object Util {
     }
 
     fun extractToken(auth: String?): String? {
-        val split: Array<String?> = auth.split(" ").toTypedArray()
-        return if (split.size == 1) split[0] else split[1]
+
+        auth?.let { authString ->
+            val split: Array<String?> = authString.split(" ").toTypedArray()
+            return if (split.size == 1) split[0] else split[1]
+        }
+        return null
     }
 
     @Throws(IOException::class)
     fun extractMimeType(imageData: ByteArray?): String? {
         ByteArrayInputStream(imageData).use { input ->
             val contentType = URLConnection.guessContentTypeFromStream(input)
-            return contentType ?: "image/xyz"
+            return contentType ?: "application/octet-stream"
         }
     }
 
