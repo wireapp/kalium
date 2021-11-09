@@ -25,7 +25,7 @@ dependencies {
     implementation("com.wire:cryptobox4j:$cryptoboxVersion")
     implementation("com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion")
     implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
-    implementation("javaxValidation:validation-api:$javaxValidationVersion")
+    implementation("javax.validation:validation-api:$javaxValidationVersion")
     implementation("com.google.protobuf:protobuf-java:$protobufVersion")
     implementation("org.jdbi:jdbi3-core:$jdbiVersion")
     implementation("org.jdbi:jdbi3-sqlobject:$jdbiVersion")
