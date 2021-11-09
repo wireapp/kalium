@@ -23,41 +23,29 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonCreator
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-class ConfirmationMessage : MessageBase {
-    @JsonProperty
-    private var type: Type? = null
+class ConfirmationMessage @JsonCreator constructor(
+        @JsonProperty val confirmationMessageId: UUID,
+        @JsonProperty val type: Type,
+        @JsonProperty("eventId") eventId: UUID,
+        @JsonProperty("messageId") messageId: UUID,
+        @JsonProperty("conversationId") convId: UUID,
+        @JsonProperty("clientId") clientId: String,
+        @JsonProperty("userId") userId: UUID,
+        @JsonProperty("time") time: String
+) : MessageBase(eventId = eventId, messageId = messageId, conversationId = convId, clientId = clientId, userId = userId, time = time) {
 
-    @JsonProperty
-    private var confirmationMessageId: UUID? = null
 
-    @JsonCreator
-    constructor(
-        @JsonProperty("eventId") eventId: UUID?,
-        @JsonProperty("messageId") messageId: UUID?,
-        @JsonProperty("conversationId") convId: UUID?,
-        @JsonProperty("clientId") clientId: String?,
-        @JsonProperty("userId") userId: UUID?,
-        @JsonProperty("time") time: String?
-    ) : super(eventId, messageId, convId, clientId, userId, time) {
-    }
-
-    constructor(msg: MessageBase?) : super(msg) {}
-
-    fun getType(): Type? {
-        return type
-    }
-
-    fun setType(type: Type?) {
-        this.type = type
-    }
-
-    fun getConfirmationMessageId(): UUID? {
-        return confirmationMessageId
-    }
-
-    fun setConfirmationMessageId(confirmationMessageId: UUID?) {
-        this.confirmationMessageId = confirmationMessageId
-    }
+    constructor(_confirmationMessageId: UUID, _type: Type, msg: MessageBase) :
+            this(
+                    confirmationMessageId = _confirmationMessageId,
+                    type = _type,
+                    eventId = msg.eventId,
+                    messageId = msg.messageId,
+                    convId = msg.conversationId,
+                    clientId = msg.clientId,
+                    userId = msg.userId,
+                    time = msg.time
+            )
 
     enum class Type {
         DELIVERED, READ
