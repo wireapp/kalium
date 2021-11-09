@@ -12,7 +12,7 @@ import com.wire.kalium.models.MessageBase
 import com.wire.kalium.tools.Logger
 import java.util.*
 
-abstract class MessageResourceBase(private val handler: MessageHandler) : EventHandler {
+abstract class BaseEventHandler(private val handler: MessageHandler) : EventHandler {
 
     @Throws(Exception::class)
     override fun handleMessage(eventId: UUID, payload: Payload, client: WireClient) {
