@@ -38,7 +38,7 @@ import com.wire.kalium.backend.models.SystemMessage
 import java.util.Collections
 import com.wire.kalium.tools.Logger
 
-abstract class MessageHandlerBase {
+interface MessageHandler {
     /**
      * @param newBot       Initialization object for new Bot instance
      * -  id          : The unique user ID for the bot.
@@ -51,7 +51,7 @@ abstract class MessageHandlerBase {
      * @return If TRUE is returned new bot instance is created for this conversation
      * If FALSE is returned this service declines to create new bot instance for this conversation
      */
-    fun onNewBot(newBot: NewBot?, serviceToken: String?): Boolean {
+    fun onNewBot(newBot: NewBot, serviceToken: String): Boolean {
         return true
     }
 
@@ -59,9 +59,9 @@ abstract class MessageHandlerBase {
      * This callback is invoked by the framework when the bot is added into a conversation
      *
      * @param client  Thread safe wire client that can be used to post back to this conversation
-     * @param message SystemMessage object. message.conversation is never null
+     * @param message SystemMessage object. message.conversation
      */
-    fun onNewConversation(client: WireClient?, message: SystemMessage?) {}
+    fun onNewConversation(client: WireClient, message: SystemMessage) {}
 
     /**
      * This callback is invoked by the framework every time connection request is received
@@ -72,7 +72,7 @@ abstract class MessageHandlerBase {
      * @param status Relation status of the connection request
      * @return TRUE if connection was accepted
      */
-    fun onConnectRequest(client: WireClient?, from: UUID?, to: UUID?, status: String?): Boolean {
+    fun onConnectRequest(client: WireClient, from: UUID, to: UUID, status: String): Boolean {
         // Bot received connect request and we want to accept it immediately
         if (status == "pending") {
             return try {
@@ -84,9 +84,7 @@ abstract class MessageHandlerBase {
             }
         }
         // Connect request sent by the bot got accepted
-        return if (status == "accepted") {
-            true
-        } else false
+        return status == "accepted"
     }
 
     /**
@@ -95,13 +93,13 @@ abstract class MessageHandlerBase {
      * @param client  Thread safe wire client that can be used to post back to this conversation
      * @param message System message object with message.users as List of UserIds that just joined this conversation
      */
-    fun onMemberJoin(client: WireClient?, message: SystemMessage?) {}
+    fun onMemberJoin(client: WireClient, message: SystemMessage) {}
 
     /**
      * @param client  Thread safe wire client that can be used to post back to this conversation
      * @param message System message object with message.users as List of UserIds that just joined this conversation
      */
-    fun onMemberLeave(client: WireClient?, message: SystemMessage?) {}
+    fun onMemberLeave(client: WireClient, message: SystemMessage) {}
 
     /**
      * This callback is called when this bot gets removed from the conversation
@@ -109,13 +107,13 @@ abstract class MessageHandlerBase {
      * @param botId Id of the Bot that got removed
      * @param msg   System message
      */
-    fun onBotRemoved(botId: UUID?, msg: SystemMessage?) {}
+    fun onBotRemoved(botId: UUID, msg: SystemMessage) {}
 
     /**
      * @param newBot
      * @return Bot name that will be used for this conversation. If NULL is returned the Default Bot Name will be used
      */
-    fun getName(newBot: NewBot?): String? {
+    fun getName(newBot: NewBot): String? {
         return null
     }
 
@@ -147,7 +145,7 @@ abstract class MessageHandlerBase {
      * @param client Thread safe wire client that can be used to post back to this conversation
      * @param msg    Message containing text
      */
-    fun onText(client: WireClient?, msg: TextMessage?) {}
+    fun onText(client: WireClient, msg: TextMessage) {}
 
     /**
      * This is generic method that is called every time something is posted to this conversation.
@@ -156,7 +154,7 @@ abstract class MessageHandlerBase {
      * @param userId         User Id for the sender
      * @param genericMessage Generic message as it comes from the BE
      */
-    fun onEvent(client: WireClient?, userId: UUID?, genericMessage: GenericMessage?) {}
+    fun onEvent(client: WireClient, userId: UUID, genericMessage: GenericMessage) {}
 
     /**
      * Called when user edits previously sent message
@@ -164,15 +162,15 @@ abstract class MessageHandlerBase {
      * @param client Thread safe wire client that can be used to post back to this conversation
      * @param msg    New Message containing replacing messageId
      */
-    fun onEditText(client: WireClient?, msg: EditedTextMessage?) {}
-    fun onCalling(client: WireClient?, msg: CallingMessage?) {}
-    fun onConversationRename(client: WireClient?, systemMessage: SystemMessage?) {}
-    fun onDelete(client: WireClient?, msg: DeletedTextMessage?) {}
-    fun onReaction(client: WireClient?, msg: ReactionMessage?) {}
-    fun onNewTeamMember(userClient: WireClient?, userId: UUID?) {}
-    fun onUserUpdate(id: UUID?, userId: UUID?) {}
-    open fun onLinkPreview(client: WireClient?, msg: LinkPreviewMessage?) {}
-    fun onPing(client: WireClient?, msg: PingMessage?) {}
+    fun onEditText(client: WireClient, msg: EditedTextMessage) {}
+    fun onCalling(client: WireClient, msg: CallingMessage) {}
+    fun onConversationRename(client: WireClient, systemMessage: SystemMessage) {}
+    fun onDelete(client: WireClient, msg: DeletedTextMessage) {}
+    fun onReaction(client: WireClient, msg: ReactionMessage) {}
+    fun onNewTeamMember(userClient: WireClient, userId: UUID) {}
+    fun onUserUpdate(id: UUID, userId: UUID) {}
+    open fun onLinkPreview(client: WireClient, msg: LinkPreviewMessage) {}
+    fun onPing(client: WireClient, msg: PingMessage) {}
 
     /**
      * This method is called when ephemeral text is posted into the conversation
@@ -180,16 +178,16 @@ abstract class MessageHandlerBase {
      * @param client Thread safe wire client that can be used to post back to this conversation
      * @param msg    Message containing text and expiration time
      */
-    fun onText(client: WireClient?, msg: EphemeralTextMessage?) {}
-    fun onConfirmation(client: WireClient?, msg: ConfirmationMessage?) {}
-    fun validatePreKeys(client: WireClient?, size: Int) {
+    fun onText(client: WireClient, msg: EphemeralTextMessage) {}
+    fun onConfirmation(client: WireClient, msg: ConfirmationMessage) {}
+    fun validatePreKeys(client: WireClient, size: Int) {
         try {
             val minAvailable = 8 * size
             if (minAvailable > 0) {
-                val availablePrekeys = client!!.getAvailablePrekeys()
-                availablePrekeys!!.remove(65535) //remove the last prekey
-                if (!availablePrekeys.isEmpty() && availablePrekeys.size < minAvailable) {
-                    val lastKeyOffset = Collections.max(availablePrekeys!!)
+                val availablePrekeys = client.getAvailablePrekeys()
+                availablePrekeys.remove(65535) //remove the last prekey
+                if (availablePrekeys.isNotEmpty() && availablePrekeys.size < minAvailable) {
+                    val lastKeyOffset = Collections.max(availablePrekeys)
                     val keys = client.newPreKeys(lastKeyOffset!! + 1, minAvailable)
                     client.uploadPreKeys(keys)
                     Logger.info("Uploaded " + keys.size + " prekeys")
@@ -200,9 +198,9 @@ abstract class MessageHandlerBase {
         }
     }
 
-    fun onPhotoPreview(client: WireClient?, msg: PhotoPreviewMessage?) {}
-    fun onAssetData(client: WireClient?, msg: RemoteMessage?) {}
-    fun onFilePreview(client: WireClient?, msg: FilePreviewMessage?) {}
-    open fun onAudioPreview(client: WireClient?, msg: AudioPreviewMessage?) {}
-    fun onVideoPreview(client: WireClient?, msg: VideoPreviewMessage?) {}
+    fun onPhotoPreview(client: WireClient, msg: PhotoPreviewMessage) {}
+    fun onAssetData(client: WireClient, msg: RemoteMessage) {}
+    fun onFilePreview(client: WireClient, msg: FilePreviewMessage) {}
+    open fun onAudioPreview(client: WireClient, msg: AudioPreviewMessage) {}
+    fun onVideoPreview(client: WireClient, msg: VideoPreviewMessage) {}
 }
