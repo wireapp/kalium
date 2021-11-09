@@ -1,133 +1,146 @@
 package com.wire.kalium
 
-import kotlin.Throws
-import java.util.UUID
+import com.google.protobuf.InvalidProtocolBufferException
 import com.waz.model.Messages.GenericMessage
 import com.wire.bots.cryptobox.CryptoException
-import com.wire.kalium.models.MessageBase
-import com.wire.kalium.backend.models.Conversation
-import com.wire.kalium.backend.models.SystemMessage
 import com.wire.kalium.backend.GenericMessageProcessor
-import com.google.protobuf.InvalidProtocolBufferException
+import com.wire.kalium.backend.models.Conversation
 import com.wire.kalium.backend.models.Member
 import com.wire.kalium.backend.models.Payload
+import com.wire.kalium.backend.models.SystemMessage
+import com.wire.kalium.models.MessageBase
 import com.wire.kalium.tools.Logger
-import java.util.Base64
+import java.util.*
 
-abstract class MessageResourceBase(protected val handler: MessageHandlerBase?) {
+abstract class MessageResourceBase(private val handler: MessageHandler) : EventHandler {
+
     @Throws(Exception::class)
-    protected fun handleMessage(eventId: UUID?, payload: Payload?, client: WireClient?) {
+    override fun handleMessage(eventId: UUID, payload: Payload, client: WireClient) {
         val data = payload.data
         val botId = client.getId()
+        Logger.debug("New event of type: '${payload.type}'; Content: $payload")
         when (payload.type) {
+            // TODO: Replace with enum!
             "conversation.otr-message-add" -> {
-                val from = payload.from
-                Logger.debug("conversation.otr-message-add: bot: %s from: %s:%s", botId, from, data.sender)
-                val processor = GenericMessageProcessor(client, handler)
-                val genericMessage = decrypt(client, payload)
-                val messageId = UUID.fromString(genericMessage.getMessageId())
-                val msgBase = MessageBase(eventId, messageId, payload.convId, data.sender, from, payload.time)
-                processor.process(msgBase, genericMessage)
-                handler.onEvent(client, from, genericMessage)
+                handleMessageAddEvent(payload, client, eventId, data)
             }
             "conversation.member-join" -> {
-                Logger.debug("conversation.member-join: bot: %s", botId)
-
-                // Check if this bot got added to the conversation
-                val participants = data.userIds
-                if (participants.remove(botId)) {
-                    val systemMessage = getSystemMessage(eventId, payload)
-                    systemMessage.conversation = client.getConversation()
-                    systemMessage.type = "conversation.create" //hack the type
-                    handler.onNewConversation(client, systemMessage)
-                    return
-                }
-
-                // Check if we still have some prekeys available. Upload new prekeys if needed
-                handler.validatePreKeys(client, participants.size)
-                val systemMessage = getSystemMessage(eventId, payload)
-                systemMessage.users = data.userIds
-                handler.onMemberJoin(client, systemMessage)
+                handleMemberJoinEvent(data, botId, eventId, payload, client)
             }
             "conversation.member-leave" -> {
-                Logger.debug("conversation.member-leave: bot: %s", botId)
-                systemMessage = getSystemMessage(eventId, payload)
-                systemMessage.users = data.userIds
-
-                // Check if this bot got removed from the conversation
-                participants = data.userIds
-                if (participants.remove(botId)) {
-                    handler.onBotRemoved(botId, systemMessage)
-                    return
-                }
-                if (!participants.isEmpty()) {
-                    handler.onMemberLeave(client, systemMessage)
-                }
+                handleMemberLeaveEvent(eventId, payload, data, botId, client)
             }
             "conversation.delete" -> {
-                Logger.debug("conversation.delete: bot: %s", botId)
-                systemMessage = getSystemMessage(eventId, payload)
-
-                // Cleanup
-                handler.onBotRemoved(botId, systemMessage)
+                handleConversationDeleteEvent(eventId, payload, botId)
             }
             "conversation.create" -> {
-                Logger.debug("conversation.create: bot: %s", botId)
-                systemMessage = getSystemMessage(eventId, payload)
-                if (systemMessage.conversation.members != null) {
-                    val self = Member()
-                    self.id = botId
-                    systemMessage.conversation.members.add(self)
-                }
-                handler.onNewConversation(client, systemMessage)
+                handleConversationCreatedEvent(eventId, payload, botId, client)
             }
             "conversation.rename" -> {
-                Logger.debug("conversation.rename: bot: %s", botId)
-                systemMessage = getSystemMessage(eventId, payload)
-                handler.onConversationRename(client, systemMessage)
+                handleConversationRenameEvent(eventId, payload, client)
             }
             "user.connection" -> {
-                val connection = payload.connection
-                Logger.debug(
-                    "user.connection: bot: %s, from: %s to: %s status: %s",
-                    botId,
-                    connection.from,
-                    connection.to,
-                    connection.status
-                )
-                val accepted = handler.onConnectRequest(client, connection.from, connection.to, connection.status)
-                if (accepted) {
-                    val conversation = Conversation()
-                    conversation.id = connection.convId
-                    systemMessage = SystemMessage()
-                    systemMessage.id = eventId
-                    systemMessage.from = connection.from
-                    systemMessage.type = payload.type
-                    systemMessage.conversation = conversation
-                    handler.onNewConversation(client, systemMessage)
-                }
+                handleConnectionUpdateEvent(client, eventId, payload)
             }
             else -> Logger.debug("Unknown event: %s", payload.type)
         }
     }
 
-    private fun getSystemMessage(eventId: UUID?, payload: Payload?): SystemMessage? {
-        val systemMessage = SystemMessage()
-        systemMessage.id = eventId
-        systemMessage.from = payload.from
-        systemMessage.time = payload.time
-        systemMessage.type = payload.type
-        systemMessage.convId = payload.convId
-        systemMessage.conversation = Conversation()
-        systemMessage.conversation.id = payload.convId
-        systemMessage.conversation.creator = payload.data.creator
-        systemMessage.conversation.name = payload.data.name
-        if (payload.data.members != null) systemMessage.conversation.members = payload.data.members.others
-        return systemMessage
+    private fun handleConnectionUpdateEvent(client: WireClient, eventId: UUID, payload: Payload) {
+        val connection = payload.connection
+        val accepted = handler.onConnectRequest(client, connection.from, connection.to, connection.status)
+        if (accepted) {
+            val conversation = Conversation()
+            conversation.id = connection.convId
+            val systemMessage = SystemMessage()
+            systemMessage.id = eventId
+            systemMessage.from = connection.from
+            systemMessage.type = payload.type
+            systemMessage.conversation = conversation
+            handler.onNewConversation(client, systemMessage)
+        }
+    }
+
+    private fun handleConversationRenameEvent(eventId: UUID, payload: Payload, client: WireClient) {
+        val systemMessage = getSystemMessage(eventId, payload)
+        handler.onConversationRename(client, systemMessage)
+    }
+
+    private fun handleConversationCreatedEvent(eventId: UUID, payload: Payload, botId: UUID, client: WireClient) {
+        val systemMessage = getSystemMessage(eventId, payload)
+        val self = Member()
+        self.id = botId
+        systemMessage.conversation.members.add(self)
+        handler.onNewConversation(client, systemMessage)
+    }
+
+    private fun handleConversationDeleteEvent(eventId: UUID, payload: Payload, botId: UUID) {
+        val systemMessage = getSystemMessage(eventId, payload)
+
+        // Cleanup
+        handler.onBotRemoved(botId, systemMessage)
+    }
+
+    private fun handleMemberLeaveEvent(eventId: UUID, payload: Payload, data: Payload.Data, botId: UUID, client: WireClient) {
+        val systemMessage = getSystemMessage(eventId, payload)
+        systemMessage.users = data.userIds
+
+        // Check if this bot got removed from the conversation
+        val participants = data.userIds
+        if (participants.remove(botId)) {
+            handler.onBotRemoved(botId, systemMessage)
+            return
+        }
+        if (participants.isNotEmpty()) {
+            handler.onMemberLeave(client, systemMessage)
+        }
+    }
+
+    private fun handleMemberJoinEvent(data: Payload.Data, botId: UUID?, eventId: UUID, payload: Payload, client: WireClient) {
+        // Check if this bot got added to the conversation
+        val participants = data.userIds
+        if (participants.remove(botId)) {
+            val systemMessage = getSystemMessage(eventId, payload)
+            systemMessage.conversation = client.getConversation()
+            systemMessage.type = "conversation.create" //hack the type
+            handler.onNewConversation(client, systemMessage)
+            return
+        }
+
+        // Check if we still have some prekeys available. Upload new prekeys if needed
+        handler.validatePreKeys(client, participants.size)
+        val systemMessage = getSystemMessage(eventId, payload)
+        systemMessage.users = data.userIds
+        handler.onMemberJoin(client, systemMessage)
+    }
+
+    private fun handleMessageAddEvent(payload: Payload, client: WireClient, eventId: UUID, data: Payload.Data) {
+        val from = payload.from
+        val processor = GenericMessageProcessor(client, handler)
+        val genericMessage = decrypt(client, payload)
+        val messageId = UUID.fromString(genericMessage.messageId)
+        val msgBase = MessageBase(eventId, messageId, payload.convId, data.sender, from, payload.time)
+        processor.process(msgBase, genericMessage)
+        handler.onEvent(client, from, genericMessage)
+    }
+
+    private fun getSystemMessage(eventId: UUID, payload: Payload): SystemMessage = SystemMessage().apply {
+        id = eventId
+        from = payload.from
+        time = payload.time
+        type = payload.type
+        convId = payload.convId
+        conversation = Conversation()
+        conversation.id = payload.convId
+        conversation.creator = payload.data.creator
+        conversation.name = payload.data.name
+        payload.data.members?.let {
+            conversation.members = it.others
+        }
     }
 
     @Throws(CryptoException::class, InvalidProtocolBufferException::class)
-    private fun decrypt(client: WireClient?, payload: Payload?): GenericMessage? {
+    private fun decrypt(client: WireClient, payload: Payload): GenericMessage {
         val from = payload.from
         val sender = payload.data.sender
         val cipher = payload.data.text
