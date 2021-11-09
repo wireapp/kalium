@@ -26,71 +26,41 @@ import java.util.ArrayList
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-open class TextMessage : MessageBase {
-    @JsonProperty
-    private var text: String? = null
+open class TextMessage @JsonCreator constructor(
+        @JsonProperty val text: String,
+        @JsonProperty val quotedMessageId: UUID,
+        @JsonProperty val quotedMessageSha256: ByteArray,
+        @JsonProperty val mentions: ArrayList<Mention>,
+        @JsonProperty("eventId") eventId: UUID,
+        @JsonProperty("messageId") messageId: UUID,
+        @JsonProperty("conversationId") convId: UUID,
+        @JsonProperty("clientId") clientId: String,
+        @JsonProperty("userId") userId: UUID,
+        @JsonProperty("time") time: String
+) : MessageBase(eventId = eventId, messageId = messageId, conversationId = convId, clientId = clientId, userId = userId, time = time) {
 
-    @JsonProperty
-    private var quotedMessageId: UUID? = null
-
-    @JsonProperty
-    private var quotedMessageSha256: ByteArray?
-
-    @JsonProperty
-    private val mentions: ArrayList<Mention?>? = ArrayList()
-
-    @JsonCreator
-    constructor(
-        @JsonProperty("eventId") eventId: UUID?,
-        @JsonProperty("messageId") messageId: UUID?,
-        @JsonProperty("conversationId") convId: UUID?,
-        @JsonProperty("clientId") clientId: String?,
-        @JsonProperty("userId") userId: UUID?,
-        @JsonProperty("time") time: String?
-    ) : super(eventId, messageId, convId, clientId, userId, time) {
-    }
-
-    constructor(msg: MessageBase?) : super(msg) {}
-
-    fun getText(): String? {
-        return text
-    }
-
-    fun setText(text: String?) {
-        this.text = text
-    }
-
-    fun getQuotedMessageId(): UUID? {
-        return quotedMessageId
-    }
-
-    fun setQuotedMessageId(quotedMessageId: UUID?) {
-        this.quotedMessageId = quotedMessageId
-    }
-
-    fun getQuotedMessageSha256(): ByteArray? {
-        return quotedMessageSha256
-    }
-
-    fun setQuotedMessageSha256(quotedMessageSha256: ByteArray?) {
-        this.quotedMessageSha256 = quotedMessageSha256
-    }
+    constructor(_text: String, _quotedMessageId: UUID, _quotedMessageSha256:ByteArray, _mentions: ArrayList<Mention>, msgBase: MessageBase) :
+            this(
+                    text = _text,
+                    quotedMessageId = _quotedMessageId,
+                    quotedMessageSha256 = _quotedMessageSha256,
+                    mentions = _mentions,
+                    eventId = msgBase.eventId,
+                    messageId = msgBase.messageId,
+                    convId = msgBase.conversationId,
+                    clientId = msgBase.clientId,
+                    userId = msgBase.userId,
+                    time = msgBase.time
+            )
 
     fun addMention(userId: String?, offset: Int, len: Int) {
-        val mention = Mention()
-        mention.userId = UUID.fromString(userId)
-        mention.offset = offset
-        mention.length = len
+        val mention = Mention(UUID.fromString(userId), offset, len)
         mentions.add(mention)
     }
 
-    fun getMentions(): ArrayList<Mention?>? {
-        return mentions
-    }
-
-    class Mention {
-        var userId: UUID? = null
-        var offset = 0
-        var length = 0
-    }
+    data class Mention(
+            val userId: UUID,
+            val offset: Int,
+            val length: Int
+    )
 }
