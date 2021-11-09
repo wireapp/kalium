@@ -88,47 +88,34 @@ object Util {
     }
 
     @Throws(IOException::class)
-    fun readFile(f: File?): String? {
-        f?.let {
-            FileInputStream(it).use { fis ->
-                val data = ByteArray(it.length() as Int)
-                fis.read(data)
-                return String(data, StandardCharsets.UTF_8)
-            }
+    fun readFile(f: File?): String? = f?.let {
+        FileInputStream(it).use { fis ->
+            val data = ByteArray(it.length() as Int)
+            fis.read(data)
+            return String(data, StandardCharsets.UTF_8)
         }
-
-        return null
     }
 
     @Throws(IOException::class)
-    fun writeLine(line: String?, file: File?) {
-        BufferedWriter(FileWriter(file)).use { bw -> bw.write(line) }
-    }
+    fun writeLine(line: String?, file: File?) = BufferedWriter(FileWriter(file)).use { bw -> bw.write(line) }
+
 
     @Throws(NoSuchAlgorithmException::class)
-    fun calcMd5(bytes: ByteArray?): String? {
+    fun calcMd5(bytes: ByteArray?): String? = bytes?.let {
+        val md = MessageDigest.getInstance("MD5")
+        md.update(bytes, 0, it.size)
+        val hash = md.digest()
+        val byteArray = Base64.getEncoder().encode(hash)
+        return String(byteArray)
+    }
+
+    fun digest(md: MessageDigest?, bytes: ByteArray?): String? = md?.let { messageDigest ->
         bytes?.let {
-            val md = MessageDigest.getInstance("MD5")
-            md.update(bytes, 0, it.size)
-            val hash = md.digest()
+            messageDigest.update(it, 0, it.size)
+            val hash = messageDigest.digest()
             val byteArray = Base64.getEncoder().encode(hash)
             return String(byteArray)
         }
-
-        return null
-    }
-
-    fun digest(md: MessageDigest?, bytes: ByteArray?): String? {
-        md?.let { messageDigest ->
-            bytes?.let {
-                messageDigest.update(it, 0, it.size)
-                val hash = messageDigest.digest()
-                val byteArray = Base64.getEncoder().encode(hash)
-                return String(byteArray)
-            }
-        }
-
-        return null
     }
 
     @Throws(NoSuchAlgorithmException::class, InvalidKeyException::class)
@@ -140,19 +127,15 @@ object Util {
     }
 
     @Throws(IOException::class)
-    fun toByteArray(input: InputStream?): ByteArray? {
-        input?.let { inputStream ->
-            ByteArrayOutputStream().use { output ->
-                var n: Int
-                val buffer = ByteArray(1024 * 4)
-                while (-1 != inputStream.read(buffer).also { n = it }) {
-                    output.write(buffer, 0, n)
-                }
-                return output.toByteArray()
+    fun toByteArray(input: InputStream?): ByteArray? = input?.let { inputStream ->
+        ByteArrayOutputStream().use { output ->
+            var n: Int
+            val buffer = ByteArray(1024 * 4)
+            while (-1 != inputStream.read(buffer).also { n = it }) {
+                output.write(buffer, 0, n)
             }
+            return output.toByteArray()
         }
-
-        return null
     }
 
     fun compareAuthorizations(auth1: String?, auth2: String?): Boolean {
@@ -162,21 +145,15 @@ object Util {
         return token1 == token2
     }
 
-    fun extractToken(auth: String?): String? {
-
-        auth?.let { authString ->
-            val split: Array<String?> = authString.split(" ").toTypedArray()
-            return if (split.size == 1) split[0] else split[1]
-        }
-        return null
+    fun extractToken(auth: String?): String? = auth?.let { authString ->
+        val split: Array<String?> = authString.split(" ").toTypedArray()
+        return if (split.size == 1) split[0] else split[1]
     }
 
     @Throws(IOException::class)
-    fun extractMimeType(imageData: ByteArray?): String? {
-        ByteArrayInputStream(imageData).use { input ->
-            val contentType = URLConnection.guessContentTypeFromStream(input)
-            return contentType ?: "application/octet-stream"
-        }
+    fun extractMimeType(imageData: ByteArray?): String? = ByteArrayInputStream(imageData).use { input ->
+        val contentType = URLConnection.guessContentTypeFromStream(input)
+        return contentType ?: "application/octet-stream"
     }
 
     @Throws(IOException::class)
