@@ -17,14 +17,7 @@
 //
 package com.wire.kalium.models.otr
 
-import com.fasterxml.jackson.annotation.JsonProperty
-import javax.validation.constraints.NotNull
-
-class PreKey {
-    @JsonProperty
-    var id = 0
-
-    @JsonProperty
-    var key //base64 encoded data
-            : @NotNull String? = null
-}
+data class PreKey(
+        val id: Int,
+        val key: String
+)
