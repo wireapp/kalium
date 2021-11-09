@@ -30,8 +30,8 @@ class VideoPreview(
     private val h: Int,
     private val w: Int,
     private val size: Int,
-    private val messageId: UUID?
-) : IGeneric {
+    override val messageId: UUID,
+) : GenericMessageIdentifiable {
     override fun createGenericMsg(): GenericMessage? {
         val audio = VideoMetaData.newBuilder()
             .setDurationInMillis(duration)
@@ -46,24 +46,8 @@ class VideoPreview(
             .setOriginal(original.build())
             .build()
         return GenericMessage.newBuilder()
-            .setMessageId(getMessageId().toString())
+            .setMessageId(messageId.toString())
             .setAsset(asset)
             .build()
-    }
-
-    fun getName(): String? {
-        return name
-    }
-
-    fun getSize(): Int {
-        return size
-    }
-
-    fun getMimeType(): String? {
-        return mimeType
-    }
-
-    override fun getMessageId(): UUID? {
-        return messageId
     }
 }

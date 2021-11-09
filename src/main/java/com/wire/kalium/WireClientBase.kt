@@ -5,8 +5,8 @@ import java.io.IOException
 import com.wire.kalium.backend.models.NewBot
 import java.util.UUID
 import java.security.MessageDigest
-import com.wire.kalium.assets.IGeneric
-import com.wire.kalium.assets.IAsset
+import com.wire.kalium.assets.GenericMessageIdentifiable
+import com.wire.kalium.assets.Asset
 import com.wire.bots.cryptobox.CryptoException
 import com.wire.kalium.models.otr.Recipients
 import com.wire.kalium.models.otr.Missing
@@ -30,12 +30,12 @@ abstract class WireClientBase protected constructor(
 ) : WireClient {
     protected var devices: Devices? = null
     @Throws(Exception::class)
-    override fun send(message: IGeneric?) {
+    override fun send(message: GenericMessageIdentifiable?) {
         postGenericMessage(message)
     }
 
     @Throws(Exception::class)
-    override fun send(message: IGeneric?, userId: UUID?) {
+    override fun send(message: GenericMessageIdentifiable?, userId: UUID?) {
         postGenericMessage(message, userId)
     }
 
@@ -69,7 +69,7 @@ abstract class WireClientBase protected constructor(
      * @throws Exception CryptoBox exception
      */
     @Throws(Exception::class)
-    protected fun postGenericMessage(generic: IGeneric?) {
+    protected fun postGenericMessage(generic: GenericMessageIdentifiable?) {
         val content = generic.createGenericMsg().toByteArray()
 
         // Try to encrypt the msg for those devices that we have the session already
@@ -101,7 +101,7 @@ abstract class WireClientBase protected constructor(
     }
 
     @Throws(Exception::class)
-    protected fun postGenericMessage(generic: IGeneric?, userId: UUID?) {
+    protected fun postGenericMessage(generic: GenericMessageIdentifiable?, userId: UUID?) {
         // Try to encrypt the msg for those devices that we have the session already
         val all = getAllDevices()
         val missing = Missing()
@@ -176,7 +176,7 @@ abstract class WireClientBase protected constructor(
     }
 
     @Throws(Exception::class)
-    override fun uploadAsset(asset: IAsset?): AssetKey? {
+    override fun uploadAsset(asset: Asset?): AssetKey? {
         return api.uploadAsset(asset)
     }
 

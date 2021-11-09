@@ -17,9 +17,11 @@
 //
 package com.wire.kalium.assets
 
-interface IAsset {
-    val mimeType: String
-    val retention: String
-    val encryptedData: ByteArray
-    val public: Boolean
+import com.waz.model.Messages.GenericMessage
+import java.util.UUID
+
+interface GenericMessageIdentifiable {
+    val messageId: UUID
+
+    fun createGenericMsg(): GenericMessage?
 }

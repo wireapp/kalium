@@ -1,6 +1,6 @@
 //
 // Wire
-// Copyright (C) 2016 Wire Swiss GmbH
+// Copyright (C) 2021 Wire Swiss GmbH
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,9 +22,10 @@ import com.waz.model.Messages.GenericMessage
 import com.waz.model.Messages.Ephemeral
 import com.waz.model.Messages
 
-class MessageEphemeral(mills: Long) : IGeneric {
+class MessageEphemeral(mills: Long) : GenericMessageIdentifiable {
     private val builder = Ephemeral.newBuilder()
-    private var messageId = UUID.randomUUID()
+    override val messageId: UUID = UUID.randomUUID()
+
     fun setText(text: String?): MessageEphemeral? {
         val textBuilder = Messages.Text.newBuilder()
             .setContent(text)
@@ -34,18 +35,9 @@ class MessageEphemeral(mills: Long) : IGeneric {
 
     override fun createGenericMsg(): GenericMessage? {
         return GenericMessage.newBuilder()
-            .setMessageId(getMessageId().toString())
+            .setMessageId(messageId.toString())
             .setEphemeral(builder)
             .build()
-    }
-
-    override fun getMessageId(): UUID? {
-        return messageId
-    }
-
-    fun setMessageId(messageId: UUID?): MessageEphemeral? {
-        this.messageId = messageId
-        return this
     }
 
     init {

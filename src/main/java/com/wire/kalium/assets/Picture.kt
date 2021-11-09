@@ -33,33 +33,25 @@ import com.waz.model.Messages
 import com.wire.kalium.tools.Util
 
 class Picture : AssetBase {
-    private var imageData: ByteArray?
+    private var imageData: ByteArray? = null
     private var width = 0
     private var height = 0
     private var size = 0
     private var expires: Long = 0
 
-    constructor(imageData: ByteArray?, mime: String?) : super(UUID.randomUUID(), mime, imageData) {
+    constructor(imageData: ByteArray?, mimeType: String) : super(UUID.randomUUID(), mimeType, imageData) {
         this.imageData = imageData
-        size = imageData.size
+        size = imageData?.size ?: 0
         val bufferedImage = loadBufferImage(imageData)
-        width = bufferedImage.getWidth()
-        height = bufferedImage.getHeight()
+        width = bufferedImage?.width ?: 0
+        height = bufferedImage?.height ?: 0
     }
 
-    constructor(imageData: ByteArray?) : super(UUID.randomUUID(), Util.extractMimeType(imageData), imageData) {
-        this.imageData = imageData
-        size = imageData.size
-        val bufferedImage = loadBufferImage(imageData)
-        width = bufferedImage.getWidth()
-        height = bufferedImage.getHeight()
-    }
-
-    constructor(messageId: UUID?, mimeType: String?) : super(messageId, mimeType) {}
+    constructor(imageData: ByteArray?) : this(imageData, Util.extractMimeType(imageData) ?: "application/octet-stream", ) { }
 
     override fun createGenericMsg(): GenericMessage? {
         val ret = GenericMessage.newBuilder()
-            .setMessageId(getMessageId().toString())
+            .setMessageId(messageId.toString())
         val metaData = ImageMetaData.newBuilder()
             .setHeight(height)
             .setWidth(width)
@@ -69,16 +61,14 @@ class Picture : AssetBase {
             .setMimeType(mimeType)
             .setImage(metaData)
         val remoteData = RemoteData.newBuilder()
-            .setOtrKey(ByteString.copyFrom(getOtrKey()))
-            .setSha256(ByteString.copyFrom(getSha256()))
-        if (getAssetToken() != null) {
-            remoteData.assetToken = getAssetToken()
-        }
-        if (getAssetKey() != null) {
-            remoteData.assetId = getAssetKey()
-        }
+            .setOtrKey(ByteString.copyFrom(otrKey))
+            .setSha256(ByteString.copyFrom(sha256))
+
+        assetToken?.let { remoteData.assetToken = it }
+        assetKey?.let { remoteData.assetId = it }
+
         val asset = Messages.Asset.newBuilder()
-            .setExpectsReadConfirmation(isReadReceiptsEnabled)
+            .setExpectsReadConfirmation(readReceiptsEnabled)
             .setUploaded(remoteData)
             .setOriginal(original)
         if (expires > 0) {
