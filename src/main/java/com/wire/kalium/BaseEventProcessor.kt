@@ -12,10 +12,10 @@ import com.wire.kalium.models.MessageBase
 import com.wire.kalium.tools.Logger
 import java.util.*
 
-abstract class BaseEventHandler(private val handler: MessageHandler) : EventHandler {
+abstract class BaseEventProcessor(private val handler: MessageHandler) : EventProcessor {
 
     @Throws(Exception::class)
-    override fun handleEvent(eventId: UUID, payload: Payload, client: WireClient) {
+    override fun processEvent(eventId: UUID, payload: Payload, client: WireClient) {
         val data = payload.data
         val botId = client.getId()
         Logger.debug("New event of type: '${payload.type}'; Content: $payload")
