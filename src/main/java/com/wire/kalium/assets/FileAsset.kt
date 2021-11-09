@@ -29,34 +29,38 @@ import com.wire.kalium.tools.Util
 import java.io.File
 
 class FileAsset : AssetBase {
-    constructor(file: File?, mimeType: String?, messageId: UUID?) : super(messageId, mimeType, readFile(file)) {}
-    constructor(bytes: ByteArray?, mimeType: String?, messageId: UUID?) : super(messageId, mimeType, bytes) {}
-    constructor(messageId: UUID?, mimeType: String?) : super(messageId, mimeType) {}
-    constructor(assetKey: String?, assetToken: String?, sha256: ByteArray?, otrKey: ByteArray?, messageId: UUID?) : super(messageId, null) {
+    constructor(
+        file: File?,
+        mimeType: String,
+        messageId: UUID
+    ) : super(messageId, mimeType, readFile(file)) {}
+
+    constructor(
+        assetKey: String?,
+        assetToken: String?,
+        messageId: UUID,
+        mimeType: String,
+        bytes: ByteArray?
+    ) : super(messageId, mimeType, bytes) {
         this.assetKey = assetKey
         this.assetToken = assetToken
-        this.sha256 = sha256
-        this.otrKey = otrKey
     }
 
     override fun createGenericMsg(): GenericMessage? {
         // Remote
         val remote = RemoteData.newBuilder()
-            .setOtrKey(ByteString.copyFrom(getOtrKey()))
-            .setSha256(ByteString.copyFrom(getSha256()))
+            .setOtrKey(ByteString.copyFrom(otrKey))
+            .setSha256(ByteString.copyFrom(sha256))
 
         // Only set token on private assets
-        if (getAssetToken() != null) {
-            remote.assetToken = getAssetToken()
-        }
-        if (getAssetKey() != null) {
-            remote.assetId = getAssetKey()
-        }
+        assetToken?.let { remote.assetToken = it }
+        assetKey?.let { remote.assetId = it }
+
         val asset = Messages.Asset.newBuilder()
-            .setExpectsReadConfirmation(isReadReceiptsEnabled)
+            .setExpectsReadConfirmation(readReceiptsEnabled)
             .setUploaded(remote)
         return GenericMessage.newBuilder()
-            .setMessageId(getMessageId().toString())
+            .setMessageId(messageId.toString())
             .setAsset(asset)
             .build()
     }

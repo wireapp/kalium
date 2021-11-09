@@ -21,19 +21,15 @@ import java.util.UUID
 import com.waz.model.Messages.GenericMessage
 import com.waz.model.Messages
 
-class Reaction(private val msgId: UUID?, private val emoji: String?) : IGeneric {
-    private val messageId = UUID.randomUUID()
+class Reaction(private val msgId: UUID?, private val emoji: String?) : GenericMessageIdentifiable {
+    override val messageId: UUID = UUID.randomUUID()
     override fun createGenericMsg(): GenericMessage? {
         val reaction = Messages.Reaction.newBuilder()
             .setMessageId(msgId.toString())
             .setEmoji(emoji)
         return GenericMessage.newBuilder()
-            .setMessageId(getMessageId().toString())
+            .setMessageId(messageId.toString())
             .setReaction(reaction)
             .build()
-    }
-
-    override fun getMessageId(): UUID? {
-        return messageId
     }
 }

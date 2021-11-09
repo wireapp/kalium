@@ -22,8 +22,12 @@ import com.waz.model.Messages.GenericMessage
 import com.waz.model.Messages.Asset.Original
 import com.waz.model.Messages
 
-class FileAssetPreview(private val name: String?, private val mimeType: String?, private val size: Long, private val messageId: UUID?) :
-    IGeneric {
+class FileAssetPreview(
+    private val name: String?,
+    private val mimeType: String?,
+    private val size: Long,
+    override val messageId: UUID
+) : GenericMessageIdentifiable {
     override fun createGenericMsg(): GenericMessage? {
         val original = Original.newBuilder()
             .setSize(size)
@@ -32,20 +36,8 @@ class FileAssetPreview(private val name: String?, private val mimeType: String?,
         val asset = Messages.Asset.newBuilder()
             .setOriginal(original)
         return GenericMessage.newBuilder()
-            .setMessageId(getMessageId().toString())
+            .setMessageId(messageId.toString())
             .setAsset(asset)
             .build()
-    }
-
-    fun getName(): String? {
-        return name
-    }
-
-    fun getMimeType(): String? {
-        return mimeType
-    }
-
-    override fun getMessageId(): UUID? {
-        return messageId
     }
 }

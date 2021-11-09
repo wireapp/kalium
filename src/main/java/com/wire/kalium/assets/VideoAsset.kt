@@ -23,25 +23,22 @@ import com.waz.model.Messages.Asset.RemoteData
 import com.google.protobuf.ByteString
 import com.waz.model.Messages
 
-class VideoAsset(bytes: ByteArray?, mime: String?, messageId: UUID?) : AssetBase(messageId, mime, bytes) {
+class VideoAsset(messageId: UUID, mimeType: String, bytes: ByteArray) : AssetBase(messageId, mimeType, bytes) {
     override fun createGenericMsg(): GenericMessage? {
         val remote = RemoteData.newBuilder()
-            .setOtrKey(ByteString.copyFrom(getOtrKey()))
-            .setSha256(ByteString.copyFrom(getSha256()))
+            .setOtrKey(ByteString.copyFrom(otrKey))
+            .setSha256(ByteString.copyFrom(sha256))
 
         // Only set token on private assets
-        if (getAssetToken() != null) {
-            remote.assetToken = getAssetToken()
-        }
-        if (getAssetKey() != null) {
-            remote.assetId = getAssetKey()
-        }
+        assetToken?.let { remote.assetToken = it }
+        assetKey?.let { remote.assetId = it }
+
         val asset = Messages.Asset.newBuilder()
             .setUploaded(remote.build())
-            .setExpectsReadConfirmation(isReadReceiptsEnabled)
+            .setExpectsReadConfirmation(readReceiptsEnabled)
             .build()
         return GenericMessage.newBuilder()
-            .setMessageId(getMessageId().toString())
+            .setMessageId(messageId.toString())
             .setAsset(asset)
             .build()
     }

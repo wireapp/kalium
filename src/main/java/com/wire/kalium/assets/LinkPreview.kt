@@ -23,12 +23,18 @@ import com.waz.model.Messages.Article
 import com.waz.model.Messages
 import com.wire.kalium.tools.Logger
 
-class LinkPreview(private val url: String?, private val title: String?, private val thumbnail: Picture?) : IGeneric {
-    private val messageId = UUID.randomUUID()
+class LinkPreview(
+    private val url: String,
+    private val title: String?,
+    private val thumbnail: Picture?
+) : GenericMessageIdentifiable {
+
+    override val messageId: UUID = UUID.randomUUID()
+
     override fun createGenericMsg(): GenericMessage? {
         var preview: Messages.Asset? = null
         try {
-            preview = thumbnail.createGenericMsg().asset
+            preview = thumbnail?.createGenericMsg()?.asset
         } catch (e: Exception) {
             Logger.warning("LinkPreview: %s", e)
         }
@@ -39,6 +45,7 @@ class LinkPreview(private val url: String?, private val title: String?, private 
             .setPermanentUrl(url)
             .setImage(preview)
             .build()
+
         // Legacy
         val linkPreview = Messages.LinkPreview.newBuilder()
             .setUrl(url)
@@ -51,12 +58,8 @@ class LinkPreview(private val url: String?, private val title: String?, private 
             .setContent(url)
             .addLinkPreview(linkPreview)
         return GenericMessage.newBuilder()
-            .setMessageId(getMessageId().toString())
+            .setMessageId(messageId.toString())
             .setText(text.build())
             .build()
-    }
-
-    override fun getMessageId(): UUID? {
-        return messageId
     }
 }

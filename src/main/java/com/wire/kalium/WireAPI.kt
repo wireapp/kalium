@@ -3,7 +3,7 @@ package com.wire.kalium
 import kotlin.Throws
 import java.io.IOException
 import java.util.UUID
-import com.wire.kalium.assets.IAsset
+import com.wire.kalium.assets.Asset
 import com.wire.kalium.models.otr.PreKeys
 import com.wire.kalium.models.otr.Missing
 import com.wire.kalium.backend.models.Conversation
@@ -28,7 +28,7 @@ interface WireAPI {
     @Throws(IOException::class)
     open fun uploadPreKeys(preKeys: ArrayList<PreKey?>?)
     @Throws(Exception::class)
-    open fun uploadAsset(asset: IAsset?): AssetKey?
+    open fun uploadAsset(asset: Asset?): AssetKey?
     @Throws(HttpException::class)
     open fun downloadAsset(assetId: String?, assetToken: String?): ByteArray?
     @Throws(HttpException::class)
