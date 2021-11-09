@@ -1,37 +1,37 @@
 package com.wire.kalium.models.otr
 
-import java.util.UUID
+import java.util.*
 
 //<UserId, ClientCipher> //Base64 encoded cipher
-class Recipients : HashMap<UUID?, ClientCipher?>() {
-    operator fun get(userId: UUID?, clientId: String?): String? {
-        val clients: HashMap<String?, String?>? = toClients(userId)
-        return clients.get(clientId)
+class Recipients : HashMap<UUID, ClientCipher>() {
+    operator fun get(userId: UUID, clientId: String): String {
+        val clients = toClients(userId)
+        return clients.getValue(clientId)
     }
 
-    fun add(userId: UUID?, clientId: String?, cipher: String?) {
+    fun add(userId: UUID, clientId: String, cipher: String) {
         val clients = toClients(userId)
         clients[clientId] = cipher
     }
 
     //<UserId, <ClientId, Cipher>>
-    fun add(userId: UUID?, clients: ClientCipher?) {
+    fun add(userId: UUID, clients: ClientCipher) {
         val clientIds = clients.keys
         for (clientId in clientIds) {
-            val bytes = clients.get(clientId)
+            val bytes = clients.getValue(clientId)
             add(userId, clientId, bytes)
         }
     }
 
-    fun add(recipients: Recipients?) {
+    fun add(recipients: Recipients) {
         val userIds = recipients.keys
         for (userId in userIds) {
-            val hashMap = recipients.get(userId)
+            val hashMap = recipients.getValue(userId)
             add(userId, hashMap)
         }
     }
 
-    private fun toClients(userId: UUID?): ClientCipher? {
-        return computeIfAbsent(userId) { k: UUID? -> ClientCipher() }
+    private fun toClients(userId: UUID): ClientCipher {
+        return computeIfAbsent(userId) { k: UUID -> ClientCipher() }
     }
 }

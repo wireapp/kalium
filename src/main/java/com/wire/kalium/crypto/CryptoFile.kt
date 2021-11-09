@@ -17,24 +17,26 @@
 //
 package com.wire.kalium.crypto
 
-import kotlin.Throws
-import java.io.IOException
-import java.util.UUID
+import com.wire.bots.cryptobox.CryptoBox
 import com.wire.bots.cryptobox.CryptoException
 import com.wire.bots.cryptobox.ICryptobox
-import com.wire.bots.cryptobox.CryptoBox
-import java.nio.file.Paths
-import java.nio.file.Files
-import java.nio.file.FileVisitOption
 import java.io.File
+import java.io.IOException
+import java.nio.file.FileVisitOption
+import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.Paths
+import java.util.UUID
+import kotlin.Comparator
+import kotlin.String
+import kotlin.Throws
 
 /**
  * Wrapper for the Crypto Box. This class is thread safe.
  */
 class CryptoFile : CryptoBase {
-    private val box: CryptoBox?
-    private val root: String?
+    private val box: CryptoBox
+    private val root: String
 
     /**
      *
@@ -49,8 +51,8 @@ class CryptoFile : CryptoBase {
      * @param botId   Bot id
      * @throws CryptoException when crypto breaks
      */
-    constructor(rootDir: String?, botId: UUID?) {
-        root = String.format("%s/%s", rootDir, botId)
+    constructor(rootDir: String, userId: UUID) {
+        root = String.format("%s/%s", rootDir, userId)
         box = CryptoBox.open(root)
     }
 
@@ -66,12 +68,12 @@ class CryptoFile : CryptoBase {
      * @param root The root storage directory of the box
      * @throws CryptoException when crypto breaks
      */
-    constructor(root: String?) {
+    constructor(root: String) {
         this.root = root
         box = CryptoBox.open(root)
     }
 
-    override fun box(): ICryptobox? {
+    override fun box(): ICryptobox {
         return box
     }
 
@@ -83,8 +85,8 @@ class CryptoFile : CryptoBase {
 
         // we don't really care if the files were actually deleted or not
         Files.walk(rootPath, FileVisitOption.FOLLOW_LINKS)
-            .sorted(Comparator.reverseOrder())
-            .map { obj: Path? -> obj.toFile() }
-            .forEach { obj: File? -> obj.delete() }
+                .sorted(Comparator.reverseOrder())
+                .map { obj: Path -> obj.toFile() }
+                .forEach { obj: File -> obj.delete() }
     }
 }

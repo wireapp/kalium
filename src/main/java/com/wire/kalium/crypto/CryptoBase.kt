@@ -17,22 +17,20 @@
 //
 package com.wire.kalium.crypto
 
-import kotlin.Throws
-import java.util.UUID
 import com.wire.bots.cryptobox.CryptoException
+import com.wire.bots.cryptobox.ICryptobox
+import com.wire.kalium.models.otr.Missing
+import com.wire.kalium.models.otr.PreKey
 import com.wire.kalium.models.otr.PreKeys
 import com.wire.kalium.models.otr.Recipients
-import com.wire.kalium.models.otr.Missing
-import com.wire.bots.cryptobox.ICryptobox
-import com.wire.kalium.models.otr.PreKey
-import java.util.ArrayList
-import java.util.Base64
+import java.util.*
 
 /**
  * Wrapper for the Crypto Box. This class is thread safe.
  */
-internal abstract class CryptoBase : Crypto {
-    abstract fun box(): ICryptobox?
+abstract class CryptoBase : Crypto {
+    abstract fun box(): ICryptobox
+
     @Throws(CryptoException::class)
     override fun getIdentity(): ByteArray? {
         return box().getIdentity()
@@ -83,13 +81,13 @@ internal abstract class CryptoBase : Crypto {
      * @throws CryptoException throws Exception
      */
     @Throws(CryptoException::class)
-    override fun encrypt(preKeys: PreKeys?, content: ByteArray?): Recipients? {
+    override fun encrypt(preKeys: PreKeys, content: ByteArray): Recipients? {
         val recipients = Recipients()
         for (userId in preKeys.keys) {
-            val clients = preKeys.get(userId)
+            val clients = preKeys.getValue(userId)
             for (clientId in clients.keys) {
-                val pk = clients.get(clientId)
-                if (pk != null && pk.key != null) {
+                val pk = clients[clientId]
+                if (pk?.key != null) {
                     val id = createId(userId, clientId)
                     val cipher = box().encryptFromPreKeys(id, toPreKey(pk), content)
                     val s = Base64.getEncoder().encodeToString(cipher)
@@ -108,10 +106,10 @@ internal abstract class CryptoBase : Crypto {
      * @param content Plain text content to be encrypted
      */
     @Throws(CryptoException::class)
-    override fun encrypt(missing: Missing?, content: ByteArray?): Recipients? {
+    override fun encrypt(missing: Missing, content: ByteArray): Recipients {
         val recipients = Recipients()
         for (userId in missing.toUserIds()) {
-            for (clientId in missing.toClients(userId)) {
+            for (clientId in missing.toClients(userId)!!) {
                 val id = createId(userId, clientId)
                 val cipher = box().encryptFromSession(id, content)
                 if (cipher != null) {
@@ -153,11 +151,11 @@ internal abstract class CryptoBase : Crypto {
     }
 
     companion object {
-        private fun toPreKey(preKey: PreKey?): com.wire.bots.cryptobox.PreKey? {
+        private fun toPreKey(preKey: PreKey): com.wire.bots.cryptobox.PreKey {
             return com.wire.bots.cryptobox.PreKey(preKey.id, Base64.getDecoder().decode(preKey.key))
         }
 
-        private fun toPreKey(preKey: com.wire.bots.cryptobox.PreKey?): PreKey? {
+        private fun toPreKey(preKey: com.wire.bots.cryptobox.PreKey): PreKey {
             val ret = PreKey()
             ret.id = preKey.id
             ret.key = Base64.getEncoder().encodeToString(preKey.data)

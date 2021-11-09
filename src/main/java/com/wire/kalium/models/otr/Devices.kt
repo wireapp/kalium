@@ -17,16 +17,16 @@
 //
 package com.wire.kalium.models.otr
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonProperty
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 class Devices {
     @JsonProperty
-    val missing: Missing? = Missing()
+    val missing: Missing = Missing()
 
     @JsonProperty
-    val redundant: Missing? = Missing()
+    val redundant: Missing = Missing()
 
     @JsonProperty
     val deleted: Missing? = Missing()
