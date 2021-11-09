@@ -17,11 +17,10 @@
 //
 package com.wire.kalium.models.otr
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import java.util.*
 
 class OtrMessage(//clientId of the sender
-        @field:JsonProperty private val sender: String, @field:JsonProperty private val recipients: Recipients
+        private val sender: String, private val recipients: Recipients
 ) {
     fun add(rec: Recipients) {
         recipients.add(rec)

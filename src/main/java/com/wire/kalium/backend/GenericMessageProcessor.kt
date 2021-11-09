@@ -17,31 +17,15 @@
 //
 package com.wire.kalium.backend
 
-import java.util.UUID
-import com.waz.model.Messages.GenericMessage
-import com.waz.model.Messages.Confirmation
-import com.wire.kalium.models.MessageBase
-import com.wire.kalium.models.TextMessage
-import com.wire.kalium.WireClient
-import com.wire.kalium.MessageHandlerBase
-import com.wire.kalium.models.LinkPreviewMessage
-import com.wire.kalium.models.EphemeralTextMessage
-import com.wire.kalium.models.EditedTextMessage
-import com.wire.kalium.models.ConfirmationMessage
-import com.wire.kalium.models.CallingMessage
-import com.wire.kalium.models.DeletedTextMessage
-import com.wire.kalium.models.ReactionMessage
-import com.wire.kalium.models.PingMessage
-import com.wire.kalium.models.PhotoPreviewMessage
-import com.wire.kalium.models.AudioPreviewMessage
-import com.wire.kalium.models.VideoPreviewMessage
-import com.wire.kalium.models.FilePreviewMessage
-import com.wire.kalium.models.RemoteMessage
 import com.waz.model.Messages
+import com.wire.kalium.MessageHandlerBase
+import com.wire.kalium.WireClient
+import com.wire.kalium.models.*
 import com.wire.kalium.tools.Logger
+import java.util.*
 
-class GenericMessageProcessor(private val client: WireClient?, private val handler: MessageHandlerBase?) {
-    fun process(msgBase: MessageBase?, generic: GenericMessage?): Boolean {
+class GenericMessageProcessor(private val client: WireClient, private val handler: MessageHandlerBase) {
+    fun process(msgBase: MessageBase, generic: Messages.GenericMessage): Boolean {
         Logger.debug("proto: { %s }", generic)
 
         // Text
@@ -65,7 +49,7 @@ class GenericMessageProcessor(private val client: WireClient?, private val handl
                 if (text.hasContent()) {
                     val msg = EphemeralTextMessage(msgBase)
                     fromText(msg, text)
-                    msg.expireAfterMillis = ephemeral.expireAfterMillis
+                    msg.setExpireAfterMillis(ephemeral.expireAfterMillis)
                     handler.onText(client, msg)
                     return true
                 }
@@ -84,7 +68,7 @@ class GenericMessageProcessor(private val client: WireClient?, private val handl
                     val msg = EditedTextMessage(msgBase)
                     fromText(msg, text)
                     val replacingMessageId = UUID.fromString(edited.replacingMessageId)
-                    msg.replacingMessageId = replacingMessageId
+                    msg.setReplacingMessageId(replacingMessageId)
                     handler.onEditText(client, msg)
                     return true
                 }
@@ -99,7 +83,7 @@ class GenericMessageProcessor(private val client: WireClient?, private val handl
             val calling = generic.getCalling()
             if (calling.hasContent()) {
                 val message = CallingMessage(msgBase)
-                message.content = calling.content
+                message.setContent(calling.content)
                 handler.onCalling(client, message)
             }
             return true
@@ -107,7 +91,7 @@ class GenericMessageProcessor(private val client: WireClient?, private val handl
         if (generic.hasDeleted()) {
             val msg = DeletedTextMessage(msgBase)
             val delMsgId = UUID.fromString(generic.getDeleted().messageId)
-            msg.deletedMessageId = delMsgId
+            msg.setDeletedMessageId(delMsgId)
             handler.onDelete(client, msg)
             return true
         }
@@ -126,7 +110,7 @@ class GenericMessageProcessor(private val client: WireClient?, private val handl
         } else false
     }
 
-    private fun fromText(textMessage: TextMessage?, text: Messages.Text?): TextMessage? {
+    private fun fromText(textMessage: TextMessage, text: Messages.Text): TextMessage? {
         textMessage.setText(text.getContent())
         if (text.hasQuote()) {
             val quotedMessageId = text.getQuote().quotedMessageId
@@ -136,7 +120,7 @@ class GenericMessageProcessor(private val client: WireClient?, private val handl
         return textMessage
     }
 
-    private fun handleAsset(msgBase: MessageBase?, asset: Messages.Asset?): Boolean {
+    private fun handleAsset(msgBase: MessageBase, asset: Messages.Asset): Boolean {
         if (asset.hasOriginal()) {
             val original = asset.getOriginal()
             if (original.hasImage()) {
@@ -155,16 +139,16 @@ class GenericMessageProcessor(private val client: WireClient?, private val handl
         return true
     }
 
-    private fun handleConfirmation(confirmation: Confirmation?, msg: ConfirmationMessage?): Boolean {
+    private fun handleConfirmation(confirmation: Messages.Confirmation, msg: ConfirmationMessage): Boolean {
         val firstMessageId = confirmation.getFirstMessageId()
         val type = confirmation.getType()
         msg.setConfirmationMessageId(UUID.fromString(firstMessageId))
-        msg.setType(if (type.number == Confirmation.Type.DELIVERED_VALUE) ConfirmationMessage.Type.DELIVERED else ConfirmationMessage.Type.READ)
+        msg.setType(if (type.number == Messages.Confirmation.Type.DELIVERED_VALUE) ConfirmationMessage.Type.DELIVERED else ConfirmationMessage.Type.READ)
         handler.onConfirmation(client, msg)
         return true
     }
 
-    private fun handleLinkPreview(text: Messages.Text?, msg: LinkPreviewMessage?): Boolean {
+    private fun handleLinkPreview(text: Messages.Text, msg: LinkPreviewMessage): Boolean {
         for (link in text.getLinkPreviewList()) {
             if (text.hasContent()) {
                 val image = link.image
@@ -184,7 +168,7 @@ class GenericMessageProcessor(private val client: WireClient?, private val handl
         return true
     }
 
-    private fun handleReaction(reaction: Messages.Reaction?, msg: ReactionMessage?): Boolean {
+    private fun handleReaction(reaction: Messages.Reaction, msg: ReactionMessage): Boolean {
         if (reaction.hasEmoji()) {
             msg.setEmoji(reaction.getEmoji())
             msg.setReactionMessageId(UUID.fromString(reaction.getMessageId()))
