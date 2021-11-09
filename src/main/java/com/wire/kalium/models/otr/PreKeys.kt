@@ -17,13 +17,11 @@
 //
 package com.wire.kalium.models.otr
 
-import java.util.UUID
-import java.util.HashMap
+import java.util.*
 
-class PreKeys : HashMap<UUID?, HashMap<String?, PreKey?>?> {
-    constructor() {}
-    constructor(array: ArrayList<PreKey?>?, clientId: String?, userId: UUID?) : super() {
-        val devs = HashMap<String?, PreKey?>()
+class PreKeys : HashMap<UUID, HashMap<String, PreKey>> {
+    constructor(array: ArrayList<PreKey>, clientId: String, userId: UUID) : super() {
+        val devs = HashMap<String, PreKey>()
         for (key in array) {
             devs[clientId] = key
         }

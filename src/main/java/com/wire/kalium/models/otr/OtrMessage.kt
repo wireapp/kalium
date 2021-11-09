@@ -17,17 +17,17 @@
 //
 package com.wire.kalium.models.otr
 
-import java.util.UUID
 import com.fasterxml.jackson.annotation.JsonProperty
+import java.util.*
 
 class OtrMessage(//clientId of the sender
-    @field:JsonProperty private val sender: String?, @field:JsonProperty private val recipients: Recipients?
+        @field:JsonProperty private val sender: String, @field:JsonProperty private val recipients: Recipients
 ) {
-    fun add(rec: Recipients?) {
+    fun add(rec: Recipients) {
         recipients.add(rec)
     }
 
-    operator fun get(userId: UUID?, clientId: String?): String? {
+    operator fun get(userId: UUID, clientId: String): String {
         return recipients.get(userId, clientId)
     }
 
