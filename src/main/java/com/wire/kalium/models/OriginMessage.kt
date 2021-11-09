@@ -19,44 +19,17 @@ package com.wire.kalium.models
 
 import java.util.UUID
 
-abstract class OriginMessage : MessageBase {
-    private var mimeType: String? = null
-    private var name: String? = null
-    private var size: Long = 0
-
-    constructor(eventId: UUID?, msgId: UUID?, convId: UUID?, clientId: String?, userId: UUID?, time: String?) : super(
-        eventId,
-        msgId,
-        convId,
-        clientId,
-        userId,
-        time
-    ) {
-    }
-
-    constructor(msg: MessageBase?) : super(msg) {}
-
-    fun getSize(): Long {
-        return size
-    }
-
-    fun setSize(size: Long) {
-        this.size = size
-    }
-
-    fun getMimeType(): String? {
-        return mimeType
-    }
-
-    fun setMimeType(mimeType: String?) {
-        this.mimeType = mimeType
-    }
-
-    fun getName(): String? {
-        return name
-    }
-
-    fun setName(name: String?) {
-        this.name = name
-    }
+abstract class OriginMessage(
+        val mimeType: String,
+        val name: String,
+        val size: Long,
+        eventId: UUID,
+        msgId: UUID,
+        conversationId: UUID,
+        clientId: String,
+        userId: UUID,
+        time: String
+) : MessageBase(eventId, msgId, conversationId, clientId, userId, time) {
+    constructor(minType: String, name: String, size: Long, msg: MessageBase) :
+            this(mimeType = minType, name = name, size = size, eventId = msg.eventId, msgId = msg.messageId, conversationId = msg.conversationId, clientId = msg.clientId, userId = msg.userId, time = msg.time)
 }
