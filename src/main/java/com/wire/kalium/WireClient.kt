@@ -20,8 +20,8 @@ package com.wire.kalium
 import kotlin.Throws
 import java.io.IOException
 import java.util.UUID
-import com.wire.kalium.assets.IGeneric
-import com.wire.kalium.assets.IAsset
+import com.wire.kalium.assets.GenericMessageIdentifiable
+import com.wire.kalium.assets.Asset
 import java.io.Closeable
 import com.wire.bots.cryptobox.CryptoException
 import com.wire.kalium.backend.models.Conversation
@@ -41,7 +41,7 @@ interface WireClient : Closeable {
      * @throws Exception
      */
     @Throws(Exception::class)
-    open fun send(message: IGeneric?)
+    open fun send(message: GenericMessageIdentifiable?)
 
     /**
      * @param message generic message (Text, Image, File, Reply, Mention, ...)
@@ -49,7 +49,7 @@ interface WireClient : Closeable {
      * @throws Exception
      */
     @Throws(Exception::class)
-    open fun send(message: IGeneric?, userId: UUID?)
+    open fun send(message: GenericMessageIdentifiable?, userId: UUID?)
 
     /**
      * This method downloads asset from the Backend.
@@ -208,7 +208,7 @@ interface WireClient : Closeable {
      * @throws Exception
      */
     @Throws(Exception::class)
-    open fun uploadAsset(asset: IAsset?): AssetKey?
+    open fun uploadAsset(asset: Asset?): AssetKey?
     @Throws(HttpException::class)
     open fun getTeam(): UUID?
     @Throws(HttpException::class)

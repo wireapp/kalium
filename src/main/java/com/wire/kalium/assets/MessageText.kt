@@ -1,6 +1,6 @@
 //
 // Wire
-// Copyright (C) 2016 Wire Swiss GmbH
+// Copyright (C) 2021 Wire Swiss GmbH
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,16 +23,11 @@ import com.google.protobuf.ByteString
 import com.waz.model.Messages.Quote
 import com.waz.model.Messages
 
-class MessageText(text: String?) : IGeneric {
-    private val builder = Messages.Text.newBuilder()
-    private var messageId = UUID.randomUUID()
+class MessageText(text: String?) : GenericMessageIdentifiable {
+    val builder = Messages.Text.newBuilder()
+    override val messageId: UUID = UUID.randomUUID()
     fun setExpectsReadConfirmation(value: Boolean): MessageText? {
         builder.expectsReadConfirmation = value
-        return this
-    }
-
-    fun setMessageId(messageId: UUID?): MessageText? {
-        this.messageId = messageId
         return this
     }
 
@@ -60,17 +55,9 @@ class MessageText(text: String?) : IGeneric {
 
     override fun createGenericMsg(): GenericMessage? {
         return GenericMessage.newBuilder()
-            .setMessageId(getMessageId().toString())
+            .setMessageId(messageId.toString())
             .setText(builder)
             .build()
-    }
-
-    override fun getMessageId(): UUID? {
-        return messageId
-    }
-
-    fun getBuilder(): Messages.Text.Builder? {
-        return builder
     }
 
     init {

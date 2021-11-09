@@ -21,18 +21,14 @@ import java.util.UUID
 import com.waz.model.Messages.GenericMessage
 import com.waz.model.Messages.Knock
 
-class Ping : IGeneric {
-    private val messageId = UUID.randomUUID()
+class Ping : GenericMessageIdentifiable {
+    override val messageId: UUID = UUID.randomUUID()
     override fun createGenericMsg(): GenericMessage? {
         val knock = Knock.newBuilder()
             .setHotKnock(false)
         return GenericMessage.newBuilder()
-            .setMessageId(getMessageId().toString())
+            .setMessageId(messageId.toString())
             .setKnock(knock)
             .build()
-    }
-
-    override fun getMessageId(): UUID? {
-        return messageId
     }
 }

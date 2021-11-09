@@ -4,23 +4,15 @@ import java.util.UUID
 import com.waz.model.Messages.GenericMessage
 import com.waz.model.Messages.Confirmation
 
-class DeliveryReceipt(private val firstMessageId: UUID?) : IGeneric {
-    private val messageId: UUID?
+class DeliveryReceipt(private val firstMessageId: UUID?) : GenericMessageIdentifiable {
+    override val messageId: UUID = UUID.randomUUID()
     override fun createGenericMsg(): GenericMessage? {
         val confirmation = Confirmation.newBuilder()
             .setFirstMessageId(firstMessageId.toString())
             .setType(Confirmation.Type.DELIVERED)
         return GenericMessage.newBuilder()
-            .setMessageId(getMessageId().toString())
+            .setMessageId(messageId.toString())
             .setConfirmation(confirmation)
             .build()
-    }
-
-    override fun getMessageId(): UUID? {
-        return messageId
-    }
-
-    init {
-        messageId = UUID.randomUUID()
     }
 }

@@ -22,10 +22,11 @@ import com.waz.model.Messages.GenericMessage
 import kotlin.jvm.JvmOverloads
 import com.waz.model.Messages
 
-class Poll @JvmOverloads constructor(private val messageId: UUID? = UUID.randomUUID()) : IGeneric {
-    private val poll: Messages.Composite.Builder?
+class Poll @JvmOverloads constructor(override val messageId: UUID = UUID.randomUUID()) : GenericMessageIdentifiable {
+    private val poll: Messages.Composite.Builder = Messages.Composite.newBuilder()
+
     fun setExpectsReadConfirmation(value: Boolean): Poll? {
-        poll.setExpectsReadConfirmation(value)
+        poll.expectsReadConfirmation = value
         return this
     }
 
@@ -40,10 +41,12 @@ class Poll @JvmOverloads constructor(private val messageId: UUID? = UUID.randomU
     }
 
     fun addText(msg: MessageText?): Poll? {
-        val textItem = Messages.Composite.Item.newBuilder()
-            .setText(msg.getBuilder())
-            .build()
-        poll.addItems(textItem)
+        msg?.let {
+            val textItem = Messages.Composite.Item.newBuilder()
+                .setText(it.builder)
+                .build()
+            poll.addItems(textItem)
+        }
         return this
     }
 
@@ -59,16 +62,9 @@ class Poll @JvmOverloads constructor(private val messageId: UUID? = UUID.randomU
 
     override fun createGenericMsg(): GenericMessage? {
         return GenericMessage.newBuilder()
-            .setMessageId(getMessageId().toString())
+            .setMessageId(messageId.toString())
             .setComposite(poll)
             .build()
     }
 
-    override fun getMessageId(): UUID? {
-        return messageId
-    }
-
-    init {
-        poll = Messages.Composite.newBuilder()
-    }
 }

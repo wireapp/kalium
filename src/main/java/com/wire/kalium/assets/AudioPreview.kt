@@ -24,18 +24,22 @@ import com.google.protobuf.ByteString
 import com.waz.model.Messages.Asset.AudioMetaData
 import com.waz.model.Messages
 
-class AudioPreview(private val name: String?, private val mimeType: String?, duration: Long, levels: ByteArray?, size: Int) : IGeneric {
-    private val messageId: UUID?
-    private val duration: Long
+class AudioPreview(
+    private val name: String,
+    val mimeType: String,
+    private val duration: Long,
+    private val levels: ByteArray,
     private val size: Int
-    private val levels: ByteArray?
+) : GenericMessageIdentifiable {
 
-    constructor(name: String?, mimeType: String?, duration: Long, size: Int) : this(name, mimeType, duration, null, size) {}
+    override val messageId: UUID = UUID.randomUUID()
 
     override fun createGenericMsg(): GenericMessage? {
         val audio = AudioMetaData.newBuilder()
             .setDurationInMillis(duration)
-        if (levels != null) audio.normalizedLoudness = ByteString.copyFrom(levels)
+
+        levels.let { audio.normalizedLoudness = ByteString.copyFrom(it) }
+
         val original = Original.newBuilder()
             .setSize(size.toLong())
             .setName(name)
@@ -45,39 +49,8 @@ class AudioPreview(private val name: String?, private val mimeType: String?, dur
             .setOriginal(original.build())
             .build()
         return GenericMessage.newBuilder()
-            .setMessageId(getMessageId().toString())
+            .setMessageId(messageId.toString())
             .setAsset(asset)
             .build()
-    }
-
-    fun getName(): String? {
-        return name
-    }
-
-    fun getSize(): Int {
-        return size
-    }
-
-    fun getMimeType(): String? {
-        return mimeType
-    }
-
-    fun getDuration(): Long {
-        return duration
-    }
-
-    fun getLevels(): ByteArray? {
-        return levels
-    }
-
-    override fun getMessageId(): UUID? {
-        return messageId
-    }
-
-    init {
-        messageId = UUID.randomUUID()
-        this.duration = duration
-        this.size = size
-        this.levels = levels
     }
 }
