@@ -35,5 +35,5 @@ class Conversation {
     var creator: UUID? = null
 
     @JsonProperty
-    var members: MutableList<Member?>? = null
+    lateinit var members: MutableList<Member>
 }
