@@ -19,53 +19,20 @@ package com.wire.kalium.models
 
 import java.util.UUID
 
-open class MessageBase {
-    protected val messageId: UUID?
-    protected val eventId: UUID?
-    protected val userId: UUID?
-    protected val clientId: String?
-    protected val conversationId: UUID?
-    protected val time: String?
-
-    constructor(eventId: UUID?, msgId: UUID?, convId: UUID?, clientId: String?, userId: UUID?, time: String?) {
-        this.eventId = eventId
-        messageId = msgId
-        conversationId = convId
-        this.clientId = clientId
-        this.userId = userId
-        this.time = time
-    }
-
-    constructor(msg: MessageBase?) {
-        eventId = msg.eventId
-        messageId = msg.messageId
-        conversationId = msg.conversationId
-        clientId = msg.clientId
-        userId = msg.userId
-        time = msg.time
-    }
-
-    fun getConversationId(): UUID? {
-        return conversationId
-    }
-
-    fun getUserId(): UUID? {
-        return userId
-    }
-
-    fun getClientId(): String? {
-        return clientId
-    }
-
-    fun getMessageId(): UUID? {
-        return messageId
-    }
-
-    fun getTime(): String? {
-        return time
-    }
-
-    fun getEventId(): UUID? {
-        return eventId
-    }
+open class MessageBase(
+        val messageId: UUID,
+        val eventId: UUID,
+        val userId: UUID,
+        val clientId: String,
+        val conversationId: UUID,
+        val time: String
+) {
+    constructor(msg: MessageBase) : this(
+            eventId = msg.eventId,
+            messageId = msg.messageId,
+            conversationId = msg.conversationId,
+            clientId = msg.clientId,
+            userId = msg.userId,
+            time = msg.time
+    )
 }
