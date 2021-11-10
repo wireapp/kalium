@@ -1,8 +1,6 @@
 package com.wire.kalium.helium
 
 import com.wire.helium.EventDecoder
-import com.wire.helium.SocketReconnectHandler
-import com.wire.helium.UserMessageResource
 import com.wire.kalium.MessageHandler
 import com.wire.kalium.backend.models.NewBot
 import com.wire.kalium.helium.models.NotificationList

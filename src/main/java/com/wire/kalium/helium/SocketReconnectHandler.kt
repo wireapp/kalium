@@ -1,21 +1,22 @@
-package com.wire.helium
+package com.wire.kalium.helium
 
+import com.wire.kalium.tools.Logger
 import org.glassfish.tyrus.client.ClientManager
 import javax.websocket.CloseReason
 
 class SocketReconnectHandler(  // seconds
         private val delay: Int) : ClientManager.ReconnectHandler() {
-    fun onDisconnect(closeReason: CloseReason?): Boolean {
+    override fun onDisconnect(closeReason: CloseReason?): Boolean {
         Logger.debug("Websocket onDisconnect: reason: %s", closeReason)
         return false
     }
 
-    fun onConnectFailure(e: Exception): Boolean {
-        Logger.exception("Websocket onConnectFailure: reason: %s", e, e.message)
+    override fun onConnectFailure(e: Exception): Boolean {
+        Logger.exception(message = "Websocket onConnectFailure: reason: ${e.message}", throwable = e)
         return true
     }
 
-    fun getDelay(): Long {
+    override fun getDelay(): Long {
         return delay.toLong()
     }
 }

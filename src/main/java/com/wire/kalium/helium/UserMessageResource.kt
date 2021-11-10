@@ -1,4 +1,4 @@
-package com.wire.helium
+package com.wire.kalium.helium
 
 import com.wire.bots.cryptobox.CryptoException
 import com.wire.kalium.BaseEventProcessor
@@ -7,8 +7,6 @@ import com.wire.kalium.WireClient
 import com.wire.kalium.backend.models.NewBot
 import com.wire.kalium.backend.models.Payload
 import com.wire.kalium.crypto.Crypto
-import com.wire.kalium.helium.API
-import com.wire.kalium.helium.WireClientImp
 import com.wire.kalium.tools.Logger
 import java.io.IOException
 import java.util.*
@@ -38,7 +36,7 @@ class UserMessageResource(handler: MessageHandler) : BaseEventProcessor(handler)
             val client: WireClient = getWireClient(convId)
             handleMessage(eventId, payload, client)
         } catch (e: CryptoException) {
-            Logger.exception("onNewMessage: msg: %s, conv: %s, %s", e, eventId, convId, e.message)
+            Logger.exception(message = "onNewMessage: msg: $eventId, conv: $convId, ${e.message}", throwable = e)
         }
     }
 

@@ -9,7 +9,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 sealed class KaliumException : Exception()
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class HttpException @JsonCreator constructor(
+sealed class HttpException @JsonCreator constructor(
         @JsonProperty("message") override val message: String? = null,
         @JsonProperty("code") val code: Int = 0,
         @JsonProperty("label") val label: String? = null
@@ -18,4 +18,16 @@ data class HttpException @JsonCreator constructor(
         val clazz = javaClass.simpleName
         return String.format("%s: code: %d, msg: %s, label: %s", clazz, code, message, label)
     }
+}
+
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+class AuthException : HttpException {
+    constructor(message: String?, code: Int) : super(message = message, code = code)
+    constructor(code: Int) : super(code = code)
+
+    @JsonCreator
+    constructor(@JsonProperty("message") message: String?,
+                @JsonProperty("code") code: Int,
+                @JsonProperty("label") label: String?) : super(message, code, label)
 }
