@@ -1,16 +1,13 @@
 package com.wire.helium
 
 import com.wire.bots.cryptobox.CryptoException
-import com.wire.xenon.MessageHandlerBase
-import com.wire.xenon.MessageResourceBase
-import com.wire.xenon.WireClient
-import com.wire.xenon.backend.models.NewBot
-import com.wire.xenon.backend.models.Payload
-import com.wire.xenon.crypto.Crypto
-import com.wire.xenon.factories.CryptoFactory
-import com.wire.xenon.factories.StorageFactory
-import com.wire.xenon.state.State
-import com.wire.xenon.tools.Logger
+import com.wire.kalium.WireClient
+import com.wire.kalium.backend.models.NewBot
+import com.wire.kalium.backend.models.Payload
+import com.wire.kalium.crypto.Crypto
+import com.wire.kalium.helium.API
+import com.wire.kalium.helium.WireClientImp
+import com.wire.kalium.tools.Logger
 import java.io.IOException
 import java.util.*
 import javax.ws.rs.client.Client
@@ -52,7 +49,7 @@ class UserMessageResource(handler: MessageHandlerBase?) : MessageResourceBase(ha
     fun getWireClient(convId: UUID?): WireClientImp {
         val crypto: Crypto? = crypto
         val newBot: NewBot = getState()
-        val api: com.wire.helium.API = com.wire.helium.API(client, convId, newBot.token)
+        val api: API = API(client, convId, newBot.token)
         return WireClientImp(api, crypto, newBot, convId!!)
     }
 

@@ -15,13 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 //
-package com.wire.helium
+package com.wire.kalium.helium
 
-import com.wire.xenon.WireAPI
-import com.wire.xenon.WireClientBase
-import com.wire.xenon.backend.models.NewBot
-import com.wire.xenon.crypto.Crypto
-import com.wire.xenon.exceptions.HttpException
+import com.wire.kalium.WireAPI
+import com.wire.kalium.WireClientBase
+import com.wire.kalium.backend.models.NewBot
+import com.wire.kalium.crypto.Crypto
 import java.util.*
 
 class WireClientImp(api: WireAPI?, crypto: Crypto?, state: NewBot?, val conversationId: UUID) : WireClientBase(api, crypto, state) {

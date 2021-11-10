@@ -17,9 +17,6 @@
 //
 package com.wire.kalium.helium.models
 
-import com.fasterxml.jackson.annotation.JsonProperty
-
-class Connection {
-    @JsonProperty
-    var status: String? = null
-}
+data class Connection(
+        var status: String? = null
+)

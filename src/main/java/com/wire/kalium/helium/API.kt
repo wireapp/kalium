@@ -19,8 +19,6 @@ package com.wire.kalium.helium
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.wire.helium.LoginClient
-import com.wire.kalium.helium.models.Connection
 import com.wire.kalium.WireAPI
 import com.wire.kalium.assets.Asset
 import com.wire.kalium.backend.models.Conversation
@@ -28,6 +26,7 @@ import com.wire.kalium.backend.models.ConversationMember
 import com.wire.kalium.backend.models.Service
 import com.wire.kalium.backend.models.User
 import com.wire.kalium.exceptions.HttpException
+import com.wire.kalium.helium.models.Connection
 import com.wire.kalium.models.AssetKey
 import com.wire.kalium.models.otr.*
 import com.wire.kalium.tools.Util
@@ -83,8 +82,7 @@ open class API(client: Client, convId: UUID?, token: String) : LoginClient(clien
     override fun getPreKeys(missing: Missing): PreKeys {
         return if (missing.isEmpty()) {
             PreKeys()
-        }
-        else {
+        } else {
             usersPath.path("prekeys")
                     .request(MediaType.APPLICATION_JSON)
                     .header(HttpHeaders.AUTHORIZATION, bearer(token))

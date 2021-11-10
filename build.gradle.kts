@@ -25,6 +25,8 @@ dependencies {
     implementation("com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion")
     implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
     implementation("javax.validation:validation-api:$javaxValidationVersion")
+    implementation("jakarta.ws.rs:jakarta.ws.rs-api:$jakartaVersion")
+
     testImplementation(kotlin("test"))
 
     // web service

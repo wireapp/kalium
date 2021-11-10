@@ -1,7 +1,7 @@
 package com.wire.helium.helpers
 
 import com.wire.bots.cryptobox.PreKey
-import com.wire.helium.API
+import com.wire.kalium.helium.API
 import com.wire.xenon.models.otr.*
 import org.glassfish.jersey.client.JerseyClientBuilder
 import java.util.*

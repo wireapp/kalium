@@ -1,19 +1,13 @@
 package com.wire.kalium
 
-import kotlin.Throws
-import java.io.IOException
-import java.util.UUID
 import com.wire.kalium.assets.Asset
-import com.wire.kalium.models.otr.PreKeys
-import com.wire.kalium.models.otr.Missing
 import com.wire.kalium.backend.models.Conversation
-import com.wire.kalium.exceptions.HttpException
-import com.wire.kalium.models.otr.OtrMessage
-import com.wire.kalium.models.otr.Devices
-import com.wire.kalium.models.AssetKey
 import com.wire.kalium.backend.models.User
-import com.wire.kalium.models.otr.PreKey
-import javax.validation.constraints.NotNull
+import com.wire.kalium.exceptions.HttpException
+import com.wire.kalium.models.AssetKey
+import com.wire.kalium.models.otr.*
+import java.io.IOException
+import java.util.*
 
 interface WireAPI {
     @Throws(HttpException::class)
@@ -48,6 +42,7 @@ interface WireAPI {
     @Throws(HttpException::class)
     open fun getUserId(handle: String): UUID
     open fun hasDevice(userId: UUID, clientId: String): Boolean
+
     @Throws(HttpException::class)
     open fun getTeam(): UUID?
     open fun getTeamMembers(teamId: UUID): MutableCollection<UUID>

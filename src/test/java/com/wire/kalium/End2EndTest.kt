@@ -1,4 +1,4 @@
-package com.wire.helium
+package com.wire.kalium
 
 import com.google.protobuf.InvalidProtocolBufferException
 import com.waz.model.Messages.GenericMessage
@@ -6,6 +6,7 @@ import com.wire.bots.cryptobox.IStorage
 import com.wire.helium.helpers.DummyAPI
 import com.wire.helium.helpers.MemStorage
 import com.wire.helium.helpers.Util.deleteDir
+import com.wire.kalium.helium.WireClientImp
 import com.wire.xenon.assets.MessageText
 import com.wire.xenon.backend.models.NewBot
 import com.wire.xenon.crypto.CryptoDatabase
