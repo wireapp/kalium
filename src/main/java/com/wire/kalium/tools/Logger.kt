@@ -26,6 +26,7 @@ import java.util.Date
 import java.util.logging.Formatter
 import java.util.logging.Handler
 import java.util.logging.Level
+import java.util.logging.Logger
 
 object Logger {
     fun getLOGGER(): Logger? {
@@ -33,23 +34,16 @@ object Logger {
     }
 
     private val LOGGER = Logger.getLogger("com.wire.bots.logger")
-    private val errorCount: AtomicInteger? = AtomicInteger()
-    private val warningCount: AtomicInteger? = AtomicInteger()
-    fun debug(msg: String?) {
-        LOGGER.fine(msg)
-    }
+    private val errorCount: AtomicInteger = AtomicInteger()
+    private val warningCount: AtomicInteger = AtomicInteger()
 
-    fun debug(format: String?, vararg args: Any?) {
-        LOGGER.fine(String.format(format, *args))
-    }
+    fun debug(msg: String?) = LOGGER.fine(msg)
 
-    fun info(msg: String?) {
-        LOGGER.info(msg)
-    }
+    fun debug(format: String?, vararg args: Any?) = format?.let { LOGGER.fine(String.format(it, *args)) }
 
-    fun info(format: String?, vararg args: Any?) {
-        LOGGER.info(String.format(format, *args))
-    }
+    fun info(msg: String?) = LOGGER.info(msg)
+
+    fun info(format: String?, vararg args: Any?) = format?.let { LOGGER.info(String.format(it, *args)) }
 
     fun error(msg: String?) {
         errorCount.incrementAndGet()
@@ -67,18 +61,13 @@ object Logger {
             }
         }
         errorCount.incrementAndGet()
-        LOGGER.severe(String.format(format, *args))
-    }
 
-    @Deprecated("")
-    fun exception(message: String?, throwable: Throwable?, vararg args: Any?) {
-        errorCount.incrementAndGet()
-        LOGGER.log(Level.SEVERE, String.format(message, *args), throwable)
+        format?.let { LOGGER.severe(String.format(it, *args)) }
     }
 
     fun exception(throwable: Throwable?, message: String?, vararg args: Any?) {
         errorCount.incrementAndGet()
-        LOGGER.log(Level.SEVERE, String.format(message, *args), throwable)
+        message?.let { LOGGER.log(Level.SEVERE, String.format(it, *args), throwable)  }
     }
 
     fun warning(msg: String?) {
@@ -88,7 +77,7 @@ object Logger {
 
     fun warning(format: String?, vararg args: Any?) {
         warningCount.incrementAndGet()
-        LOGGER.warning(String.format(format, *args))
+        format?.let { LOGGER.warning(String.format(it, *args)) }
     }
 
     fun getErrorCount(): Int {
@@ -104,12 +93,12 @@ object Logger {
     }
 
     internal class BotFormatter : Formatter() {
-        override fun format(record: LogRecord?): String? {
+        override fun format(record: LogRecord): String? {
             val builder = StringBuilder()
-            builder.append(df.format(Date(record.getMillis()))).append(" - ")
+            builder.append(df.format(Date(record.millis))).append(" - ")
             // builder.append("[").append(record.getSourceClassName()).append(".");
             // builder.append(record.getSourceMethodName()).append("] - ");
-            builder.append("[").append(record.getLevel()).append("] - ")
+            builder.append("[").append(record.level).append("] - ")
             builder.append(formatMessage(record))
             builder.append("\n")
             return builder.toString()
@@ -124,13 +113,13 @@ object Logger {
         }
 
         companion object {
-            private val df: DateFormat? = SimpleDateFormat("dd/MM/yyyy HH:mm:ss")
+            private val df: DateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm:ss")
         }
     }
 
-    init {
-        for (handler in LOGGER.handlers) {
-            com.wire.kalium.tools.handler.setFormatter(BotFormatter())
-        }
-    }
+//    init {
+//        for (handler in LOGGER.handlers) {
+//            com.wire.kalium.tools.handler.setFormatter(BotFormatter())
+//        }
+//    }
 }
