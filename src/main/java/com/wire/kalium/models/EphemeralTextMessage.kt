@@ -21,32 +21,70 @@ import java.util.UUID
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonCreator
+import java.util.ArrayList
+import com.waz.model.Messages
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-class EphemeralTextMessage : TextMessage {
-    @JsonProperty
-    private var expireAfterMillis: Long = 0
 
-    @JsonCreator
+//@JsonIgnoreProperties(ignoreUnknown = true)
+//@JsonCreator constructor EphemeralTextMessage(...
+class EphemeralTextMessage(
+//        @JsonProperty("expireAfterMillis")
+        val expireAfterMillis: Long,
+//        @JsonProperty("eventId")
+        eventId: UUID,
+//        @JsonProperty("messageId")
+        messageId: UUID,
+//        @JsonProperty("conversationId")
+        conversationId: UUID,
+//        @JsonProperty("clientId")
+        clientId: String,
+//        @JsonProperty("userId")
+        userId: UUID,
+//        @JsonProperty("time")
+        time: String,
+//        @JsonProperty
+        mentions: ArrayList<Mention>,
+//        @JsonProperty
+        text: String?
+
+) : TextMessage(
+        eventId = eventId,
+        messageId = messageId,
+        convId = conversationId,
+        clientId = clientId,
+        userId = userId,
+        time = time
+) {
+
     constructor(
-        @JsonProperty("eventId") eventId: UUID?,
-        @JsonProperty("messageId") messageId: UUID?,
-        @JsonProperty("conversationId") convId: UUID?,
-        @JsonProperty("clientId") clientId: String?,
-        @JsonProperty("userId") userId: UUID?,
-        @JsonProperty("time") time: String?,
-        @JsonProperty("expireAfterMillis") expireAfterMillis: Long
-    ) : super(eventId, messageId, convId, clientId, userId, time) {
-        this.expireAfterMillis = expireAfterMillis
-    }
+            _expireAfterMillis: Long,
+            _textMessage: TextMessage
+    ): this(
+            expireAfterMillis = _expireAfterMillis,
+            text = _textMessage.text,
+            mentions = _textMessage.mentions,
+            eventId = _textMessage.eventId,
+            messageId = _textMessage.messageId,
+            conversationId = _textMessage.conversationId,
+            clientId = _textMessage.clientId,
+            userId = _textMessage.userId,
+            time = _textMessage.time
+    )
 
-    constructor(msg: MessageBase?) : super(msg) {}
-
-    fun getExpireAfterMillis(): Long {
-        return expireAfterMillis
-    }
-
-    fun setExpireAfterMillis(expireAfterMillis: Long) {
-        this.expireAfterMillis = expireAfterMillis
-    }
+    constructor(
+            _expireAfterMillis: Long,
+            _text: String,
+            _mentions: ArrayList<Mention>,
+            msg: MessageBase
+    ) : this(
+            expireAfterMillis = _expireAfterMillis,
+            text = _text,
+            mentions = _mentions,
+            eventId = msg.eventId,
+            messageId = msg.messageId,
+            conversationId = msg.conversationId,
+            clientId = msg.clientId,
+            userId = msg.userId,
+            time = msg.time
+    )
 }

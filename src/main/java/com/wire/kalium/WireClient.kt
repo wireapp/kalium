@@ -41,7 +41,7 @@ interface WireClient : Closeable {
      * @throws Exception
      */
     @Throws(Exception::class)
-    open fun send(message: GenericMessageIdentifiable?)
+    fun send(message: GenericMessageIdentifiable)
 
     /**
      * @param message generic message (Text, Image, File, Reply, Mention, ...)
@@ -49,7 +49,7 @@ interface WireClient : Closeable {
      * @throws Exception
      */
     @Throws(Exception::class)
-    open fun send(message: GenericMessageIdentifiable?, userId: UUID?)
+    fun send(message: GenericMessageIdentifiable, userId: UUID)
 
     /**
      * This method downloads asset from the Backend.
@@ -62,12 +62,12 @@ interface WireClient : Closeable {
      * @throws Exception
      */
     @Throws(Exception::class)
-    open fun downloadAsset(assetKey: String?, assetToken: String?, sha256Challenge: ByteArray?, otrKey: ByteArray?): ByteArray?
+    fun downloadAsset(assetKey: String, assetToken: String, sha256Challenge: ByteArray, otrKey: ByteArray): ByteArray
 
     /**
      * @return Bot ID as UUID
      */
-    open fun getId(): UUID?
+    fun getId(): UUID
 
     /**
      * Fetch the bot's own user profile information. A bot's profile has the following attributes:
@@ -81,17 +81,17 @@ interface WireClient : Closeable {
      * @return
      */
     @Throws(HttpException::class)
-    open fun getSelf(): User?
+    fun getSelf(): User
 
     /**
      * @return Conversation ID as UUID
      */
-    open fun getConversationId(): UUID?
+    fun getConversationId(): UUID
 
     /**
      * @return Device ID as returned by the Wire Backend
      */
-    open fun getDeviceId(): String?
+    fun getDeviceId(): String
 
     /**
      * Fetch users' profiles from the Backend
@@ -101,7 +101,7 @@ interface WireClient : Closeable {
      * @throws HttpException
      */
     @Throws(HttpException::class)
-    open fun getUsers(userIds: MutableCollection<UUID?>?): MutableCollection<User?>?
+    fun getUsers(userIds: MutableCollection<UUID>): MutableCollection<User>
 
     /**
      * Fetch users' profiles from the Backend
@@ -111,7 +111,7 @@ interface WireClient : Closeable {
      * @throws HttpException
      */
     @Throws(HttpException::class)
-    open fun getUser(userId: UUID?): User?
+    fun getUser(userId: UUID): User
 
     /**
      * Fetch conversation details from the Backend
@@ -120,7 +120,7 @@ interface WireClient : Closeable {
      * @throws IOException
      */
     @Throws(IOException::class)
-    open fun getConversation(): Conversation?
+    fun getConversation(): Conversation
 
     /**
      * Bots cannot send/receive/accept connect requests. This method can be used when
@@ -131,7 +131,7 @@ interface WireClient : Closeable {
      * @throws Exception
      */
     @Throws(Exception::class)
-    open fun acceptConnection(user: UUID?)
+    fun acceptConnection(user: UUID)
 
     /**
      * Decrypt cipher either using existing session or it creates new session from this cipher and decrypts
@@ -143,7 +143,7 @@ interface WireClient : Closeable {
      * @throws CryptoException
      */
     @Throws(CryptoException::class)
-    open fun decrypt(userId: UUID?, clientId: String?, cypher: String?): String?
+    fun decrypt(userId: UUID, clientId: String, cypher: String): String
 
     /**
      * Invoked by the sdk. Called once when the conversation is created
@@ -152,7 +152,7 @@ interface WireClient : Closeable {
      * @throws CryptoException
      */
     @Throws(CryptoException::class)
-    open fun newLastPreKey(): PreKey?
+    fun newLastPreKey(): PreKey
 
     /**
      * Invoked by the sdk. Called once when the conversation is created and then occasionally when number of available
@@ -164,7 +164,7 @@ interface WireClient : Closeable {
      * @throws CryptoException
      */
     @Throws(CryptoException::class)
-    open fun newPreKeys(from: Int, count: Int): ArrayList<PreKey?>?
+    fun newPreKeys(from: Int, count: Int): ArrayList<PreKey>
 
     /**
      * Uploads previously generated prekeys to BE
@@ -173,7 +173,7 @@ interface WireClient : Closeable {
      * @throws IOException
      */
     @Throws(IOException::class)
-    open fun uploadPreKeys(preKeys: ArrayList<PreKey?>?)
+    fun uploadPreKeys(preKeys: ArrayList<PreKey>)
 
     /**
      * Returns the list of available prekeys.
@@ -181,14 +181,14 @@ interface WireClient : Closeable {
      *
      * @return List of available prekeys' ids
      */
-    open fun getAvailablePrekeys(): ArrayList<Int?>?
+    fun getAvailablePrekeys(): ArrayList<Int>
 
     /**
      * Checks if CryptoBox is closed
      *
      * @return True if crypto box is closed
      */
-    open fun isClosed(): Boolean
+    fun isClosed(): Boolean
 
     /**
      * Download publicly available profile picture for the given asset key. This asset is not encrypted
@@ -198,7 +198,7 @@ interface WireClient : Closeable {
      * @throws Exception
      */
     @Throws(Exception::class)
-    open fun downloadProfilePicture(assetKey: String?): ByteArray?
+    fun downloadProfilePicture(assetKey: String): ByteArray
 
     /**
      * Uploads assert to backend. This method is used in conjunction with sendPicture(IGeneric)
@@ -208,19 +208,27 @@ interface WireClient : Closeable {
      * @throws Exception
      */
     @Throws(Exception::class)
-    open fun uploadAsset(asset: Asset?): AssetKey?
+    fun uploadAsset(asset: Asset): AssetKey
+
     @Throws(HttpException::class)
-    open fun getTeam(): UUID?
+    fun getTeam(): UUID
+
     @Throws(HttpException::class)
-    open fun createConversation(name: String?, teamId: UUID?, users: MutableList<UUID?>?): Conversation?
+    fun createConversation(name: String, teamId: UUID, users: MutableList<UUID>): Conversation
+
     @Throws(HttpException::class)
-    open fun createOne2One(teamId: UUID?, userId: UUID?): Conversation?
+    fun createOne2One(teamId: UUID, userId: UUID): Conversation
+
     @Throws(HttpException::class)
-    open fun leaveConversation(userId: UUID?)
+    fun leaveConversation(userId: UUID)
+
     @Throws(HttpException::class)
-    open fun addParticipants(vararg userIds: UUID?): User?
+    fun addParticipants(vararg userIds: UUID): User
+
     @Throws(HttpException::class)
-    open fun addService(serviceId: UUID?, providerId: UUID?): User?
+    fun addService(serviceId: UUID, providerId: UUID): User
+
     @Throws(HttpException::class)
-    open fun deleteConversation(teamId: UUID?): Boolean
+    fun deleteConversation(teamId: UUID): Boolean
+
 }

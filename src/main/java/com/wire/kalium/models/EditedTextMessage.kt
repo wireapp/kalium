@@ -23,24 +23,32 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonCreator
 import java.util.ArrayList
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-class EditedTextMessage @JsonCreator constructor(
-        @JsonProperty val replacingMessageId: UUID,
-        @JsonProperty text: String,
-        @JsonProperty quotedMessageId: UUID,
-        @JsonProperty quotedMessageSha256: ByteArray,
-        @JsonProperty mentions: ArrayList<Mention>,
-        @JsonProperty("eventId") eventId: UUID,
-        @JsonProperty("messageId") messageId: UUID,
-        @JsonProperty("conversationId") convId: UUID,
-        @JsonProperty("clientId") clientId: String,
-        @JsonProperty("userId") userId: UUID,
-        @JsonProperty("time") time: String
+//@JsonIgnoreProperties(ignoreUnknown = true)
+//@JsonCreator constructor(...
+class EditedTextMessage(
+//        @JsonProperty
+        val replacingMessageId: UUID,
+//        @JsonProperty
+        text: String?,
+//        @JsonProperty
+        quotedMessageId: UUID?,
+//        @JsonProperty
+        quotedMessageSha256: ByteArray?,
+//        @JsonProperty
+        mentions: ArrayList<Mention>,
+//        @JsonProperty("eventId")
+        eventId: UUID,
+//        @JsonProperty("messageId")
+        messageId: UUID,
+//        @JsonProperty("conversationId")
+        convId: UUID,
+//        @JsonProperty("clientId")
+        clientId: String,
+//        @JsonProperty("userId")
+        userId: UUID,
+//        @JsonProperty("time")
+        time: String
 ) : TextMessage(
-        text = text,
-        quotedMessageId = quotedMessageId,
-        quotedMessageSha256 = quotedMessageSha256,
-        mentions = mentions,
         eventId = eventId,
         messageId = messageId,
         convId = convId,
@@ -48,25 +56,41 @@ class EditedTextMessage @JsonCreator constructor(
         userId = userId,
         time = time
 ) {
+        constructor(
+                _replacingMessageId: UUID,
+                _textMessage: TextMessage,
+        ) : this (
+                replacingMessageId = _replacingMessageId,
+                text = _textMessage.text,
+                quotedMessageId = _textMessage.quotedMessageId,
+                quotedMessageSha256 = _textMessage.quotedMessageSha256,
+                mentions = _textMessage.mentions,
+                eventId = _textMessage.eventId,
+                messageId = _textMessage.messageId,
+                convId = _textMessage.conversationId,
+                clientId = _textMessage.clientId,
+                userId = _textMessage.userId,
+                time = _textMessage.time
+        )
 
-    constructor(
-            _replacingMessageId: UUID,
-            _text: String,
-            _quotedMessageId: UUID,
-            _quotedMessageSha256: ByteArray,
-            _mentions: ArrayList<Mention>,
-            msg: MessageBase
-    ) : this(
-            replacingMessageId = _replacingMessageId,
-            text = _text,
-            quotedMessageId = _quotedMessageId,
-            quotedMessageSha256 = _quotedMessageSha256,
-            mentions = _mentions,
-            eventId = msg.eventId,
-            messageId = msg.messageId,
-            convId = msg.conversationId,
-            clientId = msg.clientId,
-            userId = msg.userId,
-            time = msg.time
-    )
+        constructor(
+                _replacingMessageId: UUID,
+                _text: String,
+                _quotedMessageId: UUID,
+                _quotedMessageSha256: ByteArray,
+                _mentions: ArrayList<Mention>,
+                msg: MessageBase
+        ) : this(
+                replacingMessageId = _replacingMessageId,
+                text = _text,
+                quotedMessageId = _quotedMessageId,
+                quotedMessageSha256 = _quotedMessageSha256,
+                mentions = _mentions,
+                eventId = msg.eventId,
+                messageId = msg.messageId,
+                convId = msg.conversationId,
+                clientId = msg.clientId,
+                userId = msg.userId,
+                time = msg.time
+        )
 }

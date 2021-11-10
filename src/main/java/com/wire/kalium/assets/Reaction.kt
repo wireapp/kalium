@@ -23,7 +23,7 @@ import com.waz.model.Messages
 
 class Reaction(private val msgId: UUID?, private val emoji: String?) : GenericMessageIdentifiable {
     override val messageId: UUID = UUID.randomUUID()
-    override fun createGenericMsg(): GenericMessage? {
+    override fun createGenericMsg(): GenericMessage {
         val reaction = Messages.Reaction.newBuilder()
             .setMessageId(msgId.toString())
             .setEmoji(emoji)

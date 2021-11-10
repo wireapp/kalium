@@ -17,18 +17,16 @@
 //
 package com.wire.kalium.models.otr
 
-class Devices {
-    val missing: Missing = Missing()
-    val redundant: Missing = Missing()
+data class Devices(
+    val missing: Missing = Missing(),
+    val redundant: Missing = Missing(),
     val deleted: Missing = Missing()
-
+) {
     fun hasMissing(): Boolean {
-        return missing.isEmpty()
+        return missing.isNotEmpty()
     }
 
-    fun size(): Int {
-        var ret = 0
-        for (cls in missing.values) ret += cls.size
-        return ret
+    fun size(): Int = missing.values.fold(0) { accumulator, clients ->
+        accumulator + clients.size
     }
 }

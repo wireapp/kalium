@@ -23,28 +23,38 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonCreator
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-class FilePreviewMessage : OriginMessage {
-    @JsonCreator
-    constructor(
-        @JsonProperty("eventId") eventId: UUID?,
-        @JsonProperty("messageId") messageId: UUID?,
-        @JsonProperty("conversationId") convId: UUID?,
-        @JsonProperty("clientId") clientId: String?,
-        @JsonProperty("userId") userId: UUID?,
-        @JsonProperty("time") time: String?,
-        @JsonProperty("mimeType") mimeType: String?,
-        @JsonProperty("size") size: Long,
-        @JsonProperty("name") name: String?
-    ) : super(eventId, messageId, convId, clientId, userId, time) {
-        setMimeType(mimeType)
-        setName(name)
-        setSize(size)
-    }
 
-    constructor(msg: MessageBase?, original: Original?) : super(msg) {
-        mimeType = original.getMimeType()
-        size = original.getSize()
-        name = original.getName()
-    }
+@JsonIgnoreProperties(ignoreUnknown = true)
+class FilePreviewMessage @JsonCreator constructor(
+        @JsonProperty("eventId") eventId: UUID,
+        @JsonProperty("messageId") messageId: UUID,
+        @JsonProperty("conversationId") conversationId: UUID,
+        @JsonProperty("clientId") clientId: String,
+        @JsonProperty("userId") userId: UUID,
+        @JsonProperty("time") time: String,
+        @JsonProperty("mimeType") mimeType: String,
+        @JsonProperty("size") size: Long,
+        @JsonProperty("name") name: String
+) : OriginMessage(
+        mimeType = mimeType,
+        name = name,
+        size = size,
+        eventId = eventId,
+        msgId = messageId,
+        conversationId = conversationId,
+        clientId = clientId,
+        userId = userId,
+        time = time
+) {
+    constructor(msg: MessageBase, original: Original) : this(
+            mimeType = original.mimeType,
+            size = original.size,
+            name = original.name,
+            eventId = msg.eventId,
+            messageId = msg.messageId,
+            conversationId = msg.conversationId,
+            clientId = msg.clientId,
+            userId = msg.userId,
+            time = msg.time
+    )
 }

@@ -30,6 +30,15 @@ abstract class OriginMessage(
         userId: UUID,
         time: String
 ) : MessageBase(eventId, msgId, conversationId, clientId, userId, time) {
-    constructor(minType: String, name: String, size: Long, msg: MessageBase) :
-            this(mimeType = minType, name = name, size = size, eventId = msg.eventId, msgId = msg.messageId, conversationId = msg.conversationId, clientId = msg.clientId, userId = msg.userId, time = msg.time)
+    constructor(_mimeType: String, _name: String, _size: Long, msg: MessageBase) : this(
+            mimeType = _mimeType,
+            name = _name,
+            size = _size,
+            eventId = msg.eventId,
+            msgId = msg.messageId,
+            conversationId = msg.conversationId,
+            clientId = msg.clientId,
+            userId = msg.userId,
+            time = msg.time
+    )
 }

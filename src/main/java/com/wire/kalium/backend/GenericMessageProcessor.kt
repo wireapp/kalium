@@ -25,17 +25,19 @@ import com.wire.kalium.tools.Logger
 import java.util.*
 
 class GenericMessageProcessor(private val client: WireClient, private val handler: MessageHandler) {
+
     fun process(msgBase: MessageBase, generic: Messages.GenericMessage): Boolean {
         Logger.debug("proto: { %s }", generic)
 
         // Text
         if (generic.hasText()) {
-            val text = generic.getText()
-            if (!text.linkPreviewList.isEmpty()) {
-                return handleLinkPreview(text, LinkPreviewMessage(msgBase))
+            if (generic.text.linkPreviewList.isNotEmpty()) {
+                // FIXME: Fix this when we have LinkPreviews Again
+//                return handleLinkPreview(text, LinkPreviewMessage(msgBase))
+                return true
             }
-            if (text.hasContent()) {
-                val msg = fromText(TextMessage(msgBase), text)
+            if (generic.text.hasContent()) {
+                val msg = TextMessage(generic.text, msgBase)
                 handler.onText(client, msg)
                 return true
             }
@@ -43,14 +45,12 @@ class GenericMessageProcessor(private val client: WireClient, private val handle
 
         // Ephemeral messages
         if (generic.hasEphemeral()) {
-            val ephemeral = generic.getEphemeral()
+            val ephemeral = generic.ephemeral
             if (ephemeral.hasText()) {
-                val text = ephemeral.text
-                if (text.hasContent()) {
-                    val msg = EphemeralTextMessage(msgBase)
-                    fromText(msg, text)
-                    msg.setExpireAfterMillis(ephemeral.expireAfterMillis)
-                    handler.onText(client, msg)
+                val textMessage = TextMessage(generic.text, msgBase)
+                if (textMessage.text != null) {
+                    val ephemeralMessage = EphemeralTextMessage(ephemeral.expireAfterMillis, textMessage)
+                    handler.onText(client, ephemeralMessage)
                     return true
                 }
             }
@@ -61,68 +61,76 @@ class GenericMessageProcessor(private val client: WireClient, private val handle
 
         // Edit message
         if (generic.hasEdited()) {
-            val edited = generic.getEdited()
+            val edited = generic.edited
             if (edited.hasText()) {
-                val text = edited.text
-                if (text.hasContent()) {
-                    val msg = EditedTextMessage(msgBase)
-                    fromText(msg, text)
+                val textMessage = TextMessage(edited.text, msgBase)
+                if (textMessage.text != null) {
                     val replacingMessageId = UUID.fromString(edited.replacingMessageId)
-                    msg.setReplacingMessageId(replacingMessageId)
+                    val msg = EditedTextMessage(replacingMessageId, textMessage)
                     handler.onEditText(client, msg)
                     return true
                 }
             }
         }
+
+        // Confirmation Message
         if (generic.hasConfirmation()) {
-            val confirmation = generic.getConfirmation()
-            val msg = ConfirmationMessage(msgBase)
-            return handleConfirmation(confirmation, msg)
+            val confirmation = generic.confirmation
+
+            val confirmationType = if (confirmation.type.number == Messages.Confirmation.Type.DELIVERED_VALUE) {
+                ConfirmationMessage.Type.DELIVERED
+            } else {
+                ConfirmationMessage.Type.READ
+            }
+
+            val msg = ConfirmationMessage(UUID.fromString(confirmation.firstMessageId), confirmationType, msgBase)
+            handler.onConfirmation(client, msg)
+            return true
         }
+
+        // Calling Message
         if (generic.hasCalling()) {
-            val calling = generic.getCalling()
+            val calling = generic.calling
             if (calling.hasContent()) {
-                val message = CallingMessage(msgBase)
-                message.setContent(calling.content)
+                val message = CallingMessage(calling.content, msgBase)
                 handler.onCalling(client, message)
             }
             return true
         }
+
+        // Delete Message
         if (generic.hasDeleted()) {
-            val msg = DeletedTextMessage(msgBase)
-            val delMsgId = UUID.fromString(generic.getDeleted().messageId)
-            msg.setDeletedMessageId(delMsgId)
+            val msg = DeletedTextMessage(UUID.fromString(generic.deleted.messageId), msgBase)
             handler.onDelete(client, msg)
             return true
         }
+
+        // Reaction Message
         if (generic.hasReaction()) {
-            val reaction = generic.getReaction()
-            val msg = ReactionMessage(msgBase)
-            return handleReaction(reaction, msg)
+            val reaction = generic.reaction
+            if (reaction.hasEmoji()) {
+                val msg = ReactionMessage(reaction.emoji, UUID.fromString(reaction.messageId), msgBase)
+                handler.onReaction(client, msg)
+                return true
+            }
         }
+
+        // Knock Message
         if (generic.hasKnock()) {
             val msg = PingMessage(msgBase)
             handler.onPing(client, msg)
             return true
         }
-        return if (generic.hasAsset()) {
-            handleAsset(msgBase, generic.getAsset())
-        } else false
-    }
 
-    private fun fromText(textMessage: TextMessage, text: Messages.Text): TextMessage? {
-        textMessage.setText(text.getContent())
-        if (text.hasQuote()) {
-            val quotedMessageId = text.getQuote().quotedMessageId
-            textMessage.setQuotedMessageId(UUID.fromString(quotedMessageId))
-        }
-        for (mention in text.getMentionsList()) textMessage.addMention(mention.userId, mention.start, mention.length)
-        return textMessage
+        // Asset Message
+        return if (generic.hasAsset()) {
+            handleAsset(msgBase, generic.asset)
+        } else false
     }
 
     private fun handleAsset(msgBase: MessageBase, asset: Messages.Asset): Boolean {
         if (asset.hasOriginal()) {
-            val original = asset.getOriginal()
+            val original = asset.original
             if (original.hasImage()) {
                 handler.onPhotoPreview(client, PhotoPreviewMessage(msgBase, original))
             } else if (original.hasAudio()) {
@@ -139,41 +147,23 @@ class GenericMessageProcessor(private val client: WireClient, private val handle
         return true
     }
 
-    private fun handleConfirmation(confirmation: Messages.Confirmation, msg: ConfirmationMessage): Boolean {
-        val firstMessageId = confirmation.getFirstMessageId()
-        val type = confirmation.getType()
-        msg.setConfirmationMessageId(UUID.fromString(firstMessageId))
-        msg.setType(if (type.number == Messages.Confirmation.Type.DELIVERED_VALUE) ConfirmationMessage.Type.DELIVERED else ConfirmationMessage.Type.READ)
-        handler.onConfirmation(client, msg)
-        return true
-    }
-
-    private fun handleLinkPreview(text: Messages.Text, msg: LinkPreviewMessage): Boolean {
-        for (link in text.getLinkPreviewList()) {
-            if (text.hasContent()) {
-                val image = link.image
-                msg.fromOrigin(image.original)
-                msg.fromRemote(image.uploaded)
-                val imageMetaData = image.original.image
-                msg.setHeight(imageMetaData.height)
-                msg.setWidth(imageMetaData.width)
-                msg.setSummary(link.summary)
-                msg.setTitle(link.title)
-                msg.setUrl(link.url)
-                msg.setUrlOffset(link.urlOffset)
-                msg.setText(text.getContent())
-                handler.onLinkPreview(client, msg)
-            }
-        }
-        return true
-    }
-
-    private fun handleReaction(reaction: Messages.Reaction, msg: ReactionMessage): Boolean {
-        if (reaction.hasEmoji()) {
-            msg.setEmoji(reaction.getEmoji())
-            msg.setReactionMessageId(UUID.fromString(reaction.getMessageId()))
-            handler.onReaction(client, msg)
-        }
-        return true
-    }
+//    private fun handleLinkPreview(text: Messages.Text, msg: LinkPreviewMessage): Boolean {
+//        for (link in text.getLinkPreviewList()) {
+//            if (text.hasContent()) {
+//                val image = link.image
+//                msg.fromOrigin(image.original)
+//                msg.fromRemote(image.uploaded)
+//                val imageMetaData = image.original.image
+//                msg.setHeight(imageMetaData.height)
+//                msg.setWidth(imageMetaData.width)
+//                msg.setSummary(link.summary)
+//                msg.setTitle(link.title)
+//                msg.setUrl(link.url)
+//                msg.setUrlOffset(link.urlOffset)
+//                msg.setText(text.getContent())
+//                handler.onLinkPreview(client, msg)
+//            }
+//        }
+//        return true
+//    }
 }

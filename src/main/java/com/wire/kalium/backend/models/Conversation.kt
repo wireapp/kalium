@@ -18,22 +18,10 @@
 package com.wire.kalium.backend.models
 
 import java.util.UUID
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.annotation.JsonInclude
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-@JsonInclude(JsonInclude.Include.NON_NULL)
-class Conversation {
-    @JsonProperty
-    var id: UUID? = null
-
-    @JsonProperty
-    var name: String? = null
-
-    @JsonProperty
-    var creator: UUID? = null
-
-    @JsonProperty
-    lateinit var members: MutableList<Member>
-}
+data class Conversation(
+    val id: UUID,
+    val name: String,
+    val creator: UUID,
+    val members: List<ConversationMember>
+)

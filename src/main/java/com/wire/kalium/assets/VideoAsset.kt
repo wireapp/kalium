@@ -24,7 +24,7 @@ import com.google.protobuf.ByteString
 import com.waz.model.Messages
 
 class VideoAsset(messageId: UUID, mimeType: String, bytes: ByteArray) : AssetBase(messageId, mimeType, bytes) {
-    override fun createGenericMsg(): GenericMessage? {
+    override fun createGenericMsg(): GenericMessage {
         val remote = RemoteData.newBuilder()
             .setOtrKey(ByteString.copyFrom(otrKey))
             .setSha256(ByteString.copyFrom(sha256))

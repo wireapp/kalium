@@ -17,20 +17,27 @@
 //
 package com.wire.kalium.backend.models
 
-import java.util.UUID
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.annotation.JsonInclude
-
-@JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown = true)
-class Member {
-    @JsonProperty
-    var id: UUID? = null
-
-    @JsonProperty
-    var status: Int? = null
-
-    @JsonProperty
-    var service: Service? = null
+sealed class ConversationMember {
+    abstract val userId: String
 }
+
+data class OtherMember(
+    override val userId: String,
+    val service: ServiceReferenceResponse?
+) : ConversationMember()
+
+data class SelfMember(
+    override val userId: String,
+    val service: ServiceReferenceResponse?,
+    val hiddenReference: String?,
+    val otrMutedReference: String?,
+    val hidden: Boolean?,
+    val otrArchived: Boolean?,
+    val otrMuted: Boolean?,
+    val otrArchiveReference: String?
+) : ConversationMember()
+
+data class ServiceReferenceResponse(
+    val id: String,
+    val provider: String
+)

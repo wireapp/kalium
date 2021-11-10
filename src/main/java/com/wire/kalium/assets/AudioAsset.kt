@@ -27,7 +27,7 @@ class AudioAsset : AssetBase {
     constructor(messageId: UUID, mimeType: String, bytes: ByteArray?) : super(messageId, mimeType, bytes) {}
     constructor(bytes: ByteArray?, preview: AudioPreview) : super(preview.messageId, preview.mimeType, bytes) {}
 
-    override fun createGenericMsg(): GenericMessage? {
+    override fun createGenericMsg(): GenericMessage {
         val remote = RemoteData.newBuilder()
             .setOtrKey(ByteString.copyFrom(otrKey))
             .setSha256(ByteString.copyFrom(sha256))

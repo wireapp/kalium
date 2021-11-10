@@ -62,7 +62,7 @@ object Util {
     }
 
     @Throws(Exception::class)
-    fun decrypt(key: ByteArray?, encrypted: ByteArray?): ByteArray? {
+    fun decrypt(key: ByteArray, encrypted: ByteArray): ByteArray {
         val `is` = ByteArrayInputStream(encrypted)
         val iv = ByteArray(16)
         `is`.read(iv)
@@ -88,49 +88,50 @@ object Util {
     }
 
     @Throws(IOException::class)
-    fun readFile(f: File?): String? {
-        FileInputStream(f).use { fis ->
-            val data = ByteArray(f.length() as Int)
+    fun readFile(f: File?): String? = f?.let {
+        FileInputStream(it).use { fis ->
+            val data = ByteArray(it.length() as Int)
             fis.read(data)
             return String(data, StandardCharsets.UTF_8)
         }
     }
 
     @Throws(IOException::class)
-    fun writeLine(line: String?, file: File?) {
-        BufferedWriter(FileWriter(file)).use { bw -> bw.write(line) }
-    }
+    fun writeLine(line: String?, file: File?) = BufferedWriter(FileWriter(file)).use { bw -> bw.write(line) }
+
 
     @Throws(NoSuchAlgorithmException::class)
-    fun calcMd5(bytes: ByteArray?): String? {
+    fun calcMd5(bytes: ByteArray?): String? = bytes?.let {
         val md = MessageDigest.getInstance("MD5")
-        md.update(bytes, 0, bytes.size)
+        md.update(bytes, 0, it.size)
         val hash = md.digest()
         val byteArray = Base64.getEncoder().encode(hash)
         return String(byteArray)
     }
 
-    fun digest(md: MessageDigest?, bytes: ByteArray?): String? {
-        md.update(bytes, 0, bytes.size)
-        val hash = md.digest()
-        val byteArray = Base64.getEncoder().encode(hash)
-        return String(byteArray)
+    fun digest(md: MessageDigest?, bytes: ByteArray?): String? = md?.let { messageDigest ->
+        bytes?.let {
+            messageDigest.update(it, 0, it.size)
+            val hash = messageDigest.digest()
+            val byteArray = Base64.getEncoder().encode(hash)
+            return String(byteArray)
+        }
     }
 
     @Throws(NoSuchAlgorithmException::class, InvalidKeyException::class)
     fun getHmacSHA1(payload: String?, secret: String?): String? {
         val hmac = Mac.getInstance(HMAC_SHA_1)
-        hmac.init(SecretKeySpec(secret.toByteArray(StandardCharsets.UTF_8), HMAC_SHA_1))
-        val bytes = hmac.doFinal(payload.toByteArray(StandardCharsets.UTF_8))
+        hmac.init(SecretKeySpec(secret?.toByteArray(StandardCharsets.UTF_8), HMAC_SHA_1))
+        val bytes = hmac.doFinal(payload?.toByteArray(StandardCharsets.UTF_8))
         return String.format("%040x", BigInteger(1, bytes))
     }
 
     @Throws(IOException::class)
-    fun toByteArray(input: InputStream?): ByteArray? {
+    fun toByteArray(input: InputStream?): ByteArray? = input?.let { inputStream ->
         ByteArrayOutputStream().use { output ->
             var n: Int
             val buffer = ByteArray(1024 * 4)
-            while (-1 != input.read(buffer).also { n = it }) {
+            while (-1 != inputStream.read(buffer).also { n = it }) {
                 output.write(buffer, 0, n)
             }
             return output.toByteArray()
@@ -144,17 +145,15 @@ object Util {
         return token1 == token2
     }
 
-    fun extractToken(auth: String?): String? {
-        val split: Array<String?> = auth.split(" ").toTypedArray()
+    fun extractToken(auth: String?): String? = auth?.let { authString ->
+        val split: Array<String?> = authString.split(" ").toTypedArray()
         return if (split.size == 1) split[0] else split[1]
     }
 
     @Throws(IOException::class)
-    fun extractMimeType(imageData: ByteArray?): String? {
-        ByteArrayInputStream(imageData).use { input ->
-            val contentType = URLConnection.guessContentTypeFromStream(input)
-            return contentType ?: "image/xyz"
-        }
+    fun extractMimeType(imageData: ByteArray?): String? = ByteArrayInputStream(imageData).use { input ->
+        val contentType = URLConnection.guessContentTypeFromStream(input)
+        return contentType ?: "application/octet-stream"
     }
 
     @Throws(IOException::class)

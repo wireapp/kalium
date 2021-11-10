@@ -49,7 +49,7 @@ class Picture : AssetBase {
 
     constructor(imageData: ByteArray?) : this(imageData, Util.extractMimeType(imageData) ?: "application/octet-stream", ) { }
 
-    override fun createGenericMsg(): GenericMessage? {
+    override fun createGenericMsg(): GenericMessage {
         val ret = GenericMessage.newBuilder()
             .setMessageId(messageId.toString())
         val metaData = ImageMetaData.newBuilder()
