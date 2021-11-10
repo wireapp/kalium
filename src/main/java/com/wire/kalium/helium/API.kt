@@ -20,10 +20,13 @@ package com.wire.kalium.helium
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.wire.kalium.WireAPI
+import com.wire.kalium.assets.Asset
 import com.wire.kalium.backend.models.Conversation
+import com.wire.kalium.backend.models.ConversationMember
 import com.wire.kalium.backend.models.Service
 import com.wire.kalium.backend.models.User
 import com.wire.kalium.exceptions.HttpException
+import com.wire.kalium.helium.models.Connection
 import com.wire.kalium.models.AssetKey
 import com.wire.kalium.models.otr.*
 import com.wire.kalium.tools.Util
@@ -51,69 +54,77 @@ open class API(client: Client, convId: UUID?, token: String) : LoginClient(clien
     private val convId: String?
 
     @Throws(HttpException::class)
-    open fun sendMessage(msg: OtrMessage?, vararg ignoreMissing: Any?): Devices? {
+    override fun sendMessage(msg: OtrMessage, vararg ignoreMissing: Any?): Devices {
         val response: Response = conversationsPath.path(convId).path("otr/messages").queryParam("ignore_missing", ignoreMissing).request(MediaType.APPLICATION_JSON).header(HttpHeaders.AUTHORIZATION, bearer(token)).post(Entity.entity(msg, MediaType.APPLICATION_JSON))
         val statusCode: Int = response.getStatus()
         if (statusCode == 412) {
             return response.readEntity(Devices::class.java)
         } else if (statusCode >= 400) {
-            throw HttpException(response.getStatusInfo().getReasonPhrase(), response.getStatus())
+            throw HttpException(response.statusInfo.reasonPhrase, response.status)
         }
         response.close()
         return Devices()
     }
 
     @Throws(HttpException::class)
-    fun sendPartialMessage(msg: OtrMessage?, userId: UUID?): Devices {
+    override fun sendPartialMessage(msg: OtrMessage, userId: UUID): Devices {
         val response: Response = conversationsPath.path(convId).path("otr/messages").queryParam("report_missing", userId).request(MediaType.APPLICATION_JSON).header(HttpHeaders.AUTHORIZATION, bearer(token)).post(Entity.entity(msg, MediaType.APPLICATION_JSON))
         val statusCode: Int = response.getStatus()
         if (statusCode == 412) {
             return response.readEntity(Devices::class.java)
         } else if (statusCode >= 400) {
-            throw HttpException(response.getStatusInfo().getReasonPhrase(), response.getStatus())
+            throw HttpException(response.statusInfo.reasonPhrase, response.status)
         }
         response.close()
         return Devices()
     }
 
-    open fun getPreKeys(missing: Missing): PreKeys? {
-        return if (missing.isEmpty()) PreKeys() else usersPath.path("prekeys").request(MediaType.APPLICATION_JSON).header(HttpHeaders.AUTHORIZATION, bearer(token)).accept(MediaType.APPLICATION_JSON).post(Entity.entity(missing, MediaType.APPLICATION_JSON), PreKeys::class.java)
+    override fun getPreKeys(missing: Missing): PreKeys {
+        return if (missing.isEmpty()) {
+            PreKeys()
+        } else {
+            usersPath.path("prekeys")
+                    .request(MediaType.APPLICATION_JSON)
+                    .header(HttpHeaders.AUTHORIZATION, bearer(token))
+                    .accept(MediaType.APPLICATION_JSON)
+                    .post(Entity.entity(missing, MediaType.APPLICATION_JSON), PreKeys::class.java)
+        }
     }
 
     @Throws(HttpException::class)
-    fun downloadAsset(assetKey: String?, assetToken: String?): ByteArray {
+    override fun downloadAsset(assetId: String, assetToken: String?): ByteArray {
         val req: Invocation.Builder = assetsPath
-                .path(assetKey)
+                .path(assetId)
                 .queryParam("access_token", token)
                 .request()
         if (assetToken != null) req.header("Asset-Token", assetToken)
         val response: Response = req.get()
-        if (response.getStatus() >= 400) {
-            val log = java.lang.String.format("%s. AssetId: %s", response.readEntity(String::class.java), assetKey)
-            throw HttpException(log, response.getStatus())
+        if (response.status >= 400) {
+            val log = java.lang.String.format("%s. AssetId: %s", response.readEntity(String::class.java), assetId)
+            throw HttpException(log, response.status)
         }
         return response.readEntity(ByteArray::class.java)
     }
 
     @Throws(HttpException::class)
-    fun acceptConnection(user: UUID) {
-        val connection: com.wire.helium.models.Connection = com.wire.helium.models.Connection()
-        connection.setStatus("accepted")
+    override fun acceptConnection(user: UUID) {
+        val connection: Connection = Connection()
+        connection.status = "accepted"
         val response: Response = connectionsPath.path(user.toString()).request(MediaType.APPLICATION_JSON).header(HttpHeaders.AUTHORIZATION, bearer(token)).put(Entity.entity(connection, MediaType.APPLICATION_JSON))
-        if (response.getStatus() >= 400) {
-            throw HttpException(response.readEntity(String::class.java), response.getStatus())
+        if (response.status >= 400) {
+            throw HttpException(response.readEntity(String::class.java), response.status)
         }
         response.close()
     }
 
     @Throws(Exception::class)
-    fun uploadAsset(asset: IAsset): AssetKey {
+    override fun uploadAsset(asset: Asset): AssetKey {
         val sb = StringBuilder()
 
         // Part 1
         val strMetadata = java.lang.String.format("{\"public\": %s, \"retention\": \"%s\"}",
-                asset.isPublic(),
-                asset.getRetention())
+                asset.public,
+                asset.retention)
         sb.append("--frontier\r\n")
         sb.append("Content-Type: application/json; charset=utf-8\r\n")
         sb.append("Content-Length: ")
@@ -125,19 +136,19 @@ open class API(client: Client, convId: UUID?, token: String) : LoginClient(clien
         // Part 2
         sb.append("--frontier\r\n")
         sb.append("Content-Type: ")
-                .append(asset.getMimeType())
+                .append(asset.mimeType)
                 .append("\r\n")
         sb.append("Content-Length: ")
-                .append(asset.getEncryptedData().length)
+                .append(asset.encryptedData.size)
                 .append("\r\n")
         sb.append("Content-MD5: ")
-                .append(Util.calcMd5(asset.getEncryptedData()))
+                .append(Util.calcMd5(asset.encryptedData))
                 .append("\r\n\r\n")
 
         // Complete
         val os = ByteArrayOutputStream()
         os.write(sb.toString().toByteArray(StandardCharsets.UTF_8))
-        os.write(asset.getEncryptedData())
+        os.write(asset.encryptedData)
         os.write("\r\n--frontier--\r\n".toByteArray(StandardCharsets.UTF_8))
         val response: Response = assetsPath
                 .request(MediaType.APPLICATION_JSON_TYPE)
@@ -146,56 +157,52 @@ open class API(client: Client, convId: UUID?, token: String) : LoginClient(clien
         return response.readEntity(AssetKey::class.java)
     }
 
-    val conversation: Conversation
-        get() {
-            val conv: _Conv = conversationsPath.path(convId).request().header(HttpHeaders.AUTHORIZATION, bearer(token)).get(_Conv::class.java)
-            val ret = Conversation()
-            ret.name = conv.name
-            ret.id = conv.id
-            ret.members = conv.members!!.others
-            return ret
-        }
-
-    @Throws(HttpException::class)
-    fun deleteConversation(teamId: UUID): Boolean {
-        val response: Response = teamsPath.path(teamId.toString()).path("conversations").path(convId).request().header(HttpHeaders.AUTHORIZATION, bearer(token)).delete()
-        if (response.getStatus() >= 400) {
-            throw HttpException(response.readEntity(String::class.java), response.getStatus())
-        }
-        return response.getStatus() === 200
+    override fun getConversation(): Conversation {
+        val conv: _Conv = conversationsPath.path(convId).request().header(HttpHeaders.AUTHORIZATION, bearer(token)).get(_Conv::class.java)
+        return Conversation(name = conv.name!!, id = conv.id!!, members = conv.members!!.others!!)
     }
 
     @Throws(HttpException::class)
-    fun addService(serviceId: UUID, providerId: UUID): User {
+    override fun deleteConversation(teamId: UUID): Boolean {
+        val response: Response = teamsPath.path(teamId.toString()).path("conversations").path(convId).request().header(HttpHeaders.AUTHORIZATION, bearer(token)).delete()
+        if (response.status >= 400) {
+            throw HttpException(response.readEntity(String::class.java), response.status)
+        }
+        return response.status === 200
+    }
+
+    @Throws(HttpException::class)
+    override fun addService(serviceId: UUID, providerId: UUID): User {
         val service = _Service()
         service.service = serviceId
         service.provider = providerId
         val response: Response = conversationsPath.path(convId).path("bots").request().accept(MediaType.APPLICATION_JSON).header(HttpHeaders.AUTHORIZATION, bearer(token)).post(Entity.entity(service, MediaType.APPLICATION_JSON))
         if (response.getStatus() >= 400) {
             val msg: String = response.readEntity(String::class.java)
-            throw HttpException(msg, response.getStatus())
+            throw HttpException(msg, response.status)
         }
+
+        // TODO: if the service is in the response why do we need to change it
         val user: User = response.readEntity(User::class.java)
-        user.service = Service()
-        user.service.id = serviceId
-        user.service.providerId = providerId
+        user.service = Service(id = serviceId, provider = providerId)
+
         return user
     }
 
     @Throws(HttpException::class)
-    fun addParticipants(vararg userIds: UUID?): User {
+    override fun addParticipants(vararg userIds: UUID): User {
         val newConv = _NewConv()
-        newConv.users = Arrays.asList(*userIds)
+        newConv.users = listOf(*userIds)
         val response: Response = conversationsPath.path(convId).path("members").request().header(HttpHeaders.AUTHORIZATION, bearer(token)).post(Entity.entity(newConv, MediaType.APPLICATION_JSON))
-        if (response.getStatus() >= 400) {
+        if (response.status >= 400) {
             val msg: String = response.readEntity(String::class.java)
-            throw HttpException(msg, response.getStatus())
+            throw HttpException(msg, response.status)
         }
         return response.readEntity(User::class.java)
     }
 
     @Throws(HttpException::class)
-    fun createConversation(name: String?, teamId: UUID?, users: List<UUID>?): Conversation {
+    override fun createConversation(name: String, teamId: UUID, users: MutableList<UUID>): Conversation {
         val newConv = _NewConv()
         newConv.name = name
         newConv.users = users
@@ -204,19 +211,17 @@ open class API(client: Client, convId: UUID?, token: String) : LoginClient(clien
             newConv.team!!.teamId = teamId
         }
         val response: Response = conversationsPath.request(MediaType.APPLICATION_JSON).header(HttpHeaders.AUTHORIZATION, bearer(token)).post(Entity.entity(newConv, MediaType.APPLICATION_JSON))
-        if (response.getStatus() >= 400) {
-            throw HttpException(response.readEntity(String::class.java), response.getStatus())
+        if (response.status >= 400) {
+            throw HttpException(response.readEntity(String::class.java), response.status)
         }
         val conv: _Conv = response.readEntity(_Conv::class.java)
-        val ret = Conversation()
-        ret.name = conv.name
-        ret.id = conv.id
-        ret.members = conv.members!!.others
+        // TODO: make sure this are not null
+        val ret = Conversation(id = conv.id!!, name = conv.name!!, members = conv.members!!.others!!)
         return ret
     }
 
     @Throws(HttpException::class)
-    fun createOne2One(teamId: UUID?, userId: UUID): Conversation {
+    override fun createOne2One(teamId: UUID, userId: UUID): Conversation {
         val newConv = _NewConv()
         newConv.users = listOf(userId)
         if (teamId != null) {
@@ -228,19 +233,16 @@ open class API(client: Client, convId: UUID?, token: String) : LoginClient(clien
                 .request(MediaType.APPLICATION_JSON)
                 .header(HttpHeaders.AUTHORIZATION, bearer(token))
                 .post(Entity.entity(newConv, MediaType.APPLICATION_JSON))
-        if (response.getStatus() >= 400) {
+        if (response.status >= 400) {
             throw HttpException(response.readEntity(String::class.java), response.getStatus())
         }
         val conv: _Conv = response.readEntity(_Conv::class.java)
-        val ret = Conversation()
-        ret.name = conv.name
-        ret.id = conv.id
-        ret.members = conv.members!!.others
+        val ret = Conversation(id = conv.id!!, name = conv.name!!, members = conv.members!!.others!!)
         return ret
     }
 
     @Throws(HttpException::class)
-    fun leaveConversation(user: UUID) {
+    override fun leaveConversation(user: UUID) {
         val response: Response = conversationsPath
                 .path(convId)
                 .path("members")
@@ -248,67 +250,67 @@ open class API(client: Client, convId: UUID?, token: String) : LoginClient(clien
                 .request(MediaType.APPLICATION_JSON)
                 .header(HttpHeaders.AUTHORIZATION, bearer(token))
                 .delete()
-        if (response.getStatus() >= 400) {
-            throw HttpException(response.readEntity(String::class.java), response.getStatus())
+        if (response.status >= 400) {
+            throw HttpException(response.readEntity(String::class.java), response.status)
         }
     }
 
-    fun uploadPreKeys(preKeys: ArrayList<PreKey?>?) {
+    override fun uploadPreKeys(preKeys: ArrayList<PreKey>) {
         usersPath.path("prekeys").request(MediaType.APPLICATION_JSON).header(HttpHeaders.AUTHORIZATION, bearer(token)).accept(MediaType.APPLICATION_JSON).post(Entity.entity(preKeys, MediaType.APPLICATION_JSON))
     }
 
-    fun getAvailablePrekeys(clientId: String?): ArrayList<Int> {
-        return clientsPath.path(clientId).path("prekeys").request().header(HttpHeaders.AUTHORIZATION, bearer(token)).accept(MediaType.APPLICATION_JSON).get(object : GenericType() {})
+    // FIXME: GenericType
+    override fun getAvailablePrekeys(client: String): ArrayList<Int> {
+        return clientsPath.path(client).path("prekeys").request().header(HttpHeaders.AUTHORIZATION, bearer(token)).accept(MediaType.APPLICATION_JSON).get(object : GenericType() {})
     }
 
-    fun getUsers(ids: Collection<UUID?>): Collection<User> {
+    override fun getUsers(ids: MutableCollection<UUID>): MutableCollection<User> {
         return usersPath.queryParam("ids", ids.toTypedArray()).request(MediaType.APPLICATION_JSON).header(HttpHeaders.AUTHORIZATION, bearer(token)).get(object : GenericType() {})
     }
 
     @Throws(HttpException::class)
-    fun getUser(userId: UUID): User {
+    override fun getUser(userId: UUID): User {
         val response: Response = usersPath.path(userId.toString()).request(MediaType.APPLICATION_JSON).header(HttpHeaders.AUTHORIZATION, bearer(token)).get()
-        if (response.getStatus() !== 200) {
-            throw HttpException(response.readEntity(String::class.java), response.getStatus())
+        if (response.status !== 200) {
+            throw HttpException(response.readEntity(String::class.java), response.status)
         }
         return response.readEntity(User::class.java)
     }
 
     @Throws(HttpException::class)
-    fun getUserId(handle: String?): UUID? {
+    override fun getUserId(handle: String): UUID {
         val response: Response = usersPath.path("handles").path(handle).request(MediaType.APPLICATION_JSON).header(HttpHeaders.AUTHORIZATION, bearer(token)).get()
-        if (response.getStatus() !== 200) {
+        if (response.status !== 200) {
             throw HttpException(response.readEntity(String::class.java), response.getStatus())
         }
         val teamMember: _TeamMember = response.readEntity(_TeamMember::class.java)
-        return teamMember.user
+        return teamMember.user!!
     }
 
-    fun hasDevice(userId: UUID, clientId: String?): Boolean {
+    override fun hasDevice(userId: UUID, clientId: String): Boolean {
         val response: Response = usersPath.path(userId.toString()).path("clients").path(clientId).request(MediaType.APPLICATION_JSON).header(HttpHeaders.AUTHORIZATION, bearer(token)).get()
         response.close()
-        return response.getStatus() === 200
+        return response.status === 200
     }
 
-    val self: User
-        get() = selfPath.request(MediaType.APPLICATION_JSON).header(HttpHeaders.AUTHORIZATION, bearer(token)).get(User::class.java)
+    override fun getSelf(): User = selfPath.request(MediaType.APPLICATION_JSON).header(HttpHeaders.AUTHORIZATION, bearer(token)).get(User::class.java)
 
-    @get:Throws(HttpException::class)
-    val team: UUID?
-        get() {
-            val response: Response = teamsPath
-                    .request(MediaType.APPLICATION_JSON)
-                    .header(HttpHeaders.AUTHORIZATION, bearer(token))
-                    .accept(MediaType.APPLICATION_JSON)
-                    .get()
-            if (response.getStatus() !== 200) {
-                throw HttpException(response.readEntity(String::class.java), response.getStatus())
-            }
-            val teams: _Teams = response.readEntity(_Teams::class.java)
-            return if (teams.teams!!.isEmpty()) null else teams.teams!![0].id
+    @Throws(HttpException::class)
+    override fun getTeam(): UUID? {
+        val response: Response = teamsPath
+                .request(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, bearer(token))
+                .accept(MediaType.APPLICATION_JSON)
+                .get()
+        if (response.status !== 200) {
+            throw HttpException(response.readEntity(String::class.java), response.status)
         }
+        val teams: _Teams = response.readEntity(_Teams::class.java)
+        return if (teams.teams!!.isEmpty()) null else teams.teams!![0].id
+    }
 
-    fun getTeamMembers(teamId: UUID): Collection<UUID?> {
+
+    override fun getTeamMembers(teamId: UUID): MutableCollection<UUID> {
         val team: _Team = teamsPath
                 .path(teamId.toString())
                 .path("members")
@@ -334,7 +336,7 @@ open class API(client: Client, convId: UUID?, token: String) : LoginClient(clien
     @JsonIgnoreProperties(ignoreUnknown = true)
     class _Members {
         @JsonProperty
-        var others: List<Member>? = null
+        var others: List<ConversationMember>? = null
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
