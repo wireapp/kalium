@@ -29,7 +29,14 @@ class Payload {
     /**
      * TODO: Replace String with something type-safe.
      *   Maybe an Enum? What are the possible values of this status? Bad discoverability too.
-     *   Currently known: pending, accepted
+     *   Currently known:
+     *   "conversation.otr-message-add"
+    "conversation.member-join"
+    "conversation.member-leave"
+    "conversation.delete"
+    "conversation.create"
+    "conversation.rename"
+    "user.connection"
      **/
     @JsonProperty
     lateinit var type: String
