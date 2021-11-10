@@ -15,10 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 //
-package com.wire.helium.models
+package com.wire.kalium.helium.models
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.wire.xenon.models.otr.PreKey
+import com.wire.kalium.models.otr.PreKey
 
 class NewClient {
     @JsonProperty("lastkey")

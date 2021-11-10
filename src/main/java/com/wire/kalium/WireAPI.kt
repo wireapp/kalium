@@ -49,7 +49,7 @@ interface WireAPI {
     open fun getUserId(handle: String): UUID
     open fun hasDevice(userId: UUID, clientId: String): Boolean
     @Throws(HttpException::class)
-    open fun getTeam(): UUID
+    open fun getTeam(): UUID?
     open fun getTeamMembers(teamId: UUID): MutableCollection<UUID>
     @Throws(Exception::class)
     open fun acceptConnection(user: UUID)

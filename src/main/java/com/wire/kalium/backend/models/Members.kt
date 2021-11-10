@@ -17,6 +17,7 @@
 //
 package com.wire.kalium.backend.models
 
+// TODO: rename file
 sealed class ConversationMember {
     abstract val userId: String
 }

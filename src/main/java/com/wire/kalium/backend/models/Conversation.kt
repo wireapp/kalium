@@ -22,6 +22,7 @@ import java.util.UUID
 data class Conversation(
     val id: UUID,
     val name: String,
-    val creator: UUID,
     val members: List<ConversationMember>
-)
+) {
+    var creator: UUID? = null
+}

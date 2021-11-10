@@ -24,8 +24,7 @@ data class User(
         val name: String,
         val accent_id: Int,
         val handle: String,
-        val service: Service,
+        var service: Service? = null, // why null ? see API.kt line
         val assets: ArrayList<Asset?>,
         val email: String //maybe we can get nulls here
-
 )
