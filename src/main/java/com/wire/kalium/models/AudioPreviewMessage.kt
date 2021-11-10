@@ -36,20 +36,30 @@ class AudioPreviewMessage @JsonCreator constructor(
         @JsonProperty("mimeType") mimeType: String,
         @JsonProperty("size") size: Long,
         @JsonProperty("name") name: String
-) : OriginMessage(mimeType = mimeType, name = name, size = size, eventId = eventId, msgId = messageId, conversationId = convId, clientId = clientId, userId = userId, time = time) {
+) : OriginMessage(
+        mimeType = mimeType,
+        name = name,
+        size = size,
+        eventId = eventId,
+        msgId = messageId,
+        conversationId = convId,
+        clientId = clientId,
+        userId = userId,
+        time = time
+) {
 
     constructor(msg: MessageBase, original: Original) :
             this(
                     duration = original.audio.durationInMillis,
                     levels = original.audio.normalizedLoudness.toByteArray(),
+                    mimeType = original.mimeType,
+                    size = original.size,
+                    name = original.name,
                     eventId = msg.eventId,
                     messageId = msg.messageId,
                     convId = msg.conversationId,
                     clientId = msg.clientId,
                     userId = msg.userId,
-                    time = msg.time,
-                    mimeType = original.mimeType,
-                    size = original.size,
-                    name = original.name
+                    time = msg.time
             )
 }

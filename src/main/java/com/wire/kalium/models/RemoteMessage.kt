@@ -22,74 +22,29 @@ import com.waz.model.Messages.Asset.RemoteData
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonCreator
 
-class RemoteMessage : MessageBase {
-    @JsonProperty
-    private var assetId: String? = null
+class RemoteMessage @JsonCreator constructor(
+        @JsonProperty("assetId") val assetId: String,
+        @JsonProperty("assetToken") val assetToken: String,
+        @JsonProperty("otrKey") val otrKey: ByteArray,
+        @JsonProperty("sha256") val sha256: ByteArray,
+        @JsonProperty("eventId") eventId: UUID,
+        @JsonProperty("messageId") messageId: UUID,
+        @JsonProperty("conversationId") convId: UUID,
+        @JsonProperty("clientId") clientId: String,
+        @JsonProperty("userId") userId: UUID,
+        @JsonProperty("time") time: String
+) : MessageBase(eventId = eventId, messageId = messageId, conversationId = convId, clientId = clientId, userId = userId, time = time) {
 
-    @JsonProperty
-    private var assetToken: String? = null
-
-    @JsonProperty
-    private var otrKey: ByteArray?
-
-    @JsonProperty
-    private var sha256: ByteArray?
-
-    @JsonCreator
-    constructor(
-        @JsonProperty("eventId") eventId: UUID?,
-        @JsonProperty("messageId") messageId: UUID?,
-        @JsonProperty("conversationId") convId: UUID?,
-        @JsonProperty("clientId") clientId: String?,
-        @JsonProperty("userId") userId: UUID?,
-        @JsonProperty("time") time: String?,
-        @JsonProperty("assetId") assetId: String?,
-        @JsonProperty("assetToken") assetToken: String?,
-        @JsonProperty("otrKey") otrKey: ByteArray?,
-        @JsonProperty("sha256") sha256: ByteArray?
-    ) : super(eventId, messageId, convId, clientId, userId, time) {
-        setAssetId(assetId)
-        setAssetToken(assetToken)
-        setSha256(sha256)
-        setOtrKey(otrKey)
-    }
-
-    constructor(msg: MessageBase?, uploaded: RemoteData?) : super(msg) {
-        setAssetId(uploaded.getAssetId())
-        setAssetToken(uploaded.getAssetToken())
-        setSha256(uploaded.getSha256().toByteArray())
-        setOtrKey(uploaded.getOtrKey().toByteArray())
-    }
-
-    fun getAssetToken(): String? {
-        return assetToken
-    }
-
-    fun setAssetToken(assetToken: String?) {
-        this.assetToken = assetToken
-    }
-
-    fun getOtrKey(): ByteArray? {
-        return otrKey
-    }
-
-    fun setOtrKey(otrKey: ByteArray?) {
-        this.otrKey = otrKey
-    }
-
-    fun getAssetId(): String? {
-        return assetId
-    }
-
-    fun setAssetId(assetId: String?) {
-        this.assetId = assetId
-    }
-
-    fun getSha256(): ByteArray? {
-        return sha256
-    }
-
-    fun setSha256(sha256: ByteArray?) {
-        this.sha256 = sha256
-    }
+    constructor(msg: MessageBase, uploaded: RemoteData) : this(
+            assetId = uploaded.assetId,
+            assetToken = uploaded.assetToken,
+            otrKey = uploaded.otrKey.toByteArray(),
+            sha256 = uploaded.sha256.toByteArray(),
+            eventId = msg.eventId,
+            messageId = msg.messageId,
+            convId = msg.conversationId,
+            clientId = msg.clientId,
+            userId = msg.userId,
+            time = msg.time
+    )
 }

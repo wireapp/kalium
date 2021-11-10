@@ -26,55 +26,42 @@ import com.fasterxml.jackson.annotation.JsonInclude
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-class PhotoPreviewMessage : OriginMessage {
-    @JsonProperty
-    private var height = 0
-
-    @JsonProperty
-    private var width = 0
-
-    @JsonCreator
-    constructor(
-        @JsonProperty("eventId") eventId: UUID?,
-        @JsonProperty("messageId") messageId: UUID?,
-        @JsonProperty("conversationId") convId: UUID?,
-        @JsonProperty("clientId") clientId: String?,
-        @JsonProperty("userId") userId: UUID?,
-        @JsonProperty("time") time: String?,
-        @JsonProperty("mimeType") mimeType: String?,
+class PhotoPreviewMessage @JsonCreator constructor(
+        // TODO: dimension data class ?
+        @JsonProperty("width") val height: Int,
+        @JsonProperty("height") val width: Int,
+        @JsonProperty("eventId") eventId: UUID,
+        @JsonProperty("messageId") messageId: UUID,
+        @JsonProperty("conversationId") convId: UUID,
+        @JsonProperty("clientId") clientId: String,
+        @JsonProperty("userId") userId: UUID,
+        @JsonProperty("time") time: String,
+        @JsonProperty("mimeType") mimeType: String,
         @JsonProperty("size") size: Long,
-        @JsonProperty("name") name: String?,
-        @JsonProperty("width") width: Int,
-        @JsonProperty("height") height: Int
-    ) : super(eventId, messageId, convId, clientId, userId, time) {
-        setMimeType(mimeType)
-        setName(name)
-        setSize(size)
-        setWidth(width)
-        setHeight(height)
-    }
+        @JsonProperty("name") name: String
+) : OriginMessage(
+        mimeType = mimeType,
+        name = name,
+        size = size,
+        eventId = eventId,
+        msgId = messageId,
+        conversationId = convId,
+        clientId = clientId,
+        userId = userId,
+        time = time
+) {
 
-    constructor(msg: MessageBase?, original: Original?) : super(msg) {
-        mimeType = original.getMimeType()
-        size = original.getSize()
-        name = original.getName()
-        setWidth(original.getImage().width)
-        setHeight(original.getImage().height)
-    }
-
-    fun getHeight(): Int {
-        return height
-    }
-
-    fun setHeight(height: Int) {
-        this.height = height
-    }
-
-    fun getWidth(): Int {
-        return width
-    }
-
-    fun setWidth(width: Int) {
-        this.width = width
-    }
+    constructor(msg: MessageBase, original: Original) : this(
+            width = original.video.width,
+            height = original.video.height,
+            size = original.size,
+            mimeType = original.mimeType,
+            name = original.name,
+            eventId = msg.eventId,
+            messageId = msg.messageId,
+            convId = msg.conversationId,
+            clientId = msg.clientId,
+            userId = msg.userId,
+            time = msg.time
+    )
 }

@@ -1,6 +1,6 @@
 //
 // Wire
-// Copyright (C) 2016 Wire Swiss GmbH
+// Copyright (C) 2021 Wire Swiss GmbH
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -142,25 +142,17 @@ abstract class CryptoBase : Crypto {
     /**
      * Closes CryptoBox object. After this method is invoked no more operations on this object can be done
      */
-    override fun close() {
-        box().close()
-    }
+    override fun close() = box().close()
 
-    override fun isClosed(): Boolean {
-        return box().isClosed()
-    }
+    override fun isClosed(): Boolean = box().isClosed
 
     companion object {
-        private fun toPreKey(preKey: PreKey): com.wire.bots.cryptobox.PreKey {
-            return com.wire.bots.cryptobox.PreKey(preKey.id, Base64.getDecoder().decode(preKey.key))
-        }
+        private fun toPreKey(preKey: PreKey): com.wire.bots.cryptobox.PreKey =
+            com.wire.bots.cryptobox.PreKey(preKey.id, Base64.getDecoder().decode(preKey.key))
 
-        private fun toPreKey(preKey: com.wire.bots.cryptobox.PreKey): PreKey {
-            val ret = PreKey()
-            ret.id = preKey.id
-            ret.key = Base64.getEncoder().encodeToString(preKey.data)
-            return ret
-        }
+
+        private fun toPreKey(preKey: com.wire.bots.cryptobox.PreKey): PreKey =
+            PreKey(preKey.id,Base64.getEncoder().encodeToString(preKey.data))
 
         private fun createId(userId: UUID?, clientId: String?): String? {
             return String.format("%s_%s", userId, clientId)

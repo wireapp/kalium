@@ -21,7 +21,7 @@ class GenericMessageProcessorTest {
     @Test
     fun testLinkPreview() {
         val handler = MessageHandler()
-        val processor = GenericMessageProcessor(null, handler)
+        val processor = GenericMessageProcessor(getTestClient(), handler)
         val eventId = UUID.randomUUID()
         val messageId = UUID.randomUUID()
         val from = UUID.randomUUID()
@@ -62,7 +62,7 @@ class GenericMessageProcessorTest {
     @Test
     fun testAudioOrigin() {
         val handler = MessageHandler()
-        val processor = GenericMessageProcessor(null, handler)
+        val processor = GenericMessageProcessor(getTestClient(), handler)
         val eventId = UUID.randomUUID()
         val messageId = UUID.randomUUID()
         val from = UUID.randomUUID()
@@ -91,7 +91,7 @@ class GenericMessageProcessorTest {
     @Test
     fun testAudioUploaded() {
         val handler = MessageHandler()
-        val processor = GenericMessageProcessor(null, handler)
+        val processor = GenericMessageProcessor(getTestClient(), handler)
         val eventId = UUID.randomUUID()
         val messageId = UUID.randomUUID()
         val from = UUID.randomUUID()
@@ -114,8 +114,12 @@ class GenericMessageProcessorTest {
         processor.process(msgBase, builder.build())
     }
 
-    private class MessageHandler : MessageHandlerBase() {
-        override fun onLinkPreview(client: WireClient?, msg: LinkPreviewMessage?) {
+    private fun getTestClient(): WireClient{
+        TODO("Fake it? Mock it?")
+    }
+
+    private class MessageHandler : com.wire.kalium.MessageHandler {
+        override fun onLinkPreview(client: WireClient, msg: LinkPreviewMessage) {
             Assertions.assertEquals(TITLE, msg.getTitle())
             Assertions.assertEquals(SUMMARY, msg.getSummary())
             Assertions.assertEquals(URL, msg.getUrl())
@@ -128,8 +132,8 @@ class GenericMessageProcessorTest {
             Assertions.assertEquals(ASSET_TOKEN, msg.getAssetToken())
         }
 
-        override fun onAudioPreview(client: WireClient?, msg: AudioPreviewMessage?) {
-            Assertions.assertEquals(AUDIO_MIME_TYPE, msg.getMimeType())
+        override fun onAudioPreview(client: WireClient, msg: AudioPreviewMessage) {
+            Assertions.assertEquals(AUDIO_MIME_TYPE, msg.mimeType)
         }
     }
 
