@@ -17,27 +17,13 @@
 //
 package com.wire.kalium.backend.models
 
-import java.util.UUID
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import java.util.*
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-class User {
-    @JsonProperty
-    var id: UUID? = null
-
-    @JsonProperty
-    var name: String? = null
-
-    @JsonProperty("accent_id")
-    var accent = 0
-
-    @JsonProperty
-    var handle: String? = null
-
-    @JsonProperty
-    var service: Service? = null
-
-    @JsonProperty
-    var assets: ArrayList<Asset?>? = null
-}
+data class User(
+        val id: UUID,
+        val name: String,
+        val accent_id: Int,
+        val handle: String,
+        val service: Service,
+        val assets: ArrayList<Asset?>
+)

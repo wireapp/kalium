@@ -17,27 +17,13 @@
 //
 package com.wire.kalium.backend.models
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.annotation.JsonProperty
 import java.util.UUID
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-class NewBot {
-    @JsonProperty
-    lateinit var id: UUID
-
-    @JsonProperty
-    lateinit var client: String
-
-    @JsonProperty
-    lateinit var token: String
-
-    @JsonProperty
-    var locale: String? = null
-
-    @JsonProperty
-    lateinit var origin: User
-
-    @JsonProperty
-    lateinit var conversation: Conversation
-}
+data class NewBot(
+        val id: UUID,
+        val client: String,
+        val token: String,
+        val locale: String,
+        val origin: User,
+        val conversation: Conversation,
+)
