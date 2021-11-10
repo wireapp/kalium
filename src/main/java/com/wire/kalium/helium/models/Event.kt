@@ -15,11 +15,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 //
-package com.wire.helium.models
+package com.wire.kalium.helium.models
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.wire.xenon.backend.models.Payload
+import com.wire.kalium.backend.models.Payload
 import java.util.*
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -28,7 +28,7 @@ class Event {
     var id: UUID? = null
 
     @JsonProperty
-    var payload: Array<Payload>
+    var payload: Array<Payload>? = null
 
     @JsonProperty("transient")
     var trans = false
