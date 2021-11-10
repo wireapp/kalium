@@ -5,12 +5,13 @@ import com.waz.model.Messages.GenericMessage
 import com.wire.bots.cryptobox.CryptoException
 import com.wire.kalium.backend.GenericMessageProcessor
 import com.wire.kalium.backend.models.Conversation
-import com.wire.kalium.backend.models.Member
+import com.wire.kalium.backend.models.Data
 import com.wire.kalium.backend.models.Payload
 import com.wire.kalium.backend.models.SystemMessage
 import com.wire.kalium.models.MessageBase
 import com.wire.kalium.tools.Logger
-import java.util.*
+import java.util.Base64
+import java.util.UUID
 
 abstract class BaseEventProcessor(private val handler: MessageHandler) : EventProcessor {
 
@@ -50,13 +51,7 @@ abstract class BaseEventProcessor(private val handler: MessageHandler) : EventPr
         val connection = payload.connection
         val accepted = handler.onConnectRequest(client, connection.from, connection.to, connection.status)
         if (accepted) {
-            val conversation = Conversation()
-            conversation.id = connection.conversation
-            val systemMessage = SystemMessage()
-            systemMessage.id = eventId
-            systemMessage.from = connection.from
-            systemMessage.type = payload.type
-            systemMessage.conversation = conversation
+            val systemMessage = getSystemMessage(eventId, payload)
             handler.onNewConversation(client, systemMessage)
         }
     }
@@ -68,9 +63,6 @@ abstract class BaseEventProcessor(private val handler: MessageHandler) : EventPr
 
     private fun handleConversationCreatedEvent(eventId: UUID, payload: Payload, botId: UUID, client: WireClient) {
         val systemMessage = getSystemMessage(eventId, payload)
-        val self = Member()
-        self.id = botId
-        systemMessage.conversation.members.add(self)
         handler.onNewConversation(client, systemMessage)
     }
 
@@ -81,13 +73,13 @@ abstract class BaseEventProcessor(private val handler: MessageHandler) : EventPr
         handler.onBotRemoved(botId, systemMessage)
     }
 
-    private fun handleMemberLeaveEvent(eventId: UUID, payload: Payload, data: Payload.Data, botId: UUID, client: WireClient) {
+    private fun handleMemberLeaveEvent(eventId: UUID, payload: Payload, data: Data, botId: UUID, client: WireClient) {
+        val participants = data.user_ids
         val systemMessage = getSystemMessage(eventId, payload)
-        systemMessage.users = data.userIds
+            .copy(userIds = participants)
 
         // Check if this bot got removed from the conversation
-        val participants = data.userIds
-        if (participants.remove(botId)) {
+        if (participants.any { it == botId }) {
             handler.onBotRemoved(botId, systemMessage)
             return
         }
@@ -96,47 +88,45 @@ abstract class BaseEventProcessor(private val handler: MessageHandler) : EventPr
         }
     }
 
-    private fun handleMemberJoinEvent(data: Payload.Data, botId: UUID?, eventId: UUID, payload: Payload, client: WireClient) {
+    private fun handleMemberJoinEvent(data: Data, botId: UUID?, eventId: UUID, payload: Payload, client: WireClient) {
+        val participants = data.user_ids
+        val originalSystemMessage = getSystemMessage(eventId, payload)
+
         // Check if this bot got added to the conversation
-        val participants = data.userIds
-        if (participants.remove(botId)) {
-            val systemMessage = getSystemMessage(eventId, payload)
-            systemMessage.conversation = client.getConversation()
-            systemMessage.type = "conversation.create" //hack the type
+        if (participants.any { it == botId }) {
+            val systemMessage = originalSystemMessage.copy(
+                conversation = client.getConversation(),
+                type = "conversation.create" // hack the type
+            )
             handler.onNewConversation(client, systemMessage)
             return
         }
 
         // Check if we still have some prekeys available. Upload new prekeys if needed
         handler.validatePreKeys(client, participants.size)
-        val systemMessage = getSystemMessage(eventId, payload)
-        systemMessage.users = data.userIds
+        val systemMessage = originalSystemMessage.copy(userIds = data.user_ids)
         handler.onMemberJoin(client, systemMessage)
     }
 
-    private fun handleMessageAddEvent(payload: Payload, client: WireClient, eventId: UUID, data: Payload.Data) {
+    private fun handleMessageAddEvent(payload: Payload, client: WireClient, eventId: UUID, data: Data) {
         val from = payload.from
         val processor = GenericMessageProcessor(client, handler)
         val genericMessage = decrypt(client, payload)
         val messageId = UUID.fromString(genericMessage.messageId)
-        val msgBase = MessageBase(eventId, messageId, payload.convId, data.sender, from, payload.time)
+        val msgBase = MessageBase(eventId, messageId, payload.conversation, data.sender, from, payload.time)
         processor.process(msgBase, genericMessage)
         handler.onEvent(client, from, genericMessage)
     }
 
-    private fun getSystemMessage(eventId: UUID, payload: Payload): SystemMessage = SystemMessage().apply {
-        id = eventId
-        from = payload.from
-        time = payload.time
-        type = payload.type
-        convId = payload.convId
-        conversation = Conversation()
-        conversation.id = payload.convId
-        conversation.creator = payload.data.creator
-        conversation.name = payload.data.name
-        payload.data.members?.let {
-            conversation.members = it.others
-        }
+    private fun getSystemMessage(eventId: UUID, payload: Payload): SystemMessage {
+        val conversation = Conversation(
+            payload.conversation, payload.data.name, payload.data.creator,
+            payload.data.members.allMembers()
+        )
+        return SystemMessage(
+            eventId, payload.type, payload.time, payload.from,
+            conversation, conversation.id, conversation.members.map { UUID.fromString(it.userId) }
+        )
     }
 
     @Throws(CryptoException::class, InvalidProtocolBufferException::class)

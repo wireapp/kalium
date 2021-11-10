@@ -17,57 +17,60 @@
 //
 package com.wire.kalium.backend.models
 
-import java.util.*
+import java.util.UUID
 
 data class Payload(
-        /**
-         * TODO: Replace String with something type-safe.
-         *   Maybe an Enum? What are the possible values of this status? Bad discoverability too.
-         *   Currently known:
-         *   "conversation.otr-message-add"
-         *   "conversation.member-join"
-         *   "conversation.member-leave"
-         *   "conversation.delete"
-         *   "conversation.create"
-         *   "conversation.rename"
-         *   "user.connection"
-         **/
-        val type: String,
-        val conversation: UUID,
-        val from: UUID,
-        val time: String,
-        val data: Data,
-        var team: UUID,
-        val connection: Connection,
-        var user: User,
+    /**
+     * TODO: Replace String with something type-safe.
+     *   Maybe an Enum? What are the possible values of this status? Bad discoverability too.
+     *   Currently known:
+     *   "conversation.otr-message-add"
+     *   "conversation.member-join"
+     *   "conversation.member-leave"
+     *   "conversation.delete"
+     *   "conversation.create"
+     *   "conversation.rename"
+     *   "user.connection"
+     **/
+    val type: String,
+    val conversation: UUID,
+    val from: UUID,
+    val time: String,
+    val data: Data,
+    var team: UUID,
+    val connection: Connection,
+    var user: User,
 )
 
 data class Data(
-        val sender: String,
-        val recipient: String,
-        val text: String,
-        val user_ids: MutableList<UUID>,
-        val name: String,
-        val id: String,
-        val key: String,
-        val user: UUID,
-        val creator: UUID,
-        val members: Members,
+    val sender: String,
+    val recipient: String,
+    val text: String,
+    val user_ids: List<UUID>,
+    val name: String,
+    val id: String,
+    val key: String,
+    val user: UUID,
+    val creator: UUID,
+    val members: Members,
 )
 
 data class Members(
-        val others: MutableList<Member>
-)
+    val others: List<OtherMember>,
+    val self: SelfMember
+) {
+    fun allMembers(): List<ConversationMember> = others + self
+}
 
 data class Connection(
-        /**
-         * TODO: Replace String with something type-safe.
-         *   Maybe an Enum? What are the possible values of this status? Bad discoverability too.
-         *   Currently known: pending, accepted, sent
-         **/
-        val status: String,
+    /**
+     * TODO: Replace String with something type-safe.
+     *   Maybe an Enum? What are the possible values of this status? Bad discoverability too.
+     *   Currently known: pending, accepted, sent
+     **/
+    val status: String,
 
-        val from: UUID,
-        val to: UUID,
-        val conversation: UUID
+    val from: UUID,
+    val to: UUID,
+    val conversation: UUID
 )
