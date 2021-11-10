@@ -18,33 +18,33 @@
 package com.wire.kalium.models
 
 import java.util.UUID
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.annotation.JsonCreator
-import com.fasterxml.jackson.annotation.JsonInclude
+import com.waz.model.Messages
 import java.util.ArrayList
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-@JsonInclude(JsonInclude.Include.NON_NULL)
-open class TextMessage @JsonCreator constructor(
-        @JsonProperty val text: String,
-        @JsonProperty val quotedMessageId: UUID,
-        @JsonProperty val quotedMessageSha256: ByteArray,
-        @JsonProperty val mentions: ArrayList<Mention>,
-        @JsonProperty("eventId") eventId: UUID,
-        @JsonProperty("messageId") messageId: UUID,
-        @JsonProperty("conversationId") convId: UUID,
-        @JsonProperty("clientId") clientId: String,
-        @JsonProperty("userId") userId: UUID,
-        @JsonProperty("time") time: String
+//@JsonIgnoreProperties(ignoreUnknown = true)
+//@JsonInclude(JsonInclude.Include.NON_NULL)
+open class TextMessage constructor(
+//        @JsonProperty("eventId")
+        eventId: UUID,
+//        @JsonProperty("messageId")
+        messageId: UUID,
+//        @JsonProperty("conversationId")
+        convId: UUID,
+//        @JsonProperty("clientId")
+        clientId: String,
+//        @JsonProperty("userId")
+        userId: UUID,
+//        @JsonProperty("time")
+        time: String
 ) : MessageBase(eventId = eventId, messageId = messageId, conversationId = convId, clientId = clientId, userId = userId, time = time) {
 
-    constructor(_text: String, _quotedMessageId: UUID, _quotedMessageSha256:ByteArray, _mentions: ArrayList<Mention>, msgBase: MessageBase) :
+    var text: String? = null
+    var quotedMessageId: UUID? = null
+    var quotedMessageSha256: ByteArray? = null
+    var mentions: ArrayList<Mention> = arrayListOf()
+
+    constructor(_text: String, _mentions: ArrayList<Mention>, msgBase: MessageBase) :
             this(
-                    text = _text,
-                    quotedMessageId = _quotedMessageId,
-                    quotedMessageSha256 = _quotedMessageSha256,
-                    mentions = _mentions,
                     eventId = msgBase.eventId,
                     messageId = msgBase.messageId,
                     convId = msgBase.conversationId,
@@ -52,6 +52,27 @@ open class TextMessage @JsonCreator constructor(
                     userId = msgBase.userId,
                     time = msgBase.time
             )
+
+    constructor(_messageText: Messages.Text, _messageBase: MessageBase): this(
+        eventId = _messageBase.eventId,
+        messageId = _messageBase.messageId,
+        convId = _messageBase.conversationId,
+        clientId = _messageBase.clientId,
+        userId = _messageBase.userId,
+        time = _messageBase.time
+    ) {
+
+        text = if(_messageText.hasContent()) _messageText.content else null
+
+        if (_messageText.hasQuote()) {
+            quotedMessageId = UUID.fromString(_messageText.quote.quotedMessageId)
+            quotedMessageSha256 = _messageText.quote.quotedMessageSha256.toByteArray()
+        }
+
+        for (mention in _messageText.mentionsList) {
+            addMention(mention.userId, mention.start, mention.length)
+        }
+    }
 
     fun addMention(userId: String?, offset: Int, len: Int) {
         val mention = Mention(UUID.fromString(userId), offset, len)

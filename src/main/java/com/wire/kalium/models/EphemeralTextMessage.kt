@@ -22,26 +22,32 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonCreator
 import java.util.ArrayList
+import com.waz.model.Messages
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-class EphemeralTextMessage @JsonCreator constructor(
-        @JsonProperty("expireAfterMillis") val expireAfterMillis: Long,
-        @JsonProperty("eventId") eventId: UUID,
-        @JsonProperty("messageId") messageId: UUID,
-        @JsonProperty("conversationId") conversationId: UUID,
-        @JsonProperty("clientId") clientId: String,
-        @JsonProperty("userId") userId: UUID,
-        @JsonProperty("time") time: String,
-        @JsonProperty quotedMessageId: UUID,
-        @JsonProperty quotedMessageSha256: ByteArray,
-        @JsonProperty mentions: ArrayList<Mention>,
-        @JsonProperty text: String
+
+//@JsonIgnoreProperties(ignoreUnknown = true)
+//@JsonCreator constructor EphemeralTextMessage(...
+class EphemeralTextMessage(
+//        @JsonProperty("expireAfterMillis")
+        val expireAfterMillis: Long,
+//        @JsonProperty("eventId")
+        eventId: UUID,
+//        @JsonProperty("messageId")
+        messageId: UUID,
+//        @JsonProperty("conversationId")
+        conversationId: UUID,
+//        @JsonProperty("clientId")
+        clientId: String,
+//        @JsonProperty("userId")
+        userId: UUID,
+//        @JsonProperty("time")
+        time: String,
+//        @JsonProperty
+        mentions: ArrayList<Mention>,
+//        @JsonProperty
+        text: String?
 
 ) : TextMessage(
-        text = text,
-        quotedMessageId = quotedMessageId,
-        quotedMessageSha256 = quotedMessageSha256,
-        mentions = mentions,
         eventId = eventId,
         messageId = messageId,
         convId = conversationId,
@@ -52,16 +58,27 @@ class EphemeralTextMessage @JsonCreator constructor(
 
     constructor(
             _expireAfterMillis: Long,
+            _textMessage: TextMessage
+    ): this(
+            expireAfterMillis = _expireAfterMillis,
+            text = _textMessage.text,
+            mentions = _textMessage.mentions,
+            eventId = _textMessage.eventId,
+            messageId = _textMessage.messageId,
+            conversationId = _textMessage.conversationId,
+            clientId = _textMessage.clientId,
+            userId = _textMessage.userId,
+            time = _textMessage.time
+    )
+
+    constructor(
+            _expireAfterMillis: Long,
             _text: String,
-            _quotedMessageId: UUID,
-            _quotedMessageSha256: ByteArray,
             _mentions: ArrayList<Mention>,
             msg: MessageBase
     ) : this(
             expireAfterMillis = _expireAfterMillis,
             text = _text,
-            quotedMessageId = _quotedMessageId,
-            quotedMessageSha256 = _quotedMessageSha256,
             mentions = _mentions,
             eventId = msg.eventId,
             messageId = msg.messageId,
