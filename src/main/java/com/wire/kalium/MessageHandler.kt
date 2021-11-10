@@ -21,7 +21,7 @@ import com.wire.kalium.backend.models.NewBot
 import java.util.UUID
 import com.waz.model.Messages.GenericMessage
 import com.wire.kalium.models.TextMessage
-import com.wire.kalium.models.LinkPreviewMessage
+//import com.wire.kalium.models.LinkPreviewMessage TODO: Implement LinkPreviews
 import com.wire.kalium.models.EphemeralTextMessage
 import com.wire.kalium.models.EditedTextMessage
 import com.wire.kalium.models.ConfirmationMessage
@@ -169,7 +169,7 @@ interface MessageHandler {
     fun onReaction(client: WireClient, msg: ReactionMessage) {}
     fun onNewTeamMember(userClient: WireClient, userId: UUID) {}
     fun onUserUpdate(id: UUID, userId: UUID) {}
-    open fun onLinkPreview(client: WireClient, msg: LinkPreviewMessage) {}
+//    open fun onLinkPreview(client: WireClient, msg: LinkPreviewMessage) {} TODO: Implement LinkPreviews
     fun onPing(client: WireClient, msg: PingMessage) {}
 
     /**
