@@ -6,7 +6,7 @@ import com.waz.model.Messages
 
 class ButtonActionConfirmation(private val refMsgId: UUID?, private val buttonId: String?) : GenericMessageIdentifiable {
     override val messageId: UUID = UUID.randomUUID()
-    override fun createGenericMsg(): GenericMessage? {
+    override fun createGenericMsg(): GenericMessage {
         val confirmation = Messages.ButtonActionConfirmation.newBuilder()
             .setButtonId(buttonId)
             .setReferenceMessageId(refMsgId.toString())

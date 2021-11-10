@@ -23,5 +23,5 @@ import java.util.UUID
 interface GenericMessageIdentifiable {
     val messageId: UUID
 
-    fun createGenericMsg(): GenericMessage?
+    fun createGenericMsg(): GenericMessage
 }

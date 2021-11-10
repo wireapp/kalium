@@ -28,7 +28,7 @@ class FileAssetPreview(
     private val size: Long,
     override val messageId: UUID
 ) : GenericMessageIdentifiable {
-    override fun createGenericMsg(): GenericMessage? {
+    override fun createGenericMsg(): GenericMessage {
         val original = Original.newBuilder()
             .setSize(size)
             .setName(name)

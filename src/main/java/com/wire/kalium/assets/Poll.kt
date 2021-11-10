@@ -60,7 +60,7 @@ class Poll @JvmOverloads constructor(override val messageId: UUID = UUID.randomU
         return this
     }
 
-    override fun createGenericMsg(): GenericMessage? {
+    override fun createGenericMsg(): GenericMessage {
         return GenericMessage.newBuilder()
             .setMessageId(messageId.toString())
             .setComposite(poll)

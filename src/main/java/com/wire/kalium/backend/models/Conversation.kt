@@ -17,11 +17,11 @@
 //
 package com.wire.kalium.backend.models
 
-import java.util.*
+import java.util.UUID
 
 data class Conversation(
-        val id: UUID,
-        val name: String,
-        val creator: UUID,
-        val members: MutableList<Member>
+    val id: UUID,
+    val name: String,
+    val creator: UUID,
+    val members: MutableList<Member>
 )

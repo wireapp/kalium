@@ -17,7 +17,7 @@
 //
 package com.wire.kalium.backend.models
 
-import java.util.*
+import java.util.UUID
 
 data class NewBot(
         val id: UUID,
