@@ -17,10 +17,27 @@
 //
 package com.wire.kalium.backend.models
 
-import java.util.*
+sealed class ConversationMember {
+    abstract val userId: String
+}
 
-data class Member(
-        val id: UUID,
-        val status: Int,
-        val service: Service
+data class OtherMember(
+    override val userId: String,
+    val service: ServiceReferenceResponse?
+) : ConversationMember()
+
+data class SelfMember(
+    override val userId: String,
+    val service: ServiceReferenceResponse?,
+    val hiddenReference: String?,
+    val otrMutedReference: String?,
+    val hidden: Boolean?,
+    val otrArchived: Boolean?,
+    val otrMuted: Boolean?,
+    val otrArchiveReference: String?
+) : ConversationMember()
+
+data class ServiceReferenceResponse(
+    val id: String,
+    val provider: String
 )

@@ -23,5 +23,5 @@ data class Conversation(
     val id: UUID,
     val name: String,
     val creator: UUID,
-    val members: MutableList<Member>
+    val members: List<ConversationMember>
 )
