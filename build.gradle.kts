@@ -18,6 +18,7 @@ dependencies {
     val javaxValidationVersion = "2.0.1.Final"
     val junitVersion = "5.7.1"
     val kotlinVersion = "1.5.31"
+    val jakartaVersion = "2.1.6"
 
     implementation("com.wire:generic-message-proto:$genericMessageProtoVersion")
     implementation("com.wire:cryptobox4j:$cryptoboxVersion")
@@ -25,6 +26,9 @@ dependencies {
     implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
     implementation("javax.validation:validation-api:$javaxValidationVersion")
     testImplementation(kotlin("test"))
+
+    // web service
+    implementation("jakarta.ws.rs:jakarta.ws.rs-api:$jakartaVersion")
 }
 
 tasks.test {
