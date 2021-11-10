@@ -1,4 +1,4 @@
-package com.wire.kalium.helium
+package com.wire.kalium
 
 import org.apache.log4j.BasicConfigurator
 import org.flywaydb.core.Flyway

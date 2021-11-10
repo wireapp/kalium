@@ -1,6 +1,7 @@
-package com.wire.helium
+package com.wire.kalium
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider
+import com.wire.kalium.helium.Application
 import com.wire.xenon.MessageHandlerBase
 import com.wire.xenon.WireClient
 import com.wire.xenon.assets.MessageText
@@ -25,16 +26,18 @@ import javax.ws.rs.client.Client
 import javax.ws.rs.client.ClientBuilder
 
 @Disabled("This is an integration test which requires access to Wire account.")
-class ApplicationTest : DatabaseTestBase() {
+class ApplicationTest {
     @Test
     @Throws(Exception::class)
     fun sendMessagesTest() {
         val email = "your email"
         val password = "secret"
         val wsUrl = "wss://prod-nginz-ssl.wire.com"
+
         val client: Client = ClientBuilder
                 .newClient()
                 .register(JacksonJsonProvider::class.java)
+
         val messageHandlerBase: MessageHandlerBase = object : MessageHandlerBase() {
             fun onText(client: WireClient?, msg: TextMessage) {
                 Logger.info("onText: received: %s", msg.getText())
@@ -52,6 +55,7 @@ class ApplicationTest : DatabaseTestBase() {
                 }
             }
         }
+
         val app = Application(email, password, false, wsUrl)
                 .addClient(client)
                 .addCryptoFactory(cryptoFactory)

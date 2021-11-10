@@ -1,19 +1,15 @@
-package com.wire.helium
+package com.wire.kalium.helium
 
 import com.wire.bots.cryptobox.CryptoException
 import com.wire.helium.EventDecoder
-import com.wire.helium.models.Cookie
+import com.wire.helium.SocketReconnectHandler
+import com.wire.helium.UserMessageResource
 import com.wire.helium.models.NotificationList
-import com.wire.xenon.MessageHandlerBase
-import com.wire.xenon.backend.models.NewBot
-import com.wire.xenon.backend.models.Payload
-import com.wire.xenon.crypto.Crypto
-import com.wire.xenon.exceptions.HttpException
-import com.wire.xenon.factories.CryptoFactory
-import com.wire.xenon.factories.StorageFactory
-import com.wire.xenon.models.otr.PreKey
-import com.wire.xenon.state.State
-import com.wire.xenon.tools.Logger
+import com.wire.kalium.MessageHandler
+import com.wire.kalium.backend.models.NewBot
+import com.wire.kalium.crypto.Crypto
+import com.wire.kalium.models.otr.PreKey
+import com.wire.kalium.tools.Logger
 import org.glassfish.tyrus.client.ClientManager
 import org.glassfish.tyrus.client.ClientProperties
 import java.io.IOException
@@ -38,7 +34,7 @@ class Application {
     private var storageFactory: StorageFactory? = null
     private var cryptoFactory: CryptoFactory? = null
     private var client: Client? = null
-    private var handler: MessageHandlerBase? = null
+    private var handler: MessageHandler? = null
     private var userMessageResource: UserMessageResource? = null
     var userId: UUID? = null
         private set
@@ -72,7 +68,7 @@ class Application {
         return this
     }
 
-    fun addHandler(handler: MessageHandlerBase?): Application {
+    fun addHandler(handler: MessageHandler?): Application {
         this.handler = handler
         return this
     }
@@ -228,9 +224,9 @@ class Application {
     fun newDevice(userId: UUID?, password: String?, token: String?): String {
         val crypto: Crypto = cryptoFactory.create(userId)
         val loginClient = LoginClient(client)
-        val preKeys: ArrayList<PreKey?> = crypto.newPreKeys(0, 20)
+        val preKeys: ArrayList<PreKey> = crypto.newPreKeys(0, 20)
         val lastKey: PreKey = crypto.newLastPreKey()
-        return loginClient.registerClient(token!!, password!!, preKeys, lastKey, "tablet", "permanent", "lithium")
+        return loginClient.registerClient(token!!, password!!, preKeys, lastKey)
     }
 
     val clientId: String?

@@ -1,8 +1,9 @@
 package com.wire.helium
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.wire.xenon.tools.Logger
-import com.wire.xenon.tools.Util
+import com.wire.kalium.tools.Logger
+import com.wire.kalium.tools.Util
+
 import java.io.IOException
 import java.io.InputStream
 import java.nio.charset.StandardCharsets

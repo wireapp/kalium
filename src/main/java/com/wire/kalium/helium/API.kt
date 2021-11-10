@@ -15,20 +15,18 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 //
-package com.wire.helium
+package com.wire.kalium.helium
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.wire.xenon.WireAPI
-import com.wire.xenon.assets.IAsset
-import com.wire.xenon.backend.models.Conversation
-import com.wire.xenon.backend.models.Member
-import com.wire.xenon.backend.models.Service
-import com.wire.xenon.backend.models.User
-import com.wire.xenon.exceptions.HttpException
-import com.wire.xenon.models.AssetKey
-import com.wire.xenon.models.otr.*
-import com.wire.xenon.tools.Util
+import com.wire.kalium.WireAPI
+import com.wire.kalium.backend.models.Conversation
+import com.wire.kalium.backend.models.Service
+import com.wire.kalium.backend.models.User
+import com.wire.kalium.exceptions.HttpException
+import com.wire.kalium.models.AssetKey
+import com.wire.kalium.models.otr.*
+import com.wire.kalium.tools.Util
 import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
 import java.util.*

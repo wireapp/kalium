@@ -15,22 +15,22 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 //
-package com.wire.helium
+package com.wire.kalium.helium
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.wire.helium.models.Cookie
 import com.wire.helium.models.NewClient
 import com.wire.helium.models.NotificationList
-import com.wire.xenon.Const
-import com.wire.xenon.exceptions.AuthException
-import com.wire.xenon.exceptions.HttpException
-import com.wire.xenon.models.otr.PreKey
+import com.wire.kalium.models.otr.PreKey
 import java.util.*
 import javax.ws.rs.client.Client
 import javax.ws.rs.client.Entity
 import javax.ws.rs.client.Invocation
 import javax.ws.rs.client.WebTarget
-import javax.ws.rs.core.*
+import javax.ws.rs.core.HttpHeaders
+import javax.ws.rs.core.MediaType
+import javax.ws.rs.core.NewCookie
+import javax.ws.rs.core.Response
 
 open class LoginClient(client: Client) {
     @JvmField
@@ -40,7 +40,7 @@ open class LoginClient(client: Client) {
     private val cookiesPath: WebTarget
     private val notificationsPath: WebTarget
     fun host(): String {
-        val host = System.getProperty(Const.WIRE_BOTS_SDK_API, System.getenv("WIRE_API_HOST"))
+        val host = System.getenv("WIRE_API_HOST")
         return host ?: "https://prod-nginz-https.wire.com"
     }
 
@@ -78,7 +78,7 @@ open class LoginClient(client: Client) {
 
     @Deprecated("")
     @Throws(HttpException::class)
-    fun registerClient(token: String, password: String, preKeys: ArrayList<PreKey?>, lastKey: PreKey): String {
+    fun registerClient(token: String, password: String, preKeys: ArrayList<PreKey>, lastKey: PreKey): String {
         val deviceClass = "tablet"
         val type = "permanent"
         return registerClient(token, password, preKeys, lastKey, deviceClass, type, LABEL)
@@ -92,7 +92,7 @@ open class LoginClient(client: Client) {
      * @return Client id
      */
     @Throws(HttpException::class)
-    fun registerClient(token: String, password: String, preKeys: ArrayList<PreKey?>, lastKey: PreKey,
+    fun registerClient(token: String, password: String, preKeys: ArrayList<PreKey>, lastKey: PreKey,
                        clazz: String, type: String, label: String): String {
         val newClient = NewClient()
         newClient.password = password
