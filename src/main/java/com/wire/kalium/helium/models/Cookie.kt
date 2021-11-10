@@ -1,4 +1,4 @@
-package com.wire.helium.models
+package com.wire.kalium.helium.models
 
 class Cookie {
     var name: String? = null

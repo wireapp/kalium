@@ -17,11 +17,12 @@
 //
 package com.wire.kalium.backend.models
 
-import java.util.UUID
+import java.util.*
 
 data class Conversation(
-    val id: UUID,
-    val name: String,
-    val creator: UUID,
-    val members: List<ConversationMember>
-)
+        val id: UUID,
+        val name: String,
+        val members: List<ConversationMember>
+) {
+    var creator: UUID? = null
+}

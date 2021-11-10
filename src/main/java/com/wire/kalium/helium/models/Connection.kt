@@ -15,11 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 //
-package com.wire.helium.models
+package com.wire.kalium.helium.models
 
-import com.fasterxml.jackson.annotation.JsonProperty
-
-class Connection {
-    @JsonProperty
-    var status: String? = null
-}
+data class Connection(
+        var status: String? = null
+)

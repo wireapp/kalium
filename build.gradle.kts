@@ -28,6 +28,9 @@ dependencies {
     implementation("jakarta.ws.rs:jakarta.ws.rs-api:$jakartaVersion")
 
     testImplementation(kotlin("test"))
+
+    // web service
+    implementation("jakarta.ws.rs:jakarta.ws.rs-api:$jakartaVersion")
 }
 
 tasks.test {

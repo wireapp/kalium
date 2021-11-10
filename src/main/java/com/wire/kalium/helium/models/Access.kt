@@ -1,4 +1,4 @@
-package com.wire.helium.models
+package com.wire.kalium.helium.models
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
