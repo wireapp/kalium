@@ -8,7 +8,6 @@ import com.waz.model.Messages.Asset.RemoteData
 import com.google.protobuf.ByteString
 import com.waz.model.Messages.Asset.AudioMetaData
 import com.wire.kalium.models.MessageBase
-import com.wire.kalium.models.LinkPreviewMessage
 import com.wire.kalium.models.AudioPreviewMessage
 import com.wire.kalium.backend.GenericMessageProcessor
 import com.waz.model.Messages
@@ -119,6 +118,8 @@ class GenericMessageProcessorTest {
     }
 
     private class MessageHandler : com.wire.kalium.MessageHandler {
+        // TODO: LinkPreviewMessage
+        /*
         override fun onLinkPreview(client: WireClient, msg: LinkPreviewMessage) {
             Assertions.assertEquals(TITLE, msg.getTitle())
             Assertions.assertEquals(SUMMARY, msg.getSummary())
@@ -131,6 +132,7 @@ class GenericMessageProcessorTest {
             Assertions.assertEquals(MIME_TYPE, msg.getMimeType())
             Assertions.assertEquals(ASSET_TOKEN, msg.getAssetToken())
         }
+    */
 
         override fun onAudioPreview(client: WireClient, msg: AudioPreviewMessage) {
             Assertions.assertEquals(AUDIO_MIME_TYPE, msg.mimeType)
@@ -138,19 +140,19 @@ class GenericMessageProcessorTest {
     }
 
     companion object {
-        val AUDIO_MIME_TYPE: String? = "audio/x-m4a"
-        val NAME: String? = "audio.m4a"
+        const val AUDIO_MIME_TYPE: String = "audio/x-m4a"
+        const val NAME: String = "audio.m4a"
         const val DURATION = 27000
-        private val TITLE: String? = "title"
-        private val SUMMARY: String? = "summary"
-        private val URL: String? = "https://wire.com"
-        private val CONTENT: String? = "This is https://wire.com"
+        private const val TITLE: String = "title"
+        private const val SUMMARY: String = "summary"
+        private const val URL: String = "https://wire.com"
+        private const val CONTENT: String = "This is https://wire.com"
         private const val URL_OFFSET = 8
-        private val ASSET_KEY: String? = "key"
-        private val ASSET_TOKEN: String? = "token"
+        private const val ASSET_KEY: String = "key"
+        private const val ASSET_TOKEN: String = "token"
         private const val HEIGHT = 43
         private const val WIDTH = 84
         private const val SIZE = 123
-        private val MIME_TYPE: String? = "image/png"
+        private const val MIME_TYPE: String = "image/png"
     }
 }
