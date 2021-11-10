@@ -1,6 +1,8 @@
 package com.wire.helium
 
 import com.wire.bots.cryptobox.CryptoException
+import com.wire.kalium.BaseEventProcessor
+import com.wire.kalium.MessageHandler
 import com.wire.kalium.WireClient
 import com.wire.kalium.backend.models.NewBot
 import com.wire.kalium.backend.models.Payload
@@ -12,7 +14,7 @@ import java.io.IOException
 import java.util.*
 import javax.ws.rs.client.Client
 
-class UserMessageResource(handler: MessageHandlerBase?) : MessageResourceBase(handler) {
+class UserMessageResource(handler: MessageHandler) : BaseEventProcessor(handler) {
     private var userId: UUID? = null
     private var storageFactory: StorageFactory? = null
     private var cryptoFactory: CryptoFactory? = null

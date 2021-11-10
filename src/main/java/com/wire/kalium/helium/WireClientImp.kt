@@ -21,11 +21,13 @@ import com.wire.kalium.WireAPI
 import com.wire.kalium.WireClientBase
 import com.wire.kalium.backend.models.NewBot
 import com.wire.kalium.crypto.Crypto
+import com.wire.kalium.exceptions.HttpException
 import java.util.*
 
-class WireClientImp(api: WireAPI?, crypto: Crypto?, state: NewBot?, val conversationId: UUID) : WireClientBase(api, crypto, state) {
+class WireClientImp(api: WireAPI, crypto: Crypto, state: NewBot) : WireClientBase(api, crypto, state) {
+
     @Throws(HttpException::class)
-    fun getUserId(username: String?): UUID {
+    fun getUserId(username: String): UUID {
         return api.getUserId(username)
     }
 }

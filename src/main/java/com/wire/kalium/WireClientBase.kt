@@ -9,22 +9,17 @@ import com.wire.kalium.backend.models.User
 import com.wire.kalium.crypto.Crypto
 import com.wire.kalium.exceptions.HttpException
 import com.wire.kalium.models.AssetKey
-import com.wire.kalium.models.otr.Devices
-import com.wire.kalium.models.otr.Missing
-import com.wire.kalium.models.otr.OtrMessage
-import com.wire.kalium.models.otr.PreKey
-import com.wire.kalium.models.otr.Recipients
+import com.wire.kalium.models.otr.*
 import com.wire.kalium.tools.Logger
 import com.wire.kalium.tools.Util
 import java.io.IOException
 import java.security.MessageDigest
-import java.util.Arrays
-import java.util.UUID
+import java.util.*
 
 abstract class WireClientBase protected constructor(
-    private val api: WireAPI,
-    private val crypto: Crypto,
-    private val state: NewBot
+        protected val api: WireAPI,
+        protected val crypto: Crypto,
+        protected val state: NewBot
 ) : WireClient {
     private var devices: Devices = Devices()
 
@@ -83,9 +78,9 @@ abstract class WireClientBase protected constructor(
     }
 
     private fun handleMissingDevices(
-        encrypt: Recipients,
-        content: ByteArray,
-        message: OtrMessage
+            encrypt: Recipients,
+            content: ByteArray,
+            message: OtrMessage
     ) {
         var encrypt1 = encrypt
         val preKeys = api.getPreKeys(devices.missing)
@@ -190,7 +185,7 @@ abstract class WireClientBase protected constructor(
     }
 
     @Throws(HttpException::class)
-    override fun getTeam(): UUID {
+    override fun getTeam(): UUID? {
         return api.getTeam()
     }
 

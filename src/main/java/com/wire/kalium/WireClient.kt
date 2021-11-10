@@ -17,18 +17,17 @@
 //
 package com.wire.kalium
 
-import kotlin.Throws
-import java.io.IOException
-import java.util.UUID
-import com.wire.kalium.assets.GenericMessageIdentifiable
-import com.wire.kalium.assets.Asset
-import java.io.Closeable
 import com.wire.bots.cryptobox.CryptoException
+import com.wire.kalium.assets.Asset
+import com.wire.kalium.assets.GenericMessageIdentifiable
 import com.wire.kalium.backend.models.Conversation
+import com.wire.kalium.backend.models.User
 import com.wire.kalium.exceptions.HttpException
 import com.wire.kalium.models.AssetKey
-import com.wire.kalium.backend.models.User
 import com.wire.kalium.models.otr.PreKey
+import java.io.Closeable
+import java.io.IOException
+import java.util.*
 
 /**
  * Thread safe class for postings into this conversation
@@ -211,7 +210,7 @@ interface WireClient : Closeable {
     fun uploadAsset(asset: Asset): AssetKey
 
     @Throws(HttpException::class)
-    fun getTeam(): UUID
+    fun getTeam(): UUID?
 
     @Throws(HttpException::class)
     fun createConversation(name: String, teamId: UUID, users: MutableList<UUID>): Conversation
