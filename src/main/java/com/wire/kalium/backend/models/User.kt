@@ -25,5 +25,7 @@ data class User(
         val accent_id: Int,
         val handle: String,
         val service: Service,
-        val assets: ArrayList<Asset?>
+        val assets: ArrayList<Asset?>,
+        val email: String //maybe we can get nulls here
+
 )

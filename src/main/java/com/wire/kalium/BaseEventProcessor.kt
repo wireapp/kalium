@@ -10,8 +10,7 @@ import com.wire.kalium.backend.models.Payload
 import com.wire.kalium.backend.models.SystemMessage
 import com.wire.kalium.models.MessageBase
 import com.wire.kalium.tools.Logger
-import java.util.Base64
-import java.util.UUID
+import java.util.*
 
 abstract class BaseEventProcessor(private val handler: MessageHandler) : EventProcessor {
 
@@ -52,7 +51,7 @@ abstract class BaseEventProcessor(private val handler: MessageHandler) : EventPr
         val accepted = handler.onConnectRequest(client, connection.from, connection.to, connection.status)
         if (accepted) {
             val conversation = Conversation()
-            conversation.id = connection.convId
+            conversation.id = connection.conversation
             val systemMessage = SystemMessage()
             systemMessage.id = eventId
             systemMessage.from = connection.from
