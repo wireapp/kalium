@@ -32,7 +32,7 @@ class VideoPreview(
     private val size: Int,
     override val messageId: UUID,
 ) : GenericMessageIdentifiable {
-    override fun createGenericMsg(): GenericMessage? {
+    override fun createGenericMsg(): GenericMessage {
         val audio = VideoMetaData.newBuilder()
             .setDurationInMillis(duration)
             .setHeight(h)

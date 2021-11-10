@@ -62,7 +62,7 @@ object Util {
     }
 
     @Throws(Exception::class)
-    fun decrypt(key: ByteArray?, encrypted: ByteArray?): ByteArray? {
+    fun decrypt(key: ByteArray, encrypted: ByteArray): ByteArray {
         val `is` = ByteArrayInputStream(encrypted)
         val iv = ByteArray(16)
         `is`.read(iv)

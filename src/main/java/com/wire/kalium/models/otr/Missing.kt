@@ -5,7 +5,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 //<UserId, [ClientId]>
 class Missing : ConcurrentHashMap<UUID, MutableCollection<String>>() {
-    fun toClients(userId: UUID): MutableCollection<String>? {
+    fun ofUser(userId: UUID): MutableCollection<String>? {
         return get(userId)
     }
 

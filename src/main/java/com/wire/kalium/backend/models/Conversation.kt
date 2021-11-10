@@ -26,7 +26,7 @@ import com.fasterxml.jackson.annotation.JsonInclude
 @JsonInclude(JsonInclude.Include.NON_NULL)
 class Conversation {
     @JsonProperty
-    var id: UUID? = null
+    lateinit var id: UUID
 
     @JsonProperty
     var name: String? = null

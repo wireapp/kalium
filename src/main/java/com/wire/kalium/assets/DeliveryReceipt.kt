@@ -6,7 +6,7 @@ import com.waz.model.Messages.Confirmation
 
 class DeliveryReceipt(private val firstMessageId: UUID?) : GenericMessageIdentifiable {
     override val messageId: UUID = UUID.randomUUID()
-    override fun createGenericMsg(): GenericMessage? {
+    override fun createGenericMsg(): GenericMessage {
         val confirmation = Confirmation.newBuilder()
             .setFirstMessageId(firstMessageId.toString())
             .setType(Confirmation.Type.DELIVERED)

@@ -23,7 +23,7 @@ import com.waz.model.Messages.Knock
 
 class Ping : GenericMessageIdentifiable {
     override val messageId: UUID = UUID.randomUUID()
-    override fun createGenericMsg(): GenericMessage? {
+    override fun createGenericMsg(): GenericMessage {
         val knock = Knock.newBuilder()
             .setHotKnock(false)
         return GenericMessage.newBuilder()

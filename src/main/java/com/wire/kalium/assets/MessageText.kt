@@ -53,7 +53,7 @@ class MessageText(text: String?) : GenericMessageIdentifiable {
         return this
     }
 
-    override fun createGenericMsg(): GenericMessage? {
+    override fun createGenericMsg(): GenericMessage {
         return GenericMessage.newBuilder()
             .setMessageId(messageId.toString())
             .setText(builder)

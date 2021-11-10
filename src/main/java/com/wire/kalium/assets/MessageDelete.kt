@@ -23,7 +23,7 @@ import com.waz.model.Messages
 
 class MessageDelete(private val delMessageId: UUID?) : GenericMessageIdentifiable {
     override val messageId: UUID = UUID.randomUUID()
-    override fun createGenericMsg(): GenericMessage? {
+    override fun createGenericMsg(): GenericMessage {
         val del = Messages.MessageDelete.newBuilder()
             .setMessageId(delMessageId.toString())
         return GenericMessage.newBuilder()

@@ -31,7 +31,7 @@ class LinkPreview(
 
     override val messageId: UUID = UUID.randomUUID()
 
-    override fun createGenericMsg(): GenericMessage? {
+    override fun createGenericMsg(): GenericMessage {
         var preview: Messages.Asset? = null
         try {
             preview = thumbnail?.createGenericMsg()?.asset

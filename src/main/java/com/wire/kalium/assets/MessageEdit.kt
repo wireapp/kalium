@@ -23,7 +23,7 @@ import com.waz.model.Messages
 
 class MessageEdit(private val replacingMessageId: UUID?, private val text: String?) : GenericMessageIdentifiable {
     override val messageId: UUID = UUID.randomUUID()
-    override fun createGenericMsg(): GenericMessage? {
+    override fun createGenericMsg(): GenericMessage {
         val text = Messages.Text.newBuilder()
             .setContent(text)
         val messageEdit = Messages.MessageEdit.newBuilder()

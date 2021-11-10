@@ -46,7 +46,7 @@ class FileAsset : AssetBase {
         this.assetToken = assetToken
     }
 
-    override fun createGenericMsg(): GenericMessage? {
+    override fun createGenericMsg(): GenericMessage {
         // Remote
         val remote = RemoteData.newBuilder()
             .setOtrKey(ByteString.copyFrom(otrKey))

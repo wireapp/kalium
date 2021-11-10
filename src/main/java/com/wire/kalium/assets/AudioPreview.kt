@@ -34,7 +34,7 @@ class AudioPreview(
 
     override val messageId: UUID = UUID.randomUUID()
 
-    override fun createGenericMsg(): GenericMessage? {
+    override fun createGenericMsg(): GenericMessage {
         val audio = AudioMetaData.newBuilder()
             .setDurationInMillis(duration)
 

@@ -109,7 +109,7 @@ abstract class CryptoBase : Crypto {
     override fun encrypt(missing: Missing, content: ByteArray): Recipients {
         val recipients = Recipients()
         for (userId in missing.toUserIds()) {
-            for (clientId in missing.toClients(userId)!!) {
+            for (clientId in missing.ofUser(userId)!!) {
                 val id = createId(userId, clientId)
                 val cipher = box().encryptFromSession(id, content)
                 if (cipher != null) {

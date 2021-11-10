@@ -33,7 +33,7 @@ class MessageEphemeral(mills: Long) : GenericMessageIdentifiable {
         return this
     }
 
-    override fun createGenericMsg(): GenericMessage? {
+    override fun createGenericMsg(): GenericMessage {
         return GenericMessage.newBuilder()
             .setMessageId(messageId.toString())
             .setEphemeral(builder)
