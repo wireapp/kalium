@@ -24,69 +24,44 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonCreator
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-class VideoPreviewMessage : OriginMessage {
-    @JsonProperty
-    private var duration: Long = 0
-
-    @JsonProperty
-    private var width = 0
-
-    @JsonProperty
-    private var height = 0
-
-    @JsonCreator
-    constructor(
-        @JsonProperty("eventId") eventId: UUID?,
-        @JsonProperty("messageId") messageId: UUID?,
-        @JsonProperty("conversationId") convId: UUID?,
-        @JsonProperty("clientId") clientId: String?,
-        @JsonProperty("userId") userId: UUID?,
-        @JsonProperty("time") time: String?,
-        @JsonProperty("mimeType") mimeType: String?,
+class VideoPreviewMessage @JsonCreator constructor(
+        @JsonProperty("width") val width: Int,
+        @JsonProperty("height") val height: Int,
+        @JsonProperty("duration") val duration: Long,
+        @JsonProperty("eventId") eventId: UUID,
+        @JsonProperty("messageId") messageId: UUID,
+        @JsonProperty("conversationId") conversationId: UUID,
+        @JsonProperty("clientId") clientId: String,
+        @JsonProperty("userId") userId: UUID,
+        @JsonProperty("time") time: String,
+        @JsonProperty("mimeType") mimeType: String,
         @JsonProperty("size") size: Long,
-        @JsonProperty("name") name: String?,
-        @JsonProperty("width") width: Int,
-        @JsonProperty("height") height: Int,
-        @JsonProperty("duration") duration: Long
-    ) : super(eventId, messageId, convId, clientId, userId, time) {
-        setMimeType(mimeType)
-        setName(name)
-        setSize(size)
-        setWidth(width)
-        setHeight(height)
-        setDuration(duration)
-    }
+        @JsonProperty("name") name: String
+) : OriginMessage(
+        mimeType = mimeType,
+        name = name,
+        size = size,
+        eventId = eventId,
+        msgId = messageId,
+        conversationId = conversationId,
+        clientId = clientId,
+        userId = userId,
+        time = time
+) {
 
-    constructor(msg: MessageBase?, original: Original?) : super(msg) {
-        mimeType = original.getMimeType()
-        size = original.getSize()
-        name = original.getName()
-        setWidth(original.getVideo().width)
-        setHeight(original.getVideo().height)
-        setDuration(original.getVideo().durationInMillis)
-    }
-
-    fun getDuration(): Long {
-        return duration
-    }
-
-    fun setDuration(duration: Long) {
-        this.duration = duration
-    }
-
-    fun getHeight(): Int {
-        return height
-    }
-
-    fun setHeight(height: Int) {
-        this.height = height
-    }
-
-    fun getWidth(): Int {
-        return width
-    }
-
-    fun setWidth(width: Int) {
-        this.width = width
-    }
+    constructor(msg: MessageBase, original: Original) : this(
+            width = original.video.width,
+            height = original.video.height,
+            duration = original.video.durationInMillis,
+            eventId = msg.eventId,
+            messageId = msg.messageId,
+            conversationId = msg.conversationId,
+            clientId = msg.clientId,
+            userId = msg.userId,
+            time = msg.time,
+            // TODO: check if this need to change
+            mimeType = original.mimeType,
+            size = original.size,
+            name = original.name
+    )
 }

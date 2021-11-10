@@ -21,32 +21,53 @@ import java.util.UUID
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonCreator
+import java.util.ArrayList
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-class EphemeralTextMessage : TextMessage {
-    @JsonProperty
-    private var expireAfterMillis: Long = 0
+class EphemeralTextMessage @JsonCreator constructor(
+        @JsonProperty("expireAfterMillis") val expireAfterMillis: Long,
+        @JsonProperty("eventId") eventId: UUID,
+        @JsonProperty("messageId") messageId: UUID,
+        @JsonProperty("conversationId") conversationId: UUID,
+        @JsonProperty("clientId") clientId: String,
+        @JsonProperty("userId") userId: UUID,
+        @JsonProperty("time") time: String,
+        @JsonProperty quotedMessageId: UUID,
+        @JsonProperty quotedMessageSha256: ByteArray,
+        @JsonProperty mentions: ArrayList<Mention>,
+        @JsonProperty text: String
 
-    @JsonCreator
+) : TextMessage(
+        text = text,
+        quotedMessageId = quotedMessageId,
+        quotedMessageSha256 = quotedMessageSha256,
+        mentions = mentions,
+        eventId = eventId,
+        messageId = messageId,
+        convId = conversationId,
+        clientId = clientId,
+        userId = userId,
+        time = time
+) {
+
     constructor(
-        @JsonProperty("eventId") eventId: UUID?,
-        @JsonProperty("messageId") messageId: UUID?,
-        @JsonProperty("conversationId") convId: UUID?,
-        @JsonProperty("clientId") clientId: String?,
-        @JsonProperty("userId") userId: UUID?,
-        @JsonProperty("time") time: String?,
-        @JsonProperty("expireAfterMillis") expireAfterMillis: Long
-    ) : super(eventId, messageId, convId, clientId, userId, time) {
-        this.expireAfterMillis = expireAfterMillis
-    }
-
-    constructor(msg: MessageBase?) : super(msg) {}
-
-    fun getExpireAfterMillis(): Long {
-        return expireAfterMillis
-    }
-
-    fun setExpireAfterMillis(expireAfterMillis: Long) {
-        this.expireAfterMillis = expireAfterMillis
-    }
+            _expireAfterMillis: Long,
+            _text: String,
+            _quotedMessageId: UUID,
+            _quotedMessageSha256: ByteArray,
+            _mentions: ArrayList<Mention>,
+            msg: MessageBase
+    ) : this(
+            expireAfterMillis = _expireAfterMillis,
+            text = _text,
+            quotedMessageId = _quotedMessageId,
+            quotedMessageSha256 = _quotedMessageSha256,
+            mentions = _mentions,
+            eventId = msg.eventId,
+            messageId = msg.messageId,
+            conversationId = msg.conversationId,
+            clientId = msg.clientId,
+            userId = msg.userId,
+            time = msg.time
+    )
 }
