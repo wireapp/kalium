@@ -1,6 +1,6 @@
 //
 // Wire
-// Copyright (C) 2016 Wire Swiss GmbH
+// Copyright (C) 2020 Wire Swiss GmbH
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,23 +17,9 @@
 //
 package com.wire.kalium.backend.models
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.annotation.JsonProperty
-
-data class AssetKt(
-    val type: String,
-    val key: String,
-    val size: String
+data class Asset(
+        val type: String,
+        val key: String,
+        val size: String
 )
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-class Asset {
-    @JsonProperty
-    var type: String? = null
-
-    @JsonProperty
-    var key: String? = null
-
-    @JsonProperty
-    var size: String? = null
-}
