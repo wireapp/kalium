@@ -1,7 +1,7 @@
 package com.wire.kalium
 
-import com.wire.helium.helpers.MemStorage
 import com.wire.kalium.assets.MessageText
+import com.wire.kalium.backend.models.NewBot
 import com.wire.kalium.crypto.CryptoFile
 import com.wire.kalium.helium.Application
 import org.junit.jupiter.api.Disabled
@@ -22,10 +22,14 @@ class ApplicationSenderTest {
         val client: Client = ClientBuilder
                 .newClient()
 
+        val crypto = CryptoFile("/tmp/joker")
+
+        val storage = Storage()
+
         val app = Application(email, password)
                 .addClient(client)
-                .addCryptoFactory(cryptoFactory)
-                .addStorageFactory(storageFactory)
+                .addCrypto(crypto)
+                .addStorage(storage)
 
         // Login, create device if needed, setup token refresh timer, pull missed messages and more
         app.start()
@@ -39,8 +43,20 @@ class ApplicationSenderTest {
         app.stop()
     }
 
-    val storageFactory: StorageFactory
-        get() = StorageFactory { userId -> MemStorage() }
-    val cryptoFactory: CryptoFactory
-        get() = CryptoFactory { userId -> CryptoFile(userId) }
+    class Storage : IState {
+        var newBot: NewBot? = null
+
+        override fun saveState(newBot: NewBot): Boolean {
+            this.newBot = newBot
+            return true
+        }
+
+        override fun getState(): NewBot {
+            return newBot!!
+        }
+
+        override fun removeState(): Boolean {
+            return true
+        }
+    }
 }
