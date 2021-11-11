@@ -21,13 +21,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.wire.kalium.WireAPI
 import com.wire.kalium.assets.Asset
-import com.wire.kalium.backend.models.Conversation
-import com.wire.kalium.backend.models.ConversationMember
-import com.wire.kalium.backend.models.Service
-import com.wire.kalium.backend.models.User
+import com.wire.kalium.backend.models.*
 import com.wire.kalium.exceptions.AuthException
 import com.wire.kalium.exceptions.HttpException
-import com.wire.kalium.helium.models.Connection
 import com.wire.kalium.models.AssetKey
 import com.wire.kalium.models.otr.*
 import com.wire.kalium.tools.Util
@@ -109,8 +105,7 @@ open class API(client: Client, convId: UUID?, token: String) : LoginClient(clien
 
     @Throws(HttpException::class)
     override fun acceptConnection(user: UUID) {
-        val connection: Connection = Connection()
-        connection.status = "accepted"
+        val connection = Connection(status = "accepted")
         val response: Response = connectionsPath.path(user.toString()).request(MediaType.APPLICATION_JSON).header(HttpHeaders.AUTHORIZATION, bearer(token)).put(Entity.entity(connection, MediaType.APPLICATION_JSON))
         if (response.status >= 400) {
             throw HttpException(response.readEntity(String::class.java), response.status)

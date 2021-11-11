@@ -15,38 +15,23 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 //
-package com.wire.kalium.helium.models
+package com.wire.kalium.backend.models
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.wire.kalium.models.otr.PreKey
 
-class NewClient {
-    @JsonProperty("lastkey")
-    var lastkey: PreKey? = null
+data class NewClient(
+        val lastkey: PreKey,
+        val prekeys: List<PreKey>,
+        val password: String,
+        @JsonProperty("class")
+        val clazz: String,
+        val type: String,
+        val label: String,
+        //val sigkeys: Sig
+)
 
-    @JsonProperty("prekeys")
-    var prekeys: List<PreKey>? = null
-
-    @JsonProperty
-    var password: String? = null
-
-    @JsonProperty("class")
-    var clazz: String? = null
-
-    @JsonProperty
-    var type: String? = null
-
-    @JsonProperty
-    var label: String? = null
-
-    @JsonProperty
-    var sigkeys = Sig()
-
-    class Sig {
-        @JsonProperty
-        var enckey: String? = null
-
-        @JsonProperty
-        var mackey: String? = null
-    }
-}
+//data class Sig (
+//    val enckey: String,
+//    val mackey: String
+//)
