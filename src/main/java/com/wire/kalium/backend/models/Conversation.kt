@@ -17,7 +17,6 @@
 //
 package com.wire.kalium.backend.models
 
-import java.util.*
 import com.wire.kalium.tools.UUIDSerializer
 import kotlinx.serialization.Serializable
 import java.util.UUID

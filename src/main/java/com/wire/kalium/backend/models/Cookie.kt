@@ -3,7 +3,7 @@ package com.wire.kalium.backend.models
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class Cookie (
+data class Cookie(
         var name: String,
         var value: String
 )

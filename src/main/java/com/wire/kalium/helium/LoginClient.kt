@@ -17,11 +17,13 @@
 //
 package com.wire.kalium.helium
 
-import com.wire.kalium.backend.models.*
+import com.wire.kalium.backend.models.Access
+import com.wire.kalium.backend.models.Cookie
+import com.wire.kalium.backend.models.NewClient
+import com.wire.kalium.backend.models.NotificationList
 import com.wire.kalium.exceptions.AuthException
 import com.wire.kalium.exceptions.HttpException
 import com.wire.kalium.models.otr.PreKey
-import kotlinx.serialization.Serializable
 import java.util.*
 import javax.ws.rs.client.Client
 import javax.ws.rs.client.Entity
@@ -31,8 +33,6 @@ import javax.ws.rs.core.HttpHeaders
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.NewCookie
 import javax.ws.rs.core.Response
-import javax.ws.rs.core.Cookie
-
 
 open class LoginClient(client: Client) {
     @JvmField
@@ -120,7 +120,7 @@ open class LoginClient(client: Client) {
     }
 
     @Throws(HttpException::class)
-    fun renewAccessToken(cookie: Cookie): Access {
+    fun renewAccessToken(cookie: javax.ws.rs.core.Cookie): Access {
         val builder: Invocation.Builder = accessPath
                 .request(MediaType.APPLICATION_JSON)
                 .cookie(cookie)
@@ -143,7 +143,7 @@ open class LoginClient(client: Client) {
     }
 
     @Throws(HttpException::class)
-    fun logout(cookie: Cookie, token: String) {
+    fun logout(cookie: javax.ws.rs.core.Cookie, token: String) {
         val response: Response = accessPath
                 .path("logout")
                 .request(MediaType.APPLICATION_JSON)
@@ -204,19 +204,16 @@ open class LoginClient(client: Client) {
         throw response.readEntity(HttpException::class.java)
     }
 
-    @Serializable
     internal class _Login {
         var email: String? = null
         var password: String? = null
         var label: String? = null
     }
 
-    @Serializable
     internal class _Client {
         var id: String? = null
     }
 
-    @Serializable
     internal class _RemoveCookies {
         var password: String? = null
         var labels: List<String>? = null

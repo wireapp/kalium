@@ -1,5 +1,6 @@
 package com.wire.kalium
 
+import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider
 import com.wire.kalium.assets.MessageText
 import com.wire.kalium.backend.models.NewBot
 import com.wire.kalium.crypto.CryptoFile
@@ -19,8 +20,9 @@ class ApplicationSenderTest {
 
         val client: Client = ClientBuilder
                 .newClient()
+                .register(JacksonJsonProvider::class.java)
 
-        val crypto = CryptoFile("/tmp/joker")
+        val crypto = CryptoFile("./joker")
 
         val storage = Storage()
 
@@ -36,7 +38,7 @@ class ApplicationSenderTest {
         val wireClient = app.getWireClient(conversationId)
 
         // Send text
-        wireClient.send(MessageText("Hi there from Kotlin!"))
+        wireClient.send(MessageText("Is that you, John Wayne? Is this me?"))
 
         app.stop()
     }
