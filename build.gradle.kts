@@ -25,6 +25,9 @@ dependencies {
     implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
     implementation("javax.validation:validation-api:$javaxValidationVersion")
     testImplementation(kotlin("test"))
+
+    // cli
+    implementation("com.github.ajalt.clikt:clikt:3.2.0")
 }
 
 tasks.test {
