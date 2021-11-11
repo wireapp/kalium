@@ -42,7 +42,7 @@ abstract class WireClientBase protected constructor(
     }
 
     override fun getConversationId(): UUID {
-        return state.conversation.id
+        return state.conversation!!.id
     }
 
     @Throws(IOException::class)

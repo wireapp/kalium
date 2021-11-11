@@ -4,19 +4,17 @@ import com.wire.kalium.assets.MessageText
 import com.wire.kalium.backend.models.NewBot
 import com.wire.kalium.crypto.CryptoFile
 import com.wire.kalium.helium.Application
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.util.*
 import javax.ws.rs.client.Client
 import javax.ws.rs.client.ClientBuilder
 
-@Disabled("This is an integration test which requires access to Wire account.")
 class ApplicationSenderTest {
     @Test
     @Throws(Exception::class)
     fun sendMessagesTest() {
-        val email = "your email"
-        val password = "secret"
+        val email = "dejan+joker@wire.com"
+        val password = "12345678"
         val conversationId = UUID.fromString("")
 
         val client: Client = ClientBuilder
@@ -38,7 +36,7 @@ class ApplicationSenderTest {
         val wireClient = app.getWireClient(conversationId)
 
         // Send text
-        wireClient.send(MessageText("Hi there!"))
+        wireClient.send(MessageText("Hi there from Kotlin!"))
 
         app.stop()
     }

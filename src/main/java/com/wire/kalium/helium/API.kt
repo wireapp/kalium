@@ -35,7 +35,6 @@ import javax.ws.rs.client.Client
 import javax.ws.rs.client.Entity
 import javax.ws.rs.client.Invocation
 import javax.ws.rs.client.WebTarget
-import javax.ws.rs.core.GenericType
 import javax.ws.rs.core.HttpHeaders
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
@@ -257,19 +256,22 @@ open class API(client: Client, convId: UUID?, token: String) : LoginClient(clien
 
     // FIXME: GenericType
     override fun getAvailablePrekeys(client: String): ArrayList<Int> {
-        return clientsPath.path(client)
-                .path("prekeys")
-                .request()
-                .header(HttpHeaders.AUTHORIZATION, bearer(token))
-                .accept(MediaType.APPLICATION_JSON)
-                .get(object : GenericType() {})
+        TODO("Fix me")
+
+//        return clientsPath.path(client)
+//                .path("prekeys")
+//                .request()
+//                .header(HttpHeaders.AUTHORIZATION, bearer(token))
+//                .accept(MediaType.APPLICATION_JSON)
+//                .get(object : GenericType() {})
     }
 
     override fun getUsers(ids: MutableCollection<UUID>): MutableCollection<User> {
-        return usersPath.queryParam("ids", ids.toTypedArray())
-                .request(MediaType.APPLICATION_JSON)
-                .header(HttpHeaders.AUTHORIZATION, bearer(token))
-                .get(object : GenericType() {})
+        TODO("Fix me")
+//        return usersPath.queryParam("ids", ids.toTypedArray())
+//                .request(MediaType.APPLICATION_JSON)
+//                .header(HttpHeaders.AUTHORIZATION, bearer(token))
+//                .get(object : GenericType() {})
     }
 
     @Throws(HttpException::class)
