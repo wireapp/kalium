@@ -17,15 +17,18 @@
 //
 package com.wire.kalium.backend.models
 
+import com.wire.kalium.tools.UUIDSerializer
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import java.util.*
 
+@Serializable
 data class User(
-        val id: UUID,
+        @Serializable(with = UUIDSerializer::class) val id: UUID,
         val name: String,
         val accent_id: Int,
         val handle: String,
         val service: Service,
         val assets: ArrayList<Asset?>,
         val email: String //maybe we can get nulls here
-
 )

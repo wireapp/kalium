@@ -17,15 +17,20 @@
 //
 package com.wire.kalium.backend.models
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 sealed class ConversationMember {
     abstract val userId: String
 }
 
+@Serializable
 data class OtherMember(
     override val userId: String,
     val service: ServiceReferenceResponse?
 ) : ConversationMember()
 
+@Serializable
 data class SelfMember(
     override val userId: String,
     val service: ServiceReferenceResponse?,
@@ -37,6 +42,7 @@ data class SelfMember(
     val otrArchiveReference: String?
 ) : ConversationMember()
 
+@Serializable
 data class ServiceReferenceResponse(
     val id: String,
     val provider: String

@@ -2,6 +2,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("jvm") version "1.5.31"
+    kotlin("plugin.serialization") version "1.5.31"
+
 }
 
 group = "com.wire.kalium"
@@ -18,12 +20,14 @@ dependencies {
     val javaxValidationVersion = "2.0.1.Final"
     val junitVersion = "5.7.1"
     val kotlinVersion = "1.5.31"
+    val ktxSerializationVersion = "1.3.0"
 
     implementation("com.wire:generic-message-proto:$genericMessageProtoVersion")
     implementation("com.wire:cryptobox4j:$cryptoboxVersion")
     implementation("com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion")
     implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
     implementation("javax.validation:validation-api:$javaxValidationVersion")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$ktxSerializationVersion")
     testImplementation(kotlin("test"))
 
     // cli
