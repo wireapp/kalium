@@ -17,6 +17,8 @@
 //
 package com.wire.kalium.backend.models
 
+
+// TODO: rename file
 import kotlinx.serialization.Serializable
 
 @Serializable

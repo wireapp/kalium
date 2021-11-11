@@ -17,18 +17,18 @@
 //
 package com.wire.kalium.backend.models
 
-import com.wire.kalium.tools.UUIDSerializer
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonProperty
 import java.util.*
 
-@Serializable
-data class User(
-        @Serializable(with = UUIDSerializer::class) val id: UUID,
-        val name: String,
-        val accent_id: Int,
-        val handle: String,
-        var service: Service? = null, // why null ? see API.kt line
-        val assets: ArrayList<Asset?>,
-        val email: String //maybe we can get nulls here
-)
+@JsonIgnoreProperties(ignoreUnknown = true)
+class Event {
+    @JsonProperty
+    var id: UUID? = null
+
+    @JsonProperty
+    var payload: Array<Payload>? = null
+
+    @JsonProperty("transient")
+    var trans = false
+}

@@ -17,18 +17,21 @@
 //
 package com.wire.kalium.backend.models
 
-import com.wire.kalium.tools.UUIDSerializer
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-import java.util.*
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.wire.kalium.models.otr.PreKey
 
-@Serializable
-data class User(
-        @Serializable(with = UUIDSerializer::class) val id: UUID,
-        val name: String,
-        val accent_id: Int,
-        val handle: String,
-        var service: Service? = null, // why null ? see API.kt line
-        val assets: ArrayList<Asset?>,
-        val email: String //maybe we can get nulls here
+data class NewClient(
+        val lastkey: PreKey,
+        val prekeys: List<PreKey>,
+        val password: String,
+        @JsonProperty("class")
+        val clazz: String,
+        val type: String,
+        val label: String,
+        //val sigkeys: Sig
 )
+
+//data class Sig (
+//    val enckey: String,
+//    val mackey: String
+//)

@@ -17,6 +17,7 @@
 //
 package com.wire.kalium.backend.models
 
+import java.util.*
 import com.wire.kalium.tools.UUIDSerializer
 import kotlinx.serialization.Serializable
 import java.util.UUID
@@ -26,7 +27,7 @@ data class NewBot(
         @Serializable(with = UUIDSerializer::class) val id: UUID,
         val client: String,
         val token: String,
-        val locale: String,
-        val origin: User,
-        val conversation: Conversation,
+        val last: UUID?,
+        val origin: User?,
+        val conversation: Conversation?,
 )
