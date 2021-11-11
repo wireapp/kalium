@@ -17,8 +17,10 @@
 //
 package com.wire.kalium.helium
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.wire.kalium.backend.models.*
+import com.wire.kalium.backend.models.Access
+import com.wire.kalium.backend.models.Cookie
+import com.wire.kalium.backend.models.NewClient
+import com.wire.kalium.backend.models.NotificationList
 import com.wire.kalium.exceptions.AuthException
 import com.wire.kalium.exceptions.HttpException
 import com.wire.kalium.models.otr.PreKey
@@ -27,11 +29,7 @@ import javax.ws.rs.client.Client
 import javax.ws.rs.client.Entity
 import javax.ws.rs.client.Invocation
 import javax.ws.rs.client.WebTarget
-import javax.ws.rs.core.HttpHeaders
-import javax.ws.rs.core.MediaType
-import javax.ws.rs.core.NewCookie
-import javax.ws.rs.core.Response
-import javax.ws.rs.core.Cookie
+import javax.ws.rs.core.*
 
 
 open class LoginClient(client: Client) {
@@ -204,19 +202,16 @@ open class LoginClient(client: Client) {
         throw response.readEntity(HttpException::class.java)
     }
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
     internal class _Login {
         var email: String? = null
         var password: String? = null
         var label: String? = null
     }
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
     internal class _Client {
         var id: String? = null
     }
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
     internal class _RemoveCookies {
         var password: String? = null
         var labels: List<String>? = null

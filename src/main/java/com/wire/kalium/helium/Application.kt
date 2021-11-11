@@ -54,7 +54,7 @@ open class Application(protected val email: String, protected val password: Stri
     @Throws(Exception::class)
     fun start() {
         loginClient = LoginClient(client)
-        val access: Access = loginClient.login(email, password, true)
+        val access: Access = loginClient.login(email, password)
         userId = access.userId
         // FIXME: converting cookie into cookie
         cookie = convert(access.cookie.toJavaxCookie())
