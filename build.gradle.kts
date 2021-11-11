@@ -35,7 +35,7 @@ dependencies {
     implementation("org.glassfish.jersey.core:jersey-client:$jerseyVersion")
     implementation("org.glassfish.tyrus.bundles:tyrus-standalone-client:$tyrusVersion")
     // not really sure if .jersey.inject one is needed
-    implementation("org.glassfish.jersey.inject:org.glassfish.jersey.inject:$tyrusVersion")
+    //implementation("org.glassfish.jersey.inject:jersey-hk2:$tyrusVersion")
 
 }
 
