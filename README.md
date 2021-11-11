@@ -35,8 +35,8 @@ compile-native:
 	    -I"${JAVA_HOME}/include" \
 	    -I"${JAVA_HOME}/include/$(JAVA_OS)" \
 	    -Ibuild/include \
-      -I../cryptobox-c/src \
-      -L../cryptobox-c/target/release/
+            -I../cryptobox-c/src \
+            -L../cryptobox-c/target/release \
 	    -Lbuild/lib \
 	    -lsodium \
 	    -lcryptobox \
