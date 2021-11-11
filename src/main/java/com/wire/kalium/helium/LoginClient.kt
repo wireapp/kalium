@@ -29,8 +29,10 @@ import javax.ws.rs.client.Client
 import javax.ws.rs.client.Entity
 import javax.ws.rs.client.Invocation
 import javax.ws.rs.client.WebTarget
-import javax.ws.rs.core.*
-
+import javax.ws.rs.core.HttpHeaders
+import javax.ws.rs.core.MediaType
+import javax.ws.rs.core.NewCookie
+import javax.ws.rs.core.Response
 
 open class LoginClient(client: Client) {
     @JvmField
@@ -118,7 +120,7 @@ open class LoginClient(client: Client) {
     }
 
     @Throws(HttpException::class)
-    fun renewAccessToken(cookie: Cookie): Access {
+    fun renewAccessToken(cookie: javax.ws.rs.core.Cookie): Access {
         val builder: Invocation.Builder = accessPath
                 .request(MediaType.APPLICATION_JSON)
                 .cookie(cookie)
@@ -141,7 +143,7 @@ open class LoginClient(client: Client) {
     }
 
     @Throws(HttpException::class)
-    fun logout(cookie: Cookie, token: String) {
+    fun logout(cookie: javax.ws.rs.core.Cookie, token: String) {
         val response: Response = accessPath
                 .path("logout")
                 .request(MediaType.APPLICATION_JSON)
