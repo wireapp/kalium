@@ -26,20 +26,20 @@ import java.util.UUID
 data class Conversation(
         @Serializable(with = UUIDSerializer::class) val id: UUID,
         val name: String,
-        @Serializable(with = UUIDSerializer::class) val creator: UUID,
-        val members: List<ConversationMember>
-)
-  /*
-        val id: UUID,
-        val name: String,
         val members: List<ConversationMember>
 ) {
-    var creator: UUID? = null
+    @Serializable(with = UUIDSerializer::class) var creator: UUID? = null
 
     constructor(id: UUID, name: String, members: List<ConversationMember>, creator: UUID): this (
             id = id, name = name, members = members
     ) {
-       this.creator = creator
+        this.creator = creator
     }
 }
+/*
+        @Serializable(with = UUIDSerializer::class) val id: UUID,
+        val name: String,
+        @Serializable(with = UUIDSerializer::class) val creator: UUID,
+        val members: List<ConversationMember>
+)
 */

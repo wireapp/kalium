@@ -27,7 +27,7 @@ data class NewBot(
         @Serializable(with = UUIDSerializer::class) val id: UUID,
         val client: String,
         val token: String,
-        val last: UUID?,
+        @Serializable(with = UUIDSerializer::class) val last: UUID?,
         val origin: User?,
         val conversation: Conversation?,
 )
