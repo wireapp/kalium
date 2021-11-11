@@ -17,11 +17,11 @@
 //
 package com.wire.kalium.helium
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.wire.kalium.backend.models.*
 import com.wire.kalium.exceptions.AuthException
 import com.wire.kalium.exceptions.HttpException
 import com.wire.kalium.models.otr.PreKey
+import kotlinx.serialization.Serializable
 import java.util.*
 import javax.ws.rs.client.Client
 import javax.ws.rs.client.Entity
@@ -204,19 +204,19 @@ open class LoginClient(client: Client) {
         throw response.readEntity(HttpException::class.java)
     }
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
+    @Serializable
     internal class _Login {
         var email: String? = null
         var password: String? = null
         var label: String? = null
     }
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
+    @Serializable
     internal class _Client {
         var id: String? = null
     }
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
+    @Serializable
     internal class _RemoveCookies {
         var password: String? = null
         var labels: List<String>? = null
