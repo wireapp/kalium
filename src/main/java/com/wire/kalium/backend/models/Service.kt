@@ -17,8 +17,10 @@
 //
 package com.wire.kalium.backend.models
 
+import kotlinx.serialization.Serializable
 import java.util.*
 
+@Serializable
 data class Service(
         var id: UUID,
         var provider: UUID

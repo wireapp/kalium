@@ -17,8 +17,11 @@
 //
 package com.wire.kalium.backend.models
 
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import java.util.*
 
+@Serializable
 data class User(
         val id: UUID,
         val name: String,
@@ -27,5 +30,4 @@ data class User(
         val service: Service,
         val assets: ArrayList<Asset?>,
         val email: String //maybe we can get nulls here
-
 )

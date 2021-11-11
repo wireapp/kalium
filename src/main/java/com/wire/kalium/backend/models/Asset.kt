@@ -17,6 +17,9 @@
 //
 package com.wire.kalium.backend.models
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class Asset(
         val type: String,
         val key: String,

@@ -17,6 +17,7 @@
 //
 package com.wire.kalium.backend.models
 
+import kotlinx.serialization.Serializable
 import java.util.UUID
 
 data class Payload(
@@ -62,6 +63,7 @@ data class Members(
     fun allMembers(): List<ConversationMember> = others + self
 }
 
+@Serializable
 data class Connection(
     /**
      * TODO: Replace String with something type-safe.

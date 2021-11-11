@@ -17,8 +17,10 @@
 //
 package com.wire.kalium.backend.models
 
+import kotlinx.serialization.Serializable
 import java.util.UUID
 
+@Serializable
 data class NewBot(
         val id: UUID,
         val client: String,

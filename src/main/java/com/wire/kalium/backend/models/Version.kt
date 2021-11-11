@@ -1,5 +1,6 @@
 package com.wire.kalium.backend.models
 
-data class Version(
-        val version: String
-)
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class Version(val version: String)
