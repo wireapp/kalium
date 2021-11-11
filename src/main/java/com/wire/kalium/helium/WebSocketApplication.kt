@@ -1,8 +1,8 @@
 package com.wire.kalium.helium
 
-import com.wire.helium.EventDecoder
 import com.wire.kalium.MessageHandler
 import com.wire.kalium.backend.models.NewBot
+import com.wire.kalium.helium.models.Event
 import com.wire.kalium.helium.models.NotificationList
 import com.wire.kalium.tools.Logger
 import org.glassfish.tyrus.client.ClientManager
@@ -15,7 +15,7 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 import javax.websocket.*
 
-@ClientEndpoint(decoders = EventDecoder::class)
+@ClientEndpoint(decoders = [EventDecoder::class])
 class WebSocketApplication : Application {
     private var handler: MessageHandler? = null
     private var userMessageResource: UserMessageResource? = null
@@ -23,8 +23,7 @@ class WebSocketApplication : Application {
     private var wsUrl: String?
     private var session: Session? = null
 
-    constructor(email: String, password: String, sync: Boolean, wsUrl: String?) {
-        :Application(email, password)
+    constructor(email: String, password: String, sync: Boolean, wsUrl: String?) : super(email = email, password = password) {
         this.sync = sync
         this.wsUrl = wsUrl
     }
@@ -72,36 +71,38 @@ class WebSocketApplication : Application {
         renewal.scheduleAtFixedRate({
             try {
                 if (session != null) {
-                    session.getBasicRemote().sendBinary(ByteBuffer.wrap("ping".toByteArray(StandardCharsets.UTF_8)))
+                    session!!.basicRemote.sendBinary(ByteBuffer.wrap("ping".toByteArray(StandardCharsets.UTF_8)))
                 }
             } catch (e: Exception) {
-                Logger.exception("Ping error: %s", e, e.message)
+                Logger.exception(message = "Ping error: ${e.message}", throwable = e)
             }
         }, 10, 10, TimeUnit.SECONDS)
 
         session = connectSocket(wsUrl)
-        Logger.info("Websocket %s uri: %s", session.isOpen(), session.getRequestURI())
+        Logger.info("Websocket ${session!!.isOpen} uri: ${session!!.requestURI}")
     }
 
     @OnMessage
-    fun onMessage(event: com.wire.helium.models.Event?) {
+    fun onMessage(event: Event?) {
         if (event == null) return
-        for (payload in event.payload) {
-            try {
-                when (payload.type) {
-                    "team.member-join", "user.update" -> userMessageResource!!.onUpdate(event.id, payload)
-                    "user.connection" -> userMessageResource!!.onNewMessage(
-                            event.id,  /* payload.connection.from, */ //todo check this!!
-                            payload.connection.convId,
-                            payload)
-                    "conversation.otr-message-add", "conversation.member-join", "conversation.member-leave", "conversation.create" -> userMessageResource!!.onNewMessage(
-                            event.id,
-                            payload.convId,
-                            payload)
-                    else -> Logger.info("Unknown type: %s, from: %s", payload.type, payload.from)
+        event.payload?.let { payloadArray ->
+            for (payload in payloadArray) {
+                try {
+                    when (payload.type) {
+                        "team.member-join", "user.update" -> userMessageResource!!.onUpdate(event.id, payload)
+                        "user.connection" -> userMessageResource!!.onNewMessage(
+                                event.id,  /* payload.connection.from, */ //todo check this!!
+                                payload.connection.conversation,
+                                payload)
+                        "conversation.otr-message-add", "conversation.member-join", "conversation.member-leave", "conversation.create" -> userMessageResource!!.onNewMessage(
+                                event.id,
+                                payload.conversation,
+                                payload)
+                        else -> Logger.info("Unknown type: %s, from: %s", payload.type, payload.from)
+                    }
+                } catch (e: Exception) {
+                    Logger.exception(message = "Endpoint:onMessage: ${e.message} ${payload.type}", throwable = e)
                 }
-            } catch (e: Exception) {
-                Logger.exception("Endpoint:onMessage: %s %s", e, e.message, payload.type)
             }
         }
     }
@@ -123,21 +124,21 @@ class WebSocketApplication : Application {
         val newBot: NewBot = storageFactory
                 .create(userId)
                 .getState()
-        val wss: URI = client
-                .target(wsUrl)
-                .path("await")
-                .queryParam("client", newBot.client)
-                .queryParam("access_token", newBot.token)
-                .getUri()
+        val wss: URI? = client
+                ?.target(wsUrl)
+                ?.path("await")
+                ?.queryParam("client", newBot.client)
+                ?.queryParam("access_token", newBot.token)
+                ?.uri
 
         // connect the Websocket
         val container: ClientManager = ClientManager.createClient()
-        container.getProperties().put(ClientProperties.RECONNECT_HANDLER, SocketReconnectHandler(5))
-        container.setDefaultMaxSessionIdleTimeout(-1)
+        container.properties[ClientProperties.RECONNECT_HANDLER] = SocketReconnectHandler(5)
+        container.defaultMaxSessionIdleTimeout = -1
         return container.connectToServer(this, wss)
     }
 
-    private fun since(state: NewBot): UUID? {
-        return if (state.locale != null) UUID.fromString(state.locale) else null
+    private fun since(state: NewBot): UUID {
+        return UUID.fromString(state.locale)
     }
 }

@@ -15,16 +15,16 @@ import java.util.concurrent.TimeUnit
 import javax.ws.rs.client.Client
 import javax.ws.rs.core.Cookie
 
-class Application(protected val email: String, protected val password: String) {
+open class Application(protected val email: String, protected val password: String) {
 
-    protected val renewal: ScheduledExecutorService
+    protected val renewal: ScheduledExecutorService = Executors.newScheduledThreadPool(1)
 
     protected var storageFactory: StorageFactory? = null
     protected var cryptoFactory: CryptoFactory? = null
     protected var client: Client? = null
     protected var userId: UUID? = null
         private set
-    private var loginClient: LoginClient? = null
+    var loginClient: LoginClient? = null
     private var cookie: Cookie? = null
 
     fun addClient(client: Client): Application {
@@ -54,33 +54,34 @@ class Application(protected val email: String, protected val password: String) {
         loginClient = LoginClient(client)
         val access: Access = loginClient!!.login(email, password, true)
         userId = access.userId
-        cookie = convert(access.getCookie())
+        cookie = convert(access.cookie)
         var clientId = clientId
         if (clientId == null) {
-            clientId = newDevice(userId!!, password, access.getAccessToken())
+            clientId = newDevice(userId!!, password, access.accessToken)
             Logger.info("Created new device. clientId: %s", clientId)
         }
-        var state: NewBot = updateState(userId!!, clientId, access.getAccessToken(), null)
+        var state: NewBot = updateState(userId!!, clientId, access.accessToken, null)
         Logger.info("Logged in as: %s, userId: %s, clientId: %s", email, state.id, state.client)
         val deviceId: String = state.client
         renewal.scheduleAtFixedRate({
             try {
                 val newAccess: Access = loginClient!!.renewAccessToken(cookie)
-                updateState(userId!!, deviceId, newAccess.getAccessToken(), null)
+                updateState(userId!!, deviceId, newAccess.accessToken, null)
                 if (newAccess.hasCookie()) {
-                    cookie = convert(newAccess.getCookie())
+                    cookie = convert(newAccess.cookie)
                 }
                 Logger.info("Updated access token. Exp in: %d sec, cookie: %s",
                         newAccess.expiresIn,
                         newAccess.hasCookie())
             } catch (e: Exception) {
-                Logger.exception("Token renewal error: %s", e, e.message)
+                Logger.exception(message = "Token renewal error: ${e.message}", throwable = e)
             }
         }, access.expiresIn.toLong(), access.expiresIn.toLong(), TimeUnit.SECONDS)
     }
 
+    // TODO: why to convert a javax Cookie into javax Cookie
     private fun convert(cookie: Cookie): Cookie {
-        return Cookie(cookie.name, cookie.value)
+            return Cookie(cookie.name, cookie.value)
     }
 
     @Throws(CryptoException::class, HttpException::class)
@@ -126,7 +127,4 @@ class Application(protected val email: String, protected val password: String) {
         private const val SIZE = 100
     }
 
-    init {
-        renewal = Executors.newScheduledThreadPool(1)
-    }
 }
