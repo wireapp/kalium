@@ -17,13 +17,13 @@
 //
 package com.wire.kalium.backend.models
 
-import java.util.UUID
+import java.util.*
 
 data class NewBot(
         val id: UUID,
         val client: String,
         val token: String,
-        val locale: String,
-        val origin: User,
-        val conversation: Conversation,
+        val last: UUID?,
+        val origin: User?,
+        val conversation: Conversation?,
 )

@@ -1,6 +1,7 @@
 package com.wire.kalium.helium
 
 import com.wire.bots.cryptobox.CryptoException
+import com.wire.kalium.IState
 import com.wire.kalium.backend.models.Access
 import com.wire.kalium.backend.models.NewBot
 import com.wire.kalium.backend.models.toJavaxCookie
@@ -20,8 +21,8 @@ open class Application(protected val email: String, protected val password: Stri
 
     protected val renewal: ScheduledExecutorService = Executors.newScheduledThreadPool(1)
 
-    protected var storageFactory: StorageFactory? = null
-    protected var cryptoFactory: CryptoFactory? = null
+    protected var storage: IState? = null
+    protected var crypto: Crypto? = null
     protected lateinit var client: Client
     protected var userId: UUID? = null
         private set
@@ -33,21 +34,21 @@ open class Application(protected val email: String, protected val password: Stri
         return this
     }
 
-    fun addCryptoFactory(cryptoFactory: CryptoFactory?): Application {
-        this.cryptoFactory = cryptoFactory
+    fun addCrypto(crypto: Crypto?): Application {
+        this.crypto = crypto
         return this
     }
 
-    fun addStorageFactory(storageFactory: StorageFactory?): Application {
-        this.storageFactory = storageFactory
+    fun addStorage(storage: IState?): Application {
+        this.storage = storage
         return this
     }
 
     @Throws(Exception::class)
     fun stop() {
         Logger.info("Logging out...")
-        val state: NewBot = storageFactory.create(userId).getState()
-        loginClient.logout(cookie, state.token)
+        val state: NewBot? = storage!!.getState()
+        loginClient.logout(cookie, state!!.token)
     }
 
     @Throws(Exception::class)
@@ -62,9 +63,9 @@ open class Application(protected val email: String, protected val password: Stri
             clientId = newDevice(userId!!, password, access.access_token)
             Logger.info("Created new device. clientId: %s", clientId)
         }
-        var state: NewBot = updateState(userId!!, clientId!!, access.access_token, null)
-        Logger.info("Logged in as: %s, userId: %s, clientId: %s", email, state.id, state.client)
-        val deviceId: String = state.client
+        val state: NewBot? = updateState(userId!!, clientId!!, access.access_token, null)
+        Logger.info("Logged in as: %s, userId: %s, clientId: %s", email, state!!.id, state.client)
+        val deviceId: String = state!!.client
         renewal.scheduleAtFixedRate({
             try {
                 val newAccess: Access = loginClient.renewAccessToken(cookie)
@@ -85,41 +86,32 @@ open class Application(protected val email: String, protected val password: Stri
 
     @Throws(CryptoException::class, HttpException::class)
     fun newDevice(userId: UUID, password: String, token: String): String? {
-        val crypto: Crypto = cryptoFactory.create(userId)
         val loginClient = LoginClient(client)
-        val preKeys: ArrayList<PreKey> = crypto.newPreKeys(0, 20)
-        val lastKey: PreKey = crypto.newLastPreKey()
+        val preKeys: ArrayList<PreKey> = crypto!!.newPreKeys(0, 20)
+        val lastKey: PreKey = crypto!!.newLastPreKey()
         return loginClient.registerClient(token, password, preKeys, lastKey)
     }
 
     val clientId: String?
         get() = try {
-            storageFactory.create(userId).getState().client
+            storage!!.getState()!!.client
         } catch (ex: IOException) {
             null
         }
 
     @Throws(CryptoException::class, IOException::class)
     fun getWireClient(conversationId: UUID?): WireClientImp {
-        return userMessageResource!!.getWireClient(conversationId)
+        val state = storage!!.getState()
+        val token = state.token
+        val api = API(client, conversationId, token)
+        return WireClientImp(api, crypto!!, state)
     }
 
     @Throws(IOException::class)
-    fun updateState(userId: UUID, clientId: String, token: String, last: UUID?): NewBot {
-        val state: State = storageFactory.create(userId)
-        var newBot: NewBot
-        try {
-            newBot = state.getState()
-            newBot.token = token
-        } catch (ex: IOException) {
-            newBot = NewBot(id = userId, client = clientId, token = token)
-        }
-
-        if (last != null)
-            newBot.locale = last.toString()  //todo: hahaha... rename locale to Last
-
-        state.saveState(newBot)
-        return state.getState()
+    fun updateState(userId: UUID, clientId: String, token: String, last: UUID?): NewBot? {
+        val newBot = NewBot(id = userId, client = clientId, token = token, last = last, conversation = null, origin = null)
+        storage!!.saveState(newBot)
+        return storage!!.getState()
     }
 
     companion object {
