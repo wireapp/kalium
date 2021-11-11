@@ -18,9 +18,6 @@
 package com.wire.kalium.models
 
 import java.util.UUID
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.annotation.JsonCreator
 import java.util.ArrayList
 
 //@JsonIgnoreProperties(ignoreUnknown = true)
@@ -51,7 +48,7 @@ class EditedTextMessage(
 ) : TextMessage(
         eventId = eventId,
         messageId = messageId,
-        convId = convId,
+        conversationId = convId,
         clientId = clientId,
         userId = userId,
         time = time

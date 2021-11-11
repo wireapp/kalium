@@ -19,27 +19,41 @@ package com.wire.kalium.models
 
 import java.util.UUID
 import com.waz.model.Messages
+import com.wire.kalium.tools.UUIDSerializer
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import java.util.ArrayList
 
 //@JsonIgnoreProperties(ignoreUnknown = true)
 //@JsonInclude(JsonInclude.Include.NON_NULL)
-open class TextMessage constructor(
+@Serializable
+open class TextMessage (
 //        @JsonProperty("eventId")
-        eventId: UUID,
+        @Serializable(with = UUIDSerializer::class)
+        @SerialName("eventId")
+        override val eventId: UUID,
 //        @JsonProperty("messageId")
-        messageId: UUID,
+        @Serializable(with = UUIDSerializer::class)
+        @SerialName("messageId")
+        override val messageId: UUID,
 //        @JsonProperty("conversationId")
-        convId: UUID,
+        @Serializable(with = UUIDSerializer::class)
+        @SerialName("conversationId")
+        override val conversationId: UUID,
 //        @JsonProperty("clientId")
-        clientId: String,
+        @SerialName("clientId")
+        override val clientId: String,
 //        @JsonProperty("userId")
-        userId: UUID,
+        @Serializable(with = UUIDSerializer::class)
+        @SerialName("userId")
+        override val userId: UUID,
 //        @JsonProperty("time")
-        time: String
-) : MessageBase(eventId = eventId, messageId = messageId, conversationId = convId, clientId = clientId, userId = userId, time = time) {
+        @SerialName("time")
+        override val time: String
+) : MessageBase(eventId = eventId, messageId = messageId, conversationId = conversationId, clientId = clientId, userId = userId, time = time) {
 
     var text: String? = null
-    var quotedMessageId: UUID? = null
+    @Serializable(with = UUIDSerializer::class) var quotedMessageId: UUID? = null
     var quotedMessageSha256: ByteArray? = null
     var mentions: ArrayList<Mention> = arrayListOf()
 
@@ -47,7 +61,7 @@ open class TextMessage constructor(
             this(
                     eventId = msgBase.eventId,
                     messageId = msgBase.messageId,
-                    convId = msgBase.conversationId,
+                    conversationId = msgBase.conversationId,
                     clientId = msgBase.clientId,
                     userId = msgBase.userId,
                     time = msgBase.time
@@ -56,7 +70,7 @@ open class TextMessage constructor(
     constructor(_messageText: Messages.Text, _messageBase: MessageBase): this(
         eventId = _messageBase.eventId,
         messageId = _messageBase.messageId,
-        convId = _messageBase.conversationId,
+        conversationId = _messageBase.conversationId,
         clientId = _messageBase.clientId,
         userId = _messageBase.userId,
         time = _messageBase.time
@@ -79,8 +93,9 @@ open class TextMessage constructor(
         mentions.add(mention)
     }
 
+    @Serializable
     data class Mention(
-            val userId: UUID,
+            @Serializable(with = UUIDSerializer::class) val userId: UUID,
             val offset: Int,
             val length: Int
     )
