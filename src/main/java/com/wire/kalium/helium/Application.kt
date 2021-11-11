@@ -4,7 +4,6 @@ import com.wire.bots.cryptobox.CryptoException
 import com.wire.kalium.IState
 import com.wire.kalium.backend.models.Access
 import com.wire.kalium.backend.models.NewBot
-import com.wire.kalium.backend.models.toJavaxCookie
 import com.wire.kalium.crypto.Crypto
 import com.wire.kalium.exceptions.HttpException
 import com.wire.kalium.models.otr.PreKey
@@ -13,7 +12,6 @@ import java.io.IOException
 import java.util.*
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.TimeUnit
 import javax.ws.rs.client.Client
 import javax.ws.rs.core.Cookie
 
@@ -55,9 +53,10 @@ open class Application(protected val email: String, protected val password: Stri
     fun start() {
         loginClient = LoginClient(client)
         val access: Access = loginClient.login(email, password)
-        userId = access.userId
+        userId = access.user
         // FIXME: converting cookie into cookie
-        cookie = convert(access.cookie.toJavaxCookie())
+        //cookie = convert(access.cookie.toJavaxCookie())
+
         var clientId = clientId
         if (clientId == null) {
             clientId = newDevice(userId!!, password, access.access_token)
@@ -65,18 +64,19 @@ open class Application(protected val email: String, protected val password: Stri
         }
         val state: NewBot? = updateState(userId!!, clientId!!, access.access_token, null)
         Logger.info("Logged in as: %s, userId: %s, clientId: %s", email, state!!.id, state.client)
-        val deviceId: String = state!!.client
-        renewal.scheduleAtFixedRate({
-            try {
-                val newAccess: Access = loginClient.renewAccessToken(cookie)
-                updateState(userId!!, deviceId, newAccess.access_token, null)
-                // FIXME: converting cookie into cookie
-                cookie = convert(newAccess.cookie.toJavaxCookie())
-                Logger.info("Updated access token. Exp in: ${newAccess.expires_in} sec, cookie: ${newAccess.cookie}")
-            } catch (e: Exception) {
-                Logger.exception(message = "Token renewal error: ${e.message}", throwable = e)
-            }
-        }, access.expires_in.toLong(), access.expires_in.toLong(), TimeUnit.SECONDS)
+        val deviceId: String = state.client
+
+//        renewal.scheduleAtFixedRate({
+//            try {
+//                val newAccess: Access = loginClient.renewAccessToken(cookie)
+//                updateState(userId!!, deviceId, newAccess.access_token, null)
+//                // FIXME: converting cookie into cookie
+//                cookie = convert(newAccess.cookie.toJavaxCookie())
+//                Logger.info("Updated access token. Exp in: ${newAccess.expires_in} sec, cookie: ${newAccess.cookie}")
+//            } catch (e: Exception) {
+//                Logger.exception(message = "Token renewal error: ${e.message}", throwable = e)
+//            }
+//        }, access.expires_in.toLong(), access.expires_in.toLong(), TimeUnit.SECONDS)
     }
 
     // TODO: why to convert a javax Cookie into javax Cookie

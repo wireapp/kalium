@@ -18,7 +18,6 @@
 package com.wire.kalium.helium
 
 import com.wire.kalium.backend.models.Access
-import com.wire.kalium.backend.models.Cookie
 import com.wire.kalium.backend.models.NewClient
 import com.wire.kalium.backend.models.NotificationList
 import com.wire.kalium.exceptions.AuthException
@@ -31,7 +30,6 @@ import javax.ws.rs.client.Invocation
 import javax.ws.rs.client.WebTarget
 import javax.ws.rs.core.HttpHeaders
 import javax.ws.rs.core.MediaType
-import javax.ws.rs.core.NewCookie
 import javax.ws.rs.core.Response
 
 open class LoginClient(client: Client) {
@@ -67,11 +65,15 @@ open class LoginClient(client: Client) {
             val entity: String = response.readEntity(String::class.java)
             throw AuthException(message = entity, code = status)
         }
+        val entity: String = response.readEntity(String::class.java)
+
         val access: Access = response.readEntity(Access::class.java)
-        val zuid: NewCookie? = response.cookies[COOKIE_NAME]
-        if (zuid != null) {
-            access.cookie = Cookie(name = zuid.name, value = zuid.value)
-        }
+
+        //TODO uncomment this
+//        val zuid: NewCookie? = response.cookies[COOKIE_NAME]
+//        if (zuid != null) {
+//            access.cookie = Cookie(name = zuid.name, value = zuid.value)
+//        }
         return access
     }
 
@@ -135,10 +137,12 @@ open class LoginClient(client: Client) {
             throw response.readEntity(HttpException::class.java)
         }
         val access: Access = response.readEntity(Access::class.java)
-        val zuid: NewCookie? = response.cookies[COOKIE_NAME]
-        if (zuid != null) {
-            access.cookie =  Cookie(name = zuid.name, value = zuid.value)
-        }
+
+        //TODO uncomment this
+//        val zuid: NewCookie? = response.cookies[COOKIE_NAME]
+//        if (zuid != null) {
+//            access.cookie =  Cookie(name = zuid.name, value = zuid.value)
+//        }
         return access
     }
 
