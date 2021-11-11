@@ -1,7 +1,7 @@
 package com.wire.kalium.helium
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.wire.kalium.helium.models.Event
+import com.wire.kalium.backend.models.Event
 import com.wire.kalium.tools.Logger
 import com.wire.kalium.tools.Util
 import java.io.IOException

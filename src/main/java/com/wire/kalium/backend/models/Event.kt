@@ -15,11 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 //
-package com.wire.kalium.helium.models
+package com.wire.kalium.backend.models
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.wire.kalium.backend.models.Payload
 import java.util.*
 
 @JsonIgnoreProperties(ignoreUnknown = true)

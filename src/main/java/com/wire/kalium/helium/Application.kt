@@ -1,10 +1,10 @@
 package com.wire.kalium.helium
 
 import com.wire.bots.cryptobox.CryptoException
+import com.wire.kalium.backend.models.Access
 import com.wire.kalium.backend.models.NewBot
 import com.wire.kalium.crypto.Crypto
 import com.wire.kalium.exceptions.HttpException
-import com.wire.kalium.helium.models.Access
 import com.wire.kalium.models.otr.PreKey
 import com.wire.kalium.tools.Logger
 import java.io.IOException

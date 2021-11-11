@@ -1,4 +1,4 @@
-package com.wire.kalium.helium.models
+package com.wire.kalium.backend.models
 
 data class Cookie (
         var name: String,

@@ -18,9 +18,9 @@
 package com.wire.kalium.helium
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.wire.kalium.backend.models.*
 import com.wire.kalium.exceptions.AuthException
 import com.wire.kalium.exceptions.HttpException
-import com.wire.kalium.helium.models.*
 import com.wire.kalium.models.otr.PreKey
 import java.util.*
 import javax.ws.rs.client.Client
