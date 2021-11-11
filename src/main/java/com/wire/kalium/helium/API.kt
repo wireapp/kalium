@@ -105,7 +105,7 @@ open class API(client: Client, convId: UUID?, token: String) : LoginClient(clien
 
     @Throws(HttpException::class)
     override fun acceptConnection(user: UUID) {
-        val connection = Connection(status = "accepted")
+        val connection = Connection(status = "accepted", to = user, from = user, conversation = UUID.fromString(convId))
         val response: Response = connectionsPath.path(user.toString()).request(MediaType.APPLICATION_JSON).header(HttpHeaders.AUTHORIZATION, bearer(token)).put(Entity.entity(connection, MediaType.APPLICATION_JSON))
         if (response.status >= 400) {
             throw HttpException(response.readEntity(String::class.java), response.status)

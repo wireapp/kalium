@@ -2,37 +2,31 @@ package com.wire.kalium
 
 import com.google.protobuf.InvalidProtocolBufferException
 import com.waz.model.Messages.GenericMessage
-import com.wire.bots.cryptobox.IStorage
 import com.wire.helium.helpers.DummyAPI
 import com.wire.helium.helpers.MemStorage
 import com.wire.helium.helpers.Util.deleteDir
+import com.wire.kalium.assets.MessageText
+import com.wire.kalium.backend.models.NewBot
+import com.wire.kalium.crypto.CryptoFile
 import com.wire.kalium.helium.WireClientImp
-import com.wire.xenon.assets.MessageText
-import com.wire.xenon.backend.models.NewBot
-import com.wire.xenon.crypto.CryptoDatabase
-import com.wire.xenon.crypto.storage.JdbiStorage
-import com.wire.xenon.models.otr.OtrMessage
+import com.wire.kalium.models.otr.OtrMessage
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.io.IOException
 import java.util.*
 
-class End2EndTest : DatabaseTestBase() {
-    private var storage: IStorage? = null
+class End2EndTest {
     private var rootFolder: String? = null
 
     @BeforeEach
     fun beforeEach() {
         rootFolder = "helium-unit-test-" + UUID.randomUUID()
-        storage = JdbiStorage(jdbi)
-        flyway.migrate()
     }
 
     @AfterEach
     @Throws(IOException::class)
     fun afterEach() {
-        flyway.clean()
         deleteDir(rootFolder)
     }
 
@@ -41,11 +35,9 @@ class End2EndTest : DatabaseTestBase() {
     fun testAliceToAlice() {
         val aliceId = UUID.randomUUID()
         val client1 = "alice1_" + UUID.randomUUID()
-        val state = NewBot()
-        state.id = aliceId
-        state.client = aliceId.toString()
-        val aliceCrypto = CryptoDatabase(aliceId, storage, "$rootFolder/testAliceToAlice/1")
-        val aliceCrypto1 = CryptoDatabase(aliceId, storage, "$rootFolder/testAliceToAlice/2")
+        val state = NewBot(id = aliceId, client = aliceId.toString(), token = null)
+        val aliceCrypto = CryptoFile("$rootFolder/testAliceToAlice/1", aliceId)
+        val aliceCrypto1 = CryptoFile("$rootFolder/testAliceToAlice/2", aliceId)
         val api = DummyAPI()
         api.addDevice(aliceId, client1, aliceCrypto1.box().newLastPreKey())
         val aliceClient = WireClientImp(api, aliceCrypto, state, null)
@@ -67,13 +59,11 @@ class End2EndTest : DatabaseTestBase() {
         val aliceId = UUID.randomUUID()
         val client1 = "bob1"
         val storage = MemStorage()
-        val aliceCrypto = CryptoDatabase(aliceId, storage, "$rootFolder/testAliceToBob")
-        val bobCrypto = CryptoDatabase(bobId, storage, "$rootFolder/testAliceToBob")
+        val aliceCrypto = CryptoFile("$rootFolder/testAliceToBob", aliceId)
+        val bobCrypto = CryptoFile("$rootFolder/testAliceToBob", bobId)
         val api = DummyAPI()
         api.addDevice(bobId, client1, bobCrypto.box().newLastPreKey())
-        val state = NewBot()
-        state.id = aliceId
-        state.client = "alice1"
+        val state = NewBot(id = aliceId, client = "alice1")
         val aliceClient = WireClientImp(api, aliceCrypto, state, null)
         for (i in 0..9) {
             val text = "Hello Bob, This is Alice!"
@@ -95,17 +85,15 @@ class End2EndTest : DatabaseTestBase() {
         val client2 = "bob2_" + UUID.randomUUID()
         val client3 = "alice3_" + UUID.randomUUID()
         val aliceCl = "alice_" + UUID.randomUUID()
-        val aliceCrypto1 = CryptoDatabase(aliceId, storage, "$rootFolder/testMultiDevicePostgres/alice/1")
-        val bobCrypto1 = CryptoDatabase(bobId, storage, "$rootFolder/testMultiDevicePostgres/bob/1")
-        val bobCrypto2 = CryptoDatabase(bobId, storage, "$rootFolder/testMultiDevicePostgres/bob/2")
+        val aliceCrypto1 = CryptoFile("$rootFolder/testMultiDevicePostgres/alice/1", aliceId)
+        val bobCrypto1 = CryptoFile("$rootFolder/testMultiDevicePostgres/bob/1", bobId)
+        val bobCrypto2 = CryptoFile("$rootFolder/testMultiDevicePostgres/bob/2", bobId)
         val api = DummyAPI()
         api.addDevice(bobId, client1, bobCrypto1.box().newLastPreKey())
         api.addDevice(bobId, client2, bobCrypto2.box().newLastPreKey())
         api.addDevice(aliceId, client3, aliceCrypto1.box().newLastPreKey())
-        val aliceCrypto = CryptoDatabase(aliceId, storage, "$rootFolder/testMultiDevicePostgres/alice")
-        val state = NewBot()
-        state.id = aliceId
-        state.client = aliceCl
+        val aliceCrypto = CryptoFile("$rootFolder/testMultiDevicePostgres/alice", aliceId)
+        val state = NewBot(id = aliceId, client = aliceCl)
         val aliceClient = WireClientImp(api, aliceCrypto, state, null)
         for (i in 0..9) {
             val text = "Hello Bob, This is Alice!"

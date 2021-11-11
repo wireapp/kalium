@@ -35,7 +35,7 @@ class MemStorage : IStorage {
 
     override fun fetchPrekeys(id: String): Array<PreKey> {
         val ret = prekeys[id]
-        return ret?.toTypedArray()
+        return ret?.toTypedArray()!!
     }
 
     override fun insertPrekey(id: String, kid: Int, data: ByteArray) {
@@ -63,9 +63,9 @@ class MemStorage : IStorage {
 
     private inner class Record  //this.key = key;
     internal constructor(key: String?, //private final String key;
-                         private var data: ByteArray) : IRecord {
+                         private var data: ByteArray?) : IRecord {
         var locked = false
-        override fun getData(): ByteArray {
+        override fun getData(): ByteArray? {
             return data
         }
 
