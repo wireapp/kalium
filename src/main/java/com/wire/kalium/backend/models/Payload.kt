@@ -21,6 +21,7 @@ import com.wire.kalium.tools.UUIDSerializer
 import kotlinx.serialization.Serializable
 import java.util.UUID
 
+@Serializable
 data class Payload(
     /**
      * TODO: Replace String with something type-safe.
@@ -35,28 +36,30 @@ data class Payload(
      *   "user.connection"
      **/
     val type: String,
-    val conversation: UUID,
-    val from: UUID,
+    @Serializable(with = UUIDSerializer::class) val conversation: UUID,
+    @Serializable(with = UUIDSerializer::class) val from: UUID,
     val time: String,
     val data: Data,
-    var team: UUID,
+    @Serializable(with = UUIDSerializer::class) var team: UUID,
     val connection: Connection,
     var user: User,
 )
 
+@Serializable
 data class Data(
-    val sender: String,
-    val recipient: String,
-    val text: String,
-    val user_ids: List<UUID>,
-    val name: String,
-    val id: String,
-    val key: String,
-    val user: UUID,
-    val creator: UUID,
-    val members: Members,
+        val sender: String,
+        val recipient: String,
+        val text: String,
+        val user_ids: List<@Serializable(with = UUIDSerializer::class) UUID>,
+        val name: String,
+        val id: String,
+        val key: String,
+        @Serializable(with = UUIDSerializer::class) val user: UUID,
+        @Serializable(with = UUIDSerializer::class) val creator: UUID,
+        val members: Members,
 )
 
+@Serializable
 data class Members(
     val others: List<OtherMember>,
     val self: SelfMember
