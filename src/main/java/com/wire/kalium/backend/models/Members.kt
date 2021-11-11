@@ -19,6 +19,7 @@ package com.wire.kalium.backend.models
 
 import kotlinx.serialization.Serializable
 
+@Serializable
 sealed class ConversationMember {
     abstract val userId: String
 }
