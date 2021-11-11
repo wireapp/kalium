@@ -17,15 +17,18 @@
 //
 package com.wire.kalium.models
 
+import com.wire.kalium.tools.UUIDSerializer
+import kotlinx.serialization.Serializable
 import java.util.UUID
 
+@Serializable
 open class MessageBase(
-        val messageId: UUID,
-        val eventId: UUID,
-        val userId: UUID,
-        val clientId: String,
-        val conversationId: UUID,
-        val time: String
+        @Serializable(with = UUIDSerializer::class) open val messageId: UUID,
+        @Serializable(with = UUIDSerializer::class)  open val eventId: UUID,
+        @Serializable(with = UUIDSerializer::class)  open val userId: UUID,
+        open val clientId: String,
+        @Serializable(with = UUIDSerializer::class) open val conversationId: UUID,
+        open val time: String
 ) {
     constructor(msg: MessageBase) : this(
             eventId = msg.eventId,
