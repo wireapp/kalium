@@ -19,18 +19,24 @@ dependencies {
     val junitVersion = "5.7.1"
     val kotlinVersion = "1.5.31"
     val jakartaVersion = "2.1.6"
+    val jerseyVersion = "2.32"
+    val tyrusVersion = "1.13.1"
+
 
     implementation("com.wire:generic-message-proto:$genericMessageProtoVersion")
     implementation("com.wire:cryptobox4j:$cryptoboxVersion")
     implementation("com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion")
     implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
     implementation("javax.validation:validation-api:$javaxValidationVersion")
-    implementation("jakarta.ws.rs:jakarta.ws.rs-api:$jakartaVersion")
-
     testImplementation(kotlin("test"))
 
     // web service
     implementation("jakarta.ws.rs:jakarta.ws.rs-api:$jakartaVersion")
+    implementation("org.glassfish.jersey.core:jersey-client:$jerseyVersion")
+    implementation("org.glassfish.tyrus.bundles:tyrus-standalone-client:$tyrusVersion")
+    // not really sure if .jersey.inject one is needed
+    implementation("org.glassfish.jersey.inject:org.glassfish.jersey.inject:$tyrusVersion")
+
 }
 
 tasks.test {

@@ -25,6 +25,7 @@ import com.wire.kalium.backend.models.Conversation
 import com.wire.kalium.backend.models.ConversationMember
 import com.wire.kalium.backend.models.Service
 import com.wire.kalium.backend.models.User
+import com.wire.kalium.exceptions.AuthException
 import com.wire.kalium.exceptions.HttpException
 import com.wire.kalium.helium.models.Connection
 import com.wire.kalium.models.AssetKey
@@ -60,7 +61,7 @@ open class API(client: Client, convId: UUID?, token: String) : LoginClient(clien
         if (statusCode == 412) {
             return response.readEntity(Devices::class.java)
         } else if (statusCode >= 400) {
-            throw HttpException(response.statusInfo.reasonPhrase, response.status)
+            throw AuthException(response.statusInfo.reasonPhrase, response.status)
         }
         response.close()
         return Devices()
@@ -261,11 +262,19 @@ open class API(client: Client, convId: UUID?, token: String) : LoginClient(clien
 
     // FIXME: GenericType
     override fun getAvailablePrekeys(client: String): ArrayList<Int> {
-        return clientsPath.path(client).path("prekeys").request().header(HttpHeaders.AUTHORIZATION, bearer(token)).accept(MediaType.APPLICATION_JSON).get(object : GenericType() {})
+        return clientsPath.path(client)
+                .path("prekeys")
+                .request()
+                .header(HttpHeaders.AUTHORIZATION, bearer(token))
+                .accept(MediaType.APPLICATION_JSON)
+                .get(object : GenericType() {})
     }
 
     override fun getUsers(ids: MutableCollection<UUID>): MutableCollection<User> {
-        return usersPath.queryParam("ids", ids.toTypedArray()).request(MediaType.APPLICATION_JSON).header(HttpHeaders.AUTHORIZATION, bearer(token)).get(object : GenericType() {})
+        return usersPath.queryParam("ids", ids.toTypedArray())
+                .request(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, bearer(token))
+                .get(object : GenericType() {})
     }
 
     @Throws(HttpException::class)

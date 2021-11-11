@@ -18,11 +18,9 @@
 package com.wire.kalium.helium
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.wire.kalium.exceptions.AuthException
 import com.wire.kalium.exceptions.HttpException
-import com.wire.kalium.helium.models.Access
-import com.wire.kalium.helium.models.Cookie
-import com.wire.kalium.helium.models.NewClient
-import com.wire.kalium.helium.models.NotificationList
+import com.wire.kalium.helium.models.*
 import com.wire.kalium.models.otr.PreKey
 import java.util.*
 import javax.ws.rs.client.Client
@@ -54,33 +52,30 @@ open class LoginClient(client: Client) {
         login.password = password
         login.label = LABEL
         val response: Response = loginPath.queryParam("persist", persisted).request(MediaType.APPLICATION_JSON).post(Entity.entity(login, MediaType.APPLICATION_JSON))
-        val status: Int = response.getStatus()
+        val status: Int = response.status
         if (status == 401) {   //todo nginx returns text/html for 401. Cannot deserialize as json
             response.readEntity(String::class.java)
-            throw HttpException(message = null, code = status, label = "ohh")
+            throw AuthException(message = null, code = status)
         }
         if (status == 403) {
             val entity: String = response.readEntity(String::class.java)
-            throw HttpException(message = entity, code = status, label = "ohh")
+            throw AuthException(message = entity, code = status)
         }
         if (status >= 400) {
             val entity: String = response.readEntity(String::class.java)
-            throw HttpException(entity, status)
+            throw AuthException(message = entity, code = status)
         }
         val access: Access = response.readEntity(Access::class.java)
-        val zuid: NewCookie = response.getCookies().get(COOKIE_NAME)
+        val zuid: NewCookie? = response.cookies[COOKIE_NAME]
         if (zuid != null) {
-            val c = Cookie()
-            c.name = zuid.getName()
-            c.value = zuid.getValue()
-            access.setCookie(c)
+            access.cookie = Cookie(name = zuid.name, value = zuid.value)
         }
         return access
     }
 
     @Deprecated("")
     @Throws(HttpException::class)
-    fun registerClient(token: String, password: String, preKeys: ArrayList<PreKey>, lastKey: PreKey): String {
+    fun registerClient(token: String, password: String, preKeys: ArrayList<PreKey>, lastKey: PreKey): String? {
         val deviceClass = "tablet"
         val type = "permanent"
         return registerClient(token, password, preKeys, lastKey, deviceClass, type, LABEL)
@@ -95,7 +90,7 @@ open class LoginClient(client: Client) {
      */
     @Throws(HttpException::class)
     fun registerClient(token: String, password: String, preKeys: ArrayList<PreKey>, lastKey: PreKey,
-                       clazz: String, type: String, label: String): String {
+                       clazz: String, type: String, label: String): String? {
         val newClient = NewClient()
         newClient.password = password
         newClient.lastkey = lastKey
@@ -112,7 +107,7 @@ open class LoginClient(client: Client) {
         val status: Int = response.getStatus()
         if (status == 401) {   //todo nginx returns text/html for 401. Cannot deserialize as json
             val entity = response.readEntity(String::class.java)
-            throw HttpException(message = entity, code = status, label = "ohh")
+            throw AuthException(message = entity, code = status)
         } else if (status >= 400) {
             throw response.readEntity(HttpException::class.java)
         }
@@ -120,43 +115,40 @@ open class LoginClient(client: Client) {
     }
 
     @Throws(HttpException::class)
-    fun renewAccessToken(cookie: Cookie?): Access {
+    fun renewAccessToken(cookie: Cookie): Access {
         val builder: Invocation.Builder = accessPath
                 .request(MediaType.APPLICATION_JSON)
-                .cookie(cookie)
+                .cookie(cookie.toJavaxCookie())
         val response: Response = builder.post(Entity.entity(null, MediaType.APPLICATION_JSON))
         val status: Int = response.getStatus()
         if (status == 401) {   //todo nginx returns text/html for 401. Cannot deserialize as json
             response.readEntity(String::class.java)
-            throw HttpException(message = null, code = status, label = "ohh")
+            throw AuthException(code = status)
         } else if (status == 403) {
             throw response.readEntity(AuthException::class.java)
         } else if (status >= 400) {
             throw response.readEntity(HttpException::class.java)
         }
         val access: Access = response.readEntity(Access::class.java)
-        val zuid: NewCookie = response.getCookies().get(COOKIE_NAME)
+        val zuid: NewCookie? = response.cookies[COOKIE_NAME]
         if (zuid != null) {
-            val c = Cookie()
-            c.name = zuid.getName()
-            c.value = zuid.getValue()
-            access.setCookie(c)
+            access.cookie =  Cookie(name = zuid.name, value = zuid.value)
         }
         return access
     }
 
     @Throws(HttpException::class)
-    fun logout(cookie: Cookie?, token: String) {
+    fun logout(cookie: Cookie, token: String) {
         val response: Response = accessPath
                 .path("logout")
                 .request(MediaType.APPLICATION_JSON)
                 .header(HttpHeaders.AUTHORIZATION, bearer(token))
-                .cookie(cookie)
+                .cookie(cookie.toJavaxCookie())
                 .post(Entity.entity(null, MediaType.APPLICATION_JSON))
         val status: Int = response.getStatus()
         if (status == 401) {   //todo nginx returns text/html for 401. Cannot deserialize as json
             response.readEntity(String::class.java)
-            throw HttpException(message = null, code = status, label = "ohh")
+            throw AuthException(code = status)
         } else if (status == 403) {
             throw response.readEntity(AuthException::class.java)
         } else if (status >= 400) {
@@ -170,10 +162,10 @@ open class LoginClient(client: Client) {
         removeCookies.password = password
         removeCookies.labels = listOf(LABEL)
         val response: Response = cookiesPath.request(MediaType.APPLICATION_JSON).header(HttpHeaders.AUTHORIZATION, bearer(token)).post(Entity.entity(removeCookies, MediaType.APPLICATION_JSON))
-        val status: Int = response.getStatus()
+        val status: Int = response.status
         if (status == 401) {   //todo nginx returns text/html for 401. Cannot deserialize as json
             response.readEntity(String::class.java)
-            throw HttpException(message = null, code = status, label = "ohh")
+            throw AuthException(code = status)
         } else if (status >= 400) {
             throw response.readEntity(HttpException::class.java)
         }
@@ -200,7 +192,7 @@ open class LoginClient(client: Client) {
             return response.readEntity(NotificationList::class.java)
         } else if (status == 401) {   //todo nginx returns text/html for 401. Cannot deserialize as json
             response.readEntity(String::class.java)
-            throw HttpException(message = null, code = status, label = "ohh")
+            throw AuthException(code = status)
         } else if (status == 403) {
             throw response.readEntity(AuthException::class.java)
         }
