@@ -17,6 +17,8 @@
 //
 package com.wire.kalium.backend.models
 
+import com.wire.kalium.tools.UUIDSerializer
+import kotlinx.serialization.Serializable
 import java.util.UUID
 
 data class Payload(
@@ -62,15 +64,16 @@ data class Members(
     fun allMembers(): List<ConversationMember> = others + self
 }
 
+@Serializable
 data class Connection(
-    /**
+        /**
      * TODO: Replace String with something type-safe.
      *   Maybe an Enum? What are the possible values of this status? Bad discoverability too.
      *   Currently known: pending, accepted, sent
      **/
     val status: String,
 
-    val from: UUID,
-    val to: UUID,
-    val conversation: UUID
+        @Serializable(with = UUIDSerializer::class) val from: UUID,
+        @Serializable(with = UUIDSerializer::class) val to: UUID,
+        @Serializable(with = UUIDSerializer::class) val conversation: UUID
 )

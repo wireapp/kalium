@@ -18,8 +18,18 @@
 package com.wire.kalium.backend.models
 
 import java.util.*
+import com.wire.kalium.tools.UUIDSerializer
+import kotlinx.serialization.Serializable
+import java.util.UUID
 
+@Serializable
 data class Conversation(
+        @Serializable(with = UUIDSerializer::class) val id: UUID,
+        val name: String,
+        @Serializable(with = UUIDSerializer::class) val creator: UUID,
+        val members: List<ConversationMember>
+)
+  /*
         val id: UUID,
         val name: String,
         val members: List<ConversationMember>
@@ -32,3 +42,4 @@ data class Conversation(
        this.creator = creator
     }
 }
+*/
