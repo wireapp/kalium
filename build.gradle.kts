@@ -27,8 +27,8 @@ dependencies {
 
     implementation("com.wire:generic-message-proto:$genericMessageProtoVersion")
     implementation("com.wire:cryptobox4j:$cryptoboxVersion")
-    implementation("com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion")
-    implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
+    //implementation("com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion")
+    //implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
     implementation("javax.validation:validation-api:$javaxValidationVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$ktxSerializationVersion")
     testImplementation(kotlin("test"))

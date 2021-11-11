@@ -17,18 +17,13 @@
 //
 package com.wire.kalium.backend.models
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.annotation.JsonProperty
+import com.wire.kalium.tools.UUIDSerializer
+import kotlinx.serialization.Serializable
 import java.util.*
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+@Serializable
 class Event {
-    @JsonProperty
-    var id: UUID? = null
-
-    @JsonProperty
+    var id: @Serializable(with = UUIDSerializer::class) UUID? = null
     var payload: Array<Payload>? = null
-
-    @JsonProperty("transient")
-    var trans = false
+    var transient = false
 }

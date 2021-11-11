@@ -1,9 +1,10 @@
 package com.wire.kalium.helium
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.wire.kalium.backend.models.Event
+import com.wire.kalium.tools.KtxSerializer
 import com.wire.kalium.tools.Logger
 import com.wire.kalium.tools.Util
+import kotlinx.serialization.decodeFromString
 import java.io.IOException
 import java.io.InputStream
 import javax.websocket.Decoder
@@ -19,15 +20,11 @@ class EventDecoder : Decoder.BinaryStream<Event?> {
             if (str.equals("pong", ignoreCase = true)) {
                 Logger.debug("MessageDecoder: %s", str)
             } else {
-                return mapper.readValue<Event>(str, Event::class.java)
+                return KtxSerializer.json.decodeFromString<Event>(str)
             }
         } catch (e: IOException) {
             Logger.exception(message = "MessageDecoder: ${e.message}", throwable = e)
         }
         return null
-    }
-
-    companion object {
-        private val mapper = ObjectMapper()
     }
 }
