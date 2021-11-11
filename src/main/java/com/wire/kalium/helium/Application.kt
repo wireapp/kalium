@@ -3,6 +3,7 @@ package com.wire.kalium.helium
 import com.wire.bots.cryptobox.CryptoException
 import com.wire.kalium.backend.models.Access
 import com.wire.kalium.backend.models.NewBot
+import com.wire.kalium.backend.models.toJavaxCookie
 import com.wire.kalium.crypto.Crypto
 import com.wire.kalium.exceptions.HttpException
 import com.wire.kalium.models.otr.PreKey
@@ -21,11 +22,11 @@ open class Application(protected val email: String, protected val password: Stri
 
     protected var storageFactory: StorageFactory? = null
     protected var cryptoFactory: CryptoFactory? = null
-    protected var client: Client? = null
+    protected lateinit var client: Client
     protected var userId: UUID? = null
         private set
-    var loginClient: LoginClient? = null
-    private var cookie: Cookie? = null
+    lateinit var loginClient: LoginClient
+    private lateinit var cookie: Cookie
 
     fun addClient(client: Client): Application {
         this.client = client
@@ -46,48 +47,46 @@ open class Application(protected val email: String, protected val password: Stri
     fun stop() {
         Logger.info("Logging out...")
         val state: NewBot = storageFactory.create(userId).getState()
-        loginClient!!.logout(cookie, state.token)
+        loginClient.logout(cookie, state.token)
     }
 
     @Throws(Exception::class)
     fun start() {
         loginClient = LoginClient(client)
-        val access: Access = loginClient!!.login(email, password, true)
+        val access: Access = loginClient.login(email, password, true)
         userId = access.userId
-        cookie = convert(access.cookie)
+        // FIXME: converting cookie into cookie
+        cookie = convert(access.cookie.toJavaxCookie())
         var clientId = clientId
         if (clientId == null) {
-            clientId = newDevice(userId!!, password, access.accessToken)
+            clientId = newDevice(userId!!, password, access.access_token)
             Logger.info("Created new device. clientId: %s", clientId)
         }
-        var state: NewBot = updateState(userId!!, clientId, access.accessToken, null)
+        var state: NewBot = updateState(userId!!, clientId!!, access.access_token, null)
         Logger.info("Logged in as: %s, userId: %s, clientId: %s", email, state.id, state.client)
         val deviceId: String = state.client
         renewal.scheduleAtFixedRate({
             try {
-                val newAccess: Access = loginClient!!.renewAccessToken(cookie)
-                updateState(userId!!, deviceId, newAccess.accessToken, null)
-                if (newAccess.hasCookie()) {
-                    cookie = convert(newAccess.cookie)
-                }
-                Logger.info("Updated access token. Exp in: %d sec, cookie: %s",
-                        newAccess.expiresIn,
-                        newAccess.hasCookie())
+                val newAccess: Access = loginClient.renewAccessToken(cookie)
+                updateState(userId!!, deviceId, newAccess.access_token, null)
+                // FIXME: converting cookie into cookie
+                cookie = convert(newAccess.cookie.toJavaxCookie())
+                Logger.info("Updated access token. Exp in: ${newAccess.expires_in} sec, cookie: ${newAccess.cookie}")
             } catch (e: Exception) {
                 Logger.exception(message = "Token renewal error: ${e.message}", throwable = e)
             }
-        }, access.expiresIn.toLong(), access.expiresIn.toLong(), TimeUnit.SECONDS)
+        }, access.expires_in.toLong(), access.expires_in.toLong(), TimeUnit.SECONDS)
     }
 
     // TODO: why to convert a javax Cookie into javax Cookie
     private fun convert(cookie: Cookie): Cookie {
-            return Cookie(cookie.name, cookie.value)
+        return Cookie(cookie.name, cookie.value)
     }
 
     @Throws(CryptoException::class, HttpException::class)
-    fun newDevice(userId: UUID, password: String, token: String): String {
+    fun newDevice(userId: UUID, password: String, token: String): String? {
         val crypto: Crypto = cryptoFactory.create(userId)
-        val loginClient = LoginClient(client!!)
+        val loginClient = LoginClient(client)
         val preKeys: ArrayList<PreKey> = crypto.newPreKeys(0, 20)
         val lastKey: PreKey = crypto.newLastPreKey()
         return loginClient.registerClient(token, password, preKeys, lastKey)
@@ -111,7 +110,7 @@ open class Application(protected val email: String, protected val password: Stri
         var newBot: NewBot
         try {
             newBot = state.getState()
-            newBot.setToken(token)
+            newBot.token = token
         } catch (ex: IOException) {
             newBot = NewBot(id = userId, client = clientId, token = token)
         }

@@ -31,6 +31,8 @@ import javax.ws.rs.core.HttpHeaders
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.NewCookie
 import javax.ws.rs.core.Response
+import javax.ws.rs.core.Cookie
+
 
 open class LoginClient(client: Client) {
     @JvmField
@@ -91,15 +93,18 @@ open class LoginClient(client: Client) {
     @Throws(HttpException::class)
     fun registerClient(token: String, password: String, preKeys: ArrayList<PreKey>, lastKey: PreKey,
                        clazz: String, type: String, label: String): String? {
-        val newClient = NewClient()
-        newClient.password = password
-        newClient.lastkey = lastKey
-        newClient.prekeys = preKeys
-        newClient.sigkeys.enckey = Base64.getEncoder().encodeToString(ByteArray(32))
-        newClient.sigkeys.mackey = Base64.getEncoder().encodeToString(ByteArray(32))
-        newClient.clazz = clazz
-        newClient.label = label
-        newClient.type = type
+        val newClient = NewClient(
+                password = password,
+                lastkey = lastKey,
+                prekeys = preKeys,
+                clazz = clazz,
+                label = label,
+                type = type
+        )
+
+        // FIXME: why are sigkeys deleted from NewClient class
+        //newClient.sigkeys.enckey = Base64.getEncoder().encodeToString(ByteArray(32))
+        //newClient.sigkeys.mackey = Base64.getEncoder().encodeToString(ByteArray(32))
         val response: Response = clientsPath
                 .request(MediaType.APPLICATION_JSON)
                 .header(HttpHeaders.AUTHORIZATION, bearer(token))
@@ -118,7 +123,7 @@ open class LoginClient(client: Client) {
     fun renewAccessToken(cookie: Cookie): Access {
         val builder: Invocation.Builder = accessPath
                 .request(MediaType.APPLICATION_JSON)
-                .cookie(cookie.toJavaxCookie())
+                .cookie(cookie)
         val response: Response = builder.post(Entity.entity(null, MediaType.APPLICATION_JSON))
         val status: Int = response.getStatus()
         if (status == 401) {   //todo nginx returns text/html for 401. Cannot deserialize as json
@@ -143,7 +148,7 @@ open class LoginClient(client: Client) {
                 .path("logout")
                 .request(MediaType.APPLICATION_JSON)
                 .header(HttpHeaders.AUTHORIZATION, bearer(token))
-                .cookie(cookie.toJavaxCookie())
+                .cookie(cookie)
                 .post(Entity.entity(null, MediaType.APPLICATION_JSON))
         val status: Int = response.getStatus()
         if (status == 401) {   //todo nginx returns text/html for 401. Cannot deserialize as json

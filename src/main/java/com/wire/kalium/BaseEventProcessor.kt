@@ -120,8 +120,8 @@ abstract class BaseEventProcessor(private val handler: MessageHandler) : EventPr
 
     private fun getSystemMessage(eventId: UUID, payload: Payload): SystemMessage {
         val conversation = Conversation(
-            payload.conversation, payload.data.name, payload.data.creator,
-            payload.data.members.allMembers()
+            id = payload.conversation, name = payload.data.name, creator = payload.data.creator,
+            members = payload.data.members.allMembers()
         )
         return SystemMessage(
             eventId, payload.type, payload.time, payload.from,
