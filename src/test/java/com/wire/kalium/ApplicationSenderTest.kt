@@ -15,7 +15,7 @@ class ApplicationSenderTest {
     fun sendMessagesTest() {
         val email = "dejan+joker@wire.com"
         val password = "12345678"
-        val conversationId = UUID.fromString("")
+        val conversationId = UUID.fromString("c2aba93d-56ad-4992-915d-e66e69d96418")
 
         val client: Client = ClientBuilder
                 .newClient()
