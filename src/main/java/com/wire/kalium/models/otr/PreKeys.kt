@@ -17,11 +17,20 @@
 //
 package com.wire.kalium.models.otr
 
+import com.wire.kalium.tools.UUIDSerializer
+import kotlinx.serialization.Serializable
 import java.util.*
 
-class PreKeys() : HashMap<UUID, HashMap<String, PreKey>>() {
+@Serializable
+class ClientKey : HashMap<String, PreKey>() {
+
+}
+
+@Serializable
+class PreKeys() : HashMap<UUID, ClientKey>() {
+
     constructor(array: ArrayList<PreKey>, clientId: String, userId: UUID) : this() {
-        val devs = HashMap<String, PreKey>()
+        val devs = ClientKey()
         for (key in array) {
             devs[clientId] = key
         }
@@ -34,3 +43,17 @@ class PreKeys() : HashMap<UUID, HashMap<String, PreKey>>() {
         return ret
     }
 }
+
+@Serializable
+data class ClientPrekey(
+        val client: String,
+        val prekey: PreKey
+)
+
+@Serializable
+data class AllUserPrekeys(
+        @Serializable(with = UUIDSerializer::class) val user: UUID,
+        val clients: List<ClientPrekey>
+)
+
+typealias UsersPrekeysCollection = Map<UUID, Map<String, PreKey>>

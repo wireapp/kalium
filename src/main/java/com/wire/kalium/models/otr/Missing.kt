@@ -2,11 +2,11 @@ package com.wire.kalium.models.otr
 
 import kotlinx.serialization.Serializable
 import java.util.*
-import java.util.concurrent.ConcurrentHashMap
 
 //<UserId, [ClientId]>
 @Serializable
-class Missing : ConcurrentHashMap<UUID, MutableCollection<String>>() {
+
+class Missing : HashMap<UUID, MutableCollection<String>>() {
     fun ofUser(userId: UUID): MutableCollection<String>? {
         return get(userId)
     }

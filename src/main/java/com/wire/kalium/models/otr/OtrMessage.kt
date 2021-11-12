@@ -19,6 +19,7 @@ package com.wire.kalium.models.otr
 
 import kotlinx.serialization.Serializable
 import java.util.*
+
 @Serializable
 class OtrMessage(//clientId of the sender
         private val sender: String, private val recipients: Recipients
