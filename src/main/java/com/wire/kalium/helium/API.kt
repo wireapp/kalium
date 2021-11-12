@@ -81,11 +81,13 @@ open class API(client: Client, convId: UUID?, token: String) : LoginClient(clien
         return if (missing.isEmpty()) {
             PreKeys()
         } else {
-            usersPath.path("prekeys")
+            val response = usersPath.path("prekeys")
                     .request(MediaType.APPLICATION_JSON)
                     .header(HttpHeaders.AUTHORIZATION, bearer(token))
                     .accept(MediaType.APPLICATION_JSON)
-                    .post(Entity.entity(missing, MediaType.APPLICATION_JSON), PreKeys::class.java)
+                    .post(Entity.entity(missing, MediaType.APPLICATION_JSON))
+
+            return response.readEntity(PreKeys::class.java)
         }
     }
 
@@ -333,7 +335,8 @@ open class API(client: Client, convId: UUID?, token: String) : LoginClient(clien
     @Serializable
     class _Conv {
         //@JsonProperty
-        @Serializable(with = UUIDSerializer::class) var id: UUID? = null
+        @Serializable(with = UUIDSerializer::class)
+        var id: UUID? = null
 
         //@JsonProperty
         var name: String? = null
@@ -353,15 +356,19 @@ open class API(client: Client, convId: UUID?, token: String) : LoginClient(clien
     //@JsonIgnoreProperties(ignoreUnknown = true)
     @Serializable
     internal class _Service {
-        @Serializable(with = UUIDSerializer::class) var service: UUID? = null
-        @Serializable(with = UUIDSerializer::class) var provider: UUID? = null
+        @Serializable(with = UUIDSerializer::class)
+        var service: UUID? = null
+
+        @Serializable(with = UUIDSerializer::class)
+        var provider: UUID? = null
     }
 
     //@JsonIgnoreProperties(ignoreUnknown = true)
     @Serializable
     internal class _Team {
         //@JsonProperty
-        @Serializable(with = UUIDSerializer::class) var id: UUID? = null
+        @Serializable(with = UUIDSerializer::class)
+        var id: UUID? = null
 
         //@JsonProperty
         var name: String? = null
@@ -374,7 +381,8 @@ open class API(client: Client, convId: UUID?, token: String) : LoginClient(clien
     @Serializable
     internal class _TeamMember {
         //@JsonProperty
-        @Serializable(with = UUIDSerializer::class) var user: UUID? = null
+        @Serializable(with = UUIDSerializer::class)
+        var user: UUID? = null
     }
 
     //@JsonIgnoreProperties(ignoreUnknown = true)
@@ -402,7 +410,8 @@ open class API(client: Client, convId: UUID?, token: String) : LoginClient(clien
     @Serializable
     internal class _TeamInfo {
         //@JsonProperty("teamid")
-        @Serializable(with = UUIDSerializer::class) var teamId: UUID? = null
+        @Serializable(with = UUIDSerializer::class)
+        var teamId: UUID? = null
 
         //@JsonProperty
         var managed = false
