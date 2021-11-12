@@ -19,8 +19,9 @@ package com.wire.kalium.models.otr
 
 import java.util.*
 
-class OtrMessage(//clientId of the sender
-        private val sender: String, private val recipients: Recipients
+data class OtrMessage(
+        private val sender: String,  //clientId of the sender
+        val recipients: Recipients
 ) {
     fun add(rec: Recipients) {
         recipients.add(rec)

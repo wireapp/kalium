@@ -68,22 +68,24 @@ abstract class WireClientBase protected constructor(
 
         // Try to encrypt the msg for those devices that we have the session already
         val encrypt = encrypt(content, getAllDevices())
-        val msg = OtrMessage(getDeviceId(), encrypt)
+        val sender = getDeviceId()
+        val msg = OtrMessage(sender, encrypt)
         val res = api.sendMessage(msg, false)
 
         if (res.hasMissing()) {
             // Fetch preKeys for the missing devices from the Backend
-            handleMissingDevices(encrypt, content, msg)
+            handleMissingDevices(res.missing, encrypt, content, msg)
         }
     }
 
     private fun handleMissingDevices(
+            missing: Missing,
             encrypt: Recipients,
             content: ByteArray,
             message: OtrMessage
     ) {
         var encrypt1 = encrypt
-        val preKeys = api.getPreKeys(devices.missing)
+        val preKeys = api.getPreKeys(missing)
         Logger.debug("Fetched %d preKeys for %d devices. Bot: %s", preKeys.count(), devices.size(), getId())
 
         // Encrypt msg for those devices that were missing. This time using preKeys
@@ -111,7 +113,7 @@ abstract class WireClientBase protected constructor(
         val message = OtrMessage(getDeviceId(), recipients)
         val res = api.sendPartialMessage(message, userId)
         if (res.hasMissing()) {
-            handleMissingDevices(recipients, content, message)
+            handleMissingDevices(res.missing, recipients, content, message)
         }
     }
 
@@ -234,6 +236,7 @@ abstract class WireClientBase protected constructor(
     private fun fetchDevices(): Devices {
         val deviceId = getDeviceId()
         val msg = OtrMessage(deviceId, Recipients())
-        return api.sendMessage(msg)
+        val devices = api.sendMessage(msg)
+        return devices
     }
 }

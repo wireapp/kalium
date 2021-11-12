@@ -17,10 +17,13 @@
 //
 package com.wire.kalium.models.otr
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class Devices(
-    val missing: Missing = Missing(),
-    val redundant: Missing = Missing(),
-    val deleted: Missing = Missing()
+        val missing: Missing = Missing(),
+        val redundant: Missing = Missing(),
+        val deleted: Missing = Missing()
 ) {
     fun hasMissing(): Boolean {
         return missing.isNotEmpty()
