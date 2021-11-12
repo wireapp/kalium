@@ -29,7 +29,7 @@ dependencies {
     implementation("com.wire:cryptobox4j:$cryptoboxVersion")
     //implementation("com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion")
     //implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
-    implementation("com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:$jacksonVersion")
+    //implementation("com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:$jacksonVersion")
     implementation("org.glassfish.jersey.inject:jersey-hk2:2.28")
 
     implementation("javax.validation:validation-api:$javaxValidationVersion")

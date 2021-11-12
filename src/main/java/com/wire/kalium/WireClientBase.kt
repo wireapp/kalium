@@ -34,11 +34,11 @@ abstract class WireClientBase protected constructor(
     }
 
     override fun getId(): UUID {
-        return state.id
+        return state.id!!
     }
 
     override fun getDeviceId(): String {
-        return state.client
+        return state.client!!
     }
 
     override fun getConversationId(): UUID {
@@ -143,7 +143,7 @@ abstract class WireClientBase protected constructor(
     }
 
     override fun getAvailablePrekeys(): ArrayList<Int> {
-        return api.getAvailablePrekeys(state.client)
+        return api.getAvailablePrekeys(state.client!!)
     }
 
     @Throws(HttpException::class)

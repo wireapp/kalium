@@ -1,6 +1,5 @@
 package com.wire.kalium
 
-import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider
 import com.wire.kalium.assets.MessageText
 import com.wire.kalium.backend.models.NewBot
 import com.wire.kalium.crypto.CryptoFile
@@ -20,7 +19,7 @@ class ApplicationSenderTest {
 
         val client: Client = ClientBuilder
                 .newClient()
-                .register(JacksonJsonProvider::class.java)
+                //.register(JacksonJsonProvider::class.java)
 
         val crypto = CryptoFile("./joker")
 

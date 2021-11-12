@@ -17,8 +17,6 @@
 //
 package com.wire.kalium.helium
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.wire.kalium.WireAPI
 import com.wire.kalium.assets.Asset
 import com.wire.kalium.backend.models.*
@@ -26,7 +24,9 @@ import com.wire.kalium.exceptions.AuthException
 import com.wire.kalium.exceptions.HttpException
 import com.wire.kalium.models.AssetKey
 import com.wire.kalium.models.otr.*
+import com.wire.kalium.tools.UUIDSerializer
 import com.wire.kalium.tools.Util
+import kotlinx.serialization.Serializable
 import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
 import java.util.*
@@ -327,81 +327,91 @@ open class API(client: Client, convId: UUID?, token: String) : LoginClient(clien
         return team.members!!.stream().map { x: _TeamMember -> x.user }.collect(Collectors.toList())
     }
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
+    //@JsonIgnoreProperties(ignoreUnknown = true)
+    @Serializable
     class _Conv {
-        @JsonProperty
-        var id: UUID? = null
+        //@JsonProperty
+        @Serializable(with = UUIDSerializer::class) var id: UUID? = null
 
-        @JsonProperty
+        //@JsonProperty
         var name: String? = null
 
-        @JsonProperty
+        //@JsonProperty
         var members: _Members? = null
     }
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
+    //@JsonIgnoreProperties(ignoreUnknown = true)
+
+    @Serializable
     class _Members {
-        @JsonProperty
+        //@JsonProperty
         var others: List<ConversationMember>? = null
     }
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
+    //@JsonIgnoreProperties(ignoreUnknown = true)
+    @Serializable
     internal class _Service {
-        var service: UUID? = null
-        var provider: UUID? = null
+        @Serializable(with = UUIDSerializer::class) var service: UUID? = null
+        @Serializable(with = UUIDSerializer::class) var provider: UUID? = null
     }
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
+    //@JsonIgnoreProperties(ignoreUnknown = true)
+    @Serializable
     internal class _Team {
-        @JsonProperty
-        var id: UUID? = null
+        //@JsonProperty
+        @Serializable(with = UUIDSerializer::class) var id: UUID? = null
 
-        @JsonProperty
+        //@JsonProperty
         var name: String? = null
 
-        @JsonProperty
+        //@JsonProperty
         var members: List<_TeamMember>? = null
     }
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
+    //JsonIgnoreProperties(ignoreUnknown = true)
+    @Serializable
     internal class _TeamMember {
-        @JsonProperty
-        var user: UUID? = null
+        //@JsonProperty
+        @Serializable(with = UUIDSerializer::class) var user: UUID? = null
     }
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
+    //@JsonIgnoreProperties(ignoreUnknown = true)
+    @Serializable
     internal class _Teams {
-        @JsonProperty
+        //@JsonProperty
         var teams: ArrayList<_Team>? = null
     }
 
+    @Serializable
     internal class _NewConv {
-        @JsonProperty
+        //@JsonProperty
         var name: String? = null
 
-        @JsonProperty
+        //@JsonProperty
         var team: _TeamInfo? = null
 
-        @JsonProperty
-        var users: List<UUID>? = null
+        //@JsonProperty
+        var users: List<@Serializable(with = UUIDSerializer::class) UUID>? = null
 
-        @JsonProperty
+        //@JsonProperty
         var service: _Service? = null
     }
 
+    @Serializable
     internal class _TeamInfo {
-        @JsonProperty("teamid")
-        var teamId: UUID? = null
+        //@JsonProperty("teamid")
+        @Serializable(with = UUIDSerializer::class) var teamId: UUID? = null
 
-        @JsonProperty
+        //@JsonProperty
         var managed = false
     }
 
+    @Serializable
     internal class _Device {
-        @JsonProperty("id")
+        //@JsonProperty("id")
         var clientId: String? = null
 
-        @JsonProperty("class")
+        //@JsonProperty("class")
         var type: String? = null
     }
 
