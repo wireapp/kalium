@@ -24,10 +24,10 @@ import java.util.UUID
 
 @Serializable
 data class NewBot(
-        @Serializable(with = UUIDSerializer::class) val id: UUID,
-        val client: String,
-        val token: String,
-        @Serializable(with = UUIDSerializer::class) val last: UUID?,
-        val origin: User?,
-        val conversation: Conversation?,
+        @Serializable(with = UUIDSerializer::class) val id: UUID? = null,
+        val client: String? = null,
+        val token: String? = null,
+        @Serializable(with = UUIDSerializer::class) val last: UUID? = null,
+        val origin: User? = null,
+        val conversation: Conversation? = null,
 )

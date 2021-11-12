@@ -27,7 +27,7 @@ dependencies {
 
     implementation("com.wire:generic-message-proto:$genericMessageProtoVersion")
     implementation("com.wire:cryptobox4j:$cryptoboxVersion")
-    //implementation("com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion")
+    implementation("com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion")
     //implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
     implementation("com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:$jacksonVersion")
     implementation("org.glassfish.jersey.inject:jersey-hk2:2.28")
@@ -42,7 +42,7 @@ dependencies {
     implementation("org.glassfish.jersey.core:jersey-client:$jerseyVersion")
     implementation("org.glassfish.tyrus.bundles:tyrus-standalone-client:$tyrusVersion")
     // not really sure if .jersey.inject one is needed
-    //implementation("org.glassfish.jersey.inject:jersey-hk2:$tyrusVersion")
+    implementation("org.glassfish.jersey.inject:jersey-hk2:$tyrusVersion")
     // cli
     implementation("com.github.ajalt.clikt:clikt:3.2.0")
 }

@@ -15,7 +15,7 @@ import java.util.concurrent.ScheduledExecutorService
 import javax.ws.rs.client.Client
 import javax.ws.rs.core.Cookie
 
-open class Application(protected val email: String, protected val password: String) {
+class Application(protected val email: String, protected val password: String) {
 
     protected val renewal: ScheduledExecutorService = Executors.newScheduledThreadPool(1)
 
@@ -46,7 +46,7 @@ open class Application(protected val email: String, protected val password: Stri
     fun stop() {
         Logger.info("Logging out...")
         val state: NewBot? = storage!!.getState()
-        loginClient.logout(cookie, state!!.token)
+        loginClient.logout(cookie, state!!.token!!)
     }
 
     @Throws(Exception::class)
@@ -57,14 +57,12 @@ open class Application(protected val email: String, protected val password: Stri
         // FIXME: converting cookie into cookie
         //cookie = convert(access.cookie.toJavaxCookie())
 
-        var clientId = clientId
-        if (clientId == null) {
-            clientId = newDevice(userId!!, password, access.access_token)
-            Logger.info("Created new device. clientId: %s", clientId)
-        }
+        val clientId = newDevice(userId!!, password, access.access_token)
+
         val state: NewBot? = updateState(userId!!, clientId!!, access.access_token, null)
+
         Logger.info("Logged in as: %s, userId: %s, clientId: %s", email, state!!.id, state.client)
-        val deviceId: String = state.client
+        val deviceId: String = state.client!!
 
 //        renewal.scheduleAtFixedRate({
 //            try {
@@ -94,7 +92,7 @@ open class Application(protected val email: String, protected val password: Stri
 
     val clientId: String?
         get() = try {
-            storage!!.getState()!!.client
+            storage!!.getState().client
         } catch (ex: IOException) {
             null
         }
@@ -103,7 +101,7 @@ open class Application(protected val email: String, protected val password: Stri
     fun getWireClient(conversationId: UUID?): WireClientImp {
         val state = storage!!.getState()
         val token = state.token
-        val api = API(client, conversationId, token)
+        val api = API(client, conversationId, token!!)
         return WireClientImp(api, crypto!!, state)
     }
 

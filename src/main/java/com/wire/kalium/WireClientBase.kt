@@ -34,11 +34,11 @@ abstract class WireClientBase protected constructor(
     }
 
     override fun getId(): UUID {
-        return state.id
+        return state.id!!
     }
 
     override fun getDeviceId(): String {
-        return state.client
+        return state.client!!
     }
 
     override fun getConversationId(): UUID {
@@ -143,7 +143,7 @@ abstract class WireClientBase protected constructor(
     }
 
     override fun getAvailablePrekeys(): ArrayList<Int> {
-        return api.getAvailablePrekeys(state.client)
+        return api.getAvailablePrekeys(state.client!!)
     }
 
     @Throws(HttpException::class)
@@ -232,11 +232,8 @@ abstract class WireClientBase protected constructor(
      */
     @Throws(HttpException::class)
     private fun fetchDevices(): Devices {
-        if (devices.hasMissing()) {
-            val deviceId = getDeviceId()
-            val msg = OtrMessage(deviceId, Recipients())
-            devices = api.sendMessage(msg)
-        }
-        return if (devices != null) devices else Devices()
+        val deviceId = getDeviceId()
+        val msg = OtrMessage(deviceId, Recipients())
+        return api.sendMessage(msg)
     }
 }

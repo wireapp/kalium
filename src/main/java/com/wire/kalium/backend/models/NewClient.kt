@@ -17,14 +17,16 @@
 //
 package com.wire.kalium.backend.models
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.wire.kalium.models.otr.PreKey
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class NewClient(
         val lastkey: PreKey,
         val prekeys: List<PreKey>,
         val password: String,
-        @JsonProperty("class")
+        @SerialName("class")
         val clazz: String,
         val type: String,
         val label: String,

@@ -1,55 +1,49 @@
 package com.wire.kalium.exceptions
 
-import com.fasterxml.jackson.annotation.JsonCreator
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.annotation.JsonProperty
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 // TODO: return custom error instead of throwing exception
 
-sealed class KaliumException: Exception()
+@Serializable
+sealed class KaliumException : Exception()
 
+@Serializable
 sealed class NetworkException(
-        override var message: String? = null,
-        var code: Int = 0,
-        var label: String? = null
-): KaliumException()
+        open var _message: String? = null,
+        open var _code: Int = 0,
+        open var _label: String? = null
+) : KaliumException()
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-class HttpException : NetworkException {
+@Serializable
+data class HttpException(
+        @SerialName("message") override var _message: String? = null,
+        @SerialName("code") override var _code: Int = 0,
+        @SerialName("label") override var _label: String? = null,
+
+        ) : NetworkException(_message) {
+
+
     constructor(message: String?,
-                code: Int) : super(message) {
-        this.code = code
-        this.message = message
+                code: Int) : this(_message = message) {
+        this._code = code
+
+        this._message = message
     }
 
-    @JsonCreator
-    constructor(@JsonProperty("message") message: String?,
-                @JsonProperty("code") code: Int,
-                @JsonProperty("label") label: String?) : super(message) {
-        this.code = code
-        this.message = message
-        this.label = label
-    }
-
-    constructor(code: Int) : super(code = code) {
-        this.code = code
-    }
-
-    constructor() {}
 
     override fun toString(): String {
         val clazz = javaClass.simpleName
-        return String.format("%s: code: %d, msg: %s, label: %s", clazz, code, message, label)
+        return "$clazz: code: $_code, msg: $message, label: $_label"
     }
 }
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+@Serializable
 class AuthException : NetworkException {
-    constructor(message: String?, code: Int) : super(message = message, code = code)
-    constructor(code: Int) : super(code = code)
+    constructor(message: String?, code: Int) : super(_message = message, _code = code)
+    constructor(code: Int) : super(_code = code)
 
-    @JsonCreator
-    constructor(@JsonProperty("message") message: String?,
-                @JsonProperty("code") code: Int,
-                @JsonProperty("label") label: String?) : super(message, code, label)
+    constructor( message: String?,
+                code: Int,
+                label: String?) : super(message, code, label)
 }

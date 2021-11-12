@@ -18,11 +18,18 @@
 package com.wire.kalium.helium
 
 import com.wire.kalium.backend.models.Access
+import com.wire.kalium.backend.models.Cookie
 import com.wire.kalium.backend.models.NewClient
 import com.wire.kalium.backend.models.NotificationList
 import com.wire.kalium.exceptions.AuthException
 import com.wire.kalium.exceptions.HttpException
 import com.wire.kalium.models.otr.PreKey
+import com.wire.kalium.tools.KtxSerializer
+import com.wire.kalium.tools.Logger
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 import java.util.*
 import javax.ws.rs.client.Client
 import javax.ws.rs.client.Entity
@@ -30,6 +37,7 @@ import javax.ws.rs.client.Invocation
 import javax.ws.rs.client.WebTarget
 import javax.ws.rs.core.HttpHeaders
 import javax.ws.rs.core.MediaType
+import javax.ws.rs.core.NewCookie
 import javax.ws.rs.core.Response
 
 open class LoginClient(client: Client) {
@@ -46,12 +54,16 @@ open class LoginClient(client: Client) {
 
     @JvmOverloads
     @Throws(HttpException::class)
-    fun login(email: String?, password: String?, persisted: Boolean = false): Access {
-        val login = _Login()
-        login.email = email
-        login.password = password
-        login.label = LABEL
-        val response: Response = loginPath.queryParam("persist", persisted).request(MediaType.APPLICATION_JSON).post(Entity.entity(login, MediaType.APPLICATION_JSON))
+    fun login(email: String, password: String, persisted: Boolean = false): Access {
+        val login = LoginRequestBody(email = email, password = password, label =  LABEL)
+
+        val loginRequestJson = KtxSerializer.json.encodeToString(login)
+        val response: Response = loginPath.queryParam("persist", persisted)
+                .request(MediaType.APPLICATION_JSON)
+                .post(Entity.json(loginRequestJson))
+
+        println(response.date)
+
         val status: Int = response.status
         if (status == 401) {   //todo nginx returns text/html for 401. Cannot deserialize as json
             response.readEntity(String::class.java)
@@ -59,7 +71,8 @@ open class LoginClient(client: Client) {
         }
         if (status == 403) {
             val entity: String = response.readEntity(String::class.java)
-            throw AuthException(message = entity, code = status)
+            Logger.error(entity)
+            //throw AuthException(message = entity, code = status)
         }
         if (status >= 400) {
             val entity: String = response.readEntity(String::class.java)
@@ -67,13 +80,18 @@ open class LoginClient(client: Client) {
         }
         val entity: String = response.readEntity(String::class.java)
 
-        val access: Access = response.readEntity(Access::class.java)
+        val access = KtxSerializer.json.decodeFromString<Access>(entity)
+
+        //val access: Access = response.readEntity(Access::class.java)
+
+        Logger.error(entity)
+        Logger.error(access.toString())
 
         //TODO uncomment this
-//        val zuid: NewCookie? = response.cookies[COOKIE_NAME]
-//        if (zuid != null) {
-//            access.cookie = Cookie(name = zuid.name, value = zuid.value)
-//        }
+        val zuid: NewCookie? = response.cookies[COOKIE_NAME]
+        if (zuid != null) {
+            access.cookie = Cookie(name = zuid.name, value = zuid.value)
+        }
         return access
     }
 
@@ -81,7 +99,7 @@ open class LoginClient(client: Client) {
     @Throws(HttpException::class)
     fun registerClient(token: String, password: String, preKeys: ArrayList<PreKey>, lastKey: PreKey): String? {
         val deviceClass = "tablet"
-        val type = "permanent"
+        val type = "temporary"
         return registerClient(token, password, preKeys, lastKey, deviceClass, type, LABEL)
     }
 
@@ -107,18 +125,26 @@ open class LoginClient(client: Client) {
         // FIXME: why are sigkeys deleted from NewClient class
         //newClient.sigkeys.enckey = Base64.getEncoder().encodeToString(ByteArray(32))
         //newClient.sigkeys.mackey = Base64.getEncoder().encodeToString(ByteArray(32))
+        val newClientJson = KtxSerializer.json.encodeToString(newClient)
         val response: Response = clientsPath
                 .request(MediaType.APPLICATION_JSON)
                 .header(HttpHeaders.AUTHORIZATION, bearer(token))
-                .post(Entity.entity(newClient, MediaType.APPLICATION_JSON))
-        val status: Int = response.getStatus()
+                .post(Entity.json(newClientJson))
+                //.post(Entity.entity(newClient, MediaType.APPLICATION_JSON))
+        println(response)
+        val status: Int = response.status
         if (status == 401) {   //todo nginx returns text/html for 401. Cannot deserialize as json
             val entity = response.readEntity(String::class.java)
             throw AuthException(message = entity, code = status)
         } else if (status >= 400) {
-            throw response.readEntity(HttpException::class.java)
+            Logger.error(response.readEntity(String::class.java))
+            //throw response.readEntity(HttpException::class.java)
         }
-        return response.readEntity(_Client::class.java).id
+
+        val responseJson = response.readEntity(String::class.java)
+        val _clientResponse = KtxSerializer.json.decodeFromString<_Client>(responseJson)
+
+        return _clientResponse.id
     }
 
     @Throws(HttpException::class)
@@ -208,16 +234,38 @@ open class LoginClient(client: Client) {
         throw response.readEntity(HttpException::class.java)
     }
 
-    internal class _Login {
-        var email: String? = null
-        var password: String? = null
-        var label: String? = null
-    }
+    @Serializable
+    internal data class LoginRequestBody (
+            val email: String,
+            val password: String,
+            val label: String
+    )
 
+    @Serializable
     internal class _Client {
         var id: String? = null
+        var time: String? = null
+        val location: Location? = null
+        val type: String? = null
+        @SerialName("class") var clazz: String? = null
+        var label: String? = null
+        var capabilities: _Capabilities? = null
     }
 
+    @Serializable
+    internal class _Capabilities {
+        var capabilities: List<String>? = null
+    }
+
+
+
+    @Serializable
+    data class Location(
+            val lat: Double,
+            val lon: Double
+    )
+
+    @Serializable
     internal class _RemoveCookies {
         var password: String? = null
         var labels: List<String>? = null

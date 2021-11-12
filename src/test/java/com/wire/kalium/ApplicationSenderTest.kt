@@ -14,9 +14,20 @@ class ApplicationSenderTest {
     @Test
     @Throws(Exception::class)
     fun sendMessagesTest() {
-        val email = "dejan+joker@wire.com"
+        val email = "dejan@wire.com"
         val password = "12345678"
         val conversationId = UUID.fromString("c2aba93d-56ad-4992-915d-e66e69d96418")
+
+//        val configJerseyClient: Configuration
+//
+//        configJerseyClient.setChunkedEncodingEnabled(false)
+//        configJerseyClient.setGzipEnabled(false)
+//        configJerseyClient.setGzipEnabledForRequests(false)
+//
+//        val client = JerseyClientBuilder()
+//                .withConfig(configJerseyClient)
+//                .register(JacksonJsonProvider::class.java)
+//                .build()
 
         val client: Client = ClientBuilder
                 .newClient()
