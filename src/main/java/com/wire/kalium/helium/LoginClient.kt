@@ -99,7 +99,7 @@ open class LoginClient(client: Client) {
     @Throws(HttpException::class)
     fun registerClient(token: String, password: String, preKeys: ArrayList<PreKey>, lastKey: PreKey): String? {
         val deviceClass = "tablet"
-        val type = "permanent"
+        val type = "temporary"
         return registerClient(token, password, preKeys, lastKey, deviceClass, type, LABEL)
     }
 

@@ -51,11 +51,13 @@ open class API(client: Client, convId: UUID?, token: String) : LoginClient(clien
 
     @Throws(HttpException::class)
     override fun sendMessage(msg: OtrMessage, vararg ignoreMissing: Any?): Devices {
-        val response: Response = conversationsPath.path(convId).path("otr/messages").queryParam("ignore_missing", ignoreMissing).request(MediaType.APPLICATION_JSON).header(HttpHeaders.AUTHORIZATION, bearer(token)).post(Entity.entity(msg, MediaType.APPLICATION_JSON))
+        //val response: Response = conversationsPath.path(convId).path("otr/messages").queryParam("ignore_missing", ignoreMissing).request(MediaType.APPLICATION_JSON).header(HttpHeaders.AUTHORIZATION, bearer(token)).post(Entity.entity(msg, MediaType.APPLICATION_JSON))
+        val response: Response = conversationsPath.path(convId).path("otr/messages").request(MediaType.APPLICATION_JSON).header(HttpHeaders.AUTHORIZATION, bearer(token)).post(Entity.entity(msg, MediaType.APPLICATION_JSON))
         val statusCode: Int = response.getStatus()
         if (statusCode == 412) {
             return response.readEntity(Devices::class.java)
         } else if (statusCode >= 400) {
+            val readEntity = response.readEntity(String::class.java)
             throw AuthException(response.statusInfo.reasonPhrase, response.status)
         }
         response.close()

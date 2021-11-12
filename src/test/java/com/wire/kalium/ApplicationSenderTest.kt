@@ -1,5 +1,6 @@
 package com.wire.kalium
 
+import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider
 import com.wire.kalium.assets.MessageText
 import com.wire.kalium.backend.models.NewBot
 import com.wire.kalium.crypto.CryptoFile
@@ -13,13 +14,24 @@ class ApplicationSenderTest {
     @Test
     @Throws(Exception::class)
     fun sendMessagesTest() {
-        val email = "dejan+joker@wire.com"
+        val email = "dejan@wire.com"
         val password = "12345678"
         val conversationId = UUID.fromString("c2aba93d-56ad-4992-915d-e66e69d96418")
 
+//        val configJerseyClient: Configuration
+//
+//        configJerseyClient.setChunkedEncodingEnabled(false)
+//        configJerseyClient.setGzipEnabled(false)
+//        configJerseyClient.setGzipEnabledForRequests(false)
+//
+//        val client = JerseyClientBuilder()
+//                .withConfig(configJerseyClient)
+//                .register(JacksonJsonProvider::class.java)
+//                .build()
+
         val client: Client = ClientBuilder
                 .newClient()
-                //.register(JacksonJsonProvider::class.java)
+                .register(JacksonJsonProvider::class.java)
 
         val crypto = CryptoFile("./joker")
 

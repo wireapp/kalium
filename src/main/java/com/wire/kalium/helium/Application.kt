@@ -57,12 +57,10 @@ class Application(protected val email: String, protected val password: String) {
         // FIXME: converting cookie into cookie
         //cookie = convert(access.cookie.toJavaxCookie())
 
-        var clientId = clientId
-        if (clientId == null) {
-            clientId = newDevice(userId!!, password, access.access_token)
-            Logger.info("Created new device. clientId: %s", clientId)
-        }
+        val clientId = newDevice(userId!!, password, access.access_token)
+
         val state: NewBot? = updateState(userId!!, clientId!!, access.access_token, null)
+
         Logger.info("Logged in as: %s, userId: %s, clientId: %s", email, state!!.id, state.client)
         val deviceId: String = state.client!!
 

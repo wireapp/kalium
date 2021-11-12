@@ -232,11 +232,8 @@ abstract class WireClientBase protected constructor(
      */
     @Throws(HttpException::class)
     private fun fetchDevices(): Devices {
-        if (devices.hasMissing()) {
-            val deviceId = getDeviceId()
-            val msg = OtrMessage(deviceId, Recipients())
-            devices = api.sendMessage(msg)
-        }
-        return if (devices != null) devices else Devices()
+        val deviceId = getDeviceId()
+        val msg = OtrMessage(deviceId, Recipients())
+        return api.sendMessage(msg)
     }
 }
