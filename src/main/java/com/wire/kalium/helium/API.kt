@@ -24,9 +24,12 @@ import com.wire.kalium.exceptions.AuthException
 import com.wire.kalium.exceptions.HttpException
 import com.wire.kalium.models.AssetKey
 import com.wire.kalium.models.otr.*
+import com.wire.kalium.tools.KtxSerializer
 import com.wire.kalium.tools.UUIDSerializer
 import com.wire.kalium.tools.Util
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
 import java.util.*
@@ -52,10 +55,17 @@ open class API(client: Client, convId: UUID?, token: String) : LoginClient(clien
     @Throws(HttpException::class)
     override fun sendMessage(msg: OtrMessage, vararg ignoreMissing: Any?): Devices {
         //val response: Response = conversationsPath.path(convId).path("otr/messages").queryParam("ignore_missing", ignoreMissing).request(MediaType.APPLICATION_JSON).header(HttpHeaders.AUTHORIZATION, bearer(token)).post(Entity.entity(msg, MediaType.APPLICATION_JSON))
-        val response: Response = conversationsPath.path(convId).path("otr/messages").request(MediaType.APPLICATION_JSON).header(HttpHeaders.AUTHORIZATION, bearer(token)).post(Entity.entity(msg, MediaType.APPLICATION_JSON))
-        val statusCode: Int = response.getStatus()
+        val msgJson = KtxSerializer.json.encodeToString(msg)
+        val response: Response = conversationsPath.path(convId)
+                .path("otr/messages")
+                .request(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, bearer(token))
+                .post(Entity.json(msgJson))
+
+        val statusCode: Int = response.status
         if (statusCode == 412) {
-            return response.readEntity(Devices::class.java)
+            val res = response.readEntity(String::class.java)
+            return KtxSerializer.json.decodeFromString(res)
         } else if (statusCode >= 400) {
             val readEntity = response.readEntity(String::class.java)
             throw AuthException(response.statusInfo.reasonPhrase, response.status)
@@ -155,7 +165,10 @@ open class API(client: Client, convId: UUID?, token: String) : LoginClient(clien
     }
 
     override fun getConversation(): Conversation {
-        val conv: _Conv = conversationsPath.path(convId).request().header(HttpHeaders.AUTHORIZATION, bearer(token)).get(_Conv::class.java)
+        val conv: _Conv = conversationsPath.path(convId)
+                .request(MediaType.APPLICATION_JSON_TYPE)
+                .header(HttpHeaders.AUTHORIZATION, bearer(token))
+                .get(_Conv::class.java)
         return Conversation(name = conv.name!!, id = conv.id!!, members = conv.members!!.others!!)
     }
 

@@ -17,6 +17,9 @@
 //
 package com.wire.kalium.models.otr
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class Devices(
     val missing: Missing = Missing(),
     val redundant: Missing = Missing(),
