@@ -2,13 +2,15 @@ package com.wire.kalium
 
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
-import com.github.ajalt.clikt.parameters.options.prompt
 import com.github.ajalt.clikt.parameters.options.required
 import com.wire.kalium.assets.MessageText
 import com.wire.kalium.backend.models.NewBot
 import com.wire.kalium.crypto.CryptoFile
 import com.wire.kalium.helium.Application
+import com.wire.kalium.tools.Logger
+import org.glassfish.jersey.logging.LoggingFeature
 import java.util.*
+import java.util.logging.Level
 import javax.ws.rs.client.Client
 import javax.ws.rs.client.ClientBuilder
 
@@ -23,6 +25,8 @@ class CliApplication: CliktCommand() {
         val conversationId = UUID.fromString(convid)
         val httpClient: Client = ClientBuilder
                 .newClient()
+        val loggingFeature = LoggingFeature(Logger.getLOGGER(), Level.INFO, null, null)
+        httpClient.register(loggingFeature)
 
         val crypto = CryptoFile("/tmp/joker")
         val storage = Storage()

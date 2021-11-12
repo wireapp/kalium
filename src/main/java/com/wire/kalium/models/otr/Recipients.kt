@@ -1,8 +1,10 @@
 package com.wire.kalium.models.otr
 
+import kotlinx.serialization.Serializable
 import java.util.*
 
 //<UserId, ClientCipher> //Base64 encoded cipher
+@Serializable
 class Recipients : HashMap<UUID, ClientCipher>() {
     operator fun get(userId: UUID, clientId: String): String {
         val clients = toClients(userId)

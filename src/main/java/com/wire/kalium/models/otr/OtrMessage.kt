@@ -17,18 +17,19 @@
 //
 package com.wire.kalium.models.otr
 
+import kotlinx.serialization.Serializable
 import java.util.*
 
-data class OtrMessage(
-        private val sender: String,  //clientId of the sender
-        val recipients: Recipients
+@Serializable
+class OtrMessage(//clientId of the sender
+        private val sender: String, private val recipients: Recipients
 ) {
     fun add(rec: Recipients) {
         recipients.add(rec)
     }
 
     operator fun get(userId: UUID, clientId: String): String {
-        return recipients.get(userId, clientId)
+        return recipients[userId, clientId]
     }
 
     fun size(): Int {

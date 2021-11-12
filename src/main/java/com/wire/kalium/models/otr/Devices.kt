@@ -17,9 +17,9 @@
 //
 package com.wire.kalium.models.otr
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import kotlinx.serialization.Serializable
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+@Serializable
 data class Devices(
         val missing: Missing = Missing(),
         val redundant: Missing = Missing(),

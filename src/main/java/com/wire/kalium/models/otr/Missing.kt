@@ -5,6 +5,7 @@ import java.util.*
 
 //<UserId, [ClientId]>
 @Serializable
+
 class Missing : HashMap<UUID, MutableCollection<String>>() {
     fun ofUser(userId: UUID): MutableCollection<String>? {
         return get(userId)
