@@ -8,60 +8,59 @@ import com.wire.kalium.backend.models.Conversation
 import com.wire.kalium.backend.models.Data
 import com.wire.kalium.backend.models.Payload
 import com.wire.kalium.backend.models.SystemMessage
-import com.wire.kalium.models.MessageBase
+import com.wire.kalium.models.inbound.MessageBase
 import com.wire.kalium.tools.Logger
-import java.util.Base64
-import java.util.UUID
+import java.util.*
 
-abstract class BaseEventProcessor(private val handler: MessageHandler) : EventProcessor {
+abstract class BaseEventProcessor(private val handler: MessageHandler) : IEventProcessor {
 
     @Throws(Exception::class)
-    override fun processEvent(eventId: UUID, payload: Payload, client: WireClient) {
+    override fun processEvent(eventId: UUID, payload: Payload, wireClient: IWireClient) {
         val data = payload.data
-        val botId = client.getId()
+        val userId = wireClient.getUserId()
         Logger.debug("New event of type: '${payload.type}'; Content: $payload")
         when (payload.type) {
             // TODO: Replace with enum!
             "conversation.otr-message-add" -> {
-                handleMessageAddEvent(payload, client, eventId, data)
+                handleMessageAddEvent(payload, wireClient, eventId, data)
             }
             "conversation.member-join" -> {
-                handleMemberJoinEvent(data, botId, eventId, payload, client)
+                handleMemberJoinEvent(data, userId, eventId, payload, wireClient)
             }
             "conversation.member-leave" -> {
-                handleMemberLeaveEvent(eventId, payload, data, botId, client)
+                handleMemberLeaveEvent(eventId, payload, data, userId, wireClient)
             }
             "conversation.delete" -> {
-                handleConversationDeleteEvent(eventId, payload, botId)
+                handleConversationDeleteEvent(eventId, payload, userId)
             }
             "conversation.create" -> {
-                handleConversationCreatedEvent(eventId, payload, botId, client)
+                handleConversationCreatedEvent(eventId, payload, userId, wireClient)
             }
             "conversation.rename" -> {
-                handleConversationRenameEvent(eventId, payload, client)
+                handleConversationRenameEvent(eventId, payload, wireClient)
             }
             "user.connection" -> {
-                handleConnectionUpdateEvent(client, eventId, payload)
+                handleConnectionUpdateEvent(wireClient, eventId, payload)
             }
             else -> Logger.debug("Unknown event: %s", payload.type)
         }
     }
 
-    private fun handleConnectionUpdateEvent(client: WireClient, eventId: UUID, payload: Payload) {
+    private fun handleConnectionUpdateEvent(wireClient: IWireClient, eventId: UUID, payload: Payload) {
         val connection = payload.connection
-        val accepted = handler.onConnectRequest(client, connection.from, connection.to, connection.status)
+        val accepted = handler.onConnectRequest(wireClient, connection.from, connection.to, connection.status)
         if (accepted) {
             val systemMessage = getSystemMessage(eventId, payload)
-            handler.onNewConversation(client, systemMessage)
+            handler.onNewConversation(wireClient, systemMessage)
         }
     }
 
-    private fun handleConversationRenameEvent(eventId: UUID, payload: Payload, client: WireClient) {
+    private fun handleConversationRenameEvent(eventId: UUID, payload: Payload, client: IWireClient) {
         val systemMessage = getSystemMessage(eventId, payload)
         handler.onConversationRename(client, systemMessage)
     }
 
-    private fun handleConversationCreatedEvent(eventId: UUID, payload: Payload, botId: UUID, client: WireClient) {
+    private fun handleConversationCreatedEvent(eventId: UUID, payload: Payload, botId: UUID, client: IWireClient) {
         val systemMessage = getSystemMessage(eventId, payload)
         handler.onNewConversation(client, systemMessage)
     }
@@ -73,10 +72,10 @@ abstract class BaseEventProcessor(private val handler: MessageHandler) : EventPr
         handler.onBotRemoved(botId, systemMessage)
     }
 
-    private fun handleMemberLeaveEvent(eventId: UUID, payload: Payload, data: Data, botId: UUID, client: WireClient) {
+    private fun handleMemberLeaveEvent(eventId: UUID, payload: Payload, data: Data, botId: UUID, client: IWireClient) {
         val participants = data.user_ids
         val systemMessage = getSystemMessage(eventId, payload)
-            .copy(userIds = participants)
+                .copy(userIds = participants)
 
         // Check if this bot got removed from the conversation
         if (participants.any { it == botId }) {
@@ -88,15 +87,15 @@ abstract class BaseEventProcessor(private val handler: MessageHandler) : EventPr
         }
     }
 
-    private fun handleMemberJoinEvent(data: Data, botId: UUID?, eventId: UUID, payload: Payload, client: WireClient) {
+    private fun handleMemberJoinEvent(data: Data, botId: UUID?, eventId: UUID, payload: Payload, client: IWireClient) {
         val participants = data.user_ids
         val originalSystemMessage = getSystemMessage(eventId, payload)
 
         // Check if this bot got added to the conversation
         if (participants.any { it == botId }) {
             val systemMessage = originalSystemMessage.copy(
-                conversation = client.getConversation(),
-                type = "conversation.create" // hack the type
+                    conversation = client.getConversation(),
+                    type = "conversation.create" // hack the type
             )
             handler.onNewConversation(client, systemMessage)
             return
@@ -108,7 +107,7 @@ abstract class BaseEventProcessor(private val handler: MessageHandler) : EventPr
         handler.onMemberJoin(client, systemMessage)
     }
 
-    private fun handleMessageAddEvent(payload: Payload, client: WireClient, eventId: UUID, data: Data) {
+    private fun handleMessageAddEvent(payload: Payload, client: IWireClient, eventId: UUID, data: Data) {
         val from = payload.from
         val processor = GenericMessageProcessor(client, handler)
         val genericMessage = decrypt(client, payload)
@@ -130,7 +129,7 @@ abstract class BaseEventProcessor(private val handler: MessageHandler) : EventPr
     }
 
     @Throws(CryptoException::class, InvalidProtocolBufferException::class)
-    private fun decrypt(client: WireClient, payload: Payload): GenericMessage {
+    private fun decrypt(client: IWireClient, payload: Payload): GenericMessage {
         val from = payload.from
         val sender = payload.data.sender
         val cipher = payload.data.text

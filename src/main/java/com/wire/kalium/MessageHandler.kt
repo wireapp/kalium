@@ -17,26 +17,13 @@
 //
 package com.wire.kalium
 
-import com.wire.kalium.backend.models.NewBot
-import java.util.UUID
-import com.waz.model.Messages.GenericMessage
-import com.wire.kalium.models.TextMessage
 //import com.wire.kalium.models.LinkPreviewMessage TODO: Implement LinkPreviews
-import com.wire.kalium.models.EphemeralTextMessage
-import com.wire.kalium.models.EditedTextMessage
-import com.wire.kalium.models.ConfirmationMessage
-import com.wire.kalium.models.CallingMessage
-import com.wire.kalium.models.DeletedTextMessage
-import com.wire.kalium.models.ReactionMessage
-import com.wire.kalium.models.PingMessage
-import com.wire.kalium.models.PhotoPreviewMessage
-import com.wire.kalium.models.AudioPreviewMessage
-import com.wire.kalium.models.VideoPreviewMessage
-import com.wire.kalium.models.FilePreviewMessage
-import com.wire.kalium.models.RemoteMessage
+import com.waz.model.Messages.GenericMessage
+import com.wire.kalium.backend.models.NewBot
 import com.wire.kalium.backend.models.SystemMessage
-import java.util.Collections
+import com.wire.kalium.models.inbound.*
 import com.wire.kalium.tools.Logger
+import java.util.*
 
 interface MessageHandler {
     /**
@@ -61,7 +48,7 @@ interface MessageHandler {
      * @param client  Thread safe wire client that can be used to post back to this conversation
      * @param message SystemMessage object. message.conversation
      */
-    fun onNewConversation(client: WireClient, message: SystemMessage) {}
+    fun onNewConversation(client: IWireClient, message: SystemMessage) {}
 
     /**
      * This callback is invoked by the framework every time connection request is received
@@ -72,7 +59,7 @@ interface MessageHandler {
      * @param status Relation status of the connection request
      * @return TRUE if connection was accepted
      */
-    fun onConnectRequest(client: WireClient, from: UUID, to: UUID, status: String): Boolean {
+    fun onConnectRequest(client: IWireClient, from: UUID, to: UUID, status: String): Boolean {
         // Bot received connect request and we want to accept it immediately
         if (status == "pending") {
             return try {
@@ -93,13 +80,13 @@ interface MessageHandler {
      * @param client  Thread safe wire client that can be used to post back to this conversation
      * @param message System message object with message.users as List of UserIds that just joined this conversation
      */
-    fun onMemberJoin(client: WireClient, message: SystemMessage) {}
+    fun onMemberJoin(client: IWireClient, message: SystemMessage) {}
 
     /**
      * @param client  Thread safe wire client that can be used to post back to this conversation
      * @param message System message object with message.users as List of UserIds that just joined this conversation
      */
-    fun onMemberLeave(client: WireClient, message: SystemMessage) {}
+    fun onMemberLeave(client: IWireClient, message: SystemMessage) {}
 
     /**
      * This callback is called when this bot gets removed from the conversation
@@ -145,7 +132,7 @@ interface MessageHandler {
      * @param client Thread safe wire client that can be used to post back to this conversation
      * @param msg    Message containing text
      */
-    fun onText(client: WireClient, msg: TextMessage) {}
+    fun onText(client: IWireClient, msg: TextMessage) {}
 
     /**
      * This is generic method that is called every time something is posted to this conversation.
@@ -154,7 +141,7 @@ interface MessageHandler {
      * @param userId         User Id for the sender
      * @param genericMessage Generic message as it comes from the BE
      */
-    fun onEvent(client: WireClient, userId: UUID, genericMessage: GenericMessage) {}
+    fun onEvent(client: IWireClient, userId: UUID, genericMessage: GenericMessage) {}
 
     /**
      * Called when user edits previously sent message
@@ -162,15 +149,16 @@ interface MessageHandler {
      * @param client Thread safe wire client that can be used to post back to this conversation
      * @param msg    New Message containing replacing messageId
      */
-    fun onEditText(client: WireClient, msg: EditedTextMessage) {}
-    fun onCalling(client: WireClient, msg: CallingMessage) {}
-    fun onConversationRename(client: WireClient, systemMessage: SystemMessage) {}
-    fun onDelete(client: WireClient, msg: DeletedTextMessage) {}
-    fun onReaction(client: WireClient, msg: ReactionMessage) {}
-    fun onNewTeamMember(userClient: WireClient, userId: UUID) {}
+    fun onEditText(client: IWireClient, msg: EditedTextMessage) {}
+    fun onCalling(client: IWireClient, msg: CallingMessage) {}
+    fun onConversationRename(client: IWireClient, systemMessage: SystemMessage) {}
+    fun onDelete(client: IWireClient, msg: DeletedTextMessage) {}
+    fun onReaction(client: IWireClient, msg: ReactionMessage) {}
+    fun onNewTeamMember(userClient: IWireClient, userId: UUID) {}
     fun onUserUpdate(id: UUID, userId: UUID) {}
-//    open fun onLinkPreview(client: WireClient, msg: LinkPreviewMessage) {} TODO: Implement LinkPreviews
-    fun onPing(client: WireClient, msg: PingMessage) {}
+
+    //    open fun onLinkPreview(client: WireClient, msg: LinkPreviewMessage) {} TODO: Implement LinkPreviews
+    fun onPing(client: IWireClient, msg: PingMessage) {}
 
     /**
      * This method is called when ephemeral text is posted into the conversation
@@ -178,9 +166,9 @@ interface MessageHandler {
      * @param client Thread safe wire client that can be used to post back to this conversation
      * @param msg    Message containing text and expiration time
      */
-    fun onText(client: WireClient, msg: EphemeralTextMessage) {}
-    fun onConfirmation(client: WireClient, msg: ConfirmationMessage) {}
-    fun validatePreKeys(client: WireClient, size: Int) {
+    fun onText(client: IWireClient, msg: EphemeralTextMessage) {}
+    fun onConfirmation(client: IWireClient, msg: ConfirmationMessage) {}
+    fun validatePreKeys(client: IWireClient, size: Int) {
         try {
             val minAvailable = 8 * size
             if (minAvailable > 0) {
@@ -194,13 +182,13 @@ interface MessageHandler {
                 }
             }
         } catch (e: Exception) {
-            Logger.error("validatePreKeys: bot: %s %s", client.getId(), e)
+            Logger.error("validatePreKeys: bot: %s %s", client.getUserId(), e)
         }
     }
 
-    fun onPhotoPreview(client: WireClient, msg: PhotoPreviewMessage) {}
-    fun onAssetData(client: WireClient, msg: RemoteMessage) {}
-    fun onFilePreview(client: WireClient, msg: FilePreviewMessage) {}
-    open fun onAudioPreview(client: WireClient, msg: AudioPreviewMessage) {}
-    fun onVideoPreview(client: WireClient, msg: VideoPreviewMessage) {}
+    fun onPhotoPreview(client: IWireClient, msg: PhotoPreviewMessage) {}
+    fun onAssetData(client: IWireClient, msg: RemoteMessage) {}
+    fun onFilePreview(client: IWireClient, msg: FilePreviewMessage) {}
+    open fun onAudioPreview(client: IWireClient, msg: AudioPreviewMessage) {}
+    fun onVideoPreview(client: IWireClient, msg: VideoPreviewMessage) {}
 }

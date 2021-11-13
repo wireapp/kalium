@@ -18,13 +18,13 @@
 package com.wire.kalium.backend
 
 import com.waz.model.Messages
+import com.wire.kalium.IWireClient
 import com.wire.kalium.MessageHandler
-import com.wire.kalium.WireClient
-import com.wire.kalium.models.*
+import com.wire.kalium.models.inbound.*
 import com.wire.kalium.tools.Logger
 import java.util.*
 
-class GenericMessageProcessor(private val client: WireClient, private val handler: MessageHandler) {
+class GenericMessageProcessor(private val client: IWireClient, private val handler: MessageHandler) {
 
     fun process(msgBase: MessageBase, generic: Messages.GenericMessage): Boolean {
         Logger.debug("proto: { %s }", generic)

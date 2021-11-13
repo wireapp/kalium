@@ -15,19 +15,30 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 //
-package com.wire.kalium.backend.models
+package com.wire.kalium.models.inbound
 
-import com.wire.kalium.tools.UUIDSerializer
-import kotlinx.serialization.Serializable
 import java.util.*
 
-@Serializable
-data class User(
-        @Serializable(with = UUIDSerializer::class) val id: UUID,
+abstract class OriginMessage(
+        val mimeType: String,
         val name: String,
-        val accent_id: Int,
-        val handle: String,
-        var service: Service? = null, // why null ? see API.kt line. Dejan: Participant can be human (has no service) or bot (has service)
-        val assets: ArrayList<AssetKey>,
-        val email: String //maybe we can get nulls here
-)
+        val size: Long,
+        eventId: UUID,
+        msgId: UUID,
+        conversationId: UUID,
+        clientId: String,
+        userId: UUID,
+        time: String
+) : MessageBase(eventId, msgId, conversationId, clientId, userId, time) {
+    constructor(_mimeType: String, _name: String, _size: Long, msg: MessageBase) : this(
+            mimeType = _mimeType,
+            name = _name,
+            size = _size,
+            eventId = msg.eventId,
+            msgId = msg.messageId,
+            conversationId = msg.conversationId,
+            clientId = msg.clientId,
+            userId = msg.userId,
+            time = msg.time
+    )
+}

@@ -1,6 +1,6 @@
 //
 // Wire
-// Copyright (C) 2016 Wire Swiss GmbH
+// Copyright (C) 2021 Wire Swiss GmbH
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,25 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 //
-package com.wire.kalium.backend.models
 
-import com.wire.kalium.models.outbound.otr.PreKey
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+package com.wire.kalium.models.inbound
 
-@Serializable
-data class NewClient(
-        val lastkey: PreKey,
-        val prekeys: List<PreKey>,
-        val password: String,
-        @SerialName("class")
-        val clazz: String,
-        val type: String,
-        val label: String,
-        //val sigkeys: Sig
-)
-
-//data class Sig (
-//    val enckey: String,
-//    val mackey: String
-//)
+data class AssetKey(val id: String, val token: String, val expires: String)

@@ -1,20 +1,15 @@
 package com.wire.kalium
 
-import java.util.UUID
-import com.waz.model.Messages.GenericMessage
-import com.waz.model.Messages.Asset.ImageMetaData
-import com.waz.model.Messages.Asset.Original
-import com.waz.model.Messages.Asset.RemoteData
 import com.google.protobuf.ByteString
-import com.waz.model.Messages.Asset.AudioMetaData
-import com.wire.kalium.models.MessageBase
-import com.wire.kalium.models.AudioPreviewMessage
-import com.wire.kalium.backend.GenericMessageProcessor
 import com.waz.model.Messages
+import com.waz.model.Messages.Asset.*
+import com.waz.model.Messages.GenericMessage
+import com.wire.kalium.backend.GenericMessageProcessor
+import com.wire.kalium.models.inbound.AudioPreviewMessage
+import com.wire.kalium.models.inbound.MessageBase
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import java.util.Date
-import java.util.Random
+import java.util.*
 
 class GenericMessageProcessorTest {
     @Test
@@ -113,7 +108,7 @@ class GenericMessageProcessorTest {
         processor.process(msgBase, builder.build())
     }
 
-    private fun getTestClient(): WireClient{
+    private fun getTestClient(): IWireClient {
         TODO("Fake it? Mock it?")
     }
 
@@ -134,7 +129,7 @@ class GenericMessageProcessorTest {
         }
     */
 
-        override fun onAudioPreview(client: WireClient, msg: AudioPreviewMessage) {
+        override fun onAudioPreview(client: IWireClient, msg: AudioPreviewMessage) {
             Assertions.assertEquals(AUDIO_MIME_TYPE, msg.mimeType)
         }
     }

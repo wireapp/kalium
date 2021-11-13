@@ -15,25 +15,20 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 //
-package com.wire.kalium.backend.models
+package com.wire.kalium.models.outbound
 
-import com.wire.kalium.models.outbound.otr.PreKey
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+import com.waz.model.Messages.GenericMessage
+import com.waz.model.Messages.Knock
+import java.util.*
 
-@Serializable
-data class NewClient(
-        val lastkey: PreKey,
-        val prekeys: List<PreKey>,
-        val password: String,
-        @SerialName("class")
-        val clazz: String,
-        val type: String,
-        val label: String,
-        //val sigkeys: Sig
-)
-
-//data class Sig (
-//    val enckey: String,
-//    val mackey: String
-//)
+class Ping : GenericMessageIdentifiable {
+    override val messageId: UUID = UUID.randomUUID()
+    override fun createGenericMsg(): GenericMessage {
+        val knock = Knock.newBuilder()
+            .setHotKnock(false)
+        return GenericMessage.newBuilder()
+            .setMessageId(messageId.toString())
+            .setKnock(knock)
+            .build()
+    }
+}

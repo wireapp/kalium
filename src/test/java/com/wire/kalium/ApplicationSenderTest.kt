@@ -1,10 +1,9 @@
 package com.wire.kalium
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider
-import com.wire.kalium.assets.MessageText
 import com.wire.kalium.backend.models.NewBot
 import com.wire.kalium.crypto.CryptoFile
-import com.wire.kalium.helium.Application
+import com.wire.kalium.models.outbound.MessageText
 import org.junit.jupiter.api.Test
 import java.util.*
 import javax.ws.rs.client.Client
@@ -29,7 +28,6 @@ class ApplicationSenderTest {
         val app = Application(email, password)
                 .addClient(client)
                 .addCrypto(crypto)
-                .addStorage(storage)
 
         // Login, create device if needed, setup token refresh timer, pull missed messages and more
         app.start()

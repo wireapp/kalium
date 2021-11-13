@@ -15,25 +15,23 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 //
-package com.wire.kalium.backend.models
+package com.wire.kalium.models.outbound.otr
 
-import com.wire.kalium.models.outbound.otr.PreKey
-import kotlinx.serialization.SerialName
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class NewClient(
-        val lastkey: PreKey,
-        val prekeys: List<PreKey>,
-        val password: String,
-        @SerialName("class")
-        val clazz: String,
-        val type: String,
-        val label: String,
-        //val sigkeys: Sig
-)
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class Devices(
+        val missing: Missing = Missing(),
+        val redundant: Missing = Missing(),
+        val deleted: Missing = Missing()
+) {
+    fun hasMissing(): Boolean {
+        return missing.isNotEmpty()
+    }
 
-//data class Sig (
-//    val enckey: String,
-//    val mackey: String
-//)
+    fun size(): Int = missing.values.fold(0) { accumulator, clients ->
+        accumulator + clients.size
+    }
+}

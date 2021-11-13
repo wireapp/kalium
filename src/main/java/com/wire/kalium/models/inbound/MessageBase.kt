@@ -15,25 +15,24 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 //
-package com.wire.kalium.backend.models
+package com.wire.kalium.models.inbound
 
-import com.wire.kalium.models.outbound.otr.PreKey
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+import java.util.*
 
-@Serializable
-data class NewClient(
-        val lastkey: PreKey,
-        val prekeys: List<PreKey>,
-        val password: String,
-        @SerialName("class")
-        val clazz: String,
-        val type: String,
-        val label: String,
-        //val sigkeys: Sig
-)
-
-//data class Sig (
-//    val enckey: String,
-//    val mackey: String
-//)
+open class MessageBase(
+        val messageId: UUID,
+        val eventId: UUID,
+        val userId: UUID,
+        val clientId: String,
+        val conversationId: UUID,
+        val time: String
+) {
+    constructor(msg: MessageBase) : this(
+            eventId = msg.eventId,
+            messageId = msg.messageId,
+            conversationId = msg.conversationId,
+            clientId = msg.clientId,
+            userId = msg.userId,
+            time = msg.time
+    )
+}

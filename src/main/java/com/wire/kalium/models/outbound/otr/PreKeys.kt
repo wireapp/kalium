@@ -15,18 +15,45 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 //
-package com.wire.kalium.backend.models
+package com.wire.kalium.models.outbound.otr
 
 import com.wire.kalium.tools.UUIDSerializer
 import kotlinx.serialization.Serializable
 import java.util.*
 
 @Serializable
-data class NewBot(
-        @Serializable(with = UUIDSerializer::class) val id: UUID? = null,
-        val client: String? = null,
-        val token: String,
-        @Serializable(with = UUIDSerializer::class) val last: UUID? = null,
-        val origin: User? = null,
-        val conversation: Conversation? = null,
+class ClientKey : HashMap<String, PreKey>() {
+
+}
+
+@Serializable
+class PreKeys() : HashMap<UUID, ClientKey>() {
+
+    constructor(array: ArrayList<PreKey>, clientId: String, userId: UUID) : this() {
+        val devs = ClientKey()
+        for (key in array) {
+            devs[clientId] = key
+        }
+        put(userId, devs)
+    }
+
+    fun count(): Int {
+        var ret = 0
+        for (cls in values) ret += cls.size
+        return ret
+    }
+}
+
+@Serializable
+data class ClientPrekey(
+        val client: String,
+        val prekey: PreKey
 )
+
+@Serializable
+data class AllUserPrekeys(
+        @Serializable(with = UUIDSerializer::class) val user: UUID,
+        val clients: List<ClientPrekey>
+)
+
+typealias UsersPrekeysCollection = Map<UUID, Map<String, PreKey>>

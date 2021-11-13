@@ -15,25 +15,32 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 //
-package com.wire.kalium.backend.models
+package com.wire.kalium.models.outbound.otr
 
-import com.wire.kalium.models.outbound.otr.PreKey
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import java.util.*
 
 @Serializable
-data class NewClient(
-        val lastkey: PreKey,
-        val prekeys: List<PreKey>,
-        val password: String,
-        @SerialName("class")
-        val clazz: String,
-        val type: String,
-        val label: String,
-        //val sigkeys: Sig
-)
+class OtrMessage(//clientId of the sender
+        private val sender: String, private val recipients: Recipients
+) {
+    fun add(rec: Recipients) {
+        recipients.add(rec)
+    }
 
-//data class Sig (
-//    val enckey: String,
-//    val mackey: String
-//)
+    operator fun get(userId: UUID, clientId: String): String {
+        return recipients[userId, clientId]
+    }
+
+    fun size(): Int {
+        var count = 0
+        for (devs in recipients.values) {
+            count += devs.size
+        }
+        return count
+    }
+
+    fun getSender(): String? {
+        return sender
+    }
+}
