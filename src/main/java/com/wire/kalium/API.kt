@@ -17,9 +17,9 @@
 //
 package com.wire.kalium
 
-import com.wire.kalium.backend.models.*
 import com.wire.kalium.exceptions.AuthException
 import com.wire.kalium.exceptions.HttpException
+import com.wire.kalium.models.backend.*
 import com.wire.kalium.models.inbound.AssetKey
 import com.wire.kalium.models.outbound.Asset
 import com.wire.kalium.models.outbound.otr.*

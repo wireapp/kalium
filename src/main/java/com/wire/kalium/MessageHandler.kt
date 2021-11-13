@@ -19,8 +19,8 @@ package com.wire.kalium
 
 //import com.wire.kalium.models.LinkPreviewMessage TODO: Implement LinkPreviews
 import com.waz.model.Messages.GenericMessage
-import com.wire.kalium.backend.models.SystemMessage
 import com.wire.kalium.models.inbound.*
+import com.wire.kalium.models.system.SystemMessage
 import com.wire.kalium.tools.Logger
 import java.util.*
 

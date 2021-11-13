@@ -4,7 +4,6 @@ import com.google.protobuf.ByteString
 import com.waz.model.Messages
 import com.waz.model.Messages.Asset.*
 import com.waz.model.Messages.GenericMessage
-import com.wire.kalium.backend.GenericMessageProcessor
 import com.wire.kalium.models.inbound.AudioPreviewMessage
 import com.wire.kalium.models.inbound.MessageBase
 import org.junit.jupiter.api.Assertions

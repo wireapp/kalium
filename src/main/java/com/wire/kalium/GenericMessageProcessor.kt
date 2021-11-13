@@ -15,11 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 //
-package com.wire.kalium.backend
+package com.wire.kalium
 
 import com.waz.model.Messages
-import com.wire.kalium.IWireClient
-import com.wire.kalium.MessageHandler
 import com.wire.kalium.models.inbound.*
 import com.wire.kalium.tools.Logger
 import java.util.*

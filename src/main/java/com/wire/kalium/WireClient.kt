@@ -1,11 +1,11 @@
 package com.wire.kalium
 
 import com.wire.bots.cryptobox.CryptoException
-import com.wire.kalium.backend.models.Access
-import com.wire.kalium.backend.models.Conversation
-import com.wire.kalium.backend.models.User
 import com.wire.kalium.crypto.Crypto
 import com.wire.kalium.exceptions.HttpException
+import com.wire.kalium.models.backend.Access
+import com.wire.kalium.models.backend.Conversation
+import com.wire.kalium.models.backend.User
 import com.wire.kalium.models.inbound.AssetKey
 import com.wire.kalium.models.outbound.Asset
 import com.wire.kalium.models.outbound.GenericMessageIdentifiable

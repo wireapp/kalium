@@ -17,13 +17,13 @@
 //
 package com.wire.kalium
 
-import com.wire.kalium.backend.models.Access
-import com.wire.kalium.backend.models.Cookie
-import com.wire.kalium.backend.models.NewClient
-import com.wire.kalium.backend.models.NotificationList
 import com.wire.kalium.exceptions.AuthException
 import com.wire.kalium.exceptions.HttpException
+import com.wire.kalium.models.backend.Access
+import com.wire.kalium.models.backend.NewClient
+import com.wire.kalium.models.backend.NotificationList
 import com.wire.kalium.models.outbound.otr.PreKey
+import com.wire.kalium.models.system.Cookie
 import com.wire.kalium.tools.KtxSerializer
 import com.wire.kalium.tools.Logger
 import kotlinx.serialization.SerialName

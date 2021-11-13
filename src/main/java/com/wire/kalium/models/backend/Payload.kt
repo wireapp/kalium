@@ -15,54 +15,54 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 //
-package com.wire.kalium.backend.models
+package com.wire.kalium.models.backend
 
 import com.wire.kalium.tools.UUIDSerializer
 import kotlinx.serialization.Serializable
-import java.util.UUID
+import java.util.*
 
 @Serializable
 data class Payload(
-    /**
-     * TODO: Replace String with something type-safe.
-     *   Maybe an Enum? What are the possible values of this status? Bad discoverability too.
-     *   Currently known:
-     *   "conversation.otr-message-add"
-     *   "conversation.member-join"
-     *   "conversation.member-leave"
-     *   "conversation.delete"
-     *   "conversation.create"
-     *   "conversation.rename"
-     *   "user.connection"
-     **/
-    val type: String,
-    val conversation: @Serializable(with = UUIDSerializer::class) UUID,
-    val from: @Serializable(with = UUIDSerializer::class) UUID,
-    val time: String,
-    val data: Data,
-    var team: @Serializable(with = UUIDSerializer::class) UUID,
-    val connection: Connection,
-    var user: User,
+        /**
+         * TODO: Replace String with something type-safe.
+         *   Maybe an Enum? What are the possible values of this status? Bad discoverability too.
+         *   Currently known:
+         *   "conversation.otr-message-add"
+         *   "conversation.member-join"
+         *   "conversation.member-leave"
+         *   "conversation.delete"
+         *   "conversation.create"
+         *   "conversation.rename"
+         *   "user.connection"
+         **/
+        val type: String,
+        val conversation: @Serializable(with = UUIDSerializer::class) UUID,
+        val from: @Serializable(with = UUIDSerializer::class) UUID,
+        val time: String,
+        val data: Data,
+        var team: @Serializable(with = UUIDSerializer::class) UUID,
+        val connection: Connection,
+        var user: User,
 )
 
 @Serializable
 data class Data(
-    val sender: String,
-    val recipient: String,
-    val text: String,
-    val user_ids: List<@Serializable(with = UUIDSerializer::class) UUID>,
-    val name: String,
-    val id: String,
-    val key: String,
-    val user: @Serializable(with = UUIDSerializer::class) UUID,
-    val creator: @Serializable(with = UUIDSerializer::class) UUID,
-    val members: Members,
+        val sender: String,
+        val recipient: String,
+        val text: String,
+        val user_ids: List<@Serializable(with = UUIDSerializer::class) UUID>,
+        val name: String,
+        val id: String,
+        val key: String,
+        val user: @Serializable(with = UUIDSerializer::class) UUID,
+        val creator: @Serializable(with = UUIDSerializer::class) UUID,
+        val members: Members,
 )
 
 @Serializable
 data class Members(
-    val others: List<OtherMember>,
-    val self: SelfMember
+        val others: List<OtherMember>,
+        val self: SelfMember
 ) {
     fun allMembers(): List<ConversationMember> = others + self
 }

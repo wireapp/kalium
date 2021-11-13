@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 //
-package com.wire.kalium.backend.models
+package com.wire.kalium.models.backend
 
 
 // TODO: rename file
@@ -34,14 +34,14 @@ data class OtherMember(
 
 @Serializable
 data class SelfMember(
-    override val userId: String,
-    val service: ServiceReferenceResponse?,
-    val hiddenReference: String?,
-    val otrMutedReference: String?,
-    val hidden: Boolean?,
-    val otrArchived: Boolean?,
-    val otrMuted: Boolean?,
-    val otrArchiveReference: String?
+        override val userId: String,
+        val service: ServiceReferenceResponse?,
+        val hiddenReference: String?,
+        val otrMutedReference: String?,
+        val hidden: Boolean?,
+        val otrArchived: Boolean?,
+        val otrMuted: Boolean?,
+        val otrArchiveReference: String?
 ) : ConversationMember()
 
 @Serializable

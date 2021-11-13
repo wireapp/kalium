@@ -5,7 +5,7 @@
 //import com.wire.kalium.MessageHandler
 //import com.wire.kalium.WireClient
 //import com.wire.kalium.backend.models.NewBot
-//import com.wire.kalium.backend.models.Payload
+//import com.wire.kalium.models.backend.Payload
 //import com.wire.kalium.crypto.Crypto
 //import com.wire.kalium.tools.Logger
 //import java.io.IOException

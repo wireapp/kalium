@@ -3,12 +3,11 @@ package com.wire.kalium
 import com.google.protobuf.InvalidProtocolBufferException
 import com.waz.model.Messages.GenericMessage
 import com.wire.bots.cryptobox.CryptoException
-import com.wire.kalium.backend.GenericMessageProcessor
-import com.wire.kalium.backend.models.Conversation
-import com.wire.kalium.backend.models.Data
-import com.wire.kalium.backend.models.Payload
-import com.wire.kalium.backend.models.SystemMessage
+import com.wire.kalium.models.backend.Conversation
+import com.wire.kalium.models.backend.Data
+import com.wire.kalium.models.backend.Payload
 import com.wire.kalium.models.inbound.MessageBase
+import com.wire.kalium.models.system.SystemMessage
 import com.wire.kalium.tools.Logger
 import java.util.*
 

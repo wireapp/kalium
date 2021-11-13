@@ -1,5 +1,6 @@
-package com.wire.kalium.backend.models
+package com.wire.kalium.models.backend
 
+import com.wire.kalium.models.system.Cookie
 import com.wire.kalium.tools.UUIDSerializer
 import kotlinx.serialization.Serializable
 import java.util.*

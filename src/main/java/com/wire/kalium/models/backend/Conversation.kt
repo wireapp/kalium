@@ -15,19 +15,30 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 //
-package com.wire.kalium.backend.models
+package com.wire.kalium.models.backend
 
 import com.wire.kalium.tools.UUIDSerializer
 import kotlinx.serialization.Serializable
 import java.util.*
 
 @Serializable
-data class User(
+data class Conversation(
         @Serializable(with = UUIDSerializer::class) val id: UUID,
         val name: String,
-        val accent_id: Int,
-        val handle: String,
-        var service: Service? = null, // why null ? see API.kt line. Dejan: Participant can be human (has no service) or bot (has service)
-        val assets: ArrayList<AssetKey>,
-        val email: String //maybe we can get nulls here
+        val members: List<ConversationMember>
+) {
+    @Serializable(with = UUIDSerializer::class) var creator: UUID? = null
+
+    constructor(id: UUID, name: String, members: List<ConversationMember>, creator: UUID): this (
+            id = id, name = name, members = members
+    ) {
+        this.creator = creator
+    }
+}
+/*
+        @Serializable(with = UUIDSerializer::class) val id: UUID,
+        val name: String,
+        @Serializable(with = UUIDSerializer::class) val creator: UUID,
+        val members: List<ConversationMember>
 )
+*/

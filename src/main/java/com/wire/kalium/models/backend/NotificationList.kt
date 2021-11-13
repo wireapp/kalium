@@ -1,4 +1,4 @@
-package com.wire.kalium.backend.models
+package com.wire.kalium.models.backend
 
 data class NotificationList(
         val has_more: Boolean,

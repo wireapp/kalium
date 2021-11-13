@@ -1,9 +1,9 @@
 package com.wire.kalium
 
 import com.wire.bots.cryptobox.CryptoException
-import com.wire.kalium.backend.models.Access
 import com.wire.kalium.crypto.Crypto
 import com.wire.kalium.exceptions.HttpException
+import com.wire.kalium.models.backend.Access
 import com.wire.kalium.models.outbound.otr.PreKey
 import com.wire.kalium.tools.Logger
 import java.io.IOException
