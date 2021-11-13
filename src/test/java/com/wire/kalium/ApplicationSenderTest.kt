@@ -1,7 +1,6 @@
 package com.wire.kalium
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider
-import com.wire.kalium.backend.models.NewBot
 import com.wire.kalium.crypto.CryptoFile
 import com.wire.kalium.models.outbound.MessageText
 import org.junit.jupiter.api.Test
@@ -23,8 +22,6 @@ class ApplicationSenderTest {
 
         val crypto = CryptoFile("./joker")
 
-        val storage = Storage()
-
         val app = Application(email, password)
                 .addClient(client)
                 .addCrypto(crypto)
@@ -39,22 +36,5 @@ class ApplicationSenderTest {
         wireClient.send(MessageText("Is that you, John Wayne? Is this me?"))
 
         app.stop()
-    }
-
-    class Storage : IState {
-        var newBot: NewBot? = null
-
-        override fun saveState(newBot: NewBot): Boolean {
-            this.newBot = newBot
-            return true
-        }
-
-        override fun getState(): NewBot {
-            return newBot!!
-        }
-
-        override fun removeState(): Boolean {
-            return true
-        }
     }
 }

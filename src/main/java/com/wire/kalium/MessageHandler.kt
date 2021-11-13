@@ -19,29 +19,12 @@ package com.wire.kalium
 
 //import com.wire.kalium.models.LinkPreviewMessage TODO: Implement LinkPreviews
 import com.waz.model.Messages.GenericMessage
-import com.wire.kalium.backend.models.NewBot
 import com.wire.kalium.backend.models.SystemMessage
 import com.wire.kalium.models.inbound.*
 import com.wire.kalium.tools.Logger
 import java.util.*
 
 interface MessageHandler {
-    /**
-     * @param newBot       Initialization object for new Bot instance
-     * -  id          : The unique user ID for the bot.
-     * -  client      : The client ID for the bot.
-     * -  origin      : The profile of the user who requested the bot, as it is returned from GET /bot/users.
-     * -  conversation: The convId as seen by the bot and as returned from GET /bot/convId.
-     * -  token       : The bearer token that the bot must use on inbound requests.
-     * -  locale      : The preferred locale for the bot to use, in form of an IETF language tag.
-     * @param serviceToken Service token obtained from the Wire BE when the service was created
-     * @return If TRUE is returned new bot instance is created for this conversation
-     * If FALSE is returned this service declines to create new bot instance for this conversation
-     */
-    fun onNewBot(newBot: NewBot, serviceToken: String): Boolean {
-        return true
-    }
-
     /**
      * This callback is invoked by the framework when the bot is added into a conversation
      *
@@ -95,14 +78,6 @@ interface MessageHandler {
      * @param msg   System message
      */
     fun onBotRemoved(botId: UUID, msg: SystemMessage) {}
-
-    /**
-     * @param newBot
-     * @return Bot name that will be used for this conversation. If NULL is returned the Default Bot Name will be used
-     */
-    fun getName(newBot: NewBot): String? {
-        return null
-    }
 
     /**
      * @return Bot's Accent Colour index (from [1 - 7]) that will be used for this conversation. If 0 is returned the
