@@ -169,11 +169,14 @@ open class API(client: Client, convId: UUID?, token: String) : LoginClient(clien
         os.write(sb.toString().toByteArray(StandardCharsets.UTF_8))
         os.write(asset.encryptedData)
         os.write("\r\n--frontier--\r\n".toByteArray(StandardCharsets.UTF_8))
+
         val response: Response = assetsPath
                 .request(MediaType.APPLICATION_JSON_TYPE)
                 .header(HttpHeaders.AUTHORIZATION, bearer(token))
                 .post(Entity.entity(os.toByteArray(), "multipart/mixed; boundary=frontier"))
-        return response.readEntity(AssetKey::class.java)
+
+        val content = response.readEntity(String::class.java)
+        return mapper.readValue(content)
     }
 
     override fun getConversation(): Conversation {

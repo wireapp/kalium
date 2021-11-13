@@ -18,4 +18,7 @@
 
 package com.wire.kalium.models.inbound
 
-data class AssetKey(val id: String, val token: String, val expires: String)
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class AssetKey(val key: String, val token: String)

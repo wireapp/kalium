@@ -18,7 +18,6 @@
 package com.wire.kalium.models.outbound
 
 import com.google.protobuf.ByteString
-import com.waz.model.Messages
 import com.waz.model.Messages.Asset.*
 import com.waz.model.Messages.Ephemeral
 import com.waz.model.Messages.GenericMessage
@@ -64,10 +63,10 @@ class Picture : AssetBase {
         assetToken?.let { remoteData.assetToken = it }
         assetKey?.let { remoteData.assetId = it }
 
-        val asset = Messages.Asset.newBuilder()
-            .setExpectsReadConfirmation(readReceiptsEnabled)
-            .setUploaded(remoteData)
-            .setOriginal(original)
+        val asset = newBuilder()
+                .setExpectsReadConfirmation(readReceiptsEnabled)
+                .setUploaded(remoteData)
+                .setOriginal(original)
         if (expires > 0) {
             val ephemeral = Ephemeral.newBuilder()
                 .setAsset(asset)
