@@ -22,7 +22,8 @@ import java.util.*
 
 @Serializable
 class OtrMessage(//clientId of the sender
-        private val sender: String, private val recipients: Recipients
+        private val sender: String,
+        val recipients: Recipients
 ) {
     fun add(rec: Recipients) {
         recipients.add(rec)

@@ -81,12 +81,7 @@ class WireClient(
         val encrypt = crypto.encrypt(preKeys, content)
         message.add(encrypt)
 
-        // reset devices so they could be pulled next time
-        devices = Devices()
         devices = api.sendMessage(message, true)
-        if (devices.hasMissing()) {
-            //Logger.error("Failed to send otr message to %d devices. Bot: %s", devices.size(), getId())
-        } // FIXME: Silent failure. Missing else?
     }
 
     @Throws(Exception::class)
@@ -229,7 +224,7 @@ class WireClient(
     @Throws(HttpException::class)
     private fun fetchDevices(): Devices {
         val msg = OtrMessage(clientId, Recipients())
-        val devices = api.sendMessage(msg)
+        val devices = api.sendMessage(msg, false)
         return devices
     }
 }

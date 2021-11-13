@@ -11,7 +11,7 @@ import java.util.*
 
 interface IWireAPI {
     @Throws(HttpException::class)
-    open fun sendMessage(msg: OtrMessage, vararg ignoreMissing: Any?): Devices
+    open fun sendMessage(msg: OtrMessage, flag: Boolean): Devices
 
     @Throws(HttpException::class)
     open fun sendPartialMessage(msg: OtrMessage, userId: UUID): Devices

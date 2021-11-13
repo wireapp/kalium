@@ -17,6 +17,9 @@
 //
 package com.wire.kalium
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import com.wire.kalium.exceptions.AuthException
 import com.wire.kalium.exceptions.HttpException
 import com.wire.kalium.models.backend.*
@@ -41,6 +44,7 @@ import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
 
 open class API(client: Client, convId: UUID?, token: String) : LoginClient(client), IWireAPI {
+    private var mapper: ObjectMapper
     private val conversationsPath: WebTarget
     private val usersPath: WebTarget
     private val assetsPath: WebTarget
@@ -51,14 +55,14 @@ open class API(client: Client, convId: UUID?, token: String) : LoginClient(clien
     private val convId: String?
 
     @Throws(HttpException::class)
-    override fun sendMessage(msg: OtrMessage, vararg ignoreMissing: Any?): Devices {
+    override fun sendMessage(msg: OtrMessage, flag: Boolean): Devices {
         val msgJson = KtxSerializer.json.encodeToString(msg)
         val response: Response = conversationsPath.path(convId)
                 .path("otr/messages")
-                //.queryParam("ignore_missing", ignoreMissing)  //todo re-enable this
+                .queryParam("ignore_missing", flag)  //todo re-enable this
                 .request(MediaType.APPLICATION_JSON)
                 .header(HttpHeaders.AUTHORIZATION, bearer(token))
-                .post(Entity.json(msgJson))
+                .post(Entity.entity(msg, MediaType.APPLICATION_JSON))
 
         val statusCode: Int = response.status
         if (statusCode == 412) {
@@ -98,7 +102,8 @@ open class API(client: Client, convId: UUID?, token: String) : LoginClient(clien
                     .accept(MediaType.APPLICATION_JSON)
                     .post(Entity.entity(missing, MediaType.APPLICATION_JSON))
 
-            return response.readEntity(PreKeys::class.java)
+            val content = response.readEntity(String::class.java)
+            return mapper.readValue(content)
         }
     }
 
@@ -464,6 +469,7 @@ open class API(client: Client, convId: UUID?, token: String) : LoginClient(clien
     }
 
     init {
+        this.mapper = jacksonObjectMapper()
         this.convId = convId?.toString()
         this.token = token
         val target: WebTarget = client
