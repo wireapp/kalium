@@ -1,6 +1,6 @@
 package com.wire.kalium.helium
 
-import com.wire.kalium.backend.models.Event
+import com.wire.kalium.models.backend.Event
 import com.wire.kalium.tools.KtxSerializer
 import com.wire.kalium.tools.Logger
 import com.wire.kalium.tools.Util

@@ -3,10 +3,8 @@ package com.wire.kalium
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
-import com.wire.kalium.assets.MessageText
-import com.wire.kalium.backend.models.NewBot
 import com.wire.kalium.crypto.CryptoFile
-import com.wire.kalium.helium.Application
+import com.wire.kalium.models.outbound.MessageText
 import com.wire.kalium.tools.Logger
 import org.glassfish.jersey.logging.LoggingFeature
 import java.util.*
@@ -29,11 +27,9 @@ class CliApplication: CliktCommand() {
         httpClient.register(loggingFeature)
 
         val crypto = CryptoFile("/tmp/joker")
-        val storage = Storage()
         val app = Application("dejan+joker@wire.com", "12345678")
                 .addClient(httpClient)
                 .addCrypto(crypto)
-                .addStorage(storage)
 
         // Login, create device if needed, setup token refresh timer, pull missed messages and more
         app.start()
@@ -45,23 +41,6 @@ class CliApplication: CliktCommand() {
         wireClient.send(MessageText("Hi there from Kotlin!"))
 
         app.stop()
-    }
-}
-
-class Storage : IState {
-    var newBot = NewBot()
-
-    override fun saveState(newBot: NewBot): Boolean {
-        this.newBot = newBot
-        return true
-    }
-
-    override fun getState(): NewBot {
-        return newBot
-    }
-
-    override fun removeState(): Boolean {
-        return true
     }
 }
 

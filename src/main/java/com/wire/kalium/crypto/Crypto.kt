@@ -1,10 +1,10 @@
 package com.wire.kalium.crypto
 
 import com.wire.bots.cryptobox.CryptoException
-import com.wire.kalium.models.otr.Missing
-import com.wire.kalium.models.otr.PreKey
-import com.wire.kalium.models.otr.PreKeys
-import com.wire.kalium.models.otr.Recipients
+import com.wire.kalium.models.outbound.otr.Missing
+import com.wire.kalium.models.outbound.otr.PreKey
+import com.wire.kalium.models.outbound.otr.PreKeys
+import com.wire.kalium.models.outbound.otr.Recipients
 import java.io.Closeable
 import java.io.IOException
 import java.util.*

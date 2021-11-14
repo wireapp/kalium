@@ -5,7 +5,7 @@
 //import com.wire.helium.helpers.DummyAPI
 //import com.wire.helium.helpers.MemStorage
 //import com.wire.helium.helpers.Util.deleteDir
-//import com.wire.kalium.assets.MessageText
+//import com.wire.kalium.models.outbound.MessageText
 //import com.wire.kalium.backend.models.NewBot
 //import com.wire.kalium.crypto.CryptoFile
 //import com.wire.kalium.helium.WireClientImp

@@ -2,8 +2,8 @@
 //
 //import com.wire.kalium.MessageHandler
 //import com.wire.kalium.backend.models.NewBot
-//import com.wire.kalium.backend.models.Event
-//import com.wire.kalium.backend.models.NotificationList
+//import com.wire.kalium.models.backend.Event
+//import com.wire.kalium.models.backend.NotificationList
 //import com.wire.kalium.tools.Logger
 //import org.glassfish.tyrus.client.ClientManager
 //import org.glassfish.tyrus.client.ClientProperties

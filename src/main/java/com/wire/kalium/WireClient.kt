@@ -1,233 +1,230 @@
-//
-// Wire
-// Copyright (C) 2016 Wire Swiss GmbH
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program. If not, see http://www.gnu.org/licenses/.
-//
 package com.wire.kalium
 
 import com.wire.bots.cryptobox.CryptoException
-import com.wire.kalium.assets.Asset
-import com.wire.kalium.assets.GenericMessageIdentifiable
-import com.wire.kalium.backend.models.Conversation
-import com.wire.kalium.backend.models.User
+import com.wire.kalium.crypto.Crypto
 import com.wire.kalium.exceptions.HttpException
-import com.wire.kalium.models.AssetKey
-import com.wire.kalium.models.otr.PreKey
-import java.io.Closeable
+import com.wire.kalium.models.backend.Access
+import com.wire.kalium.models.backend.Conversation
+import com.wire.kalium.models.backend.User
+import com.wire.kalium.models.inbound.AssetKey
+import com.wire.kalium.models.outbound.Asset
+import com.wire.kalium.models.outbound.GenericMessageIdentifiable
+import com.wire.kalium.models.outbound.otr.*
+import com.wire.kalium.tools.Util
 import java.io.IOException
+import java.security.MessageDigest
 import java.util.*
 
-/**
- * Thread safe class for postings into this conversation
- */
-interface WireClient : Closeable {
-    /**
-     * Post a generic message into conversation
-     *
-     * @param message generic message (Text, Image, File, Reply, Mention, ...)
-     * @throws Exception
-     */
+class WireClient(
+        protected val api: IWireAPI,
+        protected val crypto: Crypto,
+        protected val access: Access,
+        protected val clientId: String
+
+) : IWireClient {
+    private var devices: Devices = Devices()
+
     @Throws(Exception::class)
-    fun send(message: GenericMessageIdentifiable)
+    override fun send(message: GenericMessageIdentifiable) {
+        postGenericMessageTargetingUser(message)
+    }
 
-    /**
-     * @param message generic message (Text, Image, File, Reply, Mention, ...)
-     * @param userId  ignore all other participants except this user
-     * @throws Exception
-     */
     @Throws(Exception::class)
-    fun send(message: GenericMessageIdentifiable, userId: UUID)
+    override fun send(message: GenericMessageIdentifiable, userId: UUID) {
+        postGenericMessageTargetingUser(message, userId)
+    }
 
-    /**
-     * This method downloads asset from the Backend.
-     *
-     * @param assetKey        Unique asset identifier (UUID)
-     * @param assetToken      Asset token (null in case of public assets)
-     * @param sha256Challenge SHA256 hash code for this asset
-     * @param otrKey          Encryption key to be used to decrypt the data
-     * @return Decrypted asset data
-     * @throws Exception
-     */
-    @Throws(Exception::class)
-    fun downloadAsset(assetKey: String, assetToken: String, sha256Challenge: ByteArray, otrKey: ByteArray): ByteArray
+    override fun getUserId(): UUID {
+        return access.user
+    }
 
-    /**
-     * @return Bot ID as UUID
-     */
-    fun getId(): UUID
-
-    /**
-     * Fetch the bot's own user profile information. A bot's profile has the following attributes:
-     *
-     *
-     * id (String): The bot's user ID.
-     * name (String): The bot's name.
-     * accent_id (Number): The bot's accent colour.
-     * assets (Array): The bot's public profile assets (e.g. images).
-     *
-     * @return
-     */
-    @Throws(HttpException::class)
-    fun getSelf(): User
-
-    /**
-     * @return Conversation ID as UUID
-     */
-    fun getConversationId(): UUID
-
-    /**
-     * @return Device ID as returned by the Wire Backend
-     */
-    fun getDeviceId(): String
-
-    /**
-     * Fetch users' profiles from the Backend
-     *
-     * @param userIds User IDs (UUID) that are being requested
-     * @return Collection of user profiles (name, accent colour,...)
-     * @throws HttpException
-     */
-    @Throws(HttpException::class)
-    fun getUsers(userIds: MutableCollection<UUID>): MutableCollection<User>
-
-    /**
-     * Fetch users' profiles from the Backend
-     *
-     * @param userId User ID (UUID) that are being requested
-     * @return User profile (name, accent colour,...)
-     * @throws HttpException
-     */
-    @Throws(HttpException::class)
-    fun getUser(userId: UUID): User
-
-    /**
-     * Fetch conversation details from the Backend
-     *
-     * @return Conversation details including Conversation ID, Conversation name, List of participants
-     * @throws IOException
-     */
     @Throws(IOException::class)
-    fun getConversation(): Conversation
+    override fun close() {
+        crypto.close()
+    }
+
+    override fun isClosed(): Boolean {
+        return crypto.isClosed()
+    }
 
     /**
-     * Bots cannot send/receive/accept connect requests. This method can be used when
-     * running the sdk as a regular user and you need to
-     * accept/reject a connect request.
+     * Encrypt whole message for participants in the conversation.
+     * Implements the fallback for the 412 error code and missing
+     * devices.
      *
-     * @param user User ID as UUID
-     * @throws Exception
+     * @param generic generic message to be sent
+     * @throws Exception CryptoBox exception
      */
     @Throws(Exception::class)
-    fun acceptConnection(user: UUID)
+    protected fun postGenericMessageTargetingUser(generic: GenericMessageIdentifiable) {
+        val content = generic.createGenericMsg().toByteArray()
 
-    /**
-     * Decrypt cipher either using existing session or it creates new session from this cipher and decrypts
-     *
-     * @param userId   Sender's User id
-     * @param clientId Sender's Client id
-     * @param cypher   Encrypted, Base64 encoded string
-     * @return Base64 encoded decrypted text
-     * @throws CryptoException
-     */
-    @Throws(CryptoException::class)
-    fun decrypt(userId: UUID, clientId: String, cypher: String): String
+        // Try to encrypt the msg for those devices that we have the session already
+        val encrypt = encrypt(content, getAllDevices())
+        val msg = OtrMessage(clientId, encrypt)
+        val res = api.sendMessage(msg, false)
 
-    /**
-     * Invoked by the sdk. Called once when the conversation is created
-     *
-     * @return Last prekey
-     * @throws CryptoException
-     */
-    @Throws(CryptoException::class)
-    fun newLastPreKey(): PreKey
+        if (res.hasMissing()) {
+            // Fetch preKeys for the missing devices from the Backend
+            handleMissingDevices(res.missing, content, msg)
+        }
+    }
 
-    /**
-     * Invoked by the sdk. Called once when the conversation is created and then occasionally when number of available
-     * keys drops too low
-     *
-     * @param from  Starting offset
-     * @param count Number of keys to generate
-     * @return List of prekeys
-     * @throws CryptoException
-     */
-    @Throws(CryptoException::class)
-    fun newPreKeys(from: Int, count: Int): ArrayList<PreKey>
+    private fun handleMissingDevices(
+            missing: Missing,
+            content: ByteArray,
+            message: OtrMessage
+    ) {
+        val preKeys = api.getPreKeys(missing)
 
-    /**
-     * Uploads previously generated prekeys to BE
-     *
-     * @param preKeys Pre keys to be uploaded
-     * @throws IOException
-     */
+        // Encrypt msg for those devices that were missing. This time using preKeys
+        val encrypt = crypto.encrypt(preKeys, content)
+        message.add(encrypt)
+
+        devices = api.sendMessage(message, true)
+    }
+
+    @Throws(Exception::class)
+    protected fun postGenericMessageTargetingUser(generic: GenericMessageIdentifiable, userId: UUID) {
+        // Try to encrypt the msg for those devices that we have the session already
+        val allDevices = getAllDevices()
+        val missing = Missing()
+        allDevices.ofUser(userId)?.forEach { client ->
+            missing.add(userId, client)
+        }
+        val content = generic.createGenericMsg().toByteArray()
+        val recipients = encrypt(content, missing)
+        val message = OtrMessage(clientId, recipients)
+        val res = api.sendPartialMessage(message, userId)
+        if (res.hasMissing()) {
+            handleMissingDevices(res.missing, content, message)
+        }
+    }
+
+    override fun getSelf(): User {
+        return api.getSelf()
+    }
+
+    override fun getUsers(userIds: MutableCollection<UUID>): MutableCollection<User> {
+        return api.getUsers(userIds)
+    }
+
+    override fun getUser(userId: UUID): User {
+        val users = api.getUsers(mutableSetOf(userId))
+        return users.iterator().next()
+    }
+
+    override fun getConversation(): Conversation {
+        return api.getConversation()
+    }
+
+    @Throws(Exception::class)
+    override fun acceptConnection(user: UUID) {
+        api.acceptConnection(user)
+    }
+
     @Throws(IOException::class)
-    fun uploadPreKeys(preKeys: ArrayList<PreKey>)
+    override fun uploadPreKeys(preKeys: ArrayList<PreKey>) {
+        api.uploadPreKeys(preKeys)
+    }
 
-    /**
-     * Returns the list of available prekeys.
-     * If the number is too low (less than 8) you should generate new prekeys and upload them to BE
-     *
-     * @return List of available prekeys' ids
-     */
-    fun getAvailablePrekeys(): ArrayList<Int>
+    override fun getAvailablePrekeys(): ArrayList<Int> {
+        return api.getAvailablePrekeys(clientId)
+    }
 
-    /**
-     * Checks if CryptoBox is closed
-     *
-     * @return True if crypto box is closed
-     */
-    fun isClosed(): Boolean
+    @Throws(HttpException::class)
+    override fun downloadProfilePicture(assetKey: String): ByteArray {
+        return api.downloadAsset(assetKey, null)
+    }
 
-    /**
-     * Download publicly available profile picture for the given asset key. This asset is not encrypted
-     *
-     * @param assetKey Asset key
-     * @return Profile picture binary data
-     * @throws Exception
-     */
     @Throws(Exception::class)
-    fun downloadProfilePicture(assetKey: String): ByteArray
+    override fun uploadAsset(asset: Asset): AssetKey {
+        return api.uploadAsset(asset)
+    }
+
+    @Throws(CryptoException::class)
+    fun encrypt(content: ByteArray, missing: Missing): Recipients {
+        return crypto.encrypt(missing, content)
+    }
+
+    @Throws(CryptoException::class)
+    override fun decrypt(userId: UUID, clientId: String, cypher: String): String {
+        return crypto.decrypt(userId, clientId, cypher)
+    }
+
+    @Throws(CryptoException::class)
+    override fun newLastPreKey(): PreKey {
+        return crypto.newLastPreKey()
+    }
+
+    @Throws(CryptoException::class)
+    override fun newPreKeys(from: Int, count: Int): ArrayList<PreKey> {
+        return crypto.newPreKeys(from, count)
+    }
+
+    @Throws(Exception::class)
+    override fun downloadAsset(assetKey: String, assetToken: String, sha256Challenge: ByteArray, otrKey: ByteArray): ByteArray {
+        val cipher = api.downloadAsset(assetKey, assetToken)
+        val sha256 = MessageDigest.getInstance("SHA-256").digest(cipher)
+        if (!Arrays.equals(sha256, sha256Challenge)) throw Exception("Failed sha256 check")
+        return Util.decrypt(otrKey, cipher)
+    }
+
+    @Throws(HttpException::class)
+    override fun getTeam(): UUID? {
+        return api.getTeam()
+    }
+
+    @Throws(HttpException::class)
+    override fun createConversation(name: String, teamId: UUID, users: MutableList<UUID>): Conversation {
+        return api.createConversation(name, teamId, users)
+    }
+
+    @Throws(HttpException::class)
+    override fun createOne2One(teamId: UUID, userId: UUID): Conversation {
+        return api.createOne2One(teamId, userId)
+    }
+
+    @Throws(HttpException::class)
+    override fun leaveConversation(userId: UUID) {
+        api.leaveConversation(userId)
+    }
+
+    @Throws(HttpException::class)
+    override fun addParticipants(vararg userIds: UUID): User {
+        return api.addParticipants(*userIds)
+    }
+
+    @Throws(HttpException::class)
+    override fun addService(serviceId: UUID, providerId: UUID): User {
+        return api.addService(serviceId, providerId)
+    }
+
+    @Throws(HttpException::class)
+    override fun deleteConversation(teamId: UUID): Boolean {
+        return api.deleteConversation(teamId)
+    }
+
+    @Throws(HttpException::class)
+    override fun getUserId(username: String): UUID {
+        return api.getUserId(username)
+    }
+
+    @Throws(HttpException::class)
+    private fun getAllDevices(): Missing {
+        return fetchDevices().missing
+    }
 
     /**
-     * Uploads assert to backend. This method is used in conjunction with sendPicture(IGeneric)
+     * This method will send an empty message to BE and collect the list of missing client ids
+     * When empty message is sent the Backend will respond with error 412 and a list of missing clients.
      *
-     * @param asset Asset to be uploaded
-     * @return Assert Key and Asset token in case of private assets
-     * @throws Exception
+     * @return List of all participants in this conversation and their clientIds
      */
-    @Throws(Exception::class)
-    fun uploadAsset(asset: Asset): AssetKey
-
     @Throws(HttpException::class)
-    fun getTeam(): UUID?
-
-    @Throws(HttpException::class)
-    fun createConversation(name: String, teamId: UUID, users: MutableList<UUID>): Conversation
-
-    @Throws(HttpException::class)
-    fun createOne2One(teamId: UUID, userId: UUID): Conversation
-
-    @Throws(HttpException::class)
-    fun leaveConversation(userId: UUID)
-
-    @Throws(HttpException::class)
-    fun addParticipants(vararg userIds: UUID): User
-
-    @Throws(HttpException::class)
-    fun addService(serviceId: UUID, providerId: UUID): User
-
-    @Throws(HttpException::class)
-    fun deleteConversation(teamId: UUID): Boolean
-
+    private fun fetchDevices(): Devices {
+        val msg = OtrMessage(clientId, Recipients())
+        val devices = api.sendMessage(msg, false)
+        return devices
+    }
 }

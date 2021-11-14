@@ -1,10 +1,9 @@
 package com.wire.kalium
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider
-import com.wire.kalium.assets.MessageText
-import com.wire.kalium.backend.models.NewBot
 import com.wire.kalium.crypto.CryptoFile
-import com.wire.kalium.helium.Application
+import com.wire.kalium.models.outbound.Picture
+import com.wire.kalium.tools.Util
 import org.junit.jupiter.api.Test
 import java.util.*
 import javax.ws.rs.client.Client
@@ -24,12 +23,9 @@ class ApplicationSenderTest {
 
         val crypto = CryptoFile("./joker")
 
-        val storage = Storage()
-
         val app = Application(email, password)
                 .addClient(client)
                 .addCrypto(crypto)
-                .addStorage(storage)
 
         // Login, create device if needed, setup token refresh timer, pull missed messages and more
         app.start()
@@ -38,25 +34,16 @@ class ApplicationSenderTest {
         val wireClient = app.getWireClient(conversationId)
 
         // Send text
-        wireClient.send(MessageText("Is that you, John Wayne? Is this me?"))
+        //wireClient.send(MessageText("Is that you, John Wayne? Is this me?"))
+
+        // Send Image
+        val bytes: ByteArray? = Util.getResource("moon.jpg")
+        val image = Picture(bytes, "image/jpeg")
+        val assetKey = wireClient.uploadAsset(image)
+        image.assetKey = assetKey.key
+        image.assetToken = assetKey.token
+        wireClient.send(image)
 
         app.stop()
-    }
-
-    class Storage : IState {
-        var newBot: NewBot? = null
-
-        override fun saveState(newBot: NewBot): Boolean {
-            this.newBot = newBot
-            return true
-        }
-
-        override fun getState(): NewBot {
-            return newBot!!
-        }
-
-        override fun removeState(): Boolean {
-            return true
-        }
     }
 }

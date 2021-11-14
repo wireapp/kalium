@@ -1,7 +1,7 @@
 //package com.wire.kalium
 //
 //import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider
-//import com.wire.kalium.helium.Application
+//import com.wire.kalium.Application
 //import com.wire.xenon.MessageHandlerBase
 //import com.wire.xenon.WireClient
 //import com.wire.xenon.assets.MessageText
