@@ -1,3 +1,6 @@
+.DS_Store
+native/
+
 # Built application files
 *.apk
 *.aar
