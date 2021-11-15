@@ -17,40 +17,31 @@
 //
 package com.wire.kalium.tools
 
-import kotlin.Throws
-import java.io.IOException
-import javax.crypto.Cipher
-import javax.crypto.spec.SecretKeySpec
-import javax.crypto.spec.IvParameterSpec
-import java.io.ByteArrayOutputStream
-import java.io.ByteArrayInputStream
-import java.security.NoSuchAlgorithmException
-import java.security.spec.InvalidKeySpecException
-import javax.crypto.SecretKey
-import javax.crypto.SecretKeyFactory
-import java.security.spec.KeySpec
-import javax.crypto.spec.PBEKeySpec
-import java.io.BufferedReader
-import java.io.FileReader
-import java.io.FileInputStream
-import java.io.BufferedWriter
-import java.io.FileWriter
-import java.security.MessageDigest
+import java.io.*
 import java.math.BigInteger
-import java.io.File
-import java.io.InputStream
 import java.net.URLConnection
 import java.nio.charset.StandardCharsets
 import java.security.InvalidKeyException
-import java.util.Base64
+import java.security.MessageDigest
+import java.security.NoSuchAlgorithmException
+import java.security.spec.InvalidKeySpecException
+import java.security.spec.KeySpec
+import java.util.*
 import java.util.regex.Pattern
+import javax.crypto.Cipher
 import javax.crypto.Mac
+import javax.crypto.SecretKey
+import javax.crypto.SecretKeyFactory
+import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.PBEKeySpec
+import javax.crypto.spec.SecretKeySpec
 
 object Util {
     private val pattern = Pattern.compile("(?<=@)([a-zA-Z0-9\\_]{3,})")
     private val HMAC_SHA_1: String? = "HmacSHA1"
+
     @Throws(Exception::class)
-    fun encrypt(key: ByteArray?, dataToSend: ByteArray?, iv: ByteArray?): ByteArray? {
+    fun encrypt(key: ByteArray, dataToSend: ByteArray?, iv: ByteArray): ByteArray {
         val c = Cipher.getInstance("AES/CBC/PKCS5Padding")
         val secretKeySpec = SecretKeySpec(key, "AES")
         c.init(Cipher.ENCRYPT_MODE, secretKeySpec, IvParameterSpec(iv))

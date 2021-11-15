@@ -21,7 +21,7 @@ class ApplicationSenderTest {
                 .newClient()
                 .register(JacksonJsonProvider::class.java)
 
-        val crypto = CryptoFile("./joker")
+        val crypto = CryptoFile("./data/joker")
 
         val app = Application(email, password)
                 .addClient(client)
