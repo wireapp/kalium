@@ -2,12 +2,22 @@ package com.wire.kalium
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider
 import com.wire.kalium.crypto.CryptoFile
-import com.wire.kalium.models.outbound.Picture
-import com.wire.kalium.tools.Util
+import com.wire.kalium.models.inbound.PhotoPreviewMessage
+import com.wire.kalium.models.inbound.TextMessage
+import com.wire.kalium.tools.Logger
 import org.junit.jupiter.api.Test
-import java.util.*
 import javax.ws.rs.client.Client
 import javax.ws.rs.client.ClientBuilder
+
+class MessageHandlerImpl : MessageHandler {
+    override fun onText(client: IWireClient, msg: TextMessage) {
+        Logger.info("onText: received: %s", msg.text)
+    }
+
+    override fun onPhotoPreview(msg: PhotoPreviewMessage) {
+        Logger.info("onImage: received: %d bytes, %s", msg.getSize(), msg.getMimeType())
+    }
+}
 
 class ApplicationSenderTest {
     @Test
@@ -15,7 +25,6 @@ class ApplicationSenderTest {
     fun sendMessagesTest() {
         val email = "dejan@wire.com"
         val password = "12345678"
-        val conversationId = UUID.fromString("c2aba93d-56ad-4992-915d-e66e69d96418")
 
         val client: Client = ClientBuilder
                 .newClient()
@@ -23,27 +32,15 @@ class ApplicationSenderTest {
 
         val crypto = CryptoFile("./data/joker")
 
-        val app = Application(email, password)
+        val app = WebSocketApplication(email, password)
                 .addClient(client)
                 .addCrypto(crypto)
+                .addWSUrl("wss://prod-nginz-ssl.wire.com")
+                .addHandler(MessageHandlerImpl())
 
         // Login, create device if needed, setup token refresh timer, pull missed messages and more
         app.start()
 
-        // Create WireClient for this conversationId
-        val wireClient = app.getWireClient(conversationId)
-
-        // Send text
-        //wireClient.send(MessageText("Is that you, John Wayne? Is this me?"))
-
-        // Send Image
-        val bytes: ByteArray? = Util.getResource("moon.jpg")
-        val image = Picture(bytes, "image/jpeg")
-        val assetKey = wireClient.uploadAsset(image)
-        image.assetKey = assetKey.key
-        image.assetToken = assetKey.token
-        wireClient.send(image)
-
-        app.stop()
+        Thread.sleep(1000 * 60 * 10)
     }
 }

@@ -206,9 +206,9 @@ open class LoginClient(client: Client) {
     }
 
     @Throws(HttpException::class)
-    fun retrieveNotifications(client: String?, since: UUID?, token: String, size: Int): NotificationList {
+    fun retrieveNotifications(clientId: String, since: UUID?, token: String, size: Int): NotificationList {
         var webTarget: WebTarget = notificationsPath
-                .queryParam("client", client)
+                .queryParam("client", clientId)
                 .queryParam("size", size)
         if (since != null) {
             webTarget = webTarget

@@ -11,7 +11,7 @@ import java.util.*
 import javax.ws.rs.client.Client
 import javax.ws.rs.core.Cookie
 
-class Application(protected val email: String, protected val password: String) {
+class Application(private val email: String, private val password: String) {
 
     //protected val renewal: ScheduledExecutorService = Executors.newScheduledThreadPool(1)
 
@@ -70,7 +70,7 @@ class Application(protected val email: String, protected val password: String) {
     }
 
     @Throws(CryptoException::class, HttpException::class)
-    fun createNewDevice(password: String, token: String): String? {
+    private fun createNewDevice(password: String, token: String): String? {
         val loginClient = LoginClient(client)
         val preKeys: ArrayList<PreKey> = crypto!!.newPreKeys(0, 20)
         val lastKey: PreKey = crypto!!.newLastPreKey()

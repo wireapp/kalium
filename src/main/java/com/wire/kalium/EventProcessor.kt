@@ -3,6 +3,8 @@ package com.wire.kalium
 import com.google.protobuf.InvalidProtocolBufferException
 import com.waz.model.Messages.GenericMessage
 import com.wire.bots.cryptobox.CryptoException
+import com.wire.kalium.crypto.Crypto
+import com.wire.kalium.models.backend.Access
 import com.wire.kalium.models.backend.Conversation
 import com.wire.kalium.models.backend.Data
 import com.wire.kalium.models.backend.Payload
@@ -10,8 +12,12 @@ import com.wire.kalium.models.inbound.MessageBase
 import com.wire.kalium.models.system.SystemMessage
 import com.wire.kalium.tools.Logger
 import java.util.*
+import javax.ws.rs.client.Client
 
-abstract class BaseEventProcessor(private val handler: MessageHandler) : IEventProcessor {
+class EventProcessor(private val handler: MessageHandler) : IEventProcessor {
+    private var client: Client? = null
+    private var crypto: Crypto? = null
+    private var access: Access? = null
 
     @Throws(Exception::class)
     override fun processEvent(eventId: UUID, payload: Payload, wireClient: IWireClient) {
@@ -41,8 +47,29 @@ abstract class BaseEventProcessor(private val handler: MessageHandler) : IEventP
             "user.connection" -> {
                 handleConnectionUpdateEvent(wireClient, eventId, payload)
             }
+            "team.member-join" -> {
+                handler.onNewTeamMember(wireClient, payload.data.user)
+            }
+            "user.update" -> {
+                handler.onUserUpdate(eventId, payload.user.id)
+            }
             else -> Logger.debug("Unknown event: %s", payload.type)
         }
+    }
+
+    fun addCrypto(crypto: Crypto): EventProcessor {
+        this.crypto = crypto
+        return this
+    }
+
+    fun addAccess(access: Access): EventProcessor {
+        this.access = access
+        return this
+    }
+
+    fun addClient(client: Client?): EventProcessor {
+        this.client = client
+        return this
     }
 
     private fun handleConnectionUpdateEvent(wireClient: IWireClient, eventId: UUID, payload: Payload) {
@@ -118,12 +145,12 @@ abstract class BaseEventProcessor(private val handler: MessageHandler) : IEventP
 
     private fun getSystemMessage(eventId: UUID, payload: Payload): SystemMessage {
         val conversation = Conversation(
-            id = payload.conversation, name = payload.data.name, creator = payload.data.creator,
-            members = payload.data.members.allMembers()
+                id = payload.conversation, name = payload.data.name, creator = payload.data.creator,
+                members = payload.data.members.allMembers()
         )
         return SystemMessage(
-            eventId, payload.type, payload.time, payload.from,
-            conversation, conversation.id, conversation.members.map { UUID.fromString(it.userId) }
+                eventId, payload.type, payload.time, payload.from,
+                conversation, conversation.id, conversation.members.map { UUID.fromString(it.userId) }
         )
     }
 
