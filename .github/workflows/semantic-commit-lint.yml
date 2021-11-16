@@ -1,18 +1,29 @@
 name: "Semantic Commit Linting of PR titles"
 
 on:
-  pull_request_target:
+  pull_request:
     types: [ opened, edited, synchronize ]
 
 jobs:
-  main:
+  semantic-commit-pr-title-lint:
     runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      CUSTOM_PR_LABEL: "Fix PR Title 🤦‍♂️"
     steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          
+      - name: Set environment variables
+        run: | 
+          echo "HEAD=${{github.head_ref}}" >> $GITHUB_ENV
+          
       # Please look up the latest version from
       # https://github.com/amannn/action-semantic-pull-request/releases
-      - uses: amannn/action-semantic-pull-request@v3.4.6
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run Semantic Commint Linter
+        uses: amannn/action-semantic-pull-request@v3.4.6
         with:
           # Configure which types are allowed.
           # Default: https://github.com/commitizen/conventional-commit-types
@@ -42,3 +53,12 @@ jobs:
           # merge commit, and it's easy to commit this by mistake. Enable this option
           # to also validate the commit message for one commit PRs.
           validateSingleCommit: true
+      - name: Add Failure Label
+        if: failure()
+        run: |
+          gh api repos/{owner}/{repo}/labels -f name="${CUSTOM_PR_LABEL}" -f color="FF0000" || true
+          gh pr edit "${HEAD}" --add-label "${CUSTOM_PR_LABEL}"
+      - name: Remove Failure Label
+        if: success()
+        run: |
+          gh pr edit "${HEAD}" --remove-label "${CUSTOM_PR_LABEL}"
