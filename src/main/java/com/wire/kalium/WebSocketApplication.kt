@@ -104,7 +104,7 @@ class WebSocketApplication(val email: String, val password: String) {
         // Access token renewal
         renewal.scheduleAtFixedRate({
             try {
-                access = loginClient.renewAccessToken(access!!.cookie)
+                access = loginClient.renewAccessToken(access!!.cookie!!)
 
                 Logger.info("Updated access token. Exp in: ${access!!.expires_in} sec, cookie: ${access!!.cookie}")
             } catch (e: Exception) {

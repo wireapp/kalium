@@ -82,12 +82,9 @@ open class LoginClient(client: Client) {
 
         val access = KtxSerializer.json.decodeFromString<Access>(entity)
 
-        //val access: Access = response.readEntity(Access::class.java)
-
         Logger.error(entity)
         Logger.error(access.toString())
 
-        //TODO uncomment this
         val zuid: NewCookie? = response.cookies[COOKIE_NAME]
         if (zuid != null) {
             access.cookie = Cookie(name = zuid.name, value = zuid.value)
@@ -147,10 +144,11 @@ open class LoginClient(client: Client) {
     }
 
     @Throws(HttpException::class)
-    fun renewAccessToken(cookie: javax.ws.rs.core.Cookie): Access {
+    fun renewAccessToken(cookie: Cookie): Access {
+        val cookie1 = javax.ws.rs.core.Cookie(cookie.name, cookie.value)
         val builder: Invocation.Builder = accessPath
                 .request(MediaType.APPLICATION_JSON)
-                .cookie(cookie)
+                .cookie(cookie1)
         val response: Response = builder.post(Entity.entity(null, MediaType.APPLICATION_JSON))
         val status: Int = response.getStatus()
         if (status == 401) {   //todo nginx returns text/html for 401. Cannot deserialize as json
@@ -164,10 +162,10 @@ open class LoginClient(client: Client) {
         val access: Access = response.readEntity(Access::class.java)
 
         //TODO uncomment this
-//        val zuid: NewCookie? = response.cookies[COOKIE_NAME]
-//        if (zuid != null) {
-//            access.cookie =  Cookie(name = zuid.name, value = zuid.value)
-//        }
+        val zuid: NewCookie? = response.cookies[COOKIE_NAME]
+        if (zuid != null) {
+            access.cookie = Cookie(name = zuid.name, value = zuid.value)
+        }
         return access
     }
 
