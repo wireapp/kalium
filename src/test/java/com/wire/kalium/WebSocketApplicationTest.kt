@@ -10,7 +10,8 @@ import javax.ws.rs.client.ClientBuilder
 
 class MessageHandlerImpl : MessageHandler {
     override fun onText(client: IWireClient, msg: TextMessage) {
-        Logger.info("onText: received: %s", msg.text)
+        val user = client.getUser(msg.userId)
+        Logger.info("'%s' said: '%s'", user.name, msg.text)
     }
 }
 
@@ -31,7 +32,7 @@ class WebSocketApplicationTest {
                 .addClient(client)
                 .addCrypto(crypto)
                 .addWSUrl("wss://prod-nginz-ssl.wire.com")
-                .shouldSync(true)
+                .shouldSync(false)
                 .addHandler(MessageHandlerImpl())
 
         // Login, create device if needed, setup token refresh timer, pull missed messages and more

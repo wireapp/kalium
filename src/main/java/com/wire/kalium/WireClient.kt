@@ -110,8 +110,7 @@ class WireClient(
     }
 
     override fun getUser(userId: UUID): User {
-        val users = api.getUsers(mutableSetOf(userId))
-        return users.iterator().next()
+        return api.getUser(userId)
     }
 
     override fun getConversation(): Conversation {

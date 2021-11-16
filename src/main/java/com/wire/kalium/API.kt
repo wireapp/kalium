@@ -325,20 +325,21 @@ open class API(client: Client, convId: UUID?, token: String) : LoginClient(clien
     }
 
     override fun getUsers(ids: MutableCollection<UUID>): MutableCollection<User> {
-        TODO("Fix me")
-//        return usersPath.queryParam("ids", ids.toTypedArray())
-//                .request(MediaType.APPLICATION_JSON)
-//                .header(HttpHeaders.AUTHORIZATION, bearer(token))
-//                .get(object : GenericType() {})
+        val response = usersPath.queryParam("ids", ids.toTypedArray())
+                .request(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, bearer(token))
+                .get()
+        val readEntity = response.readEntity(String::class.java)
+        return KtxSerializer.json.decodeFromString(readEntity)
     }
 
     @Throws(HttpException::class)
     override fun getUser(userId: UUID): User {
         val response: Response = usersPath.path(userId.toString()).request(MediaType.APPLICATION_JSON).header(HttpHeaders.AUTHORIZATION, bearer(token)).get()
-        if (response.status !== 200) {
+        if (response.status != 200) {
             throw HttpException(response.readEntity(String::class.java), response.status)
         }
-        return response.readEntity(User::class.java)
+        return KtxSerializer.json.decodeFromString(response.readEntity(String::class.java))
     }
 
     @Throws(HttpException::class)

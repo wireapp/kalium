@@ -99,7 +99,7 @@ class WebSocketApplication(val email: String, val password: String) {
             } catch (e: Exception) {
                 Logger.exception(message = "Ping error: ${e.message}", throwable = e)
             }
-        }, 10, 10, TimeUnit.SECONDS)
+        }, 60, 60, TimeUnit.SECONDS)
 
         // Access token renewal
         renewal.scheduleAtFixedRate({
