@@ -219,7 +219,8 @@ open class LoginClient(client: Client) {
                 .get()
         val status: Int = response.getStatus()
         if (status == 200) {
-            return response.readEntity(NotificationList::class.java)
+            val content = response.readEntity(String::class.java)
+            return KtxSerializer.json.decodeFromString(content)
         } else if (status == 404) {  //todo what???
             return response.readEntity(NotificationList::class.java)
         } else if (status == 401) {   //todo nginx returns text/html for 401. Cannot deserialize as json

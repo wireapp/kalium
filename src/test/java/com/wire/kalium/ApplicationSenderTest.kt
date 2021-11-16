@@ -2,6 +2,7 @@ package com.wire.kalium
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider
 import com.wire.kalium.crypto.CryptoFile
+import com.wire.kalium.models.outbound.MessageText
 import com.wire.kalium.models.outbound.Picture
 import com.wire.kalium.tools.Util
 import org.junit.jupiter.api.Test
@@ -34,7 +35,7 @@ class ApplicationSenderTest {
         val wireClient = app.getWireClient(conversationId)
 
         // Send text
-        //wireClient.send(MessageText("Is that you, John Wayne? Is this me?"))
+        wireClient.send(MessageText("Is that you, John Wayne? Is this me?"))
 
         // Send Image
         val bytes: ByteArray? = Util.getResource("moon.jpg")

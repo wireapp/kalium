@@ -30,6 +30,7 @@ import com.wire.kalium.tools.KtxSerializer
 import com.wire.kalium.tools.UUIDSerializer
 import com.wire.kalium.tools.Util
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
@@ -180,10 +181,17 @@ open class API(client: Client, convId: UUID?, token: String) : LoginClient(clien
     }
 
     override fun getConversation(): Conversation {
-        val conv: _Conv = conversationsPath.path(convId)
+        val response = conversationsPath.path(convId)
                 .request(MediaType.APPLICATION_JSON_TYPE)
                 .header(HttpHeaders.AUTHORIZATION, bearer(token))
-                .get(_Conv::class.java)
+                .get()
+
+        val content = response.readEntity(String::class.java)
+        if (response.status >= 400) {
+            throw HttpException(content, response.status)
+        }
+
+        val conv = KtxSerializer.json.decodeFromString<_Conv>(content)
         return Conversation(name = conv.name!!, id = conv.id!!, members = conv.members!!.others!!)
     }
 
@@ -249,19 +257,20 @@ open class API(client: Client, convId: UUID?, token: String) : LoginClient(clien
         newConv.users = users
         if (teamId != null) {
             newConv.team = _TeamInfo()
-            newConv.team!!.teamId = teamId
+            newConv.team!!.teamid = teamId
         }
         val response: Response = conversationsPath
                 .request(MediaType.APPLICATION_JSON)
                 .header(HttpHeaders.AUTHORIZATION, bearer(token))
                 .post(Entity.entity(newConv, MediaType.APPLICATION_JSON))
+
+        val content = response.readEntity(String::class.java)
         if (response.status >= 400) {
-            throw HttpException(response.readEntity(String::class.java), response.status)
+            throw HttpException(content, response.status)
         }
-        val conv: _Conv = response.readEntity(_Conv::class.java)
-        // TODO: make sure this are not null
-        val ret = Conversation(id = conv.id!!, name = conv.name!!, members = conv.members!!.others!!)
-        return ret
+
+        val conv = KtxSerializer.json.decodeFromString<_Conv>(content)
+        return Conversation(id = conv.id!!, name = conv.name!!, members = conv.members!!.others!!)
     }
 
     @Throws(HttpException::class)
@@ -270,7 +279,7 @@ open class API(client: Client, convId: UUID?, token: String) : LoginClient(clien
         newConv.users = listOf(userId)
         if (teamId != null) {
             newConv.team = _TeamInfo()
-            newConv.team!!.teamId = teamId
+            newConv.team!!.teamid = teamId
         }
         val response: Response = conversationsPath
                 .path("one2one")
@@ -376,29 +385,19 @@ open class API(client: Client, convId: UUID?, token: String) : LoginClient(clien
         return team.members!!.stream().map { x: _TeamMember -> x.user }.collect(Collectors.toList())
     }
 
-    //@JsonIgnoreProperties(ignoreUnknown = true)
     @Serializable
-    class _Conv {
-        //@JsonProperty
-        @Serializable(with = UUIDSerializer::class)
-        var id: UUID? = null
-
-        //@JsonProperty
-        var name: String? = null
-
-        //@JsonProperty
-        var members: _Members? = null
-    }
-
-    //@JsonIgnoreProperties(ignoreUnknown = true)
+    data class _Members(
+            val others: ArrayList<ConversationMember>
+    )
 
     @Serializable
-    class _Members {
-        //@JsonProperty
-        var others: List<ConversationMember>? = null
-    }
+    data class _Conv(
+            @Serializable(with = UUIDSerializer::class)
+            val id: UUID,
+            val name: String,
+            val members: _Members
+    )
 
-    //@JsonIgnoreProperties(ignoreUnknown = true)
     @Serializable
     internal class _Service {
         @Serializable(with = UUIDSerializer::class)
@@ -408,66 +407,43 @@ open class API(client: Client, convId: UUID?, token: String) : LoginClient(clien
         var provider: UUID? = null
     }
 
-    //@JsonIgnoreProperties(ignoreUnknown = true)
     @Serializable
     internal class _Team {
-        //@JsonProperty
         @Serializable(with = UUIDSerializer::class)
         var id: UUID? = null
-
-        //@JsonProperty
         var name: String? = null
-
-        //@JsonProperty
         var members: List<_TeamMember>? = null
     }
 
-    //JsonIgnoreProperties(ignoreUnknown = true)
     @Serializable
     internal class _TeamMember {
-        //@JsonProperty
         @Serializable(with = UUIDSerializer::class)
         var user: UUID? = null
     }
 
-    //@JsonIgnoreProperties(ignoreUnknown = true)
     @Serializable
     internal class _Teams {
-        //@JsonProperty
         var teams: ArrayList<_Team>? = null
     }
 
     @Serializable
     internal class _NewConv {
-        //@JsonProperty
         var name: String? = null
-
-        //@JsonProperty
         var team: _TeamInfo? = null
-
-        //@JsonProperty
         var users: List<@Serializable(with = UUIDSerializer::class) UUID>? = null
-
-        //@JsonProperty
         var service: _Service? = null
     }
 
     @Serializable
     internal class _TeamInfo {
-        //@JsonProperty("teamid")
         @Serializable(with = UUIDSerializer::class)
-        var teamId: UUID? = null
-
-        //@JsonProperty
+        var teamid: UUID? = null
         var managed = false
     }
 
     @Serializable
     internal class _Device {
-        //@JsonProperty("id")
         var clientId: String? = null
-
-        //@JsonProperty("class")
         var type: String? = null
     }
 

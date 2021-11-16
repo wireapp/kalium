@@ -31,6 +31,7 @@ class WebSocketApplicationTest {
                 .addClient(client)
                 .addCrypto(crypto)
                 .addWSUrl("wss://prod-nginz-ssl.wire.com")
+                .shouldSync(true)
                 .addHandler(MessageHandlerImpl())
 
         // Login, create device if needed, setup token refresh timer, pull missed messages and more

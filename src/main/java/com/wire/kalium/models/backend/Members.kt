@@ -28,8 +28,8 @@ sealed class ConversationMember {
 
 @Serializable
 data class OtherMember(
-    override val userId: String,
-    val service: ServiceReferenceResponse?
+        override val userId: String,
+        val service: ServiceReferenceResponse?
 ) : ConversationMember()
 
 @Serializable
@@ -46,6 +46,6 @@ data class SelfMember(
 
 @Serializable
 data class ServiceReferenceResponse(
-    val id: String,
-    val provider: String
+        val id: String,
+        val provider: String
 )
