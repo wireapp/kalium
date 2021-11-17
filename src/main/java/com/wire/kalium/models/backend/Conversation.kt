@@ -24,12 +24,13 @@ import java.util.*
 @Serializable
 data class Conversation(
         @Serializable(with = UUIDSerializer::class) val id: UUID,
-        val name: String,
-        val members: List<ConversationMember>
+        val name: String? = null,
+        val members: List<ConversationMember>? = null  // todo fix me
 ) {
-    @Serializable(with = UUIDSerializer::class) var creator: UUID? = null
+    @Serializable(with = UUIDSerializer::class)
+    var creator: UUID? = null
 
-    constructor(id: UUID, name: String, members: List<ConversationMember>, creator: UUID): this (
+    constructor(id: UUID, name: String?, members: List<ConversationMember>?, creator: UUID?) : this(
             id = id, name = name, members = members
     ) {
         this.creator = creator

@@ -24,10 +24,10 @@ import java.util.*
 @Serializable
 data class User(
         @Serializable(with = UUIDSerializer::class) val id: UUID,
-        val name: String,
-        val accent_id: Int,
-        val handle: String,
+        val name: String? = null,
+        val accent_id: Int? = null,
+        val handle: String? = null,
         var service: Service? = null, // why null ? see API.kt line. Dejan: Participant can be human (has no service) or bot (has service)
-        val assets: ArrayList<AssetKey>,
-        val email: String //maybe we can get nulls here
+        val assets: ArrayList<AssetKey>? = null,
+        val email: String? = null //maybe we can get nulls here
 )

@@ -13,5 +13,5 @@ data class SystemMessage(
         @Serializable(with = UUIDSerializer::class) val from: UUID,
         val conversation: Conversation,
         @Serializable(with = UUIDSerializer::class) val convId: UUID,
-        val userIds: List<@Serializable(with = UUIDSerializer::class) UUID>
+        val userIds: List<@Serializable(with = UUIDSerializer::class) UUID>? = null
 )

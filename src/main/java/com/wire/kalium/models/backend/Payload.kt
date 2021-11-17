@@ -36,27 +36,27 @@ data class Payload(
          *   "user.connection"
          **/
         val type: String,
-        val conversation: @Serializable(with = UUIDSerializer::class) UUID,
-        val from: @Serializable(with = UUIDSerializer::class) UUID,
-        val time: String,
-        val data: Data,
-        var team: @Serializable(with = UUIDSerializer::class) UUID,
-        val connection: Connection,
-        var user: User,
+        val conversation: @Serializable(with = UUIDSerializer::class) UUID? = null,
+        val from: @Serializable(with = UUIDSerializer::class) UUID? = null,
+        val time: String? = null,
+        val data: Data? = null,
+        var team: @Serializable(with = UUIDSerializer::class) UUID? = null,
+        val connection: Connection? = null,
+        var user: User? = null,
 )
 
 @Serializable
 data class Data(
-        val sender: String,
-        val recipient: String,
-        val text: String,
-        val user_ids: List<@Serializable(with = UUIDSerializer::class) UUID>,
-        val name: String,
-        val id: String,
-        val key: String,
-        val user: @Serializable(with = UUIDSerializer::class) UUID,
-        val creator: @Serializable(with = UUIDSerializer::class) UUID,
-        val members: Members,
+        val sender: String? = null,
+        val recipient: String? = null,
+        val text: String? = null,
+        val user_ids: List<@Serializable(with = UUIDSerializer::class) UUID>? = null,
+        val name: String? = null,
+        val id: String? = null,
+        val key: String? = null,
+        val user: @Serializable(with = UUIDSerializer::class) UUID? = null,
+        val creator: @Serializable(with = UUIDSerializer::class) UUID? = null,
+        val members: Members? = null,
 )
 
 @Serializable
@@ -70,11 +70,11 @@ data class Members(
 @Serializable
 data class Connection(
         /**
-     * TODO: Replace String with something type-safe.
-     *   Maybe an Enum? What are the possible values of this status? Bad discoverability too.
-     *   Currently known: pending, accepted, sent
-     **/
-    val status: String,
+         * TODO: Replace String with something type-safe.
+         *   Maybe an Enum? What are the possible values of this status? Bad discoverability too.
+         *   Currently known: pending, accepted, sent
+         **/
+        val status: String,
 
         @Serializable(with = UUIDSerializer::class) val from: UUID,
         @Serializable(with = UUIDSerializer::class) val to: UUID,
