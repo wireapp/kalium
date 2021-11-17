@@ -24,6 +24,8 @@ dependencies {
     val jerseyVersion = "2.32"
     val tyrusVersion = "1.13.1"
     val ktxSerializationVersion = "1.3.0"
+    val ktorVersion = "1.6.4"
+    val coroutinesVersion = "1.5.2"
 
     implementation("com.wire:generic-message-proto:$genericMessageProtoVersion")
     implementation("com.wire:cryptobox4j:$cryptoboxVersion")
@@ -46,6 +48,18 @@ dependencies {
     implementation("org.glassfish.jersey.inject:jersey-hk2:$tyrusVersion")
     // cli
     implementation("com.github.ajalt.clikt:clikt:3.2.0")
+
+    // ktor
+    implementation("io.ktor:ktor-client-core:$ktorVersion")
+    implementation ("io.ktor:ktor-client-json:$ktorVersion")
+    implementation ("io.ktor:ktor-client-serialization:$ktorVersion")
+    implementation ("io.ktor:ktor-client-logging:$ktorVersion")
+    implementation("io.ktor:ktor-client-auth:$ktorVersion")
+    implementation("io.ktor:ktor-client-okhttp:$ktorVersion")
+
+    // coroutines
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
+
 }
 
 tasks.test {
