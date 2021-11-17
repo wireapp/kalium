@@ -4,10 +4,17 @@ import com.wire.kalium.models.outbound.otr.OtrMessage
 
 interface MessageApi {
 
-    fun sendMessage(conversationID: String, msg: OtrMessage, ignoreMissing: Boolean = false)
+    suspend fun sendMessage(
+            sendMessageRequest: SendMessageRequest,
+            conversationId: String,
+            ignoreMissing: Boolean,
+            token: String
+    ): SendMessageResponse
+
+    suspend fun sendPartialMessage(otrMessage: OtrMessage, conversationID: String, userId: String): SendMessageResponse
 
     companion object {
-        protected const val PATH_MESSAGE = "otr/messages"
-        protected const val QUERY_IGNORE_MISSING = "ignore_missing"
+        const val PATH_OTR_MESSAGE = "/otr/messages"
+        const val QUERY_IGNORE_MISSING = "ignore_missing"
     }
 }
