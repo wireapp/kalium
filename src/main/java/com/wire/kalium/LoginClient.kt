@@ -20,6 +20,7 @@ package com.wire.kalium
 import com.wire.kalium.exceptions.AuthException
 import com.wire.kalium.exceptions.HttpException
 import com.wire.kalium.models.backend.Access
+import com.wire.kalium.models.backend.Location
 import com.wire.kalium.models.backend.NewClient
 import com.wire.kalium.models.backend.NotificationList
 import com.wire.kalium.models.outbound.otr.PreKey
@@ -254,14 +255,6 @@ open class LoginClient(client: Client) {
     internal class _Capabilities {
         var capabilities: List<String>? = null
     }
-
-
-
-    @Serializable
-    data class Location(
-            val lat: Double,
-            val lon: Double
-    )
 
     @Serializable
     internal class _RemoveCookies {
