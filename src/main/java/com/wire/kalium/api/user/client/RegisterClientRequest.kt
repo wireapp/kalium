@@ -1,6 +1,5 @@
 package com.wire.kalium.api.user.client
 
-import com.wire.kalium.models.backend.Location
 import com.wire.kalium.models.outbound.otr.PreKey
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -18,8 +17,8 @@ data class RegisterClientRequest(
 @Serializable
 data class RegisterClientResponse(
         @SerialName("id") val clientId: String,
-        @SerialName("time") val time: String,
-        @SerialName("location") val location: Location,
+        @SerialName("time") val registrationTime: String,
+        @SerialName("location") val location: LocationResponse,
         @SerialName("type") val type: String,
         @SerialName("class") val deviceType: String,
         @SerialName("label") val label: String,
