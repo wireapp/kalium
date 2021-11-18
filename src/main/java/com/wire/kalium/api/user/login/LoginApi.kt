@@ -9,8 +9,7 @@ interface LoginApi {
     suspend fun emailLogin(loginWithEmailRequest: LoginWithEmailRequest, persist: Boolean): LoginWithEmailResponse
 
     companion object {
-        @JvmStatic
-        val BASE_URL = HostProvider.host
+        const val BASE_URL = HostProvider.host
         const val PATH_LOGIN = "/login"
         const val QUERY_PERSIST = "persist"
     }

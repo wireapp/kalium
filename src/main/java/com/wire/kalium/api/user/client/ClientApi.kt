@@ -9,8 +9,7 @@ interface ClientApi {
     suspend fun registerClient(registerClientRequest: RegisterClientRequest, token: String): RegisterClientResponse
 
     companion object {
-        @JvmStatic
-        val BASE_URL = HostProvider.host
+        const val BASE_URL = HostProvider.host
         const val PATH_CLIENTS = "/clients"
     }
 }
