@@ -4,6 +4,7 @@ import com.wire.kalium.api.KaliumHttpResult
 import com.wire.kalium.api.user.client.ClientApi.Companion.BASE_URL
 import com.wire.kalium.api.user.client.ClientApi.Companion.PATH_CLIENTS
 import com.wire.kalium.api.wrapKaliumResponse
+import com.wire.kalium.exceptions.AuthException
 import com.wire.kalium.exceptions.HttpException
 import io.ktor.client.HttpClient
 import io.ktor.client.call.receive
@@ -18,13 +19,13 @@ class ClientApiImp(private val httpClient: HttpClient) : ClientApi {
         token: String
     ): KaliumHttpResult<RegisterClientResponse> =
         wrapKaliumResponse<RegisterClientResponse> {
-            httpClient.post<HttpResponse>(urlString = "$BASE_URL$PATH_CLIENTS") {
+            httpClient.post<HttpResponse>(path = PATH_CLIENTS) {
                 header(HttpHeaders.Authorization, "Bearer $token")
                 body = registerClientRequest
             }.receive()
         }.also {
             if (it.httpStatusCode == 400 or 401) {
-                throw HttpException(code = it.httpStatusCode, message = ":)")
+                throw AuthException(code = it.httpStatusCode)
             }
         }
 }

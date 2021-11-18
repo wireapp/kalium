@@ -6,12 +6,13 @@ import com.github.ajalt.clikt.parameters.options.required
 import com.wire.kalium.api.KtorHttpClient
 import com.wire.kalium.api.user.client.ClientApiImp
 import com.wire.kalium.api.user.client.RegisterClientRequest
+import com.wire.kalium.api.user.login.LoginApi
 import com.wire.kalium.api.user.login.LoginApiImp
 import com.wire.kalium.api.user.login.LoginWithEmailRequest
 import com.wire.kalium.crypto.Crypto
 import com.wire.kalium.crypto.CryptoFile
 import com.wire.kalium.models.outbound.otr.PreKey
-import kotlinx.coroutines.*
+import kotlinx.coroutines.runBlocking
 
 
 class CliApplication() : CliktCommand() {
@@ -23,13 +24,11 @@ class CliApplication() : CliktCommand() {
     override fun run() {
         runBlocking {
             val httpClient = KtorHttpClient().ktorHttpClient
-            val login = LoginApiImp(httpClient)
+            val loginApi: LoginApi = LoginApiImp(httpClient)
             val body = LoginWithEmailRequest(email = "dejan@wire.com", password = "12345678", label = "ktor")
-
             val crypto: Crypto = CryptoFile("./data/joker")
-
-            val access = login.emailLogin(body, false)
-            println(access)
+            val loginResult = loginApi.emailLogin(body, false)
+            println(loginResult.resultBody)
             val preKeys: ArrayList<PreKey> = crypto.newPreKeys(0, 20)
             val lastKey: PreKey = crypto.newLastPreKey()
             val deviceClass = "tablet"
@@ -42,8 +41,8 @@ class CliApplication() : CliktCommand() {
                     preKeys = preKeys,
                     lastKey = lastKey
             )
-            val registerClient = ClientApiImp(httpClient).registerClient(registerClientRequest, access.accessToken)
-            println(registerClient)
+            val registerClient = ClientApiImp(httpClient).registerClient(registerClientRequest, loginResult.resultBody.accessToken)
+            println(registerClient.resultBody)
         }
 
         // login stuff here

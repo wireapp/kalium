@@ -1,8 +1,11 @@
 package com.wire.kalium.api.message
 
+import com.wire.kalium.api.KaliumHttpResult
+import com.wire.kalium.api.isSuccessful
 import com.wire.kalium.api.message.MessageApi.Companion.PATH_OTR_MESSAGE
 import com.wire.kalium.api.message.MessageApi.Companion.QUERY_IGNORE_MISSING
 import com.wire.kalium.api.user.client.ClientApi.Companion.BASE_URL
+import com.wire.kalium.api.wrapKaliumResponse
 import com.wire.kalium.exceptions.AuthException
 import com.wire.kalium.models.outbound.otr.OtrMessage
 import io.ktor.client.HttpClient
@@ -20,21 +23,26 @@ class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
             conversationId: String,
             ignoreMissing: Boolean,
             token: String
-    ): SendMessageResponse {
+    ): KaliumHttpResult<SendMessageResponse> {
         val response = httpClient.post<HttpResponse>(urlString = "$BASE_URL/$conversationId$PATH_OTR_MESSAGE") {
             header(HttpHeaders.Authorization, "Bearer $token")
             parameter(QUERY_IGNORE_MISSING, sendMessageRequest)
             body = sendMessageRequest
         }
-        if (response.status.value == 412) {
-            return response.receive<MissingDevicesResponse>()
-        } else if (response.status.value >= 400) {
+        return if (response.status.value == 412) {
+            wrapKaliumResponse<MissingDevicesResponse> {
+                response
+            }
+        } else if (response.isSuccessful()) {
+            wrapKaliumResponse<MessageSent> {
+                response
+            }
+        } else {
             throw AuthException(code = response.status.value, message = response.status.description)
         }
-        return MessageSent
     }
 
-    override suspend fun sendPartialMessage(otrMessage: OtrMessage, conversationID: String, userId: String): SendMessageResponse {
+    override suspend fun sendPartialMessage(otrMessage: OtrMessage, conversationID: String, userId: String): KaliumHttpResult<SendMessageResponse> {
         TODO("Not yet implemented")
     }
 }
