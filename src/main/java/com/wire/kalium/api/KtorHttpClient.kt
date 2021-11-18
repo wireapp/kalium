@@ -1,24 +1,34 @@
 package com.wire.kalium.api
 
 import com.wire.kalium.tools.HostProvider
-import io.ktor.client.*
+import io.ktor.client.HttpClient
 import io.ktor.client.call.receive
-import io.ktor.client.engine.okhttp.*
-import io.ktor.client.features.*
-import io.ktor.client.features.json.*
-import io.ktor.client.features.json.serializer.*
-import io.ktor.client.request.*
+import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.features.defaultRequest
+import io.ktor.client.features.json.JsonFeature
+import io.ktor.client.features.json.serializer.KotlinxSerializer
+import io.ktor.client.request.header
+import io.ktor.client.request.host
 import io.ktor.client.statement.HttpResponse
-import io.ktor.http.*
+import io.ktor.http.ContentType
+import io.ktor.http.URLProtocol
+import kotlinx.serialization.json.Json
+import okhttp3.logging.HttpLoggingInterceptor
 
 class KtorHttpClient(
-    //private val authApi: AuthApi,
-    //private val tokenRepo: TokenRepository
+        //private val authApi: AuthApi,
+        //private val tokenRepo: TokenRepository
 ) {
     val ktorHttpClient by lazy {
         HttpClient(OkHttp) {
+            engine {
+                val interceptor = HttpLoggingInterceptor()
+                interceptor.setLevel(HttpLoggingInterceptor.Level.BODY)
+                addInterceptor(interceptor)
+            }
+
             install(JsonFeature) {
-                serializer = KotlinxSerializer(kotlinx.serialization.json.Json {
+                serializer = KotlinxSerializer(Json {
                     prettyPrint = true
                     isLenient = true
                     ignoreUnknownKeys = true
