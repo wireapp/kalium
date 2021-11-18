@@ -53,9 +53,11 @@ dependencies {
     implementation("io.ktor:ktor-client-core:$ktorVersion")
     implementation ("io.ktor:ktor-client-json:$ktorVersion")
     implementation ("io.ktor:ktor-client-serialization:$ktorVersion")
-    implementation ("io.ktor:ktor-client-logging:$ktorVersion")
+    // Failed to load class "org.slf4j.impl.StaticLoggerBinder". error
+    //implementation ("io.ktor:ktor-client-logging:$ktorVersion")
     implementation("io.ktor:ktor-client-auth:$ktorVersion")
     implementation("io.ktor:ktor-client-okhttp:$ktorVersion")
+    implementation ("com.squareup.okhttp3:logging-interceptor:4.9.0")
 
     // coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
