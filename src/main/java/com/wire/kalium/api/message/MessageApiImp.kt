@@ -5,11 +5,14 @@ import com.wire.kalium.api.message.MessageApi.Companion.QUERY_IGNORE_MISSING
 import com.wire.kalium.api.user.client.ClientApi.Companion.BASE_URL
 import com.wire.kalium.exceptions.AuthException
 import com.wire.kalium.models.outbound.otr.OtrMessage
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
+import io.ktor.client.HttpClient
+import io.ktor.client.call.receive
+import io.ktor.client.request.header
+import io.ktor.client.request.parameter
+import io.ktor.client.request.post
+import io.ktor.client.statement.HttpResponse
+import io.ktor.http.HttpHeaders
+
 
 class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
     override suspend fun sendMessage(
