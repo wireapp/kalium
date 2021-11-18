@@ -194,7 +194,9 @@ open class LoginClient(client: Client) {
         val removeCookies = _RemoveCookies()
         removeCookies.password = password
         removeCookies.labels = listOf(LABEL)
-        val response: Response = cookiesPath.request(MediaType.APPLICATION_JSON).header(HttpHeaders.AUTHORIZATION, bearer(token)).post(Entity.entity(removeCookies, MediaType.APPLICATION_JSON))
+        val response: Response = cookiesPath.request(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, bearer(token))
+                .post(Entity.entity(removeCookies, MediaType.APPLICATION_JSON))
         val status: Int = response.status
         if (status == 401) {   //todo nginx returns text/html for 401. Cannot deserialize as json
             response.readEntity(String::class.java)

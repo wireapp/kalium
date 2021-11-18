@@ -3,16 +3,15 @@ package com.wire.kalium.api.auth
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-sealed class RemoveCookiesRequest
 
 @Serializable
-data class RemoveCookiesWithIds(
+data class RemoveCookiesByIdsRequest(
         @SerialName("ids") val cookiesId: List<String>,
         @SerialName("password") val password: String
-): RemoveCookiesRequest()
+)
 
 @Serializable
-data class RemoveCookiesWithLabels(
+data class RemoveCookiesByLabels(
         @SerialName("labels") val labels: List<String>,
         @SerialName("password") val password: String
-): RemoveCookiesRequest()
+)
