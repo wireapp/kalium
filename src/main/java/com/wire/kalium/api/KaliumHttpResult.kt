@@ -1,5 +1,6 @@
 package com.wire.kalium.api
 
+import io.ktor.http.Headers
 
 interface KaliumHttpResult<out BodyType : Any> {
     val httpStatusCode: Int
@@ -7,7 +8,7 @@ interface KaliumHttpResult<out BodyType : Any> {
     val isSuccessful: Boolean
         get() = (httpStatusCode in 200..299)
 
-    val headers: Set<Map.Entry<String, List<String>>>
+    val headers: Headers
 
     val resultBody: BodyType
 }

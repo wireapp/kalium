@@ -11,6 +11,7 @@ import io.ktor.client.request.header
 import io.ktor.client.request.host
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
+import io.ktor.http.Headers
 import io.ktor.http.URLProtocol
 import kotlinx.serialization.json.Json
 import okhttp3.logging.HttpLoggingInterceptor
@@ -48,8 +49,8 @@ class KtorHttpClient(
 class KaliumKtorResult<BodyType : Any>(private val httpResponse: HttpResponse, private val body: BodyType) : KaliumHttpResult<BodyType> {
     override val httpStatusCode: Int
         get() = httpResponse.status.value
-    override val headers: Set<Map.Entry<String, List<String>>>
-        get() = httpResponse.headers.entries()
+    override val headers: Headers
+        get() = httpResponse.headers
     override val resultBody: BodyType
         get() = body
 }

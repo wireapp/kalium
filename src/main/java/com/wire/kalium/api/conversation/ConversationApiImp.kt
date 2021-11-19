@@ -1,0 +1,45 @@
+package com.wire.kalium.api.conversation
+
+import com.wire.kalium.api.KaliumHttpResult
+import com.wire.kalium.api.wrapKaliumResponse
+import com.wire.kalium.exceptions.HttpException
+import io.ktor.client.HttpClient
+import io.ktor.client.call.receive
+import io.ktor.client.features.ResponseException
+import io.ktor.client.request.get
+import io.ktor.client.request.parameter
+import io.ktor.client.statement.HttpResponse
+
+class ConversationApiImp(private val httpClient: HttpClient): ConversationApi {
+    override suspend fun conversationsByBatch(queryStart: String, querySize: Int): KaliumHttpResult<ConversationPagingResponse> = wrapKaliumResponse<ConversationPagingResponse> {
+        try {
+            httpClient.get<HttpResponse>(path = PATH_CONVERSATIONS) {
+                parameter(QUERY_KEY_START, queryStart)
+                parameter(QUERY_KEY_SIZE, querySize)
+            }.receive()
+        } catch (e: ResponseException) {
+            throw HttpException(_code = e.response.status.value)
+        }
+    }
+
+    override suspend fun fetchConversationsDetails(queryStart: String, queryIds: List<String>): KaliumHttpResult<ConversationPagingResponse> = wrapKaliumResponse<ConversationPagingResponse> {
+        try {
+            httpClient.get<HttpResponse>(path = PATH_CONVERSATIONS) {
+                parameter(QUERY_KEY_START, queryStart)
+                parameter(QUERY_IDS, queryIds)
+            }.receive()
+        } catch (e: ResponseException) {
+            throw HttpException(_code = e.response.status.value)
+        }
+    }
+
+
+
+
+    private companion object {
+        const val PATH_CONVERSATIONS = "/conversations"
+        const val QUERY_KEY_START = "start"
+        const val QUERY_KEY_SIZE = "size"
+        const val QUERY_IDS = "ids"
+    }
+}
