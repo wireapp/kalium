@@ -1,13 +1,11 @@
 package com.wire.kalium.api.message
 
 import com.wire.kalium.api.KaliumHttpResult
-import com.wire.kalium.models.outbound.otr.OtrMessage
-import kotlinx.serialization.SerialName
 
 interface MessageApi {
 
     sealed interface SendMessageOptionsInterface
-    sealed class MessageOption(): SendMessageOptionsInterface {
+    sealed class MessageOption : SendMessageOptionsInterface {
         object IgnoreAll: MessageOption()
         object ReportAll: MessageOption()
         data class IgnoreSome(val userIDs: List<String>): MessageOption()
@@ -15,7 +13,7 @@ interface MessageApi {
     }
 
     sealed interface SendMessageParameters
-    sealed class Parameters(): SendMessageParameters {
+    sealed class Parameters : SendMessageParameters {
         data class DefaultParameters(
            val sender: String,
            val `data`: String,
