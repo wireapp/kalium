@@ -26,16 +26,16 @@ class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
     ): KaliumHttpResult<SendMessageResponse> {
         val response = httpClient.post<HttpResponse>(urlString = "$BASE_URL/$conversationId$PATH_OTR_MESSAGE") {
             header(HttpHeaders.Authorization, "Bearer $token")
-            parameter(QUERY_IGNORE_MISSING, sendMessageRequest)
+            parameter(QUERY_IGNORE_MISSING, ignoreMissing)
             body = sendMessageRequest
         }
         return if (response.status.value == 412) {
             wrapKaliumResponse<MissingDevicesResponse> {
-                response
+                response.receive()
             }
         } else if (response.isSuccessful()) {
             wrapKaliumResponse<MessageSent> {
-                response
+                response.receive()
             }
         } else {
             throw AuthException(code = response.status.value, message = response.status.description)
