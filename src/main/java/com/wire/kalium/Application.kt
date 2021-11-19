@@ -36,7 +36,7 @@ class Application(private val email: String, private val password: String) {
     @Throws(Exception::class)
     fun stop() {
         Logger.info("Logging out...")
-        loginClient.logout(cookie, access!!.access_token)
+        loginClient.logout(cookie, access!!.accessToken)
     }
 
     @Throws(Exception::class)
@@ -47,7 +47,7 @@ class Application(private val email: String, private val password: String) {
         // FIXME: converting cookie into cookie
         //cookie = convert(access.cookie.toJavaxCookie())
 
-        clientId = createNewDevice(password, access!!.access_token)
+        clientId = createNewDevice(password, access!!.accessToken)
 
         Logger.info("Logged in as: %s, userId: %s, clientId: %s", email, access!!.user, clientId)
 
@@ -79,7 +79,7 @@ class Application(private val email: String, private val password: String) {
 
     @Throws(CryptoException::class, IOException::class)
     fun getWireClient(conversationId: UUID?): WireClient {
-        val api = API(client, conversationId, access!!.access_token)
+        val api = API(client, conversationId, access!!.accessToken)
         return WireClient(api, crypto!!, access!!, clientId!!)
     }
 }

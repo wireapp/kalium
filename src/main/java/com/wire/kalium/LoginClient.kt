@@ -112,8 +112,8 @@ open class LoginClient(client: Client) {
                        clazz: String, type: String, label: String): String? {
         val newClient = NewClient(
                 password = password,
-                lastkey = lastKey,
-                prekeys = preKeys,
+                lastKey = lastKey,
+                preKeys = preKeys,
                 clazz = clazz,
                 label = label,
                 type = type

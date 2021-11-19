@@ -23,14 +23,13 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class NewClient(
-        val lastkey: PreKey,
-        val prekeys: List<PreKey>,
-        val password: String,
-        @SerialName("class")
-        val clazz: String,
-        val type: String,
-        val label: String,
-        //val sigkeys: Sig
+    @SerialName("lastkey") val lastKey: PreKey,
+    @SerialName("prekeys") val preKeys: List<PreKey>,
+    @SerialName("password") val password: String,
+    @SerialName("class") val clazz: String,
+    @SerialName("type") val type: String,
+    @SerialName("label") val label: String,
+    //val sigkeys: Sig
 )
 
 //data class Sig (

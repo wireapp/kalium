@@ -18,12 +18,17 @@
 package com.wire.kalium.models.backend
 
 import com.wire.kalium.tools.UUIDSerializer
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import java.util.*
+import java.util.UUID
 
 @Serializable
 class Event {
-    var id: @Serializable(with = UUIDSerializer::class) UUID? = null
-    var payload: Array<Payload>? = null
-    var transient = false
+    @Serializable(with = UUIDSerializer::class)
+    @SerialName("id")
+    val id: UUID? = null
+    @SerialName("payload")
+    val payload: Array<Payload>? = null
+    @SerialName("transient")
+    val transient = false
 }

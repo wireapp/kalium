@@ -8,7 +8,7 @@ import java.util.*
 @Serializable
 data class SystemMessage(
         @Serializable(with = UUIDSerializer::class) val id: UUID,
-        val type: String,
+        val type: String, //TODO: Replace with enum for different types?
         val time: String,
         @Serializable(with = UUIDSerializer::class) val from: UUID,
         val conversation: Conversation,

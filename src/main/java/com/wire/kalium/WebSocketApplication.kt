@@ -69,7 +69,7 @@ class WebSocketApplication(val email: String, val password: String) {
         loginClient = LoginClient(client)
         access = loginClient.login(email, password)
 
-        clientId = createNewDevice(password, access!!.access_token)
+        clientId = createNewDevice(password, access!!.accessToken)
 
         eventProcessor = EventProcessor(handler!!)
                 .addClient(client)
@@ -79,14 +79,14 @@ class WebSocketApplication(val email: String, val password: String) {
         if (sync) {
             var notificationList: NotificationList = loginClient.retrieveNotifications(clientId!!,
                     last,
-                    access!!.access_token,
+                    access!!.accessToken,
                     100)
             while (!notificationList.notifications.isEmpty()) {
                 for (notification in notificationList.notifications) {
                     onMessage(notification)
                     last = notification.id
                 }
-                notificationList = loginClient.retrieveNotifications(clientId!!, last, access!!.access_token, 100)
+                notificationList = loginClient.retrieveNotifications(clientId!!, last, access!!.accessToken, 100)
             }
         }
 
@@ -146,7 +146,7 @@ class WebSocketApplication(val email: String, val password: String) {
                 .target(wsUrl)
                 .path("await")
                 .queryParam("client", clientId)
-                .queryParam("access_token", access!!.access_token)
+                .queryParam("access_token", access!!.accessToken)
                 .uri
 
         // connect the Websocket
@@ -166,7 +166,7 @@ class WebSocketApplication(val email: String, val password: String) {
 
     @Throws(CryptoException::class, IOException::class)
     fun createWireClient(conversationId: UUID?): WireClient {
-        val api = API(client, conversationId, access!!.access_token)
+        val api = API(client, conversationId, access!!.accessToken)
         return WireClient(api, crypto!!, access!!, clientId!!)
     }
 }

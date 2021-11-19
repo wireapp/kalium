@@ -98,7 +98,7 @@ class EventProcessor(private val handler: MessageHandler) : IEventProcessor {
     }
 
     private fun handleMemberLeaveEvent(eventId: UUID, payload: Payload, data: Data, botId: UUID, client: IWireClient) {
-        val participants = data.user_ids!!
+        val participants = data.userIds!!
         val systemMessage = getSystemMessage(eventId, payload)
                 .copy(userIds = participants)
 
@@ -113,7 +113,7 @@ class EventProcessor(private val handler: MessageHandler) : IEventProcessor {
     }
 
     private fun handleMemberJoinEvent(data: Data, botId: UUID?, eventId: UUID, payload: Payload, client: IWireClient) {
-        val participants = data.user_ids!!
+        val participants = data.userIds!!
         val originalSystemMessage = getSystemMessage(eventId, payload)
 
         // Check if this bot got added to the conversation
@@ -128,7 +128,7 @@ class EventProcessor(private val handler: MessageHandler) : IEventProcessor {
 
         // Check if we still have some prekeys available. Upload new prekeys if needed
         handler.validatePreKeys(client, participants.size)
-        val systemMessage = originalSystemMessage.copy(userIds = data.user_ids)
+        val systemMessage = originalSystemMessage.copy(userIds = data.userIds)
         handler.onMemberJoin(client, systemMessage)
     }
 
@@ -147,7 +147,7 @@ class EventProcessor(private val handler: MessageHandler) : IEventProcessor {
                 id = payload.conversation!!,
                 name = payload.data!!.name,
                 creator = payload.data.creator,
-                members = null
+                members = listOf() //FIXME: Is it necessary ?
         )
         return SystemMessage(
                 eventId,
@@ -156,7 +156,7 @@ class EventProcessor(private val handler: MessageHandler) : IEventProcessor {
                 payload.from!!,
                 conversation,
                 conversation.id,
-                null //fix me: conversation.members.map { UUID.fromString(it.userId) }
+                conversation.members.map { UUID.fromString(it.userId) }
         )
     }
 

@@ -19,33 +19,35 @@ package com.wire.kalium.models.backend
 
 
 // TODO: rename file
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 sealed class ConversationMember {
+    @SerialName("userId")
     abstract val userId: String
 }
 
 @Serializable
 data class OtherMember(
-        override val userId: String,
-        val service: ServiceReferenceResponse?
+    @SerialName("userId") override val userId: String,
+    @SerialName("service") val service: ServiceReferenceResponse?
 ) : ConversationMember()
 
 @Serializable
 data class SelfMember(
-        override val userId: String,
-        val service: ServiceReferenceResponse?,
-        val hiddenReference: String?,
-        val otrMutedReference: String?,
-        val hidden: Boolean?,
-        val otrArchived: Boolean?,
-        val otrMuted: Boolean?,
-        val otrArchiveReference: String?
+    @SerialName("userId") override val userId: String,
+    @SerialName("service") val service: ServiceReferenceResponse?,
+    @SerialName("hiddenReference") val hiddenReference: String?,
+    @SerialName("otrMutedReference") val otrMutedReference: String?,
+    @SerialName("hidden") val hidden: Boolean?,
+    @SerialName("otrArchived") val otrArchived: Boolean?,
+    @SerialName("otrMuted") val otrMuted: Boolean?,
+    @SerialName("otrArchiveReference") val otrArchiveReference: String?
 ) : ConversationMember()
 
 @Serializable
 data class ServiceReferenceResponse(
-        val id: String,
-        val provider: String
+    @SerialName("id") val id: String,
+    @SerialName("provider") val provider: String
 )

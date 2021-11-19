@@ -18,16 +18,17 @@
 package com.wire.kalium.models.backend
 
 import com.wire.kalium.tools.UUIDSerializer
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import java.util.*
+import java.util.UUID
 
 @Serializable
 data class User(
-        @Serializable(with = UUIDSerializer::class) val id: UUID,
-        val name: String? = null,
-        val accent_id: Int? = null,
-        val handle: String? = null,
-        var service: Service? = null, // why null ? see API.kt line. Dejan: Participant can be human (has no service) or bot (has service)
-        val assets: ArrayList<AssetKey>? = null,
-        val email: String? = null //maybe we can get nulls here
+    @Serializable(with = UUIDSerializer::class) val id: UUID,
+    @SerialName("name") val name: String? = null,
+    @SerialName("accent_id") val accentId: Int? = null,
+    @SerialName("handle") val handle: String? = null,
+    @SerialName("service") var service: Service? = null,
+    @SerialName("assets") val assets: ArrayList<AssetKey>? = null,
+    @SerialName("email") val email: String? = null
 )
