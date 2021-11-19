@@ -18,6 +18,7 @@ data class ClientResponse(
 
 @Serializable
 data class LocationResponse(
+    // TODO: check if location name is needed
     //@SerialName("name") val name: String,
     @SerialName("lat") val latitude: String,
     @SerialName("lon") val longitude: String
