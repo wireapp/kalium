@@ -65,7 +65,9 @@ dependencies {
     // Unit tests dependencies
     testImplementation(kotlin("test"))
     testImplementation("junit:junit:$junit4Version")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${coroutinesVersion}")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutinesVersion")
+    testImplementation("io.ktor:ktor-client-mock:$coroutinesVersion")
+    testImplementation("io.mockk:mockk:1.12.1")
 }
 
 tasks.test {
