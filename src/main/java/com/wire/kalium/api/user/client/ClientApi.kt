@@ -7,7 +7,7 @@ import com.wire.kalium.tools.HostProvider
 interface ClientApi {
 
     @Throws(HttpException::class)
-    suspend fun registerClient(registerClientRequest: RegisterClientRequest, token: String): KaliumHttpResult<RegisterClientResponse>
+    suspend fun registerClient(registerClientRequest: RegisterClientRequest): KaliumHttpResult<RegisterClientResponse>
 
     companion object {
         const val BASE_URL = HostProvider.host

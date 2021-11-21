@@ -3,7 +3,10 @@ package com.wire.kalium.api
 import com.wire.kalium.tools.HostProvider
 import io.ktor.client.HttpClient
 import io.ktor.client.call.receive
-import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.features.auth.Auth
+import io.ktor.client.features.auth.providers.BearerTokens
+import io.ktor.client.features.auth.providers.bearer
 import io.ktor.client.features.defaultRequest
 import io.ktor.client.features.json.JsonFeature
 import io.ktor.client.features.json.serializer.KotlinxSerializer
@@ -14,20 +17,33 @@ import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.URLProtocol
 import kotlinx.serialization.json.Json
-import okhttp3.logging.HttpLoggingInterceptor
 
 class KtorHttpClient(
-        //private val authApi: AuthApi,
-        //private val tokenRepo: TokenRepository
+        private val hostProvider: HostProvider,
+        private val engine: HttpClientEngine,
+        private val authenticationManager: AuthenticationManager,
 ) {
-    val ktorHttpClient by lazy {
-        HttpClient(OkHttp) {
-            engine {
-                val interceptor = HttpLoggingInterceptor()
-                interceptor.setLevel(HttpLoggingInterceptor.Level.BODY)
-                addInterceptor(interceptor)
-            }
 
+    val provideKtorHttpClient by lazy {
+        HttpClient(engine) {
+            defaultRequest {
+                header("Content-Type", "application/json")
+                host = hostProvider.host
+                url.protocol = URLProtocol.HTTPS
+            }
+            install(Auth) {
+                bearer {
+                    loadTokens {
+                        BearerTokens(
+                                accessToken = authenticationManager.accessToken(),
+                                refreshToken = authenticationManager.refreshToken()
+                        )
+                    }
+                    refreshTokens { unauthorizedResponse: HttpResponse ->
+                        TODO("refresh the tokens, interface?")
+                    }
+                }
+            }
             install(JsonFeature) {
                 serializer = KotlinxSerializer(Json {
                     prettyPrint = true
@@ -35,12 +51,6 @@ class KtorHttpClient(
                     ignoreUnknownKeys = true
                 })
                 accept(ContentType.Application.Json)
-                accept(ContentType.Text.Plain)
-            }
-            defaultRequest {
-                header("Content-Type", "application/json")
-                host = HostProvider.host
-                url.protocol = URLProtocol.HTTPS
             }
         }
     }
@@ -61,4 +71,3 @@ suspend inline fun <reified BodyType : Any> wrapKaliumResponse(performRequest: (
 }
 
 fun HttpResponse.isSuccessful(): Boolean = this.status.value in 200..299
-
