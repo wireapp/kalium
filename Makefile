@@ -33,7 +33,7 @@ cryptobox4j-clone:
 	@echo "Cloning and building cryptobox4j"
 	cd native && \
 	rm -rf cryptobox4j  && \
-	git clone https://github.com/wireapp/cryptobox4j.git && \
+	git clone https://github.com/wireapp/cryptobox4j.git
 
 libsodium:
 	@echo "Getting libsodium"
