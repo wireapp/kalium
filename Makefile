@@ -47,17 +47,19 @@ libsodium:
 
 cryptobox4j: cryptobox4j-clone cryptobox-compile
 
-cryptobox4j-compile:
+cryptobox4j-compile: cryptobox4j-clone
 	cd native/cryptobox4j && \
 	mkdir -p build/lib && \
+	JAVA_HOME=$(/usr/libexec/java_home) && \
 	cc -std=c99 -g -Wall src/cryptobox-jni.c \
 		-I"${JAVA_HOME}/include" \
 		-I"${JAVA_HOME}/include/darwin" \
 		-Ibuild/include \
 		-I../cryptobox-c/src \
 		-L../cryptobox-c/target/release/ \
-		-lsodium \
 		-lcryptobox \
+		-L/usr/local/lib/ \
+		-lsodium \
 		-shared \
 		-fPIC \
 		-Wl,-install_name,libcryptobox-jni.dylib \
