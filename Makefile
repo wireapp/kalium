@@ -45,7 +45,9 @@ libsodium:
 	./configure && \
 	make && make install
 
-cryptobox4j: cryptobox4j-clone
+cryptobox4j: cryptobox4j-clone cryptobox-compile
+
+cryptobox4j-compile:
 	cd native/cryptobox4j && \
 	mkdir -p build/lib && \
 	cc -std=c99 -g -Wall src/cryptobox-jni.c \
