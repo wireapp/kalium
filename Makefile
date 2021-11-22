@@ -49,17 +49,17 @@ cryptobox4j: cryptobox4j-clone
 	cd native/cryptobox4j && \
 	mkdir -p build/lib && \
 	cc -std=c99 -g -Wall src/cryptobox-jni.c \
-	    -I"${JAVA_HOME}/include" \
-	    -I"${JAVA_HOME}/include/darwin" \
+		-I"${JAVA_HOME}/include" \
+		-I"${JAVA_HOME}/include/darwin" \
 		-Ibuild/include \
 		-I../cryptobox-c/src \
 		-L../cryptobox-c/target/release/ \
-	    -lsodium \
-	    -lcryptobox \
-	    -shared \
-	    -fPIC \
-	    -Wl,-install_name,libcryptobox-jni.dylib \
-	    -o build/lib/libcryptobox-jni.dylib
+		-lsodium \
+		-lcryptobox \
+		-shared \
+		-fPIC \
+		-Wl,-install_name,libcryptobox-jni.dylib \
+		-o build/lib/libcryptobox-jni.dylib
 
 copy-all-libs:
 	cd native && \
