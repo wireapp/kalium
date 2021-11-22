@@ -7,7 +7,7 @@ Kalium
 
 - [libsodium](https://github.com/jedisct1/libsodium)
 - [cryptobox-c](https://github.com/wireapp/cryptobox-c)
-- [cryptobox-c](https://github.com/wireapp/cryptobox4j)
+- [cryptobox4j](https://github.com/wireapp/cryptobox4j)
 
 
 #### Building on macOS 12
