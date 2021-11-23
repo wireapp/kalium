@@ -18,7 +18,7 @@ Run `make`, then pass the libraries in `native/libs` and the location of `libsod
 -Djava.library.path=/usr/local/lib/:/Users/tmpz/Code/Wire/kalium/native/libs
 ```
 
-Note the the path needs to be adjusted for your machine.
+Note that the path needs to be adjusted for your machine.
 
 #### Running the tests
 
