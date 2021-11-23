@@ -6,6 +6,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.receive
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.features.ClientRequestException
+import io.ktor.client.features.HttpResponseValidator
 import io.ktor.client.features.RedirectResponseException
 import io.ktor.client.features.ResponseException
 import io.ktor.client.features.ServerResponseException
@@ -31,6 +32,7 @@ class KtorHttpClient(
 
     val provideKtorHttpClient by lazy {
         HttpClient(engine) {
+            expectSuccess = false
             defaultRequest {
                 header("Content-Type", "application/json")
                 host = hostProvider.host
@@ -57,6 +59,30 @@ class KtorHttpClient(
                 })
                 accept(ContentType.Application.Json)
             }
+            HttpResponseValidator {
+                handleResponseException { exception ->
+                    if (exception is ResponseException) {
+                        when(exception) {
+                            is RedirectResponseException -> {
+                                // 300..399
+                                throw exception
+                            }
+                            is ClientRequestException -> {
+                                // 400..499
+                                throw exception
+                            }
+                            is ServerResponseException ->{
+                                // 500..599
+                                throw exception
+                            }
+                            else -> {
+                                // other ResponseException
+                                throw exception
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -71,29 +97,8 @@ class KaliumKtorResult<BodyType : Any>(private val httpResponse: HttpResponse, p
 }
 
 suspend inline fun <reified BodyType : Any> wrapKaliumResponse(performRequest: () -> HttpResponse): KaliumHttpResult<BodyType> {
-    try {
         val result = performRequest()
         return KaliumKtorResult(result, result.receive())
-    } catch (e: ResponseException) {
-        when(e) {
-            is RedirectResponseException -> {
-                // 300..399
-                throw e
-            }
-            is ClientRequestException -> {
-                // 400..499
-                throw e
-            }
-            is ServerResponseException ->{
-                // 500..599
-                throw e
-            }
-            else -> {
-                // other ResponseException
-                throw e
-            }
-        }
-    }
 }
 
 fun HttpResponse.isSuccessful(): Boolean = this.status.value in 200..299
