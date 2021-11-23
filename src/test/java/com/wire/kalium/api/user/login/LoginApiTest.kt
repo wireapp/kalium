@@ -40,7 +40,7 @@ class LoginApiTest : ApiTest {
         )
         val loginApi: LoginApi = LoginApiImp(httpClient)
         runBlocking {
-            val error = assertFailsWith<ClientRequestException> { loginApi.emailLogin(VALID_LOGIN_REQUEST, false) }
+            val error = assertFailsWith<ClientRequestException> { loginApi.emailLogin(INVALID_LOGIN_REQUEST, false) }
             assertEquals(error.response.receive<ErrorResponse>(), ERROR_RESPONSE)
         }
     }
@@ -49,6 +49,8 @@ class LoginApiTest : ApiTest {
     private companion object {
         val VALID_LOGIN_REQUEST = LoginWithEmailRequest("valid.test@email.com", "valid_password", "label")
         val VALID_LOGIN_RESPONSE = LoginWithEmailResponse(userId = "user_id", expiresIn = 900, accessToken = "access_token", tokenType = "Bearer")
+
+        val INVALID_LOGIN_REQUEST = LoginWithEmailRequest("valid.test@email.com", "invalid_password", "label")
 
         val ERROR_RESPONSE = ErrorResponse(401, "invalid credentials", "invalid_credentials")
 
