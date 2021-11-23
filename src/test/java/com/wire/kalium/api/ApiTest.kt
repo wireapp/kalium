@@ -5,11 +5,13 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.HttpRequestData
+import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.cio.parsePartHeaders
+import io.ktor.http.fullPath
 import io.ktor.http.headersOf
 import io.ktor.utils.io.ByteReadChannel
 import kotlin.test.assertEquals
@@ -77,4 +79,10 @@ interface ApiTest {
     fun HttpRequestData.assertHead() = this.assertMethodType(HttpMethod.Head)
     fun HttpRequestData.assertOptions() = this.assertMethodType(HttpMethod.Options)
 
+    // content type
+    fun HttpRequestData.assertJson() = assertContentType(ContentType.Application.Json)
+    private fun HttpRequestData.assertContentType(contentType: ContentType) = assertEquals(this.body.contentType, ContentType.Application.Json)
+
+    // path
+    fun HttpRequestData.assertPathEqual(path: String) = assertEquals(this.url.encodedPath, path)
 }
