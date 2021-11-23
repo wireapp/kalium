@@ -13,7 +13,6 @@ interface LoginApi {
     ): KaliumHttpResult<LoginWithEmailResponse>
 
     companion object {
-        const val BASE_URL = HostProvider.host
         const val PATH_LOGIN = "login"
         const val QUERY_PERSIST = "persist"
     }
