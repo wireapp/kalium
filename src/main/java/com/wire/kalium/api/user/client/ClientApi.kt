@@ -8,9 +8,4 @@ interface ClientApi {
 
     @Throws(HttpException::class)
     suspend fun registerClient(registerClientRequest: RegisterClientRequest): KaliumHttpResult<RegisterClientResponse>
-
-    companion object {
-        const val BASE_URL = HostProvider.host
-        const val PATH_CLIENTS = "/clients"
-    }
 }

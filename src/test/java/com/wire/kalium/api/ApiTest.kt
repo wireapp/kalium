@@ -61,8 +61,16 @@ interface ApiTest {
     }
 
     // query params assertions
+    /**
+     * assert the request url has query parameter value
+     * @param name name of the query parameter
+     */
     fun HttpRequestData.assertQueryExist(name: String) = assert(!this.url.parameters[name].isNullOrBlank())
-    fun HttpRequestData.assertNotQueryParams() = assert(this.url.parameters.names().isEmpty())
+
+    /**
+     * assert the request url has no query params
+     */
+    fun HttpRequestData.assertNoQueryParams() = assert(this.url.parameters.names().isEmpty())
 
     // request headers assertions
     fun HttpRequestData.assertHeaderExist(name: String) = assert(!this.headers[name].isNullOrBlank())
