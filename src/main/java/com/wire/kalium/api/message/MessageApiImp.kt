@@ -5,7 +5,6 @@ import com.wire.kalium.api.isSuccessful
 import com.wire.kalium.api.message.MessageApi.Companion.PATH_OTR_MESSAGE
 import com.wire.kalium.api.message.MessageApi.Companion.QUERY_IGNORE_MISSING
 import com.wire.kalium.api.message.MessageApi.Companion.QUERY_REPORT_MISSING
-import com.wire.kalium.api.user.client.ClientApi.Companion.BASE_URL
 import com.wire.kalium.api.wrapKaliumResponse
 import com.wire.kalium.exceptions.AuthException
 import io.ktor.client.*
@@ -51,7 +50,7 @@ class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
             body: RequestBody
         ): HttpResponse {
 
-            return httpClient.post<HttpResponse>(urlString = "$BASE_URL/$conversationId$PATH_OTR_MESSAGE") {
+            return httpClient.post<HttpResponse>(path = "/$conversationId$PATH_OTR_MESSAGE") {
                 if(queryParameter != null) {
                     parameter(queryParameter, queryParameterValue)
                 }
