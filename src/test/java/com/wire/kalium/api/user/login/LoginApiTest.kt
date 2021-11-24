@@ -14,7 +14,7 @@ import kotlin.test.assertFailsWith
 
 class LoginApiTest : ApiTest {
     @Test
-    fun `given a valid login request, when calling the login endpoint, the request should be configured courtly`() {
+    fun `given a valid login request, when calling the login endpoint, the request should be configured correctly`() {
         val httpClient = mockHttpClient(
                 KtxSerializer.json.encodeToString(VALID_LOGIN_RESPONSE),
                 statusCode = HttpStatusCode.OK,

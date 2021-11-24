@@ -16,7 +16,7 @@ import kotlin.test.assertFailsWith
 
 class ClientApiTest : ApiTest {
     @Test
-    fun `given a valid register client request, when calling the register client endpoint, the request should be configured courtly`() {
+    fun `given a valid register client request, when calling the register client endpoint, the request should be configured correctly`() {
         val httpClient = mockHttpClient(
                 KtxSerializer.json.encodeToString(VALID_Register_Client_RESPONSE),
                 statusCode = HttpStatusCode.Created,
