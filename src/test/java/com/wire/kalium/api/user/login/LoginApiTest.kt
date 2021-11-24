@@ -28,7 +28,7 @@ class LoginApiTest : ApiTest {
         val loginApi: LoginApi = LoginApiImp(httpClient)
         runBlocking {
             val response = loginApi.emailLogin(VALID_LOGIN_REQUEST, false)
-            assertEquals(response.resultBody, VALID_LOGIN_RESPONSE)
+            assertEquals(response, VALID_LOGIN_RESPONSE)
         }
     }
 

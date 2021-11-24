@@ -10,6 +10,7 @@ import com.wire.kalium.api.user.client.RegisterClientRequest
 import com.wire.kalium.api.user.login.LoginApi
 import com.wire.kalium.api.user.login.LoginApiImp
 import com.wire.kalium.api.user.login.LoginWithEmailRequest
+import com.wire.kalium.api.user.logout.LogoutApiImp
 import com.wire.kalium.crypto.Crypto
 import com.wire.kalium.crypto.CryptoFile
 import com.wire.kalium.models.outbound.otr.PreKey
@@ -28,9 +29,7 @@ import kotlinx.serialization.json.Json
 import okhttp3.logging.HttpLoggingInterceptor
 
 private class AuthenticationManagerImp(private val accessToken: String, private val tokenType: String, val refreshToken: String) : AuthenticationManager {
-    override fun accessToken(): String {
-        return accessToken
-    }
+    override fun accessToken(): String = accessToken
     override fun refreshToken(): String = refreshToken
 }
 
@@ -66,8 +65,8 @@ class CliApplication() : CliktCommand() {
             val body = LoginWithEmailRequest(email = "dejan@wire.com", password = "12345678", label = "ktor")
             val crypto: Crypto = CryptoFile("./data/joker")
             val loginResult = loginApi.emailLogin(body, false)
-            println("login: ${loginResult.resultBody} ")
-            val authenticationManager = AuthenticationManagerImp(loginResult.resultBody.accessToken, loginResult.resultBody.tokenType, "")
+            println("login: $loginResult ")
+            val authenticationManager = AuthenticationManagerImp(loginResult.accessToken, loginResult.tokenType, "")
             val preKeys: ArrayList<PreKey> = crypto.newPreKeys(0, 20)
             val lastKey: PreKey = crypto.newLastPreKey()
             val deviceClass = "tablet"
@@ -83,6 +82,8 @@ class CliApplication() : CliktCommand() {
             val httpClient = KtorHttpClient(HostProvider, okHttp, authenticationManager).provideKtorHttpClient
             val registerClient = ClientApiImp(httpClient).registerClient(registerClientRequest)
             println(registerClient.resultBody)
+            val logoutResponse = LogoutApiImp(httpClient).logout(authenticationManager.accessToken())
+            println(logoutResponse)
         }
     }
 }
