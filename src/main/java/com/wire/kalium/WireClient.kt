@@ -14,6 +14,7 @@ import com.wire.kalium.tools.Util
 import java.io.IOException
 import java.security.MessageDigest
 import java.util.*
+import kotlin.collections.HashMap
 
 class WireClient(
         protected val api: IWireAPI,
@@ -143,6 +144,11 @@ class WireClient(
 
     @Throws(CryptoException::class)
     fun encrypt(content: ByteArray, missing: Missing): Recipients {
+        return crypto.encrypt(missing, content)
+    }
+
+    @Throws(CryptoException::class)
+    fun encrypt(content: ByteArray, missing: HashMap<String, List<String>>): Recipients {
         return crypto.encrypt(missing, content)
     }
 

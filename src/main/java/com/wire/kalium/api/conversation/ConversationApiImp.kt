@@ -12,16 +12,16 @@ import io.ktor.client.request.parameter
 import io.ktor.client.statement.HttpResponse
 
 class ConversationApiImp(private val httpClient: HttpClient) : ConversationApi {
-    override suspend fun conversationsByBatch(queryStart: String, querySize: Int): KaliumHttpResult<ConversationPagingResponse> = wrapKaliumResponse<ConversationPagingResponse> {
+    override suspend fun conversationsByBatch(queryStart: String?, querySize: Int): KaliumHttpResult<ConversationPagingResponse> = wrapKaliumResponse<ConversationPagingResponse> {
         httpClient.get<HttpResponse>(path = PATH_CONVERSATIONS) {
-            parameter(QUERY_KEY_START, queryStart)
+            queryStart?.let { parameter(QUERY_KEY_START, it) }
             parameter(QUERY_KEY_SIZE, querySize)
         }.receive()
     }
 
-    override suspend fun fetchConversationsDetails(queryStart: String, queryIds: List<String>): KaliumHttpResult<ConversationPagingResponse> = wrapKaliumResponse<ConversationPagingResponse> {
+    override suspend fun fetchConversationsDetails(queryStart: String?, queryIds: List<String>): KaliumHttpResult<ConversationPagingResponse> = wrapKaliumResponse<ConversationPagingResponse> {
         httpClient.get<HttpResponse>(path = PATH_CONVERSATIONS) {
-            parameter(QUERY_KEY_START, queryStart)
+            queryStart?.let { parameter(QUERY_KEY_START, it) }
             parameter(QUERY_IDS, queryIds)
         }.receive()
     }

@@ -3,14 +3,25 @@ package com.wire.kalium.api.message
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-sealed class SendMessageResponse
+sealed class SendMessageResponse {
+    @Serializable
+    data class MissingDevicesResponse(
+            @SerialName("time") val time: String,
+            @SerialName("missing") val missing: MissingUsers,
+            @SerialName("redundant") val redundant: RedundantUsers,
+            @SerialName("deleted") val deleted: DeletedUsers
+    ) : SendMessageResponse()
 
-@Serializable
-data class MissingDevicesResponse(
-        @SerialName("time") val time: String,
-        @SerialName("missing") val missing: HashMap<String, List<String>>,
-        @SerialName("redundant") val redundant: HashMap<String, List<String>>,
-        @SerialName("deleted") val deleted: HashMap<String, List<String>>
-) : SendMessageResponse()
+    // TODO: fix serial error after a message is sent
+    object MessageSent : SendMessageResponse()
+}
 
-object MessageSent : SendMessageResponse()
+
+
+
+// Map of userId to clientId
+typealias MissingUsers = UserIdToClientMap
+typealias RedundantUsers = UserIdToClientMap
+typealias DeletedUsers = UserIdToClientMap
+
+typealias UserIdToClientMap = HashMap<String, List<String>>

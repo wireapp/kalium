@@ -46,7 +46,7 @@ class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
                 body: RequestBody
         ): KaliumHttpResult<SendMessageResponse> {
             try {
-                return wrapKaliumResponse<MessageSent> {
+                return wrapKaliumResponse<SendMessageResponse.MessageSent> {
                     httpClient.post<HttpResponse>(path = "$PATH_CONVERSATIONS/$conversationId$PATH_OTR_MESSAGE") {
                         if (queryParameter != null) {
                             parameter(queryParameter, queryParameterValue)
@@ -56,7 +56,7 @@ class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
                 }
             } catch (e: ClientRequestException) {
                 if (e.response.status.value == 412) {
-                    return wrapKaliumResponse<MissingDevicesResponse> { e.response }
+                    return wrapKaliumResponse<SendMessageResponse.MissingDevicesResponse> { e.response }
                 } else {
                     throw e
                 }

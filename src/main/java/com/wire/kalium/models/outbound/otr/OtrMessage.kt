@@ -30,7 +30,7 @@ class OtrMessage(//clientId of the sender
     }
 
     operator fun get(userId: UUID, clientId: String): String {
-        return recipients[userId, clientId]
+        return recipients[userId.toString(), clientId]
     }
 
     fun size(): Int {

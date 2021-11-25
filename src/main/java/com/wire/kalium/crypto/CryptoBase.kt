@@ -19,11 +19,13 @@ package com.wire.kalium.crypto
 
 import com.wire.bots.cryptobox.CryptoException
 import com.wire.bots.cryptobox.ICryptobox
+import com.wire.kalium.api.prekey.MapUserClientsToPreKey
 import com.wire.kalium.models.outbound.otr.Missing
 import com.wire.kalium.models.outbound.otr.PreKey
 import com.wire.kalium.models.outbound.otr.PreKeys
 import com.wire.kalium.models.outbound.otr.Recipients
 import java.util.*
+import kotlin.collections.HashMap
 
 /**
  * Wrapper for the Crypto Box. This class is thread safe.
@@ -91,7 +93,7 @@ abstract class CryptoBase : Crypto {
                     val id = createId(userId, clientId)
                     val cipher = box().encryptFromPreKeys(id, toPreKey(pk), content)
                     val s = Base64.getEncoder().encodeToString(cipher)
-                    recipients.add(userId, clientId, s)
+                    recipients.add(userId.toString(), clientId, s)
                 }
             }
         }
@@ -114,7 +116,42 @@ abstract class CryptoBase : Crypto {
                 val cipher = box().encryptFromSession(id, content)
                 if (cipher != null) {
                     val s = Base64.getEncoder().encodeToString(cipher)
+                    recipients.add(userId.toString(), clientId, s)
+                }
+            }
+        }
+        return recipients
+    }
+
+
+    @Throws(CryptoException::class)
+    override fun encrypt(missing: HashMap<String, List<String>>, content: ByteArray): Recipients {
+        val recipients = Recipients()
+        for (userId in missing.keys) {
+            for (clientId in missing[userId]!!) {
+                val id = createId(userId, clientId)
+                val cipher = box().encryptFromSession(id, content)
+                if (cipher != null) {
+                    val s = Base64.getEncoder().encodeToString(cipher)
                     recipients.add(userId, clientId, s)
+                }
+            }
+        }
+        return recipients
+    }
+
+
+    override fun encryptPre(preKeys: MapUserClientsToPreKey, content: ByteArray): Recipients {
+        val recipients = Recipients()
+        for (userId in preKeys.keys) {
+            val clients = preKeys.getValue(userId)
+            for (clientId in clients.keys) {
+                val pk = clients[clientId]
+                if (pk?.key != null) {
+                    val id = createId(userId, clientId)
+                    val cipher = box().encryptFromPreKeys(id, toPreKey(pk), content)
+                    val s = Base64.getEncoder().encodeToString(cipher)
+                    recipients.add(userId.toString(), clientId, s)
                 }
             }
         }
@@ -155,6 +192,10 @@ abstract class CryptoBase : Crypto {
             PreKey(preKey.id,Base64.getEncoder().encodeToString(preKey.data))
 
         private fun createId(userId: UUID?, clientId: String?): String? {
+            return String.format("%s_%s", userId, clientId)
+        }
+
+        private fun createId(userId: String, clientId: String): String {
             return String.format("%s_%s", userId, clientId)
         }
     }
