@@ -25,6 +25,7 @@ import com.wire.kalium.models.outbound.otr.PreKey
 import com.wire.kalium.models.outbound.otr.PreKeys
 import com.wire.kalium.models.outbound.otr.Recipients
 import java.util.*
+import kotlin.collections.HashMap
 
 /**
  * Wrapper for the Crypto Box. This class is thread safe.

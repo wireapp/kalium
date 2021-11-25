@@ -18,6 +18,7 @@ import com.wire.kalium.tools.Util
 import java.io.IOException
 import java.security.MessageDigest
 import java.util.*
+import kotlin.collections.HashMap
 
 class WireClient(
         protected val api: IWireAPI,
