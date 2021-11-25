@@ -4,11 +4,9 @@ import com.wire.kalium.api.KaliumHttpResult
 import com.wire.kalium.api.wrapKaliumResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.features.ClientRequestException
-import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.statement.HttpResponse
-import io.ktor.http.HttpHeaders
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -46,8 +44,8 @@ class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
                 body: RequestBody
         ): KaliumHttpResult<SendMessageResponse> {
             try {
-                return wrapKaliumResponse<MessageSent> {
-                    httpClient.post<HttpResponse>(path = "/$conversationId$PATH_OTR_MESSAGE") {
+                return wrapKaliumResponse<SendMessageResponse.MessageSent> {
+                    httpClient.post<HttpResponse>(path = "$PATH_CONVERSATIONS/$conversationId$PATH_OTR_MESSAGE") {
                         if (queryParameter != null) {
                             parameter(queryParameter, queryParameterValue)
                         }
@@ -56,7 +54,7 @@ class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
                 }
             } catch (e: ClientRequestException) {
                 if (e.response.status.value == 412) {
-                    return wrapKaliumResponse<MissingDevicesResponse> { e.response }
+                    return wrapKaliumResponse<SendMessageResponse.MissingDevicesResponse> { e.response }
                 } else {
                     throw e
                 }
@@ -66,7 +64,7 @@ class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
         when (option) {
             is MessageApi.MessageOption.IgnoreAll -> {
                 val body = parameters.toRequestBody()
-                return performRequest(QUERY_IGNORE_MISSING, false, body)
+                return performRequest(QUERY_IGNORE_MISSING, true, body)
             }
             is MessageApi.MessageOption.IgnoreSome -> {
                 val body = parameters.toRequestBody()
@@ -88,6 +86,7 @@ class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
 
     private companion object {
         const val PATH_OTR_MESSAGE = "/otr/messages"
+        const val PATH_CONVERSATIONS = "/conversations"
         const val QUERY_IGNORE_MISSING = "ignore_missing"
         const val QUERY_REPORT_MISSING = "report_missing"
     }

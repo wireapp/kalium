@@ -18,8 +18,8 @@
 package com.wire.kalium.models.backend
 
 import com.wire.kalium.tools.UUIDSerializer
+import java.util.UUID
 import kotlinx.serialization.Serializable
-import java.util.*
 
 @Serializable
 data class User(

@@ -17,20 +17,16 @@
 //
 package com.wire.kalium
 
+import com.wire.kalium.api.user.client.LocationResponse
 import com.wire.kalium.exceptions.AuthException
 import com.wire.kalium.exceptions.HttpException
 import com.wire.kalium.models.backend.Access
-import com.wire.kalium.models.backend.Location
 import com.wire.kalium.models.backend.NewClient
 import com.wire.kalium.models.backend.NotificationList
 import com.wire.kalium.models.outbound.otr.PreKey
 import com.wire.kalium.models.system.Cookie
 import com.wire.kalium.tools.KtxSerializer
 import com.wire.kalium.tools.Logger
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
 import java.util.*
 import javax.ws.rs.client.Client
 import javax.ws.rs.client.Entity
@@ -40,6 +36,10 @@ import javax.ws.rs.core.HttpHeaders
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.NewCookie
 import javax.ws.rs.core.Response
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 
 open class LoginClient(client: Client) {
     @JvmField
@@ -246,7 +246,7 @@ open class LoginClient(client: Client) {
     internal class _Client {
         var id: String? = null
         var time: String? = null
-        val location: Location? = null
+        val location: LocationResponse? = null
         val type: String? = null
         @SerialName("class") var clazz: String? = null
         var label: String? = null

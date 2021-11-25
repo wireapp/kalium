@@ -18,8 +18,8 @@
 package com.wire.kalium.models.outbound.otr
 
 import com.wire.kalium.tools.UUIDSerializer
-import kotlinx.serialization.Serializable
 import java.util.*
+import kotlinx.serialization.Serializable
 
 @Serializable
 class ClientKey : HashMap<String, PreKey>() {
