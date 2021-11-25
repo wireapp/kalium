@@ -47,7 +47,7 @@ class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
         ): KaliumHttpResult<SendMessageResponse> {
             try {
                 return wrapKaliumResponse<MessageSent> {
-                    httpClient.post<HttpResponse>(path = "/$conversationId$PATH_OTR_MESSAGE") {
+                    httpClient.post<HttpResponse>(path = "$PATH_CONVERSATIONS/$conversationId$PATH_OTR_MESSAGE") {
                         if (queryParameter != null) {
                             parameter(queryParameter, queryParameterValue)
                         }
@@ -66,7 +66,7 @@ class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
         when (option) {
             is MessageApi.MessageOption.IgnoreAll -> {
                 val body = parameters.toRequestBody()
-                return performRequest(QUERY_IGNORE_MISSING, false, body)
+                return performRequest(QUERY_IGNORE_MISSING, true, body)
             }
             is MessageApi.MessageOption.IgnoreSome -> {
                 val body = parameters.toRequestBody()
@@ -88,6 +88,7 @@ class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
 
     private companion object {
         const val PATH_OTR_MESSAGE = "/otr/messages"
+        const val PATH_CONVERSATIONS = "/conversations"
         const val QUERY_IGNORE_MISSING = "ignore_missing"
         const val QUERY_REPORT_MISSING = "report_missing"
     }
