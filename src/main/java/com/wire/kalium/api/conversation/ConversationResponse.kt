@@ -15,7 +15,7 @@ data class ConversationResponse(
         val name: String?,
 
         @SerialName("qualified_id")
-        val id: ConversationIdResponse,
+        val id: ConversationId,
 
         @SerialName("type")
         val type: Int,
@@ -57,7 +57,7 @@ data class ConversationSelfMemberResponse(
         val hidden: Boolean?,
 
         @SerialName("qualified_id")
-        override val userId: UserIdResponse,
+        override val userId: UserId,
 
         @SerialName("otr_archived")
         val otrArchived: Boolean?,
@@ -75,11 +75,11 @@ data class ConversationOtherMembersResponse(
         val service: ServiceReferenceResponse?,
 
         @SerialName("qualified_id")
-        override val userId: UserIdResponse,
+        override val userId: UserId,
 ) : ConversationMemberResponse
 
 interface ConversationMemberResponse {
-        val userId: UserIdResponse
+    val userId: UserId
 }
 
 @Serializable
