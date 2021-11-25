@@ -1,9 +1,6 @@
 package com.wire.kalium.api
 
-import com.sun.xml.internal.ws.wsdl.writer.document.soap12.BodyType
-import com.wire.kalium.exceptions.ApiErrorException
-import com.wire.kalium.exceptions.InvalidRequestException
-import com.wire.kalium.exceptions.OtherException
+import com.wire.kalium.exceptions.KaliumException
 import com.wire.kalium.tools.HostProvider
 import io.ktor.client.HttpClient
 import io.ktor.client.call.receive
@@ -27,9 +24,9 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 
 class KtorHttpClient(
-        private val hostProvider: HostProvider,
-        private val engine: HttpClientEngine,
-        private val authenticationManager: AuthenticationManager,
+    private val hostProvider: HostProvider,
+    private val engine: HttpClientEngine,
+    private val authenticationManager: AuthenticationManager,
 ) {
 
     val provideKtorHttpClient by lazy {
@@ -43,8 +40,8 @@ class KtorHttpClient(
                 bearer {
                     loadTokens {
                         BearerTokens(
-                                accessToken = authenticationManager.accessToken(),
-                                refreshToken = authenticationManager.refreshToken()
+                            accessToken = authenticationManager.accessToken(),
+                            refreshToken = authenticationManager.refreshToken()
                         )
                     }
                     refreshTokens { unauthorizedResponse: HttpResponse ->
@@ -64,7 +61,8 @@ class KtorHttpClient(
     }
 }
 
-class KaliumKtorResult<out BodyType : Any, out ErrorType>(private val httpResponse: HttpResponse, private val body: BodyType) : KaliumHttpResult<BodyType> {
+class KaliumKtorResult<out BodyType : Any, out ErrorType>(private val httpResponse: HttpResponse, private val body: BodyType) :
+    KaliumHttpResult<BodyType> {
     override val httpStatusCode: Int
         get() = httpResponse.status.value
     override val headers: Set<Map.Entry<String, List<String>>>
@@ -73,43 +71,41 @@ class KaliumKtorResult<out BodyType : Any, out ErrorType>(private val httpRespon
         get() = body
 }
 
-sealed class NetworkResponse<out T : Any, out E : Any> {
-    data class Success<out T : Any>(val code: Int, val body: T) : NetworkResponse<T, Nothing>()
-    data class ServerError<out E : Any>(val code: Int, val body: E) : NetworkResponse<Nothing, E>()
-    object InvalidRequest : NetworkResponse<Nothing, Nothing>()
-    data class GenericError(val throwable: Throwable) : NetworkResponse<Nothing, Nothing>()
+sealed class NetworkResponse<out T>{
+    data class Success<out T : Any>(val response: HttpResponse, val body: T) : NetworkResponse<T>()
+    data class Error<out E : KaliumException>(val error: KaliumException) : NetworkResponse<E>()
 }
 
-suspend inline fun <reified BodyType : Any, reified ErrorType : Any> wrapKaliumResponse(performRequest: () -> HttpResponse): NetworkResponse<BodyType, ErrorType> {
+suspend inline fun <reified BodyType> wrapKaliumResponse(performRequest: () -> HttpResponse): NetworkResponse<BodyType> =
     try {
         val result = performRequest()
-        return NetworkResponse.Success(result.status.value, result.receive())
+        NetworkResponse.Success(result, result.receive())
     } catch (e: ResponseException) { // ktor exception
         when (e) {
             is RedirectResponseException -> {
                 // 300 .. 399
-                return NetworkResponse.GenericError(e)
+                NetworkResponse.Error(error = KaliumException.RedirectError(e.response.status.value, e))
             }
             is ClientRequestException -> {
-                return if (e.response.status.value == 400) {
+                if (e.response.status.value == 400) {
                     // 400
-                    NetworkResponse.InvalidRequest
+                    NetworkResponse.Error(error = KaliumException.InvalidRequestError(e.response.status.value, e))
                 } else {
                     // 401 .. 499
-                    NetworkResponse.ServerError(code = e.response.status.value, body = e.response.receive())
+                    NetworkResponse.Error(error = KaliumException.ServerError(e.response.status.value, e))
                 }
             }
             is ServerResponseException -> {
                 // 500 .. 599
-                return NetworkResponse.GenericError(e)
+                NetworkResponse.Error(error = KaliumException.ServerError(e.response.status.value, e))
             }
             else -> {
-                return NetworkResponse.GenericError(e)
+                NetworkResponse.Error(error = KaliumException.GenericError(e.response.status.value, e))
             }
         }
     } catch (e: SerializationException) {
-        return NetworkResponse.GenericError(e)
+        NetworkResponse.Error(error = KaliumException.GenericError(400, e))
     }
-}
+
 
 fun HttpResponse.isSuccessful(): Boolean = this.status.value in 200..299

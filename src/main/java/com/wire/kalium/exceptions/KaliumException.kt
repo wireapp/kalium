@@ -6,7 +6,12 @@ import kotlinx.serialization.Serializable
 // TODO: return custom error instead of throwing exception
 
 @Serializable
-sealed class KaliumException : Exception()
+sealed class KaliumException : Exception() {
+    class RedirectError(code: Int, throwable: Throwable?): KaliumException()
+    class InvalidRequestError(code: Int, throwable: Throwable?): KaliumException()
+    class ServerError(code: Int, throwable: Throwable?): KaliumException()
+    class GenericError(code: Int, throwable: Throwable?): KaliumException()
+}
 
 @Serializable
 sealed class NetworkException(

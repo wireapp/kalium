@@ -16,5 +16,4 @@ class LoginApiImp(private val httpClient: HttpClient) : LoginApi {
                 parameter(QUERY_PERSIST, persist)
                 body = loginWithEmailRequest
             }
-
 }
