@@ -1,7 +1,9 @@
 package com.wire.kalium.api.user.client
 
 import com.wire.kalium.api.KaliumHttpResult
+import com.wire.kalium.api.user.client.ClientApi.Companion.PATH_CLIENTS
 import com.wire.kalium.api.wrapKaliumResponse
+import com.wire.kalium.exceptions.AuthException
 import io.ktor.client.HttpClient
 import io.ktor.client.call.receive
 import io.ktor.client.request.post

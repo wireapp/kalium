@@ -5,10 +5,6 @@ import com.wire.kalium.tools.HostProvider
 import io.ktor.client.HttpClient
 import io.ktor.client.call.receive
 import io.ktor.client.engine.HttpClientEngine
-import io.ktor.client.features.ClientRequestException
-import io.ktor.client.features.RedirectResponseException
-import io.ktor.client.features.ResponseException
-import io.ktor.client.features.ServerResponseException
 import io.ktor.client.features.auth.Auth
 import io.ktor.client.features.auth.providers.BearerTokens
 import io.ktor.client.features.auth.providers.bearer
@@ -64,8 +60,8 @@ class KtorHttpClient(
 class KaliumKtorResult<BodyType : Any>(private val httpResponse: HttpResponse, private val body: BodyType) : KaliumHttpResult<BodyType> {
     override val httpStatusCode: Int
         get() = httpResponse.status.value
-    override val headers: Set<Map.Entry<String, List<String>>>
-        get() = httpResponse.headers.entries()
+    override val headers: Headers
+        get() = httpResponse.headers
     override val resultBody: BodyType
         get() = body
 }
