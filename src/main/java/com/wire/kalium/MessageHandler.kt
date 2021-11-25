@@ -19,7 +19,19 @@ package com.wire.kalium
 
 //import com.wire.kalium.models.LinkPreviewMessage TODO: Implement LinkPreviews
 import com.waz.model.Messages.GenericMessage
-import com.wire.kalium.models.inbound.*
+import com.wire.kalium.models.inbound.AudioPreviewMessage
+import com.wire.kalium.models.inbound.CallingMessage
+import com.wire.kalium.models.inbound.ConfirmationMessage
+import com.wire.kalium.models.inbound.DeletedTextMessage
+import com.wire.kalium.models.inbound.EditedTextMessage
+import com.wire.kalium.models.inbound.EphemeralTextMessage
+import com.wire.kalium.models.inbound.FilePreviewMessage
+import com.wire.kalium.models.inbound.PhotoPreviewMessage
+import com.wire.kalium.models.inbound.PingMessage
+import com.wire.kalium.models.inbound.ReactionMessage
+import com.wire.kalium.models.inbound.RemoteMessage
+import com.wire.kalium.models.inbound.TextMessage
+import com.wire.kalium.models.inbound.VideoPreviewMessage
 import com.wire.kalium.models.system.SystemMessage
 import com.wire.kalium.tools.Logger
 import java.util.*

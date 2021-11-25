@@ -2,7 +2,6 @@ package com.wire.kalium.api.user.login
 
 import com.wire.kalium.api.KaliumHttpResult
 import com.wire.kalium.exceptions.HttpException
-import com.wire.kalium.tools.HostProvider
 
 
 interface LoginApi {

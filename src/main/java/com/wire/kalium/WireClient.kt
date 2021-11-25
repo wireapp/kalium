@@ -9,12 +9,15 @@ import com.wire.kalium.models.backend.User
 import com.wire.kalium.models.inbound.AssetKey
 import com.wire.kalium.models.outbound.Asset
 import com.wire.kalium.models.outbound.GenericMessageIdentifiable
-import com.wire.kalium.models.outbound.otr.*
+import com.wire.kalium.models.outbound.otr.Devices
+import com.wire.kalium.models.outbound.otr.Missing
+import com.wire.kalium.models.outbound.otr.OtrMessage
+import com.wire.kalium.models.outbound.otr.PreKey
+import com.wire.kalium.models.outbound.otr.Recipients
 import com.wire.kalium.tools.Util
 import java.io.IOException
 import java.security.MessageDigest
 import java.util.*
-import kotlin.collections.HashMap
 
 class WireClient(
         protected val api: IWireAPI,

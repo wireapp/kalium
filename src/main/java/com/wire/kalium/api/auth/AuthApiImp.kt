@@ -8,7 +8,6 @@ import io.ktor.client.call.receive
 import io.ktor.client.request.cookie
 import io.ktor.client.request.post
 import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.request
 import io.ktor.http.Cookie
 
 class AuthApiImp(private val httpClient: HttpClient) : AuthApi {

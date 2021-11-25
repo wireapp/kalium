@@ -9,7 +9,6 @@ import com.wire.kalium.models.outbound.otr.Recipients
 import java.io.Closeable
 import java.io.IOException
 import java.util.*
-import kotlin.collections.HashMap
 
 interface Crypto : Closeable {
     @Throws(CryptoException::class)

@@ -1,8 +1,8 @@
 package com.wire.kalium.api.conversation
-import com.wire.kalium.models.backend.UserId
-import kotlinx.serialization.Serializable
 
+import com.wire.kalium.models.backend.UserId
 import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 
 @Serializable

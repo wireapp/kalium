@@ -17,7 +17,16 @@
 //
 package com.wire.kalium.tools
 
-import java.io.*
+import java.io.BufferedReader
+import java.io.BufferedWriter
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileReader
+import java.io.FileWriter
+import java.io.IOException
+import java.io.InputStream
 import java.math.BigInteger
 import java.net.URLConnection
 import java.nio.charset.StandardCharsets
@@ -26,7 +35,7 @@ import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.security.spec.InvalidKeySpecException
 import java.security.spec.KeySpec
-import java.util.*
+import java.util.Base64
 import java.util.regex.Pattern
 import javax.crypto.Cipher
 import javax.crypto.Mac

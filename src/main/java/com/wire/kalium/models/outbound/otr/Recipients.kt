@@ -1,7 +1,6 @@
 package com.wire.kalium.models.outbound.otr
 
 import kotlinx.serialization.Serializable
-import java.util.*
 
 //<UserId, ClientCipher> //Base64 encoded cipher
 @Serializable

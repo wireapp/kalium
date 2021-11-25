@@ -17,15 +17,14 @@
 //
 package com.wire.kalium.tools
 
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.logging.LogRecord
-import java.lang.StringBuilder
 import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.logging.Formatter
 import java.util.logging.Handler
 import java.util.logging.Level
+import java.util.logging.LogRecord
 import java.util.logging.Logger
 
 object Logger {

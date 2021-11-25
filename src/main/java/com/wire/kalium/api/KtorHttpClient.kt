@@ -1,6 +1,5 @@
 package com.wire.kalium.api
 
-import com.wire.kalium.exceptions.HttpException
 import com.wire.kalium.tools.HostProvider
 import io.ktor.client.HttpClient
 import io.ktor.client.call.receive

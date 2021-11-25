@@ -4,11 +4,9 @@ import com.wire.kalium.api.KaliumHttpResult
 import com.wire.kalium.api.wrapKaliumResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.features.ClientRequestException
-import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.statement.HttpResponse
-import io.ktor.http.HttpHeaders
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
