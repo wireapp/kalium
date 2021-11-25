@@ -26,6 +26,7 @@ dependencies {
     val ktxSerializationVersion = "1.3.0"
     val ktorVersion = "1.6.4"
     val coroutinesVersion = "1.5.2"
+    val junit4Version = "4.13"
 
     implementation("com.wire:generic-message-proto:$genericMessageProtoVersion")
     implementation("com.wire:cryptobox4j:$cryptoboxVersion")
@@ -37,8 +38,6 @@ dependencies {
 
     implementation("javax.validation:validation-api:$javaxValidationVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$ktxSerializationVersion")
-    testImplementation(kotlin("test"))
-
 
     // web service
     implementation("jakarta.ws.rs:jakarta.ws.rs-api:$jakartaVersion")
@@ -62,6 +61,12 @@ dependencies {
     // coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
 
+    // TEST
+    // Unit tests dependencies
+    testImplementation(kotlin("test"))
+    testImplementation("junit:junit:$junit4Version")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutinesVersion")
+    testImplementation("io.ktor:ktor-client-mock:$coroutinesVersion")
 }
 
 tasks.test {

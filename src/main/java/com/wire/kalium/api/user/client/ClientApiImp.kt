@@ -16,9 +16,8 @@ class ClientApiImp(private val httpClient: HttpClient) : ClientApi {
                 httpClient.post<HttpResponse>(path = PATH_CLIENTS) {
                     body = registerClientRequest
                 }.receive()
-            }.also {
-                if (it.httpStatusCode == 400 or 401) {
-                    throw AuthException(code = it.httpStatusCode)
-                }
             }
+    private companion object {
+        const val PATH_CLIENTS = "clients"
+    }
 }
