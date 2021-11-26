@@ -4,6 +4,7 @@ import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.ErrorResponse
 import com.wire.kalium.api.NetworkResponse
 import com.wire.kalium.tools.KtxSerializer
+import io.ktor.client.*
 import io.ktor.http.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
@@ -20,7 +21,7 @@ class LogoutApiTest : ApiTest {
                 .withSuccessfulResponse(responseObj)
                 .arrange()
 
-            val mockHttpClient = arrangement.httpClient
+            val mockHttpClient = arrangement.client
             val mockedCookie = "mocked-cookie"
 
             // When
@@ -34,12 +35,11 @@ class LogoutApiTest : ApiTest {
     @Test
     fun `given an invalid logout request, when calling the logout endpoint, the correct server error exception is thrown`() = runBlocking {
         // Given
-        val responseObj = ERROR_RESPONSE
         val arrangement = Arrangement()
-            .withSuccessfulResponse(responseObj)
+            .withErrorResponse()
             .arrange()
 
-        val mockHttpClient = arrangement.httpClient
+        val mockHttpClient = arrangement.client
         val mockedCookie = "mocked-cookie"
 
         // When
@@ -47,35 +47,40 @@ class LogoutApiTest : ApiTest {
         val response = logoutApi.logout(mockedCookie)
 
         // Then
-        assertTrue(response is NetworkResponse.Success)
+        assertTrue(response is NetworkResponse.Error)
     }
 
-    private inner class Arrangement {
+    inner class Arrangement {
         var expectedResponse = ""
-        val httpClient = mockHttpClient(
-            expectedResponse,
-            statusCode = HttpStatusCode.OK,
-            assertion = {
-                assertPost()
-                assertJson()
-                assertQueryExist(QUERY_PERSIST)
-                assertPathEqual(PATH_LOGOUT)
-            }
-        )
+        var statusCode = HttpStatusCode.OK
+        lateinit var client: HttpClient
 
-        fun withSuccessfulResponse(response: Any): Arrangement {
+        inline fun <reified T> withSuccessfulResponse(response: T): Arrangement {
             expectedResponse = KtxSerializer.json.encodeToString(response)
             return this
         }
 
-        fun arrange() = this
+        fun withErrorResponse(): Arrangement {
+            expectedResponse = KtxSerializer.json.encodeToString(ERROR_RESPONSE)
+            statusCode = HttpStatusCode.Unauthorized
+            return this
+        }
+
+        fun arrange(): Arrangement {
+            client = mockHttpClient(
+                expectedResponse,
+                statusCode = statusCode,
+                assertion = {
+                    assertPost()
+                    assertPathEqual(PATH_LOGOUT)
+                }
+            )
+            return this
+        }
     }
 
     private companion object {
-
         val ERROR_RESPONSE = ErrorResponse(401, "invalid credentials", "invalid_credentials")
-
-        const val QUERY_PERSIST = "persist"
-        const val PATH_LOGOUT = "logout"
+        const val PATH_LOGOUT = "access/logout"
     }
 }

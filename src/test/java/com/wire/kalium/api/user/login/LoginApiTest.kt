@@ -2,6 +2,8 @@ package com.wire.kalium.api.user.login
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.ErrorResponse
+import com.wire.kalium.api.NetworkResponse
+import com.wire.kalium.api.successValue
 import com.wire.kalium.tools.KtxSerializer
 import io.ktor.client.call.receive
 import io.ktor.client.features.ClientRequestException
@@ -11,6 +13,7 @@ import kotlinx.serialization.encodeToString
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 
 class LoginApiTest : ApiTest {
     @Test
@@ -28,7 +31,7 @@ class LoginApiTest : ApiTest {
         val loginApi: LoginApi = LoginApiImp(httpClient)
         runBlocking {
             val response = loginApi.emailLogin(VALID_LOGIN_REQUEST, false)
-            assertEquals(response, VALID_LOGIN_RESPONSE)
+            assertEquals(response.successValue(), VALID_LOGIN_RESPONSE)
         }
     }
 
@@ -40,8 +43,8 @@ class LoginApiTest : ApiTest {
         )
         val loginApi: LoginApi = LoginApiImp(httpClient)
         runBlocking {
-            val error = assertFailsWith<ClientRequestException> { loginApi.emailLogin(INVALID_LOGIN_REQUEST, false) }
-            assertEquals(error.response.receive<ErrorResponse>(), ERROR_RESPONSE)
+            val error = loginApi.emailLogin(INVALID_LOGIN_REQUEST, false)
+            assertTrue(error is NetworkResponse.Error)
         }
     }
 

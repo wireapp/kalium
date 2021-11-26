@@ -10,11 +10,12 @@ class LogoutApiImp(private val client: HttpClient) : LogoutApi {
 
     private companion object {
         const val PATH_LOGOUT = "access/logout"
+        const val COOKIE = "cookie"
     }
 
     override suspend fun logout(cookie: String): NetworkResponse<Unit> = wrapKaliumResponse {
         client.post(path = PATH_LOGOUT) {
-            header(HttpHeaders.COOKIE, cookie)
+            header(COOKIE, cookie)
         }
     }
 }

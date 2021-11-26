@@ -8,5 +8,5 @@ interface LoginApi {
     suspend fun emailLogin(
         loginWithEmailRequest: LoginWithEmailRequest,
         persist: Boolean
-    ): LoginWithEmailResponse
+    ): NetworkResponse<LoginWithEmailResponse>
 }

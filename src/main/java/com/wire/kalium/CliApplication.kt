@@ -5,6 +5,7 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.wire.kalium.api.AuthenticationManager
 import com.wire.kalium.api.KtorHttpClient
+import com.wire.kalium.api.successValue
 import com.wire.kalium.api.user.client.ClientApiImp
 import com.wire.kalium.api.user.client.RegisterClientRequest
 import com.wire.kalium.api.user.login.LoginApi
@@ -64,7 +65,7 @@ class CliApplication() : CliktCommand() {
             })
             val body = LoginWithEmailRequest(email = "dejan@wire.com", password = "12345678", label = "ktor")
             val crypto: Crypto = CryptoFile("./data/joker")
-            val loginResult = loginApi.emailLogin(body, false)
+            val loginResult = loginApi.emailLogin(body, false).successValue()
             println("login: $loginResult ")
             val authenticationManager = AuthenticationManagerImp(loginResult.accessToken, loginResult.tokenType, "")
             val preKeys: ArrayList<PreKey> = crypto.newPreKeys(0, 20)

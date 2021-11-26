@@ -20,6 +20,7 @@ import io.ktor.client.request.host
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.http.URLProtocol
+import io.ktor.util.*
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 
@@ -77,6 +78,7 @@ sealed class NetworkResponse<out T>{
 }
 
 fun <T>NetworkResponse<T>.successValue(): T = (this as NetworkResponse.Success).body
+fun <T>NetworkResponse<T>.responseHeaders(): String = (this as NetworkResponse.Success).response.headers.toMap().toString()
 fun <T>NetworkResponse<T>.errorValue(): KaliumException = (this as NetworkResponse.Error).kException
 
 suspend inline fun <reified BodyType> wrapKaliumResponse(performRequest: () -> HttpResponse): NetworkResponse<BodyType> =
