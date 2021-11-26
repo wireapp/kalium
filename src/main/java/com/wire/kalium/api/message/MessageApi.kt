@@ -1,6 +1,7 @@
 package com.wire.kalium.api.message
 
 import com.wire.kalium.api.KaliumHttpResult
+import com.wire.kalium.api.NetworkResponse
 
 interface MessageApi {
 
@@ -28,5 +29,5 @@ interface MessageApi {
             parameters: Parameters.DefaultParameters,
             conversationId: String,
             option: MessageOption
-    ): KaliumHttpResult<SendMessageResponse>
+    ): NetworkResponse<SendMessageResponse>
 }

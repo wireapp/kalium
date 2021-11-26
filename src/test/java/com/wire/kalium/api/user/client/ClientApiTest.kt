@@ -2,6 +2,7 @@ package com.wire.kalium.api.user.client
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.ErrorResponse
+import com.wire.kalium.api.NetworkResponse
 import com.wire.kalium.models.outbound.otr.PreKey
 import com.wire.kalium.tools.KtxSerializer
 import io.ktor.client.call.receive
@@ -12,7 +13,6 @@ import kotlinx.serialization.encodeToString
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-
 
 class ClientApiTest : ApiTest {
     @Test
@@ -29,8 +29,8 @@ class ClientApiTest : ApiTest {
         )
         val clientApi: ClientApi = ClientApiImp(httpClient)
         runBlocking {
-            val response = clientApi.registerClient(Register_Client_REQUEST)
-            assertEquals(response.resultBody, VALID_Register_Client_RESPONSE)
+            val response: RegisterClientResponse = (clientApi.registerClient(Register_Client_REQUEST) as NetworkResponse.Success).body
+            assertEquals(response, VALID_Register_Client_RESPONSE)
         }
     }
 
@@ -43,7 +43,7 @@ class ClientApiTest : ApiTest {
         val clientApi: ClientApi = ClientApiImp(httpClient)
         runBlocking {
             val error = assertFailsWith<ClientRequestException> { clientApi.registerClient(Register_Client_REQUEST) }
-            assertEquals(error.response.receive<ErrorResponse>(), ERROR_RESPONSE)
+            assertEquals(error.response.receive(), ERROR_RESPONSE)
         }
     }
 

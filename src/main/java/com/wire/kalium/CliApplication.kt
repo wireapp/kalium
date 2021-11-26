@@ -81,7 +81,7 @@ class CliApplication() : CliktCommand() {
             )
             val httpClient = KtorHttpClient(HostProvider, okHttp, authenticationManager).provideKtorHttpClient
             val registerClient = ClientApiImp(httpClient).registerClient(registerClientRequest)
-            println(registerClient.resultBody)
+            println(registerClient)
             val logoutResponse = LogoutApiImp(httpClient).logout(authenticationManager.accessToken())
             println(logoutResponse)
         }

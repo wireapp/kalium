@@ -9,8 +9,7 @@ import javax.ws.rs.core.HttpHeaders
 class LogoutApiImp(private val client: HttpClient) : LogoutApi {
 
     private companion object {
-        const val PATH_LOGOUT = "logout"
-        const val QUERY_ACCESS_TOKEN = "access_token"
+        const val PATH_LOGOUT = "access/logout"
     }
 
     override suspend fun logout(cookie: String): NetworkResponse<Unit> = wrapKaliumResponse {

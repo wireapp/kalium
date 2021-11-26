@@ -1,6 +1,7 @@
 package com.wire.kalium.api.message
 
 import com.wire.kalium.api.KaliumHttpResult
+import com.wire.kalium.api.NetworkResponse
 import com.wire.kalium.api.wrapKaliumResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.features.ClientRequestException
@@ -38,29 +39,21 @@ class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
             parameters: MessageApi.Parameters.DefaultParameters,
             conversationId: String,
             option: MessageApi.MessageOption
-    ): KaliumHttpResult<SendMessageResponse> {
+    ): NetworkResponse<SendMessageResponse> {
 
         suspend fun performRequest(
                 queryParameter: String?,
                 queryParameterValue: Any?,
                 body: RequestBody
-        ): KaliumHttpResult<SendMessageResponse> {
-            try {
+        ): NetworkResponse<SendMessageResponse> {
                 return wrapKaliumResponse<MessageSent> {
-                    httpClient.post<HttpResponse>(path = "/$conversationId$PATH_OTR_MESSAGE") {
-                        if (queryParameter != null) {
+                    httpClient.post(path = "/$conversationId$PATH_OTR_MESSAGE") {
+                        queryParameter?.run{
                             parameter(queryParameter, queryParameterValue)
                         }
                         this.body = body
                     }
                 }
-            } catch (e: ClientRequestException) {
-                if (e.response.status.value == 412) {
-                    return wrapKaliumResponse<MissingDevicesResponse> { e.response }
-                } else {
-                    throw e
-                }
-            }
         }
 
         when (option) {

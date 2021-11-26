@@ -1,6 +1,7 @@
 package com.wire.kalium.api.notification
 
 import com.wire.kalium.api.KaliumHttpResult
+import com.wire.kalium.api.NetworkResponse
 import com.wire.kalium.api.wrapKaliumResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.receive
@@ -10,7 +11,7 @@ import io.ktor.client.statement.HttpResponse
 
 class NotificationApiImpl(private val httpClient: HttpClient) : NotificationApi{
     override suspend fun lastNotification(queryClient: String
-    ): KaliumHttpResult<NotificationResponse> = wrapKaliumResponse {
+    ): NetworkResponse<NotificationResponse> = wrapKaliumResponse {
         httpClient.get<HttpResponse>(path = "$PATH_NOTIFICATIONS$PATH_LAST") {
             parameter(CLIENT_QUERY_KEY, queryClient)
         }.receive()
@@ -20,21 +21,21 @@ class NotificationApiImpl(private val httpClient: HttpClient) : NotificationApi{
             querySize: Int,
             queryClient: String,
             querySince: String
-    ): KaliumHttpResult<NotificationPageResponse> = notificationsCall(querySize = querySize, queryClient = queryClient, querySince = querySince)
+    ): NetworkResponse<NotificationPageResponse> = notificationsCall(querySize = querySize, queryClient = queryClient, querySince = querySince)
 
-    override suspend fun getAllNotifications(querySize: Int, queryClient: String): KaliumHttpResult<NotificationPageResponse> =
+    override suspend fun getAllNotifications(querySize: Int, queryClient: String): NetworkResponse<NotificationPageResponse> =
     notificationsCall(querySize = querySize, queryClient = queryClient, querySince = null)
 
     private suspend fun notificationsCall(
             querySize: Int,
             queryClient: String,
             querySince: String?
-    ): KaliumHttpResult<NotificationPageResponse> = wrapKaliumResponse{
-        httpClient.get<HttpResponse>(path = PATH_NOTIFICATIONS) {
+    ): NetworkResponse<NotificationPageResponse> = wrapKaliumResponse{
+        httpClient.get(path = PATH_NOTIFICATIONS) {
             parameter(SIZE_QUERY_KEY, querySize)
             parameter(CLIENT_QUERY_KEY, queryClient)
             querySince?.let { parameter(SINCE_QUERY_KEY, it) }
-        }.receive()
+        }
     }
 
     companion object {
