@@ -1,5 +1,6 @@
 package com.wire.kalium.api.conversation
 
+import com.wire.kalium.models.backend.AccessRole
 import com.wire.kalium.models.backend.ConversationId
 import com.wire.kalium.models.backend.UserId
 import kotlinx.serialization.SerialName
@@ -20,22 +21,22 @@ data class ConversationEvent(
 
 @Serializable
 data class EventData(
-        @SerialName("access") val access: List<String>, // How users can join conversations = ['private', 'invite', 'link', 'code']
+        @SerialName("access") val access: List<AccessRole>, // How users can join conversations = ['private', 'invite', 'link', 'code']
         @SerialName("access_role") val accessRole: String,
         @SerialName("code") val code: String, // Stable conversation identifier ,
         @SerialName("conversation_role") val conversationRole: String?,
-        @SerialName("creator") val creator: String, // 99db9768-04e3-4b5d-9268-831b6a25c4ab
+        @SerialName("creator") val creator: String,
         @SerialName("data") val `data`: String?, // Extra (symmetric) data (i.e. ciphertext, Base64 in JSON) that is common with all other recipients. ,
         @SerialName("email") val email: String?,
         @SerialName("hidden") val hidden: Boolean?,
-        @SerialName("hidden_ref") val hiddenRef: String?, // string
+        @SerialName("hidden_ref") val hiddenRef: String?,
         @SerialName("id") val id: String?,
-        @SerialName("key") val key: String, // Stable conversation identifier ,
+        @SerialName("key") val key: String, // Stable conversation identifier
         @SerialName("last_event") val lastEvent: String?,
         @SerialName("last_event_time") val lastEventTime: String?,
         @SerialName("members") val members: ConversationMembersResponse,
         @SerialName("message") val message: String?,
-        @SerialName("message_timer") val messageTimer: Int?, // Per-conversation message timer (can be null) ,
+        @SerialName("message_timer") val messageTimer: Int?, // Per-conversation message timer (can be null)
         @SerialName("name") val name: String,
         @SerialName("otr_archived") val otrArchived: Boolean?,
         @SerialName("otr_archived_ref") val otrArchivedRef: String?,
@@ -48,7 +49,7 @@ data class EventData(
         @SerialName("receipt_mode") val receiptMode: Int, //Conversation receipt mode
         @SerialName("recipient") val recipient: String,
         @SerialName("sender") val sender: String,
-        @SerialName("status") val status: String, //  ['started', 'stopped'],
+        @SerialName("status") val status: String, //  ['started', 'stopped']
         @SerialName("target") val target: String?,
         @SerialName("team") val team: String?,
         @SerialName("text") val text: String, // The ciphertext for the recipient (Base64 in JSON)
