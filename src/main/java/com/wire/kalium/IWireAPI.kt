@@ -5,7 +5,11 @@ import com.wire.kalium.models.backend.Conversation
 import com.wire.kalium.models.backend.User
 import com.wire.kalium.models.inbound.AssetKey
 import com.wire.kalium.models.outbound.Asset
-import com.wire.kalium.models.outbound.otr.*
+import com.wire.kalium.models.outbound.otr.Devices
+import com.wire.kalium.models.outbound.otr.Missing
+import com.wire.kalium.models.outbound.otr.OtrMessage
+import com.wire.kalium.models.outbound.otr.PreKey
+import com.wire.kalium.models.outbound.otr.PreKeys
 import java.io.IOException
 import java.util.*
 

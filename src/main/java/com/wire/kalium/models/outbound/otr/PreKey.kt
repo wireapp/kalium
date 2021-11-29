@@ -17,10 +17,13 @@
 //
 package com.wire.kalium.models.outbound.otr
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class PreKey(
+        @SerialName("id")
         val id: Int,
+        @SerialName("key")
         val key: String
 )

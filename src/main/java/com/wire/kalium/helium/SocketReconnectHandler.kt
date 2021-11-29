@@ -1,8 +1,8 @@
 package com.wire.kalium.helium
 
 import com.wire.kalium.tools.Logger
-import org.glassfish.tyrus.client.ClientManager
 import javax.websocket.CloseReason
+import org.glassfish.tyrus.client.ClientManager
 
 class SocketReconnectHandler(  // seconds
         private val delay: Int) : ClientManager.ReconnectHandler() {

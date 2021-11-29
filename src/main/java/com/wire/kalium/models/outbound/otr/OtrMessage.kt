@@ -17,8 +17,8 @@
 //
 package com.wire.kalium.models.outbound.otr
 
-import kotlinx.serialization.Serializable
 import java.util.*
+import kotlinx.serialization.Serializable
 
 @Serializable
 class OtrMessage(//clientId of the sender
@@ -30,7 +30,7 @@ class OtrMessage(//clientId of the sender
     }
 
     operator fun get(userId: UUID, clientId: String): String {
-        return recipients[userId, clientId]
+        return recipients[userId.toString(), clientId]
     }
 
     fun size(): Int {

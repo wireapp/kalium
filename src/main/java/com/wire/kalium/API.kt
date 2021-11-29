@@ -22,19 +22,24 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.wire.kalium.exceptions.AuthException
 import com.wire.kalium.exceptions.HttpException
-import com.wire.kalium.models.backend.*
+import com.wire.kalium.models.backend.Connection
+import com.wire.kalium.models.backend.Conversation
+import com.wire.kalium.models.backend.ConversationMember
+import com.wire.kalium.models.backend.Service
+import com.wire.kalium.models.backend.User
 import com.wire.kalium.models.inbound.AssetKey
 import com.wire.kalium.models.outbound.Asset
-import com.wire.kalium.models.outbound.otr.*
+import com.wire.kalium.models.outbound.otr.Devices
+import com.wire.kalium.models.outbound.otr.Missing
+import com.wire.kalium.models.outbound.otr.OtrMessage
+import com.wire.kalium.models.outbound.otr.PreKey
+import com.wire.kalium.models.outbound.otr.PreKeys
 import com.wire.kalium.tools.KtxSerializer
 import com.wire.kalium.tools.UUIDSerializer
 import com.wire.kalium.tools.Util
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
 import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
-import java.util.*
+import java.util.UUID
 import java.util.stream.Collectors
 import javax.ws.rs.client.Client
 import javax.ws.rs.client.Entity
@@ -43,6 +48,9 @@ import javax.ws.rs.client.WebTarget
 import javax.ws.rs.core.HttpHeaders
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 
 open class API(client: Client, convId: UUID?, token: String) : LoginClient(client), IWireAPI {
     private var mapper: ObjectMapper

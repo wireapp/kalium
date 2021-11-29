@@ -24,6 +24,9 @@ dependencies {
     val jerseyVersion = "2.32"
     val tyrusVersion = "1.13.1"
     val ktxSerializationVersion = "1.3.0"
+    val ktorVersion = "1.6.4"
+    val coroutinesVersion = "1.5.2"
+    val junit4Version = "4.13"
 
     implementation("com.wire:generic-message-proto:$genericMessageProtoVersion")
     implementation("com.wire:cryptobox4j:$cryptoboxVersion")
@@ -35,8 +38,6 @@ dependencies {
 
     implementation("javax.validation:validation-api:$javaxValidationVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$ktxSerializationVersion")
-    testImplementation(kotlin("test"))
-
 
     // web service
     implementation("jakarta.ws.rs:jakarta.ws.rs-api:$jakartaVersion")
@@ -46,6 +47,26 @@ dependencies {
     implementation("org.glassfish.jersey.inject:jersey-hk2:$tyrusVersion")
     // cli
     implementation("com.github.ajalt.clikt:clikt:3.2.0")
+
+    // ktor
+    implementation("io.ktor:ktor-client-core:$ktorVersion")
+    implementation ("io.ktor:ktor-client-json:$ktorVersion")
+    implementation ("io.ktor:ktor-client-serialization:$ktorVersion")
+    // Failed to load class "org.slf4j.impl.StaticLoggerBinder". error
+    //implementation ("io.ktor:ktor-client-logging:$ktorVersion")
+    implementation("io.ktor:ktor-client-auth:$ktorVersion")
+    implementation("io.ktor:ktor-client-okhttp:$ktorVersion")
+    implementation ("com.squareup.okhttp3:logging-interceptor:4.9.0")
+
+    // coroutines
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
+
+    // TEST
+    // Unit tests dependencies
+    testImplementation(kotlin("test"))
+    testImplementation("junit:junit:$junit4Version")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutinesVersion")
+    testImplementation("io.ktor:ktor-client-mock:$coroutinesVersion")
 }
 
 tasks.test {

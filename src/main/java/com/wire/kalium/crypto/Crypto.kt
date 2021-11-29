@@ -1,6 +1,7 @@
 package com.wire.kalium.crypto
 
 import com.wire.bots.cryptobox.CryptoException
+import com.wire.kalium.api.prekey.UserClientsToPreKeyMap
 import com.wire.kalium.models.outbound.otr.Missing
 import com.wire.kalium.models.outbound.otr.PreKey
 import com.wire.kalium.models.outbound.otr.PreKeys
@@ -8,6 +9,7 @@ import com.wire.kalium.models.outbound.otr.Recipients
 import java.io.Closeable
 import java.io.IOException
 import java.util.*
+import kotlin.collections.HashMap
 
 interface Crypto : Closeable {
     @Throws(CryptoException::class)
@@ -34,6 +36,14 @@ interface Crypto : Closeable {
      */
     @Throws(CryptoException::class)
     open fun encrypt(missing: Missing, content: ByteArray): Recipients
+
+    @Throws(CryptoException::class)
+    open fun encrypt(missing: HashMap<String, List<String>>, content: ByteArray): Recipients
+
+    @Throws(CryptoException::class)
+    open fun encryptPre(preKeys: UserClientsToPreKeyMap, content: ByteArray): Recipients
+
+
 
     /**
      * Decrypt cipher either using existing session or it creates new session from this cipher and decrypts
