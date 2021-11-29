@@ -11,7 +11,6 @@ import io.kotest.matchers.should
 import io.kotest.matchers.types.beInstanceOf
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.json.Json
 
 class AssetKeySerializationTest : BehaviorSpec({
     Given("A valid JSON of a complete image asset") {

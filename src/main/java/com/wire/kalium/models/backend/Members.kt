@@ -48,6 +48,7 @@ data class SelfMember(
 
 @Serializable
 data class ServiceReferenceResponse(
+    //TODO Verify: Documentation claims that this is optional. Is it really?
     @SerialName("id") val id: String,
     @SerialName("provider") val provider: String
 )

@@ -25,6 +25,7 @@ dependencies {
     val kotestVersion = "4.6.3"
     val junitVersion = "5.7.1"
     val kotlinVersion = "1.5.31"
+    val mockkVersion = "1.12.1"
     val jakartaVersion = "2.1.6"
     val jerseyVersion = "2.32"
     val tyrusVersion = "1.13.1"
@@ -47,6 +48,8 @@ dependencies {
     testImplementation("io.kotest:kotest-runner-junit5:$kotestVersion")
     testImplementation("io.kotest:kotest-assertions-core:$kotestVersion")
     testImplementation("io.kotest:kotest-property:$kotestVersion")
+
+    testImplementation("io.mockk:mockk:$mockkVersion")
 
     // web service
     implementation("jakarta.ws.rs:jakarta.ws.rs-api:$jakartaVersion")
