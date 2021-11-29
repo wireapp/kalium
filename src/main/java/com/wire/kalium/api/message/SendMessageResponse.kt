@@ -12,8 +12,13 @@ sealed class SendMessageResponse {
             @SerialName("deleted") val deleted: DeletedUsers
     ) : SendMessageResponse()
 
-    // TODO: fix serial error after a message is sent
-    object MessageSent : SendMessageResponse()
+    @Serializable
+    data class MessageSent(
+            @SerialName("time") val time: String,
+            @SerialName("missing") val missing: MissingUsers,
+            @SerialName("redundant") val redundant: RedundantUsers,
+            @SerialName("deleted") val deleted: DeletedUsers
+    ) : SendMessageResponse()
 }
 
 
@@ -25,3 +30,12 @@ typealias RedundantUsers = UserIdToClientMap
 typealias DeletedUsers = UserIdToClientMap
 
 typealias UserIdToClientMap = HashMap<String, List<String>>
+
+@Serializable
+enum class MessagePriority {
+    @SerialName("low")
+    LOW,
+
+    @SerialName("high")
+    HIGH
+}

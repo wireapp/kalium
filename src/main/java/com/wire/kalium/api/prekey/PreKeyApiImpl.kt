@@ -9,7 +9,7 @@ import io.ktor.client.request.post
 import io.ktor.client.statement.HttpResponse
 
 class PreKeyApiImpl(private val httpClient: HttpClient) : PreKeyApi {
-    override suspend fun getUsersPreKey(users: UserIdToClientMap): KaliumHttpResult<MapUserClientsToPreKey> = wrapKaliumResponse {
+    override suspend fun getUsersPreKey(users: UserIdToClientMap): KaliumHttpResult<UserClientsToPreKeyMap> = wrapKaliumResponse {
         httpClient.post<HttpResponse>(path = "$PATH_USERS$PATH_PRE_KEY") {
             body = users
         }.receive()

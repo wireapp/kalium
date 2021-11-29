@@ -17,10 +17,10 @@ class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
             @SerialName("sender") val sender: String,
             @SerialName("data") val `data`: String,
             @SerialName("native_push") val nativePush: Boolean,
-            @SerialName("recipients") val recipients: HashMap<String, HashMap<String, String>>,
+            @SerialName("recipients") val recipients: Map<String, Map<String, String>>,
             @SerialName("transient") val transient: Boolean,
             @SerialName("report_missing") var reportMissing: List<String>? = null,
-            @SerialName("native_priority") val priority: String
+            @SerialName("native_priority") val priority: MessagePriority
     )
 
     private fun MessageApi.Parameters.DefaultParameters.toRequestBody(): RequestBody = RequestBody(

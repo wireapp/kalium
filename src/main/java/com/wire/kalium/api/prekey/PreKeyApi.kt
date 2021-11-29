@@ -5,8 +5,7 @@ import com.wire.kalium.api.message.UserIdToClientMap
 import com.wire.kalium.models.outbound.otr.PreKey
 
 interface PreKeyApi {
-    suspend fun getUsersPreKey(users: UserIdToClientMap): KaliumHttpResult<MapUserClientsToPreKey>
+    suspend fun getUsersPreKey(users: UserIdToClientMap): KaliumHttpResult<UserClientsToPreKeyMap>
 }
 
-
-typealias MapUserClientsToPreKey = HashMap<String, HashMap<String, PreKey>>
+typealias UserClientsToPreKeyMap = HashMap<String, HashMap<String, PreKey>>

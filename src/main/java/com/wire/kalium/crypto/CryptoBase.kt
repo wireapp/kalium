@@ -19,7 +19,7 @@ package com.wire.kalium.crypto
 
 import com.wire.bots.cryptobox.CryptoException
 import com.wire.bots.cryptobox.ICryptobox
-import com.wire.kalium.api.prekey.MapUserClientsToPreKey
+import com.wire.kalium.api.prekey.UserClientsToPreKeyMap
 import com.wire.kalium.models.outbound.otr.Missing
 import com.wire.kalium.models.outbound.otr.PreKey
 import com.wire.kalium.models.outbound.otr.PreKeys
@@ -141,7 +141,7 @@ abstract class CryptoBase : Crypto {
     }
 
 
-    override fun encryptPre(preKeys: MapUserClientsToPreKey, content: ByteArray): Recipients {
+    override fun encryptPre(preKeys: UserClientsToPreKeyMap, content: ByteArray): Recipients {
         val recipients = Recipients()
         for (userId in preKeys.keys) {
             val clients = preKeys.getValue(userId)
