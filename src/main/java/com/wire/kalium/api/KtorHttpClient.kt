@@ -1,9 +1,17 @@
 package com.wire.kalium.api
 
+import com.wire.kalium.exceptions.HttpException
 import com.wire.kalium.tools.HostProvider
 import io.ktor.client.HttpClient
 import io.ktor.client.call.receive
-import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.features.ClientRequestException
+import io.ktor.client.features.RedirectResponseException
+import io.ktor.client.features.ResponseException
+import io.ktor.client.features.ServerResponseException
+import io.ktor.client.features.auth.Auth
+import io.ktor.client.features.auth.providers.BearerTokens
+import io.ktor.client.features.auth.providers.bearer
 import io.ktor.client.features.defaultRequest
 import io.ktor.client.features.json.JsonFeature
 import io.ktor.client.features.json.serializer.KotlinxSerializer
@@ -11,35 +19,44 @@ import io.ktor.client.request.header
 import io.ktor.client.request.host
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
+import io.ktor.http.Headers
 import io.ktor.http.URLProtocol
 import kotlinx.serialization.json.Json
-import okhttp3.logging.HttpLoggingInterceptor
 
 class KtorHttpClient(
-        //private val authApi: AuthApi,
-        //private val tokenRepo: TokenRepository
+        private val hostProvider: HostProvider,
+        private val engine: HttpClientEngine,
+        private val authenticationManager: AuthenticationManager,
 ) {
-    val ktorHttpClient by lazy {
-        HttpClient(OkHttp) {
-            engine {
-                val interceptor = HttpLoggingInterceptor()
-                interceptor.setLevel(HttpLoggingInterceptor.Level.BODY)
-                addInterceptor(interceptor)
-            }
 
+    val provideKtorHttpClient by lazy {
+        HttpClient(engine) {
+            defaultRequest {
+                header("Content-Type", "application/json")
+                host = hostProvider.host
+                url.protocol = URLProtocol.HTTPS
+            }
+            install(Auth) {
+                bearer {
+                    loadTokens {
+                        BearerTokens(
+                                accessToken = authenticationManager.accessToken(),
+                                refreshToken = authenticationManager.refreshToken()
+                        )
+                    }
+                    refreshTokens { unauthorizedResponse: HttpResponse ->
+                        TODO("refresh the tokens, interface?")
+                    }
+                }
+            }
             install(JsonFeature) {
                 serializer = KotlinxSerializer(Json {
                     prettyPrint = true
                     isLenient = true
                     ignoreUnknownKeys = true
+                    encodeDefaults = true
                 })
                 accept(ContentType.Application.Json)
-                accept(ContentType.Text.Plain)
-            }
-            defaultRequest {
-                header("Content-Type", "application/json")
-                host = HostProvider.host
-                url.protocol = URLProtocol.HTTPS
             }
         }
     }
@@ -48,16 +65,36 @@ class KtorHttpClient(
 class KaliumKtorResult<BodyType : Any>(private val httpResponse: HttpResponse, private val body: BodyType) : KaliumHttpResult<BodyType> {
     override val httpStatusCode: Int
         get() = httpResponse.status.value
-    override val headers: Set<Map.Entry<String, List<String>>>
-        get() = httpResponse.headers.entries()
+    override val headers: Headers
+        get() = httpResponse.headers
     override val resultBody: BodyType
         get() = body
 }
 
 suspend inline fun <reified BodyType : Any> wrapKaliumResponse(performRequest: () -> HttpResponse): KaliumHttpResult<BodyType> {
-    val result = performRequest()
-    return KaliumKtorResult(result, result.receive())
+    try {
+        val result = performRequest()
+        return KaliumKtorResult(result, result.receive())
+    } catch (e: ResponseException) {
+        when(e) {
+            is RedirectResponseException -> {
+                // 300..399
+                throw e
+            }
+            is ClientRequestException -> {
+                // 400..499
+                throw e
+            }
+            is ServerResponseException ->{
+                // 500..599
+                throw e
+            }
+            else -> {
+                // other ResponseException
+                throw e
+            }
+        }
+    }
 }
 
 fun HttpResponse.isSuccessful(): Boolean = this.status.value in 200..299
-

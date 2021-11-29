@@ -33,7 +33,7 @@ cryptobox4j-clone:
 	@echo "Cloning and building cryptobox4j"
 	cd native && \
 	rm -rf cryptobox4j  && \
-	git clone https://github.com/wireapp/cryptobox4j.git && \
+	git clone https://github.com/wireapp/cryptobox4j.git
 
 libsodium:
 	@echo "Getting libsodium"
@@ -45,21 +45,25 @@ libsodium:
 	./configure && \
 	make && make install
 
-cryptobox4j: cryptobox4j-clone
+cryptobox4j: cryptobox4j-clone cryptobox4j-compile
+
+cryptobox4j-compile: cryptobox4j-clone
 	cd native/cryptobox4j && \
 	mkdir -p build/lib && \
+	JAVA_HOME=$(/usr/libexec/java_home) && \
 	cc -std=c99 -g -Wall src/cryptobox-jni.c \
-	    -I"${JAVA_HOME}/include" \
-	    -I"${JAVA_HOME}/include/darwin" \
+		-I"${JAVA_HOME}/include" \
+		-I"${JAVA_HOME}/include/darwin" \
 		-Ibuild/include \
 		-I../cryptobox-c/src \
 		-L../cryptobox-c/target/release/ \
-	    -lsodium \
-	    -lcryptobox \
-	    -shared \
-	    -fPIC \
-	    -Wl,-install_name,libcryptobox-jni.dylib \
-	    -o build/lib/libcryptobox-jni.dylib
+		-lcryptobox \
+		-L/usr/local/lib/ \
+		-lsodium \
+		-shared \
+		-fPIC \
+		-Wl,-install_name,libcryptobox-jni.dylib \
+		-o build/lib/libcryptobox-jni.dylib
 
 copy-all-libs:
 	cd native && \

@@ -18,7 +18,10 @@
 package com.wire.kalium.models.outbound
 
 import com.google.protobuf.ByteString
-import com.waz.model.Messages.Asset.*
+import com.waz.model.Messages.Asset.ImageMetaData
+import com.waz.model.Messages.Asset.Original
+import com.waz.model.Messages.Asset.RemoteData
+import com.waz.model.Messages.Asset.newBuilder
 import com.waz.model.Messages.Ephemeral
 import com.waz.model.Messages.GenericMessage
 import com.wire.kalium.tools.Util
