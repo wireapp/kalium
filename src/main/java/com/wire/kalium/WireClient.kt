@@ -17,14 +17,14 @@ import com.wire.kalium.models.outbound.otr.Recipients
 import com.wire.kalium.tools.Util
 import java.io.IOException
 import java.security.MessageDigest
-import java.util.*
-import kotlin.collections.HashMap
+import java.util.Arrays
+import java.util.UUID
 
 class WireClient(
-        protected val api: IWireAPI,
-        protected val crypto: Crypto,
-        protected val access: Access,
-        protected val clientId: String
+    protected val api: IWireAPI,
+    protected val crypto: Crypto,
+    protected val access: Access,
+    protected val clientId: String
 
 ) : IWireClient {
     private var devices: Devices = Devices()
@@ -76,9 +76,9 @@ class WireClient(
     }
 
     private fun handleMissingDevices(
-            missing: Missing,
-            content: ByteArray,
-            message: OtrMessage
+        missing: Missing,
+        content: ByteArray,
+        message: OtrMessage
     ) {
         val preKeys = api.getPreKeys(missing)
 

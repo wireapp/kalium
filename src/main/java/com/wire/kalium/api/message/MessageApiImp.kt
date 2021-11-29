@@ -14,34 +14,34 @@ class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
 
     @Serializable
     internal data class RequestBody(
-            @SerialName("sender") val sender: String,
-            @SerialName("data") val `data`: String,
-            @SerialName("native_push") val nativePush: Boolean,
-            @SerialName("recipients") val recipients: Map<String, Map<String, String>>,
-            @SerialName("transient") val transient: Boolean,
-            @SerialName("report_missing") var reportMissing: List<String>? = null,
-            @SerialName("native_priority") val priority: MessagePriority
+        @SerialName("sender") val sender: String,
+        @SerialName("data") val `data`: String,
+        @SerialName("native_push") val nativePush: Boolean,
+        @SerialName("recipients") val recipients: Map<String, Map<String, String>>,
+        @SerialName("transient") val transient: Boolean,
+        @SerialName("report_missing") var reportMissing: List<String>? = null,
+        @SerialName("native_priority") val priority: MessagePriority
     )
 
     private fun MessageApi.Parameters.DefaultParameters.toRequestBody(): RequestBody = RequestBody(
-            sender = this.sender,
-            data = this.data,
-            nativePush = this.nativePush,
-            recipients = this.recipients,
-            transient = this.transient,
-            priority = this.priority
+        sender = this.sender,
+        data = this.data,
+        nativePush = this.nativePush,
+        recipients = this.recipients,
+        transient = this.transient,
+        priority = this.priority
     )
 
     override suspend fun sendMessage(
-            parameters: MessageApi.Parameters.DefaultParameters,
-            conversationId: String,
-            option: MessageApi.MessageOption
+        parameters: MessageApi.Parameters.DefaultParameters,
+        conversationId: String,
+        option: MessageApi.MessageOption
     ): KaliumHttpResult<SendMessageResponse> {
 
         suspend fun performRequest(
-                queryParameter: String?,
-                queryParameterValue: Any?,
-                body: RequestBody
+            queryParameter: String?,
+            queryParameterValue: Any?,
+            body: RequestBody
         ): KaliumHttpResult<SendMessageResponse> {
             try {
                 return wrapKaliumResponse<SendMessageResponse.MessageSent> {

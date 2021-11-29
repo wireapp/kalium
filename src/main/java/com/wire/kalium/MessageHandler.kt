@@ -34,7 +34,8 @@ import com.wire.kalium.models.inbound.TextMessage
 import com.wire.kalium.models.inbound.VideoPreviewMessage
 import com.wire.kalium.models.system.SystemMessage
 import com.wire.kalium.tools.Logger
-import java.util.*
+import java.util.Collections
+import java.util.UUID
 
 interface MessageHandler {
     /**

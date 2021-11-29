@@ -19,7 +19,7 @@ package com.wire.kalium.models.outbound
 
 import com.waz.model.Messages
 import com.waz.model.Messages.GenericMessage
-import java.util.*
+import java.util.UUID
 
 class MessageDelete(private val delMessageId: UUID?) : GenericMessageIdentifiable {
     override val messageId: UUID = UUID.randomUUID()

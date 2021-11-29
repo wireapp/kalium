@@ -20,31 +20,31 @@ package com.wire.kalium.models.inbound
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.waz.model.Messages.Asset.RemoteData
-import java.util.*
+import java.util.UUID
 
 class RemoteMessage @JsonCreator constructor(
-        @JsonProperty("assetId") val assetId: String,
-        @JsonProperty("assetToken") val assetToken: String,
-        @JsonProperty("otrKey") val otrKey: ByteArray,
-        @JsonProperty("sha256") val sha256: ByteArray,
-        @JsonProperty("eventId") eventId: UUID,
-        @JsonProperty("messageId") messageId: UUID,
-        @JsonProperty("conversationId") convId: UUID,
-        @JsonProperty("clientId") clientId: String,
-        @JsonProperty("userId") userId: UUID,
-        @JsonProperty("time") time: String
+    @JsonProperty("assetId") val assetId: String,
+    @JsonProperty("assetToken") val assetToken: String,
+    @JsonProperty("otrKey") val otrKey: ByteArray,
+    @JsonProperty("sha256") val sha256: ByteArray,
+    @JsonProperty("eventId") eventId: UUID,
+    @JsonProperty("messageId") messageId: UUID,
+    @JsonProperty("conversationId") convId: UUID,
+    @JsonProperty("clientId") clientId: String,
+    @JsonProperty("userId") userId: UUID,
+    @JsonProperty("time") time: String
 ) : MessageBase(eventId = eventId, messageId = messageId, conversationId = convId, clientId = clientId, userId = userId, time = time) {
 
     constructor(msg: MessageBase, uploaded: RemoteData) : this(
-            assetId = uploaded.assetId,
-            assetToken = uploaded.assetToken,
-            otrKey = uploaded.otrKey.toByteArray(),
-            sha256 = uploaded.sha256.toByteArray(),
-            eventId = msg.eventId,
-            messageId = msg.messageId,
-            convId = msg.conversationId,
-            clientId = msg.clientId,
-            userId = msg.userId,
-            time = msg.time
+        assetId = uploaded.assetId,
+        assetToken = uploaded.assetToken,
+        otrKey = uploaded.otrKey.toByteArray(),
+        sha256 = uploaded.sha256.toByteArray(),
+        eventId = msg.eventId,
+        messageId = msg.messageId,
+        convId = msg.conversationId,
+        clientId = msg.clientId,
+        userId = msg.userId,
+        time = msg.time
     )
 }

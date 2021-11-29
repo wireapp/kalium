@@ -24,8 +24,8 @@ import com.wire.kalium.models.outbound.otr.Missing
 import com.wire.kalium.models.outbound.otr.PreKey
 import com.wire.kalium.models.outbound.otr.PreKeys
 import com.wire.kalium.models.outbound.otr.Recipients
-import java.util.*
-import kotlin.collections.HashMap
+import java.util.Base64
+import java.util.UUID
 
 /**
  * Wrapper for the Crypto Box. This class is thread safe.
@@ -189,7 +189,7 @@ abstract class CryptoBase : Crypto {
 
 
         private fun toPreKey(preKey: com.wire.bots.cryptobox.PreKey): PreKey =
-            PreKey(preKey.id,Base64.getEncoder().encodeToString(preKey.data))
+            PreKey(preKey.id, Base64.getEncoder().encodeToString(preKey.data))
 
         private fun createId(userId: UUID?, clientId: String?): String? {
             return String.format("%s_%s", userId, clientId)

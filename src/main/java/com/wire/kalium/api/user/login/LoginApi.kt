@@ -7,8 +7,8 @@ import com.wire.kalium.exceptions.HttpException
 interface LoginApi {
     @Throws(HttpException::class)
     suspend fun emailLogin(
-            loginWithEmailRequest: LoginWithEmailRequest,
-            persist: Boolean
+        loginWithEmailRequest: LoginWithEmailRequest,
+        persist: Boolean
     ): KaliumHttpResult<LoginWithEmailResponse>
 
     companion object {

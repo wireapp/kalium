@@ -20,7 +20,7 @@ package com.wire.kalium.models.outbound
 import com.waz.model.Messages
 import com.waz.model.Messages.Asset.Original
 import com.waz.model.Messages.GenericMessage
-import java.util.*
+import java.util.UUID
 
 class FileAssetPreview(
     private val name: String?,

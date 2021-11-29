@@ -11,7 +11,7 @@ import com.wire.kalium.models.outbound.otr.OtrMessage
 import com.wire.kalium.models.outbound.otr.PreKey
 import com.wire.kalium.models.outbound.otr.PreKeys
 import java.io.IOException
-import java.util.*
+import java.util.UUID
 
 interface IWireAPI {
     @Throws(HttpException::class)
@@ -27,12 +27,16 @@ interface IWireAPI {
 
     @Throws(IOException::class)
     open fun uploadPreKeys(preKeys: ArrayList<PreKey>)
+
     @Throws(Exception::class)
     open fun uploadAsset(asset: Asset): AssetKey
+
     @Throws(HttpException::class)
     open fun downloadAsset(assetId: String, assetToken: String?): ByteArray
+
     @Throws(HttpException::class)
     open fun deleteConversation(teamId: UUID): Boolean
+
     @Throws(HttpException::class)
     open fun addService(serviceId: UUID, providerId: UUID): User
 
@@ -47,8 +51,10 @@ interface IWireAPI {
 
     @Throws(HttpException::class)
     open fun leaveConversation(user: UUID)
+
     @Throws(HttpException::class)
     open fun getUser(userId: UUID): User
+
     @Throws(HttpException::class)
     open fun getUserId(handle: String): UUID
     open fun hasDevice(userId: UUID, clientId: String): Boolean
@@ -56,6 +62,7 @@ interface IWireAPI {
     @Throws(HttpException::class)
     open fun getTeam(): UUID?
     open fun getTeamMembers(teamId: UUID): MutableCollection<UUID>
+
     @Throws(Exception::class)
     open fun acceptConnection(user: UUID)
 }

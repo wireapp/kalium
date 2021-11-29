@@ -17,22 +17,22 @@
 //
 package com.wire.kalium.models.inbound
 
-import java.util.*
+import java.util.UUID
 
 open class MessageBase(
-        val messageId: UUID,
-        val eventId: UUID,
-        val userId: UUID,
-        val clientId: String,
-        val conversationId: UUID,
-        val time: String
+    val messageId: UUID,
+    val eventId: UUID,
+    val userId: UUID,
+    val clientId: String,
+    val conversationId: UUID,
+    val time: String
 ) {
     constructor(msg: MessageBase) : this(
-            eventId = msg.eventId,
-            messageId = msg.messageId,
-            conversationId = msg.conversationId,
-            clientId = msg.clientId,
-            userId = msg.userId,
-            time = msg.time
+        eventId = msg.eventId,
+        messageId = msg.messageId,
+        conversationId = msg.conversationId,
+        clientId = msg.clientId,
+        userId = msg.userId,
+        time = msg.time
     )
 }

@@ -17,28 +17,28 @@
 //
 package com.wire.kalium.models.inbound
 
-import java.util.*
+import java.util.UUID
 
 abstract class OriginMessage(
-        val mimeType: String,
-        val name: String,
-        val size: Long,
-        eventId: UUID,
-        msgId: UUID,
-        conversationId: UUID,
-        clientId: String,
-        userId: UUID,
-        time: String
+    val mimeType: String,
+    val name: String,
+    val size: Long,
+    eventId: UUID,
+    msgId: UUID,
+    conversationId: UUID,
+    clientId: String,
+    userId: UUID,
+    time: String
 ) : MessageBase(eventId, msgId, conversationId, clientId, userId, time) {
     constructor(_mimeType: String, _name: String, _size: Long, msg: MessageBase) : this(
-            mimeType = _mimeType,
-            name = _name,
-            size = _size,
-            eventId = msg.eventId,
-            msgId = msg.messageId,
-            conversationId = msg.conversationId,
-            clientId = msg.clientId,
-            userId = msg.userId,
-            time = msg.time
+        mimeType = _mimeType,
+        name = _name,
+        size = _size,
+        eventId = msg.eventId,
+        msgId = msg.messageId,
+        conversationId = msg.conversationId,
+        clientId = msg.clientId,
+        userId = msg.userId,
+        time = msg.time
     )
 }
