@@ -21,7 +21,7 @@ import com.google.protobuf.ByteString
 import com.waz.model.Messages
 import com.waz.model.Messages.GenericMessage
 import com.waz.model.Messages.Quote
-import java.util.*
+import java.util.UUID
 
 class MessageText(text: String?) : GenericMessageIdentifiable {
     val builder = Messages.Text.newBuilder()

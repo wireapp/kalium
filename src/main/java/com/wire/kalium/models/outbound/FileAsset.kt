@@ -25,14 +25,15 @@ import com.wire.kalium.tools.Util
 import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
-import java.util.*
+import java.util.UUID
 
 class FileAsset : AssetBase {
     constructor(
         file: File?,
         mimeType: String,
         messageId: UUID
-    ) : super(messageId, mimeType, readFile(file)) {}
+    ) : super(messageId, mimeType, readFile(file)) {
+    }
 
     constructor(
         assetKey: String?,

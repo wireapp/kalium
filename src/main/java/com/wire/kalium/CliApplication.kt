@@ -12,7 +12,6 @@ import com.wire.kalium.api.message.MessageApiImp
 import com.wire.kalium.api.message.MessagePriority
 import com.wire.kalium.api.message.SendMessageResponse
 import com.wire.kalium.api.message.UserIdToClientMap
-import com.wire.kalium.api.prekey.UserClientsToPreKeyMap
 import com.wire.kalium.api.prekey.PreKeyApi
 import com.wire.kalium.api.prekey.PreKeyApiImpl
 import com.wire.kalium.api.user.client.ClientApi
@@ -42,9 +41,9 @@ import kotlinx.serialization.json.Json
 import okhttp3.logging.HttpLoggingInterceptor
 
 private class AuthenticationManagerImp(
-        private val accessToken: String,
-        private val tokenType: String,
-        val refreshToken: String
+    private val accessToken: String,
+    private val tokenType: String,
+    val refreshToken: String
 ) : AuthenticationManager {
     override fun accessToken(): String {
         return accessToken
@@ -68,7 +67,7 @@ class CliApplication() : CliktCommand() {
     private lateinit var crypto: Crypto
 
     private lateinit var clientId: String
-   private lateinit var conversationId: String
+    private lateinit var conversationId: String
     private lateinit var recipients: UserIdToClientMap
 
     override fun run() {
@@ -92,17 +91,17 @@ class CliApplication() : CliktCommand() {
             })
 
             val loginResult = loginApi.emailLogin(
-                    LoginWithEmailRequest(email = email, password = password, label = "ktor"),
-                    false
+                LoginWithEmailRequest(email = email, password = password, label = "ktor"),
+                false
             ).resultBody
 
             // initialize Crypto box
             crypto = CryptoFile("./data/${loginResult.userId}")
 
             authenticationManager = AuthenticationManagerImp(
-                    loginResult.accessToken,
-                    loginResult.tokenType,
-                    "" // TODO: Extract zuid cookie after login
+                loginResult.accessToken,
+                loginResult.tokenType,
+                "" // TODO: Extract zuid cookie after login
             )
 
             val okHttp = OkHttp.create {
@@ -118,12 +117,12 @@ class CliApplication() : CliktCommand() {
 
             // register client and send preKeys
             val registerClientRequest = RegisterClientRequest(
-                    password = password,
-                    deviceType = DeviceType.Desktop,
-                    label = "ktor",
-                    type = ClientType.Temporary,
-                    preKeys = crypto.newPreKeys(0, 100),
-                    lastKey = crypto.newLastPreKey()
+                password = password,
+                deviceType = DeviceType.Desktop,
+                label = "ktor",
+                type = ClientType.Temporary,
+                preKeys = crypto.newPreKeys(0, 100),
+                lastKey = crypto.newLastPreKey()
             )
             val registerClientResponse = clientApi.registerClient(registerClientRequest)
             clientId = registerClientResponse.resultBody.clientId
@@ -149,28 +148,30 @@ class CliApplication() : CliktCommand() {
         val content = msg.createGenericMsg().toByteArray()
         val encryptedMessage = crypto.encrypt(recipients, content)
         val param = MessageApi.Parameters.DefaultParameters(
-                sender = clientId,
-                priority = MessagePriority.LOW,
-                nativePush = false,
-                recipients = encryptedMessage,
-                transient = false,
+            sender = clientId,
+            priority = MessagePriority.LOW,
+            nativePush = false,
+            recipients = encryptedMessage,
+            transient = false,
         )
-        val messageResult = messageApi.sendMessage(conversationId = conversationId, option = MessageApi.MessageOption.ReportAll, parameters = param)
+        val messageResult =
+            messageApi.sendMessage(conversationId = conversationId, option = MessageApi.MessageOption.ReportAll, parameters = param)
         when (messageResult.resultBody) {
             is SendMessageResponse.MessageSent -> {}
-            is SendMessageResponse.MissingDevicesResponse -> {  }
+            is SendMessageResponse.MissingDevicesResponse -> {}
         }
     }
 
     private suspend fun getConvRecipients() {
         val param = MessageApi.Parameters.DefaultParameters(
-                sender = clientId,
-                priority = MessagePriority.LOW,
-                nativePush = false,
-                recipients = Recipients(),
-                transient = false,
+            sender = clientId,
+            priority = MessagePriority.LOW,
+            nativePush = false,
+            recipients = Recipients(),
+            transient = false,
         )
-        val messageResult = messageApi.sendMessage(conversationId = conversationId, option = MessageApi.MessageOption.ReportAll, parameters = param)
+        val messageResult =
+            messageApi.sendMessage(conversationId = conversationId, option = MessageApi.MessageOption.ReportAll, parameters = param)
         when (messageResult.resultBody) {
             is SendMessageResponse.MissingDevicesResponse -> {
                 recipients = (messageResult.resultBody as SendMessageResponse.MissingDevicesResponse).missing

@@ -36,18 +36,18 @@ interface MessageApi {
          */
         // TODO: what is transient
         data class DefaultParameters(
-                val sender: String,
-                val recipients: Recipients,
-                val nativePush: Boolean,
-                val priority: MessagePriority,
-                val transient: Boolean,
-                val `data`: String = ""
+            val sender: String,
+            val recipients: Recipients,
+            val nativePush: Boolean,
+            val priority: MessagePriority,
+            val transient: Boolean,
+            val `data`: String = ""
         ) : Parameters()
     }
 
     suspend fun sendMessage(
-            parameters: Parameters.DefaultParameters,
-            conversationId: String,
-            option: MessageOption
+        parameters: Parameters.DefaultParameters,
+        conversationId: String,
+        option: MessageOption
     ): KaliumHttpResult<SendMessageResponse>
 }

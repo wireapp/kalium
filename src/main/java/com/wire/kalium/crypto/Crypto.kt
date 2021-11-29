@@ -8,8 +8,7 @@ import com.wire.kalium.models.outbound.otr.PreKeys
 import com.wire.kalium.models.outbound.otr.Recipients
 import java.io.Closeable
 import java.io.IOException
-import java.util.*
-import kotlin.collections.HashMap
+import java.util.UUID
 
 interface Crypto : Closeable {
     @Throws(CryptoException::class)
@@ -44,7 +43,6 @@ interface Crypto : Closeable {
     open fun encryptPre(preKeys: UserClientsToPreKeyMap, content: ByteArray): Recipients
 
 
-
     /**
      * Decrypt cipher either using existing session or it creates new session from this cipher and decrypts
      *
@@ -57,6 +55,7 @@ interface Crypto : Closeable {
     @Throws(CryptoException::class)
     open fun decrypt(userId: UUID, clientId: String, cypher: String): String
     open fun isClosed(): Boolean
+
     @Throws(IOException::class)
     open fun purge()
 }

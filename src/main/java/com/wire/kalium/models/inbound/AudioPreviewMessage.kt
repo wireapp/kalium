@@ -21,45 +21,45 @@ import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.waz.model.Messages.Asset.Original
-import java.util.*
+import java.util.UUID
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 class AudioPreviewMessage @JsonCreator constructor(
-        @JsonProperty("duration") val duration: Long,
-        @JsonProperty("levels") val levels: ByteArray,
-        @JsonProperty("eventId") eventId: UUID,
-        @JsonProperty("messageId") messageId: UUID,
-        @JsonProperty("conversationId") convId: UUID,
-        @JsonProperty("clientId") clientId: String,
-        @JsonProperty("userId") userId: UUID,
-        @JsonProperty("time") time: String,
-        @JsonProperty("mimeType") mimeType: String,
-        @JsonProperty("size") size: Long,
-        @JsonProperty("name") name: String
+    @JsonProperty("duration") val duration: Long,
+    @JsonProperty("levels") val levels: ByteArray,
+    @JsonProperty("eventId") eventId: UUID,
+    @JsonProperty("messageId") messageId: UUID,
+    @JsonProperty("conversationId") convId: UUID,
+    @JsonProperty("clientId") clientId: String,
+    @JsonProperty("userId") userId: UUID,
+    @JsonProperty("time") time: String,
+    @JsonProperty("mimeType") mimeType: String,
+    @JsonProperty("size") size: Long,
+    @JsonProperty("name") name: String
 ) : OriginMessage(
-        mimeType = mimeType,
-        name = name,
-        size = size,
-        eventId = eventId,
-        msgId = messageId,
-        conversationId = convId,
-        clientId = clientId,
-        userId = userId,
-        time = time
+    mimeType = mimeType,
+    name = name,
+    size = size,
+    eventId = eventId,
+    msgId = messageId,
+    conversationId = convId,
+    clientId = clientId,
+    userId = userId,
+    time = time
 ) {
 
     constructor(msg: MessageBase, original: Original) :
             this(
-                    duration = original.audio.durationInMillis,
-                    levels = original.audio.normalizedLoudness.toByteArray(),
-                    mimeType = original.mimeType,
-                    size = original.size,
-                    name = original.name,
-                    eventId = msg.eventId,
-                    messageId = msg.messageId,
-                    convId = msg.conversationId,
-                    clientId = msg.clientId,
-                    userId = msg.userId,
-                    time = msg.time
+                duration = original.audio.durationInMillis,
+                levels = original.audio.normalizedLoudness.toByteArray(),
+                mimeType = original.mimeType,
+                size = original.size,
+                name = original.name,
+                eventId = msg.eventId,
+                messageId = msg.messageId,
+                convId = msg.conversationId,
+                clientId = msg.clientId,
+                userId = msg.userId,
+                time = msg.time
             )
 }

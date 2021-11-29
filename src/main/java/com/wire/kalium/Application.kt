@@ -7,7 +7,7 @@ import com.wire.kalium.models.backend.Access
 import com.wire.kalium.models.outbound.otr.PreKey
 import com.wire.kalium.tools.Logger
 import java.io.IOException
-import java.util.*
+import java.util.UUID
 import javax.ws.rs.client.Client
 import javax.ws.rs.core.Cookie
 

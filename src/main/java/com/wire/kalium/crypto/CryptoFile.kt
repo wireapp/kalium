@@ -82,8 +82,8 @@ class CryptoFile : CryptoBase {
 
         // we don't really care if the files were actually deleted or not
         Files.walk(rootPath, FileVisitOption.FOLLOW_LINKS)
-                .sorted(Comparator.reverseOrder())
-                .map { obj: Path -> obj.toFile() }
-                .forEach { obj: File -> obj.delete() }
+            .sorted(Comparator.reverseOrder())
+            .map { obj: Path -> obj.toFile() }
+            .forEach { obj: File -> obj.delete() }
     }
 }

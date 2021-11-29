@@ -20,31 +20,31 @@ package com.wire.kalium.models.inbound
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
-import java.util.*
+import java.util.UUID
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 class ConfirmationMessage @JsonCreator constructor(
-        @JsonProperty val confirmationMessageId: UUID,
-        @JsonProperty val type: Type,
-        @JsonProperty("eventId") eventId: UUID,
-        @JsonProperty("messageId") messageId: UUID,
-        @JsonProperty("conversationId") convId: UUID,
-        @JsonProperty("clientId") clientId: String,
-        @JsonProperty("userId") userId: UUID,
-        @JsonProperty("time") time: String
+    @JsonProperty val confirmationMessageId: UUID,
+    @JsonProperty val type: Type,
+    @JsonProperty("eventId") eventId: UUID,
+    @JsonProperty("messageId") messageId: UUID,
+    @JsonProperty("conversationId") convId: UUID,
+    @JsonProperty("clientId") clientId: String,
+    @JsonProperty("userId") userId: UUID,
+    @JsonProperty("time") time: String
 ) : MessageBase(eventId = eventId, messageId = messageId, conversationId = convId, clientId = clientId, userId = userId, time = time) {
 
 
     constructor(_confirmationMessageId: UUID, _type: Type, msg: MessageBase) :
             this(
-                    confirmationMessageId = _confirmationMessageId,
-                    type = _type,
-                    eventId = msg.eventId,
-                    messageId = msg.messageId,
-                    convId = msg.conversationId,
-                    clientId = msg.clientId,
-                    userId = msg.userId,
-                    time = msg.time
+                confirmationMessageId = _confirmationMessageId,
+                type = _type,
+                eventId = msg.eventId,
+                messageId = msg.messageId,
+                convId = msg.conversationId,
+                clientId = msg.clientId,
+                userId = msg.userId,
+                time = msg.time
             )
 
     enum class Type {

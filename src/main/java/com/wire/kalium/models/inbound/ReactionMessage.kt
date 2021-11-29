@@ -20,28 +20,28 @@ package com.wire.kalium.models.inbound
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
-import java.util.*
+import java.util.UUID
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 class ReactionMessage @JsonCreator constructor(
-        @JsonProperty val emoji: String,
-        @JsonProperty val reactionMessageId: UUID,
-        @JsonProperty("eventId") eventId: UUID,
-        @JsonProperty("messageId") messageId: UUID,
-        @JsonProperty("conversationId") convId: UUID,
-        @JsonProperty("clientId") clientId: String,
-        @JsonProperty("userId") userId: UUID,
-        @JsonProperty("time") time: String
-)  : MessageBase(eventId, messageId, convId, clientId, userId, time) {
+    @JsonProperty val emoji: String,
+    @JsonProperty val reactionMessageId: UUID,
+    @JsonProperty("eventId") eventId: UUID,
+    @JsonProperty("messageId") messageId: UUID,
+    @JsonProperty("conversationId") convId: UUID,
+    @JsonProperty("clientId") clientId: String,
+    @JsonProperty("userId") userId: UUID,
+    @JsonProperty("time") time: String
+) : MessageBase(eventId, messageId, convId, clientId, userId, time) {
 
-    constructor(_emoji: String, _reactionMessageId: UUID,msgBase: MessageBase) : this(
-            emoji = _emoji,
-            reactionMessageId = _reactionMessageId,
-            eventId = msgBase.eventId,
-            messageId = msgBase.messageId,
-            convId = msgBase.conversationId,
-            clientId = msgBase.clientId,
-            userId = msgBase.userId,
-            time = msgBase.time
+    constructor(_emoji: String, _reactionMessageId: UUID, msgBase: MessageBase) : this(
+        emoji = _emoji,
+        reactionMessageId = _reactionMessageId,
+        eventId = msgBase.eventId,
+        messageId = msgBase.messageId,
+        convId = msgBase.conversationId,
+        clientId = msgBase.clientId,
+        userId = msgBase.userId,
+        time = msgBase.time
     )
 }

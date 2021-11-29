@@ -6,18 +6,18 @@ import kotlinx.serialization.Serializable
 sealed class SendMessageResponse {
     @Serializable
     data class MissingDevicesResponse(
-            @SerialName("time") val time: String,
-            @SerialName("missing") val missing: MissingUsers,
-            @SerialName("redundant") val redundant: RedundantUsers,
-            @SerialName("deleted") val deleted: DeletedUsers
+        @SerialName("time") val time: String,
+        @SerialName("missing") val missing: MissingUsers,
+        @SerialName("redundant") val redundant: RedundantUsers,
+        @SerialName("deleted") val deleted: DeletedUsers
     ) : SendMessageResponse()
 
     @Serializable
     data class MessageSent(
-            @SerialName("time") val time: String,
-            @SerialName("missing") val missing: MissingUsers,
-            @SerialName("redundant") val redundant: RedundantUsers,
-            @SerialName("deleted") val deleted: DeletedUsers
+        @SerialName("time") val time: String,
+        @SerialName("missing") val missing: MissingUsers,
+        @SerialName("redundant") val redundant: RedundantUsers,
+        @SerialName("deleted") val deleted: DeletedUsers
     ) : SendMessageResponse()
 }
 

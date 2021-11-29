@@ -5,8 +5,12 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 enum class AccessRole {
-    @SerialName("private") PRIVATE,
-    @SerialName("code") CODE,
-    @SerialName("invite") INVITE,
-    @SerialName("link") LINK
+    @SerialName("private")
+    PRIVATE,
+    @SerialName("code")
+    CODE,
+    @SerialName("invite")
+    INVITE,
+    @SerialName("link")
+    LINK
 }

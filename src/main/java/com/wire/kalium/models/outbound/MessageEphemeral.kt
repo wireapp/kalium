@@ -20,7 +20,7 @@ package com.wire.kalium.models.outbound
 import com.waz.model.Messages
 import com.waz.model.Messages.Ephemeral
 import com.waz.model.Messages.GenericMessage
-import java.util.*
+import java.util.UUID
 
 class MessageEphemeral(mills: Long) : GenericMessageIdentifiable {
     private val builder = Ephemeral.newBuilder()

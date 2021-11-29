@@ -3,12 +3,12 @@ package com.wire.kalium.models.outbound
 import com.wire.kalium.tools.Util
 import java.security.MessageDigest
 import java.security.SecureRandom
-import java.util.*
+import java.util.UUID
 
 abstract class AssetBase(
-        override val messageId: UUID,
-        override val mimeType: String,
-        val bytes: ByteArray?
+    override val messageId: UUID,
+    override val mimeType: String,
+    val bytes: ByteArray?
 ) : Asset, GenericMessageIdentifiable {
 
     override val retention: String = "persistent"
