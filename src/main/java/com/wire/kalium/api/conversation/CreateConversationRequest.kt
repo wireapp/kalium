@@ -1,5 +1,6 @@
 package com.wire.kalium.api.conversation
 
+import com.wire.kalium.models.backend.AccessRole
 import com.wire.kalium.models.backend.UserId
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -8,7 +9,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class CreateConversationRequest(
     @SerialName("access")
-    val access: List<String>,
+    val access: List<AccessRole>,
     @SerialName("access_role")
     val accessRole: String, // How users can join conversations ['private', 'invite', 'link', 'code']
     @SerialName("conversation_role")

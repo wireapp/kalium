@@ -60,8 +60,8 @@ class ClientApiTest : ApiTest {
 
         val Register_Client_REQUEST = RegisterClientRequest(
                 password = "password",
-                deviceType = "device_type",
-                type = "type",
+                deviceType = DeviceType.Desktop,
+                type = ClientType.Temporary,
                 label = "label",
                 preKeys = listOf(TEST_PRES_KEY_1, TEST_PRES_KEY_2, TEST_PRES_KEY_3),
                 lastKey = TEST_LAST_KEY
@@ -71,8 +71,8 @@ class ClientApiTest : ApiTest {
                 clientId = "client_id",
                 registrationTime = "12.34.56.78",
                 location = LocationResponse(latitude = "1.234", longitude = "5.678"),
-                type = "type",
-                deviceType = "device_type",
+                type = ClientType.Temporary,
+                deviceType = DeviceType.Desktop,
                 label = "label",
                 capabilities = Capabilities(capabilities = listOf())
         )
