@@ -22,46 +22,46 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.waz.model.Messages.Asset.Original
-import java.util.*
+import java.util.UUID
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 class PhotoPreviewMessage @JsonCreator constructor(
-        // TODO: dimension data class ?
-        @JsonProperty("width") val height: Int,
-        @JsonProperty("height") val width: Int,
-        @JsonProperty("eventId") eventId: UUID,
-        @JsonProperty("messageId") messageId: UUID,
-        @JsonProperty("conversationId") convId: UUID,
-        @JsonProperty("clientId") clientId: String,
-        @JsonProperty("userId") userId: UUID,
-        @JsonProperty("time") time: String,
-        @JsonProperty("mimeType") mimeType: String,
-        @JsonProperty("size") size: Long,
-        @JsonProperty("name") name: String
+    // TODO: dimension data class ?
+    @JsonProperty("width") val height: Int,
+    @JsonProperty("height") val width: Int,
+    @JsonProperty("eventId") eventId: UUID,
+    @JsonProperty("messageId") messageId: UUID,
+    @JsonProperty("conversationId") convId: UUID,
+    @JsonProperty("clientId") clientId: String,
+    @JsonProperty("userId") userId: UUID,
+    @JsonProperty("time") time: String,
+    @JsonProperty("mimeType") mimeType: String,
+    @JsonProperty("size") size: Long,
+    @JsonProperty("name") name: String
 ) : OriginMessage(
-        mimeType = mimeType,
-        name = name,
-        size = size,
-        eventId = eventId,
-        msgId = messageId,
-        conversationId = convId,
-        clientId = clientId,
-        userId = userId,
-        time = time
+    mimeType = mimeType,
+    name = name,
+    size = size,
+    eventId = eventId,
+    msgId = messageId,
+    conversationId = convId,
+    clientId = clientId,
+    userId = userId,
+    time = time
 ) {
 
     constructor(msg: MessageBase, original: Original) : this(
-            width = original.video.width,
-            height = original.video.height,
-            size = original.size,
-            mimeType = original.mimeType,
-            name = original.name,
-            eventId = msg.eventId,
-            messageId = msg.messageId,
-            convId = msg.conversationId,
-            clientId = msg.clientId,
-            userId = msg.userId,
-            time = msg.time
+        width = original.video.width,
+        height = original.video.height,
+        size = original.size,
+        mimeType = original.mimeType,
+        name = original.name,
+        eventId = msg.eventId,
+        messageId = msg.messageId,
+        convId = msg.conversationId,
+        clientId = msg.clientId,
+        userId = msg.userId,
+        time = msg.time
     )
 }

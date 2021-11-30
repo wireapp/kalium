@@ -18,8 +18,8 @@
 package com.wire.kalium.models.backend
 
 import com.wire.kalium.tools.UUIDSerializer
-import java.util.*
 import kotlinx.serialization.Serializable
+import java.util.UUID
 
 @Serializable
 class Event {

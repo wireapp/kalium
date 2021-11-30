@@ -20,27 +20,27 @@ package com.wire.kalium.models.inbound
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
-import java.util.*
+import java.util.UUID
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 class DeletedTextMessage @JsonCreator constructor(
-        @JsonProperty val deletedMessageId: UUID,
-        @JsonProperty("eventId") eventId: UUID,
-        @JsonProperty("messageId") messageId: UUID,
-        @JsonProperty("conversationId") convId: UUID,
-        @JsonProperty("clientId") clientId: String,
-        @JsonProperty("userId") userId: UUID,
-        @JsonProperty("time") time: String
+    @JsonProperty val deletedMessageId: UUID,
+    @JsonProperty("eventId") eventId: UUID,
+    @JsonProperty("messageId") messageId: UUID,
+    @JsonProperty("conversationId") convId: UUID,
+    @JsonProperty("clientId") clientId: String,
+    @JsonProperty("userId") userId: UUID,
+    @JsonProperty("time") time: String
 ) : MessageBase(eventId = eventId, messageId = messageId, conversationId = convId, clientId = clientId, userId = userId, time = time) {
 
     constructor(_deletedMessageId: UUID, msgBase: MessageBase) :
             this(
-                    deletedMessageId = _deletedMessageId,
-                    eventId = msgBase.eventId,
-                    messageId = msgBase.messageId,
-                    convId = msgBase.conversationId,
-                    clientId = msgBase.clientId,
-                    userId = msgBase.userId,
-                    time = msgBase.time
+                deletedMessageId = _deletedMessageId,
+                eventId = msgBase.eventId,
+                messageId = msgBase.messageId,
+                convId = msgBase.conversationId,
+                clientId = msgBase.clientId,
+                userId = msgBase.userId,
+                time = msgBase.time
             )
 }

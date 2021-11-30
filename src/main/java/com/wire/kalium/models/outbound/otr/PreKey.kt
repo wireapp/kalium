@@ -22,8 +22,8 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class PreKey(
-        @SerialName("id")
-        val id: Int,
-        @SerialName("key")
-        val key: String
+    @SerialName("id")
+    val id: Int,
+    @SerialName("key")
+    val key: String
 )

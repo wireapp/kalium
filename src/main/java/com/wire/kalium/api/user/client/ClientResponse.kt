@@ -5,15 +5,15 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class ClientResponse(
-        @SerialName("id") val id: String,
-        @SerialName("cookie") val refreshToken: String,
-        @SerialName("time") val registrationTime: String,
-        @SerialName("location") val location: LocationResponse?,
-        @SerialName("address") val ipAddress: String?,
-        @SerialName("model") val model: String?,
-        @SerialName("type") val deviceType: String,
-        @SerialName("class") val deviceClass: String,
-        @SerialName("label") val label: String?
+    @SerialName("id") val id: String,
+    @SerialName("cookie") val refreshToken: String,
+    @SerialName("time") val registrationTime: String,
+    @SerialName("location") val location: LocationResponse?,
+    @SerialName("address") val ipAddress: String?,
+    @SerialName("model") val model: String?,
+    @SerialName("type") val deviceType: String,
+    @SerialName("class") val deviceClass: String,
+    @SerialName("label") val label: String?
 )
 
 @Serializable

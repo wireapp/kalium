@@ -18,9 +18,22 @@
 package com.wire.kalium
 
 import com.waz.model.Messages
-import com.wire.kalium.models.inbound.*
+import com.wire.kalium.models.inbound.AudioPreviewMessage
+import com.wire.kalium.models.inbound.CallingMessage
+import com.wire.kalium.models.inbound.ConfirmationMessage
+import com.wire.kalium.models.inbound.DeletedTextMessage
+import com.wire.kalium.models.inbound.EditedTextMessage
+import com.wire.kalium.models.inbound.EphemeralTextMessage
+import com.wire.kalium.models.inbound.FilePreviewMessage
+import com.wire.kalium.models.inbound.MessageBase
+import com.wire.kalium.models.inbound.PhotoPreviewMessage
+import com.wire.kalium.models.inbound.PingMessage
+import com.wire.kalium.models.inbound.ReactionMessage
+import com.wire.kalium.models.inbound.RemoteMessage
+import com.wire.kalium.models.inbound.TextMessage
+import com.wire.kalium.models.inbound.VideoPreviewMessage
 import com.wire.kalium.tools.Logger
-import java.util.*
+import java.util.UUID
 
 class GenericMessageProcessor(private val client: IWireClient, private val handler: MessageHandler) {
 

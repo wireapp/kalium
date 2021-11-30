@@ -6,9 +6,9 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class NotificationPageResponse(
-        @SerialName("time") val time: String,
-        @SerialName("has_more") val hasMore: Boolean,
-        @SerialName("notifications") val notifications: List<NotificationResponse>
+    @SerialName("time") val time: String,
+    @SerialName("has_more") val hasMore: Boolean,
+    @SerialName("notifications") val notifications: List<NotificationResponse>
 )
 
 @Serializable

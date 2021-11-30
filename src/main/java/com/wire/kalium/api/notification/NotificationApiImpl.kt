@@ -8,8 +8,9 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.statement.HttpResponse
 
-class NotificationApiImpl(private val httpClient: HttpClient) : NotificationApi{
-    override suspend fun lastNotification(queryClient: String
+class NotificationApiImpl(private val httpClient: HttpClient) : NotificationApi {
+    override suspend fun lastNotification(
+        queryClient: String
     ): KaliumHttpResult<NotificationResponse> = wrapKaliumResponse {
         httpClient.get<HttpResponse>(path = "$PATH_NOTIFICATIONS$PATH_LAST") {
             parameter(CLIENT_QUERY_KEY, queryClient)
@@ -17,19 +18,20 @@ class NotificationApiImpl(private val httpClient: HttpClient) : NotificationApi{
     }
 
     override suspend fun notificationsByBatch(
-            querySize: Int,
-            queryClient: String,
-            querySince: String
-    ): KaliumHttpResult<NotificationPageResponse> = notificationsCall(querySize = querySize, queryClient = queryClient, querySince = querySince)
+        querySize: Int,
+        queryClient: String,
+        querySince: String
+    ): KaliumHttpResult<NotificationPageResponse> =
+        notificationsCall(querySize = querySize, queryClient = queryClient, querySince = querySince)
 
     override suspend fun getAllNotifications(querySize: Int, queryClient: String): KaliumHttpResult<NotificationPageResponse> =
-    notificationsCall(querySize = querySize, queryClient = queryClient, querySince = null)
+        notificationsCall(querySize = querySize, queryClient = queryClient, querySince = null)
 
     private suspend fun notificationsCall(
-            querySize: Int,
-            queryClient: String,
-            querySince: String?
-    ): KaliumHttpResult<NotificationPageResponse> = wrapKaliumResponse{
+        querySize: Int,
+        queryClient: String,
+        querySince: String?
+    ): KaliumHttpResult<NotificationPageResponse> = wrapKaliumResponse {
         httpClient.get<HttpResponse>(path = PATH_NOTIFICATIONS) {
             parameter(SIZE_QUERY_KEY, querySize)
             parameter(CLIENT_QUERY_KEY, queryClient)

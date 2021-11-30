@@ -14,12 +14,12 @@ import io.ktor.client.statement.HttpResponse
 class LoginApiImp(private val httpClient: HttpClient) : LoginApi {
 
     override suspend fun emailLogin(
-            loginWithEmailRequest: LoginWithEmailRequest,
-            persist: Boolean
+        loginWithEmailRequest: LoginWithEmailRequest,
+        persist: Boolean
     ): KaliumHttpResult<LoginWithEmailResponse> = wrapKaliumResponse<LoginWithEmailResponse> {
-            httpClient.post<HttpResponse>(path = PATH_LOGIN) {
-                parameter(QUERY_PERSIST, persist)
-                body = loginWithEmailRequest
-            }.receive()
+        httpClient.post<HttpResponse>(path = PATH_LOGIN) {
+            parameter(QUERY_PERSIST, persist)
+            body = loginWithEmailRequest
+        }.receive()
     }
 }

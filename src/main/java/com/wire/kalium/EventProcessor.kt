@@ -11,7 +11,8 @@ import com.wire.kalium.models.backend.Payload
 import com.wire.kalium.models.inbound.MessageBase
 import com.wire.kalium.models.system.SystemMessage
 import com.wire.kalium.tools.Logger
-import java.util.*
+import java.util.Base64
+import java.util.UUID
 import javax.ws.rs.client.Client
 
 class EventProcessor(private val handler: MessageHandler) : IEventProcessor {
@@ -100,7 +101,7 @@ class EventProcessor(private val handler: MessageHandler) : IEventProcessor {
     private fun handleMemberLeaveEvent(eventId: UUID, payload: Payload, data: Data, botId: UUID, client: IWireClient) {
         val participants = data.user_ids!!
         val systemMessage = getSystemMessage(eventId, payload)
-                .copy(userIds = participants)
+            .copy(userIds = participants)
 
         // Check if this bot got removed from the conversation
         if (participants.any { it == botId }) {
@@ -119,8 +120,8 @@ class EventProcessor(private val handler: MessageHandler) : IEventProcessor {
         // Check if this bot got added to the conversation
         if (participants.any { it == botId }) {
             val systemMessage = originalSystemMessage.copy(
-                    conversation = client.getConversation(),
-                    type = "conversation.create" // hack the type
+                conversation = client.getConversation(),
+                type = "conversation.create" // hack the type
             )
             handler.onNewConversation(client, systemMessage)
             return
@@ -144,19 +145,19 @@ class EventProcessor(private val handler: MessageHandler) : IEventProcessor {
 
     private fun getSystemMessage(eventId: UUID, payload: Payload): SystemMessage {
         val conversation = Conversation(
-                id = payload.conversation!!,
-                name = payload.data!!.name,
-                creator = payload.data.creator,
-                members = null
+            id = payload.conversation!!,
+            name = payload.data!!.name,
+            creator = payload.data.creator,
+            members = null
         )
         return SystemMessage(
-                eventId,
-                payload.type,
-                payload.time!!,
-                payload.from!!,
-                conversation,
-                conversation.id,
-                null //fix me: conversation.members.map { UUID.fromString(it.userId) }
+            eventId,
+            payload.type,
+            payload.time!!,
+            payload.from!!,
+            conversation,
+            conversation.id,
+            null //fix me: conversation.members.map { UUID.fromString(it.userId) }
         )
     }
 

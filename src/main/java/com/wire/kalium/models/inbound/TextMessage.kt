@@ -18,23 +18,23 @@
 package com.wire.kalium.models.inbound
 
 import com.waz.model.Messages
-import java.util.*
+import java.util.UUID
 
 //@JsonIgnoreProperties(ignoreUnknown = true)
 //@JsonInclude(JsonInclude.Include.NON_NULL)
 open class TextMessage constructor(
 //        @JsonProperty("eventId")
-        eventId: UUID,
+    eventId: UUID,
 //        @JsonProperty("messageId")
-        messageId: UUID,
+    messageId: UUID,
 //        @JsonProperty("conversationId")
-        convId: UUID,
+    convId: UUID,
 //        @JsonProperty("clientId")
-        clientId: String,
+    clientId: String,
 //        @JsonProperty("userId")
-        userId: UUID,
+    userId: UUID,
 //        @JsonProperty("time")
-        time: String
+    time: String
 ) : MessageBase(eventId = eventId, messageId = messageId, conversationId = convId, clientId = clientId, userId = userId, time = time) {
 
     var text: String? = null
@@ -44,15 +44,15 @@ open class TextMessage constructor(
 
     constructor(_text: String, _mentions: ArrayList<Mention>, msgBase: MessageBase) :
             this(
-                    eventId = msgBase.eventId,
-                    messageId = msgBase.messageId,
-                    convId = msgBase.conversationId,
-                    clientId = msgBase.clientId,
-                    userId = msgBase.userId,
-                    time = msgBase.time
+                eventId = msgBase.eventId,
+                messageId = msgBase.messageId,
+                convId = msgBase.conversationId,
+                clientId = msgBase.clientId,
+                userId = msgBase.userId,
+                time = msgBase.time
             )
 
-    constructor(_messageText: Messages.Text, _messageBase: MessageBase): this(
+    constructor(_messageText: Messages.Text, _messageBase: MessageBase) : this(
         eventId = _messageBase.eventId,
         messageId = _messageBase.messageId,
         convId = _messageBase.conversationId,
@@ -61,7 +61,7 @@ open class TextMessage constructor(
         time = _messageBase.time
     ) {
 
-        text = if(_messageText.hasContent()) _messageText.content else null
+        text = if (_messageText.hasContent()) _messageText.content else null
 
         if (_messageText.hasQuote()) {
             quotedMessageId = UUID.fromString(_messageText.quote.quotedMessageId)
@@ -79,8 +79,8 @@ open class TextMessage constructor(
     }
 
     data class Mention(
-            val userId: UUID,
-            val offset: Int,
-            val length: Int
+        val userId: UUID,
+        val offset: Int,
+        val length: Int
     )
 }

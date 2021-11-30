@@ -1,6 +1,5 @@
 package com.wire.kalium.api
 
-import com.wire.kalium.exceptions.HttpException
 import com.wire.kalium.tools.HostProvider
 import io.ktor.client.HttpClient
 import io.ktor.client.call.receive
@@ -24,9 +23,9 @@ import io.ktor.http.URLProtocol
 import kotlinx.serialization.json.Json
 
 class KtorHttpClient(
-        private val hostProvider: HostProvider,
-        private val engine: HttpClientEngine,
-        private val authenticationManager: AuthenticationManager,
+    private val hostProvider: HostProvider,
+    private val engine: HttpClientEngine,
+    private val authenticationManager: AuthenticationManager,
 ) {
 
     val provideKtorHttpClient by lazy {
@@ -40,8 +39,8 @@ class KtorHttpClient(
                 bearer {
                     loadTokens {
                         BearerTokens(
-                                accessToken = authenticationManager.accessToken(),
-                                refreshToken = authenticationManager.refreshToken()
+                            accessToken = authenticationManager.accessToken(),
+                            refreshToken = authenticationManager.refreshToken()
                         )
                     }
                     refreshTokens { unauthorizedResponse: HttpResponse ->
@@ -76,7 +75,7 @@ suspend inline fun <reified BodyType : Any> wrapKaliumResponse(performRequest: (
         val result = performRequest()
         return KaliumKtorResult(result, result.receive())
     } catch (e: ResponseException) {
-        when(e) {
+        when (e) {
             is RedirectResponseException -> {
                 // 300..399
                 throw e
@@ -85,7 +84,7 @@ suspend inline fun <reified BodyType : Any> wrapKaliumResponse(performRequest: (
                 // 400..499
                 throw e
             }
-            is ServerResponseException ->{
+            is ServerResponseException -> {
                 // 500..599
                 throw e
             }

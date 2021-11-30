@@ -18,8 +18,8 @@
 package com.wire.kalium.models.outbound.otr
 
 import com.wire.kalium.tools.UUIDSerializer
-import java.util.*
 import kotlinx.serialization.Serializable
+import java.util.UUID
 
 @Serializable
 class ClientKey : HashMap<String, PreKey>() {
@@ -46,14 +46,14 @@ class PreKeys() : HashMap<UUID, ClientKey>() {
 
 @Serializable
 data class ClientPrekey(
-        val client: String,
-        val prekey: PreKey
+    val client: String,
+    val prekey: PreKey
 )
 
 @Serializable
 data class AllUserPrekeys(
-        @Serializable(with = UUIDSerializer::class) val user: UUID,
-        val clients: List<ClientPrekey>
+    @Serializable(with = UUIDSerializer::class) val user: UUID,
+    val clients: List<ClientPrekey>
 )
 
 typealias UsersPrekeysCollection = Map<UUID, Map<String, PreKey>>
