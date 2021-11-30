@@ -14,6 +14,7 @@ import io.ktor.client.features.auth.providers.bearer
 import io.ktor.client.features.defaultRequest
 import io.ktor.client.features.json.JsonFeature
 import io.ktor.client.features.json.serializer.KotlinxSerializer
+import io.ktor.client.features.websocket.WebSockets
 import io.ktor.client.request.header
 import io.ktor.client.request.host
 import io.ktor.client.statement.HttpResponse
@@ -27,6 +28,29 @@ class KtorHttpClient(
     private val engine: HttpClientEngine,
     private val authenticationManager: AuthenticationManager,
 ) {
+
+    val provideWebSocketClient by lazy {
+        HttpClient(engine) {
+            defaultRequest {
+                host = hostProvider.host
+                url.protocol = URLProtocol.WSS
+            }
+            install(WebSockets)
+            install(Auth) {
+                bearer {
+                    loadTokens {
+                        BearerTokens(
+                            accessToken = authenticationManager.accessToken(),
+                            refreshToken = authenticationManager.refreshToken()
+                        )
+                    }
+                    refreshTokens { unauthorizedResponse: HttpResponse ->
+                        TODO("refresh the tokens, interface?")
+                    }
+                }
+            }
+        }
+    }
 
     val provideKtorHttpClient by lazy {
         HttpClient(engine) {
