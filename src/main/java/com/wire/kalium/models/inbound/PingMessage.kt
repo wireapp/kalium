@@ -17,19 +17,15 @@
 //
 package com.wire.kalium.models.inbound
 
-import com.fasterxml.jackson.annotation.JsonCreator
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.annotation.JsonProperty
 import java.util.UUID
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-class PingMessage @JsonCreator constructor(
-    @JsonProperty("eventId") eventId: UUID,
-    @JsonProperty("messageId") messageId: UUID,
-    @JsonProperty("conversationId") convId: UUID,
-    @JsonProperty("clientId") clientId: String,
-    @JsonProperty("userId") userId: UUID,
-    @JsonProperty("time") time: String
+class PingMessage(
+    eventId: UUID,
+    messageId: UUID,
+    convId: UUID,
+    clientId: String,
+    userId: UUID,
+    time: String
 ) : MessageBase(eventId, messageId, convId, clientId, userId, time) {
 
 

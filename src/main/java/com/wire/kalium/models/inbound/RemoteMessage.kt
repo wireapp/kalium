@@ -17,22 +17,20 @@
 //
 package com.wire.kalium.models.inbound
 
-import com.fasterxml.jackson.annotation.JsonCreator
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.waz.model.Messages.Asset.RemoteData
 import java.util.UUID
 
-class RemoteMessage @JsonCreator constructor(
-    @JsonProperty("assetId") val assetId: String,
-    @JsonProperty("assetToken") val assetToken: String,
-    @JsonProperty("otrKey") val otrKey: ByteArray,
-    @JsonProperty("sha256") val sha256: ByteArray,
-    @JsonProperty("eventId") eventId: UUID,
-    @JsonProperty("messageId") messageId: UUID,
-    @JsonProperty("conversationId") convId: UUID,
-    @JsonProperty("clientId") clientId: String,
-    @JsonProperty("userId") userId: UUID,
-    @JsonProperty("time") time: String
+class RemoteMessage(
+    val assetId: String,
+    val assetToken: String,
+    val otrKey: ByteArray,
+    val sha256: ByteArray,
+    eventId: UUID,
+    messageId: UUID,
+    convId: UUID,
+    clientId: String,
+    userId: UUID,
+    time: String
 ) : MessageBase(eventId = eventId, messageId = messageId, conversationId = convId, clientId = clientId, userId = userId, time = time) {
 
     constructor(msg: MessageBase, uploaded: RemoteData) : this(

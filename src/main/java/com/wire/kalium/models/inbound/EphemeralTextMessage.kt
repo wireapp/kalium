@@ -19,27 +19,15 @@ package com.wire.kalium.models.inbound
 
 import java.util.UUID
 
-
-//@JsonIgnoreProperties(ignoreUnknown = true)
-//@JsonCreator constructor EphemeralTextMessage(...
 class EphemeralTextMessage(
-//        @JsonProperty("expireAfterMillis")
     val expireAfterMillis: Long,
-//        @JsonProperty("eventId")
     eventId: UUID,
-//        @JsonProperty("messageId")
     messageId: UUID,
-//        @JsonProperty("conversationId")
     conversationId: UUID,
-//        @JsonProperty("clientId")
     clientId: String,
-//        @JsonProperty("userId")
     userId: UUID,
-//        @JsonProperty("time")
     time: String,
-//        @JsonProperty
     mentions: ArrayList<Mention>,
-//        @JsonProperty
     text: String?
 
 ) : TextMessage(

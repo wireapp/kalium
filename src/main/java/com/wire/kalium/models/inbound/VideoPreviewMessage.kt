@@ -17,26 +17,22 @@
 //
 package com.wire.kalium.models.inbound
 
-import com.fasterxml.jackson.annotation.JsonCreator
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.waz.model.Messages.Asset.Original
 import java.util.UUID
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-class VideoPreviewMessage @JsonCreator constructor(
-    @JsonProperty("width") val width: Int,
-    @JsonProperty("height") val height: Int,
-    @JsonProperty("duration") val duration: Long,
-    @JsonProperty("eventId") eventId: UUID,
-    @JsonProperty("messageId") messageId: UUID,
-    @JsonProperty("conversationId") conversationId: UUID,
-    @JsonProperty("clientId") clientId: String,
-    @JsonProperty("userId") userId: UUID,
-    @JsonProperty("time") time: String,
-    @JsonProperty("mimeType") mimeType: String,
-    @JsonProperty("size") size: Long,
-    @JsonProperty("name") name: String
+class VideoPreviewMessage(
+    val width: Int,
+    val height: Int,
+    val duration: Long,
+    eventId: UUID,
+    messageId: UUID,
+    conversationId: UUID,
+    clientId: String,
+    userId: UUID,
+    time: String,
+    mimeType: String,
+    size: Long,
+    name: String
 ) : OriginMessage(
     mimeType = mimeType,
     name = name,

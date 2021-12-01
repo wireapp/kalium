@@ -17,28 +17,22 @@
 //
 package com.wire.kalium.models.inbound
 
-import com.fasterxml.jackson.annotation.JsonCreator
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.annotation.JsonInclude
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.waz.model.Messages.Asset.Original
 import java.util.UUID
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-@JsonInclude(JsonInclude.Include.NON_NULL)
-class PhotoPreviewMessage @JsonCreator constructor(
+class PhotoPreviewMessage(
     // TODO: dimension data class ?
-    @JsonProperty("width") val height: Int,
-    @JsonProperty("height") val width: Int,
-    @JsonProperty("eventId") eventId: UUID,
-    @JsonProperty("messageId") messageId: UUID,
-    @JsonProperty("conversationId") convId: UUID,
-    @JsonProperty("clientId") clientId: String,
-    @JsonProperty("userId") userId: UUID,
-    @JsonProperty("time") time: String,
-    @JsonProperty("mimeType") mimeType: String,
-    @JsonProperty("size") size: Long,
-    @JsonProperty("name") name: String
+    val height: Int,
+    val width: Int,
+    eventId: UUID,
+    messageId: UUID,
+    convId: UUID,
+    clientId: String,
+    userId: UUID,
+    time: String,
+    mimeType: String,
+    size: Long,
+    name: String
 ) : OriginMessage(
     mimeType = mimeType,
     name = name,
