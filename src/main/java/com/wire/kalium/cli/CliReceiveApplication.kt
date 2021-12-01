@@ -6,6 +6,8 @@ import com.github.ajalt.clikt.parameters.options.required
 import com.waz.model.Messages
 import com.wire.kalium.api.AuthenticationManager
 import com.wire.kalium.api.KtorHttpClient
+import com.wire.kalium.api.asset.AssetsApi
+import com.wire.kalium.api.asset.AssetsApiImp
 import com.wire.kalium.api.conversation.ConversationApi
 import com.wire.kalium.api.conversation.ConversationApiImp
 import com.wire.kalium.api.message.MessageApi
@@ -32,6 +34,7 @@ import com.wire.kalium.models.outbound.MessageText
 import com.wire.kalium.models.outbound.otr.Recipients
 import com.wire.kalium.tools.HostProvider
 import com.wire.kalium.tools.KtxSerializer
+import com.wire.kalium.tools.Util
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.features.auth.Auth
@@ -59,6 +62,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import okhttp3.logging.HttpLoggingInterceptor
+import java.io.File
 import java.util.*
 
 class CliReceiveApplication : CliktCommand() {
@@ -72,6 +76,7 @@ class CliReceiveApplication : CliktCommand() {
     private lateinit var clientApi: ClientApi
     private lateinit var authenticationManager: AuthenticationManager
     private lateinit var appHttpClient: HttpClient
+    private lateinit var assetsApi: AssetsApi
 
     private lateinit var crypto: Crypto
 
@@ -121,6 +126,7 @@ class CliReceiveApplication : CliktCommand() {
         clientApi = ClientApiImp(appHttpClient)
         messageApi = MessageApiImp(appHttpClient)
         conversationApi = ConversationApiImp(appHttpClient)
+        assetsApi = AssetsApiImp(appHttpClient)
         preKeyApi = PreKeyApiImpl(appHttpClient)
 
         // register client and send preKeys
@@ -141,26 +147,32 @@ class CliReceiveApplication : CliktCommand() {
         }
 
         print("Enter conversation ID:")
-        conversationId = "3407ced0-5d0a-446a-ab0b-32a0baffb475"
+        conversationId = readLine()!!
         getConvRecipients()
 
         val eventApi = EventApi(ktorClient.provideWebSocketClient)
         val flow = eventApi.listenToLiveEvent(clientId)
         flow.collect {
-            it.payload?.let { payload ->
-                val msg = payload[0]
+
+            if (it.payload!![0].conversation == conversationId) {
+                val msg = it.payload[0]
                 val message = crypto.decrypt(
                     userId = UUID.fromString(msg.qualifiedFrom.id),
                     clientId = msg.data?.sender!!,
-                    cypher = msg.data?.text
+                    cypher = msg.data.text
                 )
                 val test = Base64.getDecoder().decode(message)
                 println("----------------------")
-                println(Messages.GenericMessage.parseFrom(test))
+                val genericMessage = Messages.GenericMessage.parseFrom(test)
+                if (genericMessage.hasText()) {
+                    echo("userId: ${msg.qualifiedFrom.id} sent: ${genericMessage.text!!.content}")
+                } else if (genericMessage.hasAsset() && genericMessage.asset.hasUploaded()) {
+                    val byteArray = assetsApi.downloadAsset(genericMessage.asset!!.uploaded.assetId, null).resultBody
+                    val image = Util.decrypt(encrypted = byteArray, key = genericMessage.asset.uploaded.otrKey!!.toByteArray())
+                    File(".png").writeBytes(image)
+                }
             }
         }
-
-
     }
 
     private suspend fun getConvRecipients() {

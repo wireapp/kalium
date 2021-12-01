@@ -64,7 +64,6 @@ class CliSendApplication() : CliktCommand() {
     override fun run() = runBlocking {
         // initialize the login api with a ktor http client
         loginApi = LoginApiImp(HttpClient(OkHttp) {
-            expectSuccess = false
             defaultRequest {
                 header("Content-Type", "application/json")
                 host = HostProvider.host
@@ -125,10 +124,6 @@ class CliSendApplication() : CliktCommand() {
         print("Enter conversation ID:")
         conversationId = readLine()!!
         getConvRecipients()
-
-        appHttpClient.webSocket(method = HttpMethod.Get,) {
-
-        }
 
         while (true) {
             val message = readLine()!!
