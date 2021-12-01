@@ -4,5 +4,5 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 class ErrorMessage(
-        val message: String
+    val message: String
 )

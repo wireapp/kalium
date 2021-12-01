@@ -28,7 +28,11 @@ import com.wire.kalium.models.outbound.otr.PreKey
 import com.wire.kalium.models.system.Cookie
 import com.wire.kalium.tools.KtxSerializer
 import com.wire.kalium.tools.Logger
-import java.util.*
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import java.util.UUID
 import javax.ws.rs.client.Client
 import javax.ws.rs.client.Entity
 import javax.ws.rs.client.Invocation
@@ -37,10 +41,6 @@ import javax.ws.rs.core.HttpHeaders
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.NewCookie
 import javax.ws.rs.core.Response
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
 
 open class LoginClient(client: Client) {
     @JvmField
@@ -57,12 +57,12 @@ open class LoginClient(client: Client) {
     @JvmOverloads
     @Throws(HttpException::class)
     fun login(email: String, password: String, persisted: Boolean = false): Access {
-        val login = LoginRequestBody(email = email, password = password, label =  LABEL)
+        val login = LoginRequestBody(email = email, password = password, label = LABEL)
 
         val loginRequestJson = KtxSerializer.json.encodeToString(login)
         val response: Response = loginPath.queryParam("persist", persisted)
-                .request(MediaType.APPLICATION_JSON)
-                .post(Entity.json(loginRequestJson))
+            .request(MediaType.APPLICATION_JSON)
+            .post(Entity.json(loginRequestJson))
 
         println(response.date)
 
@@ -109,15 +109,17 @@ open class LoginClient(client: Client) {
      * @return Client id
      */
     @Throws(HttpException::class)
-    fun registerClient(token: String, password: String, preKeys: ArrayList<PreKey>, lastKey: PreKey,
-                       clazz: String, type: String, label: String): String? {
+    fun registerClient(
+        token: String, password: String, preKeys: ArrayList<PreKey>, lastKey: PreKey,
+        clazz: String, type: String, label: String
+    ): String? {
         val newClient = NewClient(
-                password = password,
-                lastKey = lastKey,
-                preKeys = preKeys,
-                clazz = clazz,
-                label = label,
-                type = type
+            password = password,
+            lastKey = lastKey,
+            preKeys = preKeys,
+            clazz = clazz,
+            label = label,
+            type = type
         )
 
         // FIXME: why are sigkeys deleted from NewClient class
@@ -125,10 +127,10 @@ open class LoginClient(client: Client) {
         //newClient.sigkeys.mackey = Base64.getEncoder().encodeToString(ByteArray(32))
         val newClientJson = KtxSerializer.json.encodeToString(newClient)
         val response: Response = clientsPath
-                .request(MediaType.APPLICATION_JSON)
-                .header(HttpHeaders.AUTHORIZATION, bearer(token))
-                .post(Entity.json(newClientJson))
-                //.post(Entity.entity(newClient, MediaType.APPLICATION_JSON))
+            .request(MediaType.APPLICATION_JSON)
+            .header(HttpHeaders.AUTHORIZATION, bearer(token))
+            .post(Entity.json(newClientJson))
+        //.post(Entity.entity(newClient, MediaType.APPLICATION_JSON))
         println(response)
         val status: Int = response.status
         if (status == 401) {   //todo nginx returns text/html for 401. Cannot deserialize as json
@@ -149,8 +151,8 @@ open class LoginClient(client: Client) {
     fun renewAccessToken(cookie: Cookie): Access {
         val cookie1 = javax.ws.rs.core.Cookie(cookie.name, cookie.value)
         val builder: Invocation.Builder = accessPath
-                .request(MediaType.APPLICATION_JSON)
-                .cookie(cookie1)
+            .request(MediaType.APPLICATION_JSON)
+            .cookie(cookie1)
         val response: Response = builder.post(Entity.entity(null, MediaType.APPLICATION_JSON))
         val status: Int = response.getStatus()
         if (status == 401) {   //todo nginx returns text/html for 401. Cannot deserialize as json
@@ -174,11 +176,11 @@ open class LoginClient(client: Client) {
     @Throws(HttpException::class)
     fun logout(cookie: javax.ws.rs.core.Cookie, token: String) {
         val response: Response = accessPath
-                .path("logout")
-                .request(MediaType.APPLICATION_JSON)
-                .header(HttpHeaders.AUTHORIZATION, bearer(token))
-                .cookie(cookie)
-                .post(Entity.entity(null, MediaType.APPLICATION_JSON))
+            .path("logout")
+            .request(MediaType.APPLICATION_JSON)
+            .header(HttpHeaders.AUTHORIZATION, bearer(token))
+            .cookie(cookie)
+            .post(Entity.entity(null, MediaType.APPLICATION_JSON))
         val status: Int = response.getStatus()
         if (status == 401) {   //todo nginx returns text/html for 401. Cannot deserialize as json
             response.readEntity(String::class.java)
@@ -196,8 +198,8 @@ open class LoginClient(client: Client) {
         removeCookies.password = password
         removeCookies.labels = listOf(LABEL)
         val response: Response = cookiesPath.request(MediaType.APPLICATION_JSON)
-                .header(HttpHeaders.AUTHORIZATION, bearer(token))
-                .post(Entity.entity(removeCookies, MediaType.APPLICATION_JSON))
+            .header(HttpHeaders.AUTHORIZATION, bearer(token))
+            .post(Entity.entity(removeCookies, MediaType.APPLICATION_JSON))
         val status: Int = response.status
         if (status == 401) {   //todo nginx returns text/html for 401. Cannot deserialize as json
             response.readEntity(String::class.java)
@@ -210,17 +212,17 @@ open class LoginClient(client: Client) {
     @Throws(HttpException::class)
     fun retrieveNotifications(clientId: String, since: UUID?, token: String, size: Int): NotificationList {
         var webTarget: WebTarget = notificationsPath
-                .queryParam("client", clientId)
-                .queryParam("size", size)
+            .queryParam("client", clientId)
+            .queryParam("size", size)
         if (since != null) {
             webTarget = webTarget
-                    .queryParam("since", since.toString())
+                .queryParam("since", since.toString())
         }
         val response: Response = webTarget
-                .request(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON)
-                .header(HttpHeaders.AUTHORIZATION, bearer(token))
-                .get()
+            .request(MediaType.APPLICATION_JSON)
+            .accept(MediaType.APPLICATION_JSON)
+            .header(HttpHeaders.AUTHORIZATION, bearer(token))
+            .get()
         val status: Int = response.getStatus()
         if (status == 200) {
             val content = response.readEntity(String::class.java)
@@ -237,10 +239,10 @@ open class LoginClient(client: Client) {
     }
 
     @Serializable
-    internal data class LoginRequestBody (
-            val email: String,
-            val password: String,
-            val label: String
+    internal data class LoginRequestBody(
+        val email: String,
+        val password: String,
+        val label: String
     )
 
     @Serializable
@@ -249,7 +251,8 @@ open class LoginClient(client: Client) {
         var time: String? = null
         val location: LocationResponse? = null
         val type: String? = null
-        @SerialName("class") var clazz: String? = null
+        @SerialName("class")
+        var clazz: String? = null
         var label: String? = null
         var capabilities: _Capabilities? = null
     }
@@ -278,19 +281,19 @@ open class LoginClient(client: Client) {
     init {
         val host = host()
         loginPath = client
-                .target(host)
-                .path("login")
+            .target(host)
+            .path("login")
         clientsPath = client
-                .target(host)
-                .path("clients")
+            .target(host)
+            .path("clients")
         accessPath = client
-                .target(host)
-                .path("access")
+            .target(host)
+            .path("access")
         cookiesPath = client
-                .target(host)
-                .path("cookies")
+            .target(host)
+            .path("cookies")
         notificationsPath = client
-                .target(host)
-                .path("notifications")
+            .target(host)
+            .path("notifications")
     }
 }

@@ -19,7 +19,7 @@ package com.wire.kalium.models.outbound
 
 import com.waz.model.Messages.GenericMessage
 import com.waz.model.Messages.Knock
-import java.util.*
+import java.util.UUID
 
 class Ping : GenericMessageIdentifiable {
     override val messageId: UUID = UUID.randomUUID()

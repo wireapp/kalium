@@ -18,7 +18,7 @@
 package com.wire.kalium.models.outbound
 
 import com.waz.model.Messages.GenericMessage
-import java.util.*
+import java.util.UUID
 
 interface GenericMessageIdentifiable {
     val messageId: UUID

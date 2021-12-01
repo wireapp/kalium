@@ -28,7 +28,7 @@ import com.wire.kalium.tools.Util
 import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
 import java.io.IOException
-import java.util.*
+import java.util.UUID
 import javax.imageio.ImageIO
 
 class Picture : AssetBase {
@@ -46,7 +46,7 @@ class Picture : AssetBase {
         height = bufferedImage?.height ?: 0
     }
 
-    constructor(imageData: ByteArray?) : this(imageData, Util.extractMimeType(imageData) ?: "application/octet-stream", ) { }
+    constructor(imageData: ByteArray?) : this(imageData, Util.extractMimeType(imageData) ?: "application/octet-stream") {}
 
     override fun createGenericMsg(): GenericMessage {
         val ret = GenericMessage.newBuilder()
@@ -67,9 +67,9 @@ class Picture : AssetBase {
         assetKey?.let { remoteData.assetId = it }
 
         val asset = newBuilder()
-                .setExpectsReadConfirmation(readReceiptsEnabled)
-                .setUploaded(remoteData)
-                .setOriginal(original)
+            .setExpectsReadConfirmation(readReceiptsEnabled)
+            .setUploaded(remoteData)
+            .setOriginal(original)
         if (expires > 0) {
             val ephemeral = Ephemeral.newBuilder()
                 .setAsset(asset)

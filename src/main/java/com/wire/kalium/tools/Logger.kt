@@ -66,7 +66,7 @@ object Logger {
 
     fun exception(throwable: Throwable?, message: String?, vararg args: Any?) {
         errorCount.incrementAndGet()
-        message?.let { LOGGER.log(Level.SEVERE, String.format(it, *args), throwable)  }
+        message?.let { LOGGER.log(Level.SEVERE, String.format(it, *args), throwable) }
     }
 
     fun warning(msg: String?) {

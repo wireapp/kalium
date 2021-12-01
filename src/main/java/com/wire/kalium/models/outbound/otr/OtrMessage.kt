@@ -17,13 +17,13 @@
 //
 package com.wire.kalium.models.outbound.otr
 
-import java.util.*
 import kotlinx.serialization.Serializable
+import java.util.UUID
 
 @Serializable
 class OtrMessage(//clientId of the sender
-        private val sender: String,
-        val recipients: Recipients
+    private val sender: String,
+    val recipients: Recipients
 ) {
     fun add(rec: Recipients) {
         recipients.add(rec)

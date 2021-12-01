@@ -21,7 +21,7 @@ import com.google.protobuf.ByteString
 import com.waz.model.Messages
 import com.waz.model.Messages.Asset.RemoteData
 import com.waz.model.Messages.GenericMessage
-import java.util.*
+import java.util.UUID
 
 class VideoAsset(messageId: UUID, mimeType: String, bytes: ByteArray) : AssetBase(messageId, mimeType, bytes) {
     override fun createGenericMsg(): GenericMessage {

@@ -21,7 +21,7 @@ import com.google.protobuf.ByteString
 import com.waz.model.Messages
 import com.waz.model.Messages.Asset.RemoteData
 import com.waz.model.Messages.GenericMessage
-import java.util.*
+import java.util.UUID
 
 class AudioAsset : AssetBase {
     constructor(messageId: UUID, mimeType: String, bytes: ByteArray?) : super(messageId, mimeType, bytes) {}

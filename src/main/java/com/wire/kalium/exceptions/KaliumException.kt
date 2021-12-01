@@ -10,22 +10,24 @@ sealed class KaliumException : Exception()
 
 @Serializable
 sealed class NetworkException(
-        open var _message: String? = null,
-        open var _code: Int = 0,
-        open var _label: String? = null
+    open var _message: String? = null,
+    open var _code: Int = 0,
+    open var _label: String? = null
 ) : KaliumException()
 
 @Serializable
 data class HttpException(
-        @SerialName("message") override var _message: String? = null,
-        @SerialName("code") override var _code: Int = 0,
-        @SerialName("label") override var _label: String? = null,
+    @SerialName("message") override var _message: String? = null,
+    @SerialName("code") override var _code: Int = 0,
+    @SerialName("label") override var _label: String? = null,
 
-        ) : NetworkException(_message) {
+    ) : NetworkException(_message) {
 
 
-    constructor(message: String?,
-                code: Int) : this(_message = message) {
+    constructor(
+        message: String?,
+        code: Int
+    ) : this(_message = message) {
         this._code = code
 
         this._message = message
@@ -43,7 +45,9 @@ class AuthException : NetworkException {
     constructor(message: String?, code: Int) : super(_message = message, _code = code)
     constructor(code: Int) : super(_code = code)
 
-    constructor( message: String?,
-                code: Int,
-                label: String?) : super(message, code, label)
+    constructor(
+        message: String?,
+        code: Int,
+        label: String?
+    ) : super(message, code, label)
 }

@@ -9,9 +9,9 @@ typealias UserId = QualifiedID
 
 @Serializable
 data class QualifiedID(
-        @SerialName("id")
-        val value: String,
+    @SerialName("id")
+    val value: String,
 
-        @SerialName("domain")
-        val domain: String
+    @SerialName("domain")
+    val domain: String
 )

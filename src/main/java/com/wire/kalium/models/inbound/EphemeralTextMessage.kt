@@ -17,69 +17,69 @@
 //
 package com.wire.kalium.models.inbound
 
-import java.util.*
+import java.util.UUID
 
 
 //@JsonIgnoreProperties(ignoreUnknown = true)
 //@JsonCreator constructor EphemeralTextMessage(...
 class EphemeralTextMessage(
 //        @JsonProperty("expireAfterMillis")
-        val expireAfterMillis: Long,
+    val expireAfterMillis: Long,
 //        @JsonProperty("eventId")
-        eventId: UUID,
+    eventId: UUID,
 //        @JsonProperty("messageId")
-        messageId: UUID,
+    messageId: UUID,
 //        @JsonProperty("conversationId")
-        conversationId: UUID,
+    conversationId: UUID,
 //        @JsonProperty("clientId")
-        clientId: String,
+    clientId: String,
 //        @JsonProperty("userId")
-        userId: UUID,
+    userId: UUID,
 //        @JsonProperty("time")
-        time: String,
+    time: String,
 //        @JsonProperty
-        mentions: ArrayList<Mention>,
+    mentions: ArrayList<Mention>,
 //        @JsonProperty
-        text: String?
+    text: String?
 
 ) : TextMessage(
-        eventId = eventId,
-        messageId = messageId,
-        convId = conversationId,
-        clientId = clientId,
-        userId = userId,
-        time = time
+    eventId = eventId,
+    messageId = messageId,
+    convId = conversationId,
+    clientId = clientId,
+    userId = userId,
+    time = time
 ) {
 
     constructor(
-            _expireAfterMillis: Long,
-            _textMessage: TextMessage
-    ): this(
-            expireAfterMillis = _expireAfterMillis,
-            text = _textMessage.text,
-            mentions = _textMessage.mentions,
-            eventId = _textMessage.eventId,
-            messageId = _textMessage.messageId,
-            conversationId = _textMessage.conversationId,
-            clientId = _textMessage.clientId,
-            userId = _textMessage.userId,
-            time = _textMessage.time
+        _expireAfterMillis: Long,
+        _textMessage: TextMessage
+    ) : this(
+        expireAfterMillis = _expireAfterMillis,
+        text = _textMessage.text,
+        mentions = _textMessage.mentions,
+        eventId = _textMessage.eventId,
+        messageId = _textMessage.messageId,
+        conversationId = _textMessage.conversationId,
+        clientId = _textMessage.clientId,
+        userId = _textMessage.userId,
+        time = _textMessage.time
     )
 
     constructor(
-            _expireAfterMillis: Long,
-            _text: String,
-            _mentions: ArrayList<Mention>,
-            msg: MessageBase
+        _expireAfterMillis: Long,
+        _text: String,
+        _mentions: ArrayList<Mention>,
+        msg: MessageBase
     ) : this(
-            expireAfterMillis = _expireAfterMillis,
-            text = _text,
-            mentions = _mentions,
-            eventId = msg.eventId,
-            messageId = msg.messageId,
-            conversationId = msg.conversationId,
-            clientId = msg.clientId,
-            userId = msg.userId,
-            time = msg.time
+        expireAfterMillis = _expireAfterMillis,
+        text = _text,
+        mentions = _mentions,
+        eventId = msg.eventId,
+        messageId = msg.messageId,
+        conversationId = msg.conversationId,
+        clientId = msg.clientId,
+        userId = msg.userId,
+        time = msg.time
     )
 }

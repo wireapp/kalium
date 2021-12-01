@@ -16,11 +16,18 @@ import java.io.IOException
 import java.net.URI
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
-import javax.websocket.*
+import javax.websocket.ClientEndpoint
+import javax.websocket.CloseReason
+import javax.websocket.DeploymentException
+import javax.websocket.EndpointConfig
+import javax.websocket.OnClose
+import javax.websocket.OnMessage
+import javax.websocket.OnOpen
+import javax.websocket.Session
 import javax.ws.rs.client.Client
 
 @ClientEndpoint(decoders = [EventDecoder::class])
@@ -72,15 +79,17 @@ class WebSocketApplication(val email: String, val password: String) {
         clientId = createNewDevice(password, access!!.accessToken)
 
         eventProcessor = EventProcessor(handler!!)
-                .addClient(client)
-                .addCrypto(crypto!!)
+            .addClient(client)
+            .addCrypto(crypto!!)
 
         // Pull from notification stream
         if (sync) {
-            var notificationList: NotificationList = loginClient.retrieveNotifications(clientId!!,
-                    last,
-                    access!!.accessToken,
-                    100)
+            var notificationList: NotificationList = loginClient.retrieveNotifications(
+                clientId!!,
+                last,
+                access!!.accessToken,
+                100
+            )
             while (!notificationList.notifications.isEmpty()) {
                 for (notification in notificationList.notifications) {
                     onMessage(notification)
@@ -143,11 +152,11 @@ class WebSocketApplication(val email: String, val password: String) {
     private fun connectSocket(wsUrl: String?): Session {
 
         val wss: URI? = client
-                .target(wsUrl)
-                .path("await")
-                .queryParam("client", clientId)
-                .queryParam("access_token", access!!.accessToken)
-                .uri
+            .target(wsUrl)
+            .path("await")
+            .queryParam("client", clientId)
+            .queryParam("access_token", access!!.accessToken)
+            .uri
 
         // connect the Websocket
         val container: ClientManager = ClientManager.createClient()

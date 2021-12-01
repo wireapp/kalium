@@ -12,26 +12,30 @@ import io.ktor.client.statement.request
 import io.ktor.http.Cookie
 
 class AuthApiImp(private val httpClient: HttpClient) : AuthApi {
-    override suspend fun renewAccessToken(cookie: Cookie): KaliumHttpResult<RenewAccessTokenResponse> = wrapKaliumResponse<RenewAccessTokenResponse> {
-        httpClient.post<HttpResponse>(path = PATH_ACCESS) {
-            this.cookie(cookie.name, cookie.value)
-        }.receive()
-    }.also {
-        if (it.httpStatusCode == 401 or 403 or 400) {
-            throw AuthException(code = it.httpStatusCode )
+    override suspend fun renewAccessToken(cookie: Cookie): KaliumHttpResult<RenewAccessTokenResponse> =
+        wrapKaliumResponse<RenewAccessTokenResponse> {
+            httpClient.post<HttpResponse>(path = PATH_ACCESS) {
+                this.cookie(cookie.name, cookie.value)
+            }.receive()
+        }.also {
+            if (it.httpStatusCode == 401 or 403 or 400) {
+                throw AuthException(code = it.httpStatusCode)
+            }
         }
-    }
 
-    override suspend fun removeCookiesByIds(removeCookiesByIdsRequest: RemoveCookiesByIdsRequest): KaliumHttpResult<Unit> = wrapKaliumResponse<Unit>  {
-        httpClient.post<HttpResponse>(path = "$PATH_COOKIES$PATH_REMOVE") {
-            body = removeCookiesByIdsRequest
-        }.receive()
-    }
-    override suspend fun RemoveCookiesByLabels(removeCookiesWithIdsRequest: RemoveCookiesByLabels): KaliumHttpResult<Unit> = wrapKaliumResponse<Unit>  {
-        httpClient.post<HttpResponse>(path = "$PATH_COOKIES$PATH_REMOVE") {
-            body = removeCookiesWithIdsRequest
-        }.receive()
-    }
+    override suspend fun removeCookiesByIds(removeCookiesByIdsRequest: RemoveCookiesByIdsRequest): KaliumHttpResult<Unit> =
+        wrapKaliumResponse<Unit> {
+            httpClient.post<HttpResponse>(path = "$PATH_COOKIES$PATH_REMOVE") {
+                body = removeCookiesByIdsRequest
+            }.receive()
+        }
+
+    override suspend fun RemoveCookiesByLabels(removeCookiesWithIdsRequest: RemoveCookiesByLabels): KaliumHttpResult<Unit> =
+        wrapKaliumResponse<Unit> {
+            httpClient.post<HttpResponse>(path = "$PATH_COOKIES$PATH_REMOVE") {
+                body = removeCookiesWithIdsRequest
+            }.receive()
+        }
 
     companion object {
         private const val PATH_ACCESS = "access"

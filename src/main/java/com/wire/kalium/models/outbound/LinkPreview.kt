@@ -21,7 +21,7 @@ import com.waz.model.Messages
 import com.waz.model.Messages.Article
 import com.waz.model.Messages.GenericMessage
 import com.wire.kalium.tools.Logger
-import java.util.*
+import java.util.UUID
 
 class LinkPreview(
     private val url: String,

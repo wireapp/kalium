@@ -27,7 +27,7 @@ import com.wire.kalium.models.outbound.GenericMessageIdentifiable
 import com.wire.kalium.models.outbound.otr.PreKey
 import java.io.Closeable
 import java.io.IOException
-import java.util.*
+import java.util.UUID
 
 /**
  * Thread safe class for postings into this conversation

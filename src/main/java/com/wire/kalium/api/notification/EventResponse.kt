@@ -8,21 +8,21 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class EventResponse(
-        @SerialName("id") val id: String,
-        @SerialName("transient") val transient: Boolean,
-        @SerialName("payload") val payload: List<Payload>?
+    @SerialName("id") val id: String,
+    @SerialName("transient") val transient: Boolean,
+    @SerialName("payload") val payload: List<Payload>?
 )
 
 @Serializable
 data class Payload(
-        @SerialName("qualified_conversation") val qualifiedConversation: ConversationIdResponse,
-        @SerialName("conversation") val conversation: String,
-        @SerialName("time") val time: String,
-        @SerialName("data") val data: Data?,
-        @SerialName("from") val from: String,
-        @SerialName("qualified_from") val qualifiedFrom: QualifiedFrom,
-        @SerialName("type") val type: String,
-        @SerialName("client") val client: ClientResponse
+    @SerialName("qualified_conversation") val qualifiedConversation: ConversationIdResponse,
+    @SerialName("conversation") val conversation: String,
+    @SerialName("time") val time: String,
+    @SerialName("data") val data: Data?,
+    @SerialName("from") val from: String,
+    @SerialName("qualified_from") val qualifiedFrom: QualifiedFrom,
+    @SerialName("type") val type: String,
+    @SerialName("client") val client: ClientResponse
 )
 
 @Serializable
