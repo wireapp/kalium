@@ -20,20 +20,12 @@ package com.wire.kalium.models.inbound
 import com.waz.model.Messages
 import java.util.UUID
 
-//@JsonIgnoreProperties(ignoreUnknown = true)
-//@JsonInclude(JsonInclude.Include.NON_NULL)
-open class TextMessage constructor(
-//        @JsonProperty("eventId")
+open class TextMessage(
     eventId: UUID,
-//        @JsonProperty("messageId")
     messageId: UUID,
-//        @JsonProperty("conversationId")
     convId: UUID,
-//        @JsonProperty("clientId")
     clientId: String,
-//        @JsonProperty("userId")
     userId: UUID,
-//        @JsonProperty("time")
     time: String
 ) : MessageBase(eventId = eventId, messageId = messageId, conversationId = convId, clientId = clientId, userId = userId, time = time) {
 

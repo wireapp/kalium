@@ -19,8 +19,8 @@ package com.wire.kalium.models.inbound
 
 import java.util.UUID
 
-//@JsonIgnoreProperties(ignoreUnknown = true)
-//@JsonCreator constructor(...
+
+//constructor(...
 class EditedTextMessage(
 //        @JsonProperty
     val replacingMessageId: UUID,
