@@ -145,7 +145,10 @@ class CliSendApplication() : CliktCommand() {
         val messageResult = messageApi.sendMessage(conversationId = conversationId, option = MessageApi.MessageOption.ReportAll, parameters = param)
         when (messageResult.resultBody) {
             is SendMessageResponse.MessageSent -> {}
-            is SendMessageResponse.MissingDevicesResponse -> {}
+            is SendMessageResponse.MissingDevicesResponse -> {
+                getConvRecipients()
+                sendTextMessage(message)
+            }
         }
     }
 

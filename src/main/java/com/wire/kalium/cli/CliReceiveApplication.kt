@@ -15,7 +15,6 @@ import com.wire.kalium.api.message.MessageApiImp
 import com.wire.kalium.api.message.MessagePriority
 import com.wire.kalium.api.message.SendMessageResponse
 import com.wire.kalium.api.message.UserIdToClientMap
-import com.wire.kalium.api.notification.EventResponse
 import com.wire.kalium.api.prekey.PreKeyApi
 import com.wire.kalium.api.prekey.PreKeyApiImpl
 import com.wire.kalium.api.user.client.ClientApi
@@ -29,38 +28,22 @@ import com.wire.kalium.api.user.login.LoginWithEmailRequest
 import com.wire.kalium.api.websocket.EventApi
 import com.wire.kalium.crypto.Crypto
 import com.wire.kalium.crypto.CryptoFile
-import com.wire.kalium.models.backend.Event
 import com.wire.kalium.models.outbound.MessageText
 import com.wire.kalium.models.outbound.otr.Recipients
 import com.wire.kalium.tools.HostProvider
-import com.wire.kalium.tools.KtxSerializer
 import com.wire.kalium.tools.Util
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
-import io.ktor.client.features.auth.Auth
-import io.ktor.client.features.auth.providers.BearerTokens
-import io.ktor.client.features.auth.providers.bearer
 import io.ktor.client.features.defaultRequest
 import io.ktor.client.features.json.JsonFeature
 import io.ktor.client.features.json.serializer.KotlinxSerializer
-import io.ktor.client.features.websocket.WebSockets
-import io.ktor.client.features.websocket.webSocket
 import io.ktor.client.request.header
 import io.ktor.client.request.host
-import io.ktor.client.request.parameter
-import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
-import io.ktor.http.Headers
-import io.ktor.http.HttpMethod
 import io.ktor.http.URLProtocol
-import io.ktor.http.cio.websocket.Frame
-import io.ktor.http.cio.websocket.readText
-import io.ktor.http.parametersOf
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.decodeFromStream
 import okhttp3.logging.HttpLoggingInterceptor
 import java.io.File
 import java.util.*
@@ -155,21 +138,21 @@ class CliReceiveApplication : CliktCommand() {
         flow.collect {
 
             if (it.payload!![0].conversation == conversationId) {
-                val msg = it.payload[0]
+                val payload = it.payload[0]
                 val message = crypto.decrypt(
-                    userId = UUID.fromString(msg.qualifiedFrom.id),
-                    clientId = msg.data?.sender!!,
-                    cypher = msg.data.text
+                    userId = UUID.fromString(payload.qualifiedFrom.id),
+                    clientId = payload.data?.sender!!,
+                    cypher = payload.data.text
                 )
                 val test = Base64.getDecoder().decode(message)
                 println("----------------------")
                 val genericMessage = Messages.GenericMessage.parseFrom(test)
                 if (genericMessage.hasText()) {
-                    echo("userId: ${msg.qualifiedFrom.id} sent: ${genericMessage.text!!.content}")
+                    echo("userId: ${payload.qualifiedFrom.id} sent: ${genericMessage.text!!.content}")
                 } else if (genericMessage.hasAsset() && genericMessage.asset.hasUploaded()) {
                     val byteArray = assetsApi.downloadAsset(genericMessage.asset!!.uploaded.assetId, null).resultBody
                     val image = Util.decrypt(encrypted = byteArray, key = genericMessage.asset.uploaded.otrKey!!.toByteArray())
-                    File(".png").writeBytes(image)
+                    File("${genericMessage.messageId}").writeBytes(image)
                 }
             }
         }
