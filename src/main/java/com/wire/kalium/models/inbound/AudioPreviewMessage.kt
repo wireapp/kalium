@@ -17,25 +17,21 @@
 //
 package com.wire.kalium.models.inbound
 
-import com.fasterxml.jackson.annotation.JsonCreator
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.waz.model.Messages.Asset.Original
 import java.util.UUID
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-class AudioPreviewMessage @JsonCreator constructor(
-    @JsonProperty("duration") val duration: Long,
-    @JsonProperty("levels") val levels: ByteArray,
-    @JsonProperty("eventId") eventId: UUID,
-    @JsonProperty("messageId") messageId: UUID,
-    @JsonProperty("conversationId") convId: UUID,
-    @JsonProperty("clientId") clientId: String,
-    @JsonProperty("userId") userId: UUID,
-    @JsonProperty("time") time: String,
-    @JsonProperty("mimeType") mimeType: String,
-    @JsonProperty("size") size: Long,
-    @JsonProperty("name") name: String
+class AudioPreviewMessage(
+    val duration: Long,
+    val levels: ByteArray,
+    eventId: UUID,
+    messageId: UUID,
+    convId: UUID,
+    clientId: String,
+    userId: UUID,
+    time: String,
+    mimeType: String,
+    size: Long,
+    name: String
 ) : OriginMessage(
     mimeType = mimeType,
     name = name,
