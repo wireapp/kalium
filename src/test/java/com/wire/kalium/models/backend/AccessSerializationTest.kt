@@ -34,27 +34,15 @@ class AccessSerializationTest : BehaviorSpec({
     }
 
     Given("A JSON with missing access_token") {
-        commonMissingFieldTests(AccessJson.missingAccessToken)
+        commonMissingFieldTests<Access>(AccessJson.missingAccessToken.rawJson)
     }
     Given("A JSON with missing user") {
-        commonMissingFieldTests(AccessJson.missingUser)
+        commonMissingFieldTests<Access>(AccessJson.missingUser.rawJson)
     }
     Given("A JSON with missing token_type") {
-        commonMissingFieldTests(AccessJson.missingTokenType)
+        commonMissingFieldTests<Access>(AccessJson.missingTokenType.rawJson)
     }
     Given("A JSON with missing expiration") {
-        commonMissingFieldTests(AccessJson.missingExpiration)
+        commonMissingFieldTests<Access>(AccessJson.missingExpiration.rawJson)
     }
 })
-
-private suspend fun BehaviorSpecGivenContainerContext.commonMissingFieldTests(json: FaultyJsonProvider) {
-    When("Deserializing it") {
-        val exception = runCatching {
-            KtxSerializer.json.decodeFromString<Access>(json.rawJson)
-        }.exceptionOrNull()
-
-        Then("An SerializationException should be throw") {
-            exception should beInstanceOf<SerializationException>()
-        }
-    }
-}

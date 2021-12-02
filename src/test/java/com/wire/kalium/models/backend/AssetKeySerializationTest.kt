@@ -20,13 +20,13 @@ class AssetKeySerializationTest : BehaviorSpec({
         commonValidTests(AssetKeyJson.validPreviewImage)
     }
     Given("A JSON with missing access_token") {
-        commonMissingFieldTests(AssetKeyJson.missingKey)
+        commonMissingFieldTests<AssetKey>(AssetKeyJson.missingKey.rawJson)
     }
     Given("A JSON with missing user") {
-        commonMissingFieldTests(AssetKeyJson.missingSize)
+        commonMissingFieldTests<AssetKey>(AssetKeyJson.missingSize.rawJson)
     }
     Given("A JSON with missing token_type") {
-        commonMissingFieldTests(AssetKeyJson.missingType)
+        commonMissingFieldTests<AssetKey>(AssetKeyJson.missingType.rawJson)
     }
 })
 
@@ -42,18 +42,6 @@ private suspend fun BehaviorSpecGivenContainerContext.commonValidTests(validJson
         }
         Then("Type should match") {
             result.type shouldBeEqualToComparingFields validJson.serializableData.type
-        }
-    }
-}
-
-private suspend fun BehaviorSpecGivenContainerContext.commonMissingFieldTests(json: FaultyJsonProvider) {
-    When("Deserializing it") {
-        val exception = runCatching {
-            KtxSerializer.json.decodeFromString<AssetKey>(json.rawJson)
-        }.exceptionOrNull()
-
-        Then("An SerializationException should be throw") {
-            exception should beInstanceOf<SerializationException>()
         }
     }
 }

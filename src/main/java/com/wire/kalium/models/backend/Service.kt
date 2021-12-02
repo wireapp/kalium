@@ -18,6 +18,7 @@
 package com.wire.kalium.models.backend
 
 import com.wire.kalium.tools.UUIDSerializer
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.util.UUID
 
