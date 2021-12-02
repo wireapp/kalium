@@ -55,6 +55,7 @@ dependencies {
     // Failed to load class "org.slf4j.impl.StaticLoggerBinder". error
     //implementation ("io.ktor:ktor-client-logging:$ktorVersion")
     implementation("io.ktor:ktor-client-auth:$ktorVersion")
+    implementation("io.ktor:ktor-client-websockets:$ktorVersion")
     implementation("io.ktor:ktor-client-okhttp:$ktorVersion")
     implementation ("com.squareup.okhttp3:logging-interceptor:4.9.0")
 

@@ -1,4 +1,4 @@
-package com.wire.kalium
+package com.wire.kalium.cli
 
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
@@ -32,27 +32,18 @@ import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.features.defaultRequest
 import io.ktor.client.features.json.JsonFeature
 import io.ktor.client.features.json.serializer.KotlinxSerializer
+import io.ktor.client.features.websocket.webSocket
 import io.ktor.client.request.header
 import io.ktor.client.request.host
 import io.ktor.http.ContentType
+import io.ktor.http.HttpMethod
 import io.ktor.http.URLProtocol
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import okhttp3.logging.HttpLoggingInterceptor
 
-private class AuthenticationManagerImp(
-    private val accessToken: String,
-    private val tokenType: String,
-    val refreshToken: String
-) : AuthenticationManager {
-    override fun accessToken(): String {
-        return accessToken
-    }
 
-    override fun refreshToken(): String = refreshToken
-}
-
-class CliApplication() : CliktCommand() {
+class CliSendApplication() : CliktCommand() {
     val email: String by option(help = "wire account email").required()
     val password: String by option(help = "wire account password").required()
 
@@ -70,76 +61,73 @@ class CliApplication() : CliktCommand() {
     private lateinit var conversationId: String
     private lateinit var recipients: UserIdToClientMap
 
-    override fun run() {
-        runBlocking {
-            // initialize the login api with a ktor http client
-            loginApi = LoginApiImp(HttpClient(OkHttp) {
-                expectSuccess = false
-                defaultRequest {
-                    header("Content-Type", "application/json")
-                    host = HostProvider.host
-                    url.protocol = URLProtocol.HTTPS
-                }
-                install(JsonFeature) {
-                    serializer = KotlinxSerializer(Json {
-                        prettyPrint = true
-                        isLenient = true
-                        ignoreUnknownKeys = true
-                    })
-                    accept(ContentType.Application.Json)
-                }
-            })
-
-            val loginResult = loginApi.emailLogin(
-                LoginWithEmailRequest(email = email, password = password, label = "ktor"),
-                false
-            ).resultBody
-
-            // initialize Crypto box
-            crypto = CryptoFile("./data/${loginResult.userId}")
-
-            authenticationManager = AuthenticationManagerImp(
-                loginResult.accessToken,
-                loginResult.tokenType,
-                "" // TODO: Extract zuid cookie after login
-            )
-
-            val okHttp = OkHttp.create {
-                val interceptor = HttpLoggingInterceptor()
-                interceptor.setLevel(HttpLoggingInterceptor.Level.BODY)
-                //addInterceptor(interceptor)
+    override fun run() = runBlocking {
+        // initialize the login api with a ktor http client
+        loginApi = LoginApiImp(HttpClient(OkHttp) {
+            defaultRequest {
+                header("Content-Type", "application/json")
+                host = HostProvider.host
+                url.protocol = URLProtocol.HTTPS
             }
-            appHttpClient = KtorHttpClient(HostProvider, okHttp, authenticationManager).provideKtorHttpClient
-            clientApi = ClientApiImp(appHttpClient)
-            messageApi = MessageApiImp(appHttpClient)
-            conversationApi = ConversationApiImp(appHttpClient)
-            preKeyApi = PreKeyApiImpl(appHttpClient)
-
-            // register client and send preKeys
-            val registerClientRequest = RegisterClientRequest(
-                password = password,
-                deviceType = DeviceType.Desktop,
-                label = "ktor",
-                type = ClientType.Temporary,
-                preKeys = crypto.newPreKeys(0, 100),
-                lastKey = crypto.newLastPreKey()
-            )
-            val registerClientResponse = clientApi.registerClient(registerClientRequest)
-            clientId = registerClientResponse.resultBody.clientId
-
-            val conversationsList = conversationApi.conversationsByBatch(null, 500).resultBody.conversations
-            for (conv in conversationsList) {
-                println("${conv.id.value}  Name: ${conv.name}")
+            install(JsonFeature) {
+                serializer = KotlinxSerializer(Json {
+                    prettyPrint = true
+                    isLenient = true
+                    ignoreUnknownKeys = true
+                })
+                accept(ContentType.Application.Json)
             }
+        })
 
-            print("Enter conversation ID:")
-            conversationId = readLine()!!
-            getConvRecipients()
+        val loginResult = loginApi.emailLogin(
+            LoginWithEmailRequest(email = email, password = password, label = "ktor"),
+            false
+        ).resultBody
 
-            while (true) {
-                val message = readLine()!!
-                sendTextMessage(message = message)
-            }
+        // initialize Crypto box
+        crypto = CryptoFile("./data/${loginResult.userId}")
+
+        authenticationManager = AuthenticationManagerImpl(
+            loginResult.accessToken,
+            loginResult.tokenType,
+            "" // TODO: Extract zuid cookie after login
+        )
+
+        val okHttp = OkHttp.create {
+            val interceptor = HttpLoggingInterceptor()
+            interceptor.setLevel(HttpLoggingInterceptor.Level.BODY)
+            //addInterceptor(interceptor)
+        }
+        appHttpClient = KtorHttpClient(HostProvider, okHttp, authenticationManager).provideKtorHttpClient
+        clientApi = ClientApiImp(appHttpClient)
+        messageApi = MessageApiImp(appHttpClient)
+        conversationApi = ConversationApiImp(appHttpClient)
+        preKeyApi = PreKeyApiImpl(appHttpClient)
+
+        // register client and send preKeys
+        val registerClientRequest = RegisterClientRequest(
+            password = password,
+            deviceType = DeviceType.Desktop,
+            label = "ktor",
+            type = ClientType.Temporary,
+            preKeys = crypto.newPreKeys(0, 100),
+            lastKey = crypto.newLastPreKey()
+        )
+        val registerClientResponse = clientApi.registerClient(registerClientRequest)
+        clientId = registerClientResponse.resultBody.clientId
+
+        val conversationsList = conversationApi.conversationsByBatch(null, 500).resultBody.conversations
+        for (conv in conversationsList) {
+            println("${conv.id.value}  Name: ${conv.name}")
+        }
+
+        print("Enter conversation ID:")
+        conversationId = readLine()!!
+        getConvRecipients()
+
+        while (true) {
+            val message = readLine()!!
+            sendTextMessage(message = message)
         }
     }
 
@@ -158,7 +146,10 @@ class CliApplication() : CliktCommand() {
             messageApi.sendMessage(conversationId = conversationId, option = MessageApi.MessageOption.ReportAll, parameters = param)
         when (messageResult.resultBody) {
             is SendMessageResponse.MessageSent -> {}
-            is SendMessageResponse.MissingDevicesResponse -> {}
+            is SendMessageResponse.MissingDevicesResponse -> {
+                getConvRecipients()
+                sendTextMessage(message)
+            }
         }
     }
 
@@ -184,4 +175,4 @@ class CliApplication() : CliktCommand() {
     }
 }
 
-fun main(args: Array<String>) = CliApplication().main(args)
+fun main(args: Array<String>) = CliSendApplication().main(args)
