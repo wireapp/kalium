@@ -17,12 +17,29 @@
 //
 package com.wire.kalium.models.backend
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class AssetKey(
-    val type: String,
-    val key: String,
-    val size: String
-)
+    @SerialName("type") val type: Type,
+    @SerialName("key") val key: String,
+    @SerialName("size") val size: Size
+) {
+
+    @Serializable
+    enum class Size {
+        @SerialName("preview")
+        PREVIEW,
+
+        @SerialName("complete")
+        COMPLETE
+    }
+
+    @Serializable
+    enum class Type {
+        @SerialName("image")
+        IMAGE
+    }
+}
 

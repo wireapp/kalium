@@ -21,6 +21,7 @@ import com.wire.kalium.api.user.client.LocationResponse
 import com.wire.kalium.exceptions.AuthException
 import com.wire.kalium.exceptions.HttpException
 import com.wire.kalium.models.backend.Access
+import com.wire.kalium.models.backend.Location
 import com.wire.kalium.models.backend.NewClient
 import com.wire.kalium.models.backend.NotificationList
 import com.wire.kalium.models.outbound.otr.PreKey
@@ -114,8 +115,8 @@ open class LoginClient(client: Client) {
     ): String? {
         val newClient = NewClient(
             password = password,
-            lastkey = lastKey,
-            prekeys = preKeys,
+            lastKey = lastKey,
+            preKeys = preKeys,
             clazz = clazz,
             label = label,
             type = type

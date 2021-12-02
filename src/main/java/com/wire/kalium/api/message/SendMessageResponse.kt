@@ -21,9 +21,6 @@ sealed class SendMessageResponse {
     ) : SendMessageResponse()
 }
 
-
-
-
 // Map of userId to clientId
 typealias MissingUsers = UserIdToClientMap
 typealias RedundantUsers = UserIdToClientMap

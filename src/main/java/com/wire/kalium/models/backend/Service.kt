@@ -18,11 +18,12 @@
 package com.wire.kalium.models.backend
 
 import com.wire.kalium.tools.UUIDSerializer
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.util.UUID
 
 @Serializable
 data class Service(
-    @Serializable(with = UUIDSerializer::class) var id: UUID,
-    @Serializable(with = UUIDSerializer::class) var provider: UUID
+    @SerialName("id") @Serializable(with = UUIDSerializer::class) var id: UUID,
+    @SerialName("provider") @Serializable(with = UUIDSerializer::class) var provider: UUID
 )

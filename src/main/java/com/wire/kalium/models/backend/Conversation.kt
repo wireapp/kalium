@@ -18,28 +18,23 @@
 package com.wire.kalium.models.backend
 
 import com.wire.kalium.tools.UUIDSerializer
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.util.UUID
 
 @Serializable
 data class Conversation(
-    @Serializable(with = UUIDSerializer::class) val id: UUID,
-    val name: String? = null,
-    val members: List<ConversationMember>? = null  // todo fix me
+    @Serializable(with = UUIDSerializer::class)
+    @SerialName("id") val id: UUID,
+    @SerialName("name") val name: String? = null,
+    @SerialName("members") val members: List<ConversationMember>
 ) {
     @Serializable(with = UUIDSerializer::class)
     var creator: UUID? = null
 
-    constructor(id: UUID, name: String?, members: List<ConversationMember>?, creator: UUID?) : this(
+    constructor(id: UUID, name: String?, members: List<ConversationMember>, creator: UUID?) : this(
         id = id, name = name, members = members
     ) {
         this.creator = creator
     }
 }
-/*
-        @Serializable(with = UUIDSerializer::class) val id: UUID,
-        val name: String,
-        @Serializable(with = UUIDSerializer::class) val creator: UUID,
-        val members: List<ConversationMember>
-)
-*/
