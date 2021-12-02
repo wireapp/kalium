@@ -15,7 +15,7 @@ class AssetApiImp(private val httpClient: HttpClient) : AssetApi {
      * @param assetToken the asset token, can be null in case of public assets
      */
     override suspend fun downloadAsset(assetKey: String, assetToken: String?): KaliumHttpResult<ByteArray> = wrapKaliumResponse {
-        httpClient.get<HttpResponse>(path = "$PATH_PUBLIC_ASSETS$assetKey") {
+        httpClient.get<HttpResponse>(path = "$PATH_PUBLIC_ASSETS/$assetKey") {
             assetToken?.let { header(HEADER_ASSET_TOKEN, it) }
         }.receive()
     }
