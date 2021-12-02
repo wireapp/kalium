@@ -14,8 +14,6 @@ data class SendMessageRequest(
         @SerialName("native_priority") val priority: String = "low"
 )
 
-sealed class SendMessageResponse
-
 @Serializable
 data class MissingDevicesResponse(
         @SerialName("missing") val missing: HashMap<String, List<String>>,

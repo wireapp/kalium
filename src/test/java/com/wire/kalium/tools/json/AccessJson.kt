@@ -1,8 +1,7 @@
-package com.wire.kalium.models.backend.json
+package com.wire.kalium.tools.json
 
 import com.wire.kalium.models.backend.Access
 import java.util.UUID
-
 
 object AccessJson {
     private val jsonProvider = { serializable: Access ->

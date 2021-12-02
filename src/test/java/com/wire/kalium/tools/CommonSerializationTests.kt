@@ -1,6 +1,5 @@
-package com.wire.kalium.models.backend
+package com.wire.kalium.tools
 
-import com.wire.kalium.tools.KtxSerializer
 import io.kotest.core.spec.style.scopes.BehaviorSpecGivenContainerContext
 import io.kotest.matchers.should
 import io.kotest.matchers.types.beInstanceOf

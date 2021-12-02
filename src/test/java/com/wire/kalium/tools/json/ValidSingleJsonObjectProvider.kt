@@ -1,4 +1,4 @@
-package com.wire.kalium.models.backend.json
+package com.wire.kalium.tools.json
 
 sealed interface JsonProvider {
     val rawJson: String
@@ -10,5 +10,5 @@ data class ValidJsonProvider<Serializable : Any>(
     val serializableData: Serializable,
     private val jsonProvider: (Serializable) -> String
 ) : JsonProvider {
-    override val rawJson: String = jsonProvider(serializableData)
+    override val rawJson: String = jsonProvider(serializableData).replace("\\s".toRegex(), "")
 }

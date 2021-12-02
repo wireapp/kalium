@@ -1,4 +1,4 @@
-package com.wire.kalium.models.backend.json
+package com.wire.kalium.tools.json
 
 import com.wire.kalium.models.backend.AssetKey
 

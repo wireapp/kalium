@@ -148,7 +148,7 @@ class EventProcessor(private val handler: MessageHandler) : IEventProcessor {
             id = payload.conversation!!,
             name = payload.data!!.name,
             creator = payload.data.creator,
-            members = null
+            members = listOf()
         )
         return SystemMessage(
             eventId,

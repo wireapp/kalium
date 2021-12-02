@@ -1,6 +1,6 @@
 import com.wire.kalium.models.backend.ServiceReferenceResponse
-import com.wire.kalium.models.backend.commonMissingFieldTests
-import com.wire.kalium.models.backend.json.ServiceReferenceResponseJson
+import com.wire.kalium.tools.commonMissingFieldTests
+import com.wire.kalium.tools.json.ServiceReferenceResponseJson
 import com.wire.kalium.tools.KtxSerializer
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe

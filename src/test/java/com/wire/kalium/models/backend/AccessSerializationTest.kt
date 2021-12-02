@@ -1,14 +1,10 @@
 package com.wire.kalium.models.backend
 
-import com.wire.kalium.models.backend.json.AccessJson
-import com.wire.kalium.models.backend.json.FaultyJsonProvider
+import com.wire.kalium.tools.json.AccessJson
 import com.wire.kalium.tools.KtxSerializer
+import com.wire.kalium.tools.commonMissingFieldTests
 import io.kotest.core.spec.style.BehaviorSpec
-import io.kotest.core.spec.style.scopes.BehaviorSpecGivenContainerContext
 import io.kotest.matchers.equality.shouldBeEqualToComparingFields
-import io.kotest.matchers.should
-import io.kotest.matchers.types.beInstanceOf
-import kotlinx.serialization.SerializationException
 import kotlinx.serialization.decodeFromString
 
 class AccessSerializationTest : BehaviorSpec({
