@@ -22,7 +22,7 @@ data class Payload(
     @SerialName("from") val from: String,
     @SerialName("qualified_from") val qualifiedFrom: QualifiedFrom,
     @SerialName("type") val type: String,
-    @SerialName("client") val client: ClientResponse
+    @SerialName("client") val client: ClientResponse? = null
 )
 
 @Serializable
