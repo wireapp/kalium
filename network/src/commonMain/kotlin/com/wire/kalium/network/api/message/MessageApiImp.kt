@@ -1,5 +1,4 @@
 package com.wire.kalium.network.api.message
-
 import com.wire.kalium.network.api.KaliumHttpResult
 import com.wire.kalium.network.api.wrapKaliumResponse
 import io.ktor.client.HttpClient
@@ -17,7 +16,8 @@ class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
         @SerialName("sender") val sender: String,
         @SerialName("data") val `data`: String,
         @SerialName("native_push") val nativePush: Boolean,
-        @SerialName("recipients") val recipients: Map<String, Map<String, String>>,
+// TODO: Migrate Recipients to this new project
+//        @SerialName("recipients") val recipients: Map<String, Map<String, String>>,
         @SerialName("transient") val transient: Boolean,
         @SerialName("report_missing") var reportMissing: List<String>? = null,
         @SerialName("native_priority") val priority: MessagePriority
@@ -27,7 +27,7 @@ class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
         sender = this.sender,
         data = this.data,
         nativePush = this.nativePush,
-        recipients = this.recipients,
+//        recipients = this.recipients, // TODO: Migrate Recipients to this new project
         transient = this.transient,
         priority = this.priority
     )

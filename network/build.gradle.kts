@@ -1,6 +1,5 @@
 plugins {
     id("com.android.library")
-   // kotlin("plugin.serialization") version "1.5.31"
     id("org.jetbrains.kotlin.multiplatform")
     id("org.jetbrains.kotlin.plugin.serialization") version "1.5.31"
 }

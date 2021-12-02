@@ -37,7 +37,6 @@ dependencies {
     val javaxValidationVersion = "2.0.1.Final"
     val kotestVersion = "4.6.3"
     val junitVersion = "5.7.1"
-    val kotlinVersion = "1.5.31"
     val mockkVersion = "1.12.1"
     val jakartaVersion = "2.1.6"
     val jerseyVersion = "2.32"

@@ -1,7 +1,5 @@
 package com.wire.kalium.network.api.message
-
 import com.wire.kalium.network.api.KaliumHttpResult
-import com.wire.kalium.models.outbound.otr.Recipients
 
 interface MessageApi {
 
@@ -37,7 +35,8 @@ interface MessageApi {
         // TODO: what is transient
         data class DefaultParameters(
             val sender: String,
-            val recipients: Recipients,
+                // TODO: Migrate Recipients to this new project
+//            val recipients: Recipients,
             val nativePush: Boolean,
             val priority: MessagePriority,
             val transient: Boolean,

@@ -1,6 +1,6 @@
 package com.wire.kalium.network.api.user.client
 
-import com.wire.kalium.models.outbound.otr.PreKey
+import com.wire.kalium.network.api.prekey.PreKey
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

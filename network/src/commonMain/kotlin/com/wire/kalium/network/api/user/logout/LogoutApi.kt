@@ -1,7 +1,6 @@
 package com.wire.kalium.network.api.user.logout
 
-import com.wire.kalium.exceptions.HttpException
-import javax.ws.rs.core.Cookie
+import com.wire.kalium.network.exceptions.HttpException
 
 interface LogoutApi {
     @Throws(HttpException::class)

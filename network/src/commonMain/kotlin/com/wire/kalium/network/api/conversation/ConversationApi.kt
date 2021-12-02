@@ -1,8 +1,8 @@
 package com.wire.kalium.network.api.conversation
 
 import com.wire.kalium.network.api.KaliumHttpResult
-import com.wire.kalium.models.backend.ConversationId
-import com.wire.kalium.models.backend.UserId
+import com.wire.kalium.network.api.ConversationId
+import com.wire.kalium.network.api.UserId
 
 interface ConversationApi {
 

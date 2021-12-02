@@ -2,8 +2,8 @@ package com.wire.kalium.network.api.conversation
 
 import com.wire.kalium.network.api.KaliumHttpResult
 import com.wire.kalium.network.api.wrapKaliumResponse
-import com.wire.kalium.models.backend.ConversationId
-import com.wire.kalium.models.backend.UserId
+import com.wire.kalium.network.api.ConversationId
+import com.wire.kalium.network.api.UserId
 import io.ktor.client.HttpClient
 import io.ktor.client.call.receive
 import io.ktor.client.request.delete

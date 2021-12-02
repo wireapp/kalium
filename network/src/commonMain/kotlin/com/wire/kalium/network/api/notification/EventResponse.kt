@@ -1,10 +1,9 @@
 package com.wire.kalium.network.api.notification
 
+import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.user.client.ClientResponse
-import com.wire.kalium.models.backend.QualifiedID
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-
 
 @Serializable
 data class EventResponse(
@@ -15,7 +14,7 @@ data class EventResponse(
 
 @Serializable
 data class Payload(
-    @SerialName("qualified_conversation") val qualifiedConversation: QualifiedID,
+    @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
     @SerialName("conversation") val conversation: String,
     @SerialName("time") val time: String,
     @SerialName("data") val data: Data?,

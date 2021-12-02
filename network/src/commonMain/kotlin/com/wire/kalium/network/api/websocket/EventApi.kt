@@ -27,8 +27,10 @@ class EventApi(private val httpClient: HttpClient) {
             while (true) {
                 when (val frame = incoming.receive()) {
                     is Frame.Binary -> {
-                        val event = KtxSerializer.json.decode<EventResponse>(frame.data)
-                        emit(event)
+                        //TODO: replace "decodeFromStream" with something else
+                        // decodeFromStream only works on JVM
+//                        val event = KtxSerializer.json.decodeFromStream<EventResponse>(frame.data)
+//                        emit(event)
                     }
                 }
             }

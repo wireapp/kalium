@@ -1,7 +1,7 @@
 package com.wire.kalium.network.api.conversation
 
-import com.wire.kalium.models.backend.AccessRole
-import com.wire.kalium.models.backend.UserId
+import com.wire.kalium.network.api.UserId
+import com.wire.kalium.network.api.model.AccessRole
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
