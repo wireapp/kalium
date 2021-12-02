@@ -6,22 +6,22 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
-import java.io.InputStream
 
-class AssetsApiImp(private val httpClient: HttpClient) : AssetsApi {
+class AssetApiImp(private val httpClient: HttpClient) : AssetApi {
 
+    /**
+     * download an asset
+     * @param assetKey the asset identifier
+     * @param assetToken the asset token, can be null in case of public assets
+     */
     override suspend fun downloadAsset(assetKey: String, assetToken: String?): KaliumHttpResult<ByteArray> = wrapKaliumResponse {
         httpClient.get<HttpResponse>(path = "$PATH_PUBLIC_ASSETS$assetKey") {
-            assetToken?.run {
-                header(HEADER_ASSET_TOKEN, this)
-            }
+            assetToken?.let { header(HEADER_ASSET_TOKEN, it) }
         }.receive()
     }
 
-    override suspend fun uploadAsset(): KaliumHttpResult<HttpResponse> = wrapKaliumResponse {
-        httpClient.get<HttpResponse>(path = PATH_PUBLIC_ASSETS) {
-            // Method signature and Implementation still to be defined once there is proper documentation in place in Swagger
-        }.receive()
+    override suspend fun uploadAsset() {
+        TODO ("not yet implemented")
     }
 
     private companion object {

@@ -1,13 +1,14 @@
 package com.wire.kalium.cli
 
 import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.parameters.options.counted
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.waz.model.Messages
 import com.wire.kalium.api.AuthenticationManager
 import com.wire.kalium.api.KtorHttpClient
-import com.wire.kalium.api.asset.AssetsApi
-import com.wire.kalium.api.asset.AssetsApiImp
+import com.wire.kalium.api.asset.AssetApi
+import com.wire.kalium.api.asset.AssetApiImp
 import com.wire.kalium.api.conversation.ConversationApi
 import com.wire.kalium.api.conversation.ConversationApiImp
 import com.wire.kalium.api.message.MessageApi
@@ -51,6 +52,7 @@ import java.util.*
 class CliReceiveApplication : CliktCommand() {
     val email: String by option(help = "wire account email").required()
     val password: String by option(help = "wire account password").required()
+    val verbosity by option("-v").counted()
 
     private lateinit var loginApi: LoginApi
     private lateinit var conversationApi: ConversationApi
@@ -59,7 +61,7 @@ class CliReceiveApplication : CliktCommand() {
     private lateinit var clientApi: ClientApi
     private lateinit var authenticationManager: AuthenticationManager
     private lateinit var appHttpClient: HttpClient
-    private lateinit var assetsApi: AssetsApi
+    private lateinit var assetApi: AssetApi
 
     private lateinit var crypto: Crypto
 
@@ -102,14 +104,14 @@ class CliReceiveApplication : CliktCommand() {
         val okHttp = OkHttp.create {
             val interceptor = HttpLoggingInterceptor()
             interceptor.setLevel(HttpLoggingInterceptor.Level.BODY)
-            addInterceptor(interceptor)
+            //addInterceptor(interceptor)
         }
         val ktorClient = KtorHttpClient(HostProvider, okHttp, authenticationManager)
         appHttpClient = ktorClient.provideKtorHttpClient
         clientApi = ClientApiImp(appHttpClient)
         messageApi = MessageApiImp(appHttpClient)
         conversationApi = ConversationApiImp(appHttpClient)
-        assetsApi = AssetsApiImp(appHttpClient)
+        assetApi = AssetApiImp(appHttpClient)
         preKeyApi = PreKeyApiImpl(appHttpClient)
 
         // register client and send preKeys
@@ -136,26 +138,31 @@ class CliReceiveApplication : CliktCommand() {
         val eventApi = EventApi(ktorClient.provideWebSocketClient)
         val flow = eventApi.listenToLiveEvent(clientId)
         flow.collect {
+            for (payload in it.payload!!) {
+                if (payload.conversation == conversationId) {
+                    val message = crypto.decrypt(
+                        userId = UUID.fromString(payload.qualifiedFrom.id),
+                        clientId = payload.data?.sender!!,
+                        cypher = payload.data.text
+                    )
+                    val test = Base64.getDecoder().decode(message)
+                    val genericMessage = Messages.GenericMessage.parseFrom(test)
+                    echo(genericMessage)
+                    if (genericMessage.hasText()) {
+                        println("----------------------")
+                    } else if (genericMessage.hasAsset() && genericMessage.asset.hasUploaded()) {
+                        saveImage(genericMessage)
+                    }
 
-            if (it.payload!![0].conversation == conversationId) {
-                val payload = it.payload[0]
-                val message = crypto.decrypt(
-                    userId = UUID.fromString(payload.qualifiedFrom.id),
-                    clientId = payload.data?.sender!!,
-                    cypher = payload.data.text
-                )
-                val test = Base64.getDecoder().decode(message)
-                println("----------------------")
-                val genericMessage = Messages.GenericMessage.parseFrom(test)
-                if (genericMessage.hasText()) {
-                    echo("userId: ${payload.qualifiedFrom.id} sent: ${genericMessage.text!!.content}")
-                } else if (genericMessage.hasAsset() && genericMessage.asset.hasUploaded()) {
-                    val byteArray = assetsApi.downloadAsset(genericMessage.asset!!.uploaded.assetId, null).resultBody
-                    val image = Util.decrypt(encrypted = byteArray, key = genericMessage.asset.uploaded.otrKey!!.toByteArray())
-                    File("${genericMessage.messageId}").writeBytes(image)
                 }
             }
         }
+    }
+
+    private suspend fun saveImage(genericMessage: Messages.GenericMessage) {
+        val byteArray = assetApi.downloadAsset(genericMessage.asset!!.uploaded.assetId, null).resultBody
+        val image = Util.decrypt(encrypted = byteArray, key = genericMessage.asset.uploaded.otrKey!!.toByteArray())
+        File("./data/images/${genericMessage.messageId}").writeBytes(image)
     }
 
     private suspend fun getConvRecipients() {
