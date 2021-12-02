@@ -80,17 +80,17 @@ class CliSendApplication() : CliktCommand() {
         })
 
         val loginResult = loginApi.emailLogin(
-                LoginWithEmailRequest(email = email, password = password, label = "ktor"),
-                false
+            LoginWithEmailRequest(email = email, password = password, label = "ktor"),
+            false
         ).resultBody
 
         // initialize Crypto box
         crypto = CryptoFile("./data/${loginResult.userId}")
 
         authenticationManager = AuthenticationManagerImpl(
-                loginResult.accessToken,
-                loginResult.tokenType,
-                "" // TODO: Extract zuid cookie after login
+            loginResult.accessToken,
+            loginResult.tokenType,
+            "" // TODO: Extract zuid cookie after login
         )
 
         val okHttp = OkHttp.create {
@@ -106,12 +106,12 @@ class CliSendApplication() : CliktCommand() {
 
         // register client and send preKeys
         val registerClientRequest = RegisterClientRequest(
-                password = password,
-                deviceType = DeviceType.Desktop,
-                label = "ktor",
-                type = ClientType.Temporary,
-                preKeys = crypto.newPreKeys(0, 100),
-                lastKey = crypto.newLastPreKey()
+            password = password,
+            deviceType = DeviceType.Desktop,
+            label = "ktor",
+            type = ClientType.Temporary,
+            preKeys = crypto.newPreKeys(0, 100),
+            lastKey = crypto.newLastPreKey()
         )
         val registerClientResponse = clientApi.registerClient(registerClientRequest)
         clientId = registerClientResponse.resultBody.clientId
@@ -136,13 +136,14 @@ class CliSendApplication() : CliktCommand() {
         val content = msg.createGenericMsg().toByteArray()
         val encryptedMessage = crypto.encrypt(recipients, content)
         val param = MessageApi.Parameters.DefaultParameters(
-                sender = clientId,
-                priority = MessagePriority.LOW,
-                nativePush = false,
-                recipients = encryptedMessage,
-                transient = false,
+            sender = clientId,
+            priority = MessagePriority.LOW,
+            nativePush = false,
+            recipients = encryptedMessage,
+            transient = false,
         )
-        val messageResult = messageApi.sendMessage(conversationId = conversationId, option = MessageApi.MessageOption.ReportAll, parameters = param)
+        val messageResult =
+            messageApi.sendMessage(conversationId = conversationId, option = MessageApi.MessageOption.ReportAll, parameters = param)
         when (messageResult.resultBody) {
             is SendMessageResponse.MessageSent -> {}
             is SendMessageResponse.MissingDevicesResponse -> {
@@ -154,13 +155,14 @@ class CliSendApplication() : CliktCommand() {
 
     private suspend fun getConvRecipients() {
         val param = MessageApi.Parameters.DefaultParameters(
-                sender = clientId,
-                priority = MessagePriority.LOW,
-                nativePush = false,
-                recipients = Recipients(),
-                transient = false,
+            sender = clientId,
+            priority = MessagePriority.LOW,
+            nativePush = false,
+            recipients = Recipients(),
+            transient = false,
         )
-        val messageResult = messageApi.sendMessage(conversationId = conversationId, option = MessageApi.MessageOption.ReportAll, parameters = param)
+        val messageResult =
+            messageApi.sendMessage(conversationId = conversationId, option = MessageApi.MessageOption.ReportAll, parameters = param)
         when (messageResult.resultBody) {
             is SendMessageResponse.MissingDevicesResponse -> {
                 recipients = (messageResult.resultBody as SendMessageResponse.MissingDevicesResponse).missing
