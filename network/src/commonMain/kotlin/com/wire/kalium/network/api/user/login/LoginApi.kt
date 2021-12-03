@@ -4,8 +4,5 @@ import com.wire.kalium.network.api.KaliumHttpResult
 
 
 interface LoginApi {
-    suspend fun emailLogin(
-        loginWithEmailRequest: LoginWithEmailRequest,
-        persist: Boolean
-    ): KaliumHttpResult<LoginWithEmailResponse>
+    suspend fun emailLogin(loginWithEmailRequest: LoginWithEmailRequest, persist: Boolean): KaliumHttpResult<LoginWithEmailResponse>
 }
