@@ -29,7 +29,7 @@ class AuthApiImp(private val httpClient: HttpClient) : AuthApi {
             }.receive()
         }
 
-    override suspend fun RemoveCookiesByLabels(removeCookiesWithIdsRequest: RemoveCookiesByLabels): KaliumHttpResult<Unit> =
+    override suspend fun removeCookiesByLabels(removeCookiesWithIdsRequest: RemoveCookiesByLabels): KaliumHttpResult<Unit> =
         wrapKaliumResponse<Unit> {
             httpClient.post<HttpResponse>(path = "$PATH_COOKIES$PATH_REMOVE") {
                 body = removeCookiesWithIdsRequest

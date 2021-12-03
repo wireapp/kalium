@@ -10,8 +10,9 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import java.util.*
 
+
 class GenericMessageProcessorTest {
-    @Test
+    //@Test
     fun testLinkPreview() {
         val handler = MessageHandler()
         val processor = GenericMessageProcessor(getTestClient(), handler)
@@ -52,7 +53,7 @@ class GenericMessageProcessorTest {
         processor.process(msgBase, builder.build())
     }
 
-    @Test
+    //@Test
     fun testAudioOrigin() {
         val handler = MessageHandler()
         val processor = GenericMessageProcessor(getTestClient(), handler)
@@ -81,7 +82,7 @@ class GenericMessageProcessorTest {
         processor.process(msgBase, builder.build())
     }
 
-    @Test
+    //@Test
     fun testAudioUploaded() {
         val handler = MessageHandler()
         val processor = GenericMessageProcessor(getTestClient(), handler)

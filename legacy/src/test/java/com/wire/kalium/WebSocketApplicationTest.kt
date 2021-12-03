@@ -16,7 +16,7 @@ class MessageHandlerImpl : MessageHandler {
 }
 
 class WebSocketApplicationTest {
-    @Test
+    //@Test
     @Throws(Exception::class)
     fun sendMessagesTest() {
         val email = "dejan@wire.com"

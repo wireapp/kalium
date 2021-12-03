@@ -11,7 +11,7 @@ import javax.ws.rs.client.Client
 import javax.ws.rs.client.ClientBuilder
 
 class ApplicationSenderTest {
-    @Test
+    //@Test
     @Throws(Exception::class)
     fun sendMessagesTest() {
         val email = "dejan@wire.com"

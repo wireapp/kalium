@@ -1,6 +1,6 @@
 plugins {
-    id("com.android.application")
-    kotlin("android")
+    Plugins.androidApplication(this)
+    Plugins.androidKotlin(this)
 }
 
 android {

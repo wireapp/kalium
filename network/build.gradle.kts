@@ -1,33 +1,23 @@
 plugins {
-    id("com.android.library")
-    id("org.jetbrains.kotlin.multiplatform")
-    id("org.jetbrains.kotlin.plugin.serialization") version "1.5.31"
+    Plugins.androidLibrary(this)
+    Plugins.multiplatform(this)
+    Plugins.serialization(this)
 }
 
 group = "com.wire.kalium"
 version = "0.0.1-SNAPSHOT"
 
-buildscript {
-    repositories { mavenCentral() }
-    dependencies {
-        val kotlinVersion = "1.5.31"
-        classpath(kotlin("gradle-plugin", version = kotlinVersion))
-        classpath(kotlin("serialization", version = kotlinVersion))
-    }
-}
-
 android {
-    compileSdk = 31
+    compileSdk = Android.Sdk.compile
     sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
     defaultConfig {
-        minSdk = 23
-        targetSdk = 31
+        minSdk = Android.Sdk.min
+        targetSdk = Android.Sdk.target
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
-
 }
 
 kotlin {
