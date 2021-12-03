@@ -1,17 +1,24 @@
 package com.wire.kalium.network.api.prekey
 
 import com.wire.kalium.network.api.KaliumHttpResult
-import com.wire.kalium.network.api.UserId
-import com.wire.kalium.network.api.message.QualifiedUserIdToClientMap
+
 import com.wire.kalium.network.api.message.UserIdToClientMap
 
 interface PreKeyApi {
     @Deprecated("use getUsersPreKey with QualifiedUserId")
     suspend fun getUsersPreKey(users: UserIdToClientMap): KaliumHttpResult<UserClientsToPreKeyMap>
 
-    suspend fun getUsersPreKey(users: QualifiedUserIdToClientMap): KaliumHttpResult<QualifiedUserClientPrekeyMap>
+    /**
+     * @param users a map of domain to (map of user IDs to client IDs)
+     * @return a prekey for each one. You can't request information for more users than maximum conversation size.
+     */
+    suspend fun getUsersPreKey(users: DomainToUserIdToClientsMap): KaliumHttpResult<DomainToUserIdToClientsToPreykeyMap>
+
+    suspend fun getClientAvailablePrekeys(clientId: String): KaliumHttpResult<List<Int>>
 
 }
 
 typealias UserClientsToPreKeyMap = HashMap<String, HashMap<String, PreKey>>
-typealias QualifiedUserClientPrekeyMap = HashMap<UserId, HashMap<String, PreKey>>
+typealias DomainToUserIdToClientsToPreykeyMap = HashMap<String, HashMap<String, HashMap<String, PreKey>>>
+typealias DomainToUserIdToClientsMap = HashMap<String, HashMap<String, String>>
+
