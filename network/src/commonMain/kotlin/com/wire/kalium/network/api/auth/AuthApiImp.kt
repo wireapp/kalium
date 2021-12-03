@@ -2,7 +2,6 @@ package com.wire.kalium.network.api.auth
 
 import com.wire.kalium.network.api.KaliumHttpResult
 import com.wire.kalium.network.api.wrapKaliumResponse
-import com.wire.kalium.network.exceptions.AuthException
 import io.ktor.client.HttpClient
 import io.ktor.client.call.receive
 import io.ktor.client.request.cookie
@@ -16,10 +15,6 @@ class AuthApiImp(private val httpClient: HttpClient) : AuthApi {
             httpClient.post<HttpResponse>(path = PATH_ACCESS) {
                 this.cookie(cookie.name, cookie.value)
             }.receive()
-        }.also {
-            if (it.httpStatusCode == 401 or 403 or 400) {
-                throw AuthException(code = it.httpStatusCode)
-            }
         }
 
     override suspend fun removeCookiesByIds(removeCookiesByIdsRequest: RemoveCookiesByIdsRequest): KaliumHttpResult<Unit> =
