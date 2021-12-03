@@ -6,7 +6,6 @@ import com.wire.kalium.network.api.wrapKaliumResponse
 import io.ktor.client.*
 import io.ktor.client.request.*
 
-
 class LogoutImp(private val httpClient: HttpClient) : LogoutApi {
     override suspend fun logout(cookie: String): KaliumHttpResult<LoginWithEmailResponse> = wrapKaliumResponse {
         httpClient.post(path = PATH_LOGOUT) {
