@@ -8,9 +8,4 @@ interface LoginApi {
         loginWithEmailRequest: LoginWithEmailRequest,
         persist: Boolean
     ): KaliumHttpResult<LoginWithEmailResponse>
-
-    companion object {
-        const val PATH_LOGIN = "login"
-        const val QUERY_PERSIST = "persist"
-    }
 }
