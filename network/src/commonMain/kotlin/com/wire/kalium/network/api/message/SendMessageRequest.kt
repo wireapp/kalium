@@ -11,14 +11,5 @@ data class SendMessageRequest(
         @SerialName("recipients") val recipients: HashMap<String, HashMap<String, String>>,
         @SerialName("transient") val transient: Boolean,
         @SerialName("report_missing") val reportMissing: List<String> = listOf(),
-        @SerialName("native_priority") val priority: String = "low"
+        @SerialName("native_priority") val priority: MessagePriority
 )
-
-@Serializable
-data class MissingDevicesResponse(
-        @SerialName("missing") val missing: HashMap<String, List<String>>,
-        @SerialName("redundant") val redundant: HashMap<String, List<String>>,
-        @SerialName("deleted") val deleted: HashMap<String, List<String>>
-) : SendMessageResponse()
-
-object MessageSent : SendMessageResponse()

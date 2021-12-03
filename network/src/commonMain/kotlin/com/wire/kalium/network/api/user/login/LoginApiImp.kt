@@ -1,8 +1,6 @@
 package com.wire.kalium.network.api.user.login
 
 import com.wire.kalium.network.api.KaliumHttpResult
-import com.wire.kalium.network.api.user.login.LoginApi.Companion.PATH_LOGIN
-import com.wire.kalium.network.api.user.login.LoginApi.Companion.QUERY_PERSIST
 import com.wire.kalium.network.api.wrapKaliumResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.receive
@@ -21,5 +19,9 @@ class LoginApiImp(private val httpClient: HttpClient) : LoginApi {
             parameter(QUERY_PERSIST, persist)
             body = loginWithEmailRequest
         }.receive()
+    }
+    private companion object {
+        const val PATH_LOGIN = "login"
+        const val QUERY_PERSIST = "persist"
     }
 }

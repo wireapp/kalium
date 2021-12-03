@@ -2,10 +2,12 @@ package com.wire.kalium.network.api.asset
 
 import com.wire.kalium.network.api.KaliumHttpResult
 import com.wire.kalium.network.api.wrapKaliumResponse
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
+import io.ktor.client.HttpClient
+import io.ktor.client.call.receive
+import io.ktor.client.request.get
+import io.ktor.client.request.header
+import io.ktor.client.statement.HttpResponse
+
 
 class AssetApiImp(private val httpClient: HttpClient) : AssetApi {
 
@@ -21,7 +23,7 @@ class AssetApiImp(private val httpClient: HttpClient) : AssetApi {
     }
 
     override suspend fun uploadAsset() {
-        TODO ("not yet implemented")
+        TODO("not yet implemented")
     }
 
     private companion object {
