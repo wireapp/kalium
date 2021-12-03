@@ -1,9 +1,8 @@
 package com.wire.kalium.network.api.user.logout
 
-interface LogoutApi {
-    fun logout(cookie: Cookie)
+import com.wire.kalium.network.api.KaliumHttpResult
+import com.wire.kalium.network.api.user.login.LoginWithEmailResponse
 
-    companion object {
-        protected val PATH_LOGOUT = "logout"
-    }
+interface LogoutApi {
+    suspend fun logout(cookie: String): KaliumHttpResult<LoginWithEmailResponse>
 }
