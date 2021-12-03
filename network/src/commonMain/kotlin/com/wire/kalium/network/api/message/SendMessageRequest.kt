@@ -11,6 +11,5 @@ data class SendMessageRequest(
         @SerialName("recipients") val recipients: HashMap<String, HashMap<String, String>>,
         @SerialName("transient") val transient: Boolean,
         @SerialName("report_missing") val reportMissing: List<String> = listOf(),
-        @SerialName("native_priority") val priority: String = "low"
+        @SerialName("native_priority") val priority: MessagePriority
 )
-
