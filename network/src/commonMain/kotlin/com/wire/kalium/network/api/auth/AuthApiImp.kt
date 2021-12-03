@@ -36,9 +36,9 @@ class AuthApiImp(private val httpClient: HttpClient) : AuthApi {
             }.receive()
         }
 
-    companion object {
-        private const val PATH_ACCESS = "access"
-        private const val PATH_COOKIES = "cookies"
-        private const val PATH_REMOVE = "/remove"
+    private companion object {
+        const val PATH_ACCESS = "access"
+        const val PATH_COOKIES = "cookies"
+        const val PATH_REMOVE = "/remove"
     }
 }
