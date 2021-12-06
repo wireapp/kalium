@@ -53,6 +53,7 @@ object Dependencies {
 
     object Coroutines {
         const val core = "org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}"
+        const val test = "org.jetbrains.kotlinx:kotlinx-coroutines-test:${Versions.coroutines}"
     }
 
     object Cli {
@@ -70,6 +71,8 @@ object Dependencies {
         const val logging = "io.ktor:ktor-client-logging:${Versions.ktor}"
         const val auth = "io.ktor:ktor-client-auth:${Versions.ktor}"
         const val webSocket = "io.ktor:ktor-client-websockets:${Versions.ktor}"
+
+        const val mock = "io.ktor:ktor-client-mock:${Versions.ktor}"
 
         const val okHttp = "io.ktor:ktor-client-okhttp:${Versions.ktor}"
     }
