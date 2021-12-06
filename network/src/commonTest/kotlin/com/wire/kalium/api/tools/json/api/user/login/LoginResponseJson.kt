@@ -1,5 +1,7 @@
-package com.wire.kalium.api.tools.json
+package com.wire.kalium.api.tools.json.api.user.login
 
+import com.wire.kalium.api.tools.json.FaultyJsonProvider
+import com.wire.kalium.api.tools.json.ValidJsonProvider
 import com.wire.kalium.network.api.user.login.LoginWithEmailResponse
 
 object LoginResponseJson {

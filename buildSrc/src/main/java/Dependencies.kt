@@ -12,6 +12,7 @@ object Versions {
     const val kover = "0.4.2"
     const val ktor = "1.6.4"
     const val okHttp = "4.9.3"
+    const val kotest = "4.6.3"
 }
 
 object Plugins {
@@ -75,5 +76,11 @@ object Dependencies {
         const val mock = "io.ktor:ktor-client-mock:${Versions.ktor}"
 
         const val okHttp = "io.ktor:ktor-client-okhttp:${Versions.ktor}"
+    }
+
+    object Kotest {
+        const val junit5Runner = "io.kotest:kotest-runner-junit5:${Versions.kotest}"
+        const val assertions = "io.kotest:kotest-assertions-core:${Versions.kotest}"
+        const val property = "io.kotest:kotest-property:${Versions.kotest}"
     }
 }
