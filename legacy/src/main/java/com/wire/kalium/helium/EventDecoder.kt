@@ -14,7 +14,6 @@ class EventDecoder : Decoder.BinaryStream<Event> {
     override fun init(config: EndpointConfig?) {}
     override fun destroy() {}
 
-    @ExperimentalSerializationApi
     override fun decode(stream: InputStream): Event? {
         try {
             return KtxSerializer.json.decodeFromStream(stream)

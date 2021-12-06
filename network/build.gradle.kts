@@ -49,6 +49,10 @@ kotlin {
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
+                // coroutines
+                implementation(Dependencies.Coroutines.test)
+                // ktor test
+                implementation(Dependencies.Ktor.mock)
             }
         }
         val jvmMain by getting {
