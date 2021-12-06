@@ -33,7 +33,6 @@ class LoginApiTest : ApiTest {
         val loginApi: LoginApi = LoginApiImp(httpClient)
 
         val response = loginApi.emailLogin(VALID_LOGIN_REQUEST.serializableData, false)
-        //
         assertEquals(response.resultBody, VALID_LOGIN_RESPONSE.serializableData)
 
     }
@@ -45,9 +44,9 @@ class LoginApiTest : ApiTest {
             statusCode = HttpStatusCode.Unauthorized
         )
         val loginApi: LoginApi = LoginApiImp(httpClient)
+
         val error = assertFailsWith<ClientRequestException> { loginApi.emailLogin(INVALID_LOGIN_REQUEST, false) }
         assertEquals(error.response.receive<ErrorResponse>(), ERROR_RESPONSE.serializableData)
-
     }
 
 

@@ -27,7 +27,7 @@ class ClientApiTest : ApiTest {
     fun givenAValidRegisterClientRequest_whenCallingTheRegisterClientEndpoint_theRequestShouldBeConfiguredCorrectly() =
         runTest {
             val httpClient = mockHttpClient(
-                KtxSerializer.json.encodeToString(VALID_Register_Client_RESPONSE),
+                KtxSerializer.json.encodeToString(VALID_REGISTER_CLIENT_RESPONSE),
                 statusCode = HttpStatusCode.Created,
                 assertion = {
                     assertPost()
@@ -37,8 +37,8 @@ class ClientApiTest : ApiTest {
                 }
             )
             val clientApi: ClientApi = ClientApiImp(httpClient)
-            val response = clientApi.registerClient(Register_Client_REQUEST)
-            assertEquals(response.resultBody, VALID_Register_Client_RESPONSE)
+            val response = clientApi.registerClient(REGISTER_CLIENT_REQUEST)
+            assertEquals(response.resultBody, VALID_REGISTER_CLIENT_RESPONSE)
         }
 
     @Test
@@ -48,7 +48,7 @@ class ClientApiTest : ApiTest {
             statusCode = HttpStatusCode.Unauthorized
         )
         val clientApi: ClientApi = ClientApiImp(httpClient)
-        val error = assertFailsWith<ClientRequestException> { clientApi.registerClient(Register_Client_REQUEST) }
+        val error = assertFailsWith<ClientRequestException> { clientApi.registerClient(REGISTER_CLIENT_REQUEST) }
         assertEquals(error.response.receive<ErrorResponse>(), ERROR_RESPONSE)
     }
 
@@ -63,7 +63,7 @@ class ClientApiTest : ApiTest {
         val TEST_LAST_KEY = PreKey(101, "last_key")
 
 
-        val Register_Client_REQUEST = RegisterClientRequest(
+        val REGISTER_CLIENT_REQUEST = RegisterClientRequest(
             password = "password",
             deviceType = DeviceType.Desktop,
             type = ClientType.Temporary,
@@ -72,7 +72,7 @@ class ClientApiTest : ApiTest {
             lastKey = TEST_LAST_KEY
         )
 
-        val VALID_Register_Client_RESPONSE = RegisterClientResponse(
+        val VALID_REGISTER_CLIENT_RESPONSE = RegisterClientResponse(
             clientId = "client_id",
             registrationTime = "12.34.56.78",
             location = LocationResponse(latitude = "1.234", longitude = "5.678"),
