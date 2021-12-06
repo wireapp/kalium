@@ -1,4 +1,4 @@
-package com.wire.kalium.api.user.client
+package com.wire.kalium.api.tools.json.api.user.client
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.network.api.ErrorResponse

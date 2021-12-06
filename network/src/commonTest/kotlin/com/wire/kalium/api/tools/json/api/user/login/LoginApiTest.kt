@@ -1,20 +1,16 @@
-package com.wire.kalium.api.user.login
+package com.wire.kalium.api.tools.json.api.user.login
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.api.tools.json.api.user.login.LoginResponseJson
-import com.wire.kalium.api.tools.json.api.user.login.LoginWithEmailRequestJson
 import com.wire.kalium.api.tools.json.model.ErrorResponseJson
 import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.api.user.login.LoginApi
 import com.wire.kalium.network.api.user.login.LoginApiImp
 import com.wire.kalium.network.api.user.login.LoginWithEmailRequest
-import com.wire.kalium.network.tools.KtxSerializer
 import io.ktor.client.call.receive
 import io.ktor.client.features.ClientRequestException
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.encodeToString
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
