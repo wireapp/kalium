@@ -20,5 +20,5 @@ interface PreKeyApi {
 
 typealias UserClientsToPreKeyMap = Map<String, Map<String, PreKey>>
 typealias DomainToUserIdToClientsToPreykeyMap = Map<String, Map<String, Map<String, PreKey>>>
-typealias DomainToUserIdToClientsMap = Map<String, Map<String, String>>
+typealias DomainToUserIdToClientsMap = Map<String, Map<String, List<String>>>
 
