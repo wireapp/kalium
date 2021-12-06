@@ -5,7 +5,6 @@ import com.wire.kalium.api.tools.json.model.ErrorResponseJson
 import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.api.user.login.LoginApi
 import com.wire.kalium.network.api.user.login.LoginApiImp
-import com.wire.kalium.network.api.user.login.LoginWithEmailRequest
 import io.ktor.client.call.receive
 import io.ktor.client.features.ClientRequestException
 import io.ktor.http.HttpStatusCode
@@ -32,29 +31,27 @@ class LoginApiTest : ApiTest {
         )
         val loginApi: LoginApi = LoginApiImp(httpClient)
 
-        val response = loginApi.emailLogin(VALID_LOGIN_REQUEST.serializableData, false)
+        val response = loginApi.emailLogin(LOGIN_REQUEST.serializableData, false)
         assertEquals(response.resultBody, VALID_LOGIN_RESPONSE.serializableData)
 
     }
 
     @Test
-    fun givenAnInvalidLoginRequest_whenCallingTheLoginEndpoint_theCorrectExceptionIsThrown() = runTest {
+    fun givenTheServerReturnsAnError_whenCallingTheLoginEndpoint_theCorrectExceptionIsThrown() = runTest {
         val httpClient = mockHttpClient(
             ERROR_RESPONSE.rawJson,
             statusCode = HttpStatusCode.Unauthorized
         )
         val loginApi: LoginApi = LoginApiImp(httpClient)
 
-        val error = assertFailsWith<ClientRequestException> { loginApi.emailLogin(INVALID_LOGIN_REQUEST, false) }
+        val error = assertFailsWith<ClientRequestException> { loginApi.emailLogin(LOGIN_REQUEST.serializableData, false) }
         assertEquals(error.response.receive<ErrorResponse>(), ERROR_RESPONSE.serializableData)
     }
 
 
     private companion object {
-        val VALID_LOGIN_REQUEST = LoginWithEmailRequestJson.valid
+        val LOGIN_REQUEST = LoginWithEmailRequestJson.valid
         val VALID_LOGIN_RESPONSE = LoginResponseJson.valid
-
-        val INVALID_LOGIN_REQUEST = LoginWithEmailRequest("valid.test@email.com", "invalid_password", "label")
 
         val ERROR_RESPONSE = ErrorResponseJson.valid
         const val QUERY_PERSIST = "persist"

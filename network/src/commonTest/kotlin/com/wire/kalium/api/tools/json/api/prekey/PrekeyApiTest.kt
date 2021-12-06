@@ -31,12 +31,11 @@ class PrekeyApiTest : ApiTest {
         val preKeyApi: PreKeyApi = PreKeyApiImpl(httpClient)
 
         val response = preKeyApi.getUsersPreKey(VALID_GET_USERS_PREKEY_REQUEST.serializableData)
-        //
         assertEquals(response.resultBody, VALID_GET_USERS_PREKEY_RESPONSE.serializableData)
     }
 
     @Test
-    fun givenAnInvalidDomainToUserIdToClientsMap_whenCallingGetUsersPrekeyEndpoint_theCorrectExceptionIsThrown() = runTest {
+    fun givenTheServerReturnsAnError_whenCallingGetUsersPrekeyEndpoint_theCorrectExceptionIsThrown() = runTest {
         val httpClient = mockHttpClient(
             ErrorResponseJson.valid.rawJson,
             statusCode = HttpStatusCode.Forbidden,
