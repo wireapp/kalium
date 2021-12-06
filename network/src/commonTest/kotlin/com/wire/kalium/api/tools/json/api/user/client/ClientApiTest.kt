@@ -82,6 +82,6 @@ class ClientApiTest : ApiTest {
             capabilities = Capabilities(capabilities = listOf())
         )
 
-        val ERROR_RESPONSE = ErrorResponse(403, "unauthorized", "unauthorized")
+        val ERROR_RESPONSE = ErrorResponseJson.valid.serializableData
     }
 }
