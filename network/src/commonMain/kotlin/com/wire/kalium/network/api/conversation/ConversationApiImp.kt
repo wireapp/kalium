@@ -27,7 +27,7 @@ class ConversationApiImp(private val httpClient: HttpClient) : ConversationApi {
     ): KaliumHttpResult<ConversationPagingResponse> = wrapKaliumResponse<ConversationPagingResponse> {
         httpClient.get<HttpResponse>(path = PATH_CONVERSATIONS) {
             queryStart?.let { parameter(QUERY_KEY_START, it) }
-            parameter(QUERY_IDS, queryIds)
+            parameter(QUERY_KEY_IDS, queryIds)
         }.receive()
     }
 
@@ -61,15 +61,24 @@ class ConversationApiImp(private val httpClient: HttpClient) : ConversationApi {
             }.receive()
         }
 
+    /**
+     * returns 200 conversation created or 204 conversation unchanged
+     */
+    override suspend fun addParticipant(addParticipantRequest: AddParticipantRequest, conversationId: ConversationId): KaliumHttpResult<ConversationEvent> =
+        wrapKaliumResponse {
+            httpClient.post<HttpResponse>(path = "$PATH_CONVERSATIONS/${conversationId.value}$PATH_Members$PATH_V2") {
+                body = addParticipantRequest
+            }.receive()
+        }
 
     private companion object {
         const val PATH_CONVERSATIONS = "/conversations"
         const val PATH_Members = "/members"
         const val PATH_ONE_2_ONE = "/one2one"
-
+        const val PATH_V2 = "/v2"
 
         const val QUERY_KEY_START = "start"
         const val QUERY_KEY_SIZE = "size"
-        const val QUERY_IDS = "ids"
+        const val QUERY_KEY_IDS = "ids"
     }
 }
