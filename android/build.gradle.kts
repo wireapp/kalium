@@ -15,16 +15,6 @@ android {
         testInstrumentationRunner = Android.testRunner
     }
 
-    externalNativeBuild {
-        cmake {
-            version = Android.Ndk.cMakeVersion
-        }
-        ndkBuild {
-            ndkVersion = Android.Ndk.version
-            path(File("src/main/jni/Android.mk"))
-        }
-    }
-
     buildFeatures {
         compose = true
     }

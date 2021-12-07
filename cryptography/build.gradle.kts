@@ -18,6 +18,16 @@ android {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
+
+    externalNativeBuild {
+        cmake {
+            version = Android.Ndk.cMakeVersion
+        }
+        ndkBuild {
+            ndkVersion = Android.Ndk.version
+            path(File("src/main/jni/Android.mk"))
+        }
+    }
 }
 
 kotlin {
