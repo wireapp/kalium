@@ -7,10 +7,11 @@ import io.ktor.client.features.websocket.webSocket
 import io.ktor.client.request.parameter
 import io.ktor.http.HttpMethod
 import io.ktor.http.cio.websocket.Frame
-import io.ktor.util.Identity.decode
+import io.ktor.utils.io.core.String
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.decodeFromString
 
 class EventApi(private val httpClient: HttpClient) {
     /**
@@ -27,10 +28,10 @@ class EventApi(private val httpClient: HttpClient) {
             while (true) {
                 when (val frame = incoming.receive()) {
                     is Frame.Binary -> {
-                        //TODO: replace "decodeFromStream" with something else
-                        // decodeFromStream only works on JVM
-//                        val event = KtxSerializer.json.decodeFromStream<EventResponse>(frame.data)
-//                        emit(event)
+                        // assuming here the byteArray is an ASCII character set
+                        val jsonString = String(frame.data)
+                        val event = KtxSerializer.json.decodeFromString<EventResponse>(jsonString)
+                        emit(event)
                     }
                 }
             }
