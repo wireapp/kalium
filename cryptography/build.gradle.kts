@@ -25,7 +25,7 @@ android {
         }
         ndkBuild {
             ndkVersion = Android.Ndk.version
-            path(File("src/main/jni/Android.mk"))
+            path(File("src/androidMain/jni/Android.mk"))
         }
     }
 }
