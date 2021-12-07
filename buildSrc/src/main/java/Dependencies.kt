@@ -59,7 +59,7 @@ object Dependencies {
 
     object Cryptography {
         const val cryptoboxAndroid = "com.wire:cryptobox-android:${Versions.cryptoboxAndroid}"
-        const val cryptobox4j = "com.wire:cryptobox-4j:${Versions.cryptobox4j}"
+        const val cryptobox4j = "com.wire:cryptobox4j:${Versions.cryptobox4j}"
     }
 
     object Cli {
