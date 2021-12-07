@@ -3,8 +3,9 @@ package com.wire.kalium.network.api.user.logout
 import com.wire.kalium.network.api.KaliumHttpResult
 import com.wire.kalium.network.api.user.login.LoginWithEmailResponse
 import com.wire.kalium.network.api.wrapKaliumResponse
-import io.ktor.client.*
-import io.ktor.client.request.*
+import io.ktor.client.HttpClient
+import io.ktor.client.request.header
+import io.ktor.client.request.post
 import io.ktor.http.HttpHeaders
 
 class LogoutImp(private val httpClient: HttpClient) : LogoutApi {
