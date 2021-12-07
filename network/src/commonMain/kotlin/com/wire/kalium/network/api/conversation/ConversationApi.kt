@@ -11,4 +11,6 @@ interface ConversationApi {
     suspend fun fetchConversationsDetails(queryStart: String?, queryIds: List<String>): KaliumHttpResult<ConversationPagingResponse>
 
     suspend fun removeConversationMember(userId: UserId, conversationId: ConversationId): KaliumHttpResult<Unit>
+
+    suspend fun createNewConversation(createConversationRequest: CreateConversationRequest): KaliumHttpResult<ConversationResponse>
 }

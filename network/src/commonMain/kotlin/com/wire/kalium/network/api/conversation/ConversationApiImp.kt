@@ -9,6 +9,7 @@ import io.ktor.client.call.receive
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
+import io.ktor.client.request.post
 import io.ktor.client.statement.HttpResponse
 
 class ConversationApiImp(private val httpClient: HttpClient) : ConversationApi {
@@ -39,7 +40,18 @@ class ConversationApiImp(private val httpClient: HttpClient) : ConversationApi {
                 path = "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}" +
                         PATH_Members +
                         "/${userId.domain}/${userId.value}"
-            )
+            ).receive()
+        }
+
+    /**
+     * returns 201 when a new conversation is created,
+     * and 200 when the conversation already existed
+     */
+    override suspend fun createNewConversation(createConversationRequest: CreateConversationRequest): KaliumHttpResult<ConversationResponse> =
+        wrapKaliumResponse {
+            httpClient.post<HttpResponse>(path = PATH_CONVERSATIONS) {
+                body = createConversationRequest
+            }.receive()
         }
 
 
