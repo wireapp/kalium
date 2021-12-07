@@ -7,27 +7,31 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class RegisterClientRequest(
     @SerialName("password") val password: String,
+    @SerialName("prekeys") val preKeys: List<PreKey>,
+    @SerialName("lastkey") val lastKey: PreKey,
     @SerialName("class") val deviceType: DeviceType,
     @SerialName("type") val type: ClientType, // 'temporary', 'permanent', 'legalhold'
     @SerialName("label") val label: String,
-    @SerialName("prekeys") val preKeys: List<PreKey>,
-    @SerialName("lastkey") val lastKey: PreKey
+    @SerialName("capabilities") val capabilities: List<ClientCapability>?,
+    @SerialName("model") val model: String
 )
 
 @Serializable
 data class RegisterClientResponse(
     @SerialName("id") val clientId: String,
     @SerialName("type") val type: ClientType,
-    @SerialName("time") val registrationTime: String,
-    @SerialName("location") val location: LocationResponse? = null,
+    @SerialName("time") val registrationTime: String, // yyyy-mm-ddThh:MM:ss.qqq
+    @SerialName("location") val location: LocationResponse?,
     @SerialName("class") val deviceType: DeviceType?,
     @SerialName("label") val label: String?,
-    val capabilities: Capabilities?
+    @SerialName("cookie") val cookie: String?,
+    @SerialName("capabilities") val capabilities: Capabilities?,
+    @SerialName("model") val model: String?
 )
 
 @Serializable
 data class Capabilities(
-    @SerialName("capabilities") val capabilities: List<String>
+    @SerialName("capabilities") val capabilities: List<ClientCapability>
 )
 
 @Serializable
@@ -56,4 +60,10 @@ enum class DeviceType {
 
     @SerialName("legalhold")
     LegalHold
+}
+
+@Serializable
+enum class ClientCapability {
+    @SerialName("legalhold-implicit-consent")
+    LegalHoldImplicitConsent
 }
