@@ -37,56 +37,35 @@ data class Capabilities(
 @Serializable
 enum class ClientType {
     @SerialName("temporary")
-    Temporary {
-        override fun toString(): String {
-            return "temporary"
-        }
-    },
+    Temporary,
 
     @SerialName("permanent")
-    Permanent {
-        override fun toString(): String {
-            return "permanent"
-        }
-    },
+    Permanent,
 
     @SerialName("legalhold")
-    LegalHold {
-        override fun toString(): String {
-            return "legalhold"
-        }
+    LegalHold;
+
+    override fun toString(): String {
+        return this.name.lowercase()
     }
 }
 
 @Serializable
 enum class DeviceType {
-    //'phone', 'tablet', 'desktop', 'legalhold'
     @SerialName("phone")
-    Phone {
-        override fun toString(): String {
-            return "phone"
-        }
-    },
+    Phone,
 
     @SerialName("tablet")
-    Tablet {
-        override fun toString(): String {
-            return "tablet"
-        }
-    },
+    Tablet,
 
     @SerialName("desktop")
-    Desktop {
-        override fun toString(): String {
-            return "desktop"
-        }
-    },
+    Desktop,
 
     @SerialName("legalhold")
-    LegalHold {
-        override fun toString(): String {
-            return "legalhold"
-        }
+    LegalHold;
+
+    override fun toString(): String {
+        return this.name.lowercase()
     }
 }
 
