@@ -31,8 +31,12 @@ typealias UserIdToClientMap = HashMap<String, List<String>>
 @Serializable
 enum class MessagePriority {
     @SerialName("low")
-    LOW,
+    Low,
 
     @SerialName("high")
-    HIGH
+    High;
+
+    override fun toString(): String {
+        return this.name.lowercase()
+    }
 }
