@@ -49,33 +49,23 @@ class NetworkModule(
 
     private val hostProvider = HostProvider
 
-    val loginApi: LoginApi by lazy {
-        LoginApiImp(anonymousHttpClient)
-    }
-    val authApi: AuthApi by lazy<AuthApi> {
-        AuthApiImp(authenticatedHttpClient)
-    }
-    val logoutApi: LogoutApi by lazy {
-        LogoutImp(authenticatedHttpClient)
-    }
-    val clientApi: ClientApi by lazy {
-        ClientApiImp(authenticatedHttpClient)
-    }
-    val messageApi: MessageApi by lazy {
-        MessageApiImp(authenticatedHttpClient)
-    }
-    val conversationApi: ConversationApi by lazy {
-        ConversationApiImp(authenticatedHttpClient)
-    }
-    val preKeyApi: PreKeyApi by lazy {
-        PreKeyApiImpl(authenticatedHttpClient)
-    }
-    val assetApi: AssetApi by lazy {
-        AssetApiImp(authenticatedHttpClient)
-    }
-    val notificationApi: NotificationApi by lazy {
-        NotificationApiImpl(authenticatedHttpClient)
-    }
+    val loginApi: LoginApi get() = LoginApiImp(anonymousHttpClient)
+
+    val authApi: AuthApi get() = AuthApiImp(authenticatedHttpClient)
+
+    val logoutApi: LogoutApi get() = LogoutImp(authenticatedHttpClient)
+
+    val clientApi: ClientApi get() = ClientApiImp(authenticatedHttpClient)
+
+    val messageApi: MessageApi get() = MessageApiImp(authenticatedHttpClient)
+
+    val conversationApi: ConversationApi get() = ConversationApiImp(authenticatedHttpClient)
+
+    val preKeyApi: PreKeyApi get() = PreKeyApiImpl(authenticatedHttpClient)
+
+    val assetApi: AssetApi get() = AssetApiImp(authenticatedHttpClient)
+
+    val notificationApi: NotificationApi get() = NotificationApiImpl(authenticatedHttpClient)
 
     private val kotlinxSerializer = KotlinxSerializer(KtxSerializer.json)
 
