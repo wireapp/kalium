@@ -37,33 +37,65 @@ data class Capabilities(
 @Serializable
 enum class ClientType {
     @SerialName("temporary")
-    Temporary,
+    Temporary {
+        override fun toString(): String {
+            return "temporary"
+        }
+    },
 
     @SerialName("permanent")
-    Permanent,
+    Permanent {
+        override fun toString(): String {
+            return "permanent"
+        }
+    },
 
     @SerialName("legalhold")
-    LegalHold
+    LegalHold {
+        override fun toString(): String {
+            return "legalhold"
+        }
+    }
 }
 
 @Serializable
 enum class DeviceType {
     //'phone', 'tablet', 'desktop', 'legalhold'
     @SerialName("phone")
-    Phone,
+    Phone {
+        override fun toString(): String {
+            return "phone"
+        }
+    },
 
     @SerialName("tablet")
-    Tablet,
+    Tablet {
+        override fun toString(): String {
+            return "tablet"
+        }
+    },
 
     @SerialName("desktop")
-    Desktop,
+    Desktop {
+        override fun toString(): String {
+            return "desktop"
+        }
+    },
 
     @SerialName("legalhold")
-    LegalHold
+    LegalHold {
+        override fun toString(): String {
+            return "legalhold"
+        }
+    }
 }
 
 @Serializable
 enum class ClientCapability {
     @SerialName("legalhold-implicit-consent")
-    LegalHoldImplicitConsent
+    LegalHoldImplicitConsent {
+        override fun toString(): String {
+            return "legalhold-implicit-consent"
+        }
+    }
 }

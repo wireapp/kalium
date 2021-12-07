@@ -9,7 +9,7 @@ object ErrorResponseJson {
         |{
         |  "code": ${serializable.code},
         |  "label": "${serializable.label}",
-        |  "message": "${serializable.message}",
+        |  "message": "${serializable.message}"
         |}
         """.trimMargin()
     }

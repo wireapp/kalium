@@ -30,7 +30,7 @@ object RegisterClientRequestJson {
         |           "key": "${serializable.preKeys[1].key}"
         |       }
         |  ],
-        |  "type": "${serializable.type}",
+        |  "type": "${serializable.type.name}",
         |  "capabilities": [
         |       "${serializable.capabilities?.get(0)}"
         |  ],

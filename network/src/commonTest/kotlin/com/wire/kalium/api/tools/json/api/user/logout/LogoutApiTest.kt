@@ -7,6 +7,8 @@ import com.wire.kalium.api.tools.json.model.ErrorResponseJson
 import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.network.api.user.client.ClientApiImp
+import com.wire.kalium.network.api.user.logout.LogoutApi
+import com.wire.kalium.network.api.user.logout.LogoutImp
 import io.ktor.client.call.receive
 import io.ktor.client.features.ClientRequestException
 import io.ktor.http.HttpHeaders
@@ -28,15 +30,13 @@ class LogoutApiTest : ApiTest {
                 statusCode = HttpStatusCode.Created,
                 assertion = {
                     assertPost()
-                    assertJson()
                     assertNoQueryParams()
                     assertPathEqual(PATH_LOGOUT)
                     assertHeaderExist(HttpHeaders.Cookie)
                 }
             )
-            val clientApi: ClientApi = ClientApiImp(httpClient)
-            val response = clientApi.registerClient(REGISTER_CLIENT_REQUEST.serializableData)
-            assertEquals(response.resultBody, VALID_REGISTER_CLIENT_RESPONSE.serializableData)
+            val logout: LogoutApi = LogoutImp(httpClient)
+            logout.logout(TEST_COOKIE)
         }
 
     @Test
@@ -45,15 +45,15 @@ class LogoutApiTest : ApiTest {
             ErrorResponseJson.valid.rawJson,
             statusCode = HttpStatusCode.Unauthorized
         )
-        val clientApi: ClientApi = ClientApiImp(httpClient)
-        val error = assertFailsWith<ClientRequestException> { clientApi.registerClient(REGISTER_CLIENT_REQUEST.serializableData) }
+        val logout: LogoutApi = LogoutImp(httpClient)
+        val error = assertFailsWith<ClientRequestException> { logout.logout(TEST_COOKIE) }
         assertEquals(error.response.receive<ErrorResponse>(), ERROR_RESPONSE)
     }
 
 
     private companion object {
-        const val PATH_LOGOUT = "access/logout"
-        val REGISTER_CLIENT_REQUEST = RegisterClientRequestJson.valid
+        const val PATH_LOGOUT = "/access/logout"
+        const val TEST_COOKIE = "cookie"
         val VALID_REGISTER_CLIENT_RESPONSE = RegisterClientResponseJson.valid
         val ERROR_RESPONSE = ErrorResponseJson.valid.serializableData
     }

@@ -9,7 +9,7 @@ import io.ktor.client.request.post
 import io.ktor.http.HttpHeaders
 
 class LogoutImp(private val httpClient: HttpClient) : LogoutApi {
-    override suspend fun logout(cookie: String): KaliumHttpResult<LoginWithEmailResponse> = wrapKaliumResponse {
+    override suspend fun logout(cookie: String): KaliumHttpResult<Unit> = wrapKaliumResponse {
         httpClient.post(path = "$PATH_ACCESS$PATH_LOGOUT") {
             header(HttpHeaders.Cookie, cookie)
         }
