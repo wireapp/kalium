@@ -30,6 +30,10 @@ import io.ktor.client.features.auth.providers.bearer
 import io.ktor.client.features.defaultRequest
 import io.ktor.client.features.json.JsonFeature
 import io.ktor.client.features.json.serializer.KotlinxSerializer
+import io.ktor.client.features.logging.LogLevel
+import io.ktor.client.features.logging.Logger
+import io.ktor.client.features.logging.Logging
+import io.ktor.client.features.logging.SIMPLE
 import io.ktor.client.features.websocket.WebSockets
 import io.ktor.client.request.header
 import io.ktor.client.request.host
@@ -39,7 +43,8 @@ import io.ktor.http.URLProtocol
 
 class NetworkModule(
     private val credentialsProvider: CredentialsProvider,
-    private val engine: HttpClientEngine = defaultHttpEngine()
+    private val engine: HttpClientEngine = defaultHttpEngine(),
+    private val isRequestLoggingEnabled: Boolean = false
 ) {
 
     private val hostProvider = HostProvider
@@ -80,10 +85,17 @@ class NetworkModule(
             host = HostProvider.host
             url.protocol = URLProtocol.HTTPS
         }
+        if (isRequestLoggingEnabled) {
+            install(Logging) {
+                logger = Logger.SIMPLE
+                level = LogLevel.ALL
+            }
+        }
         install(JsonFeature) {
             serializer = kotlinxSerializer
             accept(ContentType.Application.Json)
         }
+        config()
     }
 
     internal val anonymousHttpClient by lazy {

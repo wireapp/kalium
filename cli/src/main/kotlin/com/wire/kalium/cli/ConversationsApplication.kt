@@ -7,7 +7,7 @@ import com.wire.kalium.network.NetworkModule
 import com.wire.kalium.network.api.user.login.LoginWithEmailRequest
 import kotlinx.coroutines.runBlocking
 
-class LoginApplication : CliktCommand() {
+class ConversationsApplication : CliktCommand() {
     private val email: String by option(help = "wire account email").required()
     private val password: String by option(help = "wire account password").required()
 
@@ -21,9 +21,16 @@ class LoginApplication : CliktCommand() {
             false
         ).resultBody
 
-        println("Authenticated: LoginResult = $loginResult")
+        credentialsLedger.onAuthenticate(loginResult.accessToken, "") //TODO extract refresh token from cookie response
+
+        val conversations = networkModule.conversationApi.conversationsByBatch(null, 100).resultBody.conversations
+
+        println("Your conversations:")
+        conversations.forEach {
+            println("ID:${it.id}, Name: ${it.name}")
+        }
     }
 
 }
 
-fun main(args: Array<String>) = LoginApplication().main(args)
+fun main(args: Array<String>) = ConversationsApplication().main(args)
