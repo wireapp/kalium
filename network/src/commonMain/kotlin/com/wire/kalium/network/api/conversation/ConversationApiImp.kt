@@ -54,10 +54,19 @@ class ConversationApiImp(private val httpClient: HttpClient) : ConversationApi {
             }.receive()
         }
 
+    override suspend fun createOne2OneConversation(createConversationRequest: CreateConversationRequest): KaliumHttpResult<ConversationResponse> =
+        wrapKaliumResponse {
+            httpClient.post<HttpResponse>(path = "$PATH_CONVERSATIONS$PATH_ONE_2_ONE") {
+                body = createConversationRequest
+            }.receive()
+        }
+
 
     private companion object {
         const val PATH_CONVERSATIONS = "/conversations"
         const val PATH_Members = "/members"
+        const val PATH_ONE_2_ONE = "/one2one"
+
 
         const val QUERY_KEY_START = "start"
         const val QUERY_KEY_SIZE = "size"

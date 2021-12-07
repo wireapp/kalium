@@ -13,4 +13,6 @@ interface ConversationApi {
     suspend fun removeConversationMember(userId: UserId, conversationId: ConversationId): KaliumHttpResult<Unit>
 
     suspend fun createNewConversation(createConversationRequest: CreateConversationRequest): KaliumHttpResult<ConversationResponse>
+
+    suspend fun createOne2OneConversation(createConversationRequest: CreateConversationRequest): KaliumHttpResult<ConversationResponse>
 }
