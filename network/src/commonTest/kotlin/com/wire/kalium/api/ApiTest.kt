@@ -1,8 +1,7 @@
 package com.wire.kalium.api
 
-import com.wire.kalium.network.api.AuthenticationManager
-import com.wire.kalium.network.api.KtorHttpClient
-import com.wire.kalium.network.tools.HostProvider
+import com.wire.kalium.network.NetworkModule
+import com.wire.kalium.network.api.CredentialsProvider
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -17,7 +16,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-private class TestAuthManager() : AuthenticationManager {
+private class TestAuthManager() : CredentialsProvider {
     override fun accessToken(): String =
         "eyJhbGciOiJIUzI1AnwarInR5cCI6IkpXVCJ9.eyJsb2dnZWRJbkFzIjoiYWRtaW4iLCJpYXQiOjE0MjI3Nzk2Mz69.gzSraSYS8EXBxLN_oWnFSRgCzcmJmMjLiuyu5CSpyHI"
 
@@ -60,11 +59,10 @@ interface ApiTest {
                 headers = headersOf(HttpHeaders.ContentType, "application/json")
             )
         }
-        return KtorHttpClient(
+        return NetworkModule(
             engine = mockEngine,
-            hostProvider = HostProvider,
-            authenticationManager = TestAuthManager()
-        ).provideKtorHttpClient
+            credentialsProvider = TestAuthManager()
+        ).authenticatedHttpClient
     }
 
     // query params assertions

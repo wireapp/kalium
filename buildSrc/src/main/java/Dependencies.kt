@@ -10,7 +10,7 @@ object Versions {
     const val coroutines = "1.6.0-RC"
     const val compose = "1.1.0-beta04"
     const val kover = "0.4.2"
-    const val ktor = "1.6.4"
+    const val ktor = "1.6.6"
     const val okHttp = "4.9.3"
     const val kotest = "4.6.3"
 }
