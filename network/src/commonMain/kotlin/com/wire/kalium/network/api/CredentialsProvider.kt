@@ -1,6 +1,6 @@
 package com.wire.kalium.network.api
 
-interface AuthenticationManager {
+interface CredentialsProvider {
     fun accessToken(): String
     fun refreshToken(): String
 }
