@@ -57,11 +57,14 @@ kotlin {
         }
         val jvmMain by getting {
             dependencies {
+                implementation(Dependencies.Ktor.okHttp)
             }
         }
         val jvmTest by getting
         val androidMain by getting {
-
+            dependencies {
+                implementation(Dependencies.Ktor.okHttp)
+            }
         }
         val androidTest by getting
     }
