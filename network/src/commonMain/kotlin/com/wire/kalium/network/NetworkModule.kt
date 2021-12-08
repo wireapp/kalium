@@ -39,7 +39,6 @@ import io.ktor.client.features.websocket.WebSockets
 import io.ktor.client.request.header
 import io.ktor.client.request.host
 import io.ktor.client.statement.HttpResponse
-import io.ktor.client.utils.EmptyContent
 import io.ktor.http.ContentType
 import io.ktor.http.URLProtocol
 
