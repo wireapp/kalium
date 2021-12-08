@@ -19,6 +19,7 @@ import com.wire.kalium.network.api.user.login.LoginApi
 import com.wire.kalium.network.api.user.login.LoginApiImp
 import com.wire.kalium.network.api.user.logout.LogoutApi
 import com.wire.kalium.network.api.user.logout.LogoutImp
+import com.wire.kalium.network.api.websocket.EventApi
 import com.wire.kalium.network.tools.HostProvider
 import com.wire.kalium.network.tools.KtxSerializer
 import io.ktor.client.HttpClient
@@ -38,6 +39,7 @@ import io.ktor.client.features.websocket.WebSockets
 import io.ktor.client.request.header
 import io.ktor.client.request.host
 import io.ktor.client.statement.HttpResponse
+import io.ktor.client.utils.EmptyContent
 import io.ktor.http.ContentType
 import io.ktor.http.URLProtocol
 
@@ -66,6 +68,8 @@ class NetworkModule(
     val assetApi: AssetApi get() = AssetApiImp(authenticatedHttpClient)
 
     val notificationApi: NotificationApi get() = NotificationApiImpl(authenticatedHttpClient)
+
+    val eventApi: EventApi get() = EventApi(webSocketClient)
 
     private val kotlinxSerializer = KotlinxSerializer(KtxSerializer.json)
 
