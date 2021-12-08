@@ -4,7 +4,11 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 typealias ConversationId = QualifiedID
+typealias NonQualifiedConversationId = String
 typealias UserId = QualifiedID
+typealias NonQualifiedUserId = String
+typealias TeamId = String
+typealias AssetId = String
 
 @Serializable
 data class QualifiedID(
