@@ -16,5 +16,5 @@ interface ConversationApi {
 
     suspend fun createOne2OneConversation(createConversationRequest: CreateConversationRequest): KaliumHttpResult<ConversationResponse>
 
-    suspend fun addParticipant(addParticipantRequest: AddParticipantRequest, conversationId: ConversationId): KaliumHttpResult<ConversationEvent>
+    suspend fun addParticipant(addParticipantRequest: AddParticipantRequest, conversationId: ConversationId): KaliumHttpResult<AddParticipantResponse>
 }

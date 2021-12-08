@@ -6,6 +6,8 @@ import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.UserId
 import io.ktor.client.HttpClient
 import io.ktor.client.call.receive
+import io.ktor.client.features.ClientRequestException
+import io.ktor.client.features.ResponseException
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
@@ -64,12 +66,25 @@ class ConversationApiImp(private val httpClient: HttpClient) : ConversationApi {
     /**
      * returns 200 conversation created or 204 conversation unchanged
      */
-    override suspend fun addParticipant(addParticipantRequest: AddParticipantRequest, conversationId: ConversationId): KaliumHttpResult<ConversationEvent> =
-        wrapKaliumResponse {
-            httpClient.post<HttpResponse>(path = "$PATH_CONVERSATIONS/${conversationId.value}$PATH_Members$PATH_V2") {
+    override suspend fun addParticipant(
+        addParticipantRequest: AddParticipantRequest,
+        conversationId: ConversationId
+    ): KaliumHttpResult<AddParticipantResponse> {
+        try {
+            val response = httpClient.post<HttpResponse>(path = "$PATH_CONVERSATIONS/${conversationId.value}$PATH_Members$PATH_V2") {
                 body = addParticipantRequest
-            }.receive()
+            }
+            return when (response.status.value) {
+                200 -> wrapKaliumResponse<AddParticipantResponse.UserAdded> { response }
+                // 204
+                else -> wrapKaliumResponse<AddParticipantResponse.ConversationUnchanged> { response }
+            }
+            // TODO: to be changed one the way we handel error is done
+        } catch (e: ResponseException) {
+            throw e
         }
+    }
+
 
     private companion object {
         const val PATH_CONVERSATIONS = "/conversations"
