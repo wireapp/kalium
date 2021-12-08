@@ -42,6 +42,7 @@ android {
 
 dependencies {
     implementation(project(":network"))
+    implementation(project(":cryptography"))
 
     implementation(Dependencies.Android.appCompat)
     implementation(Dependencies.Android.activityCompose)
