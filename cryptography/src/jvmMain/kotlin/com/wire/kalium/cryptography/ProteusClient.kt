@@ -54,6 +54,10 @@ actual class ProteusClient {
         }
     }
 
+    actual fun createSessionAndDecrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
+        return wrapException { box!!.decrypt(sessionId.value, message) }
+    }
+
     private fun <T> wrapException(b: () -> T): T {
         try {
             return b()

@@ -50,6 +50,8 @@ expect class ProteusClient {
     fun getSession(sessionId: CryptoSessionId): ProteusSession?
     @Throws(ProteusException::class)
     fun createSession(preKey: PreKey, sessionId: CryptoSessionId): ProteusSession
+    @Throws(ProteusException::class)
+    fun createSessionAndDecrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray
 }
 
 fun ProteusClient.createSessions(preKeys: HashMap<String, HashMap<String, PreKey>>) {
