@@ -1,6 +1,6 @@
 package com.wire.kalium.api
 
-import com.wire.kalium.network.NetworkModule
+import com.wire.kalium.network.AuthenticatedNetworkContainer
 import com.wire.kalium.network.api.CredentialsProvider
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -59,7 +59,7 @@ interface ApiTest {
                 headers = headersOf(HttpHeaders.ContentType, "application/json")
             )
         }
-        return NetworkModule(
+        return AuthenticatedNetworkContainer(
             engine = mockEngine,
             credentialsProvider = TestAuthManager()
         ).authenticatedHttpClient
