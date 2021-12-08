@@ -70,6 +70,7 @@ class NetworkModule(
 
     val eventApi: EventApi get() = EventApi(webSocketClient)
 
+
     private val kotlinxSerializer = KotlinxSerializer(KtxSerializer.json)
 
     private fun provideBaseHttpClient(config: HttpClientConfig<*>.() -> Unit = {}) = HttpClient(engine) {
