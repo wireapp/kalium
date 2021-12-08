@@ -7,13 +7,14 @@ object Versions {
     const val activityCompose = "1.3.1"
     const val appCompat = "1.1.0"
     const val cliKt = "3.3.0"
-    const val coroutines = "1.5.2"
-    const val compose = "1.0.5"
+    const val coroutines = "1.6.0-RC"
+    const val compose = "1.1.0-beta04"
     const val cryptobox4j = "1.0.0"
     const val cryptoboxAndroid = "1.1.3"
     const val kover = "0.4.2"
-    const val ktor = "1.6.4"
+    const val ktor = "1.6.6"
     const val okHttp = "4.9.3"
+    const val kotest = "4.6.3"
 }
 
 object Plugins {
@@ -55,6 +56,7 @@ object Dependencies {
 
     object Coroutines {
         const val core = "org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}"
+        const val test = "org.jetbrains.kotlinx:kotlinx-coroutines-test:${Versions.coroutines}"
     }
 
     object Cryptography {
@@ -78,6 +80,14 @@ object Dependencies {
         const val auth = "io.ktor:ktor-client-auth:${Versions.ktor}"
         const val webSocket = "io.ktor:ktor-client-websockets:${Versions.ktor}"
 
+        const val mock = "io.ktor:ktor-client-mock:${Versions.ktor}"
+
         const val okHttp = "io.ktor:ktor-client-okhttp:${Versions.ktor}"
+    }
+
+    object Kotest {
+        const val junit5Runner = "io.kotest:kotest-runner-junit5:${Versions.kotest}"
+        const val assertions = "io.kotest:kotest-assertions-core:${Versions.kotest}"
+        const val property = "io.kotest:kotest-property:${Versions.kotest}"
     }
 }
