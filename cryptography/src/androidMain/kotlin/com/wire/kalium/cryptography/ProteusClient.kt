@@ -70,7 +70,7 @@ actual class ProteusClient {
     actual fun getSession(sessionId: CryptoSessionId): ProteusSession? {
         return try {
             ProteusSession(box!!.getSession(sessionId.value))
-        } catch (e: Exception){
+        } catch (e: Exception) {
             null
         }
     }
@@ -81,11 +81,7 @@ actual class ProteusClient {
 
     actual fun createSessionAndDecrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
         return wrapException {
-            box!!.getSession(sessionId.value).let {
-                it.decrypt(message)
-            } ?: run {
-                box!!.initSessionFromMessage(sessionId.value, message).message
-            }
+            box!!.initSessionFromMessage(sessionId.value, message).message
         }
     }
 
