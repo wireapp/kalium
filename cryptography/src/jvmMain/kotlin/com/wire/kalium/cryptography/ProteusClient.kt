@@ -9,31 +9,39 @@ import java.util.UUID
 
 actual class ProteusClient {
 
-    val box: CryptoBox
+    val path: String
+    var box: CryptoBox? = null
 
     actual constructor(rootDir: String, userId: String) {
-        val root = String.format("%s/%s", rootDir, userId)
-        box = CryptoBox.open(root)
+        path = String.format("%s/%s", rootDir, userId)
+    }
+
+    actual fun open() {
+        box = wrapException { CryptoBox.open(path) }
+    }
+
+    actual fun close() {
+        box?.close()
     }
 
     actual fun getIdentity(): ByteArray {
-        return wrapException { box.identity }
+        return wrapException { box!!.identity }
     }
 
     actual fun getLocalFingerprint(): ByteArray {
-        return wrapException { box.localFingerprint }
+        return wrapException { box!!.localFingerprint }
     }
 
     actual fun newLastPreKey(): PreKey {
-        return wrapException { toPreKey(box.newLastPreKey()) }
+        return wrapException { toPreKey(box!!.newLastPreKey()) }
     }
 
     actual fun newPreKeys(from: Int, count: Int): ArrayList<PreKey> {
-        return wrapException { box.newPreKeys(from, count).map { toPreKey(it) } as ArrayList<PreKey> }
+        return wrapException { box!!.newPreKeys(from, count).map { toPreKey(it) } as ArrayList<PreKey> }
     }
 
     actual fun getSession(sessionId: CryptoSessionId): ProteusSession? {
-        return ProteusSession(box, sessionId)
+        return box?.let { ProteusSession(it, sessionId) }
     }
 
     actual fun createSession(
@@ -41,12 +49,12 @@ actual class ProteusClient {
         sessionId: CryptoSessionId
     ): ProteusSession {
         return wrapException {
-            box.encryptFromPreKeys(sessionId.value, toPreKey(preKey), ByteArray(0))
-            ProteusSession(box, sessionId)
+            box!!.encryptFromPreKeys(sessionId.value, toPreKey(preKey), ByteArray(0))
+            ProteusSession(box!!, sessionId)
         }
     }
 
-    fun <T> wrapException(b: () -> T): T {
+    private fun <T> wrapException(b: () -> T): T {
         try {
             return b()
         } catch (e: CryptoException) {
@@ -71,7 +79,6 @@ actual class ProteusClient {
             return String.format("%s_%s", userId, clientId)
         }
     }
-
 }
 
 actual class ProteusSession {

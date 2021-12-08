@@ -30,8 +30,12 @@ expect class ProteusSession {
 
 expect class ProteusClient {
 
-    @Throws(ProteusException::class)
     constructor(rootDir: String, userId: String)
+
+    @Throws(ProteusException::class)
+    fun open()
+    @Throws(ProteusException::class)
+    fun close()
 
     @Throws(ProteusException::class)
     fun getIdentity(): ByteArray

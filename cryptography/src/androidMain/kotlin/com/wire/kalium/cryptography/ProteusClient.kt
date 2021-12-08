@@ -36,21 +36,50 @@ actual class ProteusSession {
 
 actual class ProteusClient {
 
-    val box: CryptoBox
+    val path: String
+    var box: CryptoBox? = null
 
     actual constructor(rootDir: String, userId: String) {
-        val root = String.format("%s/%s", rootDir, userId)
+        path = String.format("%s/%s", rootDir, userId)
+    }
 
-        try {
-            box = CryptoBox.open(root)
-        } catch (e: CryptoException) {
-            throw ProteusException(e.message, e.code.ordinal)
-        } catch (e: Exception) {
-            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR)
+    actual fun open() {
+        box = wrapException { CryptoBox.open(path) }
+    }
+
+    actual fun close() {
+        box?.close()
+    }
+
+    actual fun getIdentity(): ByteArray {
+        return wrapException { box!!.copyIdentity() }
+    }
+
+    actual fun getLocalFingerprint(): ByteArray {
+        return wrapException { box!!.localFingerprint }
+    }
+
+    actual fun newPreKeys(from: Int, count: Int): ArrayList<PreKey> {
+        return wrapException { box!!.newPreKeys(from, count).map { toPreKey(it) } as ArrayList<PreKey> }
+    }
+
+    actual fun newLastPreKey(): PreKey {
+        return wrapException { toPreKey(box!!.newLastPreKey()) }
+    }
+
+    actual fun getSession(sessionId: CryptoSessionId): ProteusSession? {
+        return try {
+            ProteusSession(box!!.getSession(sessionId.value))
+        } catch (e: Exception){
+            null
         }
     }
 
-    fun <T> wrapException(b: () -> T): T {
+    actual fun createSession(preKey: PreKey, sessionId: CryptoSessionId): ProteusSession {
+        return wrapException { ProteusSession(box!!.initSessionFromPreKey(sessionId.value, toPreKey(preKey))) }
+    }
+
+    private fun <T> wrapException(b: () -> T): T {
         try {
             return b()
         } catch (e: CryptoException) {
@@ -58,34 +87,6 @@ actual class ProteusClient {
         } catch (e: Exception) {
             throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR)
         }
-    }
-
-    actual fun getIdentity(): ByteArray {
-        return wrapException { box.copyIdentity() }
-    }
-
-    actual fun getLocalFingerprint(): ByteArray {
-        return wrapException { box.localFingerprint }
-    }
-
-    actual fun newPreKeys(from: Int, count: Int): ArrayList<PreKey> {
-        return wrapException { box.newPreKeys(from, count).map { toPreKey(it) } as ArrayList<PreKey> }
-    }
-
-    actual fun newLastPreKey(): PreKey {
-        return wrapException { toPreKey(box.newLastPreKey()) }
-    }
-
-    actual fun getSession(sessionId: CryptoSessionId): ProteusSession? {
-        return try {
-            ProteusSession(box.getSession(sessionId.value))
-        } catch (e: Exception){
-            null
-        }
-    }
-
-    actual fun createSession(preKey: PreKey, sessionId: CryptoSessionId): ProteusSession {
-        return wrapException { ProteusSession(box.initSessionFromPreKey(sessionId.value, toPreKey(preKey))) }
     }
 
     companion object {
@@ -103,4 +104,5 @@ actual class ProteusClient {
             return String.format("%s_%s", userId, clientId)
         }
     }
+
 }
