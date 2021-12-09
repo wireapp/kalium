@@ -2,7 +2,7 @@ package com.wire.kalium.network.api.conversation
 
 import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.UserId
-import com.wire.kalium.network.api.model.AccessRole
+import com.wire.kalium.network.api.model.ConversationAccess
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -21,8 +21,8 @@ data class ConversationEvent(
 
 @Serializable
 data class EventData(
-    @SerialName("access") val access: List<AccessRole>, // How users can join conversations = ['private', 'invite', 'link', 'code']
-    @SerialName("access_role") val accessRole: String,
+    @SerialName("access") val access: List<ConversationAccess>, // How users can join conversations = ['private', 'invite', 'link', 'code']
+    @SerialName("access_role") val conversationAccess: ConversationAccess,
     @SerialName("code") val code: String, // Stable conversation identifier ,
     @SerialName("conversation_role") val conversationRole: String?,
     @SerialName("creator") val creator: String,
