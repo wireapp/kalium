@@ -1,11 +1,11 @@
 package com.wire.kalium.network.api.message
-import com.wire.kalium.network.api.KaliumHttpResult
-import com.wire.kalium.network.api.wrapKaliumResponse
-import io.ktor.client.HttpClient
-import io.ktor.client.features.ClientRequestException
-import io.ktor.client.request.parameter
-import io.ktor.client.request.post
-import io.ktor.client.statement.HttpResponse
+
+import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.wrapKaliumResponse
+import io.ktor.client.*
+import io.ktor.client.features.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -36,13 +36,13 @@ class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
         parameters: MessageApi.Parameters.DefaultParameters,
         conversationId: String,
         option: MessageApi.MessageOption
-    ): KaliumHttpResult<SendMessageResponse> {
+    ): NetworkResponse<SendMessageResponse> {
 
         suspend fun performRequest(
             queryParameter: String?,
             queryParameterValue: Any?,
             body: RequestBody
-        ): KaliumHttpResult<SendMessageResponse> {
+        ): NetworkResponse<SendMessageResponse> {
             try {
                 return wrapKaliumResponse<SendMessageResponse.MessageSent> {
                     httpClient.post<HttpResponse>(path = "$PATH_CONVERSATIONS/$conversationId$PATH_OTR_MESSAGE") {
