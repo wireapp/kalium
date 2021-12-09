@@ -41,10 +41,9 @@ actual class ProteusClient actual constructor(rootDir: String, userId: String) {
     }
 
     actual fun open() {
-        val f = File(path)
         box = wrapException { CryptoBox.open(path) }
     }
-    
+
     actual fun close() {
         box.close()
     }

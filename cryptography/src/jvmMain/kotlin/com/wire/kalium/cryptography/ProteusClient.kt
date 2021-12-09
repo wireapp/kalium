@@ -8,7 +8,7 @@ import java.util.ArrayList
 import java.util.Base64
 import java.util.UUID
 
-actual class ProteusClient(rootDir: String, userId: String) {
+actual class ProteusClient actual constructor(rootDir: String, userId: String) {
 
     private val path: String
     private lateinit var box: CryptoBox

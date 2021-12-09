@@ -52,7 +52,7 @@ expect class ProteusClient(rootDir: String, userId: String) {
     fun createSessionAndDecrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray
 }
 
-fun ProteusClient.createSessions(preKeys: HashMap<String, HashMap<String, PreKey>>) {
+fun ProteusClient.createSessions(preKeys: Map<String, Map<String, PreKey>>) {
     for (userId in preKeys.keys) {
         val clients = preKeys.getValue(userId)
         for (clientId in clients.keys) {
