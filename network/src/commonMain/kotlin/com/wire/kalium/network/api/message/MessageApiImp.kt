@@ -1,5 +1,7 @@
 package com.wire.kalium.network.api.message
 
+import com.wire.kalium.network.api.ErrorResponse
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.*
@@ -45,7 +47,7 @@ class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
         ): NetworkResponse<SendMessageResponse> {
             try {
                 return wrapKaliumResponse<SendMessageResponse.MessageSent> {
-                    httpClient.post<HttpResponse>(path = "$PATH_CONVERSATIONS/$conversationId$PATH_OTR_MESSAGE") {
+                    httpClient.post(path = "$PATH_CONVERSATIONS/$conversationId$PATH_OTR_MESSAGE") {
                         if (queryParameter != null) {
                             parameter(queryParameter, queryParameterValue)
                         }
@@ -56,7 +58,7 @@ class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
                 if (e.response.status.value == 412) {
                     return wrapKaliumResponse<SendMessageResponse.MissingDevicesResponse> { e.response }
                 } else {
-                    throw e
+                    throw KaliumException.InvalidRequestError(ErrorResponse(e.response.status.value, e.message, e.toString()), e)
                 }
             }
         }
