@@ -6,6 +6,7 @@ import com.wire.kalium.api.tools.json.model.DomainToUserIdToClientsMapJson
 import com.wire.kalium.api.tools.json.model.ErrorResponseJson
 import com.wire.kalium.network.api.prekey.PreKeyApi
 import com.wire.kalium.network.api.prekey.PreKeyApiImpl
+import com.wire.kalium.network.utils.successValue
 import io.ktor.client.features.ClientRequestException
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -25,13 +26,13 @@ class PrekeyApiTest : ApiTest {
             assertion = {
                 assertPost()
                 assertJson()
-                assertPathEqual(PATH_PREYKEY)
+                assertPathEqual(PATH_PREKEYS)
             }
         )
         val preKeyApi: PreKeyApi = PreKeyApiImpl(httpClient)
 
         val response = preKeyApi.getUsersPreKey(VALID_GET_USERS_PREKEY_REQUEST.serializableData)
-        assertEquals(response.resultBody, VALID_GET_USERS_PREKEY_RESPONSE.serializableData)
+        assertEquals(response.successValue(), VALID_GET_USERS_PREKEY_RESPONSE.serializableData)
     }
 
     @Test
@@ -50,6 +51,6 @@ class PrekeyApiTest : ApiTest {
     private companion object {
         val VALID_GET_USERS_PREKEY_REQUEST = DomainToUserIdToClientsMapJson.valid
         val VALID_GET_USERS_PREKEY_RESPONSE = DomainToUserIdToClientToPreKeyMapJson.valid
-        const val PATH_PREYKEY = "/users/list-prekeys"
+        const val PATH_PREKEYS = "/users/list-prekeys"
     }
 }

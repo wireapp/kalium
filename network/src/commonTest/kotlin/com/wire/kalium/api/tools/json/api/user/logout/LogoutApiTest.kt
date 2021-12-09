@@ -1,12 +1,8 @@
 package com.wire.kalium.api.tools.json.api.user.logout
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.api.tools.json.api.user.client.RegisterClientRequestJson
 import com.wire.kalium.api.tools.json.api.user.client.RegisterClientResponseJson
 import com.wire.kalium.api.tools.json.model.ErrorResponseJson
-import com.wire.kalium.network.api.ErrorResponse
-import com.wire.kalium.network.api.user.client.ClientApi
-import com.wire.kalium.network.api.user.client.ClientApiImp
 import com.wire.kalium.network.api.user.logout.LogoutApi
 import com.wire.kalium.network.api.user.logout.LogoutImp
 import io.ktor.client.call.receive
@@ -18,7 +14,6 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-
 
 @ExperimentalCoroutinesApi
 class LogoutApiTest : ApiTest {
@@ -47,9 +42,8 @@ class LogoutApiTest : ApiTest {
         )
         val logout: LogoutApi = LogoutImp(httpClient)
         val error = assertFailsWith<ClientRequestException> { logout.logout(TEST_COOKIE) }
-        assertEquals(error.response.receive<ErrorResponse>(), ERROR_RESPONSE)
+        assertEquals(error.response.receive(), ERROR_RESPONSE)
     }
-
 
     private companion object {
         const val PATH_LOGOUT = "/access/logout"

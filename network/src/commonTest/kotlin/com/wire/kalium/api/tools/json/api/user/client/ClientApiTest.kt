@@ -5,6 +5,7 @@ import com.wire.kalium.api.tools.json.model.ErrorResponseJson
 import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.network.api.user.client.ClientApiImp
+import com.wire.kalium.network.utils.successValue
 import io.ktor.client.call.receive
 import io.ktor.client.features.ClientRequestException
 import io.ktor.http.HttpStatusCode
@@ -31,7 +32,7 @@ class ClientApiTest : ApiTest {
             )
             val clientApi: ClientApi = ClientApiImp(httpClient)
             val response = clientApi.registerClient(REGISTER_CLIENT_REQUEST.serializableData)
-            assertEquals(response.resultBody, VALID_REGISTER_CLIENT_RESPONSE.serializableData)
+            assertEquals(response.successValue(), VALID_REGISTER_CLIENT_RESPONSE.serializableData)
         }
 
     @Test

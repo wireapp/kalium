@@ -5,6 +5,7 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.wire.kalium.network.NetworkModule
 import com.wire.kalium.network.api.user.login.LoginWithEmailRequest
+import com.wire.kalium.network.utils.successValue
 import kotlinx.coroutines.runBlocking
 
 class ConversationsApplication : CliktCommand() {
@@ -19,11 +20,11 @@ class ConversationsApplication : CliktCommand() {
         val loginResult = networkModule.loginApi.emailLogin(
             LoginWithEmailRequest(email = email, password = password, label = "ktor"),
             false
-        ).resultBody
+        ).successValue()
 
         credentialsLedger.onAuthenticate(loginResult.accessToken, "") //TODO extract refresh token from cookie response
 
-        val conversations = networkModule.conversationApi.conversationsByBatch(null, 100).resultBody.conversations
+        val conversations = networkModule.conversationApi.conversationsByBatch(null, 100).successValue().conversations
 
         println("Your conversations:")
         conversations.forEach {
