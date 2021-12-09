@@ -1,4 +1,5 @@
 package com.wire.kalium.network.api.user.self
+
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

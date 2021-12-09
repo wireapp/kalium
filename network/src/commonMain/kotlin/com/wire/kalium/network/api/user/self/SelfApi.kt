@@ -11,8 +11,8 @@ class SelfApi(private val httpClient: HttpClient) {
 
     suspend fun getSelfInfo(): KaliumHttpResult<SelfUserInfoResponse> =
         wrapKaliumResponse {
-        httpClient.get<HttpResponse>(path = PATH_SELF).receive()
-    }
+            httpClient.get<HttpResponse>(path = PATH_SELF).receive()
+        }
 
     private companion object {
         const val PATH_SELF = "self"

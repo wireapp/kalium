@@ -1,4 +1,5 @@
 package com.wire.kalium.network.api.user.self
+
 import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.model.Asset
 import com.wire.kalium.network.api.model.Service
@@ -41,11 +42,11 @@ data class SelfUserInfoResponse(
     val managedBy: ManagedBy // 'wire', 'scim'
 )
 
-
 @Serializable
 enum class ManagedBy {
     @SerialName("wire")
     Wire,
+
     @SerialName("scim")
     Scim;
 
