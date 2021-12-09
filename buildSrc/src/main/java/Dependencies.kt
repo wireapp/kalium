@@ -9,6 +9,8 @@ object Versions {
     const val cliKt = "3.3.0"
     const val coroutines = "1.6.0-RC"
     const val compose = "1.1.0-beta04"
+    const val cryptobox4j = "1.0.0"
+    const val cryptoboxAndroid = "1.1.3"
     const val kover = "0.4.2"
     const val ktor = "1.6.6"
     const val okHttp = "4.9.3"
@@ -55,6 +57,11 @@ object Dependencies {
     object Coroutines {
         const val core = "org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}"
         const val test = "org.jetbrains.kotlinx:kotlinx-coroutines-test:${Versions.coroutines}"
+    }
+
+    object Cryptography {
+        const val cryptoboxAndroid = "com.wire:cryptobox-android:${Versions.cryptoboxAndroid}"
+        const val cryptobox4j = "com.wire:cryptobox4j:${Versions.cryptobox4j}"
     }
 
     object Cli {
