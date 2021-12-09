@@ -1,5 +1,7 @@
 package com.wire.kalium.cryptography
 
+import android.app.Activity
+import android.content.Context
 import android.util.Base64
 import com.wire.cryptobox.CryptoBox
 import com.wire.cryptobox.CryptoException
@@ -8,13 +10,7 @@ import com.wire.kalium.cryptography.exceptions.ProteusException
 import java.io.File
 import java.util.UUID
 
-actual class ProteusSession(session: CryptoSession) {
-
-    private val session: CryptoSession
-
-    init {
-        this.session = session
-    }
+actual class ProteusSession(private val session: CryptoSession) {
 
     actual fun encrypt(data: ByteArray): ByteArray {
         return wrapException { session.encrypt(data) }
@@ -48,7 +44,7 @@ actual class ProteusClient actual constructor(rootDir: String, userId: String) {
         val f = File(path)
         box = wrapException { CryptoBox.open(path) }
     }
-
+    
     actual fun close() {
         box.close()
     }

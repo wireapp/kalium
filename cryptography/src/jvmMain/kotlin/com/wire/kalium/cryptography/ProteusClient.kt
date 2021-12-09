@@ -3,6 +3,7 @@ package com.wire.kalium.cryptography
 import com.wire.bots.cryptobox.CryptoBox
 import com.wire.bots.cryptobox.CryptoException
 import com.wire.kalium.cryptography.exceptions.ProteusException
+import java.io.File
 import java.util.ArrayList
 import java.util.Base64
 import java.util.UUID
@@ -17,11 +18,15 @@ actual class ProteusClient(rootDir: String, userId: String) {
     }
 
     actual fun open() {
-        box = wrapException { CryptoBox.open(path) }
+        val directory = File(path)
+        box = wrapException {
+            directory.mkdirs()
+            CryptoBox.open(path)
+        }
     }
 
     actual fun close() {
-        box.lose()
+        box.close()
     }
 
     actual fun getIdentity(): ByteArray {
@@ -85,15 +90,7 @@ actual class ProteusClient(rootDir: String, userId: String) {
     }
 }
 
-actual class ProteusSession(box: CryptoBox, sessionId: CryptoSessionId) {
-
-    private val box: CryptoBox
-    private val sessionId: CryptoSessionId
-
-    init {
-        this.box = box
-        this.sessionId = sessionId
-    }
+actual class ProteusSession(private val box: CryptoBox, private val sessionId: CryptoSessionId) {
 
     actual fun encrypt(data: ByteArray): ByteArray {
         return wrapException { box.encryptFromSession(sessionId.value, data) }

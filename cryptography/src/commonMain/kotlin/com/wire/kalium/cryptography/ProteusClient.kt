@@ -29,7 +29,7 @@ expect class ProteusSession {
 }
 
 expect class ProteusClient(rootDir: String, userId: String) {
-    
+
     @Throws(ProteusException::class)
     fun open()
     @Throws(ProteusException::class)
