@@ -6,27 +6,44 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import com.wire.kalium.network.Greeting
-import com.wire.kalium.network.api.auth.AuthApi
-import com.wire.kalium.network.api.auth.AuthApiImp
+import com.wire.kalium.logic.AuthenticationScope
+import com.wire.kalium.logic.CoreLogic
+import com.wire.kalium.network.api.conversation.ConversationResponse
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-
-
         setContent {
-            MainLayout()
+            val core = CoreLogic()
+            val session = core.authentication {
+                runBlocking {
+                    loginUsingEmail(
+                        "username@example.com",
+                        "password"
+                    ) as AuthenticationScope.AuthenticationResult.Success // assuming success
+                }
+            }.userSession
+            val conversations = core.session(session) {
+                runBlocking {
+                    conversations.getConversations().first()
+                }
+            }
+            MainLayout(conversations)
         }
     }
 }
 
 @Composable
-fun MainLayout() {
+//TODO: Don't use serialization data!
+fun MainLayout(conversations: List<ConversationResponse>) {
     Column {
-        Text("Greetings!")
-        Text(Greeting().greet())
+        Text("Your conversations:")
+        conversations.forEach {
+            Text("ID: ${it.id}; Name: ${it.name}")
+        }
     }
 }

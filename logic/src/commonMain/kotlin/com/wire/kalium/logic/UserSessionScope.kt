@@ -1,9 +1,11 @@
 package com.wire.kalium.logic
 
+import com.wire.kalium.network.AuthenticatedNetworkContainer
+
 class UserSessionScope(
-    val userSession: UserSession,
-    val authenticatedDataSourcesProvider: AuthenticatedDataSourcesProvider
+    private val userSession: AuthSession,
+    private val authenticatedNetworkContainer: AuthenticatedNetworkContainer
 ) {
 
-    val conversations: ConversationService get() = ConversationService(userSession)
+    val conversations: ConversationScope get() = ConversationScope(authenticatedNetworkContainer)
 }

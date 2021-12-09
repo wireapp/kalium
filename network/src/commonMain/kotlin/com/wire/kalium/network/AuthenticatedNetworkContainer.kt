@@ -36,7 +36,7 @@ class AuthenticatedNetworkContainer(
     private val credentialsProvider: CredentialsProvider,
     private val engine: HttpClientEngine = defaultHttpEngine(),
     private val isRequestLoggingEnabled: Boolean = false,
-    private val onTokenUpdate: (newTokenInfo: Pair<String,String>) -> Unit
+//    private val onTokenUpdate: (newTokenInfo: Pair<String,String>) -> Unit Idea to let the network handle the refresh token automatically
 ) {
 
     private val hostProvider = HostProvider

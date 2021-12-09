@@ -38,7 +38,7 @@ kotlin {
                 implementation(Dependencies.Coroutines.core)
 
                 // ktor
-                implementation(Dependencies.Ktor.core)
+                api(Dependencies.Ktor.core)
                 implementation(Dependencies.Ktor.json)
                 implementation(Dependencies.Ktor.serialization)
                 implementation(Dependencies.Ktor.logging)
