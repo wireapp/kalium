@@ -18,17 +18,16 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            val core = CoreLogic()
-            val session = core.authentication {
-                runBlocking {
+            val conversations = runBlocking {
+                val core = CoreLogic()
+                val session = core.authenticationScope {
                     loginUsingEmail(
-                        "username@example.com",
+                        "username@example.com", //TODO Form or something to get user input
                         "password"
                     ) as AuthenticationScope.AuthenticationResult.Success // assuming success
-                }
-            }.userSession
-            val conversations = core.session(session) {
-                runBlocking {
+                }.userSession
+
+                core.sessionScope(session) {
                     conversations.getConversations().first()
                 }
             }

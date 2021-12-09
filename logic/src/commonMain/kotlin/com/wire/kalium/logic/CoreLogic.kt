@@ -15,9 +15,9 @@ class CoreLogic {
 
     private val authenticationScope: AuthenticationScope get() = AuthenticationScope(loginContainer)
 
-    fun <T> authentication(action: AuthenticationScope.() -> T): T = authenticationScope.action()
+    suspend fun <T> authenticationScope(action: suspend AuthenticationScope.() -> T): T = authenticationScope.action()
 
-    fun <T> session(session: AuthSession, action: UserSessionScope.() -> T): T {
+    suspend fun <T> sessionScope(session: AuthSession, action: suspend UserSessionScope.() -> T): T {
         val dataSourceSet = userScopeStorage[session] ?: run {
             val networkContainer = AuthenticatedNetworkContainer(session)
             AuthenticatedDataSourceSet(networkContainer).also {
