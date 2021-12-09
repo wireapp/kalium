@@ -53,6 +53,9 @@ class MainActivity : ComponentActivity() {
     data class SampleUser(val id: String, val name: String)
 }
 
+data class SampleUser(val id: String, val name: String)
+
+
 @Composable
 fun MainLayout(messageFromBob: String) {
     Column {

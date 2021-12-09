@@ -7,12 +7,12 @@ import java.util.ArrayList
 import java.util.Base64
 import java.util.UUID
 
-actual class ProteusClient {
+actual class ProteusClient(rootDir: String, userId: String) {
 
-    val path: String
-    var box: CryptoBox? = null
+    private val path: String
+    private lateinit var box: CryptoBox
 
-    actual constructor(rootDir: String, userId: String) {
+    init {
         path = String.format("%s/%s", rootDir, userId)
     }
 
@@ -21,27 +21,27 @@ actual class ProteusClient {
     }
 
     actual fun close() {
-        box?.close()
+        box.lose()
     }
 
     actual fun getIdentity(): ByteArray {
-        return wrapException { box!!.identity }
+        return wrapException { box.identity }
     }
 
     actual fun getLocalFingerprint(): ByteArray {
-        return wrapException { box!!.localFingerprint }
+        return wrapException { box.localFingerprint }
     }
 
     actual fun newLastPreKey(): PreKey {
-        return wrapException { toPreKey(box!!.newLastPreKey()) }
+        return wrapException { toPreKey(box.newLastPreKey()) }
     }
 
     actual fun newPreKeys(from: Int, count: Int): ArrayList<PreKey> {
-        return wrapException { box!!.newPreKeys(from, count).map { toPreKey(it) } as ArrayList<PreKey> }
+        return wrapException { box.newPreKeys(from, count).map { toPreKey(it) } as ArrayList<PreKey> }
     }
 
     actual fun getSession(sessionId: CryptoSessionId): ProteusSession? {
-        return box?.let { ProteusSession(it, sessionId) }
+        return box.let { ProteusSession(it, sessionId) }
     }
 
     actual fun createSession(
@@ -49,13 +49,13 @@ actual class ProteusClient {
         sessionId: CryptoSessionId
     ): ProteusSession {
         return wrapException {
-            box!!.encryptFromPreKeys(sessionId.value, toPreKey(preKey), ByteArray(0))
-            ProteusSession(box!!, sessionId)
+            box.encryptFromPreKeys(sessionId.value, toPreKey(preKey), ByteArray(0))
+            ProteusSession(box, sessionId)
         }
     }
 
     actual fun createSessionAndDecrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
-        return wrapException { box!!.decrypt(sessionId.value, message) }
+        return wrapException { box.decrypt(sessionId.value, message) }
     }
 
     private fun <T> wrapException(b: () -> T): T {
@@ -85,12 +85,12 @@ actual class ProteusClient {
     }
 }
 
-actual class ProteusSession {
+actual class ProteusSession(box: CryptoBox, sessionId: CryptoSessionId) {
 
-    val box: CryptoBox
-    val sessionId: CryptoSessionId
+    private val box: CryptoBox
+    private val sessionId: CryptoSessionId
 
-    constructor(box: CryptoBox, sessionId: CryptoSessionId) {
+    init {
         this.box = box
         this.sessionId = sessionId
     }
@@ -103,7 +103,7 @@ actual class ProteusSession {
         return wrapException { box.decrypt(sessionId.value, data) }
     }
 
-    fun <T> wrapException(b: () -> T): T {
+    private fun <T> wrapException(b: () -> T): T {
         try {
             return b()
         } catch (e: CryptoException) {

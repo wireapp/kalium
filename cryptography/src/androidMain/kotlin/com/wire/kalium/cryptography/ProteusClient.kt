@@ -5,13 +5,14 @@ import com.wire.cryptobox.CryptoBox
 import com.wire.cryptobox.CryptoException
 import com.wire.cryptobox.CryptoSession
 import com.wire.kalium.cryptography.exceptions.ProteusException
+import java.io.File
 import java.util.UUID
 
-actual class ProteusSession {
+actual class ProteusSession(session: CryptoSession) {
 
-    val session: CryptoSession
+    private val session: CryptoSession
 
-    constructor(session: CryptoSession) {
+    init {
         this.session = session
     }
 
@@ -23,7 +24,7 @@ actual class ProteusSession {
         return wrapException { session.decrypt(data) }
     }
 
-    fun <T> wrapException(b: () -> T): T {
+    private fun <T> wrapException(b: () -> T): T {
         try {
             return b()
         } catch (e: CryptoException) {
@@ -34,54 +35,55 @@ actual class ProteusSession {
     }
 }
 
-actual class ProteusClient {
+actual class ProteusClient actual constructor(rootDir: String, userId: String) {
 
-    val path: String
-    var box: CryptoBox? = null
+    private val path: String
+    private lateinit var box: CryptoBox
 
-    actual constructor(rootDir: String, userId: String) {
+    init {
         path = String.format("%s/%s", rootDir, userId)
     }
 
     actual fun open() {
+        val f = File(path)
         box = wrapException { CryptoBox.open(path) }
     }
 
     actual fun close() {
-        box?.close()
+        box.close()
     }
 
     actual fun getIdentity(): ByteArray {
-        return wrapException { box!!.copyIdentity() }
+        return wrapException { box.copyIdentity() }
     }
 
     actual fun getLocalFingerprint(): ByteArray {
-        return wrapException { box!!.localFingerprint }
+        return wrapException { box.localFingerprint }
     }
 
     actual fun newPreKeys(from: Int, count: Int): ArrayList<PreKey> {
-        return wrapException { box!!.newPreKeys(from, count).map { toPreKey(it) } as ArrayList<PreKey> }
+        return wrapException { box.newPreKeys(from, count).map { toPreKey(it) } as ArrayList<PreKey> }
     }
 
     actual fun newLastPreKey(): PreKey {
-        return wrapException { toPreKey(box!!.newLastPreKey()) }
+        return wrapException { toPreKey(box.newLastPreKey()) }
     }
 
     actual fun getSession(sessionId: CryptoSessionId): ProteusSession? {
         return try {
-            ProteusSession(box!!.getSession(sessionId.value))
+            ProteusSession(box.getSession(sessionId.value))
         } catch (e: Exception) {
             null
         }
     }
 
     actual fun createSession(preKey: PreKey, sessionId: CryptoSessionId): ProteusSession {
-        return wrapException { ProteusSession(box!!.initSessionFromPreKey(sessionId.value, toPreKey(preKey))) }
+        return wrapException { ProteusSession(box.initSessionFromPreKey(sessionId.value, toPreKey(preKey))) }
     }
 
     actual fun createSessionAndDecrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
         return wrapException {
-            box!!.initSessionFromMessage(sessionId.value, message).message
+            box.initSessionFromMessage(sessionId.value, message).message
         }
     }
 

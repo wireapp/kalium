@@ -28,10 +28,8 @@ expect class ProteusSession {
     fun decrypt(data: ByteArray): ByteArray
 }
 
-expect class ProteusClient {
-
-    constructor(rootDir: String, userId: String)
-
+expect class ProteusClient(rootDir: String, userId: String) {
+    
     @Throws(ProteusException::class)
     fun open()
     @Throws(ProteusException::class)
