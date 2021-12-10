@@ -2,6 +2,8 @@ package com.wire.kalium.api.tools.json.api.user.self
 
 import com.wire.kalium.api.tools.json.ValidJsonProvider
 import com.wire.kalium.network.api.UserId
+import com.wire.kalium.network.api.model.Asset
+import com.wire.kalium.network.api.model.AssetType
 import com.wire.kalium.network.api.user.self.ManagedBy
 import com.wire.kalium.network.api.user.self.SelfUserInfoResponse
 
@@ -9,12 +11,12 @@ object SelfUserInfoResponseJson {
     private val jsonProvider = { serializable: SelfUserInfoResponse ->
         """
         |{
-        |  "id": ${serializable.id},
-        |  "qualified_id": "${serializable.qualifiedId}",
+        |  "id": "${serializable.id}",
+        |  "qualified_id": {
+        |       "id": "${serializable.qualifiedId.value}"
+        |       "domain": "${serializable.qualifiedId.domain}"
+        |  },
         |  "name": "${serializable.name}",
-        |  "picture": [
-        |       {}
-        |  ]
         |  "accent_id": ${serializable.accentId},
         |  "assets": [
         |       {
@@ -22,7 +24,8 @@ object SelfUserInfoResponseJson {
         |           "type": "${serializable.assets[0].type}"
         |       }
         |  ],
-        |  "local": "${serializable.locale}",
+        |  "picture": []
+        |  "locale": "${serializable.locale}",
         |  "team": "${serializable.team}",
         |  "managed_by": "${serializable.managedBy}"
         |}
@@ -40,7 +43,7 @@ object SelfUserInfoResponseJson {
             picture = listOf(),
             accentId = 0,
             deleted = null,
-            assets = listOf(),
+            assets = listOf(Asset(type = AssetType.Image, key = "asset_key", size = null)),
             locale = "user_local",
             service = null,
             expiresAt = null,
