@@ -13,6 +13,8 @@ import com.wire.kalium.network.api.notification.NotificationApi
 import com.wire.kalium.network.api.notification.NotificationApiImpl
 import com.wire.kalium.network.api.prekey.PreKeyApi
 import com.wire.kalium.network.api.prekey.PreKeyApiImpl
+import com.wire.kalium.network.api.teams.TeamsApi
+import com.wire.kalium.network.api.teams.TeamsApiImp
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.network.api.user.client.ClientApiImp
 import com.wire.kalium.network.api.user.logout.LogoutApi
@@ -56,6 +58,8 @@ class AuthenticatedNetworkContainer(
     val assetApi: AssetApi get() = AssetApiImp(authenticatedHttpClient)
 
     val notificationApi: NotificationApi get() = NotificationApiImpl(authenticatedHttpClient)
+
+    val teamsApi: TeamsApi get() = TeamsApiImp(authenticatedHttpClient)
 
     private val kotlinxSerializer = KotlinxSerializer(KtxSerializer.json)
 

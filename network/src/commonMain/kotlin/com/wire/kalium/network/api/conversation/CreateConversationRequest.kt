@@ -34,5 +34,5 @@ data class Team(
     @SerialName("managed")
     val managed: Boolean,
     @SerialName("teamid")
-    val teamid: String
+    val teamId: String
 )
