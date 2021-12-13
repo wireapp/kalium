@@ -10,7 +10,7 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.http.Cookie
 
 class AuthApiImp(private val httpClient: HttpClient) : AuthApi {
-    override suspend fun renewAccessToken(cookieName: String, cookieValue: String): KaliumHttpResult<RenewAccessTokenResponse> =
+    override suspend fun renewAccessToken(refreshToken: String): KaliumHttpResult<RenewAccessTokenResponse> =
         wrapKaliumResponse<RenewAccessTokenResponse> {
             httpClient.post<HttpResponse>(path = PATH_ACCESS) {
                 this.cookie(cookieName, cookieValue)

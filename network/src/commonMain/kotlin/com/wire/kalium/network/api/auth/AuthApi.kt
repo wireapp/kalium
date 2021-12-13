@@ -7,7 +7,7 @@ import com.wire.kalium.network.api.KaliumHttpResult
  */
 interface AuthApi {
 
-    suspend fun renewAccessToken(cookieName: String, cookieValue: String): KaliumHttpResult<RenewAccessTokenResponse>
+    suspend fun renewAccessToken(refreshToken: String): KaliumHttpResult<RenewAccessTokenResponse>
 
     // TODO: move this to user api
     suspend fun removeCookiesByIds(removeCookiesByIdsRequest: RemoveCookiesByIdsRequest): KaliumHttpResult<Unit>
