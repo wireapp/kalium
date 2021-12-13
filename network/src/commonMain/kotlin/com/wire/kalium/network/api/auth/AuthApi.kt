@@ -1,14 +1,13 @@
 package com.wire.kalium.network.api.auth
 
 import com.wire.kalium.network.api.KaliumHttpResult
-import io.ktor.http.Cookie
 
 /**
  *
  */
 interface AuthApi {
 
-    suspend fun renewAccessToken(cookie: Cookie): KaliumHttpResult<RenewAccessTokenResponse>
+    suspend fun renewAccessToken(cookieName: String, cookieValue: String): KaliumHttpResult<RenewAccessTokenResponse>
 
     // TODO: move this to user api
     suspend fun removeCookiesByIds(removeCookiesByIdsRequest: RemoveCookiesByIdsRequest): KaliumHttpResult<Unit>
