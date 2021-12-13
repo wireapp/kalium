@@ -35,6 +35,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(project(":network"))
+                implementation(project(":cryptography"))
 
                 // coroutines
                 implementation(Dependencies.Coroutines.core)

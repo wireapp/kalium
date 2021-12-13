@@ -1,11 +1,22 @@
 package com.wire.kalium.logic
 
-import com.wire.kalium.network.AuthenticatedNetworkContainer
+import com.wire.kalium.logic.feature.auth.AuthSession
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.feature.conversation.ConversationScope
+import com.wire.kalium.logic.feature.message.MessageScope
 
 class UserSessionScope(
     private val userSession: AuthSession,
-    private val authenticatedNetworkContainer: AuthenticatedNetworkContainer
+    private val authenticatedDataSourceSet: AuthenticatedDataSourceSet
 ) {
 
-    val conversations: ConversationScope get() = ConversationScope(authenticatedNetworkContainer)
+    private val conversationRepository: ConversationRepository
+        get() = ConversationRepository(authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi)
+
+    private val messageRepository: MessageRepository
+        get() = MessageRepository(authenticatedDataSourceSet.authenticatedNetworkContainer.messageApi)
+
+    val conversations: ConversationScope get() = ConversationScope(conversationRepository)
+    val messages: MessageScope get() = MessageScope(messageRepository)
 }

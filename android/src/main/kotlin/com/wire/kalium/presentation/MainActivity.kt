@@ -6,8 +6,8 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import com.wire.kalium.logic.AuthenticationScope
 import com.wire.kalium.logic.CoreLogic
+import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -27,22 +27,23 @@ class MainActivity : ComponentActivity() {
                     ) as AuthenticationScope.AuthenticationResult.Success // assuming success
                 }.userSession
 
-                core.sessionScope(session) {
-                    conversations.getConversations().first()
-                }
-            }
-            MainLayout(conversations)
-        }
-    }
-}
+                val userSessionScope = core.getSessionScope(session)
 
-@Composable
-//TODO: Don't use serialization data!
-fun MainLayout(conversations: List<ConversationResponse>) {
-    Column {
-        Text("Your conversations:")
-        conversations.forEach {
-            Text("ID: ${it.id}; Name: ${it.name}")
+                val sessionScope = core.sessionScope(session)
+                conversations.getConversations().first()
+                messages.sendTextMessage()
+            }
+        }
+        MainLayout(conversations)
+    }
+
+    @Composable
+    //TODO: Don't use serialization data!
+    fun MainLayout(conversations: List<ConversationResponse>) {
+        Column {
+            Text("Your conversations:")
+            conversations.forEach {
+                Text("ID: ${it.id}; Name: ${it.name}")
+            }
         }
     }
-}

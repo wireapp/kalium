@@ -1,5 +1,6 @@
-package com.wire.kalium.logic
+package com.wire.kalium.logic.feature.auth
 
+import com.wire.kalium.logic.GenericFailure
 import com.wire.kalium.network.LoginNetworkContainer
 import com.wire.kalium.network.api.user.login.LoginWithEmailRequest
 

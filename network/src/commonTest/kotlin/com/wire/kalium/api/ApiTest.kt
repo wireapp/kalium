@@ -1,7 +1,7 @@
 package com.wire.kalium.api
 
 import com.wire.kalium.network.AuthenticatedNetworkContainer
-import com.wire.kalium.network.api.CredentialsProvider
+import com.wire.kalium.network.api.SessionCredentials
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -16,7 +16,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-private class TestAuthManager() : CredentialsProvider {
+private class TestAuthManager() : SessionCredentials {
     override fun accessToken(): String =
         "eyJhbGciOiJIUzI1AnwarInR5cCI6IkpXVCJ9.eyJsb2dnZWRJbkFzIjoiYWRtaW4iLCJpYXQiOjE0MjI3Nzk2Mz69.gzSraSYS8EXBxLN_oWnFSRgCzcmJmMjLiuyu5CSpyHI"
 
