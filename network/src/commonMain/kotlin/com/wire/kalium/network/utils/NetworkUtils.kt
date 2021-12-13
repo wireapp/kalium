@@ -7,17 +7,25 @@ import io.ktor.client.features.*
 import io.ktor.client.statement.*
 import io.ktor.util.*
 import kotlinx.serialization.SerializationException
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.contract
 
 sealed class NetworkResponse<out T> {
-    data class Success<out T : Any>(val response: HttpResponse, val body: T) : NetworkResponse<T>()
+    data class Success<out T : Any>(internal val response: HttpResponse, val value: T) : NetworkResponse<T>()
     data class Error<out E : KaliumException>(val kException: KaliumException) : NetworkResponse<E>()
 }
 
-fun <T> NetworkResponse<T>.successValue(): T = (this as NetworkResponse.Success).body
-fun <T> NetworkResponse<T>.isSuccessful(): Boolean = this is NetworkResponse.Success
-fun <T> NetworkResponse<T>.asHttpResponseCode(): Int = (this as NetworkResponse.Success).response.status.value
-fun <T> NetworkResponse<T>.responseHeaders(): Map<String, List<String>> = (this as NetworkResponse.Success).response.headers.toMap()
-fun <T> NetworkResponse<T>.errorValue(): KaliumException = (this as NetworkResponse.Error).kException
+fun <T> NetworkResponse<T>.httpResponseCode(): Int = if (isSuccessful()) this.response.status.value else this.kException.errorResponse.code
+fun <T> NetworkResponse<T>.httpResponseHeaders(): Map<String, List<String>> = (this as NetworkResponse.Success).response.headers.toMap()
+
+@OptIn(ExperimentalContracts::class)
+fun <T> NetworkResponse<T>.isSuccessful(): Boolean {
+    contract {
+        returns(true) implies (this@isSuccessful is NetworkResponse.Success)
+        returns(false) implies (this@isSuccessful is NetworkResponse.Error)
+    }
+    return this@isSuccessful is NetworkResponse.Success
+}
 
 suspend inline fun <reified BodyType> wrapKaliumResponse(performRequest: () -> HttpResponse): NetworkResponse<BodyType> =
     try {
@@ -28,16 +36,11 @@ suspend inline fun <reified BodyType> wrapKaliumResponse(performRequest: () -> H
         when (e) {
             is RedirectResponseException -> {
                 // 300 .. 399
-                NetworkResponse.Error(kException = KaliumException.RedirectError(e.response.status.value, e))
+                NetworkResponse.Error(kException = KaliumException.RedirectError(e.response.receive(), e))
             }
             is ClientRequestException -> {
-                if (e.response.status.value == 400) {
-                    // 400
-                    NetworkResponse.Error(kException = KaliumException.InvalidRequestError(e.response.receive(), e))
-                } else {
-                    // 401 .. 499
-                    NetworkResponse.Error(kException = KaliumException.ServerError(e.response.receive(), e))
-                }
+                // 400 .. 499
+                NetworkResponse.Error(kException = KaliumException.InvalidRequestError(e.response.receive(), e))
             }
             is ServerResponseException -> {
                 // 500 .. 599

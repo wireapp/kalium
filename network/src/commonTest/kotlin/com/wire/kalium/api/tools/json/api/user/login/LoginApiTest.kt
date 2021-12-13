@@ -4,7 +4,7 @@ import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.tools.json.model.ErrorResponseJson
 import com.wire.kalium.network.api.user.login.LoginApi
 import com.wire.kalium.network.api.user.login.LoginApiImp
-import com.wire.kalium.network.utils.successValue
+import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.client.call.receive
 import io.ktor.client.features.ClientRequestException
 import io.ktor.http.HttpStatusCode
@@ -13,6 +13,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
 class LoginApiTest : ApiTest {
@@ -32,8 +33,8 @@ class LoginApiTest : ApiTest {
         val loginApi: LoginApi = LoginApiImp(httpClient)
 
         val response = loginApi.emailLogin(LOGIN_REQUEST.serializableData, false)
-        assertEquals(response.successValue(), VALID_LOGIN_RESPONSE.serializableData)
-
+        assertTrue(response.isSuccessful())
+        assertEquals(response.value, VALID_LOGIN_RESPONSE.serializableData)
     }
 
     @Test
