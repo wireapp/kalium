@@ -4,6 +4,7 @@ import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.tools.json.model.ErrorResponseJson
 import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.api.user.self.SelfApi
+import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.client.call.receive
 import io.ktor.client.features.ClientRequestException
 import io.ktor.http.HttpStatusCode
@@ -12,6 +13,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
 class SelfApiTest : ApiTest {
@@ -29,7 +31,8 @@ class SelfApiTest : ApiTest {
             )
             val selfApi: SelfApi = SelfApi(httpClient)
             val response = selfApi.getSelfInfo()
-            assertEquals(response.resultBody, VALID_SELF_RESPONSE.serializableData)
+            assertTrue(response.isSuccessful())
+            assertEquals(response.value, VALID_SELF_RESPONSE.serializableData)
         }
 
     @Test

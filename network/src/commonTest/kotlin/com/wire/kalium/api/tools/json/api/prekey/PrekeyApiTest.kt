@@ -6,6 +6,7 @@ import com.wire.kalium.api.tools.json.model.DomainToUserIdToClientsMapJson
 import com.wire.kalium.api.tools.json.model.ErrorResponseJson
 import com.wire.kalium.network.api.prekey.PreKeyApi
 import com.wire.kalium.network.api.prekey.PreKeyApiImpl
+import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.client.features.ClientRequestException
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -13,6 +14,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
 class PrekeyApiTest : ApiTest {
@@ -31,7 +33,8 @@ class PrekeyApiTest : ApiTest {
         val preKeyApi: PreKeyApi = PreKeyApiImpl(httpClient)
 
         val response = preKeyApi.getUsersPreKey(VALID_GET_USERS_PREKEY_REQUEST.serializableData)
-        assertEquals(response.value(), VALID_GET_USERS_PREKEY_RESPONSE.serializableData)
+        assertTrue(response.isSuccessful())
+        assertEquals(response.value, VALID_GET_USERS_PREKEY_RESPONSE.serializableData)
     }
 
     @Test
