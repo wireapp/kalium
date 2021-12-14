@@ -5,7 +5,7 @@ import io.ktor.http.Cookie
 
 interface AuthApi {
 
-    suspend fun renewAccessToken(cookie: Cookie): NetworkResponse<RenewAccessTokenResponse>
+    suspend fun renewAccessToken(refreshToken: String): NetworkResponse<RenewAccessTokenResponse>
 
     // TODO: move this to user api
     suspend fun removeCookiesByIds(removeCookiesByIdsRequest: RemoveCookiesByIdsRequest): NetworkResponse<Unit>

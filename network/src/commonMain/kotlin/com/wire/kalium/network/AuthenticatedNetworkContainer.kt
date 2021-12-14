@@ -1,6 +1,5 @@
 package com.wire.kalium.network
 
-import com.wire.kalium.network.api.RefreshTokenProperties
 import com.wire.kalium.network.api.SessionCredentials
 import com.wire.kalium.network.api.asset.AssetApi
 import com.wire.kalium.network.api.asset.AssetApiImp
@@ -22,6 +21,7 @@ import com.wire.kalium.network.api.user.logout.LogoutApi
 import com.wire.kalium.network.api.user.logout.LogoutImp
 import com.wire.kalium.network.tools.HostProvider
 import com.wire.kalium.network.tools.KtxSerializer
+import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.HttpClientEngine
@@ -91,9 +91,13 @@ class AuthenticatedNetworkContainer(
                     )
                 }
                 refreshTokens { unauthorizedResponse: HttpResponse ->
-                    val refreshedResponse = authApi.renewAccessToken(RefreshTokenProperties.COOKIE_NAME, sessionCredentials.refreshToken)
-//                    onTokenUpdate()
-                    BearerTokens(refreshedResponse.resultBody.accessToken, TODO("Get the 🍪"))
+                    val refreshedResponse = authApi.renewAccessToken(sessionCredentials.refreshToken)
+
+                    return@refreshTokens if (refreshedResponse.isSuccessful()) {
+                        BearerTokens(refreshedResponse.value.accessToken, TODO("Get the 🍪"))
+                    } else {
+                        null
+                    }
                 }
             }
         }

@@ -1,6 +1,7 @@
 package com.wire.kalium.logic
 
 import com.wire.kalium.cryptography.ProteusClient
+import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthSessionMapper
 import com.wire.kalium.logic.feature.auth.AuthenticationScope

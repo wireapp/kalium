@@ -3,7 +3,9 @@ package com.wire.kalium.cli
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
-import com.wire.kalium.network.NetworkModule
+import com.wire.kalium.network.AuthenticatedNetworkContainer
+import com.wire.kalium.network.LoginNetworkContainer
+import com.wire.kalium.network.api.SessionCredentials
 import com.wire.kalium.network.api.user.login.LoginWithEmailRequest
 import com.wire.kalium.network.utils.isSuccessful
 import kotlinx.coroutines.runBlocking
@@ -14,10 +16,9 @@ class ConversationsApplication : CliktCommand() {
 
     override fun run(): Unit = runBlocking {
 
-        val credentialsLedger = InMemoryCredentialsLedger()
-        val networkModule = NetworkModule(credentialsLedger)
+        val loginContainer = LoginNetworkContainer()
 
-        val loginResult = networkModule.loginApi.emailLogin(
+        val loginResult = loginContainer.loginApi.emailLogin(
             LoginWithEmailRequest(email = email, password = password, label = "ktor"),
             false
         )
@@ -25,7 +26,10 @@ class ConversationsApplication : CliktCommand() {
         if (!loginResult.isSuccessful()) {
             println("There was an error on the login :( check the credentials and the internet connection and try again please")
         } else {
-            credentialsLedger.onAuthenticate(loginResult.value.accessToken, "") //TODO extract refresh token from cookie response
+            val sessionData = loginResult.value
+            //TODO: Get them 🍪 refresh token
+            val sessionCredentials = SessionCredentials(sessionData.tokenType, sessionData.accessToken, "refreshToken")
+            val networkModule = AuthenticatedNetworkContainer(sessionCredentials)
             val conversationsResponse = networkModule.conversationApi.conversationsByBatch(null, 100)
 
             if (!conversationsResponse.isSuccessful()) {

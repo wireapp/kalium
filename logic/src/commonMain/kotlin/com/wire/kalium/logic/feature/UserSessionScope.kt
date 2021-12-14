@@ -1,5 +1,6 @@
-package com.wire.kalium.logic
+package com.wire.kalium.logic.feature
 
+import com.wire.kalium.logic.AuthenticatedDataSourceSet
 import com.wire.kalium.logic.data.conversation.ConversationMapper
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.message.MessageRepository

@@ -14,4 +14,6 @@ sealed class GenericFailure {
      */
     object ServerMiscommunication : GenericFailure()
 
+    class UnknownFailure(val rootCause: Throwable?): GenericFailure()
+
 }

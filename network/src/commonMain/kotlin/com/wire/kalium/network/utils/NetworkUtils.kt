@@ -8,6 +8,7 @@ import io.ktor.client.features.RedirectResponseException
 import io.ktor.client.features.ResponseException
 import io.ktor.client.features.ServerResponseException
 import io.ktor.client.statement.HttpResponse
+import io.ktor.http.setCookie
 import io.ktor.util.toMap
 import io.ktor.utils.io.errors.IOException
 import kotlinx.serialization.SerializationException
@@ -20,7 +21,15 @@ sealed class NetworkResponse<out T> {
 }
 
 fun <T> NetworkResponse<T>.httpResponseCode(): Int = if (isSuccessful()) this.response.status.value else kException.errorCode
-fun <T> NetworkResponse<T>.httpResponseHeaders(): Map<String, List<String>> = (this as NetworkResponse.Success).response.headers.toMap()
+fun <T> NetworkResponse<T>.httpResponseHeaders(): Map<String, String?> =
+    (this as NetworkResponse.Success).response
+        .headers.toMap().mapValues { headerEntry -> headerEntry.value.firstOrNull() } //Ignore header duplication on purpose
+
+fun <T> NetworkResponse<T>.httpResponseCookies(): Map<String, String> =
+    (this as NetworkResponse.Success).response
+        .setCookie().associate {
+            it.name to it.value
+        }
 
 @OptIn(ExperimentalContracts::class)
 fun <T> NetworkResponse<T>.isSuccessful(): Boolean {
@@ -60,7 +69,13 @@ suspend inline fun <reified BodyType> wrapKaliumResponse(performRequest: () -> H
         )
     } catch (e: IOException) {
         NetworkResponse.Error(
-            kException = KaliumException.NetworkUnavailableError(ErrorResponse(400, e.message ?: "There was an I/O. Check the internet connection? ", e.toString()), e)
+            kException = KaliumException.NetworkUnavailableError(
+                ErrorResponse(
+                    400,
+                    e.message ?: "There was an I/O. Check the internet connection? ",
+                    e.toString()
+                ), e
+            )
         )
     } catch (e: Exception) {
         NetworkResponse.Error(
