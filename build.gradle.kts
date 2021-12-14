@@ -20,7 +20,9 @@ repositories {
 }
 
 tasks.withType<Test> {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        reports.junitXml.required.set(true)
+    }
 }
 
 allprojects {
