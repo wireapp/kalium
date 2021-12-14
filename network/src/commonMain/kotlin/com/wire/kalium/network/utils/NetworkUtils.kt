@@ -51,12 +51,12 @@ suspend inline fun <reified BodyType> wrapKaliumResponse(performRequest: () -> H
                 NetworkResponse.Error(kException = KaliumException.ServerError(e.response.receive()))
             }
             else -> {
-                NetworkResponse.Error(kException = KaliumException.GenericError(e.response.receive()))
+                NetworkResponse.Error(kException = KaliumException.GenericError(e.response.receive(), e))
             }
         }
     } catch (e: SerializationException) {
         NetworkResponse.Error(
-            kException = KaliumException.GenericError(ErrorResponse(400, e.message ?: "There was a Serialization error ", e.toString()))
+            kException = KaliumException.GenericError(ErrorResponse(400, e.message ?: "There was a Serialization error ", e.toString()), e)
         )
     } catch (e: IOException) {
         NetworkResponse.Error(
@@ -64,6 +64,6 @@ suspend inline fun <reified BodyType> wrapKaliumResponse(performRequest: () -> H
         )
     } catch (e: Exception) {
         NetworkResponse.Error(
-            kException = KaliumException.GenericError(ErrorResponse(400, e.message ?: "There was a General error :( ", e.toString()))
+            kException = KaliumException.GenericError(ErrorResponse(400, e.message ?: "There was a General error :( ", e.toString()), e)
         )
     }

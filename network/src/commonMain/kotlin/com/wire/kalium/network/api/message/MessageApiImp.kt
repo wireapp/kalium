@@ -69,7 +69,7 @@ class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
                 }
             } catch (e: Exception) {
                 NetworkResponse.Error(
-                    kException = KaliumException.GenericError(ErrorResponse(400, e.message ?: "There was a generic error ", e.toString()))
+                    kException = KaliumException.GenericError(ErrorResponse(400, e.message ?: "There was a generic error ", e.toString()), e)
                 )
             }
         }
