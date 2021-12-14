@@ -8,10 +8,9 @@ class MessageRepository(
 ) {
 
     //TODO Rework after NetworkResponse in PR #151
-    // Again, Either maybe?
+    // Either response maybe?
     suspend fun sendEnvelope(envelope: MessageEnvelope) {
 
     }
-
 
 }
