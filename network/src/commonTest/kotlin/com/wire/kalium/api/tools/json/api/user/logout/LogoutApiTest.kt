@@ -5,15 +5,16 @@ import com.wire.kalium.api.tools.json.api.user.client.RegisterClientResponseJson
 import com.wire.kalium.api.tools.json.model.ErrorResponseJson
 import com.wire.kalium.network.api.user.logout.LogoutApi
 import com.wire.kalium.network.api.user.logout.LogoutImp
-import io.ktor.client.call.receive
-import io.ktor.client.features.ClientRequestException
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
 class LogoutApiTest : ApiTest {
@@ -41,8 +42,10 @@ class LogoutApiTest : ApiTest {
             statusCode = HttpStatusCode.Unauthorized
         )
         val logout: LogoutApi = LogoutImp(httpClient)
-        val error = assertFailsWith<ClientRequestException> { logout.logout(TEST_COOKIE) }
-        assertEquals(error.response.receive(), ERROR_RESPONSE)
+        val errorResponse = logout.logout(TEST_COOKIE)
+        assertFalse(errorResponse.isSuccessful())
+        assertTrue(errorResponse.kException is KaliumException.InvalidRequestError)
+        assertEquals((errorResponse.kException as KaliumException.InvalidRequestError).errorResponse, ERROR_RESPONSE)
     }
 
     private companion object {
