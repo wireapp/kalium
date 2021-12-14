@@ -1,11 +1,10 @@
 package com.wire.kalium.network.api.teams
 
 import com.wire.kalium.network.api.AssetId
-import com.wire.kalium.network.api.ConversationId
-import com.wire.kalium.network.api.KaliumHttpResult
 import com.wire.kalium.network.api.NonQualifiedConversationId
 import com.wire.kalium.network.api.TeamId
 import com.wire.kalium.network.api.NonQualifiedUserId
+import com.wire.kalium.network.utils.NetworkResponse
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -77,7 +76,7 @@ interface TeamsApi {
         data class LimitTo(val teamIds: List<TeamId>) : GetTeamsOption()
     }
 
-    suspend fun deleteConversation(conversationId: NonQualifiedConversationId, teamId: TeamId): KaliumHttpResult<Unit>
-    suspend fun getTeams(size: Int?, option: GetTeamsOption?): KaliumHttpResult<TeamsResponse>
-    suspend fun getTeamMembers(teamId: TeamId, limitTo: Int?): KaliumHttpResult<TeamMemberList>
+    suspend fun deleteConversation(conversationId: NonQualifiedConversationId, teamId: TeamId): NetworkResponse<Unit>
+    suspend fun getTeams(size: Int?, option: GetTeamsOption?): NetworkResponse<TeamsResponse>
+    suspend fun getTeamMembers(teamId: TeamId, limitTo: Int?): NetworkResponse<TeamMemberList>
 }

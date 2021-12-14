@@ -20,7 +20,7 @@ object LoginWithEmailRequestJson {
             email = "user@email.de",
             label = "label",
             password = "password",
-        ), LoginWithEmailRequestJson.jsonProvider
+        ), jsonProvider
     )
 
     val missingEmail = FaultyJsonProvider(
