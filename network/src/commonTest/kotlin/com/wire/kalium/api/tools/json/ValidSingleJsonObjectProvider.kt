@@ -12,3 +12,10 @@ data class ValidJsonProvider<Serializable : Any>(
 ) : JsonProvider {
     override val rawJson: String = jsonProvider(serializableData).replace("\\s".toRegex(), "")
 }
+
+data class AnyResponseProvider<T>(
+    val data: T,
+    private val jsonProvider: (T) -> String
+): JsonProvider {
+    override val rawJson: String = jsonProvider(data).replace("\\s".toRegex(), "")
+}

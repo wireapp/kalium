@@ -18,7 +18,7 @@ interface MessageApi {
          */
         object ReportAll : MessageOption()
         data class IgnoreSome(val userIDs: List<String>) : MessageOption()
-        data class ReposeSome(val userIDs: List<String>) : MessageOption()
+        data class ReportSome(val userIDs: List<String>) : MessageOption()
     }
 
     sealed interface SendMessageParameters

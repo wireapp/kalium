@@ -2,12 +2,15 @@ package com.wire.kalium.network.api.message
 
 import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.SentMessageError
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
-import io.ktor.client.*
-import io.ktor.client.features.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
+import io.ktor.client.HttpClient
+import io.ktor.client.call.receive
+import io.ktor.client.features.ResponseException
+import io.ktor.client.request.parameter
+import io.ktor.client.request.post
+import io.ktor.client.statement.HttpResponse
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -45,21 +48,29 @@ class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
             queryParameterValue: Any?,
             body: RequestBody
         ): NetworkResponse<SendMessageResponse> {
-            try {
-                return wrapKaliumResponse<SendMessageResponse.MessageSent> {
-                    httpClient.post(path = "$PATH_CONVERSATIONS/$conversationId$PATH_OTR_MESSAGE") {
-                        if (queryParameter != null) {
-                            parameter(queryParameter, queryParameterValue)
-                        }
-                        this.body = body
+            return try {
+                val response = httpClient.post<HttpResponse>(path = "$PATH_CONVERSATIONS/$conversationId$PATH_OTR_MESSAGE") {
+                    if (queryParameter != null) {
+                        parameter(queryParameter, queryParameterValue)
                     }
+                    this.body = body
                 }
-            } catch (e: ClientRequestException) {
-                if (e.response.status.value == 412) {
-                    return wrapKaliumResponse<SendMessageResponse.MissingDevicesResponse> { e.response }
-                } else {
-                    throw KaliumException.InvalidRequestError(ErrorResponse(e.response.status.value, e.message, e.toString()), e)
+                return NetworkResponse.Success(response, response.receive<SendMessageResponse.MessageSent>())
+            } catch (e: ResponseException) {
+                when (e.response.status.value) {
+                    // It's a 412 Error
+                    412 -> NetworkResponse.Error(
+                        kException = SentMessageError.MissingDeviceError(
+                            errorBody = e.response.receive(),
+                            errorCode = e.response.status.value
+                        )
+                    )
+                    else -> wrapKaliumResponse { e.response }
                 }
+            } catch (e: Exception) {
+                NetworkResponse.Error(
+                    kException = KaliumException.GenericError(ErrorResponse(400, e.message ?: "There was a generic error ", e.toString()), e)
+                )
             }
         }
 
@@ -78,7 +89,7 @@ class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
                 val body = parameters.toRequestBody()
                 return performRequest(QUERY_REPORT_MISSING, true, body)
             }
-            is MessageApi.MessageOption.ReposeSome -> {
+            is MessageApi.MessageOption.ReportSome -> {
                 val body = parameters.toRequestBody()
                 body.reportMissing = option.userIDs
                 return performRequest(null, null, body)
@@ -87,8 +98,8 @@ class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
     }
 
     private companion object {
-        const val PATH_OTR_MESSAGE = "/otr/messages"
-        const val PATH_CONVERSATIONS = "/conversations"
+        const val PATH_OTR_MESSAGE = "otr/messages"
+        const val PATH_CONVERSATIONS = "conversations"
         const val QUERY_IGNORE_MISSING = "ignore_missing"
         const val QUERY_REPORT_MISSING = "report_missing"
     }

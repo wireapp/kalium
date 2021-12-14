@@ -2,10 +2,14 @@ package com.wire.kalium.network.utils
 
 import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
-import io.ktor.client.call.*
-import io.ktor.client.features.*
-import io.ktor.client.statement.*
-import io.ktor.util.*
+import io.ktor.client.call.receive
+import io.ktor.client.features.ClientRequestException
+import io.ktor.client.features.RedirectResponseException
+import io.ktor.client.features.ResponseException
+import io.ktor.client.features.ServerResponseException
+import io.ktor.client.statement.HttpResponse
+import io.ktor.util.toMap
+import io.ktor.utils.io.errors.IOException
 import kotlinx.serialization.SerializationException
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
@@ -15,7 +19,7 @@ sealed class NetworkResponse<out T> {
     data class Error<out E : KaliumException>(val kException: KaliumException) : NetworkResponse<E>()
 }
 
-fun <T> NetworkResponse<T>.httpResponseCode(): Int = if (isSuccessful()) this.response.status.value else this.kException.errorResponse.code
+fun <T> NetworkResponse<T>.httpResponseCode(): Int = if (isSuccessful()) this.response.status.value else kException.errorCode
 fun <T> NetworkResponse<T>.httpResponseHeaders(): Map<String, List<String>> = (this as NetworkResponse.Success).response.headers.toMap()
 
 @OptIn(ExperimentalContracts::class)
@@ -53,5 +57,13 @@ suspend inline fun <reified BodyType> wrapKaliumResponse(performRequest: () -> H
     } catch (e: SerializationException) {
         NetworkResponse.Error(
             kException = KaliumException.GenericError(ErrorResponse(400, e.message ?: "There was a Serialization error ", e.toString()), e)
+        )
+    } catch (e: IOException) {
+        NetworkResponse.Error(
+            kException = KaliumException.GenericError(ErrorResponse(400, e.message ?: "There was an I/O. Check the internet connection? ", e.toString()), e)
+        )
+    } catch (e: Exception) {
+        NetworkResponse.Error(
+            kException = KaliumException.GenericError(ErrorResponse(400, e.message ?: "There was a General error :( ", e.toString()), e)
         )
     }
