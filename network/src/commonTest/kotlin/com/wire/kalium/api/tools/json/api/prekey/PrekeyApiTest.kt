@@ -6,13 +6,15 @@ import com.wire.kalium.api.tools.json.model.DomainToUserIdToClientsMapJson
 import com.wire.kalium.api.tools.json.model.ErrorResponseJson
 import com.wire.kalium.network.api.prekey.PreKeyApi
 import com.wire.kalium.network.api.prekey.PreKeyApiImpl
-import io.ktor.client.features.ClientRequestException
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
 class PrekeyApiTest : ApiTest {
@@ -25,13 +27,14 @@ class PrekeyApiTest : ApiTest {
             assertion = {
                 assertPost()
                 assertJson()
-                assertPathEqual(PATH_PREYKEY)
+                assertPathEqual(PATH_PREKEYS)
             }
         )
         val preKeyApi: PreKeyApi = PreKeyApiImpl(httpClient)
 
         val response = preKeyApi.getUsersPreKey(VALID_GET_USERS_PREKEY_REQUEST.serializableData)
-        assertEquals(response.resultBody, VALID_GET_USERS_PREKEY_RESPONSE.serializableData)
+        assertTrue(response.isSuccessful())
+        assertEquals(response.value, VALID_GET_USERS_PREKEY_RESPONSE.serializableData)
     }
 
     @Test
@@ -41,15 +44,16 @@ class PrekeyApiTest : ApiTest {
             statusCode = HttpStatusCode.Forbidden,
         )
         val preKeyApi: PreKeyApi = PreKeyApiImpl(httpClient)
-
-        assertFailsWith<ClientRequestException> { preKeyApi.getUsersPreKey(VALID_GET_USERS_PREKEY_REQUEST.serializableData) }
-
+        val errorResponse = preKeyApi.getUsersPreKey(VALID_GET_USERS_PREKEY_REQUEST.serializableData)
+        assertFalse(errorResponse.isSuccessful())
+        assertTrue(errorResponse.kException is KaliumException.InvalidRequestError)
+        assertEquals((errorResponse.kException as KaliumException.InvalidRequestError).errorResponse, ERROR_RESPONSE)
     }
-
 
     private companion object {
         val VALID_GET_USERS_PREKEY_REQUEST = DomainToUserIdToClientsMapJson.valid
         val VALID_GET_USERS_PREKEY_RESPONSE = DomainToUserIdToClientToPreKeyMapJson.valid
-        const val PATH_PREYKEY = "/users/list-prekeys"
+        val ERROR_RESPONSE = ErrorResponseJson.valid.serializableData
+        const val PATH_PREKEYS = "/users/list-prekeys"
     }
 }

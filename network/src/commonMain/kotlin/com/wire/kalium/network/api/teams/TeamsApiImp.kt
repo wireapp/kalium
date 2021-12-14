@@ -1,49 +1,46 @@
 package com.wire.kalium.network.api.teams
 
-import com.wire.kalium.network.api.ConversationId
-import com.wire.kalium.network.api.KaliumHttpResult
 import com.wire.kalium.network.api.NonQualifiedConversationId
 import com.wire.kalium.network.api.TeamId
-import com.wire.kalium.network.api.wrapKaliumResponse
+import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
-import io.ktor.client.call.receive
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
-import io.ktor.client.statement.HttpResponse
 
 class TeamsApiImp(private val httpClient: HttpClient) : TeamsApi {
 
-    override suspend fun deleteConversation(conversationId: NonQualifiedConversationId, teamId: TeamId): KaliumHttpResult<Unit> =
+    override suspend fun deleteConversation(conversationId: NonQualifiedConversationId, teamId: TeamId): NetworkResponse<Unit> =
         wrapKaliumResponse {
-            httpClient.delete<HttpResponse>(
+            httpClient.delete(
                 path = "/$PATH_TEAMS/$teamId/$PATH_CONVERSATIONS/$conversationId"
-            ).receive()
+            )
         }
 
-    override suspend fun getTeams(size: Int?, option: TeamsApi.GetTeamsOption?): KaliumHttpResult<TeamsApi.TeamsResponse> =
+    override suspend fun getTeams(size: Int?, option: TeamsApi.GetTeamsOption?): NetworkResponse<TeamsApi.TeamsResponse> =
         wrapKaliumResponse {
             when (option) {
                 is TeamsApi.GetTeamsOption.StartFrom ->
-                    httpClient.get<HttpResponse>(path = "/$PATH_TEAMS") {
+                    httpClient.get(path = "/$PATH_TEAMS") {
                         size?.let { parameter(QUERY_KEY_SIZE, it) }
-                        option?.let { parameter(QUERY_KEY_START, it.teamId) }
-                    }.receive()
+                        option.let { parameter(QUERY_KEY_START, it.teamId) }
+                    }
                 is TeamsApi.GetTeamsOption.LimitTo ->
-                    httpClient.get<HttpResponse>(path = "/$PATH_TEAMS") {
+                    httpClient.get(path = "/$PATH_TEAMS") {
                         size?.let { parameter(QUERY_KEY_SIZE, it) }
-                        option?.let { parameter(QUERY_KEY_IDS, it.teamIds.joinToString(",")) }
-                    }.receive()
+                        option.let { parameter(QUERY_KEY_IDS, it.teamIds.joinToString(",")) }
+                    }
                 null ->
-                    httpClient.get<HttpResponse>(path = "/$PATH_TEAMS").receive()
+                    httpClient.get(path = "/$PATH_TEAMS")
             }
         }
 
-    override suspend fun getTeamMembers(teamId: TeamId, limitTo: Int?): KaliumHttpResult<TeamsApi.TeamMemberList> =
+    override suspend fun getTeamMembers(teamId: TeamId, limitTo: Int?): NetworkResponse<TeamsApi.TeamMemberList> =
         wrapKaliumResponse {
-            httpClient.get<HttpResponse>(path = "/$PATH_TEAMS/$teamId/$PATH_MEMBERS") {
+            httpClient.get(path = "/$PATH_TEAMS/$teamId/$PATH_MEMBERS") {
                 limitTo?.let { parameter("maxResults", it) }
-            }.receive()
+            }
         }
 
     private companion object {

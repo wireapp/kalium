@@ -1,5 +1,6 @@
 package com.wire.kalium.network.api.message
-import com.wire.kalium.network.api.KaliumHttpResult
+
+import com.wire.kalium.network.utils.NetworkResponse
 
 interface MessageApi {
 
@@ -17,7 +18,7 @@ interface MessageApi {
          */
         object ReportAll : MessageOption()
         data class IgnoreSome(val userIDs: List<String>) : MessageOption()
-        data class ReposeSome(val userIDs: List<String>) : MessageOption()
+        data class ReportSome(val userIDs: List<String>) : MessageOption()
     }
 
     sealed interface SendMessageParameters
@@ -35,7 +36,7 @@ interface MessageApi {
         // TODO: what is transient
         data class DefaultParameters(
             val sender: String,
-                // TODO: Migrate Recipients to this new project
+            // TODO: Migrate Recipients to this new project
 //            val recipients: Recipients,
             val nativePush: Boolean,
             val priority: MessagePriority,
@@ -48,5 +49,5 @@ interface MessageApi {
         parameters: Parameters.DefaultParameters,
         conversationId: String,
         option: MessageOption
-    ): KaliumHttpResult<SendMessageResponse>
+    ): NetworkResponse<SendMessageResponse>
 }
