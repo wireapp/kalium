@@ -1,7 +1,7 @@
 package com.wire.kalium.api
 
+import com.wire.kalium.api.tools.testCredentials
 import com.wire.kalium.network.AuthenticatedNetworkContainer
-import com.wire.kalium.network.api.SessionCredentials
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -15,14 +15,6 @@ import io.ktor.utils.io.ByteReadChannel
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
-
-private class TestAuthManager() : SessionCredentials {
-    override fun accessToken(): String =
-        "eyJhbGciOiJIUzI1AnwarInR5cCI6IkpXVCJ9.eyJsb2dnZWRJbkFzIjoiYWRtaW4iLCJpYXQiOjE0MjI3Nzk2Mz69.gzSraSYS8EXBxLN_oWnFSRgCzcmJmMjLiuyu5CSpyHI"
-
-    override fun refreshToken(): String =
-        "a123bGciOiJIUzI1NiIsInR5cCI6IkpX2fr9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6Ik420G4gRG9lIiwiYWRtaW4iOnRydWV9.TJVA95OrM7E2cBab30RMHrHDcEfxjoYZgeFONFh7HgQ"
-}
 
 interface ApiTest {
 
@@ -61,7 +53,7 @@ interface ApiTest {
         }
         return AuthenticatedNetworkContainer(
             engine = mockEngine,
-            credentialsProvider = TestAuthManager()
+            sessionCredentials = testCredentials
         ).authenticatedHttpClient
     }
 
@@ -71,17 +63,20 @@ interface ApiTest {
      * @param name name of the query parameter
      */
     fun HttpRequestData.assertQueryExist(name: String) = assertFalse(this.url.parameters[name].isNullOrBlank())
+
     /**
      * assert the request url does not have query parameter value
      * @param name name of the query parameter
      */
     fun HttpRequestData.assertQueryDoesNotExist(name: String) = assertTrue(this.url.parameters[name].isNullOrBlank())
+
     /**
      * assert the request url has query parameter value
      * @param name name of the query parameter
      * @param hasValue the value of the parameter
      */
     fun HttpRequestData.assertQueryParameter(name: String, hasValue: String) = assertEquals(this.url.parameters[name], hasValue)
+
     /**
      * assert the request url has no query params
      */
