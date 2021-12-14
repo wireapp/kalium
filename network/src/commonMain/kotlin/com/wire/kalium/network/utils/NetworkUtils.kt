@@ -40,30 +40,30 @@ suspend inline fun <reified BodyType> wrapKaliumResponse(performRequest: () -> H
         when (e) {
             is RedirectResponseException -> {
                 // 300 .. 399
-                NetworkResponse.Error(kException = KaliumException.RedirectError(e.response.receive(), e))
+                NetworkResponse.Error(kException = KaliumException.RedirectError(e.response.receive()))
             }
             is ClientRequestException -> {
                 // 400 .. 499
-                NetworkResponse.Error(kException = KaliumException.InvalidRequestError(e.response.receive(), e))
+                NetworkResponse.Error(kException = KaliumException.InvalidRequestError(e.response.receive()))
             }
             is ServerResponseException -> {
                 // 500 .. 599
-                NetworkResponse.Error(kException = KaliumException.ServerError(e.response.receive(), e))
+                NetworkResponse.Error(kException = KaliumException.ServerError(e.response.receive()))
             }
             else -> {
-                NetworkResponse.Error(kException = KaliumException.GenericError(e.response.receive(), e))
+                NetworkResponse.Error(kException = KaliumException.GenericError(e.response.receive()))
             }
         }
     } catch (e: SerializationException) {
         NetworkResponse.Error(
-            kException = KaliumException.GenericError(ErrorResponse(400, e.message ?: "There was a Serialization error ", e.toString()), e)
+            kException = KaliumException.GenericError(ErrorResponse(400, e.message ?: "There was a Serialization error ", e.toString()))
         )
     } catch (e: IOException) {
         NetworkResponse.Error(
-            kException = KaliumException.GenericError(ErrorResponse(400, e.message ?: "There was an I/O. Check the internet connection? ", e.toString()), e)
+            kException = KaliumException.NetworkUnavailableError(ErrorResponse(400, e.message ?: "There was an I/O. Check the internet connection? ", e.toString()), e)
         )
     } catch (e: Exception) {
         NetworkResponse.Error(
-            kException = KaliumException.GenericError(ErrorResponse(400, e.message ?: "There was a General error :( ", e.toString()), e)
+            kException = KaliumException.GenericError(ErrorResponse(400, e.message ?: "There was a General error :( ", e.toString()))
         )
     }
