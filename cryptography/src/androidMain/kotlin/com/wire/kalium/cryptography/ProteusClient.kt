@@ -45,7 +45,7 @@ actual class ProteusClient actual constructor(rootDir: String, userId: String) {
     }
 
     actual fun decrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
-        val session = box.getSession(sessionId.value)
+        val session = box.tryGetSession(sessionId.value)
 
         return wrapException {
             if (session != null) {
