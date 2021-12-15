@@ -41,6 +41,9 @@ object Plugins {
     fun multiplatform(scope: PluginDependenciesSpec) =
         scope.id("org.jetbrains.kotlin.multiplatform")
 
+    fun wire(scope: PluginDependenciesSpec) =
+        scope.id("com.wire.plugin")
+
     fun serialization(scope: PluginDependenciesSpec) =
         scope.kotlin("plugin.serialization") version Versions.kotlin
 }

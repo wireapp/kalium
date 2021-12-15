@@ -10,3 +10,4 @@ rootDir
     }.forEach {
         include(":${it.name}")
     }
+include("plugin")

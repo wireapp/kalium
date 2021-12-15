@@ -1,7 +1,18 @@
+import com.wire.plugin.CarthagePlatform
+import com.wire.plugin.CarthageParameters
+import com.wire.plugin.CarthageCommand
+import com.wire.plugin.DefGeneratorArtifactDefinition
+
 plugins {
     Plugins.androidLibrary(this)
     Plugins.multiplatform(this)
     Plugins.serialization(this)
+    Plugins.wire(this)
+}
+
+dependencies {
+    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:1.6.0")
+    implementation("org.jetbrains.kotlin:kotlin-native-utils:1.6.0")
 }
 
 group = "com.wire.kalium"
@@ -30,6 +41,31 @@ android {
     }
 }
 
+val iosCryptoboxArtifact = DefGeneratorArtifactDefinition(
+    artifactName = "WireCryptobox",
+    artifactTarget = "ios-x86_64-simulator",
+    isXCFramework = true
+)
+
+val defsOutputDir = projectDir.resolve("defs")
+
+wire {
+    tag.set("cryptography")
+    carthageParameters.set(
+        CarthageParameters(
+            CarthageCommand.UPDATE,
+            platforms = listOf(CarthagePlatform.IOS),
+            useXCFrameworks = true
+        )
+    )
+    defGeneratorParameters.set(
+        com.wire.plugin.DefGeneratorParameters(
+            defOutputDir = defsOutputDir,
+            artifactDefinitions = listOf(iosCryptoboxArtifact)
+        )
+    )
+}
+
 kotlin {
     jvm {
         compilations.all {
@@ -40,6 +76,38 @@ kotlin {
         }
     }
     android()
+
+    iosX64 {
+        compilations
+            .getByName(org.jetbrains.kotlin.gradle.plugin.KotlinCompilation.MAIN_COMPILATION_NAME)
+            .cinterops
+            .create(iosCryptoboxArtifact.artifactName) {
+                defFileProperty.set(project.rootDir.resolve("cryptography").resolve(wire.defFileForArtifact(iosCryptoboxArtifact)))
+                includeDirs("${project.rootDir}/cryptography/Carthage/Build/${wire.headersDirForArtifact(iosCryptoboxArtifact).path}")
+                packageName = "com.wire.${iosCryptoboxArtifact.artifactName}"
+            }
+
+//        compilations
+//            .getByName(org.jetbrains.kotlin.gradle.plugin.KotlinCompilation.MAIN_COMPILATION_NAME)
+//            .cinterops
+//            .create("AFNetworking") {
+//                defFileProperty.set(File("${project.rootDir}/cryptography/Carthage/Build/Defs/$name.def"))
+//                // ios-arm64_i386_x86_64-simulator
+//                // ios-x86_64-simulator
+//                includeDirs("${project.rootDir}/cryptography/Carthage/Build/$name.xcframework/ios-arm64_i386_x86_64-simulator/$name.framework/Headers")
+//                packageName = "com.wire.$name"
+//            }
+
+        binaries {
+            framework {
+                baseName = "Cryptography"
+                transitiveExport = true
+                linkerOpts(
+                    "-F${project.rootDir}/cryptography/Carthage/Build/${iosCryptoboxArtifact.artifactName}.xcframework/${iosCryptoboxArtifact.artifactTarget}"
+                )
+            }
+        }
+    }
 
     sourceSets {
         val commonMain by getting {
