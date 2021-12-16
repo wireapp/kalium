@@ -18,14 +18,14 @@ object DomainToUserIdToClientsMapJson {
     private val jsonProvider = { _ : DomainToUserIdToClientsMap ->
         """
         |{
-        |  $DOMAIN_1: {
-        |    $USER_1: [
-        |      $USER_1_client_1,
-        |      $USER_1_client_2
+        |  "$DOMAIN_1": {
+        |    "$USER_1": [
+        |      "$USER_1_client_1",
+        |      "$USER_1_client_2"
         |    ],
-        |    $USER_2: [
-        |      $USER_2_client_1",
-        |      $USER_2_client_2
+        |    "$USER_2": [
+        |      "$USER_2_client_1",
+        |      "$USER_2_client_2"
         |    ]
         |  }
         |}
