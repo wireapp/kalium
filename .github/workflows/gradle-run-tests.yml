@@ -26,12 +26,15 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 29
-          script: ./gradlew connectedAndroidTest
+          script: ./gradlew cryptography:connectedAndroidTest
       - name: Publish Unit Test Results
         uses: EnricoMi/publish-unit-test-result-action/composite@v1.25
         if: always()
         with:
-          files: network/build/test-results/testDebugUnitTest/**/*.xml
+          files: |
+            network/build/test-results/testDebugUnitTest/**/*.xml
+            cryptography/build/test-results/**/*.xml
+            cryptography/build/outputs/androidTest-results/**/*.xml
       - name: Cleanup Gradle Cache
         # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
         # Restoring these files from a GitHub Actions cache might cause problems for future builds.
