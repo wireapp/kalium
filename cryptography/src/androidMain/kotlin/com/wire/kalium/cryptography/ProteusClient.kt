@@ -5,6 +5,7 @@ import com.wire.cryptobox.CryptoBox
 import com.wire.cryptobox.CryptoException
 import com.wire.cryptobox.CryptoSession
 import com.wire.kalium.cryptography.exceptions.ProteusException
+import java.io.File
 import java.util.UUID
 
 actual class ProteusClient actual constructor(rootDir: String, userId: String) {
@@ -17,7 +18,10 @@ actual class ProteusClient actual constructor(rootDir: String, userId: String) {
     }
 
     actual fun open() {
-        box = wrapException { CryptoBox.open(path) }
+        box = wrapException {
+            File(path).mkdirs()
+            CryptoBox.open(path)
+        }
     }
 
     actual fun close() {

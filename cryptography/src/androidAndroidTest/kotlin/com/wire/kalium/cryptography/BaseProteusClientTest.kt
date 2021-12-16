@@ -8,5 +8,5 @@ actual open class BaseProteusClientTest {
         val root = Files.createTempDirectory("proteus").toFile().absolutePath
         return ProteusClient(root, userId.value)
     }
-}
 
+}
