@@ -20,14 +20,6 @@ data class PreKey(
     val encodedData: String
 )
 
-expect class ProteusSession {
-
-    @Throws(ProteusException::class)
-    fun encrypt(data: ByteArray): ByteArray
-    @Throws(ProteusException::class)
-    fun decrypt(data: ByteArray): ByteArray
-}
-
 expect class ProteusClient(rootDir: String, userId: String) {
 
     @Throws(ProteusException::class)
@@ -45,11 +37,17 @@ expect class ProteusClient(rootDir: String, userId: String) {
     @Throws(ProteusException::class)
     fun newLastPreKey(): PreKey
 
-    fun getSession(sessionId: CryptoSessionId): ProteusSession?
     @Throws(ProteusException::class)
-    fun createSession(preKey: PreKey, sessionId: CryptoSessionId): ProteusSession
+    fun createSession(preKey: PreKey, sessionId: CryptoSessionId)
+
     @Throws(ProteusException::class)
-    fun createSessionAndDecrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray
+    fun decrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray
+
+    @Throws(ProteusException::class)
+    fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray?
+
+    @Throws(ProteusException::class)
+    fun encryptWithPreKey(message: ByteArray, preKey: PreKey, sessionId: CryptoSessionId): ByteArray
 }
 
 fun ProteusClient.createSessions(preKeys: Map<String, Map<String, PreKey>>) {

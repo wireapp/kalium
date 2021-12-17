@@ -15,6 +15,8 @@ object Versions {
     const val ktor = "1.6.6"
     const val okHttp = "4.9.3"
     const val kotest = "4.6.3"
+    const val androidTestRunner = "1.4.0"
+    const val androidTestRules = "1.4.0"
 }
 
 object Plugins {
@@ -55,6 +57,11 @@ object Dependencies {
         const val activityCompose = "androidx.activity:activity-compose:${Versions.activityCompose}"
         const val composeMaterial = "androidx.compose.material:material:${Versions.compose}"
         const val composeTooling = "androidx.compose.ui:ui-tooling:${Versions.compose}"
+    }
+
+    object AndroidInstruments {
+        const val androidTestRunner = "androidx.test:runner:${Versions.androidTestRunner}"
+        const val androidTestRules = "androidx.test:rules:${Versions.androidTestRules}"
     }
 
     object Coroutines {
