@@ -94,18 +94,17 @@ kotlin {
                 packageName = "com.wire.${iosCryptoboxArtifact.artifactName}"
             }
 
-//        compilations
-//            .getByName(org.jetbrains.kotlin.gradle.plugin.KotlinCompilation.MAIN_COMPILATION_NAME)
-//            .cinterops
-//            .create("AFNetworking") {
-//                defFileProperty.set(File("${project.rootDir}/cryptography/Carthage/Build/Defs/$name.def"))
-//                // ios-arm64_i386_x86_64-simulator
-//                // ios-x86_64-simulator
-//                includeDirs("${project.rootDir}/cryptography/Carthage/Build/$name.xcframework/ios-arm64_i386_x86_64-simulator/$name.framework/Headers")
-//                packageName = "com.wire.$name"
-//            }
+        compilations
+            .getByName(org.jetbrains.kotlin.gradle.plugin.KotlinCompilation.TEST_COMPILATION_NAME)
+            .cinterops
+            .create(iosCryptoboxArtifact.artifactName) {
+                defFileProperty.set(project.rootDir.resolve("cryptography").resolve(wire.defFileForArtifact(iosCryptoboxArtifact)))
+                includeDirs("${project.rootDir}/cryptography/Carthage/Build/${wire.headersDirForArtifact(iosCryptoboxArtifact).path}")
+                packageName = "com.wire.${iosCryptoboxArtifact.artifactName}"
+            }
 
         binaries {
+            getTest("DEBUG").linkerOpts.add("-F${project.rootDir}/cryptography/Carthage/Build/${iosCryptoboxArtifact.artifactName}.xcframework/${iosCryptoboxArtifact.artifactTarget}") // Waah
             framework {
                 baseName = "Cryptography"
                 transitiveExport = true
@@ -145,6 +144,9 @@ kotlin {
                 implementation(Dependencies.AndroidInstruments.androidTestRunner)
                 implementation(Dependencies.AndroidInstruments.androidTestRules)
             }
+        }
+        val iosX64Test by getting {
+
         }
     }
 }
