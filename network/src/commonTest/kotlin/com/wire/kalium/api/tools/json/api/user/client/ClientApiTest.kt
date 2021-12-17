@@ -2,17 +2,17 @@ package com.wire.kalium.api.tools.json.api.user.client
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.tools.json.model.ErrorResponseJson
-import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.network.api.user.client.ClientApiImp
-import io.ktor.client.call.receive
-import io.ktor.client.features.ClientRequestException
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
 class ClientApiTest : ApiTest {
@@ -31,7 +31,8 @@ class ClientApiTest : ApiTest {
             )
             val clientApi: ClientApi = ClientApiImp(httpClient)
             val response = clientApi.registerClient(REGISTER_CLIENT_REQUEST.serializableData)
-            assertEquals(response.resultBody, VALID_REGISTER_CLIENT_RESPONSE.serializableData)
+            assertTrue(response.isSuccessful())
+            assertEquals(response.value, VALID_REGISTER_CLIENT_RESPONSE.serializableData)
         }
 
     @Test
@@ -41,10 +42,11 @@ class ClientApiTest : ApiTest {
             statusCode = HttpStatusCode.Unauthorized
         )
         val clientApi: ClientApi = ClientApiImp(httpClient)
-        val error = assertFailsWith<ClientRequestException> { clientApi.registerClient(REGISTER_CLIENT_REQUEST.serializableData) }
-        assertEquals(error.response.receive<ErrorResponse>(), ERROR_RESPONSE)
+        val errorResponse = clientApi.registerClient(REGISTER_CLIENT_REQUEST.serializableData)
+        assertFalse(errorResponse.isSuccessful())
+        assertTrue(errorResponse.kException is KaliumException.InvalidRequestError)
+        assertEquals((errorResponse.kException as KaliumException.InvalidRequestError).errorResponse, ERROR_RESPONSE)
     }
-
 
     private companion object {
         const val PATH_CLIENTS = "clients"

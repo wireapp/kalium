@@ -35,6 +35,7 @@ android {
 
     kotlinOptions {
         jvmTarget = "1.8"
+        freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
     }
 
 //    sourceSets { map { it.java.srcDir("src/${it.name}/kotlin") } }

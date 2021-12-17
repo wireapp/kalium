@@ -1,27 +1,19 @@
 package com.wire.kalium.network.exceptions
 
-import kotlinx.serialization.Serializable
+import com.wire.kalium.network.api.ErrorResponse
+import com.wire.kalium.network.api.message.SendMessageResponse
 
-// TODO: return custom error instead of throwing exception
+sealed class KaliumException(val errorCode: Int) : Exception() {
+    class RedirectError(val errorResponse: ErrorResponse) : KaliumException(errorCode = errorResponse.code)
+    class InvalidRequestError(val errorResponse: ErrorResponse) : KaliumException(errorCode = errorResponse.code)
+    class ServerError(val errorResponse: ErrorResponse) : KaliumException(errorCode = errorResponse.code)
+    class GenericError(val errorResponse: ErrorResponse?, override val cause: Throwable?) : KaliumException(errorCode = errorResponse?.code ?: 400)
+    class NetworkUnavailableError(val errorResponse: ErrorResponse?, override val cause: Throwable?) :
+        KaliumException(errorCode = errorResponse?.code ?: 400)
 
-@Serializable
-sealed class KaliumException : Exception()
+    sealed class FeatureError(errorCode: Int) : KaliumException(errorCode)
+}
 
-@Serializable
-sealed class NetworkException(
-    open var _message: String? = null,
-    open var _code: Int = 0,
-    open var _label: String? = null
-) : KaliumException()
-
-@Serializable
-class AuthException : NetworkException {
-    constructor(message: String?, code: Int) : super(_message = message, _code = code)
-    constructor(code: Int) : super(_code = code)
-
-    constructor(
-        message: String?,
-        code: Int,
-        label: String?
-    ) : super(message, code, label)
+sealed class SentMessageError(errorCode: Int) : KaliumException.FeatureError(errorCode) {
+    class MissingDeviceError(val errorBody: SendMessageResponse.MissingDevicesResponse, errorCode: Int) : SentMessageError(errorCode)
 }
