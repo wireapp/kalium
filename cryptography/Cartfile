@@ -1,2 +1,1 @@
-github "wireapp/wire-ios-cryptobox" ~> 31.0.0
-github "AFNetworking/AFNetworking"
+github "wireapp/wire-ios-cryptobox" "chore/add-objc-annotations"
