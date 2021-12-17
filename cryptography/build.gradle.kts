@@ -19,6 +19,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_1_8
     }
     sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
+    // Remove Android Unit tests, as it's currently impossible to run native-through-NDK code on simple Unit tests.
     sourceSets.remove(sourceSets["test"])
     externalNativeBuild {
         cmake {
