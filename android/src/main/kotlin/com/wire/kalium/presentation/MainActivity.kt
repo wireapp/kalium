@@ -36,14 +36,8 @@ class MainActivity : ComponentActivity() {
 
         bobClient.createSession(aliceKey, aliceSessionId)
         val message = "Oi Alice!"
-        val encryptedMessage = bobClient.getSession(aliceSessionId)!!.encrypt(message.toByteArray(Charsets.UTF_8))
-
-        val decryptedMessage = aliceClient.getSession(bobSessionId)?.decrypt(encryptedMessage)
-        // Session is not established when receiving the first message, so call createSessionAndDecrypt
-            ?: aliceClient.createSessionAndDecrypt(
-                encryptedMessage,
-                bobSessionId
-            )
+        val encryptedMessage = bobClient.encrypt(message.toByteArray(Charsets.UTF_8), aliceSessionId)!!
+        val decryptedMessage = aliceClient.decrypt(encryptedMessage, bobSessionId)
 
         setContent {
             MainLayout(decryptedMessage.toString(Charsets.UTF_8))

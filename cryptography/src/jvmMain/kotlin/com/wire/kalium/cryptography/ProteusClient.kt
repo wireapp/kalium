@@ -45,22 +45,24 @@ actual class ProteusClient actual constructor(rootDir: String, userId: String) {
         return wrapException { box.newPreKeys(from, count).map { toPreKey(it) } as ArrayList<PreKey> }
     }
 
-    actual fun getSession(sessionId: CryptoSessionId): ProteusSession? {
-        return box.let { ProteusSession(it, sessionId) }
+    actual fun createSession(preKey: PreKey, sessionId: CryptoSessionId) {
+        wrapException { box.encryptFromPreKeys(sessionId.value, toPreKey(preKey), ByteArray(0)) }
     }
 
-    actual fun createSession(
+    actual fun decrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
+        return wrapException { box.decrypt(sessionId.value, message) }
+    }
+
+    actual fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray? {
+        return wrapException { box.encryptFromSession(sessionId.value, message) }
+    }
+
+    actual fun encryptWithPreKey(
+        message: ByteArray,
         preKey: PreKey,
         sessionId: CryptoSessionId
-    ): ProteusSession {
-        return wrapException {
-            box.encryptFromPreKeys(sessionId.value, toPreKey(preKey), ByteArray(0))
-            ProteusSession(box, sessionId)
-        }
-    }
-
-    actual fun createSessionAndDecrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
-        return wrapException { box.decrypt(sessionId.value, message) }
+    ): ByteArray {
+        return wrapException { box.encryptFromPreKeys(sessionId.value, toPreKey(preKey), message) }
     }
 
     private fun <T> wrapException(b: () -> T): T {
@@ -86,27 +88,6 @@ actual class ProteusClient actual constructor(rootDir: String, userId: String) {
 
         private fun createId(userId: String, clientId: String): String {
             return String.format("%s_%s", userId, clientId)
-        }
-    }
-}
-
-actual class ProteusSession(private val box: CryptoBox, private val sessionId: CryptoSessionId) {
-
-    actual fun encrypt(data: ByteArray): ByteArray {
-        return wrapException { box.encryptFromSession(sessionId.value, data) }
-    }
-
-    actual fun decrypt(data: ByteArray): ByteArray {
-        return wrapException { box.decrypt(sessionId.value, data) }
-    }
-
-    private fun <T> wrapException(b: () -> T): T {
-        try {
-            return b()
-        } catch (e: CryptoException) {
-            throw ProteusException(e.message, e.code.ordinal)
-        } catch (e: Exception) {
-            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR)
         }
     }
 
