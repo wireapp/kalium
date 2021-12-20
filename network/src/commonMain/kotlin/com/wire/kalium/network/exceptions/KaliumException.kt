@@ -14,6 +14,6 @@ sealed class KaliumException(val errorCode: Int) : Exception() {
     sealed class FeatureError(errorCode: Int) : KaliumException(errorCode)
 }
 
-sealed class SentMessageError(errorCode: Int) : KaliumException.FeatureError(errorCode) {
-    class MissingDeviceError(val errorBody: SendMessageResponse.MissingDevicesResponse, errorCode: Int) : SentMessageError(errorCode)
+sealed class SendMessageError(errorCode: Int) : KaliumException.FeatureError(errorCode) {
+    class MissingDeviceError(val errorBody: SendMessageResponse.MissingDevicesResponse, errorCode: Int) : SendMessageError(errorCode)
 }

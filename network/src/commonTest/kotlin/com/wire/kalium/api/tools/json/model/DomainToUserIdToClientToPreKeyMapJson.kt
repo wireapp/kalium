@@ -20,19 +20,19 @@ object DomainToUserIdToClientToPreKeyMapJson {
     private val jsonProvider = { _: DomainToUserIdToClientsToPreykeyMap ->
             """
             |{
-            |  $DOMAIN_1: {
-            |    $USER_1: {
-            |      $USER_1_CLIENT: {
-            |        "key": ${USER_1_CLIENT_PREYKEY.key},
+            |  "$DOMAIN_1": {
+            |    "$USER_1": {
+            |      "$USER_1_CLIENT": {
+            |        "key": "${USER_1_CLIENT_PREYKEY.key}",
             |        "id": ${USER_1_CLIENT_PREYKEY.id}
             |      }
             |    }
             |  },
-            |  $DOMAIN_2: {
-            |    $USER_2: {
-            |      $USER_2_CLIENT: {
-            |        "key": ${USER_2_CLIENT_PREYKEY.key},
-            |        "id": ${USER_2_CLIENT_PREYKEY.id}
+            |  "$DOMAIN_2": {
+            |    "$USER_2": {
+            |      "$USER_2_CLIENT": {
+            |        "key": "${USER_2_CLIENT_PREYKEY.key}",
+            |        "id": "${USER_2_CLIENT_PREYKEY.id}"
             |      }
             |    }
             |  }
