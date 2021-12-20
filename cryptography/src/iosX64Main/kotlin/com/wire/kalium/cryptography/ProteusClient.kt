@@ -22,9 +22,9 @@ import platform.Foundation.create
 import platform.Foundation.valueForKey
 import platform.posix.memcpy
 
-actual class ProteusClient actual constructor(val rootDir: String, val userId: String) {
+actual class ProteusClient actual constructor(private val rootDir: String, private val userId: String) {
 
-    lateinit var box: EncryptionContext
+    private var box: EncryptionContext? = null
 
     @Throws(ProteusException::class)
     actual fun open() {
@@ -35,7 +35,9 @@ actual class ProteusClient actual constructor(val rootDir: String, val userId: S
 
     @Throws(ProteusException::class)
     actual fun close() {
-        TODO("Not yet implemented")
+        box = null
+        // the underlaying cbox is currently closed on deinit so we need to force a GC collection.
+        kotlin.native.internal.GC.collect()
     }
 
     @Throws(ProteusException::class)
@@ -46,7 +48,7 @@ actual class ProteusClient actual constructor(val rootDir: String, val userId: S
     @Throws(ProteusException::class)
     actual fun getLocalFingerprint(): ByteArray {
         lateinit var fingerprint: NSData
-        box.perform { session ->
+        box?.perform { session ->
             fingerprint = session?.localFingerprint()!!
         }
         return toData(fingerprint)
@@ -55,16 +57,22 @@ actual class ProteusClient actual constructor(val rootDir: String, val userId: S
     @Throws(ProteusException::class)
     actual fun newPreKeys(from: Int, count: Int): ArrayList<PreKey> {
         lateinit var preKeys: ArrayList<PreKey>
-        box.perform { session ->
-            var range = NSMakeRange(from.convert(), count.convert())
-            val rawPreKeys = session?.generatePrekeys(range, null)
-            preKeys = rawPreKeys?.map { bar ->
-                val dict = bar as NSDictionary
-                val id = dict.valueForKey("id") as NSNumber
-                val foo = dict.valueForKey("prekey") as String
-                toPreKey(id.intValue, foo)
-            } as ArrayList<PreKey>
-            session.commitCache()
+        box?.perform { session ->
+            val range = NSMakeRange(from.convert(), count.convert())
+            memScoped {
+                val errorPtr: ObjCObjectVar<NSError?> = alloc()
+                val rawPreKeys = session?.generatePrekeys(range, errorPtr.ptr)
+                errorPtr.value?.let { error ->
+                    throw toException(error)
+                }
+                preKeys = rawPreKeys?.map { bar ->
+                    val dict = bar as NSDictionary
+                    val id = dict.valueForKey("id") as NSNumber
+                    val foo = dict.valueForKey("prekey") as String
+                    toPreKey(id.intValue, foo)
+                } as ArrayList<PreKey>
+            }
+            session?.commitCache()
         }
         return preKeys
     }
@@ -72,9 +80,15 @@ actual class ProteusClient actual constructor(val rootDir: String, val userId: S
     @Throws(ProteusException::class)
     actual fun newLastPreKey(): PreKey {
         lateinit var preKey: PreKey
-        box.perform { session ->
-            val pk = session?.generateLastPrekeyAndReturnError(null)!!
-            preKey = toPreKey(65535, pk)
+        box?.perform { session ->
+            memScoped {
+                val errorPtr: ObjCObjectVar<NSError?> = alloc()
+                val pk = session?.generateLastPrekeyAndReturnError(errorPtr.ptr)!!
+                errorPtr.value?.let { error ->
+                    throw toException(error)
+                }
+                preKey = toPreKey(65535, pk)
+            }
             session?.commitCache()
         }
         return preKey
@@ -82,14 +96,13 @@ actual class ProteusClient actual constructor(val rootDir: String, val userId: S
 
     @Throws(ProteusException::class)
     actual fun createSession(preKey: PreKey, sessionId: CryptoSessionId) {
-        box.perform { session ->
+        box?.perform { session ->
             memScoped {
-                val errorPtr: ObjCObjectVar<NSError?> = alloc<ObjCObjectVar<NSError?>>()
+                val errorPtr: ObjCObjectVar<NSError?> = alloc()
                 session?.createClientSession(toSessionId(sessionId), toPreKey(preKey), errorPtr.ptr)
-                session?.commitCache()
+                session?.commitCache() // NOTE necessary since objects are not immediately GC collected.
                 errorPtr.value?.let { error ->
-                    // TODO do proper error handling
-                    throw ProteusException("${error.domain} ${error.code}", 0)
+                    throw toException(error)
                 }
             }
 
@@ -99,11 +112,25 @@ actual class ProteusClient actual constructor(val rootDir: String, val userId: S
     @Throws(ProteusException::class)
     actual fun decrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
         lateinit var decrypted: NSData
-        box.perform { session ->
+        box?.perform { session ->
             if (session?.hasSessionFor(toSessionId(sessionId)) == true) {
-                decrypted = session.decrypt(toData(message), toSessionId(sessionId), null)!!
+                memScoped {
+                    val errorPtr: ObjCObjectVar<NSError?> = alloc()
+                    decrypted = session.decrypt(toData(message), toSessionId(sessionId), errorPtr.ptr)!!
+                    errorPtr.value?.let { error ->
+                        throw toException(error)
+                    }
+                }
+
             } else {
-                decrypted = session?.createClientSessionAndReturnPlaintextFor(toSessionId(sessionId), toData(message), null)!!
+                memScoped {
+                    val errorPtr: ObjCObjectVar<NSError?> = alloc()
+                    decrypted = session?.createClientSessionAndReturnPlaintextFor(toSessionId(sessionId), toData(message), errorPtr.ptr)!!
+                    errorPtr.value?.let { error ->
+                        throw toException(error)
+                    }
+                }
+
             }
             session?.commitCache()
         }
@@ -113,17 +140,15 @@ actual class ProteusClient actual constructor(val rootDir: String, val userId: S
     @Throws(ProteusException::class)
     actual fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray? {
         var encrypted: NSData? = null
-        box.perform { session ->
+        box?.perform { session ->
             if (session?.hasSessionFor(toSessionId(sessionId)) == true) {
                 memScoped {
-                    val errorPtr: ObjCObjectVar<NSError?> = alloc<ObjCObjectVar<NSError?>>()
+                    val errorPtr: ObjCObjectVar<NSError?> = alloc()
                     encrypted = session.encrypt(toData(message), toSessionId(sessionId), errorPtr.ptr)!!
                     errorPtr.value?.let { error ->
-                        // TODO do proper error handling
-                        throw ProteusException("${error.domain} ${error.code}", 0)
+                        throw toException(error)
                     }
                 }
-                session?.commitCache()
             }
 
         }
@@ -158,6 +183,10 @@ actual class ProteusClient actual constructor(val rootDir: String, val userId: S
 
         private fun toSessionId(sessionId: CryptoSessionId): EncryptionSessionIdentifier {
             return EncryptionSessionIdentifier(null, sessionId.userId.value, sessionId.cryptoClientId.value)
+        }
+
+        private fun toException(error: NSError): ProteusException {
+            return ProteusException(message = error.description,  code = error.code.toInt())
         }
     }
 
