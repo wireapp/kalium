@@ -1,14 +1,14 @@
 package com.wire.kalium.network.api.user.client
 
-import com.wire.kalium.network.api.prekey.PreKey
+import com.wire.kalium.network.api.prekey.PreKeyDTO
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class RegisterClientRequest(
     @SerialName("password") val password: String,
-    @SerialName("prekeys") val preKeys: List<PreKey>,
-    @SerialName("lastkey") val lastKey: PreKey,
+    @SerialName("prekeys") val preKeyDTOS: List<PreKeyDTO>,
+    @SerialName("lastkey") val lastKey: PreKeyDTO,
     @SerialName("class") val deviceType: DeviceType,
     @SerialName("type") val type: ClientType, // 'temporary', 'permanent', 'legalhold'
     @SerialName("label") val label: String,

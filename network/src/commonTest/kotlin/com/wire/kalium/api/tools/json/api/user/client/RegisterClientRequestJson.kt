@@ -2,7 +2,7 @@ package com.wire.kalium.api.tools.json.api.user.client
 
 import com.wire.kalium.api.tools.json.FaultyJsonProvider
 import com.wire.kalium.api.tools.json.ValidJsonProvider
-import com.wire.kalium.network.api.prekey.PreKey
+import com.wire.kalium.network.api.prekey.PreKeyDTO
 import com.wire.kalium.network.api.user.client.ClientCapability
 import com.wire.kalium.network.api.user.client.ClientType
 import com.wire.kalium.network.api.user.client.DeviceType
@@ -22,12 +22,12 @@ object RegisterClientRequestJson {
         |  "password": "${serializable.password}",
         |  "prekeys": [
         |       {
-        |           "id": ${serializable.preKeys[0].id},
-        |           "key": "${serializable.preKeys[0].key}"
+        |           "id": ${serializable.preKeyDTOS[0].id},
+        |           "key": "${serializable.preKeyDTOS[0].key}"
         |       },
         |       {
-        |           "id": ${serializable.preKeys[1].id},
-        |           "key": "${serializable.preKeys[1].key}"
+        |           "id": ${serializable.preKeyDTOS[1].id},
+        |           "key": "${serializable.preKeyDTOS[1].key}"
         |       }
         |  ],
         |  "type": "${serializable.type.name}",
@@ -45,8 +45,8 @@ object RegisterClientRequestJson {
             deviceType = DeviceType.Desktop,
             type = ClientType.Permanent,
             label = "label",
-            preKeys = listOf(PreKey(1, "preykey_1"), PreKey(2, "prekey_2")),
-            lastKey = PreKey(999, "last_prekey"),
+            preKeyDTOS = listOf(PreKeyDTO(1, "preykey_1"), PreKeyDTO(2, "prekey_2")),
+            lastKey = PreKeyDTO(999, "last_prekey"),
             capabilities = listOf(ClientCapability.LegalHoldImplicitConsent),
             model = "model"
         ),

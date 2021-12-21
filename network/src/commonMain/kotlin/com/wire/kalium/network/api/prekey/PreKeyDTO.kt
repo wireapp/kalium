@@ -21,7 +21,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class PreKey(
+data class PreKeyDTO(
     @SerialName("id")
     val id: Int,
     @SerialName("key")
