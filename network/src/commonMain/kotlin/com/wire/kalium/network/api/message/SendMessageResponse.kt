@@ -3,30 +3,31 @@ package com.wire.kalium.network.api.message
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+@Serializable
 sealed class SendMessageResponse {
+    abstract val time: String
+    abstract val missing: UserIdToClientMap
+    abstract val redundant: UserIdToClientMap
+    abstract val deleted: UserIdToClientMap
+
     @Serializable
     data class MissingDevicesResponse(
-        @SerialName("time") val time: String,
-        @SerialName("missing") val missing: MissingUsers,
-        @SerialName("redundant") val redundant: RedundantUsers,
-        @SerialName("deleted") val deleted: DeletedUsers
+        override val time: String,
+        override val missing: UserIdToClientMap,
+        override val redundant: UserIdToClientMap,
+        override val deleted: UserIdToClientMap
     ) : SendMessageResponse()
 
     @Serializable
     data class MessageSent(
-        @SerialName("time") val time: String,
-        @SerialName("missing") val missing: MissingUsers,
-        @SerialName("redundant") val redundant: RedundantUsers,
-        @SerialName("deleted") val deleted: DeletedUsers
+        override val time: String,
+        override val missing: UserIdToClientMap,
+        override val redundant: UserIdToClientMap,
+        override val deleted: UserIdToClientMap
     ) : SendMessageResponse()
 }
 
-// Map of userId to clientId
-typealias MissingUsers = UserIdToClientMap
-typealias RedundantUsers = UserIdToClientMap
-typealias DeletedUsers = UserIdToClientMap
-
-typealias UserIdToClientMap = HashMap<String, List<String>>
+typealias UserIdToClientMap = Map<String, List<String>>
 
 @Serializable
 enum class MessagePriority {
@@ -34,5 +35,9 @@ enum class MessagePriority {
     LOW,
 
     @SerialName("high")
-    HIGH
+    HIGH;
+
+    override fun toString(): String {
+        return this.name.lowercase()
+    }
 }

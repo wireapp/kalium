@@ -22,7 +22,7 @@ class LogoutApiTest : ApiTest {
     fun givenAValidRegisterLogoutRequest_whenCallingTheRegisterLogoutEndpoint_theRequestShouldBeConfiguredCorrectly() =
         runTest {
             val httpClient = mockHttpClient(
-                VALID_REGISTER_CLIENT_RESPONSE.rawJson,
+                "",
                 statusCode = HttpStatusCode.Created,
                 assertion = {
                     assertPost()
@@ -38,20 +38,19 @@ class LogoutApiTest : ApiTest {
     @Test
     fun givenTheServerReturnsAnError_whenCallingTheLogoutEndpoint_theCorrectExceptionIsThrown() = runTest {
         val httpClient = mockHttpClient(
-            ErrorResponseJson.valid.rawJson,
+            ERROR_RESPONSE.rawJson,
             statusCode = HttpStatusCode.Unauthorized
         )
         val logout: LogoutApi = LogoutImp(httpClient)
         val errorResponse = logout.logout(TEST_COOKIE)
         assertFalse(errorResponse.isSuccessful())
         assertTrue(errorResponse.kException is KaliumException.InvalidRequestError)
-        assertEquals((errorResponse.kException as KaliumException.InvalidRequestError).errorResponse, ERROR_RESPONSE)
+        assertEquals((errorResponse.kException as KaliumException.InvalidRequestError).errorResponse, ERROR_RESPONSE.serializableData)
     }
 
     private companion object {
         const val PATH_LOGOUT = "/access/logout"
         const val TEST_COOKIE = "cookie"
-        val VALID_REGISTER_CLIENT_RESPONSE = RegisterClientResponseJson.valid
-        val ERROR_RESPONSE = ErrorResponseJson.valid.serializableData
+        val ERROR_RESPONSE = ErrorResponseJson.valid
     }
 }
