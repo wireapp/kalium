@@ -32,9 +32,9 @@ jobs:
         if: always()
         with:
           files: |
-            network/build/test-results/testDebugUnitTest/**/*.xml
-            cryptography/build/test-results/**/*.xml
-            cryptography/build/outputs/androidTest-results/**/*.xml
+            **/build/test-results/testDebugUnitTest/**/*.xml
+            **/build/test-results/**/*.xml
+            **/build/outputs/androidTest-results/**/*.xml
       - name: Cleanup Gradle Cache
         # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
         # Restoring these files from a GitHub Actions cache might cause problems for future builds.
