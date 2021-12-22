@@ -5,7 +5,7 @@ import com.wire.kalium.network.api.user.client.Capabilities
 import com.wire.kalium.network.api.user.client.ClientCapabilityDTO
 import com.wire.kalium.network.api.user.client.ClientTypeDTO
 import com.wire.kalium.network.api.user.client.DeviceTypeDTO
-import com.wire.kalium.network.api.user.client.LocationResponse
+import com.wire.kalium.network.api.user.client.LocationDTO
 import com.wire.kalium.network.api.user.client.RegisterClientResponse
 
 object RegisterClientResponseJson {
@@ -38,7 +38,7 @@ object RegisterClientResponseJson {
             type = ClientTypeDTO.Permanent,
             deviceType = DeviceTypeDTO.Phone,
             registrationTime = "2021-05-12T10:52:02.671Z",
-            location = LocationResponse(latitude = "1.2345", longitude = "6.7890"),
+            location = LocationDTO(latitude = "1.2345", longitude = "6.7890"),
             label = "label",
             cookie = "sldkfmdeklmwldwlek23kl44mntiuepfojfndkjd",
             capabilities = Capabilities(listOf(ClientCapabilityDTO.LegalHoldImplicitConsent)),

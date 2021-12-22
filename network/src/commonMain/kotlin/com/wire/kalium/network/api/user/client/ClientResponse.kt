@@ -8,7 +8,7 @@ data class ClientResponse(
     @SerialName("id") val id: String,
     @SerialName("cookie") val refreshToken: String,
     @SerialName("time") val registrationTime: String,
-    @SerialName("location") val location: LocationResponse?,
+    @SerialName("location") val location: LocationDTO?,
     @SerialName("address") val ipAddress: String?,
     @SerialName("model") val model: String?,
     @SerialName("type") val deviceType: String,
@@ -17,7 +17,7 @@ data class ClientResponse(
 )
 
 @Serializable
-data class LocationResponse(
+data class LocationDTO(
     // TODO: check if location name is needed
     //@SerialName("name") val name: String,
     @SerialName("lat") val latitude: String,

@@ -21,7 +21,7 @@ data class RegisterClientResponse(
     @SerialName("id") val clientId: String,
     @SerialName("type") val type: ClientTypeDTO,
     @SerialName("time") val registrationTime: String, // yyyy-mm-ddThh:MM:ss.qqq
-    @SerialName("location") val location: LocationResponse?,
+    @SerialName("location") val location: LocationDTO?,
     @SerialName("class") val deviceType: DeviceTypeDTO?,
     @SerialName("label") val label: String?,
     @SerialName("cookie") val cookie: String?,
