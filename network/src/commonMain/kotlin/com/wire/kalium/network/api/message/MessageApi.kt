@@ -33,15 +33,13 @@ interface MessageApi {
          * @param priority message priority
          * @param transient
          */
-        // TODO: what is transient
         data class DefaultParameters(
             val sender: String,
-            // TODO: Migrate Recipients to this new project
-//            val recipients: Recipients,
+            val recipients: UserToClientToEncMsgMap,
             val nativePush: Boolean,
             val priority: MessagePriority,
             val transient: Boolean,
-            val `data`: String = ""
+            val `data`: String? = null
         ) : Parameters()
     }
 
@@ -51,3 +49,5 @@ interface MessageApi {
         option: MessageOption
     ): NetworkResponse<SendMessageResponse>
 }
+
+typealias UserToClientToEncMsgMap = Map<String, Map<String, String>>

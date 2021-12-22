@@ -2,7 +2,7 @@ package com.wire.kalium.network.api.message
 
 import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.SentMessageError
+import com.wire.kalium.network.exceptions.SendMessageError
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
@@ -19,10 +19,9 @@ class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
     @Serializable
     internal data class RequestBody(
         @SerialName("sender") val sender: String,
-        @SerialName("data") val `data`: String,
+        @SerialName("data") val `data`: String?,
         @SerialName("native_push") val nativePush: Boolean,
-// TODO: Migrate Recipients to this new project
-//        @SerialName("recipients") val recipients: Map<String, Map<String, String>>,
+        @SerialName("recipients") val recipients: UserToClientToEncMsgMap,
         @SerialName("transient") val transient: Boolean,
         @SerialName("report_missing") var reportMissing: List<String>? = null,
         @SerialName("native_priority") val priority: MessagePriority
@@ -32,7 +31,7 @@ class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
         sender = this.sender,
         data = this.data,
         nativePush = this.nativePush,
-//        recipients = this.recipients, // TODO: Migrate Recipients to this new project
+        recipients = this.recipients,
         transient = this.transient,
         priority = this.priority
     )
@@ -60,7 +59,7 @@ class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
                 when (e.response.status.value) {
                     // It's a 412 Error
                     412 -> NetworkResponse.Error(
-                        kException = SentMessageError.MissingDeviceError(
+                        kException = SendMessageError.MissingDeviceError(
                             errorBody = e.response.receive(),
                             errorCode = e.response.status.value
                         )
@@ -98,8 +97,8 @@ class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
     }
 
     private companion object {
-        const val PATH_OTR_MESSAGE = "otr/messages"
-        const val PATH_CONVERSATIONS = "conversations"
+        const val PATH_OTR_MESSAGE = "/otr/messages"
+        const val PATH_CONVERSATIONS = "/conversations"
         const val QUERY_IGNORE_MISSING = "ignore_missing"
         const val QUERY_REPORT_MISSING = "report_missing"
     }
