@@ -24,7 +24,6 @@ kotlin {
     jvm {
         compilations.all {
             kotlinOptions.jvmTarget = "1.8"
-            kotlinOptions.freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
         }
         testRuns["test"].executionTask.configure {
             useJUnit()
@@ -35,16 +34,11 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
+                implementation(project(":network"))
+                implementation(project(":cryptography"))
+
                 // coroutines
                 implementation(Dependencies.Coroutines.core)
-
-                // ktor
-                api(Dependencies.Ktor.core)
-                implementation(Dependencies.Ktor.json)
-                implementation(Dependencies.Ktor.serialization)
-                implementation(Dependencies.Ktor.logging)
-                implementation(Dependencies.Ktor.auth)
-                implementation(Dependencies.Ktor.webSocket)
             }
         }
         val commonTest by getting {
@@ -52,20 +46,14 @@ kotlin {
                 implementation(kotlin("test"))
                 // coroutines
                 implementation(Dependencies.Coroutines.test)
-                // ktor test
-                implementation(Dependencies.Ktor.mock)
             }
         }
         val jvmMain by getting {
-            dependencies {
-                implementation(Dependencies.Ktor.okHttp)
-            }
+            dependencies { }
         }
         val jvmTest by getting
         val androidMain by getting {
-            dependencies {
-                implementation(Dependencies.Ktor.okHttp)
-            }
+            dependencies { }
         }
         val androidTest by getting
     }

@@ -54,6 +54,8 @@ object Dependencies {
         const val activityCompose = "androidx.activity:activity-compose:${Versions.activityCompose}"
         const val composeMaterial = "androidx.compose.material:material:${Versions.compose}"
         const val composeTooling = "androidx.compose.ui:ui-tooling:${Versions.compose}"
+        const val coroutines = "org.jetbrains.kotlinx:kotlinx-coroutines-android:${Versions.coroutines}"
+        const val ktor = "io.ktor:ktor-client-android:${Versions.ktor}"
     }
 
     object AndroidInstruments {

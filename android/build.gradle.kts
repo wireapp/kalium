@@ -44,8 +44,12 @@ android {
 dependencies {
     implementation(project(":network"))
     implementation(project(":cryptography"))
+    implementation(project(":logic"))
 
     implementation(Dependencies.Android.appCompat)
     implementation(Dependencies.Android.activityCompose)
     implementation(Dependencies.Android.composeMaterial)
+    implementation(Dependencies.Android.coroutines)
+    implementation(Dependencies.Android.ktor)
+    implementation(Dependencies.Ktor.okHttp)
 }

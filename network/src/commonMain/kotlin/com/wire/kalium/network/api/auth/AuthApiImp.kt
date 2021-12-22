@@ -1,5 +1,6 @@
 package com.wire.kalium.network.api.auth
 
+import com.wire.kalium.network.api.RefreshTokenProperties
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.*
@@ -7,9 +8,9 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 
 class AuthApiImp(private val httpClient: HttpClient) : AuthApi {
-    override suspend fun renewAccessToken(cookie: Cookie): NetworkResponse<RenewAccessTokenResponse> = wrapKaliumResponse {
+    override suspend fun renewAccessToken(refreshToken: String): NetworkResponse<RenewAccessTokenResponse> = wrapKaliumResponse {
         httpClient.post(path = PATH_ACCESS) {
-            this.cookie(cookie.name, cookie.value)
+            this.cookie(RefreshTokenProperties.COOKIE_NAME, refreshToken)
         }
     }
 

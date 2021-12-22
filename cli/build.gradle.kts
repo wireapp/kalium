@@ -5,6 +5,7 @@ plugins {
 
 dependencies {
     implementation(project(":network"))
+    implementation(project(":logic"))
 
     implementation(Dependencies.Cli.cliKt)
     implementation(Dependencies.Ktor.core)
