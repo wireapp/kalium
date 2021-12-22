@@ -10,7 +10,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.feature.auth.LoginUsingEmailUseCase
+import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 
@@ -28,7 +28,7 @@ class MainActivity : ComponentActivity() {
                         email = "username@example.com", //TODO Form or something to get user input
                         password = "password",
                         shouldPersistClient = false
-                    ) as LoginUsingEmailUseCase.Result.Success // assuming success
+                    ) as AuthenticationResult.Success // assuming success
                 }.userSession
 
                 val conversationList = core.sessionScope(session) {
