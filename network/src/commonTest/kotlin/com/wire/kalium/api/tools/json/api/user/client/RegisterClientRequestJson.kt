@@ -3,9 +3,9 @@ package com.wire.kalium.api.tools.json.api.user.client
 import com.wire.kalium.api.tools.json.FaultyJsonProvider
 import com.wire.kalium.api.tools.json.ValidJsonProvider
 import com.wire.kalium.network.api.prekey.PreKeyDTO
-import com.wire.kalium.network.api.user.client.ClientCapability
-import com.wire.kalium.network.api.user.client.ClientType
-import com.wire.kalium.network.api.user.client.DeviceType
+import com.wire.kalium.network.api.user.client.ClientCapabilityDTO
+import com.wire.kalium.network.api.user.client.ClientTypeDTO
+import com.wire.kalium.network.api.user.client.DeviceTypeDTO
 import com.wire.kalium.network.api.user.client.RegisterClientRequest
 
 object RegisterClientRequestJson {
@@ -42,12 +42,12 @@ object RegisterClientRequestJson {
     val valid = ValidJsonProvider(
         RegisterClientRequest(
             password = "password",
-            deviceType = DeviceType.Desktop,
-            type = ClientType.Permanent,
+            deviceType = DeviceTypeDTO.Desktop,
+            type = ClientTypeDTO.Permanent,
             label = "label",
             preKeyDTOS = listOf(PreKeyDTO(1, "preykey_1"), PreKeyDTO(2, "prekey_2")),
             lastKey = PreKeyDTO(999, "last_prekey"),
-            capabilities = listOf(ClientCapability.LegalHoldImplicitConsent),
+            capabilities = listOf(ClientCapabilityDTO.LegalHoldImplicitConsent),
             model = "model"
         ),
         jsonProvider
