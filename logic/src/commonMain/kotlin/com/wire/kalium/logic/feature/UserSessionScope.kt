@@ -4,6 +4,9 @@ import com.wire.kalium.logic.AuthenticatedDataSourceSet
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.client.ClientMapper
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.client.ClientRepositoryImpl
+import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
+import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSourceImpl
 import com.wire.kalium.logic.data.conversation.ConversationMapper
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.location.LocationMapper
@@ -32,8 +35,14 @@ class UserSessionScope(
     private val locationMapper: LocationMapper get() = LocationMapper()
     private val clientMapper: ClientMapper get() = ClientMapper(preyKeyMapper, locationMapper, clientConfig)
 
+    private val clientRemoteDataSource: ClientRemoteDataSource
+        get() = ClientRemoteDataSourceImpl(
+            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
+            clientMapper
+        )
+
     private val clientRepository: ClientRepository
-        get() = ClientRepository(authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi, clientMapper)
+        get() = ClientRepositoryImpl(clientRemoteDataSource)
 
     val client: ClientScope get() = ClientScope(clientRepository)
     val conversations: ConversationScope get() = ConversationScope(conversationRepository)
