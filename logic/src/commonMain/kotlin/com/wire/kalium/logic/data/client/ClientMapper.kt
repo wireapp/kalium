@@ -1,8 +1,8 @@
 package com.wire.kalium.logic.data.client
 
+import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.location.LocationMapper
 import com.wire.kalium.logic.data.prekey.PreyKeyMapper
-import com.wire.kalium.network.api.user.client.Capabilities
 import com.wire.kalium.network.api.user.client.ClientCapabilityDTO
 import com.wire.kalium.network.api.user.client.ClientTypeDTO
 import com.wire.kalium.network.api.user.client.DeviceTypeDTO
@@ -11,17 +11,18 @@ import com.wire.kalium.network.api.user.client.RegisterClientResponse
 
 class ClientMapper(
     private val preyKeyMapper: PreyKeyMapper,
-    private val locationMapper: LocationMapper
+    private val locationMapper: LocationMapper,
+    private val clientConfig: ClientConfig
 ) {
 
     fun toRegisterClientRequest(param: RegisterClientParam): RegisterClientRequest = RegisterClientRequest(
         password = param.password,
         lastKey = preyKeyMapper.toPreKeyDTO(param.lastKey),
-        label = param.label,
-        deviceType = toDeviceTypeDTO(param.deviceType),
-        type = toClientTypeDTO(param.type),
-        capabilities = param.capabilities?.let { it.map { toClientCapabilityDTO(it) } } ?: run { null },
-        model = param.model,
+        label = clientConfig.deviceName(),
+        deviceType = toDeviceTypeDTO(clientConfig.deviceType()),
+        type = toClientTypeDTO(clientConfig.clientType()),
+        capabilities = param.capabilities?.let { capabilities -> capabilities.map { toClientCapabilityDTO(it) } } ?: run { null },
+        model = clientConfig.deviceModelName(),
         preKeyDTOS = param.preKeys.map { preyKeyMapper.toPreKeyDTO(it) },
     )
 
@@ -33,7 +34,8 @@ class ClientMapper(
         deviceType = response.deviceType?.let { fromDeviceTypeDTO(it) } ?: run { null },
         label = response.label,
         cookie = response.cookie,
-        capabilities = response.capabilities?.let { Capabilities(it.capabilities.map { fromClientCapabilityDTO(it) }) } ?: run { null },
+        capabilities = response.capabilities?.let { capabilities -> Capabilities(capabilities.capabilities.map { fromClientCapabilityDTO(it) }) }
+            ?: run { null },
         model = response.model
     )
 

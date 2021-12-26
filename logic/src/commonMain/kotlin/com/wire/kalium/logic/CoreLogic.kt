@@ -1,6 +1,7 @@
 package com.wire.kalium.logic
 
 import com.wire.kalium.cryptography.ProteusClient
+import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthSessionMapper
@@ -11,7 +12,8 @@ import com.wire.kalium.network.LoginNetworkContainer
 class CoreLogic(
     private val clientLabel: String,
     private val rootProteusDirectoryPath: String,
-    private val authSessionMapper: AuthSessionMapper = AuthSessionMapper()
+    private val authSessionMapper: AuthSessionMapper = AuthSessionMapper(),
+    private val clientConfig: ClientConfig
 ) {
 
     private val loginContainer: LoginNetworkContainer by lazy {
@@ -34,7 +36,7 @@ class CoreLogic(
                 userScopeStorage[session] = it
             }
         }
-        return UserSessionScope(session, dataSourceSet)
+        return UserSessionScope(session, dataSourceSet, clientConfig)
     }
 
     suspend fun <T> authenticationScope(action: suspend AuthenticationScope.() -> T)
