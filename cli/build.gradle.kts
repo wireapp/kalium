@@ -9,6 +9,7 @@ dependencies {
 
     implementation(Dependencies.Cli.cliKt)
     implementation(Dependencies.Ktor.core)
+    implementation(Dependencies.Ktor.utils)
     implementation(Dependencies.Ktor.okHttp)
     implementation(Dependencies.OkHttp.loggingInterceptor)
 }

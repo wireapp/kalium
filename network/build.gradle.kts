@@ -43,7 +43,7 @@ kotlin {
                 implementation(Dependencies.Ktor.json)
                 implementation(Dependencies.Ktor.serialization)
                 implementation(Dependencies.Ktor.logging)
-                implementation(Dependencies.Ktor.auth)
+                implementation(Dependencies.Ktor.authClient)
                 implementation(Dependencies.Ktor.webSocket)
             }
         }

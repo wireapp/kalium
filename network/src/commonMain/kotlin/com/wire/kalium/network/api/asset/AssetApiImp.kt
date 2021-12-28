@@ -1,9 +1,14 @@
 package com.wire.kalium.network.api.asset
 
+import com.wire.kalium.network.api.model.Asset
+import com.wire.kalium.network.api.model.AssetMetadata
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.*
 import io.ktor.client.request.*
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
+import io.ktor.utils.io.charsets.Charsets
 
 class AssetApiImp(private val httpClient: HttpClient) : AssetApi {
 
@@ -18,8 +23,45 @@ class AssetApiImp(private val httpClient: HttpClient) : AssetApi {
         }
     }
 
-    override suspend fun uploadAsset() {
-        TODO("not yet implemented")
+    override suspend fun uploadAsset(metadata: AssetMetadata, encryptedData: ByteArray): NetworkResponse<Asset> = wrapKaliumResponse {
+        httpClient.post(path = PATH_PUBLIC_ASSETS) {
+            contentType(ContentType.MultiPart.Mixed)
+            body = provideAssetRequestBody(metadata, encryptedData)
+        }
+    }
+
+    private fun provideAssetRequestBody(metadata: AssetMetadata, encryptedData: ByteArray): String {
+        val body = StringBuilder()
+
+        // Part 1
+        val strMetadata = "{\"public\": ${metadata.public}, \"retention\": \"${metadata.retentionType.name.lowercase()}\"}"
+
+        body.append("--frontier\r\n")
+        body.append("Content-Type: application/json;charset=utf-8\r\n")
+        body.append("Content-Length: ")
+            .append(strMetadata.length)
+            .append("\r\n\r\n")
+        body.append(strMetadata)
+            .append("\r\n")
+
+        // Part 2
+        body.append("--frontier\r\n")
+        body.append("Content-Type: application/octet-stream")
+            .append("\r\n")
+        body.append("Content-Length: ")
+            .append(encryptedData.size)
+            .append("\r\n")
+        body.append("Content-MD5: ")
+            .append(metadata.md5)
+            .append("\r\n\r\n")
+
+        // Complete
+//        val os =
+//        os.write(sb.toString().toByteArray(StandardCharsets.UTF_8))
+//        os.write(asset.encryptedData)
+//        os.write("\r\n--frontier--\r\n".toByteArray(StandardCharsets.UTF_8))
+
+        return body.toString()
     }
 
     private companion object {
