@@ -14,11 +14,11 @@ actual class SessionLocalDataSource(
     private val dataStore: DataStoreStorage
 ) {
     actual suspend fun addSession(session: Session) {
-        allSessions().collectLatest { sessions ->
+        allSessions().collect { sessions ->
             if (sessions.containsKey(session.userId).not()) {
                 sessions.toMutableMap().put(session.userId, session)
                 saveSessions(sessions)
-                return@collectLatest
+                return@collect
             }
         }
     }
@@ -30,6 +30,7 @@ actual class SessionLocalDataSource(
         allSessions().collect { sessions ->
             sessions.toMutableMap().remove(userId)
             saveSessions(sessions)
+            return@collect
         }
     }
 
