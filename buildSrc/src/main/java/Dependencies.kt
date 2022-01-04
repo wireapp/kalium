@@ -17,6 +17,8 @@ object Versions {
     const val kotest = "4.6.3"
     const val androidTestRunner = "1.4.0"
     const val androidTestRules = "1.4.0"
+    const val androidxArch = "2.1.0"
+    const val mockk = "1.12.0"
 }
 
 object Plugins {
@@ -61,6 +63,7 @@ object Dependencies {
     object AndroidInstruments {
         const val androidTestRunner = "androidx.test:runner:${Versions.androidTestRunner}"
         const val androidTestRules = "androidx.test:rules:${Versions.androidTestRules}"
+        const val androidxArchTesting = "androidx.arch.core:core-testing:${Versions.androidxArch}"
     }
 
     object Coroutines {
@@ -92,6 +95,11 @@ object Dependencies {
         const val mock = "io.ktor:ktor-client-mock:${Versions.ktor}"
 
         const val okHttp = "io.ktor:ktor-client-okhttp:${Versions.ktor}"
+    }
+
+    object mockk {
+        const val mockk          = "io.mockk:mockk:${Versions.mockk}"
+        const val mockkAndroid   = "io.mockk:mockk-android:${Versions.mockk}"
     }
 
     object Kotest {
