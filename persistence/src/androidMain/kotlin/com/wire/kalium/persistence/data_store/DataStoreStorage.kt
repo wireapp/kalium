@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.wire.kalium.persistence.model.DataStoreResult
 import com.wire.kalium.persistence.util.JsonSerializer
 import com.wire.kalium.persistence.util.SecurityUtil
 import kotlinx.coroutines.flow.Flow
@@ -58,13 +59,18 @@ class DataStoreStorage(
     inline fun <reified T> Flow<Preferences>.secureMap(
         securityKeyAlias: String,
         crossinline fetchValue: (value: Preferences) -> String
-    ): Flow<T> {
+    ): Flow<DataStoreResult<T>> {
         return map { preferences ->
-            val decryptedValue = security.decryptData(
-                securityKeyAlias,
-                fetchValue(preferences).split(bytesToStringSeparator).map { it.toByte() }.toByteArray()
-            )
-            JsonSerializer().decodeFromString(decryptedValue)
+            val savedString = fetchValue(preferences)
+            if (savedString.isEmpty()) {
+                DataStoreResult.DataNotFound()
+            } else {
+                val decryptedValue = security.decryptData(
+                    securityKeyAlias,
+                    savedString.split(bytesToStringSeparator).map { it.toByte() }.toByteArray()
+                )
+                DataStoreResult.Success(JsonSerializer().decodeFromString(decryptedValue))
+            }
         }
     }
 
