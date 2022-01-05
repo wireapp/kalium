@@ -56,7 +56,7 @@ class ConversationsApplication : CliktCommand() {
             AssetMetadata("image/jpeg", true, AssetRetentionType.ETERNAL, calcMd5(imageBytes)),
             imageBytes ?: ByteArray(16)
         )
-        println("The upload result -> $uploadResult")
+        println("The upload result is -> $uploadResult")
     }
 
     @Throws(IOException::class)

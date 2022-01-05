@@ -53,7 +53,6 @@ kotlin {
             dependencies {
                 // coroutines
                 implementation(Dependencies.Coroutines.core)
-                api(Dependencies.Ktor.core)
                 api(Dependencies.Ktor.core2)
             }
         }
