@@ -67,21 +67,17 @@ class ClientMapper(
         }
     }
 
-    private fun toDeviceTypeDTO(deviceType: DeviceType): DeviceTypeDTO {
-        return when (deviceType) {
-            DeviceType.Phone -> DeviceTypeDTO.Phone
-            DeviceType.Tablet -> DeviceTypeDTO.Tablet
-            DeviceType.Desktop -> DeviceTypeDTO.Desktop
-            DeviceType.LegalHold -> DeviceTypeDTO.LegalHold
-        }
+    private fun toDeviceTypeDTO(deviceType: DeviceType): DeviceTypeDTO = when (deviceType) {
+        DeviceType.Phone -> DeviceTypeDTO.Phone
+        DeviceType.Tablet -> DeviceTypeDTO.Tablet
+        DeviceType.Desktop -> DeviceTypeDTO.Desktop
+        DeviceType.LegalHold -> DeviceTypeDTO.LegalHold
     }
 
-    private fun fromDeviceTypeDTO(deviceTypeDTO: DeviceTypeDTO): DeviceType {
-        return when (deviceTypeDTO) {
-            DeviceTypeDTO.Phone -> DeviceType.Phone
-            DeviceTypeDTO.Tablet -> DeviceType.Tablet
-            DeviceTypeDTO.Desktop -> DeviceType.Desktop
-            DeviceTypeDTO.LegalHold -> DeviceType.LegalHold
-        }
+    private fun fromDeviceTypeDTO(deviceTypeDTO: DeviceTypeDTO): DeviceType = when (deviceTypeDTO) {
+        DeviceTypeDTO.Phone -> DeviceType.Phone
+        DeviceTypeDTO.Tablet -> DeviceType.Tablet
+        DeviceTypeDTO.Desktop -> DeviceType.Desktop
+        DeviceTypeDTO.LegalHold -> DeviceType.LegalHold
     }
 }
