@@ -88,6 +88,7 @@ object Dependencies {
         const val logging = "io.ktor:ktor-client-logging:${Versions.ktor}"
         const val auth = "io.ktor:ktor-client-auth:${Versions.ktor}"
         const val webSocket = "io.ktor:ktor-client-websockets:${Versions.ktor}"
+        const val utils = "io.ktor:ktor-utils:${Versions.ktor}"
 
         const val mock = "io.ktor:ktor-client-mock:${Versions.ktor}"
 
