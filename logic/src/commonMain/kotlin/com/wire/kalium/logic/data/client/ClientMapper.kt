@@ -39,20 +39,16 @@ class ClientMapper(
         model = response.model
     )
 
-    private fun toClientTypeDTO(clientType: ClientType): ClientTypeDTO {
-        return when (clientType) {
-            ClientType.Temporary -> ClientTypeDTO.Temporary
-            ClientType.Permanent -> ClientTypeDTO.Permanent
-            ClientType.LegalHold -> ClientTypeDTO.LegalHold
-        }
+    private fun toClientTypeDTO(clientType: ClientType): ClientTypeDTO = when (clientType) {
+        ClientType.Temporary -> ClientTypeDTO.Temporary
+        ClientType.Permanent -> ClientTypeDTO.Permanent
+        ClientType.LegalHold -> ClientTypeDTO.LegalHold
     }
 
-    private fun fromClientTypeDTO(clientTypeDTO: ClientTypeDTO): ClientType {
-        return when (clientTypeDTO) {
-            ClientTypeDTO.Temporary -> ClientType.Temporary
-            ClientTypeDTO.Permanent -> ClientType.Permanent
-            ClientTypeDTO.LegalHold -> ClientType.LegalHold
-        }
+    private fun fromClientTypeDTO(clientTypeDTO: ClientTypeDTO): ClientType = when (clientTypeDTO) {
+        ClientTypeDTO.Temporary -> ClientType.Temporary
+        ClientTypeDTO.Permanent -> ClientType.Permanent
+        ClientTypeDTO.LegalHold -> ClientType.LegalHold
     }
 
     private fun toClientCapabilityDTO(clientCapability: ClientCapability): ClientCapabilityDTO = when (clientCapability) {
