@@ -10,6 +10,8 @@ interface ConversationApi {
 
     suspend fun fetchConversationsDetails(queryStart: String?, queryIds: List<String>): NetworkResponse<ConversationPagingResponse>
 
+    suspend fun fetchConversationDetails(conversationId: ConversationId): NetworkResponse<ConversationResponse>
+
     suspend fun removeConversationMember(userId: UserId, conversationId: ConversationId): NetworkResponse<Unit>
 
     suspend fun createNewConversation(createConversationRequest: CreateConversationRequest): NetworkResponse<ConversationResponse>

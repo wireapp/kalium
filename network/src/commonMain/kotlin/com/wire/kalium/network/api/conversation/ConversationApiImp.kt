@@ -42,6 +42,13 @@ class ConversationApiImp(private val httpClient: HttpClient) : ConversationApi {
             )
         }
 
+    override suspend fun fetchConversationDetails(conversationId: ConversationId): NetworkResponse<ConversationResponse> =
+        wrapKaliumResponse {
+            httpClient.get(
+                path = "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}"
+            )
+        }
+
     /**
      * returns 201 when a new conversation is created or 200 if the conversation already existed
      */
