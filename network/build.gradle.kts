@@ -40,6 +40,8 @@ kotlin {
 
                 // ktor
                 api(Dependencies.Ktor.core)
+                api(Dependencies.Ktor.core2)
+                implementation(Dependencies.Ktor.utils)
                 implementation(Dependencies.Ktor.json)
                 implementation(Dependencies.Ktor.serialization)
                 implementation(Dependencies.Ktor.logging)
@@ -59,12 +61,15 @@ kotlin {
         val jvmMain by getting {
             dependencies {
                 implementation(Dependencies.Ktor.okHttp)
+                //implementation(Dependencies.Ktor.core)
+                //implementation(Dependencies.Ktor.core2)
             }
         }
         val jvmTest by getting
         val androidMain by getting {
             dependencies {
                 implementation(Dependencies.Ktor.okHttp)
+                //implementation(Dependencies.Ktor.core)
             }
         }
         val androidTest by getting

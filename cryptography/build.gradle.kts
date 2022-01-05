@@ -27,7 +27,7 @@ android {
         }
         ndkBuild {
             ndkVersion = Android.Ndk.version
-            path(File("src/androidMain/jni/Android.mk"))
+            //path(File("src/androidMain/jni/Android.mk"))
         }
     }
 }
@@ -53,7 +53,8 @@ kotlin {
             dependencies {
                 // coroutines
                 implementation(Dependencies.Coroutines.core)
-
+                api(Dependencies.Ktor.core)
+                api(Dependencies.Ktor.core2)
             }
         }
         val commonTest by getting {

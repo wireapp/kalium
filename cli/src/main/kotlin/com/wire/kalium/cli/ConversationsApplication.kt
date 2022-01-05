@@ -3,6 +3,7 @@ package com.wire.kalium.cli
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
+import com.wire.kalium.cryptography.utils.calcMd5
 import com.wire.kalium.network.AuthenticatedNetworkContainer
 import com.wire.kalium.network.LoginNetworkContainer
 import com.wire.kalium.network.api.SessionCredentials
@@ -10,12 +11,10 @@ import com.wire.kalium.network.api.model.AssetMetadata
 import com.wire.kalium.network.api.model.AssetRetentionType
 import com.wire.kalium.network.api.user.login.LoginWithEmailRequest
 import com.wire.kalium.network.utils.isSuccessful
-import io.ktor.util.encodeBase64
 import kotlinx.coroutines.runBlocking
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
-import java.security.MessageDigest
 
 class ConversationsApplication : CliktCommand() {
     private val email: String by option(help = "wire account email").required()
@@ -26,8 +25,7 @@ class ConversationsApplication : CliktCommand() {
         val loginContainer = LoginNetworkContainer()
 
         val loginResult = loginContainer.loginApi.emailLogin(
-            LoginWithEmailRequest(email = email, password = password, label = "ktor"),
-            false
+            LoginWithEmailRequest(email = email, password = password, label = "ktor"), false
         )
 
         if (!loginResult.isSuccessful()) {
@@ -48,19 +46,17 @@ class ConversationsApplication : CliktCommand() {
                 }
             }
 
-            uploadAsset(networkModule)
+            uploadTestAsset(networkModule)
         }
     }
 
-    private suspend fun uploadAsset(networkModule: AuthenticatedNetworkContainer) {
-        val bytes: ByteArray? = getResource("moon1.jpg")
-        val uploadResult =
-            networkModule.assetApi.uploadAsset(
-                AssetMetadata("image/jpeg", true, AssetRetentionType.ETERNAL, calcMd5(bytes)),
-                bytes ?: ByteArray(16)
-            )
-
-        println("THE UPLOAD RESULT -> $uploadResult")
+    private suspend fun uploadTestAsset(networkModule: AuthenticatedNetworkContainer) {
+        val imageBytes: ByteArray? = getResource("moon1.jpg")
+        val uploadResult = networkModule.assetApi.uploadAsset(
+            AssetMetadata("image/jpeg", true, AssetRetentionType.ETERNAL, calcMd5(imageBytes)),
+            imageBytes ?: ByteArray(16)
+        )
+        println("The upload result -> $uploadResult")
     }
 
     @Throws(IOException::class)
@@ -81,12 +77,5 @@ class ConversationsApplication : CliktCommand() {
         }
     }
 }
-
-fun calcMd5(bytes: ByteArray?): String = bytes?.let {
-    val md = MessageDigest.getInstance("MD5")
-    md.update(bytes, 0, it.size)
-    val hash = md.digest()
-    return hash.encodeBase64()
-} ?: ""
 
 fun main(args: Array<String>) = ConversationsApplication().main(args)

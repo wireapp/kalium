@@ -7,8 +7,11 @@ import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.http.ContentType
+import io.ktor.http.content.OutgoingContent
 import io.ktor.http.contentType
-import io.ktor.utils.io.charsets.Charsets
+import io.ktor.utils.io.ByteWriteChannel
+import io.ktor.utils.io.charsets.Charsets.UTF_8
+import io.ktor.utils.io.core.toByteArray
 
 class AssetApiImp(private val httpClient: HttpClient) : AssetApi {
 
@@ -18,19 +21,19 @@ class AssetApiImp(private val httpClient: HttpClient) : AssetApi {
      * @param assetToken the asset token, can be null in case of public assets
      */
     override suspend fun downloadAsset(assetKey: String, assetToken: String?): NetworkResponse<ByteArray> = wrapKaliumResponse {
-        httpClient.get(path = "$PATH_PUBLIC_ASSETS/$assetKey") {
+        httpClient.get("$PATH_PUBLIC_ASSETS/$assetKey") {
             assetToken?.let { header(HEADER_ASSET_TOKEN, it) }
         }
     }
 
     override suspend fun uploadAsset(metadata: AssetMetadata, encryptedData: ByteArray): NetworkResponse<Asset> = wrapKaliumResponse {
-        httpClient.post(path = PATH_PUBLIC_ASSETS) {
+        httpClient.post(PATH_PUBLIC_ASSETS) {
             contentType(ContentType.MultiPart.Mixed)
-            body = provideAssetRequestBody(metadata, encryptedData)
+            setBody(provideAssetRequestBody(metadata, encryptedData))
         }
     }
 
-    private fun provideAssetRequestBody(metadata: AssetMetadata, encryptedData: ByteArray): String {
+    private fun provideAssetRequestBody(metadata: AssetMetadata, encryptedData: ByteArray): ByteArray {
         val body = StringBuilder()
 
         // Part 1
@@ -55,13 +58,11 @@ class AssetApiImp(private val httpClient: HttpClient) : AssetApi {
             .append(metadata.md5)
             .append("\r\n\r\n")
 
-        // Complete
-//        val os =
-//        os.write(sb.toString().toByteArray(StandardCharsets.UTF_8))
-//        os.write(asset.encryptedData)
-//        os.write("\r\n--frontier--\r\n".toByteArray(StandardCharsets.UTF_8))
+        val bodyArray = body.toString().toByteArray(UTF_8)
+        val closingArray = "\r\n--frontier--\r\n".toByteArray(UTF_8)
 
-        return body.toString()
+        // Merge all sections on the request
+        return bodyArray + encryptedData + closingArray
     }
 
     private companion object {

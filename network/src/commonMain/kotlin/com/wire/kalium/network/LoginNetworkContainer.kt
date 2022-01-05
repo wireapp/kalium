@@ -4,7 +4,7 @@ import com.wire.kalium.network.api.user.login.LoginApi
 import com.wire.kalium.network.api.user.login.LoginApiImp
 import com.wire.kalium.network.tools.KtxSerializer
 import io.ktor.client.engine.HttpClientEngine
-import io.ktor.client.features.json.serializer.KotlinxSerializer
+import io.ktor.client.plugins.json.serializer.KotlinxSerializer
 
 class LoginNetworkContainer(
     private val engine: HttpClientEngine = defaultHttpEngine(),

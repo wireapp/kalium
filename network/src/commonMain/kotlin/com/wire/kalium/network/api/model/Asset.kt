@@ -5,6 +5,6 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Asset(
     val key: String,
-    val expires: String,
-    val token: String
+    val expires: String?,
+    val token: String?
 )

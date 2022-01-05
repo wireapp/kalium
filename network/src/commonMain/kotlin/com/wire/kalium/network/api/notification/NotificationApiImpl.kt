@@ -9,7 +9,7 @@ class NotificationApiImpl(private val httpClient: HttpClient) : NotificationApi 
     override suspend fun lastNotification(
         queryClient: String
     ): NetworkResponse<NotificationResponse> = wrapKaliumResponse {
-        httpClient.get(path = "$PATH_NOTIFICATIONS$PATH_LAST") {
+        httpClient.get("$PATH_NOTIFICATIONS$PATH_LAST") {
             parameter(CLIENT_QUERY_KEY, queryClient)
         }
     }
@@ -29,7 +29,7 @@ class NotificationApiImpl(private val httpClient: HttpClient) : NotificationApi 
         queryClient: String,
         querySince: String?
     ): NetworkResponse<NotificationPageResponse> = wrapKaliumResponse {
-        httpClient.get(path = PATH_NOTIFICATIONS) {
+        httpClient.get(PATH_NOTIFICATIONS) {
             parameter(SIZE_QUERY_KEY, querySize)
             parameter(CLIENT_QUERY_KEY, queryClient)
             querySince?.let { parameter(SINCE_QUERY_KEY, it) }
