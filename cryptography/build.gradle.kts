@@ -47,18 +47,26 @@ kotlin {
         }
     }
     android()
+    js(IR) {
+        browser {
+            commonWebpackConfig {
+                cssSupport.enabled = true
+            }
+        }
+    }
 
     sourceSets {
         val commonMain by getting {
             dependencies {
                 // coroutines
                 implementation(Dependencies.Coroutines.core)
-                api(Dependencies.Ktor.core2)
+                api(Dependencies.Ktor.core)
             }
         }
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
+                implementation(Dependencies.Coroutines.test)
             }
         }
         val jvmMain by getting {
@@ -67,6 +75,13 @@ kotlin {
             }
         }
         val jvmTest by getting
+        val jsMain by getting {
+            dependencies {
+                implementation(npm("@wireapp/cryptobox", "12.7.1", generateExternals = false))
+                implementation(npm("@wireapp/store-engine", "4.9.7", generateExternals = false))
+            }
+        }
+        val jsTest by getting
         val androidMain by getting {
             dependencies {
                 implementation(Dependencies.Cryptography.cryptoboxAndroid)

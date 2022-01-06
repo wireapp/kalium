@@ -14,7 +14,6 @@ object Versions {
     const val kover = "0.4.2"
     const val ktor = "1.6.7"
     const val ktor2 = "2.0.0-beta-1"
-    const val ktorUtils = "2.0.0-beta-1"
     const val okHttp = "4.9.3"
     const val kotest = "4.6.3"
     const val androidTestRunner = "1.4.0"
@@ -84,17 +83,15 @@ object Dependencies {
     }
 
     object Ktor {
-        const val core2 = "io.ktor:ktor-client-core:${Versions.ktor2}"
+        const val core = "io.ktor:ktor-client-core:${Versions.ktor2}"
         const val json = "io.ktor:ktor-client-json:${Versions.ktor2}"
         const val serialization = "io.ktor:ktor-serialization-kotlinx-json:${Versions.ktor2}"
         const val logging = "io.ktor:ktor-client-logging:${Versions.ktor2}"
         const val authClient = "io.ktor:ktor-client-auth:${Versions.ktor2}"
         const val contentNegotiation = "io.ktor:ktor-client-content-negotiation:${Versions.ktor2}"
-        const val utils = "io.ktor:ktor-utils:${Versions.ktorUtils}"
-        const val webSocket = "io.ktor:ktor-client-websockets:${Versions.ktor}"
-
-        const val mock = "io.ktor:ktor-client-mock:${Versions.ktor}"
-
+        const val webSocket = "io.ktor:ktor-client-websockets:${Versions.ktor2}"
+        const val utils = "io.ktor:ktor-utils:${Versions.ktor2}"
+        const val mock = "io.ktor:ktor-client-mock:${Versions.ktor2}"
         const val okHttp = "io.ktor:ktor-client-okhttp:${Versions.ktor2}"
     }
 

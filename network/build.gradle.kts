@@ -39,7 +39,7 @@ kotlin {
                 implementation(Dependencies.Coroutines.core)
 
                 // ktor
-                api(Dependencies.Ktor.core2)
+                api(Dependencies.Ktor.core)
                 implementation(Dependencies.Ktor.utils)
                 implementation(Dependencies.Ktor.json)
                 implementation(Dependencies.Ktor.serialization)
