@@ -10,6 +10,7 @@ import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.UserId
+import kotlinx.coroutines.runBlocking
 import java.io.File
 
 class MainActivity : ComponentActivity() {
@@ -18,7 +19,14 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val rootProteusDir = File(this.filesDir, "proteus")
+        val decryptedMessage = encryptAndDecrypt(rootProteusDir)
 
+        setContent {
+            MainLayout(decryptedMessage.toString(Charsets.UTF_8))
+        }
+    }
+
+    fun encryptAndDecrypt(rootProteusDir: File): ByteArray = runBlocking {
         val alice = SampleUser("aliceId", "Alice")
         val aliceFile = File(rootProteusDir, alice.id)
         aliceFile.mkdirs()
@@ -39,9 +47,7 @@ class MainActivity : ComponentActivity() {
         val encryptedMessage = bobClient.encrypt(message.toByteArray(Charsets.UTF_8), aliceSessionId)!!
         val decryptedMessage = aliceClient.decrypt(encryptedMessage, bobSessionId)
 
-        setContent {
-            MainLayout(decryptedMessage.toString(Charsets.UTF_8))
-        }
+        return@runBlocking decryptedMessage
     }
 
     data class SampleUser(val id: String, val name: String)

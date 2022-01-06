@@ -17,7 +17,7 @@ actual class ProteusClient actual constructor(rootDir: String, userId: String) {
         path = String.format("%s/%s", rootDir, userId)
     }
 
-    actual fun open() {
+    actual suspend fun open() {
         box = wrapException {
             File(path).mkdirs()
             CryptoBox.open(path)
@@ -36,7 +36,7 @@ actual class ProteusClient actual constructor(rootDir: String, userId: String) {
         return wrapException { box.localFingerprint }
     }
 
-    actual fun newPreKeys(from: Int, count: Int): ArrayList<PreKey> {
+    actual suspend  fun newPreKeys(from: Int, count: Int): ArrayList<PreKey> {
         return wrapException { box.newPreKeys(from, count).map { toPreKey(it) } as ArrayList<PreKey> }
     }
 
@@ -44,11 +44,11 @@ actual class ProteusClient actual constructor(rootDir: String, userId: String) {
         return wrapException { toPreKey(box.newLastPreKey()) }
     }
 
-    actual fun createSession(preKey: PreKey, sessionId: CryptoSessionId) {
+    actual suspend fun createSession(preKey: PreKey, sessionId: CryptoSessionId) {
         wrapException { box.initSessionFromPreKey(sessionId.value, toPreKey(preKey)) }
     }
 
-    actual fun decrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
+    actual suspend fun decrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
         val session = box.tryGetSession(sessionId.value)
 
         return wrapException {
@@ -60,11 +60,11 @@ actual class ProteusClient actual constructor(rootDir: String, userId: String) {
         }
     }
 
-    actual fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray? {
+    actual suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray? {
         return wrapException { box.getSession(sessionId.value)?.encrypt(message) }
     }
 
-    actual fun encryptWithPreKey(
+    actual suspend fun encryptWithPreKey(
         message: ByteArray,
         preKey: PreKey,
         sessionId: CryptoSessionId
