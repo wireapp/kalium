@@ -2,7 +2,7 @@ package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.location.LocationMapper
-import com.wire.kalium.logic.data.prekey.PreyKeyMapper
+import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.network.api.user.client.ClientCapabilityDTO
 import com.wire.kalium.network.api.user.client.ClientTypeDTO
 import com.wire.kalium.network.api.user.client.DeviceTypeDTO
@@ -10,7 +10,7 @@ import com.wire.kalium.network.api.user.client.RegisterClientRequest
 import com.wire.kalium.network.api.user.client.RegisterClientResponse
 
 class ClientMapper(
-    private val preyKeyMapper: PreyKeyMapper,
+    private val preyKeyMapper: PreKeyMapper,
     private val locationMapper: LocationMapper,
     private val clientConfig: ClientConfig
 ) {
@@ -23,7 +23,7 @@ class ClientMapper(
         type = toClientTypeDTO(clientConfig.clientType()),
         capabilities = param.capabilities?.let { capabilities -> capabilities.map { toClientCapabilityDTO(it) } } ?: run { null },
         model = clientConfig.deviceModelName(),
-        preKeyDTOS = param.preKeys.map { preyKeyMapper.toPreKeyDTO(it) },
+        preKeys = param.preKeys.map { preyKeyMapper.toPreKeyDTO(it) },
     )
 
     fun fromRegisterClientResponse(response: RegisterClientResponse): Client = Client(

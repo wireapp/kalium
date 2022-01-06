@@ -22,12 +22,12 @@ object RegisterClientRequestJson {
         |  "password": "${serializable.password}",
         |  "prekeys": [
         |       {
-        |           "id": ${serializable.preKeyDTOS[0].id},
-        |           "key": "${serializable.preKeyDTOS[0].key}"
+        |           "id": ${serializable.preKeys[0].id},
+        |           "key": "${serializable.preKeys[0].key}"
         |       },
         |       {
-        |           "id": ${serializable.preKeyDTOS[1].id},
-        |           "key": "${serializable.preKeyDTOS[1].key}"
+        |           "id": ${serializable.preKeys[1].id},
+        |           "key": "${serializable.preKeys[1].key}"
         |       }
         |  ],
         |  "type": "${serializable.type.name}",
@@ -45,7 +45,7 @@ object RegisterClientRequestJson {
             deviceType = DeviceTypeDTO.Desktop,
             type = ClientTypeDTO.Permanent,
             label = "label",
-            preKeyDTOS = listOf(PreKeyDTO(1, "preykey_1"), PreKeyDTO(2, "prekey_2")),
+            preKeys = listOf(PreKeyDTO(1, "preykey_1"), PreKeyDTO(2, "prekey_2")),
             lastKey = PreKeyDTO(999, "last_prekey"),
             capabilities = listOf(ClientCapabilityDTO.LegalHoldImplicitConsent),
             model = "model"

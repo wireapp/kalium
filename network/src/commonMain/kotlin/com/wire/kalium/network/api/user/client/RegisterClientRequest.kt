@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class RegisterClientRequest(
     @SerialName("password") val password: String,
-    @SerialName("prekeys") val preKeyDTOS: List<PreKeyDTO>,
+    @SerialName("prekeys") val preKeys: List<PreKeyDTO>,
     @SerialName("lastkey") val lastKey: PreKeyDTO,
     @SerialName("class") val deviceType: DeviceTypeDTO,
     @SerialName("type") val type: ClientTypeDTO, // 'temporary', 'permanent', 'legalhold'
