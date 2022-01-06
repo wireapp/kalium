@@ -6,14 +6,14 @@ import java.io.InputStream
 
 object CLIUtils {
 
-    /*@Throws(IOException::class)
-    fun getResource(name: String?): ByteArray? {
+    @Throws(IOException::class)
+    fun getResource(name: String): ByteArray {
         val classLoader = CLIUtils::class.java.classLoader
         classLoader.getResourceAsStream(name).use { resourceAsStream -> return toByteArray(resourceAsStream) }
-    }*/
+    }
 
-    /*@Throws(IOException::class)
-    fun toByteArray(input: InputStream?): ByteArray? = input?.let { inputStream ->
+    @Throws(IOException::class)
+    fun toByteArray(input: InputStream?): ByteArray = input?.let { inputStream ->
         ByteArrayOutputStream().use { output ->
             var n: Int
             val buffer = ByteArray(1024 * 4)
@@ -22,5 +22,5 @@ object CLIUtils {
             }
             return output.toByteArray()
         }
-    }*/
+    } ?: ByteArray(16)
 }

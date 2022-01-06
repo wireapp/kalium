@@ -86,7 +86,7 @@ object Dependencies {
     object Ktor {
         const val core2 = "io.ktor:ktor-client-core:${Versions.ktor2}"
         const val json = "io.ktor:ktor-client-json:${Versions.ktor2}"
-        const val serialization = "io.ktor:ktor-client-serialization:${Versions.ktor2}"
+        const val serialization = "io.ktor:ktor-serialization-kotlinx-json:${Versions.ktor2}"
         const val logging = "io.ktor:ktor-client-logging:${Versions.ktor2}"
         const val authClient = "io.ktor:ktor-client-auth:${Versions.ktor2}"
         const val contentNegotiation = "io.ktor:ktor-client-content-negotiation:${Versions.ktor2}"

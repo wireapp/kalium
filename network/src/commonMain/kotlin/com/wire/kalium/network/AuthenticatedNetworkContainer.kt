@@ -20,7 +20,6 @@ import com.wire.kalium.network.api.user.client.ClientApiImp
 import com.wire.kalium.network.api.user.logout.LogoutApi
 import com.wire.kalium.network.api.user.logout.LogoutImp
 import com.wire.kalium.network.tools.HostProvider
-import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
@@ -29,9 +28,7 @@ import io.ktor.client.plugins.auth.Auth
 import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.auth.providers.bearer
 import io.ktor.client.plugins.defaultRequest
-import io.ktor.client.plugins.json.serializer.KotlinxSerializer
 import io.ktor.client.plugins.websocket.WebSockets
-import io.ktor.client.request.host
 import io.ktor.http.URLProtocol
 
 class AuthenticatedNetworkContainer(
@@ -61,10 +58,8 @@ class AuthenticatedNetworkContainer(
 
     val teamsApi: TeamsApi get() = TeamsApiImp(authenticatedHttpClient)
 
-    private val kotlinxSerializer = KotlinxSerializer(KtxSerializer.json)
-
     internal val authenticatedHttpClient by lazy {
-        provideBaseHttpClient(kotlinxSerializer, engine, isRequestLoggingEnabled) {
+        provideBaseHttpClient(engine, isRequestLoggingEnabled) {
             installAuth()
         }
     }

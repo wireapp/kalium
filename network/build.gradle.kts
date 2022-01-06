@@ -46,6 +46,7 @@ kotlin {
                 implementation(Dependencies.Ktor.logging)
                 implementation(Dependencies.Ktor.authClient)
                 implementation(Dependencies.Ktor.webSocket)
+                implementation(Dependencies.Ktor.contentNegotiation)
             }
         }
         val commonTest by getting {
