@@ -6,8 +6,6 @@ import com.wire.kalium.logic.data.client.Client
 sealed class RegisterClientResult {
     class Success(val client: Client) : RegisterClientResult()
 
-    object Loading : RegisterClientResult()
-
     sealed class Failure : RegisterClientResult() {
         object InvalidCredentials : Failure()
         class Generic(val genericFailure: CoreFailure) : Failure()

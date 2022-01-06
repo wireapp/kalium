@@ -12,8 +12,6 @@ class RegisterClientUseCase(
     private val clientRepository: ClientRepository
 ) {
     suspend operator fun invoke(param: RegisterClientParam): Flow<RegisterClientResult> = flow {
-        emit(RegisterClientResult.Loading)
-
         when (val result = clientRepository.registerClient(param)) {
             is Either.Right -> emit(RegisterClientResult.Success(result.value))
 
