@@ -12,6 +12,7 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.utils.io.ByteReadChannel
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -99,7 +100,7 @@ interface ApiTest {
     // content type
     fun HttpRequestData.assertJson() = assertContentType(ContentType.Application.Json)
     private fun HttpRequestData.assertContentType(contentType: ContentType) =
-        assertEquals(this.body.contentType, ContentType.Application.Json)
+        assertContains(this.body.contentType?.contentType ?: "", contentType.contentType)
 
     // path
     fun HttpRequestData.assertPathEqual(path: String) = assertEquals(this.url.encodedPath, path)

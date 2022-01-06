@@ -3,9 +3,13 @@ package com.wire.kalium.cli
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
+import com.wire.kalium.cli.CLIUtils.getResource
+import com.wire.kalium.cryptography.utils.calcMd5
 import com.wire.kalium.network.AuthenticatedNetworkContainer
 import com.wire.kalium.network.LoginNetworkContainer
 import com.wire.kalium.network.api.SessionCredentials
+import com.wire.kalium.network.api.model.AssetMetadata
+import com.wire.kalium.network.api.model.AssetRetentionType
 import com.wire.kalium.network.api.user.login.LoginWithEmailRequest
 import com.wire.kalium.network.utils.isSuccessful
 import kotlinx.coroutines.runBlocking
@@ -19,8 +23,7 @@ class ConversationsApplication : CliktCommand() {
         val loginContainer = LoginNetworkContainer()
 
         val loginResult = loginContainer.loginApi.emailLogin(
-            LoginWithEmailRequest(email = email, password = password, label = "ktor"),
-            false
+            LoginWithEmailRequest(email = email, password = password, label = "ktor"), false
         )
 
         if (!loginResult.isSuccessful()) {
@@ -40,9 +43,19 @@ class ConversationsApplication : CliktCommand() {
                     println("ID:${it.id}, Name: ${it.name}")
                 }
             }
+
+            uploadTestAsset(networkModule)
         }
     }
 
+    private suspend fun uploadTestAsset(networkModule: AuthenticatedNetworkContainer) {
+        val imageBytes: ByteArray = getResource("moon1.jpg")
+        val uploadResult = networkModule.assetApi.uploadAsset(
+            AssetMetadata("image/jpeg", true, AssetRetentionType.ETERNAL, calcMd5(imageBytes)),
+            imageBytes
+        )
+        println("The upload result is -> $uploadResult")
+    }
 }
 
 fun main(args: Array<String>) = ConversationsApplication().main(args)

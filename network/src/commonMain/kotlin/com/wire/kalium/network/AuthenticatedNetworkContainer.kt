@@ -20,19 +20,15 @@ import com.wire.kalium.network.api.user.client.ClientApiImp
 import com.wire.kalium.network.api.user.logout.LogoutApi
 import com.wire.kalium.network.api.user.logout.LogoutImp
 import com.wire.kalium.network.tools.HostProvider
-import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.HttpClientEngine
-import io.ktor.client.features.auth.Auth
-import io.ktor.client.features.auth.providers.BearerTokens
-import io.ktor.client.features.auth.providers.bearer
-import io.ktor.client.features.defaultRequest
-import io.ktor.client.features.json.serializer.KotlinxSerializer
-import io.ktor.client.features.websocket.WebSockets
-import io.ktor.client.request.host
-import io.ktor.client.statement.HttpResponse
+import io.ktor.client.plugins.auth.Auth
+import io.ktor.client.plugins.auth.providers.BearerTokens
+import io.ktor.client.plugins.auth.providers.bearer
+import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.http.URLProtocol
 
 class AuthenticatedNetworkContainer(
@@ -62,10 +58,8 @@ class AuthenticatedNetworkContainer(
 
     val teamsApi: TeamsApi get() = TeamsApiImp(authenticatedHttpClient)
 
-    private val kotlinxSerializer = KotlinxSerializer(KtxSerializer.json)
-
     internal val authenticatedHttpClient by lazy {
-        provideBaseHttpClient(kotlinxSerializer, engine, isRequestLoggingEnabled) {
+        provideBaseHttpClient(engine, isRequestLoggingEnabled) {
             installAuth()
         }
     }
@@ -82,7 +76,7 @@ class AuthenticatedNetworkContainer(
     }
 
     private fun HttpClientConfig<*>.installAuth() {
-        install(Auth) {
+        Auth {
             bearer {
                 loadTokens {
                     BearerTokens(
@@ -90,7 +84,7 @@ class AuthenticatedNetworkContainer(
                         refreshToken = sessionCredentials.refreshToken
                     )
                 }
-                refreshTokens { unauthorizedResponse: HttpResponse ->
+                refreshTokens {
                     val refreshedResponse = authApi.renewAccessToken(sessionCredentials.refreshToken)
 
                     return@refreshTokens if (refreshedResponse.isSuccessful()) {

@@ -13,32 +13,30 @@ class TeamsApiImp(private val httpClient: HttpClient) : TeamsApi {
 
     override suspend fun deleteConversation(conversationId: NonQualifiedConversationId, teamId: TeamId): NetworkResponse<Unit> =
         wrapKaliumResponse {
-            httpClient.delete(
-                path = "/$PATH_TEAMS/$teamId/$PATH_CONVERSATIONS/$conversationId"
-            )
+            httpClient.delete("/$PATH_TEAMS/$teamId/$PATH_CONVERSATIONS/$conversationId")
         }
 
     override suspend fun getTeams(size: Int?, option: TeamsApi.GetTeamsOption?): NetworkResponse<TeamsApi.TeamsResponse> =
         wrapKaliumResponse {
             when (option) {
                 is TeamsApi.GetTeamsOption.StartFrom ->
-                    httpClient.get(path = "/$PATH_TEAMS") {
+                    httpClient.get("/$PATH_TEAMS") {
                         size?.let { parameter(QUERY_KEY_SIZE, it) }
-                        option.let { parameter(QUERY_KEY_START, it.teamId) }
+                        parameter(QUERY_KEY_START, option.teamId)
                     }
                 is TeamsApi.GetTeamsOption.LimitTo ->
-                    httpClient.get(path = "/$PATH_TEAMS") {
+                    httpClient.get("/$PATH_TEAMS") {
                         size?.let { parameter(QUERY_KEY_SIZE, it) }
-                        option.let { parameter(QUERY_KEY_IDS, it.teamIds.joinToString(",")) }
+                        parameter(QUERY_KEY_IDS, option.teamIds.joinToString(","))
                     }
                 null ->
-                    httpClient.get(path = "/$PATH_TEAMS")
+                    httpClient.get("/$PATH_TEAMS")
             }
         }
 
     override suspend fun getTeamMembers(teamId: TeamId, limitTo: Int?): NetworkResponse<TeamsApi.TeamMemberList> =
         wrapKaliumResponse {
-            httpClient.get(path = "/$PATH_TEAMS/$teamId/$PATH_MEMBERS") {
+            httpClient.get("/$PATH_TEAMS/$teamId/$PATH_MEMBERS") {
                 limitTo?.let { parameter("maxResults", it) }
             }
         }

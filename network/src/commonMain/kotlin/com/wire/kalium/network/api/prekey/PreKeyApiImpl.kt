@@ -5,18 +5,19 @@ import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 
 class PreKeyApiImpl(private val httpClient: HttpClient) : PreKeyApi {
 
     override suspend fun getUsersPreKey(users: DomainToUserIdToClientsMap): NetworkResponse<DomainToUserIdToClientsToPreykeyMap> =
         wrapKaliumResponse {
-            httpClient.post(path = "$PATH_USERS$PATH_List_PREKEYS") {
-                body = users
+            httpClient.post("$PATH_USERS$PATH_List_PREKEYS") {
+                setBody(users)
             }
         }
 
     override suspend fun getClientAvailablePrekeys(clientId: String): NetworkResponse<List<Int>> = wrapKaliumResponse {
-        httpClient.get(path = "$PATH_CLIENTS/$clientId$PATH_PRE_KEY")
+        httpClient.get("$PATH_CLIENTS/$clientId$PATH_PRE_KEY")
     }
 
     private companion object {
