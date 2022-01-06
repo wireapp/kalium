@@ -47,7 +47,7 @@ class SelfApiTest : ApiTest {
     }
 
     private companion object {
-        const val PATH_SELF = "self"
+        const val PATH_SELF = "/self"
         val VALID_SELF_RESPONSE = SelfUserInfoResponseJson.valid
         val ERROR_RESPONSE = ErrorResponseJson.valid.serializableData
     }

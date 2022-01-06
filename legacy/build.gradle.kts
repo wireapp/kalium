@@ -42,7 +42,7 @@ dependencies {
     implementation("org.glassfish.jersey.inject:jersey-hk2:2.28")
 
     implementation("javax.validation:validation-api:$javaxValidationVersion")
-    //implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$ktxSerializationVersion")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$ktxSerializationVersion")
     testImplementation(kotlin("test"))
     testImplementation("io.kotest:kotest-runner-junit5:$kotestVersion")
     testImplementation("io.kotest:kotest-assertions-core:$kotestVersion")

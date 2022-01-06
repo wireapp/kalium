@@ -49,7 +49,7 @@ class ClientApiTest : ApiTest {
     }
 
     private companion object {
-        const val PATH_CLIENTS = "clients"
+        const val PATH_CLIENTS = "/clients"
         val REGISTER_CLIENT_REQUEST = RegisterClientRequestJson.valid
         val VALID_REGISTER_CLIENT_RESPONSE = RegisterClientResponseJson.valid
         val ERROR_RESPONSE = ErrorResponseJson.valid.serializableData
