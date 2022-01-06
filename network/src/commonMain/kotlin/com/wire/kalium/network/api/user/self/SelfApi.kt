@@ -9,7 +9,7 @@ class SelfApi(private val httpClient: HttpClient) {
 
     suspend fun getSelfInfo(): NetworkResponse<SelfUserInfoResponse> =
         wrapKaliumResponse {
-            httpClient.get(path = PATH_SELF)
+            httpClient.get(PATH_SELF)
         }
 
     private companion object {

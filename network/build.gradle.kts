@@ -40,11 +40,13 @@ kotlin {
 
                 // ktor
                 api(Dependencies.Ktor.core)
+                implementation(Dependencies.Ktor.utils)
                 implementation(Dependencies.Ktor.json)
                 implementation(Dependencies.Ktor.serialization)
                 implementation(Dependencies.Ktor.logging)
-                implementation(Dependencies.Ktor.auth)
+                implementation(Dependencies.Ktor.authClient)
                 implementation(Dependencies.Ktor.webSocket)
+                implementation(Dependencies.Ktor.contentNegotiation)
             }
         }
         val commonTest by getting {

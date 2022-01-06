@@ -55,6 +55,6 @@ class LoginApiTest : ApiTest {
         val VALID_LOGIN_RESPONSE = LoginResponseJson.valid
         val ERROR_RESPONSE = ErrorResponseJson.valid.serializableData
         const val QUERY_PERSIST = "persist"
-        const val PATH_LOGIN = "login"
+        const val PATH_LOGIN = "/login"
     }
 }
