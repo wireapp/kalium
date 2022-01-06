@@ -90,8 +90,8 @@ actual class ProteusClient actual constructor(rootDir: String, userId: String) {
         sessionId: CryptoSessionId
     ): ByteArray {
         val preKeyBundle = preKey.encodedData.decodeBase64Bytes()
-        val foo = box.encrypt(sessionId.value, payload = message.toUint8Array(), preKeyBundle = preKeyBundle.toArrayBuffer())
-        return Int8Array(foo.await()).unsafeCast<ByteArray>()
+        val encryptedMessage = box.encrypt(sessionId.value, payload = message.toUint8Array(), preKeyBundle = preKeyBundle.toArrayBuffer())
+        return Int8Array(encryptedMessage.await()).unsafeCast<ByteArray>()
     }
 
     fun ByteArray.toUint8Array(): Uint8Array {
