@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature
 
 import com.wire.kalium.logic.AuthenticatedDataSourceSet
+import com.wire.kalium.logic.data.conversation.ConversationDataSource
 import com.wire.kalium.logic.data.conversation.ConversationMapper
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MemberMapper
@@ -20,7 +21,7 @@ class UserSessionScope(
     private val conversationMapper: ConversationMapper get() = ConversationMapper(idMapper, memberMapper)
 
     private val conversationRepository: ConversationRepository
-        get() = ConversationRepository(
+        get() = ConversationDataSource(
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi, idMapper, conversationMapper
         )

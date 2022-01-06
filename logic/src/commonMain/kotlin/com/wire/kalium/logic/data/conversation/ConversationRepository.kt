@@ -11,15 +11,21 @@ import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.network.utils.isSuccessful
 
-class ConversationRepository(
+interface ConversationRepository {
+    suspend fun getConversationList(): List<Conversation>
+    suspend fun getConversationDetails(conversationId: ConversationId): Either<CoreFailure, Conversation>
+    suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
+}
+
+class ConversationDataSource(
     private val conversationApi: ConversationApi,
     private val clientApi: ClientApi,
     private val idMapper: IdMapper,
     private val conversationMapper: ConversationMapper,
     private val memberMapper: MemberMapper
-) {
+) : ConversationRepository {
 
-    suspend fun getConversationList(): List<Conversation> {
+    override suspend fun getConversationList(): List<Conversation> {
         val conversationsResponse = conversationApi.conversationsByBatch(null, 100)
         if (!conversationsResponse.isSuccessful()) {
             TODO("Error handling. Repository layer, a good place to use Either<Failure,Success> ?")
@@ -27,7 +33,7 @@ class ConversationRepository(
         return conversationsResponse.value.conversations.map(conversationMapper::fromApiModel)
     }
 
-    suspend fun getConversationDetails(conversationId: ConversationId): Either<CoreFailure, Conversation> {
+    override suspend fun getConversationDetails(conversationId: ConversationId): Either<CoreFailure, Conversation> {
         val conversationResponse = conversationApi.fetchConversationDetails(conversationId)
 
         if (!conversationResponse.isSuccessful()) {
@@ -49,7 +55,7 @@ class ConversationRepository(
     /**
      * Fetches a list of all recipients for a given conversation including this very client
      */
-    suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>> = suspending {
+    override suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>> = suspending {
         getConversationMembers(conversationId).flatMap { membersIds ->
             val allIds = membersIds.map { id -> idMapper.toApiModel(id) }
 
