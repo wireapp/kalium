@@ -64,7 +64,7 @@ class OutgoingMessageRecipientsRetriever(
         }
     }
 
-    private suspend fun missingContactClients(detailedContacts: List<DetailedContact>, senderUserId: String) =
+    private suspend fun missingClients(detailedContacts: List<DetailedContact>, senderUserId: String) =
         suspending {
             detailedContacts.foldToEitherWhileRight(mutableMapOf<String, List<String>>()) { detailedContact, userAccumulator ->
                 missingClientsForContact(detailedContact, senderUserId).map { missingClients ->
