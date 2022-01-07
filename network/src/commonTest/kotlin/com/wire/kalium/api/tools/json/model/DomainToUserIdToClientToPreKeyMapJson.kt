@@ -2,7 +2,7 @@ package com.wire.kalium.api.tools.json.model
 
 import com.wire.kalium.api.tools.json.ValidJsonProvider
 import com.wire.kalium.network.api.prekey.DomainToUserIdToClientsToPreykeyMap
-import com.wire.kalium.network.api.prekey.PreKey
+import com.wire.kalium.network.api.prekey.PreKeyDTO
 
 object DomainToUserIdToClientToPreKeyMapJson {
 
@@ -11,11 +11,11 @@ object DomainToUserIdToClientToPreKeyMapJson {
 
     private const val USER_1 = "user10d0-000b-9c1a-000d-a4130002c221"
     private const val USER_1_CLIENT = "60f85e4b15ad3786"
-    private val USER_1_CLIENT_PREYKEY = PreKey(key = "preKey1CoQBYIOjl7hw0D8YRNq", id = 1)
+    private val USER_1_CLIENT_PREYKEY = PreKeyDTO(key = "preKey1CoQBYIOjl7hw0D8YRNq", id = 1)
 
     private const val USER_2 = "user200d0-000b-9c1a-000d-a4130002c221"
     private const val USER_2_CLIENT = "32233lj33j3dfh7u"
-    private val USER_2_CLIENT_PREYKEY = PreKey(key = "preKey2ANWARqEvoQI6l9hw0D", id = 2)
+    private val USER_2_CLIENT_PREYKEY = PreKeyDTO(key = "preKey2ANWARqEvoQI6l9hw0D", id = 2)
 
     private val jsonProvider = { _: DomainToUserIdToClientsToPreykeyMap ->
             """

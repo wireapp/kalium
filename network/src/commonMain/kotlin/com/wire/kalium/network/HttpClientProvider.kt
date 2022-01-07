@@ -4,24 +4,18 @@ import com.wire.kalium.network.tools.HostProvider
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.HttpClientEngine
-import io.ktor.client.features.auth.Auth
-import io.ktor.client.features.auth.providers.BearerTokens
-import io.ktor.client.features.auth.providers.bearer
-import io.ktor.client.features.defaultRequest
-import io.ktor.client.features.json.JsonFeature
-import io.ktor.client.features.json.serializer.KotlinxSerializer
-import io.ktor.client.features.logging.LogLevel
-import io.ktor.client.features.logging.Logger
-import io.ktor.client.features.logging.Logging
-import io.ktor.client.features.logging.SIMPLE
+import io.ktor.client.plugins.ContentNegotiation
+import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logger
+import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.plugins.logging.SIMPLE
 import io.ktor.client.request.header
-import io.ktor.client.request.host
-import io.ktor.client.statement.HttpResponse
-import io.ktor.http.ContentType
 import io.ktor.http.URLProtocol
+import io.ktor.serialization.kotlinx.json.json
+import kotlinx.serialization.json.Json
 
 internal fun provideBaseHttpClient(
-    kotlinxSerializer: KotlinxSerializer,
     engine: HttpClientEngine,
     isRequestLoggingEnabled: Boolean = false,
     config: HttpClientConfig<*>.() -> Unit = {}
@@ -37,9 +31,13 @@ internal fun provideBaseHttpClient(
             level = LogLevel.ALL
         }
     }
-    install(JsonFeature) {
-        serializer = kotlinxSerializer
-        accept(ContentType.Application.Json)
+    install(ContentNegotiation) {
+        json(Json {
+            prettyPrint = true
+            isLenient = true
+            ignoreUnknownKeys = true
+            explicitNulls = false
+        })
     }
     config()
 }
