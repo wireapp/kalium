@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.failure.ResourceNotFound
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.suspending
@@ -12,7 +13,7 @@ import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.network.utils.isSuccessful
 
 interface ConversationRepository {
-    suspend fun getConversationList(): List<Conversation>
+    suspend fun getConversationList(): Either<CoreFailure, List<Conversation>>
     suspend fun getConversationDetails(conversationId: ConversationId): Either<CoreFailure, Conversation>
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
 }
@@ -25,18 +26,22 @@ class ConversationDataSource(
     private val memberMapper: MemberMapper
 ) : ConversationRepository {
 
-    override suspend fun getConversationList(): List<Conversation> {
+    override suspend fun getConversationList(): Either<CoreFailure, List<Conversation>> {
         val conversationsResponse = conversationApi.conversationsByBatch(null, 100)
-        if (!conversationsResponse.isSuccessful()) {
-            TODO("Error handling. Repository layer, a good place to use Either<Failure,Success> ?")
+        return if (!conversationsResponse.isSuccessful()) {
+            Either.Left(CoreFailure.ServerMiscommunication)
+        } else {
+            Either.Right(conversationsResponse.value.conversations.map(conversationMapper::fromApiModel))
         }
-        return conversationsResponse.value.conversations.map(conversationMapper::fromApiModel)
     }
 
     override suspend fun getConversationDetails(conversationId: ConversationId): Either<CoreFailure, Conversation> {
         val conversationResponse = conversationApi.fetchConversationDetails(conversationId)
 
         if (!conversationResponse.isSuccessful()) {
+            if (conversationResponse.kException.errorCode == 404) {
+                return Either.Left(ResourceNotFound)
+            }
             return Either.Left(CoreFailure.ServerMiscommunication)
         }
         return Either.Right(conversationMapper.fromApiModel(conversationResponse.value))
