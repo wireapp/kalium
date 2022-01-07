@@ -10,10 +10,10 @@ class LoginApiImp(private val httpClient: HttpClient) : LoginApi {
     override suspend fun emailLogin(
         loginWithEmailRequest: LoginWithEmailRequest,
         persist: Boolean
-    ): NetworkResponse<LoginWithEmailResponse> = wrapKaliumResponse<LoginWithEmailResponse> {
-        httpClient.post(path = PATH_LOGIN) {
+    ): NetworkResponse<LoginWithEmailResponse> = wrapKaliumResponse {
+        httpClient.post(PATH_LOGIN) {
             parameter(QUERY_PERSIST, persist)
-            body = loginWithEmailRequest
+            setBody(loginWithEmailRequest)
         }
     }
 

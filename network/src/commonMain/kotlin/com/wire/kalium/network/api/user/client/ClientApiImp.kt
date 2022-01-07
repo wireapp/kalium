@@ -7,12 +7,13 @@ import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 
 class ClientApiImp(private val httpClient: HttpClient) : ClientApi {
     override suspend fun registerClient(registerClientRequest: RegisterClientRequest): NetworkResponse<RegisterClientResponse> =
         wrapKaliumResponse {
-            httpClient.post(path = PATH_CLIENTS) {
-                body = registerClientRequest
+            httpClient.post(PATH_CLIENTS) {
+                setBody(registerClientRequest)
             }
         }
 

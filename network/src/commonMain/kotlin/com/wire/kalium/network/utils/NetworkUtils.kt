@@ -2,11 +2,11 @@ package com.wire.kalium.network.utils
 
 import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
-import io.ktor.client.call.receive
-import io.ktor.client.features.ClientRequestException
-import io.ktor.client.features.RedirectResponseException
-import io.ktor.client.features.ResponseException
-import io.ktor.client.features.ServerResponseException
+import io.ktor.client.call.body
+import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.RedirectResponseException
+import io.ktor.client.plugins.ResponseException
+import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.setCookie
 import io.ktor.util.toMap
@@ -56,24 +56,24 @@ fun <T> NetworkResponse<T>.isSuccessful(): Boolean {
 suspend inline fun <reified BodyType> wrapKaliumResponse(performRequest: () -> HttpResponse): NetworkResponse<BodyType> =
     try {
         val result = performRequest()
-        NetworkResponse.Success(result, result.receive())
+        NetworkResponse.Success(result, result.body())
     } catch (e: ResponseException) { // ktor exception
         e.printStackTrace()
         when (e) {
             is RedirectResponseException -> {
                 // 300 .. 399
-                NetworkResponse.Error(kException = KaliumException.RedirectError(e.response.receive()))
+                NetworkResponse.Error(kException = KaliumException.RedirectError(e.response.body()))
             }
             is ClientRequestException -> {
                 // 400 .. 499
-                NetworkResponse.Error(kException = KaliumException.InvalidRequestError(e.response.receive()))
+                NetworkResponse.Error(kException = KaliumException.InvalidRequestError(e.response.body()))
             }
             is ServerResponseException -> {
                 // 500 .. 599
-                NetworkResponse.Error(kException = KaliumException.ServerError(e.response.receive()))
+                NetworkResponse.Error(kException = KaliumException.ServerError(e.response.body()))
             }
             else -> {
-                NetworkResponse.Error(kException = KaliumException.GenericError(e.response.receive(), e))
+                NetworkResponse.Error(kException = KaliumException.GenericError(e.response.body(), e))
             }
         }
     } catch (e: SerializationException) {

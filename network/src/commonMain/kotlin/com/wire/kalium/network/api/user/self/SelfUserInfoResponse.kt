@@ -1,7 +1,7 @@
 package com.wire.kalium.network.api.user.self
 
 import com.wire.kalium.network.api.UserId
-import com.wire.kalium.network.api.model.Asset
+import com.wire.kalium.network.api.model.UserAsset
 import com.wire.kalium.network.api.model.Service
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -27,7 +27,7 @@ data class SelfUserInfoResponse(
     @SerialName("deleted")
     val deleted: Boolean?,
     @SerialName("assets")
-    val assets: List<Asset>,
+    val assets: List<UserAsset>,
     @SerialName("locale")
     val locale: String,
     @SerialName("service")
