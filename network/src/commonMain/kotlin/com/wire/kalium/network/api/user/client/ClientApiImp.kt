@@ -20,7 +20,7 @@ class ClientApiImp(private val httpClient: HttpClient) : ClientApi {
     override suspend fun listClientsOfUsers(userIds: List<UserId>): NetworkResponse<Map<UserId, List<SimpleClientResponse>>> =
         wrapKaliumResponse<ClientsOfUsersResponse> {
             httpClient.post(PATH_LIST_CLIENTS) {
-                body = ListClientsOfUsersRequest(userIds)
+                setBody(ListClientsOfUsersRequest(userIds))
             }
         }.mapSuccess { response ->
             // Maps from nested mapping of domain -> Id -> List<Clients>, to Map of UserId to List<Clients>

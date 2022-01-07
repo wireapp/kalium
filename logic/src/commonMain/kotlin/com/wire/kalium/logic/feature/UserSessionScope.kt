@@ -33,7 +33,7 @@ class UserSessionScope(
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi, idMapper, conversationMapper
+            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi, idMapper, conversationMapper, memberMapper
         )
 
     private val messageRepository: MessageRepository

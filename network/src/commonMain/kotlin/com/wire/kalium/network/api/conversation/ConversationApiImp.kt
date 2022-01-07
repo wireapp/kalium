@@ -46,7 +46,7 @@ class ConversationApiImp(private val httpClient: HttpClient) : ConversationApi {
     override suspend fun fetchConversationDetails(conversationId: ConversationId): NetworkResponse<ConversationResponse> =
         wrapKaliumResponse {
             httpClient.get(
-                path = "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}"
+                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}"
             )
         }
 
