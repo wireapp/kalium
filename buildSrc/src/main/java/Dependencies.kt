@@ -16,6 +16,7 @@ object Versions {
     const val ktor2 = "2.0.0-beta-1"
     const val okHttp = "4.9.3"
     const val kotest = "4.6.3"
+    const val mockative = "1.1.4"
     const val androidTestRunner = "1.4.0"
     const val androidTestRules = "1.4.0"
 }
@@ -37,6 +38,9 @@ object Plugins {
 
     fun jvm(scope: PluginDependenciesSpec) =
         scope.kotlin("jvm")
+
+    fun ksp(scope: PluginDependenciesSpec) =
+        scope.id("com.google.devtools.ksp").version("1.6.10-1.0.2")
 
     fun kover(scope: PluginDependenciesSpec) =
         scope.id("org.jetbrains.kotlinx.kover") version Versions.kover
@@ -99,5 +103,10 @@ object Dependencies {
         const val junit5Runner = "io.kotest:kotest-runner-junit5:${Versions.kotest}"
         const val assertions = "io.kotest:kotest-assertions-core:${Versions.kotest}"
         const val property = "io.kotest:kotest-property:${Versions.kotest}"
+    }
+
+    object Test {
+        const val mockative = "io.mockative:mockative:${Versions.mockative}"
+        const val mockativeProcessor = "io.mockative:mockative-processor:${Versions.mockative}"
     }
 }

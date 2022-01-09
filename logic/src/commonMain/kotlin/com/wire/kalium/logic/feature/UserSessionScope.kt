@@ -9,9 +9,12 @@ import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
 import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSourceImpl
 import com.wire.kalium.logic.data.conversation.ConversationDataSource
 import com.wire.kalium.logic.data.conversation.ConversationMapper
+import com.wire.kalium.logic.data.conversation.ConversationMapperImpl
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MemberMapper
+import com.wire.kalium.logic.data.conversation.MemberMapperImpl
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.location.LocationMapper
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
@@ -26,9 +29,9 @@ class UserSessionScope(
     private val clientConfig: ClientConfig
 ) {
 
-    private val idMapper: IdMapper get() = IdMapper()
-    private val memberMapper: MemberMapper get() = MemberMapper(idMapper)
-    private val conversationMapper: ConversationMapper get() = ConversationMapper(idMapper, memberMapper)
+    private val idMapper: IdMapper get() = IdMapperImpl()
+    private val memberMapper: MemberMapper get() = MemberMapperImpl(idMapper)
+    private val conversationMapper: ConversationMapper get() = ConversationMapperImpl(idMapper, memberMapper)
 
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(

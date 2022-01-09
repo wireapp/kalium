@@ -5,9 +5,14 @@ import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.user.client.SimpleClientResponse
 
-class MemberMapper(private val idMapper: IdMapper) {
+interface MemberMapper {
+    fun fromApiModel(conversationMembersResponse: ConversationMembersResponse): MembersInfo
+    fun fromMapOfClientsResponseToRecipients(qualifiedMap: Map<UserId, List<SimpleClientResponse>>): List<Recipient>
+}
 
-    fun fromApiModel(conversationMembersResponse: ConversationMembersResponse): MembersInfo {
+internal class MemberMapperImpl(private val idMapper: IdMapper) : MemberMapper {
+
+    override fun fromApiModel(conversationMembersResponse: ConversationMembersResponse): MembersInfo {
         val self = Member(idMapper.fromApiModel(conversationMembersResponse.self.userId))
         val others = conversationMembersResponse.otherMembers.map { member ->
             Member(idMapper.fromApiModel(member.userId))
@@ -15,7 +20,7 @@ class MemberMapper(private val idMapper: IdMapper) {
         return MembersInfo(self, others)
     }
 
-    fun fromMapOfClientsResponseToRecipients(qualifiedMap: Map<UserId, List<SimpleClientResponse>>): List<Recipient> =
+    override fun fromMapOfClientsResponseToRecipients(qualifiedMap: Map<UserId, List<SimpleClientResponse>>): List<Recipient> =
         qualifiedMap.entries.map { entry ->
             val id = idMapper.fromApiModel(entry.key)
 

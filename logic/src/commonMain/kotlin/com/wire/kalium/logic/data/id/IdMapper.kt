@@ -5,11 +5,17 @@ import com.wire.kalium.network.api.user.client.SimpleClientResponse
 
 internal typealias NetworkQualifiedId = com.wire.kalium.network.api.QualifiedID
 
-class IdMapper {
+interface IdMapper {
+    fun fromApiModel(networkId: NetworkQualifiedId): QualifiedID
+    fun fromSimpleClientResponse(clientResponse: SimpleClientResponse): ClientId
+    fun toApiModel(qualifiedID: QualifiedID): NetworkQualifiedId
+}
 
-    fun fromApiModel(networkId: NetworkQualifiedId) = QualifiedID(value = networkId.value, domain = networkId.domain)
+internal class IdMapperImpl : IdMapper {
 
-    fun fromSimpleClientResponse(clientResponse: SimpleClientResponse) = ClientId(clientResponse.id)
+    override fun fromApiModel(networkId: NetworkQualifiedId) = QualifiedID(value = networkId.value, domain = networkId.domain)
 
-    fun toApiModel(qualifiedID: QualifiedID) = NetworkQualifiedId(value = qualifiedID.value, domain = qualifiedID.domain)
+    override fun fromSimpleClientResponse(clientResponse: SimpleClientResponse) = ClientId(clientResponse.id)
+
+    override fun toApiModel(qualifiedID: QualifiedID) = NetworkQualifiedId(value = qualifiedID.value, domain = qualifiedID.domain)
 }

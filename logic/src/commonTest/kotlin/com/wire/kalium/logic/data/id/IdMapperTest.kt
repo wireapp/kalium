@@ -6,7 +6,7 @@ import kotlin.test.assertEquals
 
 class IdMapperTest {
 
-    private val idMapper = IdMapper()
+    private val idMapper = IdMapperImpl()
 
     @Test
     fun givenAQualifiedId_whenMappingToApiModel_thenTheFieldsShouldBeMappedCorrectly() {
