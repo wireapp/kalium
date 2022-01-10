@@ -6,11 +6,11 @@ import com.wire.kalium.network.exceptions.SendMessageError
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
-import io.ktor.client.call.receive
-import io.ktor.client.features.ResponseException
+import io.ktor.client.call.body
+import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
-import io.ktor.client.statement.HttpResponse
+import io.ktor.client.request.setBody
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -48,19 +48,19 @@ class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
             body: RequestBody
         ): NetworkResponse<SendMessageResponse> {
             return try {
-                val response = httpClient.post<HttpResponse>(path = "$PATH_CONVERSATIONS/$conversationId$PATH_OTR_MESSAGE") {
+                val response = httpClient.post("$PATH_CONVERSATIONS/$conversationId$PATH_OTR_MESSAGE") {
                     if (queryParameter != null) {
                         parameter(queryParameter, queryParameterValue)
                     }
-                    this.body = body
+                    setBody(body)
                 }
-                return NetworkResponse.Success(response, response.receive<SendMessageResponse.MessageSent>())
+                return NetworkResponse.Success(response, response.body<SendMessageResponse.MessageSent>())
             } catch (e: ResponseException) {
                 when (e.response.status.value) {
                     // It's a 412 Error
                     412 -> NetworkResponse.Error(
                         kException = SendMessageError.MissingDeviceError(
-                            errorBody = e.response.receive(),
+                            errorBody = e.response.body(),
                             errorCode = e.response.status.value
                         )
                     )
@@ -68,7 +68,10 @@ class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
                 }
             } catch (e: Exception) {
                 NetworkResponse.Error(
-                    kException = KaliumException.GenericError(ErrorResponse(400, e.message ?: "There was a generic error ", e.toString()), e)
+                    kException = KaliumException.GenericError(
+                        ErrorResponse(400, e.message ?: "There was a generic error ", e.toString()),
+                        e
+                    )
                 )
             }
         }

@@ -9,22 +9,22 @@ import io.ktor.http.*
 
 class AuthApiImp(private val httpClient: HttpClient) : AuthApi {
     override suspend fun renewAccessToken(refreshToken: String): NetworkResponse<RenewAccessTokenResponse> = wrapKaliumResponse {
-        httpClient.post(path = PATH_ACCESS) {
+        httpClient.post(PATH_ACCESS) {
             this.cookie(RefreshTokenProperties.COOKIE_NAME, refreshToken)
         }
     }
 
     override suspend fun removeCookiesByIds(removeCookiesByIdsRequest: RemoveCookiesByIdsRequest): NetworkResponse<Unit> =
         wrapKaliumResponse {
-            httpClient.post(path = "$PATH_COOKIES$PATH_REMOVE") {
-                body = removeCookiesByIdsRequest
+            httpClient.post("$PATH_COOKIES$PATH_REMOVE") {
+                setBody(removeCookiesByIdsRequest)
             }
         }
 
     override suspend fun removeCookiesByLabels(removeCookiesWithIdsRequest: RemoveCookiesByLabels): NetworkResponse<Unit> =
         wrapKaliumResponse {
-            httpClient.post(path = "$PATH_COOKIES$PATH_REMOVE") {
-                body = removeCookiesWithIdsRequest
+            httpClient.post("$PATH_COOKIES$PATH_REMOVE") {
+                setBody(removeCookiesWithIdsRequest)
             }
         }
 

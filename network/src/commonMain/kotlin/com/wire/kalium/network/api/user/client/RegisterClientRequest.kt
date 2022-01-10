@@ -1,28 +1,28 @@
 package com.wire.kalium.network.api.user.client
 
-import com.wire.kalium.network.api.prekey.PreKey
+import com.wire.kalium.network.api.prekey.PreKeyDTO
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class RegisterClientRequest(
     @SerialName("password") val password: String,
-    @SerialName("prekeys") val preKeys: List<PreKey>,
-    @SerialName("lastkey") val lastKey: PreKey,
-    @SerialName("class") val deviceType: DeviceType,
-    @SerialName("type") val type: ClientType, // 'temporary', 'permanent', 'legalhold'
+    @SerialName("prekeys") val preKeys: List<PreKeyDTO>,
+    @SerialName("lastkey") val lastKey: PreKeyDTO,
+    @SerialName("class") val deviceType: DeviceTypeDTO,
+    @SerialName("type") val type: ClientTypeDTO, // 'temporary', 'permanent', 'legalhold'
     @SerialName("label") val label: String,
-    @SerialName("capabilities") val capabilities: List<ClientCapability>?,
+    @SerialName("capabilities") val capabilities: List<ClientCapabilityDTO>?,
     @SerialName("model") val model: String
 )
 
 @Serializable
 data class RegisterClientResponse(
     @SerialName("id") val clientId: String,
-    @SerialName("type") val type: ClientType,
+    @SerialName("type") val type: ClientTypeDTO,
     @SerialName("time") val registrationTime: String, // yyyy-mm-ddThh:MM:ss.qqq
-    @SerialName("location") val location: LocationResponse?,
-    @SerialName("class") val deviceType: DeviceType?,
+    @SerialName("location") val location: LocationDTO?,
+    @SerialName("class") val deviceType: DeviceTypeDTO?,
     @SerialName("label") val label: String?,
     @SerialName("cookie") val cookie: String?,
     @SerialName("capabilities") val capabilities: Capabilities?,
@@ -31,11 +31,11 @@ data class RegisterClientResponse(
 
 @Serializable
 data class Capabilities(
-    @SerialName("capabilities") val capabilities: List<ClientCapability>
+    @SerialName("capabilities") val capabilities: List<ClientCapabilityDTO>
 )
 
 @Serializable
-enum class ClientType {
+enum class ClientTypeDTO {
     @SerialName("temporary")
     Temporary,
 
@@ -51,7 +51,7 @@ enum class ClientType {
 }
 
 @Serializable
-enum class DeviceType {
+enum class DeviceTypeDTO {
     @SerialName("phone")
     Phone,
 
@@ -70,7 +70,7 @@ enum class DeviceType {
 }
 
 @Serializable
-enum class ClientCapability {
+enum class ClientCapabilityDTO {
     @SerialName("legalhold-implicit-consent")
     LegalHoldImplicitConsent {
         override fun toString(): String {
