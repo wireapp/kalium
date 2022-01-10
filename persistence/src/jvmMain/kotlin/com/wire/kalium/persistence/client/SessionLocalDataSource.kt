@@ -1,11 +1,11 @@
 package com.wire.kalium.persistence.client
 
 import com.wire.kalium.persistence.model.DataStoreResult
-import com.wire.kalium.persistence.model.Session
+import com.wire.kalium.persistence.model.SessionDao
 import kotlinx.coroutines.flow.Flow
 
 actual class SessionLocalDataSource {
-    actual suspend fun addSession(session: Session) {
+    actual suspend fun addSession(sessionDao: SessionDao) {
         TODO("Not yet implemented")
     }
 
@@ -13,11 +13,11 @@ actual class SessionLocalDataSource {
         TODO("Not yet implemented")
     }
 
-    actual suspend fun currentSession(): Session? {
+    actual suspend fun currentSession(): SessionDao? {
         TODO("Not yet implemented")
     }
 
-    actual suspend fun updateCurrentSession(session: Session) {
+    actual suspend fun updateCurrentSession(sessionDao: SessionDao) {
         TODO("Not yet implemented")
     }
 
@@ -25,7 +25,7 @@ actual class SessionLocalDataSource {
         TODO("Not yet implemented")
     }
 
-    actual fun allSessions(): Flow<DataStoreResult<Map<String, Session>>> {
+    actual fun allSessions(): Flow<DataStoreResult<Map<String, SessionDao>>> {
         TODO("Not yet implemented")
     }
 }

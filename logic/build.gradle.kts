@@ -36,6 +36,7 @@ kotlin {
             dependencies {
                 implementation(project(":network"))
                 implementation(project(":cryptography"))
+                implementation(project(":persistence"))
 
                 // coroutines
                 implementation(Dependencies.Coroutines.core)

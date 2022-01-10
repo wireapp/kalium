@@ -1,6 +1,6 @@
 package com.wire.kalium.persistence.model
 
-data class Session(
+data class SessionDao(
     val userId: String,
     val clientId: String,
     val domain: String,

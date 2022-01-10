@@ -13,7 +13,10 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.httpResponseCookies
 import com.wire.kalium.network.utils.isSuccessful
 
-class LoginRepository(private val loginApi: LoginApi, private val clientLabel: String) {
+class LoginRepository(
+    private val loginApi: LoginApi,
+    private val clientLabel: String
+) {
 
     suspend fun loginWithEmail(email: String, password: String, shouldPersistClient: Boolean): Either<CoreFailure, AuthSession> {
         val response = loginApi.emailLogin(
