@@ -59,7 +59,7 @@ class DataStoreStorage(
     inline fun <reified T> Flow<Preferences>.secureMap(
         securityKeyAlias: String,
         crossinline fetchValue: (value: Preferences) -> String
-    ): Flow<DataStoreResult<T>> {
+    ): Flow<DataStoreResult<out T>> {
         return map { preferences ->
             val savedString = fetchValue(preferences)
             if (savedString.isEmpty()) {
