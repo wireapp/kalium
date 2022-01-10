@@ -1,10 +1,17 @@
 plugins {
     Plugins.androidLibrary(this)
     Plugins.multiplatform(this)
+    Plugins.sqlDelight(this)
 }
 
 group = "com.wire.kalium"
 version = "0.0.1-SNAPSHOT"
+
+sqldelight {
+    database("AppDatabase") {
+        packageName = "com.wire.kalium.persistence.db"
+    }
+}
 
 android {
     compileSdk = Android.Sdk.compile
@@ -37,6 +44,7 @@ kotlin {
                 // coroutines
                 implementation(Dependencies.Coroutines.core)
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.0")
+                implementation(Dependencies.SqlDelight.runtime)
             }
         }
         val commonTest by getting {
@@ -46,11 +54,16 @@ kotlin {
                 implementation(Dependencies.Coroutines.test)
             }
         }
-        val jvmMain by getting
+        val jvmMain by getting {
+            dependencies {
+                implementation(Dependencies.SqlDelight.jvmDriver)
+            }
+        }
         val jvmTest by getting
         val androidMain by getting {
             dependencies {
                 implementation ("androidx.datastore:datastore-preferences:1.0.0")
+                implementation(Dependencies.SqlDelight.androidDriver)
             }
         }
         val androidTest by getting {

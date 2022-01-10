@@ -20,6 +20,7 @@ object Versions {
     const val androidTestRules = "1.4.0"
     const val androidxArch = "2.1.0"
     const val mockk = "1.12.0"
+    const val sqlDelight = "1.5.3"
 }
 
 object Plugins {
@@ -48,6 +49,9 @@ object Plugins {
 
     fun serialization(scope: PluginDependenciesSpec) =
         scope.kotlin("plugin.serialization") version Versions.kotlin
+
+    fun sqlDelight(scope: PluginDependenciesSpec) =
+        scope.id("com.squareup.sqldelight")
 }
 
 object Dependencies {
@@ -96,6 +100,13 @@ object Dependencies {
         const val utils = "io.ktor:ktor-utils:${Versions.ktor2}"
         const val mock = "io.ktor:ktor-client-mock:${Versions.ktor2}"
         const val okHttp = "io.ktor:ktor-client-okhttp:${Versions.ktor2}"
+    }
+
+    object SqlDelight {
+        const val runtime = "com.squareup.sqldelight:runtime:${Versions.sqlDelight}"
+        const val androidDriver = "com.squareup.sqldelight:android-driver:${Versions.sqlDelight}"
+        const val nativeDriver = "com.squareup.sqldelight:native-driver:${Versions.sqlDelight}"
+        const val jvmDriver = "com.squareup.sqldelight:sqlite-driver:${Versions.sqlDelight}"
     }
 
     object mockk {
