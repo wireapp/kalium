@@ -21,7 +21,7 @@ class PrekeyApiTest : ApiTest {
 
     @Test
     fun givenAValidDomainToUserIdToClientsMap_whenCallingGetUsersPrekeyEndpoint_theRequestShouldBeConfiguredCorrectly() = runTest {
-        val httpClient = mockHttpClient(
+        val httpClient = mockAuthenticatedHttpClient(
             VALID_GET_USERS_PREKEY_RESPONSE.rawJson,
             statusCode = HttpStatusCode.OK,
             assertion = {
@@ -39,7 +39,7 @@ class PrekeyApiTest : ApiTest {
 
     @Test
     fun givenTheServerReturnsAnError_whenCallingGetUsersPrekeyEndpoint_theCorrectExceptionIsThrown() = runTest {
-        val httpClient = mockHttpClient(
+        val httpClient = mockAuthenticatedHttpClient(
             ErrorResponseJson.valid.rawJson,
             statusCode = HttpStatusCode.Forbidden,
         )

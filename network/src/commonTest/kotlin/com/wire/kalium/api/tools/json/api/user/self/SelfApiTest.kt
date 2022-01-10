@@ -18,7 +18,7 @@ class SelfApiTest : ApiTest {
     @Test
     fun givenAValidRegisterLogoutRequest_whenCallingTheRegisterLogoutEndpoint_theRequestShouldBeConfiguredCorrectly() =
         runTest {
-            val httpClient = mockHttpClient(
+            val httpClient = mockAuthenticatedHttpClient(
                 VALID_SELF_RESPONSE.rawJson,
                 statusCode = HttpStatusCode.Created,
                 assertion = {
@@ -35,7 +35,7 @@ class SelfApiTest : ApiTest {
 
     @Test
     fun givenTheServerReturnsAnError_whenCallingTheGetSelfEndpoint_theCorrectExceptionIsThrown() = runTest {
-        val httpClient = mockHttpClient(
+        val httpClient = mockAuthenticatedHttpClient(
             ErrorResponseJson.valid.rawJson,
             statusCode = HttpStatusCode.Unauthorized
         )
