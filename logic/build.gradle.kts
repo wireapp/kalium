@@ -54,7 +54,9 @@ kotlin {
         }
         val jvmTest by getting
         val androidMain by getting {
-            dependencies { }
+            dependencies {
+                implementation(Dependencies.Android.dataStorePreferences)
+            }
         }
         val androidTest by getting
     }

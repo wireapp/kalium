@@ -50,12 +50,11 @@ kotlin {
         val jvmTest by getting
         val androidMain by getting {
             dependencies {
-                implementation ("androidx.datastore:datastore-preferences:1.0.0")
+                implementation (Dependencies.Android.dataStorePreferences)
             }
         }
         val androidTest by getting {
             dependencies {
-                implementation (Dependencies.Coroutines.test)
                 implementation(Dependencies.AndroidInstruments.androidxArchTesting)
             }
         }
