@@ -15,6 +15,7 @@ interface SessionRepository {
     suspend fun getSessions(): Flow<Either<CoreFailure, List<AuthSession>>>
 }
 
+@Deprecated("Use the SessionRepositoryImpl", replaceWith = ReplaceWith("SessionRepositoryImpl"))
 class InMemorySessionRepository : SessionRepository {
     private val sessions = hashMapOf<String, AuthSession>()
 
@@ -31,14 +32,14 @@ class SessionRepositoryImpl(
     private val sessionMapper: SessionMapper
 ) : SessionRepository {
     override suspend fun storeSession(autSession: AuthSession) {
-        sessionLocalDataSource.addSession(sessionMapper.toPersistenceSession(autSession))
+        sessionLocalDataSource.addSession(sessionMapper.toSessionDao(autSession))
     }
 
     override suspend fun getSessions(): Flow<Either<CoreFailure, List<AuthSession>>> =
         sessionLocalDataSource.allSessions().map { result ->
             when (result) {
                 is DataStoreResult.Success -> return@map Either.Right(
-                    result.data.values.toList().map { sessionMapper.fromPersistenceSession(it) })
+                    result.data.values.toList().map { sessionMapper.fromSessionDao(it) })
                 is DataStoreResult.DataNotFound -> return@map Either.Left(SessionFailure.NoSessionFound)
             }
         }

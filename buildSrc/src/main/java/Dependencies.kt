@@ -20,6 +20,7 @@ object Versions {
     const val androidTestRules = "1.4.0"
     const val androidxArch = "2.1.0"
     const val mockk = "1.12.0"
+    const val dataStore = "1.0.0"
 }
 
 object Plugins {
@@ -59,6 +60,7 @@ object Dependencies {
         const val composeTooling = "androidx.compose.ui:ui-tooling:${Versions.compose}"
         const val coroutines = "org.jetbrains.kotlinx:kotlinx-coroutines-android:${Versions.coroutines}"
         const val ktor = "io.ktor:ktor-client-android:${Versions.ktor}"
+        const val dataStorePreferences = "androidx.datastore:datastore-preferences:${Versions.dataStore}"
     }
 
     object AndroidInstruments {
