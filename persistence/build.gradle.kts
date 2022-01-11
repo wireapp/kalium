@@ -19,6 +19,7 @@ android {
     defaultConfig {
         minSdk = Android.Sdk.min
         targetSdk = Android.Sdk.target
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
@@ -70,6 +71,13 @@ kotlin {
             dependencies {
                 implementation (Dependencies.Coroutines.test)
                 implementation(Dependencies.AndroidInstruments.androidxArchTesting)
+            }
+        }
+        val androidAndroidTest by getting {
+            dependencies {
+                implementation(Dependencies.AndroidInstruments.androidTestRunner)
+                implementation(Dependencies.AndroidInstruments.androidTestRules)
+                implementation(Dependencies.AndroidInstruments.androidTestCore)
             }
         }
     }

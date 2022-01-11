@@ -18,6 +18,7 @@ object Versions {
     const val kotest = "4.6.3"
     const val androidTestRunner = "1.4.0"
     const val androidTestRules = "1.4.0"
+    const val androidTestCore = "1.4.0"
     const val androidxArch = "2.1.0"
     const val mockk = "1.12.0"
     const val sqlDelight = "1.5.3"
@@ -68,6 +69,7 @@ object Dependencies {
     object AndroidInstruments {
         const val androidTestRunner = "androidx.test:runner:${Versions.androidTestRunner}"
         const val androidTestRules = "androidx.test:rules:${Versions.androidTestRules}"
+        const val androidTestCore = "androidx.test:core:${Versions.androidTestCore}"
         const val androidxArchTesting = "androidx.arch.core:core-testing:${Versions.androidxArch}"
     }
 

@@ -63,7 +63,7 @@ class DataStoreStorage(
         return map { preferences ->
             val savedString = fetchValue(preferences)
             if (savedString.isEmpty()) {
-                DataStoreResult.DataNotFound
+                DataStoreResult.DataNotFound()
             } else {
                 val decryptedValue = security.decryptData(
                     securityKeyAlias,
