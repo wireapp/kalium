@@ -15,7 +15,7 @@ class TeamsApiTest: ApiTest {
     fun givenAValidListOfTeamsIds_whenCallingGetTeamsLimitedTo_theRequestShouldBeConfiguredCorrectly() =
         runTest {
             val commaSeparatedListOfIds = LIST_OF_TEAM_IDS.joinToString(",")
-            val httpClient = mockHttpClient(
+            val httpClient = mockAuthenticatedHttpClient(
                 GET_LIMIT_TO_CLIENT_RESPONSE.rawJson,
                 statusCode = HttpStatusCode.OK,
                 assertion = {
@@ -33,7 +33,7 @@ class TeamsApiTest: ApiTest {
     @Test
     fun givenAValidGetTeamsRequest_whenCallingGetTeamsStartFrom_theRequestShouldBeConfiguredCorrectly() =
         runTest {
-            val httpClient = mockHttpClient(
+            val httpClient = mockAuthenticatedHttpClient(
                 GET_START_FROM_CLIENT_RESPONSE.rawJson,
                 statusCode = HttpStatusCode.OK,
                 assertion = {
@@ -51,7 +51,7 @@ class TeamsApiTest: ApiTest {
     @Test
     fun givenAValidGetTeamsFirstPageRequest_whenGettingTeamsMembers_theRequestShouldBeConfiguredCorrectly() =
         runTest {
-            val httpClient = mockHttpClient(
+            val httpClient = mockAuthenticatedHttpClient(
                 GET_TEAM_MEMBER_CLIENT_RESPONSE.rawJson,
                 statusCode = HttpStatusCode.OK,
                 assertion = {
@@ -69,7 +69,7 @@ class TeamsApiTest: ApiTest {
     fun givenADeleteConversationForTeamRequest_whenDeletingATeamConversationWithSuccess_theRequestShouldBeConfiguredCorrectly() =
         runTest {
             val conversationId = "96a6e8e4-6420-49db-aa83-2711edf7580d"
-            val httpClient = mockHttpClient(
+            val httpClient = mockAuthenticatedHttpClient(
                 "",
                 statusCode = HttpStatusCode.OK,
                 assertion = {
