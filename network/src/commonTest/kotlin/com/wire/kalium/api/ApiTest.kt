@@ -2,6 +2,7 @@ package com.wire.kalium.api
 
 import com.wire.kalium.api.tools.testCredentials
 import com.wire.kalium.network.AuthenticatedNetworkContainer
+import com.wire.kalium.network.LoginNetworkContainer
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -20,27 +21,78 @@ import kotlin.test.assertTrue
 interface ApiTest {
 
     /**
-     * creates a mock Ktor Http client
+     * creates an authenticated mock Ktor Http client
      * @param responseBody the response body as Json string
      * @param statusCode the response http status code
      * @param assertion lambda function to apply assertions to the request
      * @return mock Ktor http client
      */
-    fun mockHttpClient(
+    fun mockAuthenticatedHttpClient(
         responseBody: String,
         statusCode: HttpStatusCode,
         assertion: (HttpRequestData.() -> Unit) = {}
-    ): HttpClient = mockHttpClient(ByteReadChannel(responseBody), statusCode, assertion)
+    ): HttpClient = mockAuthenticatedHttpClient(ByteReadChannel(responseBody), statusCode, assertion)
+
+    private fun mockAuthenticatedHttpClient(
+        responseBody: ByteReadChannel,
+        statusCode: HttpStatusCode,
+        assertion: (HttpRequestData.() -> Unit) = {}
+    ): HttpClient {
+        val mockEngine = MockEngine { request ->
+            request.assertion()
+            respond(
+                content = responseBody,
+                status = statusCode,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        return AuthenticatedNetworkContainer(
+            engine = mockEngine,
+            sessionCredentials = testCredentials
+        ).authenticatedHttpClient
+    }
 
     /**
-     * creates a mock Ktor Http client
-     * @param responseBody the response body as ByteReadChannel
+     * creates an unauthenticated mock Ktor Http client
+     * @param responseBody the response body as Json string
      * @param statusCode the response http status code
      * @param assertion lambda function to apply assertions to the request
      * @return mock Ktor http client
      */
-    fun mockHttpClient(
+    fun mockUnauthenticatedHttpClient(
+        responseBody: String,
+        statusCode: HttpStatusCode,
+        assertion: (HttpRequestData.() -> Unit) = {}
+    ): HttpClient = mockAuthenticatedHttpClient(ByteReadChannel(responseBody), statusCode, assertion)
+
+    private fun mockUnauthenticatedHttpClient(
         responseBody: ByteReadChannel,
+        statusCode: HttpStatusCode,
+        assertion: (HttpRequestData.() -> Unit) = {}
+    ): HttpClient {
+        val mockEngine = MockEngine { request ->
+            request.assertion()
+            respond(
+                content = responseBody,
+                status = statusCode,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        return LoginNetworkContainer(
+            engine = mockEngine,
+            isRequestLoggingEnabled = true
+        ).anonymousHttpClient
+    }
+
+    /**
+     * Creates a mock Ktor Http client
+     * @param responseBody the response body as a ByteArray
+     * @param statusCode the response http status code
+     * @param assertion lambda function to apply assertions to the request
+     * @return mock Ktor http client
+     */
+    fun mockAuthenticatedHttpClient(
+        responseBody: ByteArray,
         statusCode: HttpStatusCode,
         assertion: (HttpRequestData.() -> Unit) = {}
     ): HttpClient {

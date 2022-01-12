@@ -16,7 +16,7 @@ import io.ktor.utils.io.core.toByteArray
 class AssetApiImp(private val httpClient: HttpClient) : AssetApi {
 
     /**
-     * download an asset
+     * Downloads an asset
      * @param assetKey the asset identifier
      * @param assetToken the asset token, can be null in case of public assets
      */
@@ -26,6 +26,10 @@ class AssetApiImp(private val httpClient: HttpClient) : AssetApi {
         }
     }
 
+    /** Uploads an already encrypted asset
+     * @param metadata the metadata associated to the asset that wants to be uploaded
+     * @param encryptedData the encrypted data on a ByteArray shape
+     */
     override suspend fun uploadAsset(metadata: AssetMetadata, encryptedData: ByteArray): NetworkResponse<Asset> = wrapKaliumResponse {
         httpClient.post(PATH_PUBLIC_ASSETS) {
             contentType(ContentType.MultiPart.Mixed)

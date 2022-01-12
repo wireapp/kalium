@@ -19,7 +19,7 @@ class LoginApiTest : ApiTest {
 
     @Test
     fun givenAValidLoginRequest_whenCallingTheLoginEndpoint_theRequestShouldBeConfiguredCorrectly() = runTest {
-        val httpClient = mockHttpClient(
+        val httpClient = mockUnauthenticatedHttpClient(
             VALID_LOGIN_RESPONSE.rawJson,
             statusCode = HttpStatusCode.OK,
             assertion = {
@@ -38,7 +38,7 @@ class LoginApiTest : ApiTest {
 
     @Test
     fun givenTheServerReturnsAnError_whenCallingTheLoginEndpoint_theCorrectExceptionIsThrown() = runTest {
-        val httpClient = mockHttpClient(
+        val httpClient = mockUnauthenticatedHttpClient(
             ErrorResponseJson.valid.rawJson,
             statusCode = HttpStatusCode.Unauthorized
         )
