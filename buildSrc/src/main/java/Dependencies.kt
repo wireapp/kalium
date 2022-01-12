@@ -1,3 +1,4 @@
+import org.gradle.api.JavaVersion
 import org.gradle.kotlin.dsl.kotlin
 import org.gradle.kotlin.dsl.version
 import org.gradle.plugin.use.PluginDependenciesSpec
@@ -21,6 +22,7 @@ object Versions {
     const val androidxArch = "2.1.0"
     const val mockk = "1.12.0"
     const val dataStore = "1.0.0"
+    const val ktxSerialization = "1.3.2"
 }
 
 object Plugins {
@@ -52,6 +54,10 @@ object Plugins {
 }
 
 object Dependencies {
+
+    object Kotlinx {
+        const val serialization = "org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.ktxSerialization}"
+    }
 
     object Android {
         const val appCompat = "androidx.appcompat:appcompat:${Versions.appCompat}"
