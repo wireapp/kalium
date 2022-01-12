@@ -2,13 +2,13 @@ package com.wire.kalium.logic.data.session
 
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.network.api.SessionCredentials
-import com.wire.kalium.persistence.model.SessionDao
+import com.wire.kalium.persistence.model.PersistenceSession
 
 interface SessionMapper {
     fun toSessionCredentials(authSession: AuthSession): SessionCredentials
 
-    fun fromSessionDao(sessionDao: SessionDao): AuthSession
-    fun toSessionDao(authSession: AuthSession): SessionDao
+    fun fromPersistenceSession(persistenceSession: PersistenceSession): AuthSession
+    fun toPersistenceSession(authSession: AuthSession): PersistenceSession
 }
 
 internal class SessionMapperImpl : SessionMapper {
@@ -19,14 +19,14 @@ internal class SessionMapperImpl : SessionMapper {
         refreshToken = authSession.refreshToken
     )
 
-    override fun fromSessionDao(sessionDao: SessionDao): AuthSession = AuthSession(
-        userId = sessionDao.userId,
-        accessToken = sessionDao.accessToken,
-        refreshToken = sessionDao.refreshToken,
-        tokenType = sessionDao.tokenType
+    override fun fromPersistenceSession(persistenceSession: PersistenceSession): AuthSession = AuthSession(
+        userId = persistenceSession.userId,
+        accessToken = persistenceSession.accessToken,
+        refreshToken = persistenceSession.refreshToken,
+        tokenType = persistenceSession.tokenType
     )
 
-    override fun toSessionDao(authSession: AuthSession): SessionDao = SessionDao(
+    override fun toPersistenceSession(authSession: AuthSession): PersistenceSession = PersistenceSession(
         userId = authSession.userId,
         accessToken = authSession.accessToken,
         refreshToken = authSession.refreshToken,
