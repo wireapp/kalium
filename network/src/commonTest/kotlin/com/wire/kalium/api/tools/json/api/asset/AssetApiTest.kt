@@ -23,6 +23,7 @@ class AssetApiTest : ApiTest {
         // Given
         val assetMetadata = AssetMetadata("image/jpeg", true, AssetRetentionType.ETERNAL, "md5-hash")
         val encryptedData = ByteArray(16)
+        Random.nextBytes(encryptedData)
         val httpClient = mockAuthenticatedHttpClient(
             VALID_ASSET_UPLOAD_RESPONSE.rawJson,
             statusCode = HttpStatusCode.Created,
@@ -49,6 +50,7 @@ class AssetApiTest : ApiTest {
         // Given
         val assetMetadata = AssetMetadata("image/jpeg", true, AssetRetentionType.ETERNAL, "md5-hash")
         val encryptedData = ByteArray(16)
+        Random.nextBytes(encryptedData)
         val httpClient = mockAuthenticatedHttpClient(
             VALID_ASSET_UPLOAD_RESPONSE.rawJson,
             statusCode = HttpStatusCode.Created,
