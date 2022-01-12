@@ -38,6 +38,15 @@ kotlin {
         }
     }
     android()
+    js(IR) {
+        browser {
+            testTask {
+                useMocha {
+                    timeout = "5s"
+                }
+            }
+        }
+    }
 
     sourceSets {
         val commonMain by getting {
@@ -61,6 +70,13 @@ kotlin {
             }
         }
         val jvmTest by getting
+        val jsMain by getting {
+            dependencies {
+                implementation(Dependencies.SqlDelight.jsDriver)
+                implementation(devNpm("copy-webpack-plugin", "9.1.0"))
+            }
+        }
+        val jsTest by getting
         val androidMain by getting {
             dependencies {
                 implementation ("androidx.datastore:datastore-preferences:1.0.0")

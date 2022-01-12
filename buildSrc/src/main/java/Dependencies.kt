@@ -109,6 +109,7 @@ object Dependencies {
         const val androidDriver = "com.squareup.sqldelight:android-driver:${Versions.sqlDelight}"
         const val nativeDriver = "com.squareup.sqldelight:native-driver:${Versions.sqlDelight}"
         const val jvmDriver = "com.squareup.sqldelight:sqlite-driver:${Versions.sqlDelight}"
+        const val jsDriver = "com.squareup.sqldelight:sqljs-driver:${Versions.sqlDelight}"
     }
 
     object mockk {
