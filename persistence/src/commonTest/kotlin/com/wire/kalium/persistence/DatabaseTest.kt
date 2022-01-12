@@ -5,7 +5,6 @@ import com.wire.kalium.persistence.db.User
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class DatabaseTest: BaseDatabaseTest() {
 

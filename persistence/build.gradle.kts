@@ -81,6 +81,8 @@ kotlin {
             dependencies {
                 implementation ("androidx.datastore:datastore-preferences:1.0.0")
                 implementation(Dependencies.SqlDelight.androidDriver)
+                implementation("net.zetetic:android-database-sqlcipher:4.5.0@aar")
+                implementation("androidx.sqlite:sqlite:2.0.1")
             }
         }
         val androidTest by getting {
