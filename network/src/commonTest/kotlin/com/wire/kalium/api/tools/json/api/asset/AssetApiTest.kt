@@ -11,6 +11,7 @@ import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -74,6 +75,7 @@ class AssetApiTest : ApiTest {
         // Given
         val assetMetadata = AssetMetadata("image/jpeg", true, AssetRetentionType.ETERNAL, "md5-hash")
         val encryptedData = ByteArray(16)
+        Random.nextBytes(encryptedData)
         val httpClient = mockAuthenticatedHttpClient(
             INVALID_ASSET_UPLOAD_RESPONSE.rawJson,
             statusCode = HttpStatusCode.BadRequest,
@@ -99,6 +101,7 @@ class AssetApiTest : ApiTest {
     fun givenAValidAssetDownloadApiRequest_whenCallingTheAssetDownloadApiEndpoint_theRequestShouldBeConfiguredCorrectly() = runTest {
         // Given
         val downloadedAsset = ByteArray(16)
+        Random.nextBytes(downloadedAsset)
         val assetKey = "3-1-e7788668-1b22-488a-b63c-acede42f771f"
         val assetToken = "assetToken"
         val apiPath = "$PATH_PUBLIC_ASSETS/$assetKey"
@@ -120,11 +123,7 @@ class AssetApiTest : ApiTest {
 
         // Then
         assertTrue(response.isSuccessful())
-
-        // We can't assert that the response object is exactly the same object as the provided on the Mocked HttpClient because MockEngine
-        // from Ktor seems to copy internally the content of the original ByteArray into a different ByteArray, therefore they are not
-        // technically the same object. That's why we are just doing a simple array size check
-        assertEquals(response.value.size, downloadedAsset.size)
+        assertEquals(response.value.decodeToString(), downloadedAsset.decodeToString())
     }
 
     @Test
