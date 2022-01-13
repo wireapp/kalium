@@ -27,7 +27,7 @@ abstract class AuthenticationScopeCommon(
             sessionMapper = sessionMapper,
             sessionLocalDataSource = sessionLocalDataSource
         )
-    val loginUsingEmail: LoginUsingEmailUseCase get() = LoginUsingEmailUseCase(loginRepository, sessionRepository)
+    val loginUsingEmail: LoginUseCase get() = LoginUseCase(loginRepository, sessionRepository)
     val getSessions: GetSessionsUseCase get() = GetSessionsUseCase(sessionRepository)
     val session: SessionScope get() = SessionScope(sessionRepository)
 }

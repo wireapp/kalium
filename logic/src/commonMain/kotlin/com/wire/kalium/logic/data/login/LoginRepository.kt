@@ -24,7 +24,6 @@ class LoginRepository(
                 email, password, clientLabel
             ), shouldPersistClient
         )
-
         return if (!response.isSuccessful()) {
             handleFailedApiResponse(response)
         } else {
