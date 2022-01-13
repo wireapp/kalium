@@ -10,6 +10,7 @@ class DatabaseTest: BaseDatabaseTest() {
 
     @Test
     fun givenDatabase_ThenUserCanBeStoredAndRetrieved() = runTest {
+        deleteDatabase()
         val factory = createDatabaseDriverFactory()
         val database = AppDatabase(factory.createDriver())
         val user = User(1, "John Doe")

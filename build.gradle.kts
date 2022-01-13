@@ -1,11 +1,11 @@
-
 buildscript {
     val kotlinVersion = "1.6.0"
-    val sqlDelightVersion = "1.5.3"
+    val sqlDelightVersion = "2.0.0-SNAPSHOT"
 
     repositories {
         google()
         mavenCentral()
+        maven(url = "https://oss.sonatype.org/content/repositories/snapshots")
     }
 
     dependencies {
@@ -29,6 +29,7 @@ tasks.withType<Test> {
 
 allprojects {
     repositories {
+        maven(url = "https://oss.sonatype.org/content/repositories/snapshots")
         google()
         mavenCentral()
     }

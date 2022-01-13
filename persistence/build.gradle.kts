@@ -7,6 +7,10 @@ plugins {
 group = "com.wire.kalium"
 version = "0.0.1-SNAPSHOT"
 
+dependencies {
+    implementation("org.jetbrains.kotlin:kotlin-native-utils:1.6.0")
+}
+
 sqldelight {
     database("AppDatabase") {
         packageName = "com.wire.kalium.persistence.db"
@@ -38,6 +42,7 @@ kotlin {
         }
     }
     android()
+    iosX64()
     js(IR) {
         browser {
             testTask {
@@ -98,5 +103,12 @@ kotlin {
                 implementation(Dependencies.AndroidInstruments.androidTestCore)
             }
         }
+
+        val iosX64Main by getting {
+            dependencies {
+                implementation(Dependencies.SqlDelight.nativeDriver)
+            }
+        }
+        val iosX64Test by getting
     }
 }
