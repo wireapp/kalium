@@ -1,14 +1,13 @@
-package com.wire.kalium.logic.feature.auth
+package com.wire.kalium.logic.feature.session
 
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.failure.SessionFailure
-import com.wire.kalium.logic.feature.session.GetAllSessionsResult
 import com.wire.kalium.logic.functional.Either
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 
-class GetSessionsUseCase(
+class GetAllSessionsUseCase(
     private val sessionRepository: SessionRepository
 ) {
     suspend operator fun invoke(): Flow<GetAllSessionsResult> = flow {

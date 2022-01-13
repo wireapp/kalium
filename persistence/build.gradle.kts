@@ -1,7 +1,6 @@
 plugins {
     Plugins.androidLibrary(this)
     Plugins.multiplatform(this)
-    Plugins.serialization(this)
 }
 
 group = "com.wire.kalium"
@@ -24,6 +23,7 @@ kotlin {
     jvm {
         compilations.all {
             kotlinOptions.jvmTarget = "1.8"
+            kotlinOptions.freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
         }
         testRuns["test"].executionTask.configure {
             useJUnit()
@@ -34,12 +34,9 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(project(":network"))
-                implementation(project(":cryptography"))
-                implementation(project(":persistence"))
-
                 // coroutines
                 implementation(Dependencies.Coroutines.core)
+                implementation(Dependencies.Kotlinx.serialization)
             }
         }
         val commonTest by getting {
@@ -49,15 +46,17 @@ kotlin {
                 implementation(Dependencies.Coroutines.test)
             }
         }
-        val jvmMain by getting {
-            dependencies { }
-        }
+        val jvmMain by getting
         val jvmTest by getting
         val androidMain by getting {
             dependencies {
-                implementation(Dependencies.Android.dataStorePreferences)
+                implementation (Dependencies.Android.dataStorePreferences)
             }
         }
-        val androidTest by getting
+        val androidTest by getting {
+            dependencies {
+                implementation(Dependencies.AndroidInstruments.androidxArchTesting)
+            }
+        }
     }
 }
