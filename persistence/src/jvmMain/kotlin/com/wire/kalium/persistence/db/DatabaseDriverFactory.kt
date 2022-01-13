@@ -1,7 +1,7 @@
 package com.wire.kalium.persistence.db
 
-import com.squareup.sqldelight.db.SqlDriver
-import com.squareup.sqldelight.sqlite.driver.JdbcSqliteDriver
+import app.cash.sqldelight.db.SqlDriver
+import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 
 actual class DatabaseDriverFactory {
 

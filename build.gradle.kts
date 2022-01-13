@@ -12,7 +12,7 @@ buildscript {
         // keeping this here to allow AS to automatically update
         classpath("com.android.tools.build:gradle:7.0.3")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}")
-        classpath("com.squareup.sqldelight:gradle-plugin:$sqlDelightVersion")
+        classpath("app.cash.sqldelight:gradle-plugin:$sqlDelightVersion")
     }
 }
 

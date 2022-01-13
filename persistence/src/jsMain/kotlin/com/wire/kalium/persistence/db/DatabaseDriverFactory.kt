@@ -1,7 +1,7 @@
 package com.wire.kalium.persistence.db
 
-import com.squareup.sqldelight.db.SqlDriver
-import com.squareup.sqldelight.drivers.sqljs.initSqlDriver
+import app.cash.sqldelight.db.SqlDriver
+import app.cash.sqldelight.driver.sqljs.initSqlDriver
 import kotlinx.coroutines.await
 
 actual class DatabaseDriverFactory {

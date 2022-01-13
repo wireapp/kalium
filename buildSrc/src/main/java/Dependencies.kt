@@ -21,7 +21,7 @@ object Versions {
     const val androidTestCore = "1.4.0"
     const val androidxArch = "2.1.0"
     const val mockk = "1.12.0"
-    const val sqlDelight = "1.5.3"
+    const val sqlDelight = "2.0.0-SNAPSHOT"
 }
 
 object Plugins {
@@ -52,7 +52,7 @@ object Plugins {
         scope.kotlin("plugin.serialization") version Versions.kotlin
 
     fun sqlDelight(scope: PluginDependenciesSpec) =
-        scope.id("com.squareup.sqldelight")
+        scope.id("app.cash.sqldelight")
 }
 
 object Dependencies {
@@ -105,11 +105,11 @@ object Dependencies {
     }
 
     object SqlDelight {
-        const val runtime = "com.squareup.sqldelight:runtime:${Versions.sqlDelight}"
-        const val androidDriver = "com.squareup.sqldelight:android-driver:${Versions.sqlDelight}"
-        const val nativeDriver = "com.squareup.sqldelight:native-driver:${Versions.sqlDelight}"
-        const val jvmDriver = "com.squareup.sqldelight:sqlite-driver:${Versions.sqlDelight}"
-        const val jsDriver = "com.squareup.sqldelight:sqljs-driver:${Versions.sqlDelight}"
+        const val runtime = "app.cash.sqldelight:runtime:${Versions.sqlDelight}"
+        const val androidDriver = "app.cash.sqldelight:android-driver:${Versions.sqlDelight}"
+        const val nativeDriver = "app.cash.sqldelight:native-driver:${Versions.sqlDelight}"
+        const val jvmDriver = "app.cash.sqldelight:sqlite-driver:${Versions.sqlDelight}"
+        const val jsDriver = "app.cash.sqldelight:sqljs-driver:${Versions.sqlDelight}"
     }
 
     object mockk {

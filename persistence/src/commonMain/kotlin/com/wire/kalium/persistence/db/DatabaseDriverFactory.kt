@@ -1,6 +1,6 @@
 package com.wire.kalium.persistence.db
 
-import com.squareup.sqldelight.db.SqlDriver
+import app.cash.sqldelight.db.SqlDriver
 
 expect class DatabaseDriverFactory {
     suspend fun createDriver(): SqlDriver
