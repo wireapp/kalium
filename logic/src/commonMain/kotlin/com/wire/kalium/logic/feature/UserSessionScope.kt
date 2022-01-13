@@ -15,11 +15,12 @@ import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.message.MessageScope
+import io.ktor.client.HttpClient
 
 expect class UserSessionScope: UserSessionScopeCommon
 
 abstract class UserSessionScopeCommon(
-    private val authenticatedDataSourceSet: AuthenticatedDataSourceSet,
+    private val authenticatedDataSourceSet: AuthenticatedDataSourceSet
 ) {
     private val conversationMapper: ConversationMapper get() = ConversationMapper()
 

@@ -13,5 +13,5 @@ actual class UserSessionScope(
     authenticatedDataSourceSet: AuthenticatedDataSourceSet
 ) : UserSessionScopeCommon(authenticatedDataSourceSet) {
 
-    override val clientConfig: ClientConfig get()= ClientConfig(applicationContext)
+    override val clientConfig: ClientConfig get() = ClientConfig(applicationContext)
 }

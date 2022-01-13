@@ -22,6 +22,6 @@ actual class AuthenticationScope(
     private val dataStore: DataStore<Preferences> =
         preferencesDataStore(name = "data-store").getValue(applicationContext, String::javaClass)
     private val securityUtil: SecurityUtil get() = SecurityUtil()
-    private val dataStoreStorage: DataStoreStorage = DataStoreStorage(dataStore, securityUtil)
+    private val dataStoreStorage: DataStoreStorage get() = DataStoreStorage(dataStore, securityUtil)
     override val sessionLocalDataSource: SessionLocalDataSource get() = SessionLocalDataSource(dataStoreStorage)
 }
