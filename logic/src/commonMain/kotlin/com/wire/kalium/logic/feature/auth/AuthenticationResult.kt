@@ -7,6 +7,7 @@ sealed class AuthenticationResult {
 
     sealed class Failure : AuthenticationResult() {
         object InvalidCredentials : Failure()
+        object InvalidUserIdentifier : Failure()
         class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }

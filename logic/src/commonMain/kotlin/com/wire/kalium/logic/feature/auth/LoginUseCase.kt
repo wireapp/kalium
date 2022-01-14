@@ -7,10 +7,23 @@ import com.wire.kalium.logic.functional.Either
 
 class LoginUseCase(
     private val loginRepository: LoginRepository,
-    private val sessionRepository: SessionRepository
+    private val sessionRepository: SessionRepository,
+    private val validateEmailUseCase: ValidateEmailUseCase,
+    private val validateUserHandleUseCase: ValidateUserHandleUseCase
 ) {
-    suspend operator fun invoke(email: String, password: String, shouldPersistClient: Boolean): AuthenticationResult {
-        return when (val result = loginRepository.loginWithEmail(email, password, shouldPersistClient)) {
+    suspend operator fun invoke(userIdentifier: String, password: String, shouldPersistClient: Boolean): AuthenticationResult {
+        val result = when (validateEmailUseCase(userIdentifier)) {
+            true -> loginRepository.loginWithEmail(userIdentifier, password, shouldPersistClient)
+            false -> {
+                when (validateUserHandleUseCase(userIdentifier)) {
+                    true -> loginRepository.loginWithHandle(userIdentifier, password, shouldPersistClient)
+                    // userIdentifier is neither email nor user handle
+                    false -> return AuthenticationResult.Failure.InvalidUserIdentifier
+                }
+            }
+        }
+
+        return when (result) {
             is Either.Right -> {
                 sessionRepository.storeSession(result.value)
                 AuthenticationResult.Success(result.value)
