@@ -1,7 +1,10 @@
+import Plugins.ksp
+
 plugins {
     Plugins.androidLibrary(this)
     Plugins.multiplatform(this)
     Plugins.serialization(this)
+    Plugins.ksp(this)
 }
 
 group = "com.wire.kalium"
@@ -47,6 +50,9 @@ kotlin {
                 implementation(kotlin("test"))
                 // coroutines
                 implementation(Dependencies.Coroutines.test)
+
+                // mocking
+                implementation(Dependencies.Test.mockative)
             }
         }
         val jvmMain by getting {
@@ -60,4 +66,8 @@ kotlin {
         }
         val androidTest by getting
     }
+}
+
+dependencies {
+    ksp(Dependencies.Test.mockativeProcessor)
 }

@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.data.login
+package com.wire.kalium.logic.data.auth.login
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.failure.InvalidCredentials

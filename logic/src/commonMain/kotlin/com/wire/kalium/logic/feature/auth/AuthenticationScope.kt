@@ -1,7 +1,7 @@
 package com.wire.kalium.logic.feature.auth
 
-import com.wire.kalium.logic.data.login.LoginRepository
-import com.wire.kalium.logic.data.login.LoginRepositoryImpl
+import com.wire.kalium.logic.data.auth.login.LoginRepository
+import com.wire.kalium.logic.data.auth.login.LoginRepositoryImpl
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.session.SessionMapperImpl
 import com.wire.kalium.logic.data.session.SessionRepository

@@ -1,6 +1,6 @@
 package com.wire.kalium.logic.feature.auth
 
-import com.wire.kalium.logic.data.login.LoginRepository
+import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.failure.AuthenticationFailure
 import com.wire.kalium.logic.functional.Either
