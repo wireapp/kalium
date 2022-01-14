@@ -17,6 +17,8 @@ import com.wire.kalium.network.api.teams.TeamsApi
 import com.wire.kalium.network.api.teams.TeamsApiImp
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.network.api.user.client.ClientApiImp
+import com.wire.kalium.network.api.user.details.UserDetailsApi
+import com.wire.kalium.network.api.user.details.UserDetailsApiImp
 import com.wire.kalium.network.api.user.logout.LogoutApi
 import com.wire.kalium.network.api.user.logout.LogoutImp
 import com.wire.kalium.network.tools.HostProvider
@@ -45,6 +47,8 @@ class AuthenticatedNetworkContainer(
     val logoutApi: LogoutApi get() = LogoutImp(authenticatedHttpClient)
 
     val clientApi: ClientApi get() = ClientApiImp(authenticatedHttpClient)
+
+    val users: UserDetailsApi get() = UserDetailsApiImp(authenticatedHttpClient)
 
     val messageApi: MessageApi get() = MessageApiImp(authenticatedHttpClient)
 
