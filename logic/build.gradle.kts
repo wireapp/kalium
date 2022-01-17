@@ -1,3 +1,5 @@
+import Plugins.ksp
+
 plugins {
     Plugins.androidLibrary(this)
     Plugins.multiplatform(this)
@@ -49,6 +51,9 @@ kotlin {
                 implementation(Dependencies.Test.mockative)
                 // coroutines
                 implementation(Dependencies.Coroutines.test)
+
+                // mocking
+                implementation(Dependencies.Test.mockative)
             }
         }
         val jvmMain by getting {

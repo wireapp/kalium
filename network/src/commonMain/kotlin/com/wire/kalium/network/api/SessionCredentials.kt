@@ -1,6 +1,6 @@
 package com.wire.kalium.network.api
 
-import com.wire.kalium.network.api.user.login.LoginWithEmailResponse
+import com.wire.kalium.network.api.user.login.LoginResponse
 
 data class SessionCredentials(
     val tokenType: String,
@@ -8,7 +8,7 @@ data class SessionCredentials(
     val refreshToken: String
 )
 
-fun LoginWithEmailResponse.toSessionCredentials(refreshToken: String): SessionCredentials = SessionCredentials(
+fun LoginResponse.toSessionCredentials(refreshToken: String): SessionCredentials = SessionCredentials(
     tokenType = tokenType,
     accessToken = accessToken,
     refreshToken = refreshToken

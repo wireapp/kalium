@@ -2,28 +2,38 @@ package com.wire.kalium.api.tools.json.api.user.login
 
 import com.wire.kalium.api.tools.json.FaultyJsonProvider
 import com.wire.kalium.api.tools.json.ValidJsonProvider
-import com.wire.kalium.network.api.user.login.LoginWithEmailRequest
+import com.wire.kalium.network.api.user.login.LoginApi
+import kotlinx.serialization.json.buildJsonObject
 
 object LoginWithEmailRequestJson {
-    private val jsonProvider = { serializable: LoginWithEmailRequest ->
-        """
-        |{
-        |  "email": ${serializable.email},
-        |  "label": "${serializable.label}",
-        |  "password": "${serializable.password}",
-        |}
-        """.trimMargin()
+    private val jsonProvider = { serializable: LoginApi.LoginParam ->
+        buildJsonObject {
+            "password" to serializable.password
+            "label" to serializable.label
+            when(serializable) {
+                is LoginApi.LoginParam.LoginWithEmail -> "email" to serializable.email
+                is LoginApi.LoginParam.LoginWithHandel -> "handle" to serializable.handle
+            }
+        }.toString()
     }
 
-    val valid = ValidJsonProvider(
-        LoginWithEmailRequest(
+    val validLoginWithEmail = ValidJsonProvider(
+        LoginApi.LoginParam.LoginWithEmail(
             email = "user@email.de",
             label = "label",
             password = "password",
         ), jsonProvider
     )
 
-    val missingEmail = FaultyJsonProvider(
+    val validLoginWithHandel = ValidJsonProvider(
+        LoginApi.LoginParam.LoginWithHandel(
+            handle = "cool_user_name",
+            label = "label",
+            password = "password",
+        ), jsonProvider
+    )
+
+    val missingEmailAndHandel = FaultyJsonProvider(
         """
         |{
         |  "label": "label",
@@ -31,6 +41,7 @@ object LoginWithEmailRequestJson {
         |}
         """.trimMargin()
     )
+
 
     val missingLabel = FaultyJsonProvider(
         """

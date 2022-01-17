@@ -1,4 +1,3 @@
-import org.gradle.api.JavaVersion
 import org.gradle.kotlin.dsl.kotlin
 import org.gradle.kotlin.dsl.version
 import org.gradle.plugin.use.PluginDependenciesSpec
@@ -21,9 +20,9 @@ object Versions {
     const val androidTestRunner = "1.4.0"
     const val androidTestRules = "1.4.0"
     const val androidxArch = "2.1.0"
-    const val mockk = "1.12.0"
     const val dataStore = "1.0.0"
     const val ktxSerialization = "1.3.2"
+    const val mockative = "1.1.4"
 }
 
 object Plugins {
@@ -55,6 +54,9 @@ object Plugins {
 
     fun serialization(scope: PluginDependenciesSpec) =
         scope.kotlin("plugin.serialization") version Versions.kotlin
+
+    fun ksp(scope: PluginDependenciesSpec) =
+        scope.id("com.google.devtools.ksp").version("1.6.10-1.0.2")
 }
 
 object Dependencies {
@@ -108,11 +110,6 @@ object Dependencies {
         const val utils = "io.ktor:ktor-utils:${Versions.ktor2}"
         const val mock = "io.ktor:ktor-client-mock:${Versions.ktor2}"
         const val okHttp = "io.ktor:ktor-client-okhttp:${Versions.ktor2}"
-    }
-
-    object mockk {
-        const val mockk          = "io.mockk:mockk:${Versions.mockk}"
-        const val mockkAndroid   = "io.mockk:mockk-android:${Versions.mockk}"
     }
 
     object Kotest {
