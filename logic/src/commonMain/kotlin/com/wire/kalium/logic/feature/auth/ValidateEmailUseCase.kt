@@ -19,6 +19,6 @@ class ValidateEmailUseCaseImpl : ValidateEmailUseCase {
 
     private companion object {
         private const val EMAIL_MIN_LENGTH = 5
-        private val EMAIL_REGEX = "^[A-Za-z](.*)([@]{1})(.{1,})(\\.)(.{1,})".toRegex()
+        private val EMAIL_REGEX = """^[A-Za-z](.*)([@]{1})(.{1,})\.)(.{1,})""".toRegex()
     }
 }
