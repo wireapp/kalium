@@ -23,15 +23,14 @@ class LoginUseCase(
     private val validateUserHandleUseCase: ValidateUserHandleUseCase
 ) {
     suspend operator fun invoke(userIdentifier: String, password: String, shouldPersistClient: Boolean): AuthenticationResult {
-        val result = when (validateEmailUseCase(userIdentifier)) {
-            true -> loginRepository.loginWithEmail(userIdentifier, password, shouldPersistClient)
-            false -> {
-                when (validateUserHandleUseCase(userIdentifier)) {
-                    true -> loginRepository.loginWithHandle(userIdentifier, password, shouldPersistClient)
-                    // userIdentifier is neither email nor user handle
-                    false -> return AuthenticationResult.Failure.InvalidUserIdentifier
-                }
+        val result = when {
+            validateEmailUseCase(userIdentifier) -> {
+                loginRepository.loginWithEmail(userIdentifier, password, shouldPersistClient)
             }
+            validateUserHandleUseCase(userIdentifier) -> {
+                loginRepository.loginWithHandle(userIdentifier, password, shouldPersistClient)
+            }
+            else -> return AuthenticationResult.Failure.InvalidUserIdentifier
         }
 
         return when (result) {
