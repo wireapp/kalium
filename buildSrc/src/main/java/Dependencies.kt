@@ -22,7 +22,6 @@ object Versions {
     const val androidxArch = "2.1.0"
     const val dataStore = "1.0.0"
     const val ktxSerialization = "1.3.2"
-    const val mockative = "1.1.4"
 }
 
 object Plugins {
@@ -55,8 +54,6 @@ object Plugins {
     fun serialization(scope: PluginDependenciesSpec) =
         scope.kotlin("plugin.serialization") version Versions.kotlin
 
-    fun ksp(scope: PluginDependenciesSpec) =
-        scope.id("com.google.devtools.ksp").version("1.6.10-1.0.2")
 }
 
 object Dependencies {
