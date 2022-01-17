@@ -4,8 +4,10 @@ import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.failure.InvalidCredentials
 import com.wire.kalium.logic.functional.Either
+import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.classOf
+import io.mockative.configure
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
@@ -21,8 +23,9 @@ class LoginUseCaseTest {
     @Mock
     val loginRepository = mock(classOf<LoginRepository>())
 
+    @OptIn(ConfigurationApi::class)
     @Mock
-    val sessionRepository = mock(classOf<SessionRepository>())
+    val sessionRepository = configure(mock(classOf<SessionRepository>())) { stubsUnitByDefault = true }
 
     @Mock
     val validateEmailUseCase = mock(classOf<ValidateEmailUseCase>())
@@ -47,7 +50,7 @@ class LoginUseCaseTest {
             given(loginRepository).coroutine { loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT) }.then {
                 Either.Right(TEST_AUTH_SESSION)
             }
-            given(sessionRepository).coroutine { storeSession(TEST_AUTH_SESSION) }.then { Unit }
+            given(sessionRepository).coroutine { storeSession(TEST_AUTH_SESSION) }
 
             val loginUserCaseResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT)
 
