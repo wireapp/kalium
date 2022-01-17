@@ -37,6 +37,7 @@ kotlin {
             dependencies {
                 implementation(project(":network"))
                 implementation(project(":cryptography"))
+                implementation(project(":persistence"))
 
                 // coroutines
                 implementation(Dependencies.Coroutines.core)
@@ -55,7 +56,9 @@ kotlin {
         }
         val jvmTest by getting
         val androidMain by getting {
-            dependencies { }
+            dependencies {
+                implementation(Dependencies.Android.dataStorePreferences)
+            }
         }
         val androidTest by getting
     }

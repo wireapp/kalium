@@ -1,3 +1,4 @@
+import org.gradle.api.JavaVersion
 import org.gradle.kotlin.dsl.kotlin
 import org.gradle.kotlin.dsl.version
 import org.gradle.plugin.use.PluginDependenciesSpec
@@ -19,6 +20,10 @@ object Versions {
     const val mockative = "1.1.4"
     const val androidTestRunner = "1.4.0"
     const val androidTestRules = "1.4.0"
+    const val androidxArch = "2.1.0"
+    const val mockk = "1.12.0"
+    const val dataStore = "1.0.0"
+    const val ktxSerialization = "1.3.2"
 }
 
 object Plugins {
@@ -54,6 +59,10 @@ object Plugins {
 
 object Dependencies {
 
+    object Kotlinx {
+        const val serialization = "org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.ktxSerialization}"
+    }
+
     object Android {
         const val appCompat = "androidx.appcompat:appcompat:${Versions.appCompat}"
         const val activityCompose = "androidx.activity:activity-compose:${Versions.activityCompose}"
@@ -61,11 +70,13 @@ object Dependencies {
         const val composeTooling = "androidx.compose.ui:ui-tooling:${Versions.compose}"
         const val coroutines = "org.jetbrains.kotlinx:kotlinx-coroutines-android:${Versions.coroutines}"
         const val ktor = "io.ktor:ktor-client-android:${Versions.ktor}"
+        const val dataStorePreferences = "androidx.datastore:datastore-preferences:${Versions.dataStore}"
     }
 
     object AndroidInstruments {
         const val androidTestRunner = "androidx.test:runner:${Versions.androidTestRunner}"
         const val androidTestRules = "androidx.test:rules:${Versions.androidTestRules}"
+        const val androidxArchTesting = "androidx.arch.core:core-testing:${Versions.androidxArch}"
     }
 
     object Coroutines {
@@ -97,6 +108,11 @@ object Dependencies {
         const val utils = "io.ktor:ktor-utils:${Versions.ktor2}"
         const val mock = "io.ktor:ktor-client-mock:${Versions.ktor2}"
         const val okHttp = "io.ktor:ktor-client-okhttp:${Versions.ktor2}"
+    }
+
+    object mockk {
+        const val mockk          = "io.mockk:mockk:${Versions.mockk}"
+        const val mockkAndroid   = "io.mockk:mockk-android:${Versions.mockk}"
     }
 
     object Kotest {

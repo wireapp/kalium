@@ -19,7 +19,7 @@ class ClientApiTest : ApiTest {
     @Test
     fun givenAValidRegisterClientRequest_whenCallingTheRegisterClientEndpoint_theRequestShouldBeConfiguredCorrectly() =
         runTest {
-            val httpClient = mockHttpClient(
+            val httpClient = mockAuthenticatedHttpClient(
                 VALID_REGISTER_CLIENT_RESPONSE.rawJson,
                 statusCode = HttpStatusCode.Created,
                 assertion = {
@@ -37,7 +37,7 @@ class ClientApiTest : ApiTest {
 
     @Test
     fun givenTheServerReturnsAnError_whenCallingTheRegisterClientEndpoint_theCorrectExceptionIsThrown() = runTest {
-        val httpClient = mockHttpClient(
+        val httpClient = mockAuthenticatedHttpClient(
             ErrorResponseJson.valid.rawJson,
             statusCode = HttpStatusCode.Unauthorized
         )
