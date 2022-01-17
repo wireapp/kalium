@@ -11,7 +11,7 @@ class ValidateUserHandleUseCaseTest {
     fun `given a validUserHandleUseCase is invoked, when valid handel, then return true`() {
         VALID_HANDLES.forEach { validEmail ->
             val result = validateUserHandleUseCase(validEmail)
-            assertEquals(true, result)
+            assertTrue(result)
         }
     }
 
