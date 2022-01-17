@@ -1,7 +1,8 @@
 package com.wire.kalium.logic.feature.auth
 
 import kotlin.test.Test
-import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class ValidateUserHandleUseCaseTest {
 
@@ -10,23 +11,20 @@ class ValidateUserHandleUseCaseTest {
     @Test
     fun `given a validUserHandleUseCase is invoked, when valid handel, then return true`() {
         VALID_HANDLES.forEach { validEmail ->
-            val result = validateUserHandleUseCase(validEmail)
-            assertTrue(result)
+            assertTrue { validateUserHandleUseCase(validEmail) }
         }
     }
 
     @Test
     fun `given a validUserHandleUseCase is invoked, when valid handel, then return false`() {
         INVALID_HANDLES.forEach { validEmail ->
-            val result = validateUserHandleUseCase(validEmail)
-            assertFalse(result)
+            assertFalse { validateUserHandleUseCase(validEmail) }
         }
     }
 
     @Test
     fun `given a validUserHandleUseCase is invoked, when handel is short, then return false`() {
-            val result = validateUserHandleUseCase("a")
-            assertFalse(result)
+        assertFalse { validateUserHandleUseCase("a") }
     }
 
     private companion object {
