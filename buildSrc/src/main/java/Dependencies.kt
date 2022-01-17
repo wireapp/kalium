@@ -8,7 +8,7 @@ object Versions {
     const val appCompat = "1.1.0"
     const val cliKt = "3.3.0"
     const val coroutines = "1.6.0-RC"
-    const val compose = "1.1.0-beta04"
+    const val compose = "1.1.0-rc02"
     const val cryptobox4j = "1.0.0"
     const val cryptoboxAndroid = "1.1.3"
     const val kover = "0.4.2"
