@@ -9,16 +9,16 @@ class ValidateUserHandleUseCaseTest {
     private val validateUserHandleUseCase: ValidateUserHandleUseCase = ValidateUserHandleUseCaseImpl()
 
     @Test
-    fun `given a validUserHandleUseCase is invoked, when valid handel, then return true`() {
-        VALID_HANDLES.forEach { validEmail ->
-            assertTrue { validateUserHandleUseCase(validEmail) }
+    fun `given a validUserHandleUseCase is invoked, when handel is valid , then return true`() {
+        VALID_HANDLES.forEach { validUserHandle ->
+            assertTrue { validateUserHandleUseCase(validUserHandle) }
         }
     }
 
     @Test
-    fun `given a validUserHandleUseCase is invoked, when valid handel, then return false`() {
-        INVALID_HANDLES.forEach { validEmail ->
-            assertFalse { validateUserHandleUseCase(validEmail) }
+    fun `given a validUserHandleUseCase is invoked, when handel is invalid, then return false`() {
+        INVALID_HANDLES.forEach { inValidUserHandle ->
+            assertFalse { validateUserHandleUseCase(inValidUserHandle) }
         }
     }
 

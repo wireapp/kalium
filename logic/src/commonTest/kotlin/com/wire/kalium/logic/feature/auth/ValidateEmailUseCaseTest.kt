@@ -16,9 +16,9 @@ class ValidateEmailUseCaseTest {
     }
 
     @Test
-    fun `given a validateEmailUseCase is invoked, when inValid email, then return false`() {
-        INVALID_EMAILS.forEach { validEmail ->
-            assertFalse{ validateEmailUseCase(validEmail) }
+    fun `given a validateEmailUseCase is invoked, when email is inValid, then return false`() {
+        INVALID_EMAILS.forEach { inValidEmail ->
+            assertFalse{ validateEmailUseCase(inValidEmail) }
         }
     }
 
@@ -36,7 +36,7 @@ class ValidateEmailUseCaseTest {
                 "id-with-dash@domain.com",
                 "a@domain.com",
                 "example-abc@abc-domain.com",
-                "example@s.solutions",
+                "example@s.solutions"
             )
 
         val INVALID_EMAILS = listOf(
