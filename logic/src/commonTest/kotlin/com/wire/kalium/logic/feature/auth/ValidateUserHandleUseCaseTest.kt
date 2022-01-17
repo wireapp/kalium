@@ -11,7 +11,7 @@ class ValidateUserHandleUseCaseTest {
     fun `given a validUserHandleUseCase is invoked, when valid handel, then return true`() {
         VALID_HANDLES.forEach { validEmail ->
             val result = validateUserHandleUseCase(validEmail)
-            assertEquals(true, result)
+            assertTrue(result)
         }
     }
 
@@ -19,14 +19,14 @@ class ValidateUserHandleUseCaseTest {
     fun `given a validUserHandleUseCase is invoked, when valid handel, then return false`() {
         INVALID_HANDLES.forEach { validEmail ->
             val result = validateUserHandleUseCase(validEmail)
-            assertEquals(false, result)
+            assertFalse(result)
         }
     }
 
     @Test
     fun `given a validUserHandleUseCase is invoked, when handel is short, then return false`() {
             val result = validateUserHandleUseCase("a")
-            assertEquals(false, result)
+            assertFalse(result)
     }
 
     private companion object {

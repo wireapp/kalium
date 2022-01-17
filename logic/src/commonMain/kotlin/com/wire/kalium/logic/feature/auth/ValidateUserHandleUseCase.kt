@@ -19,6 +19,6 @@ class ValidateUserHandleUseCaseImpl: ValidateUserHandleUseCase  {
 
     private companion object {
         private const val HANDEL_MIN_LENGTH = 2
-        private val HANDLE_REGEX = "^[a-z0-9_]*\$".toRegex()
+        private val HANDLE_REGEX = """^[a-z0-9_]*$""".toRegex()
     }
 }

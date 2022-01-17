@@ -73,7 +73,7 @@ class LoginUseCaseTest {
             given(loginRepository).coroutine { loginWithHandle(TEST_HANDEL, TEST_PASSWORD, TEST_PERSIST_CLIENT) }.then {
                 Either.Right(TEST_AUTH_SESSION)
             }
-            given(sessionRepository).coroutine { storeSession(TEST_AUTH_SESSION) }.then { Unit }
+            given(sessionRepository).coroutine { storeSession(TEST_AUTH_SESSION) }
 
             // when
             val loginUserCaseResult = loginUseCase(TEST_HANDEL, TEST_PASSWORD, TEST_PERSIST_CLIENT)
