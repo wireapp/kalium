@@ -9,22 +9,22 @@ class ValidateEmailUseCaseTest {
     private val validateEmailUseCase: ValidateEmailUseCase = ValidateEmailUseCaseImpl()
 
     @Test
-    fun `given a validateEmailUseCase is invoked, when valid email, then return true`() {
+    fun `given a validateEmailUseCase is invoked, when email is valid, then return true`() {
         VALID_EMAILS.forEach { validEmail ->
-            assertTrue { validateEmailUseCase(validEmail) }
+            assertTrue(message = "$validEmail is invalid ") { validateEmailUseCase(validEmail) }
         }
     }
 
     @Test
     fun `given a validateEmailUseCase is invoked, when email is inValid, then return false`() {
         INVALID_EMAILS.forEach { inValidEmail ->
-            assertFalse{ validateEmailUseCase(inValidEmail) }
+            assertFalse { validateEmailUseCase(inValidEmail) }
         }
     }
 
     @Test
     fun `given a validateEmailUseCase is invoked, when email is short, then return false`() {
-            assertFalse{ validateEmailUseCase("1@3.") }
+        assertFalse { validateEmailUseCase("1@3.") }
     }
 
     private companion object {

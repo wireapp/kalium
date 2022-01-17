@@ -108,11 +108,13 @@ class LoginUseCaseTest {
         runTest {
             given(validateEmailUseCase).invocation { invoke(TEST_EMAIL) }.then { true }
             given(validateUserHandleUseCase).invocation { invoke(TEST_EMAIL) }.then { false }
-            given(loginRepository).coroutine { loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT) }.then { Either.Left(InvalidCredentials) }
+            given(loginRepository).coroutine { loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT) }
+                .then { Either.Left(InvalidCredentials) }
 
             given(validateEmailUseCase).invocation { invoke(TEST_HANDEL) }.then { false }
             given(validateUserHandleUseCase).invocation { invoke(TEST_HANDEL) }.then { true }
-            given(loginRepository).coroutine { loginWithHandle(TEST_HANDEL, TEST_PASSWORD, TEST_PERSIST_CLIENT) }.then { Either.Left(InvalidCredentials) }
+            given(loginRepository).coroutine { loginWithHandle(TEST_HANDEL, TEST_PASSWORD, TEST_PERSIST_CLIENT) }
+                .then { Either.Left(InvalidCredentials) }
 
             // email
             val loginEmailResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT)
