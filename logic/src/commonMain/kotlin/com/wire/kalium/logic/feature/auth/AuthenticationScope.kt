@@ -29,8 +29,8 @@ abstract class AuthenticationScopeCommon(
             sessionLocalDataSource = sessionLocalDataSource
         )
 
-    private val validateEmailUseCase: ValidateEmailUseCase get() = ValidateEmailUseCase()
-    private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCase()
+    private val validateEmailUseCase: ValidateEmailUseCase get() = ValidateEmailUseCaseImpl()
+    private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
 
     val loginUsingEmail: LoginUseCase
         get() = LoginUseCase(

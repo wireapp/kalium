@@ -1,7 +1,10 @@
 package com.wire.kalium.logic.feature.auth
 
-class ValidateUserHandleUseCase  {
-    operator fun invoke(handle: String): Boolean {
+interface ValidateUserHandleUseCase {
+    operator fun invoke(handle: String): Boolean
+}
+class ValidateUserHandleUseCaseImpl: ValidateUserHandleUseCase  {
+    override operator fun invoke(handle: String): Boolean {
         return when {
             isHandleTooShort(handle) -> false
             !validateHandle(handle) -> false

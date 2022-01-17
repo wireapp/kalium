@@ -1,9 +1,20 @@
 package com.wire.kalium.logic.feature.auth
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.failure.AuthenticationFailure
 import com.wire.kalium.logic.functional.Either
+
+sealed class AuthenticationResult {
+    data class Success(val userSession: AuthSession) : AuthenticationResult()
+
+    sealed class Failure : AuthenticationResult() {
+        object InvalidCredentials : Failure()
+        object InvalidUserIdentifier : Failure()
+        class Generic(val genericFailure: CoreFailure) : Failure()
+    }
+}
 
 class LoginUseCase(
     private val loginRepository: LoginRepository,

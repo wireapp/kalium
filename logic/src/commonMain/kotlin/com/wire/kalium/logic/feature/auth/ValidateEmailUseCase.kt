@@ -1,7 +1,12 @@
 package com.wire.kalium.logic.feature.auth
 
-class ValidateEmailUseCase {
-    operator fun invoke(email: String): Boolean = when {
+interface ValidateEmailUseCase {
+    operator fun invoke(email: String): Boolean
+}
+
+
+class ValidateEmailUseCaseImpl : ValidateEmailUseCase {
+    override operator fun invoke(email: String): Boolean = when {
         isEmailTooShort(email) -> false
         !emailCharactersValid(email) -> false
         else -> true

@@ -7,6 +7,7 @@ import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.statement.DefaultHttpResponse
 import io.ktor.client.statement.HttpResponse
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
@@ -32,7 +33,7 @@ class LoginRepositoryTest {
 
     @Test
     fun givenALoginRepository_WhenCallingLoginWithEmail_ThenTheLoginApiMustBeCalledWithCorrectParam() = runTest {
-        // TODO: finde a way to mock any api class response
+        // TODO: find a way to mock any api class response
         /*
         given(loginApi).coroutine {
             login(
@@ -42,14 +43,13 @@ class LoginRepositoryTest {
                     label = CLIENT_LABEL
                 ), TEST_PERSIST_CLIENT
             )
-        }.then { NetworkResponse.Success(value = LoginResponse("", 123, "", "")) }
-
+        }.then { NetworkResponse.Success(value = LoginResponse("", 123, "", ""), response = Any() ) }
 
         loginRepository.loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT)
         verify(loginApi).coroutine {
             login(LoginApi.LoginParam.LoginWithEmail(TEST_EMAIL, TEST_PASSWORD, CLIENT_LABEL), TEST_PERSIST_CLIENT)
         }.wasInvoked(exactly = once)
-         */
+        */
     }
 
     private companion object {
