@@ -29,15 +29,46 @@ class ConversationMapperTest {
     }
 
     @Test
-    fun givenAConversationResponse_whenMappingFromConversationResponse_thenShouldCallIdMapperToMapConversationId() {
+    fun givenAConversationResponse_whenMappingFromConversationResponse_thenTheNameShouldBeCorrect() {
         val response = CONVERSATION_RESPONSE
-        val originalConversationId = ORIGINAL_CONVERSATION_ID
+        val self = Member(QualifiedID("whatever", "domain"))
+        val otherMembers = listOf(Member(QualifiedID("v1", "d1")), Member(QualifiedID("v2", "d2")))
+        val transformedMemberInfo = MembersInfo(self, otherMembers)
         val transformedConversationId = QualifiedID("transformed", "tDomain")
 
         given(idMapper)
             .function(idMapper::fromApiModel)
             .whenInvokedWith(any())
             .then { transformedConversationId }
+
+        given(memberMapper)
+            .function(memberMapper::fromApiModel)
+            .whenInvokedWith(any())
+            .then { transformedMemberInfo }
+
+        val mappedResponse = conversationMapper.fromApiModel(response)
+
+        assertEquals(mappedResponse.name, response.name)
+    }
+
+    @Test
+    fun givenAConversationResponse_whenMappingFromConversationResponse_thenShouldCallIdMapperToMapConversationId() {
+        val response = CONVERSATION_RESPONSE
+        val originalConversationId = ORIGINAL_CONVERSATION_ID
+        val self = Member(QualifiedID("whatever", "domain"))
+        val otherMembers = listOf(Member(QualifiedID("v1", "d1")), Member(QualifiedID("v2", "d2")))
+        val transformedMemberInfo = MembersInfo(self, otherMembers)
+        val transformedConversationId = QualifiedID("transformed", "tDomain")
+
+        given(idMapper)
+            .function(idMapper::fromApiModel)
+            .whenInvokedWith(any())
+            .then { transformedConversationId }
+
+        given(memberMapper)
+            .function(memberMapper::fromApiModel)
+            .whenInvokedWith(any())
+            .then { transformedMemberInfo }
 
         val mappedResponse = conversationMapper.fromApiModel(response)
 
@@ -55,6 +86,12 @@ class ConversationMapperTest {
         val self = Member(QualifiedID("whatever", "domain"))
         val otherMembers = listOf(Member(QualifiedID("v1", "d1")), Member(QualifiedID("v2", "d2")))
         val transformedMemberInfo = MembersInfo(self, otherMembers)
+        val transformedConversationId = QualifiedID("transformed", "tDomain")
+
+        given(idMapper)
+            .function(idMapper::fromApiModel)
+            .whenInvokedWith(any())
+            .then { transformedConversationId }
 
         given(memberMapper)
             .function(memberMapper::fromApiModel)
@@ -76,6 +113,5 @@ class ConversationMapperTest {
         val CONVERSATION_RESPONSE = ConversationResponse(
             "creator", MEMBERS_RESPONSE, "name", ORIGINAL_CONVERSATION_ID, 42, null
         )
-
     }
 }
