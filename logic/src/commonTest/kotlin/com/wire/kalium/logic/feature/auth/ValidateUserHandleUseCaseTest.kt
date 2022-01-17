@@ -5,27 +5,27 @@ import kotlin.test.assertEquals
 
 class ValidateUserHandleUseCaseTest {
 
-    private val validateEmailUseCase = ValidateEmailUseCaseImpl()
+    private val validateUserHandleUseCase: ValidateUserHandleUseCase = ValidateUserHandleUseCaseImpl()
 
     @Test
-    fun `given a valid user handle is invoked, when valid handel, then return true`() {
+    fun `given a validUserHandleUseCase is invoked, when valid handel, then return true`() {
         VALID_HANDLES.forEach { validEmail ->
-            val result = validateEmailUseCase(validEmail)
+            val result = validateUserHandleUseCase(validEmail)
             assertEquals(true, result)
         }
     }
 
     @Test
-    fun `given a invalid user handle is invoked, when valid handel, then return false`() {
+    fun `given a validUserHandleUseCase is invoked, when valid handel, then return false`() {
         INVALID_HANDLES.forEach { validEmail ->
-            val result = validateEmailUseCase(validEmail)
+            val result = validateUserHandleUseCase(validEmail)
             assertEquals(false, result)
         }
     }
 
     @Test
-    fun `given a short user handle is invoked, when valid handel, then return false`() {
-            val result = validateEmailUseCase("a")
+    fun `given a validUserHandleUseCase is invoked, when handel is short, then return false`() {
+            val result = validateUserHandleUseCase("a")
             assertEquals(false, result)
     }
 

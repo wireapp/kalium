@@ -5,7 +5,7 @@ import kotlin.test.assertEquals
 
 class ValidateEmailUseCaseTest {
 
-    private val validateEmailUseCase = ValidateEmailUseCaseImpl()
+    private val validateEmailUseCase: ValidateEmailUseCase = ValidateEmailUseCaseImpl()
 
     @Test
     fun `given a validateEmailUseCase is invoked, when valid email, then return true`() {
