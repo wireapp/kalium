@@ -3,7 +3,7 @@ package com.wire.kalium.api.tools.json.api.user.login
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.tools.json.model.ErrorResponseJson
 import com.wire.kalium.network.api.user.login.LoginApi
-import com.wire.kalium.network.api.user.login.LoginApiImp
+import com.wire.kalium.network.api.user.login.LoginApiImpl
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
@@ -29,9 +29,9 @@ class LoginApiTest : ApiTest {
                 assertPathEqual(PATH_LOGIN)
             }
         )
-        val loginApi: LoginApi = LoginApiImp(httpClient)
+        val loginApi: LoginApi = LoginApiImpl(httpClient)
 
-        val response = loginApi.emailLogin(LOGIN_REQUEST.serializableData, false)
+        val response = loginApi.login(LOGIN_WITH_EMAIL_REQUEST.serializableData, false)
         assertTrue(response.isSuccessful())
         assertEquals(response.value, VALID_LOGIN_RESPONSE.serializableData)
     }
@@ -42,16 +42,16 @@ class LoginApiTest : ApiTest {
             ErrorResponseJson.valid.rawJson,
             statusCode = HttpStatusCode.Unauthorized
         )
-        val loginApi: LoginApi = LoginApiImp(httpClient)
+        val loginApi: LoginApi = LoginApiImpl(httpClient)
 
-        val errorResponse = loginApi.emailLogin(LOGIN_REQUEST.serializableData, false)
+        val errorResponse = loginApi.login(LOGIN_WITH_EMAIL_REQUEST.serializableData, false)
         assertFalse(errorResponse.isSuccessful())
         assertTrue(errorResponse.kException is KaliumException.InvalidRequestError)
         assertEquals((errorResponse.kException as KaliumException.InvalidRequestError).errorResponse, ERROR_RESPONSE)
     }
 
     private companion object {
-        val LOGIN_REQUEST = LoginWithEmailRequestJson.valid
+        val LOGIN_WITH_EMAIL_REQUEST = LoginWithEmailRequestJson.validLoginWithEmail
         val VALID_LOGIN_RESPONSE = LoginResponseJson.valid
         val ERROR_RESPONSE = ErrorResponseJson.valid.serializableData
         const val QUERY_PERSIST = "persist"

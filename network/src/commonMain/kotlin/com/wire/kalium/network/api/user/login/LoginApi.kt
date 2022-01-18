@@ -3,5 +3,20 @@ package com.wire.kalium.network.api.user.login
 import com.wire.kalium.network.utils.NetworkResponse
 
 interface LoginApi {
-    suspend fun emailLogin(loginWithEmailRequest: LoginWithEmailRequest, persist: Boolean): NetworkResponse<LoginWithEmailResponse>
+
+    sealed class LoginParam(open val password: String, open val label: String) {
+        data class LoginWithEmail(
+            val email: String,
+            override val password: String,
+            override val label: String
+        ) : LoginParam(password, label)
+
+        data class LoginWithHandel(
+            val handle: String,
+            override val password: String,
+            override val label: String
+        ) : LoginParam(password, label)
+    }
+
+    suspend fun login(param: LoginParam, persist: Boolean): NetworkResponse<LoginResponse>
 }

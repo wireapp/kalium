@@ -2,10 +2,10 @@ package com.wire.kalium.api.tools.json.api.user.login
 
 import com.wire.kalium.api.tools.json.FaultyJsonProvider
 import com.wire.kalium.api.tools.json.ValidJsonProvider
-import com.wire.kalium.network.api.user.login.LoginWithEmailResponse
+import com.wire.kalium.network.api.user.login.LoginResponse
 
 object LoginResponseJson {
-    private val jsonProvider = { serializable: LoginWithEmailResponse ->
+    private val jsonProvider = { serializable: LoginResponse ->
         """
         |{
         |  "expires_in": ${serializable.expiresIn},
@@ -16,7 +16,7 @@ object LoginResponseJson {
         """.trimMargin()
     }
     val valid = ValidJsonProvider(
-        LoginWithEmailResponse(
+        LoginResponse(
             userId = "user_id",
             accessToken = "Nlrhltkj-NgJUjEVevHz8Ilgy_pyWCT2b0kQb-GlnamyswanghN9DcC3an5RUuA7sh1_nC3hv2ZzMRlIhPM7Ag==.v=1.k=1.d=1637254939." +
                     "t=a.l=.u=75ebeb16-a860-4be4-84a7-157654b492cf.c=18401233206926541098",

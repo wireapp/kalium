@@ -10,7 +10,7 @@ import com.wire.kalium.network.LoginNetworkContainer
 import com.wire.kalium.network.api.SessionCredentials
 import com.wire.kalium.network.api.model.AssetMetadata
 import com.wire.kalium.network.api.model.AssetRetentionType
-import com.wire.kalium.network.api.user.login.LoginWithEmailRequest
+import com.wire.kalium.network.api.user.login.LoginApi
 import com.wire.kalium.network.utils.isSuccessful
 import kotlinx.coroutines.runBlocking
 
@@ -22,9 +22,8 @@ class ConversationsApplication : CliktCommand() {
 
         val loginContainer = LoginNetworkContainer()
 
-        val loginResult = loginContainer.loginApi.emailLogin(
-            LoginWithEmailRequest(email = email, password = password, label = "ktor"), false
-        )
+        val loginResult = loginContainer.loginApi.login(
+            LoginApi.LoginParam.LoginWithEmail(email = email, password = password, label = "ktor"), false)
 
         if (!loginResult.isSuccessful()) {
             println("There was an error on the login :( check the credentials and the internet connection and try again please")

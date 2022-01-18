@@ -7,25 +7,35 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.ClientRepositoryImpl
 import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
 import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSourceImpl
+import com.wire.kalium.logic.data.conversation.ConversationDataSource
 import com.wire.kalium.logic.data.conversation.ConversationMapper
+import com.wire.kalium.logic.data.conversation.ConversationMapperImpl
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MemberMapper
+import com.wire.kalium.logic.data.conversation.MemberMapperImpl
+import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.location.LocationMapper
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.message.MessageScope
-import io.ktor.client.HttpClient
 
 expect class UserSessionScope: UserSessionScopeCommon
 
 abstract class UserSessionScopeCommon(
     private val authenticatedDataSourceSet: AuthenticatedDataSourceSet
 ) {
-    private val conversationMapper: ConversationMapper get() = ConversationMapper()
+    private val idMapper: IdMapper get() = IdMapperImpl()
+    private val memberMapper: MemberMapper get() = MemberMapperImpl(idMapper)
+    private val conversationMapper: ConversationMapper get() = ConversationMapperImpl(idMapper, memberMapper)
 
     private val conversationRepository: ConversationRepository
-        get() = ConversationRepository(authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi, conversationMapper)
+        get() = ConversationDataSource(
+            authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi, idMapper, conversationMapper, memberMapper
+        )
 
     private val messageRepository: MessageRepository
         get() = MessageRepository(authenticatedDataSourceSet.authenticatedNetworkContainer.messageApi)

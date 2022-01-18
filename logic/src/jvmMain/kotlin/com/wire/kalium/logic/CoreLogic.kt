@@ -1,8 +1,6 @@
 package com.wire.kalium.logic
 
-import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.feature.UserSessionScope
-import com.wire.kalium.logic.feature.UserSessionScopeCommon
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 
