@@ -8,7 +8,8 @@ object Versions {
     const val appCompat = "1.1.0"
     const val cliKt = "3.3.0"
     const val coroutines = "1.6.0-RC"
-    const val compose = "1.1.0-beta04"
+    const val compose = "1.1.0-rc01"
+    const val composeCompiler = "1.1.0-rc02"
     const val cryptobox4j = "1.0.0"
     const val cryptoboxAndroid = "1.1.3"
     const val kover = "0.4.2"
@@ -16,12 +17,12 @@ object Versions {
     const val ktor2 = "2.0.0-beta-1"
     const val okHttp = "4.9.3"
     const val kotest = "4.6.3"
+    const val mockative = "1.1.4"
     const val androidTestRunner = "1.4.0"
     const val androidTestRules = "1.4.0"
     const val androidxArch = "2.1.0"
     const val dataStore = "1.0.0"
     const val ktxSerialization = "1.3.2"
-    const val mockative = "1.1.4"
 }
 
 object Plugins {
@@ -42,6 +43,9 @@ object Plugins {
     fun jvm(scope: PluginDependenciesSpec) =
         scope.kotlin("jvm")
 
+    fun ksp(scope: PluginDependenciesSpec) =
+        scope.id("com.google.devtools.ksp").version("1.6.10-1.0.2")
+
     fun kover(scope: PluginDependenciesSpec) =
         scope.id("org.jetbrains.kotlinx.kover") version Versions.kover
 
@@ -51,8 +55,6 @@ object Plugins {
     fun serialization(scope: PluginDependenciesSpec) =
         scope.kotlin("plugin.serialization") version Versions.kotlin
 
-    fun ksp(scope: PluginDependenciesSpec) =
-        scope.id("com.google.devtools.ksp").version("1.6.10-1.0.2")
 }
 
 object Dependencies {
