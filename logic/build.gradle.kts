@@ -48,7 +48,6 @@ kotlin {
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
-                implementation(Dependencies.Test.mockative)
                 // coroutines
                 implementation(Dependencies.Coroutines.test)
 
