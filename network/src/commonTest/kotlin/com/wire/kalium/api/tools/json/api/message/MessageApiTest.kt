@@ -5,9 +5,7 @@ import com.wire.kalium.api.tools.json.ValidJsonProvider
 import com.wire.kalium.network.api.message.MessageApi
 import com.wire.kalium.network.api.message.MessageApiImp
 import com.wire.kalium.network.api.message.SendMessageResponse
-import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.SendMessageError
-import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -23,7 +21,7 @@ class MessageApiTest : ApiTest {
     @Test
     fun givenAValidIgnoreAlloption_whenSendingAMessage_theRequestShouldBeConfiguredCorrectly() =
         runTest {
-            val httpClient = mockHttpClient(
+            val httpClient = mockAuthenticatedHttpClient(
                 SUCCESS_RESPONSE.rawJson,
                 statusCode = HttpStatusCode.Created,
                 assertion =
@@ -48,7 +46,7 @@ class MessageApiTest : ApiTest {
     @Test
     fun givenAValidReportAll_whenSendingAMessage_theRequestShouldBeConfiguredCorrectly() =
         runTest {
-            val httpClient = mockHttpClient(
+            val httpClient = mockAuthenticatedHttpClient(
                 SUCCESS_RESPONSE.rawJson,
                 statusCode = HttpStatusCode.Created,
                 assertion =
@@ -73,7 +71,7 @@ class MessageApiTest : ApiTest {
     @Test
     fun givenAValidIgnoreSome_whenSendingAMessage_theRequestShouldBeConfiguredCorrectly() =
         runTest {
-            val httpClient = mockHttpClient(
+            val httpClient = mockAuthenticatedHttpClient(
                 SUCCESS_RESPONSE.rawJson,
                 statusCode = HttpStatusCode.Created,
                 assertion =
@@ -98,7 +96,7 @@ class MessageApiTest : ApiTest {
     @Test
     fun givenAValidReportSome_whenSendingAMessage_theRequestShouldBeConfiguredCorrectly() =
         runTest {
-            val httpClient = mockHttpClient(
+            val httpClient = mockAuthenticatedHttpClient(
                 SUCCESS_RESPONSE.rawJson,
                 statusCode = HttpStatusCode.Created,
                 assertion =
@@ -132,7 +130,7 @@ class MessageApiTest : ApiTest {
 
     private fun errorCaseTest(errorResponse: ValidJsonProvider<SendMessageResponse.MissingDevicesResponse>) =
         runTest {
-            val httpClient = mockHttpClient(
+            val httpClient = mockAuthenticatedHttpClient(
                 errorResponse.rawJson,
                 statusCode = HttpStatusCode.PreconditionFailed
             )

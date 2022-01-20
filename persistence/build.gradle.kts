@@ -58,8 +58,8 @@ kotlin {
             dependencies {
                 // coroutines
                 implementation(Dependencies.Coroutines.core)
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.0")
                 implementation(Dependencies.SqlDelight.runtime)
+                implementation(Dependencies.Kotlinx.serialization)
             }
         }
         val commonTest by getting {
@@ -85,7 +85,7 @@ kotlin {
         val jsTest by getting
         val androidMain by getting {
             dependencies {
-                implementation ("androidx.datastore:datastore-preferences:1.0.0")
+                implementation(Dependencies.Android.dataStorePreferences)
                 implementation(Dependencies.SqlDelight.androidDriver)
                 implementation("net.zetetic:android-database-sqlcipher:4.5.0@aar")
                 implementation("androidx.sqlite:sqlite:2.0.1")
@@ -93,7 +93,7 @@ kotlin {
         }
         val androidTest by getting {
             dependencies {
-                implementation (Dependencies.Coroutines.test)
+                implementation(Dependencies.Coroutines.test)
                 implementation(Dependencies.AndroidInstruments.androidxArchTesting)
             }
         }

@@ -8,5 +8,4 @@ import com.wire.kalium.logic.functional.Either
 
 interface ClientRemoteDataSource {
     suspend fun registerClient(param: RegisterClientParam): Either<CoreFailure, Client>
-
-    }
+}

@@ -1,7 +1,6 @@
 package com.wire.kalium.api.tools.json.api.user.logout
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.api.tools.json.api.user.client.RegisterClientResponseJson
 import com.wire.kalium.api.tools.json.model.ErrorResponseJson
 import com.wire.kalium.network.api.user.logout.LogoutApi
 import com.wire.kalium.network.api.user.logout.LogoutImp
@@ -21,7 +20,7 @@ class LogoutApiTest : ApiTest {
     @Test
     fun givenAValidRegisterLogoutRequest_whenCallingTheRegisterLogoutEndpoint_theRequestShouldBeConfiguredCorrectly() =
         runTest {
-            val httpClient = mockHttpClient(
+            val httpClient = mockAuthenticatedHttpClient(
                 "",
                 statusCode = HttpStatusCode.Created,
                 assertion = {
@@ -37,7 +36,7 @@ class LogoutApiTest : ApiTest {
 
     @Test
     fun givenTheServerReturnsAnError_whenCallingTheLogoutEndpoint_theCorrectExceptionIsThrown() = runTest {
-        val httpClient = mockHttpClient(
+        val httpClient = mockAuthenticatedHttpClient(
             ERROR_RESPONSE.rawJson,
             statusCode = HttpStatusCode.Unauthorized
         )

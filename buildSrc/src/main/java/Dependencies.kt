@@ -8,7 +8,8 @@ object Versions {
     const val appCompat = "1.1.0"
     const val cliKt = "3.3.0"
     const val coroutines = "1.6.0-RC3"
-    const val compose = "1.1.0-beta04"
+    const val compose = "1.1.0-rc01"
+    const val composeCompiler = "1.1.0-rc02"
     const val cryptobox4j = "1.0.0"
     const val cryptoboxAndroid = "1.1.3"
     const val kover = "0.4.2"
@@ -16,11 +17,13 @@ object Versions {
     const val ktor2 = "2.0.0-beta-1"
     const val okHttp = "4.9.3"
     const val kotest = "4.6.3"
+    const val mockative = "1.1.4"
     const val androidTestRunner = "1.4.0"
     const val androidTestRules = "1.4.0"
     const val androidTestCore = "1.4.0"
     const val androidxArch = "2.1.0"
-    const val mockk = "1.12.0"
+    const val dataStore = "1.0.0"
+    const val ktxSerialization = "1.3.2"
     const val sqlDelight = "2.0.0-SNAPSHOT"
 }
 
@@ -42,6 +45,9 @@ object Plugins {
     fun jvm(scope: PluginDependenciesSpec) =
         scope.kotlin("jvm")
 
+    fun ksp(scope: PluginDependenciesSpec) =
+        scope.id("com.google.devtools.ksp").version("1.6.10-1.0.2")
+
     fun kover(scope: PluginDependenciesSpec) =
         scope.id("org.jetbrains.kotlinx.kover") version Versions.kover
 
@@ -57,6 +63,10 @@ object Plugins {
 
 object Dependencies {
 
+    object Kotlinx {
+        const val serialization = "org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.ktxSerialization}"
+    }
+
     object Android {
         const val appCompat = "androidx.appcompat:appcompat:${Versions.appCompat}"
         const val activityCompose = "androidx.activity:activity-compose:${Versions.activityCompose}"
@@ -64,6 +74,7 @@ object Dependencies {
         const val composeTooling = "androidx.compose.ui:ui-tooling:${Versions.compose}"
         const val coroutines = "org.jetbrains.kotlinx:kotlinx-coroutines-android:${Versions.coroutines}"
         const val ktor = "io.ktor:ktor-client-android:${Versions.ktor}"
+        const val dataStorePreferences = "androidx.datastore:datastore-preferences:${Versions.dataStore}"
     }
 
     object AndroidInstruments {
@@ -112,14 +123,14 @@ object Dependencies {
         const val jsDriver = "app.cash.sqldelight:sqljs-driver:${Versions.sqlDelight}"
     }
 
-    object mockk {
-        const val mockk          = "io.mockk:mockk:${Versions.mockk}"
-        const val mockkAndroid   = "io.mockk:mockk-android:${Versions.mockk}"
-    }
-
     object Kotest {
         const val junit5Runner = "io.kotest:kotest-runner-junit5:${Versions.kotest}"
         const val assertions = "io.kotest:kotest-assertions-core:${Versions.kotest}"
         const val property = "io.kotest:kotest-property:${Versions.kotest}"
+    }
+
+    object Test {
+        const val mockative = "io.mockative:mockative:${Versions.mockative}"
+        const val mockativeProcessor = "io.mockative:mockative-processor:${Versions.mockative}"
     }
 }

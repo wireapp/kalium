@@ -31,6 +31,19 @@ fun <T> NetworkResponse<T>.httpResponseCookies(): Map<String, String> =
             it.name to it.value
         }
 
+/**
+ * If the request is successful, perform [mapping] and create a new Success with its result
+ * @return A new [NetworkResponse.Success] with the mapped result,
+ * or [NetworkResponse.Error] if it was never a success to begin with
+ */
+fun <T, U : Any> NetworkResponse<T>.mapSuccess(mapping: ((T) -> U)): NetworkResponse<U> =
+    if (isSuccessful()) {
+        NetworkResponse.Success(response, mapping(this.value))
+    } else {
+        NetworkResponse.Error(kException)
+    }
+
+
 @OptIn(ExperimentalContracts::class)
 fun <T> NetworkResponse<T>.isSuccessful(): Boolean {
     contract {

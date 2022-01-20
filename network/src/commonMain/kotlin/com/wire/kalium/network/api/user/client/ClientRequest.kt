@@ -1,5 +1,7 @@
 package com.wire.kalium.network.api.user.client
 
+import com.wire.kalium.network.api.QualifiedID
+import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.prekey.PreKeyDTO
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -78,3 +80,8 @@ enum class ClientCapabilityDTO {
         }
     }
 }
+
+@Serializable
+data class ListClientsOfUsersRequest(
+    @SerialName("qualified_users") val users: List<UserId>
+)

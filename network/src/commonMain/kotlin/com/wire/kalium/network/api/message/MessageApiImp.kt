@@ -54,7 +54,7 @@ class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
                     }
                     setBody(body)
                 }
-                return NetworkResponse.Success(response, response.body<SendMessageResponse.MessageSent>())
+                return NetworkResponse.Success(response = response, value = response.body<SendMessageResponse.MessageSent>())
             } catch (e: ResponseException) {
                 when (e.response.status.value) {
                     // It's a 412 Error
