@@ -5,7 +5,8 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.wire.kalium.network.LoginNetworkContainer
-import com.wire.kalium.persistence.client.SessionLocalDataSource
+import com.wire.kalium.persistence.client.SessionDao
+import com.wire.kalium.persistence.client.SessionDaoImpl
 import com.wire.kalium.persistence.data_store.DataStoreStorage
 import com.wire.kalium.persistence.util.SecurityUtil
 
@@ -23,5 +24,5 @@ actual class AuthenticationScope(
         preferencesDataStore(name = "data-store").getValue(applicationContext, String::javaClass)
     private val securityUtil: SecurityUtil get() = SecurityUtil()
     private val dataStoreStorage: DataStoreStorage get() = DataStoreStorage(dataStore, securityUtil)
-    override val sessionLocalDataSource: SessionLocalDataSource get() = SessionLocalDataSource(dataStoreStorage)
+    override val sessionDao: SessionDao get() = SessionDaoImpl(dataStoreStorage)
 }

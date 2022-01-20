@@ -5,10 +5,12 @@ import com.wire.kalium.logic.data.auth.login.LoginRepositoryImpl
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.session.SessionMapperImpl
 import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.data.session.SessionRepositoryImpl
+import com.wire.kalium.logic.data.session.SessionDataSource
+import com.wire.kalium.logic.data.session.local.SessionLocalDataSource
+import com.wire.kalium.logic.data.session.local.SessionLocalRepository
 import com.wire.kalium.logic.feature.session.SessionScope
 import com.wire.kalium.network.LoginNetworkContainer
-import com.wire.kalium.persistence.client.SessionLocalDataSource
+import com.wire.kalium.persistence.client.SessionDao
 
 expect class AuthenticationScope : AuthenticationScopeCommon
 
@@ -17,17 +19,15 @@ abstract class AuthenticationScopeCommon(
     private val clientLabel: String
 ) {
 
-    protected abstract val sessionLocalDataSource: SessionLocalDataSource
+    protected abstract val sessionDao: SessionDao
 
     private val sessionMapper: SessionMapper get() = SessionMapperImpl()
 
     private val loginRepository: LoginRepository get() = LoginRepositoryImpl(loginNetworkContainer.loginApi, clientLabel)
 
+    private val sessionLocalRepository: SessionLocalRepository get() = SessionLocalDataSource(sessionDao, sessionMapper)
     private val sessionRepository: SessionRepository
-        get() = SessionRepositoryImpl(
-            sessionMapper = sessionMapper,
-            sessionLocalDataSource = sessionLocalDataSource
-        )
+        get() = SessionDataSource(sessionLocalRepository)
 
     private val validateEmailUseCase: ValidateEmailUseCase get() = ValidateEmailUseCaseImpl()
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
