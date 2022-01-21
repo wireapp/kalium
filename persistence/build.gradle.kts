@@ -25,6 +25,8 @@ android {
         targetSdk = Android.Sdk.target
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
+    // Remove Android Unit tests, as it's currently impossible to run native-through-NDK code on simple Unit tests.
+    sourceSets.remove(sourceSets["test"])
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
@@ -39,6 +41,10 @@ kotlin {
         }
         testRuns["test"].executionTask.configure {
             useJUnit()
+
+            testLogging {
+                showStandardStreams = true
+            }
         }
     }
     android()
@@ -59,6 +65,7 @@ kotlin {
                 // coroutines
                 implementation(Dependencies.Coroutines.core)
                 implementation(Dependencies.SqlDelight.runtime)
+                implementation(Dependencies.SqlDelight.coroutinesExtension)
                 implementation(Dependencies.Kotlinx.serialization)
             }
         }
@@ -89,12 +96,6 @@ kotlin {
                 implementation(Dependencies.SqlDelight.androidDriver)
                 implementation("net.zetetic:android-database-sqlcipher:4.5.0@aar")
                 implementation("androidx.sqlite:sqlite:2.0.1")
-            }
-        }
-        val androidTest by getting {
-            dependencies {
-                implementation(Dependencies.Coroutines.test)
-                implementation(Dependencies.AndroidInstruments.androidxArchTesting)
             }
         }
         val androidAndroidTest by getting {

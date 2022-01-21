@@ -117,6 +117,7 @@ object Dependencies {
 
     object SqlDelight {
         const val runtime = "app.cash.sqldelight:runtime:${Versions.sqlDelight}"
+        const val coroutinesExtension = "app.cash.sqldelight:coroutines-extensions:${Versions.sqlDelight}"
         const val androidDriver = "app.cash.sqldelight:android-driver:${Versions.sqlDelight}"
         const val nativeDriver = "app.cash.sqldelight:native-driver:${Versions.sqlDelight}"
         const val jvmDriver = "app.cash.sqldelight:sqlite-driver:${Versions.sqlDelight}"

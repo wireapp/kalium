@@ -1,14 +1,28 @@
+import com.wire.kalium.persistence.dao.QualifiedID;
+
 CREATE TABLE User (
-    id INTEGER NOT NULL PRIMARY KEY,
-    name TEXT NOT NULL
+    qualified_id TEXT AS QualifiedID NOT NULL PRIMARY KEY,
+    name TEXT,
+    handle TEXT
 );
 
 deleteAllUsers:
 DELETE FROM User;
 
+deleteUser:
+DELETE FROM User WHERE qualified_id = ?;
+
 insertUser:
-INSERT INTO User(id, name)
-VALUES(?, ?);
+INSERT INTO User(qualified_id, name, handle)
+VALUES(?, ?, ?);
+
+updateUser:
+UPDATE User
+SET name = ?, handle = ?
+WHERE qualified_id = ?;
 
 selectAllUsers:
 SELECT * FROM User;
+
+selectByQualifiedId:
+SELECT * FROM User WHERE qualified_id = ?;
