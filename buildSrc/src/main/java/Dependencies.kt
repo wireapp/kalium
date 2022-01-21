@@ -12,7 +12,7 @@ object Versions {
     const val composeCompiler = "1.1.0-rc02"
     const val cryptobox4j = "1.0.0"
     const val cryptoboxAndroid = "1.1.3"
-    const val kover = "0.4.2"
+    const val kover = "0.4.4"
     const val ktor = "1.6.7"
     const val ktor2 = "2.0.0-beta-1"
     const val okHttp = "4.9.3"

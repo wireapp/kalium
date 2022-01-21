@@ -3,7 +3,6 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     Plugins.jvm(this)
     Plugins.serialization(this)
-    Plugins.kover(this)
 }
 
 group = "com.wire.kalium"
