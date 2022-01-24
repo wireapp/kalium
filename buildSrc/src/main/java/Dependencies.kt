@@ -23,6 +23,7 @@ object Versions {
     const val androidxArch = "2.1.0"
     const val dataStore = "1.0.0"
     const val ktxSerialization = "1.3.2"
+    const val multiplatformSettings = "0.8.1"
 }
 
 object Plugins {
@@ -71,6 +72,10 @@ object Dependencies {
         const val coroutines = "org.jetbrains.kotlinx:kotlinx-coroutines-android:${Versions.coroutines}"
         const val ktor = "io.ktor:ktor-client-android:${Versions.ktor}"
         const val dataStorePreferences = "androidx.datastore:datastore-preferences:${Versions.dataStore}"
+    }
+
+    object MultiplatformSettings {
+        const val settings = "com.russhwolf:multiplatform-settings:${Versions.multiplatformSettings}"
     }
 
     object AndroidInstruments {

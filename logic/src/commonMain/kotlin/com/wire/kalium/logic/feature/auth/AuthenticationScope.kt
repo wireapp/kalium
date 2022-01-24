@@ -10,7 +10,10 @@ import com.wire.kalium.logic.data.session.local.SessionLocalDataSource
 import com.wire.kalium.logic.data.session.local.SessionLocalRepository
 import com.wire.kalium.logic.feature.session.SessionScope
 import com.wire.kalium.network.LoginNetworkContainer
+import com.wire.kalium.persistence.client.SessionDAOImpl
 import com.wire.kalium.persistence.client.SessionDao
+import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
+import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 
 expect class AuthenticationScope : AuthenticationScopeCommon
 
@@ -19,7 +22,9 @@ abstract class AuthenticationScopeCommon(
     private val clientLabel: String
 ) {
 
-    protected abstract val sessionDao: SessionDao
+    protected abstract val encryptedSettingsHolder: EncryptedSettingsHolder
+    private val kaliumPreferences: KaliumPreferences get() = KaliumPreferences(encryptedSettingsHolder.encryptedSettings)
+    private val sessionDao: SessionDao get() = SessionDAOImpl(kaliumPreferences)
 
     private val sessionMapper: SessionMapper get() = SessionMapperImpl()
 

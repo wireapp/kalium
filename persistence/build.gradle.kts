@@ -37,6 +37,7 @@ kotlin {
                 // coroutines
                 implementation(Dependencies.Coroutines.core)
                 implementation(Dependencies.Kotlinx.serialization)
+                implementation(Dependencies.MultiplatformSettings.settings)
             }
         }
         val commonTest by getting {
@@ -48,11 +49,7 @@ kotlin {
         }
         val jvmMain by getting
         val jvmTest by getting
-        val androidMain by getting {
-            dependencies {
-                implementation (Dependencies.Android.dataStorePreferences)
-            }
-        }
+        val androidMain by getting
         val androidTest by getting {
             dependencies {
                 implementation(Dependencies.AndroidInstruments.androidxArchTesting)
