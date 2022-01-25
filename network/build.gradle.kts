@@ -36,7 +36,11 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 // coroutines
-                implementation(Dependencies.Coroutines.core)
+                implementation(Dependencies.Coroutines.core) {
+                    version {
+                        strictly(Versions.coroutines)
+                    }
+                }
 
                 // ktor
                 api(Dependencies.Ktor.core)

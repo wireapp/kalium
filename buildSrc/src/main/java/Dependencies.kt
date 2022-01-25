@@ -7,7 +7,7 @@ object Versions {
     const val activityCompose = "1.3.1"
     const val appCompat = "1.1.0"
     const val cliKt = "3.3.0"
-    const val coroutines = "1.6.0-RC"
+    const val coroutines = "1.6.0-native-mt"
     const val compose = "1.1.0-rc01"
     const val composeCompiler = "1.1.0-rc02"
     const val cryptobox4j = "1.0.0"
@@ -20,9 +20,11 @@ object Versions {
     const val mockative = "1.1.4"
     const val androidTestRunner = "1.4.0"
     const val androidTestRules = "1.4.0"
+    const val androidTestCore = "1.4.0"
     const val androidxArch = "2.1.0"
     const val dataStore = "1.0.0"
     const val ktxSerialization = "1.3.2"
+    const val sqlDelight = "2.0.0-SNAPSHOT"
 }
 
 object Plugins {
@@ -55,6 +57,8 @@ object Plugins {
     fun serialization(scope: PluginDependenciesSpec) =
         scope.kotlin("plugin.serialization") version Versions.kotlin
 
+    fun sqlDelight(scope: PluginDependenciesSpec) =
+        scope.id("app.cash.sqldelight")
 }
 
 object Dependencies {
@@ -76,6 +80,7 @@ object Dependencies {
     object AndroidInstruments {
         const val androidTestRunner = "androidx.test:runner:${Versions.androidTestRunner}"
         const val androidTestRules = "androidx.test:rules:${Versions.androidTestRules}"
+        const val androidTestCore = "androidx.test:core:${Versions.androidTestCore}"
         const val androidxArchTesting = "androidx.arch.core:core-testing:${Versions.androidxArch}"
     }
 
@@ -108,6 +113,15 @@ object Dependencies {
         const val utils = "io.ktor:ktor-utils:${Versions.ktor2}"
         const val mock = "io.ktor:ktor-client-mock:${Versions.ktor2}"
         const val okHttp = "io.ktor:ktor-client-okhttp:${Versions.ktor2}"
+    }
+
+    object SqlDelight {
+        const val runtime = "app.cash.sqldelight:runtime:${Versions.sqlDelight}"
+        const val coroutinesExtension = "app.cash.sqldelight:coroutines-extensions:${Versions.sqlDelight}"
+        const val androidDriver = "app.cash.sqldelight:android-driver:${Versions.sqlDelight}"
+        const val nativeDriver = "app.cash.sqldelight:native-driver:${Versions.sqlDelight}"
+        const val jvmDriver = "app.cash.sqldelight:sqlite-driver:${Versions.sqlDelight}"
+        const val jsDriver = "app.cash.sqldelight:sqljs-driver:${Versions.sqlDelight}"
     }
 
     object Kotest {
