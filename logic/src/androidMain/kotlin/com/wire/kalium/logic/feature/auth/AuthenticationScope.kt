@@ -8,7 +8,7 @@ import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
  * This class is only for platform specific variables,
  * and it should only override functions/variables from AuthenticationScopeCommon
  */
-class AuthenticationScope(
+actual class AuthenticationScope(
     loginNetworkContainer: LoginNetworkContainer,
     clientLabel: String,
     private val applicationContext: Context
