@@ -51,7 +51,7 @@ kotlin {
         val jvmTest by getting
         val androidMain by getting {
             dependencies {
-                implementation("androidx.security:security-crypto:1.0.0")
+                implementation(Dependencies.Android.securityCrypto)
             }
         }
         val androidTest by getting {

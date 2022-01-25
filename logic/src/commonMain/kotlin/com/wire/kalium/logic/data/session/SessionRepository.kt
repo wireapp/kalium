@@ -4,10 +4,6 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.session.local.SessionLocalRepository
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.Either
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
 
 interface SessionRepository {
     suspend fun storeSession(autSession: AuthSession)
@@ -24,7 +20,7 @@ class InMemorySessionRepository : SessionRepository {
     }
 
     override suspend fun getSessions(): Either<CoreFailure, List<AuthSession>> = Either.Right(sessions.values.toList())
-    override suspend fun doseSessionExist(userId: String): Either<CoreFailure, Boolean> {
+    override suspend fun doesSessionExist(userId: String): Either<CoreFailure, Boolean> {
         TODO("Not yet implemented")
     }
 
@@ -37,12 +33,12 @@ class SessionDataSource(
 
     override suspend fun getSessions(): Either<CoreFailure, List<AuthSession>> = sessionLocalRepository.getSessions()
 
-    override suspend fun doseSessionExist(userId: String): Either<CoreFailure, Boolean> =
-        when (val sessions = sessionLocalRepository.getSessions()) {
-            is Either.Left -> Either.Left(sessions.value)
+    override suspend fun doesSessionExist(userId: String): Either<CoreFailure, Boolean> =
+        when (val result = sessionLocalRepository.getSessions()) {
+            is Either.Left -> Either.Left(result.value)
 
             is Either.Right -> {
-                sessions.value.forEach {
+                result.value.forEach {
                     if (it.userId == userId) {
                         Either.Right(true)
                     }
