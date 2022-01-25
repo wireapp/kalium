@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.map
 interface SessionRepository {
     suspend fun storeSession(autSession: AuthSession)
     suspend fun getSessions(): Either<CoreFailure, List<AuthSession>>
-    suspend fun doseSessionExist(userId: String): Either<CoreFailure, Boolean>
+    suspend fun doesSessionExist(userId: String): Either<CoreFailure, Boolean>
 }
 
 @Deprecated("Use the SessionRepositoryImpl", replaceWith = ReplaceWith("SessionRepositoryImpl"))
