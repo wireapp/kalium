@@ -32,9 +32,4 @@ class KaliumPreferences(
             JsonSerializer().decodeFromString(it)
         } ?: run { null }
     }
-
-
-    private companion object {
-        const val bytesToStringSeparator = "|"
-    }
 }
