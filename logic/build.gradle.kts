@@ -40,6 +40,11 @@ kotlin {
                 implementation(project(":persistence"))
 
                 // coroutines
+                implementation(Dependencies.Coroutines.core) {
+                    version {
+                        strictly(Versions.coroutines)
+                    }
+                }
                 implementation(Dependencies.Coroutines.core)
                 // the Dependency is duplicated between here and persistence build.gradle.kts
                 implementation(Dependencies.MultiplatformSettings.settings)
