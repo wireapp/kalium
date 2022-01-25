@@ -63,7 +63,11 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 // coroutines
-                implementation(Dependencies.Coroutines.core)
+                implementation(Dependencies.Coroutines.core) {
+                    version {
+                        strictly(Versions.coroutines)
+                    }
+                }
                 implementation(Dependencies.SqlDelight.runtime)
                 implementation(Dependencies.SqlDelight.coroutinesExtension)
                 implementation(Dependencies.Kotlinx.serialization)

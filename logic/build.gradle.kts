@@ -42,7 +42,11 @@ kotlin {
                 implementation(project(":persistence"))
 
                 // coroutines
-                implementation(Dependencies.Coroutines.core)
+                implementation(Dependencies.Coroutines.core) {
+                    version {
+                        strictly(Versions.coroutines)
+                    }
+                }
             }
         }
         val commonTest by getting {

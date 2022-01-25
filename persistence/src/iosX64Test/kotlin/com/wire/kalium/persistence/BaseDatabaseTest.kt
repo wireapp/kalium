@@ -1,6 +1,5 @@
 package com.wire.kalium.persistence
 
-import com.wire.kalium.persistence.db.DatabaseDriverFactory
 import co.touchlab.sqliter.DatabaseFileContext.deleteDatabase
 import com.wire.kalium.persistence.db.Database
 
