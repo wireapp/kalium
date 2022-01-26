@@ -1,8 +1,14 @@
 package com.wire.kalium.persistence.client
 
+import com.wire.kalium.persistence.Util.JsonSerializer
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.model.DataStoreResult
 import com.wire.kalium.persistence.model.PersistenceSession
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
+import kotlin.jvm.JvmInline
+import kotlin.reflect.KClass
 
 interface SessionDao {
     /**
@@ -40,14 +46,14 @@ class SessionDAOImpl(
     private val kaliumPreferences: KaliumPreferences
 ) : SessionDao {
     override suspend fun addSession(persistenceSession: PersistenceSession) =
-        kaliumPreferences.putSerializable(SESSIONS_KEY, persistenceSession)
+        kaliumPreferences.putSerializable(SESSIONS_KEY, persistenceSession, PersistenceSession.serializer())
 
     override suspend fun deleteSession(userId: String) {
         when (val result = allSessions()) {
             is DataStoreResult.Success -> {
                 // save the new map if the remove did not return null (session was deleted)
                 result.data.toMutableMap().remove(userId)?.let {
-                    saveAllSessions(result.data)
+                    saveAllSessions(SessionsMap(result.data))
                 } ?: run {
                     // session didn't exist in the first place
                 }
@@ -58,8 +64,9 @@ class SessionDAOImpl(
 
     override suspend fun currentSession(): PersistenceSession? =
         kaliumPreferences.getString(CURRENT_SESSION_KEY)?.let { userId ->
-            kaliumPreferences.getSerializable<Map<String, PersistenceSession>>(SESSIONS_KEY)?.let { storedSessions ->
-                storedSessions[userId]
+            when (val result = allSessions()) {
+                is DataStoreResult.Success -> result.data[userId]
+                DataStoreResult.DataNotFound -> null
             }
         }
 
@@ -67,15 +74,15 @@ class SessionDAOImpl(
     override suspend fun updateCurrentSession(userId: String) = kaliumPreferences.putString(CURRENT_SESSION_KEY, userId)
 
     override suspend fun allSessions(): DataStoreResult<Map<String, PersistenceSession>> {
-        return kaliumPreferences.getSerializable<Map<String, PersistenceSession>>(SESSIONS_KEY)?.let {
-            DataStoreResult.Success(it)
+        return kaliumPreferences.getSerializable(SESSIONS_KEY, SessionsMap.serializer())?.let {
+            DataStoreResult.Success(it.s)
         } ?: run { DataStoreResult.DataNotFound }
     }
 
     override suspend fun existSessions(): Boolean = kaliumPreferences.exitsValue(SESSIONS_KEY)
 
-    private fun saveAllSessions(sessions: Map<String, PersistenceSession>) {
-        kaliumPreferences.putSerializable(SESSIONS_KEY, sessions)
+    private fun saveAllSessions(sessions: SessionsMap) {
+        kaliumPreferences.putSerializable(SESSIONS_KEY, sessions, SessionsMap.serializer())
     }
 
     private companion object {
@@ -83,3 +90,9 @@ class SessionDAOImpl(
         private const val CURRENT_SESSION_KEY = "current_session_key"
     }
 }
+
+// No actual instantiation of class 'SessionsMap' happens
+// At runtime an object of 'SessionsMap' contains just 'Map<String, PersistenceSession>'
+@Serializable
+@JvmInline
+value class SessionsMap(val s: Map<String, PersistenceSession>)

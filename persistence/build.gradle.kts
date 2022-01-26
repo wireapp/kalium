@@ -2,6 +2,7 @@ plugins {
     Plugins.androidLibrary(this)
     Plugins.multiplatform(this)
     Plugins.sqlDelight(this)
+    Plugins.serialization(this)
 }
 
 group = "com.wire.kalium"
@@ -80,6 +81,7 @@ kotlin {
                 implementation(kotlin("test"))
                 // coroutines
                 implementation(Dependencies.Coroutines.test)
+                implementation(Dependencies.MultiplatformSettings.test)
             }
         }
         val jvmMain by getting {

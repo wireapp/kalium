@@ -80,6 +80,7 @@ object Dependencies {
 
     object MultiplatformSettings {
         const val settings = "com.russhwolf:multiplatform-settings:${Versions.multiplatformSettings}"
+        const val test = "com.russhwolf:multiplatform-settings-test:${Versions.multiplatformSettings}"
     }
 
     object AndroidInstruments {

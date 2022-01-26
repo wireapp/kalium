@@ -14,6 +14,7 @@ import com.wire.kalium.persistence.client.SessionDAOImpl
 import com.wire.kalium.persistence.client.SessionDao
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
+import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
 
 expect class AuthenticationScope : AuthenticationScopeCommon
 
@@ -23,7 +24,7 @@ abstract class AuthenticationScopeCommon(
 ) {
 
     protected abstract val encryptedSettingsHolder: EncryptedSettingsHolder
-    private val kaliumPreferences: KaliumPreferences get() = KaliumPreferences(encryptedSettingsHolder.encryptedSettings)
+    private val kaliumPreferences: KaliumPreferences get() = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
     private val sessionDao: SessionDao get() = SessionDAOImpl(kaliumPreferences)
 
     private val sessionMapper: SessionMapper get() = SessionMapperImpl()

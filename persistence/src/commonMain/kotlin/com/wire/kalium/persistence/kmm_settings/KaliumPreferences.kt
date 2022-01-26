@@ -4,32 +4,43 @@ import com.russhwolf.settings.Settings
 import com.russhwolf.settings.get
 import com.russhwolf.settings.set
 import com.wire.kalium.persistence.Util.JsonSerializer
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
+import kotlinx.serialization.KSerializer
 
-class KaliumPreferences(
-    val encryptedSettings: Settings
-) {
+interface KaliumPreferences {
+    fun remove(key: String)
+    fun exitsValue(key: String): Boolean
+    fun putString(key: String, value: String)
+    fun putString(key: String, value: () -> String) = putString(key, value())
+    fun getString(key: String): String?
 
-    fun remove(key: String) = encryptedSettings.remove(key)
+    fun <T> putSerializable(key: String, value: T, kSerializer: KSerializer<T>)
+    fun <T> putSerializable(key: String, value: () -> T, kSerializer: KSerializer<T>) = putSerializable(key, value(), kSerializer)
+    fun <T> getSerializable(key: String, kSerializer: KSerializer<T>): T?
+}
 
-    fun exitsValue(key: String) = encryptedSettings.keys.contains(key)
+class KaliumPreferencesSettings(
+    private val encryptedSettings: Settings
+) : KaliumPreferences {
 
-    fun putString(key: String, value: String) {
+    override fun remove(key: String) = encryptedSettings.remove(key)
+
+    override fun exitsValue(key: String) = encryptedSettings.keys.contains(key)
+
+    override fun putString(key: String, value: String) {
         encryptedSettings[key] = value
     }
-    fun putString(key: String, value: () -> String) = putString(key, value())
-    fun getString(key: String): String? = encryptedSettings[key]
 
-    inline fun <reified T> putSerializable(key: String, value: T) {
+    override fun getString(key: String): String? = encryptedSettings[key]
+
+    override fun <T> putSerializable(key: String, value: T, kSerializer: KSerializer<T>) {
         // TODO: try catch for Serialization exceptions
-        encryptedSettings[key] = JsonSerializer().encodeToString(value)
+        encryptedSettings[key] = JsonSerializer().encodeToString(kSerializer, value)
     }
-    inline fun <reified T> putSerializable(key: String, value: () -> T) = putSerializable(key, value())
-    inline fun <reified T> getSerializable(key: String): T? {
+
+    override fun <T> getSerializable(key: String, kSerializer: KSerializer<T>): T? {
         val jsonString: String? = encryptedSettings[key]
         return jsonString?.let {
-            JsonSerializer().decodeFromString(it)
+            JsonSerializer().decodeFromString(kSerializer, it)
         } ?: run { null }
     }
 }
