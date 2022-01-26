@@ -6,7 +6,7 @@ import com.wire.kalium.logic.failure.SessionFailure
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.persistence.client.SessionDAO
-import com.wire.kalium.persistence.model.DataStoreResult
+import com.wire.kalium.persistence.model.PreferencesResult
 
 interface SessionLocalRepository {
     suspend fun storeSession(autSession: AuthSession)
@@ -23,10 +23,10 @@ class SessionLocalDataSource(
 
     override suspend fun getSessions(): Either<CoreFailure, List<AuthSession>> =
         when (val result = sessionLocalDataSource.allSessions()) {
-            is DataStoreResult.Success -> Either.Right(
+            is PreferencesResult.Success -> Either.Right(
                 result.data.values.toList().map { sessionMapper.fromPersistenceSession(it) })
 
-            is DataStoreResult.DataNotFound -> Either.Left(SessionFailure.NoSessionFound)
+            is PreferencesResult.DataNotFound -> Either.Left(SessionFailure.NoSessionFound)
         }
 
 }

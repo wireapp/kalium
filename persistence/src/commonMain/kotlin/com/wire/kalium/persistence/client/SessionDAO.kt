@@ -1,7 +1,7 @@
 package com.wire.kalium.persistence.client
 
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
-import com.wire.kalium.persistence.model.DataStoreResult
+import com.wire.kalium.persistence.model.PreferencesResult
 import com.wire.kalium.persistence.model.PersistenceSession
 import kotlinx.serialization.Serializable
 import kotlin.jvm.JvmInline
@@ -30,12 +30,12 @@ interface SessionDAO {
     /**
      * return all stored session as a userId to session map
      */
-    suspend fun allSessions(): DataStoreResult<Map<String, PersistenceSession>>
+    suspend fun allSessions(): PreferencesResult<Map<String, PersistenceSession>>
 
     /**
      * returns true if there is any session saved and false otherwise
      */
-    suspend fun existSessions(): Boolean
+    suspend fun sessionsExist(): Boolean
 }
 
 class SessionDAOImpl(
@@ -43,11 +43,11 @@ class SessionDAOImpl(
 ) : SessionDAO {
     override suspend fun addSession(persistenceSession: PersistenceSession) =
         when(val result = allSessions()) {
-            is DataStoreResult.Success -> {
+            is PreferencesResult.Success -> {
                 result.data.toMutableMap()[persistenceSession.userId] = persistenceSession
                 saveAllSessions(SessionsMap(result.data))
             }
-            DataStoreResult.DataNotFound -> {
+            PreferencesResult.DataNotFound -> {
                 val sessions = mapOf(persistenceSession.userId to persistenceSession)
                 saveAllSessions(SessionsMap(sessions))
             }
@@ -55,36 +55,38 @@ class SessionDAOImpl(
 
     override suspend fun deleteSession(userId: String) {
         when (val result = allSessions()) {
-            is DataStoreResult.Success -> {
+            is PreferencesResult.Success -> {
                 // save the new map if the remove did not return null (session was deleted)
                 result.data.toMutableMap().remove(userId)?.let {
                     saveAllSessions(SessionsMap(result.data))
-                } ?: run {
+                } ?: {
                     // session didn't exist in the first place
                 }
             }
-            is DataStoreResult.DataNotFound -> TODO()
+            is PreferencesResult.DataNotFound -> {
+                // trying to delete a session when no sessions are actually stored
+            }
         }
     }
 
     override suspend fun currentSession(): PersistenceSession? =
         kaliumPreferences.getString(CURRENT_SESSION_KEY)?.let { userId ->
             when (val result = allSessions()) {
-                is DataStoreResult.Success -> result.data[userId]
-                DataStoreResult.DataNotFound -> null
+                is PreferencesResult.Success -> result.data[userId]
+                PreferencesResult.DataNotFound -> null
             }
         }
 
 
     override suspend fun updateCurrentSession(userId: String) = kaliumPreferences.putString(CURRENT_SESSION_KEY, userId)
 
-    override suspend fun allSessions(): DataStoreResult<Map<String, PersistenceSession>> {
+    override suspend fun allSessions(): PreferencesResult<Map<String, PersistenceSession>> {
         return kaliumPreferences.getSerializable(SESSIONS_KEY, SessionsMap.serializer())?.let {
-            DataStoreResult.Success(it.s)
-        } ?: run { DataStoreResult.DataNotFound }
+            PreferencesResult.Success(it.s)
+        } ?: run { PreferencesResult.DataNotFound }
     }
 
-    override suspend fun existSessions(): Boolean = kaliumPreferences.exitsValue(SESSIONS_KEY)
+    override suspend fun sessionsExist(): Boolean = kaliumPreferences.hasValue(SESSIONS_KEY)
 
     private fun saveAllSessions(sessions: SessionsMap) {
         kaliumPreferences.putSerializable(SESSIONS_KEY, sessions, SessionsMap.serializer())

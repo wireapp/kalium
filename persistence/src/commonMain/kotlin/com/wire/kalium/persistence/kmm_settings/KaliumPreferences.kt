@@ -8,7 +8,7 @@ import kotlinx.serialization.KSerializer
 
 interface KaliumPreferences {
     fun remove(key: String)
-    fun exitsValue(key: String): Boolean
+    fun hasValue(key: String): Boolean
     fun putString(key: String, value: String)
     fun putString(key: String, value: () -> String) = putString(key, value())
     fun getString(key: String): String?
@@ -24,7 +24,7 @@ class KaliumPreferencesSettings(
 
     override fun remove(key: String) = encryptedSettings.remove(key)
 
-    override fun exitsValue(key: String) = encryptedSettings.keys.contains(key)
+    override fun hasValue(key: String) = encryptedSettings.keys.contains(key)
 
     override fun putString(key: String, value: String) {
         encryptedSettings[key] = value

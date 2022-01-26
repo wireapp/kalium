@@ -26,8 +26,8 @@ class KaliumPreferencesTest {
         val testString = "some cool text"
         kaliumPreferences.putString(KEY1, testString)
         assertEquals(kaliumPreferences.getString(KEY1), testString)
-        assertTrue(kaliumPreferences.exitsValue(KEY1))
-        assertFalse(kaliumPreferences.exitsValue(KEY2))
+        assertTrue(kaliumPreferences.hasValue(KEY1))
+        assertFalse(kaliumPreferences.hasValue(KEY2))
     }
 
 
