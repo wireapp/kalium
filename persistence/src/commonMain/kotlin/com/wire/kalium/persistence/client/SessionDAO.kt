@@ -1,16 +1,12 @@
 package com.wire.kalium.persistence.client
 
-import com.wire.kalium.persistence.Util.JsonSerializer
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.model.DataStoreResult
 import com.wire.kalium.persistence.model.PersistenceSession
-import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
 import kotlin.jvm.JvmInline
-import kotlin.reflect.KClass
 
-interface SessionDao {
+interface SessionDAO {
     /**
      * store a session locally
      */
@@ -44,9 +40,18 @@ interface SessionDao {
 
 class SessionDAOImpl(
     private val kaliumPreferences: KaliumPreferences
-) : SessionDao {
+) : SessionDAO {
     override suspend fun addSession(persistenceSession: PersistenceSession) =
-        kaliumPreferences.putSerializable(SESSIONS_KEY, persistenceSession, PersistenceSession.serializer())
+        when(val result = allSessions()) {
+            is DataStoreResult.Success -> {
+                result.data.toMutableMap()[persistenceSession.userId] = persistenceSession
+                saveAllSessions(SessionsMap(result.data))
+            }
+            DataStoreResult.DataNotFound -> {
+                val sessions = mapOf(persistenceSession.userId to persistenceSession)
+                saveAllSessions(SessionsMap(sessions))
+            }
+        }
 
     override suspend fun deleteSession(userId: String) {
         when (val result = allSessions()) {
@@ -95,4 +100,4 @@ class SessionDAOImpl(
 // At runtime an object of 'SessionsMap' contains just 'Map<String, PersistenceSession>'
 @Serializable
 @JvmInline
-value class SessionsMap(val s: Map<String, PersistenceSession>)
+private value class SessionsMap(val s: Map<String, PersistenceSession>)

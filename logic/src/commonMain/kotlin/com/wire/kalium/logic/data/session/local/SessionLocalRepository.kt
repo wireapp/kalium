@@ -5,10 +5,8 @@ import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.failure.SessionFailure
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.persistence.client.SessionDao
+import com.wire.kalium.persistence.client.SessionDAO
 import com.wire.kalium.persistence.model.DataStoreResult
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 
 interface SessionLocalRepository {
     suspend fun storeSession(autSession: AuthSession)
@@ -16,7 +14,7 @@ interface SessionLocalRepository {
 }
 
 class SessionLocalDataSource(
-    private val sessionLocalDataSource: SessionDao,
+    private val sessionLocalDataSource: SessionDAO,
     private val sessionMapper: SessionMapper
 ) : SessionLocalRepository {
     override suspend fun storeSession(autSession: AuthSession) =
