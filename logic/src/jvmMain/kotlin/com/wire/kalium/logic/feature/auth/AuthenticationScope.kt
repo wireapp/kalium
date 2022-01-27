@@ -7,7 +7,5 @@ actual class AuthenticationScope(
     loginNetworkContainer: LoginNetworkContainer,
     clientLabel: String
 ) : AuthenticationScopeCommon(loginNetworkContainer, clientLabel) {
-    override val sessionLocalDataSource: SessionLocalDataSource
-        get() = TODO("Not yet implemented")
-
+    override val sessionLocalDataSource: SessionLocalDataSource = SessionLocalDataSource()
 }
