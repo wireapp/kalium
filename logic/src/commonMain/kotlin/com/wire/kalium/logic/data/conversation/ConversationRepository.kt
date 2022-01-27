@@ -8,8 +8,14 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.network.api.ConversationId
+import com.wire.kalium.network.api.QualifiedID
 import com.wire.kalium.network.api.conversation.ConversationApi
+import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.user.client.ClientApi
+import com.wire.kalium.network.api.user.details.ListUserRequest
+import com.wire.kalium.network.api.user.details.UserDetailsApi
+import com.wire.kalium.network.api.user.details.UserDetailsResponse
+import com.wire.kalium.network.api.user.details.qualifiedIds
 import com.wire.kalium.network.utils.isSuccessful
 
 interface ConversationRepository {
@@ -23,7 +29,8 @@ class ConversationDataSource(
     private val clientApi: ClientApi,
     private val idMapper: IdMapper,
     private val conversationMapper: ConversationMapper,
-    private val memberMapper: MemberMapper
+    private val memberMapper: MemberMapper,
+    private val userDetailsApi: UserDetailsApi
 ) : ConversationRepository {
 
     override suspend fun getConversationList(): Either<CoreFailure, List<Conversation>> {
@@ -31,7 +38,46 @@ class ConversationDataSource(
         return if (!conversationsResponse.isSuccessful()) {
             Either.Left(CoreFailure.ServerMiscommunication)
         } else {
-            Either.Right(conversationsResponse.value.conversations.map(conversationMapper::fromApiModel))
+            val conversations = conversationsResponse.value.conversations
+            getUserDetailsForOneOnOneConversations(conversations).map { users ->
+                fillConversationNames(conversations, users)
+            }.map {
+                it.map((conversationMapper::fromApiModel))
+            }
+        }
+    }
+
+    private val ConversationResponse.shouldHaveNameReplaced: Boolean
+        get() = type !in setOf(ConversationResponse.Type.GROUP, ConversationResponse.Type.UNKNOWN) && members.otherMembers.size <= 1
+
+    private fun fillConversationNames(
+        conversations: List<ConversationResponse>,
+        users: List<UserDetailsResponse>
+    ) = conversations.map { conversation ->
+        val firstContactId = conversation.members.otherMembers.firstOrNull()?.userId
+        val contactDetails = users.firstOrNull { userDetail -> userDetail.id == firstContactId }
+        if (!conversation.shouldHaveNameReplaced || contactDetails == null) {
+            conversation
+        } else {
+            // Update the name with the details found for the contact
+            conversation.copy(name = contactDetails.name)
+        }
+    }
+
+    private suspend fun getUserDetailsForOneOnOneConversations(conversations: List<ConversationResponse>)
+            : Either<CoreFailure, List<UserDetailsResponse>> {
+        val neededUserIds = arrayListOf<QualifiedID>()
+        conversations.forEach { conversation ->
+            if (!conversation.shouldHaveNameReplaced) {
+                return@forEach
+            }
+            conversation.members.otherMembers.firstOrNull()?.userId?.let { neededUserIds += it }
+        }
+        val response = userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(neededUserIds.distinct()))
+        return if (!response.isSuccessful()) {
+            Either.Left(CoreFailure.ServerMiscommunication)
+        } else {
+            Either.Right(response.value)
         }
     }
 
