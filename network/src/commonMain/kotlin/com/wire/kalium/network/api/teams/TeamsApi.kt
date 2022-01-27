@@ -4,6 +4,7 @@ import com.wire.kalium.network.api.AssetId
 import com.wire.kalium.network.api.NonQualifiedConversationId
 import com.wire.kalium.network.api.TeamId
 import com.wire.kalium.network.api.NonQualifiedUserId
+import com.wire.kalium.network.api.user.LegalHoldStatus
 import com.wire.kalium.network.utils.NetworkResponse
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -42,18 +43,6 @@ interface TeamsApi {
         @SerialName("created_at") val createdAt: String?,
         val permissions: Permissions?
     )
-
-    @Serializable
-    enum class LegalHoldStatus {
-        @SerialName("enabled")
-        ENABLED,
-        @SerialName("pending")
-        PENDING,
-        @SerialName("disabled")
-        DISABLED,
-        @SerialName("no_consent")
-        NO_CONSENT
-    }
 
     @Serializable
     data class Permissions(
