@@ -1,11 +1,11 @@
 package com.wire.kalium.logic.feature.session
 
 import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.feature.conversation.GetConversationsUseCase
+import com.wire.kalium.logic.feature.auth.GetSessionsUseCase
 
 class SessionScope(
-    sessionRepository: SessionRepository
+    private val sessionRepository: SessionRepository
 ) {
-    val allSessions = GetAllSessionsUseCase(sessionRepository)
-    val saveSession = SaveSessionUseCase(sessionRepository)
+    val allSessions get() = GetSessionsUseCase(sessionRepository)
+    val saveSession get() = SaveSessionUseCase(sessionRepository)
 }
