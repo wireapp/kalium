@@ -1,6 +1,7 @@
 plugins {
     Plugins.androidLibrary(this)
     Plugins.multiplatform(this)
+    Plugins.serialization(this)
     Plugins.sqlDelight(this)
 }
 
@@ -65,12 +66,14 @@ kotlin {
                 // coroutines
                 implementation(Dependencies.Coroutines.core) {
                     version {
+                        // strictly using the native-mt version on coroutines
                         strictly(Versions.coroutines)
                     }
                 }
                 implementation(Dependencies.SqlDelight.runtime)
                 implementation(Dependencies.SqlDelight.coroutinesExtension)
                 implementation(Dependencies.Kotlinx.serialization)
+                implementation(Dependencies.MultiplatformSettings.settings)
             }
         }
         val commonTest by getting {
@@ -78,6 +81,8 @@ kotlin {
                 implementation(kotlin("test"))
                 // coroutines
                 implementation(Dependencies.Coroutines.test)
+                // MultiplatformSettings
+                implementation(Dependencies.MultiplatformSettings.test)
             }
         }
         val jvmMain by getting {
@@ -96,7 +101,7 @@ kotlin {
         val jsTest by getting
         val androidMain by getting {
             dependencies {
-                implementation(Dependencies.Android.dataStorePreferences)
+                implementation(Dependencies.Android.securityCrypto)
                 implementation(Dependencies.SqlDelight.androidDriver)
                 implementation("net.zetetic:android-database-sqlcipher:4.5.0@aar")
                 implementation("androidx.sqlite:sqlite:2.0.1")

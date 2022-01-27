@@ -1,13 +1,8 @@
 package com.wire.kalium.logic.feature.auth
 
 import android.content.Context
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.preferencesDataStore
 import com.wire.kalium.network.LoginNetworkContainer
-import com.wire.kalium.persistence.client.SessionLocalDataSource
-import com.wire.kalium.persistence.data_store.DataStoreStorage
-import com.wire.kalium.persistence.util.SecurityUtil
+import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 
 /**
  * This class is only for platform specific variables,
@@ -16,12 +11,12 @@ import com.wire.kalium.persistence.util.SecurityUtil
 actual class AuthenticationScope(
     loginNetworkContainer: LoginNetworkContainer,
     clientLabel: String,
-    applicationContext: Context
+    private val applicationContext: Context
 ) : AuthenticationScopeCommon(loginNetworkContainer, clientLabel) {
+    override val encryptedSettingsHolder: EncryptedSettingsHolder
+        get() = EncryptedSettingsHolder(applicationContext, PREFERENCE_FILE_NAME)
 
-    private val dataStore: DataStore<Preferences> =
-        preferencesDataStore(name = "data-store").getValue(applicationContext, String::javaClass)
-    private val securityUtil: SecurityUtil get() = SecurityUtil()
-    private val dataStoreStorage: DataStoreStorage get() = DataStoreStorage(dataStore, securityUtil)
-    override val sessionLocalDataSource: SessionLocalDataSource get() = SessionLocalDataSource(dataStoreStorage)
+    private companion object {
+        private const val PREFERENCE_FILE_NAME = "app-preference"
+    }
 }

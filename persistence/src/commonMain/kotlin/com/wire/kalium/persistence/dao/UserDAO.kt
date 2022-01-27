@@ -1,11 +1,15 @@
 package com.wire.kalium.persistence.dao
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class QualifiedID(
     val value: String,
     val domain: String
 )
+
+typealias UserId = QualifiedID
 
 data class User(
     val id: QualifiedID,

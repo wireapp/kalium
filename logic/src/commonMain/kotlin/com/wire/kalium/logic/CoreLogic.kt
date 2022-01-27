@@ -1,14 +1,11 @@
 package com.wire.kalium.logic
 
-import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.session.SessionMapperImpl
 import com.wire.kalium.logic.feature.UserSessionScope
-import com.wire.kalium.logic.feature.UserSessionScopeCommon
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.network.LoginNetworkContainer
-import com.wire.kalium.persistence.client.SessionLocalDataSource
 
 expect class CoreLogic: CoreLogicCommon
 

@@ -1,18 +1,15 @@
 package com.wire.kalium.logic.data.session
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.failure.SessionFailure
+import com.wire.kalium.logic.data.session.local.SessionLocalRepository
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.persistence.client.SessionLocalDataSource
-import com.wire.kalium.persistence.model.DataStoreResult
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
 
 interface SessionRepository {
     suspend fun storeSession(autSession: AuthSession)
-    suspend fun getSessions(): Flow<Either<CoreFailure, List<AuthSession>>>
+    suspend fun getSessions(): Either<CoreFailure, List<AuthSession>>
+    suspend fun doesSessionExist(userId: UserId): Either<CoreFailure, Boolean>
 }
 
 @Deprecated("Use the SessionRepositoryImpl", replaceWith = ReplaceWith("SessionRepositoryImpl"))
@@ -23,24 +20,33 @@ class InMemorySessionRepository : SessionRepository {
         sessions[autSession.userId] = autSession
     }
 
-    override suspend fun getSessions(): Flow<Either<CoreFailure, List<AuthSession>>> = flow { emit(Either.Right(sessions.values.toList())) }
+    override suspend fun getSessions(): Either<CoreFailure, List<AuthSession>> = Either.Right(sessions.values.toList())
+    override suspend fun doesSessionExist(userId: UserId): Either<CoreFailure, Boolean> {
+        TODO("Not yet implemented")
+    }
 
 }
 
-class SessionRepositoryImpl(
-    private val sessionLocalDataSource: SessionLocalDataSource,
-    private val sessionMapper: SessionMapper
+class SessionDataSource(
+    private val sessionLocalRepository: SessionLocalRepository
 ) : SessionRepository {
-    override suspend fun storeSession(autSession: AuthSession) {
-        sessionLocalDataSource.addSession(sessionMapper.toPersistenceSession(autSession))
-    }
+    override suspend fun storeSession(autSession: AuthSession) = sessionLocalRepository.storeSession(autSession)
 
-    override suspend fun getSessions(): Flow<Either<CoreFailure, List<AuthSession>>> =
-        sessionLocalDataSource.allSessions().map { result ->
-            when (result) {
-                is DataStoreResult.Success -> return@map Either.Right(
-                    result.data.values.toList().map { sessionMapper.fromPersistenceSession(it) })
-                is DataStoreResult.DataNotFound -> return@map Either.Left(SessionFailure.NoSessionFound)
+    override suspend fun getSessions(): Either<CoreFailure, List<AuthSession>> = sessionLocalRepository.getSessions()
+
+    override suspend fun doesSessionExist(userId: UserId): Either<CoreFailure, Boolean> =
+        when (val result = sessionLocalRepository.getSessions()) {
+            is Either.Left -> Either.Left(result.value)
+
+            is Either.Right -> {
+                result.value.forEach {
+                    if (it.userId == userId.value) {
+                        Either.Right(true)
+                    }
+                }
+                Either.Right(false)
             }
         }
 }
+
+

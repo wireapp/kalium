@@ -22,8 +22,9 @@ object Versions {
     const val androidTestRules = "1.4.0"
     const val androidTestCore = "1.4.0"
     const val androidxArch = "2.1.0"
-    const val dataStore = "1.0.0"
     const val ktxSerialization = "1.3.2"
+    const val multiplatformSettings = "0.8.1"
+    const val androidSecurity = "1.0.0"
     const val sqlDelight = "2.0.0-SNAPSHOT"
 }
 
@@ -74,7 +75,12 @@ object Dependencies {
         const val composeTooling = "androidx.compose.ui:ui-tooling:${Versions.compose}"
         const val coroutines = "org.jetbrains.kotlinx:kotlinx-coroutines-android:${Versions.coroutines}"
         const val ktor = "io.ktor:ktor-client-android:${Versions.ktor}"
-        const val dataStorePreferences = "androidx.datastore:datastore-preferences:${Versions.dataStore}"
+        const val securityCrypto = "androidx.security:security-crypto:${Versions.androidSecurity}"
+    }
+
+    object MultiplatformSettings {
+        const val settings = "com.russhwolf:multiplatform-settings:${Versions.multiplatformSettings}"
+        const val test = "com.russhwolf:multiplatform-settings-test:${Versions.multiplatformSettings}"
     }
 
     object AndroidInstruments {

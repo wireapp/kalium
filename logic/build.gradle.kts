@@ -1,5 +1,3 @@
-import Plugins.ksp
-
 plugins {
     Plugins.androidLibrary(this)
     Plugins.multiplatform(this)
@@ -47,6 +45,9 @@ kotlin {
                         strictly(Versions.coroutines)
                     }
                 }
+                implementation(Dependencies.Coroutines.core)
+                // the Dependency is duplicated between here and persistence build.gradle.kts
+                implementation(Dependencies.MultiplatformSettings.settings)
             }
         }
         val commonTest by getting {
@@ -59,15 +60,9 @@ kotlin {
                 implementation(Dependencies.Test.mockative)
             }
         }
-        val jvmMain by getting {
-            dependencies { }
-        }
+        val jvmMain by getting
         val jvmTest by getting
-        val androidMain by getting {
-            dependencies {
-                implementation(Dependencies.Android.dataStorePreferences)
-            }
-        }
+        val androidMain by getting
         val androidTest by getting
     }
 }
