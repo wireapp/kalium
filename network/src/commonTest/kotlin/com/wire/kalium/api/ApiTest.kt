@@ -11,11 +11,13 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.content.TextContent
 import io.ktor.http.headersOf
 import io.ktor.utils.io.ByteReadChannel
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 interface ApiTest {
@@ -155,5 +157,11 @@ interface ApiTest {
         assertContains(this.body.contentType?.contentType ?: "", contentType.contentType)
 
     // path
-    fun HttpRequestData.assertPathEqual(path: String) = assertEquals(this.url.encodedPath, path)
+    fun HttpRequestData.assertPathEqual(path: String) = assertEquals(path, this.url.encodedPath)
+
+    // body
+    fun HttpRequestData.assertBodyContent(content: String){
+        assertIs<TextContent>(body)
+        assertEquals(content, (body as TextContent).text)
+    }
 }
