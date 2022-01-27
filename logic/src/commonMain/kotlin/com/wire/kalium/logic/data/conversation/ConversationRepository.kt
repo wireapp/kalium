@@ -40,35 +40,25 @@ class ConversationDataSource(
         } else {
             val conversations = conversationsResponse.value.conversations
             getUserDetailsForOneOnOneConversations(conversations).map { users ->
-                fillConversationNames(conversations, users)
-            }.map {
-                it.map((conversationMapper::fromApiModel))
+                mapConversations(conversations, users)
             }
         }
     }
 
-    private val ConversationResponse.shouldHaveNameReplaced: Boolean
-        get() = type !in setOf(ConversationResponse.Type.GROUP, ConversationResponse.Type.UNKNOWN) && members.otherMembers.size <= 1
-
-    private fun fillConversationNames(
+    private fun mapConversations(
         conversations: List<ConversationResponse>,
         users: List<UserDetailsResponse>
-    ) = conversations.map { conversation ->
+    ): List<Conversation> = conversations.map { conversation ->
         val firstContactId = conversation.members.otherMembers.firstOrNull()?.userId
         val contactDetails = users.firstOrNull { userDetail -> userDetail.id == firstContactId }
-        if (!conversation.shouldHaveNameReplaced || contactDetails == null) {
-            conversation
-        } else {
-            // Update the name with the details found for the contact
-            conversation.copy(name = contactDetails.name)
-        }
+        conversationMapper.fromApiModel(conversation, contactDetails)
     }
 
     private suspend fun getUserDetailsForOneOnOneConversations(conversations: List<ConversationResponse>)
             : Either<CoreFailure, List<UserDetailsResponse>> {
         val neededUserIds = arrayListOf<QualifiedID>()
         conversations.forEach { conversation ->
-            if (!conversation.shouldHaveNameReplaced) {
+            if (!conversation.isOneOnOneConversation) {
                 return@forEach
             }
             conversation.members.otherMembers.firstOrNull()?.userId?.let { neededUserIds += it }
@@ -90,7 +80,7 @@ class ConversationDataSource(
             }
             return Either.Left(CoreFailure.ServerMiscommunication)
         }
-        return Either.Right(conversationMapper.fromApiModel(conversationResponse.value))
+        TODO("Replace with persistence data")
     }
 
     /**
@@ -98,8 +88,8 @@ class ConversationDataSource(
      */
     private suspend fun getConversationMembers(conversationId: ConversationId): Either<CoreFailure, List<UserId>> =
         getConversationDetails(conversationId).map { conversation ->
-            val otherIds = conversation.members.otherMembers.map { it.id }
-            val selfId = conversation.members.self.id
+            val otherIds = conversation.membersInfo.otherMembers.map { it.id }
+            val selfId = conversation.membersInfo.self.id
             (otherIds + selfId)
         }
 

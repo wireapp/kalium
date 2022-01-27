@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-enum class LegalHoldStatus {
+enum class LegalHoldStatusResponse {
     @SerialName("enabled")
     ENABLED,
     @SerialName("pending")

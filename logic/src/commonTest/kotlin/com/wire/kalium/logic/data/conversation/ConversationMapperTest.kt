@@ -21,11 +21,14 @@ class ConversationMapperTest {
     @Mock
     val memberMapper = mock(classOf<MemberMapper>())
 
+    @Mock
+    val legalHoldStatusMapper = mock(classOf<LegalHoldStatusMapper>())
+
     private lateinit var conversationMapper: ConversationMapper
 
     @BeforeTest
     fun setup() {
-        conversationMapper = ConversationMapperImpl(idMapper, memberMapper)
+        conversationMapper = ConversationMapperImpl(idMapper, memberMapper, legalHoldStatusMapper)
     }
 
     @Test
@@ -46,7 +49,7 @@ class ConversationMapperTest {
             .whenInvokedWith(any())
             .then { transformedMemberInfo }
 
-        val mappedResponse = conversationMapper.fromApiModel(response)
+        val mappedResponse = conversationMapper.fromApiModel(response, null)
 
         assertEquals(mappedResponse.name, response.name)
     }
@@ -70,7 +73,7 @@ class ConversationMapperTest {
             .whenInvokedWith(any())
             .then { transformedMemberInfo }
 
-        val mappedResponse = conversationMapper.fromApiModel(response)
+        val mappedResponse = conversationMapper.fromApiModel(response, null)
 
         verify(idMapper)
             .invocation { idMapper.fromApiModel(originalConversationId) }
@@ -98,7 +101,7 @@ class ConversationMapperTest {
             .whenInvokedWith(any())
             .then { transformedMemberInfo }
 
-        conversationMapper.fromApiModel(response)
+        conversationMapper.fromApiModel(response, null)
 
         verify(idMapper)
             .invocation { idMapper.fromApiModel(originalConversationId) }
@@ -111,7 +114,7 @@ class ConversationMapperTest {
         val OTHER_MEMBERS = listOf(ConversationOtherMembersResponse(null, UserId("other1", "domain1")))
         val MEMBERS_RESPONSE = ConversationMembersResponse(SELF_MEMBER_RESPONSE, OTHER_MEMBERS)
         val CONVERSATION_RESPONSE = ConversationResponse(
-            "creator", MEMBERS_RESPONSE, "name", ORIGINAL_CONVERSATION_ID, 42, null
+            "creator", MEMBERS_RESPONSE, "name", ORIGINAL_CONVERSATION_ID, ConversationResponse.Type.GROUP, null
         )
     }
 }

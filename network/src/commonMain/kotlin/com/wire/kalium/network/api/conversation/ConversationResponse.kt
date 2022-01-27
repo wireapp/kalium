@@ -26,11 +26,19 @@ data class ConversationResponse(
     @SerialName("message_timer")
     val messageTimer: Int?
 ) {
+
+    val isOneOnOneConversation: Boolean
+        get() = type in setOf(
+            Type.ONE_TO_ONE,
+            Type.WAIT_FOR_CONNECTION,
+            Type.INCOMING_CONNECTION
+        )
+
     enum class Type(val id: Int) {
-        UNKNOWN(-1), GROUP(0), SELF(1), ONE_TO_ONE(2), WAIT_FOR_CONNECTION(3), INCOMING_CONNECTION(4);
+        GROUP(0), SELF(1), ONE_TO_ONE(2), WAIT_FOR_CONNECTION(3), INCOMING_CONNECTION(4);
 
         companion object {
-            fun fromId(id: Int): Type = values().firstOrNull { type -> type.id == id } ?: UNKNOWN
+            fun fromId(id: Int): Type = values().first { type -> type.id == id }
         }
     }
 }

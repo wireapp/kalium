@@ -11,6 +11,8 @@ import com.wire.kalium.logic.data.conversation.ConversationDataSource
 import com.wire.kalium.logic.data.conversation.ConversationMapper
 import com.wire.kalium.logic.data.conversation.ConversationMapperImpl
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
+import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapperImp
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.MemberMapperImpl
 import com.wire.kalium.logic.data.id.IdMapper
@@ -29,7 +31,8 @@ abstract class UserSessionScopeCommon(
 ) {
     private val idMapper: IdMapper get() = IdMapperImpl()
     private val memberMapper: MemberMapper get() = MemberMapperImpl(idMapper)
-    private val conversationMapper: ConversationMapper get() = ConversationMapperImpl(idMapper, memberMapper)
+    private val legalHoldStatusMapper: LegalHoldStatusMapper get() = LegalHoldStatusMapperImp()
+    private val conversationMapper: ConversationMapper get() = ConversationMapperImpl(idMapper, memberMapper, legalHoldStatusMapper)
 
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(

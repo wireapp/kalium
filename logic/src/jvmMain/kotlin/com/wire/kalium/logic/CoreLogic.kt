@@ -8,7 +8,7 @@ import com.wire.kalium.network.AuthenticatedNetworkContainer
 
 actual class CoreLogic(clientLabel: String, rootProteusDirectoryPath: String) :
     CoreLogicCommon(clientLabel, rootProteusDirectoryPath) {
-    override fun getAuthenticationScope(): AuthenticationScope = AuthenticationScope(loginContainer, clientLabel)
+    override fun getAuthenticationScope(): AuthenticationScope = AuthenticationScope(rootProteusDirectoryPath, loginContainer, clientLabel)
 
     override fun getSessionScope(session: AuthSession): UserSessionScope {
         val dataSourceSet = userScopeStorage[session] ?: run {
