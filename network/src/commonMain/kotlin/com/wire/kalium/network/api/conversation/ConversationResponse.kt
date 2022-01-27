@@ -20,11 +20,20 @@ data class ConversationResponse(
     val id: ConversationId,
 
     @SerialName("type")
-    val type: Int,
+    @Serializable(with = ConversationTypeSerializer::class)
+    val type: Type,
 
     @SerialName("message_timer")
     val messageTimer: Int?
-)
+) {
+    enum class Type(val id: Int) {
+        UNKNOWN(-1), GROUP(0), SELF(1), ONE_TO_ONE(2), WAIT_FOR_CONNECTION(3), INCOMING_CONNECTION(4);
+
+        companion object {
+            fun fromId(id: Int): Type = values().firstOrNull { type -> type.id == id } ?: UNKNOWN
+        }
+    }
+}
 
 @Serializable
 data class ConversationMembersResponse(
