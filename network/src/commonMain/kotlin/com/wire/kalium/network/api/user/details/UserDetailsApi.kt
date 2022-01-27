@@ -4,5 +4,5 @@ import com.wire.kalium.network.utils.NetworkResponse
 
 interface UserDetailsApi {
 
-    suspend fun getMultipleUsers(users: ListUserRequest): NetworkResponse<Unit>
+    suspend fun getMultipleUsers(users: ListUserRequest): NetworkResponse<List<UserDetailsResponse>>
 }

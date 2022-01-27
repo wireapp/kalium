@@ -8,7 +8,7 @@ import io.ktor.client.request.setBody
 
 class UserDetailsApiImp(private val httpClient: HttpClient) : UserDetailsApi {
 
-    override suspend fun getMultipleUsers(users: ListUserRequest): NetworkResponse<Unit> = wrapKaliumResponse {
+    override suspend fun getMultipleUsers(users: ListUserRequest): NetworkResponse<List<UserDetailsResponse>> = wrapKaliumResponse {
         httpClient.post(PATH_LIST_USERS) {
             setBody(users)
         }
