@@ -1,6 +1,7 @@
 package com.wire.kalium.network
 
 import com.wire.kalium.network.tools.HostProvider
+import com.wire.kalium.network.tools.KtxSerializer
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.HttpClientEngine
@@ -32,12 +33,7 @@ internal fun provideBaseHttpClient(
         }
     }
     install(ContentNegotiation) {
-        json(Json {
-            prettyPrint = true
-            isLenient = true
-            ignoreUnknownKeys = true
-            explicitNulls = false
-        })
+        json(KtxSerializer.json)
     }
     config()
 }
