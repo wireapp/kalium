@@ -14,7 +14,7 @@ data class ConversationResponse(
     val members: ConversationMembersResponse,
 
     @SerialName("name")
-    val name: String?,
+    val name: String = "",
 
     @SerialName("qualified_id")
     val id: ConversationId,
