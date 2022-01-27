@@ -50,7 +50,7 @@ class UserDAOTest: BaseDatabaseTest() {
     }
 
     @Test
-    fun givenExistingUser_ThenUserBeUpdated() = runTest {
+    fun givenExistingUser_ThenUserCanBeUpdated() = runTest {
         db.userDAO.insertUser(user1)
         var updateUser1 = User(user1.id, "John Doe", "johndoe")
         db.userDAO.updateUser(updateUser1)
