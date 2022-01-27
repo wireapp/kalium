@@ -48,7 +48,7 @@ class AuthenticatedNetworkContainer(
 
     val clientApi: ClientApi get() = ClientApiImp(authenticatedHttpClient)
 
-    val users: UserDetailsApi get() = UserDetailsApiImp(authenticatedHttpClient)
+    val usersApi: UserDetailsApi get() = UserDetailsApiImp(authenticatedHttpClient)
 
     val messageApi: MessageApi get() = MessageApiImp(authenticatedHttpClient)
 
