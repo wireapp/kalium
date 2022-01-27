@@ -34,7 +34,8 @@ abstract class UserSessionScopeCommon(
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi, idMapper, conversationMapper, memberMapper
+            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi, idMapper, conversationMapper, memberMapper,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.usersApi
         )
 
     private val messageRepository: MessageRepository
