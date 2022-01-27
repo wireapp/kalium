@@ -42,10 +42,11 @@ class SessionDAOImpl(
     private val kaliumPreferences: KaliumPreferences
 ) : SessionDAO {
     override suspend fun addSession(persistenceSession: PersistenceSession) =
-        when(val result = allSessions()) {
+        when (val result = allSessions()) {
             is PreferencesResult.Success -> {
-                result.data.toMutableMap()[persistenceSession.userId] = persistenceSession
-                saveAllSessions(SessionsMap(result.data))
+                val temp = result.data.toMutableMap()
+                temp[persistenceSession.userId] = persistenceSession
+                saveAllSessions(SessionsMap(temp))
             }
             PreferencesResult.DataNotFound -> {
                 val sessions = mapOf(persistenceSession.userId to persistenceSession)
@@ -57,8 +58,14 @@ class SessionDAOImpl(
         when (val result = allSessions()) {
             is PreferencesResult.Success -> {
                 // save the new map if the remove did not return null (session was deleted)
-                result.data.toMutableMap().remove(userId)?.let {
-                    saveAllSessions(SessionsMap(result.data))
+                val temp = result.data.toMutableMap()
+                temp.remove(userId)?.let {
+                    if (temp.isEmpty()) {
+                        // in case it was the last session then delete sessions key/value from the file
+                        removeAllSession()
+                    } else {
+                        saveAllSessions(SessionsMap(temp))
+                    }
                 } ?: {
                     // session didn't exist in the first place
                 }
@@ -82,7 +89,12 @@ class SessionDAOImpl(
 
     override suspend fun allSessions(): PreferencesResult<Map<String, PersistenceSession>> {
         return kaliumPreferences.getSerializable(SESSIONS_KEY, SessionsMap.serializer())?.let {
-            PreferencesResult.Success(it.s)
+            if (it.s.isEmpty()) {
+                // the sessions hashMap is empty
+                PreferencesResult.DataNotFound
+            } else {
+                PreferencesResult.Success(it.s)
+            }
         } ?: run { PreferencesResult.DataNotFound }
     }
 
@@ -91,6 +103,9 @@ class SessionDAOImpl(
     private fun saveAllSessions(sessions: SessionsMap) {
         kaliumPreferences.putSerializable(SESSIONS_KEY, sessions, SessionsMap.serializer())
     }
+
+    private fun removeAllSession() = kaliumPreferences.remove(SESSIONS_KEY)
+
 
     private companion object {
         private const val SESSIONS_KEY = "session_data_store_key"
