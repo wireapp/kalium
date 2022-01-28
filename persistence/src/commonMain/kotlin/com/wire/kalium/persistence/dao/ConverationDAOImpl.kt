@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.map
 import com.wire.kalium.persistence.db.Conversation as SQLDelightConversation
 import com.wire.kalium.persistence.db.Member as SQLDelightMember
 
-class ConverationMapper {
+class ConversationMapper {
     fun toDAO(conversation: SQLDelightConversation): Conversation {
         return Conversation(conversation.qualified_id, conversation.name)
     }
