@@ -25,8 +25,8 @@ class MemberMapper {
 class ConversationDAOImpl(private val conversationQueries: ConverationsQueries,
                           private val memberQueries: MembersQueries): ConversationDAO {
 
-    val memberMapper = MemberMapper()
-    val conversationMapper = ConversationMapper()
+    private val memberMapper = MemberMapper()
+    private val conversationMapper = ConversationMapper()
 
     override suspend fun insertConversation(conversation: Conversation) {
         conversationQueries.insertConversation(conversation.id, conversation.name)
