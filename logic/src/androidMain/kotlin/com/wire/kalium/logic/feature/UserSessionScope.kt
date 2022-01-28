@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature
 import android.content.Context
 import com.wire.kalium.logic.AuthenticatedDataSourceSet
 import com.wire.kalium.logic.configuration.ClientConfig
+import com.wire.kalium.persistence.db.Database
 
 /**
  * This class is only for platform specific variables,
@@ -14,4 +15,5 @@ actual class UserSessionScope(
 ) : UserSessionScopeCommon(authenticatedDataSourceSet) {
 
     override val clientConfig: ClientConfig get() = ClientConfig(applicationContext)
+    override val database: Database get() = Database(applicationContext, "main.db", "123456789")
 }

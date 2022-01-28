@@ -21,6 +21,8 @@ import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.message.MessageScope
+import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.persistence.db.Database
 
 expect class UserSessionScope: UserSessionScopeCommon
 
@@ -30,9 +32,12 @@ abstract class UserSessionScopeCommon(
     private val idMapper: IdMapper get() = IdMapperImpl()
     private val memberMapper: MemberMapper get() = MemberMapperImpl(idMapper)
     private val conversationMapper: ConversationMapper get() = ConversationMapperImpl(idMapper, memberMapper)
+    private val syncManager: SyncManager get() = SyncManager(conversationRepository)
+    protected abstract val database: Database
 
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(
+            database.conversationDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi, idMapper, conversationMapper, memberMapper
         )
@@ -56,6 +61,6 @@ abstract class UserSessionScopeCommon(
         get() = ClientRepositoryImpl(clientRemoteDataSource)
 
     val client: ClientScope get() = ClientScope(clientRepository)
-    val conversations: ConversationScope get() = ConversationScope(conversationRepository)
+    val conversations: ConversationScope get() = ConversationScope(conversationRepository, syncManager)
     val messages: MessageScope get() = MessageScope(messageRepository)
 }
