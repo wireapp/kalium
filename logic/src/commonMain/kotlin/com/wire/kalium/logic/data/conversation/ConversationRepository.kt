@@ -35,10 +35,10 @@ class ConversationDataSource(
         return if (!conversationsResponse.isSuccessful()) {
             Either.Left(CoreFailure.ServerMiscommunication)
         } else {
-            conversationDAO.insertConversations(conversationsResponse.value.conversations.map(conversationMapper::fromApiModelToDao))
+            conversationDAO.insertConversations(conversationsResponse.value.conversations.map(conversationMapper::fromApiModelToDaoModel))
             conversationsResponse.value.conversations.forEach { conversationsResponse ->
                 conversationDAO.insertMembers(
-                    memberMapper.fromApiModelToDao(conversationsResponse.members),
+                    memberMapper.fromApiModelToDaoModel(conversationsResponse.members),
                     idMapper.fromApiToDao(conversationsResponse.id))
             }
             Either.Right(Unit)

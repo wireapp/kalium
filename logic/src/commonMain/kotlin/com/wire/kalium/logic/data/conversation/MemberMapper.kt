@@ -4,12 +4,12 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.user.client.SimpleClientResponse
-import com.wire.kalium.persistence.dao.Member as MemberDAO
+import com.wire.kalium.persistence.dao.Member as PersistedMember
 
 interface MemberMapper {
     fun fromApiModel(conversationMembersResponse: ConversationMembersResponse): MembersInfo
     fun fromMapOfClientsResponseToRecipients(qualifiedMap: Map<UserId, List<SimpleClientResponse>>): List<Recipient>
-    fun fromApiModelToDao(conversationMembersResponse: ConversationMembersResponse): List<com.wire.kalium.persistence.dao.Member>
+    fun fromApiModelToDaoModel(conversationMembersResponse: ConversationMembersResponse): List<PersistedMember>
 }
 
 internal class MemberMapperImpl(private val idMapper: IdMapper) : MemberMapper {
@@ -22,11 +22,11 @@ internal class MemberMapperImpl(private val idMapper: IdMapper) : MemberMapper {
         return MembersInfo(self, others)
     }
 
-    override fun fromApiModelToDao(conversationMembersResponse: ConversationMembersResponse): List<MemberDAO> {
+    override fun fromApiModelToDaoModel(conversationMembersResponse: ConversationMembersResponse): List<PersistedMember> {
         val otherMembers = conversationMembersResponse.otherMembers.map { member ->
-            MemberDAO( idMapper.fromApiToDao(member.userId))
+            PersistedMember( idMapper.fromApiToDao(member.userId))
         }
-        val selfMember = MemberDAO( idMapper.fromApiToDao(conversationMembersResponse.self.userId))
+        val selfMember = PersistedMember( idMapper.fromApiToDao(conversationMembersResponse.self.userId))
         return otherMembers + selfMember
     }
 
