@@ -14,6 +14,7 @@ dependencies {
 
 sqldelight {
     database("AppDatabase") {
+        dialect = "sqlite:3.24"
         packageName = "com.wire.kalium.persistence.db"
     }
 }

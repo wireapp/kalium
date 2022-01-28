@@ -16,6 +16,7 @@ actual class Database(context: Context, name: String, passphrase: String) {
     init {
         val supportFactory = SupportFactory(passphrase.toByteArray())
         val driver =  AndroidSqliteDriver(AppDatabase.Schema, context, name, factory = supportFactory)
+
         database = AppDatabase(
             driver,
             Conversation.Adapter(qualified_idAdapter = QualifiedIDAdapter()),

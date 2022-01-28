@@ -62,6 +62,15 @@ class ConverationDAOTest: BaseDatabaseTest() {
     }
 
     @Test
+    fun givenExistingConversation_ThenConversationIsUpdatedOnInsert() = runTest {
+        db.conversationDAO.insertConversation(conversation1)
+        var updatedConversation1 = Conversation(conversation1.id, "Updated conversation1")
+        db.conversationDAO.insertConversation(updatedConversation1)
+        val result = db.conversationDAO.getConversationByQualifiedID(conversation1.id).first()
+        assertEquals(result, updatedConversation1)
+    }
+
+    @Test
     fun givenExistingConversation_ThenMemberCanBeInserted() = runTest {
         db.conversationDAO.insertConversation(conversation1)
         db.conversationDAO.insertMember(member1, conversation1.id)

@@ -12,8 +12,7 @@ deleteConversation:
 DELETE FROM Conversation WHERE qualified_id = ?;
 
 insertConversation:
-INSERT INTO Conversation(qualified_id, name)
-VALUES(?, ?);
+INSERT INTO Conversation(qualified_id, name) VALUES(?, ?) ON CONFLICT(qualified_id) DO UPDATE SET name = excluded.name;
 
 updateConversation:
 UPDATE Conversation
