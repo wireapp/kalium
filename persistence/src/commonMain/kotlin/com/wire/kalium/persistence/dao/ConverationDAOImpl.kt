@@ -75,6 +75,10 @@ class ConversationDAOImpl(private val conversationQueries: ConverationsQueries,
 
     }
 
+    override suspend fun deleteMemberByQualifiedID(conversationID: QualifiedID, userID: QualifiedID) {
+        memberQueries.deleteMember(conversationID, userID)
+    }
+
     override suspend fun getAllMembers(qualifiedID: QualifiedID): Flow<List<Member>> {
         return memberQueries.selectAllMembersByConversation(qualifiedID)
             .asFlow()

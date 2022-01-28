@@ -52,10 +52,10 @@ class UserDAOTest: BaseDatabaseTest() {
     @Test
     fun givenExistingUser_ThenUserCanBeUpdated() = runTest {
         db.userDAO.insertUser(user1)
-        var updateUser1 = User(user1.id, "John Doe", "johndoe")
-        db.userDAO.updateUser(updateUser1)
+        var updatedUser1 = User(user1.id, "John Doe", "johndoe")
+        db.userDAO.updateUser(updatedUser1)
         val result = db.userDAO.getUserByQualifiedID(user1.id).first()
-        assertEquals(result, updateUser1)
+        assertEquals(result, updatedUser1)
     }
 
     @Test

@@ -20,5 +20,6 @@ interface ConversationDAO {
     suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedID)
     suspend fun insertMember(member: Member, conversationID: QualifiedID)
     suspend fun insertMembers(members: List<Member>, conversationID: QualifiedID)
+    suspend fun deleteMemberByQualifiedID(conversationID: QualifiedID, userID: QualifiedID)
     suspend fun getAllMembers(qualifiedID: QualifiedID): Flow<List<Member>>
 }

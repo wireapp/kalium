@@ -11,5 +11,8 @@ insertMember:
 INSERT INTO Member (user, conversation)
 VALUES (?, ?);
 
+deleteMember:
+DELETE FROM Member WHERE conversation = ? AND user = ?;
+
 selectAllMembersByConversation:
 SELECT * FROM Member WHERE conversation = ?;

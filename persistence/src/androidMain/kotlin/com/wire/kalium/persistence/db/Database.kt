@@ -19,12 +19,13 @@ actual class Database(context: Context, name: String, passphrase: String) {
         database = AppDatabase(
             driver,
             Conversation.Adapter(qualified_idAdapter = QualifiedIDAdapter()),
+            Member.Adapter(userAdapter = QualifiedIDAdapter(), conversationAdapter = QualifiedIDAdapter()),
             User.Adapter(qualified_idAdapter = QualifiedIDAdapter()))
     }
 
     actual val userDAO: UserDAO
-        get() = UserDAOImpl(queries = database.usersQueries )
+        get() = UserDAOImpl(database.usersQueries)
 
     actual val conversationDAO: ConversationDAO
-        get() = ConversationDAOImpl(queries = database.converationsQueries)
+        get() = ConversationDAOImpl(database.converationsQueries, database.membersQueries)
 }
