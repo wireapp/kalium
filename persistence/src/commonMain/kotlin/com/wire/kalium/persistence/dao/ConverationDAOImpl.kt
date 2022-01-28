@@ -11,13 +11,13 @@ import com.wire.kalium.persistence.db.Conversation as SQLDelightConversation
 import com.wire.kalium.persistence.db.Member as SQLDelightMember
 
 class ConversationMapper {
-    fun toDAO(conversation: SQLDelightConversation): Conversation {
+    fun toModel(conversation: SQLDelightConversation): Conversation {
         return Conversation(conversation.qualified_id, conversation.name)
     }
 }
 
 class MemberMapper {
-    fun toDAO(member: SQLDelightMember): Member {
+    fun toModel(member: SQLDelightMember): Member {
         return Member(member.user)
     }
 }
@@ -48,14 +48,14 @@ class ConversationDAOImpl(private val conversationQueries: ConverationsQueries,
         return conversationQueries.selectAllConversations()
             .asFlow()
             .mapToList()
-            .map { it.map(conversationMapper::toDAO) }
+            .map { it.map(conversationMapper::toModel) }
     }
 
     override suspend fun getConversationByQualifiedID(qualifiedID: QualifiedID): Flow<Conversation?> {
         return conversationQueries.selectByQualifiedId(qualifiedID)
             .asFlow()
             .mapToOneOrNull()
-            .map { it?.let { conversationMapper.toDAO(it) } }
+            .map { it?.let { conversationMapper.toModel(it) } }
     }
 
     override suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedID) {
@@ -83,7 +83,7 @@ class ConversationDAOImpl(private val conversationQueries: ConverationsQueries,
         return memberQueries.selectAllMembersByConversation(qualifiedID)
             .asFlow()
             .mapToList()
-            .map { it.map(memberMapper::toDAO)}
+            .map { it.map(memberMapper::toModel)}
     }
 
 }

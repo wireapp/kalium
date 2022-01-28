@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.map
 import com.wire.kalium.persistence.db.User as SQLDelightUser
 
 class UserMapper {
-    fun toDAO(user: SQLDelightUser): User {
+    fun toModel(user: SQLDelightUser): User {
         return User(user.qualified_id, user.name, user.handle)
     }
 }
@@ -36,7 +36,7 @@ class UserDAOImpl(private val queries: UsersQueries): UserDAO {
         return queries.selectByQualifiedId(qualifiedID)
             .asFlow()
             .mapToOneOrNull()
-            .map { it?.let { mapper.toDAO(it) } }
+            .map { it?.let { mapper.toModel(it) } }
     }
 
     override suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedID) {
