@@ -17,6 +17,16 @@ data class ClientResponse(
 )
 
 @Serializable
+data class NewClientEvent(
+    @SerialName("id") val id: String,
+    @SerialName("time") val registrationTime: String,
+    @SerialName("model") val model: String?,
+    @SerialName("type") val deviceType: String,
+    @SerialName("class") val deviceClass: String,
+    @SerialName("label") val label: String?
+)
+
+@Serializable
 data class LocationDTO(
     // TODO: check if location name is needed
     //@SerialName("name") val name: String,

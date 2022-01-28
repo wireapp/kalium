@@ -13,6 +13,6 @@ data class NotificationPageResponse(
 
 @Serializable
 data class NotificationResponse(
-    @SerialName("payload") val payload: List<Payload>?,
+    @SerialName("payload") val payload: List<Event>?,
     @SerialName("id") val id: String
 )
