@@ -2,11 +2,10 @@ package com.wire.kalium.logic
 
 import android.content.Context
 import com.wire.kalium.cryptography.ProteusClient
-import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.feature.UserSessionScope
-import com.wire.kalium.logic.feature.UserSessionScopeCommon
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
+import com.wire.kalium.logic.network_config.BackendType
 import com.wire.kalium.network.AuthenticatedNetworkContainer
 
 /**
@@ -17,12 +16,16 @@ actual class CoreLogic(
     private val applicationContext: Context,
     clientLabel: String,
     rootProteusDirectoryPath: String,
-) : CoreLogicCommon(clientLabel, rootProteusDirectoryPath) {
+    backEndType: BackendType
+) : CoreLogicCommon(clientLabel, rootProteusDirectoryPath, backEndType) {
     override fun getAuthenticationScope(): AuthenticationScope = AuthenticationScope(loginContainer, clientLabel, applicationContext)
 
     override fun getSessionScope(session: AuthSession): UserSessionScope {
         val dataSourceSet = userScopeStorage[session] ?: run {
-            val networkContainer = AuthenticatedNetworkContainer(sessionMapper.toSessionCredentials(session))
+            val networkContainer = AuthenticatedNetworkContainer(
+                sessionCredentials = sessionMapper.toSessionCredentials(session),
+                backEndConfig = backEndTypeMapper.toBackendConfig(backEndType)
+            )
             val proteusClient = ProteusClient(rootProteusDirectoryPath, session.userId)
             AuthenticatedDataSourceSet(networkContainer, proteusClient).also {
                 userScopeStorage[session] = it

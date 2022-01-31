@@ -29,8 +29,8 @@ tasks.withType<Test> {
 
 allprojects {
     repositories {
-        maven(url = "https://oss.sonatype.org/content/repositories/snapshots")
         google()
         mavenCentral()
+        maven(url = "https://oss.sonatype.org/content/repositories/snapshots")
     }
 }

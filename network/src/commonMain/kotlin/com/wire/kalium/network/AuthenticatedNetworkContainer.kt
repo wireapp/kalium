@@ -19,7 +19,7 @@ import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.network.api.user.client.ClientApiImp
 import com.wire.kalium.network.api.user.logout.LogoutApi
 import com.wire.kalium.network.api.user.logout.LogoutImp
-import com.wire.kalium.network.tools.HostProvider
+import com.wire.kalium.network.tools.BackendConfig
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
@@ -32,14 +32,12 @@ import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.http.URLProtocol
 
 class AuthenticatedNetworkContainer(
+    backEndConfig: BackendConfig,
     private val sessionCredentials: SessionCredentials,
     private val engine: HttpClientEngine = defaultHttpEngine(),
-    private val isRequestLoggingEnabled: Boolean = false,
+    private val isRequestLoggingEnabled: Boolean = false
 //    private val onTokenUpdate: (newTokenInfo: Pair<String, String>) -> Unit // Idea to let the network handle the refresh token automatically
 ) {
-
-    private val hostProvider = HostProvider
-
     private val authApi: AuthApi get() = AuthApiImp(authenticatedHttpClient)
 
     val logoutApi: LogoutApi get() = LogoutImp(authenticatedHttpClient)
@@ -59,7 +57,7 @@ class AuthenticatedNetworkContainer(
     val teamsApi: TeamsApi get() = TeamsApiImp(authenticatedHttpClient)
 
     internal val authenticatedHttpClient by lazy {
-        provideBaseHttpClient(engine, isRequestLoggingEnabled) {
+        provideBaseHttpClient(engine, isRequestLoggingEnabled, backEndConfig) {
             installAuth()
         }
     }
@@ -67,7 +65,7 @@ class AuthenticatedNetworkContainer(
     private val webSocketClient by lazy {
         HttpClient(engine) {
             defaultRequest {
-                host = hostProvider.host
+                host = backEndConfig.webSocketUrl
                 url.protocol = URLProtocol.WSS
             }
             install(WebSockets)

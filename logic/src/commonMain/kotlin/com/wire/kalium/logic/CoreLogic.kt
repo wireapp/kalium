@@ -5,18 +5,22 @@ import com.wire.kalium.logic.data.session.SessionMapperImpl
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
+import com.wire.kalium.logic.network_config.BackendType
+import com.wire.kalium.logic.network_config.BackEndTypeMapper
 import com.wire.kalium.network.LoginNetworkContainer
 
-expect class CoreLogic: CoreLogicCommon
+expect class CoreLogic : CoreLogicCommon
 
 abstract class CoreLogicCommon(
     // TODO: can client label be replaced with clientConfig.deviceName() ?
     protected val clientLabel: String,
-    protected val rootProteusDirectoryPath: String
-    ) {
+    protected val rootProteusDirectoryPath: String,
+    protected val backEndType: BackendType
+) {
 
+    protected val backEndTypeMapper: BackEndTypeMapper get() = BackEndTypeMapper()
     protected val loginContainer: LoginNetworkContainer by lazy {
-        LoginNetworkContainer()
+        LoginNetworkContainer(backEndConfig = backEndTypeMapper.toBackendConfig(backEndType))
     }
 
     protected val userScopeStorage = hashMapOf<AuthSession, AuthenticatedDataSourceSet>()

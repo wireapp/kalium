@@ -3,6 +3,7 @@ package com.wire.kalium.api
 import com.wire.kalium.api.tools.testCredentials
 import com.wire.kalium.network.AuthenticatedNetworkContainer
 import com.wire.kalium.network.LoginNetworkContainer
+import com.wire.kalium.network.tools.BackendConfig
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -19,7 +20,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 interface ApiTest {
-
     /**
      * creates an authenticated mock Ktor Http client
      * @param responseBody the response body as Json string
@@ -48,7 +48,8 @@ interface ApiTest {
         }
         return AuthenticatedNetworkContainer(
             engine = mockEngine,
-            sessionCredentials = testCredentials
+            sessionCredentials = testCredentials,
+            backEndConfig = TEST_BACKEND_CONFIG
         ).authenticatedHttpClient
     }
 
@@ -80,7 +81,8 @@ interface ApiTest {
         }
         return LoginNetworkContainer(
             engine = mockEngine,
-            isRequestLoggingEnabled = true
+            isRequestLoggingEnabled = true,
+            backEndConfig = TEST_BACKEND_CONFIG
         ).anonymousHttpClient
     }
 
@@ -106,7 +108,8 @@ interface ApiTest {
         }
         return AuthenticatedNetworkContainer(
             engine = mockEngine,
-            sessionCredentials = testCredentials
+            sessionCredentials = testCredentials,
+            backEndConfig = TEST_BACKEND_CONFIG
         ).authenticatedHttpClient
     }
 
@@ -156,4 +159,9 @@ interface ApiTest {
 
     // path
     fun HttpRequestData.assertPathEqual(path: String) = assertEquals(this.url.encodedPath, path)
+
+
+    private companion object {
+        val TEST_BACKEND_CONFIG = BackendConfig("", "", "")
+    }
 }
