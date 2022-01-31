@@ -13,7 +13,7 @@ class BackEndTypeMapper {
         BackendConfig(
             """"https://staging-nginz-https.zinfra.io"""",
             """"https://wire-account-staging.zinfra.io"""",
-            """"https://staging-nginz-ssl.zinfra.io/await?client=""""
+            """"https://staging-nginz-ssl.zinfra.io"""
         )
     }
 
@@ -21,7 +21,7 @@ class BackEndTypeMapper {
         BackendConfig(
             """"https://prod-nginz-https.wire.com"""",
             """"https://account.wire.com"""",
-            """"https://prod-nginz-ssl.wire.com/await?client=""""
+            """"https://prod-nginz-ssl.wire.com""""
         )
     }
 
