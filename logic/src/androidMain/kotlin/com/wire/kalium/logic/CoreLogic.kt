@@ -28,6 +28,6 @@ actual class CoreLogic(
                 userScopeStorage[session] = it
             }
         }
-        return UserSessionScope(applicationContext, dataSourceSet)
+        return UserSessionScope(applicationContext, session, dataSourceSet)
     }
 }
