@@ -1,6 +1,10 @@
 package com.wire.kalium.logic.sync
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
+import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.onSuccess
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,15 +20,16 @@ enum class SyncState {
     COMPLETED,
 }
 
-class SyncManager(private val conversationRepository: ConversationRepository) {
+class SyncManager(private val syncConversationsUseCase: SyncConversationsUseCase) {
 
     private val internalSyncState = MutableStateFlow(SyncState.WAITING)
     private var syncJob: Job? = null
 
-    suspend fun performSlowSync() {
+    suspend fun performSlowSync(): Either<CoreFailure, Unit> {
         internalSyncState.update { SyncState.FETCHING_CONVERSATIONS }
-        conversationRepository.fetchConversations()
-        internalSyncState.update { SyncState.COMPLETED }
+
+        return syncConversationsUseCase()
+            .onSuccess { internalSyncState.update { SyncState.COMPLETED } }
     }
 
     suspend fun waitForSlowSyncToComplete() {

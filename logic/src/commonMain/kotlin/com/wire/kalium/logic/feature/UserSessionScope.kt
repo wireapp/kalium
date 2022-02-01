@@ -32,7 +32,7 @@ abstract class UserSessionScopeCommon(
     private val idMapper: IdMapper get() = IdMapperImpl()
     private val memberMapper: MemberMapper get() = MemberMapperImpl(idMapper)
     private val conversationMapper: ConversationMapper get() = ConversationMapperImpl(idMapper, memberMapper)
-    private val syncManager: SyncManager get() = SyncManager(conversationRepository)
+    private val syncManager: SyncManager get() = SyncManager(conversations.syncConversations)
     protected abstract val database: Database
 
     private val conversationRepository: ConversationRepository
