@@ -18,14 +18,14 @@ import io.ktor.serialization.kotlinx.json.json
 internal fun provideBaseHttpClient(
     engine: HttpClientEngine,
     isRequestLoggingEnabled: Boolean = false,
-    backEndConfig: BackendConfig,
+    backendConfig: BackendConfig,
     config: HttpClientConfig<*>.() -> Unit = {}
 ) = HttpClient(engine) {
     defaultRequest {
         // since error response are application/jso
         // this header is added by default to all requests
         header("Content-Type", "application/json")
-        host = backEndConfig.apiBaseUrl
+        host = backendConfig.apiBaseUrl
         url.protocol = URLProtocol.HTTPS
     }
     if (isRequestLoggingEnabled) {

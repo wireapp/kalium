@@ -34,7 +34,7 @@ class ConversationsApplication : CliktCommand() {
             val sessionData = loginResult.value
             //TODO: Get them 🍪 refresh token
             val sessionCredentials = SessionCredentials(sessionData.tokenType, sessionData.accessToken, "refreshToken")
-            val networkModule = AuthenticatedNetworkContainer(sessionCredentials = sessionCredentials, backEndConfig = backendConfig)
+            val networkModule = AuthenticatedNetworkContainer(sessionCredentials = sessionCredentials, backendConfig = backendConfig)
             val conversationsResponse = networkModule.conversationApi.conversationsByBatch(null, 100)
 
             if (!conversationsResponse.isSuccessful()) {

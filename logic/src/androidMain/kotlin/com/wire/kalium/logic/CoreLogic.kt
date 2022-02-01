@@ -24,7 +24,7 @@ actual class CoreLogic(
         val dataSourceSet = userScopeStorage[session] ?: run {
             val networkContainer = AuthenticatedNetworkContainer(
                 sessionCredentials = sessionMapper.toSessionCredentials(session),
-                backEndConfig = backEndTypeMapper.toBackendConfig(buildType)
+                backendConfig = backEndTypeMapper.toBackendConfig(buildType)
             )
             val proteusClient = ProteusClient(rootProteusDirectoryPath, session.userId)
             AuthenticatedDataSourceSet(networkContainer, proteusClient).also {

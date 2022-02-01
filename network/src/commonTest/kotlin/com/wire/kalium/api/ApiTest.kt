@@ -49,7 +49,7 @@ interface ApiTest {
         return AuthenticatedNetworkContainer(
             engine = mockEngine,
             sessionCredentials = testCredentials,
-            backEndConfig = TEST_BACKEND_CONFIG
+            backendConfig = TEST_BACKEND_CONFIG
         ).authenticatedHttpClient
     }
 
@@ -109,7 +109,7 @@ interface ApiTest {
         return AuthenticatedNetworkContainer(
             engine = mockEngine,
             sessionCredentials = testCredentials,
-            backEndConfig = TEST_BACKEND_CONFIG
+            backendConfig = TEST_BACKEND_CONFIG
         ).authenticatedHttpClient
     }
 

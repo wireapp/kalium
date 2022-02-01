@@ -32,7 +32,7 @@ import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.http.URLProtocol
 
 class AuthenticatedNetworkContainer(
-    backEndConfig: BackendConfig,
+    backendConfig: BackendConfig,
     private val sessionCredentials: SessionCredentials,
     private val engine: HttpClientEngine = defaultHttpEngine(),
     private val isRequestLoggingEnabled: Boolean = false
@@ -57,7 +57,7 @@ class AuthenticatedNetworkContainer(
     val teamsApi: TeamsApi get() = TeamsApiImp(authenticatedHttpClient)
 
     internal val authenticatedHttpClient by lazy {
-        provideBaseHttpClient(engine, isRequestLoggingEnabled, backEndConfig) {
+        provideBaseHttpClient(engine, isRequestLoggingEnabled, backendConfig) {
             installAuth()
         }
     }
@@ -65,7 +65,7 @@ class AuthenticatedNetworkContainer(
     private val webSocketClient by lazy {
         HttpClient(engine) {
             defaultRequest {
-                host = backEndConfig.webSocketUrl
+                host = backendConfig.webSocketUrl
                 url.protocol = URLProtocol.WSS
             }
             install(WebSockets)
