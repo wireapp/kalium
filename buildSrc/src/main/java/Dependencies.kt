@@ -18,6 +18,7 @@ object Versions {
     const val okHttp = "4.9.3"
     const val kotest = "4.6.3"
     const val mockative = "1.1.4"
+    const val androidWork = "2.7.1"
     const val androidTestRunner = "1.4.0"
     const val androidTestRules = "1.4.0"
     const val androidTestCore = "1.4.0"
@@ -71,6 +72,7 @@ object Dependencies {
     object Android {
         const val appCompat = "androidx.appcompat:appcompat:${Versions.appCompat}"
         const val activityCompose = "androidx.activity:activity-compose:${Versions.activityCompose}"
+        const val work = "androidx.work:work-runtime-ktx:${Versions.androidWork}"
         const val composeMaterial = "androidx.compose.material:material:${Versions.compose}"
         const val composeTooling = "androidx.compose.ui:ui-tooling:${Versions.compose}"
         const val coroutines = "org.jetbrains.kotlinx:kotlinx-coroutines-android:${Versions.coroutines}"
