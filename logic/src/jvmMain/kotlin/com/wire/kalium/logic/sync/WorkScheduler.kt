@@ -1,16 +1,23 @@
 package com.wire.kalium.logic.sync
 
+import com.wire.kalium.logic.CoreLogic
+import com.wire.kalium.logic.feature.UserSessionScope
+import com.wire.kalium.logic.feature.auth.AuthSession
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import kotlin.reflect.KClass
 
-actual class WorkScheduler {
+actual class WorkScheduler(private val coreLogic: CoreLogic, private val session: AuthSession) {
 
     actual fun schedule(
         work: KClass<out UserSessionWorker>,
-        name: String,
-        sessionId: String
+        name: String
     ) {
-        val worker = work.java.getDeclaredConstructor().newInstance()
-        worker.doWork()
+        GlobalScope.launch {
+            val constructor = work::class.java.getDeclaredConstructor(UserSessionScope::class.java)
+            val worker = constructor.newInstance(coreLogic.getSessionScope(session)) as UserSessionWorker
+            worker.doWork()
+        }
     }
 
 }

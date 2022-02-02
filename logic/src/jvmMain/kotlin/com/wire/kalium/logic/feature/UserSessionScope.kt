@@ -11,6 +11,4 @@ actual class UserSessionScope(
     override val clientConfig: ClientConfig get() = ClientConfig()
     override val database: Database
         get() = Database()
-    override val workScheduler: WorkScheduler
-        get() = WorkScheduler()
 }
