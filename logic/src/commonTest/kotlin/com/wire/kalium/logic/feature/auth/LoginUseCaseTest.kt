@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.auth
 
+import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.failure.InvalidCredentials
@@ -47,19 +48,19 @@ class LoginUseCaseTest {
 
             given(validateEmailUseCase).invocation { invoke(TEST_EMAIL) }.then { true }
             given(validateUserHandleUseCase).invocation { invoke(TEST_EMAIL) }.then { false }
-            given(loginRepository).coroutine { loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT) }.then {
+            given(loginRepository).coroutine { loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG) }.then {
                 Either.Right(TEST_AUTH_SESSION)
             }
             given(sessionRepository).coroutine { storeSession(TEST_AUTH_SESSION) }
 
-            val loginUserCaseResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT)
+            val loginUserCaseResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG)
 
             assertEquals(loginUserCaseResult, AuthenticationResult.Success(TEST_AUTH_SESSION))
 
             verify(validateEmailUseCase).invocation { invoke(TEST_EMAIL) }.wasInvoked(exactly = once)
             verify(validateUserHandleUseCase).invocation { invoke(TEST_EMAIL) }.wasNotInvoked()
             verify(loginRepository).coroutine {
-                loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT)
+                loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG)
             }.wasInvoked(exactly = once)
             verify(sessionRepository).coroutine { storeSession(TEST_AUTH_SESSION) }.wasInvoked(exactly = once)
         }
@@ -70,13 +71,13 @@ class LoginUseCaseTest {
             // given
             given(validateEmailUseCase).invocation { invoke(TEST_HANDEL) }.then { false }
             given(validateUserHandleUseCase).invocation { invoke(TEST_HANDEL) }.then { true }
-            given(loginRepository).coroutine { loginWithHandle(TEST_HANDEL, TEST_PASSWORD, TEST_PERSIST_CLIENT) }.then {
+            given(loginRepository).coroutine { loginWithHandle(TEST_HANDEL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG) }.then {
                 Either.Right(TEST_AUTH_SESSION)
             }
             given(sessionRepository).coroutine { storeSession(TEST_AUTH_SESSION) }
 
             // when
-            val loginUserCaseResult = loginUseCase(TEST_HANDEL, TEST_PASSWORD, TEST_PERSIST_CLIENT)
+            val loginUserCaseResult = loginUseCase(TEST_HANDEL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG)
 
             // then
             assertEquals(loginUserCaseResult, AuthenticationResult.Success(TEST_AUTH_SESSION))
@@ -84,7 +85,7 @@ class LoginUseCaseTest {
             verify(validateEmailUseCase).invocation { invoke(TEST_HANDEL) }.wasInvoked(exactly = once)
             verify(validateUserHandleUseCase).invocation { invoke(TEST_HANDEL) }.wasInvoked(exactly = once)
             verify(loginRepository).coroutine {
-                loginWithHandle(TEST_HANDEL, TEST_PASSWORD, TEST_PERSIST_CLIENT)
+                loginWithHandle(TEST_HANDEL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG)
             }.wasInvoked(exactly = once)
             verify(sessionRepository).coroutine { storeSession(TEST_AUTH_SESSION) }.wasInvoked(exactly = once)
         }
@@ -95,7 +96,7 @@ class LoginUseCaseTest {
             given(validateEmailUseCase).invocation { invoke(TEST_EMAIL) }.then { false }
             given(validateUserHandleUseCase).invocation { invoke(TEST_EMAIL) }.then { false }
 
-            val loginUserCaseResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT)
+            val loginUserCaseResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG)
 
             assertEquals(loginUserCaseResult, AuthenticationResult.Failure.InvalidUserIdentifier)
 
@@ -108,30 +109,30 @@ class LoginUseCaseTest {
         runTest {
             given(validateEmailUseCase).invocation { invoke(TEST_EMAIL) }.then { true }
             given(validateUserHandleUseCase).invocation { invoke(TEST_EMAIL) }.then { false }
-            given(loginRepository).coroutine { loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT) }
+            given(loginRepository).coroutine { loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG) }
                 .then { Either.Left(InvalidCredentials) }
 
             given(validateEmailUseCase).invocation { invoke(TEST_HANDEL) }.then { false }
             given(validateUserHandleUseCase).invocation { invoke(TEST_HANDEL) }.then { true }
-            given(loginRepository).coroutine { loginWithHandle(TEST_HANDEL, TEST_PASSWORD, TEST_PERSIST_CLIENT) }
+            given(loginRepository).coroutine { loginWithHandle(TEST_HANDEL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG) }
                 .then { Either.Left(InvalidCredentials) }
 
             // email
-            val loginEmailResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT)
+            val loginEmailResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG)
             assertEquals(loginEmailResult, AuthenticationResult.Failure.InvalidCredentials)
             verify(validateEmailUseCase).invocation { invoke(TEST_EMAIL) }.wasInvoked(exactly = once)
             verify(validateUserHandleUseCase).invocation { invoke(TEST_EMAIL) }.wasNotInvoked()
             verify(loginRepository).coroutine {
-                loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT)
+                loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG)
             }.wasInvoked(exactly = once)
 
             // user handle
-            val loginHandelResult = loginUseCase(TEST_HANDEL, TEST_PASSWORD, TEST_PERSIST_CLIENT)
+            val loginHandelResult = loginUseCase(TEST_HANDEL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG)
             assertEquals(loginHandelResult, AuthenticationResult.Failure.InvalidCredentials)
             verify(validateEmailUseCase).invocation { invoke(TEST_HANDEL) }.wasInvoked(exactly = once)
             verify(validateUserHandleUseCase).invocation { invoke(TEST_HANDEL) }.wasInvoked(exactly = once)
             verify(loginRepository).coroutine {
-                loginWithHandle(TEST_HANDEL, TEST_PASSWORD, TEST_PERSIST_CLIENT)
+                loginWithHandle(TEST_HANDEL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG)
             }.wasInvoked(exactly = once)
         }
 
@@ -142,5 +143,13 @@ class LoginUseCaseTest {
         val TEST_PERSIST_CLIENT = Random.nextBoolean()
         val TEST_AUTH_SESSION =
             AuthSession(userId = "user_id", accessToken = "access_token", refreshToken = "refresh_token", tokenType = "token_type")
+        val TEST_SERVER_CONFIG: ServerConfig = ServerConfig(
+            apiBaseUrl = "apiBaseUrl.com",
+            accountsUrl = "accountsUrl.com",
+            webSocketUrl = "webSocketUrl.com",
+            blackListUrl = "blackListUrl.com",
+            teamsUrl = "teamsUrl.com",
+            websiteUrl = "websiteUrl.com"
+        )
     }
 }
