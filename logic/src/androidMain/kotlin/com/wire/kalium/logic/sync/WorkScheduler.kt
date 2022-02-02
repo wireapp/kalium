@@ -39,6 +39,10 @@ class WrapperWorker(private val innerWorker: UserSessionWorker, appContext: Cont
 class WrapperWorkerFactory(private val coreLogic: CoreLogic): WorkerFactory() {
 
     override fun createWorker(appContext: Context, workerClassName: String, workerParameters: WorkerParameters): ListenableWorker? {
+        if (WrapperWorker::class.java.canonicalName != workerClassName) {
+            return null // delegate to default factory
+        }
+
         val userSessionEncoded = workerParameters.inputData.getString(WrapperWorkerFactory.SESSION_KEY)
         val innerWorkerClassName = workerParameters.inputData.getString(WrapperWorkerFactory.WORKER_CLASS_KEY)
 
