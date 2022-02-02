@@ -18,15 +18,25 @@ import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.location.LocationMapper
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
+import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.message.MessageScope
+import com.wire.kalium.persistence.event.EventInfoStorage
+import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
+import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
 
 expect class UserSessionScope: UserSessionScopeCommon
 
 abstract class UserSessionScopeCommon(
+    private val session: AuthSession,
     private val authenticatedDataSourceSet: AuthenticatedDataSourceSet
 ) {
+
+    protected abstract val encryptedSettingsHolder: EncryptedSettingsHolder
+    private val userPreferencesSettings = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
+    private val eventInfoStorage = EventInfoStorage(userPreferencesSettings)
+
     private val idMapper: IdMapper get() = IdMapperImpl()
     private val memberMapper: MemberMapper get() = MemberMapperImpl(idMapper)
     private val conversationMapper: ConversationMapper get() = ConversationMapperImpl(idMapper, memberMapper)
