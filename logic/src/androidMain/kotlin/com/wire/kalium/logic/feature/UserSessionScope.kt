@@ -6,6 +6,7 @@ import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.sync.WorkScheduler
 import com.wire.kalium.persistence.db.Database
+import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 
 /**
  * This class is only for platform specific variables,
@@ -15,7 +16,14 @@ actual class UserSessionScope(
     private val applicationContext: Context,
     private val session: AuthSession,
     authenticatedDataSourceSet: AuthenticatedDataSourceSet
-) : UserSessionScopeCommon(authenticatedDataSourceSet) {
+) : UserSessionScopeCommon(session, authenticatedDataSourceSet) {
+
     override val clientConfig: ClientConfig get() = ClientConfig(applicationContext)
     override val database: Database get() = Database(applicationContext, "main.db", "123456789")
+    override val encryptedSettingsHolder: EncryptedSettingsHolder
+        get() = EncryptedSettingsHolder(applicationContext, "$PREFERENCE_FILE_PREFIX-${session.userId}")
+
+    private companion object {
+        private const val PREFERENCE_FILE_PREFIX = "user-pref"
+    }
 }
