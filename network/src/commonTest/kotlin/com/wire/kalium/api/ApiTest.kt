@@ -12,6 +12,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.URLProtocol
 import io.ktor.http.headersOf
 import io.ktor.utils.io.ByteReadChannel
 import kotlin.test.assertContains
@@ -82,7 +83,6 @@ interface ApiTest {
         return LoginNetworkContainer(
             engine = mockEngine,
             isRequestLoggingEnabled = true,
-            backEndConfig = TEST_BACKEND_CONFIG
         ).anonymousHttpClient
     }
 
@@ -160,6 +160,9 @@ interface ApiTest {
     // path
     fun HttpRequestData.assertPathEqual(path: String) = assertEquals(this.url.encodedPath, path)
 
+    // host
+    fun HttpRequestData.assertHostEqual(expectedHost: String) = assertEquals(expected = expectedHost, actual = this.url.host)
+    fun HttpRequestData.assertHttps() = assertEquals(expected = URLProtocol.HTTPS, actual = this.url.protocol)
 
     private companion object {
         val TEST_BACKEND_CONFIG = BackendConfig("", "", "")

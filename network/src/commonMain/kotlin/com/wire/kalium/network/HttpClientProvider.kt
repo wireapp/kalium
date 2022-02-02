@@ -15,18 +15,35 @@ import io.ktor.client.request.header
 import io.ktor.http.URLProtocol
 import io.ktor.serialization.kotlinx.json.json
 
+
+sealed class HttpClientOptions {
+    object NoDefaultHost : HttpClientOptions()
+    data class DefaultHost(val backendConfig: BackendConfig) : HttpClientOptions()
+}
+
 internal fun provideBaseHttpClient(
     engine: HttpClientEngine,
     isRequestLoggingEnabled: Boolean = false,
-    backendConfig: BackendConfig,
+    options: HttpClientOptions,
     config: HttpClientConfig<*>.() -> Unit = {}
 ) = HttpClient(engine) {
     defaultRequest {
-        // since error response are application/jso
+
+        // since error response are application/json
         // this header is added by default to all requests
         header("Content-Type", "application/json")
-        host = backendConfig.apiBaseUrl
-        url.protocol = URLProtocol.HTTPS
+
+        when (options) {
+            HttpClientOptions.NoDefaultHost -> {/* do nothing */ }
+
+            is HttpClientOptions.DefaultHost -> {
+                host = options.backendConfig.apiBaseUrl
+                // the UrlProtocol is intentionally here and not default for both options
+                // since any url configuration here will get overwritten by the request configuration
+                url.protocol = URLProtocol.HTTPS
+            }
+        }
+
     }
     if (isRequestLoggingEnabled) {
         install(Logging) {

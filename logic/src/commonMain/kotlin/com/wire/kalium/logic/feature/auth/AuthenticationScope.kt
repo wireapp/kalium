@@ -19,9 +19,12 @@ import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
 expect class AuthenticationScope : AuthenticationScopeCommon
 
 abstract class AuthenticationScopeCommon(
-    private val loginNetworkContainer: LoginNetworkContainer,
     private val clientLabel: String
 ) {
+
+    protected val loginNetworkContainer: LoginNetworkContainer by lazy {
+        LoginNetworkContainer()
+    }
 
     protected abstract val encryptedSettingsHolder: EncryptedSettingsHolder
     private val kaliumPreferences: KaliumPreferences get() = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)

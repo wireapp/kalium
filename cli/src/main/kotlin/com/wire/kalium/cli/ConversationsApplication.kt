@@ -5,8 +5,8 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.wire.kalium.cli.CLIUtils.getResource
 import com.wire.kalium.cryptography.utils.calcMd5
-import com.wire.kalium.logic.configuration.BuildType
-import com.wire.kalium.logic.data.backend_config.BackendTypeMapper
+import com.wire.kalium.logic.configuration.ServerConfig
+import com.wire.kalium.logic.configuration.ServerConfigMapper
 import com.wire.kalium.network.AuthenticatedNetworkContainer
 import com.wire.kalium.network.LoginNetworkContainer
 import com.wire.kalium.network.api.SessionCredentials
@@ -22,11 +22,12 @@ class ConversationsApplication : CliktCommand() {
     private val password: String by option(help = "wire account password").required()
 
     override fun run(): Unit = runBlocking {
-        val backendConfig: BackendConfig = BackendTypeMapper().toBackendConfig(BuildType.Debug)
-        val loginContainer = LoginNetworkContainer(backendConfig)
+        val backendConfig: BackendConfig = ServerConfigMapper().toBackendConfig(ServerConfig.STAGING)
+        val loginContainer = LoginNetworkContainer()
 
         val loginResult = loginContainer.loginApi.login(
-            LoginApi.LoginParam.LoginWithEmail(email = email, password = password, label = "ktor"), false)
+            LoginApi.LoginParam.LoginWithEmail(email = email, password = password, label = "ktor"), false, backendConfig.apiBaseUrl
+        )
 
         if (!loginResult.isSuccessful()) {
             println("There was an error on the login :( check the credentials and the internet connection and try again please")
