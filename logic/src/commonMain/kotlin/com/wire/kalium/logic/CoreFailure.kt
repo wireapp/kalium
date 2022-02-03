@@ -15,7 +15,7 @@ sealed class CoreFailure {
     object ServerMiscommunication : CoreFailure()
 
     /**
-     * The operation in attempt requires that this client is registered.
+     * The attempted operation requires that this client is registered.
      */
     object MissingClientRegistration : CoreFailure()
 
