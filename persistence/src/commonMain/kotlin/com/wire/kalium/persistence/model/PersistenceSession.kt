@@ -1,7 +1,16 @@
 package com.wire.kalium.persistence.model
 
-import com.wire.kalium.persistence.network_config.NetworkConfig
 import kotlinx.serialization.Serializable
+
+@Serializable
+data class NetworkConfig(
+    val apiBaseUrl: String,
+    val accountBaseUrl: String,
+    val webSocketBaseUrl: String,
+    val blackListUrl: String,
+    val teamsUrl: String,
+    val websiteUrl: String
+)
 
 @Serializable
 data class PersistenceSession(
