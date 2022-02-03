@@ -141,15 +141,22 @@ class LoginUseCaseTest {
         const val TEST_HANDEL = "cool_user"
         const val TEST_PASSWORD = "123456"
         val TEST_PERSIST_CLIENT = Random.nextBoolean()
-        val TEST_AUTH_SESSION =
-            AuthSession(userId = "user_id", accessToken = "access_token", refreshToken = "refresh_token", tokenType = "token_type")
         val TEST_SERVER_CONFIG: ServerConfig = ServerConfig(
             apiBaseUrl = "apiBaseUrl.com",
-            accountsUrl = "accountsUrl.com",
-            webSocketUrl = "webSocketUrl.com",
+            accountsBaseUrl = "accountsUrl.com",
+            webSocketBaseUrl = "webSocketUrl.com",
             blackListUrl = "blackListUrl.com",
             teamsUrl = "teamsUrl.com",
             websiteUrl = "websiteUrl.com"
         )
+        val TEST_AUTH_SESSION =
+            AuthSession(
+                userId = "user_id",
+                accessToken = "access_token",
+                refreshToken = "refresh_token",
+                tokenType = "token_type",
+                TEST_SERVER_CONFIG
+            )
+
     }
 }

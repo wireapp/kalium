@@ -23,7 +23,7 @@ class ConversationsApplication : CliktCommand() {
 
     override fun run(): Unit = runBlocking {
         val backendConfig: BackendConfig = ServerConfigMapper().toBackendConfig(ServerConfig.STAGING)
-        val loginContainer = LoginNetworkContainer()
+        val loginContainer = LoginNetworkContainer(isRequestLoggingEnabled = true)
 
         val loginResult = loginContainer.loginApi.login(
             LoginApi.LoginParam.LoginWithEmail(email = email, password = password, label = "ktor"), false, backendConfig.apiBaseUrl

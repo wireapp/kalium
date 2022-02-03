@@ -11,7 +11,7 @@ actual class CoreLogic(clientLabel: String, rootProteusDirectoryPath: String) :
         TODO("Not yet implemented")
     }
 
-    override fun getSessionScope(session: AuthSession, serverConfig: ServerConfig): UserSessionScope {
+    override fun getSessionScope(session: AuthSession): UserSessionScope {
         TODO("Not yet implemented")
     }
 

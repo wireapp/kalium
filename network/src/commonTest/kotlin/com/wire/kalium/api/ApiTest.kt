@@ -165,6 +165,6 @@ interface ApiTest {
     fun HttpRequestData.assertHttps() = assertEquals(expected = URLProtocol.HTTPS, actual = this.url.protocol)
 
     private companion object {
-        val TEST_BACKEND_CONFIG = BackendConfig("", "", "")
+        val TEST_BACKEND_CONFIG = BackendConfig("", "", "",  "",  "", "")
     }
 }

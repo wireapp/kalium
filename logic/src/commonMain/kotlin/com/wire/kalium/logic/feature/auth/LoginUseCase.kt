@@ -36,7 +36,6 @@ class LoginUseCase(
 
         return when (result) {
             is Either.Right -> {
-                // TODO: save the serverConfig of the account
                 sessionRepository.storeSession(result.value)
                 AuthenticationResult.Success(result.value)
             }

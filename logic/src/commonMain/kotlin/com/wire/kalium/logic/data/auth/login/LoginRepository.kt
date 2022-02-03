@@ -34,16 +34,16 @@ class LoginRepositoryImpl(
         return if (!response.isSuccessful()) {
             handleFailedApiResponse(response)
         } else {
-            handleSuccessfulApiResponse(response)
+            handleSuccessfulApiResponse(response, serverConfig)
         }
     }
 
-    private fun handleSuccessfulApiResponse(response: NetworkResponse.Success<LoginResponse>): Either<CoreFailure, AuthSession> {
+    private fun handleSuccessfulApiResponse(response: NetworkResponse.Success<LoginResponse>, serverConfig: ServerConfig): Either<CoreFailure, AuthSession> {
         val refreshToken = response.httpResponseCookies()[RefreshTokenProperties.COOKIE_NAME]
         return if (refreshToken == null) {
             Either.Left(CoreFailure.ServerMiscommunication)
         } else {
-            Either.Right(AuthSession(response.value.userId, response.value.accessToken, refreshToken, response.value.tokenType))
+            Either.Right(AuthSession(response.value.userId, response.value.accessToken, refreshToken, response.value.tokenType, serverConfig))
         }
     }
 

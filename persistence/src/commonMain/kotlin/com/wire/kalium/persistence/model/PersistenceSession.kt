@@ -1,5 +1,6 @@
 package com.wire.kalium.persistence.model
 
+import com.wire.kalium.persistence.network_config.NetworkConfig
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -10,5 +11,6 @@ data class PersistenceSession(
     //val domain: String,
     val tokenType: String,
     val accessToken: String,
-    val refreshToken: String
+    val refreshToken: String,
+    val networkConfig: NetworkConfig
 )

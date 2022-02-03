@@ -26,5 +26,8 @@ class NetworkConfigDAOImpl(private val kaliumPreferences: KaliumPreferences) : N
 data class NetworkConfig(
     val apiBaseUrl: String,
     val accountBaseUrl: String,
-    val webSocketBaseUrl: String
+    val webSocketBaseUrl: String,
+    val blackListUrl: String,
+    val teamsUrl: String,
+    val websiteUrl: String
 )

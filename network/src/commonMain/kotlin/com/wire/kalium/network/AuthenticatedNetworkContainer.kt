@@ -65,7 +65,7 @@ class AuthenticatedNetworkContainer(
     private val webSocketClient by lazy {
         HttpClient(engine) {
             defaultRequest {
-                host = backendConfig.webSocketUrl
+                host = backendConfig.webSocketBaseUrl
                 url.protocol = URLProtocol.WSS
             }
             install(WebSockets)

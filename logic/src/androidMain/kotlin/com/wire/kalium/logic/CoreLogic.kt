@@ -20,11 +20,11 @@ actual class CoreLogic(
     override fun getAuthenticationScope(): AuthenticationScope =
         AuthenticationScope(clientLabel = clientLabel, applicationContext = applicationContext)
 
-    override fun getSessionScope(session: AuthSession, serverConfig: ServerConfig): UserSessionScope {
+    override fun getSessionScope(session: AuthSession): UserSessionScope {
         val dataSourceSet = userScopeStorage[session] ?: run {
             val networkContainer = AuthenticatedNetworkContainer(
                 sessionCredentials = sessionMapper.toSessionCredentials(session),
-                backendConfig = serverConfigMapper.toBackendConfig(serverConfig)
+                backendConfig = serverConfigMapper.toBackendConfig(serverConfig = session.serverConfig)
             )
             val proteusClient = ProteusClient(rootProteusDirectoryPath, session.userId)
             AuthenticatedDataSourceSet(networkContainer, proteusClient).also {
