@@ -2,7 +2,7 @@ package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.RegisterClientParam
-import com.wire.kalium.logic.failure.AuthenticationFailure
+import com.wire.kalium.logic.failure.WrongPassword
 import com.wire.kalium.logic.functional.suspending
 
 
@@ -16,7 +16,7 @@ class RegisterClientUseCase(private val clientRepository: ClientRepository) {
             }
         }
     }.fold({ failure ->
-        if (failure is AuthenticationFailure)
+        if (failure is WrongPassword)
             RegisterClientResult.Failure.InvalidCredentials
         else
             RegisterClientResult.Failure.Generic(failure)

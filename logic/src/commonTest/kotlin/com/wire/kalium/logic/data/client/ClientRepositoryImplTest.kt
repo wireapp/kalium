@@ -2,8 +2,8 @@ package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
-import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.prekey.PreKey
+import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -128,10 +128,7 @@ class ClientRepositoryImplTest {
 
     private companion object {
         val REGISTER_CLIENT_PARAMS = RegisterClientParam("pass", listOf(), PreKey(2, "2"), listOf())
-        val CLIENT_ID = ClientId("test")
-        val CLIENT_RESULT = Client(
-            CLIENT_ID, ClientType.Permanent, "time", null,
-            null, "label", "cookie", null, "model"
-        )
+        val CLIENT_ID = TestClient.CLIENT_ID
+        val CLIENT_RESULT = TestClient.CLIENT
     }
 }
