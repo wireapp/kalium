@@ -22,11 +22,13 @@ import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.message.MessageScope
+import com.wire.kalium.persistence.client.ClientRegistrationStorage
+import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
 import com.wire.kalium.persistence.event.EventInfoStorage
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
 
-expect class UserSessionScope: UserSessionScopeCommon
+expect class UserSessionScope : UserSessionScopeCommon
 
 abstract class UserSessionScopeCommon(
     private val session: AuthSession,
@@ -62,8 +64,10 @@ abstract class UserSessionScopeCommon(
             clientMapper
         )
 
+    private val clientRegistrationStorage: ClientRegistrationStorage = ClientRegistrationStorageImpl(userPreferencesSettings)
+
     private val clientRepository: ClientRepository
-        get() = ClientRepositoryImpl(clientRemoteDataSource)
+        get() = ClientRepositoryImpl(clientRemoteDataSource, clientRegistrationStorage)
 
     val client: ClientScope get() = ClientScope(clientRepository)
     val conversations: ConversationScope get() = ConversationScope(conversationRepository)
