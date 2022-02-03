@@ -6,6 +6,7 @@ import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
 import androidx.work.ListenableWorker
 import androidx.work.OneTimeWorkRequest
+import androidx.work.OutOfQuotaPolicy
 import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
@@ -71,7 +72,9 @@ actual class WorkScheduler(private val context: Context, private val session: Au
             .putString(WrapperWorkerFactory.WORKER_CLASS_KEY, work.java.canonicalName)
             .putString(WrapperWorkerFactory.SESSION_KEY, Json.encodeToString(session))
             .build()
-        val request = OneTimeWorkRequest.Builder(WrapperWorker::class.java).setInputData(inputData).build()
+        val request = OneTimeWorkRequest.Builder(WrapperWorker::class.java)
+            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+            .setInputData(inputData).build()
 
         WorkManager.getInstance(context).beginUniqueWork(
             name,
