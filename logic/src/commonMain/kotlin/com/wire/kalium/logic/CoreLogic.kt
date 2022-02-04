@@ -1,6 +1,7 @@
 package com.wire.kalium.logic
 
 import com.wire.kalium.logic.configuration.ServerConfigMapper
+import com.wire.kalium.logic.configuration.ServerConfigMapperImpl
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.session.SessionMapperImpl
 import com.wire.kalium.logic.feature.UserSessionScope
@@ -22,7 +23,7 @@ abstract class CoreLogicCommon(
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     abstract fun getAuthenticationScope(): AuthenticationScope
 
-    protected val serverConfigMapper: ServerConfigMapper get() = ServerConfigMapper()
+    protected val serverConfigMapper: ServerConfigMapper get() = ServerConfigMapperImpl()
     protected val sessionMapper: SessionMapper get() = SessionMapperImpl(serverConfigMapper)
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS

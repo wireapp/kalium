@@ -1,7 +1,7 @@
 package com.wire.kalium.logic.configuration
 
 import com.wire.kalium.network.tools.BackendConfig
-import com.wire.kalium.persistence.network_config.NetworkConfig
+import com.wire.kalium.persistence.model.NetworkConfig
 
 data class ServerConfig(
     val apiBaseUrl: String,
@@ -31,17 +31,24 @@ data class ServerConfig(
     }
 }
 
-class ServerConfigMapper {
+interface ServerConfigMapper {
+    fun toBackendConfig(serverConfig: ServerConfig): BackendConfig
+    fun fromBackendConfig(backendConfig: BackendConfig): ServerConfig
+    fun toNetworkConfig(serverConfig: ServerConfig): NetworkConfig
+    fun fromNetworkConfig(networkConfig: NetworkConfig): ServerConfig
+}
+
+class ServerConfigMapperImpl : ServerConfigMapper {
     // TODO: url validation check e.g. remove https:// since ktor will control the http protocol
-    fun toBackendConfig(serverConfig: ServerConfig): BackendConfig =
+    override fun toBackendConfig(serverConfig: ServerConfig): BackendConfig =
         with(serverConfig) { BackendConfig(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl) }
 
-    fun fromBackendConfig(backendConfig: BackendConfig): ServerConfig =
+    override fun fromBackendConfig(backendConfig: BackendConfig): ServerConfig =
         with(backendConfig) { ServerConfig(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl) }
 
-    fun toNetworkConfig(serverConfig: ServerConfig): NetworkConfig =
+    override fun toNetworkConfig(serverConfig: ServerConfig): NetworkConfig =
         with(serverConfig) { NetworkConfig(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl) }
 
-    fun fromNetworkConfig(networkConfig: NetworkConfig): ServerConfig =
+    override fun fromNetworkConfig(networkConfig: NetworkConfig): ServerConfig =
         with(networkConfig) { ServerConfig(apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl) }
 }

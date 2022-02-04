@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.configuration.ServerConfigMapper
+import com.wire.kalium.logic.configuration.ServerConfigMapperImpl
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.auth.login.LoginRepositoryImpl
 import com.wire.kalium.logic.data.session.SessionMapper
@@ -31,7 +32,7 @@ abstract class AuthenticationScopeCommon(
     private val kaliumPreferences: KaliumPreferences get() = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
     private val sessionDao: SessionDAO get() = SessionDAOImpl(kaliumPreferences)
 
-    private val serverConfigMapper: ServerConfigMapper get() = ServerConfigMapper()
+    private val serverConfigMapper: ServerConfigMapper get() = ServerConfigMapperImpl()
     private val sessionMapper: SessionMapper get() = SessionMapperImpl(serverConfigMapper)
 
     private val loginRepository: LoginRepository get() = LoginRepositoryImpl(loginNetworkContainer.loginApi, clientLabel)

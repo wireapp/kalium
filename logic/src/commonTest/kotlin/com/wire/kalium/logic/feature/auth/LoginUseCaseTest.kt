@@ -157,6 +157,5 @@ class LoginUseCaseTest {
                 tokenType = "token_type",
                 TEST_SERVER_CONFIG
             )
-
     }
 }
