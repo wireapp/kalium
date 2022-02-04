@@ -27,7 +27,6 @@ abstract class CoreLogicCommon(
     protected val sessionMapper: SessionMapper get() = SessionMapperImpl(serverConfigMapper)
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
-    // TODO: replace the serverConfig with the one stored locally (after the login)
     abstract fun getSessionScope(session: AuthSession): UserSessionScope
 
     suspend fun <T> authenticationScope(action: suspend AuthenticationScope.() -> T)
