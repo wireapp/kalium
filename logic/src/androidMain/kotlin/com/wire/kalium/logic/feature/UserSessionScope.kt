@@ -4,6 +4,8 @@ import android.content.Context
 import com.wire.kalium.logic.AuthenticatedDataSourceSet
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.feature.auth.AuthSession
+import com.wire.kalium.logic.sync.WorkScheduler
+import com.wire.kalium.persistence.db.Database
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 
 /**
@@ -17,6 +19,7 @@ actual class UserSessionScope(
 ) : UserSessionScopeCommon(session, authenticatedDataSourceSet) {
 
     override val clientConfig: ClientConfig get() = ClientConfig(applicationContext)
+    override val database: Database get() = Database(applicationContext, "main.db", "123456789")
     override val encryptedSettingsHolder: EncryptedSettingsHolder
         get() = EncryptedSettingsHolder(applicationContext, "$PREFERENCE_FILE_PREFIX-${session.userId}")
 

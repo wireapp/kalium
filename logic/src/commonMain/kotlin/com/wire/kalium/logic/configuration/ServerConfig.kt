@@ -2,7 +2,9 @@ package com.wire.kalium.logic.configuration
 
 import com.wire.kalium.network.tools.BackendConfig
 import com.wire.kalium.persistence.model.NetworkConfig
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class ServerConfig(
     val apiBaseUrl: String,
     val accountsBaseUrl: String,

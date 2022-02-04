@@ -50,6 +50,7 @@ dependencies {
     implementation(Dependencies.Android.activityCompose)
     implementation(Dependencies.Android.composeMaterial)
     implementation(Dependencies.Android.coroutines)
+    implementation(Dependencies.Android.work)
     implementation(Dependencies.Android.ktor)
     implementation(Dependencies.Ktor.okHttp)
 }

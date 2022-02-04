@@ -22,11 +22,15 @@ import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.message.MessageScope
+import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.persistence.client.ClientRegistrationStorage
+import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
+import com.wire.kalium.persistence.db.Database
 import com.wire.kalium.persistence.event.EventInfoStorage
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
 
-expect class UserSessionScope: UserSessionScopeCommon
+expect class UserSessionScope : UserSessionScopeCommon
 
 abstract class UserSessionScopeCommon(
     private val session: AuthSession,
@@ -35,14 +39,17 @@ abstract class UserSessionScopeCommon(
 
     protected abstract val encryptedSettingsHolder: EncryptedSettingsHolder
     private val userPreferencesSettings = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
-    private val eventInfoStorage = EventInfoStorage(userPreferencesSettings)
+    private val eventInfoStorage: EventInfoStorage
+        get() = EventInfoStorage(userPreferencesSettings)
 
     private val idMapper: IdMapper get() = IdMapperImpl()
     private val memberMapper: MemberMapper get() = MemberMapperImpl(idMapper)
     private val conversationMapper: ConversationMapper get() = ConversationMapperImpl(idMapper, memberMapper)
+    protected abstract val database: Database
 
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(
+            database.conversationDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi, idMapper, conversationMapper, memberMapper
         )
@@ -62,10 +69,14 @@ abstract class UserSessionScopeCommon(
             clientMapper
         )
 
-    private val clientRepository: ClientRepository
-        get() = ClientRepositoryImpl(clientRemoteDataSource)
+    private val clientRegistrationStorage: ClientRegistrationStorage
+        get() = ClientRegistrationStorageImpl(userPreferencesSettings)
 
+    private val clientRepository: ClientRepository
+        get() = ClientRepositoryImpl(clientRemoteDataSource, clientRegistrationStorage)
+
+    val syncManager: SyncManager get() = authenticatedDataSourceSet.syncManager
     val client: ClientScope get() = ClientScope(clientRepository)
-    val conversations: ConversationScope get() = ConversationScope(conversationRepository)
+    val conversations: ConversationScope get() = ConversationScope(conversationRepository, authenticatedDataSourceSet.syncManager)
     val messages: MessageScope get() = MessageScope(messageRepository)
 }
