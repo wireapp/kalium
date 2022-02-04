@@ -3,6 +3,7 @@ package com.wire.kalium.api
 import com.wire.kalium.api.tools.testCredentials
 import com.wire.kalium.network.AuthenticatedNetworkContainer
 import com.wire.kalium.network.LoginNetworkContainer
+import com.wire.kalium.network.tools.BackendConfig
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -11,6 +12,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.URLProtocol
 import io.ktor.http.headersOf
 import io.ktor.utils.io.ByteReadChannel
 import kotlin.test.assertContains
@@ -19,7 +21,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 interface ApiTest {
-
     /**
      * creates an authenticated mock Ktor Http client
      * @param responseBody the response body as Json string
@@ -48,7 +49,8 @@ interface ApiTest {
         }
         return AuthenticatedNetworkContainer(
             engine = mockEngine,
-            sessionCredentials = testCredentials
+            sessionCredentials = testCredentials,
+            backendConfig = TEST_BACKEND_CONFIG
         ).authenticatedHttpClient
     }
 
@@ -80,7 +82,7 @@ interface ApiTest {
         }
         return LoginNetworkContainer(
             engine = mockEngine,
-            isRequestLoggingEnabled = true
+            isRequestLoggingEnabled = true,
         ).anonymousHttpClient
     }
 
@@ -106,7 +108,8 @@ interface ApiTest {
         }
         return AuthenticatedNetworkContainer(
             engine = mockEngine,
-            sessionCredentials = testCredentials
+            sessionCredentials = testCredentials,
+            backendConfig = TEST_BACKEND_CONFIG
         ).authenticatedHttpClient
     }
 
@@ -156,4 +159,12 @@ interface ApiTest {
 
     // path
     fun HttpRequestData.assertPathEqual(path: String) = assertEquals(this.url.encodedPath, path)
+
+    // host
+    fun HttpRequestData.assertHostEqual(expectedHost: String) = assertEquals(expected = expectedHost, actual = this.url.host)
+    fun HttpRequestData.assertHttps() = assertEquals(expected = URLProtocol.HTTPS, actual = this.url.protocol)
+
+    private companion object {
+        val TEST_BACKEND_CONFIG = BackendConfig("test.api.com", "test.account.com", "test.ws.com",  "test.blacklist",  "test.teams.com", "test.wire.com")
+    }
 }

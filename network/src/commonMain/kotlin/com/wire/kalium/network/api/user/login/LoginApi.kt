@@ -18,5 +18,9 @@ interface LoginApi {
         ) : LoginParam(password, label)
     }
 
-    suspend fun login(param: LoginParam, persist: Boolean): NetworkResponse<LoginResponse>
+    suspend fun login(
+        param: LoginParam,
+        persist: Boolean,
+        apiBaseUrl: String
+    ): NetworkResponse<LoginResponse>
 }

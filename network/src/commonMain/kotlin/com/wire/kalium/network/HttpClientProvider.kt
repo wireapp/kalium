@@ -1,6 +1,7 @@
 package com.wire.kalium.network
 
-import com.wire.kalium.network.tools.HostProvider
+import com.wire.kalium.network.tools.BackendConfig
+import com.wire.kalium.network.tools.KtxSerializer
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.HttpClientEngine
@@ -13,17 +14,36 @@ import io.ktor.client.plugins.logging.SIMPLE
 import io.ktor.client.request.header
 import io.ktor.http.URLProtocol
 import io.ktor.serialization.kotlinx.json.json
-import kotlinx.serialization.json.Json
+
+
+sealed class HttpClientOptions {
+    object NoDefaultHost : HttpClientOptions()
+    data class DefaultHost(val backendConfig: BackendConfig) : HttpClientOptions()
+}
 
 internal fun provideBaseHttpClient(
     engine: HttpClientEngine,
     isRequestLoggingEnabled: Boolean = false,
+    options: HttpClientOptions,
     config: HttpClientConfig<*>.() -> Unit = {}
 ) = HttpClient(engine) {
     defaultRequest {
+
+        // since error response are application/json
+        // this header is added by default to all requests
         header("Content-Type", "application/json")
-        host = HostProvider.host
-        url.protocol = URLProtocol.HTTPS
+
+        when (options) {
+            HttpClientOptions.NoDefaultHost -> {/* do nothing */ }
+
+            is HttpClientOptions.DefaultHost -> {
+                host = options.backendConfig.apiBaseUrl
+                // the UrlProtocol is intentionally here and not default for both options
+                // since any url configuration here will get overwritten by the request configuration
+                url.protocol = URLProtocol.HTTPS
+            }
+        }
+
     }
     if (isRequestLoggingEnabled) {
         install(Logging) {
@@ -32,12 +52,7 @@ internal fun provideBaseHttpClient(
         }
     }
     install(ContentNegotiation) {
-        json(Json {
-            prettyPrint = true
-            isLenient = true
-            ignoreUnknownKeys = true
-            explicitNulls = false
-        })
+        json(KtxSerializer.json)
     }
     config()
 }

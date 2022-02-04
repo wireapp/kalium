@@ -27,11 +27,13 @@ class LoginApiTest : ApiTest {
                 assertJson()
                 assertQueryExist(QUERY_PERSIST)
                 assertPathEqual(PATH_LOGIN)
+                assertHttps()
+                assertHostEqual(TEST_HOST)
             }
         )
         val loginApi: LoginApi = LoginApiImpl(httpClient)
 
-        val response = loginApi.login(LOGIN_WITH_EMAIL_REQUEST.serializableData, false)
+        val response = loginApi.login(LOGIN_WITH_EMAIL_REQUEST.serializableData, false, TEST_HOST)
         assertTrue(response.isSuccessful())
         assertEquals(response.value, VALID_LOGIN_RESPONSE.serializableData)
     }
@@ -44,7 +46,7 @@ class LoginApiTest : ApiTest {
         )
         val loginApi: LoginApi = LoginApiImpl(httpClient)
 
-        val errorResponse = loginApi.login(LOGIN_WITH_EMAIL_REQUEST.serializableData, false)
+        val errorResponse = loginApi.login(LOGIN_WITH_EMAIL_REQUEST.serializableData, false, TEST_HOST)
         assertFalse(errorResponse.isSuccessful())
         assertTrue(errorResponse.kException is KaliumException.InvalidRequestError)
         assertEquals((errorResponse.kException as KaliumException.InvalidRequestError).errorResponse, ERROR_RESPONSE)
@@ -56,5 +58,6 @@ class LoginApiTest : ApiTest {
         val ERROR_RESPONSE = ErrorResponseJson.valid.serializableData
         const val QUERY_PERSIST = "persist"
         const val PATH_LOGIN = "/login"
+        const val TEST_HOST = """test-https.wire.com"""
     }
 }

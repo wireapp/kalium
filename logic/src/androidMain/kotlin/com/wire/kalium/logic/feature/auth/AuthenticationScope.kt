@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.auth
 
 import android.content.Context
+import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.network.LoginNetworkContainer
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 
@@ -9,10 +10,9 @@ import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
  * and it should only override functions/variables from AuthenticationScopeCommon
  */
 actual class AuthenticationScope(
-    loginNetworkContainer: LoginNetworkContainer,
     clientLabel: String,
     private val applicationContext: Context
-) : AuthenticationScopeCommon(loginNetworkContainer, clientLabel) {
+) : AuthenticationScopeCommon(clientLabel) {
     override val encryptedSettingsHolder: EncryptedSettingsHolder
         get() = EncryptedSettingsHolder(applicationContext, PREFERENCE_FILE_NAME)
 

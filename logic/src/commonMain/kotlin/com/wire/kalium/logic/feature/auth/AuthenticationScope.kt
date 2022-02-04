@@ -1,5 +1,7 @@
 package com.wire.kalium.logic.feature.auth
 
+import com.wire.kalium.logic.configuration.ServerConfigMapper
+import com.wire.kalium.logic.configuration.ServerConfigMapperImpl
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.auth.login.LoginRepositoryImpl
 import com.wire.kalium.logic.data.session.SessionMapper
@@ -19,15 +21,19 @@ import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
 expect class AuthenticationScope : AuthenticationScopeCommon
 
 abstract class AuthenticationScopeCommon(
-    private val loginNetworkContainer: LoginNetworkContainer,
     private val clientLabel: String
 ) {
+
+    protected val loginNetworkContainer: LoginNetworkContainer by lazy {
+        LoginNetworkContainer()
+    }
 
     protected abstract val encryptedSettingsHolder: EncryptedSettingsHolder
     private val kaliumPreferences: KaliumPreferences get() = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
     private val sessionDao: SessionDAO get() = SessionDAOImpl(kaliumPreferences)
 
-    private val sessionMapper: SessionMapper get() = SessionMapperImpl()
+    private val serverConfigMapper: ServerConfigMapper get() = ServerConfigMapperImpl()
+    private val sessionMapper: SessionMapper get() = SessionMapperImpl(serverConfigMapper)
 
     private val loginRepository: LoginRepository get() = LoginRepositoryImpl(loginNetworkContainer.loginApi, clientLabel)
 
@@ -38,7 +44,7 @@ abstract class AuthenticationScopeCommon(
     private val validateEmailUseCase: ValidateEmailUseCase get() = ValidateEmailUseCaseImpl()
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
 
-    val loginUsingEmail: LoginUseCase
+    val login: LoginUseCase
         get() = LoginUseCase(
             loginRepository,
             sessionRepository,

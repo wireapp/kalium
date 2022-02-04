@@ -5,6 +5,7 @@ import com.russhwolf.settings.Settings
 import com.wire.kalium.persistence.dao.UserId
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
+import com.wire.kalium.persistence.model.NetworkConfig
 import com.wire.kalium.persistence.model.PersistenceSession
 import com.wire.kalium.persistence.model.PreferencesResult
 import kotlinx.coroutines.test.runTest
@@ -29,7 +30,13 @@ class SessionDAOTest {
     @Test
     fun givenASSession_WhenCallingAddSession_ThenTheSessionCanBeStoredLocally() = runTest {
         val persistenceSession =
-            PersistenceSession("user_id_1", "JWT", Random.nextBytes(32).decodeToString(), Random.nextBytes(32).decodeToString())
+            PersistenceSession(
+                "user_id_1",
+                "JWT",
+                Random.nextBytes(32).decodeToString(),
+                Random.nextBytes(32).decodeToString(),
+                randomNetworkConfig()
+            )
         val sessionsMap = mapOf(persistenceSession.userId to persistenceSession)
         sessionDAO.addSession(persistenceSession)
 
@@ -38,9 +45,21 @@ class SessionDAOTest {
 
     @Test
     fun givenAnExistingSession_WhenCallingDeleteSession_ThenItWillBeRemoved() = runTest {
-        val session1 = PersistenceSession("user_id_1", "JWT", Random.nextBytes(32).decodeToString(), Random.nextBytes(32).decodeToString())
+        val session1 = PersistenceSession(
+            "user_id_1",
+            "JWT",
+            Random.nextBytes(32).decodeToString(),
+            Random.nextBytes(32).decodeToString(),
+            randomNetworkConfig()
+        )
         val sessionToDelete =
-            PersistenceSession("user_id_2", "JWT", Random.nextBytes(32).decodeToString(), Random.nextBytes(32).decodeToString())
+            PersistenceSession(
+                "user_id_2",
+                "JWT",
+                Random.nextBytes(32).decodeToString(),
+                Random.nextBytes(32).decodeToString(),
+                randomNetworkConfig()
+            )
 
         val sessionsMapExpectedValue =
             PreferencesResult.Success(
@@ -63,9 +82,23 @@ class SessionDAOTest {
     @Test
     fun givenAUserId_WhenCallingUpdateCurrentSession_ThenItWillBeStoredLocally() = runTest {
         assertNull(sessionDAO.currentSession())
-        val session1 = PersistenceSession("user_id_1", "Bearer", Random.nextBytes(32).decodeToString(), Random.nextBytes(32).decodeToString())
+        val session1 =
+            PersistenceSession(
+                "user_id_1",
+                "Bearer",
+                Random.nextBytes(32).decodeToString(),
+                Random.nextBytes(32).decodeToString(),
+                randomNetworkConfig()
+            )
 
-        val session2 = PersistenceSession("user_id_2", "Bearer", Random.nextBytes(32).decodeToString(), Random.nextBytes(32).decodeToString())
+        val session2 =
+            PersistenceSession(
+                "user_id_2",
+                "Bearer",
+                Random.nextBytes(32).decodeToString(),
+                Random.nextBytes(32).decodeToString(),
+                randomNetworkConfig()
+            )
 
         sessionDAO.addSession(session1)
         sessionDAO.addSession(session2)
@@ -75,5 +108,11 @@ class SessionDAOTest {
         assertEquals(session1, sessionDAO.currentSession())
     }
 
+    private companion object {
+        val randomString get() = Random.nextBytes(64).decodeToString()
+        fun randomNetworkConfig(): NetworkConfig =
+            NetworkConfig(randomString, randomString, randomString, randomString, randomString, randomString)
+
+    }
 
 }

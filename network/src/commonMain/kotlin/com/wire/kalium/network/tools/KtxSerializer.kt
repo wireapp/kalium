@@ -3,7 +3,7 @@ package com.wire.kalium.network.tools
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 
-@ExperimentalSerializationApi
+@OptIn(ExperimentalSerializationApi::class)
 object KtxSerializer {
     val json = Json {
         isLenient = true

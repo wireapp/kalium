@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.failure.AuthenticationFailure
@@ -22,13 +23,13 @@ class LoginUseCase(
     private val validateEmailUseCase: ValidateEmailUseCase,
     private val validateUserHandleUseCase: ValidateUserHandleUseCase
 ) {
-    suspend operator fun invoke(userIdentifier: String, password: String, shouldPersistClient: Boolean): AuthenticationResult {
+    suspend operator fun invoke(userIdentifier: String, password: String, shouldPersistClient: Boolean, serverConfig: ServerConfig): AuthenticationResult {
         val result = when {
             validateEmailUseCase(userIdentifier) -> {
-                loginRepository.loginWithEmail(userIdentifier, password, shouldPersistClient)
+                loginRepository.loginWithEmail(userIdentifier, password, shouldPersistClient, serverConfig)
             }
             validateUserHandleUseCase(userIdentifier) -> {
-                loginRepository.loginWithHandle(userIdentifier, password, shouldPersistClient)
+                loginRepository.loginWithHandle(userIdentifier, password, shouldPersistClient, serverConfig)
             }
             else -> return AuthenticationResult.Failure.InvalidUserIdentifier
         }

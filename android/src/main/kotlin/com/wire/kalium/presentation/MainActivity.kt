@@ -13,6 +13,7 @@ import com.wire.kalium.cryptography.CryptoSessionId
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.UserId
 import com.wire.kalium.logic.CoreLogic
+import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthSession
@@ -23,6 +24,8 @@ import kotlinx.coroutines.runBlocking
 import java.io.File
 
 class MainActivity : ComponentActivity() {
+
+    val serverConfig: ServerConfig by lazy { ServerConfig.STAGING }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,7 +44,7 @@ class MainActivity : ComponentActivity() {
     }
 
     suspend fun login(authenticationScope: AuthenticationScope): AuthSession? {
-        val result = authenticationScope.loginUsingEmail("jacob.persson+summer1@wire.com", "hepphepp", false)
+        val result = authenticationScope.login("jacob.persson+summer1@wire.com", "hepphepp", false, serverConfig)
 
         if (result !is AuthenticationResult.Success) {
             throw RuntimeException(
