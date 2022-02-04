@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.logic.configuration.ClientConfig
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.location.LocationMapper
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.network.api.user.client.ClientCapabilityDTO
@@ -27,7 +28,7 @@ class ClientMapper(
     )
 
     fun fromRegisterClientResponse(response: RegisterClientResponse): Client = Client(
-        clientId = response.clientId,
+        clientId = ClientId(response.clientId),
         type = fromClientTypeDTO(response.type),
         registrationTime = response.registrationTime,
         location = locationMapper.fromLocationDTO(response.location),

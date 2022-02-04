@@ -7,17 +7,16 @@ import com.wire.kalium.logic.data.user.UserId
 
 typealias ConversationId = QualifiedID
 
-sealed class Conversation(val id: ConversationId, val membersInfo: MembersInfo, val name: String) {
-    class Self(id: ConversationId, membersInfo: MembersInfo, name: String) : Conversation(id, membersInfo, name)
+sealed class Conversation(val id: ConversationId, val name: String) {
+    class Self(id: ConversationId, name: String) : Conversation(id, membersInfo, name)
 
     class OneOne(
         id: ConversationId,
-        membersInfo: MembersInfo,
         name: String,
         val connectionState: ConnectionState,
         val federationStatus: FederationStatus,
         val legalHoldStatus: LegalHoldStatus
-    ) : Conversation(id, membersInfo, name) {
+    ) : Conversation(id, name) {
         enum class ConnectionState {
             // The other user has sent a connection request to this one
             INCOMING,
@@ -34,7 +33,7 @@ sealed class Conversation(val id: ConversationId, val membersInfo: MembersInfo, 
         }
     }
 
-    class Group(id: ConversationId, membersInfo: MembersInfo, name: String) : Conversation(id, membersInfo, name)
+    class Group(id: ConversationId, name: String) : Conversation(id, membersInfo, name)
 }
 
 class MembersInfo(val self: Member, val otherMembers: List<Member>)

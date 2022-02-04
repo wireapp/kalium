@@ -14,6 +14,11 @@ sealed class CoreFailure {
      */
     object ServerMiscommunication : CoreFailure()
 
+    /**
+     * The attempted operation requires that this client is registered.
+     */
+    object MissingClientRegistration : CoreFailure()
+
     class Unknown(val rootCause: Throwable?) : CoreFailure()
 
     abstract class FeatureFailure : CoreFailure()

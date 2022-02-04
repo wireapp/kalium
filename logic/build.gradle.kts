@@ -46,6 +46,7 @@ kotlin {
                     }
                 }
                 implementation(Dependencies.Coroutines.core)
+                implementation(Dependencies.Kotlinx.serialization)
                 // the Dependency is duplicated between here and persistence build.gradle.kts
                 implementation(Dependencies.MultiplatformSettings.settings)
             }
@@ -62,11 +63,16 @@ kotlin {
         }
         val jvmMain by getting
         val jvmTest by getting
-        val androidMain by getting
+        val androidMain by getting {
+            dependencies {
+                implementation(Dependencies.Android.work)
+            }
+        }
         val androidTest by getting
     }
 }
 
 dependencies {
+    implementation("androidx.work:work-runtime-ktx:2.5.0")
     ksp(Dependencies.Test.mockativeProcessor)
 }
