@@ -28,7 +28,7 @@ import com.wire.kalium.persistence.event.EventInfoStorage
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
 
-expect class UserSessionScope : UserSessionScopeCommon
+expect class UserSessionScope: UserSessionScopeCommon
 
 abstract class UserSessionScopeCommon(
     private val session: AuthSession,
