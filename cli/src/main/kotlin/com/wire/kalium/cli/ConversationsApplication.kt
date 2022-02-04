@@ -7,6 +7,7 @@ import com.wire.kalium.cli.CLIUtils.getResource
 import com.wire.kalium.cryptography.utils.calcMd5
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.configuration.ServerConfigMapper
+import com.wire.kalium.logic.configuration.ServerConfigMapperImpl
 import com.wire.kalium.network.AuthenticatedNetworkContainer
 import com.wire.kalium.network.LoginNetworkContainer
 import com.wire.kalium.network.api.SessionCredentials
@@ -22,7 +23,8 @@ class ConversationsApplication : CliktCommand() {
     private val password: String by option(help = "wire account password").required()
 
     override fun run(): Unit = runBlocking {
-        val backendConfig: BackendConfig = ServerConfigMapper().toBackendConfig(ServerConfig.STAGING)
+        val serverConfigMapper: ServerConfigMapper = ServerConfigMapperImpl()
+        val backendConfig: BackendConfig = serverConfigMapper.toBackendConfig(ServerConfig.STAGING)
         val loginContainer = LoginNetworkContainer(isRequestLoggingEnabled = true)
 
         val loginResult = loginContainer.loginApi.login(
