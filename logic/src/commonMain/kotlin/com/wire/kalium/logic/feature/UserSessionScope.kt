@@ -28,7 +28,7 @@ import com.wire.kalium.persistence.event.EventInfoStorage
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
 
-expect class UserSessionScope: UserSessionScopeCommon
+expect class UserSessionScope : UserSessionScopeCommon
 
 abstract class UserSessionScopeCommon(
     private val session: AuthSession,
@@ -37,7 +37,8 @@ abstract class UserSessionScopeCommon(
 
     protected abstract val encryptedSettingsHolder: EncryptedSettingsHolder
     private val userPreferencesSettings = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
-    private val eventInfoStorage = EventInfoStorage(userPreferencesSettings)
+    private val eventInfoStorage: EventInfoStorage
+        get() = EventInfoStorage(userPreferencesSettings)
 
     private val idMapper: IdMapper get() = IdMapperImpl()
     private val memberMapper: MemberMapper get() = MemberMapperImpl(idMapper)
@@ -64,7 +65,8 @@ abstract class UserSessionScopeCommon(
             clientMapper
         )
 
-    private val clientRegistrationStorage: ClientRegistrationStorage = ClientRegistrationStorageImpl(userPreferencesSettings)
+    private val clientRegistrationStorage: ClientRegistrationStorage
+        get() = ClientRegistrationStorageImpl(userPreferencesSettings)
 
     private val clientRepository: ClientRepository
         get() = ClientRepositoryImpl(clientRemoteDataSource, clientRegistrationStorage)
