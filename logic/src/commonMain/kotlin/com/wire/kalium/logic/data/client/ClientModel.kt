@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.client
 
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.location.Location
 import com.wire.kalium.logic.data.prekey.PreKey
 
@@ -11,7 +12,7 @@ data class RegisterClientParam(
 )
 
 data class Client(
-    val clientId: String,
+    val clientId: ClientId,
     val type: ClientType,
     val registrationTime: String, // yyyy-mm-ddThh:MM:ss.qqq
     val location: Location?,
