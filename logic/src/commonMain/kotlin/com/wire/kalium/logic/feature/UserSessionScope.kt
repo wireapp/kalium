@@ -22,10 +22,9 @@ import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.message.MessageScope
+import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
-import com.wire.kalium.logic.sync.WorkScheduler
-import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.persistence.db.Database
 import com.wire.kalium.persistence.event.EventInfoStorage
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
