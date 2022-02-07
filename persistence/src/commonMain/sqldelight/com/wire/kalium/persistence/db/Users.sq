@@ -14,7 +14,8 @@ DELETE FROM User WHERE qualified_id = ?;
 
 insertUser:
 INSERT INTO User(qualified_id, name, handle)
-VALUES(?, ?, ?);
+VALUES(?, ?, ?)
+ON CONFLICT(qualified_id) DO UPDATE SET name = excluded.name, handle = excluded.handle;
 
 updateUser:
 UPDATE User
