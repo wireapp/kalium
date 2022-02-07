@@ -31,7 +31,7 @@ class MetadataDAOTest: BaseDatabaseTest() {
     }
 
     @Test
-    fun givenExistingKey_thenExistingValueCanOverwritten() = runTest {
+    fun givenExistingKey_thenExistingValueCanBeOverwritten() = runTest {
         db.metadataDAO.insertValue(value1, key1)
         db.metadataDAO.insertValue(value2, key1)
         assertEquals(value2, db.metadataDAO.valueByKey(key1))
