@@ -18,7 +18,7 @@ import kotlinx.serialization.json.Json
 
 interface UserRepository {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
-    suspend fun getSelfUser(): Flow<SelfUser?>
+    suspend fun getSelfUser(): Flow<SelfUser>
 }
 
 class UserDataSource(
