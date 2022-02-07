@@ -73,7 +73,7 @@ actual class WorkScheduler(private val context: Context, private val session: Au
             .putString(WrapperWorkerFactory.SESSION_KEY, Json.encodeToString(session))
             .build()
         val request = OneTimeWorkRequest.Builder(WrapperWorker::class.java)
-            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+//            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
             .setInputData(inputData).build()
 
         WorkManager.getInstance(context).beginUniqueWork(
