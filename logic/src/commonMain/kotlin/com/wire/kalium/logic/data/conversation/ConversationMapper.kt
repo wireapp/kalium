@@ -1,7 +1,6 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.persistence.dao.Conversation as PersistedConversation
 
@@ -16,9 +15,25 @@ internal class ConversationMapperImpl(
     private val legalHoldStatusMapper: LegalHoldStatusMapper
 ) : ConversationMapper {
 
-    override fun fromApiModel(apiModel: ConversationResponse): Conversation = Conversation(
-        idMapper.fromApiModel(apiModel.id), apiModel.name
-    )
+    override fun fromApiModel(apiModel: ConversationResponse): Conversation {
+        val convId = idMapper.fromApiModel(apiModel.id)
+        return when (apiModel.type) {
+            ConversationResponse.Type.GROUP -> Conversation.Group(convId, apiModel.name)
+            ConversationResponse.Type.SELF -> Conversation.Group(convId, apiModel.name)
+            ConversationResponse.Type.ONE_TO_ONE,
+            ConversationResponse.Type.WAIT_FOR_CONNECTION,
+            ConversationResponse.Type.INCOMING_CONNECTION -> {
+                val connectionState = getOneOnOneConnectionState(apiModel)
+                Conversation.OneOne(
+                    convId,
+                    apiModel.name,
+                    connectionState,
+                    Conversation.OneOne.FederationStatus.NONE,
+                    LegalHoldStatus.DISABLED // TODO Fetch
+                )
+            }
+        }
+    }
 
     override fun fromDaoModel(daoModel: PersistedConversation): Conversation = Conversation(
         idMapper.fromDaoModel(daoModel.id), daoModel.name
@@ -33,4 +48,5 @@ internal class ConversationMapperImpl(
         ConversationResponse.Type.INCOMING_CONNECTION -> Conversation.OneOne.ConnectionState.INCOMING
         else -> Conversation.OneOne.ConnectionState.ACCEPTED
     }
+}
 }

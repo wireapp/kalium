@@ -16,6 +16,7 @@ import com.wire.kalium.network.api.user.details.qualifiedIds
 import com.wire.kalium.network.utils.isSuccessful
 import com.wire.kalium.persistence.dao.ConversationDAO
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 interface ConversationRepository {
@@ -35,12 +36,15 @@ class ConversationDataSource(
 ) : ConversationRepository {
 
     override suspend fun fetchConversations(): Either<CoreFailure, Unit> {
+        //TODO Migrate to conversations/list-ids + conversations/v2
         val conversationsResponse = conversationApi.conversationsByBatch(null, 100)
         return if (!conversationsResponse.isSuccessful()) {
             Either.Left(CoreFailure.ServerMiscommunication)
         } else {
-            conversationDAO.insertConversations(conversationsResponse.value.conversations.map(conversationMapper::fromApiModelToDaoModel))
-            conversationsResponse.value.conversations.forEach { conversationsResponse ->
+            val conversations = conversationsResponse.value.conversations
+            conversationDAO.insertConversations(conversations.map(conversationMapper::fromApiModelToDaoModel))
+            conversations.flatMap { it.members.otherMembers }
+            conversations.forEach { conversationsResponse ->
                 conversationDAO.insertMembers(
                     memberMapper.fromApiModelToDaoModel(conversationsResponse.members),
                     idMapper.fromApiToDao(conversationsResponse.id)
@@ -52,32 +56,6 @@ class ConversationDataSource(
 
     override suspend fun getConversationList(): Flow<List<Conversation>> {
         return conversationDAO.getAllConversations().map { it.map(conversationMapper::fromDaoModel) }
-    }
-
-    private fun mapConversations(
-        conversations: List<ConversationResponse>,
-        users: List<UserDetailsResponse>
-    ): List<Conversation> = conversations.map { conversation ->
-        val firstContactId = conversation.members.otherMembers.firstOrNull()?.userId
-        val contactDetails = users.firstOrNull { userDetail -> userDetail.id == firstContactId }
-        conversationMapper.fromApiModel(conversation, contactDetails)
-    }
-
-    private suspend fun getUserDetailsForOneOnOneConversations(conversations: List<ConversationResponse>)
-            : Either<CoreFailure, List<UserDetailsResponse>> {
-        val neededUserIds = arrayListOf<QualifiedID>()
-        conversations.forEach { conversation ->
-            if (!conversation.isOneOnOneConversation) {
-                return@forEach
-            }
-            conversation.members.otherMembers.firstOrNull()?.userId?.let { neededUserIds += it }
-        }
-        val response = userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(neededUserIds.distinct()))
-        return if (!response.isSuccessful()) {
-            Either.Left(CoreFailure.ServerMiscommunication)
-        } else {
-            Either.Right(response.value)
-        }
     }
 
     override suspend fun getConversationDetails(conversationId: ConversationId): Either<CoreFailure, Conversation> {
