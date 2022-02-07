@@ -36,7 +36,7 @@ class LoginUseCase(
 
         return when (result) {
             is Either.Right -> {
-//                sessionRepository.storeSession(result.value)
+                sessionRepository.storeSession(result.value)
                 AuthenticationResult.Success(result.value)
             }
             is Either.Left -> {
