@@ -7,6 +7,6 @@ class UserScope(
     userRepository: UserRepository,
     syncManager: SyncManager
 ) {
-    val getSelfUser: GetSelfUserUseCase = GetSelfUserUseCase(userRepository, syncManager)
+    val getSelfUser: GetSelfUserUseCase get() = GetSelfUserUseCase(userRepository, syncManager)
     val syncSelfUser: SyncSelfUserUseCase = SyncSelfUserUseCase(userRepository)
 }
