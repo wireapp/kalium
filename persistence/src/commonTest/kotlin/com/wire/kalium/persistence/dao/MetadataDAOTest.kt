@@ -2,6 +2,7 @@ package com.wire.kalium.persistence.dao
 
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.db.Database
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -27,25 +28,25 @@ class MetadataDAOTest: BaseDatabaseTest() {
     @Test
     fun givenNonExistingKey_thenValueCanBeStored() = runTest {
         db.metadataDAO.insertValue(value1, key1)
-        assertEquals(value1, db.metadataDAO.valueByKey(key1))
+        assertEquals(value1, db.metadataDAO.valueByKey(key1).first())
     }
 
     @Test
     fun givenExistingKey_thenExistingValueCanBeOverwritten() = runTest {
         db.metadataDAO.insertValue(value1, key1)
         db.metadataDAO.insertValue(value2, key1)
-        assertEquals(value2, db.metadataDAO.valueByKey(key1))
+        assertEquals(value2, db.metadataDAO.valueByKey(key1).first())
     }
 
     @Test
     fun givenExistingKey_thenValueCanBeRetrieved() = runTest {
         db.metadataDAO.insertValue(value1, key1)
-        assertEquals(value1, db.metadataDAO.valueByKey(key1))
+        assertEquals(value1, db.metadataDAO.valueByKey(key1).first())
     }
 
     @Test
     fun giveNonExistingKey_thenNullValueWillBeReturned() = runTest {
         db.metadataDAO.insertValue(value1, key1)
-        assertNull(db.metadataDAO.valueByKey(key2))
+        assertNull(db.metadataDAO.valueByKey(key2).first())
     }
 }

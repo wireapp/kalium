@@ -9,6 +9,8 @@ import com.wire.kalium.persistence.dao.QualifiedID
 import com.wire.kalium.persistence.dao.UserDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -38,13 +40,13 @@ class UserDataSource(
         }
     }
 
-    override suspend fun getSelfUser(): Flow<SelfUser?> {
-        metadataDAO.valueByKey(SELF_USER_ID_KEY)?.let { encodedValue ->
+    override suspend fun getSelfUser(): Flow<SelfUser> {
+        return metadataDAO.valueByKey(SELF_USER_ID_KEY).filterNotNull().flatMapMerge { encodedValue ->
             val selfUserID: QualifiedID = Json.decodeFromString(encodedValue)
-            return userDAO.getUserByQualifiedID(selfUserID).map { it?.let { userMapper.fromDaoModel(it) } }
+            userDAO.getUserByQualifiedID(selfUserID)
+                .filterNotNull()
+                .map(userMapper::fromDaoModel)
         }
-
-        return emptyFlow()
     }
 
     companion object {

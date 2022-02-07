@@ -1,6 +1,10 @@
 package com.wire.kalium.persistence.dao
 
+import com.squareup.sqldelight.runtime.coroutines.asFlow
+import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.db.MetadataQueries
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.mapNotNull
 
 class MetadataDAOImpl(private val metadataQueries: MetadataQueries): MetadataDAO {
 
@@ -8,7 +12,7 @@ class MetadataDAOImpl(private val metadataQueries: MetadataQueries): MetadataDAO
         metadataQueries.insertValue(key, value)
     }
 
-    override suspend fun valueByKey(key: String): String? {
-        return metadataQueries.selectByKey(key).executeAsOneOrNull()?.stringValue
+    override suspend fun valueByKey(key: String): Flow<String?> {
+        return metadataQueries.selectValueByKey(key).asFlow().mapToOneOrNull()
     }
 }
