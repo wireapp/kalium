@@ -26,6 +26,7 @@ android {
         minSdk = Android.Sdk.min
         targetSdk = Android.Sdk.target
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles("consumer-proguard-rules.pro")
     }
     // Remove Android Unit tests, as it's currently impossible to run native-through-NDK code on simple Unit tests.
     sourceSets.remove(sourceSets["test"])
