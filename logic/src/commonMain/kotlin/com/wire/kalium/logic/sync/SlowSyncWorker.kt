@@ -8,7 +8,8 @@ class SlowSyncWorker(userSessionScope: UserSessionScope) : UserSessionWorker(use
 
     override suspend fun doWork(): Result = suspending {
 
-        val result = userSessionScope.conversations.syncConversations()
+        val result = userSessionScope.users.syncSelfUser()
+            .flatMap { userSessionScope.conversations.syncConversations() }
             .onSuccess { userSessionScope.syncManager.completeSlowSync() }
 
         when ( result ) {
