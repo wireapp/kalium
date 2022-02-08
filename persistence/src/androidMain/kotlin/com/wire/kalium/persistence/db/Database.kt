@@ -38,7 +38,6 @@ actual class Database(context: Context, name: String, kaliumPreferences: KaliumP
 
     actual val metadataDAO: MetadataDAO
         get() = MetadataDAOImpl(database.metadataQueries)
-    }
 
     private fun getOrGenerateSecretKey(kaliumPreferences: KaliumPreferences): String {
         val databaseKey = kaliumPreferences.getString(DATABASE_SECRET_KEY)
