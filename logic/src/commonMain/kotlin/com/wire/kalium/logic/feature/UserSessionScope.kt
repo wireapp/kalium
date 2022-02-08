@@ -38,7 +38,7 @@ abstract class UserSessionScopeCommon(
 ) {
 
     protected abstract val encryptedSettingsHolder: EncryptedSettingsHolder
-    private val userPreferencesSettings by lazy { KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings) }
+    protected val userPreferencesSettings by lazy { KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings) }
     private val eventInfoStorage: EventInfoStorage
         get() = EventInfoStorage(userPreferencesSettings)
 
