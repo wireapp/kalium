@@ -19,6 +19,7 @@ import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.network.api.user.client.ClientApiImp
 import com.wire.kalium.network.api.user.logout.LogoutApi
 import com.wire.kalium.network.api.user.logout.LogoutImp
+import com.wire.kalium.network.api.user.self.SelfApi
 import com.wire.kalium.network.tools.BackendConfig
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.client.HttpClient
@@ -55,6 +56,8 @@ class AuthenticatedNetworkContainer(
     val notificationApi: NotificationApi get() = NotificationApiImpl(authenticatedHttpClient)
 
     val teamsApi: TeamsApi get() = TeamsApiImp(authenticatedHttpClient)
+
+    val selfApi: SelfApi get() = SelfApi(authenticatedHttpClient)
 
     internal val authenticatedHttpClient by lazy {
         provideBaseHttpClient(engine, isRequestLoggingEnabled, HttpClientOptions.DefaultHost(backendConfig)) {
