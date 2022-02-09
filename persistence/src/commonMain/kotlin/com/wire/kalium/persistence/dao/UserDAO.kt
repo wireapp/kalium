@@ -15,7 +15,7 @@ data class User(
     val id: QualifiedID,
     val name: String?,
     val handle: String?
-) { }
+)
 
 interface UserDAO {
     suspend fun insertUser(user: User)
