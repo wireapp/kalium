@@ -15,6 +15,8 @@ import com.wire.kalium.cryptography.UserId
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
@@ -35,10 +37,12 @@ class MainActivity : ComponentActivity() {
 
     fun loginAndFetchConverationList(coreLogic: CoreLogic) = lifecycleScope.launchWhenCreated {
         login(coreLogic.getAuthenticationScope())?.let {
-            val conversations = fetchConversations(coreLogic.getSessionScope(it), it)
+            val session = coreLogic.getSessionScope(it)
+            val conversations = session.conversations.getConversations().first()
+            val selfUser = session.users.getSelfUser().first()
 
             setContent {
-                MainLayout(conversations)
+                MainLayout(conversations, selfUser)
             }
         }
     }
@@ -56,15 +60,17 @@ class MainActivity : ComponentActivity() {
         return result.userSession
     }
 
-    suspend fun fetchConversations(userSessionScope: UserSessionScope, session: AuthSession): List<Conversation> {
+    suspend fun fetchConversations(userSessionScope: UserSessionScope): List<Conversation> {
         return userSessionScope.conversations.getConversations().first()
     }
 }
 
 @Composable
-fun MainLayout(conversations: List<Conversation>) {
+fun MainLayout(conversations: List<Conversation>, selfUser: SelfUser) {
     Column {
         Text("Conversation count:")
         Text("${conversations.size}")
+        Text("SelfUser:")
+        Text("${selfUser.id}")
     }
 }

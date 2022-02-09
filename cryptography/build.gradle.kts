@@ -13,6 +13,7 @@ android {
         minSdk = Android.Sdk.min
         targetSdk = Android.Sdk.target
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles("consumer-proguard-rules.pro")
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8

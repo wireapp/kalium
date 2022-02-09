@@ -18,10 +18,14 @@ import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.location.LocationMapper
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
+import com.wire.kalium.logic.data.user.UserDataSource
+import com.wire.kalium.logic.data.user.UserMapperImpl
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.message.MessageScope
+import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
@@ -38,13 +42,14 @@ abstract class UserSessionScopeCommon(
 ) {
 
     protected abstract val encryptedSettingsHolder: EncryptedSettingsHolder
-    private val userPreferencesSettings by lazy { KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings) }
+    protected val userPreferencesSettings by lazy { KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings) }
     private val eventInfoStorage: EventInfoStorage
         get() = EventInfoStorage(userPreferencesSettings)
 
     private val idMapper: IdMapper get() = IdMapperImpl()
     private val memberMapper: MemberMapper get() = MemberMapperImpl(idMapper)
     private val conversationMapper: ConversationMapper get() = ConversationMapperImpl(idMapper, memberMapper)
+    private val userMapper = UserMapperImpl(idMapper)
     protected abstract val database: Database
 
     private val conversationRepository: ConversationRepository
@@ -56,6 +61,13 @@ abstract class UserSessionScopeCommon(
 
     private val messageRepository: MessageRepository
         get() = MessageRepository(authenticatedDataSourceSet.authenticatedNetworkContainer.messageApi)
+
+    private val userRepository: UserRepository
+        get() = UserDataSource(
+            database.userDAO,
+            database.metadataDAO,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.selfApi,
+            userMapper)
 
     protected abstract val clientConfig: ClientConfig
 
@@ -77,6 +89,7 @@ abstract class UserSessionScopeCommon(
 
     val syncManager: SyncManager get() = authenticatedDataSourceSet.syncManager
     val client: ClientScope get() = ClientScope(clientRepository)
-    val conversations: ConversationScope get() = ConversationScope(conversationRepository, authenticatedDataSourceSet.syncManager)
+    val conversations: ConversationScope get() = ConversationScope(conversationRepository, syncManager)
     val messages: MessageScope get() = MessageScope(messageRepository)
+    val users: UserScope get() = UserScope(userRepository, syncManager)
 }

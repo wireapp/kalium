@@ -2,7 +2,7 @@ package com.wire.kalium.network.api.notification
 
 import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.UserId
-import com.wire.kalium.network.api.user.client.ClientResponse
+import com.wire.kalium.network.api.user.client.EventClientResponse
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -22,7 +22,7 @@ data class Payload(
     @SerialName("from") val from: String,
     @SerialName("qualified_from") val qualifiedFrom: UserId,
     @SerialName("type") val type: String,
-    @SerialName("client") val client: ClientResponse? = null
+    @SerialName("client") val client: EventClientResponse? = null
 )
 
 @Serializable

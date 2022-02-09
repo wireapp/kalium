@@ -4,6 +4,8 @@ import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationDAOImpl
+import com.wire.kalium.persistence.dao.MetadataDAO
+import com.wire.kalium.persistence.dao.MetadataDAOImpl
 import com.wire.kalium.persistence.dao.QualifiedIDAdapter
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserDAOImpl
@@ -32,6 +34,9 @@ actual class Database {
 
     actual val conversationDAO: ConversationDAO
         get() = ConversationDAOImpl(database.converationsQueries, database.membersQueries)
+
+    actual val metadataDAO: MetadataDAO
+        get() = MetadataDAOImpl(database.metadataQueries)
 
     actual val clientDAO: ClientDAO
         get() = ClientDAOImpl(database.clientsQueries)
