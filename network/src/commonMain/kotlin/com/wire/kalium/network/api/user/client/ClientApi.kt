@@ -6,6 +6,7 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -18,6 +19,9 @@ interface ClientApi {
 
     suspend fun fetchSelfUserClient(): NetworkResponse<List<ClientResponse>>
 
+    suspend fun deleteClient(password: String, clientID: String): NetworkResponse<Unit>
+
+    suspend fun fetchClientInfo(clientID: String): NetworkResponse<ClientResponse>
 }
 
 
@@ -46,6 +50,16 @@ class ClientApiImpl(private val httpClient: HttpClient) : ClientApi {
 
     override suspend fun fetchSelfUserClient(): NetworkResponse<List<ClientResponse>> =
         wrapKaliumResponse { httpClient.get(PATH_CLIENTS) }
+
+    override suspend fun deleteClient(password: String, clientID: String) =
+        wrapKaliumResponse<Unit> {
+            httpClient.delete("$PATH_CLIENTS/$clientID") {
+                setBody(PasswordRequest(password))
+            }
+        }
+
+    override suspend fun fetchClientInfo(clientID: String): NetworkResponse<ClientResponse> =
+        wrapKaliumResponse { httpClient.get("$PATH_CLIENTS/$clientID") }
 
     private companion object {
         const val PATH_USERS = "users"

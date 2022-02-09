@@ -71,3 +71,8 @@ enum class ClientCapabilityDTO {
 data class ListClientsOfUsersRequest(
     @SerialName("qualified_users") val users: List<UserId>
 )
+
+@Serializable
+data class PasswordRequest(
+    @SerialName("password") val password: String
+)
