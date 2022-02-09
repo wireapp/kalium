@@ -7,6 +7,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertFails
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class UserClientDAOIntegrationTest : BaseDatabaseTest() {
@@ -31,6 +33,14 @@ class UserClientDAOIntegrationTest : BaseDatabaseTest() {
 
         val result = clientDAO.getClientsOfUserByQualifiedID(user.id).first()
         assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun givenUserIsNotInserted_whenInsertingClient_thenAnExceptionIsThrown() = runTest {
+        // Exception depends on each platform/sqlite driver, can't assert exception type or message in common source
+        assertFails {
+            clientDAO.insertClient(client)
+        }
     }
 
     private companion object {
