@@ -8,4 +8,7 @@ interface ClientRepository {
     suspend fun registerClient(param: RegisterClientParam): Either<CoreFailure, Client>
     suspend fun persistClientId(clientId: ClientId): Either<CoreFailure, Unit>
     suspend fun currentClientId(): Either<CoreFailure, ClientId>
+    suspend fun deleteClient(param: DeleteClientParam): Either<CoreFailure, Unit>
+    suspend fun selfListOfClients(): Either<CoreFailure, List<Client>>
+    suspend fun clientInfo(clientId: ClientId /* = com.wire.kalium.logic.data.id.PlainId */): Either<CoreFailure, Client>
 }

@@ -3,7 +3,9 @@ package com.wire.kalium.logic.data.client.remote
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientMapper
+import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.data.client.RegisterClientParam
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.failure.WrongPassword
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.user.client.ClientApi
@@ -15,21 +17,47 @@ import com.wire.kalium.network.utils.isSuccessful
 class ClientRemoteDataSourceImpl(
     private val clientApi: ClientApi,
     private val clientMapper: ClientMapper
-): ClientRemoteDataSource {
+) : ClientRemoteDataSource {
+
     override suspend fun registerClient(param: RegisterClientParam): Either<CoreFailure, Client> {
         val response = clientApi.registerClient(clientMapper.toRegisterClientRequest(param))
         return if (response.isSuccessful())
-            handleSuccessfulApiResponse(response)
+            Either.Right(clientMapper.fromClientResponse(response = response.value))
         else
             handleFailedApiResponse(response)
     }
 
-    private fun handleSuccessfulApiResponse(response: NetworkResponse.Success<ClientResponse>): Either<CoreFailure, Client> {
-        return Either.Right(clientMapper.fromClientResponse(response = response.value))
+    override suspend fun deleteClient(param: DeleteClientParam): Either<CoreFailure, Unit> {
+        val response = clientApi.deleteClient(param.password, param.clientId.value)
+        return if (response.isSuccessful()) {
+            Either.Right(Unit)
+        } else {
+            handleFailedApiResponse(response)
+        }
     }
+
+    override suspend fun fetchClientInfo(clientId: ClientId): Either<CoreFailure, Client> {
+        val response = clientApi.fetchClientInfo(clientId.value)
+        return if (response.isSuccessful()) {
+            Either.Right(clientMapper.fromClientResponse(response.value))
+        } else {
+            handleFailedApiResponse(response)
+        }
+    }
+
+    override suspend fun fetchSelfUserClient(): Either<CoreFailure, List<Client>> {
+        val response = clientApi.fetchSelfUserClient()
+        return if (response.isSuccessful()) {
+            Either.Right(response.value.map { clientMapper.fromClientResponse(it) })
+        } else {
+            handleFailedApiResponse(response)
+        }
+    }
+
 
     private fun handleFailedApiResponse(response: NetworkResponse.Error<*>) =
         when (response.kException) {
+            // TODO: KaliumException.InvalidRequestError is not always wrongPassword
             is KaliumException.InvalidRequestError -> Either.Left(WrongPassword)
             is KaliumException.NetworkUnavailableError -> Either.Left(CoreFailure.NoNetworkConnection)
             else -> Either.Left(CoreFailure.Unknown(response.kException))

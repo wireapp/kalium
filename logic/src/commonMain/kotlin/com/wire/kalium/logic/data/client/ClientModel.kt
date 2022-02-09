@@ -11,6 +11,11 @@ data class RegisterClientParam(
     val capabilities: List<ClientCapability>?,
 )
 
+data class DeleteClientParam(
+    val password: String,
+    val clientId: ClientId /* = com.wire.kalium.logic.data.id.PlainId */
+)
+
 data class Client(
     val clientId: ClientId,
     val type: ClientType,
