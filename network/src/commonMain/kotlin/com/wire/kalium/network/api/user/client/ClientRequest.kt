@@ -1,6 +1,5 @@
 package com.wire.kalium.network.api.user.client
 
-import com.wire.kalium.network.api.QualifiedID
 import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.prekey.PreKeyDTO
 import kotlinx.serialization.SerialName
@@ -16,19 +15,6 @@ data class RegisterClientRequest(
     @SerialName("label") val label: String,
     @SerialName("capabilities") val capabilities: List<ClientCapabilityDTO>?,
     @SerialName("model") val model: String
-)
-
-@Serializable
-data class RegisterClientResponse(
-    @SerialName("id") val clientId: String,
-    @SerialName("type") val type: ClientTypeDTO,
-    @SerialName("time") val registrationTime: String, // yyyy-mm-ddThh:MM:ss.qqq
-    @SerialName("location") val location: LocationDTO?,
-    @SerialName("class") val deviceType: DeviceTypeDTO?,
-    @SerialName("label") val label: String?,
-    @SerialName("cookie") val cookie: String?,
-    @SerialName("capabilities") val capabilities: Capabilities?,
-    @SerialName("model") val model: String?
 )
 
 @Serializable
@@ -84,4 +70,9 @@ enum class ClientCapabilityDTO {
 @Serializable
 data class ListClientsOfUsersRequest(
     @SerialName("qualified_users") val users: List<UserId>
+)
+
+@Serializable
+data class PasswordRequest(
+    @SerialName("password") val password: String
 )

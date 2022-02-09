@@ -1,15 +1,15 @@
 package com.wire.kalium.api.tools.json.api.user.client
 
 import com.wire.kalium.api.tools.json.ValidJsonProvider
+import com.wire.kalium.network.api.model.LocationResponse
 import com.wire.kalium.network.api.user.client.Capabilities
 import com.wire.kalium.network.api.user.client.ClientCapabilityDTO
+import com.wire.kalium.network.api.user.client.ClientResponse
 import com.wire.kalium.network.api.user.client.ClientTypeDTO
 import com.wire.kalium.network.api.user.client.DeviceTypeDTO
-import com.wire.kalium.network.api.user.client.LocationDTO
-import com.wire.kalium.network.api.user.client.RegisterClientResponse
 
-object RegisterClientResponseJson {
-    private val jsonProvider = { serializable: RegisterClientResponse ->
+object ClientResponseJson {
+    private val jsonProvider = { serializable: ClientResponse ->
         """
         |{
         |   "id": "${serializable.clientId}",
@@ -33,12 +33,12 @@ object RegisterClientResponseJson {
     }
 
     val valid = ValidJsonProvider(
-        RegisterClientResponse(
+        ClientResponse(
             clientId = "defkrr8e7grgsoufhg8",
             type = ClientTypeDTO.Permanent,
             deviceType = DeviceTypeDTO.Phone,
             registrationTime = "2021-05-12T10:52:02.671Z",
-            location = LocationDTO(latitude = "1.2345", longitude = "6.7890"),
+            location = LocationResponse(latitude = "1.2345", longitude = "6.7890"),
             label = "label",
             cookie = "sldkfmdeklmwldwlek23kl44mntiuepfojfndkjd",
             capabilities = Capabilities(listOf(ClientCapabilityDTO.LegalHoldImplicitConsent)),
@@ -46,4 +46,6 @@ object RegisterClientResponseJson {
         ),
         jsonProvider
     )
+
+    fun createValid(clientResponse: ClientResponse) = ValidJsonProvider(clientResponse, jsonProvider)
 }
