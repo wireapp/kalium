@@ -20,9 +20,9 @@ class ClientDataSource(
     private val clientRemoteRepository: ClientRemoteRepository,
     private val clientRegistrationStorage: ClientRegistrationStorage
 ) : ClientRepository {
-    override suspend fun registerClient(param: RegisterClientParam): Either<CoreFailure, Client> =
-        clientRemoteRepository.registerClient(param)
-
+    override suspend fun registerClient(param: RegisterClientParam): Either<CoreFailure, Client> {
+        return clientRemoteRepository.registerClient(param)
+    }
 
     override suspend fun persistClientId(clientId: ClientId): Either<CoreFailure, Unit> {
         clientRegistrationStorage.registeredClientId = clientId.value
@@ -40,12 +40,10 @@ class ClientDataSource(
     }
 
     override suspend fun selfListOfClients(): Either<CoreFailure, List<Client>> {
-        return clientRemoteRepository.fetchSelfUserClient()
+        return clientRemoteRepository.fetchSelfUserClients()
     }
 
     override suspend fun clientInfo(clientId: ClientId): Either<CoreFailure, Client> {
         return clientRemoteRepository.fetchClientInfo(clientId)
     }
-
-
 }
