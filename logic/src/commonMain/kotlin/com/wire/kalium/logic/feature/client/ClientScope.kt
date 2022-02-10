@@ -9,5 +9,6 @@ class ClientScope(
     proteusClient: ProteusClient,
     preKeyMapper: PreKeyMapper
 ) {
+    // TODO : get() ?
     val register: RegisterClientUseCase = RegisterClientUseCase(clientRepository, proteusClient, preKeyMapper)
 }

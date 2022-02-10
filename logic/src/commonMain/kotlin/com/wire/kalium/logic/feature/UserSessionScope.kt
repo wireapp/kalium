@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature
 
+import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.logic.AuthenticatedDataSourceSet
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.client.ClientMapper
@@ -38,7 +39,7 @@ expect class UserSessionScope : UserSessionScopeCommon
 
 abstract class UserSessionScopeCommon(
     private val session: AuthSession,
-    private val authenticatedDataSourceSet: AuthenticatedDataSourceSet
+    private val authenticatedDataSourceSet: AuthenticatedDataSourceSet,
 ) {
 
     protected abstract val encryptedSettingsHolder: EncryptedSettingsHolder
@@ -67,7 +68,8 @@ abstract class UserSessionScopeCommon(
             database.userDAO,
             database.metadataDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.selfApi,
-            userMapper)
+            userMapper
+        )
 
     protected abstract val clientConfig: ClientConfig
 
@@ -88,7 +90,7 @@ abstract class UserSessionScopeCommon(
         get() = ClientRepositoryImpl(clientRemoteDataSource, clientRegistrationStorage)
 
     val syncManager: SyncManager get() = authenticatedDataSourceSet.syncManager
-    val client: ClientScope get() = ClientScope(clientRepository)
+    val client: ClientScope get() = ClientScope(clientRepository, authenticatedDataSourceSet.proteusClient, preyKeyMapper)
     val conversations: ConversationScope get() = ConversationScope(conversationRepository, syncManager)
     val messages: MessageScope get() = MessageScope(messageRepository)
     val users: UserScope get() = UserScope(userRepository, syncManager)

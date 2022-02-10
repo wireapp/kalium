@@ -1,9 +1,12 @@
 package com.wire.kalium.logic.feature.client
 
+import com.wire.kalium.cryptography.PreKey
+import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.client.ClientCapability
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.RegisterClientParam
-import com.wire.kalium.logic.data.prekey.PreKey
+import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.logic.failure.TooManyClients
 import com.wire.kalium.logic.failure.WrongPassword
 import com.wire.kalium.logic.framework.TestClient
@@ -28,11 +31,17 @@ class RegisterClientUseCaseTest {
     @Mock
     private val clientRepository = mock(classOf<ClientRepository>())
 
+    @Mock
+    private val preKeyMapper = mock(classOf<PreKeyMapper>())
+
+    @Mock
+    private val proteusClient = mock(classOf<ProteusClient>())
+
     private lateinit var registerClient: RegisterClientUseCase
 
     @BeforeTest
     fun setup() {
-        registerClient = RegisterClientUseCase(clientRepository)
+        registerClient = RegisterClientUseCase(clientRepository, proteusClient, preKeyMapper)
     }
 
     @Test
@@ -43,7 +52,7 @@ class RegisterClientUseCaseTest {
             .whenInvokedWith(anything())
             .then { Either.Left(CoreFailure.ServerMiscommunication) }
 
-        registerClient(params)
+        registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
 
         verify(clientRepository)
             .suspendFunction(clientRepository::registerClient)
@@ -59,7 +68,7 @@ class RegisterClientUseCaseTest {
             .whenInvokedWith(anything())
             .then { Either.Left(wrongPasswordFailure) }
 
-        val result = registerClient(REGISTER_PARAMETERS)
+        val result = registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
 
         assertIs<RegisterClientResult.Failure.InvalidCredentials>(result)
     }
@@ -72,7 +81,7 @@ class RegisterClientUseCaseTest {
             .whenInvokedWith(anything())
             .then { Either.Left(genericFailure) }
 
-        val result = registerClient(REGISTER_PARAMETERS)
+        val result = registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
 
         assertIs<RegisterClientResult.Failure.Generic>(result)
         assertSame(genericFailure, result.genericFailure)
@@ -86,7 +95,7 @@ class RegisterClientUseCaseTest {
             .whenInvokedWith(anything())
             .then { Either.Left(tooManyClientsFailure) }
 
-        val result = registerClient(REGISTER_PARAMETERS)
+        val result = registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
 
         assertIs<RegisterClientResult.Failure.TooManyClients>(result)
     }
@@ -98,7 +107,7 @@ class RegisterClientUseCaseTest {
             .whenInvokedWith(anything())
             .then { Either.Left(CoreFailure.ServerMiscommunication) }
 
-        registerClient(REGISTER_PARAMETERS)
+        registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
 
         verify(clientRepository)
             .suspendFunction(clientRepository::persistClientId)
@@ -119,7 +128,7 @@ class RegisterClientUseCaseTest {
             .whenInvokedWith(anything())
             .then { Either.Right(Unit) }
 
-        registerClient(REGISTER_PARAMETERS)
+        registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
 
         verify(clientRepository)
             .suspendFunction(clientRepository::persistClientId)
@@ -140,7 +149,7 @@ class RegisterClientUseCaseTest {
             .whenInvokedWith(anything())
             .then { Either.Left(persistFailure) }
 
-        val result = registerClient(REGISTER_PARAMETERS)
+        val result = registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
 
         assertIs<RegisterClientResult.Failure.Generic>(result)
         assertEquals(persistFailure, result.genericFailure)
@@ -159,14 +168,24 @@ class RegisterClientUseCaseTest {
             .whenInvokedWith(anything())
             .then { Either.Right(Unit) }
 
-        val result = registerClient(REGISTER_PARAMETERS)
+        val result = registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
 
         assertIs<RegisterClientResult.Success>(result)
         assertEquals(registeredClient, result.client)
     }
 
     private companion object {
-        val REGISTER_PARAMETERS = RegisterClientParam("pass", listOf(), PreKey(2, "42"), null)
+        const val TEST_PASSWORD = "password"
+        val TEST_CAPABILITIES: List<ClientCapability>? = listOf(
+            ClientCapability.LegalHoldImplicitConsent
+        )
+
+        val REGISTER_PARAMETERS = RegisterClientParam(
+            password = TEST_PASSWORD,
+            preKeys = listOf(PreKey(id = 1, encodedData = "1"), PreKey(id = 2, encodedData = "2")),
+            lastKey = PreKey(id = 99, encodedData = "99"),
+            capabilities = TEST_CAPABILITIES
+        )
         val CLIENT = TestClient.CLIENT
     }
 }
