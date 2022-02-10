@@ -18,11 +18,6 @@ class ClientRemoteDataSourceImpl(
     private val clientMapper: ClientMapper
 ) : ClientRemoteDataSource {
 
-    private companion object {
-        private const val ERROR_MESSAGE_TOO_MANY_CLIENTS = "too-many-clients"
-        private const val ERROR_MESSAGE_MISSING_AUTH = "missing-auth"
-    }
-
     override suspend fun registerClient(param: RegisterClientParam): Either<CoreFailure, Client> {
         val response = clientApi.registerClient(clientMapper.toRegisterClientRequest(param))
         return if (response.isSuccessful())
@@ -46,4 +41,9 @@ class ClientRemoteDataSourceImpl(
             is KaliumException.NetworkUnavailableError -> Either.Left(CoreFailure.NoNetworkConnection)
             else -> Either.Left(CoreFailure.Unknown(response.kException))
         }
+
+    private companion object {
+        private const val ERROR_MESSAGE_TOO_MANY_CLIENTS = "too-many-clients"
+        private const val ERROR_MESSAGE_MISSING_AUTH = "missing-auth"
+    }
 }
