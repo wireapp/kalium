@@ -1,6 +1,7 @@
 package com.wire.kalium.persistence.db
 
 import android.content.Context
+import androidx.sqlite.db.SupportSQLiteDatabase
 import android.os.Build
 import android.util.Base64
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
@@ -12,6 +13,8 @@ import com.wire.kalium.persistence.dao.QualifiedIDAdapter
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserDAOImpl
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
+import com.wire.kalium.persistence.dao.client.ClientDAO
+import com.wire.kalium.persistence.dao.client.ClientDAOImpl
 import net.sqlcipher.database.SupportFactory
 import java.security.SecureRandom
 
@@ -21,13 +24,29 @@ actual class Database(context: Context, name: String, kaliumPreferences: KaliumP
 
     init {
         val supportFactory = SupportFactory(getOrGenerateSecretKey(kaliumPreferences).toByteArray())
-        val driver =  AndroidSqliteDriver(AppDatabase.Schema, context, name, factory = supportFactory)
+
+        val onConnectCallback = object : AndroidSqliteDriver.Callback(AppDatabase.Schema) {
+            override fun onOpen(db: SupportSQLiteDatabase) {
+                super.onOpen(db)
+                db.execSQL("PRAGMA foreign_keys=ON;")
+            }
+        }
+
+        val driver = AndroidSqliteDriver(
+            schema = AppDatabase.Schema,
+            context = context,
+            name = name,
+            factory = supportFactory,
+            callback = onConnectCallback
+        )
 
         database = AppDatabase(
             driver,
+            Client.Adapter(user_idAdapter = QualifiedIDAdapter()),
             Conversation.Adapter(qualified_idAdapter = QualifiedIDAdapter()),
             Member.Adapter(userAdapter = QualifiedIDAdapter(), conversationAdapter = QualifiedIDAdapter()),
-            User.Adapter(qualified_idAdapter = QualifiedIDAdapter()))
+            User.Adapter(qualified_idAdapter = QualifiedIDAdapter())
+        )
     }
 
     actual val userDAO: UserDAO
@@ -38,6 +57,9 @@ actual class Database(context: Context, name: String, kaliumPreferences: KaliumP
 
     actual val metadataDAO: MetadataDAO
         get() = MetadataDAOImpl(database.metadataQueries)
+
+    actual val clientDAO: ClientDAO
+        get() = ClientDAOImpl(database.clientsQueries)
 
     private fun getOrGenerateSecretKey(kaliumPreferences: KaliumPreferences): String {
         val databaseKey = kaliumPreferences.getString(DATABASE_SECRET_KEY)
