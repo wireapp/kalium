@@ -9,6 +9,7 @@ sealed class RegisterClientResult {
     sealed class Failure : RegisterClientResult() {
         object InvalidCredentials : Failure()
         object TooManyClients : Failure()
+        data class ProtuseFailure(val e: Throwable): Failure()
         class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }

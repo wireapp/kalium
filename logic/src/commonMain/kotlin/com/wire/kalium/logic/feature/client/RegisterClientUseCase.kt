@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.cryptography.ProteusClient
+import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.data.client.ClientCapability
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.RegisterClientParam
@@ -19,34 +20,40 @@ class RegisterClientUseCase(
     suspend operator fun invoke(
         password: String,
         capabilities: List<ClientCapability>?,
-        preKeysToSend: Int = DEFAULT_PREYS_COUNT
+        preKeysToSend: Int = DEFAULT_PRE_KEYS_COUNT
     ): RegisterClientResult = suspending {
         //TODO Should we fail here if the client is already registered?
+        try {
+            val param = RegisterClientParam(
+                password = password,
+                capabilities = capabilities,
+                preKeys = proteusClient.newPreKeys(FIRST_KEY_ID, preKeysToSend),
+                lastKey = proteusClient.newLastPreKey()
+            )
 
-        val param = RegisterClientParam(
-            password = password,
-            capabilities = capabilities,
-            preKeys = proteusClient.newPreKeys(0, preKeysToSend),
-            lastKey = proteusClient.newLastPreKey()
-        )
+            clientRepository.registerClient(param).flatMap { client ->
+                clientRepository.persistClientId(client.clientId).map {
+                    client
+                }
 
-        clientRepository.registerClient(param).flatMap { client ->
-            clientRepository.persistClientId(client.clientId).map {
-                client
-            }
+            }.fold({ failure ->
+                when (failure) {
+                    WrongPassword -> RegisterClientResult.Failure.InvalidCredentials
+                    TooManyClients -> RegisterClientResult.Failure.TooManyClients
+                    else -> RegisterClientResult.Failure.Generic(failure)
+                }
+            }, { client ->
+                RegisterClientResult.Success(client)
+            })!!
+
+        } catch (e: ProteusException) {
+            RegisterClientResult.Failure.ProtuseFailure(e)
         }
-    }.fold({ failure ->
-        when (failure) {
-            WrongPassword -> RegisterClientResult.Failure.InvalidCredentials
-            TooManyClients -> RegisterClientResult.Failure.TooManyClients
-            else -> RegisterClientResult.Failure.Generic(failure)
-        }
-    }, { client ->
-        RegisterClientResult.Success(client)
-    })!!
+    }
 
     private companion object {
-        const val DEFAULT_PREYS_COUNT = 100
+        const val FIRST_KEY_ID = 0
+        const val DEFAULT_PRE_KEYS_COUNT = 100
     }
 
 }

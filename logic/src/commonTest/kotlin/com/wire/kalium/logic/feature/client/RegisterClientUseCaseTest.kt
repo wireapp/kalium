@@ -21,6 +21,7 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
+import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -54,6 +55,18 @@ class RegisterClientUseCaseTest {
             .whenInvoked()
             .then { LAST_KEY }
 
+    }
+
+    @AfterTest
+    fun test() {
+        verify(proteusClient)
+            .suspendFunction(proteusClient::newPreKeys)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
+
+        verify(proteusClient)
+            .function(proteusClient::newLastPreKey)
+            .wasInvoked(exactly = once)
     }
 
     @Test
