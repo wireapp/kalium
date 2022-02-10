@@ -31,7 +31,7 @@ class RegisterClientUseCaseTest {
 
     @BeforeTest
     fun setup() {
-        registerClient = RegisterClientUseCase(clientRepository)
+        registerClient = RegisterClientUseCaseImpl(clientRepository)
     }
 
     @Test

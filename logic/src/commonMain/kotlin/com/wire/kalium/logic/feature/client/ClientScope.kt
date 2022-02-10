@@ -5,5 +5,5 @@ import com.wire.kalium.logic.data.client.ClientRepository
 class ClientScope(
     clientRepository: ClientRepository
 ) {
-    val register: RegisterClientUseCase = RegisterClientUseCase(clientRepository)
+    val register: RegisterClientUseCase = RegisterClientUseCaseImpl(clientRepository)
 }
