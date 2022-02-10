@@ -21,7 +21,7 @@ interface ClientRemoteRepository {
 
     suspend fun fetchClientInfo(clientId: ClientId): Either<CoreFailure, Client>
 
-    suspend fun fetchSelfUserClient(): Either<CoreFailure, List<Client>>
+    suspend fun fetchSelfUserClients(): Either<CoreFailure, List<Client>>
 }
 
 class ClientRemoteDataSource(
@@ -55,7 +55,7 @@ class ClientRemoteDataSource(
         }
     }
 
-    override suspend fun fetchSelfUserClient(): Either<CoreFailure, List<Client>> {
+    override suspend fun fetchSelfUserClients(): Either<CoreFailure, List<Client>> {
         val response = clientApi.fetchSelfUserClient()
         return if (response.isSuccessful()) {
             Either.Right(response.value.map { clientMapper.fromClientResponse(it) })
