@@ -3,6 +3,8 @@ package com.wire.kalium.logic.feature.client
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.RegisterClientParam
 import com.wire.kalium.logic.failure.ClientFailure
+import com.wire.kalium.logic.failure.TooManyClients
+import com.wire.kalium.logic.failure.WrongPassword
 import com.wire.kalium.logic.functional.suspending
 
 interface RegisterClientUseCase {
@@ -19,10 +21,11 @@ class RegisterClientUseCaseImpl(private val clientRepository: ClientRepository) 
             }
         }
     }.fold({ failure ->
-        if (failure is ClientFailure.WrongPassword)
-            RegisterClientResult.Failure.InvalidCredentials
-        else
-            RegisterClientResult.Failure.Generic(failure)
+        when (failure) {
+            WrongPassword -> RegisterClientResult.Failure.InvalidCredentials
+            TooManyClients -> RegisterClientResult.Failure.TooManyClients
+            else -> RegisterClientResult.Failure.Generic(failure)
+        }
     }, { client ->
         RegisterClientResult.Success(client)
     })!!
