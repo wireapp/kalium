@@ -9,15 +9,25 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.failure.WrongPassword
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.user.client.ClientApi
-import com.wire.kalium.network.api.user.client.ClientResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 
-class ClientRemoteDataSourceImpl(
+
+interface ClientRemoteRepository {
+    suspend fun registerClient(param: RegisterClientParam): Either<CoreFailure, Client>
+
+    suspend fun deleteClient(param: DeleteClientParam): Either<CoreFailure, Unit>
+
+    suspend fun fetchClientInfo(clientId: ClientId): Either<CoreFailure, Client>
+
+    suspend fun fetchSelfUserClient(): Either<CoreFailure, List<Client>>
+}
+
+class ClientRemoteDataSource(
     private val clientApi: ClientApi,
     private val clientMapper: ClientMapper
-) : ClientRemoteDataSource {
+) : ClientRemoteRepository {
 
     override suspend fun registerClient(param: RegisterClientParam): Either<CoreFailure, Client> {
         val response = clientApi.registerClient(clientMapper.toRegisterClientRequest(param))

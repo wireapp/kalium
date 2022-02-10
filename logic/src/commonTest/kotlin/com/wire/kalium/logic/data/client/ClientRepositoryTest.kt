@@ -1,7 +1,7 @@
 package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
+import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.prekey.PreKey
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
@@ -24,34 +24,34 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertSame
 
-class ClientRepositoryImplTest {
+class ClientRepositoryTest {
 
     @Mock
-    private val clientRemoteDataSource = mock(classOf<ClientRemoteDataSource>())
+    private val clientRemoteRepository = mock(classOf<ClientRemoteRepository>())
 
     @Mock
     private val clientRegistrationStorage = configure(mock(classOf<ClientRegistrationStorage>())) {
         stubsUnitByDefault = true
     }
 
-    private lateinit var clientRepository: ClientRepositoryImpl
+    private lateinit var clientRepository: ClientRepository
 
     @BeforeTest
     fun setup() {
-        clientRepository = ClientRepositoryImpl(clientRemoteDataSource, clientRegistrationStorage)
+        clientRepository = ClientDataSource(clientRemoteRepository, clientRegistrationStorage)
     }
 
     @Test
     fun givenClientParams_whenRegisteringClient_thenParamsShouldBePassedCorrectly() = runTest {
-        given(clientRemoteDataSource)
-            .suspendFunction(clientRemoteDataSource::registerClient)
+        given(clientRemoteRepository)
+            .suspendFunction(clientRemoteRepository::registerClient)
             .whenInvokedWith(any())
             .then { Either.Right(CLIENT_RESULT) }
 
         clientRepository.registerClient(REGISTER_CLIENT_PARAMS)
 
-        verify(clientRemoteDataSource)
-            .suspendFunction(clientRemoteDataSource::registerClient)
+        verify(clientRemoteRepository)
+            .suspendFunction(clientRemoteRepository::registerClient)
             .with(eq(REGISTER_CLIENT_PARAMS))
             .wasInvoked(once)
     }
@@ -59,8 +59,8 @@ class ClientRepositoryImplTest {
     @Test
     fun givingRemoteDataSourceFails_whenRegisteringClient_thenTheFailureShouldBePropagated() = runTest {
         val failure = Either.Left(CoreFailure.NoNetworkConnection)
-        given(clientRemoteDataSource)
-            .suspendFunction(clientRemoteDataSource::registerClient)
+        given(clientRemoteRepository)
+            .suspendFunction(clientRemoteRepository::registerClient)
             .whenInvokedWith(any())
             .then { failure }
 
@@ -74,8 +74,8 @@ class ClientRepositoryImplTest {
     @Test
     fun givenRemoteDataSourceSucceed_whenRegisteringClient_thenTheSuccessShouldBePropagated() = runTest {
         val clientResult = Either.Right(CLIENT_RESULT)
-        given(clientRemoteDataSource)
-            .suspendFunction(clientRemoteDataSource::registerClient)
+        given(clientRemoteRepository)
+            .suspendFunction(clientRemoteRepository::registerClient)
             .whenInvokedWith(any())
             .then { clientResult }
 
