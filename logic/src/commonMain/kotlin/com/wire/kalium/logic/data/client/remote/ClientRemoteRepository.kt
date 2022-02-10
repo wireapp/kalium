@@ -6,7 +6,7 @@ import com.wire.kalium.logic.data.client.ClientMapper
 import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.data.client.RegisterClientParam
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.failure.WrongPassword
+import com.wire.kalium.logic.failure.ClientFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.network.exceptions.KaliumException
@@ -68,7 +68,7 @@ class ClientRemoteDataSource(
     private fun handleFailedApiResponse(response: NetworkResponse.Error<*>) =
         when (response.kException) {
             // TODO: KaliumException.InvalidRequestError is not always wrongPassword
-            is KaliumException.InvalidRequestError -> Either.Left(WrongPassword)
+            is KaliumException.InvalidRequestError -> Either.Left(ClientFailure.WrongPassword)
             is KaliumException.NetworkUnavailableError -> Either.Left(CoreFailure.NoNetworkConnection)
             else -> Either.Left(CoreFailure.Unknown(response.kException))
         }

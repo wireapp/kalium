@@ -2,6 +2,7 @@ package com.wire.kalium.logic.failure
 
 import com.wire.kalium.logic.CoreFailure
 
-sealed class ClientFailure : CoreFailure.FeatureFailure()
+sealed class ClientFailure : CoreFailure.FeatureFailure() {
+    object WrongPassword: ClientFailure()
+}
 
-object WrongPassword: ClientFailure()

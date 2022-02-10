@@ -4,7 +4,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.RegisterClientParam
 import com.wire.kalium.logic.data.prekey.PreKey
-import com.wire.kalium.logic.failure.WrongPassword
+import com.wire.kalium.logic.failure.ClientFailure
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -52,7 +52,7 @@ class RegisterClientUseCaseTest {
 
     @Test
     fun givenRepositoryRegistrationFailsDueToWrongPassword_whenRegistering_thenInvalidCredentialsErrorShouldBeReturned() = runTest {
-        val wrongPasswordFailure = WrongPassword
+        val wrongPasswordFailure = ClientFailure.WrongPassword
         given(clientRepository)
             .suspendFunction(clientRepository::registerClient)
             .whenInvokedWith(anything())
