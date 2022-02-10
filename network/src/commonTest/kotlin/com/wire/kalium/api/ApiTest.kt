@@ -13,11 +13,13 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLProtocol
+import io.ktor.http.content.TextContent
 import io.ktor.http.headersOf
 import io.ktor.utils.io.ByteReadChannel
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 interface ApiTest {
@@ -158,13 +160,23 @@ interface ApiTest {
         assertContains(this.body.contentType?.contentType ?: "", contentType.contentType)
 
     // path
-    fun HttpRequestData.assertPathEqual(path: String) = assertEquals(this.url.encodedPath, path)
+    fun HttpRequestData.assertPathEqual(path: String) = assertEquals(path, this.url.encodedPath)
+
+    // body
+    fun HttpRequestData.assertBodyContent(content: String) {
+        assertIs<TextContent>(body)
+        assertEquals(content, (body as TextContent).text)
+    }
 
     // host
     fun HttpRequestData.assertHostEqual(expectedHost: String) = assertEquals(expected = expectedHost, actual = this.url.host)
     fun HttpRequestData.assertHttps() = assertEquals(expected = URLProtocol.HTTPS, actual = this.url.protocol)
 
     private companion object {
-        val TEST_BACKEND_CONFIG = BackendConfig("test.api.com", "test.account.com", "test.ws.com",  "test.blacklist",  "test.teams.com", "test.wire.com")
+        val TEST_BACKEND_CONFIG =
+            BackendConfig(
+                "test.api.com", "test.account.com", "test.ws.com",
+                "test.blacklist", "test.teams.com", "test.wire.com"
+            )
     }
 }
