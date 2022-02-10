@@ -47,7 +47,7 @@ class RegisterClientUseCase(
             })!!
 
         } catch (e: ProteusException) {
-            RegisterClientResult.Failure.ProtuseFailure(e)
+            RegisterClientResult.Failure.ProteusFailure(e)
         }
     }
 
