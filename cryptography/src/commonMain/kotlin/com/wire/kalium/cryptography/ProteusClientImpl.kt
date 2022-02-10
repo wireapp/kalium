@@ -35,7 +35,8 @@ interface ProteusClient {
     fun getLocalFingerprint(): ByteArray
 
     @Throws(ProteusException::class)
-    suspend fun newPreKeys(from: Int, count: Int): ArrayList<PreKey>
+    // TODO: is there any reason for newPreKeys to return ArrayList instead of generic List
+    suspend fun newPreKeys(from: Int, count: Int): List<PreKey>
 
     @Throws(ProteusException::class)
     fun newLastPreKey(): PreKey

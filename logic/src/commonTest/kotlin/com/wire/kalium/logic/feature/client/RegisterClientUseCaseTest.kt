@@ -12,6 +12,7 @@ import com.wire.kalium.logic.failure.WrongPassword
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.eq
@@ -42,6 +43,17 @@ class RegisterClientUseCaseTest {
     @BeforeTest
     fun setup() {
         registerClient = RegisterClientUseCase(clientRepository, proteusClient, preKeyMapper)
+
+        given(proteusClient)
+            .suspendFunction(proteusClient::newPreKeys)
+            .whenInvokedWith(any(), any())
+            .then { _, _ -> PRE_KEYS }
+
+        given(proteusClient)
+            .function(proteusClient::newLastPreKey)
+            .whenInvoked()
+            .then { LAST_KEY }
+
     }
 
     @Test
@@ -180,10 +192,12 @@ class RegisterClientUseCaseTest {
             ClientCapability.LegalHoldImplicitConsent
         )
 
+        val PRE_KEYS = listOf(PreKey(id = 1, encodedData = "1"), PreKey(id = 2, encodedData = "2"))
+        val LAST_KEY = PreKey(id = 99, encodedData = "99")
         val REGISTER_PARAMETERS = RegisterClientParam(
             password = TEST_PASSWORD,
-            preKeys = listOf(PreKey(id = 1, encodedData = "1"), PreKey(id = 2, encodedData = "2")),
-            lastKey = PreKey(id = 99, encodedData = "99"),
+            preKeys = PRE_KEYS,
+            lastKey = LAST_KEY,
             capabilities = TEST_CAPABILITIES
         )
         val CLIENT = TestClient.CLIENT

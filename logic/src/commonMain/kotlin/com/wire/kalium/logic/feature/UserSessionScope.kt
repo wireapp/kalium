@@ -19,6 +19,7 @@ import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.location.LocationMapper
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
+import com.wire.kalium.logic.data.prekey.PreKeyMapperImpl
 import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserMapperImpl
 import com.wire.kalium.logic.data.user.UserRepository
@@ -73,7 +74,7 @@ abstract class UserSessionScopeCommon(
 
     protected abstract val clientConfig: ClientConfig
 
-    private val preyKeyMapper: PreKeyMapper get() = PreKeyMapper()
+    private val preyKeyMapper: PreKeyMapper get() = PreKeyMapperImpl()
     private val locationMapper: LocationMapper get() = LocationMapper()
     private val clientMapper: ClientMapper get() = ClientMapper(preyKeyMapper, locationMapper, clientConfig)
 
