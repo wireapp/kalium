@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.cryptography.PreKey
 import com.wire.kalium.cryptography.ProteusClient
+import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.ClientCapability
 import com.wire.kalium.logic.data.client.ClientRepository
@@ -57,18 +58,6 @@ class RegisterClientUseCaseTest {
 
     }
 
-    @AfterTest
-    fun test() {
-        verify(proteusClient)
-            .suspendFunction(proteusClient::newPreKeys)
-            .with(any(), any())
-            .wasInvoked(exactly = once)
-
-        verify(proteusClient)
-            .function(proteusClient::newLastPreKey)
-            .wasInvoked(exactly = once)
-    }
-
     @Test
     fun givenRegistrationParams_whenRegistering_thenTheRepositoryShouldBeCalledWithCorrectParameters() = runTest {
         val params = REGISTER_PARAMETERS
@@ -83,6 +72,15 @@ class RegisterClientUseCaseTest {
             .suspendFunction(clientRepository::registerClient)
             .with(eq(params))
             .wasInvoked(once)
+
+        verify(proteusClient)
+            .suspendFunction(proteusClient::newPreKeys)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
+
+        verify(proteusClient)
+            .function(proteusClient::newLastPreKey)
+            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -96,6 +94,15 @@ class RegisterClientUseCaseTest {
         val result = registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
 
         assertIs<RegisterClientResult.Failure.InvalidCredentials>(result)
+
+        verify(proteusClient)
+            .suspendFunction(proteusClient::newPreKeys)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
+
+        verify(proteusClient)
+            .function(proteusClient::newLastPreKey)
+            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -198,6 +205,37 @@ class RegisterClientUseCaseTest {
         assertIs<RegisterClientResult.Success>(result)
         assertEquals(registeredClient, result.client)
     }
+
+    @Test
+    fun givenProteusClient_whenNewPreKeysThrowException_thenReturnProteusFailure() = runTest {
+        val exception = ProteusException("why are we still here just to suffer", 55)
+        given(proteusClient)
+            .suspendFunction(proteusClient::newPreKeys)
+            .whenInvokedWith(any(), any())
+            .thenThrow(exception)
+
+        val result = registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
+
+        assertIs<RegisterClientResult.Failure.ProteusFailure>(result)
+        assertEquals(exception, result.e)
+    }
+
+
+    @Test
+    fun givenProteusClient_whenNewLastPreKeyThrowException_thenReturnProteusFailure() = runTest {
+        val exception = ProteusException("why are we still here just to suffer", 55)
+
+        given(proteusClient)
+            .function(proteusClient::newLastPreKey)
+            .whenInvoked()
+            .thenThrow(exception)
+
+        val result = registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
+
+        assertIs<RegisterClientResult.Failure.ProteusFailure>(result)
+        assertEquals(exception, result.e)
+    }
+
 
     private companion object {
         const val TEST_PASSWORD = "password"
