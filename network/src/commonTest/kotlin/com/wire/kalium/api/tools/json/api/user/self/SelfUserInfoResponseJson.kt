@@ -43,7 +43,7 @@ object SelfUserInfoResponseJson {
             picture = listOf(),
             accentId = 0,
             deleted = null,
-            assets = listOf(UserAsset(type = AssetType.Image, key = "asset_key", size = null)),
+            assets = listOf(UserAsset(type = AssetType.IMAGE, key = "asset_key", size = null)),
             locale = "user_local",
             service = null,
             expiresAt = null,

@@ -8,7 +8,7 @@ import com.wire.kalium.logic.failure.TooManyClients
 import com.wire.kalium.logic.failure.WrongPassword
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.user.client.ClientApi
-import com.wire.kalium.network.api.user.client.RegisterClientResponse
+import com.wire.kalium.network.api.user.client.ClientResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
@@ -31,8 +31,8 @@ class ClientRemoteDataSourceImpl(
             handleFailedApiResponse(response)
     }
 
-    private fun handleSuccessfulApiResponse(response: NetworkResponse.Success<RegisterClientResponse>): Either<CoreFailure, Client> {
-        return Either.Right(clientMapper.fromRegisterClientResponse(response = response.value))
+    private fun handleSuccessfulApiResponse(response: NetworkResponse.Success<ClientResponse>): Either<CoreFailure, Client> {
+        return Either.Right(clientMapper.fromClientResponse(response = response.value))
     }
 
     private fun handleFailedApiResponse(response: NetworkResponse.Error<*>) =

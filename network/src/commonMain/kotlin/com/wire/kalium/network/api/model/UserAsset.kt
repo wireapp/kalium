@@ -16,10 +16,10 @@ data class UserAsset(
 @Serializable
 enum class AssetSize {
     @SerialName("preview")
-    Preview,
+    PREVIEW,
 
     @SerialName("complete")
-    Complete;
+    COMPLETE;
 
     override fun toString(): String {
         return this.name.lowercase()
@@ -29,7 +29,7 @@ enum class AssetSize {
 @Serializable
 enum class AssetType {
     @SerialName("image")
-    Image;
+    IMAGE;
 
     override fun toString(): String {
         return this.name.lowercase()

@@ -6,13 +6,13 @@ import kotlinx.serialization.Serializable
 @Serializable
 enum class ConversationAccess {
     @SerialName("private")
-    Private,
+    PRIVATE,
     @SerialName("code")
-    Code,
+    CODE,
     @SerialName("invite")
-    Invite,
+    INVITE,
     @SerialName("link")
-    Link;
+    LINK;
 
     override fun toString(): String {
         return this.name.lowercase()
