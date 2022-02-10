@@ -41,14 +41,11 @@ class ValidateEmailUseCaseTest {
 
         val INVALID_EMAILS = listOf(
             "example.com",
-            //"A@b@c@domain.com",
-            //"""abc”test”email@domain.com""",
-            //"""abc is”not\valid@domain.com""",
-            //"""abc\ is\”not\valid@domain.com""",
-            ".test@domain.com",
-            //"test@domain..com",
-            " email@domain.de",
-            //"email@domain.de "
+
+            // these values are commented out because of the changes to validateEmailUseCase
+            // to check only if '@' exist somewhere
+            //".test@domain.com",
+            //" email@domain.de",
         )
     }
 }
