@@ -4,6 +4,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientMapper
 import com.wire.kalium.logic.data.client.RegisterClientParam
+import com.wire.kalium.logic.failure.TooManyClients
 import com.wire.kalium.logic.failure.WrongPassword
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.user.client.ClientApi
@@ -15,7 +16,8 @@ import com.wire.kalium.network.utils.isSuccessful
 class ClientRemoteDataSourceImpl(
     private val clientApi: ClientApi,
     private val clientMapper: ClientMapper
-): ClientRemoteDataSource {
+) : ClientRemoteDataSource {
+
     override suspend fun registerClient(param: RegisterClientParam): Either<CoreFailure, Client> {
         val response = clientApi.registerClient(clientMapper.toRegisterClientRequest(param))
         return if (response.isSuccessful())
@@ -30,8 +32,18 @@ class ClientRemoteDataSourceImpl(
 
     private fun handleFailedApiResponse(response: NetworkResponse.Error<*>) =
         when (response.kException) {
-            is KaliumException.InvalidRequestError -> Either.Left(WrongPassword)
+            is KaliumException.InvalidRequestError ->
+                when (response.kException.message) {
+                    ERROR_MESSAGE_TOO_MANY_CLIENTS -> Either.Left(TooManyClients)
+                    ERROR_MESSAGE_MISSING_AUTH -> Either.Left(WrongPassword)
+                    else -> Either.Left(CoreFailure.Unknown(response.kException))
+                }
             is KaliumException.NetworkUnavailableError -> Either.Left(CoreFailure.NoNetworkConnection)
             else -> Either.Left(CoreFailure.Unknown(response.kException))
         }
+
+    private companion object {
+        private const val ERROR_MESSAGE_TOO_MANY_CLIENTS = "too-many-clients"
+        private const val ERROR_MESSAGE_MISSING_AUTH = "missing-auth"
+    }
 }

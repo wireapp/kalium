@@ -13,7 +13,7 @@ import org.khronos.webgl.ArrayBuffer
 import org.khronos.webgl.Int8Array
 import org.khronos.webgl.Uint8Array
 
-actual class ProteusClient actual constructor(rootDir: String, userId: String) {
+actual class ProteusClientImpl actual constructor(rootDir: String, userId: String): ProteusClient {
 
     private val userId: String
     private lateinit var box: Cryptobox
@@ -22,7 +22,7 @@ actual class ProteusClient actual constructor(rootDir: String, userId: String) {
         this.userId = userId
     }
 
-    actual suspend fun open() {
+    override suspend fun open() {
         val engine = MemoryEngine()
         engine.init(userId).await()
 
@@ -30,18 +30,18 @@ actual class ProteusClient actual constructor(rootDir: String, userId: String) {
         box.create().await()
     }
 
-    actual fun close() {}
+    override fun close() {}
 
-    actual fun getIdentity(): ByteArray {
+    override fun getIdentity(): ByteArray {
         val encodedIdentity = box.getIdentity().serialise()
         return Int8Array(encodedIdentity).unsafeCast<ByteArray>()
     }
 
-    actual fun getLocalFingerprint(): ByteArray {
+    override fun getLocalFingerprint(): ByteArray {
         return box.identity.public_key.fingerprint().encodeToByteArray()
     }
 
-    actual suspend fun newPreKeys(
+    override suspend fun newPreKeys(
         from: Int,
         count: Int
     ): ArrayList<PreKey> {
@@ -49,7 +49,7 @@ actual class ProteusClient actual constructor(rootDir: String, userId: String) {
         return preKeys.map { toPreKey(box.getIdentity().public_key, it) } as ArrayList<PreKey>
     }
 
-    actual fun newLastPreKey(): PreKey {
+    override fun newLastPreKey(): PreKey {
         val preKey = box.lastResortPreKey
         if (preKey != null) {
             return toPreKey(box.getIdentity().public_key, preKey)
@@ -59,7 +59,7 @@ actual class ProteusClient actual constructor(rootDir: String, userId: String) {
     }
 
     @OptIn(InternalAPI::class)
-    actual suspend fun createSession(
+    override suspend fun createSession(
         preKey: PreKey,
         sessionId: CryptoSessionId
     ) {
@@ -67,7 +67,7 @@ actual class ProteusClient actual constructor(rootDir: String, userId: String) {
         box.session_from_prekey(sessionId.value, preKeyBundle.toArrayBuffer()).await()
     }
 
-    actual suspend fun decrypt(
+    override suspend fun decrypt(
         message: ByteArray,
         sessionId: CryptoSessionId
     ): ByteArray {
@@ -75,7 +75,7 @@ actual class ProteusClient actual constructor(rootDir: String, userId: String) {
         return Int8Array(decryptedMessage.buffer).unsafeCast<ByteArray>()
     }
 
-    actual suspend fun encrypt(
+    override suspend fun encrypt(
         message: ByteArray,
         sessionId: CryptoSessionId
     ): ByteArray? {
@@ -84,7 +84,7 @@ actual class ProteusClient actual constructor(rootDir: String, userId: String) {
     }
 
     @OptIn(InternalAPI::class)
-    actual suspend fun encryptWithPreKey(
+    override suspend fun encryptWithPreKey(
         message: ByteArray,
         preKey: PreKey,
         sessionId: CryptoSessionId

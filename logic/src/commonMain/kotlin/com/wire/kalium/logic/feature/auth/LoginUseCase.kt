@@ -24,12 +24,15 @@ class LoginUseCase(
     private val validateUserHandleUseCase: ValidateUserHandleUseCase
 ) {
     suspend operator fun invoke(userIdentifier: String, password: String, shouldPersistClient: Boolean, serverConfig: ServerConfig): AuthenticationResult {
+        // remove White Spaces around userIdentifier
+        val cleanUserIdentifier = userIdentifier.trim()
+
         val result = when {
-            validateEmailUseCase(userIdentifier) -> {
-                loginRepository.loginWithEmail(userIdentifier, password, shouldPersistClient, serverConfig)
+            validateEmailUseCase(cleanUserIdentifier) -> {
+                loginRepository.loginWithEmail(cleanUserIdentifier, password, shouldPersistClient, serverConfig)
             }
-            validateUserHandleUseCase(userIdentifier) -> {
-                loginRepository.loginWithHandle(userIdentifier, password, shouldPersistClient, serverConfig)
+            validateUserHandleUseCase(cleanUserIdentifier) -> {
+                loginRepository.loginWithHandle(cleanUserIdentifier, password, shouldPersistClient, serverConfig)
             }
             else -> return AuthenticationResult.Failure.InvalidUserIdentifier
         }

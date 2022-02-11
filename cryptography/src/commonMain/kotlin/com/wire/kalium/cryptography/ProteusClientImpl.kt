@@ -20,20 +20,23 @@ data class PreKey(
     val encodedData: String
 )
 
-expect class ProteusClient(rootDir: String, userId: String) {
+interface ProteusClient {
 
     @Throws(ProteusException::class)
     suspend fun open()
+
     @Throws(ProteusException::class)
     fun close()
 
     @Throws(ProteusException::class)
     fun getIdentity(): ByteArray
+
     @Throws(ProteusException::class)
     fun getLocalFingerprint(): ByteArray
 
     @Throws(ProteusException::class)
-    suspend fun newPreKeys(from: Int, count: Int): ArrayList<PreKey>
+    suspend fun newPreKeys(from: Int, count: Int): List<PreKey>
+
     @Throws(ProteusException::class)
     fun newLastPreKey(): PreKey
 
@@ -49,6 +52,8 @@ expect class ProteusClient(rootDir: String, userId: String) {
     @Throws(ProteusException::class)
     suspend fun encryptWithPreKey(message: ByteArray, preKey: PreKey, sessionId: CryptoSessionId): ByteArray
 }
+
+expect class ProteusClientImpl(rootDir: String, userId: String): ProteusClient
 
 suspend fun ProteusClient.createSessions(preKeys: Map<String, Map<String, PreKey>>) {
     for (userId in preKeys.keys) {

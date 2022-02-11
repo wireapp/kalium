@@ -8,22 +8,15 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.lifecycleScope
 import com.wire.kalium.KaliumApplication
-import com.wire.kalium.cryptography.CryptoClientId
-import com.wire.kalium.cryptography.CryptoSessionId
-import com.wire.kalium.cryptography.ProteusClient
-import com.wire.kalium.cryptography.UserId
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.user.SelfUser
-import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
-import java.io.File
 
 class MainActivity : ComponentActivity() {
 
