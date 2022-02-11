@@ -8,6 +8,5 @@ class ClientScope(
     clientRepository: ClientRepository,
     proteusClient: ProteusClient,
 ) {
-    // TODO : get() ?
-    val register: RegisterClientUseCase = RegisterClientUseCaseImpl(clientRepository, proteusClient)
+    val register: RegisterClientUseCase get() = RegisterClientUseCaseImpl(clientRepository, proteusClient)
 }
