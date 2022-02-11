@@ -5,9 +5,9 @@ import com.wire.kalium.logic.AuthenticatedDataSourceSet
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.client.ClientMapper
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.client.ClientRepositoryImpl
+import com.wire.kalium.logic.data.client.ClientDataSource
+import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
-import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSourceImpl
 import com.wire.kalium.logic.data.conversation.ConversationDataSource
 import com.wire.kalium.logic.data.conversation.ConversationMapper
 import com.wire.kalium.logic.data.conversation.ConversationMapperImpl
@@ -78,8 +78,8 @@ abstract class UserSessionScopeCommon(
     private val locationMapper: LocationMapper get() = LocationMapper()
     private val clientMapper: ClientMapper get() = ClientMapper(preyKeyMapper, locationMapper, clientConfig)
 
-    private val clientRemoteDataSource: ClientRemoteDataSource
-        get() = ClientRemoteDataSourceImpl(
+    private val clientRemoteRepository: ClientRemoteRepository
+        get() = ClientRemoteDataSource(
             authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
             clientMapper
         )
@@ -88,10 +88,10 @@ abstract class UserSessionScopeCommon(
         get() = ClientRegistrationStorageImpl(userPreferencesSettings)
 
     private val clientRepository: ClientRepository
-        get() = ClientRepositoryImpl(clientRemoteDataSource, clientRegistrationStorage)
+        get() = ClientDataSource(clientRemoteRepository, clientRegistrationStorage)
 
     val syncManager: SyncManager get() = authenticatedDataSourceSet.syncManager
-    val client: ClientScope get() = ClientScope(clientRepository, authenticatedDataSourceSet.proteusClient, preyKeyMapper)
+    val client: ClientScope get() = ClientScope(clientRepository, authenticatedDataSourceSet.proteusClient)
     val conversations: ConversationScope get() = ConversationScope(conversationRepository, syncManager)
     val messages: MessageScope get() = MessageScope(messageRepository)
     val users: UserScope get() = UserScope(userRepository, syncManager)
