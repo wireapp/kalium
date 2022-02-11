@@ -7,8 +7,7 @@ import com.wire.kalium.logic.data.prekey.PreKeyMapper
 class ClientScope(
     clientRepository: ClientRepository,
     proteusClient: ProteusClient,
-    preKeyMapper: PreKeyMapper
 ) {
     // TODO : get() ?
-    val register: RegisterClientUseCase = RegisterClientUseCase(clientRepository, proteusClient, preKeyMapper)
+    val register: RegisterClientUseCase = RegisterClientUseCaseImpl(clientRepository, proteusClient)
 }

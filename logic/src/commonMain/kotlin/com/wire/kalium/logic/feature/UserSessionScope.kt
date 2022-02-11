@@ -91,7 +91,7 @@ abstract class UserSessionScopeCommon(
         get() = ClientDataSource(clientRemoteRepository, clientRegistrationStorage)
 
     val syncManager: SyncManager get() = authenticatedDataSourceSet.syncManager
-    val client: ClientScope get() = ClientScope(clientRepository, authenticatedDataSourceSet.proteusClient, preyKeyMapper)
+    val client: ClientScope get() = ClientScope(clientRepository, authenticatedDataSourceSet.proteusClient)
     val conversations: ConversationScope get() = ConversationScope(conversationRepository, syncManager)
     val messages: MessageScope get() = MessageScope(messageRepository)
     val users: UserScope get() = UserScope(userRepository, syncManager)

@@ -7,11 +7,8 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.ClientCapability
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.RegisterClientParam
-import com.wire.kalium.logic.data.prekey.PreKey
 import com.wire.kalium.logic.failure.ClientFailure
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
-import com.wire.kalium.logic.failure.TooManyClients
-import com.wire.kalium.logic.failure.WrongPassword
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -24,7 +21,6 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
-import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -37,16 +33,13 @@ class RegisterClientUseCaseTest {
     private val clientRepository = mock(classOf<ClientRepository>())
 
     @Mock
-    private val preKeyMapper = mock(classOf<PreKeyMapper>())
-
-    @Mock
     private val proteusClient = mock(classOf<ProteusClient>())
 
     private lateinit var registerClient: RegisterClientUseCase
 
     @BeforeTest
     fun setup() {
-        registerClient = RegisterClientUseCase(clientRepository, proteusClient, preKeyMapper)
+        registerClient = RegisterClientUseCaseImpl(clientRepository, proteusClient)
 
         given(proteusClient)
             .suspendFunction(proteusClient::newPreKeys)
