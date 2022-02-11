@@ -6,7 +6,6 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.client.DeviceType
 import com.wire.kalium.logic.data.id.PlainId
-import com.wire.kalium.logic.failure.ClientFailure
 import com.wire.kalium.logic.functional.Either
 import io.mockative.ConfigurationApi
 import io.mockative.Mock
@@ -18,6 +17,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 @OptIn(ConfigurationApi::class)
 class SelfClientsUseCaseTest {
@@ -43,20 +43,22 @@ class SelfClientsUseCaseTest {
             .then { Either.Right(expected) }
 
         val actual = selfClientsUseCase.invoke()
-        assertEquals(SelfClientsResult.Success(expected), actual)
+        assertIs<SelfClientsResult.Success>(actual)
+        assertEquals(expected, actual.clients)
     }
 
 
 
     @Test
     fun givenSelfListOfClientsFail_thenTheErrorPropagated() = runTest {
-        val expected = ClientFailure.WrongPassword
+        val expected = CoreFailure.NoNetworkConnection
         given(clientRepository)
             .coroutine { clientRepository.selfListOfClients() }
             .then { Either.Left(expected) }
 
         val actual = selfClientsUseCase.invoke()
-        assertEquals(SelfClientsResult.Failure.Generic(expected), actual)
+        assertIs<SelfClientsResult.Failure.Generic>(actual)
+        assertEquals(expected, actual.genericFailure)
     }
 
     private companion object {
