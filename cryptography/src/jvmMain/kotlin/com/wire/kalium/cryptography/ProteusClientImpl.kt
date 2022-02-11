@@ -8,7 +8,7 @@ import java.util.ArrayList
 import java.util.Base64
 import java.util.UUID
 
-actual class ProteusClient actual constructor(rootDir: String, userId: String) {
+actual class ProteusClientImpl actual constructor(rootDir: String, userId: String): ProteusClient {
 
     private val path: String
     private lateinit var box: CryptoBox
@@ -17,7 +17,7 @@ actual class ProteusClient actual constructor(rootDir: String, userId: String) {
         path = String.format("%s/%s", rootDir, userId)
     }
 
-    actual suspend fun open() {
+    override suspend fun open() {
         val directory = File(path)
         box = wrapException {
             directory.mkdirs()
@@ -25,39 +25,39 @@ actual class ProteusClient actual constructor(rootDir: String, userId: String) {
         }
     }
 
-    actual fun close() {
+    override fun close() {
         box.close()
     }
 
-    actual fun getIdentity(): ByteArray {
+    override fun getIdentity(): ByteArray {
         return wrapException { box.identity }
     }
 
-    actual fun getLocalFingerprint(): ByteArray {
+    override fun getLocalFingerprint(): ByteArray {
         return wrapException { box.localFingerprint }
     }
 
-    actual fun newLastPreKey(): PreKey {
+    override fun newLastPreKey(): PreKey {
         return wrapException { toPreKey(box.newLastPreKey()) }
     }
 
-    actual suspend fun newPreKeys(from: Int, count: Int): ArrayList<PreKey> {
+    override suspend fun newPreKeys(from: Int, count: Int): ArrayList<PreKey> {
         return wrapException { box.newPreKeys(from, count).map { toPreKey(it) } as ArrayList<PreKey> }
     }
 
-    actual suspend fun createSession(preKey: PreKey, sessionId: CryptoSessionId) {
+    override suspend fun createSession(preKey: PreKey, sessionId: CryptoSessionId) {
         wrapException { box.encryptFromPreKeys(sessionId.value, toPreKey(preKey), ByteArray(0)) }
     }
 
-    actual suspend fun decrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
+    override suspend fun decrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
         return wrapException { box.decrypt(sessionId.value, message) }
     }
 
-    actual suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray? {
+    override suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray? {
         return wrapException { box.encryptFromSession(sessionId.value, message) }
     }
 
-    actual suspend fun encryptWithPreKey(
+    override suspend fun encryptWithPreKey(
         message: ByteArray,
         preKey: PreKey,
         sessionId: CryptoSessionId

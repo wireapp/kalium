@@ -1,14 +1,14 @@
 package com.wire.kalium.logic.data.client
 
+import com.wire.kalium.cryptography.PreKey
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.location.Location
-import com.wire.kalium.logic.data.prekey.PreKey
 
 data class RegisterClientParam(
     val password: String,
     val preKeys: List<PreKey>,
     val lastKey: PreKey,
-    val capabilities: List<ClientCapability>?,
+    val capabilities: List<ClientCapability>?
 )
 
 data class DeleteClientParam(
