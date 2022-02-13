@@ -69,6 +69,8 @@ abstract class UserSessionScopeCommon(
             database.userDAO,
             database.metadataDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.selfApi,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApo,
+            idMapper,
             userMapper
         )
 

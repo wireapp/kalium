@@ -5,6 +5,7 @@ import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.db.ConverationsQueries
 import com.wire.kalium.persistence.db.MembersQueries
+import com.wire.kalium.persistence.db.UsersQueries
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import com.wire.kalium.persistence.db.Conversation as SQLDelightConversation
@@ -22,8 +23,11 @@ class MemberMapper {
     }
 }
 
-class ConversationDAOImpl(private val conversationQueries: ConverationsQueries,
-                          private val memberQueries: MembersQueries): ConversationDAO {
+class ConversationDAOImpl(
+    private val conversationQueries: ConverationsQueries,
+    private val userQueries: UsersQueries,
+    private val memberQueries: MembersQueries
+) : ConversationDAO {
 
     private val memberMapper = MemberMapper()
     private val conversationMapper = ConversationMapper()
@@ -63,12 +67,16 @@ class ConversationDAOImpl(private val conversationQueries: ConverationsQueries,
     }
 
     override suspend fun insertMember(member: Member, conversationID: QualifiedID) {
-        memberQueries.insertMember(member.user, conversationID)
+        memberQueries.transaction {
+            userQueries.insertUser(member.user, null, null)
+            memberQueries.insertMember(member.user, conversationID)
+        }
     }
 
     override suspend fun insertMembers(members: List<Member>, conversationID: QualifiedID) {
         memberQueries.transaction {
             for (member: Member in members) {
+                userQueries.insertUser(member.user, null, null)
                 memberQueries.insertMember(member.user, conversationID)
             }
         }
@@ -83,7 +91,7 @@ class ConversationDAOImpl(private val conversationQueries: ConverationsQueries,
         return memberQueries.selectAllMembersByConversation(qualifiedID)
             .asFlow()
             .mapToList()
-            .map { it.map(memberMapper::toModel)}
+            .map { it.map(memberMapper::toModel) }
     }
 
 }

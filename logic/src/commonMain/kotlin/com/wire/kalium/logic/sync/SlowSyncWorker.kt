@@ -1,7 +1,9 @@
 package com.wire.kalium.logic.sync
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.isLeft
 import com.wire.kalium.logic.functional.suspending
 
 class SlowSyncWorker(userSessionScope: UserSessionScope) : UserSessionWorker(userSessionScope) {
@@ -10,10 +12,16 @@ class SlowSyncWorker(userSessionScope: UserSessionScope) : UserSessionWorker(use
 
         val result = userSessionScope.users.syncSelfUser()
             .flatMap { userSessionScope.conversations.syncConversations() }
+            .flatMap { userSessionScope.users.syncContacts() }
             .onSuccess { userSessionScope.syncManager.completeSlowSync() }
 
         when ( result ) {
             is Either.Left -> {
+                val failure = result.value
+                println("SYNC FAILED $failure")
+                (failure as? CoreFailure.Unknown)?.let {
+                    it.rootCause?.printStackTrace()
+                }
                 return@suspending Result.Failure
             }
             is Either.Right -> {

@@ -26,7 +26,7 @@ actual class CoreLogic(
         val dataSourceSet = userScopeStorage[session] ?: run {
             val networkContainer = AuthenticatedNetworkContainer(
                 sessionCredentials = sessionMapper.toSessionCredentials(session),
-                backendConfig = serverConfigMapper.toBackendConfig(serverConfig = session.serverConfig)
+                backendConfig = serverConfigMapper.toBackendConfig(serverConfig = session.serverConfig), isRequestLoggingEnabled = true
             )
             val proteusClient: ProteusClient = ProteusClientImpl(rootProteusDirectoryPath, session.userId)
             val workScheduler = WorkScheduler(applicationContext, session)
