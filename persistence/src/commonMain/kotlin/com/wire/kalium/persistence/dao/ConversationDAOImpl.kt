@@ -68,7 +68,7 @@ class ConversationDAOImpl(
 
     override suspend fun insertMember(member: Member, conversationID: QualifiedID) {
         memberQueries.transaction {
-            userQueries.insertUser(member.user, null, null)
+            userQueries.insertOrIgnoreUserId(member.user)
             memberQueries.insertMember(member.user, conversationID)
         }
     }
@@ -76,7 +76,7 @@ class ConversationDAOImpl(
     override suspend fun insertMembers(members: List<Member>, conversationID: QualifiedID) {
         memberQueries.transaction {
             for (member: Member in members) {
-                userQueries.insertUser(member.user, null, null)
+                userQueries.insertOrIgnoreUserId(member.user)
                 memberQueries.insertMember(member.user, conversationID)
             }
         }
