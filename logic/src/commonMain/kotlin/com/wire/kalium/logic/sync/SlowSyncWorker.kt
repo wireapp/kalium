@@ -3,7 +3,6 @@ package com.wire.kalium.logic.sync
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.isLeft
 import com.wire.kalium.logic.functional.suspending
 
 class SlowSyncWorker(userSessionScope: UserSessionScope) : UserSessionWorker(userSessionScope) {
@@ -15,7 +14,7 @@ class SlowSyncWorker(userSessionScope: UserSessionScope) : UserSessionWorker(use
             .flatMap { userSessionScope.users.syncContacts() }
             .onSuccess { userSessionScope.syncManager.completeSlowSync() }
 
-        when ( result ) {
+        when  (result) {
             is Either.Left -> {
                 val failure = result.value
                 //TODO Use multi-platform logging solution here
