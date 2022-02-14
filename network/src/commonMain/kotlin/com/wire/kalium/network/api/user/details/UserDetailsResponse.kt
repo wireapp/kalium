@@ -10,7 +10,7 @@ import kotlinx.serialization.Serializable
 data class UserDetailsResponse(
     @SerialName("qualified_id") val id: UserId,
     @SerialName("name") val name: String,
-    @SerialName("handle") val handle: String,
+    @SerialName("handle") val handle: String?,
     @SerialName("legalhold_status") val legalHoldStatus: LegalHoldStatusResponse,
     @SerialName("team") val team: String?,
     @SerialName("accent_id") val accentId: Int,

@@ -21,6 +21,7 @@ interface UserDAO {
     suspend fun insertUser(user: User)
     suspend fun insertUsers(users: List<User>)
     suspend fun updateUser(user: User)
+    suspend fun getAllUsers(): Flow<List<User>>
     suspend fun getUserByQualifiedID(qualifiedID: QualifiedID): Flow<User?>
     suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedID)
 }

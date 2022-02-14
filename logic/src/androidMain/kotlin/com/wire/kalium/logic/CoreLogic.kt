@@ -1,6 +1,7 @@
 package com.wire.kalium.logic
 
 import android.content.Context
+import com.russhwolf.settings.BuildConfig
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.ProteusClientImpl
 import com.wire.kalium.logic.feature.UserSessionScope
@@ -26,7 +27,8 @@ actual class CoreLogic(
         val dataSourceSet = userScopeStorage[session] ?: run {
             val networkContainer = AuthenticatedNetworkContainer(
                 sessionCredentials = sessionMapper.toSessionCredentials(session),
-                backendConfig = serverConfigMapper.toBackendConfig(serverConfig = session.serverConfig)
+                backendConfig = serverConfigMapper.toBackendConfig(serverConfig = session.serverConfig),
+                isRequestLoggingEnabled = BuildConfig.DEBUG //TODO: Multi-platform logging solution!
             )
             val proteusClient: ProteusClient = ProteusClientImpl(rootProteusDirectoryPath, session.userId)
             val workScheduler = WorkScheduler(applicationContext, session)

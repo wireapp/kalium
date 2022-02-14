@@ -1,8 +1,10 @@
 package com.wire.kalium.persistence.dao
 
+import com.squareup.sqldelight.runtime.coroutines.asFlow
+import com.squareup.sqldelight.runtime.coroutines.mapToList
+import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.db.UsersQueries
 import kotlinx.coroutines.flow.Flow
-import com.squareup.sqldelight.runtime.coroutines.*
 import kotlinx.coroutines.flow.map
 import com.wire.kalium.persistence.db.User as SQLDelightUser
 
@@ -12,7 +14,7 @@ class UserMapper {
     }
 }
 
-class UserDAOImpl(private val queries: UsersQueries): UserDAO {
+class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
 
     val mapper = UserMapper()
 
@@ -31,6 +33,12 @@ class UserDAOImpl(private val queries: UsersQueries): UserDAO {
     override suspend fun updateUser(user: User) {
         queries.updateUser(user.name, user.handle, user.id)
     }
+
+    override suspend fun getAllUsers(): Flow<List<User>> = queries.selectAllUsers()
+        .asFlow()
+        .mapToList()
+        .map { entryList -> entryList.map(mapper::toModel) }
+
 
     override suspend fun getUserByQualifiedID(qualifiedID: QualifiedID): Flow<User?> {
         return queries.selectByQualifiedId(qualifiedID)

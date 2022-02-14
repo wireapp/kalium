@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.feature
 
-import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.logic.AuthenticatedDataSourceSet
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.client.ClientMapper
@@ -69,6 +68,8 @@ abstract class UserSessionScopeCommon(
             database.userDAO,
             database.metadataDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.selfApi,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
+            idMapper,
             userMapper
         )
 

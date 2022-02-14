@@ -1,11 +1,13 @@
 package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.network.api.user.details.UserDetailsResponse
 import com.wire.kalium.network.api.user.self.SelfUserInfoResponse
 import com.wire.kalium.persistence.dao.User as PersistedUser
 
 interface UserMapper {
     fun fromApiModel(selfUserInfoResponse: SelfUserInfoResponse): SelfUser
+    fun fromApiModelToDaoModel(userDetailsResponse: UserDetailsResponse): PersistedUser
     fun fromApiModelToDaoModel(selfUserInfoResponse: SelfUserInfoResponse): PersistedUser
     fun fromDaoModel(user: PersistedUser): SelfUser
 }
@@ -16,6 +18,10 @@ internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
         return SelfUser(idMapper.fromApiModel(selfUserInfoResponse.qualifiedId))
     }
 
+    override fun fromApiModelToDaoModel(userDetailsResponse: UserDetailsResponse): PersistedUser {
+        return PersistedUser(idMapper.fromApiToDao(userDetailsResponse.id), userDetailsResponse.name, userDetailsResponse.handle)
+    }
+
     override fun fromDaoModel(user: com.wire.kalium.persistence.dao.User): SelfUser {
         return SelfUser(idMapper.fromDaoModel(user.id))
     }
@@ -24,7 +30,8 @@ internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
         return PersistedUser(
             idMapper.fromApiToDao(selfUserInfoResponse.qualifiedId),
             selfUserInfoResponse.name,
-            selfUserInfoResponse.handle)
+            selfUserInfoResponse.handle
+        )
     }
 
 }

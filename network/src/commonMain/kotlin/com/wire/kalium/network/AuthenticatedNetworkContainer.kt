@@ -17,6 +17,8 @@ import com.wire.kalium.network.api.teams.TeamsApi
 import com.wire.kalium.network.api.teams.TeamsApiImp
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.network.api.user.client.ClientApiImpl
+import com.wire.kalium.network.api.user.details.UserDetailsApi
+import com.wire.kalium.network.api.user.details.UserDetailsApiImp
 import com.wire.kalium.network.api.user.logout.LogoutApi
 import com.wire.kalium.network.api.user.logout.LogoutImp
 import com.wire.kalium.network.api.user.self.SelfApi
@@ -58,6 +60,8 @@ class AuthenticatedNetworkContainer(
     val teamsApi: TeamsApi get() = TeamsApiImp(authenticatedHttpClient)
 
     val selfApi: SelfApi get() = SelfApi(authenticatedHttpClient)
+
+    val userDetailsApi: UserDetailsApi get() = UserDetailsApiImp(authenticatedHttpClient)
 
     internal val authenticatedHttpClient by lazy {
         provideBaseHttpClient(engine, isRequestLoggingEnabled, HttpClientOptions.DefaultHost(backendConfig)) {

@@ -59,8 +59,7 @@ class WrapperWorkerFactory(private val coreLogic: CoreLogic): WorkerFactory() {
 
     companion object {
         const val WORKER_CLASS_KEY = "worker_class"
-        const val SESSION_KEY = "session" +
-                ""
+        const val SESSION_KEY = "session"
     }
 
 }

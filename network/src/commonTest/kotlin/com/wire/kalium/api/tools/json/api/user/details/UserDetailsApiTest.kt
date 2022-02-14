@@ -3,7 +3,11 @@ package com.wire.kalium.api.tools.json.api.user.details
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.tools.json.model.QualifiedHandleSample
 import com.wire.kalium.api.tools.json.model.QualifiedIDSamples
+import com.wire.kalium.network.api.QualifiedHandle
+import com.wire.kalium.network.api.QualifiedID
 import com.wire.kalium.network.api.user.details.ListUserRequest
+import com.wire.kalium.network.api.user.details.QualifiedHandleListRequest
+import com.wire.kalium.network.api.user.details.QualifiedUserIdListRequest
 import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.network.api.user.details.UserDetailsApiImp
 import com.wire.kalium.network.api.user.details.qualifiedHandles
@@ -14,6 +18,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.encodeToString
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 @ExperimentalCoroutinesApi
 class UserDetailsApiTest : ApiTest {
@@ -71,7 +76,8 @@ class UserDetailsApiTest : ApiTest {
         userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(listOf()))
     }
 
-    private companion object{
+
+    private companion object {
         const val PATH_LIST_USERS = "/list-users"
     }
 }

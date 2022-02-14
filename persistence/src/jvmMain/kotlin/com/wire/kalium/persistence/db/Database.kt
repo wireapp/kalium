@@ -33,7 +33,7 @@ actual class Database {
         get() = UserDAOImpl(database.usersQueries)
 
     actual val conversationDAO: ConversationDAO
-        get() = ConversationDAOImpl(database.converationsQueries, database.membersQueries)
+        get() = ConversationDAOImpl(database.converationsQueries, database.usersQueries, database.membersQueries)
 
     actual val metadataDAO: MetadataDAO
         get() = MetadataDAOImpl(database.metadataQueries)

@@ -52,10 +52,6 @@ class MainActivity : ComponentActivity() {
 
         return result.userSession
     }
-
-    suspend fun fetchConversations(userSessionScope: UserSessionScope): List<Conversation> {
-        return userSessionScope.conversations.getConversations().first()
-    }
 }
 
 @Composable
