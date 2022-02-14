@@ -59,6 +59,17 @@ sealed class Either<out L, out R> {
             is Left -> fnL(value)
             is Right -> fnR(value)
         }
+
+    /**
+     * Applies fnL if this is a Left or fnR if this is a Right.
+     * @see Left
+     * @see Right
+     */
+    fun <T> safeFold(fnL: (L) -> T, fnR: (R) -> T): T =
+        when (this) {
+            is Left -> fnL(value)
+            is Right -> fnR(value)
+        }
 }
 
 

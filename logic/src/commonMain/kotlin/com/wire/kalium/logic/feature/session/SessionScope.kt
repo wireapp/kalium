@@ -1,7 +1,7 @@
 package com.wire.kalium.logic.feature.session
 
 import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.feature.auth.GetSessionsUseCase
+import com.wire.kalium.logic.feature.session.GetSessionsUseCase
 
 class SessionScope(
     private val sessionRepository: SessionRepository
