@@ -6,21 +6,32 @@ import com.wire.kalium.logic.data.client.ClientCapability
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.RegisterClientParam
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
-import com.wire.kalium.logic.failure.TooManyClients
-import com.wire.kalium.logic.failure.WrongPassword
+import com.wire.kalium.logic.failure.ClientFailure
+import com.wire.kalium.logic.feature.client.RegisterClientUseCase.Companion.FIRST_KEY_ID
 import com.wire.kalium.logic.functional.suspending
 
-
-class RegisterClientUseCase(
-    private val clientRepository: ClientRepository,
-    private val proteusClient: ProteusClient,
-    private val preKeyMapper: PreKeyMapper
-) {
-
+interface RegisterClientUseCase {
     suspend operator fun invoke(
         password: String,
         capabilities: List<ClientCapability>?,
         preKeysToSend: Int = DEFAULT_PRE_KEYS_COUNT
+    ): RegisterClientResult
+
+    companion object {
+        const val FIRST_KEY_ID = 0
+        const val DEFAULT_PRE_KEYS_COUNT = 100
+    }
+}
+
+class RegisterClientUseCaseImpl(
+    private val clientRepository: ClientRepository,
+    private val proteusClient: ProteusClient
+) : RegisterClientUseCase {
+
+    override suspend operator fun invoke(
+        password: String,
+        capabilities: List<ClientCapability>?,
+        preKeysToSend: Int
     ): RegisterClientResult = suspending {
         //TODO Should we fail here if the client is already registered?
         try {
@@ -38,8 +49,8 @@ class RegisterClientUseCase(
 
             }.fold({ failure ->
                 when (failure) {
-                    WrongPassword -> RegisterClientResult.Failure.InvalidCredentials
-                    TooManyClients -> RegisterClientResult.Failure.TooManyClients
+                    ClientFailure.WrongPassword -> RegisterClientResult.Failure.InvalidCredentials
+                    ClientFailure.TooManyClients -> RegisterClientResult.Failure.TooManyClients
                     else -> RegisterClientResult.Failure.Generic(failure)
                 }
             }, { client ->
@@ -50,10 +61,4 @@ class RegisterClientUseCase(
             RegisterClientResult.Failure.ProteusFailure(e)
         }
     }
-
-    private companion object {
-        const val FIRST_KEY_ID = 0
-        const val DEFAULT_PRE_KEYS_COUNT = 100
-    }
-
 }
