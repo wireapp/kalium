@@ -51,7 +51,7 @@ class UserDataSource(
     override suspend fun fetchKnownUsers(): Either<CoreFailure, Unit> {
         val ids = userDAO.getAllUsers().first().map { userEntry ->
             idMapper.toApiModel(idMapper.fromDaoModel(userEntry.id))
-        }.distinct()
+        }
 
         val usersRequestResult = userApi.getMultipleUsers(ListUserRequest.qualifiedIds(ids))
         if (!usersRequestResult.isSuccessful()) {
