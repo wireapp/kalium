@@ -1,5 +1,7 @@
 package com.wire.kalium.network.api.user.details
 
+import com.wire.kalium.network.api.ErrorResponse
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import com.wire.kalium.network.utils.mapSuccess
@@ -16,6 +18,17 @@ class UserDetailsApiImp(private val httpClient: HttpClient) : UserDetailsApi {
     override suspend fun getMultipleUsers(users: ListUserRequest): NetworkResponse<List<UserDetailsResponse>> {
         val chunkedRequests = separateRequestInChunks(users)
         val results = performChunkedRequests(chunkedRequests)
+        if (results.isEmpty()){
+            return NetworkResponse.Error(
+                KaliumException.InvalidRequestError(
+                    ErrorResponse(
+                        400,
+                        "No values passed. At least one userId or handle should be passed in order to get user details",
+                        "missing-values"
+                    )
+                )
+            )
+        }
 
         // If any request fails, abort and return the failure
         results.firstOrNull { !it.isSuccessful() }?.let { errorResponse ->
