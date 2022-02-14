@@ -40,10 +40,11 @@ class LoginUseCase(
         return when (result) {
             is Either.Right -> {
                 sessionRepository.storeSession(result.value)
+                sessionRepository.updateCurrentSession(result.value.userId)
                 AuthenticationResult.Success(result.value)
             }
             is Either.Left -> {
-                if (result.value is AuthenticationFailure) {
+                if (result.value is AuthenticationFailure.InvalidCredentials) {
                     AuthenticationResult.Failure.InvalidCredentials
                 } else {
                     AuthenticationResult.Failure.Generic(result.value)

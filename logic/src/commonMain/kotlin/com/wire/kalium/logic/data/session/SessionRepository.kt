@@ -10,21 +10,7 @@ interface SessionRepository {
     suspend fun storeSession(autSession: AuthSession)
     suspend fun getSessions(): Either<CoreFailure, List<AuthSession>>
     suspend fun doesSessionExist(userId: UserId): Either<CoreFailure, Boolean>
-}
-
-@Deprecated("Use the SessionRepositoryImpl", replaceWith = ReplaceWith("SessionRepositoryImpl"))
-class InMemorySessionRepository : SessionRepository {
-    private val sessions = hashMapOf<String, AuthSession>()
-
-    override suspend fun storeSession(autSession: AuthSession) {
-        sessions[autSession.userId] = autSession
-    }
-
-    override suspend fun getSessions(): Either<CoreFailure, List<AuthSession>> = Either.Right(sessions.values.toList())
-    override suspend fun doesSessionExist(userId: UserId): Either<CoreFailure, Boolean> {
-        TODO("Not yet implemented")
-    }
-
+    suspend fun updateCurrentSession(userIdValue: String)
 }
 
 class SessionDataSource(
@@ -47,6 +33,8 @@ class SessionDataSource(
                 Either.Right(false)
             }
         }
+
+    override suspend fun updateCurrentSession(userIdValue: String) = sessionLocalRepository.updateCurrentSession(userIdValue)
 }
 
 

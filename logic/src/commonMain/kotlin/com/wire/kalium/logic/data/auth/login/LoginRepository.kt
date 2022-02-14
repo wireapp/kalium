@@ -2,7 +2,7 @@ package com.wire.kalium.logic.data.auth.login
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.configuration.ServerConfig
-import com.wire.kalium.logic.failure.InvalidCredentials
+import com.wire.kalium.logic.failure.AuthenticationFailure
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.RefreshTokenProperties
@@ -49,7 +49,7 @@ class LoginRepositoryImpl(
 
     private fun handleFailedApiResponse(response: NetworkResponse.Error<*>) =
         when (response.kException) {
-            is KaliumException.InvalidRequestError -> Either.Left(InvalidCredentials)
+            is KaliumException.InvalidRequestError -> Either.Left(AuthenticationFailure.InvalidCredentials)
             is KaliumException.NetworkUnavailableError -> Either.Left(CoreFailure.NoNetworkConnection)
             else -> Either.Left(CoreFailure.Unknown(response.kException))
         }
