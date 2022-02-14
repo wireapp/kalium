@@ -61,6 +61,7 @@ class UserDataSource(
 
         val usersToBePersisted = usersRequestResult.value.map(userMapper::fromApiModelToDaoModel)
         userDAO.insertUsers(usersToBePersisted)
+        // TODO Wrap DB calls to catch exceptions and return `Either.Left` when exceptions occur
         return Either.Right(Unit)
     }
 
