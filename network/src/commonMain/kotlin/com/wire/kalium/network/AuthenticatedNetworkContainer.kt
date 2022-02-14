@@ -61,7 +61,7 @@ class AuthenticatedNetworkContainer(
 
     val selfApi: SelfApi get() = SelfApi(authenticatedHttpClient)
 
-    val userDetailsApo: UserDetailsApi get() = UserDetailsApiImp(authenticatedHttpClient)
+    val userDetailsApi: UserDetailsApi get() = UserDetailsApiImp(authenticatedHttpClient)
 
     internal val authenticatedHttpClient by lazy {
         provideBaseHttpClient(engine, isRequestLoggingEnabled, HttpClientOptions.DefaultHost(backendConfig)) {
