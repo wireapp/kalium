@@ -18,6 +18,7 @@ class SlowSyncWorker(userSessionScope: UserSessionScope) : UserSessionWorker(use
         when ( result ) {
             is Either.Left -> {
                 val failure = result.value
+                //TODO Use multi-platform logging solution here
                 println("SYNC FAILED $failure")
                 (failure as? CoreFailure.Unknown)?.let {
                     it.rootCause?.printStackTrace()
