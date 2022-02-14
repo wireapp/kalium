@@ -6,7 +6,7 @@ import com.wire.kalium.persistence.model.PersistenceSession
 import kotlinx.serialization.Serializable
 import kotlin.jvm.JvmInline
 
-interface SessionDAO {
+interface SessionStorage {
     /**
      * store a session locally
      */
@@ -38,9 +38,9 @@ interface SessionDAO {
     suspend fun sessionsExist(): Boolean
 }
 
-class SessionDAOImpl(
+class SessionStorageImpl(
     private val kaliumPreferences: KaliumPreferences
-) : SessionDAO {
+) : SessionStorage {
     override suspend fun addSession(persistenceSession: PersistenceSession) =
         when (val result = allSessions()) {
             is PreferencesResult.Success -> {
