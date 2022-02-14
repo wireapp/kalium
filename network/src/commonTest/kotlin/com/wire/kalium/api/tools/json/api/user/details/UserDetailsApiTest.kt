@@ -44,25 +44,6 @@ class UserDetailsApiTest : ApiTest {
     }
 
     @Test
-    fun givenListOfMoreThan64QualifiedIds_whenGettingListOfUsers_thenRequestsShouldBeSplitIntoChunks() = runTest {
-        val chunksCount = 3
-        val params = getIdsList(chunksCount)
-        var callCount = 0
-        val httpClient = mockAuthenticatedHttpClient(
-            ListUsersRequestJson.validIdsJsonProvider.rawJson,
-            statusCode = HttpStatusCode.Created,
-            assertion = {
-                callCount++
-            }
-        )
-        val userDetailsApi: UserDetailsApi = UserDetailsApiImp(httpClient)
-
-        userDetailsApi.getMultipleUsers(params)
-        assertEquals(chunksCount, callCount)
-    }
-
-
-    @Test
     fun givenListOfQualifiedHandles_whenGettingListOfUsers_thenBodyShouldSerializeCorrectly() = runTest {
         val params = ListUserRequest.qualifiedHandles(listOf(QualifiedHandleSample.one, QualifiedHandleSample.two))
         val expectedRequestBody = KtxSerializer.json.encodeToString(params)
@@ -76,24 +57,6 @@ class UserDetailsApiTest : ApiTest {
         val userDetailsApi: UserDetailsApi = UserDetailsApiImp(httpClient)
 
         userDetailsApi.getMultipleUsers(params)
-    }
-
-    @Test
-    fun givenListOfMoreThan64QualifiedHandles_whenGettingListOfUsers_thenRequestsShouldBeSplitIntoChunks() = runTest {
-        val chunksCount = 3
-        val params = getHandlesList(chunksCount)
-        var callCount = 0
-        val httpClient = mockAuthenticatedHttpClient(
-            ListUsersRequestJson.validIdsJsonProvider.rawJson,
-            statusCode = HttpStatusCode.Created,
-            assertion = {
-                callCount++
-            }
-        )
-        val userDetailsApi: UserDetailsApi = UserDetailsApiImp(httpClient)
-
-        userDetailsApi.getMultipleUsers(params)
-        assertEquals(chunksCount, callCount)
     }
 
     @Test
@@ -113,26 +76,8 @@ class UserDetailsApiTest : ApiTest {
         userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(listOf()))
     }
 
-    private fun getIdsList(chunksCount: Int): QualifiedUserIdListRequest {
-        val idsList = mutableListOf<QualifiedID>()
-        repeat(MAX_QUERY_SIZE * chunksCount) {
-            idsList += QualifiedIDSamples.one.copy(domain = it.toString())
-        }
-        val params = ListUserRequest.qualifiedIds(idsList)
-        return params
-    }
-
-    private fun getHandlesList(chunksCount: Int): QualifiedHandleListRequest {
-        val handlesList = mutableListOf<QualifiedHandle>()
-        repeat(MAX_QUERY_SIZE * chunksCount) {
-            handlesList += QualifiedHandleSample.one.copy(domain = it.toString())
-        }
-        val params = ListUserRequest.qualifiedHandles(handlesList)
-        return params
-    }
 
     private companion object {
         const val PATH_LIST_USERS = "/list-users"
-        const val MAX_QUERY_SIZE = 64
     }
 }
