@@ -18,7 +18,7 @@ sealed class CurrentSessionResult {
 class CurrentSessionUseCase(private val sessionRepository: SessionRepository) {
     suspend operator fun invoke(): CurrentSessionResult = suspending {
         sessionRepository.currentSession()
-    }.safeFold({ sessionFailure ->
+    }.fold({ sessionFailure ->
         when (sessionFailure) {
             is SessionFailure.NoSessionFound -> CurrentSessionResult.Failure.SessionNotFound
         }
