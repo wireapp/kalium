@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 data class UserSsoId(
     @SerialName("scim_external_id")
     val scimExternalId: String?,
-    @SerialName("subjecßt")
+    @SerialName("subject")
     val subject: String,
     @SerialName("tenant")
     val tenant: String?

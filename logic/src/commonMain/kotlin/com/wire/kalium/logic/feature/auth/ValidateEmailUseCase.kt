@@ -13,7 +13,7 @@ class ValidateEmailUseCaseImpl : ValidateEmailUseCase {
     }
 
     private fun emailCharactersValid(email: String) =
-        email.matches(EMAIL_REGEX)
+        email.contains('@')
 
     private fun isEmailTooShort(email: String) = email.length < EMAIL_MIN_LENGTH
 

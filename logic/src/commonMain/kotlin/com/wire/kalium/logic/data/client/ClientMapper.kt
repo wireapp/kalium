@@ -1,13 +1,14 @@
 package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.logic.configuration.ClientConfig
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.location.LocationMapper
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.network.api.user.client.ClientCapabilityDTO
+import com.wire.kalium.network.api.user.client.ClientResponse
 import com.wire.kalium.network.api.user.client.ClientTypeDTO
 import com.wire.kalium.network.api.user.client.DeviceTypeDTO
 import com.wire.kalium.network.api.user.client.RegisterClientRequest
-import com.wire.kalium.network.api.user.client.RegisterClientResponse
 
 class ClientMapper(
     private val preyKeyMapper: PreKeyMapper,
@@ -26,11 +27,11 @@ class ClientMapper(
         preKeys = param.preKeys.map { preyKeyMapper.toPreKeyDTO(it) },
     )
 
-    fun fromRegisterClientResponse(response: RegisterClientResponse): Client = Client(
-        clientId = response.clientId,
+    fun fromClientResponse(response: ClientResponse): Client = Client(
+        clientId = ClientId(response.clientId),
         type = fromClientTypeDTO(response.type),
         registrationTime = response.registrationTime,
-        location = locationMapper.fromLocationDTO(response.location),
+        location = response.location?.let { locationMapper.fromLocationResponse(it) } ?: run { null },
         deviceType = response.deviceType?.let { fromDeviceTypeDTO(it) } ?: run { null },
         label = response.label,
         cookie = response.cookie,

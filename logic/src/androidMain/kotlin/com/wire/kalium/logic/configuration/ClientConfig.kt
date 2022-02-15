@@ -19,7 +19,7 @@ actual class ClientConfig(private val context: Context) {
 
     actual fun deviceModelName(): String = "${Build.MANUFACTURER} ${Build.MODEL}"
 
-    actual fun deviceName(): String = Settings.Secure.getString(context.contentResolver, bluetoothName) ?: run {deviceModelName()}
+    actual fun deviceName(): String = Settings.Secure.getString(context.contentResolver, bluetoothName) ?: run { deviceModelName() }
 
     actual fun clientType(): ClientType = ClientType.Permanent
 

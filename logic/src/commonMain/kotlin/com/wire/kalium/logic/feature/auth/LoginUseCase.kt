@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.failure.AuthenticationFailure
@@ -22,13 +23,16 @@ class LoginUseCase(
     private val validateEmailUseCase: ValidateEmailUseCase,
     private val validateUserHandleUseCase: ValidateUserHandleUseCase
 ) {
-    suspend operator fun invoke(userIdentifier: String, password: String, shouldPersistClient: Boolean): AuthenticationResult {
+    suspend operator fun invoke(userIdentifier: String, password: String, shouldPersistClient: Boolean, serverConfig: ServerConfig): AuthenticationResult {
+        // remove White Spaces around userIdentifier
+        val cleanUserIdentifier = userIdentifier.trim()
+
         val result = when {
-            validateEmailUseCase(userIdentifier) -> {
-                loginRepository.loginWithEmail(userIdentifier, password, shouldPersistClient)
+            validateEmailUseCase(cleanUserIdentifier) -> {
+                loginRepository.loginWithEmail(cleanUserIdentifier, password, shouldPersistClient, serverConfig)
             }
-            validateUserHandleUseCase(userIdentifier) -> {
-                loginRepository.loginWithHandle(userIdentifier, password, shouldPersistClient)
+            validateUserHandleUseCase(cleanUserIdentifier) -> {
+                loginRepository.loginWithHandle(cleanUserIdentifier, password, shouldPersistClient, serverConfig)
             }
             else -> return AuthenticationResult.Failure.InvalidUserIdentifier
         }
@@ -36,10 +40,11 @@ class LoginUseCase(
         return when (result) {
             is Either.Right -> {
                 sessionRepository.storeSession(result.value)
+                sessionRepository.updateCurrentSession(result.value.userId)
                 AuthenticationResult.Success(result.value)
             }
             is Either.Left -> {
-                if (result.value is AuthenticationFailure) {
+                if (result.value is AuthenticationFailure.InvalidCredentials) {
                     AuthenticationResult.Failure.InvalidCredentials
                 } else {
                     AuthenticationResult.Failure.Generic(result.value)

@@ -6,7 +6,7 @@ actual open class BaseProteusClientTest {
 
     actual fun createProteusClient(userId: UserId): ProteusClient {
         val root = Files.createTempDirectory("proteus").toFile().absolutePath
-        return ProteusClient(root, userId.value)
+        return ProteusClientImpl(root, userId.value)
     }
 
 }

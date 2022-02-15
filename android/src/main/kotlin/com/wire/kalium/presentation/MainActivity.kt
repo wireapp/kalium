@@ -6,60 +6,60 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import com.wire.kalium.cryptography.CryptoClientId
-import com.wire.kalium.cryptography.CryptoSessionId
-import com.wire.kalium.cryptography.ProteusClient
-import com.wire.kalium.cryptography.UserId
-import kotlinx.coroutines.runBlocking
-import java.io.File
+import androidx.lifecycle.lifecycleScope
+import com.wire.kalium.KaliumApplication
+import com.wire.kalium.logic.CoreLogic
+import com.wire.kalium.logic.configuration.ServerConfig
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.feature.UserSessionScope
+import com.wire.kalium.logic.feature.auth.AuthSession
+import com.wire.kalium.logic.feature.auth.AuthenticationResult
+import com.wire.kalium.logic.feature.auth.AuthenticationScope
+import kotlinx.coroutines.flow.first
 
 class MainActivity : ComponentActivity() {
+
+    val serverConfig: ServerConfig by lazy { ServerConfig.STAGING }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val rootProteusDir = File(this.filesDir, "proteus")
-        val decryptedMessage = encryptAndDecrypt(rootProteusDir)
+        loginAndFetchConverationList((application as KaliumApplication).coreLogic)
+    }
 
-        setContent {
-            MainLayout(decryptedMessage.toString(Charsets.UTF_8))
+    fun loginAndFetchConverationList(coreLogic: CoreLogic) = lifecycleScope.launchWhenCreated {
+        login(coreLogic.getAuthenticationScope())?.let {
+            val session = coreLogic.getSessionScope(it)
+            val conversations = session.conversations.getConversations().first()
+            val selfUser = session.users.getSelfUser().first()
+
+            setContent {
+                MainLayout(conversations, selfUser)
+            }
         }
     }
 
-    fun encryptAndDecrypt(rootProteusDir: File): ByteArray = runBlocking {
-        val alice = SampleUser("aliceId", "Alice")
-        val aliceFile = File(rootProteusDir, alice.id)
-        aliceFile.mkdirs()
-        val aliceClient = ProteusClient(rootProteusDir.absolutePath, alice.id)
-        aliceClient.open()
-        val aliceSessionId = CryptoSessionId(UserId(alice.id), CryptoClientId("aliceClient"))
-        val aliceKey = aliceClient.newPreKeys(0, 10).first()
+    suspend fun login(authenticationScope: AuthenticationScope): AuthSession? {
+        val result = authenticationScope.login("jacob.persson+summer1@wire.com", "hepphepp", false, serverConfig)
 
-        val bob = SampleUser("bobId", "Bob")
-        val bobFile = File(rootProteusDir, bob.id)
-        bobFile.mkdirs()
-        val bobClient = ProteusClient(rootProteusDir.absolutePath, bob.id)
-        val bobSessionId = CryptoSessionId(UserId(bob.id), CryptoClientId("bobClient"))
-        bobClient.open()
+        if (result !is AuthenticationResult.Success) {
+            throw RuntimeException(
+                "There was an error on the login :(" +
+                        "Check the credentials and the internet connection and try again"
+            )
+        }
 
-        bobClient.createSession(aliceKey, aliceSessionId)
-        val message = "Oi Alice!"
-        val encryptedMessage = bobClient.encrypt(message.toByteArray(Charsets.UTF_8), aliceSessionId)!!
-        val decryptedMessage = aliceClient.decrypt(encryptedMessage, bobSessionId)
-
-        return@runBlocking decryptedMessage
+        return result.userSession
     }
-
-    data class SampleUser(val id: String, val name: String)
 }
 
-data class SampleUser(val id: String, val name: String)
-
-
 @Composable
-fun MainLayout(messageFromBob: String) {
+fun MainLayout(conversations: List<Conversation>, selfUser: SelfUser) {
     Column {
-        Text("Bob said:")
-        Text(messageFromBob)
+        Text("Conversation count:")
+        Text("${conversations.size}")
+        Text("SelfUser:")
+        Text("${selfUser.id}")
     }
 }

@@ -1,9 +1,12 @@
 package com.wire.kalium.logic.feature.client
 
+import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.logic.data.client.ClientRepository
 
 class ClientScope(
-    clientRepository: ClientRepository
+    private val clientRepository: ClientRepository,
+    private val proteusClient: ProteusClient,
 ) {
-    val register: RegisterClientUseCase = RegisterClientUseCase(clientRepository)
+    val register: RegisterClientUseCase get() = RegisterClientUseCaseImpl(clientRepository, proteusClient)
+    val selfClients: SelfClientsUseCase get() = SelfClientsUseCaseImpl(clientRepository)
 }

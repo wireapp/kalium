@@ -1,12 +1,14 @@
 package com.wire.kalium.logic
 
 import android.content.Context
+import com.russhwolf.settings.BuildConfig
 import com.wire.kalium.cryptography.ProteusClient
-import com.wire.kalium.logic.configuration.ClientConfig
+import com.wire.kalium.cryptography.ProteusClientImpl
 import com.wire.kalium.logic.feature.UserSessionScope
-import com.wire.kalium.logic.feature.UserSessionScopeCommon
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
+import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.WorkScheduler
 import com.wire.kalium.network.AuthenticatedNetworkContainer
 
 /**
@@ -18,13 +20,20 @@ actual class CoreLogic(
     clientLabel: String,
     rootProteusDirectoryPath: String,
 ) : CoreLogicCommon(clientLabel, rootProteusDirectoryPath) {
-    override fun getAuthenticationScope(): AuthenticationScope = AuthenticationScope(loginContainer, clientLabel, applicationContext)
+    override fun getAuthenticationScope(): AuthenticationScope =
+        AuthenticationScope(clientLabel = clientLabel, applicationContext = applicationContext)
 
     override fun getSessionScope(session: AuthSession): UserSessionScope {
         val dataSourceSet = userScopeStorage[session] ?: run {
-            val networkContainer = AuthenticatedNetworkContainer(sessionMapper.toSessionCredentials(session))
-            val proteusClient = ProteusClient(rootProteusDirectoryPath, session.userId)
-            AuthenticatedDataSourceSet(networkContainer, proteusClient).also {
+            val networkContainer = AuthenticatedNetworkContainer(
+                sessionCredentials = sessionMapper.toSessionCredentials(session),
+                backendConfig = serverConfigMapper.toBackendConfig(serverConfig = session.serverConfig),
+                isRequestLoggingEnabled = BuildConfig.DEBUG //TODO: Multi-platform logging solution!
+            )
+            val proteusClient: ProteusClient = ProteusClientImpl(rootProteusDirectoryPath, session.userId)
+            val workScheduler = WorkScheduler(applicationContext, session)
+            val syncManager = SyncManager(workScheduler)
+            AuthenticatedDataSourceSet(networkContainer, proteusClient, workScheduler, syncManager).also {
                 userScopeStorage[session] = it
             }
         }

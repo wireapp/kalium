@@ -3,7 +3,7 @@ package com.wire.kalium.api.tools.json.api.user.client
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.tools.json.model.ErrorResponseJson
 import com.wire.kalium.network.api.user.client.ClientApi
-import com.wire.kalium.network.api.user.client.ClientApiImp
+import com.wire.kalium.network.api.user.client.ClientApiImpl
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
@@ -29,7 +29,7 @@ class ClientApiTest : ApiTest {
                     assertPathEqual(PATH_CLIENTS)
                 }
             )
-            val clientApi: ClientApi = ClientApiImp(httpClient)
+            val clientApi: ClientApi = ClientApiImpl(httpClient)
             val response = clientApi.registerClient(REGISTER_CLIENT_REQUEST.serializableData)
             assertTrue(response.isSuccessful())
             assertEquals(response.value, VALID_REGISTER_CLIENT_RESPONSE.serializableData)
@@ -41,7 +41,7 @@ class ClientApiTest : ApiTest {
             ErrorResponseJson.valid.rawJson,
             statusCode = HttpStatusCode.Unauthorized
         )
-        val clientApi: ClientApi = ClientApiImp(httpClient)
+        val clientApi: ClientApi = ClientApiImpl(httpClient)
         val errorResponse = clientApi.registerClient(REGISTER_CLIENT_REQUEST.serializableData)
         assertFalse(errorResponse.isSuccessful())
         assertTrue(errorResponse.kException is KaliumException.InvalidRequestError)
@@ -51,7 +51,7 @@ class ClientApiTest : ApiTest {
     private companion object {
         const val PATH_CLIENTS = "/clients"
         val REGISTER_CLIENT_REQUEST = RegisterClientRequestJson.valid
-        val VALID_REGISTER_CLIENT_RESPONSE = RegisterClientResponseJson.valid
+        val VALID_REGISTER_CLIENT_RESPONSE = ClientResponseJson.valid
         val ERROR_RESPONSE = ErrorResponseJson.valid.serializableData
     }
 }

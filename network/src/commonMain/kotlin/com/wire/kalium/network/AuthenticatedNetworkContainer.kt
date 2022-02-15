@@ -16,10 +16,13 @@ import com.wire.kalium.network.api.prekey.PreKeyApiImpl
 import com.wire.kalium.network.api.teams.TeamsApi
 import com.wire.kalium.network.api.teams.TeamsApiImp
 import com.wire.kalium.network.api.user.client.ClientApi
-import com.wire.kalium.network.api.user.client.ClientApiImp
+import com.wire.kalium.network.api.user.client.ClientApiImpl
+import com.wire.kalium.network.api.user.details.UserDetailsApi
+import com.wire.kalium.network.api.user.details.UserDetailsApiImp
 import com.wire.kalium.network.api.user.logout.LogoutApi
 import com.wire.kalium.network.api.user.logout.LogoutImp
-import com.wire.kalium.network.tools.HostProvider
+import com.wire.kalium.network.api.user.self.SelfApi
+import com.wire.kalium.network.tools.BackendConfig
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
@@ -32,19 +35,17 @@ import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.http.URLProtocol
 
 class AuthenticatedNetworkContainer(
+    private val backendConfig: BackendConfig,
     private val sessionCredentials: SessionCredentials,
     private val engine: HttpClientEngine = defaultHttpEngine(),
-    private val isRequestLoggingEnabled: Boolean = false,
+    private val isRequestLoggingEnabled: Boolean = false
 //    private val onTokenUpdate: (newTokenInfo: Pair<String, String>) -> Unit // Idea to let the network handle the refresh token automatically
 ) {
-
-    private val hostProvider = HostProvider
-
     private val authApi: AuthApi get() = AuthApiImp(authenticatedHttpClient)
 
     val logoutApi: LogoutApi get() = LogoutImp(authenticatedHttpClient)
 
-    val clientApi: ClientApi get() = ClientApiImp(authenticatedHttpClient)
+    val clientApi: ClientApi get() = ClientApiImpl(authenticatedHttpClient)
 
     val messageApi: MessageApi get() = MessageApiImp(authenticatedHttpClient)
 
@@ -58,8 +59,12 @@ class AuthenticatedNetworkContainer(
 
     val teamsApi: TeamsApi get() = TeamsApiImp(authenticatedHttpClient)
 
+    val selfApi: SelfApi get() = SelfApi(authenticatedHttpClient)
+
+    val userDetailsApi: UserDetailsApi get() = UserDetailsApiImp(authenticatedHttpClient)
+
     internal val authenticatedHttpClient by lazy {
-        provideBaseHttpClient(engine, isRequestLoggingEnabled) {
+        provideBaseHttpClient(engine, isRequestLoggingEnabled, HttpClientOptions.DefaultHost(backendConfig)) {
             installAuth()
         }
     }
@@ -67,7 +72,7 @@ class AuthenticatedNetworkContainer(
     private val webSocketClient by lazy {
         HttpClient(engine) {
             defaultRequest {
-                host = hostProvider.host
+                host = backendConfig.webSocketBaseUrl
                 url.protocol = URLProtocol.WSS
             }
             install(WebSockets)

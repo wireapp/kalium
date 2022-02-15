@@ -8,7 +8,7 @@ import com.wire.kalium.logic.data.user.UserId
 
 typealias ConversationId = QualifiedID
 
-data class Conversation(val id: ConversationId, val name: String?, val members: MembersInfo)
+open class Conversation(val id: ConversationId, val name: String?)
 
 class MembersInfo(val self: Member, val otherMembers: List<Member>)
 
