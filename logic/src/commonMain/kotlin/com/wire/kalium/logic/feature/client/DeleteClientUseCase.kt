@@ -16,7 +16,7 @@ class DeleteClientUseCaseImpl(private val clientRepository: ClientRepository) : 
         DeleteClientResult.Failure.Generic(failure)
     }, {
         DeleteClientResult.Success
-    }))!!
+    }))
 }
 
 sealed class DeleteClientResult {
