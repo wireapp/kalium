@@ -10,6 +10,8 @@ import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserDAOImpl
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientDAOImpl
+import com.wire.kalium.persistence.dao.message.MessageDAO
+import com.wire.kalium.persistence.dao.message.MessageDAOImpl
 
 actual class Database(name: String, passphrase: String) {
 
@@ -21,6 +23,11 @@ actual class Database(name: String, passphrase: String) {
             Client.Adapter(user_idAdapter = QualifiedIDAdapter()),
             Conversation.Adapter(qualified_idAdapter = QualifiedIDAdapter()),
             Member.Adapter(userAdapter = QualifiedIDAdapter(), conversationAdapter = QualifiedIDAdapter()),
+            Message.Adapter(
+                qualified_idAdapter = QualifiedIDAdapter(),
+                conversation_idAdapter = QualifiedIDAdapter(),
+                sender_idAdapter = QualifiedIDAdapter()
+            ),
             User.Adapter(qualified_idAdapter = QualifiedIDAdapter()))
         driver.execute(null, "PRAGMA foreign_keys=ON", 0)
     }
@@ -30,9 +37,13 @@ actual class Database(name: String, passphrase: String) {
 
     actual val conversationDAO: ConversationDAO
         get() = ConversationDAOImpl(database.converationsQueries, database.usersQueries, database.membersQueries)
+
     actual val metadataDAO: MetadataDAO
         get() = MetadataDAOImpl(database.metadataQueries)
 
     actual val clientDAO: ClientDAO
         get() = ClientDAOImpl(database.clientsQueries)
+
+    actual val messageDAO: MessageDAO
+        get() = MessageDAOImpl(database.messagesQueries)
 }

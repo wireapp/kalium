@@ -1,0 +1,42 @@
+import com.wire.kalium.persistence.dao.QualifiedID;
+import java.lang.Long;
+
+CREATE TABLE Message (
+    qualified_id TEXT AS QualifiedID NOT NULL PRIMARY KEY,
+    content TEXT,
+    conversation_id TEXT AS QualifiedID,
+    timestamp INTEGER AS Long,
+    sender_id TEXT AS QualifiedID,
+    status TEXT
+);
+
+deleteAllMessages:
+DELETE FROM Message;
+
+deleteMessage:
+DELETE FROM Message WHERE qualified_id = ?;
+
+insertMessage:
+INSERT INTO Message(qualified_id, content, conversation_id, timestamp, sender_id, status)
+VALUES(?, ?, ?, ?, ? ,? )
+ON CONFLICT(qualified_id) DO UPDATE SET
+qualified_id = excluded.qualified_id,
+content = excluded.content,
+conversation_id = excluded.conversation_id,
+timestamp = excluded.timestamp,
+sender_id = excluded.sender_id,
+status = excluded.status;
+
+updateMessages:
+UPDATE Message
+SET content = ?, conversation_id  = ?, timestamp = ?, sender_id = ?, status = ?
+WHERE qualified_id = ?;
+
+selectAllMessages:
+SELECT * FROM Message;
+
+selectByQualifiedId:
+SELECT * FROM Message WHERE qualified_id = ?;
+
+selectByConversationId:
+SELECT * FROM Message WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT ?;
