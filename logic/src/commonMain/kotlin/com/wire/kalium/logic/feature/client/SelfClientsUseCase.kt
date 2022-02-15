@@ -18,7 +18,7 @@ class SelfClientsUseCaseImpl(private val clientRepository: ClientRepository) : S
         }, {
             SelfClientsResult.Success(it)
         }
-    )!!
+    )
 }
 
 
