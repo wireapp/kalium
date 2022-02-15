@@ -35,7 +35,7 @@ class SuspendableEitherScope {
     /**
      * @see [Either.fold]
      */
-    suspend fun <L, R, T> Either<L, R>.fold(fnL: suspend (L) -> T?, fnR: suspend (R) -> T?): T? =
+    suspend fun <L, R, T> Either<L, R>.fold(fnL: suspend (L) -> T, fnR: suspend (R) -> T): T? =
         when (this) {
             is Left -> fnL(value)
             is Right -> fnR(value)

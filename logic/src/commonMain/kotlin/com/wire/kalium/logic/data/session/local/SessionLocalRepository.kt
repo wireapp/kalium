@@ -11,8 +11,9 @@ import com.wire.kalium.persistence.model.PreferencesResult
 
 interface SessionLocalRepository {
     suspend fun storeSession(autSession: AuthSession)
-    suspend fun getSessions(): Either<CoreFailure, List<AuthSession>>
+    suspend fun getSessions(): Either<SessionFailure, List<AuthSession>>
     suspend fun updateCurrentSession(userIdValue: String)
+    suspend fun getCurrentSession(): Either<SessionFailure, AuthSession>
 }
 
 class SessionLocalDataSource(
@@ -23,13 +24,21 @@ class SessionLocalDataSource(
     override suspend fun storeSession(autSession: AuthSession) =
         sessionStorage.addSession(sessionMapper.toPersistenceSession(autSession))
 
-    override suspend fun getSessions(): Either<CoreFailure, List<AuthSession>> =
+    override suspend fun getSessions(): Either<SessionFailure, List<AuthSession>> =
         when (val result = sessionStorage.allSessions()) {
             is PreferencesResult.Success -> Either.Right(
                 result.data.values.toList().map { sessionMapper.fromPersistenceSession(it) }
             )
             is PreferencesResult.DataNotFound -> Either.Left(SessionFailure.NoSessionFound)
         }
+
+    override suspend fun getCurrentSession(): Either<SessionFailure, AuthSession> {
+        return sessionStorage.currentSession()?.let { currentSession ->
+            return@let Either.Right(sessionMapper.fromPersistenceSession(currentSession))
+        } ?: run {
+            return@run Either.Left(SessionFailure.NoSessionFound)
+        }
+    }
 
     override suspend fun updateCurrentSession(userIdValue: String) = sessionStorage.updateCurrentSession(userIdValue)
 }
