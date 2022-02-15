@@ -14,12 +14,9 @@ interface IdMapper {
     fun toApiModel(qualifiedID: QualifiedID): NetworkQualifiedId
     fun toDaoModel(qualifiedID: QualifiedID): PersistenceQualifiedId
     fun fromApiToDao(qualifiedID: NetworkQualifiedId): PersistenceQualifiedId
-    fun toPlainId(qualifiedID: QualifiedID): PlainId
 }
 
 internal class IdMapperImpl : IdMapper {
-
-    override fun toPlainId(qualifiedID: QualifiedID): PlainId = PlainId(qualifiedID.value)
 
     override fun fromApiModel(networkId: NetworkQualifiedId) = QualifiedID(value = networkId.value, domain = networkId.domain)
 
