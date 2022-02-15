@@ -20,7 +20,7 @@ class UploadUserAvatarUseCaseImpl(
     override suspend operator fun invoke(mimeType: String, imageData: ByteArray): Either<CoreFailure, Unit> = suspending {
         assetDataSource
             .uploadPublicAsset(UploadAssetMetadata(mimeType, true, RetentionType.ETERNAL), imageData)
-        // .flatMap {}
+        // .flatMap {} // TODO: upcoming PR will finish the second part, updating user self with pic
 
         return@suspending Either.Right(Unit)
     }
