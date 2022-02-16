@@ -36,7 +36,7 @@ actual class ProteusClientImpl actual constructor(rootDir: String, userId: Strin
         return wrapException { box.localFingerprint }
     }
 
-    override suspend  fun newPreKeys(from: Int, count: Int): ArrayList<PreKey> {
+    override suspend fun newPreKeys(from: Int, count: Int): ArrayList<PreKey> {
         return wrapException { box.newPreKeys(from, count).map { toPreKey(it) } as ArrayList<PreKey> }
     }
 
@@ -87,10 +87,10 @@ actual class ProteusClientImpl actual constructor(rootDir: String, userId: Strin
 
     companion object {
         private fun toPreKey(preKey: PreKey): com.wire.cryptobox.PreKey =
-            com.wire.cryptobox.PreKey(preKey.id, Base64.decode(preKey.encodedData, Base64.DEFAULT))
+            com.wire.cryptobox.PreKey(preKey.id, Base64.decode(preKey.encodedData, Base64.NO_WRAP))
 
         private fun toPreKey(preKey: com.wire.cryptobox.PreKey): PreKey =
-            PreKey(preKey.id, Base64.encodeToString(preKey.data, Base64.DEFAULT))
+            PreKey(preKey.id, Base64.encodeToString(preKey.data, Base64.NO_WRAP))
 
         private fun createId(userId: UUID?, clientId: String?): String? {
             return String.format("%s_%s", userId, clientId)
