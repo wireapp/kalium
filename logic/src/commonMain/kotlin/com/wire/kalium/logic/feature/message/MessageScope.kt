@@ -8,4 +8,5 @@ class MessageScope(
 ) {
 
     val sendTextMessage: SendTextMessageUseCase get() = SendTextMessageUseCase(messageRepository)
+    val getRecentMessages: GetRecentMessagesUseCase get() = GetRecentMessagesUseCase(messageRepository)
 }

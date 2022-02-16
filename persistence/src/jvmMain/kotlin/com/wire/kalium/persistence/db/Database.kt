@@ -1,5 +1,6 @@
 package com.wire.kalium.persistence.db
 
+import app.cash.sqldelight.EnumColumnAdapter
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.wire.kalium.persistence.dao.ConversationDAO
@@ -11,6 +12,8 @@ import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserDAOImpl
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientDAOImpl
+import com.wire.kalium.persistence.dao.message.MessageDAO
+import com.wire.kalium.persistence.dao.message.MessageDAOImpl
 
 actual class Database {
 
@@ -24,6 +27,11 @@ actual class Database {
             Client.Adapter(user_idAdapter = QualifiedIDAdapter()),
             Conversation.Adapter(qualified_idAdapter = QualifiedIDAdapter()),
             Member.Adapter(userAdapter = QualifiedIDAdapter(), conversationAdapter = QualifiedIDAdapter()),
+            Message.Adapter(
+                conversation_idAdapter = QualifiedIDAdapter(),
+                sender_user_idAdapter = QualifiedIDAdapter(),
+                statusAdapter = EnumColumnAdapter()
+            ),
             User.Adapter(qualified_idAdapter = QualifiedIDAdapter())
         )
         driver.execute(null, "PRAGMA foreign_keys=ON", 0)
@@ -40,4 +48,7 @@ actual class Database {
 
     actual val clientDAO: ClientDAO
         get() = ClientDAOImpl(database.clientsQueries)
+
+    actual val messageDAO: MessageDAO
+        get() = MessageDAOImpl(database.messagesQueries)
 }
