@@ -20,19 +20,15 @@ import com.wire.kalium.network.api.user.client.ClientApiImpl
 import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.network.api.user.details.UserDetailsApiImp
 import com.wire.kalium.network.api.user.logout.LogoutApi
-import com.wire.kalium.network.api.user.logout.LogoutImp
+import com.wire.kalium.network.api.user.logout.LogoutImpl
 import com.wire.kalium.network.api.user.self.SelfApi
 import com.wire.kalium.network.tools.BackendConfig
 import com.wire.kalium.network.utils.isSuccessful
-import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.auth.Auth
 import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.auth.providers.bearer
-import io.ktor.client.plugins.defaultRequest
-import io.ktor.client.plugins.websocket.WebSockets
-import io.ktor.http.URLProtocol
 
 class AuthenticatedNetworkContainer(
     private val backendConfig: BackendConfig,
@@ -43,7 +39,7 @@ class AuthenticatedNetworkContainer(
 ) {
     private val authApi: AuthApi get() = AuthApiImp(authenticatedHttpClient)
 
-    val logoutApi: LogoutApi get() = LogoutImp(authenticatedHttpClient)
+    val logoutApi: LogoutApi get() = LogoutImpl(authenticatedHttpClient)
 
     val clientApi: ClientApi get() = ClientApiImpl(authenticatedHttpClient)
 
