@@ -10,7 +10,8 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class EventResponse(
     @SerialName("id") val id: String,
-    @SerialName("payload") val payload: List<EventContentDTO>?
+    @SerialName("payload") val payload: List<EventContentDTO>?,
+    @SerialName("transient") val transient: Boolean = false
 )
 
 @Serializable
