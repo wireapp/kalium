@@ -7,7 +7,7 @@ import com.wire.kalium.cryptography.ProteusClientImpl
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
-import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncManagerImpl
 import com.wire.kalium.logic.sync.WorkScheduler
 import com.wire.kalium.network.AuthenticatedNetworkContainer
 
@@ -32,7 +32,7 @@ actual class CoreLogic(
             )
             val proteusClient: ProteusClient = ProteusClientImpl(rootProteusDirectoryPath, session.userId)
             val workScheduler = WorkScheduler(applicationContext, session)
-            val syncManager = SyncManager(workScheduler)
+            val syncManager = SyncManagerImpl(workScheduler)
             AuthenticatedDataSourceSet(networkContainer, proteusClient, workScheduler, syncManager).also {
                 userScopeStorage[session] = it
             }

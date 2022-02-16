@@ -5,7 +5,6 @@ import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.data.client.ClientCapability
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.RegisterClientParam
-import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.logic.failure.ClientFailure
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase.Companion.FIRST_KEY_ID
 import com.wire.kalium.logic.functional.suspending
