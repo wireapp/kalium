@@ -8,6 +8,7 @@ interface User {
     val id: UserId
 }
 
-class SelfUser(override val id: UserId) : User {
-
-}
+class SelfUser(
+    override val id: UserId,
+    // TODO: map the rest of the data
+) : User

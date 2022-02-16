@@ -24,6 +24,7 @@ interface UserRepository {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
     suspend fun fetchKnownUsers(): Either<CoreFailure, Unit>
     suspend fun getSelfUser(): Flow<SelfUser>
+    suspend fun updateSelfUser(): Either<CoreFailure, Unit>
 }
 
 class UserDataSource(
@@ -74,8 +75,19 @@ class UserDataSource(
         }
     }
 
+    override suspend fun updateSelfUser(): Either<CoreFailure, Unit> {
+        val user = getSelfUser().first()
+        val updateRequest = userMapper.fromModelToUpdateApiModel(user)
+        val updatedSelf = selfApi.updateSelf(updateRequest)
+
+        return if (!updatedSelf.isSuccessful()) {
+            Either.Left(CoreFailure.ServerMiscommunication)
+        } else {
+            Either.Right(Unit)
+        }
+    }
+
     companion object {
         const val SELF_USER_ID_KEY = "selfUserID"
-
     }
 }
