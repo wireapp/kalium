@@ -26,7 +26,7 @@ class SuspendableEitherScopeTest {
         val either = Either.Right("Success")
 
         val result = with(suspendableEitherScope) {
-            either.fold({ fail("Shouldn't be executed") }) { 5 }
+            either.coFold({ fail("Shouldn't be executed") }) { 5 }
         }
 
         assertEquals(result, 5)
@@ -38,7 +38,7 @@ class SuspendableEitherScopeTest {
         val foldResult = "Fold Result"
 
         val result = with(suspendableEitherScope) {
-            either.fold({ foldResult }) { fail("Shouldn't be executed") }
+            either.coFold({ foldResult }) { fail("Shouldn't be executed") }
         }
 
         assertSame(result, foldResult)

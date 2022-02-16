@@ -11,15 +11,20 @@ enum class SyncState {
     COMPLETED,
 }
 
-class SyncManager(private val workScheduler: WorkScheduler) {
+interface SyncManager {
+    fun completeSlowSync()
+    suspend fun waitForSlowSyncToComplete()
+}
+
+class SyncManagerImpl(private val workScheduler: WorkScheduler) : SyncManager {
 
     private val internalSyncState = MutableStateFlow(SyncState.WAITING)
 
-    fun completeSlowSync() {
+    override fun completeSlowSync() {
         internalSyncState.update { SyncState.COMPLETED }
     }
 
-    suspend fun waitForSlowSyncToComplete() {
+    override suspend fun waitForSlowSyncToComplete() {
         startSlowSyncIfNotAlreadyCompletedOrRunning()
         internalSyncState.first { it == SyncState.COMPLETED }
     }

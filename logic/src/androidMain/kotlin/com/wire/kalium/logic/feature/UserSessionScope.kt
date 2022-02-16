@@ -1,11 +1,9 @@
 package com.wire.kalium.logic.feature
 
 import android.content.Context
-import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.logic.AuthenticatedDataSourceSet
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.feature.auth.AuthSession
-import com.wire.kalium.logic.sync.WorkScheduler
 import com.wire.kalium.persistence.db.Database
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 
