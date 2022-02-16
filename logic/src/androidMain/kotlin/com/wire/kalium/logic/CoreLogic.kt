@@ -10,6 +10,7 @@ import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.sync.SyncManagerImpl
 import com.wire.kalium.logic.sync.WorkScheduler
 import com.wire.kalium.network.AuthenticatedNetworkContainer
+import kotlinx.coroutines.runBlocking
 
 /**
  * This class is only for platform specific variables,
@@ -30,7 +31,10 @@ actual class CoreLogic(
                 backendConfig = serverConfigMapper.toBackendConfig(serverConfig = session.serverConfig),
                 isRequestLoggingEnabled = BuildConfig.DEBUG //TODO: Multi-platform logging solution!
             )
+
             val proteusClient: ProteusClient = ProteusClientImpl(rootProteusDirectoryPath, session.userId)
+            runBlocking { proteusClient.open() }
+
             val workScheduler = WorkScheduler(applicationContext, session)
             val syncManager = SyncManagerImpl(workScheduler)
             AuthenticatedDataSourceSet(networkContainer, proteusClient, workScheduler, syncManager).also {
