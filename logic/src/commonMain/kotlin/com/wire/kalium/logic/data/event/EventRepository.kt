@@ -39,7 +39,7 @@ class EventDataSource(
             val pendingEventsFlow = pendingEventsFlow(clientId)
             val liveEventsFlow = liveEventsFlow(clientId)
             flowOf(pendingEventsFlow, liveEventsFlow).flattenConcat()
-        })!!
+        })
     }
 
     private suspend fun liveEventsFlow(clientId: ClientId): Flow<Either<CoreFailure, Event>> =
