@@ -3,6 +3,8 @@ package com.wire.kalium.logic.feature
 import com.wire.kalium.logic.AuthenticatedDataSourceSet
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.asset.AssetDataSource
+import com.wire.kalium.logic.data.asset.AssetMapper
+import com.wire.kalium.logic.data.asset.AssetMapperImpl
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.client.ClientDataSource
 import com.wire.kalium.logic.data.client.ClientMapper
@@ -98,8 +100,9 @@ abstract class UserSessionScopeCommon(
     private val clientRepository: ClientRepository
         get() = ClientDataSource(clientRemoteRepository, clientRegistrationStorage)
 
+    private val assetMapper: AssetMapper get() = AssetMapperImpl()
     private val assetRepository: AssetRepository
-        get() = AssetDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.assetApi)
+        get() = AssetDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.assetApi, assetMapper)
 
     val syncManager: SyncManager get() = authenticatedDataSourceSet.syncManager
 

@@ -1,7 +1,7 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.data.asset.AssetRepository
-import com.wire.kalium.logic.data.asset.UploadAssetId
+import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -32,17 +32,17 @@ class UploadUserAvatarUseCaseTest {
 
     @Test
     fun givenValidParams_whenUploadingUserAvatar_thenShouldDelegateCallToRepository() = runTest {
-        val expected = UploadAssetId("some_key")
+        val expected = UploadedAssetId("some_key")
         given(assetRepository)
             .suspendFunction(assetRepository::uploadPublicAsset)
-            .whenInvokedWith(any(), any())
+            .whenInvokedWith(any())
             .thenReturn(Either.Right(expected))
 
         val actual = uploadUserAvatarUseCase("image/jpg", "A".encodeToByteArray())
 
         verify(assetRepository)
             .suspendFunction(assetRepository::uploadPublicAsset)
-            .with(any(), any())
+            .with(any())
             .wasInvoked(exactly = once)
     }
 }

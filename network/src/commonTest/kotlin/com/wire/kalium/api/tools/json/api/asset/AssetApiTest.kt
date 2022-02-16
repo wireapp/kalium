@@ -2,8 +2,8 @@ package com.wire.kalium.api.tools.json.api.asset
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.network.api.asset.AssetApi
-import com.wire.kalium.network.api.asset.AssetApiImp
-import com.wire.kalium.network.api.model.AssetMetadata
+import com.wire.kalium.network.api.asset.AssetApiImpl
+import com.wire.kalium.network.api.model.AssetMetadataRequest
 import com.wire.kalium.network.api.model.AssetRetentionType
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -21,7 +21,7 @@ class AssetApiTest : ApiTest {
     @Test
     fun givenAValidAssetUploadApiRequest_whenCallingTheAssetUploadApiEndpoint_theRequestShouldBeConfiguredCorrectly() = runTest {
         // Given
-        val assetMetadata = AssetMetadata("image/jpeg", true, AssetRetentionType.ETERNAL, "md5-hash")
+        val assetMetadata = AssetMetadataRequest("image/jpeg", true, AssetRetentionType.ETERNAL, "md5-hash")
         val encryptedData = ByteArray(16)
         Random.nextBytes(encryptedData)
         val httpClient = mockAuthenticatedHttpClient(
@@ -37,7 +37,7 @@ class AssetApiTest : ApiTest {
         )
 
         // When
-        val assetApi: AssetApi = AssetApiImp(httpClient)
+        val assetApi: AssetApi = AssetApiImpl(httpClient)
         val response = assetApi.uploadAsset(assetMetadata, encryptedData)
 
         // Then
@@ -48,7 +48,7 @@ class AssetApiTest : ApiTest {
     @Test
     fun givenAValidAssetUploadApiRequest_whenCallingTheAssetUploadApiEndpoint_theRequestHeaderShouldContainTheAssetToken() = runTest {
         // Given
-        val assetMetadata = AssetMetadata("image/jpeg", true, AssetRetentionType.ETERNAL, "md5-hash")
+        val assetMetadata = AssetMetadataRequest("image/jpeg", true, AssetRetentionType.ETERNAL, "md5-hash")
         val encryptedData = ByteArray(16)
         Random.nextBytes(encryptedData)
         val httpClient = mockAuthenticatedHttpClient(
@@ -64,7 +64,7 @@ class AssetApiTest : ApiTest {
         )
 
         // When
-        val assetApi: AssetApi = AssetApiImp(httpClient)
+        val assetApi: AssetApi = AssetApiImpl(httpClient)
         val response = assetApi.uploadAsset(assetMetadata, encryptedData)
 
         // Then
@@ -75,7 +75,7 @@ class AssetApiTest : ApiTest {
     @Test
     fun givenAnInvalidAssetUploadApiRequest_whenCallingTheAssetUploadApiEndpoint_theRequestShouldContainAnError() = runTest {
         // Given
-        val assetMetadata = AssetMetadata("image/jpeg", true, AssetRetentionType.ETERNAL, "md5-hash")
+        val assetMetadata = AssetMetadataRequest("image/jpeg", true, AssetRetentionType.ETERNAL, "md5-hash")
         val encryptedData = ByteArray(16)
         Random.nextBytes(encryptedData)
         val httpClient = mockAuthenticatedHttpClient(
@@ -91,7 +91,7 @@ class AssetApiTest : ApiTest {
         )
 
         // When
-        val assetApi: AssetApi = AssetApiImp(httpClient)
+        val assetApi: AssetApi = AssetApiImpl(httpClient)
         val response = assetApi.uploadAsset(assetMetadata, encryptedData)
 
         // Then
@@ -120,7 +120,7 @@ class AssetApiTest : ApiTest {
         )
 
         // When
-        val assetApi: AssetApi = AssetApiImp(httpClient)
+        val assetApi: AssetApi = AssetApiImpl(httpClient)
         val response = assetApi.downloadAsset(assetKey, assetToken)
 
         // Then
@@ -146,7 +146,7 @@ class AssetApiTest : ApiTest {
         )
 
         // When
-        val assetApi: AssetApi = AssetApiImp(httpClient)
+        val assetApi: AssetApi = AssetApiImpl(httpClient)
         val response = assetApi.downloadAsset(assetKey, assetToken)
 
         // Then

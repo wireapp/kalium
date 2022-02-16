@@ -1,11 +1,23 @@
 package com.wire.kalium.logic.data.asset
 
-import com.wire.kalium.network.api.model.Asset
-import com.wire.kalium.network.api.model.AssetMetadata
+import com.wire.kalium.network.api.model.AssetMetadataRequest
+import com.wire.kalium.network.api.model.AssetResponse
 import com.wire.kalium.network.api.model.AssetRetentionType
 
-fun UploadAssetMetadata.toApiModel(md5: String): AssetMetadata {
-    return AssetMetadata(mimeType, isPublic, AssetRetentionType.valueOf(retentionType.name), md5)
+interface AssetMapper {
+    fun toMetadataApiModel(uploadAssetMetadata: UploadAssetData): AssetMetadataRequest
+    fun toDomainModel(asset: AssetResponse): UploadedAssetId
 }
 
-fun Asset.toDomainModel(): UploadAssetId = UploadAssetId(key)
+class AssetMapperImpl : AssetMapper {
+    override fun toMetadataApiModel(uploadAssetMetadata: UploadAssetData): AssetMetadataRequest {
+        return AssetMetadataRequest(
+            uploadAssetMetadata.mimeType.name,
+            uploadAssetMetadata.isPublic,
+            AssetRetentionType.valueOf(uploadAssetMetadata.retentionType.name),
+            uploadAssetMetadata.md5
+        )
+    }
+
+    override fun toDomainModel(asset: AssetResponse) = UploadedAssetId(asset.key)
+}
