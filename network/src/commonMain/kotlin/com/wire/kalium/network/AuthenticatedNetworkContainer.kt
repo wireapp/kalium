@@ -69,17 +69,6 @@ class AuthenticatedNetworkContainer(
         }
     }
 
-    private val webSocketClient by lazy {
-        HttpClient(engine) {
-            defaultRequest {
-                host = backendConfig.webSocketBaseUrl
-                url.protocol = URLProtocol.WSS
-            }
-            install(WebSockets)
-            installAuth()
-        }
-    }
-
     private fun HttpClientConfig<*>.installAuth() {
         Auth {
             bearer {
