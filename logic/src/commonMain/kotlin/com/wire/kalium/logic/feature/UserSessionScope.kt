@@ -13,6 +13,9 @@ import com.wire.kalium.logic.data.conversation.ConversationMapperImpl
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.MemberMapperImpl
+import com.wire.kalium.logic.data.event.EventDataSource
+import com.wire.kalium.logic.data.event.EventMapper
+import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.location.LocationMapper
@@ -28,11 +31,13 @@ import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.message.MessageScope
 import com.wire.kalium.logic.feature.user.UserScope
+import com.wire.kalium.logic.sync.ListenToEventsUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
 import com.wire.kalium.persistence.db.Database
 import com.wire.kalium.persistence.event.EventInfoStorage
+import com.wire.kalium.persistence.event.EventInfoStorageImpl
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
 
@@ -46,7 +51,7 @@ abstract class UserSessionScopeCommon(
     protected abstract val encryptedSettingsHolder: EncryptedSettingsHolder
     protected val userPreferencesSettings by lazy { KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings) }
     private val eventInfoStorage: EventInfoStorage
-        get() = EventInfoStorage(userPreferencesSettings)
+        get() = EventInfoStorageImpl(userPreferencesSettings)
 
     private val idMapper: IdMapper get() = IdMapperImpl()
     private val memberMapper: MemberMapper get() = MemberMapperImpl(idMapper)
@@ -93,6 +98,17 @@ abstract class UserSessionScopeCommon(
         get() = ClientDataSource(clientRemoteRepository, clientRegistrationStorage)
 
     val syncManager: SyncManager get() = authenticatedDataSourceSet.syncManager
+
+    private val eventMapper: EventMapper get() = EventMapper(idMapper)
+    private val eventRepository: EventRepository
+        get() = EventDataSource(
+            authenticatedDataSourceSet.authenticatedNetworkContainer.notificationApi,
+            eventInfoStorage,
+            clientRepository,
+            eventMapper
+        )
+
+    val listenToEvents: ListenToEventsUseCase get() = ListenToEventsUseCase(syncManager, eventRepository)
     val client: ClientScope get() = ClientScope(clientRepository, authenticatedDataSourceSet.proteusClient)
     val conversations: ConversationScope get() = ConversationScope(conversationRepository, syncManager)
     val messages: MessageScope get() = MessageScope(messageRepository)

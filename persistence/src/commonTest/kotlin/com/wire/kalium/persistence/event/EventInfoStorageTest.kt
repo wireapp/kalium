@@ -16,18 +16,18 @@ class EventInfoStorageTest {
     private lateinit var eventInfoStorage: EventInfoStorage
 
     @BeforeTest
-    fun setup(){
+    fun setup() {
         mockSettings.clear()
-        eventInfoStorage = EventInfoStorage(kaliumPreferences)
+        eventInfoStorage = EventInfoStorageImpl(kaliumPreferences)
     }
 
     @Test
-    fun givenNoEventIdWasSaved_whenGettingTheLastEventId_thenResultShouldBeNull(){
+    fun givenNoEventIdWasSaved_whenGettingTheLastEventId_thenResultShouldBeNull() {
         assertNull(eventInfoStorage.lastProcessedId)
     }
 
     @Test
-    fun givenAnEventIdWasSaved_whenGettingTheLastEventId_thenTheSavedIdShouldBeReturned(){
+    fun givenAnEventIdWasSaved_whenGettingTheLastEventId_thenTheSavedIdShouldBeReturned() {
         val testId = "😎EventId"
         eventInfoStorage.lastProcessedId = testId
 
@@ -37,7 +37,7 @@ class EventInfoStorageTest {
     }
 
     @Test
-    fun givenTheLastIdWasUpdatedMultipleTimes_whenGettingTheLastEventId_thenTheLatestIdShouldBeReturned(){
+    fun givenTheLastIdWasUpdatedMultipleTimes_whenGettingTheLastEventId_thenTheLatestIdShouldBeReturned() {
         val latestId = "sold"
         eventInfoStorage.lastProcessedId = "give it once"
         eventInfoStorage.lastProcessedId = "give it twice"
@@ -49,7 +49,7 @@ class EventInfoStorageTest {
     }
 
     @Test
-    fun givenTheLastIdExisted_andWasUpdatedToNull_whenGettingTheLastEventId_thenNullShouldBeReturned(){
+    fun givenTheLastIdExisted_andWasUpdatedToNull_whenGettingTheLastEventId_thenNullShouldBeReturned() {
         eventInfoStorage.lastProcessedId = "give it once"
         eventInfoStorage.lastProcessedId = null
 

@@ -11,6 +11,7 @@ import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.logging.SIMPLE
+import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.request.header
 import io.ktor.http.URLProtocol
 import io.ktor.serialization.kotlinx.json.json
@@ -51,6 +52,8 @@ internal fun provideBaseHttpClient(
             level = LogLevel.ALL
         }
     }
+    // TODO: WebSockets are not supported on iOS. We need to come up with a library-agnostic/platform-specific approach
+    install(WebSockets)
     install(ContentNegotiation) {
         json(KtxSerializer.json)
     }

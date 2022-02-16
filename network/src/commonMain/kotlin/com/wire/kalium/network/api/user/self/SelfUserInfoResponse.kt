@@ -37,7 +37,7 @@ data class SelfUserInfoResponse(
     @SerialName("handle")
     val handle: String?,
     @SerialName("team")
-    val team: String,
+    val team: String?,
     @SerialName("managed_by")
     val managedBy: ManagedBy // 'wire', 'scim'
 )

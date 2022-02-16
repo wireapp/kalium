@@ -1,14 +1,27 @@
 package com.wire.kalium.network.api.notification
 
+import com.wire.kalium.network.tools.BackendConfig
+import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
-import io.ktor.client.*
-import io.ktor.client.request.*
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.websocket.webSocketSession
+import io.ktor.client.request.get
+import io.ktor.client.request.parameter
+import io.ktor.http.HttpMethod
+import io.ktor.http.URLProtocol
+import io.ktor.websocket.Frame
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.consumeAsFlow
+import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.decodeFromString
 
-class NotificationApiImpl(private val httpClient: HttpClient) : NotificationApi {
+class NotificationApiImpl(private val httpClient: HttpClient, private val backendConfig: BackendConfig) : NotificationApi {
     override suspend fun lastNotification(
         queryClient: String
-    ): NetworkResponse<NotificationResponse> = wrapKaliumResponse {
+    ): NetworkResponse<EventResponse> = wrapKaliumResponse {
         httpClient.get("$PATH_NOTIFICATIONS$PATH_LAST") {
             parameter(CLIENT_QUERY_KEY, queryClient)
         }
@@ -21,6 +34,7 @@ class NotificationApiImpl(private val httpClient: HttpClient) : NotificationApi 
     ): NetworkResponse<NotificationPageResponse> =
         notificationsCall(querySize = querySize, queryClient = queryClient, querySince = querySince)
 
+    //FIXME: This function does not get all notifications, just the first page.
     override suspend fun getAllNotifications(querySize: Int, queryClient: String): NetworkResponse<NotificationPageResponse> =
         notificationsCall(querySize = querySize, queryClient = queryClient, querySince = null)
 
@@ -36,11 +50,42 @@ class NotificationApiImpl(private val httpClient: HttpClient) : NotificationApi 
         }
     }
 
-    companion object {
-        private const val PATH_NOTIFICATIONS = "/notifications"
-        private const val PATH_LAST = "/last"
-        private const val SIZE_QUERY_KEY = "size"
-        private const val CLIENT_QUERY_KEY = "client"
-        private const val SINCE_QUERY_KEY = "since"
+    @ExperimentalSerializationApi
+    override suspend fun listenToLiveEvents(clientId: String): Flow<EventResponse> = httpClient.webSocketSession(
+        method = HttpMethod.Get,
+        path = PATH_AWAIT
+    ) {
+        url {
+            host = backendConfig.webSocketBaseUrl
+            protocol = URLProtocol.WSS
+            port = URLProtocol.WSS.defaultPort
+        }
+        parameter(CLIENT_QUERY_KEY, clientId)
+    }.incoming
+        .consumeAsFlow()
+        .catch { it.printStackTrace() }
+        .mapNotNull { frame ->
+            println("###### Received Frame: $frame ######")
+            when (frame) {
+                is Frame.Binary -> {
+                    // assuming here the byteArray is an ASCII character set
+                    val jsonString = io.ktor.utils.io.core.String(frame.data)
+                    val event = KtxSerializer.json.decodeFromString<EventResponse>(jsonString)
+                    event
+                }
+                else -> {
+                    println("###### Websocket frame not handled: $frame ######")
+                    null
+                }
+            }
+        }
+
+    private companion object {
+        const val PATH_AWAIT = "/await"
+        const val PATH_NOTIFICATIONS = "/notifications"
+        const val PATH_LAST = "/last"
+        const val SIZE_QUERY_KEY = "size"
+        const val CLIENT_QUERY_KEY = "client"
+        const val SINCE_QUERY_KEY = "since"
     }
 }

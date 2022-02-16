@@ -55,7 +55,7 @@ class AuthenticatedNetworkContainer(
 
     val assetApi: AssetApi get() = AssetApiImp(authenticatedHttpClient)
 
-    val notificationApi: NotificationApi get() = NotificationApiImpl(authenticatedHttpClient)
+    val notificationApi: NotificationApi get() = NotificationApiImpl(authenticatedHttpClient, backendConfig)
 
     val teamsApi: TeamsApi get() = TeamsApiImp(authenticatedHttpClient)
 
@@ -65,17 +65,6 @@ class AuthenticatedNetworkContainer(
 
     internal val authenticatedHttpClient by lazy {
         provideBaseHttpClient(engine, isRequestLoggingEnabled, HttpClientOptions.DefaultHost(backendConfig)) {
-            installAuth()
-        }
-    }
-
-    private val webSocketClient by lazy {
-        HttpClient(engine) {
-            defaultRequest {
-                host = backendConfig.webSocketBaseUrl
-                url.protocol = URLProtocol.WSS
-            }
-            install(WebSockets)
             installAuth()
         }
     }
