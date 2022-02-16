@@ -1,9 +1,10 @@
 package com.wire.kalium.persistence.db
 
 import android.content.Context
-import androidx.sqlite.db.SupportSQLiteDatabase
 import android.os.Build
 import android.util.Base64
+import androidx.sqlite.db.SupportSQLiteDatabase
+import app.cash.sqldelight.EnumColumnAdapter
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationDAOImpl
@@ -12,9 +13,11 @@ import com.wire.kalium.persistence.dao.MetadataDAOImpl
 import com.wire.kalium.persistence.dao.QualifiedIDAdapter
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserDAOImpl
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientDAOImpl
+import com.wire.kalium.persistence.dao.message.MessageDAO
+import com.wire.kalium.persistence.dao.message.MessageDAOImpl
+import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import net.sqlcipher.database.SupportFactory
 import java.security.SecureRandom
 
@@ -45,6 +48,11 @@ actual class Database(context: Context, name: String, kaliumPreferences: KaliumP
             Client.Adapter(user_idAdapter = QualifiedIDAdapter()),
             Conversation.Adapter(qualified_idAdapter = QualifiedIDAdapter()),
             Member.Adapter(userAdapter = QualifiedIDAdapter(), conversationAdapter = QualifiedIDAdapter()),
+            Message.Adapter(
+                conversation_idAdapter = QualifiedIDAdapter(),
+                sender_user_idAdapter = QualifiedIDAdapter(),
+                statusAdapter = EnumColumnAdapter()
+            ),
             User.Adapter(qualified_idAdapter = QualifiedIDAdapter())
         )
     }
@@ -60,6 +68,9 @@ actual class Database(context: Context, name: String, kaliumPreferences: KaliumP
 
     actual val clientDAO: ClientDAO
         get() = ClientDAOImpl(database.clientsQueries)
+
+    actual val messageDAO: MessageDAO
+        get() = MessageDAOImpl(database.messagesQueries)
 
     private fun getOrGenerateSecretKey(kaliumPreferences: KaliumPreferences): String {
         val databaseKey = kaliumPreferences.getString(DATABASE_SECRET_KEY)
