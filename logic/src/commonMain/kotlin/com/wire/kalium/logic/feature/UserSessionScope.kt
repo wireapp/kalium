@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.location.LocationMapper
+import com.wire.kalium.logic.data.message.MessageDataSource
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.logic.data.prekey.PreKeyMapperImpl
@@ -70,7 +71,7 @@ abstract class UserSessionScopeCommon(
         )
 
     private val messageRepository: MessageRepository
-        get() = MessageRepository(authenticatedDataSourceSet.authenticatedNetworkContainer.messageApi)
+        get() = MessageDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.messageApi, database.messageDAO)
 
     private val userRepository: UserRepository
         get() = UserDataSource(
