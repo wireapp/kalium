@@ -1,8 +1,10 @@
 package com.wire.kalium.logic.data.session
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.session.local.SessionLocalRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.failure.SessionFailure
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.Either
 
@@ -11,6 +13,7 @@ interface SessionRepository {
     suspend fun getSessions(): Either<CoreFailure, List<AuthSession>>
     suspend fun doesSessionExist(userId: UserId): Either<CoreFailure, Boolean>
     suspend fun updateCurrentSession(userIdValue: String)
+    suspend fun currentSession(): Either<SessionFailure, AuthSession>
 }
 
 class SessionDataSource(
@@ -35,6 +38,7 @@ class SessionDataSource(
         }
 
     override suspend fun updateCurrentSession(userIdValue: String) = sessionLocalRepository.updateCurrentSession(userIdValue)
+    override suspend fun currentSession(): Either<SessionFailure, AuthSession> = sessionLocalRepository.getCurrentSession()
 }
 
 

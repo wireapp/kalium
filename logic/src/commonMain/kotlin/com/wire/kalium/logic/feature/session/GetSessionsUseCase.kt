@@ -1,8 +1,7 @@
-package com.wire.kalium.logic.feature.auth
+package com.wire.kalium.logic.feature.session
 
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.failure.SessionFailure
-import com.wire.kalium.logic.feature.session.GetAllSessionsResult
 import com.wire.kalium.logic.functional.Either
 
 class GetSessionsUseCase(

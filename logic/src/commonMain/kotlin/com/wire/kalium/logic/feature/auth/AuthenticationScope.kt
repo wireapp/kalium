@@ -10,6 +10,7 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.session.SessionDataSource
 import com.wire.kalium.logic.data.session.local.SessionLocalDataSource
 import com.wire.kalium.logic.data.session.local.SessionLocalRepository
+import com.wire.kalium.logic.feature.session.GetSessionsUseCase
 import com.wire.kalium.logic.feature.session.SessionScope
 import com.wire.kalium.network.LoginNetworkContainer
 import com.wire.kalium.persistence.client.SessionStorageImpl
