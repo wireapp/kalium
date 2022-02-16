@@ -32,11 +32,8 @@ class RegisterClientUseCaseImpl(
         capabilities: List<ClientCapability>?,
         preKeysToSend: Int
     ): RegisterClientResult = suspending {
-        val currentClientId = clientRepository.currentClientId().fold({null},{it})
-        if (currentClientId != null) return@suspending RegisterClientResult.Failure.TooManyClients
         //TODO Should we fail here if the client is already registered?
         try {
-            proteusClient.open()
             val param = RegisterClientParam(
                 password = password,
                 capabilities = capabilities,
