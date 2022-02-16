@@ -12,9 +12,12 @@ data class UploadAssetData(
     val data: ByteArray,
     val mimeType: AssetType,
     val isPublic: Boolean,
-    val retentionType: RetentionType,
-    val md5: String = calcMd5(data)
+    val retentionType: RetentionType
 ) {
+
+    var md5: String = calcMd5(data)
+        private set
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
