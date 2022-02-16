@@ -16,7 +16,6 @@ data class UploadAssetData(
 ) {
 
     var md5: String = calcMd5(data)
-        private set
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
