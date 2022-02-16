@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Build
 import android.util.Base64
 import androidx.sqlite.db.SupportSQLiteDatabase
+import app.cash.sqldelight.EnumColumnAdapter
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationDAOImpl
@@ -48,9 +49,9 @@ actual class Database(context: Context, name: String, kaliumPreferences: KaliumP
             Conversation.Adapter(qualified_idAdapter = QualifiedIDAdapter()),
             Member.Adapter(userAdapter = QualifiedIDAdapter(), conversationAdapter = QualifiedIDAdapter()),
             Message.Adapter(
-                qualified_idAdapter = QualifiedIDAdapter(),
                 conversation_idAdapter = QualifiedIDAdapter(),
-                sender_idAdapter = QualifiedIDAdapter()
+                sender_user_idAdapter = QualifiedIDAdapter(),
+                statusAdapter = EnumColumnAdapter()
             ),
             User.Adapter(qualified_idAdapter = QualifiedIDAdapter())
         )

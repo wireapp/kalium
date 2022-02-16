@@ -1,5 +1,6 @@
 package com.wire.kalium.persistence.db
 
+import app.cash.sqldelight.EnumColumnAdapter
 import app.cash.sqldelight.driver.native.NativeSqliteDriver
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationDAOImpl
@@ -24,9 +25,9 @@ actual class Database(name: String, passphrase: String) {
             Conversation.Adapter(qualified_idAdapter = QualifiedIDAdapter()),
             Member.Adapter(userAdapter = QualifiedIDAdapter(), conversationAdapter = QualifiedIDAdapter()),
             Message.Adapter(
-                qualified_idAdapter = QualifiedIDAdapter(),
                 conversation_idAdapter = QualifiedIDAdapter(),
-                sender_idAdapter = QualifiedIDAdapter()
+                sender_user_idAdapter = QualifiedIDAdapter(),
+                statusAdapter = EnumColumnAdapter()
             ),
             User.Adapter(qualified_idAdapter = QualifiedIDAdapter()))
         driver.execute(null, "PRAGMA foreign_keys=ON", 0)

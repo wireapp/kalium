@@ -1,42 +1,46 @@
 import com.wire.kalium.persistence.dao.QualifiedID;
-import java.lang.Long;
+import com.wire.kalium.persistence.dao.message.Message;
 
 CREATE TABLE Message (
-    qualified_id TEXT AS QualifiedID NOT NULL PRIMARY KEY,
-    content TEXT,
-    conversation_id TEXT AS QualifiedID,
-    timestamp INTEGER AS Long,
-    sender_id TEXT AS QualifiedID,
-    status TEXT
+      id TEXT NOT NULL,
+      content TEXT,
+      conversation_id TEXT AS QualifiedID NOT NULL,
+      date TEXT NOT NULL,
+      sender_user_id TEXT AS QualifiedID NOT NULL,
+      sender_client_id TEXT NOT NULL,
+      status TEXT AS Message.Status NOT NULL,
+      FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id),
+      FOREIGN KEY (sender_user_id) REFERENCES User(qualified_id),
+      PRIMARY KEY (id, conversation_id)
 );
 
 deleteAllMessages:
 DELETE FROM Message;
 
 deleteMessage:
-DELETE FROM Message WHERE qualified_id = ?;
+DELETE FROM Message WHERE  id = ? AND conversation_id = ?;
 
 insertMessage:
-INSERT INTO Message(qualified_id, content, conversation_id, timestamp, sender_id, status)
-VALUES(?, ?, ?, ?, ? ,? )
-ON CONFLICT(qualified_id) DO UPDATE SET
-qualified_id = excluded.qualified_id,
+INSERT INTO Message(id, content, conversation_id, date, sender_user_id, sender_client_id, status)
+VALUES(?, ?, ?, ?, ? ,?, ?)
+ON CONFLICT(id, conversation_id) DO UPDATE SET
+id = excluded.id,
 content = excluded.content,
-conversation_id = excluded.conversation_id,
-timestamp = excluded.timestamp,
-sender_id = excluded.sender_id,
+date = excluded.date,
+sender_user_id = excluded.sender_user_id,
+sender_client_id = excluded.sender_client_id,
 status = excluded.status;
 
 updateMessages:
 UPDATE Message
-SET content = ?, conversation_id  = ?, timestamp = ?, sender_id = ?, status = ?
-WHERE qualified_id = ?;
+SET content = ?, date = ?, sender_user_id = ?, sender_client_id = ?, status = ?
+WHERE id = ? AND conversation_id = ?;
 
 selectAllMessages:
 SELECT * FROM Message;
 
-selectByQualifiedId:
-SELECT * FROM Message WHERE qualified_id = ?;
+selectById:
+SELECT * FROM Message WHERE id = ? AND conversation_id = ?;
 
 selectByConversationId:
-SELECT * FROM Message WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT ?;
+SELECT * FROM Message WHERE conversation_id = ? ORDER BY date DESC LIMIT ?;

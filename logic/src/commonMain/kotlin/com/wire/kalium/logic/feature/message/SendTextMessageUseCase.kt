@@ -9,12 +9,13 @@ class SendTextMessageUseCase(private val messageRepository: MessageRepository) {
     suspend operator fun invoke(conversationId: QualifiedID, text: String) {
         //TODO
         val message = Message(
-            id = QualifiedID("message_id", "domain"),
+            id = "someID",
             content = text,
             conversationId = conversationId,
-            timestamp = 100000L,
-            senderId = QualifiedID("sender_id", "domain"),
-            status = "status"
+            date = "25 Jan 2022 13:30:00 GMT",
+            senderUserId = QualifiedID("sender_id", "domain"),
+            senderClientId = "someSenderClientId",
+            status = Message.Status.READ
         )
 
         messageRepository.persistMessage(message)
