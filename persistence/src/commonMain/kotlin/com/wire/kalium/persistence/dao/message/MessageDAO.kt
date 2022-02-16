@@ -13,7 +13,7 @@ data class Message(
     val status: Status
 ) {
     enum class Status {
-        PENDING, SENT, READ
+        PENDING, SENT, READ, FAILED
     }
 }
 

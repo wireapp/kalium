@@ -9,7 +9,7 @@ class SendTextMessageUseCase(private val messageRepository: MessageRepository) {
     suspend operator fun invoke(conversationId: QualifiedID, text: String) {
         //TODO
         val message = Message(
-            id = "someID",
+            id = "someUUID",
             content = text,
             conversationId = conversationId,
             date = "25 Jan 2022 13:30:00 GMT",
