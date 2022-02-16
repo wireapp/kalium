@@ -2,11 +2,15 @@ package com.wire.kalium.logic.feature
 
 import com.wire.kalium.logic.AuthenticatedDataSourceSet
 import com.wire.kalium.logic.configuration.ClientConfig
+import com.wire.kalium.logic.data.asset.AssetDataSource
+import com.wire.kalium.logic.data.asset.AssetMapper
+import com.wire.kalium.logic.data.asset.AssetMapperImpl
+import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.client.ClientDataSource
 import com.wire.kalium.logic.data.client.ClientMapper
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
+import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
 import com.wire.kalium.logic.data.conversation.ConversationDataSource
 import com.wire.kalium.logic.data.conversation.ConversationMapper
 import com.wire.kalium.logic.data.conversation.ConversationMapperImpl
@@ -97,6 +101,10 @@ abstract class UserSessionScopeCommon(
     private val clientRepository: ClientRepository
         get() = ClientDataSource(clientRemoteRepository, clientRegistrationStorage)
 
+    private val assetMapper: AssetMapper get() = AssetMapperImpl()
+    private val assetRepository: AssetRepository
+        get() = AssetDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.assetApi, assetMapper)
+
     val syncManager: SyncManager get() = authenticatedDataSourceSet.syncManager
 
     private val eventMapper: EventMapper get() = EventMapper(idMapper)
@@ -112,5 +120,5 @@ abstract class UserSessionScopeCommon(
     val client: ClientScope get() = ClientScope(clientRepository, authenticatedDataSourceSet.proteusClient)
     val conversations: ConversationScope get() = ConversationScope(conversationRepository, syncManager)
     val messages: MessageScope get() = MessageScope(messageRepository)
-    val users: UserScope get() = UserScope(userRepository, syncManager)
+    val users: UserScope get() = UserScope(userRepository, syncManager, assetRepository)
 }

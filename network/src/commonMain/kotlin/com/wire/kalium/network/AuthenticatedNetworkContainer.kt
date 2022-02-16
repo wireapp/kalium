@@ -2,7 +2,7 @@ package com.wire.kalium.network
 
 import com.wire.kalium.network.api.SessionCredentials
 import com.wire.kalium.network.api.asset.AssetApi
-import com.wire.kalium.network.api.asset.AssetApiImp
+import com.wire.kalium.network.api.asset.AssetApiImpl
 import com.wire.kalium.network.api.auth.AuthApi
 import com.wire.kalium.network.api.auth.AuthApiImp
 import com.wire.kalium.network.api.conversation.ConversationApi
@@ -24,15 +24,11 @@ import com.wire.kalium.network.api.user.logout.LogoutImp
 import com.wire.kalium.network.api.user.self.SelfApi
 import com.wire.kalium.network.tools.BackendConfig
 import com.wire.kalium.network.utils.isSuccessful
-import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.auth.Auth
 import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.auth.providers.bearer
-import io.ktor.client.plugins.defaultRequest
-import io.ktor.client.plugins.websocket.WebSockets
-import io.ktor.http.URLProtocol
 
 class AuthenticatedNetworkContainer(
     private val backendConfig: BackendConfig,
@@ -53,7 +49,7 @@ class AuthenticatedNetworkContainer(
 
     val preKeyApi: PreKeyApi get() = PreKeyApiImpl(authenticatedHttpClient)
 
-    val assetApi: AssetApi get() = AssetApiImp(authenticatedHttpClient)
+    val assetApi: AssetApi get() = AssetApiImpl(authenticatedHttpClient)
 
     val notificationApi: NotificationApi get() = NotificationApiImpl(authenticatedHttpClient, backendConfig)
 
