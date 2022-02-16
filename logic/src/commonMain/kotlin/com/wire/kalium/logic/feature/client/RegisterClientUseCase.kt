@@ -5,7 +5,6 @@ import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.data.client.ClientCapability
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.RegisterClientParam
-import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.logic.failure.ClientFailure
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase.Companion.FIRST_KEY_ID
 import com.wire.kalium.logic.functional.suspending
@@ -33,8 +32,11 @@ class RegisterClientUseCaseImpl(
         capabilities: List<ClientCapability>?,
         preKeysToSend: Int
     ): RegisterClientResult = suspending {
+        val currentClientId = clientRepository.currentClientId().fold({null},{it})
+        if (currentClientId != null) return@suspending RegisterClientResult.Failure.TooManyClients
         //TODO Should we fail here if the client is already registered?
         try {
+            proteusClient.open()
             val param = RegisterClientParam(
                 password = password,
                 capabilities = capabilities,

@@ -1,14 +1,7 @@
-package com.wire.kalium.network.api.notification
+package com.wire.kalium.network.api.notification.conversation
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-
-@Serializable
-data class EventResponse(
-    @SerialName("id") val id: String,
-    @SerialName("transient") val transient: Boolean,
-    @SerialName("payload") val payload: List<Event>?
-)
 
 @Serializable
 data class MessageEventData(

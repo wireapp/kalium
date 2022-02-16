@@ -55,7 +55,7 @@ class AuthenticatedNetworkContainer(
 
     val assetApi: AssetApi get() = AssetApiImp(authenticatedHttpClient)
 
-    val notificationApi: NotificationApi get() = NotificationApiImpl(authenticatedHttpClient)
+    val notificationApi: NotificationApi get() = NotificationApiImpl(authenticatedHttpClient, backendConfig)
 
     val teamsApi: TeamsApi get() = TeamsApiImp(authenticatedHttpClient)
 

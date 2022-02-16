@@ -1,4 +1,4 @@
-package com.wire.kalium.network.api.notification
+package com.wire.kalium.network.api.notification.user
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
