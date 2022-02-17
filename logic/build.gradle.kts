@@ -89,6 +89,5 @@ kotlin {
 }
 
 dependencies {
-    implementation("androidx.work:work-runtime-ktx:2.5.0")
     ksp(Dependencies.Test.mockativeProcessor)
 }

@@ -5,7 +5,8 @@ import com.waz.model.Messages.GenericMessage
 
 actual class ProtoContentMapper {
 
-    actual fun encodeToProtobuf(messageUid: String, messageContent: MessageContent): PlainMessageBlob {
+    actual fun encodeToProtobuf(protoContent: ProtoContent): PlainMessageBlob {
+        val (messageUid, messageContent) = protoContent
         val builder = GenericMessage.newBuilder()
             .setMessageId(messageUid)
 
@@ -23,14 +24,15 @@ actual class ProtoContentMapper {
         return PlainMessageBlob(builder.build().toByteArray())
     }
 
-    actual fun decodeFromProtobuf(encodedContent: PlainMessageBlob): MessageContent {
+    actual fun decodeFromProtobuf(encodedContent: PlainMessageBlob): ProtoContent {
         val genericMessage = GenericMessage.parseFrom(encodedContent.data)
 
         //TODO Handle other message types
-        return if (genericMessage.hasText()) {
+        val content = if (genericMessage.hasText()) {
             MessageContent.Text(genericMessage.text.content)
         } else {
             MessageContent.Unknown
         }
+        return ProtoContent(genericMessage.messageId, content)
     }
 }

@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.RegisterClientParam
 import com.wire.kalium.logic.failure.ClientFailure
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase.Companion.FIRST_KEY_ID
+import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.functional.suspending
 
 interface RegisterClientUseCase {
@@ -32,6 +33,9 @@ class RegisterClientUseCaseImpl(
         capabilities: List<ClientCapability>?,
         preKeysToSend: Int
     ): RegisterClientResult = suspending {
+        if(clientRepository.currentClientId().isRight()){
+            return@suspending RegisterClientResult.Failure.TooManyClients
+        }
         //TODO Should we fail here if the client is already registered?
         try {
             val param = RegisterClientParam(

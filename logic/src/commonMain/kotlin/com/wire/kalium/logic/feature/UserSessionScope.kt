@@ -24,11 +24,14 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.location.LocationMapper
 import com.wire.kalium.logic.data.message.MessageDataSource
+import com.wire.kalium.logic.data.message.MessageMapper
+import com.wire.kalium.logic.data.message.MessageMapperImpl
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.logic.data.prekey.PreKeyMapperImpl
 import com.wire.kalium.logic.data.user.UserDataSource
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapperImpl
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.auth.AuthSession
@@ -72,8 +75,15 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi, idMapper, conversationMapper, memberMapper
         )
 
+    private val messageMapper: MessageMapper get() = MessageMapperImpl(idMapper)
+
     private val messageRepository: MessageRepository
-        get() = MessageDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.messageApi, database.messageDAO)
+        get() = MessageDataSource(
+            authenticatedDataSourceSet.authenticatedNetworkContainer.messageApi,
+            database.messageDAO,
+            messageMapper,
+            idMapper
+        )
 
     private val userRepository: UserRepository
         get() = UserDataSource(
@@ -128,6 +138,8 @@ abstract class UserSessionScopeCommon(
     val listenToEvents: ListenToEventsUseCase get() = ListenToEventsUseCase(syncManager, eventRepository, conversationEventReceiver)
     val client: ClientScope get() = ClientScope(clientRepository, authenticatedDataSourceSet.proteusClient)
     val conversations: ConversationScope get() = ConversationScope(conversationRepository, syncManager)
-    val messages: MessageScope get() = MessageScope(messageRepository)
+
+    //TODO How to get self domain?
+    val messages: MessageScope get() = MessageScope(messageRepository, clientRepository, UserId(session.userId, "domain"))
     val users: UserScope get() = UserScope(userRepository, syncManager, assetRepository)
 }
