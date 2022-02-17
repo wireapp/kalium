@@ -46,7 +46,7 @@ actual class ProteusClientImpl actual constructor(rootDir: String, userId: Strin
     }
 
     override suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean {
-        TODO("Nope. Can't do this using cryptobox4j.")
+        return wrapException { box.doesSessionExist(sessionId.value) }
     }
 
     override suspend fun createSession(preKey: PreKey, sessionId: CryptoSessionId) {
