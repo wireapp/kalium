@@ -2,6 +2,7 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.failure.ResourceNotFound
 import com.wire.kalium.logic.functional.Either
@@ -11,6 +12,7 @@ import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.network.utils.isSuccessful
 import com.wire.kalium.persistence.dao.ConversationDAO
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
@@ -18,6 +20,7 @@ interface ConversationRepository {
     suspend fun fetchConversations(): Either<CoreFailure, Unit>
     suspend fun getConversationList(): Flow<List<Conversation>>
     suspend fun getConversationDetails(conversationId: ConversationId): Either<CoreFailure, Conversation>
+    suspend fun getConversationDetailsFromDB(conversationId: QualifiedID): Flow<Conversation>
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
 }
 
@@ -39,7 +42,8 @@ class ConversationDataSource(
             conversationsResponse.value.conversations.forEach { conversationsResponse ->
                 conversationDAO.insertMembers(
                     memberMapper.fromApiModelToDaoModel(conversationsResponse.members),
-                    idMapper.fromApiToDao(conversationsResponse.id))
+                    idMapper.fromApiToDao(conversationsResponse.id)
+                )
             }
             Either.Right(Unit)
         }
@@ -59,6 +63,12 @@ class ConversationDataSource(
             return Either.Left(CoreFailure.ServerMiscommunication)
         }
         return Either.Right(conversationMapper.fromApiModel(conversationResponse.value))
+    }
+
+    override suspend fun getConversationDetailsFromDB(conversationId: QualifiedID): Flow<Conversation> {
+        return conversationDAO.getConversationByQualifiedID(idMapper.toDaoModel(conversationId))
+            .filterNotNull()
+            .map(conversationMapper::fromDaoModel)
     }
 
     /**

@@ -9,5 +9,6 @@ class ConversationScope(
 ) {
     // TODO: get()
     val getConversations: GetConversationsUseCase = GetConversationsUseCase(conversationRepository, syncManager)
+    val getConversationDetails: GetConversationDetailsUseCase = GetConversationDetailsUseCase(conversationRepository, syncManager)
     val syncConversations: SyncConversationsUseCase = SyncConversationsUseCase(conversationRepository)
 }

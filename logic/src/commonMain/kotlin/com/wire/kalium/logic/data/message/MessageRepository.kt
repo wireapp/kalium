@@ -1,9 +1,10 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.message.MessageApi
-import com.wire.kalium.persistence.dao.QualifiedID
 import com.wire.kalium.persistence.dao.message.Message
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import kotlinx.coroutines.flow.Flow
@@ -14,12 +15,13 @@ interface MessageRepository {
 }
 
 class MessageDataSource(
+    private val idMapper: IdMapper,
     private val messageApi: MessageApi,
     private val messageDAO: MessageDAO
 ) : MessageRepository {
 
     override suspend fun getMessagesForConversation(conversationId: QualifiedID, limit: Int): Flow<List<Message>> {
-        return messageDAO.getMessageByConversation(conversationId, limit)
+        return messageDAO.getMessageByConversation(idMapper.toDaoModel(conversationId), limit)
     }
 
     override suspend fun persistMessage(message: Message): Either<CoreFailure, Unit> {
