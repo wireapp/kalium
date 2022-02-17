@@ -14,7 +14,12 @@ typealias UserId = QualifiedID
 data class User(
     val id: QualifiedID,
     val name: String?,
-    val handle: String?
+    val handle: String?,
+    val email: String?,
+    val phone: String?,
+    val accentId: Int,
+    val team: String?
+    // val picture: List<UserAsset>
 )
 
 interface UserDAO {

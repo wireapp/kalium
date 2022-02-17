@@ -8,8 +8,16 @@ import com.wire.kalium.logic.data.asset.UploadAssetData
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
+import kotlinx.coroutines.flow.map
 
 interface UploadUserAvatarUseCase {
+    /**
+     * Function that allows uploading a profile picture
+     * This first will upload an asset and then will link the asset to the [User]
+     *
+     * @param mimeType mimetype of the user picture
+     * @param imageData binary data of the actual picture
+     */
     suspend operator fun invoke(mimeType: String, imageData: ByteArray): Either<CoreFailure, Unit>
 }
 
@@ -19,11 +27,13 @@ class UploadUserAvatarUseCaseImpl(
 ) : UploadUserAvatarUseCase {
 
     override suspend operator fun invoke(mimeType: String, imageData: ByteArray): Either<CoreFailure, Unit> = suspending {
-        assetDataSource
-            .uploadPublicAsset(UploadAssetData(imageData, ImageAsset.JPG, true, RetentionType.ETERNAL)).map {
-                println("> uploaded :" + it.key)
-            }
-        // .flatMap {} // TODO: upcoming PR will finish the second part, updating user self with pic
+        userDataSource.getSelfUser().map { user ->
+            assetDataSource
+                .uploadPublicAsset(UploadAssetData(imageData, ImageAsset.JPG, true, RetentionType.ETERNAL))
+                .map { asset ->
+                    userDataSource.updateSelfUser(asset)
+                }
+        }
 
         return@suspending Either.Right(Unit)
     }

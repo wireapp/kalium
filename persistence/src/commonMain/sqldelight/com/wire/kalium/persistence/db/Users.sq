@@ -3,7 +3,11 @@ import com.wire.kalium.persistence.dao.QualifiedID;
 CREATE TABLE User (
     qualified_id TEXT AS QualifiedID NOT NULL PRIMARY KEY,
     name TEXT,
-    handle TEXT
+    handle TEXT,
+    email TEXT,
+    phone TEXT,
+    accent_id INTEGER AS Int NOT NULL DEFAULT 0,
+    team TEXT
 );
 
 deleteAllUsers:
@@ -13,8 +17,8 @@ deleteUser:
 DELETE FROM User WHERE qualified_id = ?;
 
 insertUser:
-INSERT INTO User(qualified_id, name, handle)
-VALUES(?, ?, ?)
+INSERT INTO User(qualified_id, name, handle, email, phone, accent_id, team)
+VALUES(?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET name = excluded.name, handle = excluded.handle;
 
 insertOrIgnoreUserId:
@@ -23,7 +27,7 @@ VALUES(?);
 
 updateUser:
 UPDATE User
-SET name = ?, handle = ?
+SET name = ?, handle = ?, email = ?, accent_id = ?
 WHERE qualified_id = ?;
 
 selectAllUsers:
