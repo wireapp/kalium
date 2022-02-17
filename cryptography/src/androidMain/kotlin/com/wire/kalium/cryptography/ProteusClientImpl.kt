@@ -3,12 +3,11 @@ package com.wire.kalium.cryptography
 import android.util.Base64
 import com.wire.cryptobox.CryptoBox
 import com.wire.cryptobox.CryptoException
-import com.wire.cryptobox.CryptoSession
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import java.io.File
 import java.util.UUID
 
-actual class ProteusClientImpl actual constructor(rootDir: String, userId: String): ProteusClient {
+actual class ProteusClientImpl actual constructor(rootDir: String, userId: String) : ProteusClient {
 
     private val path: String
     private lateinit var box: CryptoBox
@@ -44,6 +43,19 @@ actual class ProteusClientImpl actual constructor(rootDir: String, userId: Strin
         return wrapException { toPreKey(box.newLastPreKey()) }
     }
 
+    override suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean {
+        return try {
+            box.getSession(sessionId.value)
+            true
+        } catch (e: CryptoException) {
+            if (e.code == CryptoException.Code.SESSION_NOT_FOUND) {
+                false
+            } else {
+                throw e
+            }
+        }
+    }
+
     override suspend fun createSession(preKey: PreKey, sessionId: CryptoSessionId) {
         wrapException { box.initSessionFromPreKey(sessionId.value, toPreKey(preKey)) }
     }
@@ -70,7 +82,7 @@ actual class ProteusClientImpl actual constructor(rootDir: String, userId: Strin
         sessionId: CryptoSessionId
     ): ByteArray {
         return wrapException {
-            val session =  box.initSessionFromPreKey(sessionId.value, toPreKey(preKey))
+            val session = box.initSessionFromPreKey(sessionId.value, toPreKey(preKey))
             session.encrypt(message)
         }
     }
