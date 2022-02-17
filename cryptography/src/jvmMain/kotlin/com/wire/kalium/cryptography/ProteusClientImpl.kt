@@ -45,6 +45,10 @@ actual class ProteusClientImpl actual constructor(rootDir: String, userId: Strin
         return wrapException { box.newPreKeys(from, count).map { toPreKey(it) } as ArrayList<PreKey> }
     }
 
+    override suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean {
+        TODO("Nope. Can't do this using cryptobox4j.")
+    }
+
     override suspend fun createSession(preKey: PreKey, sessionId: CryptoSessionId) {
         wrapException { box.encryptFromPreKeys(sessionId.value, toPreKey(preKey), ByteArray(0)) }
     }
