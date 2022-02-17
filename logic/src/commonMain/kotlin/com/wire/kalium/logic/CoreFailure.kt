@@ -23,3 +23,7 @@ sealed class CoreFailure {
 
     abstract class FeatureFailure : CoreFailure()
 }
+
+sealed class SessionFailure : CoreFailure.FeatureFailure() {
+    object NoSessionFound: SessionFailure()
+}

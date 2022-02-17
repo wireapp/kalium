@@ -1,35 +1,34 @@
 package com.wire.kalium.logic.data.session
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.id.PlainId
+import com.wire.kalium.logic.SessionFailure
 import com.wire.kalium.logic.data.session.local.SessionLocalRepository
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.failure.SessionFailure
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.Either
 
 interface SessionRepository {
-    suspend fun storeSession(autSession: AuthSession)
-    suspend fun getSessions(): Either<CoreFailure, List<AuthSession>>
-    suspend fun doesSessionExist(userId: UserId): Either<CoreFailure, Boolean>
-    suspend fun updateCurrentSession(userIdValue: String)
-    suspend fun currentSession(): Either<SessionFailure, AuthSession>
+    fun storeSession(autSession: AuthSession)
+    fun getSessions(): Either<SessionFailure, List<AuthSession>>
+    fun doesSessionExist(userIdValue: String): Either<CoreFailure, Boolean>
+    fun updateCurrentSession(userIdValue: String)
+    fun currentSession(): Either<SessionFailure, AuthSession>
+    fun deleteSession(userIdValue: String)
 }
 
 class SessionDataSource(
     private val sessionLocalRepository: SessionLocalRepository
 ) : SessionRepository {
-    override suspend fun storeSession(autSession: AuthSession) = sessionLocalRepository.storeSession(autSession)
+    override fun storeSession(autSession: AuthSession) = sessionLocalRepository.storeSession(autSession)
 
-    override suspend fun getSessions(): Either<CoreFailure, List<AuthSession>> = sessionLocalRepository.getSessions()
+    override fun getSessions(): Either<SessionFailure, List<AuthSession>> = sessionLocalRepository.getSessions()
 
-    override suspend fun doesSessionExist(userId: UserId): Either<CoreFailure, Boolean> =
+    override fun doesSessionExist(userIdValue: String): Either<CoreFailure, Boolean> =
         when (val result = sessionLocalRepository.getSessions()) {
             is Either.Left -> Either.Left(result.value)
 
             is Either.Right -> {
                 result.value.forEach {
-                    if (it.userId == userId.value) {
+                    if (it.userId == userIdValue) {
                         Either.Right(true)
                     }
                 }
@@ -37,8 +36,11 @@ class SessionDataSource(
             }
         }
 
-    override suspend fun updateCurrentSession(userIdValue: String) = sessionLocalRepository.updateCurrentSession(userIdValue)
-    override suspend fun currentSession(): Either<SessionFailure, AuthSession> = sessionLocalRepository.getCurrentSession()
+    override fun updateCurrentSession(userIdValue: String) = sessionLocalRepository.updateCurrentSession(userIdValue)
+
+    override fun currentSession(): Either<SessionFailure, AuthSession> = sessionLocalRepository.getCurrentSession()
+
+    override fun deleteSession(userIdValue: String) = sessionLocalRepository.deleteSession(userIdValue)
 }
 
 

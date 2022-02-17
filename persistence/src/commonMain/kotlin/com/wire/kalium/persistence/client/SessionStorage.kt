@@ -10,38 +10,38 @@ interface SessionStorage {
     /**
      * store a session locally
      */
-    suspend fun addSession(persistenceSession: PersistenceSession)
+    fun addSession(persistenceSession: PersistenceSession)
 
     /**
      * delete a session from the local storage
      */
-    suspend fun deleteSession(userId: String)
+    fun deleteSession(userId: String)
 
     /**
      * returns the current active user session
      */
-    suspend fun currentSession(): PersistenceSession?
+     fun currentSession(): PersistenceSession?
 
     /**
      * changes the current active user session
      */
-    suspend fun updateCurrentSession(userId: String)
+    fun updateCurrentSession(userId: String)
 
     /**
      * return all stored session as a userId to session map
      */
-    suspend fun allSessions(): PreferencesResult<Map<String, PersistenceSession>>
+    fun allSessions(): PreferencesResult<Map<String, PersistenceSession>>
 
     /**
      * returns true if there is any session saved and false otherwise
      */
-    suspend fun sessionsExist(): Boolean
+    fun sessionsExist(): Boolean
 }
 
 class SessionStorageImpl(
     private val kaliumPreferences: KaliumPreferences
 ) : SessionStorage {
-    override suspend fun addSession(persistenceSession: PersistenceSession) =
+    override fun addSession(persistenceSession: PersistenceSession) =
         when (val result = allSessions()) {
             is PreferencesResult.Success -> {
                 val temp = result.data.toMutableMap()
@@ -54,7 +54,7 @@ class SessionStorageImpl(
             }
         }
 
-    override suspend fun deleteSession(userId: String) {
+    override fun deleteSession(userId: String) {
         when (val result = allSessions()) {
             is PreferencesResult.Success -> {
                 // save the new map if the remove did not return null (session was deleted)
@@ -76,7 +76,7 @@ class SessionStorageImpl(
         }
     }
 
-    override suspend fun currentSession(): PersistenceSession? =
+    override  fun currentSession(): PersistenceSession? =
         kaliumPreferences.getString(CURRENT_SESSION_KEY)?.let { userId ->
             when (val result = allSessions()) {
                 is PreferencesResult.Success -> result.data[userId]
@@ -85,9 +85,9 @@ class SessionStorageImpl(
         }
 
 
-    override suspend fun updateCurrentSession(userId: String) = kaliumPreferences.putString(CURRENT_SESSION_KEY, userId)
+    override fun updateCurrentSession(userId: String) = kaliumPreferences.putString(CURRENT_SESSION_KEY, userId)
 
-    override suspend fun allSessions(): PreferencesResult<Map<String, PersistenceSession>> {
+    override fun allSessions(): PreferencesResult<Map<String, PersistenceSession>> {
         return kaliumPreferences.getSerializable(SESSIONS_KEY, SessionsMap.serializer())?.let {
             if (it.s.isEmpty()) {
                 // the sessions hashMap is empty
@@ -98,7 +98,7 @@ class SessionStorageImpl(
         } ?: run { PreferencesResult.DataNotFound }
     }
 
-    override suspend fun sessionsExist(): Boolean = kaliumPreferences.hasValue(SESSIONS_KEY)
+    override fun sessionsExist(): Boolean = kaliumPreferences.hasValue(SESSIONS_KEY)
 
     private fun saveAllSessions(sessions: SessionsMap) {
         kaliumPreferences.putSerializable(SESSIONS_KEY, sessions, SessionsMap.serializer())

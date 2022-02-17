@@ -1,19 +1,18 @@
 package com.wire.kalium.logic.data.session.local
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.SessionFailure
 import com.wire.kalium.logic.data.session.SessionMapper
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.failure.SessionFailure
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.persistence.client.SessionStorage
 import com.wire.kalium.persistence.model.PreferencesResult
 
 interface SessionLocalRepository {
-    suspend fun storeSession(autSession: AuthSession)
-    suspend fun getSessions(): Either<SessionFailure, List<AuthSession>>
-    suspend fun updateCurrentSession(userIdValue: String)
-    suspend fun getCurrentSession(): Either<SessionFailure, AuthSession>
+    fun storeSession(autSession: AuthSession)
+    fun getSessions(): Either<SessionFailure, List<AuthSession>>
+    fun updateCurrentSession(userIdValue: String)
+    fun getCurrentSession(): Either<SessionFailure, AuthSession>
+    fun deleteSession(userIdValue: String)
 }
 
 class SessionLocalDataSource(
@@ -21,10 +20,10 @@ class SessionLocalDataSource(
     private val sessionMapper: SessionMapper
 ) : SessionLocalRepository {
 
-    override suspend fun storeSession(autSession: AuthSession) =
+    override fun storeSession(autSession: AuthSession) =
         sessionStorage.addSession(sessionMapper.toPersistenceSession(autSession))
 
-    override suspend fun getSessions(): Either<SessionFailure, List<AuthSession>> =
+    override fun getSessions(): Either<SessionFailure, List<AuthSession>> =
         when (val result = sessionStorage.allSessions()) {
             is PreferencesResult.Success -> Either.Right(
                 result.data.values.toList().map { sessionMapper.fromPersistenceSession(it) }
@@ -32,7 +31,7 @@ class SessionLocalDataSource(
             is PreferencesResult.DataNotFound -> Either.Left(SessionFailure.NoSessionFound)
         }
 
-    override suspend fun getCurrentSession(): Either<SessionFailure, AuthSession> {
+    override fun getCurrentSession(): Either<SessionFailure, AuthSession> {
         return sessionStorage.currentSession()?.let { currentSession ->
             return@let Either.Right(sessionMapper.fromPersistenceSession(currentSession))
         } ?: run {
@@ -40,5 +39,7 @@ class SessionLocalDataSource(
         }
     }
 
-    override suspend fun updateCurrentSession(userIdValue: String) = sessionStorage.updateCurrentSession(userIdValue)
+    override fun deleteSession(userIdValue: String) = sessionStorage.deleteSession(userIdValue)
+
+    override fun updateCurrentSession(userIdValue: String) = sessionStorage.updateCurrentSession(userIdValue)
 }
