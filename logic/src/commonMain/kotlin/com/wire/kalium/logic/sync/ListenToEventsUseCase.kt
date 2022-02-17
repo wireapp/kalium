@@ -7,7 +7,8 @@ import com.wire.kalium.logic.functional.onFailure
 
 class ListenToEventsUseCase(
     private val syncManager: SyncManager,
-    private val eventRepository: EventRepository
+    private val eventRepository: EventRepository,
+    private val conversationEventReceiver: EventReceiver<Event.Conversation>
 ) {
 
     /**
@@ -21,8 +22,8 @@ class ListenToEventsUseCase(
             either.map { event ->
                 println("Event received: $event")
                 when (event) {
-                    is Event.Conversation.NewMessage -> {
-                        //TODO Handle messages!
+                    is Event.Conversation -> {
+                        conversationEventReceiver.onEvent(event)
                     }
                     else -> {
                         //TODO: Multiplatform logging

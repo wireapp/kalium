@@ -16,7 +16,6 @@ object Versions {
     const val ktor = "1.6.7"
     const val ktor2 = "2.0.0-beta-1"
     const val okHttp = "4.9.3"
-    const val kotest = "4.6.3"
     const val mockative = "1.1.4"
     const val androidWork = "2.7.1"
     const val androidTestRunner = "1.4.0"
@@ -27,6 +26,8 @@ object Versions {
     const val multiplatformSettings = "0.8.1"
     const val androidSecurity = "1.0.0"
     const val sqlDelight = "2.0.0-SNAPSHOT"
+    const val wireJvmMessageProto = "1.36.0"
+    const val protobufLite = "3.19.4"
 }
 
 object Plugins {
@@ -132,14 +133,13 @@ object Dependencies {
         const val jsDriver = "app.cash.sqldelight:sqljs-driver:${Versions.sqlDelight}"
     }
 
-    object Kotest {
-        const val junit5Runner = "io.kotest:kotest-runner-junit5:${Versions.kotest}"
-        const val assertions = "io.kotest:kotest-assertions-core:${Versions.kotest}"
-        const val property = "io.kotest:kotest-property:${Versions.kotest}"
-    }
-
     object Test {
         const val mockative = "io.mockative:mockative:${Versions.mockative}"
         const val mockativeProcessor = "io.mockative:mockative-processor:${Versions.mockative}"
+    }
+
+    object Protobuf {
+        const val wireJvmMessageProto = "com.wire:generic-message-proto:${Versions.wireJvmMessageProto}"
+        const val protobufLite = "com.google.protobuf:protobuf-javalite:${Versions.protobufLite}"
     }
 }

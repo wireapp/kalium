@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet
+
 plugins {
     Plugins.androidLibrary(this)
     Plugins.multiplatform(this)
@@ -61,11 +63,25 @@ kotlin {
                 implementation(Dependencies.Test.mockative)
             }
         }
-        val jvmMain by getting
+        fun KotlinSourceSet.addCommonKotlinJvmSourceDir() {
+            kotlin.srcDir("src/commonJvmAndroid/kotlin")
+        }
+        val jvmMain by getting {
+            addCommonKotlinJvmSourceDir()
+            dependencies {
+                implementation(Dependencies.Protobuf.wireJvmMessageProto)
+            }
+        }
         val jvmTest by getting
         val androidMain by getting {
+            addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(Dependencies.Android.work)
+                implementation(Dependencies.Protobuf.wireJvmMessageProto) {
+                    // Don't use the runtime Protobuf included in wire. We can use Protobuf Lite instead
+                    exclude(module = "protobuf-java")
+                }
+                implementation(Dependencies.Protobuf.protobufLite)
             }
         }
         val androidTest by getting
