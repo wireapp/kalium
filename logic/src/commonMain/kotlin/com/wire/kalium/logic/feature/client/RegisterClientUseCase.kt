@@ -33,9 +33,6 @@ class RegisterClientUseCaseImpl(
         capabilities: List<ClientCapability>?,
         preKeysToSend: Int
     ): RegisterClientResult = suspending {
-        if(clientRepository.currentClientId().isRight()){
-            return@suspending RegisterClientResult.Failure.TooManyClients
-        }
         //TODO Should we fail here if the client is already registered?
         try {
             val param = RegisterClientParam(
