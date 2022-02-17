@@ -27,13 +27,11 @@ class UploadUserAvatarUseCaseImpl(
 ) : UploadUserAvatarUseCase {
 
     override suspend operator fun invoke(mimeType: String, imageData: ByteArray): Either<CoreFailure, Unit> = suspending {
-        userDataSource.getSelfUser().map { user ->
-            assetDataSource
-                .uploadPublicAsset(UploadAssetData(imageData, ImageAsset.JPG, true, RetentionType.ETERNAL))
-                .map { asset ->
-                    userDataSource.updateSelfUser(asset)
-                }
-        }
+        assetDataSource
+            .uploadPublicAsset(UploadAssetData(imageData, ImageAsset.JPG, true, RetentionType.ETERNAL))
+            .map { asset ->
+                userDataSource.updateSelfUser(newAssetId = asset.key)
+            }
 
         return@suspending Either.Right(Unit)
     }

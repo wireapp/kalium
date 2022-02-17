@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.data.user
 
-import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.network.api.user.details.UserDetailsResponse
 import com.wire.kalium.network.api.user.self.ImageSize
@@ -14,7 +13,14 @@ interface UserMapper {
     fun fromApiModelToDaoModel(userDetailsResponse: UserDetailsResponse): PersistedUser
     fun fromApiModelToDaoModel(selfUserInfoResponse: SelfUserInfoResponse): PersistedUser
     fun fromDaoModel(user: PersistedUser): SelfUser
-    fun fromModelToUpdateApiModel(user: SelfUser, uploadedAssetId: UploadedAssetId): UserUpdateRequest
+
+    /**
+     * Maps the user data to be updated. if the parameters [newName] [newAccent] [newAssetId] are nulls,
+     * it indicates that not updation should be made.
+     *
+     *  TODO: handle deletion of assets references, emptyAssetList
+     */
+    fun fromModelToUpdateApiModel(user: SelfUser, newName: String?, newAccent: Int?, newAssetId: String?): UserUpdateRequest
 }
 
 internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
@@ -47,13 +53,25 @@ internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
     override fun fromDaoModel(user: com.wire.kalium.persistence.dao.User) =
         SelfUser(idMapper.fromDaoModel(user.id), user.name, user.handle, user.email, user.phone, user.accentId, user.team, emptyList())
 
-    override fun fromModelToUpdateApiModel(user: SelfUser, uploadedAssetId: UploadedAssetId): UserUpdateRequest {
+    override fun fromModelToUpdateApiModel(
+        user: SelfUser,
+        newName: String?,
+        newAccent: Int?,
+        newAssetId: String?
+    ): UserUpdateRequest {
         return UserUpdateRequest(
-            user.id.value,
-            idMapper.toApiModel(user.id),
-            user.name,
-            listOf(UserAssetRequest(uploadedAssetId.key, ImageSize.Complete), UserAssetRequest(uploadedAssetId.key, ImageSize.Preview)),
-            user.accentId
+            id = user.id.value,
+            qualifiedId = idMapper.toApiModel(user.id),
+            name = newName ?: user.name,
+            accentId = newAccent ?: user.accentId,
+            assets = if (newAssetId != null) {
+                listOf(
+                    UserAssetRequest(newAssetId, ImageSize.Complete),
+                    UserAssetRequest(newAssetId, ImageSize.Preview)
+                )
+            } else {
+                null
+            }
         )
     }
 

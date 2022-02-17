@@ -13,12 +13,12 @@ data class UserUpdateRequest(
     @SerialName("name")
     val name: String?,
     @SerialName("assets")
-    val assets: List<UserAssetRequest>,
+    val assets: List<UserAssetRequest>?,
     @SerialName("accent_id")
     val accentId: Int?
 ) {
     @SerialName("picture")
-    var picture: List<UserAssetRequest> = assets
+    var picture: List<UserAssetRequest>? = assets
 }
 
 @Serializable

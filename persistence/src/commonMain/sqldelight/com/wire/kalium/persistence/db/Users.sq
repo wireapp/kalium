@@ -6,7 +6,7 @@ CREATE TABLE User (
     handle TEXT,
     email TEXT,
     phone TEXT,
-    accent_id INTEGER AS Int NOT NULL DEFAULT 0,
+    accent_id TEXT,
     team TEXT
 );
 
