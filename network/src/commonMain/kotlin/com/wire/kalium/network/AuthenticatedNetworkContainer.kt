@@ -39,7 +39,7 @@ class AuthenticatedNetworkContainer(
 ) {
     private val authApi: AuthApi get() = AuthApiImp(authenticatedHttpClient)
 
-    val logoutApi: LogoutApi get() = LogoutImpl(authenticatedHttpClient)
+    val logoutApi: LogoutApi get() = LogoutImpl(authenticatedHttpClient, sessionCredentials.refreshToken)
 
     val clientApi: ClientApi get() = ClientApiImpl(authenticatedHttpClient)
 
