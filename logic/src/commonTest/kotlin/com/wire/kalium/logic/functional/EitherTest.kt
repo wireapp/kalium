@@ -33,7 +33,7 @@ class EitherTest {
     fun `given flatMap is called, when either is Right, applies function and returns new Either`() {
         val either = Either.Right("Success")
 
-        val mapped = Either.Left(KaliumException.GenericError(null, null))
+        val mapped = Either.Left(KaliumException.GenericError(KaliumException.GenericError(IllegalStateException())))
         val result = either.flatMap {
             assertSame(it, "Success")
             mapped

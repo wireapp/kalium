@@ -2,6 +2,7 @@ package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.cryptography.PreKey
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.failure.ClientFailure
@@ -9,7 +10,9 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
+import io.ktor.utils.io.errors.IOException
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -60,7 +63,7 @@ class ClientRepositoryTest {
 
     @Test
     fun givingRemoteDataSourceFails_whenRegisteringClient_thenTheFailureShouldBePropagated() = runTest {
-        val failure = Either.Left(CoreFailure.NoNetworkConnection)
+        val failure = Either.Left(TEST_FAILURE)
         given(clientRemoteRepository)
             .suspendFunction(clientRemoteRepository::registerClient)
             .whenInvokedWith(any())
@@ -149,7 +152,7 @@ class ClientRepositoryTest {
     @Test
     fun givenClientId_whenGettingClientInformationFail_thenTheErrorIsPropagated() = runTest {
         val clientId = CLIENT_ID
-        val expected: Either.Left<CoreFailure> = Either.Left(CoreFailure.NoNetworkConnection)
+        val expected = Either.Left(TEST_FAILURE)
         given(clientRemoteRepository)
             .coroutine { clientRemoteRepository.fetchClientInfo(clientId) }
             .then { expected }
@@ -168,7 +171,8 @@ class ClientRepositoryTest {
     fun givenClientIdAndAPassword_whenGettingDeletingClientFail_thenTheErrorIsPropagated() = runTest {
         val param = DeleteClientParam("password", CLIENT_ID)
 
-        val expected = Either.Left(ClientFailure.WrongPassword)
+        //val expected = Either.Left(ClientFailure.WrongPassword)
+        val expected = Either.Left(TEST_FAILURE)
 
         given(clientRemoteRepository)
             .coroutine { clientRemoteRepository.deleteClient(param) }
@@ -247,7 +251,7 @@ class ClientRepositoryTest {
 
     @Test
     fun whenSelfListOfClientsIsFail_thenTheErrorIsPropagated() = runTest {
-        val expected: Either.Left<CoreFailure> = Either.Left(CoreFailure.ServerMiscommunication)
+        val expected: Either.Left<CoreFailure> = Either.Left(TEST_FAILURE)
 
         given(clientRemoteRepository).coroutine { clientRepository.selfListOfClients() }.then { expected }
 
@@ -260,6 +264,7 @@ class ClientRepositoryTest {
         val REGISTER_CLIENT_PARAMS = RegisterClientParam("pass", listOf(), PreKey(2, "2"), listOf())
         val CLIENT_ID = TestClient.CLIENT_ID
         val CLIENT_RESULT = TestClient.CLIENT
+        val TEST_FAILURE = NetworkFailure.NoNetworkConnection(KaliumException.NetworkUnavailableError(IOException("no internet")))
     }
 }
 

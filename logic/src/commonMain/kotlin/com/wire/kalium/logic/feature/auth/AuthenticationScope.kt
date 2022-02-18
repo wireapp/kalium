@@ -36,7 +36,7 @@ abstract class AuthenticationScopeCommon(
     private val serverConfigMapper: ServerConfigMapper get() = ServerConfigMapperImpl()
     private val sessionMapper: SessionMapper get() = SessionMapperImpl(serverConfigMapper)
 
-    private val loginRepository: LoginRepository get() = LoginRepositoryImpl(loginNetworkContainer.loginApi, clientLabel)
+    private val loginRepository: LoginRepository get() = LoginRepositoryImpl(loginNetworkContainer.loginApi, clientLabel, sessionMapper)
 
     private val sessionLocalRepository: SessionLocalRepository get() = SessionLocalDataSource(sessionStorage, sessionMapper)
     private val sessionRepository: SessionRepository

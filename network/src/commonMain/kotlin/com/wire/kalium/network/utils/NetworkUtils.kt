@@ -8,44 +8,113 @@ import io.ktor.client.plugins.RedirectResponseException
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.statement.HttpResponse
-import io.ktor.http.setCookie
+import io.ktor.http.HttpHeaders
+import io.ktor.http.parseServerSetCookieHeader
 import io.ktor.util.toMap
 import io.ktor.utils.io.errors.IOException
 import kotlinx.serialization.SerializationException
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
-sealed class NetworkResponse<out T> {
-    data class Success<out T : Any>(internal val response: HttpResponse, val value: T) : NetworkResponse<T>()
+sealed class NetworkResponse<out T : Any> {
+    data class Success<out T : Any>(
+        val value: T,
+        val headers: Map<String, String?>,
+        val httpCode: Int
+    ) : NetworkResponse<T>() {
+        internal constructor(value: T, httpResponse: HttpResponse) : this(
+            value,
+            httpResponse.headers.toMap()
+                .mapValues { headerEntry -> headerEntry.value.firstOrNull() }, //Ignore header duplication on purpose)
+            httpResponse.status.value
+        )
+    }
+
     data class Error<out E : KaliumException>(val kException: KaliumException) : NetworkResponse<E>()
 }
 
-fun <T> NetworkResponse<T>.httpResponseCode(): Int = if (isSuccessful()) this.response.status.value else kException.errorCode
-fun <T> NetworkResponse<T>.httpResponseHeaders(): Map<String, String?> =
-    (this as NetworkResponse.Success).response
-        .headers.toMap().mapValues { headerEntry -> headerEntry.value.firstOrNull() } //Ignore header duplication on purpose
-
-fun <T> NetworkResponse<T>.httpResponseCookies(): Map<String, String> =
-    (this as NetworkResponse.Success).response
-        .setCookie().associate {
+fun <T : Any> NetworkResponse.Success<T>.cookies(): Map<String, String> {
+    return this.headers[HttpHeaders.SetCookie]?.splitSetCookieHeader()?.flatMap { it.splitSetCookieHeader() }
+        ?.map { parseServerSetCookieHeader(it) }?.associate {
             it.name to it.value
+        } ?: mapOf()
+}
+
+internal fun String.splitSetCookieHeader(): List<String> {
+    var comma = indexOf(',')
+
+    if (comma == -1) {
+        return listOf(this)
+    }
+
+    val result = mutableListOf<String>()
+    var current = 0
+
+    var equals = indexOf('=', comma)
+    var semicolon = indexOf(';', comma)
+    while (current < length && comma > 0) {
+        if (equals < comma) {
+            equals = indexOf('=', comma)
         }
+
+        var nextComma = indexOf(',', comma + 1)
+        while (nextComma >= 0 && nextComma < equals) {
+            comma = nextComma
+            nextComma = indexOf(',', nextComma + 1)
+        }
+
+        if (semicolon < comma) {
+            semicolon = indexOf(';', comma)
+        }
+
+        // No more keys remaining.
+        if (equals < 0) {
+            result += substring(current)
+            return result
+        }
+
+        // No ';' between ',' and '=' => We're on a header border.
+        if (semicolon == -1 || semicolon > equals) {
+            result += substring(current, comma)
+            current = comma + 1
+            // Update comma index at the end of loop.
+        }
+
+        // ',' in value, skip it and find next.
+        comma = nextComma
+    }
+
+    // Add last chunk if no more ',' available.
+    if (current < length) {
+        result += substring(current)
+    }
+
+    return result
+}
 
 /**
  * If the request is successful, perform [mapping] and create a new Success with its result
  * @return A new [NetworkResponse.Success] with the mapped result,
  * or [NetworkResponse.Error] if it was never a success to begin with
  */
-fun <T, U : Any> NetworkResponse<T>.mapSuccess(mapping: ((T) -> U)): NetworkResponse<U> =
+inline fun <T : Any, U : Any> NetworkResponse<T>.mapSuccess(mapping: ((T) -> U)): NetworkResponse<U> =
     if (isSuccessful()) {
-        NetworkResponse.Success(response, mapping(this.value))
+        NetworkResponse.Success(mapping(this.value), this.headers, this.httpCode)
     } else {
         NetworkResponse.Error(kException)
     }
 
 
+fun <E : KaliumException> NetworkResponse<E>.onFailure(fn: (NetworkResponse.Error<E>) -> Unit): NetworkResponse<E> =
+    this.apply { if (this is NetworkResponse.Error) fn(this) }
+
+
+fun <T : Any> NetworkResponse<T>.onSuccess(fn: (NetworkResponse.Success<T>) -> Unit): NetworkResponse<T> =
+    this.apply { if (this is NetworkResponse.Success) fn(this) }
+
+
 @OptIn(ExperimentalContracts::class)
-fun <T> NetworkResponse<T>.isSuccessful(): Boolean {
+fun <T : Any> NetworkResponse<T>.isSuccessful(): Boolean {
     contract {
         returns(true) implies (this@isSuccessful is NetworkResponse.Success)
         returns(false) implies (this@isSuccessful is NetworkResponse.Error)
@@ -53,12 +122,14 @@ fun <T> NetworkResponse<T>.isSuccessful(): Boolean {
     return this@isSuccessful is NetworkResponse.Success
 }
 
-suspend inline fun <reified BodyType> wrapKaliumResponse(performRequest: () -> HttpResponse): NetworkResponse<BodyType> =
+internal suspend inline fun <reified BodyType : Any> wrapKaliumResponse(performRequest: () -> HttpResponse): NetworkResponse<BodyType> =
     try {
         val result = performRequest()
-        NetworkResponse.Success(result, result.body())
+        NetworkResponse.Success(
+            value = result.body(),
+            httpResponse = result
+        )
     } catch (e: ResponseException) { // ktor exception
-        e.printStackTrace()
         when (e) {
             is RedirectResponseException -> {
                 // 300 .. 399
@@ -70,28 +141,26 @@ suspend inline fun <reified BodyType> wrapKaliumResponse(performRequest: () -> H
             }
             is ServerResponseException -> {
                 // 500 .. 599
+                // TODO: do 500 errors have body
                 NetworkResponse.Error(kException = KaliumException.ServerError(e.response.body()))
             }
             else -> {
-                NetworkResponse.Error(kException = KaliumException.GenericError(e.response.body(), e))
+                NetworkResponse.Error(kException = KaliumException.GenericError(e))
             }
         }
     } catch (e: SerializationException) {
         NetworkResponse.Error(
-            kException = KaliumException.GenericError(ErrorResponse(400, e.message ?: "There was a Serialization error ", e.toString()), e)
+            kException = KaliumException.GenericError(cause = e)
         )
     } catch (e: IOException) {
+        // TODO: does Ktor throw IOException on time out/no internet connection
         NetworkResponse.Error(
-            kException = KaliumException.NetworkUnavailableError(
-                ErrorResponse(
-                    400,
-                    e.message ?: "There was an I/O. Check the internet connection? ",
-                    e.toString()
-                ), e
-            )
+            kException = KaliumException.NetworkUnavailableError(cause = e)
         )
+
     } catch (e: Exception) {
+        // TODO: should we catch 'Em all
         NetworkResponse.Error(
-            kException = KaliumException.GenericError(ErrorResponse(400, e.message ?: "There was a General error :( ", e.toString()), e)
+            kException = KaliumException.GenericError(e)
         )
     }

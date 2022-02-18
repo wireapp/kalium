@@ -4,6 +4,7 @@ import com.wire.kalium.cryptography.PreKey
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.ClientCapability
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.RegisterClientParam
@@ -11,6 +12,8 @@ import com.wire.kalium.logic.failure.ClientFailure
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.network.exceptions.KaliumException
+import io.ktor.utils.io.errors.IOException
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
@@ -59,7 +62,7 @@ class RegisterClientUseCaseTest {
         given(clientRepository)
             .suspendFunction(clientRepository::registerClient)
             .whenInvokedWith(anything())
-            .then { Either.Left(CoreFailure.ServerMiscommunication) }
+            .then { Either.Left(TEST_FAILURE) }
 
         registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
 
@@ -102,7 +105,7 @@ class RegisterClientUseCaseTest {
 
     @Test
     fun givenRepositoryRegistrationFailsDueToGenericError_whenRegistering_thenGenericErrorShouldBeReturned() = runTest {
-        val genericFailure = CoreFailure.NoNetworkConnection
+        val genericFailure = TEST_FAILURE
         given(clientRepository)
             .suspendFunction(clientRepository::registerClient)
             .whenInvokedWith(anything())
@@ -132,7 +135,7 @@ class RegisterClientUseCaseTest {
         given(clientRepository)
             .suspendFunction(clientRepository::registerClient)
             .whenInvokedWith(anything())
-            .then { Either.Left(CoreFailure.ServerMiscommunication) }
+            .then { Either.Left(TEST_FAILURE) }
 
         registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
 
@@ -170,7 +173,7 @@ class RegisterClientUseCaseTest {
             .whenInvokedWith(anything())
             .then { Either.Right(CLIENT) }
 
-        val persistFailure = CoreFailure.ServerMiscommunication
+        val persistFailure = TEST_FAILURE
         given(clientRepository)
             .suspendFunction(clientRepository::persistClientId)
             .whenInvokedWith(anything())
@@ -247,5 +250,8 @@ class RegisterClientUseCaseTest {
             capabilities = TEST_CAPABILITIES
         )
         val CLIENT = TestClient.CLIENT
+
+        val TEST_FAILURE = NetworkFailure.NoNetworkConnection(KaliumException.NetworkUnavailableError(IOException("no internet")))
+
     }
 }

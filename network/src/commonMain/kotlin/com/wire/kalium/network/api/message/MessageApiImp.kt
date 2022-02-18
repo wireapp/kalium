@@ -54,24 +54,22 @@ class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
                     }
                     setBody(body)
                 }
-                return NetworkResponse.Success(response = response, value = response.body<SendMessageResponse.MessageSent>())
+                return NetworkResponse.Success(httpResponse = response, value = response.body<SendMessageResponse.MessageSent>())
             } catch (e: ResponseException) {
                 when (e.response.status.value) {
                     // It's a 412 Error
                     412 -> NetworkResponse.Error(
                         kException = SendMessageError.MissingDeviceError(
-                            errorBody = e.response.body(),
-                            errorCode = e.response.status.value
+                            errorBody = e.response.body()
                         )
                     )
                     else -> wrapKaliumResponse { e.response }
                 }
-            } catch (e: Exception) {
+            }
+            // TODO: is this even necessary since we catch 'Em all in wrapKaliumResponse
+            catch (e: Exception) {
                 NetworkResponse.Error(
-                    kException = KaliumException.GenericError(
-                        ErrorResponse(400, e.message ?: "There was a generic error ", e.toString()),
-                        e
-                    )
+                    kException = KaliumException.GenericError(e)
                 )
             }
         }
