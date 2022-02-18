@@ -4,3 +4,5 @@ data class QualifiedID(
     val value: String,
     val domain: String
 )
+
+typealias ConversationId = QualifiedID
