@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.map
 
 class UserMapper {
     fun toModel(user: SQLDelightUser): User {
-        return User(user.qualified_id, user.name, user.handle, user.email, user.phone, user.accent_id?.toInt()!!, user.team) //TODO: pending investigate int issue
+        return User(user.qualified_id, user.name, user.handle, user.email, user.phone, user.accent_id, user.team)
     }
 }
 
@@ -19,19 +19,19 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
     val mapper = UserMapper()
 
     override suspend fun insertUser(user: User) {
-        queries.insertUser(user.id, user.name, user.handle, user.email, user.phone, user.accentId.toString(), user.team)
+        queries.insertUser(user.id, user.name, user.handle, user.email, user.phone, user.accentId, user.team)
     }
 
     override suspend fun insertUsers(users: List<User>) {
         queries.transaction {
             for (user: User in users) {
-                queries.insertUser(user.id, user.name, user.handle, user.email, user.phone, user.accentId.toString(), user.team)
+                queries.insertUser(user.id, user.name, user.handle, user.email, user.phone, user.accentId, user.team)
             }
         }
     }
 
     override suspend fun updateUser(user: User) {
-        queries.updateUser(user.name, user.handle, user.email, user.accentId.toString(), user.id)
+        queries.updateUser(user.name, user.handle, user.email, user.accentId, user.id)
     }
 
     override suspend fun getAllUsers(): Flow<List<User>> = queries.selectAllUsers()

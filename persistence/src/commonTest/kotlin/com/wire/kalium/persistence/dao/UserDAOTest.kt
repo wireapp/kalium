@@ -2,18 +2,19 @@ package com.wire.kalium.persistence.dao
 
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.db.Database
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.runTest
+import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
 
-class UserDAOTest: BaseDatabaseTest() {
+class UserDAOTest : BaseDatabaseTest() {
 
-    val user1 = User(QualifiedID("1", "wire.com"), "user1", "handle1")
-    val user2 = User(QualifiedID("2", "wire.com"), "user2", "handle2")
-    val user3 = User(QualifiedID("3", "wire.com"), "user3", "handle3")
+    val user1 = newUserEntity(id = "1")
+    val user2 = newUserEntity(id = "2")
+    val user3 = newUserEntity(id = "3")
 
     lateinit var db: Database
 
@@ -52,7 +53,7 @@ class UserDAOTest: BaseDatabaseTest() {
     @Test
     fun givenExistingUser_ThenUserCanBeUpdated() = runTest {
         db.userDAO.insertUser(user1)
-        var updatedUser1 = User(user1.id, "John Doe", "johndoe")
+        var updatedUser1 = User(user1.id, "John Doe", "johndoe", "email1", "phone1", 1, "team")
         db.userDAO.updateUser(updatedUser1)
         val result = db.userDAO.getUserByQualifiedID(user1.id).first()
         assertEquals(result, updatedUser1)
@@ -61,7 +62,7 @@ class UserDAOTest: BaseDatabaseTest() {
     @Test
     fun givenRetrievedUser_ThenUpdatesArePropagatedThroughFlow() = runTest {
         db.userDAO.insertUser(user1)
-        val updatedUser1 = User(user1.id, "John Doe", "johndoe")
+        val updatedUser1 = User(user1.id, "John Doe", "johndoe", "email1", "phone1", 1, "team")
 
         val result = db.userDAO.getUserByQualifiedID(user1.id)
         assertEquals(user1, result.first())
@@ -69,5 +70,4 @@ class UserDAOTest: BaseDatabaseTest() {
         db.userDAO.updateUser(updatedUser1)
         assertEquals(updatedUser1, result.first())
     }
-
 }
