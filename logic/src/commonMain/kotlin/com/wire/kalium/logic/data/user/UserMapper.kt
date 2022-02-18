@@ -6,13 +6,13 @@ import com.wire.kalium.network.api.user.self.ImageSize
 import com.wire.kalium.network.api.user.self.SelfUserInfoResponse
 import com.wire.kalium.network.api.user.self.UserAssetRequest
 import com.wire.kalium.network.api.user.self.UserUpdateRequest
-import com.wire.kalium.persistence.dao.User as PersistedUser
+import com.wire.kalium.persistence.dao.UserEntity
 
 interface UserMapper {
     fun fromApiModel(selfUserInfoResponse: SelfUserInfoResponse): SelfUser
-    fun fromApiModelToDaoModel(userDetailsResponse: UserDetailsResponse): PersistedUser
-    fun fromApiModelToDaoModel(selfUserInfoResponse: SelfUserInfoResponse): PersistedUser
-    fun fromDaoModel(user: PersistedUser): SelfUser
+    fun fromApiModelToDaoModel(userDetailsResponse: UserDetailsResponse): UserEntity
+    fun fromApiModelToDaoModel(selfUserInfoResponse: SelfUserInfoResponse): UserEntity
+    fun fromDaoModel(user: UserEntity): SelfUser
 
     /**
      * Maps the user data to be updated. if the parameters [newName] [newAccent] [newAssetId] are nulls,
@@ -38,8 +38,8 @@ internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
         )
     }
 
-    override fun fromApiModelToDaoModel(userDetailsResponse: UserDetailsResponse): PersistedUser {
-        return PersistedUser(
+    override fun fromApiModelToDaoModel(userDetailsResponse: UserDetailsResponse): UserEntity {
+        return UserEntity(
             idMapper.fromApiToDao(userDetailsResponse.id),
             userDetailsResponse.name,
             userDetailsResponse.handle,
@@ -50,7 +50,7 @@ internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
         )
     }
 
-    override fun fromDaoModel(user: com.wire.kalium.persistence.dao.User) =
+    override fun fromDaoModel(user: com.wire.kalium.persistence.dao.UserEntity) =
         SelfUser(idMapper.fromDaoModel(user.id), user.name, user.handle, user.email, user.phone, user.accentId, user.team, emptyList())
 
     override fun fromModelToUpdateApiModel(
@@ -75,8 +75,8 @@ internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
         )
     }
 
-    override fun fromApiModelToDaoModel(selfUserInfoResponse: SelfUserInfoResponse): PersistedUser {
-        return PersistedUser(
+    override fun fromApiModelToDaoModel(selfUserInfoResponse: SelfUserInfoResponse): UserEntity {
+        return UserEntity(
             idMapper.fromApiToDao(selfUserInfoResponse.qualifiedId),
             selfUserInfoResponse.name,
             selfUserInfoResponse.handle,

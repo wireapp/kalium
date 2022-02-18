@@ -11,7 +11,7 @@ data class QualifiedID(
 
 typealias UserId = QualifiedID
 
-data class User(
+data class UserEntity(
     val id: QualifiedID,
     val name: String?,
     val handle: String?,
@@ -23,10 +23,10 @@ data class User(
 )
 
 interface UserDAO {
-    suspend fun insertUser(user: User)
-    suspend fun insertUsers(users: List<User>)
-    suspend fun updateUser(user: User)
-    suspend fun getAllUsers(): Flow<List<User>>
-    suspend fun getUserByQualifiedID(qualifiedID: QualifiedID): Flow<User?>
+    suspend fun insertUser(user: UserEntity)
+    suspend fun insertUsers(users: List<UserEntity>)
+    suspend fun updateUser(user: UserEntity)
+    suspend fun getAllUsers(): Flow<List<UserEntity>>
+    suspend fun getUserByQualifiedID(qualifiedID: QualifiedID): Flow<UserEntity?>
     suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedID)
 }

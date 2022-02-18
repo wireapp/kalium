@@ -1,10 +1,10 @@
 package com.wire.kalium.persistence.utils.stubs
 
 import com.wire.kalium.persistence.dao.QualifiedID
-import com.wire.kalium.persistence.dao.User
+import com.wire.kalium.persistence.dao.UserEntity
 
 fun newUserEntity(id: String = "test") =
-    User(
+    UserEntity(
         id = QualifiedID(id, "wire.com"),
         name = "user$id",
         handle = "handle$id",
@@ -15,7 +15,7 @@ fun newUserEntity(id: String = "test") =
     )
 
 fun newUserEntity(qualifiedID: QualifiedID, id: String = "test") =
-    User(
+    UserEntity(
         id = qualifiedID,
         name = "user$id",
         handle = "handle$id",

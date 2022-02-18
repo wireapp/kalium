@@ -53,7 +53,7 @@ class UserDAOTest : BaseDatabaseTest() {
     @Test
     fun givenExistingUser_ThenUserCanBeUpdated() = runTest {
         db.userDAO.insertUser(user1)
-        var updatedUser1 = User(user1.id, "John Doe", "johndoe", "email1", "phone1", 1, "team")
+        var updatedUser1 = UserEntity(user1.id, "John Doe", "johndoe", "email1", "phone1", 1, "team")
         db.userDAO.updateUser(updatedUser1)
         val result = db.userDAO.getUserByQualifiedID(user1.id).first()
         assertEquals(result, updatedUser1)
@@ -62,7 +62,7 @@ class UserDAOTest : BaseDatabaseTest() {
     @Test
     fun givenRetrievedUser_ThenUpdatesArePropagatedThroughFlow() = runTest {
         db.userDAO.insertUser(user1)
-        val updatedUser1 = User(user1.id, "John Doe", "johndoe", "email1", "phone1", 1, "team")
+        val updatedUser1 = UserEntity(user1.id, "John Doe", "johndoe", "email1", "phone1", 1, "team")
 
         val result = db.userDAO.getUserByQualifiedID(user1.id)
         assertEquals(user1, result.first())
