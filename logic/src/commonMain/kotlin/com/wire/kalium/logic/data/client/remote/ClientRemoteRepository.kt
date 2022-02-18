@@ -41,17 +41,6 @@ class ClientRemoteDataSource(
                     .map { clientMapper.fromClientResponse(it) }
             }
 
-    private fun handleFailedApiResponse(response: NetworkResponse.Error<*>): Either.Left<CoreFailure> =
-        when (response.kException) {
-            is KaliumException.InvalidRequestError ->
-                when ((response.kException as KaliumException.InvalidRequestError).errorResponse.label) {
-                    ERROR_LABEL_TOO_MANY_CLIENTS -> Either.Left(ClientFailure.TooManyClients)
-                    ERROR_LABEL_INVALID_CREDENTIALS, ERROR_LABEL_BAD_REQUEST -> Either.Left(ClientFailure.WrongPassword)
-                    else -> Either.Left(CoreFailure.Unknown(response.kException))
-                }
-            is KaliumException.NetworkUnavailableError -> Either.Left(CoreFailure.NoNetworkConnection)
-            else -> Either.Left(CoreFailure.Unknown(response.kException))
-        }
 
     private companion object {
         private const val ERROR_LABEL_TOO_MANY_CLIENTS = "too-many-clients"
