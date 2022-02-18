@@ -5,6 +5,7 @@ import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.data.client.ClientCapability
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.RegisterClientParam
+import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.logic.failure.ClientFailure
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase.Companion.FIRST_KEY_ID
 import com.wire.kalium.logic.functional.suspending
@@ -24,7 +25,8 @@ interface RegisterClientUseCase {
 
 class RegisterClientUseCaseImpl(
     private val clientRepository: ClientRepository,
-    private val proteusClient: ProteusClient
+    private val proteusClient: ProteusClient,
+    private val preKeyMapper: PreKeyMapper
 ) : RegisterClientUseCase {
 
     override suspend operator fun invoke(
@@ -34,11 +36,13 @@ class RegisterClientUseCaseImpl(
     ): RegisterClientResult = suspending {
         //TODO Should we fail here if the client is already registered?
         try {
+            val mappedPreKey = preKeyMapper.fromPreKeyCrypto(proteusClient.newLastPreKey())
+            val mappedPreKeyList = preKeyMapper.fromPreKeyCryptoList(proteusClient.newPreKeys(FIRST_KEY_ID, preKeysToSend))
             val param = RegisterClientParam(
                 password = password,
                 capabilities = capabilities,
-                preKeys = proteusClient.newPreKeys(FIRST_KEY_ID, preKeysToSend),
-                lastKey = proteusClient.newLastPreKey()
+                preKeys = mappedPreKeyList,
+                lastKey = mappedPreKey
             )
 
             clientRepository.registerClient(param).flatMap { client ->

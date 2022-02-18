@@ -1,8 +1,8 @@
 package com.wire.kalium.logic.data.client
 
-import com.wire.kalium.cryptography.PreKey
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.location.Location
+import com.wire.kalium.logic.data.prekey.PreKey
 
 data class RegisterClientParam(
     val password: String,

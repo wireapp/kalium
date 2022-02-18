@@ -1,9 +1,9 @@
 package com.wire.kalium.logic.data.client
 
-import com.wire.kalium.cryptography.PreKey
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.id.PlainId
+import com.wire.kalium.logic.data.prekey.PreKey
 import com.wire.kalium.logic.failure.ClientFailure
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either

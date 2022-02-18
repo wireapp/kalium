@@ -61,6 +61,7 @@ abstract class UserSessionScopeCommon(
     private val memberMapper: MemberMapper get() = MemberMapperImpl(idMapper)
     private val conversationMapper: ConversationMapper get() = ConversationMapperImpl(idMapper, memberMapper)
     private val userMapper = UserMapperImpl(idMapper)
+    private val preKeyMapper = PreKeyMapperImpl()
     protected abstract val database: Database
 
     private val conversationRepository: ConversationRepository
@@ -117,7 +118,7 @@ abstract class UserSessionScopeCommon(
         )
 
     val listenToEvents: ListenToEventsUseCase get() = ListenToEventsUseCase(syncManager, eventRepository)
-    val client: ClientScope get() = ClientScope(clientRepository, authenticatedDataSourceSet.proteusClient)
+    val client: ClientScope get() = ClientScope(clientRepository, authenticatedDataSourceSet.proteusClient, preKeyMapper)
     val conversations: ConversationScope get() = ConversationScope(conversationRepository, syncManager)
     val messages: MessageScope get() = MessageScope(messageRepository)
     val users: UserScope get() = UserScope(userRepository, syncManager, assetRepository)
