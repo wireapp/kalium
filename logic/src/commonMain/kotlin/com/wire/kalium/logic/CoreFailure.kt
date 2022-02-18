@@ -35,16 +35,11 @@ sealed class NetworkFailure(internal val kaliumException: KaliumException) : Cor
 
 inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<T>): Either<NetworkFailure, T> {
     // TODO: check for internet connection and return NoNetworkConnection
-    when (val result = networkCall()) {
-        is NetworkResponse.Success -> Either.Right(result)
+    return when (val result = networkCall()) {
+        is NetworkResponse.Success -> Either.Right(result.value)
         is NetworkResponse.Error -> when (result.kException) {
-            is KaliumException.RedirectError -> TODO()
-            is KaliumException.InvalidRequestError -> TODO()
-            is KaliumException.ServerError -> TODO()
-            is KaliumException.GenericError -> TODO()
-            is KaliumException.NetworkUnavailableError -> TODO()
-            is SendMessageError.MissingDeviceError -> TODO()
+            is KaliumException.NetworkUnavailableError -> Either.Left(NetworkFailure.NoNetworkConnection(result.kException))
+            else -> Either.Left(NetworkFailure.ServerMiscommunication(result.kException))
         }
     }
-    TODO()
 }
