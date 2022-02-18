@@ -5,15 +5,8 @@ import com.wire.kalium.network.api.RefreshTokenProperties
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.cookies
-import com.wire.kalium.network.utils.isSuccessful
-import com.wire.kalium.network.utils.mapSuccess
-import com.wire.kalium.network.utils.onSuccess
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
-import io.ktor.client.call.body
-import io.ktor.client.plugins.ResponseException
-import io.ktor.client.request.host
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -72,7 +65,7 @@ class LoginApiImpl(private val httpClient: HttpClient) : LoginApi {
         }
         return when (result) {
             is NetworkResponse.Success -> {
-                val refreshToken = result.cookies()[RefreshTokenProperties.COOKIE_NAME]
+                val refreshToken = result.cookies[RefreshTokenProperties.COOKIE_NAME]
                 if (refreshToken == null) {
                     NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "no cookie was found", "missing-refreshToken")))
                 } else {

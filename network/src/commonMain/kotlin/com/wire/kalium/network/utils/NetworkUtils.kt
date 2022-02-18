@@ -1,6 +1,5 @@
 package com.wire.kalium.network.utils
 
-import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.client.call.body
 import io.ktor.client.plugins.ClientRequestException
@@ -8,37 +7,9 @@ import io.ktor.client.plugins.RedirectResponseException
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.statement.HttpResponse
-import io.ktor.http.HttpHeaders
-import io.ktor.http.parseServerSetCookieHeader
-import io.ktor.util.toMap
 import io.ktor.utils.io.errors.IOException
 import kotlinx.serialization.SerializationException
-import kotlin.contracts.ExperimentalContracts
-import kotlin.contracts.contract
 
-sealed class NetworkResponse<out T : Any> {
-    data class Success<out T : Any>(
-        val value: T,
-        val headers: Map<String, String?>,
-        val httpCode: Int
-    ) : NetworkResponse<T>() {
-        internal constructor(value: T, httpResponse: HttpResponse) : this(
-            value,
-            httpResponse.headers.toMap()
-                .mapValues { headerEntry -> headerEntry.value.firstOrNull() }, //Ignore header duplication on purpose)
-            httpResponse.status.value
-        )
-    }
-
-    data class Error<out E : KaliumException>(val kException: KaliumException) : NetworkResponse<E>()
-}
-
-fun <T : Any> NetworkResponse.Success<T>.cookies(): Map<String, String> {
-    return this.headers[HttpHeaders.SetCookie]?.splitSetCookieHeader()?.flatMap { it.splitSetCookieHeader() }
-        ?.map { parseServerSetCookieHeader(it) }?.associate {
-            it.name to it.value
-        } ?: mapOf()
-}
 
 internal fun String.splitSetCookieHeader(): List<String> {
     var comma = indexOf(',')
@@ -113,15 +84,6 @@ fun <T : Any> NetworkResponse<T>.onSuccess(fn: (NetworkResponse.Success<T>) -> U
     this.apply { if (this is NetworkResponse.Success) fn(this) }
 
 
-@OptIn(ExperimentalContracts::class)
-fun <T : Any> NetworkResponse<T>.isSuccessful(): Boolean {
-    contract {
-        returns(true) implies (this@isSuccessful is NetworkResponse.Success)
-        returns(false) implies (this@isSuccessful is NetworkResponse.Error)
-    }
-    return this@isSuccessful is NetworkResponse.Success
-}
-
 internal suspend inline fun <reified BodyType : Any> wrapKaliumResponse(performRequest: () -> HttpResponse): NetworkResponse<BodyType> =
     try {
         val result = performRequest()
@@ -153,7 +115,7 @@ internal suspend inline fun <reified BodyType : Any> wrapKaliumResponse(performR
             kException = KaliumException.GenericError(cause = e)
         )
     } catch (e: IOException) {
-        // TODO: does Ktor throw IOException on time out/no internet connection
+        // TODO: does Ktor throw IOException on time-out/no-internet connection
         NetworkResponse.Error(
             kException = KaliumException.NetworkUnavailableError(cause = e)
         )
