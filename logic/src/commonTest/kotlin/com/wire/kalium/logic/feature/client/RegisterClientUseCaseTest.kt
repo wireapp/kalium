@@ -21,7 +21,6 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.oneOf
-import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -56,6 +55,16 @@ class RegisterClientUseCaseTest {
             .function(proteusClient::newLastPreKey)
             .whenInvoked()
             .then { LAST_KEY_CRYPTO }
+
+        given(preKeyMapper)
+            .function(preKeyMapper::fromPreKeyCrypto)
+            .whenInvokedWith(any())
+            .then { LAST_KEY }
+
+        given(preKeyMapper)
+            .function(preKeyMapper::fromPreKeyCryptoList)
+            .whenInvokedWith(any())
+            .then { PRE_KEYS }
     }
 
     @Test
