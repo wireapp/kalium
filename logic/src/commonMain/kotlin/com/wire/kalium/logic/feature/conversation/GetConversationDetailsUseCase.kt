@@ -13,6 +13,6 @@ class GetConversationDetailsUseCase(
 
     suspend operator fun invoke(conversationId: QualifiedID): Flow<Conversation> {
         syncManager.waitForSlowSyncToComplete()
-        return conversationRepository.getConversationDetailsFromDB(conversationId)
+        return conversationRepository.getConversationDetails(conversationId)
     }
 }

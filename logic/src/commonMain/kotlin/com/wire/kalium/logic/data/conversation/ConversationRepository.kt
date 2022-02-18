@@ -1,12 +1,10 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.failure.ResourceNotFound
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.network.utils.isSuccessful
@@ -19,8 +17,7 @@ import kotlinx.coroutines.flow.map
 interface ConversationRepository {
     suspend fun fetchConversations(): Either<CoreFailure, Unit>
     suspend fun getConversationList(): Flow<List<Conversation>>
-    suspend fun getConversationDetails(conversationId: ConversationId): Either<CoreFailure, Conversation>
-    suspend fun getConversationDetailsFromDB(conversationId: QualifiedID): Flow<Conversation>
+    suspend fun getConversationDetails(conversationId: ConversationId): Flow<Conversation>
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
 }
 
@@ -53,19 +50,7 @@ class ConversationDataSource(
         return conversationDAO.getAllConversations().map { it.map(conversationMapper::fromDaoModel) }
     }
 
-    override suspend fun getConversationDetails(conversationId: ConversationId): Either<CoreFailure, Conversation> {
-        val conversationResponse = conversationApi.fetchConversationDetails(conversationId)
-
-        if (!conversationResponse.isSuccessful()) {
-            if (conversationResponse.kException.errorCode == 404) {
-                return Either.Left(ResourceNotFound)
-            }
-            return Either.Left(CoreFailure.ServerMiscommunication)
-        }
-        return Either.Right(conversationMapper.fromApiModel(conversationResponse.value))
-    }
-
-    override suspend fun getConversationDetailsFromDB(conversationId: QualifiedID): Flow<Conversation> {
+    override suspend fun getConversationDetails(conversationId: ConversationId): Flow<Conversation> {
         return conversationDAO.getConversationByQualifiedID(idMapper.toDaoModel(conversationId))
             .filterNotNull()
             .map(conversationMapper::fromDaoModel)
@@ -75,7 +60,7 @@ class ConversationDataSource(
      * Fetches a list of all members' IDs or a given conversation including self user
      */
     private suspend fun getConversationMembers(conversationId: ConversationId): List<UserId> {
-        return conversationDAO.getAllMembers(idMapper.fromApiToDao(conversationId)).first().map { idMapper.fromDaoModel(it.user) }
+        return conversationDAO.getAllMembers(idMapper.toDaoModel(conversationId)).first().map { idMapper.fromDaoModel(it.user) }
     }
 
     /**
