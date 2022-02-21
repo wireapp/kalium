@@ -1,6 +1,6 @@
 package com.wire.kalium.network.api.model
 
-class AssetMetadata(
+class AssetMetadataRequest(
     val mimeType: String,
     val public: Boolean,
     val retentionType: AssetRetentionType,

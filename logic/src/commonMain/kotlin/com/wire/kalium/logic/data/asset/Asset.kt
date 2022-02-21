@@ -1,5 +1,59 @@
 package com.wire.kalium.logic.data.asset
 
-abstract class Asset
+import com.wire.kalium.cryptography.utils.calcMd5
 
-data class PublicAsset(val key: String) : Asset()
+data class UploadedAssetId(val key: String)
+
+/**
+ * On creation of this model, the use case should "calculate" the logic.
+ * For example, rules that apply for an eternal/public asset
+ */
+data class UploadAssetData(
+    val data: ByteArray,
+    val mimeType: AssetType,
+    val isPublic: Boolean,
+    val retentionType: RetentionType
+) {
+
+    var md5: String = calcMd5(data)
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as UploadAssetData
+
+        if (!data.contentEquals(other.data)) return false
+        if (mimeType != other.mimeType) return false
+        if (isPublic != other.isPublic) return false
+        if (retentionType != other.retentionType) return false
+        if (md5 != other.md5) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = data.contentHashCode()
+        result = 31 * result + mimeType.hashCode()
+        result = 31 * result + isPublic.hashCode()
+        result = 31 * result + retentionType.hashCode()
+        result = 31 * result + md5.hashCode()
+        return result
+    }
+}
+
+enum class RetentionType {
+    ETERNAL,
+    PERSISTENT,
+    VOLATILE,
+    ETERNAL_INFREQUENT_ACCESS,
+    EXPIRING
+}
+
+sealed class AssetType(open val name: String)
+
+sealed class ImageAsset(override val name: String) : AssetType(name) {
+    object JPG : ImageAsset(name = "image/jpg")
+    object PNG : ImageAsset(name = "image/png")
+}
+// should put other types of mimetypes, ie: media, audio, etc.

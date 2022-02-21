@@ -11,7 +11,7 @@ import com.wire.kalium.logic.configuration.ServerConfigMapperImpl
 import com.wire.kalium.network.AuthenticatedNetworkContainer
 import com.wire.kalium.network.LoginNetworkContainer
 import com.wire.kalium.network.api.SessionCredentials
-import com.wire.kalium.network.api.model.AssetMetadata
+import com.wire.kalium.network.api.model.AssetMetadataRequest
 import com.wire.kalium.network.api.model.AssetRetentionType
 import com.wire.kalium.network.api.user.login.LoginApi
 import com.wire.kalium.network.tools.BackendConfig
@@ -56,7 +56,7 @@ class ConversationsApplication : CliktCommand() {
     private suspend fun uploadTestAsset(networkModule: AuthenticatedNetworkContainer) {
         val imageBytes: ByteArray = getResource("moon1.jpg")
         val uploadResult = networkModule.assetApi.uploadAsset(
-            AssetMetadata("image/jpeg", true, AssetRetentionType.ETERNAL, calcMd5(imageBytes)),
+            AssetMetadataRequest("image/jpeg", true, AssetRetentionType.ETERNAL, calcMd5(imageBytes)),
             imageBytes
         )
         println("The upload result is -> $uploadResult")

@@ -2,7 +2,7 @@ package com.wire.kalium.network
 
 import com.wire.kalium.network.api.SessionCredentials
 import com.wire.kalium.network.api.asset.AssetApi
-import com.wire.kalium.network.api.asset.AssetApiImp
+import com.wire.kalium.network.api.asset.AssetApiImpl
 import com.wire.kalium.network.api.auth.AuthApi
 import com.wire.kalium.network.api.auth.AuthApiImp
 import com.wire.kalium.network.api.conversation.ConversationApi
@@ -49,7 +49,7 @@ class AuthenticatedNetworkContainer(
 
     val preKeyApi: PreKeyApi get() = PreKeyApiImpl(authenticatedHttpClient)
 
-    val assetApi: AssetApi get() = AssetApiImp(authenticatedHttpClient)
+    val assetApi: AssetApi get() = AssetApiImpl(authenticatedHttpClient)
 
     val notificationApi: NotificationApi get() = NotificationApiImpl(authenticatedHttpClient, backendConfig)
 

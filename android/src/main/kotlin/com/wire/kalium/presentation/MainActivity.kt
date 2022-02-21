@@ -12,7 +12,6 @@ import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.user.SelfUser
-import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
@@ -46,7 +45,7 @@ class MainActivity : ComponentActivity() {
         if (result !is AuthenticationResult.Success) {
             throw RuntimeException(
                 "There was an error on the login :(" +
-                        "Check the credentials and the internet connection and try again"
+                    "Check the credentials and the internet connection and try again"
             )
         }
 
