@@ -1,9 +1,12 @@
 package com.wire.kalium.logic.sync
 
+import android.app.Notification
 import android.content.Context
+import android.os.Build
 import androidx.work.CoroutineWorker
 import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
+import androidx.work.ForegroundInfo
 import androidx.work.ListenableWorker
 import androidx.work.OneTimeWorkRequest
 import androidx.work.OutOfQuotaPolicy
@@ -19,7 +22,8 @@ import kotlinx.serialization.json.Json
 import kotlin.reflect.KClass
 
 
-class WrapperWorker(private val innerWorker: UserSessionWorker, appContext: Context, params: WorkerParameters) : CoroutineWorker(appContext, params) {
+class WrapperWorker(private val innerWorker: UserSessionWorker, appContext: Context, params: WorkerParameters) :
+    CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
         return when (innerWorker.doWork()) {
@@ -35,9 +39,26 @@ class WrapperWorker(private val innerWorker: UserSessionWorker, appContext: Cont
         }
     }
 
+    //TODO: Add support for customization of foreground info when doing work on Android
+    override suspend fun getForegroundInfo(): ForegroundInfo {
+        val notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Notification.Builder(applicationContext, CHANNEL_ID)
+        } else {
+            Notification.Builder(applicationContext)
+        }.setContentTitle(NOTIFICATION_TITLE)
+            .build()
+        ForegroundInfo(NOTIFICATION_ID, notification)
+        return super.getForegroundInfo()
+    }
+
+    private companion object {
+        const val NOTIFICATION_TITLE = "Wire is updating"
+        const val NOTIFICATION_ID = -778899
+        const val CHANNEL_ID = "kaliumWorker"
+    }
 }
 
-class WrapperWorkerFactory(private val coreLogic: CoreLogic): WorkerFactory() {
+class WrapperWorkerFactory(private val coreLogic: CoreLogic) : WorkerFactory() {
 
     override fun createWorker(appContext: Context, workerClassName: String, workerParameters: WorkerParameters): ListenableWorker? {
         if (WrapperWorker::class.java.canonicalName != workerClassName) {
