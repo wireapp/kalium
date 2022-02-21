@@ -19,7 +19,7 @@ data class UserEntity(
     val phone: String?,
     val accentId: Int,
     val team: String?
-    // val picture: List<UserAsset>
+    // val picture: List<UserAsset> // TODO: map on upcoming PR, when we have assets table
 )
 
 interface UserDAO {
