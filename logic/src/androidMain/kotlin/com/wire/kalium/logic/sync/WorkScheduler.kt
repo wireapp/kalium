@@ -18,6 +18,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.wire.kalium.logic.CoreLogic
+import com.wire.kalium.logic.R
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthSession
 import kotlinx.serialization.decodeFromString
@@ -50,6 +51,7 @@ class WrapperWorker(private val innerWorker: UserSessionWorker, appContext: Cont
         } else {
             Notification.Builder(applicationContext)
         }.setContentTitle(NOTIFICATION_TITLE)
+            .setSmallIcon(R.mipmap.ic_launcher) //TODO: Customize icons too
             .build()
         return ForegroundInfo(NOTIFICATION_ID, notification)
     }
