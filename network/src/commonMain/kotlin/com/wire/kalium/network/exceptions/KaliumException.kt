@@ -2,6 +2,7 @@ package com.wire.kalium.network.exceptions
 
 import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.api.message.SendMessageResponse
+import kotlin.contracts.contract
 
 sealed class KaliumException : Exception() {
     /**
@@ -31,8 +32,33 @@ sealed class KaliumException : Exception() {
         KaliumException()
 
     sealed class FeatureError() : KaliumException()
+
+    internal companion object {
+        const val ERROR_LABEL_TOO_MANY_CLIENTS = "too-many-clients"
+        const val ERROR_LABEL_INVALID_CREDENTIALS = "invalid-credentials"
+        const val ERROR_LABEL_BAD_REQUEST = "bad-request"
+        const val ERROR_LABEL_MISSING_AUTH = "missing-auth"
+    }
 }
 
 sealed class SendMessageError : KaliumException.FeatureError() {
     class MissingDeviceError(val errorBody: SendMessageResponse.MissingDevicesResponse) : SendMessageError()
+}
+
+fun KaliumException.InvalidRequestError.isTooManyClients(): Boolean {
+    with(this.errorResponse) {
+        return code == 403 && label == KaliumException.ERROR_LABEL_TOO_MANY_CLIENTS
+    }
+}
+
+fun KaliumException.InvalidRequestError.isMissingAuth(): Boolean {
+    with(this.errorResponse) {
+        return code == 403 && label == KaliumException.ERROR_LABEL_MISSING_AUTH
+    }
+}
+
+fun KaliumException.InvalidRequestError.isBadRequest(): Boolean {
+    with(this.errorResponse) {
+        return code == 400 && label == KaliumException.ERROR_LABEL_BAD_REQUEST
+    }
 }

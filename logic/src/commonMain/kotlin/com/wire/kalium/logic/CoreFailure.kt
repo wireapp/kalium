@@ -2,7 +2,6 @@ package com.wire.kalium.logic
 
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.SendMessageError
 import com.wire.kalium.network.utils.NetworkResponse
 
 sealed class CoreFailure {
