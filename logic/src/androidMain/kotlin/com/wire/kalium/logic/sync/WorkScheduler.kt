@@ -47,8 +47,7 @@ class WrapperWorker(private val innerWorker: UserSessionWorker, appContext: Cont
             Notification.Builder(applicationContext)
         }.setContentTitle(NOTIFICATION_TITLE)
             .build()
-        ForegroundInfo(NOTIFICATION_ID, notification)
-        return super.getForegroundInfo()
+        return ForegroundInfo(NOTIFICATION_ID, notification)
     }
 
     private companion object {
