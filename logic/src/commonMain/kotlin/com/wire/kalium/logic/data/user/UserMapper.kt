@@ -21,6 +21,8 @@ interface UserMapper {
      *  TODO: handle deletion of assets references, emptyAssetList
      */
     fun fromModelToUpdateApiModel(user: SelfUser, newName: String?, newAccent: Int?, newAssetId: String?): UserUpdateRequest
+
+    fun fromUpdateRequestToDaoModel(user: SelfUser, updateRequest: UserUpdateRequest): UserEntity
 }
 
 internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
@@ -50,7 +52,7 @@ internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
         )
     }
 
-    override fun fromDaoModel(user: com.wire.kalium.persistence.dao.UserEntity) =
+    override fun fromDaoModel(user: UserEntity) =
         SelfUser(idMapper.fromDaoModel(user.id), user.name, user.handle, user.email, user.phone, user.accentId, user.team, emptyList())
 
     override fun fromModelToUpdateApiModel(
@@ -62,8 +64,8 @@ internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
         return UserUpdateRequest(
             id = user.id.value,
             qualifiedId = idMapper.toApiModel(user.id),
-            name = newName ?: user.name,
-            accentId = newAccent ?: user.accentId,
+            name = newName,
+            accentId = newAccent,
             assets = if (newAssetId != null) {
                 listOf(
                     UserAssetRequest(newAssetId, ImageSize.Complete),
@@ -72,6 +74,18 @@ internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
             } else {
                 null
             }
+        )
+    }
+
+    override fun fromUpdateRequestToDaoModel(user: SelfUser, updateRequest: UserUpdateRequest): UserEntity {
+        return UserEntity(
+            id = idMapper.toDaoModel(user.id),
+            name = updateRequest.name ?: user.name,
+            handle = user.handle,
+            email = user.email,
+            phone = user.phone,
+            accentId = updateRequest.accentId ?: user.accentId,
+            team = user.team
         )
     }
 

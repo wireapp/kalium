@@ -81,7 +81,9 @@ class UserDataSource(
 
         val updateRequest = userMapper.fromModelToUpdateApiModel(user, newName, newAccent, newAssetId)
         val updatedSelf = selfApi.updateSelf(updateRequest)
+
         return if (updatedSelf.isSuccessful()) {
+            userDAO.updateUser(userMapper.fromUpdateRequestToDaoModel(user, updateRequest))
             Either.Right(Unit)
         } else {
             Either.Left(CoreFailure.ServerMiscommunication)
