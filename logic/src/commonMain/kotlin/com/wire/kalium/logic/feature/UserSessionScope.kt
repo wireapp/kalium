@@ -11,13 +11,20 @@ import com.wire.kalium.logic.data.client.ClientMapper
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
-import com.wire.kalium.logic.data.conversation.*
+import com.wire.kalium.logic.data.conversation.ConversationDataSource
+import com.wire.kalium.logic.data.conversation.ConversationMapper
+import com.wire.kalium.logic.data.conversation.ConversationMapperImpl
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MemberMapper
+import com.wire.kalium.logic.data.conversation.MemberMapperImpl
 import com.wire.kalium.logic.data.event.EventDataSource
 import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.location.LocationMapper
+import com.wire.kalium.logic.data.logout.LogoutDataSource
+import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.message.MessageDataSource
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
@@ -114,6 +121,10 @@ abstract class UserSessionScopeCommon(
             clientRepository,
             eventMapper
         )
+
+    private val logoutRepository: LogoutRepository = LogoutDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi)
+
+    //val logout: LogoutUseCase get() = LogoutUseCase(logoutRepository, sessionRepository)
 
     val listenToEvents: ListenToEventsUseCase get() = ListenToEventsUseCase(syncManager, eventRepository)
     val client: ClientScope get() = ClientScope(clientRepository, authenticatedDataSourceSet.proteusClient)

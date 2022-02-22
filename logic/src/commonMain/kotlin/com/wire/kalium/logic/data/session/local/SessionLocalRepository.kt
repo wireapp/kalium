@@ -1,7 +1,7 @@
 package com.wire.kalium.logic.data.session.local
 
-import com.wire.kalium.logic.SessionFailure
 import com.wire.kalium.logic.data.session.SessionMapper
+import com.wire.kalium.logic.failure.SessionFailure
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.persistence.client.SessionStorage

@@ -1,8 +1,8 @@
 package com.wire.kalium.logic.data.session
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.SessionFailure
 import com.wire.kalium.logic.data.session.local.SessionLocalRepository
+import com.wire.kalium.logic.failure.SessionFailure
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.Either
 

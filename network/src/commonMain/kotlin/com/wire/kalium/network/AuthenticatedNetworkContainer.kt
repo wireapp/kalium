@@ -39,7 +39,7 @@ class AuthenticatedNetworkContainer(
 ) {
     private val authApi: AuthApi get() = AuthApiImp(authenticatedHttpClient)
 
-    val logoutApi: LogoutApi get() = LogoutImpl(authenticatedHttpClient, sessionCredentials.refreshToken)
+    val logoutApi: LogoutApi get() = LogoutImpl(authenticatedHttpClient, sessionDTO.refreshToken)
 
     val clientApi: ClientApi get() = ClientApiImpl(authenticatedHttpClient)
 
@@ -80,6 +80,7 @@ class AuthenticatedNetworkContainer(
                     return@refreshTokens if (refreshedResponse.isSuccessful()) {
                         BearerTokens(refreshedResponse.value.accessToken, TODO("Get the 🍪"))
                     } else {
+                        // TODO: if the refreshToken is expired logout ?
                         null
                     }
                 }

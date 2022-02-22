@@ -1,13 +1,10 @@
 package com.wire.kalium.network.api.user.logout
 
-import com.wire.kalium.network.api.SessionCredentials
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.post
-import io.ktor.http.HttpHeaders
-import io.ktor.http.headersOf
 
 interface LogoutApi {
     suspend fun logout(): NetworkResponse<Unit>

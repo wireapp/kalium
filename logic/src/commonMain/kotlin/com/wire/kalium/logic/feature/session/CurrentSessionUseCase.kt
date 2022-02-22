@@ -3,7 +3,6 @@ package com.wire.kalium.logic.feature.session
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.failure.SessionFailure
 import com.wire.kalium.logic.feature.auth.AuthSession
-import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
 
 sealed class CurrentSessionResult {
@@ -11,7 +10,6 @@ sealed class CurrentSessionResult {
 
     sealed class Failure : CurrentSessionResult() {
         object SessionNotFound : Failure()
-        class Generic(val sessionFailure: SessionFailure) : Failure()
     }
 }
 

@@ -42,7 +42,3 @@ inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<T>): Eith
         }
     }
 }
-
-sealed class SessionFailure : CoreFailure.FeatureFailure() {
-    object NoSessionFound: SessionFailure()
-}
