@@ -23,12 +23,13 @@ class MessageDataSource(
 
     override suspend fun getMessagesForConversation(conversationId: ConversationId, limit: Int): Flow<List<Message>> {
         return messageDAO.getMessageByConversation(idMapper.toDaoModel(conversationId), limit).map { messageList ->
-            messageList.map(messageMapper::fromRecordToMessage)
+            messageList.map(messageMapper::fromEntityToMessage)
         }
     }
 
     override suspend fun persistMessage(message: Message): Either<CoreFailure, Unit> {
-        messageDAO.insertMessage(messageMapper.fromMessageToRecord(message))
+        messageDAO.insertMessage(messageMapper.fromMessageToEntity(message))
+        //TODO: Handle failures
         return Either.Right(Unit)
     }
 

@@ -10,8 +10,8 @@ import kotlinx.coroutines.flow.map
 import com.wire.kalium.persistence.db.Message as SQLDelightMessage
 
 class MessageMapper {
-    fun toModel(msg: SQLDelightMessage): MessageRecord {
-        return MessageRecord(
+    fun toModel(msg: SQLDelightMessage): MessageEntity {
+        return MessageEntity(
             id = msg.id,
             content = msg.content,
             conversationId = msg.conversation_id,
@@ -30,7 +30,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
 
     override suspend fun deleteAllMessages() = queries.deleteAllMessages()
 
-    override suspend fun insertMessage(message: MessageRecord) =
+    override suspend fun insertMessage(message: MessageEntity) =
         queries.insertMessage(
             message.id,
             message.content,
@@ -41,7 +41,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             message.status
         )
 
-    override suspend fun insertMessages(messages: List<MessageRecord>) =
+    override suspend fun insertMessages(messages: List<MessageEntity>) =
         queries.transaction {
             messages.forEach { message ->
                 queries.insertMessage(
@@ -56,7 +56,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             }
         }
 
-    override suspend fun updateMessage(message: MessageRecord) =
+    override suspend fun updateMessage(message: MessageEntity) =
         queries.updateMessages(
             message.content,
             message.date,
@@ -67,19 +67,19 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             message.conversationId
         )
 
-    override suspend fun getAllMessages(): Flow<List<MessageRecord>> =
+    override suspend fun getAllMessages(): Flow<List<MessageEntity>> =
         queries.selectAllMessages()
             .asFlow()
             .mapToList()
             .map { entryList -> entryList.map(mapper::toModel) }
 
-    override suspend fun getMessageById(id: String, conversationId: QualifiedID): Flow<MessageRecord?> =
+    override suspend fun getMessageById(id: String, conversationId: QualifiedID): Flow<MessageEntity?> =
         queries.selectById(id, conversationId)
             .asFlow()
             .mapToOneOrNull()
             .map { msg -> msg?.let(mapper::toModel) }
 
-    override suspend fun getMessageByConversation(conversationId: QualifiedID, limit: Int): Flow<List<MessageRecord>> =
+    override suspend fun getMessageByConversation(conversationId: QualifiedID, limit: Int): Flow<List<MessageEntity>> =
         queries.selectByConversationId(conversationId, limit.toLong())
             .asFlow()
             .mapToList()

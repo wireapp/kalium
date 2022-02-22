@@ -2,26 +2,26 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.persistence.dao.message.MessageRecord
+import com.wire.kalium.persistence.dao.message.MessageEntity
 
 interface MessageMapper {
-    fun fromMessageToRecord(message: Message): MessageRecord
-    fun fromRecordToMessage(message: MessageRecord): Message
+    fun fromMessageToEntity(message: Message): MessageEntity
+    fun fromEntityToMessage(message: MessageEntity): Message
 }
 
 class MessageMapperImpl(private val idMapper: IdMapper) : MessageMapper {
-    override fun fromMessageToRecord(message: Message): MessageRecord {
+    override fun fromMessageToEntity(message: Message): MessageEntity {
         val stringContent = when (val content = message.content) {
             is MessageContent.Text -> content.value
             MessageContent.Unknown -> null
         }
         val status = when (message.status) {
-            Message.Status.PENDING -> MessageRecord.Status.PENDING
-            Message.Status.SENT -> MessageRecord.Status.SENT
-            Message.Status.READ -> MessageRecord.Status.READ
-            Message.Status.FAILED -> MessageRecord.Status.FAILED
+            Message.Status.PENDING -> MessageEntity.Status.PENDING
+            Message.Status.SENT -> MessageEntity.Status.SENT
+            Message.Status.READ -> MessageEntity.Status.READ
+            Message.Status.FAILED -> MessageEntity.Status.FAILED
         }
-        return MessageRecord(
+        return MessageEntity(
             message.id,
             stringContent,
             idMapper.toDaoModel(message.conversationId),
@@ -32,16 +32,16 @@ class MessageMapperImpl(private val idMapper: IdMapper) : MessageMapper {
         )
     }
 
-    override fun fromRecordToMessage(message: MessageRecord): Message {
+    override fun fromEntityToMessage(message: MessageEntity): Message {
         val content = when (val stringContent = message.content) {
             null -> MessageContent.Unknown
             else -> MessageContent.Text(stringContent)
         }
         val status = when (message.status) {
-            MessageRecord.Status.PENDING -> Message.Status.PENDING
-            MessageRecord.Status.SENT -> Message.Status.SENT
-            MessageRecord.Status.READ -> Message.Status.READ
-            MessageRecord.Status.FAILED -> Message.Status.FAILED
+            MessageEntity.Status.PENDING -> Message.Status.PENDING
+            MessageEntity.Status.SENT -> Message.Status.SENT
+            MessageEntity.Status.READ -> Message.Status.READ
+            MessageEntity.Status.FAILED -> Message.Status.FAILED
         }
         return Message(
             message.id,
