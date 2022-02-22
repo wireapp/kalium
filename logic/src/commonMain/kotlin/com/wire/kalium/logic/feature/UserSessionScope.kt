@@ -31,7 +31,6 @@ import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.logic.data.prekey.PreKeyMapperImpl
 import com.wire.kalium.logic.data.user.UserDataSource
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapperImpl
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.auth.AuthSession
@@ -139,7 +138,6 @@ abstract class UserSessionScopeCommon(
     val client: ClientScope get() = ClientScope(clientRepository, authenticatedDataSourceSet.proteusClient)
     val conversations: ConversationScope get() = ConversationScope(conversationRepository, syncManager)
 
-    //TODO How to get self domain?
-    val messages: MessageScope get() = MessageScope(messageRepository, clientRepository, UserId(session.userId, "domain"))
+    val messages: MessageScope get() = MessageScope(messageRepository, clientRepository, userRepository, syncManager)
     val users: UserScope get() = UserScope(userRepository, syncManager, assetRepository)
 }
