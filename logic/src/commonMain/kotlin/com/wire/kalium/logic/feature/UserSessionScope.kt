@@ -114,7 +114,7 @@ abstract class UserSessionScopeCommon(
 
     private val assetMapper: AssetMapper get() = AssetMapperImpl()
     private val assetRepository: AssetRepository
-        get() = AssetDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.assetApi, assetMapper)
+        get() = AssetDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.assetApi, assetMapper, database.assetDAO)
 
     val syncManager: SyncManager get() = authenticatedDataSourceSet.syncManager
 

@@ -1,9 +1,12 @@
 package com.wire.kalium.persistence.db
 
 import app.cash.sqldelight.EnumColumnAdapter
+import app.cash.sqldelight.adapter.primitive.BooleanColumnAdapter
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
+import com.wire.kalium.persistence.dao.asset.AssetDAO
+import com.wire.kalium.persistence.dao.asset.AssetDAOImpl
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationDAOImpl
 import com.wire.kalium.persistence.dao.MetadataDAO
@@ -25,6 +28,7 @@ actual class Database {
         AppDatabase.Schema.create(driver)
         database = AppDatabase(
             driver,
+            Asset.Adapter(qualified_idAdapter = QualifiedIDAdapter(), BooleanColumnAdapter),
             Client.Adapter(user_idAdapter = QualifiedIDAdapter()),
             Conversation.Adapter(qualified_idAdapter = QualifiedIDAdapter()),
             Member.Adapter(userAdapter = QualifiedIDAdapter(), conversationAdapter = QualifiedIDAdapter()),
@@ -52,4 +56,7 @@ actual class Database {
 
     actual val messageDAO: MessageDAO
         get() = MessageDAOImpl(database.messagesQueries)
+
+    actual val assetDAO: AssetDAO
+        get() = AssetDAOImpl(database.assetsQueries)
 }

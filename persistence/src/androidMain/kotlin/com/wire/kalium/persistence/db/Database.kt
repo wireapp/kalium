@@ -5,6 +5,7 @@ import android.os.Build
 import android.util.Base64
 import androidx.sqlite.db.SupportSQLiteDatabase
 import app.cash.sqldelight.EnumColumnAdapter
+import app.cash.sqldelight.adapter.primitive.BooleanColumnAdapter
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationDAOImpl
@@ -19,6 +20,8 @@ import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
+import com.wire.kalium.persistence.dao.asset.AssetDAO
+import com.wire.kalium.persistence.dao.asset.AssetDAOImpl
 import net.sqlcipher.database.SupportFactory
 import java.security.SecureRandom
 
@@ -46,6 +49,7 @@ actual class Database(context: Context, name: String, kaliumPreferences: KaliumP
 
         database = AppDatabase(
             driver,
+            Asset.Adapter(qualified_idAdapter = QualifiedIDAdapter(), downloadedAdapter = BooleanColumnAdapter),
             Client.Adapter(user_idAdapter = QualifiedIDAdapter()),
             Conversation.Adapter(qualified_idAdapter = QualifiedIDAdapter()),
             Member.Adapter(userAdapter = QualifiedIDAdapter(), conversationAdapter = QualifiedIDAdapter()),
@@ -72,6 +76,9 @@ actual class Database(context: Context, name: String, kaliumPreferences: KaliumP
 
     actual val messageDAO: MessageDAO
         get() = MessageDAOImpl(database.messagesQueries)
+
+    actual val assetDAO: AssetDAO
+        get() = AssetDAOImpl(database.assetsQueries)
 
     private fun getOrGenerateSecretKey(kaliumPreferences: KaliumPreferences): String {
         val databaseKey = kaliumPreferences.getString(DATABASE_SECRET_KEY)

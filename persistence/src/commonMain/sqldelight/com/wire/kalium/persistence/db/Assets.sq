@@ -1,18 +1,15 @@
 import com.wire.kalium.persistence.dao.QualifiedID;
+import kotlin.Boolean;
 
 CREATE TABLE Asset (
     qualified_id TEXT AS QualifiedID NOT NULL PRIMARY KEY,
-    id TEXT NOT NULL,
     token TEXT,
     name TEXT,
-    domain TEXT,
     encryption TEXT,
     mime_type TEXT,
-    sha BLOB,
-    size INTEGER,
-    source TEXT,
-    preview TEXT,
-    details TEXT
+    sha BLOB NOT NULL,
+    size INTEGER NOT NULL DEFAULT 0,
+    downloaded INTEGER AS Boolean NOT NULL DEFAULT 0
 );
 
 deleteAllAssets:
@@ -22,12 +19,12 @@ deleteAsset:
 DELETE FROM Asset WHERE qualified_id = ?;
 
 insertAsset:
-INSERT INTO Asset(qualified_id, id, token, name, domain, encryption, mime_type, sha, size, source,preview, details)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO Asset(qualified_id, token, name, encryption, mime_type, sha, size, downloaded)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?);
 
 updateAsset:
 UPDATE Asset
-SET name = ?, preview = ?, details = ?
+SET downloaded = ?
 WHERE qualified_id = ?;
 
 selectByQualifiedId:
