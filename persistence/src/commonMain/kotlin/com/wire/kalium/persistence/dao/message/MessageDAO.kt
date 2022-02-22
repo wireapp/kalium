@@ -3,7 +3,7 @@ package com.wire.kalium.persistence.dao.message
 import com.wire.kalium.persistence.dao.QualifiedID
 import kotlinx.coroutines.flow.Flow
 
-data class Message(
+data class MessageEntity(
     val id: String,
     val content: String?,
     val conversationId: QualifiedID,
@@ -20,10 +20,10 @@ data class Message(
 interface MessageDAO {
     suspend fun deleteMessage(id: String, conversationsId: QualifiedID)
     suspend fun deleteAllMessages()
-    suspend fun insertMessage(message: Message)
-    suspend fun insertMessages(messages: List<Message>)
-    suspend fun updateMessage(message: Message)
-    suspend fun getAllMessages(): Flow<List<Message>>
-    suspend fun getMessageById(id: String, conversationId: QualifiedID): Flow<Message?>
-    suspend fun getMessageByConversation(conversationId: QualifiedID, limit: Int): Flow<List<Message>>
+    suspend fun insertMessage(message: MessageEntity)
+    suspend fun insertMessages(messages: List<MessageEntity>)
+    suspend fun updateMessage(message: MessageEntity)
+    suspend fun getAllMessages(): Flow<List<MessageEntity>>
+    suspend fun getMessageById(id: String, conversationId: QualifiedID): Flow<MessageEntity?>
+    suspend fun getMessageByConversation(conversationId: QualifiedID, limit: Int): Flow<List<MessageEntity>>
 }

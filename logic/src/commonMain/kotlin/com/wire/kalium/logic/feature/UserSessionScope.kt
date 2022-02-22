@@ -11,7 +11,12 @@ import com.wire.kalium.logic.data.client.ClientMapper
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
-import com.wire.kalium.logic.data.conversation.*
+import com.wire.kalium.logic.data.conversation.ConversationDataSource
+import com.wire.kalium.logic.data.conversation.ConversationMapper
+import com.wire.kalium.logic.data.conversation.ConversationMapperImpl
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MemberMapper
+import com.wire.kalium.logic.data.conversation.MemberMapperImpl
 import com.wire.kalium.logic.data.event.EventDataSource
 import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.event.EventRepository
@@ -19,7 +24,10 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.location.LocationMapper
 import com.wire.kalium.logic.data.message.MessageDataSource
+import com.wire.kalium.logic.data.message.MessageMapper
+import com.wire.kalium.logic.data.message.MessageMapperImpl
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.logic.data.prekey.PreKeyMapperImpl
 import com.wire.kalium.logic.data.user.UserDataSource
@@ -30,6 +38,7 @@ import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.message.MessageScope
 import com.wire.kalium.logic.feature.user.UserScope
+import com.wire.kalium.logic.sync.ConversationEventReceiver
 import com.wire.kalium.logic.sync.ListenToEventsUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
@@ -65,11 +74,14 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi, idMapper, conversationMapper, memberMapper
         )
 
+    private val messageMapper: MessageMapper get() = MessageMapperImpl(idMapper)
+
     private val messageRepository: MessageRepository
         get() = MessageDataSource(
-            idMapper,
             authenticatedDataSourceSet.authenticatedNetworkContainer.messageApi,
-            database.messageDAO
+            database.messageDAO,
+            messageMapper,
+            idMapper
         )
 
     private val userRepository: UserRepository
@@ -115,9 +127,17 @@ abstract class UserSessionScopeCommon(
             eventMapper
         )
 
-    val listenToEvents: ListenToEventsUseCase get() = ListenToEventsUseCase(syncManager, eventRepository)
+    protected abstract val protoContentMapper: ProtoContentMapper
+    private val conversationEventReceiver: ConversationEventReceiver
+        get() = ConversationEventReceiver(
+            authenticatedDataSourceSet.proteusClient,
+            messageRepository,
+            protoContentMapper
+        )
+    val listenToEvents: ListenToEventsUseCase get() = ListenToEventsUseCase(syncManager, eventRepository, conversationEventReceiver)
     val client: ClientScope get() = ClientScope(clientRepository, authenticatedDataSourceSet.proteusClient)
     val conversations: ConversationScope get() = ConversationScope(conversationRepository, syncManager)
-    val messages: MessageScope get() = MessageScope(messageRepository)
+
+    val messages: MessageScope get() = MessageScope(messageRepository, clientRepository, userRepository, syncManager)
     val users: UserScope get() = UserScope(userRepository, syncManager, assetRepository)
 }

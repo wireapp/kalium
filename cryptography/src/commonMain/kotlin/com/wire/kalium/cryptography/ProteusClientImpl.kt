@@ -15,7 +15,7 @@ data class CryptoSessionId(val userId: UserId, val cryptoClientId: CryptoClientI
     val value: String = "${userId}_${cryptoClientId}"
 }
 
-data class PreKey(
+data class PreKeyCrypto(
     val id: Int,
     val encodedData: String
 )
@@ -35,13 +35,13 @@ interface ProteusClient {
     fun getLocalFingerprint(): ByteArray
 
     @Throws(ProteusException::class)
-    suspend fun newPreKeys(from: Int, count: Int): List<PreKey>
+    suspend fun newPreKeys(from: Int, count: Int): List<PreKeyCrypto>
 
     @Throws(ProteusException::class)
-    fun newLastPreKey(): PreKey
+    fun newLastPreKey(): PreKeyCrypto
 
     @Throws(ProteusException::class)
-    suspend fun createSession(preKey: PreKey, sessionId: CryptoSessionId)
+    suspend fun createSession(preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId)
 
     @Throws(ProteusException::class)
     suspend fun decrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray
@@ -50,14 +50,14 @@ interface ProteusClient {
     suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray?
 
     @Throws(ProteusException::class)
-    suspend fun encryptWithPreKey(message: ByteArray, preKey: PreKey, sessionId: CryptoSessionId): ByteArray
+    suspend fun encryptWithPreKey(message: ByteArray, preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId): ByteArray
 }
 
 expect class ProteusClientImpl(rootDir: String, userId: String): ProteusClient
 
-suspend fun ProteusClient.createSessions(preKeys: Map<String, Map<String, PreKey>>) {
-    for (userId in preKeys.keys) {
-        val clients = preKeys.getValue(userId)
+suspend fun ProteusClient.createSessions(preKeysCrypto: Map<String, Map<String, PreKeyCrypto>>) {
+    for (userId in preKeysCrypto.keys) {
+        val clients = preKeysCrypto.getValue(userId)
         for (clientId in clients.keys) {
             val pk = clients[clientId]
             if (pk != null) {
