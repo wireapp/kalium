@@ -13,7 +13,7 @@ import org.khronos.webgl.ArrayBuffer
 import org.khronos.webgl.Int8Array
 import org.khronos.webgl.Uint8Array
 
-actual class ProteusClientImpl actual constructor(rootDir: String, userId: String): ProteusClient {
+actual class ProteusClientImpl actual constructor(rootDir: String, userId: String) : ProteusClient {
 
     private val userId: String
     private lateinit var box: Cryptobox
@@ -56,6 +56,14 @@ actual class ProteusClientImpl actual constructor(rootDir: String, userId: Strin
         } else {
             throw ProteusException("Local identity doesn't exist", ProteusException.Code.UNKNOWN_ERROR)
         }
+    }
+
+    override suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean = try {
+        box.session_load(sessionId.value).await()
+        true
+        // TODO check the internals of cryptobox.js to see what happens if the session doesn't exist
+    } catch (e: Exception) {
+        false
     }
 
     @OptIn(InternalAPI::class)

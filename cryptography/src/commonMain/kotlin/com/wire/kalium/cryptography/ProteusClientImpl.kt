@@ -41,6 +41,9 @@ interface ProteusClient {
     fun newLastPreKey(): PreKeyCrypto
 
     @Throws(ProteusException::class)
+    suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean
+
+    @Throws(ProteusException::class)
     suspend fun createSession(preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId)
 
     @Throws(ProteusException::class)
