@@ -86,7 +86,7 @@ actual class ProteusClientImpl actual constructor(rootDir: String, userId: Strin
     override suspend fun encrypt(
         message: ByteArray,
         sessionId: CryptoSessionId
-    ): ByteArray? {
+    ): ByteArray {
         val encryptedMessage = box.encrypt(sessionId.value, payload = message.toUint8Array())
         return Int8Array(encryptedMessage.await()).unsafeCast<ByteArray>()
     }

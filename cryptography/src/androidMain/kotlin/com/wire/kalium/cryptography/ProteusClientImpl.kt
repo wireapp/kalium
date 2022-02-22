@@ -72,8 +72,8 @@ actual class ProteusClientImpl actual constructor(rootDir: String, userId: Strin
         }
     }
 
-    override suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray? {
-        return wrapException { box.getSession(sessionId.value)?.encrypt(message) }
+    override suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
+        return wrapException { box.getSession(sessionId.value).encrypt(message) }
     }
 
     override suspend fun encryptWithPreKey(
