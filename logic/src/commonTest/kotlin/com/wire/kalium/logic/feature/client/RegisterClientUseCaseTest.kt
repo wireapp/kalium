@@ -7,9 +7,8 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.ClientCapability
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.RegisterClientParam
-import com.wire.kalium.logic.data.prekey.PreKey
-import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.logic.failure.ClientFailure
+import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -20,7 +19,6 @@ import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.oneOf
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -37,34 +35,22 @@ class RegisterClientUseCaseTest {
     @Mock
     private val proteusClient = mock(classOf<ProteusClient>())
 
-    @Mock
-    private val preKeyMapper = mock(classOf<PreKeyMapper>())
-
     private lateinit var registerClient: RegisterClientUseCase
 
     @BeforeTest
     fun setup() {
-        registerClient = RegisterClientUseCaseImpl(clientRepository, proteusClient, preKeyMapper)
+        registerClient = RegisterClientUseCaseImpl(clientRepository, proteusClient)
 
         given(proteusClient)
             .suspendFunction(proteusClient::newPreKeys)
             .whenInvokedWith(any(), any())
-            .then { _, _ -> PRE_KEYS_CRYPTO }
+            .then { _, _ -> PRE_KEYS }
 
         given(proteusClient)
             .function(proteusClient::newLastPreKey)
             .whenInvoked()
-            .then { LAST_KEY_CRYPTO }
-
-        given(preKeyMapper)
-            .function(preKeyMapper::fromPreKeyCrypto)
-            .whenInvokedWith(any())
             .then { LAST_KEY }
 
-        given(preKeyMapper)
-            .function(preKeyMapper::fromPreKeyCryptoList)
-            .whenInvokedWith(any())
-            .then { PRE_KEYS }
     }
 
     @Test
@@ -74,16 +60,6 @@ class RegisterClientUseCaseTest {
             .suspendFunction(clientRepository::registerClient)
             .whenInvokedWith(anything())
             .then { Either.Left(CoreFailure.ServerMiscommunication) }
-
-        given(preKeyMapper)
-            .function(preKeyMapper::fromPreKeyCrypto)
-            .whenInvokedWith(oneOf(LAST_KEY_CRYPTO))
-            .then { LAST_KEY }
-
-        given(preKeyMapper)
-            .function(preKeyMapper::fromPreKeyCryptoList)
-            .whenInvokedWith(oneOf(PRE_KEYS_CRYPTO))
-            .then { PRE_KEYS }
 
         registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
 
@@ -99,16 +75,6 @@ class RegisterClientUseCaseTest {
 
         verify(proteusClient)
             .function(proteusClient::newLastPreKey)
-            .wasInvoked(exactly = once)
-
-        verify(preKeyMapper)
-            .function(preKeyMapper::fromPreKeyCrypto)
-            .with(any())
-            .wasInvoked(exactly = once)
-
-        verify(preKeyMapper)
-            .function(preKeyMapper::fromPreKeyCryptoList)
-            .with(any())
             .wasInvoked(exactly = once)
     }
 
@@ -272,12 +238,8 @@ class RegisterClientUseCaseTest {
             ClientCapability.LegalHoldImplicitConsent
         )
 
-        val PRE_KEYS = listOf(PreKey(id = 1, key = "1"), PreKey(id = 2, key = "2"))
-        val LAST_KEY = PreKey(id = 99, key = "99")
-
-        val PRE_KEYS_CRYPTO = listOf(PreKeyCrypto(id = 1, encodedData = "1"), PreKeyCrypto(id = 2, encodedData = "2"))
-        val LAST_KEY_CRYPTO = PreKeyCrypto(id = 99, encodedData = "99")
-
+        val PRE_KEYS = listOf(PreKey(id = 1, encodedData = "1"), PreKey(id = 2, encodedData = "2"))
+        val LAST_KEY = PreKey(id = 99, encodedData = "99")
         val REGISTER_PARAMETERS = RegisterClientParam(
             password = TEST_PASSWORD,
             preKeys = PRE_KEYS,

@@ -1,7 +1,7 @@
 package com.wire.kalium.logic.data.prekey.remote
 
 import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.data.prekey.PreKey
+import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.network.api.prekey.PreKeyDTO
 import io.mockative.Mock
@@ -31,7 +31,7 @@ class PreKeyListMapperTest {
         given(preKeyMapper)
             .function(preKeyMapper::fromPreKeyDTO)
             .whenInvokedWith(any())
-            .then { PreKey(1, "2") }
+            .then { PreKeyCrypto(1, "2") }
 
     }
 
@@ -136,11 +136,11 @@ class PreKeyListMapperTest {
 
     @Test
     fun `given_PreKeyMap_when_mapping_to_list_QualifiedUserPreKeyInfo_then_keys_should_be_returned_in_the_right_clients`() {
-        class KeyMappingTestSet(val clientId: String, val response: PreKeyDTO, val mapped: PreKey)
+        class KeyMappingTestSet(val clientId: String, val response: PreKeyDTO, val mapped: PreKeyCrypto)
 
-        val firstKeySet = KeyMappingTestSet("a", PreKeyDTO(1, "keyA"), PreKey(1, "keyA"))
-        val secondKeySet = KeyMappingTestSet("b", PreKeyDTO(4, "keyB"), PreKey(4, "keyB"))
-        val thirdKeySet = KeyMappingTestSet("c", PreKeyDTO(4, "keyC"), PreKey(4, "keyC"))
+        val firstKeySet = KeyMappingTestSet("a", PreKeyDTO(1, "keyA"), PreKeyCrypto(1, "keyA"))
+        val secondKeySet = KeyMappingTestSet("b", PreKeyDTO(4, "keyB"), PreKeyCrypto(4, "keyB"))
+        val thirdKeySet = KeyMappingTestSet("c", PreKeyDTO(4, "keyC"), PreKeyCrypto(4, "keyC"))
 
         val preKeyResponse = mapOf(
             "domA" to mapOf(
