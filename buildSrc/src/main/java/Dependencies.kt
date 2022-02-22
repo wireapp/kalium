@@ -130,6 +130,7 @@ object Dependencies {
         const val nativeDriver = "app.cash.sqldelight:native-driver:${Versions.sqlDelight}"
         const val jvmDriver = "app.cash.sqldelight:sqlite-driver:${Versions.sqlDelight}"
         const val jsDriver = "app.cash.sqldelight:sqljs-driver:${Versions.sqlDelight}"
+        const val primitiveAdapters = "app.cash.sqldelight:primitive-adapters:${Versions.sqlDelight}"
     }
 
     object Kotest {

@@ -1,9 +1,16 @@
 package com.wire.kalium.logic.sync
 
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
+import android.content.Context.NOTIFICATION_SERVICE
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.work.CoroutineWorker
 import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
+import androidx.work.ForegroundInfo
 import androidx.work.ListenableWorker
 import androidx.work.OneTimeWorkRequest
 import androidx.work.OutOfQuotaPolicy
@@ -11,6 +18,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.wire.kalium.logic.CoreLogic
+import com.wire.kalium.logic.R
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthSession
 import kotlinx.serialization.decodeFromString
@@ -19,7 +27,8 @@ import kotlinx.serialization.json.Json
 import kotlin.reflect.KClass
 
 
-class WrapperWorker(private val innerWorker: UserSessionWorker, appContext: Context, params: WorkerParameters) : CoroutineWorker(appContext, params) {
+class WrapperWorker(private val innerWorker: UserSessionWorker, appContext: Context, params: WorkerParameters) :
+    CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
         return when (innerWorker.doWork()) {
@@ -35,9 +44,39 @@ class WrapperWorker(private val innerWorker: UserSessionWorker, appContext: Cont
         }
     }
 
+    //TODO: Add support for customization of foreground info when doing work on Android
+    override suspend fun getForegroundInfo(): ForegroundInfo {
+        val notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Notification.Builder(applicationContext, createNotificationChannel().id)
+        } else {
+            Notification.Builder(applicationContext)
+        }.setContentTitle(NOTIFICATION_TITLE)
+            .setSmallIcon(R.mipmap.ic_launcher) //TODO: Customize icons too
+            .build()
+        return ForegroundInfo(NOTIFICATION_ID, notification)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun createNotificationChannel(): NotificationChannel {
+        //TODO: Internationalis(z)ation. Should come as a side-effect of enabling customization of notifications by consumer apps
+        val name = "Wire Sync"
+        val descriptionText = "Updating conversations and contact information"
+        val importance = NotificationManager.IMPORTANCE_NONE
+        val channel = NotificationChannel(CHANNEL_ID, name, importance)
+        channel.description = descriptionText
+        val notificationManager = applicationContext.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.createNotificationChannel(channel)
+        return channel
+    }
+
+    private companion object {
+        const val NOTIFICATION_TITLE = "Wire is updating"
+        const val NOTIFICATION_ID = -778899
+        const val CHANNEL_ID = "kaliumWorker"
+    }
 }
 
-class WrapperWorkerFactory(private val coreLogic: CoreLogic): WorkerFactory() {
+class WrapperWorkerFactory(private val coreLogic: CoreLogic) : WorkerFactory() {
 
     override fun createWorker(appContext: Context, workerClassName: String, workerParameters: WorkerParameters): ListenableWorker? {
         if (WrapperWorker::class.java.canonicalName != workerClassName) {

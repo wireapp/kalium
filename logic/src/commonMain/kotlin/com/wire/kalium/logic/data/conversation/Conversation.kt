@@ -12,7 +12,7 @@ open class Conversation(val id: ConversationId, val name: String?)
 
 class MembersInfo(val self: Member, val otherMembers: List<Member>)
 
-class Member(override val id: UserId) : User
+class Member(override val id: UserId) : User()
 
 typealias ClientId = PlainId
 

@@ -35,11 +35,11 @@ actual class ProteusClientImpl actual constructor(rootDir: String, userId: Strin
         return wrapException { box.localFingerprint }
     }
 
-    override suspend fun newPreKeys(from: Int, count: Int): ArrayList<PreKey> {
-        return wrapException { box.newPreKeys(from, count).map { toPreKey(it) } as ArrayList<PreKey> }
+    override suspend fun newPreKeys(from: Int, count: Int): ArrayList<PreKeyCrypto> {
+        return wrapException { box.newPreKeys(from, count).map { toPreKey(it) } as ArrayList<PreKeyCrypto> }
     }
 
-    override fun newLastPreKey(): PreKey {
+    override fun newLastPreKey(): PreKeyCrypto {
         return wrapException { toPreKey(box.newLastPreKey()) }
     }
 
@@ -56,8 +56,8 @@ actual class ProteusClientImpl actual constructor(rootDir: String, userId: Strin
         }
     }
 
-    override suspend fun createSession(preKey: PreKey, sessionId: CryptoSessionId) {
-        wrapException { box.initSessionFromPreKey(sessionId.value, toPreKey(preKey)) }
+    override suspend fun createSession(preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId) {
+        wrapException { box.initSessionFromPreKey(sessionId.value, toPreKey(preKeyCrypto)) }
     }
 
     override suspend fun decrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
@@ -78,11 +78,11 @@ actual class ProteusClientImpl actual constructor(rootDir: String, userId: Strin
 
     override suspend fun encryptWithPreKey(
         message: ByteArray,
-        preKey: PreKey,
+        preKeyCrypto: PreKeyCrypto,
         sessionId: CryptoSessionId
     ): ByteArray {
         return wrapException {
-            val session = box.initSessionFromPreKey(sessionId.value, toPreKey(preKey))
+            val session = box.initSessionFromPreKey(sessionId.value, toPreKey(preKeyCrypto))
             session.encrypt(message)
         }
     }
@@ -98,11 +98,11 @@ actual class ProteusClientImpl actual constructor(rootDir: String, userId: Strin
     }
 
     companion object {
-        private fun toPreKey(preKey: PreKey): com.wire.cryptobox.PreKey =
+        private fun toPreKey(preKey: PreKeyCrypto): com.wire.cryptobox.PreKey =
             com.wire.cryptobox.PreKey(preKey.id, Base64.decode(preKey.encodedData, Base64.NO_WRAP))
 
-        private fun toPreKey(preKey: com.wire.cryptobox.PreKey): PreKey =
-            PreKey(preKey.id, Base64.encodeToString(preKey.data, Base64.NO_WRAP))
+        private fun toPreKey(preKey: com.wire.cryptobox.PreKey): PreKeyCrypto =
+            PreKeyCrypto(preKey.id, Base64.encodeToString(preKey.data, Base64.NO_WRAP))
 
         private fun createId(userId: UUID?, clientId: String?): String? {
             return String.format("%s_%s", userId, clientId)
