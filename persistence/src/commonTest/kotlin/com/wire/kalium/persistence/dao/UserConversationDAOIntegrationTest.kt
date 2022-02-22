@@ -1,16 +1,17 @@
 package com.wire.kalium.persistence.dao
 
 import com.wire.kalium.persistence.BaseDatabaseTest
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.runTest
+import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
 
 class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
 
-    private val user1 = User(QualifiedID("1", "wire.com"), "user1", "handle1")
-    private val user2 = User(QualifiedID("2", "wire.com"), "user2", "handle2")
+    private val user1 = newUserEntity(id = "1")
+    private val user2 = newUserEntity(id = "2")
 
     private val conversation1 = Conversation(QualifiedID("1", "wire.com"), "conversation1")
 
@@ -38,5 +39,4 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
         val result = userDAO.getUserByQualifiedID(user1.id).first()
         assertEquals(user1, result)
     }
-
 }

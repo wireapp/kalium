@@ -1,10 +1,10 @@
 package com.wire.kalium.logic.data.client
 
-import com.wire.kalium.cryptography.PreKey
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.id.PlainId
+import com.wire.kalium.cryptography.PreKeyCrypto
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
@@ -170,7 +170,6 @@ class ClientRepositoryTest {
     fun givenClientIdAndAPassword_whenGettingDeletingClientFail_thenTheErrorIsPropagated() = runTest {
         val param = DeleteClientParam("password", CLIENT_ID)
 
-        //val expected = Either.Left(ClientFailure.WrongPassword)
         val expected = Either.Left(TEST_FAILURE)
 
         given(clientRemoteRepository)
@@ -260,7 +259,7 @@ class ClientRepositoryTest {
     }
 
     private companion object {
-        val REGISTER_CLIENT_PARAMS = RegisterClientParam("pass", listOf(), PreKey(2, "2"), listOf())
+        val REGISTER_CLIENT_PARAMS = RegisterClientParam("pass", listOf(), PreKeyCrypto(2, "2"), listOf())
         val CLIENT_ID = TestClient.CLIENT_ID
         val CLIENT_RESULT = TestClient.CLIENT
         val TEST_FAILURE = NetworkFailure.NoNetworkConnection(KaliumException.NetworkUnavailableError(IOException("no internet")))

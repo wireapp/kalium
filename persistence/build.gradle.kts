@@ -74,6 +74,7 @@ kotlin {
                 }
                 implementation(Dependencies.SqlDelight.runtime)
                 implementation(Dependencies.SqlDelight.coroutinesExtension)
+                implementation(Dependencies.SqlDelight.primitiveAdapters)
                 implementation(Dependencies.Kotlinx.serialization)
                 implementation(Dependencies.MultiplatformSettings.settings)
             }
