@@ -1,5 +1,6 @@
 package com.wire.kalium.network.api.user.login
 
+import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.utils.NetworkResponse
 
 interface LoginApi {
@@ -22,5 +23,5 @@ interface LoginApi {
         param: LoginParam,
         persist: Boolean,
         apiBaseUrl: String
-    ): NetworkResponse<LoginResponse>
+    ): NetworkResponse<SessionDTO>
 }

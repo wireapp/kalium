@@ -8,7 +8,10 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.HttpRequestData
+import io.ktor.client.utils.EmptyContent.headers
 import io.ktor.http.ContentType
+import io.ktor.http.Headers
+import io.ktor.http.HeadersImpl
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
@@ -51,7 +54,7 @@ interface ApiTest {
         }
         return AuthenticatedNetworkContainer(
             engine = mockEngine,
-            sessionCredentials = SESSION,
+            sessionDTO = SESSION,
             backendConfig = TEST_BACKEND_CONFIG
         ).authenticatedHttpClient
     }
@@ -66,20 +69,28 @@ interface ApiTest {
     fun mockUnauthenticatedHttpClient(
         responseBody: String,
         statusCode: HttpStatusCode,
-        assertion: (HttpRequestData.() -> Unit) = {}
-    ): HttpClient = mockAuthenticatedHttpClient(ByteReadChannel(responseBody), statusCode, assertion)
+        assertion: (HttpRequestData.() -> Unit) = {},
+        headers: Map<String, String>? = null
+    ): HttpClient = mockUnauthenticatedHttpClient(ByteReadChannel(responseBody), statusCode, assertion, headers)
 
     private fun mockUnauthenticatedHttpClient(
         responseBody: ByteReadChannel,
         statusCode: HttpStatusCode,
-        assertion: (HttpRequestData.() -> Unit) = {}
+        assertion: (HttpRequestData.() -> Unit) = {},
+        headers: Map<String, String>?
     ): HttpClient {
+        val head: Map<String, List<String>> = (headers?.let {
+            mutableMapOf(HttpHeaders.ContentType to "application/json").plus(headers).mapValues { listOf(it.value) }
+        } ?: run {
+            mapOf(HttpHeaders.ContentType to "application/json").mapValues { listOf(it.value) }
+        })
+
         val mockEngine = MockEngine { request ->
             request.assertion()
             respond(
                 content = responseBody,
                 status = statusCode,
-                headers = headersOf(HttpHeaders.ContentType, "application/json")
+                headers = HeadersImpl(head)
             )
         }
         return LoginNetworkContainer(
@@ -110,7 +121,7 @@ interface ApiTest {
         }
         return AuthenticatedNetworkContainer(
             engine = mockEngine,
-            sessionCredentials = SESSION,
+            sessionDTO = SESSION,
             backendConfig = TEST_BACKEND_CONFIG
         ).authenticatedHttpClient
     }

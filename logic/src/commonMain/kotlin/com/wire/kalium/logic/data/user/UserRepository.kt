@@ -3,11 +3,12 @@ package com.wire.kalium.logic.data.user
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.user.details.ListUserRequest
 import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.network.api.user.details.qualifiedIds
 import com.wire.kalium.network.api.user.self.SelfApi
-import com.wire.kalium.network.utils.isSuccessful
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedID
 import com.wire.kalium.persistence.dao.UserDAO
@@ -35,34 +36,33 @@ class UserDataSource(
     private val userMapper: UserMapper
 ) : UserRepository {
 
-    override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> {
-        val selfInfoResponse = selfApi.getSelfInfo()
-
-        return if (!selfInfoResponse.isSuccessful()) {
-            Either.Left(CoreFailure.ServerMiscommunication)
-        } else {
-            val user = userMapper.fromApiModelToDaoModel(selfInfoResponse.value)
+    override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = suspending {
+        wrapApiRequest { selfApi.getSelfInfo() }.map {
+            userMapper.fromApiModelToDaoModel(it)
+        }.coFold({
+            return@coFold Either.Left(it)
+        }, { user ->
             userDAO.insertUser(user)
             metadataDAO.insertValue(Json.encodeToString(user.id), SELF_USER_ID_KEY)
-            Either.Right(Unit)
-        }
+            return@coFold Either.Right(Unit)
+
+        })
     }
 
     override suspend fun fetchKnownUsers(): Either<CoreFailure, Unit> {
         val ids = userDAO.getAllUsers().first().map { userEntry ->
             idMapper.toApiModel(idMapper.fromDaoModel(userEntry.id))
         }
-
-        val usersRequestResult = userApi.getMultipleUsers(ListUserRequest.qualifiedIds(ids))
-        if (!usersRequestResult.isSuccessful()) {
-            usersRequestResult.kException.printStackTrace()
-            return Either.Left(CoreFailure.ServerMiscommunication)
+        return suspending {
+            wrapApiRequest {
+                userApi.getMultipleUsers(ListUserRequest.qualifiedIds(ids))
+            }.coFold({
+                Either.Left(it)
+            }, {
+                userDAO.insertUsers(it.map(userMapper::fromApiModelToDaoModel))
+                Either.Right(Unit)
+            })
         }
-
-        val usersToBePersisted = usersRequestResult.value.map(userMapper::fromApiModelToDaoModel)
-        userDAO.insertUsers(usersToBePersisted)
-        // TODO Wrap DB calls to catch exceptions and return `Either.Left` when exceptions occur
-        return Either.Right(Unit)
     }
 
     override suspend fun getSelfUser(): Flow<SelfUser> {

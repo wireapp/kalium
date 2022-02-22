@@ -1,12 +1,16 @@
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.client.DeviceType
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.network.exceptions.KaliumException
+import io.ktor.util.network.NetworkAddress
+import io.ktor.utils.io.errors.IOException
 import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.classOf
@@ -51,7 +55,7 @@ class SelfClientsUseCaseTest {
 
     @Test
     fun givenSelfListOfClientsFail_thenTheErrorPropagated() = runTest {
-        val expected = CoreFailure.NoNetworkConnection
+        val expected = NetworkFailure.ServerMiscommunication(KaliumException.NetworkUnavailableError(IOException("some error")))
         given(clientRepository)
             .coroutine { clientRepository.selfListOfClients() }
             .then { Either.Left(expected) }

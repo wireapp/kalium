@@ -1,6 +1,6 @@
 package com.wire.kalium.network
 
-import com.wire.kalium.network.api.SessionCredentials
+import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.asset.AssetApi
 import com.wire.kalium.network.api.asset.AssetApiImpl
 import com.wire.kalium.network.api.auth.AuthApi
@@ -32,7 +32,7 @@ import io.ktor.client.plugins.auth.providers.bearer
 
 class AuthenticatedNetworkContainer(
     private val backendConfig: BackendConfig,
-    private val sessionCredentials: SessionCredentials,
+    private val sessionDTO: SessionDTO,
     private val engine: HttpClientEngine = defaultHttpEngine(),
     private val isRequestLoggingEnabled: Boolean = false
 //    private val onTokenUpdate: (newTokenInfo: Pair<String, String>) -> Unit // Idea to let the network handle the refresh token automatically
@@ -70,12 +70,12 @@ class AuthenticatedNetworkContainer(
             bearer {
                 loadTokens {
                     BearerTokens(
-                        accessToken = sessionCredentials.accessToken,
-                        refreshToken = sessionCredentials.refreshToken
+                        accessToken = sessionDTO.accessToken,
+                        refreshToken = sessionDTO.refreshToken
                     )
                 }
                 refreshTokens {
-                    val refreshedResponse = authApi.renewAccessToken(sessionCredentials.refreshToken)
+                    val refreshedResponse = authApi.renewAccessToken(sessionDTO.refreshToken)
 
                     return@refreshTokens if (refreshedResponse.isSuccessful()) {
                         BearerTokens(refreshedResponse.value.accessToken, TODO("Get the 🍪"))
