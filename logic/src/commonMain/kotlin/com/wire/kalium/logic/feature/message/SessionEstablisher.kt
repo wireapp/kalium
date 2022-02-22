@@ -3,16 +3,19 @@ package com.wire.kalium.logic.feature.message
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
 import com.wire.kalium.cryptography.ProteusClient
+import com.wire.kalium.cryptography.createSessions
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Recipient
+import com.wire.kalium.logic.data.prekey.PreKeyRepository
+import com.wire.kalium.logic.data.prekey.QualifiedUserPreKeyInfo
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.cryptography.UserId as CryptoUserId
 
-interface OutgoingMessageRecipientsRetriever {
+interface SessionEstablisher {
 
     /**
      * Verifies if this client can send messages to all the client recipients.
@@ -23,9 +26,10 @@ interface OutgoingMessageRecipientsRetriever {
     ): Either<CoreFailure, Unit>
 }
 
-class OutgoingMessageRecipientsRetrieverImpl(
-    private val proteusClient: ProteusClient
-) : OutgoingMessageRecipientsRetriever {
+class SessionEstablisherImpl(
+    private val proteusClient: ProteusClient,
+    private val preKeyRepository: PreKeyRepository
+) : SessionEstablisher {
     override suspend fun prepareRecipientsForNewOutgoingMessage(
         recipients: List<Recipient>
     ): Either<CoreFailure, Unit> =
@@ -42,8 +46,26 @@ class OutgoingMessageRecipientsRetrieverImpl(
             return@suspending Either.Right(Unit)
         }
 
-        TODO("fetch prekeys using preKeyRepository and establish session")
+        preKeyRepository.preKeysOfClientsByQualifiedUsers(missingContactClients)
+            .flatMap { preKeyInfoList -> establishSessions(preKeyInfoList) }
     }
+
+    private suspend fun establishSessions(preKeyInfoList: List<QualifiedUserPreKeyInfo>): Either<CoreFailure.Unknown, Unit> {
+        val sessionPreKeysMap = getMapOfSessionIdsToPreKeys(preKeyInfoList)
+        return try {
+            proteusClient.createSessions(sessionPreKeysMap)
+            Either.Right(Unit)
+        } catch (proteusException: ProteusException) {
+            Either.Left(CoreFailure.Unknown(proteusException))
+        }
+    }
+
+    private fun getMapOfSessionIdsToPreKeys(preKeyInfoList: List<QualifiedUserPreKeyInfo>) =
+        preKeyInfoList.map { userInfo ->
+            userInfo.userId.value to userInfo.clientsInfo.map { clientInfo ->
+                clientInfo.clientId to clientInfo.preKey
+            }.toMap()
+        }.toMap()
 
     private suspend fun getAllMissingClients(
         detailedContacts: List<Recipient>
