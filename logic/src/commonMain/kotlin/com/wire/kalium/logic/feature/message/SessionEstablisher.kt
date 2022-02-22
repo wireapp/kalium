@@ -61,11 +61,11 @@ class SessionEstablisherImpl(
     }
 
     private fun getMapOfSessionIdsToPreKeys(preKeyInfoList: List<QualifiedUserPreKeyInfo>) =
-        preKeyInfoList.map { userInfo ->
-            userInfo.userId.value to userInfo.clientsInfo.map { clientInfo ->
+        preKeyInfoList.associate { userInfo ->
+            userInfo.userId.value to userInfo.clientsInfo.associate { clientInfo ->
                 clientInfo.clientId to clientInfo.preKey
-            }.toMap()
-        }.toMap()
+            }
+        }
 
     private suspend fun getAllMissingClients(
         detailedContacts: List<Recipient>
