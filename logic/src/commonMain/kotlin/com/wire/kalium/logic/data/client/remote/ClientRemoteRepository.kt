@@ -68,9 +68,9 @@ class ClientRemoteDataSource(
     private fun handleFailedApiResponse(response: NetworkResponse.Error<*>): Either.Left<CoreFailure> =
         when (response.kException) {
             is KaliumException.InvalidRequestError ->
-                when (response.kException.message) {
-                    ERROR_MESSAGE_TOO_MANY_CLIENTS -> Either.Left(ClientFailure.TooManyClients)
-                    ERROR_MESSAGE_MISSING_AUTH -> Either.Left(ClientFailure.WrongPassword)
+                when ((response.kException as KaliumException.InvalidRequestError).errorResponse.label) {
+                    ERROR_LABEL_TOO_MANY_CLIENTS -> Either.Left(ClientFailure.TooManyClients)
+                    ERROR_LABEL_INVALID_CREDENTIALS, ERROR_LABEL_BAD_REQUEST -> Either.Left(ClientFailure.WrongPassword)
                     else -> Either.Left(CoreFailure.Unknown(response.kException))
                 }
             is KaliumException.NetworkUnavailableError -> Either.Left(CoreFailure.NoNetworkConnection)
@@ -78,7 +78,8 @@ class ClientRemoteDataSource(
         }
 
     private companion object {
-        private const val ERROR_MESSAGE_TOO_MANY_CLIENTS = "too-many-clients"
-        private const val ERROR_MESSAGE_MISSING_AUTH = "missing-auth"
+        private const val ERROR_LABEL_TOO_MANY_CLIENTS = "too-many-clients"
+        private const val ERROR_LABEL_INVALID_CREDENTIALS = "invalid-credentials"
+        private const val ERROR_LABEL_BAD_REQUEST = "bad-request"
     }
 }
