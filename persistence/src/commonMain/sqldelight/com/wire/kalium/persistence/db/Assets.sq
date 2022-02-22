@@ -1,0 +1,34 @@
+import com.wire.kalium.persistence.dao.QualifiedID;
+
+CREATE TABLE Asset (
+    qualified_id TEXT AS QualifiedID NOT NULL PRIMARY KEY,
+    id TEXT NOT NULL,
+    token TEXT,
+    name TEXT,
+    domain TEXT,
+    encryption TEXT,
+    mime_type TEXT,
+    sha BLOB,
+    size INTEGER,
+    source TEXT,
+    preview TEXT,
+    details TEXT
+);
+
+deleteAllAssets:
+DELETE FROM Asset;
+
+deleteAsset:
+DELETE FROM Asset WHERE qualified_id = ?;
+
+insertAsset:
+INSERT INTO Asset(qualified_id, id, token, name, domain, encryption, mime_type, sha, size, source,preview, details)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+updateAsset:
+UPDATE Asset
+SET name = ?, preview = ?, details = ?
+WHERE qualified_id = ?;
+
+selectByQualifiedId:
+SELECT * FROM Asset WHERE qualified_id = ?;
