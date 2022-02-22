@@ -89,7 +89,7 @@ class RegisterClientUseCaseTest {
         given(clientRepository)
             .suspendFunction(clientRepository::registerClient)
             .whenInvokedWith(anything())
-            .then { Either.Left(TestNetworkError.missingAuth) }
+            .then { Either.Left(wrongPasswordFailure) }
 
         val result = registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
 
