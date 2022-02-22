@@ -23,7 +23,7 @@ actual class UserSessionScope(
     override val encryptedSettingsHolder: EncryptedSettingsHolder
         get() = EncryptedSettingsHolder(applicationContext, "$PREFERENCE_FILE_PREFIX-${session.userId}")
 
-    override val protoContentMapper: ProtoContentMapper = ProtoContentMapper()
+    override val protoContentMapper: ProtoContentMapper get() = ProtoContentMapper()
 
     private companion object {
         private const val PREFERENCE_FILE_PREFIX = "user-pref"
