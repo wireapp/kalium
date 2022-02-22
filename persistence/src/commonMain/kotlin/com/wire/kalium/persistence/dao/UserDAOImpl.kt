@@ -3,14 +3,14 @@ package com.wire.kalium.persistence.dao
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
+import com.wire.kalium.persistence.db.User as SQLDelightUser
 import com.wire.kalium.persistence.db.UsersQueries
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import com.wire.kalium.persistence.db.User as SQLDelightUser
 
 class UserMapper {
-    fun toModel(user: SQLDelightUser): User {
-        return User(user.qualified_id, user.name, user.handle)
+    fun toModel(user: SQLDelightUser): UserEntity {
+        return UserEntity(user.qualified_id, user.name, user.handle, user.email, user.phone, user.accent_id, user.team)
     }
 }
 
@@ -18,29 +18,28 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
 
     val mapper = UserMapper()
 
-    override suspend fun insertUser(user: User) {
-        queries.insertUser(user.id, user.name, user.handle)
+    override suspend fun insertUser(user: UserEntity) {
+        queries.insertUser(user.id, user.name, user.handle, user.email, user.phone, user.accentId, user.team)
     }
 
-    override suspend fun insertUsers(users: List<User>) {
+    override suspend fun insertUsers(users: List<UserEntity>) {
         queries.transaction {
-            for (user: User in users) {
-                queries.insertUser(user.id, user.name, user.handle)
+            for (user: UserEntity in users) {
+                queries.insertUser(user.id, user.name, user.handle, user.email, user.phone, user.accentId, user.team)
             }
         }
     }
 
-    override suspend fun updateUser(user: User) {
-        queries.updateUser(user.name, user.handle, user.id)
+    override suspend fun updateUser(user: UserEntity) {
+        queries.updateUser(user.name, user.handle, user.email, user.accentId, user.id)
     }
 
-    override suspend fun getAllUsers(): Flow<List<User>> = queries.selectAllUsers()
+    override suspend fun getAllUsers(): Flow<List<UserEntity>> = queries.selectAllUsers()
         .asFlow()
         .mapToList()
         .map { entryList -> entryList.map(mapper::toModel) }
 
-
-    override suspend fun getUserByQualifiedID(qualifiedID: QualifiedID): Flow<User?> {
+    override suspend fun getUserByQualifiedID(qualifiedID: QualifiedID): Flow<UserEntity?> {
         return queries.selectByQualifiedId(qualifiedID)
             .asFlow()
             .mapToOneOrNull()
@@ -50,5 +49,4 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
     override suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedID) {
         queries.deleteUser(qualifiedID)
     }
-
 }

@@ -34,6 +34,7 @@ class RegisterClientUseCaseImpl(
     ): RegisterClientResult = suspending {
         //TODO Should we fail here if the client is already registered?
         try {
+
             val param = RegisterClientParam(
                 password = password,
                 capabilities = capabilities,

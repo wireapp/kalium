@@ -18,6 +18,7 @@ import com.wire.kalium.persistence.dao.client.ClientDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
+import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import net.sqlcipher.database.SupportFactory
 import java.security.SecureRandom
 
@@ -53,7 +54,7 @@ actual class Database(context: Context, name: String, kaliumPreferences: KaliumP
                 sender_user_idAdapter = QualifiedIDAdapter(),
                 statusAdapter = EnumColumnAdapter()
             ),
-            User.Adapter(qualified_idAdapter = QualifiedIDAdapter())
+            User.Adapter(qualified_idAdapter = QualifiedIDAdapter(), IntColumnAdapter)
         )
     }
 

@@ -59,6 +59,6 @@ fun MainLayout(conversations: List<Conversation>, selfUser: SelfUser) {
         Text("Conversation count:")
         Text("${conversations.size}")
         Text("SelfUser:")
-        Text("${selfUser.id}")
+        Text("$selfUser")
     }
 }
