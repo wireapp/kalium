@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.shouldFail
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -41,7 +42,7 @@ class MessageSendFailureHandlerTest {
 
 
     @Test
-    fun given_missing_clients_when_handling_clientsHaveChanged_failure_then_users_that_control_these_clients_should_be_fetched() = runTest {
+    fun givenMissingClients_whenHandlingClientsHaveChangedFailure_thenUsersThatControlTheseClientsShouldBeFetched() = runTest {
         val failureData = SendMessageFailure.ClientsHaveChanged(missingClientsOfUsers = mapOf(userOne, userTwo), mapOf(), mapOf())
 
         given(userRepository)
@@ -64,7 +65,7 @@ class MessageSendFailureHandlerTest {
 
 
     @Test
-    fun given_missing_contacts_and_clients_when_handling_clientsHaveChanged_failure_then_clients_should_be_added_to_contacts() = runTest {
+    fun givenMissingContactsAndClients_whenHandlingClientsHaveChangedFailureThenClientsShouldBeAddedToContacts() = runTest {
         val failureData = SendMessageFailure.ClientsHaveChanged(missingClientsOfUsers = mapOf(userOne, userTwo), mapOf(), mapOf())
 
         given(userRepository)
@@ -92,7 +93,7 @@ class MessageSendFailureHandlerTest {
 
 
     @Test
-    fun given_repository_fails_to_fetch_contacts_when_handling_clientsHaveChanged_failure_then_failure_should_be_propagated() = runTest {
+    fun givenRepositoryFailsToFetchContacts_whenHandlingClientsHaveChangedFailure_thenFailureShouldBePropagated() = runTest {
         val failure = CoreFailure.ServerMiscommunication
         given(userRepository)
             .suspendFunction(userRepository::fetchUsersByIds)
@@ -101,12 +102,12 @@ class MessageSendFailureHandlerTest {
         val failureData = SendMessageFailure.ClientsHaveChanged(mapOf(), mapOf(), mapOf())
 
         val result = messageSendFailureHandler.handleClientsHaveChangedFailure(failureData)
-
+        result.shouldFail()
         assertEquals(Either.Left(CoreFailure.ServerMiscommunication), result)
     }
 
     @Test
-    fun given_repository_fails_to_add_clients_to_contacts_when_handling_clientsHaveChanged_failure_then_failure_should_be_propagated() = runTest {
+    fun givenRepositoryFailsToAddClientsToContacts_whenHandlingClientsHaveChangedFailure_thenFailureShouldBePropagated() = runTest {
             val failure = CoreFailure.ServerMiscommunication
             given(userRepository)
                 .suspendFunction(userRepository::fetchUsersByIds)
@@ -119,7 +120,7 @@ class MessageSendFailureHandlerTest {
             val failureData = SendMessageFailure.ClientsHaveChanged(mapOf(userOne), mapOf(), mapOf())
 
             val result = messageSendFailureHandler.handleClientsHaveChangedFailure(failureData)
-
+            result.shouldFail()
             assertEquals(Either.Left(CoreFailure.ServerMiscommunication), result)
         }
 }
