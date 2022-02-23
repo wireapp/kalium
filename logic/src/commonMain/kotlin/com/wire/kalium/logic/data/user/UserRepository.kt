@@ -42,6 +42,7 @@ class UserDataSource(
 
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> {
         val selfInfoResponse = selfApi.getSelfInfo()
+        // TODO if we have assets id, also persist on asset table the ids for later sync or on demand getassetByKey usecase
 
         return if (!selfInfoResponse.isSuccessful()) {
             Either.Left(CoreFailure.ServerMiscommunication)

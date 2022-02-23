@@ -8,7 +8,11 @@ CREATE TABLE User (
     email TEXT,
     phone TEXT,
     accent_id INTEGER AS Int NOT NULL DEFAULT 0,
-    team TEXT
+    team TEXT,
+    preview_asset_id TEXT,
+    complete_asset_id TEXT,
+    FOREIGN KEY (preview_asset_id) REFERENCES Asset(key) ON DELETE CASCADE,
+    FOREIGN KEY (complete_asset_id) REFERENCES Asset(key) ON DELETE CASCADE
 );
 
 deleteAllUsers:

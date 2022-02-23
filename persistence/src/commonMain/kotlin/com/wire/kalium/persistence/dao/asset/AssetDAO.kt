@@ -7,7 +7,7 @@ data class AssetEntity(
     val name: String?,
     val encryption: String?,
     val mimeType: String?,
-    val sha: ByteArray,
+    val sha: ByteArray?,
     val size: Long,
     val downloaded: Boolean
 ) {

@@ -7,7 +7,7 @@ CREATE TABLE Asset (
     name TEXT,
     encryption TEXT,
     mime_type TEXT,
-    sha BLOB NOT NULL,
+    sha BLOB,
     size INTEGER NOT NULL DEFAULT 0,
     downloaded INTEGER AS Boolean NOT NULL DEFAULT 0,
     PRIMARY KEY (key , domain)

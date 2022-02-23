@@ -30,11 +30,11 @@ class AssetMapperImpl : AssetMapper {
             domain = uploadedAssetResponse.domain,
             token = uploadedAssetResponse.token,
             name = java.util.UUID.randomUUID().toString(), // can be anything ?
-            encryption = uploadAssetData.md5,
+            encryption = uploadAssetData.md5, // should use something like byteArray to encrypt
             mimeType = uploadAssetData.mimeType.name,
             sha = uploadAssetData.data,
             size = uploadAssetData.data.size.toLong(),
-            downloaded = false
+            downloaded = true
         )
     }
 }
