@@ -45,7 +45,7 @@ class MessageSendFailureHandlerTest {
         val failureData = SendMessageFailure.ClientsHaveChanged(missingClientsOfUsers = mapOf(userOne, userTwo), mapOf(), mapOf())
 
         given(userRepository)
-            .suspendFunction(userRepository::fetchUsersById)
+            .suspendFunction(userRepository::fetchUsersByIds)
             .whenInvokedWith(eq(failureData.missingClientsOfUsers.keys))
             .thenReturn(Either.Right(Unit))
 
@@ -57,7 +57,7 @@ class MessageSendFailureHandlerTest {
         messageSendFailureHandler.handleClientsHaveChangedFailure(failureData)
 
         verify(userRepository)
-            .suspendFunction(userRepository::fetchUsersById)
+            .suspendFunction(userRepository::fetchUsersByIds)
             .with(eq(failureData.missingClientsOfUsers.keys))
             .wasInvoked(once)
     }
@@ -68,7 +68,7 @@ class MessageSendFailureHandlerTest {
         val failureData = SendMessageFailure.ClientsHaveChanged(missingClientsOfUsers = mapOf(userOne, userTwo), mapOf(), mapOf())
 
         given(userRepository)
-            .suspendFunction(userRepository::fetchUsersById)
+            .suspendFunction(userRepository::fetchUsersByIds)
             .whenInvokedWith(eq(failureData.missingClientsOfUsers.keys))
             .thenReturn(Either.Right(Unit))
 
@@ -95,7 +95,7 @@ class MessageSendFailureHandlerTest {
     fun given_repository_fails_to_fetch_contacts_when_handling_clientsHaveChanged_failure_then_failure_should_be_propagated() = runTest {
         val failure = CoreFailure.ServerMiscommunication
         given(userRepository)
-            .suspendFunction(userRepository::fetchUsersById)
+            .suspendFunction(userRepository::fetchUsersByIds)
             .whenInvokedWith(any())
             .thenReturn(Either.Left(failure))
         val failureData = SendMessageFailure.ClientsHaveChanged(mapOf(), mapOf(), mapOf())
@@ -106,11 +106,10 @@ class MessageSendFailureHandlerTest {
     }
 
     @Test
-    fun given_repository_fails_to_add_clients_to_contacts_when_handling_clientsHaveChanged_failure_then_failure_should_be_propagated() =
-        runTest {
+    fun given_repository_fails_to_add_clients_to_contacts_when_handling_clientsHaveChanged_failure_then_failure_should_be_propagated() = runTest {
             val failure = CoreFailure.ServerMiscommunication
             given(userRepository)
-                .suspendFunction(userRepository::fetchUsersById)
+                .suspendFunction(userRepository::fetchUsersByIds)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
             given(clientRepository)
