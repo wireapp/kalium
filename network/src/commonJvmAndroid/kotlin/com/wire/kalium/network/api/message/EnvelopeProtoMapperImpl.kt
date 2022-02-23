@@ -1,7 +1,5 @@
-package com.wire.kalium.network.api.messages
+package com.wire.kalium.network.api.message
 
-import com.wire.kalium.network.api.message.EnvelopeProtoMapper
-import com.wire.kalium.network.api.message.MessageApi
 import com.wire.messages.Otr
 
 class EnvelopeProtoMapperImpl: EnvelopeProtoMapper {
@@ -34,4 +32,4 @@ class EnvelopeProtoMapperImpl: EnvelopeProtoMapper {
     }
 }
 
-actual fun provideEnvelopeProtoMapper() = EnvelopeProtoMapperImpl()
+actual fun provideEnvelopeProtoMapper(): EnvelopeProtoMapper = EnvelopeProtoMapperImpl()

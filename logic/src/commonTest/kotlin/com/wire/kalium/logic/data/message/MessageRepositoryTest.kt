@@ -36,13 +36,16 @@ class MessageRepositoryTest {
     val messageDAO = configure(mock(MessageDAO::class)) { stubsUnitByDefault = true }
 
     @Mock
+    val sendMessageFailureMapper = mock(SendMessageFailureMapper::class)
+
+    @Mock
     val messageMapper = mock(MessageMapper::class)
 
     private lateinit var messageRepository: MessageRepository
 
     @BeforeTest
     fun setup() {
-        messageRepository = MessageDataSource(messageApi, messageDAO, messageMapper, idMapper)
+        messageRepository = MessageDataSource(messageApi, messageDAO, messageMapper, idMapper, sendMessageFailureMapper)
     }
 
     @Test

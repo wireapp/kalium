@@ -1,4 +1,4 @@
-package com.wire.kalium.network.api.messages
+package com.wire.kalium.network.api.message
 
 import com.wire.messages.Otr
 import java.math.BigInteger
