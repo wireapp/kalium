@@ -1,9 +1,9 @@
 package com.wire.kalium.logic.data.client
 
-import com.wire.kalium.cryptography.PreKey
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.id.PlainId
+import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.failure.ClientFailure
 import com.wire.kalium.logic.framework.TestClient
@@ -264,7 +264,7 @@ class ClientRepositoryTest {
     }
 
     private companion object {
-        val REGISTER_CLIENT_PARAMS = RegisterClientParam("pass", listOf(), PreKey(2, "2"), listOf())
+        val REGISTER_CLIENT_PARAMS = RegisterClientParam("pass", listOf(), PreKeyCrypto(2, "2"), listOf())
         val CLIENT_ID = TestClient.CLIENT_ID
         val CLIENT_RESULT = TestClient.CLIENT
     }

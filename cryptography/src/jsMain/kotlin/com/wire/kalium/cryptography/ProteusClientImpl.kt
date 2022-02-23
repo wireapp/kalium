@@ -13,7 +13,7 @@ import org.khronos.webgl.ArrayBuffer
 import org.khronos.webgl.Int8Array
 import org.khronos.webgl.Uint8Array
 
-actual class ProteusClientImpl actual constructor(rootDir: String, userId: String): ProteusClient {
+actual class ProteusClientImpl actual constructor(rootDir: String, userId: String) : ProteusClient {
 
     private val userId: String
     private lateinit var box: Cryptobox
@@ -44,12 +44,12 @@ actual class ProteusClientImpl actual constructor(rootDir: String, userId: Strin
     override suspend fun newPreKeys(
         from: Int,
         count: Int
-    ): ArrayList<PreKey> {
+    ): ArrayList<PreKeyCrypto> {
         val preKeys = box.new_prekeys(from, count).await()
-        return preKeys.map { toPreKey(box.getIdentity().public_key, it) } as ArrayList<PreKey>
+        return preKeys.map { toPreKey(box.getIdentity().public_key, it) } as ArrayList<PreKeyCrypto>
     }
 
-    override fun newLastPreKey(): PreKey {
+    override fun newLastPreKey(): PreKeyCrypto {
         val preKey = box.lastResortPreKey
         if (preKey != null) {
             return toPreKey(box.getIdentity().public_key, preKey)
@@ -58,12 +58,20 @@ actual class ProteusClientImpl actual constructor(rootDir: String, userId: Strin
         }
     }
 
+    override suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean = try {
+        box.session_load(sessionId.value).await()
+        true
+        // TODO check the internals of cryptobox.js to see what happens if the session doesn't exist
+    } catch (e: Exception) {
+        false
+    }
+
     @OptIn(InternalAPI::class)
     override suspend fun createSession(
-        preKey: PreKey,
+        preKeyCrypto: PreKeyCrypto,
         sessionId: CryptoSessionId
     ) {
-        val preKeyBundle = preKey.encodedData.decodeBase64Bytes()
+        val preKeyBundle = preKeyCrypto.encodedData.decodeBase64Bytes()
         box.session_from_prekey(sessionId.value, preKeyBundle.toArrayBuffer()).await()
     }
 
@@ -86,10 +94,10 @@ actual class ProteusClientImpl actual constructor(rootDir: String, userId: Strin
     @OptIn(InternalAPI::class)
     override suspend fun encryptWithPreKey(
         message: ByteArray,
-        preKey: PreKey,
+        preKeyCrypto: PreKeyCrypto,
         sessionId: CryptoSessionId
     ): ByteArray {
-        val preKeyBundle = preKey.encodedData.decodeBase64Bytes()
+        val preKeyBundle = preKeyCrypto.encodedData.decodeBase64Bytes()
         val encryptedMessage = box.encrypt(sessionId.value, payload = message.toUint8Array(), preKeyBundle = preKeyBundle.toArrayBuffer())
         return Int8Array(encryptedMessage.await()).unsafeCast<ByteArray>()
     }
@@ -106,10 +114,10 @@ actual class ProteusClientImpl actual constructor(rootDir: String, userId: Strin
 
     companion object {
         @OptIn(InternalAPI::class)
-        private fun toPreKey(localIdentityKey: IdentityKey, preKey: com.wire.kalium.cryptography.externals.PreKey): PreKey {
+        private fun toPreKey(localIdentityKey: IdentityKey, preKey: com.wire.kalium.cryptography.externals.PreKey): PreKeyCrypto {
             val preKeyBundle = PreKeyBundle(localIdentityKey, preKey)
             val encodedData = Uint8Array(preKeyBundle.serialise()).unsafeCast<ByteArray>().encodeBase64()
-            return PreKey(preKey.key_id.toInt(), encodedData)
+            return PreKeyCrypto(preKey.key_id.toInt(), encodedData)
         }
     }
 }

@@ -16,6 +16,7 @@ import com.wire.kalium.persistence.dao.UserDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.decodeFromString
@@ -27,6 +28,7 @@ interface UserRepository {
     suspend fun fetchKnownUsers(): Either<CoreFailure, Unit>
     suspend fun fetchUsersById(ids: Set<QualifiedID>): Either<CoreFailure, Unit>
     suspend fun getSelfUser(): Flow<SelfUser>
+    suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, Unit>
 }
 
 class UserDataSource(
@@ -87,6 +89,28 @@ class UserDataSource(
         return Either.Right(Unit)
     }
 
+    override suspend fun getSelfUser(): Flow<SelfUser> {
+        return metadataDAO.valueByKey(SELF_USER_ID_KEY).filterNotNull().flatMapMerge { encodedValue ->
+            val selfUserID: QualifiedID = Json.decodeFromString(encodedValue)
+            userDAO.getUserByQualifiedID(selfUserID)
+                .filterNotNull()
+                .map(userMapper::fromDaoModel)
+        }
+    }
+
+    override suspend fun updateSelfUser(newName: String?, newAccent: Int?, newAssetId: String?): Either<CoreFailure, Unit> {
+        val user = getSelfUser().firstOrNull() ?: return Either.Left(CoreFailure.ServerMiscommunication) // TODO: replace for a DB error
+
+        val updateRequest = userMapper.fromModelToUpdateApiModel(user, newName, newAccent, newAssetId)
+        val updatedSelf = selfApi.updateSelf(updateRequest)
+
+        return if (updatedSelf.isSuccessful()) {
+            userDAO.updateUser(userMapper.fromUpdateRequestToDaoModel(user, updateRequest))
+            Either.Right(Unit)
+        } else {
+            Either.Left(CoreFailure.ServerMiscommunication)
+        }
+    }
     companion object {
         const val SELF_USER_ID_KEY = "selfUserID"
 
