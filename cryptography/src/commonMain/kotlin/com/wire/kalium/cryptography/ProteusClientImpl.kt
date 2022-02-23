@@ -41,13 +41,16 @@ interface ProteusClient {
     fun newLastPreKey(): PreKeyCrypto
 
     @Throws(ProteusException::class)
+    suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean
+
+    @Throws(ProteusException::class)
     suspend fun createSession(preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId)
 
     @Throws(ProteusException::class)
     suspend fun decrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray
 
     @Throws(ProteusException::class)
-    suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray?
+    suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray
 
     @Throws(ProteusException::class)
     suspend fun encryptWithPreKey(message: ByteArray, preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId): ByteArray

@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature
 import android.content.Context
 import com.wire.kalium.logic.AuthenticatedDataSourceSet
 import com.wire.kalium.logic.configuration.ClientConfig
+import com.wire.kalium.logic.data.message.PlatformProtoContentMapper
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.persistence.db.Database
@@ -20,6 +21,6 @@ actual class UserSessionScope(
 
     override val clientConfig: ClientConfig get() = ClientConfig(applicationContext)
 
-    override val protoContentMapper: ProtoContentMapper get() = ProtoContentMapper()
+    override val protoContentMapper: ProtoContentMapper get() = PlatformProtoContentMapper()
 
 }

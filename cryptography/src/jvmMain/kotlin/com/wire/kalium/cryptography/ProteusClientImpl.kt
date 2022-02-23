@@ -45,6 +45,10 @@ actual class ProteusClientImpl actual constructor(rootDir: String, userId: Strin
         return wrapException { box.newPreKeys(from, count).map { toPreKey(it) } as ArrayList<PreKeyCrypto> }
     }
 
+    override suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean {
+        return wrapException { box.doesSessionExist(sessionId.value) }
+    }
+
     override suspend fun createSession(preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId) {
         wrapException { box.encryptFromPreKeys(sessionId.value, toPreKey(preKeyCrypto), ByteArray(0)) }
     }
@@ -53,7 +57,7 @@ actual class ProteusClientImpl actual constructor(rootDir: String, userId: Strin
         return wrapException { box.decrypt(sessionId.value, message) }
     }
 
-    override suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray? {
+    override suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
         return wrapException { box.encryptFromSession(sessionId.value, message) }
     }
 

@@ -13,7 +13,7 @@ import org.khronos.webgl.ArrayBuffer
 import org.khronos.webgl.Int8Array
 import org.khronos.webgl.Uint8Array
 
-actual class ProteusClientImpl actual constructor(rootDir: String, userId: String): ProteusClient {
+actual class ProteusClientImpl actual constructor(rootDir: String, userId: String) : ProteusClient {
 
     private val userId: String
     private lateinit var box: Cryptobox
@@ -58,6 +58,14 @@ actual class ProteusClientImpl actual constructor(rootDir: String, userId: Strin
         }
     }
 
+    override suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean = try {
+        box.session_load(sessionId.value).await()
+        true
+        // TODO check the internals of cryptobox.js to see what happens if the session doesn't exist
+    } catch (e: Exception) {
+        false
+    }
+
     @OptIn(InternalAPI::class)
     override suspend fun createSession(
         preKeyCrypto: PreKeyCrypto,
@@ -78,7 +86,7 @@ actual class ProteusClientImpl actual constructor(rootDir: String, userId: Strin
     override suspend fun encrypt(
         message: ByteArray,
         sessionId: CryptoSessionId
-    ): ByteArray? {
+    ): ByteArray {
         val encryptedMessage = box.encrypt(sessionId.value, payload = message.toUint8Array())
         return Int8Array(encryptedMessage.await()).unsafeCast<ByteArray>()
     }
