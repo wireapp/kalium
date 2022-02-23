@@ -43,7 +43,15 @@ actual class CoreLogic(
             val encryptedSettingsHolder = EncryptedSettingsHolder(applicationContext, "${PREFERENCE_FILE_PREFIX}-${session.userId}")
             val userPreferencesSettings = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
             val database = Database(applicationContext, "main.db", userPreferencesSettings)
-            AuthenticatedDataSourceSet(networkContainer, proteusClient, workScheduler, syncManager, database, userPreferencesSettings, encryptedSettingsHolder).also {
+            AuthenticatedDataSourceSet(
+                networkContainer,
+                proteusClient,
+                workScheduler,
+                syncManager,
+                database,
+                userPreferencesSettings,
+                encryptedSettingsHolder
+            ).also {
                 userScopeStorage[session] = it
             }
         }
