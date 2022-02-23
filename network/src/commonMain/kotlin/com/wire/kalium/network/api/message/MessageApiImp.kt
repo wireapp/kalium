@@ -111,7 +111,7 @@ class MessageApiImp(
         conversationId: ConversationId
     ): NetworkResponse<QualifiedSendMessageResponse> {
         return try {
-            val response = httpClient.post("/conversations/${conversationId.domain}/${conversationId.value}/proteus/messages") {
+            val response = httpClient.post("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}$PATH_PROTEUS_MESSAGE") {
                 contentType(ContentType.parse("application/protobuf"))
                 setBody(envelopeProtoMapper.encodeToProtobuf(parameters))
             }
@@ -139,6 +139,7 @@ class MessageApiImp(
 
     private companion object {
         const val PATH_OTR_MESSAGE = "/otr/messages"
+        const val PATH_PROTEUS_MESSAGE = "/proteus/messages"
         const val PATH_CONVERSATIONS = "/conversations"
         const val QUERY_IGNORE_MISSING = "ignore_missing"
         const val QUERY_REPORT_MISSING = "report_missing"
