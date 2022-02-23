@@ -9,7 +9,9 @@ import com.wire.kalium.network.api.user.details.qualifiedIds
 import com.wire.kalium.network.api.user.self.SelfApi
 import com.wire.kalium.network.utils.isSuccessful
 import com.wire.kalium.persistence.dao.MetadataDAO
-import com.wire.kalium.persistence.dao.QualifiedID
+import com.wire.kalium.logic.data.id.NetworkQualifiedId
+import com.wire.kalium.persistence.dao.QualifiedID as QualifiedIDEntity
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.persistence.dao.UserDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
@@ -24,6 +26,7 @@ import kotlinx.serialization.json.Json
 interface UserRepository {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
     suspend fun fetchKnownUsers(): Either<CoreFailure, Unit>
+    suspend fun fetchUsersByIds(ids: Set<QualifiedID>): Either<CoreFailure, Unit>
     suspend fun getSelfUser(): Flow<SelfUser>
     suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, Unit>
 }
@@ -52,24 +55,31 @@ class UserDataSource(
 
     override suspend fun fetchKnownUsers(): Either<CoreFailure, Unit> {
         val ids = userDAO.getAllUsers().first().map { userEntry ->
-            idMapper.toApiModel(idMapper.fromDaoModel(userEntry.id))
+            idMapper.fromDaoModel(userEntry.id)
         }
 
-        val usersRequestResult = userApi.getMultipleUsers(ListUserRequest.qualifiedIds(ids))
+        return fetchUsersByIds(ids.toSet())
+    }
+
+    override suspend fun fetchUsersByIds(ids: Set<QualifiedID>): Either<CoreFailure, Unit> {
+        val mappedIds = ids.map { idMapper.toApiModel(it) }
+
+        val usersRequestResult = userApi.getMultipleUsers(ListUserRequest.qualifiedIds(mappedIds))
+
         if (!usersRequestResult.isSuccessful()) {
             usersRequestResult.kException.printStackTrace()
             return Either.Left(CoreFailure.ServerMiscommunication)
         }
-
         val usersToBePersisted = usersRequestResult.value.map(userMapper::fromApiModelToDaoModel)
         userDAO.insertUsers(usersToBePersisted)
+
         // TODO Wrap DB calls to catch exceptions and return `Either.Left` when exceptions occur
         return Either.Right(Unit)
     }
 
     override suspend fun getSelfUser(): Flow<SelfUser> {
         return metadataDAO.valueByKey(SELF_USER_ID_KEY).filterNotNull().flatMapMerge { encodedValue ->
-            val selfUserID: QualifiedID = Json.decodeFromString(encodedValue)
+            val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
             userDAO.getUserByQualifiedID(selfUserID)
                 .filterNotNull()
                 .map(userMapper::fromDaoModel)
@@ -89,8 +99,8 @@ class UserDataSource(
             Either.Left(CoreFailure.ServerMiscommunication)
         }
     }
-
     companion object {
         const val SELF_USER_ID_KEY = "selfUserID"
+
     }
 }
