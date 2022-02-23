@@ -30,7 +30,12 @@ sealed class NetworkFailure(internal val kaliumException: KaliumException) : Cor
      * Either fix our app or our backend.
      */
     class ServerMiscommunication(kaliumException: KaliumException) : NetworkFailure(kaliumException)
+
+    data class Unknown(val rootCause: Throwable?) : CoreFailure()
+
+    abstract class FeatureFailure : CoreFailure()
 }
+
 
 inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<T>): Either<NetworkFailure, T> {
     // TODO: check for internet connection and return NoNetworkConnection

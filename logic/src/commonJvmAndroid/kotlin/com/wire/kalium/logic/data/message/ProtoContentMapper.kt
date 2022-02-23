@@ -3,9 +3,9 @@ package com.wire.kalium.logic.data.message
 import com.waz.model.Messages
 import com.waz.model.Messages.GenericMessage
 
-actual class ProtoContentMapper {
+actual class PlatformProtoContentMapper(): ProtoContentMapper {
 
-    actual fun encodeToProtobuf(protoContent: ProtoContent): PlainMessageBlob {
+    override fun encodeToProtobuf(protoContent: ProtoContent): PlainMessageBlob {
         val (messageUid, messageContent) = protoContent
         val builder = GenericMessage.newBuilder()
             .setMessageId(messageUid)
@@ -24,7 +24,7 @@ actual class ProtoContentMapper {
         return PlainMessageBlob(builder.build().toByteArray())
     }
 
-    actual fun decodeFromProtobuf(encodedContent: PlainMessageBlob): ProtoContent {
+    override fun decodeFromProtobuf(encodedContent: PlainMessageBlob): ProtoContent {
         val genericMessage = GenericMessage.parseFrom(encodedContent.data)
 
         //TODO Handle other message types

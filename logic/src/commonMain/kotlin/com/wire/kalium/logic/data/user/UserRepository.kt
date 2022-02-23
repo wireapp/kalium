@@ -11,7 +11,8 @@ import com.wire.kalium.network.api.user.details.qualifiedIds
 import com.wire.kalium.network.api.user.self.SelfApi
 import com.wire.kalium.network.utils.isSuccessful
 import com.wire.kalium.persistence.dao.MetadataDAO
-import com.wire.kalium.persistence.dao.QualifiedID
+import com.wire.kalium.persistence.dao.QualifiedID as QualifiedIDEntity
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.persistence.dao.UserDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
@@ -26,6 +27,7 @@ import kotlinx.serialization.json.Json
 interface UserRepository {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
     suspend fun fetchKnownUsers(): Either<CoreFailure, Unit>
+    suspend fun fetchUsersByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun getSelfUser(): Flow<SelfUser>
     suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, Unit>
 }
@@ -43,22 +45,25 @@ class UserDataSource(
         wrapApiRequest { selfApi.getSelfInfo() }.map {
             userMapper.fromApiModelToDaoModel(it)
         }.coFold({
-            return@coFold Either.Left(it)
+            Either.Left(it)
         }, { user ->
             userDAO.insertUser(user)
             metadataDAO.insertValue(Json.encodeToString(user.id), SELF_USER_ID_KEY)
-            return@coFold Either.Right(Unit)
-
+            Either.Right(Unit)
         })
     }
 
     override suspend fun fetchKnownUsers(): Either<CoreFailure, Unit> {
         val ids = userDAO.getAllUsers().first().map { userEntry ->
-            idMapper.toApiModel(idMapper.fromDaoModel(userEntry.id))
+            idMapper.fromDaoModel(userEntry.id)
         }
+        return fetchUsersByIds(ids.toSet())
+    }
+
+    override suspend fun fetchUsersByIds(ids: Set<UserId>): Either<CoreFailure, Unit> {
         return suspending {
             wrapApiRequest {
-                userApi.getMultipleUsers(ListUserRequest.qualifiedIds(ids))
+                userApi.getMultipleUsers(ListUserRequest.qualifiedIds(ids.map(idMapper::toApiModel)))
             }.coFold({
                 Either.Left(it)
             }, {
@@ -70,7 +75,7 @@ class UserDataSource(
 
     override suspend fun getSelfUser(): Flow<SelfUser> {
         return metadataDAO.valueByKey(SELF_USER_ID_KEY).filterNotNull().flatMapMerge { encodedValue ->
-            val selfUserID: QualifiedID = Json.decodeFromString(encodedValue)
+            val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
             userDAO.getUserByQualifiedID(selfUserID)
                 .filterNotNull()
                 .map(userMapper::fromDaoModel)
@@ -78,7 +83,8 @@ class UserDataSource(
     }
 
     override suspend fun updateSelfUser(newName: String?, newAccent: Int?, newAssetId: String?): Either<CoreFailure, Unit> {
-        val user = getSelfUser().firstOrNull() ?: return Either.Left(CoreFailure.Unknown(NullPointerException())) // TODO: replace for a DB error
+        val user =
+            getSelfUser().firstOrNull() ?: return Either.Left(CoreFailure.Unknown(NullPointerException())) // TODO: replace for a DB error
 
         val updateRequest = userMapper.fromModelToUpdateApiModel(user, newName, newAccent, newAssetId)
         val updatedSelf = selfApi.updateSelf(updateRequest)
@@ -87,7 +93,7 @@ class UserDataSource(
             userDAO.updateUser(userMapper.fromUpdateRequestToDaoModel(user, updateRequest))
             Either.Right(Unit)
         } else {
-            Either.Left(CoreFailure.Unknown(NullPointerException())) // TODO: replace for a DB error
+            Either.Left(CoreFailure.Unknown(IllegalStateException()))
         }
     }
 
