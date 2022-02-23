@@ -26,7 +26,7 @@ import kotlinx.serialization.json.Json
 interface UserRepository {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
     suspend fun fetchKnownUsers(): Either<CoreFailure, Unit>
-    suspend fun fetchUsersById(ids: Set<QualifiedID>): Either<CoreFailure, Unit>
+    suspend fun fetchUsersByIds(ids: Set<QualifiedID>): Either<CoreFailure, Unit>
     suspend fun getSelfUser(): Flow<SelfUser>
     suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, Unit>
 }
@@ -55,28 +55,16 @@ class UserDataSource(
 
     override suspend fun fetchKnownUsers(): Either<CoreFailure, Unit> {
         val ids = userDAO.getAllUsers().first().map { userEntry ->
-            idMapper.toApiModel(idMapper.fromDaoModel(userEntry.id))
+            idMapper.fromDaoModel(userEntry.id)
         }
 
-        return fetchUsersByIds(ids)
+        return fetchUsersByIds(ids.toSet())
     }
 
-    override suspend fun fetchUsersById(ids: Set<QualifiedID>): Either<CoreFailure, Unit> {
+    override suspend fun fetchUsersByIds(ids: Set<QualifiedID>): Either<CoreFailure, Unit> {
         val mappedIds = ids.map { idMapper.toApiModel(it) }
-        return fetchUsersByIds(mappedIds)
-    }
 
-    override suspend fun getSelfUser(): Flow<SelfUser> {
-        return metadataDAO.valueByKey(SELF_USER_ID_KEY).filterNotNull().flatMapMerge { encodedValue ->
-            val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
-            userDAO.getUserByQualifiedID(selfUserID)
-                .filterNotNull()
-                .map(userMapper::fromDaoModel)
-        }
-    }
-
-    private suspend fun fetchUsersByIds(ids: List<NetworkQualifiedId>): Either<CoreFailure, Unit> {
-        val usersRequestResult = userApi.getMultipleUsers(ListUserRequest.qualifiedIds(ids))
+        val usersRequestResult = userApi.getMultipleUsers(ListUserRequest.qualifiedIds(mappedIds))
 
         if (!usersRequestResult.isSuccessful()) {
             usersRequestResult.kException.printStackTrace()
@@ -91,7 +79,7 @@ class UserDataSource(
 
     override suspend fun getSelfUser(): Flow<SelfUser> {
         return metadataDAO.valueByKey(SELF_USER_ID_KEY).filterNotNull().flatMapMerge { encodedValue ->
-            val selfUserID: QualifiedID = Json.decodeFromString(encodedValue)
+            val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
             userDAO.getUserByQualifiedID(selfUserID)
                 .filterNotNull()
                 .map(userMapper::fromDaoModel)

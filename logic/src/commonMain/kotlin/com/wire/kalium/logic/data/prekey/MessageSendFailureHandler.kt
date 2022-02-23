@@ -20,7 +20,7 @@ class MessageSendFailureHandler(
         suspending {
             //TODO Add/remove members to/from conversation
             //TODO remove clients from conversation
-            userRepository.fetchUsersById(sendFailure.missingClientsOfUsers.keys).flatMap {
+            userRepository.fetchUsersByIds(sendFailure.missingClientsOfUsers.keys).flatMap {
                 sendFailure.missingClientsOfUsers.entries.foldToEitherWhileRight(Unit) { entry, _ ->
                     clientRepository.saveNewClients(entry.key, entry.value)
                 }
