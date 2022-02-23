@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.data.prekey
 
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
