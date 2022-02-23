@@ -3,8 +3,11 @@ package com.wire.kalium.logic.feature.message
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.failure.SendMessageFailure
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.sync.SyncManager
 
@@ -26,18 +29,44 @@ class MessageSenderImpl(
             syncManager.waitForSlowSyncToComplete()
 
             // TODO: make this thread safe (per user)
+            getRecipientsAndAttemptSend(conversationId, messageUuid)
+        }
+
+    private suspend fun getRecipientsAndAttemptSend(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit> =
+        suspending {
             conversationRepository.getConversationRecipients(conversationId)
                 .flatMap { recipients ->
                     sessionEstablisher.prepareRecipientsForNewOutgoingMessage(recipients).map { recipients }
                 }.flatMap { recipients ->
                     messageRepository.getMessageById(conversationId, messageUuid).flatMap { message ->
                         messageEnvelopeCreator.createOutgoingEnvelope(recipients, message).flatMap { envelope ->
-                            messageRepository.sendEnvelope(conversationId, envelope)
-                            //TODO("Handle failures too")
+                            trySendingEnvelopeRetryingIfPossible(conversationId, envelope, messageUuid)
                         }.flatMap {
-                            TODO("Mark message as sent")
+                            messageRepository.markMessageAsSent(conversationId, messageUuid)
                         }
                     }
                 }
         }
+
+    private suspend fun trySendingEnvelopeRetryingIfPossible(
+        conversationId: ConversationId,
+        envelope: MessageEnvelope,
+        messageUuid: String,
+    ): Either<CoreFailure, Unit> = suspending {
+        val sendResult = messageRepository.sendEnvelope(conversationId, envelope)
+
+        if (sendResult.isRight()) {
+            return@suspending Either.Right(Unit)
+        }
+
+        when (val failure = sendResult.value) {
+            is SendMessageFailure.ClientsHaveChanged -> {
+                messageSendFailureHandler.handleClientsHaveChangedFailure(failure).flatMap {
+                    getRecipientsAndAttemptSend(conversationId, messageUuid)
+                }
+            }
+            SendMessageFailure.NoNetworkConnection -> Either.Left(CoreFailure.NoNetworkConnection)
+            else -> Either.Left(failure)
+        }
+    }
 }

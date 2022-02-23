@@ -3,7 +3,9 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.failure.SendMessageFailure
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.network.api.message.MessageApi
 import com.wire.kalium.network.api.message.MessagePriority
@@ -18,8 +20,9 @@ import kotlinx.coroutines.flow.map
 interface MessageRepository {
     suspend fun getMessagesForConversation(conversationId: ConversationId, limit: Int): Flow<List<Message>>
     suspend fun persistMessage(message: Message): Either<CoreFailure, Unit>
+    suspend fun markMessageAsSent(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit>
     suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message>
-    suspend fun sendEnvelope(conversationId: ConversationId, envelope: MessageEnvelope): Either<CoreFailure, Unit>
+    suspend fun sendEnvelope(conversationId: ConversationId, envelope: MessageEnvelope): Either<SendMessageFailure, Unit>
 }
 
 class MessageDataSource(
@@ -52,7 +55,13 @@ class MessageDataSource(
         )
     }
 
-    override suspend fun sendEnvelope(conversationId: ConversationId, envelope: MessageEnvelope): Either<CoreFailure, Unit> {
+    override suspend fun markMessageAsSent(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit> = suspending {
+        getMessageById(conversationId, messageUuid)
+            .map { it.copy(status = Message.Status.SENT) }
+            .flatMap { persistMessage(it) }
+    }
+
+    override suspend fun sendEnvelope(conversationId: ConversationId, envelope: MessageEnvelope): Either<SendMessageFailure, Unit> {
         val recipientMap = envelope.recipients.associate { recipientEntry ->
             idMapper.toApiModel(recipientEntry.userId) to recipientEntry.clientPayloads.associate { clientPayload ->
                 clientPayload.clientId.value to Base64.encodeToBase64(clientPayload.payload.data).decodeToString()
@@ -72,7 +81,7 @@ class MessageDataSource(
                 Either.Left(sendMessageFailureMapper.fromDTO(exception))
             } else {
                 //TODO handle different cases
-                Either.Left(CoreFailure.Unknown(result.kException))
+                Either.Left(SendMessageFailure.Unknown(result.kException))
             }
         } else {
             Either.Right(Unit)

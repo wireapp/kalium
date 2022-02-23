@@ -50,6 +50,8 @@ kotlin {
                 }
                 implementation(Dependencies.Coroutines.core)
                 implementation(Dependencies.Kotlinx.serialization)
+                implementation(Dependencies.Kotlinx.dateTime)
+                implementation(Dependencies.UUID.benAsherUUID)
                 // the Dependency is duplicated between here and persistence build.gradle.kts
                 implementation(Dependencies.MultiplatformSettings.settings)
             }
