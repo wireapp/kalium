@@ -9,6 +9,7 @@ import com.wire.kalium.network.api.user.details.ListUserRequest
 import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.network.api.user.details.qualifiedIds
 import com.wire.kalium.network.api.user.self.SelfApi
+import com.wire.kalium.network.utils.isSuccessful
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedID
 import com.wire.kalium.persistence.dao.UserDAO
@@ -77,7 +78,7 @@ class UserDataSource(
     }
 
     override suspend fun updateSelfUser(newName: String?, newAccent: Int?, newAssetId: String?): Either<CoreFailure, Unit> {
-        val user = getSelfUser().firstOrNull() ?: return Either.Left(CoreFailure.ServerMiscommunication) // TODO: replace for a DB error
+        val user = getSelfUser().firstOrNull() ?: return Either.Left(CoreFailure.Unknown(NullPointerException())) // TODO: replace for a DB error
 
         val updateRequest = userMapper.fromModelToUpdateApiModel(user, newName, newAccent, newAssetId)
         val updatedSelf = selfApi.updateSelf(updateRequest)
@@ -86,7 +87,7 @@ class UserDataSource(
             userDAO.updateUser(userMapper.fromUpdateRequestToDaoModel(user, updateRequest))
             Either.Right(Unit)
         } else {
-            Either.Left(CoreFailure.ServerMiscommunication)
+            Either.Left(CoreFailure.Unknown(NullPointerException())) // TODO: replace for a DB error
         }
     }
 
