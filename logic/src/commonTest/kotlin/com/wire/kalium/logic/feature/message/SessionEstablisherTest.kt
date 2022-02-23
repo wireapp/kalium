@@ -6,8 +6,7 @@ import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.UserId
 import com.wire.kalium.cryptography.exceptions.ProteusException
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.prekey.ClientPreKeyInfo
@@ -31,6 +30,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 class SessionEstablisherTest {
 
@@ -68,7 +68,8 @@ class SessionEstablisherTest {
 
         sessionEstablisher.prepareRecipientsForNewOutgoingMessage(listOf(TEST_RECIPIENT_1))
             .shouldFail {
-                assertEquals(CoreFailure.Unknown(exception), it)
+                assertIs<ProteusFailure>(it)
+                assertEquals(exception, it.proteusException)
             }
     }
 
@@ -210,7 +211,8 @@ class SessionEstablisherTest {
 
         sessionEstablisher.prepareRecipientsForNewOutgoingMessage(listOf(TEST_RECIPIENT_1))
             .shouldFail {
-                assertEquals(CoreFailure.Unknown(exception), it)
+                assertIs<ProteusFailure>(it)
+                assertEquals(exception, it.proteusException)
             }
     }
 
