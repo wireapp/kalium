@@ -4,7 +4,7 @@ import com.wire.kalium.network.api.message.EnvelopeProtoMapper
 import com.wire.kalium.network.api.message.MessageApi
 import com.wire.messages.Otr
 
-actual class EnvelopeProtoMapperImpl : EnvelopeProtoMapper {
+class EnvelopeProtoMapperImpl: EnvelopeProtoMapper {
 
     private val otrClientEntryMapper = OtrClientEntryMapper()
     private val otrUserIdMapper = OtrUserIdMapper()
@@ -32,5 +32,6 @@ actual class EnvelopeProtoMapperImpl : EnvelopeProtoMapper {
             .build()
             .toByteArray()
     }
-
 }
+
+actual fun provideEnvelopeProtoMapper() = EnvelopeProtoMapperImpl()
