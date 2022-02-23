@@ -6,13 +6,12 @@ import com.wire.kalium.network.utils.NetworkResponse
 
 sealed class CoreFailure {
 
-
     /**
      * The attempted operation requires that this client is registered.
      */
     object MissingClientRegistration : CoreFailure()
 
-    class Unknown(val rootCause: Throwable?) : CoreFailure()
+    data class Unknown(val rootCause: Throwable?) : CoreFailure()
 
     abstract class FeatureFailure : CoreFailure()
 }
@@ -31,6 +30,7 @@ sealed class NetworkFailure(internal val kaliumException: KaliumException) : Cor
      */
     class ServerMiscommunication(kaliumException: KaliumException) : NetworkFailure(kaliumException)
 }
+
 
 inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<T>): Either<NetworkFailure, T> {
     // TODO: check for internet connection and return NoNetworkConnection

@@ -5,6 +5,17 @@ import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 
 object TestNetworkError {
+
+    val generic = NetworkFailure.ServerMiscommunication(
+        KaliumException.InvalidRequestError(
+            ErrorResponse(
+                400,
+                message = "generic test error",
+                label = "generic-test-error"
+            )
+        )
+    )
+
     val tooManyClient = NetworkFailure.ServerMiscommunication(
         KaliumException.InvalidRequestError(
             ErrorResponse(
