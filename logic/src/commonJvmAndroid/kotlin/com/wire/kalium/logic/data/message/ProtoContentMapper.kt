@@ -3,7 +3,7 @@ package com.wire.kalium.logic.data.message
 import com.waz.model.Messages
 import com.waz.model.Messages.GenericMessage
 
-actual class PlatformProtoContentMapper(): ProtoContentMapper {
+actual class PlatformProtoContentMapper: ProtoContentMapper {
 
     override fun encodeToProtobuf(protoContent: ProtoContent): PlainMessageBlob {
         val (messageUid, messageContent) = protoContent
