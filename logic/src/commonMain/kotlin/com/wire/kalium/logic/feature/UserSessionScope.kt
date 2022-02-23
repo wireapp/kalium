@@ -28,6 +28,8 @@ import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessageMapperImpl
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.ProtoContentMapper
+import com.wire.kalium.logic.data.message.SendMessageFailureMapper
+import com.wire.kalium.logic.data.message.SendMessageFailureMapperImpl
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.logic.data.prekey.PreKeyMapperImpl
 import com.wire.kalium.logic.data.user.UserDataSource
@@ -76,12 +78,15 @@ abstract class UserSessionScopeCommon(
 
     private val messageMapper: MessageMapper get() = MessageMapperImpl(idMapper)
 
+    private val sendMessageFailureMapper: SendMessageFailureMapper get() = SendMessageFailureMapperImpl()
+
     private val messageRepository: MessageRepository
         get() = MessageDataSource(
             authenticatedDataSourceSet.authenticatedNetworkContainer.messageApi,
             database.messageDAO,
             messageMapper,
-            idMapper
+            idMapper,
+            sendMessageFailureMapper
         )
 
     private val userRepository: UserRepository

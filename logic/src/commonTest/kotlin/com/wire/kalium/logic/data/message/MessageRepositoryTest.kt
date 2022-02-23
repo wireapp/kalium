@@ -46,7 +46,7 @@ class MessageRepositoryTest {
     }
 
     @Test
-    fun givenAnConversationId_whenGettingMessagesOfConversation_thenshouldUseIdMapperToMapTheConversationId() = runTest {
+    fun givenAnConversationId_whenGettingMessagesOfConversation_thenShouldUseIdMapperToMapTheConversationId() = runTest {
         val mappedId = TEST_QUALIFIED_ID_ENTITY
         given(idMapper)
             .function(idMapper::toDaoModel)
