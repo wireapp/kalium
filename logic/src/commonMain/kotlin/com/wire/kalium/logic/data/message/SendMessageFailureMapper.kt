@@ -2,7 +2,6 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.failure.SendMessageFailure
@@ -19,12 +18,13 @@ class SendMessageFailureMapperImpl : SendMessageFailureMapper {
             //TODO handle it better for no network or other cases, etc.
             CoreFailure.Unknown(error.cause)
         } else {
-            val errorBody = error.errorBody
-            SendMessageFailure.ClientsHaveChanged(
-                errorBody.missing.fromNestedMapToSimpleMap(),
-                errorBody.redundant.fromNestedMapToSimpleMap(),
-                errorBody.deleted.fromNestedMapToSimpleMap()
-            )
+            with(error.errorBody) {
+                SendMessageFailure.ClientsHaveChanged(
+                    missing.fromNestedMapToSimpleMap(),
+                    redundant.fromNestedMapToSimpleMap(),
+                    deleted.fromNestedMapToSimpleMap()
+                )
+            }
         }
     }
 
