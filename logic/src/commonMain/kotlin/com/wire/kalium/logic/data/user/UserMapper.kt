@@ -7,13 +7,13 @@ import com.wire.kalium.network.api.user.self.SelfUserInfoResponse
 import com.wire.kalium.network.api.asset.UserAssetDTO
 import com.wire.kalium.network.api.user.self.UserUpdateRequest
 import com.wire.kalium.persistence.dao.UserEntity
+import com.wire.kalium.persistence.dao.UserId as UserIdEntity
 
 interface UserMapper {
     fun fromApiModel(selfUserInfoResponse: SelfUserInfoResponse): SelfUser
     fun fromApiModelToDaoModel(userDetailsResponse: UserDetailsResponse): UserEntity
     fun fromApiModelToDaoModel(selfUserInfoResponse: SelfUserInfoResponse): UserEntity
     fun fromDaoModel(user: UserEntity): SelfUser
-
     /**
      * Maps the user data to be updated. if the parameters [newName] [newAccent] [newAssetId] are nulls,
      * it indicates that not updation should be made.
@@ -21,8 +21,8 @@ interface UserMapper {
      *  TODO: handle deletion of assets references, emptyAssetList
      */
     fun fromModelToUpdateApiModel(user: SelfUser, newName: String?, newAccent: Int?, newAssetId: String?): UserUpdateRequest
-
     fun fromUpdateRequestToDaoModel(user: SelfUser, updateRequest: UserUpdateRequest): UserEntity
+    fun toUserIdPersistence(userId: UserId): UserIdEntity
 }
 
 internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
@@ -100,4 +100,6 @@ internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
             selfUserInfoResponse.team
         )
     }
+
+    override fun toUserIdPersistence(userId: UserId) = UserIdEntity(userId.value, userId.domain)
 }
