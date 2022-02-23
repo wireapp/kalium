@@ -1,5 +1,6 @@
 package com.wire.kalium.logic
 
+import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -36,6 +37,7 @@ sealed class NetworkFailure(internal val kaliumException: KaliumException) : Cor
     abstract class FeatureFailure : CoreFailure()
 }
 
+class ProteusFailure(internal val proteusException: ProteusException) : CoreFailure()
 
 inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<T>): Either<NetworkFailure, T> {
     // TODO: check for internet connection and return NoNetworkConnection
@@ -45,5 +47,13 @@ inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<T>): Eith
             is KaliumException.NetworkUnavailableError -> Either.Left(NetworkFailure.NoNetworkConnection(result.kException))
             else -> Either.Left(NetworkFailure.ServerMiscommunication(result.kException))
         }
+    }
+}
+
+inline fun <T : Any> wrapCryptoRequest(cryptoRequest: () -> T): Either<ProteusFailure, T> {
+    return try {
+        Either.Right(cryptoRequest())
+    } catch (e: ProteusException) {
+        Either.Left(ProteusFailure(e))
     }
 }
