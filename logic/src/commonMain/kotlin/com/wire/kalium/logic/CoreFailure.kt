@@ -13,7 +13,7 @@ sealed class CoreFailure {
      */
     object MissingClientRegistration : CoreFailure()
 
-    class Unknown(val rootCause: Throwable?) : CoreFailure()
+    data class Unknown(val rootCause: Throwable?) : CoreFailure()
 
     abstract class FeatureFailure : CoreFailure()
 }

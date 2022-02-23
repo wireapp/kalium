@@ -52,7 +52,6 @@ import com.wire.kalium.persistence.db.Database
 import com.wire.kalium.persistence.event.EventInfoStorage
 import com.wire.kalium.persistence.event.EventInfoStorageImpl
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
 
 expect class UserSessionScope : UserSessionScopeCommon
 
@@ -61,8 +60,8 @@ abstract class UserSessionScopeCommon(
     private val authenticatedDataSourceSet: AuthenticatedDataSourceSet,
 ) {
 
-    protected abstract val encryptedSettingsHolder: EncryptedSettingsHolder
-    protected val userPreferencesSettings by lazy { KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings) }
+    private val encryptedSettingsHolder: EncryptedSettingsHolder = authenticatedDataSourceSet.encryptedSettingsHolder
+    private val userPreferencesSettings = authenticatedDataSourceSet.kaliumPreferencesSettings
     private val eventInfoStorage: EventInfoStorage
         get() = EventInfoStorageImpl(userPreferencesSettings)
 
@@ -70,7 +69,7 @@ abstract class UserSessionScopeCommon(
     private val memberMapper: MemberMapper get() = MemberMapperImpl(idMapper)
     private val conversationMapper: ConversationMapper get() = ConversationMapperImpl(idMapper, memberMapper)
     private val userMapper = UserMapperImpl(idMapper)
-    protected abstract val database: Database
+    private val database: Database = authenticatedDataSourceSet.database
 
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(
