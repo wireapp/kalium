@@ -13,16 +13,7 @@ actual class UserSessionScope(
     authenticatedDataSourceSet: AuthenticatedDataSourceSet,
 ) : UserSessionScopeCommon(session, authenticatedDataSourceSet) {
     override val clientConfig: ClientConfig get() = ClientConfig()
-    override val database: Database
-        get() = Database()
-
-    override val encryptedSettingsHolder: EncryptedSettingsHolder = EncryptedSettingsHolder(
-        "$PREFERENCE_FILE_PREFIX-${session.userId}"
-    )
 
     override val protoContentMapper: ProtoContentMapper get() = PlatformProtoContentMapper()
 
-    private companion object {
-        private const val PREFERENCE_FILE_PREFIX = ".user-pref"
-    }
 }
