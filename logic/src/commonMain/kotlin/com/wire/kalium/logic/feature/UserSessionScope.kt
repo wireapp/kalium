@@ -28,8 +28,13 @@ import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessageMapperImpl
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.ProtoContentMapper
+import com.wire.kalium.logic.data.prekey.PreKeyDataSource
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.logic.data.prekey.PreKeyMapperImpl
+import com.wire.kalium.logic.data.prekey.PreKeyRepository
+import com.wire.kalium.logic.data.prekey.remote.PreKeyListMapper
+import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteDataSource
+import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteRepository
 import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserMapperImpl
 import com.wire.kalium.logic.data.user.UserRepository
@@ -96,9 +101,10 @@ abstract class UserSessionScopeCommon(
 
     protected abstract val clientConfig: ClientConfig
 
-    private val preyKeyMapper: PreKeyMapper get() = PreKeyMapperImpl()
+    private val preKeyMapper: PreKeyMapper get() = PreKeyMapperImpl()
+    private val preKeyListMapper: PreKeyListMapper get() = PreKeyListMapper(preKeyMapper)
     private val locationMapper: LocationMapper get() = LocationMapper()
-    private val clientMapper: ClientMapper get() = ClientMapper(preyKeyMapper, locationMapper, clientConfig)
+    private val clientMapper: ClientMapper get() = ClientMapper(preKeyMapper, locationMapper, clientConfig)
 
     private val clientRemoteRepository: ClientRemoteRepository
         get() = ClientRemoteDataSource(
@@ -134,10 +140,20 @@ abstract class UserSessionScopeCommon(
             messageRepository,
             protoContentMapper
         )
-    val listenToEvents: ListenToEventsUseCase get() = ListenToEventsUseCase(syncManager, eventRepository, conversationEventReceiver)
-    val client: ClientScope get() = ClientScope(clientRepository, authenticatedDataSourceSet.proteusClient)
-    val conversations: ConversationScope get() = ConversationScope(conversationRepository, syncManager)
 
+    private val preKeyRemoteRepository: PreKeyRemoteRepository
+        get() = PreKeyRemoteDataSource(
+            authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi,
+            preKeyListMapper
+        )
+    private val preKeyRepository: PreKeyRepository
+        get() = PreKeyDataSource(
+            preKeyRemoteRepository,
+            authenticatedDataSourceSet.proteusClient
+        )
+    val listenToEvents: ListenToEventsUseCase get() = ListenToEventsUseCase(syncManager, eventRepository, conversationEventReceiver)
+    val client: ClientScope get() = ClientScope(clientRepository, preKeyRepository)
+    val conversations: ConversationScope get() = ConversationScope(conversationRepository, syncManager)
     val messages: MessageScope get() = MessageScope(messageRepository, clientRepository, userRepository, syncManager)
     val users: UserScope get() = UserScope(userRepository, syncManager, assetRepository)
 }
