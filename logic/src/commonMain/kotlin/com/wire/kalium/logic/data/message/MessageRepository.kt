@@ -11,11 +11,14 @@ import com.wire.kalium.network.exceptions.QualifiedSendMessageError
 import com.wire.kalium.network.utils.isSuccessful
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 interface MessageRepository {
     suspend fun getMessagesForConversation(conversationId: ConversationId, limit: Int): Flow<List<Message>>
     suspend fun persistMessage(message: Message): Either<CoreFailure, Unit>
+    suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message>
     suspend fun sendEnvelope(conversationId: ConversationId, envelope: MessageEnvelope): Either<CoreFailure, Unit>
 }
 
@@ -37,6 +40,16 @@ class MessageDataSource(
         messageDAO.insertMessage(messageMapper.fromMessageToEntity(message))
         //TODO: Handle failures
         return Either.Right(Unit)
+    }
+
+    override suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message> {
+        //TODO handle failures
+        return Either.Right(
+            messageDAO.getMessageById(messageUuid, idMapper.toDaoModel(conversationId))
+                .filterNotNull()
+                .map(messageMapper::fromEntityToMessage)
+                .first()
+        )
     }
 
     override suspend fun sendEnvelope(conversationId: ConversationId, envelope: MessageEnvelope): Either<CoreFailure, Unit> {
