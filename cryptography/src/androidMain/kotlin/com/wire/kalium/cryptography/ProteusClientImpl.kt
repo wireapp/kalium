@@ -7,7 +7,7 @@ import com.wire.kalium.cryptography.exceptions.ProteusException
 import java.io.File
 import java.util.UUID
 
-actual class ProteusClientImpl actual constructor(rootDir: String, userId: String): ProteusClient {
+actual class ProteusClientImpl actual constructor(rootDir: String, userId: String) : ProteusClient {
 
     private val path: String
     private lateinit var box: CryptoBox
@@ -43,6 +43,19 @@ actual class ProteusClientImpl actual constructor(rootDir: String, userId: Strin
         return wrapException { toPreKey(box.newLastPreKey()) }
     }
 
+    override suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean {
+        return try {
+            box.getSession(sessionId.value)
+            true
+        } catch (e: CryptoException) {
+            if (e.code == CryptoException.Code.SESSION_NOT_FOUND) {
+                false
+            } else {
+                throw e
+            }
+        }
+    }
+
     override suspend fun createSession(preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId) {
         wrapException { box.initSessionFromPreKey(sessionId.value, toPreKey(preKeyCrypto)) }
     }
@@ -59,8 +72,8 @@ actual class ProteusClientImpl actual constructor(rootDir: String, userId: Strin
         }
     }
 
-    override suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray? {
-        return wrapException { box.getSession(sessionId.value)?.encrypt(message) }
+    override suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
+        return wrapException { box.getSession(sessionId.value).encrypt(message) }
     }
 
     override suspend fun encryptWithPreKey(
@@ -69,7 +82,7 @@ actual class ProteusClientImpl actual constructor(rootDir: String, userId: Strin
         sessionId: CryptoSessionId
     ): ByteArray {
         return wrapException {
-            val session =  box.initSessionFromPreKey(sessionId.value, toPreKey(preKeyCrypto))
+            val session = box.initSessionFromPreKey(sessionId.value, toPreKey(preKeyCrypto))
             session.encrypt(message)
         }
     }
