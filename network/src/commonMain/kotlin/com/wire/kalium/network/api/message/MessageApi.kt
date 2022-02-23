@@ -79,6 +79,7 @@ interface MessageApi {
         ) : Parameters()
     }
 
+    @Deprecated("This endpoint doesn't support federated environments", ReplaceWith("qualifiedSendMessage"))
     suspend fun sendMessage(
         parameters: Parameters.DefaultParameters,
         conversationId: String,
