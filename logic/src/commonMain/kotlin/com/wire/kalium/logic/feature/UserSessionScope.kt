@@ -110,7 +110,7 @@ abstract class UserSessionScopeCommon(
         get() = ClientRegistrationStorageImpl(userPreferencesSettings)
 
     private val clientRepository: ClientRepository
-        get() = ClientDataSource(clientRemoteRepository, clientRegistrationStorage)
+        get() = ClientDataSource(clientRemoteRepository, clientRegistrationStorage, database.clientDAO, userMapper)
 
     private val assetMapper: AssetMapper get() = AssetMapperImpl()
     private val assetRepository: AssetRepository

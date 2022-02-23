@@ -4,12 +4,14 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.cryptography.PreKeyCrypto
+import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.failure.ClientFailure
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
+import com.wire.kalium.persistence.dao.client.ClientDAO
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -35,12 +37,17 @@ class ClientRepositoryTest {
     private val clientRegistrationStorage = configure(mock(classOf<ClientRegistrationStorage>())) {
         stubsUnitByDefault = true
     }
+    @Mock
+    private val clientDAO = mock(classOf<ClientDAO>())
+
+    @Mock
+    private val userMapper = mock(classOf<UserMapper>())
 
     private lateinit var clientRepository: ClientRepository
 
     @BeforeTest
     fun setup() {
-        clientRepository = ClientDataSource(clientRemoteRepository, clientRegistrationStorage)
+        clientRepository = ClientDataSource(clientRemoteRepository, clientRegistrationStorage, clientDAO, userMapper)
     }
 
     @Test
