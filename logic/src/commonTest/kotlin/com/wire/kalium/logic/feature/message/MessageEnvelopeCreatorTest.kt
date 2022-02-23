@@ -8,7 +8,6 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.conversation.Recipient
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PlainMessageBlob
@@ -31,6 +30,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import com.wire.kalium.cryptography.UserId as CryptoUserId
+import com.wire.kalium.logic.data.id.QualifiedID as ConversationId
 
 class MessageEnvelopeCreatorTest {
 

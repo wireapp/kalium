@@ -1,7 +1,7 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.QualifiedID as ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.user.UserId
