@@ -7,7 +7,6 @@ import com.wire.kalium.network.utils.NetworkResponse
 
 sealed class CoreFailure {
 
-
     /**
      * The attempted operation requires that this client is registered.
      */
@@ -31,10 +30,6 @@ sealed class NetworkFailure(internal val kaliumException: KaliumException) : Cor
      * Either fix our app or our backend.
      */
     class ServerMiscommunication(kaliumException: KaliumException) : NetworkFailure(kaliumException)
-
-    data class Unknown(val rootCause: Throwable?) : CoreFailure()
-
-    abstract class FeatureFailure : CoreFailure()
 }
 
 class ProteusFailure(internal val proteusException: ProteusException) : CoreFailure()
