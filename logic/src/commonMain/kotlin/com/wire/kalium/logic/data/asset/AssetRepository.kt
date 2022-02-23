@@ -20,8 +20,10 @@ internal class AssetDataSource(
         return if (!uploadedAsset.isSuccessful()) {
             Either.Left(CoreFailure.ServerMiscommunication)
         } else {
+            val assetEntity = assetMapper.toDaoModel(uploadAssetData, uploadedAsset.value)
+            assetDao.insertAsset(assetEntity)
+
             val uploadedAssetId = assetMapper.toDomainModel(uploadedAsset.value)
-            // TODO: map and persist uploaded asset
             Either.Right(uploadedAssetId)
         }
     }

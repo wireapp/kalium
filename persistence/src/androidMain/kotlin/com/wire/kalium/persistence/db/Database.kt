@@ -49,7 +49,7 @@ actual class Database(context: Context, name: String, kaliumPreferences: KaliumP
 
         database = AppDatabase(
             driver,
-            Asset.Adapter(qualified_idAdapter = QualifiedIDAdapter(), downloadedAdapter = BooleanColumnAdapter),
+            Asset.Adapter(downloadedAdapter = BooleanColumnAdapter),
             Client.Adapter(user_idAdapter = QualifiedIDAdapter()),
             Conversation.Adapter(qualified_idAdapter = QualifiedIDAdapter()),
             Member.Adapter(userAdapter = QualifiedIDAdapter(), conversationAdapter = QualifiedIDAdapter()),

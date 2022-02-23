@@ -6,7 +6,8 @@ import com.wire.kalium.persistence.db.Asset as SQLDelightAsset
 class AssetMapper {
     fun toModel(asset: SQLDelightAsset): AssetEntity {
         return AssetEntity(
-            asset.qualified_id,
+            asset.key,
+            asset.domain,
             asset.token,
             asset.name,
             asset.encryption,
@@ -24,7 +25,8 @@ class AssetDAOImpl(private val queries: AssetsQueries) : AssetDAO {
 
     override suspend fun insertAsset(assetEntity: AssetEntity) {
         queries.insertAsset(
-            assetEntity.id,
+            assetEntity.key,
+            assetEntity.domain,
             assetEntity.token,
             assetEntity.name,
             assetEntity.encryption,

@@ -28,7 +28,7 @@ actual class Database {
         AppDatabase.Schema.create(driver)
         database = AppDatabase(
             driver,
-            Asset.Adapter(qualified_idAdapter = QualifiedIDAdapter(), BooleanColumnAdapter),
+            Asset.Adapter(BooleanColumnAdapter),
             Client.Adapter(user_idAdapter = QualifiedIDAdapter()),
             Conversation.Adapter(qualified_idAdapter = QualifiedIDAdapter()),
             Member.Adapter(userAdapter = QualifiedIDAdapter(), conversationAdapter = QualifiedIDAdapter()),

@@ -1,9 +1,8 @@
 package com.wire.kalium.persistence.dao.asset
 
-import com.wire.kalium.persistence.dao.QualifiedID
-
 data class AssetEntity(
-    val id: QualifiedID,
+    val key: String,
+    val domain: String,
     val token: String?,
     val name: String?,
     val encryption: String?,
@@ -18,7 +17,8 @@ data class AssetEntity(
 
         other as AssetEntity
 
-        if (id != other.id) return false
+        if (key != other.key) return false
+        if (domain != other.domain) return false
         if (token != other.token) return false
         if (name != other.name) return false
         if (encryption != other.encryption) return false
@@ -31,7 +31,8 @@ data class AssetEntity(
     }
 
     override fun hashCode(): Int {
-        var result = id.hashCode()
+        var result = key.hashCode()
+        result = 31 * result + domain.hashCode()
         result = 31 * result + token.hashCode()
         result = 31 * result + name.hashCode()
         result = 31 * result + encryption.hashCode()

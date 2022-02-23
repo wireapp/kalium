@@ -30,6 +30,7 @@ class UploadUserAvatarUseCaseImpl(
         assetDataSource
             .uploadPublicAsset(UploadAssetData(imageData, ImageAsset.JPG, true, RetentionType.ETERNAL))
             .map { asset ->
+                println(asset)
                 userDataSource.updateSelfUser(newAssetId = asset.key)
             }
 

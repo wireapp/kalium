@@ -25,7 +25,7 @@ actual class Database(name: String, passphrase: String) {
     init {
         val driver = NativeSqliteDriver(AppDatabase.Schema, name)
         database = AppDatabase(driver,
-            Asset.Adapter(qualified_idAdapter = QualifiedIDAdapter(), downloadedAdapter = BooleanColumnAdapter),
+            Asset.Adapter(downloadedAdapter = BooleanColumnAdapter),
             Client.Adapter(user_idAdapter = QualifiedIDAdapter()),
             Conversation.Adapter(qualified_idAdapter = QualifiedIDAdapter()),
             Member.Adapter(userAdapter = QualifiedIDAdapter(), conversationAdapter = QualifiedIDAdapter()),
