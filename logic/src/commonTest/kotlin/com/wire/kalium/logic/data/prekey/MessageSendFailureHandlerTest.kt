@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestNetworkError
 import com.wire.kalium.logic.util.shouldFail
 import io.mockative.Mock
 import io.mockative.any
@@ -94,7 +95,7 @@ class MessageSendFailureHandlerTest {
 
     @Test
     fun givenRepositoryFailsToFetchContacts_whenHandlingClientsHaveChangedFailure_thenFailureShouldBePropagated() = runTest {
-        val failure = CoreFailure.ServerMiscommunication
+        val failure = TestNetworkError.generic
         given(userRepository)
             .suspendFunction(userRepository::fetchUsersByIds)
             .whenInvokedWith(any())
@@ -103,24 +104,24 @@ class MessageSendFailureHandlerTest {
 
         val result = messageSendFailureHandler.handleClientsHaveChangedFailure(failureData)
         result.shouldFail()
-        assertEquals(Either.Left(CoreFailure.ServerMiscommunication), result)
+        assertEquals(Either.Left(failure), result)
     }
 
     @Test
     fun givenRepositoryFailsToAddClientsToContacts_whenHandlingClientsHaveChangedFailure_thenFailureShouldBePropagated() = runTest {
-            val failure = CoreFailure.ServerMiscommunication
-            given(userRepository)
-                .suspendFunction(userRepository::fetchUsersByIds)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
-            given(clientRepository)
-                .suspendFunction(clientRepository::saveNewClients)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Left(failure))
-            val failureData = SendMessageFailure.ClientsHaveChanged(mapOf(userOne), mapOf(), mapOf())
+        val failure = TestNetworkError.generic
+        given(userRepository)
+            .suspendFunction(userRepository::fetchUsersByIds)
+            .whenInvokedWith(any())
+            .thenReturn(Either.Right(Unit))
+        given(clientRepository)
+            .suspendFunction(clientRepository::saveNewClients)
+            .whenInvokedWith(any(), any())
+            .thenReturn(Either.Left(failure))
+        val failureData = SendMessageFailure.ClientsHaveChanged(mapOf(userOne), mapOf(), mapOf())
 
-            val result = messageSendFailureHandler.handleClientsHaveChangedFailure(failureData)
-            result.shouldFail()
-            assertEquals(Either.Left(CoreFailure.ServerMiscommunication), result)
-        }
+        val result = messageSendFailureHandler.handleClientsHaveChangedFailure(failureData)
+        result.shouldFail()
+        assertEquals(Either.Left(failure), result)
+    }
 }
