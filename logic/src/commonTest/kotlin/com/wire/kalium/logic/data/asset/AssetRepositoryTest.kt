@@ -8,6 +8,7 @@ import com.wire.kalium.network.api.asset.AssetApi
 import com.wire.kalium.network.api.asset.AssetResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.persistence.dao.asset.AssetDAO
 import io.ktor.client.call.HttpClientCall
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.Headers
@@ -22,6 +23,7 @@ import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
+import io.mockative.thenDoNothing
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.coroutines.CoroutineContext
@@ -34,19 +36,32 @@ class AssetRepositoryTest {
     @Mock
     private val assetApi = mock(classOf<AssetApi>())
 
+    @Mock
+    private val assetDAO = mock(classOf<AssetDAO>())
+
     private lateinit var assetRepository: AssetRepository
 
     @BeforeTest
     fun setUp() {
-        assetRepository = AssetDataSource(assetApi, AssetMapperImpl())
+        assetRepository = AssetDataSource(assetApi, AssetMapperImpl(), assetDAO)
     }
 
     @Test
     fun givenValidParams_whenUploadingPublicAssets_thenShouldSucceedWithAMappedResponse() = runTest {
+        given(assetDAO)
+            .suspendFunction(assetDAO::insertAsset)
+            .whenInvokedWith(any())
+            .thenDoNothing()
+
         given(assetApi)
             .suspendFunction(assetApi::uploadAsset)
             .whenInvokedWith(any(), any())
-            .thenReturn(NetworkResponse.Success(FakeHttpResponse(), AssetResponse("some_key", "some_expiration_val", "some_token")))
+            .thenReturn(
+                NetworkResponse.Success(
+                    FakeHttpResponse(),
+                    AssetResponse("some_key", "some_domain", "some_exp", "some_token")
+                )
+            )
 
         val uploadAssetMetadata = UploadAssetData("the_image".encodeToByteArray(), ImageAsset.JPG, true, RetentionType.ETERNAL)
 
