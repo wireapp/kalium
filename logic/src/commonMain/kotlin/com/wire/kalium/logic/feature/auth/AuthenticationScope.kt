@@ -1,7 +1,12 @@
 package com.wire.kalium.logic.feature.auth
 
+import com.wire.kalium.logic.configuration.GetServerConfigUseCase
 import com.wire.kalium.logic.configuration.ServerConfigMapper
 import com.wire.kalium.logic.configuration.ServerConfigMapperImpl
+import com.wire.kalium.logic.configuration.ServerConfigRemoteDataSource
+import com.wire.kalium.logic.configuration.ServerConfigRemoteRepository
+import com.wire.kalium.logic.configuration.ServerConfigRepository
+import com.wire.kalium.logic.configuration.ServerConfigSource
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.auth.login.LoginRepositoryImpl
 import com.wire.kalium.logic.data.session.SessionMapper
@@ -34,6 +39,9 @@ abstract class AuthenticationScopeCommon(
     private val sessionStorage: SessionStorage get() = SessionStorageImpl(kaliumPreferences)
 
     private val serverConfigMapper: ServerConfigMapper get() = ServerConfigMapperImpl()
+    private val serverConfigRemoteRepository: ServerConfigRemoteRepository get() = ServerConfigRemoteDataSource(loginNetworkContainer.serverConfigApi,serverConfigMapper)
+    private val serverConfigRepository: ServerConfigRepository get() = ServerConfigSource(serverConfigRemoteRepository)
+
     private val sessionMapper: SessionMapper get() = SessionMapperImpl(serverConfigMapper)
 
     private val loginRepository: LoginRepository get() = LoginRepositoryImpl(loginNetworkContainer.loginApi, clientLabel)
@@ -54,5 +62,6 @@ abstract class AuthenticationScopeCommon(
         )
 
     val getSessions: GetSessionsUseCase get() = GetSessionsUseCase(sessionRepository)
+    val getServerConfig: GetServerConfigUseCase get() = GetServerConfigUseCase(serverConfigRepository)
     val session: SessionScope get() = SessionScope(sessionRepository)
 }
