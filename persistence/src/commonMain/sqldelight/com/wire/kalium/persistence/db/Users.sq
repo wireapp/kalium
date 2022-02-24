@@ -36,3 +36,8 @@ SELECT * FROM User;
 
 selectByQualifiedId:
 SELECT * FROM User WHERE qualified_id = ?;
+
+selectByName:
+SELECT * FROM User WHERE name = ? LIKE handle = ;
+
+

@@ -53,10 +53,37 @@ class UserDAOTest : BaseDatabaseTest() {
     @Test
     fun givenExistingUser_ThenUserCanBeUpdated() = runTest {
         db.userDAO.insertUser(user1)
-        var updatedUser1 = UserEntity(user1.id, "John Doe", "johndoe", "email1", "phone1", 1, "team")
+        val updatedUser1 = UserEntity(user1.id, "John Doe", "johndoe", "email1", "phone1", 1, "team")
         db.userDAO.updateUser(updatedUser1)
         val result = db.userDAO.getUserByQualifiedID(user1.id).first()
         assertEquals(result, updatedUser1)
+    }
+
+    @Test
+    fun givenListOfUsers_ThenUserCanBeQueriedByName() = runTest {
+        db.userDAO.insertUser(user1)
+        val updatedUser1 = UserEntity(user1.id, "John Doe", "johndoe", "email1", "phone1", 1, "team")
+
+        val result = db.userDAO.getUserByQualifiedID(user1.id)
+        assertEquals(user1, result.first())
+
+        db.userDAO.updateUser(updatedUser1)
+        assertEquals(updatedUser1, result.first())
+    }
+
+    @Test
+    fun givenListOfUsers_ThenUserCanBeQueriedByEmail() = runTest {
+        //given insert couple of users
+        db.userDAO.insertUser(user1)
+        val updatedUser1 = UserEntity(user1.id, "John Doe", "johndoe", "email1", "phone1", 1, "team")
+
+        //when perform a query on the name
+        val result = db.userDAO.getUserByQualifiedID(user1.id)
+        assertEquals(user1, result.first())
+
+        //check if result contains the name
+        db.userDAO.updateUser(updatedUser1)
+        assertEquals(updatedUser1, result.first())
     }
 
     @Test
@@ -70,4 +97,5 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.updateUser(updatedUser1)
         assertEquals(updatedUser1, result.first())
     }
+
 }
