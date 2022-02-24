@@ -4,7 +4,9 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 
-sealed class SendMessageFailure: CoreFailure.FeatureFailure() {
+sealed class SendMessageFailure : CoreFailure.FeatureFailure() {
+    class Unknown(val cause: Throwable?) : SendMessageFailure()
+    object NoNetworkConnection : SendMessageFailure()
     class ClientsHaveChanged(
         val missingClientsOfUsers: Map<UserId, List<ClientId>>,
         val redundantClientsOfUsers: Map<UserId, List<ClientId>>,
