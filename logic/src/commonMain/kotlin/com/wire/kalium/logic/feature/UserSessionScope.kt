@@ -36,6 +36,7 @@ import com.wire.kalium.logic.data.prekey.PreKeyMapperImpl
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.prekey.remote.PreKeyListMapper
 import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteDataSource
+import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteRepository
 import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserMapperImpl
 import com.wire.kalium.logic.data.user.UserRepository
@@ -138,7 +139,7 @@ abstract class UserSessionScopeCommon(
     private val preKeyListMapper: PreKeyListMapper
         get() = PreKeyListMapper(preyKeyMapper)
 
-    private val preKeyRemoteDatabase: PreKeyRemoteDataSource
+    private val preKeyRemoteDatabase: PreKeyRemoteRepository
         get() = PreKeyRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi, preKeyListMapper)
 
     private val preKeyRepository: PreKeyRepository
