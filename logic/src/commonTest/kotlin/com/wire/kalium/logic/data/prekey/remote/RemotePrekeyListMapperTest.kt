@@ -53,9 +53,9 @@ class PreKeyListMapperTest {
             it.userId
         }.containsAll(
             listOf(
-                QualifiedID("domA", "userA"),
-                QualifiedID("domA", "userB"),
-                QualifiedID("domB", "userB")
+                QualifiedID("userA","domA"),
+                QualifiedID("userB","domA"),
+                QualifiedID("userB","domB")
             )
         )
 
