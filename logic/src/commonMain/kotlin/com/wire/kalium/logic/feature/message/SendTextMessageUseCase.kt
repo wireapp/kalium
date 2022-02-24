@@ -43,6 +43,12 @@ class SendTextMessageUseCase(
                 messageRepository.persistMessage(message)
             }.flatMap {
                 messageSender.trySendingOutgoingMessage(conversationId, generatedMessageUuid)
+            }.onFailure {
+                println(it)
+                if(it is CoreFailure.Unknown){
+                    //TODO Did I write multiplatform logging today?
+                    it.rootCause?.printStackTrace()
+                }
             }
         }
     }

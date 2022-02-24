@@ -92,4 +92,4 @@ interface MessageApi {
 }
 
 typealias UserToClientToEncMsgMap = Map<String, Map<String, String>>
-typealias QualifiedUserToClientToEncMsgMap = Map<UserId, Map<String, String>>
+typealias QualifiedUserToClientToEncMsgMap = Map<UserId, Map<String, ByteArray>>

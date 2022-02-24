@@ -64,7 +64,7 @@ class MessageDataSource(
     override suspend fun sendEnvelope(conversationId: ConversationId, envelope: MessageEnvelope): Either<SendMessageFailure, Unit> {
         val recipientMap = envelope.recipients.associate { recipientEntry ->
             idMapper.toApiModel(recipientEntry.userId) to recipientEntry.clientPayloads.associate { clientPayload ->
-                clientPayload.clientId.value to Base64.encodeToBase64(clientPayload.payload.data).decodeToString()
+                clientPayload.clientId.value to clientPayload.payload.data
             }
         }
         val result = messageApi.qualifiedSendMessage(
