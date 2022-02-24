@@ -53,7 +53,7 @@ class ServerConfigMapperImpl : ServerConfigMapper {
         with(serverConfig) { BackendConfig(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl) }
 
     override fun fromBackendConfig(backendConfig: BackendConfig): ServerConfig =
-        with(backendConfig) { ServerConfig(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl) }
+        with(backendConfig) { ServerConfig(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, "") }
 
     override fun toNetworkConfigDTO(serverConfig: ServerConfig): NetworkConfigDTO =
         with(serverConfig) {
@@ -64,7 +64,7 @@ class ServerConfigMapperImpl : ServerConfigMapper {
         }
 
     override fun fromNetworkConfigDTO(networkConfigDTO: NetworkConfigDTO): ServerConfig =
-        with(networkConfigDTO) { ServerConfig(endpoints.apiBaseUrl, endpoints.accountsBaseUrl, endpoints.webSocketBaseUrl, endpoints.blackListUrl, endpoints.teamsUrl, endpoints.websiteUrl) }
+        with(networkConfigDTO) { ServerConfig(endpoints.apiBaseUrl, endpoints.accountsBaseUrl, endpoints.webSocketBaseUrl, endpoints.blackListUrl, endpoints.teamsUrl, endpoints.websiteUrl, title) }
 
 
     override fun toNetworkConfigEntity(serverConfig: ServerConfig): NetworkConfig =
