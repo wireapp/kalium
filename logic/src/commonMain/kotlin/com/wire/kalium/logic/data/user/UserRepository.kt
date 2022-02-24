@@ -1,7 +1,9 @@
 package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.user.details.ListUserRequest
 import com.wire.kalium.network.api.user.details.UserDetailsApi
@@ -9,9 +11,6 @@ import com.wire.kalium.network.api.user.details.qualifiedIds
 import com.wire.kalium.network.api.user.self.SelfApi
 import com.wire.kalium.network.utils.isSuccessful
 import com.wire.kalium.persistence.dao.MetadataDAO
-import com.wire.kalium.logic.data.id.NetworkQualifiedId
-import com.wire.kalium.persistence.dao.QualifiedID as QualifiedIDEntity
-import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.persistence.dao.UserDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
@@ -22,6 +21,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import com.wire.kalium.persistence.dao.QualifiedID as QualifiedIDEntity
 
 interface UserRepository {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
@@ -37,17 +37,19 @@ class UserDataSource(
     private val selfApi: SelfApi,
     private val userApi: UserDetailsApi,
     private val idMapper: IdMapper,
-    private val userMapper: UserMapper
+    private val userMapper: UserMapper,
+    private val assetRepository: AssetRepository
 ) : UserRepository {
 
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> {
         val selfInfoResponse = selfApi.getSelfInfo()
-        // TODO if we have assets id, also persist on asset table the ids for later sync or on demand getassetByKey usecase
 
         return if (!selfInfoResponse.isSuccessful()) {
             Either.Left(CoreFailure.ServerMiscommunication)
         } else {
             val user = userMapper.fromApiModelToDaoModel(selfInfoResponse.value)
+            // Save (in case there is no data) a reference to the asset id (profile picture)
+            assetRepository.saveUserPictureAsset(user.previewAssetId, user.completeAssetId)
             userDAO.insertUser(user)
             metadataDAO.insertValue(Json.encodeToString(user.id), SELF_USER_ID_KEY)
             Either.Right(Unit)
@@ -100,8 +102,8 @@ class UserDataSource(
             Either.Left(CoreFailure.ServerMiscommunication)
         }
     }
+
     companion object {
         const val SELF_USER_ID_KEY = "selfUserID"
-
     }
 }

@@ -10,7 +10,17 @@ import kotlinx.coroutines.flow.map
 
 class UserMapper {
     fun toModel(user: SQLDelightUser): UserEntity {
-        return UserEntity(user.qualified_id, user.name, user.handle, user.email, user.phone, user.accent_id, user.team)
+        return UserEntity(
+            user.qualified_id,
+            user.name,
+            user.handle,
+            user.email,
+            user.phone,
+            user.accent_id,
+            user.team,
+            user.preview_asset_id,
+            user.complete_asset_id
+        )
     }
 }
 
@@ -19,19 +29,19 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
     val mapper = UserMapper()
 
     override suspend fun insertUser(user: UserEntity) {
-        queries.insertUser(user.id, user.name, user.handle, user.email, user.phone, user.accentId, user.team)
+        queries.insertUser(user.id, user.name, user.handle, user.email, user.phone, user.accentId, user.team, user.previewAssetId, user.completeAssetId)
     }
 
     override suspend fun insertUsers(users: List<UserEntity>) {
         queries.transaction {
             for (user: UserEntity in users) {
-                queries.insertUser(user.id, user.name, user.handle, user.email, user.phone, user.accentId, user.team)
+                queries.insertUser(user.id, user.name, user.handle, user.email, user.phone, user.accentId, user.team, user.previewAssetId, user.completeAssetId)
             }
         }
     }
 
     override suspend fun updateUser(user: UserEntity) {
-        queries.updateUser(user.name, user.handle, user.email, user.accentId, user.id)
+        queries.updateUser(user.name, user.handle, user.email, user.accentId, user.previewAssetId, user.completeAssetId, user.id)
     }
 
     override suspend fun getAllUsers(): Flow<List<UserEntity>> = queries.selectAllUsers()

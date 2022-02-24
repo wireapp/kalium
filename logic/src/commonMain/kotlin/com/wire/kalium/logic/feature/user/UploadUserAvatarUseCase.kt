@@ -8,12 +8,11 @@ import com.wire.kalium.logic.data.asset.UploadAssetData
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
-import kotlinx.coroutines.flow.map
 
 interface UploadUserAvatarUseCase {
     /**
-     * Function that allows uploading a profile picture
-     * This first will upload an asset and then will link the asset to the [User]
+     * Function allowing the upload of a user profile picture (avatar)
+     * This first will upload the data as an asset and then will link this asset with the [User]
      *
      * @param mimeType mimetype of the user picture
      * @param imageData binary data of the actual picture
@@ -30,7 +29,6 @@ class UploadUserAvatarUseCaseImpl(
         assetDataSource
             .uploadPublicAsset(UploadAssetData(imageData, ImageAsset.JPG, true, RetentionType.ETERNAL))
             .map { asset ->
-                println(asset)
                 userDataSource.updateSelfUser(newAssetId = asset.key)
             }
 

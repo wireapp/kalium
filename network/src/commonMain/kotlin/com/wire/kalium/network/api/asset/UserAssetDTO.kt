@@ -1,6 +1,5 @@
 package com.wire.kalium.network.api.asset
 
-import com.wire.kalium.network.api.user.self.ImageSize
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -13,3 +12,19 @@ data class UserAssetDTO(
     @SerialName("type")
     val type: String = "image"
 )
+
+@Serializable
+enum class ImageSize {
+    @SerialName("preview")
+    Preview,
+
+    @SerialName("complete")
+    Complete;
+
+    override fun toString(): String {
+        return this.name.lowercase()
+    }
+}
+
+fun List<UserAssetDTO>?.getPreviewAssetOrNull() = this?.firstOrNull { it.size == ImageSize.Preview }
+fun List<UserAssetDTO>?.getCompleteAssetOrNull() = this?.firstOrNull { it.size == ImageSize.Complete }

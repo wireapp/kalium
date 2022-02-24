@@ -21,16 +21,3 @@ data class UserUpdateRequest(
     @SerialName("picture")
     var picture: List<UserAssetDTO>? = assets
 }
-
-@Serializable
-enum class ImageSize {
-    @SerialName("preview")
-    Preview,
-
-    @SerialName("complete")
-    Complete;
-
-    override fun toString(): String {
-        return this.name.lowercase()
-    }
-}

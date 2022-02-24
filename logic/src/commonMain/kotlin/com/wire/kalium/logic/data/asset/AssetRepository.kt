@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.asset
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.asset.AssetApi
 import com.wire.kalium.network.utils.isSuccessful
@@ -8,6 +9,7 @@ import com.wire.kalium.persistence.dao.asset.AssetDAO
 
 interface AssetRepository {
     suspend fun uploadPublicAsset(uploadAssetData: UploadAssetData): Either<CoreFailure, UploadedAssetId>
+    suspend fun saveUserPictureAsset(vararg assetId: UserAssetId): Either<CoreFailure, Unit>
 }
 
 internal class AssetDataSource(
@@ -26,5 +28,12 @@ internal class AssetDataSource(
             val uploadedAssetId = assetMapper.toDomainModel(uploadedAsset.value)
             Either.Right(uploadedAssetId)
         }
+    }
+
+    override suspend fun saveUserPictureAsset(vararg assetId: UserAssetId): Either<CoreFailure, Unit> {
+        assetId.forEach {
+            assetDao.insertAsset(assetMapper.fromUserAssetIdToDaoModel(it))
+        }
+        return Either.Right(Unit)
     }
 }

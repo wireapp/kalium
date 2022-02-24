@@ -1,5 +1,7 @@
 package com.wire.kalium.logic.data.asset
 
+import com.benasher44.uuid.uuid4
+import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.network.api.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.asset.AssetResponse
 import com.wire.kalium.network.api.model.AssetRetentionType
@@ -9,6 +11,7 @@ interface AssetMapper {
     fun toMetadataApiModel(uploadAssetMetadata: UploadAssetData): AssetMetadataRequest
     fun toDomainModel(asset: AssetResponse): UploadedAssetId
     fun toDaoModel(uploadAssetData: UploadAssetData, uploadedAssetResponse: AssetResponse): AssetEntity
+    fun fromUserAssetIdToDaoModel(assetId: UserAssetId): AssetEntity
 }
 
 class AssetMapperImpl : AssetMapper {
@@ -29,12 +32,16 @@ class AssetMapperImpl : AssetMapper {
             key = uploadedAssetResponse.key,
             domain = uploadedAssetResponse.domain,
             token = uploadedAssetResponse.token,
-            name = java.util.UUID.randomUUID().toString(), // can be anything ?
+            name = uuid4().toString(),
             encryption = uploadAssetData.md5, // should use something like byteArray to encrypt
             mimeType = uploadAssetData.mimeType.name,
             sha = uploadAssetData.data,
             size = uploadAssetData.data.size.toLong(),
             downloaded = true
         )
+    }
+
+    override fun fromUserAssetIdToDaoModel(assetId: UserAssetId): AssetEntity {
+        return AssetEntity(assetId.toString(), "", null, null, null, ImageAsset.JPG.name, null, 0, false)
     }
 }

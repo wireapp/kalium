@@ -100,7 +100,8 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.authenticatedNetworkContainer.selfApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
             idMapper,
-            userMapper
+            userMapper,
+            assetRepository
         )
 
     protected abstract val clientConfig: ClientConfig
