@@ -34,7 +34,6 @@ class SendTextMessageUseCase(
                     id = generatedMessageUuid,
                     content = MessageContent.Text(text),
                     conversationId = conversationId,
-                    // TODO: Do we care about clock sync? Should we get server time?
                     date = Clock.System.now().toString(),
                     senderUserId = selfUser.id,
                     senderClientId = currentClientId,
