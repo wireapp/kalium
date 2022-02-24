@@ -71,7 +71,7 @@ suspend inline fun <reified BodyType> wrapKaliumResponse(performRequest: () -> H
                     // TODO: log if 401 got to this step, since it need to be handled by the http client
                     // for 401 error the BE return response with content-type: text/html which our ktor client
                     // has no idea how to parse -> app crash
-                    HttpStatusCode.Unauthorized -> NetworkResponse.Error(KaliumException.Unauthorized)
+                    HttpStatusCode.Unauthorized -> NetworkResponse.Error(KaliumException.Unauthorized(e.response.status.value))
 
                     // TODO: try catch the parsing of error body
                     else -> NetworkResponse.Error(kException = KaliumException.InvalidRequestError(e.response.body()))
