@@ -30,8 +30,13 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.SendMessageFailureMapper
 import com.wire.kalium.logic.data.message.SendMessageFailureMapperImpl
+import com.wire.kalium.logic.data.prekey.PreKeyDataSource
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.logic.data.prekey.PreKeyMapperImpl
+import com.wire.kalium.logic.data.prekey.PreKeyRepository
+import com.wire.kalium.logic.data.prekey.remote.PreKeyListMapper
+import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteDataSource
+import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteRepository
 import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserMapperImpl
 import com.wire.kalium.logic.data.user.UserRepository
@@ -131,6 +136,15 @@ abstract class UserSessionScopeCommon(
             eventMapper
         )
 
+    private val preKeyListMapper: PreKeyListMapper
+        get() = PreKeyListMapper(preyKeyMapper)
+
+    private val preKeyRemoteDatabase: PreKeyRemoteRepository
+        get() = PreKeyRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi, preKeyListMapper)
+
+    private val preKeyRepository: PreKeyRepository
+        get() = PreKeyDataSource(preKeyRemoteDatabase)
+
     protected abstract val protoContentMapper: ProtoContentMapper
     private val conversationEventReceiver: ConversationEventReceiver
         get() = ConversationEventReceiver(
@@ -142,6 +156,15 @@ abstract class UserSessionScopeCommon(
     val client: ClientScope get() = ClientScope(clientRepository, authenticatedDataSourceSet.proteusClient)
     val conversations: ConversationScope get() = ConversationScope(conversationRepository, syncManager)
 
-    val messages: MessageScope get() = MessageScope(messageRepository, clientRepository, userRepository, syncManager)
+    val messages: MessageScope
+        get() = MessageScope(
+            messageRepository,
+            conversationRepository,
+            clientRepository,
+            authenticatedDataSourceSet.proteusClient,
+            preKeyRepository,
+            userRepository,
+            syncManager
+        )
     val users: UserScope get() = UserScope(userRepository, syncManager, assetRepository)
 }

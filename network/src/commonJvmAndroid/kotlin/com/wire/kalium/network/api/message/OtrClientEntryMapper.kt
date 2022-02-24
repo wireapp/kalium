@@ -8,8 +8,8 @@ class OtrClientEntryMapper {
 
     private val clientIdMapper = OtrClientIdMapper()
 
-    fun toOtrClientEntry(clientPayload: Map.Entry<String, String>): Otr.ClientEntry = Otr.ClientEntry.newBuilder()
+    fun toOtrClientEntry(clientPayload: Map.Entry<String, ByteArray>): Otr.ClientEntry = Otr.ClientEntry.newBuilder()
         .setClient(clientIdMapper.toOtrClientId(clientPayload.key))
-        .setText(ByteString.copyFrom(clientPayload.value, Charset.defaultCharset()))
+        .setText(ByteString.copyFrom(clientPayload.value))
         .build()
 }
