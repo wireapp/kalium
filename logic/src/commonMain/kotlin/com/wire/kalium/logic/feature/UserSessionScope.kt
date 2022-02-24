@@ -23,8 +23,6 @@ import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.location.LocationMapper
-import com.wire.kalium.logic.data.logout.LogoutDataSource
-import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.message.MessageDataSource
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessageMapperImpl
@@ -49,7 +47,6 @@ import com.wire.kalium.persistence.db.Database
 import com.wire.kalium.persistence.event.EventInfoStorage
 import com.wire.kalium.persistence.event.EventInfoStorageImpl
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
 
 expect class UserSessionScope : UserSessionScopeCommon
 
@@ -139,6 +136,6 @@ abstract class UserSessionScopeCommon(
     val listenToEvents: ListenToEventsUseCase get() = ListenToEventsUseCase(syncManager, eventRepository, conversationEventReceiver)
     val client: ClientScope get() = ClientScope(clientRepository, authenticatedDataSourceSet.proteusClient)
     val conversations: ConversationScope get() = ConversationScope(conversationRepository, syncManager)
-    val messages: MessageScope get() = MessageScope(messageRepository)
+    val messages: MessageScope get() = MessageScope(messageRepository, clientRepository, userRepository, authenticatedDataSourceSet.syncManager)
     val users: UserScope get() = UserScope(userRepository, syncManager, assetRepository)
 }

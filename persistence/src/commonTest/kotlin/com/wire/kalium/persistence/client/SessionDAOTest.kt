@@ -102,7 +102,7 @@ class SessionDAOTest {
         sessionStorage.addSession(session1)
         sessionStorage.addSession(session2)
 
-        sessionStorage.updateCurrentSession("user_id_1")
+        sessionStorage.setCurrentSession("user_id_1")
 
         assertEquals(session1, sessionStorage.currentSession())
     }

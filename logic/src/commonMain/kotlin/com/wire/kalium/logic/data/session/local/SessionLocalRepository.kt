@@ -41,5 +41,5 @@ class SessionLocalDataSource(
 
     override fun deleteSession(userIdValue: String) = sessionStorage.deleteSession(userIdValue)
 
-    override fun updateCurrentSession(userIdValue: String) = sessionStorage.updateCurrentSession(userIdValue)
+    override fun updateCurrentSession(userIdValue: String) = sessionStorage.setCurrentSession(userIdValue)
 }

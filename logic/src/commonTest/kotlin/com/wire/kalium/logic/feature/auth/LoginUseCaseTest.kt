@@ -27,7 +27,7 @@ class LoginUseCaseTest {
 
     @OptIn(ConfigurationApi::class)
     @Mock
-    val sessionRepository = configure(mock(classOf<SessionRepository>())) { stubsUnitByDefault = true }
+    val sessionRepository: SessionRepository = configure(mock(classOf<SessionRepository>())) { stubsUnitByDefault = true }
 
     @Mock
     val validateEmailUseCase = mock(classOf<ValidateEmailUseCase>())
@@ -203,11 +203,11 @@ class LoginUseCaseTest {
                 .with(any(), any(), any(), any())
                 .wasNotInvoked()
             verify(sessionRepository)
-                .suspendFunction(sessionRepository::storeSession)
+                .function(sessionRepository::storeSession)
                 .with(any())
                 .wasNotInvoked()
             verify(sessionRepository)
-                .suspendFunction(sessionRepository::updateCurrentSession)
+                .function(sessionRepository::updateCurrentSession)
                 .with(any())
                 .wasNotInvoked()
 
@@ -229,11 +229,11 @@ class LoginUseCaseTest {
                 .with(any(), any(), any(), any())
                 .wasNotInvoked()
             verify(sessionRepository)
-                .suspendFunction(sessionRepository::storeSession)
+                .function(sessionRepository::storeSession)
                 .with(any())
                 .wasNotInvoked()
             verify(sessionRepository)
-                .suspendFunction(sessionRepository::updateCurrentSession)
+                .function(sessionRepository::updateCurrentSession)
                 .with(any())
                 .wasNotInvoked()
         }

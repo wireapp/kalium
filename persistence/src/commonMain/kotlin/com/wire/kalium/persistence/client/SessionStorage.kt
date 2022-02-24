@@ -25,7 +25,7 @@ interface SessionStorage {
     /**
      * changes the current active user session
      */
-    fun updateCurrentSession(userId: String)
+    fun setCurrentSession(userId: String)
 
     /**
      * return all stored session as a userId to session map
@@ -85,7 +85,7 @@ class SessionStorageImpl(
         }
 
 
-    override fun updateCurrentSession(userId: String) = kaliumPreferences.putString(CURRENT_SESSION_KEY, userId)
+    override fun setCurrentSession(userId: String) = kaliumPreferences.putString(CURRENT_SESSION_KEY, userId)
 
     override fun allSessions(): PreferencesResult<Map<String, PersistenceSession>> {
         return kaliumPreferences.getSerializable(SESSIONS_KEY, SessionsMap.serializer())?.let {

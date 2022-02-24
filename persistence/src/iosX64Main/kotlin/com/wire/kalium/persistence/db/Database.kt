@@ -48,4 +48,8 @@ actual class Database(name: String, passphrase: String) {
 
     actual val messageDAO: MessageDAO
         get() = MessageDAOImpl(database.messagesQueries)
+
+    actual fun nuke(): Boolean {
+        TODO("Not yet implemented")
+    }
 }
