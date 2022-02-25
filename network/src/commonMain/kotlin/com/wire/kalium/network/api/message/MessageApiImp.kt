@@ -112,8 +112,10 @@ class MessageApiImp(
     ): NetworkResponse<QualifiedSendMessageResponse> {
         return try {
             val response = httpClient.post("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}$PATH_PROTEUS_MESSAGE") {
-                contentType(ContentType.parse("application/protobuf"))
                 setBody(envelopeProtoMapper.encodeToProtobuf(parameters))
+                // This technically doesn't work, Ktor will replace with application/octet-stream anyway
+                // But if this ever gets improved, we're already on the right track
+                contentType(ContentType.Application.ProtoBuf)
             }
             NetworkResponse.Success(response = response, value = response.body<QualifiedSendMessageResponse.MessageSent>())
         } catch (e: ResponseException) {

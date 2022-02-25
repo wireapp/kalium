@@ -12,13 +12,17 @@ class PreKeyListMapper(private val preKeyMapper: PreKeyMapper) {
 
     //TODO unit test to be created later
     fun toRemoteClientPreKeyInfoTo(clientPreKeyInfo: Map<UserId, List<ClientId>>): Map<String, Map<String, List<String>>> =
-        clientPreKeyInfo.mapValues { entry -> mapOf(entry.key.domain to entry.value.map { it.value }) }
-            .mapKeys { entry -> entry.key.domain }
+        clientPreKeyInfo.entries.groupBy { it.key.domain }
+            .mapValues { domainEntry ->
+                domainEntry.value.associate { userEntry ->
+                    userEntry.key.value to userEntry.value.map { it.value }
+                }
+            }
 
     fun fromRemoteQualifiedPreKeyInfoMap(qualifiedPreKeyListResponse: Map<String, Map<String, Map<String, PreKeyDTO>>>): List<QualifiedUserPreKeyInfo> =
         qualifiedPreKeyListResponse.entries.flatMap { domainEntry ->
             domainEntry.value.mapKeys { userEntry ->
-                QualifiedID(domainEntry.key, userEntry.key)
+                QualifiedID(userEntry.key, domainEntry.key)
             }.mapValues { userEntry ->
                 userEntry.value.mapValues { clientEntry ->
                     preKeyMapper.fromPreKeyDTO(clientEntry.value)

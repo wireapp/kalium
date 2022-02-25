@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.data.prekey
+package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
