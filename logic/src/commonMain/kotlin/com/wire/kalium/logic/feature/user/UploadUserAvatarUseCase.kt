@@ -30,7 +30,7 @@ class UploadUserAvatarUseCaseImpl(
             .uploadPublicAsset(UploadAssetData(imageData, ImageAsset.JPG, true, RetentionType.ETERNAL))
             .map { asset ->
                 userDataSource.updateSelfUser(newAssetId = asset.key)
-            }
+            } // todo: remove old assets, non blocking this response, as will imply deleting locally and remotly
 
         return@suspending Either.Right(Unit)
     }
