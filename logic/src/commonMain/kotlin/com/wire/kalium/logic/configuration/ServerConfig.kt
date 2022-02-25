@@ -40,8 +40,8 @@ data class ServerConfig(
 interface ServerConfigMapper {
     fun toBackendConfig(serverConfig: ServerConfig): BackendConfig
     fun fromBackendConfig(backendConfig: BackendConfig): ServerConfig
-    fun toNetworkConfigEntity(serverConfig: ServerConfig): NetworkConfig
-    fun fromNetworkConfigEntity(networkConfig: NetworkConfig): ServerConfig
+    fun toNetworkConfig(serverConfig: ServerConfig): NetworkConfig
+    fun fromNetworkConfig(networkConfig: NetworkConfig): ServerConfig
 }
 
 class ServerConfigMapperImpl : ServerConfigMapper {
@@ -52,12 +52,22 @@ class ServerConfigMapperImpl : ServerConfigMapper {
     override fun fromBackendConfig(backendConfig: BackendConfig): ServerConfig =
         with(backendConfig) { ServerConfig(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title) }
 
-    override fun toNetworkConfigEntity(serverConfig: ServerConfig): NetworkConfig =
+    override fun toNetworkConfig(serverConfig: ServerConfig): NetworkConfig =
         with(serverConfig) {
-            NetworkConfig(apiBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, accountsBaseUrl, websiteUrl,serverConfig.title)
+            NetworkConfig(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, serverConfig.title)
         }
 
-    override fun fromNetworkConfigEntity(networkConfig: NetworkConfig): ServerConfig =
-        with(networkConfig) { ServerConfig(apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl,networkConfig.title) }
+    override fun fromNetworkConfig(networkConfig: NetworkConfig): ServerConfig =
+        with(networkConfig) {
+            ServerConfig(
+                apiBaseUrl,
+                accountBaseUrl,
+                webSocketBaseUrl,
+                blackListUrl,
+                teamsUrl,
+                websiteUrl,
+                networkConfig.title
+            )
+        }
 
 }

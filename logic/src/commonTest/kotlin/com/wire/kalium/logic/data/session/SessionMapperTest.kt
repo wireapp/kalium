@@ -46,7 +46,7 @@ class SessionMapperTest {
     fun givenAnAuthSession_whenMappingToPersistenceSession_thenValuesAreMappedCorrectly() {
         val authSession: AuthSession = randomAuthSession()
         val networkConfig = with(authSession.serverConfig) {
-            NetworkConfig(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl)
+            NetworkConfig(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title)
         }
 
         given(serverConfigMapper).invocation { toNetworkConfig(authSession.serverConfig) }.then { networkConfig }
@@ -71,7 +71,7 @@ class SessionMapperTest {
     fun givenAPersistenceSession_whenMappingFromPersistenceSession_thenValuesAreMappedCorrectly() {
         val persistenceSession: PersistenceSession = randomPersistenceSession()
         val serverConfig = with(persistenceSession.networkConfig) {
-            ServerConfig(apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl)
+            ServerConfig(apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title)
         }
 
         given(serverConfigMapper).invocation { fromNetworkConfig(persistenceSession.networkConfig) }.then { serverConfig }
@@ -96,16 +96,16 @@ class SessionMapperTest {
     private companion object {
         val randomString get() = Random.nextBytes(64).decodeToString()
         fun randomBackendConfig(): BackendConfig =
-            BackendConfig(randomString, randomString, randomString, randomString, randomString, randomString)
+            BackendConfig(randomString, randomString, randomString, randomString, randomString, randomString, randomString)
 
         fun randomAuthSession(): AuthSession = AuthSession(randomString, randomString, randomString, randomString, randomServerConfig())
         fun randomPersistenceSession(): PersistenceSession = PersistenceSession(randomString, randomString, randomString, randomString, randomNetworkConfig())
 
         fun randomServerConfig(): ServerConfig =
-            ServerConfig(randomString, randomString, randomString, randomString, randomString, randomString)
+            ServerConfig(randomString, randomString, randomString, randomString, randomString, randomString, randomString)
 
         fun randomNetworkConfig(): NetworkConfig =
-            NetworkConfig(randomString, randomString, randomString, randomString, randomString, randomString)
+            NetworkConfig(randomString, randomString, randomString, randomString, randomString, randomString, randomString)
     }
 
 

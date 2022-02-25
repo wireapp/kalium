@@ -25,7 +25,7 @@ internal class SessionMapperImpl(private val serverConfigMapper: ServerConfigMap
         accessToken = persistenceSession.accessToken,
         refreshToken = persistenceSession.refreshToken,
         tokenType = persistenceSession.tokenType,
-        serverConfig = serverConfigMapper.fromNetworkConfigEntity(persistenceSession.networkConfig)
+        serverConfig = serverConfigMapper.fromNetworkConfig(persistenceSession.networkConfig)
     )
 
     override fun toPersistenceSession(authSession: AuthSession): PersistenceSession = PersistenceSession(
@@ -33,7 +33,7 @@ internal class SessionMapperImpl(private val serverConfigMapper: ServerConfigMap
         accessToken = authSession.accessToken,
         refreshToken = authSession.refreshToken,
         tokenType = authSession.tokenType,
-        networkConfig = serverConfigMapper.toNetworkConfigEntity(authSession.serverConfig)
+        networkConfig = serverConfigMapper.toNetworkConfig(authSession.serverConfig)
     )
 
 }

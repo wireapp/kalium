@@ -60,7 +60,7 @@ class CurrentSessionUseCaseTest {
     private companion object {
         val randomString get() = Random.nextBytes(64).decodeToString()
         fun randomServerConfig(): ServerConfig =
-            ServerConfig(randomString, randomString, randomString, randomString, randomString, randomString)
+            ServerConfig(randomString, randomString, randomString, randomString, randomString, randomString, randomString)
 
         fun randomAuthSession(): AuthSession = AuthSession(randomString, randomString, randomString, randomString, randomServerConfig())
     }
