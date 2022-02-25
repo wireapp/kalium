@@ -97,3 +97,6 @@ libs/
 .classpath
 .project
 .settings
+
+# Carthage
+Carthage
