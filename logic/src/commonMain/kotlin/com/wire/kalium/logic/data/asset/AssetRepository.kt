@@ -9,6 +9,7 @@ import com.wire.kalium.persistence.dao.asset.AssetDAO
 
 interface AssetRepository {
     suspend fun uploadPublicAsset(uploadAssetData: UploadAssetData): Either<CoreFailure, UploadedAssetId>
+    suspend fun downloadPublicAsset(assetKey: String): Either<CoreFailure, ByteArray>
     suspend fun saveUserPictureAsset(assetId: List<UserAssetId>): Either<CoreFailure, Unit>
 }
 
@@ -27,6 +28,16 @@ internal class AssetDataSource(
 
             val uploadedAssetId = assetMapper.toDomainModel(uploadedAsset.value)
             Either.Right(uploadedAssetId)
+        }
+    }
+
+    override suspend fun downloadPublicAsset(assetKey: String): Either<CoreFailure, ByteArray> {
+        val downloadedAsset = assetApi.downloadAsset(assetKey, null)
+        return if (!downloadedAsset.isSuccessful()) {
+            Either.Left(CoreFailure.ServerMiscommunication)
+        } else {
+            // TODO: persist into db in case there is no extra data
+            Either.Right(downloadedAsset.value)
         }
     }
 
