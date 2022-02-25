@@ -46,6 +46,10 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
             .map { it?.let { mapper.toModel(it) } }
     }
 
+    override suspend fun getUserByName(name: String): Flow<UserEntity?> {
+        return queries.selectByName(name).asFlow().mapToOneOrNull().map { it?.let { mapper.toModel(it) } }
+    }
+
     override suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedID) {
         queries.deleteUser(qualifiedID)
     }
