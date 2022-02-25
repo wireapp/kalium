@@ -22,7 +22,6 @@ class ServerConfigApiImp(private val httpClient: HttpClient) : ServerConfigApi {
         wrapKaliumResponse<ServerConfigResponse> {
             httpClient.get(serverConfigUrl)
         }.mapSuccess {
-            print("xxxxxx ${it.toString()}")
             BackendConfig(
                 apiBaseUrl = it.endpoints.apiBaseUrl,
                 accountsBaseUrl = it.endpoints.accountsBaseUrl,
