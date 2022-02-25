@@ -6,5 +6,6 @@ data class BackendConfig(
     val webSocketBaseUrl: String,
     val blackListUrl: String,
     val teamsUrl: String,
-    val websiteUrl: String
+    val websiteUrl: String,
+    val title: String
 )
