@@ -11,8 +11,8 @@ CREATE TABLE User (
     team TEXT,
     preview_asset_id TEXT,
     complete_asset_id TEXT,
-    FOREIGN KEY (preview_asset_id) REFERENCES Asset(key) ON DELETE CASCADE,
-    FOREIGN KEY (complete_asset_id) REFERENCES Asset(key) ON DELETE CASCADE
+    FOREIGN KEY (preview_asset_id) REFERENCES Asset(key) ON DELETE SET NULL,
+    FOREIGN KEY (complete_asset_id) REFERENCES Asset(key) ON DELETE SET NULL
 );
 
 deleteAllUsers:
