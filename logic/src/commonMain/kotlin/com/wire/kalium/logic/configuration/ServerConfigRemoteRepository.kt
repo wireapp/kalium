@@ -15,7 +15,7 @@ class ServerConfigRemoteDataSource(
     override suspend fun fetchServerConfig(remoteConfigUrl: String): Either<CoreFailure, ServerConfig> {
         val response = remoteConfigApi.fetchServerConfig(remoteConfigUrl)
         return if (response.isSuccessful())
-            Either.Right(serverConfigMapper.fromNetworkConfigDTO(response.value))
+            Either.Right(serverConfigMapper.fromBackendConfig(response.value))
         else
             Either.Left(CoreFailure.Unknown(response.kException))
     }

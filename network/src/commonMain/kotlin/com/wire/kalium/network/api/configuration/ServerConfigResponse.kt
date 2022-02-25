@@ -4,10 +4,11 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class NetworkConfigDTO(
+internal data class ServerConfigResponse(
     @SerialName("endpoints") val endpoints: EndPoints,
     @SerialName("title") val title: String
 )
+
 @Serializable
 data class EndPoints(
     @SerialName("backendURL") val apiBaseUrl: String,

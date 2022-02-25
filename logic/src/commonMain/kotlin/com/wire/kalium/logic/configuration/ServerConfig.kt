@@ -1,7 +1,5 @@
 package com.wire.kalium.logic.configuration
 
-import com.wire.kalium.network.api.configuration.EndPoints
-import com.wire.kalium.network.api.configuration.NetworkConfigDTO
 import com.wire.kalium.network.tools.BackendConfig
 import com.wire.kalium.persistence.model.NetworkConfig
 import kotlinx.serialization.Serializable
@@ -35,14 +33,13 @@ data class ServerConfig(
             websiteUrl = """wire.com""",
             title = "Staging"
         )
+        val DEFAULT = STAGING
     }
 }
 
 interface ServerConfigMapper {
     fun toBackendConfig(serverConfig: ServerConfig): BackendConfig
     fun fromBackendConfig(backendConfig: BackendConfig): ServerConfig
-    fun toNetworkConfigDTO(serverConfig: ServerConfig): NetworkConfigDTO
-    fun fromNetworkConfigDTO(networkConfigDTO: NetworkConfigDTO): ServerConfig
     fun toNetworkConfigEntity(serverConfig: ServerConfig): NetworkConfig
     fun fromNetworkConfigEntity(networkConfig: NetworkConfig): ServerConfig
 }
@@ -50,22 +47,10 @@ interface ServerConfigMapper {
 class ServerConfigMapperImpl : ServerConfigMapper {
     // TODO: url validation check e.g. remove https:// since ktor will control the http protocol
     override fun toBackendConfig(serverConfig: ServerConfig): BackendConfig =
-        with(serverConfig) { BackendConfig(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl) }
+        with(serverConfig) { BackendConfig(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title) }
 
     override fun fromBackendConfig(backendConfig: BackendConfig): ServerConfig =
-        with(backendConfig) { ServerConfig(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, "") }
-
-    override fun toNetworkConfigDTO(serverConfig: ServerConfig): NetworkConfigDTO =
-        with(serverConfig) {
-            NetworkConfigDTO(
-                endpoints = EndPoints(apiBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, accountsBaseUrl, websiteUrl),
-                title = serverConfig.title
-            )
-        }
-
-    override fun fromNetworkConfigDTO(networkConfigDTO: NetworkConfigDTO): ServerConfig =
-        with(networkConfigDTO) { ServerConfig(endpoints.apiBaseUrl, endpoints.accountsBaseUrl, endpoints.webSocketBaseUrl, endpoints.blackListUrl, endpoints.teamsUrl, endpoints.websiteUrl, title) }
-
+        with(backendConfig) { ServerConfig(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title) }
 
     override fun toNetworkConfigEntity(serverConfig: ServerConfig): NetworkConfig =
         with(serverConfig) {
