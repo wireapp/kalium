@@ -24,7 +24,7 @@ class ConversationsApplication : CliktCommand() {
 
     override fun run(): Unit = runBlocking {
         val serverConfigMapper: ServerConfigMapper = ServerConfigMapperImpl()
-        val backendConfig: BackendConfig = serverConfigMapper.toBackendConfig(ServerConfig.STAGING)
+        val backendConfig: BackendConfig = serverConfigMapper.toBackendConfig(ServerConfig.DEFAULT)
         val loginContainer = LoginNetworkContainer(isRequestLoggingEnabled = true)
 
         val loginResult = loginContainer.loginApi.login(

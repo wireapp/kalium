@@ -176,7 +176,7 @@ interface ApiTest {
         val TEST_BACKEND_CONFIG =
             BackendConfig(
                 "test.api.com", "test.account.com", "test.ws.com",
-                "test.blacklist", "test.teams.com", "test.wire.com"
+                "test.blacklist", "test.teams.com", "test.wire.com", "Test Title"
             )
     }
 }
