@@ -35,10 +35,10 @@ class LogoutApiTest : ApiTest {
         }
 
     @Test
-    fun givenTheServerReturnsAnError_whenCallingTheLogoutEndpoint_theCorrectExceptionIsThrown() = runTest {
+    fun givenTheServerReturnsAnError_whenCallingTheLogoutEndpoint_thenExceptionIsPropagated() = runTest {
         val httpClient = mockAuthenticatedHttpClient(
             ERROR_RESPONSE.rawJson,
-            statusCode = HttpStatusCode.Unauthorized
+            statusCode = HttpStatusCode.BadRequest
         )
         val logout: LogoutApi = LogoutImp(httpClient)
         val errorResponse = logout.logout(TEST_COOKIE)
