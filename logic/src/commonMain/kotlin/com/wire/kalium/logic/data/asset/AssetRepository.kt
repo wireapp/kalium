@@ -9,7 +9,7 @@ import com.wire.kalium.persistence.dao.asset.AssetDAO
 
 interface AssetRepository {
     suspend fun uploadPublicAsset(uploadAssetData: UploadAssetData): Either<CoreFailure, UploadedAssetId>
-    suspend fun saveUserPictureAsset(vararg assetId: UserAssetId): Either<CoreFailure, Unit>
+    suspend fun saveUserPictureAsset(assetId: List<UserAssetId>): Either<CoreFailure, Unit>
 }
 
 internal class AssetDataSource(
@@ -30,7 +30,7 @@ internal class AssetDataSource(
         }
     }
 
-    override suspend fun saveUserPictureAsset(vararg assetId: UserAssetId): Either<CoreFailure, Unit> {
+    override suspend fun saveUserPictureAsset(assetId: List<UserAssetId>): Either<CoreFailure, Unit> {
         assetId.forEach {
             assetDao.insertAsset(assetMapper.fromUserAssetIdToDaoModel(it))
         }

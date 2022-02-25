@@ -49,7 +49,7 @@ class UserDataSource(
         } else {
             val user = userMapper.fromApiModelToDaoModel(selfInfoResponse.value)
             // Save (in case there is no data) a reference to the asset id (profile picture)
-            assetRepository.saveUserPictureAsset(user.previewAssetId, user.completeAssetId)
+            assetRepository.saveUserPictureAsset(listOf(user.previewAssetId, user.completeAssetId))
             userDAO.insertUser(user)
             metadataDAO.insertValue(Json.encodeToString(user.id), SELF_USER_ID_KEY)
             Either.Right(Unit)
