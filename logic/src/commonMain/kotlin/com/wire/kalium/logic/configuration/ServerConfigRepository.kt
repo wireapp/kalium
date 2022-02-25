@@ -8,7 +8,7 @@ interface ServerConfigRepository {
     suspend fun fetchRemoteConfig(serverConfigUrl: String): Either<CoreFailure, ServerConfig>
 }
 
-class ServerConfigSource(
+class ServerConfigDataSource(
     private val remoteRepository: ServerConfigRemoteRepository
 ) : ServerConfigRepository {
 
