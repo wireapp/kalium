@@ -2,8 +2,8 @@ package com.wire.kalium.api.tools.json.api.user.self
 
 import com.wire.kalium.api.tools.json.ValidJsonProvider
 import com.wire.kalium.network.api.UserId
-import com.wire.kalium.network.api.model.UserAsset
-import com.wire.kalium.network.api.model.AssetType
+import com.wire.kalium.network.api.asset.ImageSize
+import com.wire.kalium.network.api.asset.UserAssetDTO
 import com.wire.kalium.network.api.user.self.ManagedBy
 import com.wire.kalium.network.api.user.self.SelfUserInfoResponse
 
@@ -21,10 +21,10 @@ object SelfUserInfoResponseJson {
         |  "assets": [
         |       {
         |           "key": "${serializable.assets[0].key}",
-        |           "type": "${serializable.assets[0].type}"
+        |           "type": "${serializable.assets[0].type}",
+        |           "size": "${serializable.assets[0].size}"
         |       }
         |  ],
-        |  "picture": []
         |  "locale": "${serializable.locale}",
         |  "team": "${serializable.team}",
         |  "managed_by": "${serializable.managedBy}"
@@ -40,10 +40,9 @@ object SelfUserInfoResponseJson {
             id = "id",
             qualifiedId = UserId(value = "99db9768-04e3-4b5d-9268-831b6a25c4ab", domain = "domain"),
             name = "cool_name",
-            picture = listOf(),
             accentId = 0,
             deleted = null,
-            assets = listOf(UserAsset(type = AssetType.IMAGE, key = "asset_key", size = null)),
+            assets = listOf(UserAssetDTO(type = "image", key = "asset_key", size = ImageSize.Complete)),
             locale = "user_local",
             service = null,
             expiresAt = null,
