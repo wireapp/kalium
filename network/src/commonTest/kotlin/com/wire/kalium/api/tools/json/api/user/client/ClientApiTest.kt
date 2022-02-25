@@ -36,10 +36,10 @@ class ClientApiTest : ApiTest {
         }
 
     @Test
-    fun givenTheServerReturnsAnError_whenCallingTheRegisterClientEndpoint_theCorrectExceptionIsThrown() = runTest {
+    fun givenTheServerReturnsAnError_whenCallingTheRegisterClientEndpoint_thenExceptionIsPropagated() = runTest {
         val httpClient = mockAuthenticatedHttpClient(
             ErrorResponseJson.valid.rawJson,
-            statusCode = HttpStatusCode.Unauthorized
+            statusCode = HttpStatusCode.BadRequest
         )
         val clientApi: ClientApi = ClientApiImpl(httpClient)
         val errorResponse = clientApi.registerClient(REGISTER_CLIENT_REQUEST.serializableData)
