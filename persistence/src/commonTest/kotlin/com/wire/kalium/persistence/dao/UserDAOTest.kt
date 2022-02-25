@@ -71,6 +71,23 @@ class UserDAOTest : BaseDatabaseTest() {
         assertEquals(updatedUser1, result.first())
     }
 
+
+    //query by full email
+    //query by full name
+    //query by full handle
+
+    //query by email by part of it
+    //query by name by part of it
+    //query by handle by part of it
+
+    //query by email but with name,handle does not match
+    //query by name name but handle,email does not match
+    //query by handle but email,name does not match
+
+    //query by email return no result
+    //query by name return no result
+    //query by handle return no result
+
     @Test
     fun givenListOfUsers_ThenUserCanBeQueriedByEmail() = runTest {
         //given insert couple of users
@@ -78,9 +95,8 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.insertUser(updatedUser1)
 
         //when perform a query on the name
-        val result = db.userDAO.getUserByName("jo")
+        val result = db.userDAO.getUserByName("j")
         assertEquals(updatedUser1, result.first())
-        println("result is $result")
     }
 
     @Test
