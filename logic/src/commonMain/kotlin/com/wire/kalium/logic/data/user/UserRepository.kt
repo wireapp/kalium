@@ -3,7 +3,6 @@ package com.wire.kalium.logic.data.user
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.wrapApiRequest
@@ -100,7 +99,7 @@ class UserDataSource(
 
     override suspend fun updateSelfUser(newName: String?, newAccent: Int?, newAssetId: String?): Either<CoreFailure, Unit> {
         val user =
-            getSelfUser().firstOrNull() ?: return Either.Left(CoreFailure.Unknown(NullPointerException())) // TODO: replace for a DB error
+            getSelfUser().firstOrNull() ?: return Either.Left(CoreFailure.Unknown(NullPointerException()))
 
         val updateRequest = userMapper.fromModelToUpdateApiModel(user, newName, newAccent, newAssetId)
         val updatedSelf = selfApi.updateSelf(updateRequest)
