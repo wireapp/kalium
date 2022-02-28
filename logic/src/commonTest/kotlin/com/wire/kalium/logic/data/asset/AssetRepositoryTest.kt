@@ -103,7 +103,7 @@ class AssetRepositoryTest {
             .whenInvokedWith(eq(assetsParam))
             .thenDoNothing()
 
-        val actual = assetRepository.saveUserPictureAsset(assetsIdToPersist)
+        val actual = assetRepository.saveUserPictureAssetIds(assetsIdToPersist)
 
         actual.shouldSucceed {
             assertEquals(it, Unit)

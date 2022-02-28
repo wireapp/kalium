@@ -12,7 +12,8 @@ import com.wire.kalium.persistence.dao.asset.AssetDAO
 interface AssetRepository {
     suspend fun uploadPublicAsset(uploadAssetData: UploadAssetData): Either<CoreFailure, UploadedAssetId>
     suspend fun downloadPublicAsset(assetKey: String): Either<CoreFailure, ByteArray>
-    suspend fun saveUserPictureAsset(assetId: List<UserAssetId>): Either<CoreFailure, Unit>
+    suspend fun savePublicAsset(assetKey: String, data: ByteArray): Either<CoreFailure, Unit>
+    suspend fun saveUserPictureAssetIds(assetId: List<UserAssetId>): Either<CoreFailure, Unit>
 }
 
 internal class AssetDataSource(
@@ -36,10 +37,15 @@ internal class AssetDataSource(
     override suspend fun downloadPublicAsset(assetKey: String): Either<CoreFailure, ByteArray> = suspending {
         wrapApiRequest {
             assetApi.downloadAsset(assetKey, null)
+            // TODO: call savePublicAsset
         }.map { assetData -> assetData }
     }
 
-    override suspend fun saveUserPictureAsset(assetId: List<UserAssetId>): Either<CoreFailure, Unit> = suspending {
+    override suspend fun savePublicAsset(assetKey: String, data: ByteArray): Either<CoreFailure, Unit> {
+        TODO("find by key, and do upsert")
+    }
+
+    override suspend fun saveUserPictureAssetIds(assetId: List<UserAssetId>): Either<CoreFailure, Unit> = suspending {
         assetDao.insertAssets(assetId.map { assetMapper.fromUserAssetIdToDaoModel(it) })
         return@suspending Either.Right(Unit)
     }
