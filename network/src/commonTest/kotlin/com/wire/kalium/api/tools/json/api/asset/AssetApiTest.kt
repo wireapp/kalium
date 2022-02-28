@@ -157,7 +157,7 @@ class AssetApiTest : ApiTest {
     companion object {
         val VALID_ASSET_UPLOAD_RESPONSE = AssetUploadResponseJson.valid
         val INVALID_ASSET_UPLOAD_RESPONSE = AssetUploadResponseJson.invalid
-        const val PATH_PUBLIC_ASSETS = "/assets/v3/"
+        const val PATH_PUBLIC_ASSETS = "/assets/v3"
         const val HEADER_ASSET_TOKEN = "Asset-Token"
     }
 }
