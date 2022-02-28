@@ -7,8 +7,38 @@ import com.wire.kalium.network.api.model.UserAsset
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+
 @Serializable
-data class RegisterRequest(
+internal data class SendActivationRequest(
+    @SerialName("email")
+    val email: String?,
+    @SerialName("locale")
+    val locale: String?,
+    @SerialName("phone")
+    val phone: String?,
+    @SerialName("voice_call")
+    val voiceCall: Boolean?
+)
+
+@Serializable
+internal data class ActivationRequest(
+    @SerialName("code")
+    val code: String,
+    @SerialName("dryrun")
+    val dryRun: Boolean?,
+    @SerialName("email")
+    val email: String?,
+    @SerialName("key")
+    val key: String?,
+    @SerialName("label")
+    val label: String?,
+    @SerialName("phone")
+    val phone: String?
+)
+
+
+@Serializable
+internal data class RegisterRequest(
     @SerialName("accent_id")
     val accentId: Int?,
     @SerialName("assets")
@@ -28,7 +58,7 @@ data class RegisterRequest(
     @SerialName("password")
     val password: String?,
     @SerialName("phone")
-    val phone: String,
+    val phone: String?,
     @SerialName("phone_code")
     val phoneCode: String?,
     @SerialName("team")

@@ -11,7 +11,8 @@ data class ServerConfig(
     val webSocketBaseUrl: String,
     val blackListUrl: String,
     val teamsUrl: String,
-    val websiteUrl: String
+    val websiteUrl: String,
+    val title: String
 ) {
     companion object {
         val PRODUCTION = ServerConfig(
@@ -20,7 +21,8 @@ data class ServerConfig(
             webSocketBaseUrl = """prod-nginz-ssl.wire.com""",
             teamsUrl = """teams.wire.com""",
             blackListUrl = """clientblacklist.wire.com/prod""",
-            websiteUrl = """wire.com"""
+            websiteUrl = """wire.com""",
+            title = "Production"
         )
         val STAGING = ServerConfig(
             apiBaseUrl = """staging-nginz-https.zinfra.io""",
@@ -28,8 +30,10 @@ data class ServerConfig(
             webSocketBaseUrl = """staging-nginz-ssl.zinfra.io""",
             teamsUrl = """wire-teams-staging.zinfra.io""",
             blackListUrl = """clientblacklist.wire.com/staging""",
-            websiteUrl = """wire.com"""
+            websiteUrl = """wire.com""",
+            title = "Staging"
         )
+        val DEFAULT = STAGING
     }
 }
 
@@ -43,14 +47,27 @@ interface ServerConfigMapper {
 class ServerConfigMapperImpl : ServerConfigMapper {
     // TODO: url validation check e.g. remove https:// since ktor will control the http protocol
     override fun toBackendConfig(serverConfig: ServerConfig): BackendConfig =
-        with(serverConfig) { BackendConfig(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl) }
+        with(serverConfig) { BackendConfig(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title) }
 
     override fun fromBackendConfig(backendConfig: BackendConfig): ServerConfig =
-        with(backendConfig) { ServerConfig(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl) }
+        with(backendConfig) { ServerConfig(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title) }
 
     override fun toNetworkConfig(serverConfig: ServerConfig): NetworkConfig =
-        with(serverConfig) { NetworkConfig(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl) }
+        with(serverConfig) {
+            NetworkConfig(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, serverConfig.title)
+        }
 
     override fun fromNetworkConfig(networkConfig: NetworkConfig): ServerConfig =
-        with(networkConfig) { ServerConfig(apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl) }
+        with(networkConfig) {
+            ServerConfig(
+                apiBaseUrl,
+                accountBaseUrl,
+                webSocketBaseUrl,
+                blackListUrl,
+                teamsUrl,
+                websiteUrl,
+                networkConfig.title
+            )
+        }
+
 }
