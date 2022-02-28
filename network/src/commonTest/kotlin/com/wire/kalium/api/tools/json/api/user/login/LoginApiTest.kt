@@ -45,10 +45,10 @@ class LoginApiTest : ApiTest {
     }
 
     @Test
-    fun givenTheServerReturnsAnError_whenCallingTheLoginEndpoint_theCorrectExceptionIsThrown() = runTest {
+    fun givenTheServerReturnsAnError_whenCallingTheLoginEndpoint_thenExceptionIsPropagated() = runTest {
         val httpClient = mockUnauthenticatedHttpClient(
             ErrorResponseJson.valid.rawJson,
-            statusCode = HttpStatusCode.Unauthorized
+            statusCode = HttpStatusCode.BadRequest
         )
         val loginApi: LoginApi = LoginApiImpl(httpClient)
 

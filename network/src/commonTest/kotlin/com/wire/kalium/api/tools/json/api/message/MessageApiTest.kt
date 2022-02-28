@@ -5,6 +5,7 @@ import com.wire.kalium.api.tools.json.ValidJsonProvider
 import com.wire.kalium.network.api.message.MessageApi
 import com.wire.kalium.network.api.message.MessageApiImp
 import com.wire.kalium.network.api.message.SendMessageResponse
+import com.wire.kalium.network.api.message.provideEnvelopeProtoMapper
 import com.wire.kalium.network.exceptions.SendMessageError
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
@@ -33,7 +34,7 @@ class MessageApiTest : ApiTest {
                     assertPathEqual(SEND_MESSAGE_PATH)
                 }
             )
-            val messageApi: MessageApi = MessageApiImp(httpClient)
+            val messageApi: MessageApi = MessageApiImp(httpClient, provideEnvelopeProtoMapper())
             val response = messageApi.sendMessage(
                 DEFAULT_PARAMETERS_RESPONSE.serializableData,
                 TEST_CONVERSATION_ID,
@@ -58,7 +59,7 @@ class MessageApiTest : ApiTest {
                     assertPathEqual(SEND_MESSAGE_PATH)
                 }
             )
-            val messageApi: MessageApi = MessageApiImp(httpClient)
+            val messageApi: MessageApi = MessageApiImp(httpClient, provideEnvelopeProtoMapper())
             val response = messageApi.sendMessage(
                 DEFAULT_PARAMETERS_RESPONSE.serializableData,
                 TEST_CONVERSATION_ID,
@@ -83,7 +84,7 @@ class MessageApiTest : ApiTest {
                     assertPathEqual(SEND_MESSAGE_PATH)
                 }
             )
-            val messageApi: MessageApi = MessageApiImp(httpClient)
+            val messageApi: MessageApi = MessageApiImp(httpClient, provideEnvelopeProtoMapper())
             val response = messageApi.sendMessage(
                 DEFAULT_PARAMETERS_RESPONSE.serializableData,
                 TEST_CONVERSATION_ID,
@@ -108,7 +109,7 @@ class MessageApiTest : ApiTest {
                     assertPathEqual(SEND_MESSAGE_PATH)
                 }
             )
-            val messageApi: MessageApi = MessageApiImp(httpClient)
+            val messageApi: MessageApi = MessageApiImp(httpClient, provideEnvelopeProtoMapper())
             val response = messageApi.sendMessage(
                 DEFAULT_PARAMETERS_RESPONSE.serializableData,
                 TEST_CONVERSATION_ID,
@@ -135,7 +136,7 @@ class MessageApiTest : ApiTest {
                 statusCode = HttpStatusCode.PreconditionFailed
             )
 
-            val messageApi: MessageApi = MessageApiImp(httpClient)
+            val messageApi: MessageApi = MessageApiImp(httpClient, provideEnvelopeProtoMapper())
             val response = messageApi.sendMessage(
                 DEFAULT_PARAMETERS_RESPONSE.serializableData,
                 TEST_CONVERSATION_ID,

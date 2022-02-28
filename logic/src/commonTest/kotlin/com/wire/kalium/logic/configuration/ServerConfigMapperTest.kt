@@ -20,7 +20,7 @@ class ServerConfigMapperTest {
     fun givenABackendConfig_whenMappingFromBackendConfig_thenValuesAreMappedCorrectly() {
         val backendConfig: BackendConfig = randomBackendConfig()
         val acuteValue: ServerConfig =
-            with(backendConfig) { ServerConfig(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl) }
+            with(backendConfig) { ServerConfig(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title) }
 
         val expectedValue: ServerConfig = serverConfigMapper.fromBackendConfig(backendConfig)
         assertEquals(expectedValue, acuteValue)
@@ -30,17 +30,17 @@ class ServerConfigMapperTest {
     fun givenAServerConfig_whenMappingToBackendConfig_thenValuesAreMappedCorrectly() {
         val serverConfig: ServerConfig = randomServerConfig()
         val acuteValue: BackendConfig =
-            with(serverConfig) { BackendConfig(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl) }
+            with(serverConfig) { BackendConfig(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title) }
 
         val expectedValue: BackendConfig = serverConfigMapper.toBackendConfig(serverConfig)
         assertEquals(expectedValue, acuteValue)
     }
 
     @Test
-    fun givenANetworkConfig_whenMappingFromNetworkConfig_thenValuesAreMappedCorrectly() {
+    fun givenANetworkConfigEntity_whenMappingFromNetworkConfig_thenValuesAreMappedCorrectly() {
         val networkConfig: NetworkConfig = randomNetworkConfig()
         val acuteValue: ServerConfig =
-            with(networkConfig) { ServerConfig(apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl) }
+            with(networkConfig) { ServerConfig(apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title) }
 
         val expectedValue: ServerConfig = serverConfigMapper.fromNetworkConfig(networkConfig)
         assertEquals(expectedValue, acuteValue)
@@ -50,7 +50,7 @@ class ServerConfigMapperTest {
     fun givenAServerConfig_whenMappingToNetworkConfig_thenValuesAreMappedCorrectly() {
         val serverConfig: ServerConfig = randomServerConfig()
         val acuteValue: NetworkConfig =
-            with(serverConfig) { NetworkConfig(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl) }
+            with(serverConfig) { NetworkConfig(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title) }
 
         val expectedValue: NetworkConfig = serverConfigMapper.toNetworkConfig(serverConfig)
         assertEquals(expectedValue, acuteValue)
@@ -59,12 +59,12 @@ class ServerConfigMapperTest {
     private companion object {
         val randomString get() = Random.nextBytes(64).decodeToString()
         fun randomBackendConfig(): BackendConfig =
-            BackendConfig(randomString, randomString, randomString, randomString, randomString, randomString)
+            BackendConfig(randomString, randomString, randomString, randomString, randomString, randomString, randomString)
 
         fun randomServerConfig(): ServerConfig =
-            ServerConfig(randomString, randomString, randomString, randomString, randomString, randomString)
+            ServerConfig(randomString, randomString, randomString, randomString, randomString, randomString, randomString)
 
         fun randomNetworkConfig(): NetworkConfig =
-            NetworkConfig(randomString, randomString, randomString, randomString, randomString, randomString)
+            NetworkConfig(randomString, randomString, randomString, randomString, randomString, randomString, randomString)
     }
 }

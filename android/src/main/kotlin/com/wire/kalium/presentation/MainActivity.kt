@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.first
 
 class MainActivity : ComponentActivity() {
 
-    val serverConfig: ServerConfig by lazy { ServerConfig.STAGING }
+    val serverConfig: ServerConfig by lazy { ServerConfig.DEFAULT }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

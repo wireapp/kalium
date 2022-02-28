@@ -249,7 +249,8 @@ class LoginUseCaseTest {
             webSocketBaseUrl = "webSocketUrl.com",
             blackListUrl = "blackListUrl.com",
             teamsUrl = "teamsUrl.com",
-            websiteUrl = "websiteUrl.com"
+            websiteUrl = "websiteUrl.com",
+            title = "Test Title"
         )
         val TEST_AUTH_SESSION =
             AuthSession(

@@ -9,6 +9,7 @@ import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.conversation.ConversationApiImp
 import com.wire.kalium.network.api.message.MessageApi
 import com.wire.kalium.network.api.message.MessageApiImp
+import com.wire.kalium.network.api.message.provideEnvelopeProtoMapper
 import com.wire.kalium.network.api.notification.NotificationApi
 import com.wire.kalium.network.api.notification.NotificationApiImpl
 import com.wire.kalium.network.api.prekey.PreKeyApi
@@ -43,7 +44,7 @@ class AuthenticatedNetworkContainer(
 
     val clientApi: ClientApi get() = ClientApiImpl(authenticatedHttpClient)
 
-    val messageApi: MessageApi get() = MessageApiImp(authenticatedHttpClient)
+    val messageApi: MessageApi get() = MessageApiImp(authenticatedHttpClient, provideEnvelopeProtoMapper())
 
     val conversationApi: ConversationApi get() = ConversationApiImp(authenticatedHttpClient)
 
