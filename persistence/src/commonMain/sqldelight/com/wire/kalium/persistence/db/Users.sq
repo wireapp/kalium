@@ -37,7 +37,7 @@ SELECT * FROM User;
 selectByQualifiedId:
 SELECT * FROM User WHERE qualified_id = ?;
 
-selectByName:
+selectByNameOrHandleOrEmail:
 SELECT * FROM User
 WHERE name LIKE ('%' || :name || '%')
 OR  handle LIKE  ('%' || :name || '%')

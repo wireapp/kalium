@@ -28,6 +28,6 @@ interface UserDAO {
     suspend fun updateUser(user: UserEntity)
     suspend fun getAllUsers(): Flow<List<UserEntity>>
     suspend fun getUserByQualifiedID(qualifiedID: QualifiedID): Flow<UserEntity?>
-    suspend fun getUserByName(name: String): Flow<UserEntity?>
+    suspend fun getUserByNameOrHandleOrEmail(searchQuery: String): Flow<UserEntity?>
     suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedID)
 }

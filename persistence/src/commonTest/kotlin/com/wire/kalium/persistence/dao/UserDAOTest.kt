@@ -3,12 +3,14 @@ package com.wire.kalium.persistence.dao
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.db.Database
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
-import kotlin.test.BeforeTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertContains
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 class UserDAOTest : BaseDatabaseTest() {
 
@@ -71,34 +73,6 @@ class UserDAOTest : BaseDatabaseTest() {
         assertEquals(updatedUser1, result.first())
     }
 
-
-    //query by full email
-    //query by full name
-    //query by full handle
-
-    //query by email by part of it
-    //query by name by part of it
-    //query by handle by part of it
-
-    //query by email but with name,handle does not match
-    //query by name name but handle,email does not match
-    //query by handle but email,name does not match
-
-    //query by email return no result
-    //query by name return no result
-    //query by handle return no result
-
-    @Test
-    fun givenListOfUsers_ThenUserCanBeQueriedByEmail() = runTest {
-        //given insert couple of users
-        val updatedUser1 = UserEntity(user1.id, "John Doe", "johndoe", "email1", "phone1", 1, "team")
-        db.userDAO.insertUser(updatedUser1)
-
-        //when perform a query on the name
-        val result = db.userDAO.getUserByName("j")
-        assertEquals(updatedUser1, result.first())
-    }
-
     @Test
     fun givenRetrievedUser_ThenUpdatesArePropagatedThroughFlow() = runTest {
         db.userDAO.insertUser(user1)
@@ -109,6 +83,90 @@ class UserDAOTest : BaseDatabaseTest() {
 
         db.userDAO.updateUser(updatedUser1)
         assertEquals(updatedUser1, result.first())
+    }
+
+    @Test
+    fun givenAExistingUser_ThenQueriedUserBySpecificEmailContainsTheQueriedEmail() = runTest {
+        //given
+        val mockUserEmail = "test@wire.com"
+        val mockUser = newUserEntity(email = mockUserEmail)
+        db.userDAO.insertUser(mockUser)
+        //when
+        val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(mockUserEmail).first()
+        //then
+        assertNotNull(searchResult)
+        assertEquals(searchResult.email, mockUserEmail)
+    }
+
+    @Test
+    fun givenAExistingUser_ThenQueriedUserBySpecificPartOfEmailContainsTheSearchQuery() = runTest {
+        //given
+        val mockUserEmail = "test@wire.com"
+        val mockUser = newUserEntity(email = mockUserEmail)
+        db.userDAO.insertUser(mockUser)
+        //when
+        val searchQuery = mockUserEmail.substring(5, mockUserEmail.length)
+        val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(searchQuery).first()
+        //then
+        assertNotNull(searchResult)
+        assertNotNull(searchResult.email)
+        assertContains(searchResult.email!!, searchQuery)
+    }
+
+    @Test
+    fun givenAExistingUser_ThenQueriedUserBySpecificNameContainsTheQueriedName() = runTest {
+        //given
+        val mockName = "testName"
+        val mockUser = newUserEntity(name = mockName)
+        db.userDAO.insertUser(mockUser)
+        //when
+        val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(mockName).first()
+        //then
+        assertNotNull(searchResult)
+        assertEquals(searchResult.name, mockName)
+    }
+
+    @Test
+    fun givenAExistingUser_ThenQueriedUserByPartOfNameContainsTheSearchQuery() = runTest {
+        //given
+        val mockName = "testName"
+        val mockUser = newUserEntity(name = mockName)
+        db.userDAO.insertUser(mockUser)
+        //when
+        val searchQuery = mockName.substring(5, mockName.length)
+        val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(searchQuery).first()
+        //then
+        assertNotNull(searchResult)
+        assertNotNull(searchResult.name)
+        assertContains(searchResult.name!!, searchQuery)
+    }
+
+    @Test
+    fun givenAExistingUser_ThenQueriedUserBySpecificHandleContainsTheQueriedHandle() = runTest {
+        //given
+        val mockHandle = "testHandle"
+        val mockUser = newUserEntity(handle = mockHandle)
+        db.userDAO.insertUser(mockUser)
+        //when
+        val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(mockHandle).first()
+        //then
+        assertNotNull(searchResult)
+        assertEquals(searchResult.handle, mockHandle)
+    }
+
+    @Test
+    fun givenAExistingUser_ThenQueriedUserByPartOfHandleContainsTheSearchQuery() = runTest {
+        //given
+        val mockHandle = "testHandle"
+        val mockUser = newUserEntity(handle = mockHandle)
+        db.userDAO.insertUser(mockUser)
+        //when
+        val searchQuery = mockHandle.substring(5, mockHandle.length)
+        val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(searchQuery).first()
+        //then
+        assertNotNull(searchResult)
+        assertNotNull(searchResult.handle)
+        assertContains(searchResult.handle!!, searchQuery)
     }
 
 }
