@@ -66,7 +66,7 @@ class AssetApiImpl(private val httpClient: HttpClient) : AssetApi {
     }
 
     private companion object {
-        const val PATH_PUBLIC_ASSETS = "/assets/v3/"
+        const val PATH_PUBLIC_ASSETS = "/assets/v3"
         const val HEADER_ASSET_TOKEN = "Asset-Token"
     }
 }

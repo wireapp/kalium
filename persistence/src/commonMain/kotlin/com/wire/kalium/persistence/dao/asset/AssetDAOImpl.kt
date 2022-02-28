@@ -22,7 +22,6 @@ class AssetMapper {
 class AssetDAOImpl(private val queries: AssetsQueries) : AssetDAO {
 
     val mapper by lazy { AssetMapper() }
-
     override suspend fun insertAsset(assetEntity: AssetEntity) {
         queries.insertAsset(
             assetEntity.key,
@@ -35,5 +34,23 @@ class AssetDAOImpl(private val queries: AssetsQueries) : AssetDAO {
             assetEntity.size,
             assetEntity.downloaded
         )
+    }
+
+    override suspend fun insertAssets(assetsEntity: List<AssetEntity>) {
+        queries.transaction {
+            assetsEntity.forEach { asset ->
+                queries.insertAsset(
+                    asset.key,
+                    asset.domain,
+                    asset.token,
+                    asset.name,
+                    asset.encryption,
+                    asset.mimeType,
+                    asset.sha,
+                    asset.size,
+                    asset.downloaded
+                )
+            }
+        }
     }
 }

@@ -46,4 +46,5 @@ data class AssetEntity(
 
 interface AssetDAO {
     suspend fun insertAsset(assetEntity: AssetEntity)
+    suspend fun insertAssets(assetsEntity: List<AssetEntity>)
 }
