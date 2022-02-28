@@ -1,18 +1,10 @@
 package com.wire.kalium.logic.data.auth.login
 
+import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.network.api.user.login.LoginApi
-import com.wire.kalium.network.api.user.login.LoginResponse
-import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.wrapKaliumResponse
-import io.ktor.client.statement.DefaultHttpResponse
-import io.ktor.client.statement.HttpResponse
 import io.mockative.Mock
-import io.mockative.any
 import io.mockative.classOf
-import io.mockative.given
 import io.mockative.mock
-import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.random.Random
 import kotlin.test.BeforeTest
@@ -23,12 +15,15 @@ class LoginRepositoryTest {
     @Mock
     val loginApi = mock(classOf<LoginApi>())
 
+    @Mock
+    val sessionMapper: SessionMapper = mock(classOf<SessionMapper>())
+
     private lateinit var loginRepository: LoginRepository
 
 
     @BeforeTest
     fun setup() {
-        loginRepository = LoginRepositoryImpl(loginApi, CLIENT_LABEL)
+        loginRepository = LoginRepositoryImpl(loginApi, CLIENT_LABEL, sessionMapper)
     }
 
     @Test

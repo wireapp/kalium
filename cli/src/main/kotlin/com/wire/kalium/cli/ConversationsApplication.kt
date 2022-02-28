@@ -10,7 +10,6 @@ import com.wire.kalium.logic.configuration.ServerConfigMapper
 import com.wire.kalium.logic.configuration.ServerConfigMapperImpl
 import com.wire.kalium.network.AuthenticatedNetworkContainer
 import com.wire.kalium.network.LoginNetworkContainer
-import com.wire.kalium.network.api.SessionCredentials
 import com.wire.kalium.network.api.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.model.AssetRetentionType
 import com.wire.kalium.network.api.user.login.LoginApi
@@ -36,8 +35,7 @@ class ConversationsApplication : CliktCommand() {
         } else {
             val sessionData = loginResult.value
             // TODO: Get them 🍪 refresh token
-            val sessionCredentials = SessionCredentials(sessionData.tokenType, sessionData.accessToken, "refreshToken")
-            val networkModule = AuthenticatedNetworkContainer(sessionCredentials = sessionCredentials, backendConfig = backendConfig)
+            val networkModule = AuthenticatedNetworkContainer(sessionDTO = sessionData, backendConfig = backendConfig)
             val conversationsResponse = networkModule.conversationApi.conversationsByBatch(null, 100)
 
             if (!conversationsResponse.isSuccessful()) {
