@@ -42,6 +42,7 @@ class AssetMapperImpl : AssetMapper {
     }
 
     override fun fromUserAssetIdToDaoModel(assetId: UserAssetId): AssetEntity {
+        // TODO: resolve domain map
         return AssetEntity(assetId.toString(), "", null, null, null, ImageAsset.JPG.name, null, 0, false)
     }
 }
