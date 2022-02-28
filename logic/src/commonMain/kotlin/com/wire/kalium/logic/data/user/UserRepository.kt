@@ -74,20 +74,22 @@ class UserDataSource(
             usersRequestResult.kException.printStackTrace()
             return Either.Left(CoreFailure.ServerMiscommunication)
         }
-        val usersToBePersisted: List<UserEntity> = usersRequestResult.value.map(userMapper::fromApiModelToDaoModel)
+        val usersToBePersisted = usersRequestResult.value.map(userMapper::fromApiModelToDaoModel)
+        // Save (in case there is no data) a reference to the asset id (profile picture)
+        assetRepository.saveUserPictureAsset(mapAssetsForUsersToBePersisted(usersToBePersisted))
+        userDAO.insertUsers(usersToBePersisted)
 
+        // TODO Wrap DB calls to catch exceptions and return `Either.Left` when exceptions occur
+        return Either.Right(Unit)
+    }
+    
+    private fun mapAssetsForUsersToBePersisted(usersToBePersisted: List<UserEntity>): List<UserAssetId> {
         val assetsId = mutableListOf<UserAssetId>()
         usersToBePersisted.map {
             assetsId.add(it.completeAssetId)
             assetsId.add(it.previewAssetId)
         }
-
-        // Save (in case there is no data) a reference to the asset id (profile picture)
-        assetRepository.saveUserPictureAsset(assetsId)
-        userDAO.insertUsers(usersToBePersisted)
-
-        // TODO Wrap DB calls to catch exceptions and return `Either.Left` when exceptions occur
-        return Either.Right(Unit)
+        return assetsId
     }
 
     override suspend fun getSelfUser(): Flow<SelfUser> {
