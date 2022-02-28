@@ -11,6 +11,7 @@ import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class UserDAOTest : BaseDatabaseTest() {
 
@@ -86,31 +87,174 @@ class UserDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenAExistingUser_ThenQueriedUserBySpecificEmailContainsTheQueriedEmail() = runTest {
+    fun givenAExistingUsers_WhenQueriedUserByUserEmail_ThenResultsEmailIsEqualToContainsTheQueriedEmail() = runTest {
         //given
-        val mockUserEmail = "test@wire.com"
-        val mockUser = newUserEntity(email = mockUserEmail)
-        db.userDAO.insertUser(mockUser)
+        val expectedResult = listOf(
+            UserEntity(
+                id = QualifiedID("2", "wire.com"),
+                name = "testName2",
+                handle = "testHandle2",
+                email = "testEmail2@wire.com",
+                phone = "testPhone2",
+                accentId = 2,
+                team = "testTeam2",
+            )
+        )
+
+        val mockUsers = listOf(
+            UserEntity(
+                id = QualifiedID("1", "wire.com"),
+                name = "testName1",
+                handle = "testHandle1",
+                email = "testEmail1@wire.com",
+                phone = "testPhone1",
+                accentId = 1,
+                team = "testTeam1",
+            ),
+            UserEntity(
+                id = QualifiedID("3", "wire.com"),
+                name = "testName3",
+                handle = "testHandle3",
+                email = "testEmail3@wire.com",
+                phone = "testPhone3",
+                accentId = 3,
+                team = "testTeam3",
+            )
+        ) + expectedResult
+
+        db.userDAO.insertUsers(mockUsers)
         //when
-        val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(mockUserEmail).first()
+        val searchQuery = "testEmail2@wire.com"
+        val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(searchQuery).first()
         //then
-        assertNotNull(searchResult)
-        assertEquals(searchResult.email, mockUserEmail)
+        assertTrue { searchResult.isNotEmpty() }
+        assertEquals(searchResult, expectedResult)
     }
 
     @Test
-    fun givenAExistingUser_ThenQueriedUserBySpecificPartOfEmailContainsTheSearchQuery() = runTest {
+    fun givenAExistingUsers_WhenQueriedUserByName_ThenTheResultIsEqualToTheUserWithQueriedUserName() = runTest {
         //given
-        val mockUserEmail = "test@wire.com"
-        val mockUser = newUserEntity(email = mockUserEmail)
-        db.userDAO.insertUser(mockUser)
+        val expectedResult = listOf(
+            UserEntity(
+                id = QualifiedID("2", "wire.com"),
+                name = "testName2",
+                handle = "testHandle2",
+                email = "testEmail2@wire.com",
+                phone = "testPhone2",
+                accentId = 2,
+                team = "testTeam2",
+            )
+        )
+
+        val mockUsers = listOf(
+            UserEntity(
+                id = QualifiedID("1", "wire.com"),
+                name = "testName1",
+                handle = "testHandle1",
+                email = "testEmail1@wire.com",
+                phone = "testPhone1",
+                accentId = 1,
+                team = "testTeam1",
+            ),
+            UserEntity(
+                id = QualifiedID("3", "wire.com"),
+                name = "testName3",
+                handle = "testHandle3",
+                email = "testEmail3@wire.com",
+                phone = "testPhone3",
+                accentId = 3,
+                team = "testTeam3",
+            )
+        ) + expectedResult
+
+        db.userDAO.insertUsers(mockUsers)
+        //when
+        val searchResult = db.userDAO.getUserByNameOrHandleOrEmail("testName2").first()
+        //then
+        assertTrue { searchResult.isNotEmpty() }
+        assertEquals(searchResult, expectedResult)
+    }
+
+    @Test
+    fun givenAExistingUsers_WhenQueriedUserByHandle_ThenTheResultIsEqualToTheOneUserWithQueriedHandle() = runTest {
+        //given
+        val mockUsers = listOf(
+            UserEntity(
+                id = QualifiedID("1", "wire.com"),
+                name = "testName1",
+                handle = "testHandle1",
+                email = "testEmail1@wire.com",
+                phone = "testPhone1",
+                accentId = 1,
+                team = "testTeam1",
+            ),
+            UserEntity(
+                id = QualifiedID("3", "wire.com"),
+                name = "testName3",
+                handle = "testHandle3",
+                email = "testEmail3@wire.com",
+                phone = "testPhone3",
+                accentId = 3,
+                team = "testTeam3",
+            ), UserEntity(
+                id = QualifiedID("2", "wire.com"),
+                name = "testName2",
+                handle = "testHandle2",
+                email = "testEmail2@wire.com",
+                phone = "testPhone2",
+                accentId = 2,
+                team = "testTeam2",
+            )
+        )
+        db.userDAO.insertUsers(mockUsers)
+        //when
+        val searchQuery = "testHandle2"
+        val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(searchQuery).first()
+        //then
+        assertTrue { searchResult.size == 1 }
+        assertEquals(searchResult.first().handle, searchQuery)
+    }
+
+    @Test
+    fun givenAExistingUser_WhenQueriedUserByPartOfEmail_ThenResultContainsAEntitiesWithThatPartOfUserEmail() = runTest {
+        //given
+        val mockUsers = listOf(
+            UserEntity(
+                id = QualifiedID("1", "wire.com"),
+                name = "testName1",
+                handle = "testHandle1",
+                email = "testEmail1@wire.com",
+                phone = "testPhone1",
+                accentId = 1,
+                team = "testTeam1",
+            ),
+            UserEntity(
+                id = QualifiedID("3", "wire.com"),
+                name = "testName3",
+                handle = "testHandle3",
+                email = "testEmail3@wire.com",
+                phone = "testPhone3",
+                accentId = 3,
+                team = "testTeam3",
+            ), UserEntity(
+                id = QualifiedID("2", "wire.com"),
+                name = "testName2",
+                handle = "testHandle2",
+                email = "testEmail2@wire.com",
+                phone = "testPhone2",
+                accentId = 2,
+                team = "testTeam2",
+            )
+        )
+        db.userDAO.insertUsers(mockUsers)
         //when
         val searchQuery = mockUserEmail.substring(5, mockUserEmail.length)
         val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(searchQuery).first()
         //then
-        assertNotNull(searchResult)
-        assertNotNull(searchResult.email)
-        assertContains(searchResult.email!!, searchQuery)
+        searchResult.forEach { userEntity ->
+            assertNotNull(userEntity.email)
+            assertContains(userEntity.email!!, searchQuery)
+        }
     }
 
     @Test
@@ -122,8 +266,10 @@ class UserDAOTest : BaseDatabaseTest() {
         //when
         val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(mockName).first()
         //then
-        assertNotNull(searchResult)
-        assertEquals(searchResult.name, mockName)
+        searchResult.forEach { userEntity ->
+            assertNotNull(userEntity)
+            assertEquals(userEntity.name, mockName)
+        }
     }
 
     @Test
@@ -136,9 +282,10 @@ class UserDAOTest : BaseDatabaseTest() {
         val searchQuery = mockName.substring(5, mockName.length)
         val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(searchQuery).first()
         //then
-        assertNotNull(searchResult)
-        assertNotNull(searchResult.name)
-        assertContains(searchResult.name!!, searchQuery)
+        searchResult.forEach { userEntity ->
+            assertNotNull(userEntity.name)
+            assertContains(userEntity.name!!, searchQuery)
+        }
     }
 
     @Test
@@ -150,8 +297,9 @@ class UserDAOTest : BaseDatabaseTest() {
         //when
         val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(mockHandle).first()
         //then
-        assertNotNull(searchResult)
-        assertEquals(searchResult.handle, mockHandle)
+        searchResult.forEach { userEntity ->
+            assertEquals(userEntity.handle, mockHandle)
+        }
     }
 
     @Test
@@ -164,9 +312,118 @@ class UserDAOTest : BaseDatabaseTest() {
         val searchQuery = mockHandle.substring(5, mockHandle.length)
         val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(searchQuery).first()
         //then
-        assertNotNull(searchResult)
-        assertNotNull(searchResult.handle)
-        assertContains(searchResult.handle!!, searchQuery)
+        searchResult.forEach { userEntity ->
+            assertNotNull(userEntity.handle)
+            assertContains(userEntity.handle!!, searchQuery)
+        }
+    }
+
+    @Test
+    fun givenAExistingUsersWithCommonEmailPrefix_ThenQueriedUserEmailByPartOfEmailAllContainTheSearchQuery() = runTest {
+        //given
+        val commonEmailUsers = listOf(
+            UserEntity(
+                id = QualifiedID("1", "wire.com"),
+                name = "testName1",
+                handle = "testHandle1",
+                email = "testEmail1@wire.com",
+                phone = "testPhone1",
+                accentId = 1,
+                team = "testTeam1",
+            ),
+            UserEntity(
+                id = QualifiedID("2", "wire.com"),
+                name = "testName2",
+                handle = "testHandle2",
+                email = "testEmail2@wire.com",
+                phone = "testPhone2",
+                accentId = 2,
+                team = "testTeam2",
+            ),
+            UserEntity(
+                id = QualifiedID("3", "wire.com"),
+                name = "testName3",
+                handle = "testHandle3",
+                email = "testEmail3@wire.com",
+                phone = "testPhone3",
+                accentId = 3,
+                team = "testTeam3",
+            )
+        )
+
+        val notCommonEmailUsers = listOf(
+            UserEntity(
+                id = QualifiedID("4", "wire.com"),
+                name = "testName4",
+                handle = "testHandle4",
+                email = "someDifferentEmail1@wire.com",
+                phone = "testPhone4",
+                accentId = 4,
+                team = "testTeam4",
+            ),
+            UserEntity(
+                id = QualifiedID("5", "wire.com"),
+                name = "testName5",
+                handle = "testHandle5",
+                email = "someDifferentEmail2@wire.com",
+                phone = "testPhone5",
+                accentId = 5,
+                team = "testTeam5",
+            )
+        )
+
+        val mockUsers = commonEmailUsers + notCommonEmailUsers
+
+        db.userDAO.insertUsers(mockUsers)
+        //when
+        val searchQuery = "testEmail"
+        val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(searchQuery).first()
+        //then
+        assertEquals(searchResult, commonEmailUsers)
+        searchResult.forEach { newUserEntity ->
+            assertNotNull(newUserEntity.email)
+            assertContains(newUserEntity.email!!, searchQuery)
+        }
+    }
+
+    @Test
+    fun givenAExistingUsers_ThenQueriedUsersByNonExistingEmailReturnEmptyList() = runTest {
+        //given
+        val mockUsers = listOf(
+            UserEntity(
+                id = QualifiedID("1", "wire.com"),
+                name = "testName",
+                handle = "testHandle",
+                email = "testEmail@wire.com",
+                phone = "testPhone",
+                accentId = 1,
+                team = "testTeam",
+            ),
+            UserEntity(
+                id = QualifiedID("2", "wire.com"),
+                name = "testName2",
+                handle = "testHandle2",
+                email = "testEmail2@wire.com",
+                phone = "testPhone2",
+                accentId = 2,
+                team = "testTeam2",
+            ),
+            UserEntity(
+                id = QualifiedID("3", "wire.com"),
+                name = "testName3",
+                handle = "testHandle3",
+                email = "testEmail3@wire.com",
+                phone = "testPhone3",
+                accentId = 3,
+                team = "testTeam3",
+            )
+        )
+        db.userDAO.insertUsers(mockUsers)
+        //when
+        val nonExistingEmailQuery = "doesnotexist@wire.com"
+        val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(nonExistingEmailQuery).first()
+        //then
+        assertTrue { searchResult.isEmpty() }
     }
 
 }

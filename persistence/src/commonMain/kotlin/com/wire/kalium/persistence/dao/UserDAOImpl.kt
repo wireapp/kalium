@@ -3,10 +3,10 @@ package com.wire.kalium.persistence.dao
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
-import com.wire.kalium.persistence.db.User as SQLDelightUser
 import com.wire.kalium.persistence.db.UsersQueries
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import com.wire.kalium.persistence.db.User as SQLDelightUser
 
 class UserMapper {
     fun toModel(user: SQLDelightUser): UserEntity {
@@ -46,8 +46,11 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
             .map { it?.let { mapper.toModel(it) } }
     }
 
-    override suspend fun getUserByNameOrHandleOrEmail(searchQuery: String): Flow<UserEntity?> {
-        return queries.selectByNameOrHandleOrEmail(searchQuery).asFlow().mapToOneOrNull().map { it?.let { mapper.toModel(it) } }
+    override suspend fun getUserByNameOrHandleOrEmail(searchQuery: String): Flow<List<UserEntity>> {
+        return queries.selectByNameOrHandleOrEmail(searchQuery)
+            .asFlow()
+            .mapToList()
+            .map { entryList -> entryList.map(mapper::toModel) }
     }
 
     override suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedID) {
