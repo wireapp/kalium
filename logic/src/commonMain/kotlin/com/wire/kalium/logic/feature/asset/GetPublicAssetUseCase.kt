@@ -9,7 +9,7 @@ interface GetPublicAssetUseCase {
     suspend operator fun invoke(assetKey: String): Either<CoreFailure, ByteArray>
 }
 
-internal class GetAssetUseCaseImpl(private val assetDataSource: AssetRepository) : GetPublicAssetUseCase {
+internal class GetPublicAssetUseCaseImpl(private val assetDataSource: AssetRepository) : GetPublicAssetUseCase {
     override suspend fun invoke(assetKey: String): Either<CoreFailure, ByteArray> = suspending {
         return@suspending assetDataSource.downloadPublicAsset(assetKey)
     }
