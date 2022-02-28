@@ -1,6 +1,7 @@
 package com.wire.kalium.network.api.user.register
 
 
+import com.wire.kalium.network.api.TeamId
 import com.wire.kalium.network.api.model.Service
 import com.wire.kalium.network.api.model.UserAsset
 import kotlinx.serialization.SerialName
@@ -25,5 +26,5 @@ data class RegisterResponse(
     @SerialName("service")
     val service: Service?,
     @SerialName("team")
-    val team: String?
+    val teamId: TeamId?
 )

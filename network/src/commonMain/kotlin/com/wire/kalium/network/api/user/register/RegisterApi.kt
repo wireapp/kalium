@@ -8,21 +8,23 @@ import io.ktor.client.request.setBody
 import io.ktor.http.URLProtocol
 
 interface RegisterApi {
-    sealed class RegisterParam {
+    sealed class RegisterParam(
+        open val name: String
+    ) {
         internal abstract fun toBody(): RegisterRequest
         data class PersonalAccount(
             val email: String,
             val emailCode: String,
-            val name: String,
+            override val name: String,
             val password: String,
-        ) : RegisterParam() {
+        ) : RegisterParam(name) {
             override fun toBody(): RegisterRequest = RegisterRequest(
                 email = email,
                 emailCode = emailCode,
                 password = password,
                 name = name,
                 accentId = null,
-                assets = listOf(),
+                assets = null,
                 invitationCode = null,
                 label = null,
                 locale = null,

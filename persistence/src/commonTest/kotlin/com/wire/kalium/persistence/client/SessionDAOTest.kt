@@ -110,7 +110,7 @@ class SessionDAOTest {
     private companion object {
         val randomString get() = Random.nextBytes(64).decodeToString()
         fun randomNetworkConfig(): NetworkConfig =
-            NetworkConfig(randomString, randomString, randomString, randomString, randomString, randomString)
+            NetworkConfig(randomString, randomString, randomString, randomString, randomString, randomString, "test")
 
     }
 
