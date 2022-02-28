@@ -48,7 +48,7 @@ class SuspendableEitherScopeTest {
     fun `given either is Right, when flatMapping, applies function and returns new Either`() = runTest {
         val either = Either.Right("Success")
 
-        val mapped = Either.Left(KaliumException.GenericError(null, null))
+        val mapped = Either.Left(KaliumException.GenericError(IllegalStateException()))
         val result = with(suspendableEitherScope) {
             either.flatMap {
                 assertSame(it, "Success")

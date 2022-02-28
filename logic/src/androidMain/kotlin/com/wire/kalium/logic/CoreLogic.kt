@@ -30,7 +30,7 @@ actual class CoreLogic(
     override fun getSessionScope(session: AuthSession): UserSessionScope {
         val dataSourceSet = userScopeStorage[session] ?: run {
             val networkContainer = AuthenticatedNetworkContainer(
-                sessionCredentials = sessionMapper.toSessionCredentials(session),
+                sessionDTO = sessionMapper.toSessionDTO(session),
                 backendConfig = serverConfigMapper.toBackendConfig(serverConfig = session.serverConfig),
                 isRequestLoggingEnabled = BuildConfig.DEBUG //TODO: Multi-platform logging solution!
             )
