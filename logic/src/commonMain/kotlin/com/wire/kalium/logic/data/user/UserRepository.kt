@@ -12,6 +12,7 @@ import com.wire.kalium.network.api.user.self.SelfApi
 import com.wire.kalium.network.utils.isSuccessful
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.UserDAO
+import com.wire.kalium.persistence.dao.UserEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -73,7 +74,16 @@ class UserDataSource(
             usersRequestResult.kException.printStackTrace()
             return Either.Left(CoreFailure.ServerMiscommunication)
         }
-        val usersToBePersisted = usersRequestResult.value.map(userMapper::fromApiModelToDaoModel)
+        val usersToBePersisted: List<UserEntity> = usersRequestResult.value.map(userMapper::fromApiModelToDaoModel)
+
+        val assetsId = mutableListOf<UserAssetId>()
+        usersToBePersisted.map {
+            assetsId.add(it.completeAssetId)
+            assetsId.add(it.previewAssetId)
+        }
+
+        // Save (in case there is no data) a reference to the asset id (profile picture)
+        assetRepository.saveUserPictureAsset(assetsId)
         userDAO.insertUsers(usersToBePersisted)
 
         // TODO Wrap DB calls to catch exceptions and return `Either.Left` when exceptions occur

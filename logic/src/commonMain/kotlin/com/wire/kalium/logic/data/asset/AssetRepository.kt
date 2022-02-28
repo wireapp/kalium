@@ -42,9 +42,7 @@ internal class AssetDataSource(
     }
 
     override suspend fun saveUserPictureAsset(assetId: List<UserAssetId>): Either<CoreFailure, Unit> {
-        assetId.forEach {
-            assetDao.insertAsset(assetMapper.fromUserAssetIdToDaoModel(it))
-        }
+        assetDao.insertAssets(assetId.map { assetMapper.fromUserAssetIdToDaoModel(it) })
         return Either.Right(Unit)
     }
 }
