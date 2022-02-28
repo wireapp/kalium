@@ -3,7 +3,7 @@ package com.wire.kalium.logic.data.session
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.configuration.ServerConfigMapper
 import com.wire.kalium.logic.feature.auth.AuthSession
-import com.wire.kalium.network.api.SessionCredentials
+import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.tools.BackendConfig
 import com.wire.kalium.persistence.model.NetworkConfig
 import com.wire.kalium.persistence.model.PersistenceSession
@@ -35,10 +35,10 @@ class SessionMapperTest {
     fun givenAnAuthSession_whenMappingToSessionCredentials_thenValuesAreMappedCorrectly() {
         val authSession: AuthSession = randomAuthSession()
 
-        val acuteValue: SessionCredentials =
-            with(authSession) { SessionCredentials(tokenType, accessToken, refreshToken) }
+        val acuteValue: SessionDTO =
+            with(authSession) { SessionDTO(userId ,tokenType, accessToken, refreshToken) }
 
-        val expectedValue: SessionCredentials = sessionMapper.toSessionCredentials(authSession)
+        val expectedValue: SessionDTO = sessionMapper.toSessionDTO(authSession)
         assertEquals(expectedValue, acuteValue)
     }
 

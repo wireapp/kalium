@@ -1,5 +1,9 @@
 package com.wire.kalium.network.api.user.login
 
+import com.wire.kalium.network.api.ErrorResponse
+import com.wire.kalium.network.api.RefreshTokenProperties
+import com.wire.kalium.network.api.SessionDTO
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
@@ -21,8 +25,24 @@ class LoginApiImpl(private val httpClient: HttpClient) : LoginApi {
         @SerialName("label") val label: String
     )
 
+    @Serializable
+    data class LoginResponse(
+        @SerialName("user") val userId: String,
+        @SerialName("expires_in") val expiresIn: Long,
+        @SerialName("access_token") val accessToken: String,
+        @SerialName("token_type") val tokenType: String
+    )
+
+    private fun LoginResponse.toSessionCredentials(refreshToken: String): SessionDTO = SessionDTO(
+        userIdValue = userId,
+        tokenType = tokenType,
+        accessToken = accessToken,
+        refreshToken = refreshToken
+    )
+
+
     private fun LoginApi.LoginParam.toRequestBody(): LoginRequest {
-        return when(this) {
+        return when (this) {
             is LoginApi.LoginParam.LoginWithEmail -> LoginRequest(email = email, password = password, label = label)
             is LoginApi.LoginParam.LoginWithHandel -> LoginRequest(handle = handle, password = password, label = label)
         }
@@ -32,15 +52,30 @@ class LoginApiImpl(private val httpClient: HttpClient) : LoginApi {
         param: LoginApi.LoginParam,
         persist: Boolean,
         apiBaseUrl: String
-    ): NetworkResponse<LoginResponse> = wrapKaliumResponse {
-        httpClient.post {
-            url.set(host = apiBaseUrl, path = PATH_LOGIN)
-            url.protocol = URLProtocol.HTTPS
+    ): NetworkResponse<SessionDTO> {
 
-            parameter(QUERY_PERSIST, persist)
-            setBody(param.toRequestBody())
+        val result = wrapKaliumResponse<LoginResponse> {
+            httpClient.post {
+                url.set(host = apiBaseUrl, path = PATH_LOGIN)
+                url.protocol = URLProtocol.HTTPS
+
+                parameter(QUERY_PERSIST, persist)
+                setBody(param.toRequestBody())
+            }
+        }
+        return when (result) {
+            is NetworkResponse.Success -> {
+                val refreshToken = result.cookies[RefreshTokenProperties.COOKIE_NAME]
+                if (refreshToken == null) {
+                    NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "no cookie was found", "missing-refreshToken")))
+                } else {
+                    NetworkResponse.Success(result.value.toSessionCredentials(refreshToken), result.headers, result.httpCode)
+                }
+            }
+            is NetworkResponse.Error -> NetworkResponse.Error(result.kException)
         }
     }
+
 
     private companion object {
         const val PATH_LOGIN = "login"
