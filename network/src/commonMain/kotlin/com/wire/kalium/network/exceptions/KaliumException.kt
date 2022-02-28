@@ -1,10 +1,14 @@
 package com.wire.kalium.network.exceptions
 
 import com.wire.kalium.network.api.ErrorResponse
+import com.wire.kalium.network.api.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.api.message.SendMessageResponse
 import kotlin.contracts.contract
 
-sealed class KaliumException : Exception() {
+sealed class KaliumException() : Exception() {
+
+    class Unauthorized(val errorCode: Int) : KaliumException()
+
     /**
      * http error 300 .. 399
      */
@@ -23,7 +27,7 @@ sealed class KaliumException : Exception() {
     /**
      * Generic errors e.g. Serialization errors
      */
-    class GenericError(override val cause: Throwable?) : KaliumException()
+    class GenericError(override val cause: Throwable) : KaliumException()
 
     /**
      * IOException ?
@@ -43,6 +47,12 @@ sealed class KaliumException : Exception() {
 
 sealed class SendMessageError : KaliumException.FeatureError() {
     class MissingDeviceError(val errorBody: SendMessageResponse.MissingDevicesResponse) : SendMessageError()
+}
+
+sealed class QualifiedSendMessageError() : KaliumException.FeatureError() {
+    class MissingDeviceError(
+        val errorBody: QualifiedSendMessageResponse.MissingDevicesResponse
+    ) : QualifiedSendMessageError()
 }
 
 fun KaliumException.InvalidRequestError.isTooManyClients(): Boolean {

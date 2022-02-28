@@ -6,8 +6,8 @@ import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.UserId
 import com.wire.kalium.cryptography.exceptions.ProteusException
-import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.conversation.Member
+import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.prekey.ClientPreKeyInfo
 import com.wire.kalium.logic.data.prekey.PreKeyRepository

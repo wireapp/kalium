@@ -28,6 +28,8 @@ import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessageMapperImpl
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.ProtoContentMapper
+import com.wire.kalium.logic.data.message.SendMessageFailureMapper
+import com.wire.kalium.logic.data.message.SendMessageFailureMapperImpl
 import com.wire.kalium.logic.data.prekey.PreKeyDataSource
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.logic.data.prekey.PreKeyMapperImpl
@@ -80,12 +82,15 @@ abstract class UserSessionScopeCommon(
 
     private val messageMapper: MessageMapper get() = MessageMapperImpl(idMapper)
 
+    private val sendMessageFailureMapper: SendMessageFailureMapper get() = SendMessageFailureMapperImpl()
+
     private val messageRepository: MessageRepository
         get() = MessageDataSource(
             authenticatedDataSourceSet.authenticatedNetworkContainer.messageApi,
             database.messageDAO,
             messageMapper,
-            idMapper
+            idMapper,
+            sendMessageFailureMapper
         )
 
     private val userRepository: UserRepository
@@ -100,10 +105,10 @@ abstract class UserSessionScopeCommon(
 
     protected abstract val clientConfig: ClientConfig
 
-    private val preKeyMapper: PreKeyMapper get() = PreKeyMapperImpl()
-    private val preKeyListMapper: PreKeyListMapper get() = PreKeyListMapper(preKeyMapper)
+    private val preyKeyMapper: PreKeyMapper get() = PreKeyMapperImpl()
+    private val preKeyListMapper: PreKeyListMapper get() = PreKeyListMapper(preyKeyMapper)
     private val locationMapper: LocationMapper get() = LocationMapper()
-    private val clientMapper: ClientMapper get() = ClientMapper(preKeyMapper, locationMapper, clientConfig)
+    private val clientMapper: ClientMapper get() = ClientMapper(preyKeyMapper, locationMapper, clientConfig)
 
     private val clientRemoteRepository: ClientRemoteRepository
         get() = ClientRemoteDataSource(
@@ -153,6 +158,15 @@ abstract class UserSessionScopeCommon(
     val listenToEvents: ListenToEventsUseCase get() = ListenToEventsUseCase(syncManager, eventRepository, conversationEventReceiver)
     val client: ClientScope get() = ClientScope(clientRepository, preKeyRepository)
     val conversations: ConversationScope get() = ConversationScope(conversationRepository, syncManager)
-    val messages: MessageScope get() = MessageScope(messageRepository, clientRepository, userRepository, syncManager)
+    val messages: MessageScope
+        get() = MessageScope(
+            messageRepository,
+            conversationRepository,
+            clientRepository,
+            authenticatedDataSourceSet.proteusClient,
+            preKeyRepository,
+            userRepository,
+            syncManager
+        )
     val users: UserScope get() = UserScope(userRepository, syncManager, assetRepository)
 }

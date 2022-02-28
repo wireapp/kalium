@@ -13,6 +13,8 @@ import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.logging.SIMPLE
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.request.header
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.URLProtocol
 import io.ktor.serialization.kotlinx.json.json
 
@@ -32,7 +34,7 @@ internal fun provideBaseHttpClient(
 
         // since error response are application/json
         // this header is added by default to all requests
-        header("Content-Type", "application/json")
+        header(HttpHeaders.ContentType, ContentType.Application.Json)
 
         when (options) {
             HttpClientOptions.NoDefaultHost -> {/* do nothing */ }

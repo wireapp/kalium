@@ -7,6 +7,7 @@ import io.ktor.client.plugins.RedirectResponseException
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.statement.HttpResponse
+import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.errors.IOException
 import kotlinx.serialization.SerializationException
 
@@ -99,8 +100,15 @@ internal suspend inline fun <reified BodyType : Any> wrapKaliumResponse(performR
             }
             is ClientRequestException -> {
                 // 400 .. 499
-                NetworkResponse.Error(kException = KaliumException.InvalidRequestError(e.response.body()))
-            }
+                when(e.response.status) {
+                    // TODO: log if 401 got to this step, since it need to be handled by the http client
+                    // for 401 error the BE return response with content-type: text/html which our ktor client
+                    // has no idea how to parse -> app crash
+                    HttpStatusCode.Unauthorized -> NetworkResponse.Error(KaliumException.Unauthorized(e.response.status.value))
+
+                    // TODO: try catch the parsing of error body
+                    else -> NetworkResponse.Error(kException = KaliumException.InvalidRequestError(e.response.body()))
+                }            }
             is ServerResponseException -> {
                 // 500 .. 599
                 // TODO: do 500 errors have body
