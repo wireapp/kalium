@@ -167,11 +167,9 @@ interface ApiTest {
     fun HttpRequestData.assertBodyContent(content: String) {
         assertIs<TextContent>(body)
         // convert both body and the content to JsonObject, so we are not comparing strings
-        // since json strings can have different orders of values
+        // since json strings can have different values order
         val expected = buildJsonObject { buildString { content } }
-        println(expected)
         val actual = buildJsonObject { buildString { (body as TextContent).text } }
-        println(actual)
         assertEquals(expected, actual)
     }
 
