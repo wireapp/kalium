@@ -19,6 +19,7 @@ import io.ktor.http.URLProtocol
 import io.ktor.http.content.TextContent
 import io.ktor.http.headersOf
 import io.ktor.utils.io.ByteReadChannel
+import kotlinx.serialization.json.buildJsonObject
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -176,7 +177,11 @@ interface ApiTest {
     // body
     fun HttpRequestData.assertBodyContent(content: String) {
         assertIs<TextContent>(body)
-        assertEquals(content, (body as TextContent).text)
+        // convert both body and the content to JsonObject, so we are not comparing strings
+        // since json strings can have different values order
+        val expected = buildJsonObject { buildString { content } }
+        val actual = buildJsonObject { buildString { (body as TextContent).text } }
+        assertEquals(expected, actual)
     }
 
     // host
