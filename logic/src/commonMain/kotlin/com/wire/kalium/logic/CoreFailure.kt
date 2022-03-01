@@ -18,6 +18,8 @@ sealed class CoreFailure {
 }
 
 sealed class NetworkFailure(internal val kaliumException: KaliumException) : CoreFailure() {
+    // exposed as Throwable to the app if needed for logging
+    val cause: Throwable get() = kaliumException
     /**
      * Failed to establish a connection with the necessary servers in order to pull/push data.
      * Caused by weak - complete lack of - internet connection.
