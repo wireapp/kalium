@@ -9,7 +9,7 @@ typealias UserId = QualifiedID
 typealias NonQualifiedUserId = String
 typealias TeamId = String
 typealias AssetId = String
-
+typealias AssetKey = String
 @Serializable
 data class QualifiedID(
     @SerialName("id")
