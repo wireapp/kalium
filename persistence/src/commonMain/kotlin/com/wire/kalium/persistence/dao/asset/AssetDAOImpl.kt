@@ -1,6 +1,10 @@
 package com.wire.kalium.persistence.dao.asset
 
+import com.squareup.sqldelight.runtime.coroutines.asFlow
+import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.db.AssetsQueries
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import com.wire.kalium.persistence.db.Asset as SQLDelightAsset
 
 class AssetMapper {
@@ -50,5 +54,20 @@ class AssetDAOImpl(private val queries: AssetsQueries) : AssetDAO {
                 )
             }
         }
+    }
+
+    override suspend fun getAssetByKey(assetKey: String): Flow<AssetEntity?> {
+        return queries.selectByKey(assetKey)
+            .asFlow()
+            .mapToOneOrNull()
+            .map {
+                it?.let {
+                    return@map mapper.toModel(it)
+                }
+            }
+    }
+
+    override suspend fun updateAsset(assetEntity: AssetEntity) {
+        queries.updateAsset(assetEntity.downloaded, assetEntity.sha, assetEntity.size, assetEntity.key)
     }
 }

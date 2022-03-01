@@ -13,6 +13,7 @@ interface AssetMapper {
     fun toDomainModel(asset: AssetResponse): UploadedAssetId
     fun toDaoModel(uploadAssetData: UploadAssetData, uploadedAssetResponse: AssetResponse): AssetEntity
     fun fromUserAssetIdToDaoModel(assetId: UserAssetId): AssetEntity
+    fun fromUpdatedDataToDaoModel(assetKey: String, data: ByteArray): AssetEntity
 }
 
 class AssetMapperImpl : AssetMapper {
@@ -35,7 +36,7 @@ class AssetMapperImpl : AssetMapper {
             token = uploadedAssetResponse.token,
             name = uuid4().toString(),
             mimeType = uploadAssetData.mimeType.name,
-            sha = uploadAssetData.data, // should use something like byteArray to encrypt aes256cbc
+            sha = uploadAssetData.data, // we should use something like byteArray encrypted in aes256cbc for non-public
             size = uploadAssetData.data.size.toLong(),
             downloaded = true
         )
@@ -43,5 +44,19 @@ class AssetMapperImpl : AssetMapper {
 
     override fun fromUserAssetIdToDaoModel(assetId: UserAssetId): AssetEntity {
         return AssetEntity(assetId.toString(), "", null, null, ImageAsset.JPG.name, null, 0, false)
+    }
+
+    override fun fromUpdatedDataToDaoModel(assetKey: String, data: ByteArray): AssetEntity {
+        val notUpdatableValue = "NOT_UPDATABLE_VALUE"
+        return AssetEntity(
+            key = assetKey,
+            domain = notUpdatableValue,
+            token = notUpdatableValue,
+            name = notUpdatableValue,
+            mimeType = notUpdatableValue, // could we compute the mimetype?
+            sha = data,
+            size = data.size.toLong(),
+            downloaded = true
+        )
     }
 }

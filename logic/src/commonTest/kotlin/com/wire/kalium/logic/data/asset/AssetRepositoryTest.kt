@@ -10,6 +10,7 @@ import com.wire.kalium.network.api.asset.AssetResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.asset.AssetDAO
+import com.wire.kalium.persistence.dao.asset.AssetEntity
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
 import io.mockative.any
@@ -20,6 +21,7 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.thenDoNothing
 import io.mockative.verify
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -115,14 +117,21 @@ class AssetRepositoryTest {
     }
 
     @Test
-    fun givenAnAssetId_whenDownloadingAssets_thenShouldReturnItsBinaryData() = runTest {
+    fun givenAnAssetId_whenDownloadingAssetsAndNotPresentInDB_thenShouldReturnItsBinaryDataFromRemoteAndPersistIt() = runTest {
         val assetKey = "1-3-an-asset-key"
         val expectedImage = "my_image_asset".toByteArray()
+        val expectedAssetEntity = stubAssetEntity("", expectedImage, downloaded = false)
 
+        mockAssetDaoGetByKeyCall(assetKey, expectedAssetEntity)
         given(assetApi)
             .suspendFunction(assetApi::downloadAsset)
             .whenInvokedWith(eq(assetKey), eq(null))
             .thenReturn(NetworkResponse.Success(expectedImage, mapOf(), 200))
+
+        given(assetDAO)
+            .suspendFunction(assetDAO::updateAsset)
+            .whenInvokedWith(eq(stubAssetEntityUpdate(assetKey, expectedImage)))
+            .thenReturn(Unit)
 
         val actual = assetRepository.downloadPublicAsset(assetKey)
 
@@ -138,6 +147,7 @@ class AssetRepositoryTest {
     @Test
     fun givenAnError_whenDownloadingAssets_thenShouldReturnThrowNetworkFailure() = runTest {
         val assetKey = "1-3-an-asset-key"
+        mockAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey, null, downloaded = false))
         given(assetApi)
             .suspendFunction(assetApi::downloadAsset)
             .whenInvokedWith(eq(assetKey), eq(null))
@@ -149,8 +159,55 @@ class AssetRepositoryTest {
             assertEquals(it::class, NetworkFailure.ServerMiscommunication::class)
         }
 
+        verify(assetDAO).suspendFunction(assetDAO::getAssetByKey)
+            .with(eq(assetKey))
+            .wasInvoked(exactly = once)
+
         verify(assetApi).suspendFunction(assetApi::downloadAsset)
             .with(eq(assetKey), eq(null))
             .wasInvoked(exactly = once)
     }
+
+    @Test
+    fun givenAnAssetId_whenAssetIsAlreadyDownloaded_thenShouldReturnItsBinaryDataFromDB() = runTest {
+        val assetKey = "1-3-an-asset-key"
+        val assetData = "A".toByteArray()
+        mockAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey, assetData))
+
+        val actual = assetRepository.downloadPublicAsset(assetKey)
+
+        actual.shouldSucceed {
+            assertEquals(assetData, it)
+        }
+
+        verify(assetDAO).suspendFunction(assetDAO::getAssetByKey)
+            .with(eq(assetKey))
+            .wasInvoked(exactly = once)
+
+        verify(assetApi).suspendFunction(assetApi::downloadAsset)
+            .with(eq(assetKey), eq(null))
+            .wasNotInvoked()
+    }
+
+    private fun mockAssetDaoGetByKeyCall(assetKey: String, expectedAssetEntity: AssetEntity) {
+        given(assetDAO)
+            .suspendFunction(assetDAO::getAssetByKey)
+            .whenInvokedWith(eq(assetKey))
+            .thenReturn(flowOf(expectedAssetEntity))
+    }
+
+    private fun stubAssetEntity(assetKey: String, assetData: ByteArray?, downloaded: Boolean = true) =
+        AssetEntity(assetKey, "some_domain", null, "some_name", "image/jpg", assetData, assetData?.size?.toLong() ?: 0, downloaded)
+
+    private fun stubAssetEntityUpdate(assetKey: String, assetData: ByteArray) =
+        AssetEntity(
+            assetKey,
+            "NOT_UPDATABLE_VALUE",
+            "NOT_UPDATABLE_VALUE",
+            "NOT_UPDATABLE_VALUE",
+            "NOT_UPDATABLE_VALUE",
+            assetData,
+            assetData.size.toLong(),
+            true
+        )
 }

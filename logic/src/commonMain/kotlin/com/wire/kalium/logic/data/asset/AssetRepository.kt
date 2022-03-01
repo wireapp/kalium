@@ -8,6 +8,7 @@ import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.asset.AssetApi
 import com.wire.kalium.persistence.dao.asset.AssetDAO
+import kotlinx.coroutines.flow.firstOrNull
 
 interface AssetRepository {
     suspend fun uploadPublicAsset(uploadAssetData: UploadAssetData): Either<CoreFailure, UploadedAssetId>
@@ -35,14 +36,20 @@ internal class AssetDataSource(
     }
 
     override suspend fun downloadPublicAsset(assetKey: String): Either<CoreFailure, ByteArray> = suspending {
+        val persistedAsset = assetDao.getAssetByKey(assetKey).firstOrNull()
+        if (persistedAsset != null && persistedAsset.downloaded) return@suspending Either.Right(persistedAsset.sha!!)
+
         wrapApiRequest {
             assetApi.downloadAsset(assetKey, null)
-            // TODO: call savePublicAsset
-        }.map { assetData -> assetData }
+        }.map { assetData ->
+            savePublicAsset(assetKey, assetData)
+            assetData
+        }
     }
 
-    override suspend fun savePublicAsset(assetKey: String, data: ByteArray): Either<CoreFailure, Unit> {
-        TODO("find by key, and do upsert")
+    override suspend fun savePublicAsset(assetKey: String, data: ByteArray): Either<CoreFailure, Unit> = suspending {
+        assetDao.updateAsset(assetMapper.fromUpdatedDataToDaoModel(assetKey, data))
+        return@suspending Either.Right(Unit)
     }
 
     override suspend fun saveUserPictureAssetIds(assetId: List<UserAssetId>): Either<CoreFailure, Unit> = suspending {

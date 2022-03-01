@@ -24,7 +24,7 @@ VALUES(?, ?, ?, ?, ?, ?, ?, ?);
 
 updateAsset:
 UPDATE Asset
-SET downloaded = ?
+SET downloaded = ?, sha = ?, size = ?
 WHERE key = ?;
 
 selectByKey:
