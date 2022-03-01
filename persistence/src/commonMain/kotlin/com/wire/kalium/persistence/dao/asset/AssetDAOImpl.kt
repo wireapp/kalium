@@ -10,7 +10,6 @@ class AssetMapper {
             asset.domain,
             asset.token,
             asset.name,
-            asset.encryption,
             asset.mime_type,
             asset.sha,
             asset.size,
@@ -22,13 +21,13 @@ class AssetMapper {
 class AssetDAOImpl(private val queries: AssetsQueries) : AssetDAO {
 
     val mapper by lazy { AssetMapper() }
+
     override suspend fun insertAsset(assetEntity: AssetEntity) {
         queries.insertAsset(
             assetEntity.key,
             assetEntity.domain,
             assetEntity.token,
             assetEntity.name,
-            assetEntity.encryption,
             assetEntity.mimeType,
             assetEntity.sha,
             assetEntity.size,
@@ -44,7 +43,6 @@ class AssetDAOImpl(private val queries: AssetsQueries) : AssetDAO {
                     asset.domain,
                     asset.token,
                     asset.name,
-                    asset.encryption,
                     asset.mimeType,
                     asset.sha,
                     asset.size,

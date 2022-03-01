@@ -34,7 +34,6 @@ class AssetMapperImpl : AssetMapper {
             domain = uploadedAssetResponse.domain,
             token = uploadedAssetResponse.token,
             name = uuid4().toString(),
-            encryption = null, // should use something like byteArray to encrypt aes256cbc
             mimeType = uploadAssetData.mimeType.name,
             sha = uploadAssetData.data, // should use something like byteArray to encrypt aes256cbc
             size = uploadAssetData.data.size.toLong(),
@@ -43,6 +42,6 @@ class AssetMapperImpl : AssetMapper {
     }
 
     override fun fromUserAssetIdToDaoModel(assetId: UserAssetId): AssetEntity {
-        return AssetEntity(assetId.toString(), "", null, null, null, ImageAsset.JPG.name, null, 0, false)
+        return AssetEntity(assetId.toString(), "", null, null, ImageAsset.JPG.name, null, 0, false)
     }
 }
