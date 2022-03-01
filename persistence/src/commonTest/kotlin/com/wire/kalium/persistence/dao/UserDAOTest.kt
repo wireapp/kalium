@@ -86,7 +86,7 @@ class UserDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenAExistingUsers_WhenQueriedUserByUserEmail_ThenResultsEmailIsEqualToContainsTheQueriedEmail() = runTest {
+    fun givenAExistingUsers_WhenQueriedUserByUserEmail_ThenResultsIsEqualToThatUser() = runTest {
         //given
         val user1 =
             UserEntity(
@@ -126,7 +126,7 @@ class UserDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenAExistingUsers_WhenQueriedUserByName_ThenTheResultIsEqualToTheUserWithQueriedUserName() = runTest {
+    fun givenAExistingUsers_WhenQueriedUserByName_ThenResultsIsEqualToThatUser() = runTest {
         //given
         val user1 =
             UserEntity(
@@ -166,7 +166,7 @@ class UserDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenAExistingUsers_WhenQueriedUserByHandle_ThenTheResultIsEqualToTheOneUserWithQueriedHandle() = runTest {
+    fun givenAExistingUsers_WhenQueriedUserByHandle_ThenResultsIsEqualToThatUser() = runTest {
         //given
         val user1 =
             UserEntity(
@@ -206,71 +206,72 @@ class UserDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenAExistingUsersWithCommonEmailPrefix_ThenQueriedUserEmailByPartOfEmailAllContainTheSearchQuery() = runTest {
-        //given
-        val commonEmailPrefix = "commonEmail"
+    fun givenAExistingUsersWithCommonEmailPrefix_WhenQueriedWithThatEmailPrefix_ThenResultIsEqualToTheUsersWithCommonEmailPrefix() =
+        runTest {
+            //given
+            val commonEmailPrefix = "commonEmail"
 
-        val commonEmailUsers = listOf(
-            UserEntity(
-                id = QualifiedID("1", "wire.com"),
-                name = "testName1",
-                handle = "testHandle1",
-                email = commonEmailPrefix + "1@wire.com",
-                phone = "testPhone1",
-                accentId = 1,
-                team = "testTeam1",
-            ),
-            UserEntity(
-                id = QualifiedID("2", "wire.com"),
-                name = "testName2",
-                handle = "testHandle2",
-                email = commonEmailPrefix + "2@wire.com",
-                phone = "testPhone2",
-                accentId = 2,
-                team = "testTeam2",
-            ),
-            UserEntity(
-                id = QualifiedID("3", "wire.com"),
-                name = "testName3",
-                handle = "testHandle3",
-                email = commonEmailPrefix + "3@wire.com",
-                phone = "testPhone3",
-                accentId = 3,
-                team = "testTeam3",
+            val commonEmailUsers = listOf(
+                UserEntity(
+                    id = QualifiedID("1", "wire.com"),
+                    name = "testName1",
+                    handle = "testHandle1",
+                    email = commonEmailPrefix + "1@wire.com",
+                    phone = "testPhone1",
+                    accentId = 1,
+                    team = "testTeam1",
+                ),
+                UserEntity(
+                    id = QualifiedID("2", "wire.com"),
+                    name = "testName2",
+                    handle = "testHandle2",
+                    email = commonEmailPrefix + "2@wire.com",
+                    phone = "testPhone2",
+                    accentId = 2,
+                    team = "testTeam2",
+                ),
+                UserEntity(
+                    id = QualifiedID("3", "wire.com"),
+                    name = "testName3",
+                    handle = "testHandle3",
+                    email = commonEmailPrefix + "3@wire.com",
+                    phone = "testPhone3",
+                    accentId = 3,
+                    team = "testTeam3",
+                )
             )
-        )
-        val notCommonEmailUsers = listOf(
-            UserEntity(
-                id = QualifiedID("4", "wire.com"),
-                name = "testName4",
-                handle = "testHandle4",
-                email = "someDifferentEmail1@wire.com",
-                phone = "testPhone4",
-                accentId = 4,
-                team = "testTeam4",
-            ),
-            UserEntity(
-                id = QualifiedID("5", "wire.com"),
-                name = "testName5",
-                handle = "testHandle5",
-                email = "someDifferentEmail2@wire.com",
-                phone = "testPhone5",
-                accentId = 5,
-                team = "testTeam5",
+            val notCommonEmailUsers = listOf(
+                UserEntity(
+                    id = QualifiedID("4", "wire.com"),
+                    name = "testName4",
+                    handle = "testHandle4",
+                    email = "someDifferentEmail1@wire.com",
+                    phone = "testPhone4",
+                    accentId = 4,
+                    team = "testTeam4",
+                ),
+                UserEntity(
+                    id = QualifiedID("5", "wire.com"),
+                    name = "testName5",
+                    handle = "testHandle5",
+                    email = "someDifferentEmail2@wire.com",
+                    phone = "testPhone5",
+                    accentId = 5,
+                    team = "testTeam5",
+                )
             )
-        )
-        val mockUsers = commonEmailUsers + notCommonEmailUsers
+            val mockUsers = commonEmailUsers + notCommonEmailUsers
 
-        db.userDAO.insertUsers(mockUsers)
-        //when
-        val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(commonEmailPrefix).first()
-        //then
-        assertEquals(searchResult, commonEmailUsers)
-    }
+            db.userDAO.insertUsers(mockUsers)
+            //when
+            val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(commonEmailPrefix).first()
+            //then
+            assertEquals(searchResult, commonEmailUsers)
+        }
 
     //when entering
     @Test
-    fun givenAExistingUsers_ThenQueriedUsersByNonExistingEmailReturnEmptyList() = runTest {
+    fun givenAExistingUsers_WhenQueriedWithNonExistingEmail_ThenReturnNoResults() = runTest {
         //given
         val mockUsers = listOf(
             UserEntity(
@@ -311,7 +312,7 @@ class UserDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenAExistingUsersWithCommhQuery() = runTest {
+    fun givenAExistingUsers_whenQueriedWithCommonEmailPrefix_ThenResultsUsersEmailContainsThatPrefix() = runTest {
         //given
         val commonEmailPrefix = "commonEmail"
 
@@ -349,13 +350,13 @@ class UserDAOTest : BaseDatabaseTest() {
         val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(commonEmailPrefix).first()
         //then
         searchResult.forEach { userEntity ->
-            assertContains(userEntity.email!!, "commonEmail")
+            assertContains(userEntity.email!!, commonEmailPrefix)
         }
     }
 
 
     @Test
-    fun givenAExistingUsersWithy() = runTest {
+    fun givenAExistingUsers_whenQueriedWithCommonHandlePrefix_ThenResultsUsersHandleContainsThatPrefix() = runTest {
         //given
         val commonHandlePrefix = "commonHandle"
 
@@ -398,7 +399,7 @@ class UserDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenAExistingUsersWithasdasy() = runTest {
+    fun givenAExistingUsers_whenQueriedWithCommonNamePrefix_ThenResultsUsersNameContainsThatPrefix() = runTest {
         //given
         val commonNamePrefix = "commonName"
 
@@ -441,49 +442,49 @@ class UserDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun asdasdasda() = runTest {
-        //given
-        val commonPrefix = "common"
+    fun givenAExistingUsers_whenQueriedWithCommonPrefixForNameHandleAndEmail_ThenResultsUsersNameHandleAndEmailContainsThatPrefix() =
+        runTest {
+            //given
+            val commonPrefix = "common"
 
-        val mockUsers = listOf(
-            UserEntity(
-                id = QualifiedID("1", "wire.com"),
-                name = commonPrefix + "name1",
-                handle = commonPrefix + "handle1",
-                email = commonPrefix + "Email1@wire.com",
-                phone = "testPhone1",
-                accentId = 1,
-                team = "testTeam1",
-            ),
-            UserEntity(
-                id = QualifiedID("2", "wire.com"),
-                name = commonPrefix + "name2",
-                handle = commonPrefix + "handle2",
-                email = commonPrefix + "Email2@wire.com",
-                phone = "testPhone2",
-                accentId = 2,
-                team = "testTeam2",
-            ),
-            UserEntity(
-                id = QualifiedID("3", "wire.com"),
-                name = commonPrefix + "name3",
-                handle = commonPrefix + "handle3",
-                email = commonPrefix + "Email3@wire.com",
-                phone = "testPhone3",
-                accentId = 3,
-                team = "testTeam3",
+            val mockUsers = listOf(
+                UserEntity(
+                    id = QualifiedID("1", "wire.com"),
+                    name = commonPrefix + "name1",
+                    handle = commonPrefix + "handle1",
+                    email = commonPrefix + "Email1@wire.com",
+                    phone = "testPhone1",
+                    accentId = 1,
+                    team = "testTeam1",
+                ),
+                UserEntity(
+                    id = QualifiedID("2", "wire.com"),
+                    name = commonPrefix + "name2",
+                    handle = commonPrefix + "handle2",
+                    email = commonPrefix + "Email2@wire.com",
+                    phone = "testPhone2",
+                    accentId = 2,
+                    team = "testTeam2",
+                ),
+                UserEntity(
+                    id = QualifiedID("3", "wire.com"),
+                    name = commonPrefix + "name3",
+                    handle = commonPrefix + "handle3",
+                    email = commonPrefix + "Email3@wire.com",
+                    phone = "testPhone3",
+                    accentId = 3,
+                    team = "testTeam3",
+                )
             )
-        )
-        db.userDAO.insertUsers(mockUsers)
-        //when
-        val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(commonPrefix).first()
-        //then
-        searchResult.forEach { userEntity ->
-            assertContains(userEntity.email!!, commonPrefix)
-            assertContains(userEntity.name!!, commonPrefix)
-            assertContains(userEntity.handle!!, commonPrefix)
+            db.userDAO.insertUsers(mockUsers)
+            //when
+            val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(commonPrefix).first()
+            //then
+            searchResult.forEach { userEntity ->
+                assertContains(userEntity.email!!, commonPrefix)
+                assertContains(userEntity.name!!, commonPrefix)
+                assertContains(userEntity.handle!!, commonPrefix)
+            }
         }
-    }
-
 
 }

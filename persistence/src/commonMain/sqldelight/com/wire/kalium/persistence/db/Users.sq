@@ -39,8 +39,8 @@ SELECT * FROM User WHERE qualified_id = ?;
 
 selectByNameOrHandleOrEmail:
 SELECT * FROM User
-WHERE name LIKE ('%' || :name || '%')
-OR  handle LIKE  ('%' || :name || '%')
-OR  email LIKE  ('%' || :name || '%');
+WHERE name LIKE ('%' || :searchQuery || '%')
+OR  handle LIKE  ('%' || :searchQuery || '%')
+OR  email LIKE  ('%' || :searchQuery || '%');
 
 
