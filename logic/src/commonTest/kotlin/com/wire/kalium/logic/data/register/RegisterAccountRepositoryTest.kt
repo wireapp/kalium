@@ -4,6 +4,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkExiption
 import com.wire.kalium.network.api.user.register.RegisterApi
+import com.wire.kalium.network.api.user.register.RegisterResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
@@ -103,6 +104,69 @@ class RegisterAccountRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenApiRequestRequestSuccess_whenRegisteringWithEmail_thenSuccessIsPropagated() = runTest {
+        val email = "user@domain.de"
+        val code = "123456"
+        val name = "user_name"
+        val password = "password"
+        val expected = RegisterResponse(
+            id = "user_id",
+            name = name,
+            email = email,
+            accentId = null,
+            assets = listOf(),
+            deleted = null,
+            handle = null,
+            service = null,
+            teamId = null
+        )
+
+        given(registerApi)
+            .coroutine {
+                register(
+                    RegisterApi.RegisterParam.PersonalAccount(email, code, name, password),
+                    TEST_API_HOST
+                )
+            }
+            .then { NetworkResponse.Success(expected, mapOf(), 200) }
+
+        val actual = registerAccountRepository.registerWithEmail(email, code, name, password, TEST_API_HOST)
+
+        assertIs<Either.Right<RegisterResponse>>(actual)
+        assertEquals(expected, actual.value)
+
+        verify(registerApi)
+            .coroutine { register(RegisterApi.RegisterParam.PersonalAccount(email, code, name, password), TEST_API_HOST) }
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenApiRequestRequestFail_whenRegisteringWithEmail_thenNetworkFailureIsPropagated() = runTest {
+        val email = "user@domain.de"
+        val code = "123456"
+        val name = "user_name"
+        val password = "password"
+        val expected = TestNetworkExiption.generic
+
+        given(registerApi)
+            .coroutine {
+                register(
+                    RegisterApi.RegisterParam.PersonalAccount(email, code, name, password),
+                    TEST_API_HOST
+                )
+            }
+            .then { NetworkResponse.Error<KaliumException>(expected) as NetworkResponse<RegisterResponse> }
+
+        val actual = registerAccountRepository.registerWithEmail(email, code, name, password, TEST_API_HOST)
+
+        assertIs<Either.Left<NetworkFailure>>(actual)
+        assertEquals(expected, actual.value.kaliumException)
+
+        verify(registerApi)
+            .coroutine { register(RegisterApi.RegisterParam.PersonalAccount(email, code, name, password), TEST_API_HOST) }
+            .wasInvoked(exactly = once)
+    }
 
     private companion object {
         const val TEST_API_HOST = """test.wire.com"""
