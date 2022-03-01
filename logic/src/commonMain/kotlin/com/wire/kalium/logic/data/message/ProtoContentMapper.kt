@@ -6,4 +6,4 @@ interface ProtoContentMapper {
 }
 
 // IDE is currently complaining that it's not implemented on JVM. The compiler builds it correctly. The IDE is wrong.
-expect class PlatformProtoContentMapper: ProtoContentMapper
+expect fun provideProtoContentMapper(): ProtoContentMapper

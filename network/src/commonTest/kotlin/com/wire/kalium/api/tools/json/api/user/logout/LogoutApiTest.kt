@@ -41,7 +41,7 @@ class LogoutApiTest : ApiTest {
 
         val httpClient = mockAuthenticatedHttpClient(
             ERROR_RESPONSE.rawJson,
-            statusCode = HttpStatusCode.Unauthorized
+            statusCode = HttpStatusCode.BadRequest
         )
         val logout: LogoutApi = LogoutImpl(httpClient, refreshToken)
         val errorResponse = logout.logout()

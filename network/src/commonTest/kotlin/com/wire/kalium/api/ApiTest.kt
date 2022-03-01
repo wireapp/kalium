@@ -54,7 +54,7 @@ interface ApiTest {
         }
         return AuthenticatedNetworkContainer(
             engine = mockEngine,
-            sessionDTO = SESSION,
+            sessionDTO = testCredentials,
             backendConfig = TEST_BACKEND_CONFIG
         ).authenticatedHttpClient
     }
@@ -121,7 +121,7 @@ interface ApiTest {
         }
         return AuthenticatedNetworkContainer(
             engine = mockEngine,
-            sessionDTO = SESSION,
+            sessionDTO = testCredentials,
             backendConfig = TEST_BACKEND_CONFIG
         ).authenticatedHttpClient
     }
@@ -189,7 +189,7 @@ interface ApiTest {
         val TEST_BACKEND_CONFIG =
             BackendConfig(
                 "test.api.com", "test.account.com", "test.ws.com",
-                "test.blacklist", "test.teams.com", "test.wire.com"
+                "test.blacklist", "test.teams.com", "test.wire.com", "Test Title"
             )
 
         val SESSION = testCredentials

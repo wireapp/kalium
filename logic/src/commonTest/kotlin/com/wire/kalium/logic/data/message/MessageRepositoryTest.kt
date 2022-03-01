@@ -36,17 +36,20 @@ class MessageRepositoryTest {
     val messageDAO = configure(mock(MessageDAO::class)) { stubsUnitByDefault = true }
 
     @Mock
+    val sendMessageFailureMapper = mock(SendMessageFailureMapper::class)
+
+    @Mock
     val messageMapper = mock(MessageMapper::class)
 
     private lateinit var messageRepository: MessageRepository
 
     @BeforeTest
     fun setup() {
-        messageRepository = MessageDataSource(messageApi, messageDAO, messageMapper, idMapper)
+        messageRepository = MessageDataSource(messageApi, messageDAO, messageMapper, idMapper, sendMessageFailureMapper)
     }
 
     @Test
-    fun givenAnConversationId_whenGettingMessagesOfConversation_thenshouldUseIdMapperToMapTheConversationId() = runTest {
+    fun givenAnConversationId_whenGettingMessagesOfConversation_thenShouldUseIdMapperToMapTheConversationId() = runTest {
         val mappedId = TEST_QUALIFIED_ID_ENTITY
         given(idMapper)
             .function(idMapper::toDaoModel)

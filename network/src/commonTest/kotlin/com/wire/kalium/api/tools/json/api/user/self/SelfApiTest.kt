@@ -34,10 +34,10 @@ class SelfApiTest : ApiTest {
         }
 
     @Test
-    fun givenTheServerReturnsAnError_whenCallingTheGetSelfEndpoint_theCorrectExceptionIsThrown() = runTest {
+    fun givenTheServerReturnsAnError_whenCallingTheGetSelfEndpoint_thenExceptionIsPropagated() = runTest {
         val httpClient = mockAuthenticatedHttpClient(
             ErrorResponseJson.valid.rawJson,
-            statusCode = HttpStatusCode.Unauthorized
+            statusCode = HttpStatusCode.BadRequest
         )
         val selfApi = SelfApi(httpClient)
         val response = selfApi.getSelfInfo()

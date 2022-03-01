@@ -24,3 +24,6 @@
 -keep class * extends com.wire.kalium.logic.sync.UserSessionWorker {
    <init>(...);
 }
+
+# protobuf
+-keep class * extends com.google.protobuf.GeneratedMessageLite { *; }
