@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.asset
 
 import com.benasher44.uuid.uuid4
+import com.wire.kalium.cryptography.utils.calcMd5
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.network.api.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.asset.AssetResponse
@@ -20,7 +21,7 @@ class AssetMapperImpl : AssetMapper {
             uploadAssetMetadata.mimeType.name,
             uploadAssetMetadata.isPublic,
             AssetRetentionType.valueOf(uploadAssetMetadata.retentionType.name),
-            uploadAssetMetadata.md5
+            calcMd5(uploadAssetMetadata.data)
         )
     }
 
@@ -33,9 +34,9 @@ class AssetMapperImpl : AssetMapper {
             domain = uploadedAssetResponse.domain,
             token = uploadedAssetResponse.token,
             name = uuid4().toString(),
-            encryption = uploadAssetData.md5, // should use something like byteArray to encrypt
+            encryption = null, // should use something like byteArray to encrypt aes256cbc
             mimeType = uploadAssetData.mimeType.name,
-            sha = uploadAssetData.data,
+            sha = uploadAssetData.data, // should use something like byteArray to encrypt aes256cbc
             size = uploadAssetData.data.size.toLong(),
             downloaded = true
         )
