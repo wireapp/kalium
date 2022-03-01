@@ -1,4 +1,4 @@
-package com.wire.kalium.network.api.model
+package com.wire.kalium.network.api.asset
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

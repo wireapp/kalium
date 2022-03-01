@@ -4,7 +4,7 @@ import com.benasher44.uuid.uuid4
 import com.wire.kalium.cryptography.utils.calcMd5
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.network.api.asset.AssetMetadataRequest
-import com.wire.kalium.network.api.model.AssetResponse
+import com.wire.kalium.network.api.asset.AssetResponse
 import com.wire.kalium.network.api.model.AssetRetentionType
 import com.wire.kalium.persistence.dao.asset.AssetEntity
 
