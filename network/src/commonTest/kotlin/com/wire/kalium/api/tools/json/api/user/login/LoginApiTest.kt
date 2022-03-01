@@ -2,13 +2,11 @@ package com.wire.kalium.api.tools.json.api.user.login
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.tools.json.model.ErrorResponseJson
-import com.wire.kalium.network.api.RefreshTokenProperties
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.user.login.LoginApi
 import com.wire.kalium.network.api.user.login.LoginApiImpl
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.isSuccessful
-import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -34,7 +32,7 @@ class LoginApiTest : ApiTest {
                 assertHttps()
                 assertHostEqual(TEST_HOST)
             },
-            headers = mapOf(HttpHeaders.SetCookie to "zuid=$refreshToken")
+            headers = mapOf("set-cookie" to "zuid=$refreshToken")
         )
         val expected = with(VALID_LOGIN_RESPONSE.serializableData) { SessionDTO(userIdValue = userId, accessToken = accessToken, tokenType = tokenType, refreshToken = refreshToken) }
         val loginApi: LoginApi = LoginApiImpl(httpClient)

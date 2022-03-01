@@ -1,5 +1,6 @@
 package com.wire.kalium.network.api.asset
 
+import com.wire.kalium.network.api.model.AssetResponse
 import com.wire.kalium.network.utils.NetworkResponse
 
 interface AssetApi {

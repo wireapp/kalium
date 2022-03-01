@@ -1,19 +1,16 @@
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.cryptography.PreKeyCrypto
-import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.exceptions.ProteusException
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.client.ClientCapability
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.RegisterClientParam
 import com.wire.kalium.logic.failure.ClientFailure
-import com.wire.kalium.logic.data.prekey.PreKeyMapper
+import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.test_util.TestNetworkError
-import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.utils.io.errors.IOException
 import io.mockative.Mock
@@ -38,23 +35,23 @@ class RegisterClientUseCaseTest {
     private val clientRepository = mock(classOf<ClientRepository>())
 
     @Mock
-    private val proteusClient = mock(classOf<ProteusClient>())
+    private val preKeyRepository = mock(classOf<PreKeyRepository>())
 
     private lateinit var registerClient: RegisterClientUseCase
 
     @BeforeTest
     fun setup() {
-        registerClient = RegisterClientUseCaseImpl(clientRepository, proteusClient)
+        registerClient = RegisterClientUseCaseImpl(clientRepository, preKeyRepository)
 
-        given(proteusClient)
-            .suspendFunction(proteusClient::newPreKeys)
+        given(preKeyRepository)
+            .suspendFunction(preKeyRepository::generateNewPreKeys)
             .whenInvokedWith(any(), any())
-            .then { _, _ -> PRE_KEYS }
+            .then { _, _ -> Either.Right(PRE_KEYS) }
 
-        given(proteusClient)
-            .function(proteusClient::newLastPreKey)
+        given(preKeyRepository)
+            .function(preKeyRepository::generateNewLastKey)
             .whenInvoked()
-            .then { LAST_KEY }
+            .then { Either.Right(LAST_KEY) }
 
     }
 
@@ -73,13 +70,13 @@ class RegisterClientUseCaseTest {
             .with(eq(params))
             .wasInvoked(once)
 
-        verify(proteusClient)
-            .suspendFunction(proteusClient::newPreKeys)
+        verify(preKeyRepository)
+            .suspendFunction(preKeyRepository::generateNewPreKeys)
             .with(any(), any())
             .wasInvoked(exactly = once)
 
-        verify(proteusClient)
-            .function(proteusClient::newLastPreKey)
+        verify(preKeyRepository)
+            .function(preKeyRepository::generateNewLastKey)
             .wasInvoked(exactly = once)
     }
 
@@ -95,13 +92,13 @@ class RegisterClientUseCaseTest {
 
         assertIs<RegisterClientResult.Failure.InvalidCredentials>(result)
 
-        verify(proteusClient)
-            .suspendFunction(proteusClient::newPreKeys)
+        verify(preKeyRepository)
+            .suspendFunction(preKeyRepository::generateNewPreKeys)
             .with(any(), any())
             .wasInvoked(exactly = once)
 
-        verify(proteusClient)
-            .function(proteusClient::newLastPreKey)
+        verify(preKeyRepository)
+            .function(preKeyRepository::generateNewLastKey)
             .wasInvoked(exactly = once)
     }
 
@@ -208,32 +205,32 @@ class RegisterClientUseCaseTest {
 
     @Test
     fun givenProteusClient_whenNewPreKeysThrowException_thenReturnProteusFailure() = runTest {
-        val exception = ProteusException("why are we still here just to suffer", 55)
-        given(proteusClient)
-            .suspendFunction(proteusClient::newPreKeys)
+        val failure = ProteusFailure(ProteusException("why are we still here just to suffer", 55))
+        given(preKeyRepository)
+            .suspendFunction(preKeyRepository::generateNewPreKeys)
             .whenInvokedWith(any(), any())
-            .thenThrow(exception)
+            .then { _, _ -> Either.Left(failure) }
 
         val result = registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
 
-        assertIs<RegisterClientResult.Failure.ProteusFailure>(result)
-        assertEquals(exception, result.e)
+        assertIs<RegisterClientResult.Failure.Generic>(result)
+        assertEquals(failure, result.genericFailure)
     }
 
 
     @Test
     fun givenProteusClient_whenNewLastPreKeyThrowException_thenReturnProteusFailure() = runTest {
-        val exception = ProteusException("why are we still here just to suffer", 55)
+        val failure = ProteusFailure(ProteusException("why are we still here just to suffer", 55))
 
-        given(proteusClient)
-            .function(proteusClient::newLastPreKey)
+        given(preKeyRepository)
+            .function(preKeyRepository::generateNewLastKey)
             .whenInvoked()
-            .thenThrow(exception)
+            .then { Either.Left(failure) }
 
         val result = registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
 
-        assertIs<RegisterClientResult.Failure.ProteusFailure>(result)
-        assertEquals(exception, result.e)
+        assertIs<RegisterClientResult.Failure.Generic>(result)
+        assertEquals(failure, result.genericFailure)
     }
 
 
