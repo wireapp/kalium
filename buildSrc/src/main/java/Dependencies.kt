@@ -22,6 +22,8 @@ object Versions {
     const val androidTestRules = "1.4.0"
     const val androidTestCore = "1.4.0"
     const val androidxArch = "2.1.0"
+    const val benAsherUUID = "0.4.0"
+    const val ktxDateTime = "0.3.2"
     const val ktxSerialization = "1.3.2"
     const val multiplatformSettings = "0.8.1"
     const val androidSecurity = "1.0.0"
@@ -68,6 +70,7 @@ object Dependencies {
 
     object Kotlinx {
         const val serialization = "org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.ktxSerialization}"
+        const val dateTime = "org.jetbrains.kotlinx:kotlinx-datetime:${Versions.ktxDateTime}"
     }
 
     object Android {
@@ -142,5 +145,9 @@ object Dependencies {
     object Protobuf {
         const val wireJvmMessageProto = "com.wire:generic-message-proto:${Versions.wireJvmMessageProto}"
         const val protobufLite = "com.google.protobuf:protobuf-javalite:${Versions.protobufLite}"
+    }
+
+    object UUID {
+        const val benAsherUUID = "com.benasher44:uuid:${Versions.benAsherUUID}"
     }
 }

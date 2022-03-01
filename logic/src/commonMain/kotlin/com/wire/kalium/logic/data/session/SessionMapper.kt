@@ -1,12 +1,14 @@
 package com.wire.kalium.logic.data.session
 
+import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.configuration.ServerConfigMapper
 import com.wire.kalium.logic.feature.auth.AuthSession
-import com.wire.kalium.network.api.SessionCredentials
+import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.persistence.model.PersistenceSession
 
 interface SessionMapper {
-    fun toSessionCredentials(authSession: AuthSession): SessionCredentials
+    fun toSessionDTO(authSession: AuthSession): SessionDTO
+    fun fromSessionDTO(sessionDTO: SessionDTO, serverConfig: ServerConfig): AuthSession
 
     fun fromPersistenceSession(persistenceSession: PersistenceSession): AuthSession
     fun toPersistenceSession(authSession: AuthSession): PersistenceSession
@@ -14,11 +16,13 @@ interface SessionMapper {
 
 internal class SessionMapperImpl(private val serverConfigMapper: ServerConfigMapper) : SessionMapper {
 
-    override fun toSessionCredentials(authSession: AuthSession): SessionCredentials = SessionCredentials(
-        tokenType = authSession.tokenType,
-        accessToken = authSession.accessToken,
-        refreshToken = authSession.refreshToken
-    )
+    override fun toSessionDTO(authSession: AuthSession): SessionDTO = with(authSession) {
+        SessionDTO(userIdValue = userId, tokenType = tokenType, accessToken = accessToken, refreshToken = refreshToken)
+    }
+
+    override fun fromSessionDTO(sessionDTO: SessionDTO, serverConfig: ServerConfig): AuthSession = with(sessionDTO) {
+        AuthSession(userIdValue, accessToken, refreshToken, tokenType, serverConfig)
+    }
 
     override fun fromPersistenceSession(persistenceSession: PersistenceSession): AuthSession = AuthSession(
         userId = persistenceSession.userId,

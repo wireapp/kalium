@@ -42,3 +42,6 @@
 -keepclassmembers class <1>.<2> {
   <1>.<2>$Companion Companion;
 }
+
+# protobuf
+-keep class * extends com.google.protobuf.GeneratedMessageLite { *; }

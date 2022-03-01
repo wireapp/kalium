@@ -43,7 +43,7 @@ class ClientApiImpl(private val httpClient: HttpClient) : ClientApi {
             response.qualifiedMap.entries.flatMap { domainEntry ->
                 domainEntry.value.map { userEntry ->
                     val userClients = userEntry.value
-                    QualifiedID(domainEntry.key, userEntry.key) to userClients
+                    QualifiedID(userEntry.key, domainEntry.key) to userClients
                 }
             }.toMap()
         }
@@ -64,6 +64,6 @@ class ClientApiImpl(private val httpClient: HttpClient) : ClientApi {
     private companion object {
         const val PATH_USERS = "users"
         const val PATH_CLIENTS = "clients"
-        const val PATH_LIST_CLIENTS = "$PATH_USERS/$PATH_CLIENTS/list-clients/v2"
+        const val PATH_LIST_CLIENTS = "$PATH_USERS/list-clients/v2"
     }
 }

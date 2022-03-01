@@ -3,7 +3,7 @@ package com.wire.kalium.logic.data.session
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.configuration.ServerConfigMapper
 import com.wire.kalium.logic.feature.auth.AuthSession
-import com.wire.kalium.network.api.SessionCredentials
+import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.tools.BackendConfig
 import com.wire.kalium.persistence.model.NetworkConfig
 import com.wire.kalium.persistence.model.PersistenceSession
@@ -35,10 +35,10 @@ class SessionMapperTest {
     fun givenAnAuthSession_whenMappingToSessionCredentials_thenValuesAreMappedCorrectly() {
         val authSession: AuthSession = randomAuthSession()
 
-        val acuteValue: SessionCredentials =
-            with(authSession) { SessionCredentials(tokenType, accessToken, refreshToken) }
+        val acuteValue: SessionDTO =
+            with(authSession) { SessionDTO(userId ,tokenType, accessToken, refreshToken) }
 
-        val expectedValue: SessionCredentials = sessionMapper.toSessionCredentials(authSession)
+        val expectedValue: SessionDTO = sessionMapper.toSessionDTO(authSession)
         assertEquals(expectedValue, acuteValue)
     }
 
@@ -46,7 +46,7 @@ class SessionMapperTest {
     fun givenAnAuthSession_whenMappingToPersistenceSession_thenValuesAreMappedCorrectly() {
         val authSession: AuthSession = randomAuthSession()
         val networkConfig = with(authSession.serverConfig) {
-            NetworkConfig(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl)
+            NetworkConfig(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title)
         }
 
         given(serverConfigMapper).invocation { toNetworkConfig(authSession.serverConfig) }.then { networkConfig }
@@ -71,7 +71,7 @@ class SessionMapperTest {
     fun givenAPersistenceSession_whenMappingFromPersistenceSession_thenValuesAreMappedCorrectly() {
         val persistenceSession: PersistenceSession = randomPersistenceSession()
         val serverConfig = with(persistenceSession.networkConfig) {
-            ServerConfig(apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl)
+            ServerConfig(apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title)
         }
 
         given(serverConfigMapper).invocation { fromNetworkConfig(persistenceSession.networkConfig) }.then { serverConfig }
@@ -96,16 +96,16 @@ class SessionMapperTest {
     private companion object {
         val randomString get() = Random.nextBytes(64).decodeToString()
         fun randomBackendConfig(): BackendConfig =
-            BackendConfig(randomString, randomString, randomString, randomString, randomString, randomString)
+            BackendConfig(randomString, randomString, randomString, randomString, randomString, randomString, randomString)
 
         fun randomAuthSession(): AuthSession = AuthSession(randomString, randomString, randomString, randomString, randomServerConfig())
         fun randomPersistenceSession(): PersistenceSession = PersistenceSession(randomString, randomString, randomString, randomString, randomNetworkConfig())
 
         fun randomServerConfig(): ServerConfig =
-            ServerConfig(randomString, randomString, randomString, randomString, randomString, randomString)
+            ServerConfig(randomString, randomString, randomString, randomString, randomString, randomString, randomString)
 
         fun randomNetworkConfig(): NetworkConfig =
-            NetworkConfig(randomString, randomString, randomString, randomString, randomString, randomString)
+            NetworkConfig(randomString, randomString, randomString, randomString, randomString, randomString, randomString)
     }
 
 

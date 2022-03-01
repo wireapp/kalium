@@ -1,6 +1,6 @@
 package com.wire.kalium.network
 
-import com.wire.kalium.network.api.SessionCredentials
+import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.asset.AssetApi
 import com.wire.kalium.network.api.asset.AssetApiImpl
 import com.wire.kalium.network.api.auth.AuthApi
@@ -9,6 +9,7 @@ import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.conversation.ConversationApiImp
 import com.wire.kalium.network.api.message.MessageApi
 import com.wire.kalium.network.api.message.MessageApiImp
+import com.wire.kalium.network.api.message.provideEnvelopeProtoMapper
 import com.wire.kalium.network.api.notification.NotificationApi
 import com.wire.kalium.network.api.notification.NotificationApiImpl
 import com.wire.kalium.network.api.prekey.PreKeyApi
@@ -32,7 +33,7 @@ import io.ktor.client.plugins.auth.providers.bearer
 
 class AuthenticatedNetworkContainer(
     private val backendConfig: BackendConfig,
-    private val sessionCredentials: SessionCredentials,
+    private val sessionDTO: SessionDTO,
     private val engine: HttpClientEngine = defaultHttpEngine(),
     private val isRequestLoggingEnabled: Boolean = false
 //    private val onTokenUpdate: (newTokenInfo: Pair<String, String>) -> Unit // Idea to let the network handle the refresh token automatically
@@ -43,7 +44,7 @@ class AuthenticatedNetworkContainer(
 
     val clientApi: ClientApi get() = ClientApiImpl(authenticatedHttpClient)
 
-    val messageApi: MessageApi get() = MessageApiImp(authenticatedHttpClient)
+    val messageApi: MessageApi get() = MessageApiImp(authenticatedHttpClient, provideEnvelopeProtoMapper())
 
     val conversationApi: ConversationApi get() = ConversationApiImp(authenticatedHttpClient)
 
@@ -70,12 +71,12 @@ class AuthenticatedNetworkContainer(
             bearer {
                 loadTokens {
                     BearerTokens(
-                        accessToken = sessionCredentials.accessToken,
-                        refreshToken = sessionCredentials.refreshToken
+                        accessToken = sessionDTO.accessToken,
+                        refreshToken = sessionDTO.refreshToken
                     )
                 }
                 refreshTokens {
-                    val refreshedResponse = authApi.renewAccessToken(sessionCredentials.refreshToken)
+                    val refreshedResponse = authApi.renewAccessToken(sessionDTO.refreshToken)
 
                     return@refreshTokens if (refreshedResponse.isSuccessful()) {
                         BearerTokens(refreshedResponse.value.accessToken, TODO("Get the 🍪"))

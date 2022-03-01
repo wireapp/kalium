@@ -1,7 +1,9 @@
 package com.wire.kalium.network.api.message
 
+import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.QualifiedSendMessageError
 import com.wire.kalium.network.exceptions.SendMessageError
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
@@ -11,10 +13,15 @@ import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
+class MessageApiImp(
+    private val httpClient: HttpClient,
+    private val envelopeProtoMapper: EnvelopeProtoMapper
+) : MessageApi {
 
     @Serializable
     internal data class RequestBody(
@@ -54,24 +61,22 @@ class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
                     }
                     setBody(body)
                 }
-                return NetworkResponse.Success(response = response, value = response.body<SendMessageResponse.MessageSent>())
+                return NetworkResponse.Success(httpResponse = response, value = response.body<SendMessageResponse.MessageSent>())
             } catch (e: ResponseException) {
                 when (e.response.status.value) {
                     // It's a 412 Error
                     412 -> NetworkResponse.Error(
                         kException = SendMessageError.MissingDeviceError(
-                            errorBody = e.response.body(),
-                            errorCode = e.response.status.value
+                            errorBody = e.response.body()
                         )
                     )
                     else -> wrapKaliumResponse { e.response }
                 }
-            } catch (e: Exception) {
+            }
+            // TODO: is this even necessary since we catch 'Em all in wrapKaliumResponse
+            catch (e: Exception) {
                 NetworkResponse.Error(
-                    kException = KaliumException.GenericError(
-                        ErrorResponse(400, e.message ?: "There was a generic error ", e.toString()),
-                        e
-                    )
+                    kException = KaliumException.GenericError(e)
                 )
             }
         }
@@ -99,8 +104,36 @@ class MessageApiImp(private val httpClient: HttpClient) : MessageApi {
         }
     }
 
+    override suspend fun qualifiedSendMessage(
+        parameters: MessageApi.Parameters.QualifiedDefaultParameters,
+        conversationId: ConversationId
+    ): NetworkResponse<QualifiedSendMessageResponse> {
+        return try {
+            val response = httpClient.post("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}$PATH_PROTEUS_MESSAGE") {
+                setBody(envelopeProtoMapper.encodeToProtobuf(parameters))
+                // This technically doesn't work, Ktor will replace with application/octet-stream anyway
+                // But if this ever gets improved, we're already on the right track
+                contentType(ContentType.Application.ProtoBuf)
+            }
+            NetworkResponse.Success(httpResponse = response, value = response.body<QualifiedSendMessageResponse.MessageSent>())
+        } catch (e: ResponseException) {
+            when (e.response.status.value) {
+                // It's a 412 Error
+                412 -> NetworkResponse.Error(
+                    kException = QualifiedSendMessageError.MissingDeviceError(
+                        errorBody = e.response.body()
+                    )
+                )
+                else -> wrapKaliumResponse { e.response }
+            }
+        } catch (e: Exception) {
+            NetworkResponse.Error(kException = KaliumException.GenericError(e))
+        }
+    }
+
     private companion object {
         const val PATH_OTR_MESSAGE = "/otr/messages"
+        const val PATH_PROTEUS_MESSAGE = "/proteus/messages"
         const val PATH_CONVERSATIONS = "/conversations"
         const val QUERY_IGNORE_MISSING = "ignore_missing"
         const val QUERY_REPORT_MISSING = "report_missing"

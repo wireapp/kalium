@@ -1,3 +1,6 @@
 package com.wire.kalium.logic.data.id
 
-data class PlainId(val value: String)
+import kotlin.jvm.JvmInline
+
+@JvmInline
+value class PlainId(val value: String)

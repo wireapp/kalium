@@ -1,10 +1,12 @@
 package com.wire.kalium.logic.feature.client
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.network.exceptions.KaliumException
+import io.ktor.utils.io.errors.IOException
 import io.mockative.Mock
 import io.mockative.anything
 import io.mockative.classOf
@@ -37,7 +39,7 @@ class DeleteClientUseCaseTest {
         given(clientRepository)
             .suspendFunction(clientRepository::deleteClient)
             .whenInvokedWith(anything())
-            .then { Either.Left(CoreFailure.ServerMiscommunication) }
+            .then { Either.Left(TEST_FAILURE) }
 
         deleteClient(params)
 
@@ -49,7 +51,7 @@ class DeleteClientUseCaseTest {
 
     @Test
     fun givenRepositoryDeleteClientFailsDueToGenericError_whenDeleting_thenGenericErrorShouldBeReturned() = runTest {
-        val genericFailure = CoreFailure.NoNetworkConnection
+        val genericFailure = TEST_FAILURE
         given(clientRepository)
             .suspendFunction(clientRepository::deleteClient)
             .whenInvokedWith(anything())
@@ -64,5 +66,7 @@ class DeleteClientUseCaseTest {
     private companion object {
         val CLIENT = TestClient.CLIENT
         val DELETE_CLIENT_PARAMETERS = DeleteClientParam("pass", CLIENT.clientId)
+        val TEST_FAILURE = NetworkFailure.NoNetworkConnection(KaliumException.NetworkUnavailableError(IOException("no internet")))
+
     }
 }
