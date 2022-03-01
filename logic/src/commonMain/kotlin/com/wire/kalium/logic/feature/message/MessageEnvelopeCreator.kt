@@ -3,7 +3,6 @@ package com.wire.kalium.logic.feature.message
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
 import com.wire.kalium.cryptography.ProteusClient
-import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.message.ClientPayload
@@ -15,6 +14,7 @@ import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.RecipientEntry
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.wrapCryptoRequest
 import com.wire.kalium.cryptography.UserId as CryptoUserId
 
 interface MessageEnvelopeCreator {
@@ -41,11 +41,10 @@ class MessageEnvelopeCreatorImpl(
         recipients.foldToEitherWhileRight(mutableListOf<RecipientEntry>()) { recipient, recipientAccumulator ->
             recipient.clients.foldToEitherWhileRight(mutableListOf<ClientPayload>()) { client, clientAccumulator ->
                 val session = CryptoSessionId(CryptoUserId(recipient.member.id.value), CryptoClientId(client.value))
-                try {
-                    Either.Right(EncryptedMessageBlob(proteusClient.encrypt(content.data, session)))
-                } catch (proteusException: ProteusException) {
-                    Either.Left(CoreFailure.Unknown(proteusException))
-                }.map { encryptedContent ->
+
+                // TODO: en/decryption repo
+                wrapCryptoRequest { EncryptedMessageBlob(proteusClient.encrypt(content.data, session)) }
+                    .map { encryptedContent ->
                     clientAccumulator.also {
                         it.add(ClientPayload(client, encryptedContent))
                     }
