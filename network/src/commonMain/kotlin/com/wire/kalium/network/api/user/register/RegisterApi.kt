@@ -36,12 +36,12 @@ interface RegisterApi {
         }
     }
 
-    sealed class SendActivationCodeParam {
-        internal abstract fun toBody(): SendActivationRequest
+    sealed class RequestActivationCodeParam {
+        internal abstract fun toBody(): RequestActivationRequest
         data class Email(
             val email: String
-        ) : SendActivationCodeParam() {
-            override fun toBody(): SendActivationRequest = SendActivationRequest(email = email, null, null, null)
+        ) : RequestActivationCodeParam() {
+            override fun toBody(): RequestActivationRequest = RequestActivationRequest(email = email, null, null, null)
         }
     }
 
@@ -60,8 +60,8 @@ interface RegisterApi {
         apiBaseUrl: String
     ): NetworkResponse<RegisterResponse>
 
-    suspend fun sendActivationCode(
-        param: SendActivationCodeParam,
+    suspend fun requestActivationCode(
+        param: RequestActivationCodeParam,
         apiBaseUrl: String
     ): NetworkResponse<Unit>
 
@@ -87,8 +87,8 @@ class RegisterApiImpl(private val httpClient: HttpClient) : RegisterApi {
             }
         }
 
-    override suspend fun sendActivationCode(
-        param: RegisterApi.SendActivationCodeParam,
+    override suspend fun requestActivationCode(
+        param: RegisterApi.RequestActivationCodeParam,
         apiBaseUrl: String
     ): NetworkResponse<Unit> =
         wrapKaliumResponse {

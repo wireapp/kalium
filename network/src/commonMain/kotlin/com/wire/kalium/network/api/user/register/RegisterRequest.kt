@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
 
 
 @Serializable
-internal data class SendActivationRequest(
+internal data class RequestActivationRequest(
     @SerialName("email")
     val email: String?,
     @SerialName("locale")
