@@ -3,17 +3,13 @@ package com.wire.kalium.logic.feature.client
 import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.exceptions.ProteusException
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.ClientCapability
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.RegisterClientParam
 import com.wire.kalium.logic.failure.ClientFailure
-import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.test_util.TestNetworkError
-import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.utils.io.errors.IOException
 import io.mockative.Mock
