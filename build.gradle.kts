@@ -2,8 +2,8 @@ import com.android.build.gradle.internal.tasks.factory.dependsOn
 
 buildscript {
     val kotlinVersion = "1.6.10"
-    val sqlDelightVersion = "2.0.0-SNAPSHOT"
     val dokkaVersion = "1.6.10"
+    val sqlDelightVersion = "2.0.0-SNAPSHOT"
 
     repositories {
         google()
@@ -26,11 +26,13 @@ repositories {
 }
 
 plugins {
-    id("org.jetbrains.dokka") version "1.6.10"
+    val dokkaVersion = "1.6.10"
+    id("org.jetbrains.dokka") version "$dokkaVersion"
 }
 
 dependencies {
-    dokkaHtmlPlugin("org.jetbrains.dokka:kotlin-as-java-plugin:1.6.10")
+    val dokkaVersion = "1.6.10"
+    dokkaHtmlPlugin("org.jetbrains.dokka:kotlin-as-java-plugin:$dokkaVersion")
 }
 
 tasks.withType<Test> {
@@ -58,8 +60,5 @@ tasks.create("dokkaClean") {
 
 tasks.dokkaHtml.dependsOn(tasks.dokkaHtmlMultiModule)
 tasks.dokkaHtmlMultiModule.dependsOn(tasks.getByName("dokkaClean"))
-//tasks.dokkaHtmlMultiModule.configure {
-//    outputDirectory.set(buildDir.resolve("dokkaCustomMultiModuleOutput"))
-//}
 
 apply(rootProject.file("gradle/dokka.gradle"))
