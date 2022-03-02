@@ -4,7 +4,7 @@ import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.exceptions.ProteusException
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.conversation.Recipient
@@ -29,6 +29,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import com.wire.kalium.cryptography.UserId as CryptoUserId
 
@@ -129,7 +130,8 @@ class MessageEnvelopeCreatorTest {
 
         messageEnvelopeCreator.createOutgoingEnvelope(TEST_RECIPIENTS, TEST_MESSAGE)
             .shouldFail {
-                assertEquals(CoreFailure.Unknown(exception), it)
+                assertIs<ProteusFailure>(it)
+                assertEquals(exception, it.proteusException)
             }
     }
 
