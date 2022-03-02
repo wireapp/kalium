@@ -1,0 +1,72 @@
+/*
+ * Copyright 2017-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
+ */
+
+apply plugin: 'kotlin'
+apply plugin: 'org.jetbrains.dokka'
+
+def documentedSubprojects = [
+        "cryptography",
+        "logic",
+        "network",
+        "persistence"]
+
+subprojects {
+    if (!(name in documentedSubprojects)) return
+    apply plugin: 'org.jetbrains.dokka'
+//    dependencies {
+//        dokkaPlugin("org.jetbrains.kotlinx:dokka-pathsaver-plugin:$knit_version")
+//    }
+
+//    tasks.create("dokkaClean") {
+//        group = "documentation"
+//        project.delete(file("build/dokka"))
+//    }
+//
+//    tasks.getByName("dokkaHtmlPartial").dependsOn(tasks.getByName("dokkaClean"))
+
+    tasks.named('dokkaHtmlPartial') {
+        outputDirectory = file("build/dokka")
+        dokkaSourceSets {
+            configureEach {
+                includes.from(rootProject.file('dokka/moduledoc.md').path)
+
+//                perPackageOption {
+//                    matchingRegex.set("kotlinx\\.serialization(\$|\\.).*")
+//                    reportUndocumented.set(true)
+//                    skipDeprecated.set(true)
+//                }
+
+//                // Internal API
+//                perPackageOption {
+//                    matchingRegex.set("kotlinx\\.serialization.internal(\$|\\.).*")
+//                    suppress.set(true)
+//                }
+
+//                // Workaround for typealias
+//                perPackageOption {
+//                    matchingRegex.set("kotlinx\\.serialization.protobuf.internal(\$|\\.).*")
+//                    suppress.set(true)
+//                    reportUndocumented.set(false)
+//                }
+
+//                // Deprecated migrations
+//                perPackageOption {
+//                    matchingRegex.set("kotlinx\\.protobuf(\$|\\.).*")
+//                    reportUndocumented.set(true)
+//                    skipDeprecated.set(true)
+//                }
+
+//                // Deprecated migrations
+//                perPackageOption {
+//                    matchingRegex.set("org\\.jetbrains\\.kotlinx\\.serialization\\.config(\$|\\.).*")
+//                    reportUndocumented.set(false)
+//                    skipDeprecated.set(true)
+//                }
+            }
+        }
+    }
+}
+
+// Knit relies on Dokka task and it's pretty convenient
+task dokka(dependsOn: dokkaHtmlMultiModule) {}
