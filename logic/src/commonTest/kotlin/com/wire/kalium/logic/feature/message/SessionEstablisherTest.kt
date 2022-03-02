@@ -16,7 +16,7 @@ import com.wire.kalium.logic.data.prekey.QualifiedUserPreKeyInfo
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.test_util.TestNetworkExiption
+import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
@@ -221,6 +221,6 @@ class SessionEstablisherTest {
         val TEST_USER_ID_1 = TestUser.USER_ID
         val TEST_CLIENT_ID_1 = TestClient.CLIENT_ID
         val TEST_RECIPIENT_1 = Recipient(Member(TestUser.USER_ID), listOf(TestClient.CLIENT_ID))
-        val NETWORK_ERROR = NetworkFailure.ServerMiscommunication(TestNetworkExiption.generic)
+        val NETWORK_ERROR = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
     }
 }

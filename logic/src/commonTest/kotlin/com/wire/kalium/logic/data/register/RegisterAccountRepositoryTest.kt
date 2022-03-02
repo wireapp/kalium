@@ -2,7 +2,7 @@ package com.wire.kalium.logic.data.register
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.test_util.TestNetworkExiption
+import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.api.user.register.RegisterApi
 import com.wire.kalium.network.api.user.register.RegisterResponse
 import com.wire.kalium.network.exceptions.KaliumException
@@ -50,7 +50,7 @@ class RegisterAccountRepositoryTest {
 
     @Test
     fun givenApiRequestFail_whenRequestingActivationCodeForAnEmail_thenNetworkFailureIsPropagated() = runTest {
-        val expected = TestNetworkExiption.generic
+        val expected = TestNetworkException.generic
         val email = "user@domain.de"
         given(registerApi)
             .coroutine { requestActivationCode(RegisterApi.RequestActivationCodeParam.Email(email), TEST_API_HOST) }
@@ -87,7 +87,7 @@ class RegisterAccountRepositoryTest {
 
     @Test
     fun givenApiRequestRequestFail_whenActivatingAnEmail_thenNetworkFailureIsPropagated() = runTest {
-        val expected = TestNetworkExiption.generic
+        val expected = TestNetworkException.generic
         val email = "user@domain.de"
         val code = "123456"
         given(registerApi)
@@ -147,7 +147,7 @@ class RegisterAccountRepositoryTest {
         val code = "123456"
         val name = "user_name"
         val password = "password"
-        val expected = TestNetworkExiption.generic
+        val expected = TestNetworkException.generic
 
         given(registerApi)
             .coroutine {

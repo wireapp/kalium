@@ -8,7 +8,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.failure.SendMessageFailure
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.test_util.TestNetworkExiption
+import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldFail
 import io.mockative.Mock
 import io.mockative.any
@@ -127,6 +127,6 @@ class MessageSendFailureHandlerTest {
         assertEquals(Either.Left(failure), result)
     }
     private companion object {
-        val NETWORK_ERROR = NetworkFailure.ServerMiscommunication(TestNetworkExiption.generic)
+        val NETWORK_ERROR = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
     }
 }

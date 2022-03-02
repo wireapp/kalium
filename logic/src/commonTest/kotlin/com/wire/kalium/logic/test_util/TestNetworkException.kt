@@ -3,7 +3,7 @@ package com.wire.kalium.logic.test_util
 import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 
-object TestNetworkExiption {
+object TestNetworkException {
 
     val generic = KaliumException.InvalidRequestError(
         ErrorResponse(
