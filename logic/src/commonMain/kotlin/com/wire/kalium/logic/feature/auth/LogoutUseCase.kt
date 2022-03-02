@@ -13,7 +13,8 @@ class LogoutUseCase(
 ) {
     suspend operator fun invoke() {
         // TODO: async for the network call
-        // TODO: clear crypto session ?
+        // TODO: clear crypto files ?
+        authenticatedDataSourceSet.proteusClient.close()
         logoutRepository.logout()
         authenticatedDataSourceSet.database.nuke()
         authenticatedDataSourceSet.kaliumPreferencesSettings.nuke()

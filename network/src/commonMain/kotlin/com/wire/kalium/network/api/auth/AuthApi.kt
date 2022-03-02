@@ -1,7 +1,6 @@
 package com.wire.kalium.network.api.auth
 
 import com.wire.kalium.network.utils.NetworkResponse
-import io.ktor.http.Cookie
 
 interface AuthApi {
 

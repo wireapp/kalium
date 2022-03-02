@@ -106,6 +106,7 @@ abstract class UserSessionScopeCommon(
     protected abstract val clientConfig: ClientConfig
 
     private val preyKeyMapper: PreKeyMapper get() = PreKeyMapperImpl()
+    private val preKeyListMapper: PreKeyListMapper get() = PreKeyListMapper(preyKeyMapper)
     private val locationMapper: LocationMapper get() = LocationMapper()
     private val clientMapper: ClientMapper get() = ClientMapper(preyKeyMapper, locationMapper, clientConfig)
 
@@ -136,15 +137,6 @@ abstract class UserSessionScopeCommon(
             eventMapper
         )
 
-    private val preKeyListMapper: PreKeyListMapper
-        get() = PreKeyListMapper(preyKeyMapper)
-
-    private val preKeyRemoteDatabase: PreKeyRemoteRepository
-        get() = PreKeyRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi, preKeyListMapper)
-
-    private val preKeyRepository: PreKeyRepository
-        get() = PreKeyDataSource(preKeyRemoteDatabase)
-
     protected abstract val protoContentMapper: ProtoContentMapper
     private val conversationEventReceiver: ConversationEventReceiver
         get() = ConversationEventReceiver(
@@ -152,10 +144,20 @@ abstract class UserSessionScopeCommon(
             messageRepository,
             protoContentMapper
         )
-    val listenToEvents: ListenToEventsUseCase get() = ListenToEventsUseCase(syncManager, eventRepository, conversationEventReceiver)
-    val client: ClientScope get() = ClientScope(clientRepository, authenticatedDataSourceSet.proteusClient)
-    val conversations: ConversationScope get() = ConversationScope(conversationRepository, syncManager)
 
+    private val preKeyRemoteRepository: PreKeyRemoteRepository
+        get() = PreKeyRemoteDataSource(
+            authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi,
+            preKeyListMapper
+        )
+    private val preKeyRepository: PreKeyRepository
+        get() = PreKeyDataSource(
+            preKeyRemoteRepository,
+            authenticatedDataSourceSet.proteusClient
+        )
+    val listenToEvents: ListenToEventsUseCase get() = ListenToEventsUseCase(syncManager, eventRepository, conversationEventReceiver)
+    val client: ClientScope get() = ClientScope(clientRepository, preKeyRepository)
+    val conversations: ConversationScope get() = ConversationScope(conversationRepository, syncManager)
     val messages: MessageScope
         get() = MessageScope(
             messageRepository,

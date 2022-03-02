@@ -23,7 +23,7 @@ interface TeamsApi {
         val icon: AssetId,
         val name: String,
         val id: TeamId,
-        @SerialName("icon_key") val iconKey: String?,
+        @SerialName("icon_key") val iconKey: AssetId?,
         val binding: Boolean
     )
 
