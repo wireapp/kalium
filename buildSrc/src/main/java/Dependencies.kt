@@ -51,7 +51,7 @@ object Plugins {
         scope.kotlin("jvm")
 
     fun ksp(scope: PluginDependenciesSpec) =
-        scope.id("com.google.devtools.ksp").version("1.6.20-RC-1.0.4")
+        scope.id("com.google.devtools.ksp").version("1.6.10-1.0.2")
 
     fun kover(scope: PluginDependenciesSpec) =
         scope.id("org.jetbrains.kotlinx.kover") version Versions.kover

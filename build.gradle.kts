@@ -1,5 +1,5 @@
 buildscript {
-    val kotlinVersion = "1.6.20-RC"
+    val kotlinVersion = "1.6.10"
     val sqlDelightVersion = "2.0.0-SNAPSHOT"
 
     repositories {
@@ -35,4 +35,6 @@ allprojects {
     }
 }
 
-
+rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin> {
+    rootProject.the<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootExtension>().nodeVersion = "17.6.0"
+}
