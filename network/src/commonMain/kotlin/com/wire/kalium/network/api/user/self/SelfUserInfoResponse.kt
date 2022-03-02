@@ -1,8 +1,9 @@
 package com.wire.kalium.network.api.user.self
 
 import com.wire.kalium.network.api.UserId
-import com.wire.kalium.network.api.model.UserAsset
+import com.wire.kalium.network.api.UserSsoId
 import com.wire.kalium.network.api.model.Service
+import com.wire.kalium.network.api.model.UserAsset
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -55,5 +56,7 @@ enum class ManagedBy {
     }
 }
 
+@Deprecated("used for legacy compatibility")
 @Serializable
 class Picture
+
