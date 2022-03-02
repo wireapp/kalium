@@ -8,9 +8,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.HttpRequestData
-import io.ktor.client.utils.EmptyContent.headers
 import io.ktor.http.ContentType
-import io.ktor.http.Headers
 import io.ktor.http.HeadersImpl
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
