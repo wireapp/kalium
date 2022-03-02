@@ -40,3 +40,11 @@ SELECT * FROM User;
 
 selectByQualifiedId:
 SELECT * FROM User WHERE qualified_id = ?;
+
+selectByNameOrHandleOrEmail:
+SELECT * FROM User
+WHERE name LIKE ('%' || :searchQuery || '%')
+OR  handle LIKE  ('%' || :searchQuery || '%')
+OR  email LIKE  ('%' || :searchQuery || '%');
+
+
