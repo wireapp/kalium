@@ -1,5 +1,5 @@
 buildscript {
-    val kotlinVersion = "1.6.10"
+    val kotlinVersion = "1.6.20-RC"
     val sqlDelightVersion = "2.0.0-SNAPSHOT"
 
     repositories {
@@ -10,7 +10,7 @@ buildscript {
 
     dependencies {
         // keeping this here to allow AS to automatically update
-        classpath("com.android.tools.build:gradle:7.0.3")
+        classpath("com.android.tools.build:gradle:7.0.4")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
         classpath("app.cash.sqldelight:gradle-plugin:$sqlDelightVersion")
     }
