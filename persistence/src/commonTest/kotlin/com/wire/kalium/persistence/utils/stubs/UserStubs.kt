@@ -24,3 +24,23 @@ fun newUserEntity(qualifiedID: QualifiedID, id: String = "test") =
         accentId = 1,
         team = "team"
     )
+
+fun newUserEntity(
+    id: String = "test",
+    name: String = "testName",
+    handle: String = "testHandle",
+    email: String = "testEmail@wire.com",
+    phone: String = "testPhone",
+    accentId: Int = 1,
+    team: String = "testTeam"
+): UserEntity {
+    return UserEntity(
+        id = QualifiedID(id, "wire.com"),
+        name = name,
+        handle = handle,
+        email = email,
+        phone = phone,
+        accentId = accentId,
+        team = team,
+    )
+}
