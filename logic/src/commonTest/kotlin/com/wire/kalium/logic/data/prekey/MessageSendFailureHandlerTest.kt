@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.prekey
 
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
@@ -7,7 +8,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.failure.SendMessageFailure
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.test_util.TestNetworkError
+import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldFail
 import io.mockative.Mock
 import io.mockative.any
@@ -96,7 +97,7 @@ class MessageSendFailureHandlerTest {
 
     @Test
     fun givenRepositoryFailsToFetchContacts_whenHandlingClientsHaveChangedFailure_thenFailureShouldBePropagated() = runTest {
-        val failure = TestNetworkError.generic
+        val failure = NETWORK_ERROR
         given(userRepository)
             .suspendFunction(userRepository::fetchUsersByIds)
             .whenInvokedWith(any())
@@ -110,7 +111,7 @@ class MessageSendFailureHandlerTest {
 
     @Test
     fun givenRepositoryFailsToAddClientsToContacts_whenHandlingClientsHaveChangedFailure_thenFailureShouldBePropagated() = runTest {
-        val failure = TestNetworkError.generic
+        val failure = NETWORK_ERROR
         given(userRepository)
             .suspendFunction(userRepository::fetchUsersByIds)
             .whenInvokedWith(any())
@@ -124,5 +125,8 @@ class MessageSendFailureHandlerTest {
         val result = messageSendFailureHandler.handleClientsHaveChangedFailure(failureData)
         result.shouldFail()
         assertEquals(Either.Left(failure), result)
+    }
+    private companion object {
+        val NETWORK_ERROR = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
     }
 }
