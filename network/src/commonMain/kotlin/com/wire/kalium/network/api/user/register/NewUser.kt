@@ -52,7 +52,7 @@ internal data class NewUser(
     @SerialName("email_code")
     val emailCode: String?,
     @SerialName("expires_in")
-    val expiresIn: Int,
+    val expiresIn: Int?,
     @SerialName("invitation_code")
     val invitationCode: String?, // Mutually exclusive with team|team_code ,
     @SerialName("label")
@@ -60,7 +60,7 @@ internal data class NewUser(
     @SerialName("locale")
     val locale: String?,
     @SerialName("managed_by")
-    val managedBy: ManagedBy,
+    val managedBy: ManagedBy?,
     @SerialName("name")
     val name: String,
     @SerialName("password")
@@ -80,7 +80,7 @@ internal data class NewUser(
     @SerialName("team_id")
     val teamID: TeamId?,
     @SerialName("uuid")
-    val uuid: String
+    val uuid: String?
 )
 
 @Serializable
