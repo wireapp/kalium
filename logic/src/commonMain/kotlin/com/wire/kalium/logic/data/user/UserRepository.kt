@@ -49,7 +49,7 @@ class UserDataSource(
         }.coFold({
             Either.Left(it)
         }, { user ->
-            assetRepository.saveUserPictureAssetIds(listOf(user.previewAssetId, user.completeAssetId))
+            assetRepository.saveUserPictureAsset(listOf(user.previewAssetId, user.completeAssetId))
             userDAO.insertUser(user)
             metadataDAO.insertValue(Json.encodeToString(user.id), SELF_USER_ID_KEY)
             Either.Right(Unit)
@@ -71,7 +71,7 @@ class UserDataSource(
                 Either.Left(it)
             }, {
                 val usersToBePersisted = it.map(userMapper::fromApiModelToDaoModel)
-                assetRepository.saveUserPictureAssetIds(mapAssetsForUsersToBePersisted(usersToBePersisted))
+                assetRepository.saveUserPictureAsset(mapAssetsForUsersToBePersisted(usersToBePersisted))
                 userDAO.insertUsers(usersToBePersisted)
                 Either.Right(Unit)
             })

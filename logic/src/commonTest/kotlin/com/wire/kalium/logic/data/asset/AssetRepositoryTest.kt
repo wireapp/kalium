@@ -105,7 +105,7 @@ class AssetRepositoryTest {
             .whenInvokedWith(eq(assetsParam))
             .thenDoNothing()
 
-        val actual = assetRepository.saveUserPictureAssetIds(assetsIdToPersist)
+        val actual = assetRepository.saveUserPictureAsset(assetsIdToPersist)
 
         actual.shouldSucceed {
             assertEquals(it, Unit)
@@ -120,17 +120,16 @@ class AssetRepositoryTest {
     fun givenAnAssetId_whenDownloadingAssetsAndNotPresentInDB_thenShouldReturnItsBinaryDataFromRemoteAndPersistIt() = runTest {
         val assetKey = "1-3-an-asset-key"
         val expectedImage = "my_image_asset".toByteArray()
-        val expectedAssetEntity = stubAssetEntity("", expectedImage, downloaded = false)
+        val expectedAssetEntity = stubAssetEntity("", null)
 
         mockAssetDaoGetByKeyCall(assetKey, expectedAssetEntity)
         given(assetApi)
             .suspendFunction(assetApi::downloadAsset)
             .whenInvokedWith(eq(assetKey), eq(null))
             .thenReturn(NetworkResponse.Success(expectedImage, mapOf(), 200))
-
         given(assetDAO)
             .suspendFunction(assetDAO::updateAsset)
-            .whenInvokedWith(eq(stubAssetEntityUpdate(assetKey, expectedImage)))
+            .whenInvokedWith(any())
             .thenReturn(Unit)
 
         val actual = assetRepository.downloadPublicAsset(assetKey)
@@ -139,15 +138,22 @@ class AssetRepositoryTest {
             assertEquals(it, expectedImage)
         }
 
+        verify(assetDAO).suspendFunction(assetDAO::getAssetByKey)
+            .with(eq(assetKey))
+            .wasInvoked(exactly = once)
         verify(assetApi).suspendFunction(assetApi::downloadAsset)
             .with(eq(assetKey), eq(null))
+            .wasInvoked(exactly = once)
+        verify(assetDAO)
+            .suspendFunction(assetDAO::updateAsset)
+            .with(any())
             .wasInvoked(exactly = once)
     }
 
     @Test
     fun givenAnError_whenDownloadingAssets_thenShouldReturnThrowNetworkFailure() = runTest {
         val assetKey = "1-3-an-asset-key"
-        mockAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey, null, downloaded = false))
+        mockAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey, null))
         given(assetApi)
             .suspendFunction(assetApi::downloadAsset)
             .whenInvokedWith(eq(assetKey), eq(null))
@@ -196,18 +202,15 @@ class AssetRepositoryTest {
             .thenReturn(flowOf(expectedAssetEntity))
     }
 
-    private fun stubAssetEntity(assetKey: String, assetData: ByteArray?, downloaded: Boolean = true) =
-        AssetEntity(assetKey, "some_domain", null, "some_name", "image/jpg", assetData, assetData?.size?.toLong() ?: 0, downloaded)
+    private fun stubAssetEntity(assetKey: String, assetData: ByteArray?) =
+        AssetEntity(assetKey, "some_domain", null, assetData, 1)
 
     private fun stubAssetEntityUpdate(assetKey: String, assetData: ByteArray) =
         AssetEntity(
             assetKey,
             "NOT_UPDATABLE_VALUE",
             "NOT_UPDATABLE_VALUE",
-            "NOT_UPDATABLE_VALUE",
-            "NOT_UPDATABLE_VALUE",
             assetData,
-            assetData.size.toLong(),
-            true
+            null
         )
 }

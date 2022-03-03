@@ -14,7 +14,7 @@ interface AssetRepository {
     suspend fun uploadPublicAsset(uploadAssetData: UploadAssetData): Either<CoreFailure, UploadedAssetId>
     suspend fun downloadPublicAsset(assetKey: String): Either<CoreFailure, ByteArray>
     suspend fun savePublicAsset(assetKey: String, data: ByteArray): Either<CoreFailure, Unit>
-    suspend fun saveUserPictureAssetIds(assetId: List<UserAssetId>): Either<CoreFailure, Unit>
+    suspend fun saveUserPictureAsset(assetId: List<UserAssetId>): Either<CoreFailure, Unit>
 }
 
 internal class AssetDataSource(
@@ -29,15 +29,15 @@ internal class AssetDataSource(
                 assetApi.uploadAsset(metaData, uploadAssetData.data)
             }
         }.map { assetResponse ->
-            val assetEntity = assetMapper.toDaoModel(uploadAssetData, assetResponse)
+            val assetEntity = assetMapper.fromUploadedAssetToDaoModel(uploadAssetData, assetResponse)
             assetDao.insertAsset(assetEntity)
-            assetMapper.toDomainModel(assetResponse)
+            assetMapper.fromApiUploadResponseToDomainModel(assetResponse)
         }
     }
 
     override suspend fun downloadPublicAsset(assetKey: String): Either<CoreFailure, ByteArray> = suspending {
         val persistedAsset = assetDao.getAssetByKey(assetKey).firstOrNull()
-        if (persistedAsset != null && persistedAsset.downloaded) return@suspending Either.Right(persistedAsset.sha!!)
+        if (persistedAsset?.rawData != null) return@suspending Either.Right(persistedAsset.rawData!!)
 
         wrapApiRequest {
             assetApi.downloadAsset(assetKey, null)
@@ -52,7 +52,8 @@ internal class AssetDataSource(
         return@suspending Either.Right(Unit)
     }
 
-    override suspend fun saveUserPictureAssetIds(assetId: List<UserAssetId>): Either<CoreFailure, Unit> = suspending {
+    override suspend fun saveUserPictureAsset(assetId: List<UserAssetId>): Either<CoreFailure, Unit> = suspending {
+        // TODO: on next PR we should download immediately the asset data and persist it
         assetDao.insertAssets(assetId.map { assetMapper.fromUserAssetIdToDaoModel(it) })
         return@suspending Either.Right(Unit)
     }
