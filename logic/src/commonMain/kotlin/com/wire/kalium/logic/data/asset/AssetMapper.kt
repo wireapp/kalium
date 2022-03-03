@@ -10,8 +10,8 @@ import kotlinx.datetime.Clock
 
 interface AssetMapper {
     fun toMetadataApiModel(uploadAssetMetadata: UploadAssetData): AssetMetadataRequest
-    fun toDomainModel(asset: AssetResponse): UploadedAssetId
-    fun toDaoModel(uploadAssetData: UploadAssetData, uploadedAssetResponse: AssetResponse): AssetEntity
+    fun fromApiUploadResponseToDomainModel(asset: AssetResponse): UploadedAssetId
+    fun fromUploadedAssetToDaoModel(uploadAssetData: UploadAssetData, uploadedAssetResponse: AssetResponse): AssetEntity
     fun fromUserAssetIdToDaoModel(assetId: UserAssetId): AssetEntity
 }
 
@@ -25,10 +25,10 @@ class AssetMapperImpl : AssetMapper {
         )
     }
 
-    override fun toDomainModel(asset: AssetResponse) =
+    override fun fromApiUploadResponseToDomainModel(asset: AssetResponse) =
         UploadedAssetId(asset.key)
 
-    override fun toDaoModel(uploadAssetData: UploadAssetData, uploadedAssetResponse: AssetResponse): AssetEntity {
+    override fun fromUploadedAssetToDaoModel(uploadAssetData: UploadAssetData, uploadedAssetResponse: AssetResponse): AssetEntity {
         return AssetEntity(
             key = uploadedAssetResponse.key,
             domain = uploadedAssetResponse.domain,

@@ -26,13 +26,14 @@ internal class AssetDataSource(
                 assetApi.uploadAsset(metaData, uploadAssetData.data)
             }
         }.map { assetResponse ->
-            val assetEntity = assetMapper.toDaoModel(uploadAssetData, assetResponse)
+            val assetEntity = assetMapper.fromUploadedAssetToDaoModel(uploadAssetData, assetResponse)
             assetDao.insertAsset(assetEntity)
-            assetMapper.toDomainModel(assetResponse)
+            assetMapper.fromApiUploadResponseToDomainModel(assetResponse)
         }
     }
 
     override suspend fun saveUserPictureAsset(assetId: List<UserAssetId>): Either<CoreFailure, Unit> = suspending {
+        // TODO: on next PR we should download immediately the asset data and persist it
         assetDao.insertAssets(assetId.map { assetMapper.fromUserAssetIdToDaoModel(it) })
         return@suspending Either.Right(Unit)
     }
