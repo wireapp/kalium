@@ -1,12 +1,10 @@
 package com.wire.kalium.logic.feature.user
 
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.ImageAsset
 import com.wire.kalium.logic.data.asset.RetentionType
 import com.wire.kalium.logic.data.asset.UploadAssetData
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
 
 interface UploadUserAvatarUseCase {
@@ -17,7 +15,7 @@ interface UploadUserAvatarUseCase {
      * @param mimeType mimetype of the user picture
      * @param imageData binary data of the actual picture
      */
-    suspend operator fun invoke(mimeType: String, imageData: ByteArray): Either<CoreFailure, Unit>
+    suspend operator fun invoke(mimeType: String, imageData: ByteArray): UploadAvatarResult
 }
 
 class UploadUserAvatarUseCaseImpl(
@@ -25,13 +23,20 @@ class UploadUserAvatarUseCaseImpl(
     private val assetDataSource: AssetRepository
 ) : UploadUserAvatarUseCase {
 
-    override suspend operator fun invoke(mimeType: String, imageData: ByteArray): Either<CoreFailure, Unit> = suspending {
+    override suspend operator fun invoke(mimeType: String, imageData: ByteArray): UploadAvatarResult = suspending {
         assetDataSource
             .uploadPublicAsset(UploadAssetData(imageData, ImageAsset.JPG, true, RetentionType.ETERNAL))
-            .map { asset ->
+            .flatMap { asset ->
                 userDataSource.updateSelfUser(newAssetId = asset.key)
-            } // todo: remove old assets, non blocking this response, as will imply deleting locally and remotly
-
-        return@suspending Either.Right(Unit)
+            }.fold({
+                UploadAvatarResult.Failure
+            }) {
+                UploadAvatarResult.Success
+            } // todo: remove old assets, non blocking this response, as will imply deleting locally and remotely
     }
+}
+
+sealed class UploadAvatarResult {
+    object Success : UploadAvatarResult()
+    object Failure : UploadAvatarResult()
 }
