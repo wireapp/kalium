@@ -1,5 +1,7 @@
 package com.wire.kalium.logic.sync
 
+import com.wire.kalium.logger.Logger
+import com.wire.kalium.logger.LoggerType
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.functional.onFailure
@@ -16,11 +18,19 @@ class ListenToEventsUseCase(
      */
     suspend operator fun invoke() {
         syncManager.waitForSlowSyncToComplete()
+
+        val logger = Logger(
+            tag = "ListenToEventsUseCase",
+            type = LoggerType.DEBUG
+        )
+
         eventRepository.events()
             //TODO: Handle retry/reconnection
             .collect { either ->
                 suspending {
                     either.map { event ->
+                        //TODO: Multiplatform logging
+                        logger.log(message = "Event received: $event")
                         println("Event received: $event")
                         when (event) {
                             is Event.Conversation -> {
