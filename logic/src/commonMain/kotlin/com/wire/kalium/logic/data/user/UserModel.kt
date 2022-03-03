@@ -16,8 +16,8 @@ data class SelfUser(
     val phone: String?,
     val accentId: Int,
     val team: String?,
-    val previewPicture: UserAssetId,
-    val completePicture: UserAssetId
+    val previewPicture: UserAssetId?,
+    val completePicture: UserAssetId?
 ) : User()
 
-typealias UserAssetId = String?
+typealias UserAssetId = String

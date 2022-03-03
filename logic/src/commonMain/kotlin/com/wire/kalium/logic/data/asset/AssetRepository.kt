@@ -13,8 +13,7 @@ import kotlinx.coroutines.flow.firstOrNull
 interface AssetRepository {
     suspend fun uploadPublicAsset(uploadAssetData: UploadAssetData): Either<CoreFailure, UploadedAssetId>
     suspend fun downloadPublicAsset(assetKey: String): Either<CoreFailure, ByteArray>
-    suspend fun savePublicAsset(assetKey: String, data: ByteArray): Either<CoreFailure, Unit>
-    suspend fun saveUserPictureAsset(assetId: List<UserAssetId>): Either<CoreFailure, Unit>
+    suspend fun downloadUsersPictureAssets(assetId: List<UserAssetId?>): Either<CoreFailure, Unit>
 }
 
 internal class AssetDataSource(
@@ -42,19 +41,15 @@ internal class AssetDataSource(
         wrapApiRequest {
             assetApi.downloadAsset(assetKey, null)
         }.map { assetData ->
-            savePublicAsset(assetKey, assetData)
+            assetDao.insertAsset(assetMapper.fromUserAssetToDaoModel(assetKey, assetData))
             assetData
         }
     }
 
-    override suspend fun savePublicAsset(assetKey: String, data: ByteArray): Either<CoreFailure, Unit> = suspending {
-        assetDao.updateAsset(assetMapper.fromUpdatedDataToDaoModel(assetKey, data))
-        return@suspending Either.Right(Unit)
-    }
-
-    override suspend fun saveUserPictureAsset(assetId: List<UserAssetId>): Either<CoreFailure, Unit> = suspending {
-        // TODO: on next PR we should download immediately the asset data and persist it
-        assetDao.insertAssets(assetId.map { assetMapper.fromUserAssetIdToDaoModel(it) })
+    override suspend fun downloadUsersPictureAssets(assetId: List<UserAssetId?>): Either<CoreFailure, Unit> = suspending {
+        assetId.filterNotNull().forEach {
+            downloadPublicAsset(it)
+        }
         return@suspending Either.Right(Unit)
     }
 }

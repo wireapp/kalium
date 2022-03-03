@@ -20,6 +20,7 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.thenDoNothing
+import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -98,22 +99,31 @@ class AssetRepositoryTest {
     @Test
     fun givenAListOfAssets_whenSavingAssets_thenShouldSucceed() = runTest {
         val assetsIdToPersist = listOf<UserAssetId>("assetId1", "assetId2")
-        val assetsParam = assetsIdToPersist.map { assetMapper.fromUserAssetIdToDaoModel(it) }
+        val expectedImage = "my_image_asset".toByteArray()
 
-        given(assetDAO)
-            .suspendFunction(assetDAO::insertAssets)
-            .whenInvokedWith(eq(assetsParam))
-            .thenDoNothing()
+        assetsIdToPersist.forEach { assetKey ->
+            val expectedAssetEntity = stubAssetEntity(assetKey, null)
+            mockAssetDaoGetByKeyCall(assetKey, expectedAssetEntity)
+            given(assetApi)
+                .suspendFunction(assetApi::downloadAsset)
+                .whenInvokedWith(eq(assetKey), eq(null))
+                .thenReturn(NetworkResponse.Success(expectedImage, mapOf(), 200))
 
-        val actual = assetRepository.saveUserPictureAsset(assetsIdToPersist)
+            given(assetDAO)
+                .suspendFunction(assetDAO::insertAsset)
+                .whenInvokedWith(any())
+                .thenDoNothing()
+        }
+
+        val actual = assetRepository.downloadUsersPictureAssets(assetsIdToPersist)
 
         actual.shouldSucceed {
             assertEquals(it, Unit)
         }
 
-        verify(assetDAO).suspendFunction(assetDAO::insertAssets)
+        verify(assetDAO).suspendFunction(assetDAO::insertAsset)
             .with(any())
-            .wasInvoked(exactly = once)
+            .wasInvoked(exactly = twice)
     }
 
     @Test
@@ -128,7 +138,7 @@ class AssetRepositoryTest {
             .whenInvokedWith(eq(assetKey), eq(null))
             .thenReturn(NetworkResponse.Success(expectedImage, mapOf(), 200))
         given(assetDAO)
-            .suspendFunction(assetDAO::updateAsset)
+            .suspendFunction(assetDAO::insertAsset)
             .whenInvokedWith(any())
             .thenReturn(Unit)
 
@@ -145,7 +155,7 @@ class AssetRepositoryTest {
             .with(eq(assetKey), eq(null))
             .wasInvoked(exactly = once)
         verify(assetDAO)
-            .suspendFunction(assetDAO::updateAsset)
+            .suspendFunction(assetDAO::insertAsset)
             .with(any())
             .wasInvoked(exactly = once)
     }

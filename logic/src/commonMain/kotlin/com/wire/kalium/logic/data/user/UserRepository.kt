@@ -49,7 +49,7 @@ class UserDataSource(
         }.coFold({
             Either.Left(it)
         }, { user ->
-            assetRepository.saveUserPictureAsset(listOf(user.previewAssetId, user.completeAssetId))
+            assetRepository.downloadUsersPictureAssets(listOf(user.previewAssetId, user.completeAssetId))
             userDAO.insertUser(user)
             metadataDAO.insertValue(Json.encodeToString(user.id), SELF_USER_ID_KEY)
             Either.Right(Unit)
@@ -71,7 +71,9 @@ class UserDataSource(
                 Either.Left(it)
             }, {
                 val usersToBePersisted = it.map(userMapper::fromApiModelToDaoModel)
-                assetRepository.saveUserPictureAsset(mapAssetsForUsersToBePersisted(usersToBePersisted))
+                // not sure about this, because on first sync it's taking ages =/
+                // options, doing it in 2 steps like before and downloading on demand or doing it somehow in a non.blocking fashion
+                assetRepository.downloadUsersPictureAssets(mapAssetsForUsersToBePersisted(usersToBePersisted))
                 userDAO.insertUsers(usersToBePersisted)
                 Either.Right(Unit)
             })
@@ -87,8 +89,8 @@ class UserDataSource(
         }
     }
 
-    private fun mapAssetsForUsersToBePersisted(usersToBePersisted: List<UserEntity>): List<UserAssetId> {
-        val assetsId = mutableListOf<UserAssetId>()
+    private fun mapAssetsForUsersToBePersisted(usersToBePersisted: List<UserEntity>): List<UserAssetId?> {
+        val assetsId = mutableListOf<UserAssetId?>()
         usersToBePersisted.map {
             assetsId.add(it.completeAssetId)
             assetsId.add(it.previewAssetId)
