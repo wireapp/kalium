@@ -8,12 +8,9 @@ class AssetMapper {
         return AssetEntity(
             asset.key,
             asset.domain,
-            asset.token,
-            asset.name,
             asset.mime_type,
-            asset.sha,
-            asset.size,
-            asset.downloaded
+            asset.raw_data,
+            asset.downloaded_date
         )
     }
 }
@@ -26,12 +23,9 @@ class AssetDAOImpl(private val queries: AssetsQueries) : AssetDAO {
         queries.insertAsset(
             assetEntity.key,
             assetEntity.domain,
-            assetEntity.token,
-            assetEntity.name,
             assetEntity.mimeType,
-            assetEntity.sha,
-            assetEntity.size,
-            assetEntity.downloaded
+            assetEntity.rawData,
+            assetEntity.downloadedDate
         )
     }
 
@@ -41,12 +35,9 @@ class AssetDAOImpl(private val queries: AssetsQueries) : AssetDAO {
                 queries.insertAsset(
                     asset.key,
                     asset.domain,
-                    asset.token,
-                    asset.name,
                     asset.mimeType,
-                    asset.sha,
-                    asset.size,
-                    asset.downloaded
+                    asset.rawData,
+                    asset.downloadedDate
                 )
             }
         }

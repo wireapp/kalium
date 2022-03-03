@@ -1,12 +1,12 @@
 package com.wire.kalium.logic.data.asset
 
-import com.benasher44.uuid.uuid4
 import com.wire.kalium.cryptography.utils.calcMd5
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.network.api.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.asset.AssetResponse
 import com.wire.kalium.network.api.model.AssetRetentionType
 import com.wire.kalium.persistence.dao.asset.AssetEntity
+import kotlinx.datetime.Clock
 
 interface AssetMapper {
     fun toMetadataApiModel(uploadAssetMetadata: UploadAssetData): AssetMetadataRequest
@@ -32,16 +32,13 @@ class AssetMapperImpl : AssetMapper {
         return AssetEntity(
             key = uploadedAssetResponse.key,
             domain = uploadedAssetResponse.domain,
-            token = uploadedAssetResponse.token,
-            name = uuid4().toString(),
             mimeType = uploadAssetData.mimeType.name,
-            sha = uploadAssetData.data, // should use something like byteArray to encrypt aes256cbc
-            size = uploadAssetData.data.size.toLong(),
-            downloaded = true
+            rawData = uploadAssetData.data, // should use something like byteArray to encrypt aes256cbc
+            downloadedDate = Clock.System.now().toEpochMilliseconds()
         )
     }
 
     override fun fromUserAssetIdToDaoModel(assetId: UserAssetId): AssetEntity {
-        return AssetEntity(assetId.toString(), "", null, null, ImageAsset.JPG.name, null, 0, false)
+        return AssetEntity(assetId.toString(), "", null, null, null)
     }
 }
