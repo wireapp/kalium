@@ -4,13 +4,40 @@ import co.touchlab.kermit.Severity
 import co.touchlab.kermit.StaticConfig
 import co.touchlab.kermit.Logger as KermitLogger
 
-// TODO: Add docs => https://sematext.com/blog/logging-levels/
+/**
+ * LoggerType in order from lowest to the highest severity level.
+ */
 enum class LoggerType {
+    /**
+     * A log level describing events showing step by step execution of your code that can be ignored during the standard operation,
+     * but may be useful during extended debugging sessions.
+     */
     VERBOSE,
+
+    /**
+     * A log level used for events considered to be useful during software debugging when more granular information is needed.
+     */
     DEBUG,
+
+    /**
+     * An event happened, the event is purely informative and can be ignored during normal operations.
+     */
     INFO,
+
+    /**
+     * Unexpected behavior happened inside the application,
+     * but it is continuing its work and the key business features are operating as expected.
+     */
     WARN,
+
+    /**
+     * One or more functionalities are not working, preventing some functionalities from working correctly.
+     */
     ERROR,
+
+    /**
+     * Logger is Disabled.
+     */
     DISABLED
 }
 
@@ -28,8 +55,6 @@ class KaliumLogger(config: Config) {
     }
 
     val severity = config.severity
-
-    val isEnabled: Boolean = config.severity != LoggerType.DISABLED
 
     @Suppress("unused")
     fun v(message: String, throwable: Throwable? = null) =
