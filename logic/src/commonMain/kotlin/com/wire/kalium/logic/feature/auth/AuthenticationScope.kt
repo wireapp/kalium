@@ -33,7 +33,7 @@ abstract class AuthenticationScopeCommon(
 ) {
 
     protected val loginNetworkContainer: LoginNetworkContainer by lazy {
-        LoginNetworkContainer(kaliumLogger = kaliumLogger)
+        LoginNetworkContainer(loggerType = kaliumLogger.severity)
     }
 
     protected abstract val encryptedSettingsHolder: EncryptedSettingsHolder

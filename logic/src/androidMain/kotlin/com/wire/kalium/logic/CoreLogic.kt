@@ -38,7 +38,7 @@ actual class CoreLogic(
             val networkContainer = AuthenticatedNetworkContainer(
                 sessionDTO = sessionMapper.toSessionDTO(session),
                 backendConfig = serverConfigMapper.toBackendConfig(serverConfig = session.serverConfig),
-                kaliumLogger = kaliumLogger
+                loggerType = kaliumLogger.severity
             )
 
             val proteusClient: ProteusClient = ProteusClientImpl(rootProteusDirectoryPath, session.userId)
