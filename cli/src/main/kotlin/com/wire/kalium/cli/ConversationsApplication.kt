@@ -5,6 +5,7 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.wire.kalium.cli.CLIUtils.getResource
 import com.wire.kalium.cryptography.utils.calcMd5
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.configuration.ServerConfigMapper
 import com.wire.kalium.logic.configuration.ServerConfigMapperImpl
@@ -24,7 +25,8 @@ class ConversationsApplication : CliktCommand() {
     override fun run(): Unit = runBlocking {
         val serverConfigMapper: ServerConfigMapper = ServerConfigMapperImpl()
         val backendConfig: BackendConfig = serverConfigMapper.toBackendConfig(ServerConfig.DEFAULT)
-        val loginContainer = LoginNetworkContainer(isRequestLoggingEnabled = true)
+        val kaliumLogger = KaliumLogger(initialConfig = KaliumLogger.Config.DISABLED)
+        val loginContainer = LoginNetworkContainer(kaliumLogger = kaliumLogger)
 
         val loginResult = loginContainer.loginApi.login(
             LoginApi.LoginParam.LoginWithEmail(email = email, password = password, label = "ktor"), false, backendConfig.apiBaseUrl
@@ -35,7 +37,7 @@ class ConversationsApplication : CliktCommand() {
         } else {
             val sessionData = loginResult.value
             //TODO: Get them 🍪 refresh token
-            val networkModule = AuthenticatedNetworkContainer(sessionDTO = sessionData, backendConfig = backendConfig)
+            val networkModule = AuthenticatedNetworkContainer(sessionDTO = sessionData, backendConfig = backendConfig, kaliumLogger = kaliumLogger)
             val conversationsResponse = networkModule.conversationApi.conversationsByBatch(null, 100)
 
             if (!conversationsResponse.isSuccessful()) {
