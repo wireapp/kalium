@@ -61,6 +61,7 @@ class GetPublicAssetUseCaseTest {
         val publicAsset = getPublicAsset(assetKey)
 
         assertEquals(PublicAssetResult.Failure::class, publicAsset::class)
+        assertEquals(CoreFailure.Unknown::class, (publicAsset as PublicAssetResult.Failure).coreFailure::class)
 
         verify(assetRepository)
             .suspendFunction(assetRepository::downloadPublicAsset)

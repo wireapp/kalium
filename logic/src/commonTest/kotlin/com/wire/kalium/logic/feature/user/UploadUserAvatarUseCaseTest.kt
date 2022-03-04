@@ -71,7 +71,8 @@ class UploadUserAvatarUseCaseTest {
 
         val actual = uploadUserAvatarUseCase("image/jpg", "A".encodeToByteArray())
 
-        assertEquals(UploadAvatarResult.Failure, actual)
+        assertEquals(UploadAvatarResult.Failure::class, actual::class)
+        assertEquals(CoreFailure.Unknown::class, (actual as UploadAvatarResult.Failure).coreFailure::class)
 
         verify(assetRepository)
             .suspendFunction(assetRepository::uploadAndPersistPublicAsset)

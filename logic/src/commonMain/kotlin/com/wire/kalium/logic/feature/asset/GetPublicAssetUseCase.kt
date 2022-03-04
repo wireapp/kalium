@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.asset
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.functional.suspending
@@ -11,7 +12,7 @@ interface GetPublicAssetUseCase {
 internal class GetPublicAssetUseCaseImpl(private val assetDataSource: AssetRepository) : GetPublicAssetUseCase {
     override suspend fun invoke(assetKey: UserAssetId): PublicAssetResult = suspending {
         assetDataSource.downloadPublicAsset(assetKey).fold({
-            PublicAssetResult.Failure
+            PublicAssetResult.Failure(it)
         }) {
             PublicAssetResult.Success(it)
         }
@@ -20,5 +21,5 @@ internal class GetPublicAssetUseCaseImpl(private val assetDataSource: AssetRepos
 
 sealed class PublicAssetResult {
     class Success(val asset: ByteArray) : PublicAssetResult()
-    object Failure : PublicAssetResult()
+    class Failure(val coreFailure: CoreFailure) : PublicAssetResult()
 }
