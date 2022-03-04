@@ -19,15 +19,15 @@ import kotlinx.coroutines.flow.first
 
 class MainActivity : ComponentActivity() {
 
-    val serverConfig: ServerConfig by lazy { ServerConfig.DEFAULT }
+    private val serverConfig: ServerConfig by lazy { ServerConfig.DEFAULT }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        loginAndFetchConverationList((application as KaliumApplication).coreLogic)
+        loginAndFetchConversationList((application as KaliumApplication).coreLogic)
     }
 
-    fun loginAndFetchConverationList(coreLogic: CoreLogic) = lifecycleScope.launchWhenCreated {
+    private fun loginAndFetchConversationList(coreLogic: CoreLogic) = lifecycleScope.launchWhenCreated {
         login(coreLogic.getAuthenticationScope())?.let {
             val session = coreLogic.getSessionScope(it)
             val conversations = session.conversations.getConversations().first()
@@ -39,7 +39,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    suspend fun login(authenticationScope: AuthenticationScope): AuthSession? {
+    private suspend fun login(authenticationScope: AuthenticationScope): AuthSession? {
         val result = authenticationScope.login("jacob.persson+summer1@wire.com", "hepphepp", false, serverConfig)
 
         if (result !is AuthenticationResult.Success) {

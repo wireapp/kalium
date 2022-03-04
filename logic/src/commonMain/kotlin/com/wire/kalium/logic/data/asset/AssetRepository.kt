@@ -10,7 +10,7 @@ import com.wire.kalium.network.api.asset.AssetApi
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 
 interface AssetRepository {
-    suspend fun uploadPublicAsset(uploadAssetData: UploadAssetData): Either<CoreFailure, UploadedAssetId>
+    suspend fun uploadAndPersistPublicAsset(uploadAssetData: UploadAssetData): Either<CoreFailure, UploadedAssetId>
     suspend fun saveUserPictureAsset(assetId: List<UserAssetId>): Either<CoreFailure, Unit>
 }
 
@@ -20,7 +20,7 @@ internal class AssetDataSource(
     private val assetDao: AssetDAO
 ) : AssetRepository {
 
-    override suspend fun uploadPublicAsset(uploadAssetData: UploadAssetData): Either<NetworkFailure, UploadedAssetId> = suspending {
+    override suspend fun uploadAndPersistPublicAsset(uploadAssetData: UploadAssetData): Either<NetworkFailure, UploadedAssetId> = suspending {
         wrapApiRequest {
             assetMapper.toMetadataApiModel(uploadAssetData).let { metaData ->
                 assetApi.uploadAsset(metaData, uploadAssetData.data)

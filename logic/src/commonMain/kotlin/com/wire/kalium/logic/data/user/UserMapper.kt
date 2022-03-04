@@ -2,7 +2,7 @@ package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.network.api.asset.ImageSize
-import com.wire.kalium.network.api.asset.UserAssetDTO
+import com.wire.kalium.network.api.asset.AvatarAssetDTO
 import com.wire.kalium.network.api.asset.getCompleteAssetOrNull
 import com.wire.kalium.network.api.asset.getPreviewAssetOrNull
 import com.wire.kalium.network.api.user.details.UserDetailsResponse
@@ -84,8 +84,8 @@ internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
             accentId = newAccent,
             assets = if (newAssetId != null) {
                 listOf(
-                    UserAssetDTO(newAssetId, ImageSize.Complete),
-                    UserAssetDTO(newAssetId, ImageSize.Preview)
+                    AvatarAssetDTO(newAssetId, ImageSize.Complete),
+                    AvatarAssetDTO(newAssetId, ImageSize.Preview)
                 )
             } else {
                 null

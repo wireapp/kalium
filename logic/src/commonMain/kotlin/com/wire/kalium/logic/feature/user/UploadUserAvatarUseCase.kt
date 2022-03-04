@@ -25,7 +25,7 @@ class UploadUserAvatarUseCaseImpl(
 
     override suspend operator fun invoke(mimeType: String, imageData: ByteArray): UploadAvatarResult = suspending {
         assetDataSource
-            .uploadPublicAsset(UploadAssetData(imageData, ImageAsset.JPG, true, RetentionType.ETERNAL))
+            .uploadAndPersistPublicAsset(UploadAssetData(imageData, ImageAsset.JPG, true, RetentionType.ETERNAL))
             .flatMap { asset ->
                 userDataSource.updateSelfUser(newAssetId = asset.key)
             }.fold({
