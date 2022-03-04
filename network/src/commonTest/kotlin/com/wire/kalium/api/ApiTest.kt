@@ -197,6 +197,6 @@ interface ApiTest {
             )
 
         val  TEST_LOGGER_CONFIG =
-            KaliumLogger(initialConfig = KaliumLogger.Config.DISABLED)
+            KaliumLogger(config = KaliumLogger.Config.DISABLED)
     }
 }
