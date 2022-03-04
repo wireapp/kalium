@@ -36,6 +36,8 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
+                implementation(project(":logger"))
+
                 // coroutines
                 implementation(Dependencies.Coroutines.core) {
                     version {

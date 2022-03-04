@@ -17,6 +17,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.URLProtocol
 import io.ktor.serialization.kotlinx.json.json
+import com.wire.kalium.logger.KaliumLogger
 
 
 sealed class HttpClientOptions {
@@ -26,7 +27,7 @@ sealed class HttpClientOptions {
 
 internal fun provideBaseHttpClient(
     engine: HttpClientEngine,
-    isRequestLoggingEnabled: Boolean = false,
+    kaliumLogger: KaliumLogger,
     options: HttpClientOptions,
     config: HttpClientConfig<*>.() -> Unit = {}
 ) = HttpClient(engine) {
@@ -48,7 +49,7 @@ internal fun provideBaseHttpClient(
         }
 
     }
-    if (isRequestLoggingEnabled) {
+    if (kaliumLogger.isEnabled()) {
         install(Logging) {
             logger = Logger.SIMPLE
             level = LogLevel.ALL
