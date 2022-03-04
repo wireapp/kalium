@@ -6,6 +6,7 @@ import com.wire.kalium.network.api.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.asset.AssetResponse
 import com.wire.kalium.network.api.model.AssetRetentionType
 import com.wire.kalium.persistence.dao.asset.AssetEntity
+import io.ktor.utils.io.core.toByteArray
 import kotlinx.datetime.Clock
 
 interface AssetMapper {
@@ -39,6 +40,6 @@ class AssetMapperImpl : AssetMapper {
     }
 
     override fun fromUserAssetIdToDaoModel(assetId: UserAssetId): AssetEntity {
-        return AssetEntity(assetId.toString(), "", null, null, null)
+        return AssetEntity(assetId.toString(), "", null, "".toByteArray(), null)
     }
 }

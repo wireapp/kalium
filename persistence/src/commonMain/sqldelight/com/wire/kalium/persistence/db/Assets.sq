@@ -4,7 +4,7 @@ CREATE TABLE Asset (
     key TEXT NOT NULL,
     domain TEXT NOT NULL,
     mime_type TEXT,
-    raw_data BLOB,
+    raw_data BLOB NOT NULL,
     downloaded_date INTEGER,
     PRIMARY KEY (key)
 );
