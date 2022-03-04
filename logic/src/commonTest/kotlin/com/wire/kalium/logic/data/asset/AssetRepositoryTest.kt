@@ -65,7 +65,7 @@ class AssetRepositoryTest {
 
         val uploadAssetMetadata = UploadAssetData("the_image".encodeToByteArray(), ImageAsset.JPG, true, RetentionType.ETERNAL)
 
-        val actual = assetRepository.uploadPublicAsset(uploadAssetMetadata)
+        val actual = assetRepository.uploadAndPersistPublicAsset(uploadAssetMetadata)
 
         actual.shouldSucceed {
             assertEquals("some_key", it.key)
@@ -85,7 +85,7 @@ class AssetRepositoryTest {
 
         val uploadAssetMetadata = UploadAssetData("the_image".encodeToByteArray(), ImageAsset.JPG, true, RetentionType.ETERNAL)
 
-        val actual = assetRepository.uploadPublicAsset(uploadAssetMetadata)
+        val actual = assetRepository.uploadAndPersistPublicAsset(uploadAssetMetadata)
 
         actual.shouldFail {
             assertEquals(it::class, NetworkFailure.ServerMiscommunication::class)

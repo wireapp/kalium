@@ -27,9 +27,9 @@ data class AssetEntity(
     override fun hashCode(): Int {
         var result = key.hashCode()
         result = 31 * result + domain.hashCode()
-        result = 31 * result + mimeType.hashCode()
+        result = 31 * result + (mimeType?.hashCode() ?: 0)
         result = 31 * result + rawData.contentHashCode()
-        result = 31 * result + downloadedDate.hashCode()
+        result = 31 * result + (downloadedDate?.hashCode() ?: 0)
         return result
     }
 }

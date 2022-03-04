@@ -11,7 +11,7 @@ import com.wire.kalium.persistence.dao.asset.AssetDAO
 import kotlinx.coroutines.flow.firstOrNull
 
 interface AssetRepository {
-    suspend fun uploadPublicAsset(uploadAssetData: UploadAssetData): Either<CoreFailure, UploadedAssetId>
+    suspend fun uploadAndPersistPublicAsset(uploadAssetData: UploadAssetData): Either<CoreFailure, UploadedAssetId>
     suspend fun downloadPublicAsset(assetKey: String): Either<CoreFailure, ByteArray>
     suspend fun downloadUsersPictureAssets(assetId: List<UserAssetId?>): Either<CoreFailure, Unit>
 }
@@ -22,17 +22,18 @@ internal class AssetDataSource(
     private val assetDao: AssetDAO
 ) : AssetRepository {
 
-    override suspend fun uploadPublicAsset(uploadAssetData: UploadAssetData): Either<NetworkFailure, UploadedAssetId> = suspending {
-        wrapApiRequest {
-            assetMapper.toMetadataApiModel(uploadAssetData).let { metaData ->
-                assetApi.uploadAsset(metaData, uploadAssetData.data)
+    override suspend fun uploadAndPersistPublicAsset(uploadAssetData: UploadAssetData): Either<NetworkFailure, UploadedAssetId> =
+        suspending {
+            wrapApiRequest {
+                assetMapper.toMetadataApiModel(uploadAssetData).let { metaData ->
+                    assetApi.uploadAsset(metaData, uploadAssetData.data)
+                }
+            }.map { assetResponse ->
+                val assetEntity = assetMapper.fromUploadedAssetToDaoModel(uploadAssetData, assetResponse)
+                assetDao.insertAsset(assetEntity)
+                assetMapper.fromApiUploadResponseToDomainModel(assetResponse)
             }
-        }.map { assetResponse ->
-            val assetEntity = assetMapper.fromUploadedAssetToDaoModel(uploadAssetData, assetResponse)
-            assetDao.insertAsset(assetEntity)
-            assetMapper.fromApiUploadResponseToDomainModel(assetResponse)
         }
-    }
 
     override suspend fun downloadPublicAsset(assetKey: String): Either<CoreFailure, ByteArray> = suspending {
         val persistedAsset = assetDao.getAssetByKey(assetKey).firstOrNull()

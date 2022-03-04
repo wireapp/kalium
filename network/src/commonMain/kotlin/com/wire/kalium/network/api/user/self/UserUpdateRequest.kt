@@ -1,7 +1,7 @@
 package com.wire.kalium.network.api.user.self
 
 import com.wire.kalium.network.api.UserId
-import com.wire.kalium.network.api.asset.UserAssetDTO
+import com.wire.kalium.network.api.asset.AvatarAssetDTO
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -14,10 +14,10 @@ data class UserUpdateRequest(
     @SerialName("name")
     val name: String?,
     @SerialName("assets")
-    val assets: List<UserAssetDTO>?,
+    val assets: List<AvatarAssetDTO>?,
     @SerialName("accent_id")
     val accentId: Int?
 ) {
     @SerialName("picture")
-    var picture: List<UserAssetDTO>? = assets
+    var picture: List<AvatarAssetDTO>? = assets
 }

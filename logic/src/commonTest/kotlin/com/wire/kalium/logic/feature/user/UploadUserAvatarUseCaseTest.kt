@@ -37,7 +37,7 @@ class UploadUserAvatarUseCaseTest {
     fun givenValidParams_whenUploadingUserAvatar_thenShouldReturnsASuccessResult() = runTest {
         val expected = UploadedAssetId("some_key")
         given(assetRepository)
-            .suspendFunction(assetRepository::uploadPublicAsset)
+            .suspendFunction(assetRepository::uploadAndPersistPublicAsset)
             .whenInvokedWith(any())
             .thenReturn(Either.Right(expected))
 
@@ -51,7 +51,7 @@ class UploadUserAvatarUseCaseTest {
         assertEquals(UploadAvatarResult.Success, actual)
 
         verify(assetRepository)
-            .suspendFunction(assetRepository::uploadPublicAsset)
+            .suspendFunction(assetRepository::uploadAndPersistPublicAsset)
             .with(any())
             .wasInvoked(exactly = once)
 
@@ -65,7 +65,7 @@ class UploadUserAvatarUseCaseTest {
     fun givenUploadAvatarIsInvoked_whenThereIsAnError_thenShouldCallReturnsAFailureResult() = runTest {
         val expected = UploadedAssetId("some_key")
         given(assetRepository)
-            .suspendFunction(assetRepository::uploadPublicAsset)
+            .suspendFunction(assetRepository::uploadAndPersistPublicAsset)
             .whenInvokedWith(any())
             .thenReturn(Either.Left(CoreFailure.Unknown(Throwable("an error"))))
 
@@ -74,7 +74,7 @@ class UploadUserAvatarUseCaseTest {
         assertEquals(UploadAvatarResult.Failure, actual)
 
         verify(assetRepository)
-            .suspendFunction(assetRepository::uploadPublicAsset)
+            .suspendFunction(assetRepository::uploadAndPersistPublicAsset)
             .with(any())
             .wasInvoked(exactly = once)
 

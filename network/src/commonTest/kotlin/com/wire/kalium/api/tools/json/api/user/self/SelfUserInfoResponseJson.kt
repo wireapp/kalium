@@ -3,7 +3,7 @@ package com.wire.kalium.api.tools.json.api.user.self
 import com.wire.kalium.api.tools.json.ValidJsonProvider
 import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.asset.ImageSize
-import com.wire.kalium.network.api.asset.UserAssetDTO
+import com.wire.kalium.network.api.asset.AvatarAssetDTO
 import com.wire.kalium.network.api.user.self.ManagedBy
 import com.wire.kalium.network.api.user.self.SelfUserInfoResponse
 
@@ -42,7 +42,7 @@ object SelfUserInfoResponseJson {
             name = "cool_name",
             accentId = 0,
             deleted = null,
-            assets = listOf(UserAssetDTO(type = "image", key = "asset_key", size = ImageSize.Complete)),
+            assets = listOf(AvatarAssetDTO(type = "image", key = "asset_key", size = ImageSize.Complete)),
             locale = "user_local",
             service = null,
             expiresAt = null,
