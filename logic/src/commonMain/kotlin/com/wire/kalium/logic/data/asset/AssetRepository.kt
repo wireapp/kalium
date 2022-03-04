@@ -37,7 +37,7 @@ internal class AssetDataSource(
 
     override suspend fun downloadPublicAsset(assetKey: String): Either<CoreFailure, ByteArray> = suspending {
         val persistedAsset = assetDao.getAssetByKey(assetKey).firstOrNull()
-        if (persistedAsset?.rawData != null) return@suspending Either.Right(persistedAsset.rawData!!)
+        if (persistedAsset != null) return@suspending Either.Right(persistedAsset.rawData)
 
         wrapApiRequest {
             assetApi.downloadAsset(assetKey, null)
