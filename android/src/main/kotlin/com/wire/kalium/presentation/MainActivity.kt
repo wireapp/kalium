@@ -20,10 +20,10 @@ import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.feature.asset.PublicAssetResult
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
-import com.wire.kalium.logic.functional.map
 import kotlinx.coroutines.flow.first
 
 class MainActivity : ComponentActivity() {
@@ -47,9 +47,9 @@ class MainActivity : ComponentActivity() {
 
             val selfUser = session.users.getSelfUser().first()
 
-            var avatarAsset: ByteArray? = null
-            session.users.getPublicAsset(selfUser.previewPicture.toString()).map { data ->
-                avatarAsset = data
+            val avatarAsset = when (val publicAsset = session.users.getPublicAsset(selfUser.previewPicture.toString())) {
+                is PublicAssetResult.Success -> publicAsset.asset
+                else -> null
             }
 
             setContent {

@@ -102,7 +102,7 @@ class AssetRepositoryTest {
         val expectedImage = "my_image_asset".toByteArray()
 
         assetsIdToPersist.forEach { assetKey ->
-            val expectedAssetEntity = stubAssetEntity(assetKey, null)
+            val expectedAssetEntity = stubAssetEntity(assetKey)
             mockAssetDaoGetByKeyCall(assetKey, expectedAssetEntity)
             given(assetApi)
                 .suspendFunction(assetApi::downloadAsset)
@@ -130,7 +130,7 @@ class AssetRepositoryTest {
     fun givenAnAssetId_whenDownloadingAssetsAndNotPresentInDB_thenShouldReturnItsBinaryDataFromRemoteAndPersistIt() = runTest {
         val assetKey = "1-3-an-asset-key"
         val expectedImage = "my_image_asset".toByteArray()
-        val expectedAssetEntity = stubAssetEntity("", null)
+        val expectedAssetEntity = stubAssetEntity("")
 
         mockAssetDaoGetByKeyCall(assetKey, expectedAssetEntity)
         given(assetApi)
@@ -163,10 +163,11 @@ class AssetRepositoryTest {
     @Test
     fun givenAnError_whenDownloadingAssets_thenShouldReturnThrowNetworkFailure() = runTest {
         val assetKey = "1-3-an-asset-key"
-        mockAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey, null))
+        val expectedImage = "my_image_asset".toByteArray()
+        mockAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey))
         given(assetApi)
             .suspendFunction(assetApi::downloadAsset)
-            .whenInvokedWith(eq(assetKey), eq(null))
+            .whenInvokedWith(eq(assetKey), eq(expectedImage))
             .thenReturn(NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))))
 
         val actual = assetRepository.downloadPublicAsset(assetKey)
@@ -187,8 +188,8 @@ class AssetRepositoryTest {
     @Test
     fun givenAnAssetId_whenAssetIsAlreadyDownloaded_thenShouldReturnItsBinaryDataFromDB() = runTest {
         val assetKey = "1-3-an-asset-key"
-        val assetData = "A".toByteArray()
-        mockAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey, assetData))
+        val assetData = "my_image_asset".toByteArray()
+        mockAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey))
 
         val actual = assetRepository.downloadPublicAsset(assetKey)
 
@@ -212,15 +213,6 @@ class AssetRepositoryTest {
             .thenReturn(flowOf(expectedAssetEntity))
     }
 
-    private fun stubAssetEntity(assetKey: String, assetData: ByteArray?) =
-        AssetEntity(assetKey, "some_domain", null, assetData, 1)
-
-    private fun stubAssetEntityUpdate(assetKey: String, assetData: ByteArray) =
-        AssetEntity(
-            assetKey,
-            "NOT_UPDATABLE_VALUE",
-            "NOT_UPDATABLE_VALUE",
-            assetData,
-            null
-        )
+    private fun stubAssetEntity(assetKey: String) =
+        AssetEntity(assetKey, "some_domain", null, "my_image_asset".toByteArray(), 1)
 }
