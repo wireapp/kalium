@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.auth
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.configuration.GetServerConfigUseCase
 import com.wire.kalium.logic.configuration.ServerConfigDataSource
 import com.wire.kalium.logic.configuration.ServerConfigMapper
@@ -27,11 +28,12 @@ import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
 expect class AuthenticationScope : AuthenticationScopeCommon
 
 abstract class AuthenticationScopeCommon(
-    private val clientLabel: String
+    private val clientLabel: String,
+    kaliumLogger: KaliumLogger
 ) {
 
     protected val loginNetworkContainer: LoginNetworkContainer by lazy {
-        LoginNetworkContainer()
+        LoginNetworkContainer(kaliumLogger = kaliumLogger)
     }
 
     protected abstract val encryptedSettingsHolder: EncryptedSettingsHolder

@@ -27,7 +27,11 @@ actual class CoreLogic(
 ) : CoreLogicCommon(clientLabel, rootProteusDirectoryPath, kaliumLoggerConfig) {
 
     override fun getAuthenticationScope(): AuthenticationScope =
-        AuthenticationScope(clientLabel = clientLabel, applicationContext = applicationContext)
+        AuthenticationScope(
+            clientLabel = clientLabel,
+            applicationContext = applicationContext,
+            kaliumLogger = kaliumLogger
+        )
 
     override fun getSessionScope(session: AuthSession): UserSessionScope {
         val dataSourceSet = userScopeStorage[session] ?: run {
