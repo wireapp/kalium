@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.user
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -15,6 +16,7 @@ import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class UploadUserAvatarUseCaseTest {
 
@@ -32,10 +34,10 @@ class UploadUserAvatarUseCaseTest {
     }
 
     @Test
-    fun givenValidParams_whenUploadingUserAvatar_thenShouldCallRepositoryUploadAndUpdateSelfUser() = runTest {
+    fun givenValidParams_whenUploadingUserAvatar_thenShouldReturnsASuccessResult() = runTest {
         val expected = UploadedAssetId("some_key")
         given(assetRepository)
-            .suspendFunction(assetRepository::uploadPublicAsset)
+            .suspendFunction(assetRepository::uploadAndPersistPublicAsset)
             .whenInvokedWith(any())
             .thenReturn(Either.Right(expected))
 
@@ -46,8 +48,10 @@ class UploadUserAvatarUseCaseTest {
 
         val actual = uploadUserAvatarUseCase("image/jpg", "A".encodeToByteArray())
 
+        assertEquals(UploadAvatarResult.Success, actual)
+
         verify(assetRepository)
-            .suspendFunction(assetRepository::uploadPublicAsset)
+            .suspendFunction(assetRepository::uploadAndPersistPublicAsset)
             .with(any())
             .wasInvoked(exactly = once)
 
@@ -55,5 +59,28 @@ class UploadUserAvatarUseCaseTest {
             .suspendFunction(userRepository::updateSelfUser)
             .with(eq(null), eq(null), eq(expected.key))
             .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenUploadAvatarIsInvoked_whenThereIsAnError_thenShouldCallReturnsAFailureResult() = runTest {
+        val expected = UploadedAssetId("some_key")
+        given(assetRepository)
+            .suspendFunction(assetRepository::uploadAndPersistPublicAsset)
+            .whenInvokedWith(any())
+            .thenReturn(Either.Left(CoreFailure.Unknown(Throwable("an error"))))
+
+        val actual = uploadUserAvatarUseCase("image/jpg", "A".encodeToByteArray())
+
+        assertEquals(UploadAvatarResult.Failure, actual)
+
+        verify(assetRepository)
+            .suspendFunction(assetRepository::uploadAndPersistPublicAsset)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+        verify(userRepository)
+            .suspendFunction(userRepository::updateSelfUser)
+            .with(eq(null), eq(null), eq(expected.key))
+            .wasNotInvoked()
     }
 }

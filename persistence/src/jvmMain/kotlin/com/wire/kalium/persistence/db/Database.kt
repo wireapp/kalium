@@ -11,6 +11,8 @@ import com.wire.kalium.persistence.dao.MetadataDAOImpl
 import com.wire.kalium.persistence.dao.QualifiedIDAdapter
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserDAOImpl
+import com.wire.kalium.persistence.dao.asset.AssetDAO
+import com.wire.kalium.persistence.dao.asset.AssetDAOImpl
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageDAO
@@ -52,4 +54,7 @@ actual class Database {
 
     actual val messageDAO: MessageDAO
         get() = MessageDAOImpl(database.messagesQueries)
+
+    actual val assetDAO: AssetDAO
+        get() = AssetDAOImpl(database.assetsQueries)
 }
