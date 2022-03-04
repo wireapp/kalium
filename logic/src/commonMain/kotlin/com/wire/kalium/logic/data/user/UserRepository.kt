@@ -13,7 +13,6 @@ import com.wire.kalium.network.api.user.self.SelfApi
 import com.wire.kalium.network.utils.isSuccessful
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.UserDAO
-import com.wire.kalium.persistence.dao.UserEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -70,11 +69,7 @@ class UserDataSource(
             }.coFold({
                 Either.Left(it)
             }, {
-                val usersToBePersisted = it.map(userMapper::fromApiModelToDaoModel)
-                // not sure about this, because on first sync it's taking ages =/
-                // options, doing it in 2 steps like before and downloading on demand or doing it somehow in a non.blocking fashion
-                assetRepository.downloadUsersPictureAssets(mapAssetsForUsersToBePersisted(usersToBePersisted))
-                userDAO.insertUsers(usersToBePersisted)
+                userDAO.insertUsers(it.map(userMapper::fromApiModelToDaoModel))
                 Either.Right(Unit)
             })
         }
@@ -87,15 +82,6 @@ class UserDataSource(
                 .filterNotNull()
                 .map(userMapper::fromDaoModel)
         }
-    }
-
-    private fun mapAssetsForUsersToBePersisted(usersToBePersisted: List<UserEntity>): List<UserAssetId?> {
-        val assetsId = mutableListOf<UserAssetId?>()
-        usersToBePersisted.map {
-            assetsId.add(it.completeAssetId)
-            assetsId.add(it.previewAssetId)
-        }
-        return assetsId
     }
 
     override suspend fun updateSelfUser(newName: String?, newAccent: Int?, newAssetId: String?): Either<CoreFailure, Unit> {
