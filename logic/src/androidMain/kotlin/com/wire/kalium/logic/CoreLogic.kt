@@ -1,9 +1,9 @@
 package com.wire.kalium.logic
 
 import android.content.Context
-import com.russhwolf.settings.BuildConfig
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.ProteusClientImpl
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
@@ -23,7 +23,9 @@ actual class CoreLogic(
     private val applicationContext: Context,
     clientLabel: String,
     rootProteusDirectoryPath: String,
-) : CoreLogicCommon(clientLabel, rootProteusDirectoryPath) {
+    kaliumLoggerConfig: KaliumLogger.Config
+) : CoreLogicCommon(clientLabel, rootProteusDirectoryPath, kaliumLoggerConfig) {
+
     override fun getAuthenticationScope(): AuthenticationScope =
         AuthenticationScope(clientLabel = clientLabel, applicationContext = applicationContext)
 
@@ -32,7 +34,7 @@ actual class CoreLogic(
             val networkContainer = AuthenticatedNetworkContainer(
                 sessionDTO = sessionMapper.toSessionDTO(session),
                 backendConfig = serverConfigMapper.toBackendConfig(serverConfig = session.serverConfig),
-                isRequestLoggingEnabled = BuildConfig.DEBUG //TODO: Multi-platform logging solution!
+                kaliumLogger = kaliumLogger
             )
 
             val proteusClient: ProteusClient = ProteusClientImpl(rootProteusDirectoryPath, session.userId)
@@ -55,7 +57,7 @@ actual class CoreLogic(
                 userScopeStorage[session] = it
             }
         }
-        return UserSessionScope(applicationContext, session, dataSourceSet)
+        return UserSessionScope(applicationContext, session, dataSourceSet, kaliumLogger)
     }
 
     private companion object {

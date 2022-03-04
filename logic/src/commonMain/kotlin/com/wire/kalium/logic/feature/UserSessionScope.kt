@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.AuthenticatedDataSourceSet
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.asset.AssetDataSource
@@ -60,6 +61,7 @@ expect class UserSessionScope : UserSessionScopeCommon
 abstract class UserSessionScopeCommon(
     private val session: AuthSession,
     private val authenticatedDataSourceSet: AuthenticatedDataSourceSet,
+    private val kaliumLogger: KaliumLogger
 ) {
 
     private val encryptedSettingsHolder: EncryptedSettingsHolder = authenticatedDataSourceSet.encryptedSettingsHolder
@@ -155,7 +157,12 @@ abstract class UserSessionScopeCommon(
             preKeyRemoteRepository,
             authenticatedDataSourceSet.proteusClient
         )
-    val listenToEvents: ListenToEventsUseCase get() = ListenToEventsUseCase(syncManager, eventRepository, conversationEventReceiver)
+    val listenToEvents: ListenToEventsUseCase get() = ListenToEventsUseCase(
+        syncManager = syncManager,
+        eventRepository = eventRepository,
+        conversationEventReceiver = conversationEventReceiver,
+        kaliumLogger = kaliumLogger
+    )
     val client: ClientScope get() = ClientScope(clientRepository, preKeyRepository)
     val conversations: ConversationScope get() = ConversationScope(conversationRepository, syncManager)
     val messages: MessageScope
