@@ -1,6 +1,7 @@
 package com.wire.kalium.api
 
 import com.wire.kalium.api.tools.testCredentials
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.network.AuthenticatedNetworkContainer
 import com.wire.kalium.network.LoginNetworkContainer
 import com.wire.kalium.network.tools.BackendConfig
@@ -54,7 +55,8 @@ interface ApiTest {
         return AuthenticatedNetworkContainer(
             engine = mockEngine,
             sessionDTO = testCredentials,
-            backendConfig = TEST_BACKEND_CONFIG
+            backendConfig = TEST_BACKEND_CONFIG,
+            kaliumLogger = TEST_LOGGER_CONFIG
         ).authenticatedHttpClient
     }
 
@@ -94,7 +96,7 @@ interface ApiTest {
         }
         return LoginNetworkContainer(
             engine = mockEngine,
-            isRequestLoggingEnabled = true,
+            kaliumLogger = TEST_LOGGER_CONFIG
         ).anonymousHttpClient
     }
 
@@ -121,7 +123,8 @@ interface ApiTest {
         return AuthenticatedNetworkContainer(
             engine = mockEngine,
             sessionDTO = testCredentials,
-            backendConfig = TEST_BACKEND_CONFIG
+            backendConfig = TEST_BACKEND_CONFIG,
+            kaliumLogger = TEST_LOGGER_CONFIG
         ).authenticatedHttpClient
     }
 
@@ -192,5 +195,8 @@ interface ApiTest {
                 "test.api.com", "test.account.com", "test.ws.com",
                 "test.blacklist", "test.teams.com", "test.wire.com", "Test Title"
             )
+
+        val  TEST_LOGGER_CONFIG =
+            KaliumLogger(initialConfig = KaliumLogger.Config.DISABLED)
     }
 }

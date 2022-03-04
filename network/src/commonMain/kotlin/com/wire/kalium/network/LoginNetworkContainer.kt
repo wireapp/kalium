@@ -1,5 +1,6 @@
 package com.wire.kalium.network
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.network.api.configuration.ServerConfigApi
 import com.wire.kalium.network.api.configuration.ServerConfigApiImp
 import com.wire.kalium.network.api.user.login.LoginApi
@@ -10,7 +11,7 @@ import io.ktor.client.engine.HttpClientEngine
 
 class LoginNetworkContainer(
     private val engine: HttpClientEngine = defaultHttpEngine(),
-    private val isRequestLoggingEnabled: Boolean = false
+    kaliumLogger: KaliumLogger
 ) {
 
     val loginApi: LoginApi get() = LoginApiImpl(anonymousHttpClient)
@@ -18,6 +19,6 @@ class LoginNetworkContainer(
     val registerApi: RegisterApi get() = RegisterApiImpl(anonymousHttpClient)
 
     internal val anonymousHttpClient by lazy {
-        provideBaseHttpClient(engine, isRequestLoggingEnabled, HttpClientOptions.NoDefaultHost)
+        provideBaseHttpClient(engine, kaliumLogger, HttpClientOptions.NoDefaultHost)
     }
 }
