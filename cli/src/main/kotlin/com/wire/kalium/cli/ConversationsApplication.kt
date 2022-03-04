@@ -25,7 +25,7 @@ class ConversationsApplication : CliktCommand() {
     override fun run(): Unit = runBlocking {
         val serverConfigMapper: ServerConfigMapper = ServerConfigMapperImpl()
         val backendConfig: BackendConfig = serverConfigMapper.toBackendConfig(ServerConfig.DEFAULT)
-        val kaliumLogger = KaliumLogger(initialConfig = KaliumLogger.Config.DISABLED)
+        val kaliumLogger = KaliumLogger(config = KaliumLogger.Config.DISABLED)
         val loginContainer = LoginNetworkContainer(kaliumLogger = kaliumLogger)
 
         val loginResult = loginContainer.loginApi.login(

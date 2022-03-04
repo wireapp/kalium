@@ -41,7 +41,7 @@ kotlin {
                 implementation(project(":network"))
                 implementation(project(":cryptography"))
                 implementation(project(":persistence"))
-                implementation(project(":logger"))
+                api(project(":logger"))
 
                 // coroutines
                 implementation(Dependencies.Coroutines.core) {

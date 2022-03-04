@@ -7,7 +7,6 @@ dependencies {
     implementation(project(":network"))
     implementation(project(":cryptography"))
     implementation(project(":logic"))
-    implementation(project(":logger"))
 
     implementation(Dependencies.Cli.cliKt)
     //implementation(Dependencies.Ktor.core)

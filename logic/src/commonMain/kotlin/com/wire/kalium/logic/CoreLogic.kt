@@ -37,5 +37,5 @@ abstract class CoreLogicCommon(
     suspend fun <T> sessionScope(session: AuthSession, action: suspend UserSessionScope.() -> T)
             : T = getSessionScope(session).action()
 
-    protected val kaliumLogger: KaliumLogger = KaliumLogger(initialConfig = kaliumLoggerConfig)
+    protected val kaliumLogger: KaliumLogger = KaliumLogger(config = kaliumLoggerConfig)
 }

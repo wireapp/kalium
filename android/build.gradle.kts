@@ -45,7 +45,6 @@ dependencies {
     implementation(project(":network"))
     implementation(project(":cryptography"))
     implementation(project(":logic"))
-    implementation(project(":logger"))
 
     implementation(Dependencies.Android.appCompat)
     implementation(Dependencies.Android.activityCompose)
