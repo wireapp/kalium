@@ -18,6 +18,5 @@ object CoreLogger {
 
         NetworkLogger.setLoggingLevel(level = level)
         CryptographyLogger.setLoggingLevel(level = level)
-        // TODO: Add other modules
     }
 }
