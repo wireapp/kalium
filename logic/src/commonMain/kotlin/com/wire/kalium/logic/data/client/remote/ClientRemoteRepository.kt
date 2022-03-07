@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.data.client.remote
 
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientMapper
@@ -13,7 +12,7 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.user.client.ClientApi
 
 interface ClientRemoteRepository {
-    suspend fun registerClient(param: RegisterClientParam): Either<CoreFailure, Client>
+    suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client>
     suspend fun deleteClient(param: DeleteClientParam): Either<NetworkFailure, Unit>
     suspend fun fetchClientInfo(clientId: ClientId): Either<NetworkFailure, Client>
     suspend fun fetchSelfUserClients(): Either<NetworkFailure, List<Client>>
