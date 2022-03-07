@@ -5,7 +5,6 @@ import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.logic.data.user.UserMapper
-import com.wire.kalium.logic.failure.ClientFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either

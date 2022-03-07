@@ -1,12 +1,12 @@
 package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.auth.login.LoginRepository
-import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.failure.AuthenticationFailure
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.network.exceptions.KaliumException
 
 sealed class AuthenticationResult {
     data class Success(val userSession: AuthSession) : AuthenticationResult()
@@ -45,7 +45,8 @@ class LoginUseCase(
                 AuthenticationResult.Success(result.value)
             }
             is Either.Left -> {
-                if (result.value is AuthenticationFailure.InvalidCredentials) {
+                if (result.value is NetworkFailure.ServerMiscommunication
+                    && result.value.kaliumException is KaliumException.InvalidRequestError) {
                     AuthenticationResult.Failure.InvalidCredentials
                 } else {
                     AuthenticationResult.Failure.Generic(result.value)
