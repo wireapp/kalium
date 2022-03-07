@@ -56,8 +56,7 @@ interface ApiTest {
         return AuthenticatedNetworkContainer(
             engine = mockEngine,
             sessionDTO = testCredentials,
-            backendConfig = TEST_BACKEND_CONFIG,
-            kaliumLogLevel = KaliumLogLevel.DISABLED
+            backendConfig = TEST_BACKEND_CONFIG
         ).authenticatedHttpClient
     }
 
@@ -96,8 +95,7 @@ interface ApiTest {
             )
         }
         return LoginNetworkContainer(
-            engine = mockEngine,
-            kaliumLogLevel = KaliumLogLevel.DISABLED
+            engine = mockEngine
         ).anonymousHttpClient
     }
 
@@ -124,8 +122,7 @@ interface ApiTest {
         return AuthenticatedNetworkContainer(
             engine = mockEngine,
             sessionDTO = testCredentials,
-            backendConfig = TEST_BACKEND_CONFIG,
-            kaliumLogLevel = KaliumLogLevel.DISABLED
+            backendConfig = TEST_BACKEND_CONFIG
         ).authenticatedHttpClient
     }
 
@@ -196,8 +193,5 @@ interface ApiTest {
                 "test.api.com", "test.account.com", "test.ws.com",
                 "test.blacklist", "test.teams.com", "test.wire.com", "Test Title"
             )
-
-        val  TEST_LOGGER_CONFIG =
-            KaliumLogger(config = KaliumLogger.Config.DISABLED)
     }
 }
