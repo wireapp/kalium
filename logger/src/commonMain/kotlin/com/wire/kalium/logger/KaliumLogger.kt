@@ -48,7 +48,7 @@ class KaliumLogger(config: Config) {
     init {
         kermitLogger = KermitLogger(
             config = StaticConfig(
-                minSeverity = config.severityLevel()
+                minSeverity = config.severityLevel
             ),
             tag = config.tag
         )
@@ -90,7 +90,7 @@ class KaliumLogger(config: Config) {
         val severity: KaliumLogLevel,
         val tag: String
     ) {
-        fun severityLevel(): Severity = when (severity) {
+        val severityLevel: Severity = when (severity) {
             KaliumLogLevel.VERBOSE -> Severity.Verbose
             KaliumLogLevel.DEBUG -> Severity.Debug
             KaliumLogLevel.INFO -> Severity.Info
