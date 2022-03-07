@@ -32,6 +32,13 @@ kotlin {
         }
     }
     android()
+    js(IR) {
+        browser {
+            commonWebpackConfig {
+                cssSupport.enabled = true
+            }
+        }
+    }
 
     sourceSets {
         val commonMain by getting {
@@ -50,6 +57,12 @@ kotlin {
             }
         }
         val jvmTest by getting
+        val jsMain by getting {
+            dependencies {
+                // nothing yet
+            }
+        }
+        val jsTest by getting
         val androidMain by getting {
             dependencies {
                 // nothing yet
