@@ -5,7 +5,7 @@ import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.network.NetworkLogger
 
-internal var kaliumLogger = KaliumLogger.disabledLogger()
+internal var kaliumLogger = KaliumLogger.disabled()
 
 object CoreLogger {
     fun setLoggingLevel(level: KaliumLogLevel) {

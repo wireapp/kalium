@@ -3,7 +3,7 @@ package com.wire.kalium.network
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
 
-internal var kaliumLogger = KaliumLogger.disabledLogger()
+internal var kaliumLogger = KaliumLogger.disabled()
 
 object NetworkLogger {
     fun setLoggingLevel(level: KaliumLogLevel) {
@@ -15,5 +15,5 @@ object NetworkLogger {
         )
     }
 
-    val isRequestLoggingEnabled = kaliumLogger.severity in setOf(KaliumLogLevel.VERBOSE, KaliumLogLevel.DEBUG)
+    val isRequestLoggingEnabled: Boolean get() = kaliumLogger.severity in setOf(KaliumLogLevel.VERBOSE, KaliumLogLevel.DEBUG)
 }
