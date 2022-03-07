@@ -17,7 +17,6 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.URLProtocol
 import io.ktor.serialization.kotlinx.json.json
-import com.wire.kalium.logger.KaliumLogLevel
 
 
 sealed class HttpClientOptions {

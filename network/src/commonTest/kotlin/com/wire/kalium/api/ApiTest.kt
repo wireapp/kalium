@@ -1,8 +1,6 @@
 package com.wire.kalium.api
 
 import com.wire.kalium.api.tools.testCredentials
-import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.network.AuthenticatedNetworkContainer
 import com.wire.kalium.network.LoginNetworkContainer
 import com.wire.kalium.network.tools.BackendConfig
