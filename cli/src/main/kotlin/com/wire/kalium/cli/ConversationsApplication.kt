@@ -10,7 +10,7 @@ import com.wire.kalium.logic.configuration.ServerConfigMapper
 import com.wire.kalium.logic.configuration.ServerConfigMapperImpl
 import com.wire.kalium.network.AuthenticatedNetworkContainer
 import com.wire.kalium.network.LoginNetworkContainer
-import com.wire.kalium.network.api.model.AssetMetadataRequest
+import com.wire.kalium.network.api.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.model.AssetRetentionType
 import com.wire.kalium.network.api.user.login.LoginApi
 import com.wire.kalium.network.tools.BackendConfig
@@ -34,11 +34,8 @@ class ConversationsApplication : CliktCommand() {
             println("There was an error on the login :( check the credentials and the internet connection and try again please")
         } else {
             val sessionData = loginResult.value
-            //TODO: Get them 🍪 refresh token
-            val networkModule = AuthenticatedNetworkContainer(
-                sessionDTO = sessionData,
-                backendConfig = backendConfig
-            )
+            // TODO: Get them 🍪 refresh token
+            val networkModule = AuthenticatedNetworkContainer(sessionDTO = sessionData, backendConfig = backendConfig)
             val conversationsResponse = networkModule.conversationApi.conversationsByBatch(null, 100)
 
             if (!conversationsResponse.isSuccessful()) {

@@ -3,7 +3,7 @@ package com.wire.kalium.api.tools.json.api.asset
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.network.api.asset.AssetApi
 import com.wire.kalium.network.api.asset.AssetApiImpl
-import com.wire.kalium.network.api.model.AssetMetadataRequest
+import com.wire.kalium.network.api.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.model.AssetRetentionType
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -157,7 +157,7 @@ class AssetApiTest : ApiTest {
     companion object {
         val VALID_ASSET_UPLOAD_RESPONSE = AssetUploadResponseJson.valid
         val INVALID_ASSET_UPLOAD_RESPONSE = AssetUploadResponseJson.invalid
-        const val PATH_PUBLIC_ASSETS = "/assets/v3/"
+        const val PATH_PUBLIC_ASSETS = "/assets/v3"
         const val HEADER_ASSET_TOKEN = "Asset-Token"
     }
 }
