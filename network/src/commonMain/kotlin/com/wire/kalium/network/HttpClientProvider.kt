@@ -18,7 +18,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.URLProtocol
 import io.ktor.serialization.kotlinx.json.json
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logger.LoggerType
+import com.wire.kalium.logger.KaliumLogLevel
 
 
 sealed class HttpClientOptions {
@@ -50,7 +50,7 @@ internal fun provideBaseHttpClient(
         }
 
     }
-    val isRequestLoggingEnabled = kaliumLogger.severity in setOf(LoggerType.VERBOSE, LoggerType.DEBUG)
+    val isRequestLoggingEnabled = kaliumLogger.severity in setOf(KaliumLogLevel.VERBOSE, KaliumLogLevel.DEBUG)
     if (isRequestLoggingEnabled) {
         install(Logging) {
             logger = Logger.SIMPLE

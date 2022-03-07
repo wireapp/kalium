@@ -1,7 +1,7 @@
 package com.wire.kalium.network
 
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logger.LoggerType
+import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.asset.AssetApi
 import com.wire.kalium.network.api.asset.AssetApiImpl
@@ -37,7 +37,7 @@ class AuthenticatedNetworkContainer(
     private val backendConfig: BackendConfig,
     private val sessionDTO: SessionDTO,
     private val engine: HttpClientEngine = defaultHttpEngine(),
-    loggerType: LoggerType
+    kaliumLogLevel: KaliumLogLevel
 //    private val onTokenUpdate: (newTokenInfo: Pair<String, String>) -> Unit // Idea to let the network handle the refresh token automatically
 ) {
     private val authApi: AuthApi get() = AuthApiImp(authenticatedHttpClient)
@@ -64,7 +64,7 @@ class AuthenticatedNetworkContainer(
 
     private val kaliumLogger = KaliumLogger(
         config = KaliumLogger.Config(
-            severity = loggerType,
+            severity = kaliumLogLevel,
             tag = "AuthenticatedNetworkContainer"
         )
     )

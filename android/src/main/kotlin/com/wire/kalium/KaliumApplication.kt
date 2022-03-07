@@ -3,7 +3,7 @@ package com.wire.kalium
 import android.app.Application
 import androidx.work.*
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logger.LoggerType
+import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.sync.WrapperWorkerFactory
 import java.io.File
@@ -21,7 +21,7 @@ class KaliumApplication: Application(), Configuration.Provider {
             clientLabel = "kalium",
             rootProteusDirectoryPath = rootProteusDir.absolutePath,
             kaliumLoggerConfig = KaliumLogger.Config(
-                severity = LoggerType.VERBOSE,
+                severity = KaliumLogLevel.VERBOSE,
                 tag = "KaliumApplicationLogger"
             )
         )

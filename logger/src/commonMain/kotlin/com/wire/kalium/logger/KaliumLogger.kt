@@ -7,7 +7,7 @@ import co.touchlab.kermit.Logger as KermitLogger
 /**
  * LoggerType in order from lowest to the highest severity level.
  */
-enum class LoggerType {
+enum class KaliumLogLevel {
     /**
      * A log level describing events showing step by step execution of your code that can be ignored during the standard operation,
      * but may be useful during extended debugging sessions.
@@ -87,21 +87,21 @@ class KaliumLogger(config: Config) {
         } ?: kermitLogger.e(message)
 
     class Config(
-        val severity: LoggerType,
+        val severity: KaliumLogLevel,
         val tag: String
     ) {
         fun severityLevel(): Severity = when (severity) {
-            LoggerType.VERBOSE -> Severity.Verbose
-            LoggerType.DEBUG -> Severity.Debug
-            LoggerType.INFO -> Severity.Info
-            LoggerType.WARN -> Severity.Warn
-            LoggerType.ERROR -> Severity.Error
-            LoggerType.DISABLED -> Severity.Assert
+            KaliumLogLevel.VERBOSE -> Severity.Verbose
+            KaliumLogLevel.DEBUG -> Severity.Debug
+            KaliumLogLevel.INFO -> Severity.Info
+            KaliumLogLevel.WARN -> Severity.Warn
+            KaliumLogLevel.ERROR -> Severity.Error
+            KaliumLogLevel.DISABLED -> Severity.Assert
         }
 
         companion object {
             val DISABLED = Config(
-                severity = LoggerType.DISABLED,
+                severity = KaliumLogLevel.DISABLED,
                 tag = "KaliumLogger"
             )
         }
