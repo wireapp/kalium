@@ -106,4 +106,10 @@ class KaliumLogger(config: Config) {
             )
         }
     }
+
+    companion object {
+        fun disabledLogger(): KaliumLogger = KaliumLogger(
+            config = Config.DISABLED
+        )
+    }
 }

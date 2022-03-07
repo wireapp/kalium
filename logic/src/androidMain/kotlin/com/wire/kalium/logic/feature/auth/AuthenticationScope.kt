@@ -1,9 +1,6 @@
 package com.wire.kalium.logic.feature.auth
 
 import android.content.Context
-import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.configuration.ServerConfig
-import com.wire.kalium.network.LoginNetworkContainer
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 
 /**
@@ -12,9 +9,8 @@ import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
  */
 actual class AuthenticationScope(
     clientLabel: String,
-    private val applicationContext: Context,
-    kaliumLogger: KaliumLogger
-) : AuthenticationScopeCommon(clientLabel, kaliumLogger) {
+    private val applicationContext: Context
+) : AuthenticationScopeCommon(clientLabel) {
     override val encryptedSettingsHolder: EncryptedSettingsHolder
         get() = EncryptedSettingsHolder(applicationContext, PREFERENCE_FILE_NAME)
 

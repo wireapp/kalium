@@ -1,7 +1,6 @@
 package com.wire.kalium.logic.feature
 
 import android.content.Context
-import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.AuthenticatedDataSourceSet
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
@@ -15,9 +14,8 @@ import com.wire.kalium.logic.feature.auth.AuthSession
 actual class UserSessionScope(
     private val applicationContext: Context,
     private val session: AuthSession,
-    authenticatedDataSourceSet: AuthenticatedDataSourceSet,
-    kaliumLogger: KaliumLogger
-) : UserSessionScopeCommon(session, authenticatedDataSourceSet, kaliumLogger) {
+    authenticatedDataSourceSet: AuthenticatedDataSourceSet
+) : UserSessionScopeCommon(session, authenticatedDataSourceSet) {
 
     override val clientConfig: ClientConfig get() = ClientConfig(applicationContext)
 

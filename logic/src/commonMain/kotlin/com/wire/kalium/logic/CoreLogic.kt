@@ -1,6 +1,5 @@
 package com.wire.kalium.logic
 
-import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.configuration.ServerConfigMapper
 import com.wire.kalium.logic.configuration.ServerConfigMapperImpl
 import com.wire.kalium.logic.data.session.SessionMapper
@@ -14,8 +13,7 @@ expect class CoreLogic : CoreLogicCommon
 abstract class CoreLogicCommon(
     // TODO: can client label be replaced with clientConfig.deviceName() ?
     protected val clientLabel: String,
-    protected val rootProteusDirectoryPath: String,
-    kaliumLoggerConfig: KaliumLogger.Config
+    protected val rootProteusDirectoryPath: String
 ) {
 
     protected val userScopeStorage = hashMapOf<AuthSession, AuthenticatedDataSourceSet>()
@@ -36,6 +34,4 @@ abstract class CoreLogicCommon(
 
     suspend fun <T> sessionScope(session: AuthSession, action: suspend UserSessionScope.() -> T)
             : T = getSessionScope(session).action()
-
-    protected val kaliumLogger: KaliumLogger = KaliumLogger(config = kaliumLoggerConfig)
 }

@@ -1,16 +1,15 @@
 package com.wire.kalium.logic.sync
 
-import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.kaliumLogger
 
 class ListenToEventsUseCase(
     private val syncManager: SyncManager,
     private val eventRepository: EventRepository,
-    private val conversationEventReceiver: EventReceiver<Event.Conversation>,
-    private val kaliumLogger: KaliumLogger
+    private val conversationEventReceiver: EventReceiver<Event.Conversation>
 ) {
 
     /**
