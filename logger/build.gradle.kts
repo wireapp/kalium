@@ -46,28 +46,5 @@ kotlin {
                 implementation("co.touchlab:kermit:1.0.0")
             }
         }
-        val commonTest by getting {
-            dependencies {
-                implementation(kotlin("test"))
-            }
-        }
-        val jvmMain by getting {
-            dependencies {
-                // nothing yet
-            }
-        }
-        val jvmTest by getting
-        val jsMain by getting {
-            dependencies {
-                // nothing yet
-            }
-        }
-        val jsTest by getting
-        val androidMain by getting {
-            dependencies {
-                // nothing yet
-            }
-        }
-        val androidTest by getting
     }
 }
