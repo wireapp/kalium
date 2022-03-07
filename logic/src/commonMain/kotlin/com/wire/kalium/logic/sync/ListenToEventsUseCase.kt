@@ -24,20 +24,17 @@ class ListenToEventsUseCase(
             .collect { either ->
                 suspending {
                     either.map { event ->
-                        //TODO: Multiplatform logging
                         kaliumLogger.i(message = "Event received: $event")
                         when (event) {
                             is Event.Conversation -> {
                                 conversationEventReceiver.onEvent(event)
                             }
                             else -> {
-                                //TODO: Multiplatform logging
                                 kaliumLogger.i(message = "Unhandled event id=${event.id}")
                             }
                         }
                     }
                 }.onFailure {
-                    //TODO: Multiplatform logging
                     kaliumLogger.e(message = "Failure when receiving events: $it")
                 }
             }
