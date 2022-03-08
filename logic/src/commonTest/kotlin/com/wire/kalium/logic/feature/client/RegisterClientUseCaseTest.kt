@@ -7,10 +7,11 @@ import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.client.ClientCapability
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.RegisterClientParam
-import com.wire.kalium.logic.failure.ClientFailure
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestNetworkException
+import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.utils.io.errors.IOException
 import io.mockative.Mock
@@ -82,7 +83,7 @@ class RegisterClientUseCaseTest {
 
     @Test
     fun givenRepositoryRegistrationFailsDueToWrongPassword_whenRegistering_thenInvalidCredentialsErrorShouldBeReturned() = runTest {
-        val wrongPasswordFailure = ClientFailure.WrongPassword
+        val wrongPasswordFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.missingAuth)
         given(clientRepository)
             .suspendFunction(clientRepository::registerClient)
             .whenInvokedWith(anything())
@@ -118,7 +119,7 @@ class RegisterClientUseCaseTest {
 
     @Test
     fun givenRepositoryRegistrationFailsDueToTooManyClientsRegistered_whenRegistering_thenTooManyClientsErrorShouldBeReturned() = runTest {
-        val tooManyClientsFailure = ClientFailure.TooManyClients
+        val tooManyClientsFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.tooManyClient)
         given(clientRepository)
             .suspendFunction(clientRepository::registerClient)
             .whenInvokedWith(anything())

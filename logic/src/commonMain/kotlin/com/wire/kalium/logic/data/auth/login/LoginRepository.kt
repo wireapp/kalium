@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.data.auth.login
 
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.session.SessionMapper
@@ -16,14 +15,14 @@ interface LoginRepository {
         password: String,
         shouldPersistClient: Boolean,
         serverConfig: ServerConfig
-    ): Either<CoreFailure, AuthSession>
+    ): Either<NetworkFailure, AuthSession>
 
     suspend fun loginWithHandle(
         handle: String,
         password: String,
         shouldPersistClient: Boolean,
         serverConfig: ServerConfig
-    ): Either<CoreFailure, AuthSession>
+    ): Either<NetworkFailure, AuthSession>
 }
 
 class LoginRepositoryImpl(

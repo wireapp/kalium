@@ -12,12 +12,12 @@ import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.Client as ClientEntity
 
 interface ClientRepository {
-    suspend fun registerClient(param: RegisterClientParam): Either<CoreFailure, Client>
+    suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client>
     suspend fun persistClientId(clientId: ClientId): Either<CoreFailure, Unit>
     suspend fun currentClientId(): Either<CoreFailure, ClientId>
-    suspend fun deleteClient(param: DeleteClientParam): Either<CoreFailure, Unit>
-    suspend fun selfListOfClients(): Either<CoreFailure, List<Client>>
-    suspend fun clientInfo(clientId: ClientId /* = com.wire.kalium.logic.data.id.PlainId */): Either<CoreFailure, Client>
+    suspend fun deleteClient(param: DeleteClientParam): Either<NetworkFailure, Unit>
+    suspend fun selfListOfClients(): Either<NetworkFailure, List<Client>>
+    suspend fun clientInfo(clientId: ClientId /* = com.wire.kalium.logic.data.id.PlainId */): Either<NetworkFailure, Client>
     suspend fun saveNewClients(userId: UserId, clients: List<ClientId>): Either<CoreFailure, Unit>
 }
 
@@ -28,7 +28,7 @@ class ClientDataSource(
     private val clientDAO: ClientDAO,
     private val userMapper: UserMapper
 ) : ClientRepository {
-    override suspend fun registerClient(param: RegisterClientParam): Either<CoreFailure, Client> {
+    override suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client> {
         return clientRemoteRepository.registerClient(param)
     }
 
@@ -43,15 +43,16 @@ class ClientDataSource(
         } ?: Either.Left(CoreFailure.MissingClientRegistration)
     }
 
-    override suspend fun deleteClient(param: DeleteClientParam): Either<CoreFailure, Unit> {
+    override suspend fun deleteClient(param: DeleteClientParam): Either<NetworkFailure, Unit> {
         return clientRemoteRepository.deleteClient(param)
     }
 
-    override suspend fun selfListOfClients(): Either<CoreFailure, List<Client>> {
+    // TODO: after fetch save list of self client in the db
+    override suspend fun selfListOfClients(): Either<NetworkFailure, List<Client>> {
         return clientRemoteRepository.fetchSelfUserClients()
     }
 
-    override suspend fun clientInfo(clientId: ClientId): Either<CoreFailure, Client> {
+    override suspend fun clientInfo(clientId: ClientId): Either<NetworkFailure, Client> {
         return clientRemoteRepository.fetchClientInfo(clientId)
     }
 
