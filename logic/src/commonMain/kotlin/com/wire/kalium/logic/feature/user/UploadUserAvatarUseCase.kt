@@ -16,11 +16,12 @@ interface UploadUserAvatarUseCase {
      *
      * @param mimeType mimetype of the user picture
      * @param imageData binary data of the actual picture
+     * @return UploadAvatarResult with [UserAssetId] in case of success or [CoreFailure] on failure
      */
     suspend operator fun invoke(mimeType: String, imageData: ByteArray): UploadAvatarResult
 }
 
-class UploadUserAvatarUseCaseImpl(
+internal class UploadUserAvatarUseCaseImpl(
     private val userDataSource: UserRepository,
     private val assetDataSource: AssetRepository
 ) : UploadUserAvatarUseCase {

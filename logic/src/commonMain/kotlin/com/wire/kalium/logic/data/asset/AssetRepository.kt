@@ -25,6 +25,7 @@ internal class AssetDataSource(
     override suspend fun uploadAndPersistPublicAsset(uploadAssetData: UploadAssetData): Either<NetworkFailure, UploadedAssetId> =
         suspending {
             wrapApiRequest {
+                // we should also consider for images, the compression for preview vs complete picture
                 assetMapper.toMetadataApiModel(uploadAssetData).let { metaData ->
                     assetApi.uploadAsset(metaData, uploadAssetData.data)
                 }
