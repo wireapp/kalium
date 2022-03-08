@@ -1,8 +1,10 @@
 import com.wire.kalium.persistence.dao.QualifiedID;
+import com.wire.kalium.persistence.dao.ConversationEntity;
 
 CREATE TABLE Conversation (
     qualified_id TEXT AS QualifiedID NOT NULL PRIMARY KEY,
-    name TEXT
+    name TEXT,
+    type ConversationEntity.Type
 );
 
 deleteAllConverations:

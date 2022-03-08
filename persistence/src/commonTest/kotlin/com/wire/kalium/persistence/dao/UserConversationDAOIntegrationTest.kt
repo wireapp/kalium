@@ -13,7 +13,7 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
     private val user1 = newUserEntity(id = "1")
     private val user2 = newUserEntity(id = "2")
 
-    private val conversation1 = Conversation(QualifiedID("1", "wire.com"), "conversation1")
+    private val conversationEntity1 = ConversationEntity(QualifiedID("1", "wire.com"), "conversation1")
 
     private val member1 = Member(user1.id)
     private val member2 = Member(user2.id)
@@ -33,8 +33,8 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
     fun givenUserExists_whenInsertingMember_thenOriginalUserDetailsAreKept() = runTest {
         userDAO.insertUser(user1)
 
-        conversationDAO.insertConversation(conversation1)
-        conversationDAO.insertMember(member1, conversation1.id)
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertMember(member1, conversationEntity1.id)
 
         val result = userDAO.getUserByQualifiedID(user1.id).first()
         assertEquals(user1, result)
