@@ -51,21 +51,38 @@ interface TeamsApi {
     )
 
     sealed interface GetTeamsOptionsInterface
+
+    /**
+     *
+     * Represents the options that can be passed to [getTeams]
+     *
+     */
+
     sealed class GetTeamsOption : GetTeamsOptionsInterface {
+
         /**
-         * StartFrom parameters
-         * @param teamId the id of the team to continue the query from
+         * @constructor Creates a `StartFrom` option
+         * @property[teamId] the id of the team to continue the query from
          */
+
         data class StartFrom(val teamId: TeamId) : GetTeamsOption()
 
         /**
-         * LimitTo parameters
-         * @param teamIds a list of max 32 team ids to limit the query to
+         * @constructor Creates a `LimitTo` option
+         * @property[teamIds] a list of *max 32* team ids used to limit the query
          */
         data class LimitTo(val teamIds: List<TeamId>) : GetTeamsOption()
     }
 
     suspend fun deleteConversation(conversationId: NonQualifiedConversationId, teamId: TeamId): NetworkResponse<Unit>
+
+    /**
+     * Gets a list of teams
+     *
+     * @return a list of teams, represented by [TeamsApi.TeamsResponse] wrapped in a [NetworkResponse]
+     * @param[size] limits the number of teams returned
+     * @param[option] one of [GetTeamsOption.LimitTo] or [GetTeamsOption.StartFrom]
+    */
     suspend fun getTeams(size: Int?, option: GetTeamsOption?): NetworkResponse<TeamsResponse>
     suspend fun getTeamMembers(teamId: TeamId, limitTo: Int?): NetworkResponse<TeamMemberList>
 }

@@ -5,6 +5,8 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestNetworkException
+import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.utils.io.errors.IOException
 import io.mockative.Mock
@@ -61,6 +63,19 @@ class DeleteClientUseCaseTest {
 
         assertIs<DeleteClientResult.Failure.Generic>(result)
         assertSame(genericFailure, result.genericFailure)
+    }
+
+    @Test
+    fun givenRepositoryDeleteClientFailsDueToWrongPassword_whenDeleting_thenInvalidCredentialsErrorShouldBeReturned() = runTest {
+        val wrongPasswordFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.missingAuth)
+        given(clientRepository)
+            .suspendFunction(clientRepository::deleteClient)
+            .whenInvokedWith(anything())
+            .then { Either.Left(wrongPasswordFailure) }
+
+        val result = deleteClient(DELETE_CLIENT_PARAMETERS)
+
+        assertIs<DeleteClientResult.Failure.InvalidCredentials>(result)
     }
 
     private companion object {
