@@ -13,7 +13,6 @@ object Versions {
     const val cryptobox4j = "1.1.1"
     const val cryptoboxAndroid = "1.1.3"
     const val kover = "0.4.4"
-    const val ktor = "1.6.7"
     const val ktor2 = "2.0.0-beta-1"
     const val okHttp = "4.9.3"
     const val mockative = "1.1.4"
@@ -80,7 +79,7 @@ object Dependencies {
         const val composeMaterial = "androidx.compose.material:material:${Versions.compose}"
         const val composeTooling = "androidx.compose.ui:ui-tooling:${Versions.compose}"
         const val coroutines = "org.jetbrains.kotlinx:kotlinx-coroutines-android:${Versions.coroutines}"
-        const val ktor = "io.ktor:ktor-client-android:${Versions.ktor}"
+        const val ktor = "io.ktor:ktor-client-android:${Versions.ktor2}"
         const val securityCrypto = "androidx.security:security-crypto:${Versions.androidSecurity}"
     }
 

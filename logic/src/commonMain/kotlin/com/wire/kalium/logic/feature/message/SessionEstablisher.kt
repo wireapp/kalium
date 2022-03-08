@@ -4,8 +4,8 @@ import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.createSessions
-import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
@@ -13,6 +13,7 @@ import com.wire.kalium.logic.data.prekey.QualifiedUserPreKeyInfo
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.wrapCryptoRequest
 import com.wire.kalium.cryptography.UserId as CryptoUserId
 
 interface SessionEstablisher {
@@ -50,15 +51,13 @@ class SessionEstablisherImpl(
             .flatMap { preKeyInfoList -> establishSessions(preKeyInfoList) }
     }
 
-    private suspend fun establishSessions(preKeyInfoList: List<QualifiedUserPreKeyInfo>): Either<CoreFailure.Unknown, Unit> {
-        val sessionPreKeysMap = getMapOfSessionIdsToPreKeys(preKeyInfoList)
-        return try {
-            proteusClient.createSessions(sessionPreKeysMap)
-            Either.Right(Unit)
-        } catch (proteusException: ProteusException) {
-            Either.Left(CoreFailure.Unknown(proteusException))
+    private suspend fun establishSessions(preKeyInfoList: List<QualifiedUserPreKeyInfo>): Either<ProteusFailure, Unit> =
+        wrapCryptoRequest {
+            proteusClient.createSessions(
+                getMapOfSessionIdsToPreKeys(preKeyInfoList)
+            )
         }
-    }
+
 
     private fun getMapOfSessionIdsToPreKeys(preKeyInfoList: List<QualifiedUserPreKeyInfo>) =
         preKeyInfoList.associate { userInfo ->
@@ -69,7 +68,7 @@ class SessionEstablisherImpl(
 
     private suspend fun getAllMissingClients(
         detailedContacts: List<Recipient>
-    ): Either<CoreFailure, Map<UserId, List<ClientId>>> = suspending {
+    ): Either<ProteusFailure, Map<UserId, List<ClientId>>> = suspending {
         detailedContacts.foldToEitherWhileRight(mutableMapOf<UserId, List<ClientId>>()) { recipient, userAccumulator ->
             getMissingClientsForRecipients(recipient).map { missingClients ->
                 if (missingClients.isNotEmpty()) {
@@ -82,7 +81,7 @@ class SessionEstablisherImpl(
 
     private suspend fun getMissingClientsForRecipients(
         recipient: Recipient
-    ): Either<CoreFailure, List<ClientId>> =
+    ): Either<ProteusFailure, List<ClientId>> =
         suspending {
             recipient.clients.foldToEitherWhileRight(mutableListOf<ClientId>()) { client, clientIdAccumulator ->
                 //TODO Use domain too
@@ -98,12 +97,9 @@ class SessionEstablisherImpl(
     private suspend fun doesSessionExist(
         recipientUserId: String,
         client: ClientId
-    ): Either<CoreFailure, Boolean> {
-        return try {
+    ): Either<ProteusFailure, Boolean> =
+        wrapCryptoRequest {
             val cryptoSessionID = CryptoSessionId(CryptoUserId(recipientUserId), CryptoClientId(client.value))
-            Either.Right(proteusClient.doesSessionExist(cryptoSessionID))
-        } catch (proteusException: ProteusException) {
-            Either.Left(CoreFailure.Unknown(proteusException))
+            proteusClient.doesSessionExist(cryptoSessionID)
         }
-    }
 }

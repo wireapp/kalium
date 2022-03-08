@@ -33,7 +33,7 @@ class LoginApiImpl(private val httpClient: HttpClient) : LoginApi {
         @SerialName("token_type") val tokenType: String
     )
 
-    private fun LoginResponse.toSessionCredentials(refreshToken: String): SessionDTO = SessionDTO(
+    private fun LoginResponse.toSessionDto(refreshToken: String): SessionDTO = SessionDTO(
         userIdValue = userId,
         tokenType = tokenType,
         accessToken = accessToken,
@@ -69,7 +69,7 @@ class LoginApiImpl(private val httpClient: HttpClient) : LoginApi {
                 if (refreshToken == null) {
                     NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "no cookie was found", "missing-refreshToken")))
                 } else {
-                    NetworkResponse.Success(result.value.toSessionCredentials(refreshToken), result.headers, result.httpCode)
+                    NetworkResponse.Success(result.value.toSessionDto(refreshToken), result.headers, result.httpCode)
                 }
             }
             is NetworkResponse.Error -> NetworkResponse.Error(result.kException)

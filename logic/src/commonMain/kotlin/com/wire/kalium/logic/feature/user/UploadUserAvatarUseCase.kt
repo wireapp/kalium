@@ -1,24 +1,21 @@
 package com.wire.kalium.logic.feature.user
 
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.ImageAsset
 import com.wire.kalium.logic.data.asset.RetentionType
 import com.wire.kalium.logic.data.asset.UploadAssetData
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
-import kotlinx.coroutines.flow.map
 
 interface UploadUserAvatarUseCase {
     /**
-     * Function that allows uploading a profile picture
-     * This first will upload an asset and then will link the asset to the [User]
+     * Function allowing the upload of a user profile picture (avatar)
+     * This first will upload the data as an asset and then will link this asset with the [User]
      *
      * @param mimeType mimetype of the user picture
      * @param imageData binary data of the actual picture
      */
-    suspend operator fun invoke(mimeType: String, imageData: ByteArray): Either<CoreFailure, Unit>
+    suspend operator fun invoke(mimeType: String, imageData: ByteArray): UploadAvatarResult
 }
 
 class UploadUserAvatarUseCaseImpl(
@@ -26,13 +23,20 @@ class UploadUserAvatarUseCaseImpl(
     private val assetDataSource: AssetRepository
 ) : UploadUserAvatarUseCase {
 
-    override suspend operator fun invoke(mimeType: String, imageData: ByteArray): Either<CoreFailure, Unit> = suspending {
+    override suspend operator fun invoke(mimeType: String, imageData: ByteArray): UploadAvatarResult = suspending {
         assetDataSource
-            .uploadPublicAsset(UploadAssetData(imageData, ImageAsset.JPG, true, RetentionType.ETERNAL))
-            .map { asset ->
+            .uploadAndPersistPublicAsset(UploadAssetData(imageData, ImageAsset.JPG, true, RetentionType.ETERNAL))
+            .flatMap { asset ->
                 userDataSource.updateSelfUser(newAssetId = asset.key)
-            }
-
-        return@suspending Either.Right(Unit)
+            }.fold({
+                UploadAvatarResult.Failure
+            }) {
+                UploadAvatarResult.Success
+            } // todo: remove old assets, non blocking this response, as will imply deleting locally and remotely
     }
+}
+
+sealed class UploadAvatarResult {
+    object Success : UploadAvatarResult()
+    object Failure : UploadAvatarResult()
 }
