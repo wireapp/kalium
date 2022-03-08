@@ -29,13 +29,33 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
     val mapper = UserMapper()
 
     override suspend fun insertUser(user: UserEntity) {
-        queries.insertUser(user.id, user.name, user.handle, user.email, user.phone, user.accentId, user.team, user.previewAssetId, user.completeAssetId)
+        queries.insertUser(
+            user.id,
+            user.name,
+            user.handle,
+            user.email,
+            user.phone,
+            user.accentId,
+            user.team,
+            user.previewAssetId,
+            user.completeAssetId
+        )
     }
 
     override suspend fun insertUsers(users: List<UserEntity>) {
         queries.transaction {
             for (user: UserEntity in users) {
-                queries.insertUser(user.id, user.name, user.handle, user.email, user.phone, user.accentId, user.team, user.previewAssetId, user.completeAssetId)
+                queries.insertUser(
+                    user.id,
+                    user.name,
+                    user.handle,
+                    user.email,
+                    user.phone,
+                    user.accentId,
+                    user.team,
+                    user.previewAssetId,
+                    user.completeAssetId
+                )
             }
         }
     }

@@ -31,6 +31,7 @@ interface UserRepository {
     suspend fun fetchUsersByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun getSelfUser(): Flow<SelfUser>
     suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, Unit>
+    suspend fun searchKnownUsersByNameOrHandleOrEmail(searchQuery: String): Flow<List<UserEntity>>
 }
 
 class UserDataSource(
@@ -111,6 +112,9 @@ class UserDataSource(
             Either.Left(CoreFailure.Unknown(IllegalStateException()))
         }
     }
+
+    override suspend fun searchKnownUsersByNameOrHandleOrEmail(searchQuery: String) =
+        userDAO.getUserByNameOrHandleOrEmail(searchQuery)
 
     companion object {
         const val SELF_USER_ID_KEY = "selfUserID"
