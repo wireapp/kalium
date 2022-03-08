@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.ImageAsset
 import com.wire.kalium.logic.data.asset.RetentionType
 import com.wire.kalium.logic.data.asset.UploadAssetData
+import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.suspending
 
@@ -31,13 +32,13 @@ class UploadUserAvatarUseCaseImpl(
                 userDataSource.updateSelfUser(newAssetId = asset.key)
             }.fold({
                 UploadAvatarResult.Failure(it)
-            }) {
-                UploadAvatarResult.Success
+            }) { updatedUser ->
+                UploadAvatarResult.Success(updatedUser.completePicture!!)
             } // todo: remove old assets, non blocking this response, as will imply deleting locally and remotely
     }
 }
 
 sealed class UploadAvatarResult {
-    object Success : UploadAvatarResult()
+    class Success(val userAssetId: UserAssetId) : UploadAvatarResult()
     class Failure(val coreFailure: CoreFailure) : UploadAvatarResult()
 }

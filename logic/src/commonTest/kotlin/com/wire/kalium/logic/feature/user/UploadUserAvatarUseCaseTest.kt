@@ -3,6 +3,8 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.UploadedAssetId
+import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -44,11 +46,12 @@ class UploadUserAvatarUseCaseTest {
         given(userRepository)
             .suspendFunction(userRepository::updateSelfUser)
             .whenInvokedWith(eq(null), eq(null), eq(expected.key))
-            .thenReturn(Either.Right(Unit))
+            .thenReturn(Either.Right(stubSelfUser()))
 
         val actual = uploadUserAvatarUseCase("image/jpg", "A".encodeToByteArray())
 
-        assertEquals(UploadAvatarResult.Success, actual)
+        assertEquals(UploadAvatarResult.Success::class, actual::class)
+        assertEquals("some_key", (actual as UploadAvatarResult.Success).userAssetId)
 
         verify(assetRepository)
             .suspendFunction(assetRepository::uploadAndPersistPublicAsset)
@@ -84,4 +87,16 @@ class UploadUserAvatarUseCaseTest {
             .with(eq(null), eq(null), eq(expected.key))
             .wasNotInvoked()
     }
+
+    private fun stubSelfUser() = SelfUser(
+        UserId("some_id", "some_domain"),
+        "some_name",
+        "some_handle",
+        "some_email",
+        null,
+        1,
+        null,
+        "some_key",
+        "some_key"
+    )
 }

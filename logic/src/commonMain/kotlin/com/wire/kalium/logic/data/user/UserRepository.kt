@@ -29,7 +29,7 @@ interface UserRepository {
     suspend fun fetchKnownUsers(): Either<CoreFailure, Unit>
     suspend fun fetchUsersByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun getSelfUser(): Flow<SelfUser>
-    suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, Unit>
+    suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, SelfUser>
 }
 
 class UserDataSource(
@@ -84,7 +84,7 @@ class UserDataSource(
         }
     }
 
-    override suspend fun updateSelfUser(newName: String?, newAccent: Int?, newAssetId: String?): Either<CoreFailure, Unit> {
+    override suspend fun updateSelfUser(newName: String?, newAccent: Int?, newAssetId: String?): Either<CoreFailure, SelfUser> {
         val user =
             getSelfUser().firstOrNull() ?: return Either.Left(CoreFailure.Unknown(NullPointerException()))
 
@@ -92,8 +92,9 @@ class UserDataSource(
         val updatedSelf = selfApi.updateSelf(updateRequest)
 
         return if (updatedSelf.isSuccessful()) {
-            userDAO.updateUser(userMapper.fromUpdateRequestToDaoModel(user, updateRequest))
-            Either.Right(Unit)
+            val updatedUser = userMapper.fromUpdateRequestToDaoModel(user, updateRequest)
+            userDAO.updateUser(updatedUser)
+            Either.Right(userMapper.fromDaoModel(updatedUser))
         } else {
             Either.Left(CoreFailure.Unknown(IllegalStateException()))
         }
