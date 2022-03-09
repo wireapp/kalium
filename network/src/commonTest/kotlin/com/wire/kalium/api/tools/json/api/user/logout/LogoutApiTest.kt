@@ -3,7 +3,7 @@ package com.wire.kalium.api.tools.json.api.user.logout
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.tools.json.model.ErrorResponseJson
 import com.wire.kalium.network.api.user.logout.LogoutApi
-import com.wire.kalium.network.api.user.logout.LogoutImp
+import com.wire.kalium.network.api.user.logout.LogoutImpl
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpHeaders
@@ -20,6 +20,7 @@ class LogoutApiTest : ApiTest {
     @Test
     fun givenAValidRegisterLogoutRequest_whenCallingTheRegisterLogoutEndpoint_theRequestShouldBeConfiguredCorrectly() =
         runTest {
+            val refreshToken = ApiTest.SESSION.refreshToken
             val httpClient = mockAuthenticatedHttpClient(
                 "",
                 statusCode = HttpStatusCode.Created,
@@ -27,21 +28,23 @@ class LogoutApiTest : ApiTest {
                     assertPost()
                     assertNoQueryParams()
                     assertPathEqual(PATH_LOGOUT)
-                    assertHeaderExist(HttpHeaders.Cookie)
+                    assertHeaderEqual(HttpHeaders.Cookie, refreshToken)
                 }
             )
-            val logout: LogoutApi = LogoutImp(httpClient)
-            logout.logout(TEST_COOKIE)
+            val logout: LogoutApi = LogoutImpl(httpClient, refreshToken)
+            logout.logout()
         }
 
     @Test
-    fun givenTheServerReturnsAnError_whenCallingTheLogoutEndpoint_thenExceptionIsPropagated() = runTest {
+    fun givenTheServerReturnsAnError_whenCallingTheLogoutEndpoint_theCorrectExceptionIsThrown() = runTest {
+        val refreshToken = ApiTest.SESSION.refreshToken
+
         val httpClient = mockAuthenticatedHttpClient(
             ERROR_RESPONSE.rawJson,
             statusCode = HttpStatusCode.BadRequest
         )
-        val logout: LogoutApi = LogoutImp(httpClient)
-        val errorResponse = logout.logout(TEST_COOKIE)
+        val logout: LogoutApi = LogoutImpl(httpClient, refreshToken)
+        val errorResponse = logout.logout()
         assertFalse(errorResponse.isSuccessful())
         assertTrue(errorResponse.kException is KaliumException.InvalidRequestError)
         assertEquals((errorResponse.kException as KaliumException.InvalidRequestError).errorResponse, ERROR_RESPONSE.serializableData)
