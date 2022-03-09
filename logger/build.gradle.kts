@@ -31,6 +31,7 @@ kotlin {
         }
     }
     android()
+    iosX64()
     js(IR) {
         browser {
             commonWebpackConfig {
