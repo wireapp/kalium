@@ -2,20 +2,26 @@ package com.wire.kalium.persistence.dao
 
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.runTest
 
 class ConversationDAOTest : BaseDatabaseTest() {
 
     private val user1 = newUserEntity(id = "1")
     private val user2 = newUserEntity(id = "2")
 
-    private val conversationEntity1 = ConversationEntity(QualifiedID("1", "wire.com"), "conversation1")
-    private val conversationEntity2 = ConversationEntity(QualifiedID("2", "wire.com"), "conversation2")
+    private val conversationEntity1 = ConversationEntity(
+        QualifiedID("1", "wire.com"), "conversation1",
+        ConversationEntity.Type.ONE_ON_ONE
+    )
+    private val conversationEntity2 = ConversationEntity(
+        QualifiedID("2", "wire.com"), "conversation2",
+        ConversationEntity.Type.ONE_ON_ONE
+    )
 
     private val member1 = Member(user1.id)
     private val member2 = Member(user2.id)
@@ -56,7 +62,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenExistingConversation_ThenConversationCanBeUpdated() = runTest {
         conversationDAO.insertConversation(conversationEntity1)
-        var updatedConversation1Entity = ConversationEntity(conversationEntity1.id, "Updated conversation1")
+        var updatedConversation1Entity =
+            ConversationEntity(conversationEntity1.id, "Updated conversation1", ConversationEntity.Type.ONE_ON_ONE)
         conversationDAO.updateConversation(updatedConversation1Entity)
         val result = conversationDAO.getConversationByQualifiedID(conversationEntity1.id).first()
         assertEquals(result, updatedConversation1Entity)
@@ -65,7 +72,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenExistingConversation_ThenConversationIsUpdatedOnInsert() = runTest {
         conversationDAO.insertConversation(conversationEntity1)
-        var updatedConversation1Entity = ConversationEntity(conversationEntity1.id, "Updated conversation1")
+        var updatedConversation1Entity =
+            ConversationEntity(conversationEntity1.id, "Updated conversation1", ConversationEntity.Type.ONE_ON_ONE)
         conversationDAO.insertConversation(updatedConversation1Entity)
         val result = conversationDAO.getConversationByQualifiedID(conversationEntity1.id).first()
         assertEquals(result, updatedConversation1Entity)
