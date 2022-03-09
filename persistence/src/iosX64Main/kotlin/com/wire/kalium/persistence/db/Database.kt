@@ -53,4 +53,8 @@ actual class Database(name: String, passphrase: String) {
 
     actual val assetDAO: AssetDAO
         get() = AssetDAOImpl(database.assetsQueries)
+
+    actual fun nuke(): Boolean {
+        TODO("Not yet implemented")
+    }
 }
