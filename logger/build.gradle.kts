@@ -1,7 +1,6 @@
 plugins {
     Plugins.androidLibrary(this)
     Plugins.multiplatform(this)
-    Plugins.serialization(this)
 }
 
 group = "com.wire.kalium"
