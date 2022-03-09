@@ -4,6 +4,7 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.kaliumLogger
 
 class ListenToEventsUseCase(
     private val syncManager: SyncManager,
@@ -16,25 +17,24 @@ class ListenToEventsUseCase(
      */
     suspend operator fun invoke() {
         syncManager.waitForSlowSyncToComplete()
+
         eventRepository.events()
             //TODO: Handle retry/reconnection
             .collect { either ->
                 suspending {
                     either.map { event ->
-                        println("Event received: $event")
+                        kaliumLogger.i(message = "Event received: $event")
                         when (event) {
                             is Event.Conversation -> {
                                 conversationEventReceiver.onEvent(event)
                             }
                             else -> {
-                                //TODO: Multiplatform logging
-                                println("Unhandled event id=${event.id}")
+                                kaliumLogger.i(message = "Unhandled event id=${event.id}")
                             }
                         }
                     }
                 }.onFailure {
-                    //TODO: Multiplatform logging
-                    println("Failure when receiving events: $it")
+                    kaliumLogger.e(message = "Failure when receiving events: $it")
                 }
             }
     }

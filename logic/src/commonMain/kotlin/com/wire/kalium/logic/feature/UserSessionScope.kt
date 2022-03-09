@@ -59,7 +59,7 @@ expect class UserSessionScope : UserSessionScopeCommon
 
 abstract class UserSessionScopeCommon(
     private val session: AuthSession,
-    private val authenticatedDataSourceSet: AuthenticatedDataSourceSet,
+    private val authenticatedDataSourceSet: AuthenticatedDataSourceSet
 ) {
 
     private val encryptedSettingsHolder: EncryptedSettingsHolder = authenticatedDataSourceSet.encryptedSettingsHolder
@@ -100,7 +100,8 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.authenticatedNetworkContainer.selfApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
             idMapper,
-            userMapper
+            userMapper,
+            assetRepository
         )
 
     protected abstract val clientConfig: ClientConfig
@@ -124,7 +125,7 @@ abstract class UserSessionScopeCommon(
 
     private val assetMapper: AssetMapper get() = AssetMapperImpl()
     private val assetRepository: AssetRepository
-        get() = AssetDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.assetApi, assetMapper)
+        get() = AssetDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.assetApi, assetMapper, database.assetDAO)
 
     val syncManager: SyncManager get() = authenticatedDataSourceSet.syncManager
 
@@ -155,7 +156,11 @@ abstract class UserSessionScopeCommon(
             preKeyRemoteRepository,
             authenticatedDataSourceSet.proteusClient
         )
-    val listenToEvents: ListenToEventsUseCase get() = ListenToEventsUseCase(syncManager, eventRepository, conversationEventReceiver)
+    val listenToEvents: ListenToEventsUseCase get() = ListenToEventsUseCase(
+        syncManager = syncManager,
+        eventRepository = eventRepository,
+        conversationEventReceiver = conversationEventReceiver
+    )
     val client: ClientScope get() = ClientScope(clientRepository, preKeyRepository)
     val conversations: ConversationScope get() = ConversationScope(conversationRepository, syncManager)
     val messages: MessageScope

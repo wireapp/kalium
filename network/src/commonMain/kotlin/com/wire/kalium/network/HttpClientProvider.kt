@@ -26,7 +26,6 @@ sealed class HttpClientOptions {
 
 internal fun provideBaseHttpClient(
     engine: HttpClientEngine,
-    isRequestLoggingEnabled: Boolean = false,
     options: HttpClientOptions,
     config: HttpClientConfig<*>.() -> Unit = {}
 ) = HttpClient(engine) {
@@ -48,7 +47,8 @@ internal fun provideBaseHttpClient(
         }
 
     }
-    if (isRequestLoggingEnabled) {
+
+    if (NetworkLogger.isRequestLoggingEnabled) {
         install(Logging) {
             logger = Logger.SIMPLE
             level = LogLevel.ALL

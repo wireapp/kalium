@@ -5,6 +5,7 @@ import android.os.Build
 import android.util.Base64
 import androidx.sqlite.db.SupportSQLiteDatabase
 import app.cash.sqldelight.EnumColumnAdapter
+import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationDAOImpl
@@ -13,12 +14,13 @@ import com.wire.kalium.persistence.dao.MetadataDAOImpl
 import com.wire.kalium.persistence.dao.QualifiedIDAdapter
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserDAOImpl
+import com.wire.kalium.persistence.dao.asset.AssetDAO
+import com.wire.kalium.persistence.dao.asset.AssetDAOImpl
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
-import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import net.sqlcipher.database.SupportFactory
 import java.security.SecureRandom
 
@@ -74,6 +76,9 @@ actual class Database(private val context: Context, private val name: String, ka
     actual val messageDAO: MessageDAO
         get() = MessageDAOImpl(database.messagesQueries)
 
+    actual val assetDAO: AssetDAO
+        get() = AssetDAOImpl(database.assetsQueries)
+
     actual fun nuke(): Boolean {
         driver.close()
         return context.deleteDatabase(name)
@@ -109,4 +114,5 @@ actual class Database(private val context: Context, private val name: String, ka
         private const val DATABASE_SECRET_KEY = "databaseSecret"
         private const val DATABASE_SECRET_LENGTH = 48
     }
+
 }

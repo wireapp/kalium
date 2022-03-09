@@ -6,8 +6,9 @@ import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.UserId
 import com.wire.kalium.cryptography.exceptions.ProteusException
-import com.wire.kalium.logic.data.conversation.Member
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.ProteusFailure
+import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.prekey.ClientPreKeyInfo
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
@@ -15,7 +16,7 @@ import com.wire.kalium.logic.data.prekey.QualifiedUserPreKeyInfo
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.test_util.TestNetworkError
+import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
@@ -125,7 +126,7 @@ class SessionEstablisherTest {
 
     @Test
     fun givenFetchingPreKeysFails_whenPreparingSessions_thenFailureShouldBePropagated() = runTest {
-        val failure = TestNetworkError.generic
+        val failure = NETWORK_ERROR
         given(preKeyRepository)
             .suspendFunction(preKeyRepository::preKeysOfClientsByQualifiedUsers)
             .whenInvokedWith(anything())
@@ -220,5 +221,6 @@ class SessionEstablisherTest {
         val TEST_USER_ID_1 = TestUser.USER_ID
         val TEST_CLIENT_ID_1 = TestClient.CLIENT_ID
         val TEST_RECIPIENT_1 = Recipient(Member(TestUser.USER_ID), listOf(TestClient.CLIENT_ID))
+        val NETWORK_ERROR = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
     }
 }

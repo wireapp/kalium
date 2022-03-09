@@ -1,5 +1,6 @@
 package com.wire.kalium.persistence.db
 
+import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.client.ClientDAO
@@ -12,6 +13,7 @@ expect class Database {
     val metadataDAO: MetadataDAO
     val messageDAO: MessageDAO
     val clientDAO: ClientDAO
+    val assetDAO: AssetDAO
 
     /**
      * drops DB connection and delete the DB file
