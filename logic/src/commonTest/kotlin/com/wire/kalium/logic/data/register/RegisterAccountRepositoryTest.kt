@@ -5,7 +5,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.api.user.register.RegisterApi
 import com.wire.kalium.network.api.user.register.RegisterResponse
-import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
 import io.mockative.classOf
@@ -54,7 +53,7 @@ class RegisterAccountRepositoryTest {
         val email = "user@domain.de"
         given(registerApi)
             .coroutine { requestActivationCode(RegisterApi.RequestActivationCodeParam.Email(email), TEST_API_HOST) }
-            .then { NetworkResponse.Error<KaliumException>(expected) as NetworkResponse<Unit> }
+            .then { NetworkResponse.Error(expected) }
 
         val actual = registerAccountRepository.requestEmailActivationCode(email, TEST_API_HOST)
 
@@ -92,7 +91,7 @@ class RegisterAccountRepositoryTest {
         val code = "123456"
         given(registerApi)
             .coroutine { activate(RegisterApi.ActivationParam.Email(email, code), TEST_API_HOST) }
-            .then { NetworkResponse.Error<KaliumException>(expected) as NetworkResponse<Unit> }
+            .then { NetworkResponse.Error(expected) }
 
         val actual = registerAccountRepository.verifyActivationCode(email, code, TEST_API_HOST)
 
@@ -156,7 +155,7 @@ class RegisterAccountRepositoryTest {
                     TEST_API_HOST
                 )
             }
-            .then { NetworkResponse.Error<KaliumException>(expected) as NetworkResponse<RegisterResponse> }
+            .then { NetworkResponse.Error(expected) }
 
         val actual = registerAccountRepository.registerWithEmail(email, code, name, password, TEST_API_HOST)
 

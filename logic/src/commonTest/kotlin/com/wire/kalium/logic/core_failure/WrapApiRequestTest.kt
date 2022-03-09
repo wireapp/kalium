@@ -24,7 +24,7 @@ class WrapApiRequestTest {
 
     @Test
     fun whenApiRequestReturnNoInternetConnection_thenCorrectErrorIsPropagated() {
-        val expected = NetworkResponse.Error<KaliumException>(KaliumException.NetworkUnavailableError(IOException("error")))
+        val expected = NetworkResponse.Error(KaliumException.NetworkUnavailableError(IOException("error")))
         val actual = wrapApiRequest { expected }
 
         assertIs<Either.Left<NetworkFailure.NoNetworkConnection>>(actual)
@@ -34,7 +34,7 @@ class WrapApiRequestTest {
     @Test
     fun whenApiRequestReturnAnError_thenCorrectErrorIsPropagated() {
         val expected =
-            NetworkResponse.Error<KaliumException>(KaliumException.ServerError(ErrorResponse(500, "just reboot", "server_crash")))
+            NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "just reboot", "server_crash")))
         val actual = wrapApiRequest { expected }
 
         assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(actual)
