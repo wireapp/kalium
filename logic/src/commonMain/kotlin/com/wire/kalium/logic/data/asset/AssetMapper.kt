@@ -1,19 +1,17 @@
 package com.wire.kalium.logic.data.asset
 
 import com.wire.kalium.cryptography.utils.calcMd5
-import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.network.api.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.asset.AssetResponse
 import com.wire.kalium.network.api.model.AssetRetentionType
 import com.wire.kalium.persistence.dao.asset.AssetEntity
-import io.ktor.utils.io.core.toByteArray
 import kotlinx.datetime.Clock
 
 interface AssetMapper {
     fun toMetadataApiModel(uploadAssetMetadata: UploadAssetData): AssetMetadataRequest
     fun fromApiUploadResponseToDomainModel(asset: AssetResponse): UploadedAssetId
     fun fromUploadedAssetToDaoModel(uploadAssetData: UploadAssetData, uploadedAssetResponse: AssetResponse): AssetEntity
-    fun fromUserAssetIdToDaoModel(assetId: UserAssetId): AssetEntity
+    fun fromUserAssetToDaoModel(assetKey: String, data: ByteArray): AssetEntity
 }
 
 class AssetMapperImpl : AssetMapper {
@@ -34,12 +32,18 @@ class AssetMapperImpl : AssetMapper {
             key = uploadedAssetResponse.key,
             domain = uploadedAssetResponse.domain,
             mimeType = uploadAssetData.mimeType.name,
-            rawData = uploadAssetData.data, // should use something like byteArray to encrypt aes256cbc
+            rawData = uploadAssetData.data,
             downloadedDate = Clock.System.now().toEpochMilliseconds()
         )
     }
 
-    override fun fromUserAssetIdToDaoModel(assetId: UserAssetId): AssetEntity {
-        return AssetEntity(assetId.toString(), "", null, "".toByteArray(), null)
+    override fun fromUserAssetToDaoModel(assetKey: String, data: ByteArray): AssetEntity {
+        return AssetEntity(
+            key = assetKey,
+            domain = "", // is it possible to know this on contacts sync avatars ?
+            mimeType = "",
+            rawData = data,
+            downloadedDate = Clock.System.now().toEpochMilliseconds()
+        )
     }
 }
