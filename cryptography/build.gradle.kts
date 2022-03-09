@@ -43,7 +43,7 @@ kotlin {
             useJUnit()
 
             if (System.getProperty("os.name").contains("Mac", true)) {
-                jvmArgs = jvmArgs?.plus(listOf("-Djava.library.path=/usr/local/lib/:../native/libs"))
+                jvmArgs.add("-Djava.library.path=/usr/local/lib/:../native/libs")
             }
         }
     }
