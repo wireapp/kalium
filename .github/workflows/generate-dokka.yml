@@ -31,6 +31,6 @@ jobs:
               uses: JamesIves/github-pages-deploy-action@v4.2.5
               with:
                   branch: gh-pages
-                  clean: true
+                  clean: false
                   folder: build/dokka/htmlMultiModule
-                  target_folder: docs
+                  target-folder: docs
