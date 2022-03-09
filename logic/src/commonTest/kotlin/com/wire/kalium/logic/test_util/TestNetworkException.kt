@@ -28,4 +28,12 @@ object TestNetworkException {
             label = "missing-auth"
         )
     )
+
+    val invalidCredentials = KaliumException.InvalidRequestError(
+        ErrorResponse(
+            403,
+            message = "invalid credentials",
+            label = "invalid-credentials"
+        )
+    )
 }

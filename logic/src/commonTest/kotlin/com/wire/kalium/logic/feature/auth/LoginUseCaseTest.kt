@@ -1,10 +1,13 @@
 package com.wire.kalium.logic.feature.auth
 
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.failure.AuthenticationFailure
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestNetworkException
+import com.wire.kalium.network.api.ErrorResponse
+import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.any
@@ -175,15 +178,16 @@ class LoginUseCaseTest {
     @Test
     fun `given LoginUseCase is invoked, When loginRepository return InvalidCredentials, return InvalidCredentials`() =
         runTest {
+            val invalidCredentialsFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.invalidCredentials)
             given(validateEmailUseCase).invocation { invoke(TEST_EMAIL) }.then { true }
             given(validateUserHandleUseCase).invocation { invoke(TEST_EMAIL) }.then { false }
             given(loginRepository).coroutine { loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG) }
-                .then { Either.Left(AuthenticationFailure.InvalidCredentials) }
+                .then { Either.Left(invalidCredentialsFailure) }
 
             given(validateEmailUseCase).invocation { invoke(TEST_HANDLE) }.then { false }
             given(validateUserHandleUseCase).invocation { invoke(TEST_HANDLE) }.then { true }
             given(loginRepository).coroutine { loginWithHandle(TEST_HANDLE, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG) }
-                .then { Either.Left(AuthenticationFailure.InvalidCredentials) }
+                .then { Either.Left(invalidCredentialsFailure) }
 
             // email
             val loginEmailResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG)

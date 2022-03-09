@@ -3,7 +3,14 @@ package com.wire.kalium.network.exceptions
 import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.api.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.api.message.SendMessageResponse
-import kotlin.contracts.contract
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.BAD_REQUEST
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.BLACKLISTED_EMAIL
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.DOMAIN_BLOCKED
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.INVALID_CREDENTIALS
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.INVALID_EMAIL
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.KEY_EXISTS
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.MISSING_AUTH
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.TOO_MANY_CLIENTS
 
 sealed class KaliumException() : Exception() {
 
@@ -36,13 +43,6 @@ sealed class KaliumException() : Exception() {
         KaliumException()
 
     sealed class FeatureError() : KaliumException()
-
-    internal companion object {
-        const val ERROR_LABEL_TOO_MANY_CLIENTS = "too-many-clients"
-        const val ERROR_LABEL_INVALID_CREDENTIALS = "invalid-credentials"
-        const val ERROR_LABEL_BAD_REQUEST = "bad-request"
-        const val ERROR_LABEL_MISSING_AUTH = "missing-auth"
-    }
 }
 
 sealed class SendMessageError : KaliumException.FeatureError() {
@@ -55,20 +55,35 @@ sealed class QualifiedSendMessageError() : KaliumException.FeatureError() {
     ) : QualifiedSendMessageError()
 }
 
+
+fun KaliumException.InvalidRequestError.isInvalidCredentials(): Boolean {
+    return errorResponse.label == INVALID_CREDENTIALS
+}
+
 fun KaliumException.InvalidRequestError.isTooManyClients(): Boolean {
-    with(this.errorResponse) {
-        return code == 403 && label == KaliumException.ERROR_LABEL_TOO_MANY_CLIENTS
-    }
+    return errorResponse.label == TOO_MANY_CLIENTS
 }
 
 fun KaliumException.InvalidRequestError.isMissingAuth(): Boolean {
-    with(this.errorResponse) {
-        return code == 403 && label == KaliumException.ERROR_LABEL_MISSING_AUTH
-    }
+    return errorResponse.label == MISSING_AUTH
 }
 
 fun KaliumException.InvalidRequestError.isBadRequest(): Boolean {
-    with(this.errorResponse) {
-        return code == 400 && label == KaliumException.ERROR_LABEL_BAD_REQUEST
-    }
+    return errorResponse.label == BAD_REQUEST
+}
+
+fun KaliumException.InvalidRequestError.isDomainBlocked(): Boolean {
+    return errorResponse.label == DOMAIN_BLOCKED
+}
+
+fun KaliumException.InvalidRequestError.isKeyExists(): Boolean {
+    return errorResponse.label == KEY_EXISTS
+}
+
+fun KaliumException.InvalidRequestError.isBlackListedEmail(): Boolean {
+    return errorResponse.label == BLACKLISTED_EMAIL
+}
+
+fun KaliumException.InvalidRequestError.isInvalidEmail(): Boolean {
+    return errorResponse.label == INVALID_EMAIL
 }
