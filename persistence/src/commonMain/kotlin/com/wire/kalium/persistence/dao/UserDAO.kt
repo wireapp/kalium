@@ -19,10 +19,10 @@ data class UserEntity(
     val phone: String?,
     val accentId: Int,
     val team: String?,
-    val previewAssetId: UserAssetId,
-    val completeAssetId: UserAssetId
+    val previewAssetId: UserAssetId?,
+    val completeAssetId: UserAssetId?
 )
-internal typealias UserAssetId = String?
+internal typealias UserAssetId = String
 
 interface UserDAO {
     suspend fun insertUser(user: UserEntity)
