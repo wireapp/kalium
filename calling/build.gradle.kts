@@ -35,7 +35,9 @@ kotlin {
     sourceSets {
         val androidMain by getting {
             dependencies {
-
+                implementation(Dependencies.Calling.avs)
+                implementation(Dependencies.Calling.jna)
+                implementation(Dependencies.Cryptography.cryptoboxAndroid)
             }
         }
         val commonTest by getting {
