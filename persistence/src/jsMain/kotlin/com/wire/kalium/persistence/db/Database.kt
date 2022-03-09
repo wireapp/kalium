@@ -20,4 +20,8 @@ actual class Database {
         get() = TODO("Not yet implemented")
     actual val assetDAO: AssetDAO
         get() = TODO("Not yet implemented")
+
+    actual fun nuke(): Boolean {
+        TODO("Not yet implemented")
+    }
 }

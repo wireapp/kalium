@@ -33,27 +33,27 @@ class CurrentSessionUseCaseTest {
     fun givenAUserID_whenCurrentSessionSuccess_thenTheSuccessIsPropagated() = runTest {
         val expected: AuthSession = randomAuthSession()
 
-        given(sessionRepository).coroutine { currentSession() }.then { Either.Right(expected) }
+        given(sessionRepository).invocation { currentSession() }.then { Either.Right(expected) }
 
         val actual = currentSessionUseCase()
 
         assertIs<CurrentSessionResult.Success>(actual)
         assertEquals(expected, actual.authSession)
 
-        verify(sessionRepository).coroutine { currentSession() }.wasInvoked(exactly = once)
+        verify(sessionRepository).invocation { currentSession() }.wasInvoked(exactly = once)
     }
 
     @Test
     fun givenAUserID_whenCurrentSessionFailWithNoSessionFound_thenTheErrorIsPropagated() = runTest {
         val expected: SessionFailure = SessionFailure.NoSessionFound
 
-        given(sessionRepository).coroutine { currentSession() }.then { Either.Left(expected) }
+        given(sessionRepository).invocation { currentSession() }.then { Either.Left(expected) }
 
         val actual = currentSessionUseCase()
 
         assertIs<CurrentSessionResult.Failure.SessionNotFound>(actual)
 
-        verify(sessionRepository).coroutine { currentSession() }.wasInvoked(exactly = once)
+        verify(sessionRepository).invocation { currentSession() }.wasInvoked(exactly = once)
     }
 
 

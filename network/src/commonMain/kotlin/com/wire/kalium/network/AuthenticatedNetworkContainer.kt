@@ -21,7 +21,7 @@ import com.wire.kalium.network.api.user.client.ClientApiImpl
 import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.network.api.user.details.UserDetailsApiImp
 import com.wire.kalium.network.api.user.logout.LogoutApi
-import com.wire.kalium.network.api.user.logout.LogoutImp
+import com.wire.kalium.network.api.user.logout.LogoutImpl
 import com.wire.kalium.network.api.user.self.SelfApi
 import com.wire.kalium.network.tools.BackendConfig
 import com.wire.kalium.network.utils.isSuccessful
@@ -39,7 +39,7 @@ class AuthenticatedNetworkContainer(
 ) {
     private val authApi: AuthApi get() = AuthApiImp(authenticatedHttpClient)
 
-    val logoutApi: LogoutApi get() = LogoutImp(authenticatedHttpClient)
+    val logoutApi: LogoutApi get() = LogoutImpl(authenticatedHttpClient, sessionDTO.refreshToken)
 
     val clientApi: ClientApi get() = ClientApiImpl(authenticatedHttpClient)
 
@@ -80,6 +80,7 @@ class AuthenticatedNetworkContainer(
                     return@refreshTokens if (refreshedResponse.isSuccessful()) {
                         BearerTokens(refreshedResponse.value.accessToken, TODO("Get the 🍪"))
                     } else {
+                        // TODO: if the refreshToken is expired logout ?
                         null
                     }
                 }
