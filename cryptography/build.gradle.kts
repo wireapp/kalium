@@ -53,6 +53,11 @@ kotlin {
             commonWebpackConfig {
                 cssSupport.enabled = true
             }
+            testTask {
+                useMocha {
+                    timeout = "5s"
+                }
+            }
         }
     }
 
