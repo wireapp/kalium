@@ -9,8 +9,7 @@ import com.wire.kalium.network.api.user.register.RegisterApiImpl
 import io.ktor.client.engine.HttpClientEngine
 
 class LoginNetworkContainer(
-    private val engine: HttpClientEngine = defaultHttpEngine(),
-    private val isRequestLoggingEnabled: Boolean = false
+    private val engine: HttpClientEngine = defaultHttpEngine()
 ) {
 
     val loginApi: LoginApi get() = LoginApiImpl(anonymousHttpClient)
@@ -18,6 +17,6 @@ class LoginNetworkContainer(
     val registerApi: RegisterApi get() = RegisterApiImpl(anonymousHttpClient)
 
     internal val anonymousHttpClient by lazy {
-        provideBaseHttpClient(engine, isRequestLoggingEnabled, HttpClientOptions.NoDefaultHost)
+        provideBaseHttpClient(engine, HttpClientOptions.NoDefaultHost)
     }
 }

@@ -77,6 +77,8 @@ kotlin {
                 implementation(Dependencies.SqlDelight.primitiveAdapters)
                 implementation(Dependencies.Kotlinx.serialization)
                 implementation(Dependencies.MultiplatformSettings.settings)
+
+                api(project(":logger"))
             }
         }
         val commonTest by getting {
