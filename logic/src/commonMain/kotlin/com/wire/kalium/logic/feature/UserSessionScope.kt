@@ -37,6 +37,9 @@ import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.prekey.remote.PreKeyListMapper
 import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteDataSource
 import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteRepository
+import com.wire.kalium.logic.data.team.TeamDataSource
+import com.wire.kalium.logic.data.team.TeamMapperImpl
+import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserMapperImpl
 import com.wire.kalium.logic.data.user.UserRepository
@@ -44,6 +47,7 @@ import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.message.MessageScope
+import com.wire.kalium.logic.feature.team.TeamScope
 import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.sync.ConversationEventReceiver
 import com.wire.kalium.logic.sync.ListenToEventsUseCase
@@ -72,6 +76,7 @@ abstract class UserSessionScopeCommon(
     private val conversationMapper: ConversationMapper get() = ConversationMapperImpl(idMapper, memberMapper)
     private val userMapper = UserMapperImpl(idMapper)
     private val database: Database = authenticatedDataSourceSet.database
+    private val teamMapper = TeamMapperImpl()
 
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(
@@ -102,6 +107,14 @@ abstract class UserSessionScopeCommon(
             idMapper,
             userMapper,
             assetRepository
+        )
+
+    private val teamRepository: TeamRepository
+        get() = TeamDataSource(
+            teamDAO = database.teamDAO,
+            teamMapper = teamMapper,
+            teamsApi = authenticatedDataSourceSet.authenticatedNetworkContainer.teamsApi,
+            userRepository = userRepository
         )
 
     protected abstract val clientConfig: ClientConfig
@@ -173,5 +186,12 @@ abstract class UserSessionScopeCommon(
             userRepository,
             syncManager
         )
-    val users: UserScope get() = UserScope(userRepository, syncManager, assetRepository)
+    val users: UserScope get() = UserScope(
+        userRepository = userRepository,
+        syncManager = syncManager,
+        assetRepository = assetRepository
+    )
+    val team: TeamScope get() = TeamScope(
+        teamRepository = teamRepository
+    )
 }
