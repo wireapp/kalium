@@ -93,8 +93,7 @@ interface ApiTest {
             )
         }
         return LoginNetworkContainer(
-            engine = mockEngine,
-            isRequestLoggingEnabled = true,
+            engine = mockEngine
         ).anonymousHttpClient
     }
 

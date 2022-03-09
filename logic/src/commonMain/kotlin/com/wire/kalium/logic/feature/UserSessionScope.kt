@@ -59,7 +59,7 @@ expect class UserSessionScope : UserSessionScopeCommon
 
 abstract class UserSessionScopeCommon(
     private val session: AuthSession,
-    private val authenticatedDataSourceSet: AuthenticatedDataSourceSet,
+    private val authenticatedDataSourceSet: AuthenticatedDataSourceSet
 ) {
 
     private val encryptedSettingsHolder: EncryptedSettingsHolder = authenticatedDataSourceSet.encryptedSettingsHolder
@@ -156,7 +156,11 @@ abstract class UserSessionScopeCommon(
             preKeyRemoteRepository,
             authenticatedDataSourceSet.proteusClient
         )
-    val listenToEvents: ListenToEventsUseCase get() = ListenToEventsUseCase(syncManager, eventRepository, conversationEventReceiver)
+    val listenToEvents: ListenToEventsUseCase get() = ListenToEventsUseCase(
+        syncManager = syncManager,
+        eventRepository = eventRepository,
+        conversationEventReceiver = conversationEventReceiver
+    )
     val client: ClientScope get() = ClientScope(clientRepository, preKeyRepository)
     val conversations: ConversationScope get() = ConversationScope(conversationRepository, syncManager)
     val messages: MessageScope
