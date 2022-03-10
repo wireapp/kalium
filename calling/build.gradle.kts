@@ -35,7 +35,8 @@ kotlin {
     sourceSets {
         val androidMain by getting {
             dependencies {
-
+                implementation(Dependencies.Calling.avs)
+                implementation(Dependencies.Calling.jna)
             }
         }
         val commonTest by getting {
@@ -45,4 +46,3 @@ kotlin {
         }
     }
 }
-
