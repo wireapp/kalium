@@ -1,0 +1,19 @@
+{
+  "commitish" : "72b382c86eac2b154acae930d2fa88128a0df4e4",
+  "iOS" : [
+    {
+      "swiftToolchainVersion" : "5.5.1 (swiftlang-1300.0.31.4 clang-1300.0.29.6)",
+      "hash" : "e18381276cb01fad5a6ced640fdec1eadcfd8061af54dae734fe2a71a96313f4",
+      "name" : "WireCryptobox",
+      "container" : "WireCryptobox.xcframework",
+      "identifier" : "ios-arm64"
+    },
+    {
+      "swiftToolchainVersion" : "5.5.1 (swiftlang-1300.0.31.4 clang-1300.0.29.6)",
+      "hash" : "c2e57b1309f233c0ae14f03db68cccb1f298ec993aa63b47f39e636ea9b06beb",
+      "name" : "WireCryptobox",
+      "container" : "WireCryptobox.xcframework",
+      "identifier" : "ios-x86_64-simulator"
+    }
+  ]
+}
