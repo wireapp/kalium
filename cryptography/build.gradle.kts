@@ -2,6 +2,7 @@ plugins {
     Plugins.androidLibrary(this)
     Plugins.multiplatform(this)
     Plugins.serialization(this)
+    Plugins.carthage(this)
 }
 
 group = "com.wire.kalium"
@@ -58,6 +59,13 @@ kotlin {
                     timeout = "5s"
                 }
             }
+        }
+    }
+
+    iosX64() {
+        carthage {
+            baseName = "Cryptography"
+            dependency("WireCryptobox")
         }
     }
 
