@@ -60,12 +60,6 @@ class SuspendableEitherScope {
             is Right -> Right(fn(value))
         }
 
-    suspend fun <L, R, T> Either<L, R>.mapLeft(fn: suspend (L) -> (T)): Either<T, R> =
-        when (this) {
-            is Left -> Left(fn(value))
-            is Right -> Right(value)
-        }
-
     /**
      * Folds a list into an Either while it doesn't go Left.
      * Allows for accumulation of value through iterations.
