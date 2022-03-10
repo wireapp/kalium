@@ -13,6 +13,7 @@ import com.wire.kalium.network.api.user.self.SelfApi
 import com.wire.kalium.network.utils.isSuccessful
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.UserDAO
+import com.wire.kalium.persistence.dao.UserEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -30,6 +31,7 @@ interface UserRepository {
     suspend fun fetchUsersByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun getSelfUser(): Flow<SelfUser>
     suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, SelfUser>
+    suspend fun searchKnownUsersByNameOrHandleOrEmail(searchQuery: String): Flow<List<UserEntity>>
 }
 
 class UserDataSource(
@@ -99,6 +101,9 @@ class UserDataSource(
             Either.Left(CoreFailure.Unknown(IllegalStateException()))
         }
     }
+
+    override suspend fun searchKnownUsersByNameOrHandleOrEmail(searchQuery: String) =
+        userDAO.getUserByNameOrHandleOrEmail(searchQuery)
 
     companion object {
         const val SELF_USER_ID_KEY = "selfUserID"
