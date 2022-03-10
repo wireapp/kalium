@@ -33,8 +33,62 @@ class ContactSearchApiTest : ApiTest {
             )
         }
 
+    @Test
+    fun givenAValidListOfTeamsIds_whenCallingGetTeamsLimitedTo_theRequestShouldBeConfiguredCorrectltest() =
+        runTest {
+            val httpClient = mockAuthenticatedHttpClient(
+                responseBody = "",
+                statusCode = HttpStatusCode.OK,
+                assertion = {
+                    assertGet()
+                    assertQueryExist(QUERY_KEY_SEARCH_QUERY)
+                    assertQueryExist(QUERY_KEY_DOMAIN)
+                    assertQueryDoesNotExist(QUERY_KEY_SIZE)
+                    assertQueryParameter(QUERY_KEY_SEARCH_QUERY, hasValue = DUMMY_SEARCH_QUERY)
+                    assertQueryParameter(QUERY_KEY_DOMAIN, hasValue = DUMMY_DOMAIN)
+                }
+            )
+
+            val contactSearchApi: ContactSearchApi = ContactSearchApiImpl(httpClient)
+            contactSearchApi.search(
+                ContactSearchRequest(
+                    searchQuery = DUMMY_SEARCH_QUERY,
+                    domain = DUMMY_DOMAIN,
+                )
+            )
+        }
+
+    @Test
+    fun givenAValidListOfTeamsIds_whenCallingGetTeamsLimitedTo_theRequestShouldBeConfiguredCorrectlytest2() =
+        runTest {
+            val httpClient = mockAuthenticatedHttpClient(
+                responseBody = "",
+                statusCode = HttpStatusCode.OK,
+                assertion = {
+                    assertGet()
+                    assertQueryExist(QUERY_KEY_SEARCH_QUERY)
+                    assertQueryExist(QUERY_KEY_DOMAIN)
+                    assertQueryExist(QUERY_KEY_SIZE)
+                    assertQueryParameter(QUERY_KEY_SEARCH_QUERY, hasValue = DUMMY_SEARCH_QUERY)
+                    assertQueryParameter(QUERY_KEY_DOMAIN, hasValue = DUMMY_DOMAIN)
+                    assertQueryParameter(QUERY_KEY_SIZE, hasValue = DUMMY_SIZE.toString())
+                }
+            )
+
+            val contactSearchApi: ContactSearchApi = ContactSearchApiImpl(httpClient)
+            contactSearchApi.search(
+                ContactSearchRequest(
+                    searchQuery = DUMMY_SEARCH_QUERY,
+                    domain = DUMMY_DOMAIN,
+                    resultSize = DUMMY_SIZE
+                )
+            )
+        }
+
     private companion object {
         const val DUMMY_SEARCH_QUERY = "dummy search query"
+        const val DUMMY_DOMAIN = "dummy domain"
+        const val DUMMY_SIZE = 100
 
         const val QUERY_KEY_SEARCH_QUERY = "q"
         const val QUERY_KEY_SIZE = "size"
