@@ -1,6 +1,7 @@
 package com.wire.kalium.cryptography
 
 import com.wire.kalium.cryptography.exceptions.ProteusException
+import kotlin.coroutines.cancellation.CancellationException
 
 data class CryptoClientId(val value: String) {
     override fun toString() = value
@@ -22,7 +23,7 @@ data class PreKeyCrypto(
 
 interface ProteusClient {
 
-    @Throws(ProteusException::class)
+    @Throws(ProteusException::class, CancellationException::class)
     suspend fun open()
 
     @Throws(ProteusException::class)
@@ -34,25 +35,25 @@ interface ProteusClient {
     @Throws(ProteusException::class)
     fun getLocalFingerprint(): ByteArray
 
-    @Throws(ProteusException::class)
+    @Throws(ProteusException::class, CancellationException::class)
     suspend fun newPreKeys(from: Int, count: Int): List<PreKeyCrypto>
 
     @Throws(ProteusException::class)
     fun newLastPreKey(): PreKeyCrypto
 
-    @Throws(ProteusException::class)
+    @Throws(ProteusException::class, CancellationException::class)
     suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean
 
-    @Throws(ProteusException::class)
+    @Throws(ProteusException::class, CancellationException::class)
     suspend fun createSession(preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId)
 
-    @Throws(ProteusException::class)
+    @Throws(ProteusException::class, CancellationException::class)
     suspend fun decrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray
 
-    @Throws(ProteusException::class)
+    @Throws(ProteusException::class, CancellationException::class)
     suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray
 
-    @Throws(ProteusException::class)
+    @Throws(ProteusException::class, CancellationException::class)
     suspend fun encryptWithPreKey(message: ByteArray, preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId): ByteArray
 }
 
