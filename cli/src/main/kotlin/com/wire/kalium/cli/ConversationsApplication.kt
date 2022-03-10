@@ -5,13 +5,14 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.wire.kalium.cli.CLIUtils.getResource
 import com.wire.kalium.cryptography.utils.calcMd5
+import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.configuration.ServerConfigMapper
 import com.wire.kalium.logic.configuration.ServerConfigMapperImpl
 import com.wire.kalium.network.AuthenticatedNetworkContainer
 import com.wire.kalium.network.LoginNetworkContainer
-import com.wire.kalium.network.api.SessionCredentials
-import com.wire.kalium.network.api.model.AssetMetadataRequest
+import com.wire.kalium.network.NetworkLogger
+import com.wire.kalium.network.api.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.model.AssetRetentionType
 import com.wire.kalium.network.api.user.login.LoginApi
 import com.wire.kalium.network.tools.BackendConfig
@@ -23,9 +24,11 @@ class ConversationsApplication : CliktCommand() {
     private val password: String by option(help = "wire account password").required()
 
     override fun run(): Unit = runBlocking {
+        NetworkLogger.setLoggingLevel(level = KaliumLogLevel.DEBUG)
+
         val serverConfigMapper: ServerConfigMapper = ServerConfigMapperImpl()
         val backendConfig: BackendConfig = serverConfigMapper.toBackendConfig(ServerConfig.DEFAULT)
-        val loginContainer = LoginNetworkContainer(isRequestLoggingEnabled = true)
+        val loginContainer = LoginNetworkContainer()
 
         val loginResult = loginContainer.loginApi.login(
             LoginApi.LoginParam.LoginWithEmail(email = email, password = password, label = "ktor"), false, backendConfig.apiBaseUrl
@@ -35,9 +38,8 @@ class ConversationsApplication : CliktCommand() {
             println("There was an error on the login :( check the credentials and the internet connection and try again please")
         } else {
             val sessionData = loginResult.value
-            //TODO: Get them 🍪 refresh token
-            val sessionCredentials = SessionCredentials(sessionData.tokenType, sessionData.accessToken, "refreshToken")
-            val networkModule = AuthenticatedNetworkContainer(sessionCredentials = sessionCredentials, backendConfig = backendConfig)
+            // TODO: Get them 🍪 refresh token
+            val networkModule = AuthenticatedNetworkContainer(sessionDTO = sessionData, backendConfig = backendConfig)
             val conversationsResponse = networkModule.conversationApi.conversationsByBatch(null, 100)
 
             if (!conversationsResponse.isSuccessful()) {

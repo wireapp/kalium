@@ -18,9 +18,11 @@ data class UserEntity(
     val email: String?,
     val phone: String?,
     val accentId: Int,
-    val team: String?
-    // val picture: List<UserAsset> // TODO: map on upcoming PR, when we have assets table
+    val team: String?,
+    val previewAssetId: UserAssetId?,
+    val completeAssetId: UserAssetId?
 )
+internal typealias UserAssetId = String
 
 interface UserDAO {
     suspend fun insertUser(user: UserEntity)
@@ -28,5 +30,6 @@ interface UserDAO {
     suspend fun updateUser(user: UserEntity)
     suspend fun getAllUsers(): Flow<List<UserEntity>>
     suspend fun getUserByQualifiedID(qualifiedID: QualifiedID): Flow<UserEntity?>
+    suspend fun getUserByNameOrHandleOrEmail(searchQuery: String): Flow<List<UserEntity>>
     suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedID)
 }

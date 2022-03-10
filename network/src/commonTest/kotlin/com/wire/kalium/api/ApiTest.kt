@@ -9,6 +9,7 @@ import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.HttpRequestData
 import io.ktor.http.ContentType
+import io.ktor.http.HeadersImpl
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
@@ -16,6 +17,7 @@ import io.ktor.http.URLProtocol
 import io.ktor.http.content.TextContent
 import io.ktor.http.headersOf
 import io.ktor.utils.io.ByteReadChannel
+import kotlinx.serialization.json.buildJsonObject
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -51,7 +53,7 @@ interface ApiTest {
         }
         return AuthenticatedNetworkContainer(
             engine = mockEngine,
-            sessionCredentials = testCredentials,
+            sessionDTO = testCredentials,
             backendConfig = TEST_BACKEND_CONFIG
         ).authenticatedHttpClient
     }
@@ -66,25 +68,32 @@ interface ApiTest {
     fun mockUnauthenticatedHttpClient(
         responseBody: String,
         statusCode: HttpStatusCode,
-        assertion: (HttpRequestData.() -> Unit) = {}
-    ): HttpClient = mockAuthenticatedHttpClient(ByteReadChannel(responseBody), statusCode, assertion)
+        assertion: (HttpRequestData.() -> Unit) = {},
+        headers: Map<String, String>? = null
+    ): HttpClient = mockUnauthenticatedHttpClient(ByteReadChannel(responseBody), statusCode, assertion, headers)
 
     private fun mockUnauthenticatedHttpClient(
         responseBody: ByteReadChannel,
         statusCode: HttpStatusCode,
-        assertion: (HttpRequestData.() -> Unit) = {}
+        assertion: (HttpRequestData.() -> Unit) = {},
+        headers: Map<String, String>?
     ): HttpClient {
+        val head: Map<String, List<String>> = (headers?.let {
+            mutableMapOf(HttpHeaders.ContentType to "application/json").plus(headers).mapValues { listOf(it.value) }
+        } ?: run {
+            mapOf(HttpHeaders.ContentType to "application/json").mapValues { listOf(it.value) }
+        })
+
         val mockEngine = MockEngine { request ->
             request.assertion()
             respond(
                 content = responseBody,
                 status = statusCode,
-                headers = headersOf(HttpHeaders.ContentType, "application/json")
+                headers = HeadersImpl(head)
             )
         }
         return LoginNetworkContainer(
-            engine = mockEngine,
-            isRequestLoggingEnabled = true,
+            engine = mockEngine
         ).anonymousHttpClient
     }
 
@@ -110,7 +119,7 @@ interface ApiTest {
         }
         return AuthenticatedNetworkContainer(
             engine = mockEngine,
-            sessionCredentials = testCredentials,
+            sessionDTO = testCredentials,
             backendConfig = TEST_BACKEND_CONFIG
         ).authenticatedHttpClient
     }
@@ -142,6 +151,8 @@ interface ApiTest {
 
     // request headers assertions
     fun HttpRequestData.assertHeaderExist(name: String) = assertFalse(this.headers[name].isNullOrBlank())
+    fun HttpRequestData.assertHeaderEqual(name: String, value: String) = assertEquals(value, this.headers[name])
+
     fun HttpRequestData.assertAuthorizationHeaderExist() = this.assertHeaderExist(HttpHeaders.Authorization)
 
     // http method assertion
@@ -165,18 +176,24 @@ interface ApiTest {
     // body
     fun HttpRequestData.assertBodyContent(content: String) {
         assertIs<TextContent>(body)
-        assertEquals(content, (body as TextContent).text)
+        // convert both body and the content to JsonObject, so we are not comparing strings
+        // since json strings can have different values order
+        val expected = buildJsonObject { buildString { content } }
+        val actual = buildJsonObject { buildString { (body as TextContent).text } }
+        assertEquals(expected, actual)
     }
 
     // host
     fun HttpRequestData.assertHostEqual(expectedHost: String) = assertEquals(expected = expectedHost, actual = this.url.host)
     fun HttpRequestData.assertHttps() = assertEquals(expected = URLProtocol.HTTPS, actual = this.url.protocol)
 
-    private companion object {
+    companion object {
         val TEST_BACKEND_CONFIG =
             BackendConfig(
                 "test.api.com", "test.account.com", "test.ws.com",
                 "test.blacklist", "test.teams.com", "test.wire.com", "Test Title"
             )
+
+        val SESSION = testCredentials
     }
 }

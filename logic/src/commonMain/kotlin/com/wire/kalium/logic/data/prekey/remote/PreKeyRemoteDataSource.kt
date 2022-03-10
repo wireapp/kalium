@@ -1,17 +1,21 @@
 package com.wire.kalium.logic.data.prekey.remote
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.cryptography.PreKeyCrypto
+import com.wire.kalium.cryptography.ProteusClient
+import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.prekey.QualifiedUserPreKeyInfo
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.prekey.PreKeyApi
-import com.wire.kalium.network.utils.isSuccessful
 
 interface PreKeyRemoteRepository {
     suspend fun preKeysForMultipleQualifiedUsers(
         qualifiedIdMap: Map<UserId, List<ClientId>>
-    ): Either<CoreFailure, List<QualifiedUserPreKeyInfo>>
+    ): Either<NetworkFailure, List<QualifiedUserPreKeyInfo>>
 }
 
 class PreKeyRemoteDataSource(
@@ -22,17 +26,10 @@ class PreKeyRemoteDataSource(
     //TODO unit test to be created later
     override suspend fun preKeysForMultipleQualifiedUsers(
         qualifiedIdMap: Map<UserId, List<ClientId>>
-    ): Either<CoreFailure, List<QualifiedUserPreKeyInfo>> {
-
-        val mappedUsers = preKeyListMapper.toRemoteClientPreKeyInfoTo(qualifiedIdMap)
-        val response = preKeyApi.getUsersPreKey(mappedUsers)
-        return if (response.isSuccessful()) {
-            val mappedResponse = preKeyListMapper.fromRemoteQualifiedPreKeyInfoMap(response.value)
-            Either.Right(mappedResponse)
-        } else {
-            //TODO handle error
-            Either.Left(CoreFailure.ServerMiscommunication)
-        }
-    }
-
+    ): Either<NetworkFailure, List<QualifiedUserPreKeyInfo>> =
+        wrapApiRequest {
+            preKeyApi.getUsersPreKey(
+                preKeyListMapper.toRemoteClientPreKeyInfoTo(qualifiedIdMap)
+            )
+        }.map { preKeyListMapper.fromRemoteQualifiedPreKeyInfoMap(it) }
 }

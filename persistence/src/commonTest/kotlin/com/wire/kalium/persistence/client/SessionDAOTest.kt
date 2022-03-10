@@ -102,7 +102,7 @@ class SessionDAOTest {
         sessionStorage.addSession(session1)
         sessionStorage.addSession(session2)
 
-        sessionStorage.updateCurrentSession("user_id_1")
+        sessionStorage.setCurrentSession("user_id_1")
 
         assertEquals(session1, sessionStorage.currentSession())
     }
@@ -110,8 +110,7 @@ class SessionDAOTest {
     private companion object {
         val randomString get() = Random.nextBytes(64).decodeToString()
         fun randomNetworkConfig(): NetworkConfig =
-            NetworkConfig(randomString, randomString, randomString, randomString, randomString, randomString)
-
+            NetworkConfig(randomString, randomString, randomString, randomString, randomString, randomString, "test_network_config")
     }
 
 }

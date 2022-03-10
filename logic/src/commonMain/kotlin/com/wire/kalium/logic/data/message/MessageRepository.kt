@@ -22,6 +22,7 @@ interface MessageRepository {
     suspend fun persistMessage(message: Message): Either<CoreFailure, Unit>
     suspend fun markMessageAsSent(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit>
     suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message>
+    // TODO: change the return type to Either<CoreFailure, Unit>
     suspend fun sendEnvelope(conversationId: ConversationId, envelope: MessageEnvelope): Either<SendMessageFailure, Unit>
 }
 

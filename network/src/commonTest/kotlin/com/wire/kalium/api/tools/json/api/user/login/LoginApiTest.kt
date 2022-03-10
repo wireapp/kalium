@@ -2,6 +2,7 @@ package com.wire.kalium.api.tools.json.api.user.login
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.tools.json.model.ErrorResponseJson
+import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.user.login.LoginApi
 import com.wire.kalium.network.api.user.login.LoginApiImpl
 import com.wire.kalium.network.exceptions.KaliumException
@@ -19,6 +20,7 @@ class LoginApiTest : ApiTest {
 
     @Test
     fun givenAValidLoginRequest_whenCallingTheLoginEndpoint_theRequestShouldBeConfiguredCorrectly() = runTest {
+        val refreshToken = "415a5306-a476-41bc-af36-94ab075fd881"
         val httpClient = mockUnauthenticatedHttpClient(
             VALID_LOGIN_RESPONSE.rawJson,
             statusCode = HttpStatusCode.OK,
@@ -29,13 +31,15 @@ class LoginApiTest : ApiTest {
                 assertPathEqual(PATH_LOGIN)
                 assertHttps()
                 assertHostEqual(TEST_HOST)
-            }
+            },
+            headers = mapOf("set-cookie" to "zuid=$refreshToken")
         )
+        val expected = with(VALID_LOGIN_RESPONSE.serializableData) { SessionDTO(userIdValue = userId, accessToken = accessToken, tokenType = tokenType, refreshToken = refreshToken) }
         val loginApi: LoginApi = LoginApiImpl(httpClient)
 
         val response = loginApi.login(LOGIN_WITH_EMAIL_REQUEST.serializableData, false, TEST_HOST)
         assertTrue(response.isSuccessful())
-        assertEquals(response.value, VALID_LOGIN_RESPONSE.serializableData)
+        assertEquals(expected, response.value)
     }
 
     @Test

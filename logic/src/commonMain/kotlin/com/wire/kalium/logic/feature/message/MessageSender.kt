@@ -65,7 +65,6 @@ class MessageSenderImpl(
                     getRecipientsAndAttemptSend(conversationId, messageUuid)
                 }
             }
-            SendMessageFailure.NoNetworkConnection -> Either.Left(CoreFailure.NoNetworkConnection)
             else -> Either.Left(failure)
         }
     }
