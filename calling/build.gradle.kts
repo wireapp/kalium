@@ -37,7 +37,6 @@ kotlin {
             dependencies {
                 implementation(Dependencies.Calling.avs)
                 implementation(Dependencies.Calling.jna)
-                implementation(Dependencies.Cryptography.cryptoboxAndroid)
             }
         }
         val commonTest by getting {
