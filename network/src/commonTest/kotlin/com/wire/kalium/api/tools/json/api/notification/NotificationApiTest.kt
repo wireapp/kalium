@@ -91,7 +91,7 @@ class NotificationApiTest : ApiTest {
     private companion object {
         val BACKEND_CONFIG = BackendConfig(
             "apiBaseUrl", "accountsUrl",
-            "websocketUrl", "blacklist", "teams", "website", "titel"
+            "websocketUrl", "blacklist", "teams", "website", "title"
         )
         const val PATH_NOTIFICATIONS = "/notifications"
         const val SIZE_QUERY_KEY = "size"
