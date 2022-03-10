@@ -65,6 +65,9 @@ object Plugins {
 
     fun sqlDelight(scope: PluginDependenciesSpec) =
         scope.id("app.cash.sqldelight")
+
+    fun carthage(scope: PluginDependenciesSpec) =
+        scope.id("com.wire.carthage-gradle-plugin")
 }
 
 object Dependencies {
