@@ -99,4 +99,5 @@ libs/
 .settings
 
 # Carthage
-Carthage
+**/Carthage/Checkouts/
+
