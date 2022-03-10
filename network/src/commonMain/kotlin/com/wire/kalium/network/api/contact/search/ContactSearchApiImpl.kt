@@ -4,17 +4,27 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
+import io.ktor.client.request.parameter
 
 class ContactSearchApiImpl(private val httpClient: HttpClient) : ContactSearchApi {
 
     override suspend fun search(contactSearchRequest: ContactSearchRequest): NetworkResponse<ContactSearchResponse> =
-        with(contactSearchRequest) {
-            wrapKaliumResponse {
-                httpClient.get(""" /$PATH_CONTACT_SEARCH/${searchQuery + domain?.let { "/$it" } + resultSize?.let { "/$it" }} """)
+        wrapKaliumResponse {
+            httpClient.get("/$PATH_CONTACT_SEARCH") {
+                with(contactSearchRequest) {
+                    parameter(QUERY_KEY_SEARCH_QUERY, searchQuery)
+
+                    resultSize?.let { parameter(QUERY_KEY_SIZE, domain) }
+                    domain?.let { parameter(QUERY_KEY_DOMAIN, domain) }
+                }
             }
         }
 
     private companion object {
         const val PATH_CONTACT_SEARCH = "search/contacts"
+
+        const val QUERY_KEY_SEARCH_QUERY = "q"
+        const val QUERY_KEY_SIZE = "size"
+        const val QUERY_KEY_DOMAIN = "domain"
     }
 }
