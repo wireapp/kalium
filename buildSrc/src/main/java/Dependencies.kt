@@ -7,7 +7,7 @@ object Versions {
     const val activityCompose = "1.3.1"
     const val appCompat = "1.1.0"
     const val cliKt = "3.3.0"
-    const val coroutines = "1.6.0-native-mt"
+    const val coroutines = "1.6.0"
     const val compose = "1.1.0-rc01"
     const val composeCompiler = "1.1.0-rc02"
     const val cryptobox4j = "1.1.1"
@@ -124,6 +124,7 @@ object Dependencies {
         const val utils = "io.ktor:ktor-utils:${Versions.ktor2}"
         const val mock = "io.ktor:ktor-client-mock:${Versions.ktor2}"
         const val okHttp = "io.ktor:ktor-client-okhttp:${Versions.ktor2}"
+        const val iosHttp = "io.ktor:ktor-client-ios:${Versions.ktor2}"
     }
 
     object SqlDelight {

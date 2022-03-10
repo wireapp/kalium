@@ -14,7 +14,7 @@ import com.wire.kalium.logic.feature.auth.AuthSession
 actual class UserSessionScope(
     private val applicationContext: Context,
     private val session: AuthSession,
-    authenticatedDataSourceSet: AuthenticatedDataSourceSet,
+    authenticatedDataSourceSet: AuthenticatedDataSourceSet
 ) : UserSessionScopeCommon(session, authenticatedDataSourceSet) {
 
     override val clientConfig: ClientConfig get() = ClientConfig(applicationContext)

@@ -10,9 +10,7 @@ CREATE TABLE User (
     accent_id INTEGER AS Int NOT NULL DEFAULT 0,
     team TEXT,
     preview_asset_id TEXT,
-    complete_asset_id TEXT,
-    FOREIGN KEY (preview_asset_id) REFERENCES Asset(key) ON DELETE SET NULL,
-    FOREIGN KEY (complete_asset_id) REFERENCES Asset(key) ON DELETE SET NULL
+    complete_asset_id TEXT
 );
 
 deleteAllUsers:

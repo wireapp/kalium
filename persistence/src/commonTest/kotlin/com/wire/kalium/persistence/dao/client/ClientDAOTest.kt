@@ -64,7 +64,9 @@ class ClientDAOTest : BaseDatabaseTest() {
         clientDAO.insertClients(listOf(insertedClient, insertedClient2))
 
         val unrelatedUserId = QualifiedID("unrelated", "user")
-        val unrelatedUser = UserEntity(unrelatedUserId, "name", "handle", "email", "phone", 1, "team")
+        val unrelatedUser = UserEntity(
+            unrelatedUserId, "name", "handle", "email", "phone", 1, "team", "preview1", "complete1"
+        )
         val unrelatedInsertedClient = Client(unrelatedUserId, "id1")
         userDAO.insertUser(unrelatedUser)
         clientDAO.insertClient(unrelatedInsertedClient)
@@ -102,6 +104,8 @@ class ClientDAOTest : BaseDatabaseTest() {
 
     private companion object {
         val userId = QualifiedID("test", "domain")
-        val user = UserEntity(userId, "name", "handle", "email", "phone", 1, "team")
+        val user = UserEntity(
+            userId, "name", "handle", "email", "phone", 1, "team", "preview1", "complete1"
+        )
     }
 }
