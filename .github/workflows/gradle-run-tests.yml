@@ -28,7 +28,9 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 29
-          script: ./gradlew connectedAndroidTest
+          script:|
+            ./gradlew cryptography:connectedAndroidTest
+            ./gradlew persistence:connectedAndroidTest
       - name: Publish Unit Test Results
         uses: EnricoMi/publish-unit-test-result-action/composite@v1.25
         if: always()
