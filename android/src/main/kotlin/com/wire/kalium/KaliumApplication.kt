@@ -2,6 +2,8 @@ package com.wire.kalium
 
 import android.app.Application
 import androidx.work.*
+import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.logic.CoreLogger
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.sync.WrapperWorkerFactory
 import java.io.File
@@ -14,7 +16,14 @@ class KaliumApplication: Application(), Configuration.Provider {
         super.onCreate()
 
         val rootProteusDir = File(this.filesDir, "proteus")
-        coreLogic = CoreLogic(applicationContext, "kalium", rootProteusDir.absolutePath)
+        coreLogic = CoreLogic(
+            applicationContext = applicationContext,
+            clientLabel = "kalium",
+            rootProteusDirectoryPath = rootProteusDir.absolutePath
+        )
+        CoreLogger.setLoggingLevel(
+            level = KaliumLogLevel.DEBUG
+        )
     }
 
     override fun getWorkManagerConfiguration(): Configuration {

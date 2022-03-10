@@ -93,8 +93,7 @@ interface ApiTest {
             )
         }
         return LoginNetworkContainer(
-            engine = mockEngine,
-            isRequestLoggingEnabled = true,
+            engine = mockEngine
         ).anonymousHttpClient
     }
 
@@ -152,6 +151,8 @@ interface ApiTest {
 
     // request headers assertions
     fun HttpRequestData.assertHeaderExist(name: String) = assertFalse(this.headers[name].isNullOrBlank())
+    fun HttpRequestData.assertHeaderEqual(name: String, value: String) = assertEquals(value, this.headers[name])
+
     fun HttpRequestData.assertAuthorizationHeaderExist() = this.assertHeaderExist(HttpHeaders.Authorization)
 
     // http method assertion
@@ -186,11 +187,13 @@ interface ApiTest {
     fun HttpRequestData.assertHostEqual(expectedHost: String) = assertEquals(expected = expectedHost, actual = this.url.host)
     fun HttpRequestData.assertHttps() = assertEquals(expected = URLProtocol.HTTPS, actual = this.url.protocol)
 
-    private companion object {
+    companion object {
         val TEST_BACKEND_CONFIG =
             BackendConfig(
                 "test.api.com", "test.account.com", "test.ws.com",
                 "test.blacklist", "test.teams.com", "test.wire.com", "Test Title"
             )
+
+        val SESSION = testCredentials
     }
 }

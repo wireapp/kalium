@@ -1,8 +1,6 @@
 package com.wire.kalium.logic.feature.auth
 
 import android.content.Context
-import com.wire.kalium.logic.configuration.ServerConfig
-import com.wire.kalium.network.LoginNetworkContainer
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 
 /**

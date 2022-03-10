@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
@@ -11,8 +12,6 @@ import com.wire.kalium.network.api.user.details.qualifiedIds
 import com.wire.kalium.network.api.user.self.SelfApi
 import com.wire.kalium.network.utils.isSuccessful
 import com.wire.kalium.persistence.dao.MetadataDAO
-import com.wire.kalium.persistence.dao.QualifiedID as QualifiedIDEntity
-import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.persistence.dao.UserDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
@@ -23,13 +22,14 @@ import kotlinx.coroutines.flow.map
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import com.wire.kalium.persistence.dao.QualifiedID as QualifiedIDEntity
 
 interface UserRepository {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
     suspend fun fetchKnownUsers(): Either<CoreFailure, Unit>
     suspend fun fetchUsersByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun getSelfUser(): Flow<SelfUser>
-    suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, Unit>
+    suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, SelfUser>
 }
 
 class UserDataSource(
@@ -38,7 +38,8 @@ class UserDataSource(
     private val selfApi: SelfApi,
     private val userApi: UserDetailsApi,
     private val idMapper: IdMapper,
-    private val userMapper: UserMapper
+    private val userMapper: UserMapper,
+    private val assetRepository: AssetRepository
 ) : UserRepository {
 
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = suspending {
@@ -47,6 +48,7 @@ class UserDataSource(
         }.coFold({
             Either.Left(it)
         }, { user ->
+            assetRepository.downloadUsersPictureAssets(listOf(user.previewAssetId, user.completeAssetId))
             userDAO.insertUser(user)
             metadataDAO.insertValue(Json.encodeToString(user.id), SELF_USER_ID_KEY)
             Either.Right(Unit)
@@ -82,16 +84,17 @@ class UserDataSource(
         }
     }
 
-    override suspend fun updateSelfUser(newName: String?, newAccent: Int?, newAssetId: String?): Either<CoreFailure, Unit> {
+    override suspend fun updateSelfUser(newName: String?, newAccent: Int?, newAssetId: String?): Either<CoreFailure, SelfUser> {
         val user =
-            getSelfUser().firstOrNull() ?: return Either.Left(CoreFailure.Unknown(NullPointerException())) // TODO: replace for a DB error
+            getSelfUser().firstOrNull() ?: return Either.Left(CoreFailure.Unknown(NullPointerException()))
 
         val updateRequest = userMapper.fromModelToUpdateApiModel(user, newName, newAccent, newAssetId)
         val updatedSelf = selfApi.updateSelf(updateRequest)
 
         return if (updatedSelf.isSuccessful()) {
-            userDAO.updateUser(userMapper.fromUpdateRequestToDaoModel(user, updateRequest))
-            Either.Right(Unit)
+            val updatedUser = userMapper.fromUpdateRequestToDaoModel(user, updateRequest)
+            userDAO.updateUser(updatedUser)
+            Either.Right(userMapper.fromDaoModel(updatedUser))
         } else {
             Either.Left(CoreFailure.Unknown(IllegalStateException()))
         }
