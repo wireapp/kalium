@@ -7,6 +7,7 @@ import kotlin.test.assertEquals
 class CalcMd5Test {
 
     @Test
+    @IgnoreJS
     fun testGivenByteArray_whenCallingCalcMd5_returnsExpectedDigest() {
         val input = "Hello World".encodeToByteArray()
         val digest = calcMd5(input)

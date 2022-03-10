@@ -12,8 +12,7 @@ fun newUserEntity(id: String = "test") =
         phone = "phone$id",
         accentId = 1,
         team = "team",
-        previewAssetId = "preview$id",
-        completeAssetId = "complete$id"
+        null, null
     )
 
 fun newUserEntity(qualifiedID: QualifiedID, id: String = "test") =
@@ -25,8 +24,7 @@ fun newUserEntity(qualifiedID: QualifiedID, id: String = "test") =
         phone = "phone$id",
         accentId = 1,
         team = "team",
-        previewAssetId = "preview$id",
-        completeAssetId = "complete$id"
+        null, null
     )
 
 fun newUserEntity(
