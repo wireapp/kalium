@@ -6,7 +6,7 @@ buildscript {
         google()
         mavenCentral()
         maven(url = "https://oss.sonatype.org/content/repositories/snapshots")
-        mavenLocal()
+        maven(url = "https://raw.githubusercontent.com/wireapp/wire-maven/main/releases")
     }
 
     dependencies {
