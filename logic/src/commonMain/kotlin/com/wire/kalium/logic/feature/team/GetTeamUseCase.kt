@@ -7,6 +7,6 @@ import com.wire.kalium.logic.functional.Either
 class GetTeamUseCase(private val teamRepository: TeamRepository) {
 
     suspend operator fun invoke(): Either<CoreFailure, Unit> {
-        return teamRepository.getTeam()
+        return teamRepository.syncSelfTeam()
     }
 }

@@ -10,7 +10,7 @@ import com.wire.kalium.persistence.dao.TeamDAO
 import kotlinx.coroutines.flow.firstOrNull
 
 interface TeamRepository {
-    suspend fun getTeam(): Either<CoreFailure, Unit>
+    suspend fun syncSelfTeam(): Either<CoreFailure, Unit>
 }
 
 class TeamDataSource(
@@ -20,7 +20,7 @@ class TeamDataSource(
     private val userRepository: UserRepository
 ) : TeamRepository {
 
-    override suspend fun getTeam(): Either<CoreFailure, Unit> = suspending {
+    override suspend fun syncSelfTeam(): Either<CoreFailure, Unit> = suspending {
         userRepository.getSelfUser().firstOrNull()?.team?.let { teamId ->
             wrapApiRequest {
                 teamsApi.getTeamInfo(
