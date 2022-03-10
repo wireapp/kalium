@@ -10,7 +10,7 @@ interface SearchKnownUsersUseCase {
 }
 
 class SearchKnownUsersUseCaseImpl(
-    private val userRepository: UserRepository,
+    private val userRepository: UserRepository
 ) : SearchKnownUsersUseCase {
 
     // TODO:this use case is going to be refactor once we return Either from DAO's

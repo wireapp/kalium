@@ -13,4 +13,5 @@ class UserScope(
     val syncSelfUser: SyncSelfUserUseCase get() = SyncSelfUserUseCase(userRepository)
     val syncContacts: SyncContactsUseCase get() = SyncContactsUseCaseImpl(userRepository)
     val uploadUserAvatar: UploadUserAvatarUseCase get() = UploadUserAvatarUseCaseImpl(userRepository, assetRepository)
+    val searchKnownUsers: SearchKnownUsersUseCase get() = SearchKnownUsersUseCaseImpl(userRepository)
 }
