@@ -10,10 +10,10 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.dao.client.ClientDAO
-import io.ktor.utils.io.errors.IOException
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -39,6 +39,7 @@ class ClientRepositoryTest {
     private val clientRegistrationStorage = configure(mock(classOf<ClientRegistrationStorage>())) {
         stubsUnitByDefault = true
     }
+
     @Mock
     private val clientDAO = mock(classOf<ClientDAO>())
 
@@ -269,7 +270,13 @@ class ClientRepositoryTest {
         val REGISTER_CLIENT_PARAMS = RegisterClientParam("pass", listOf(), PreKeyCrypto(2, "2"), listOf())
         val CLIENT_ID = TestClient.CLIENT_ID
         val CLIENT_RESULT = TestClient.CLIENT
-        val TEST_FAILURE = NetworkFailure.NoNetworkConnection(KaliumException.NetworkUnavailableError(IOException("no internet")))
+        val TEST_FAILURE = NetworkFailure.ServerMiscommunication(
+            KaliumException.InvalidRequestError(
+                ErrorResponse(
+                    420, "forbidden", "forbidden"
+                )
+            )
+        )
     }
 }
 
