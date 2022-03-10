@@ -9,7 +9,6 @@ import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.HttpStatusCode
-import io.ktor.utils.io.errors.IOException
 import kotlinx.serialization.SerializationException
 
 
@@ -124,12 +123,6 @@ internal suspend inline fun <reified BodyType : Any> wrapKaliumResponse(performR
         NetworkResponse.Error(
             kException = KaliumException.GenericError(cause = e)
         )
-    } catch (e: IOException) {
-        // TODO: does Ktor throw IOException on time-out/no-internet connection
-        NetworkResponse.Error(
-            kException = KaliumException.NetworkUnavailableError(cause = e)
-        )
-
     } catch (e: Exception) {
         NetworkResponse.Error(
             kException = KaliumException.GenericError(e)

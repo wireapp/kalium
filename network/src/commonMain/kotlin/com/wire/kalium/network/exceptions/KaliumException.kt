@@ -36,12 +36,6 @@ sealed class KaliumException() : Exception() {
      */
     class GenericError(override val cause: Throwable) : KaliumException()
 
-    /**
-     * IOException ?
-     */
-    class NetworkUnavailableError(override val cause: Throwable) :
-        KaliumException()
-
     sealed class FeatureError() : KaliumException()
 }
 

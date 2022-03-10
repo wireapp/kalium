@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.session.SessionRepository
@@ -42,16 +43,21 @@ class LoginUseCase(
             }
             else -> return@suspending AuthenticationResult.Failure.InvalidUserIdentifier
         }.coFold({
-            when (it.kaliumException) {
-                is KaliumException.InvalidRequestError -> {
-                    if (it.kaliumException.isInvalidCredentials()) {
-                        AuthenticationResult.Failure.InvalidCredentials
-                    } else {
-                        AuthenticationResult.Failure.Generic(it)
-                    }
-                }
-                else -> AuthenticationResult.Failure.Generic(it)
-            }
+                 when(it) {
+                     is NetworkFailure.ServerMiscommunication -> {
+                         when (it.kaliumException) {
+                             is KaliumException.InvalidRequestError -> {
+                                 if (it.kaliumException.isInvalidCredentials()) {
+                                     AuthenticationResult.Failure.InvalidCredentials
+                                 } else {
+                                     AuthenticationResult.Failure.Generic(it)
+                                 }
+                             }
+                             else -> AuthenticationResult.Failure.Generic(it)
+                         }
+                     }
+                         is NetworkFailure.NoNetworkConnection -> AuthenticationResult.Failure.Generic(it)
+                 }
         }, {
             sessionRepository.storeSession(it)
             sessionRepository.updateCurrentSession(it.userId)
