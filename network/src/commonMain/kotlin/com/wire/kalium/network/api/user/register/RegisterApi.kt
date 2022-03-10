@@ -30,11 +30,10 @@ interface RegisterApi {
                 locale = null,
                 phone = null,
                 phoneCode = null,
-                newBindingTeam = null,
+                newBindingTeamDTO = null,
                 teamCode = null,
                 expiresIn = null,
                 managedBy = null,
-                picture = null,
                 ssoID = null,
                 teamID = null,
                 uuid = null

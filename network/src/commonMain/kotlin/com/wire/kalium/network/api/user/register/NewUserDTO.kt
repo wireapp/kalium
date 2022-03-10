@@ -5,9 +5,8 @@ import com.wire.kalium.network.api.AssetId
 import com.wire.kalium.network.api.AssetKey
 import com.wire.kalium.network.api.TeamId
 import com.wire.kalium.network.api.UserSsoId
-import com.wire.kalium.network.api.model.UserAsset
+import com.wire.kalium.network.api.model.UserAssetDTO
 import com.wire.kalium.network.api.user.self.ManagedBy
-import com.wire.kalium.network.api.user.self.Picture
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -46,7 +45,7 @@ internal data class NewUserDTO(
     @SerialName("accent_id")
     val accentId: Int?,
     @SerialName("assets")
-    val assets: List<UserAsset>?,
+    val assets: List<UserAssetDTO>?,
     @SerialName("email")
     val email: String?,
     @SerialName("email_code")
@@ -69,12 +68,10 @@ internal data class NewUserDTO(
     val phone: String?,
     @SerialName("phone_code")
     val phoneCode: String?,
-    @SerialName("picture")
-    val picture: Picture?,
     @SerialName("sso_id")
     val ssoID: UserSsoId?,
     @SerialName("team")
-    val newBindingTeam: NewBindingTeam?,
+    val newBindingTeamDTO: NewBindingTeamDTO?,
     @SerialName("team_code")
     val teamCode: String?,
     @SerialName("team_id")
@@ -84,7 +81,7 @@ internal data class NewUserDTO(
 )
 
 @Serializable
-data class NewBindingTeam(
+data class NewBindingTeamDTO(
     @SerialName("currency")
     val currency: String?,
     @SerialName("icon")
