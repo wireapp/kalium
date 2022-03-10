@@ -55,6 +55,9 @@ kotlin {
     js(IR) {
         browser {
             testTask {
+                // TODO: Re-enable when JS persistence is supported
+                // Removed as it's currently not implemented
+                this.enabled = false
                 useMocha {
                     timeout = "5s"
                 }
