@@ -5,7 +5,8 @@ CREATE TABLE Team (
 
 insertTeam:
 INSERT INTO Team(id, name)
-VALUES (?, ?);
+VALUES (?, ?)
+ON CONFLICT(id) DO UPDATE SET name = excluded.name;
 
 selectTeamById:
 SELECT id, name
