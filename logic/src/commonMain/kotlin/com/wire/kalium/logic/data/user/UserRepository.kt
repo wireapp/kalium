@@ -13,6 +13,7 @@ import com.wire.kalium.network.api.user.self.SelfApi
 import com.wire.kalium.network.utils.isSuccessful
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.UserDAO
+import com.wire.kalium.persistence.dao.UserEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
