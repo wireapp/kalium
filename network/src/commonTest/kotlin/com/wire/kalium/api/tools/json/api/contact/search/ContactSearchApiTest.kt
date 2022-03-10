@@ -11,7 +11,7 @@ import kotlin.test.Test
 class ContactSearchApiTest : ApiTest {
 
     @Test
-    fun givenAValidListOfTeamsIds_whenCallingGetTeamsLimitedTo_theRequestShouldBeConfiguredCorrectly() =
+    fun givenRequestWithSearchQuery_whenCallingSearchContact_ThenRequestShouldReturnExpectedAssertion() =
         runTest {
             val httpClient = mockAuthenticatedHttpClient(
                 responseBody = "",
@@ -34,7 +34,7 @@ class ContactSearchApiTest : ApiTest {
         }
 
     @Test
-    fun givenAValidListOfTeamsIds_whenCallingGetTeamsLimitedTo_theRequestShouldBeConfiguredCorrectltest() =
+    fun givenRequestWithSearchQueryAndDomain_whenCallingSearchContact_ThenRequestShouldReturnExpectedAssertion() =
         runTest {
             val httpClient = mockAuthenticatedHttpClient(
                 responseBody = "",
@@ -59,7 +59,7 @@ class ContactSearchApiTest : ApiTest {
         }
 
     @Test
-    fun givenAValidListOfTeamsIds_whenCallingGetTeamsLimitedTo_theRequestShouldBeConfiguredCorrectlytest2() =
+    fun givenRequestWithSearchQueryAndDomainAndResultSize_whenCallingSearchContact_ThenRequestShouldReturnExpectedAssertion() =
         runTest {
             val httpClient = mockAuthenticatedHttpClient(
                 responseBody = "",
