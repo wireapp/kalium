@@ -126,6 +126,7 @@ object Dependencies {
         const val utils = "io.ktor:ktor-utils:${Versions.ktor2}"
         const val mock = "io.ktor:ktor-client-mock:${Versions.ktor2}"
         const val okHttp = "io.ktor:ktor-client-okhttp:${Versions.ktor2}"
+        const val iosHttp = "io.ktor:ktor-client-ios:${Versions.ktor2}"
     }
 
     object SqlDelight {

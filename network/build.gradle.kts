@@ -32,6 +32,7 @@ kotlin {
         }
     }
     android()
+    iosX64()
 
     sourceSets {
         val commonMain by getting {
@@ -88,5 +89,10 @@ kotlin {
             }
         }
         val androidTest by getting
+        val iosX64Main by getting {
+            dependencies {
+                implementation(Dependencies.Ktor.iosHttp)
+            }
+        }
     }
 }
