@@ -23,7 +23,7 @@ jobs:
       - name: Build Native dependencies
         run: make
       - name: Test with Gradle
-        run: ./gradlew check
+        run: ./gradlew allTests
       - name: Android Instrumentation Tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
