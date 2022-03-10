@@ -7,7 +7,7 @@ object Versions {
     const val activityCompose = "1.3.1"
     const val appCompat = "1.1.0"
     const val cliKt = "3.3.0"
-    const val coroutines = "1.6.0"
+    const val coroutines = "1.6.0-native-mt"
     const val compose = "1.1.0-rc01"
     const val composeCompiler = "1.1.0-rc02"
     const val cryptobox4j = "1.1.1"
@@ -29,6 +29,8 @@ object Versions {
     const val sqlDelight = "2.0.0-SNAPSHOT"
     const val wireJvmMessageProto = "1.36.0"
     const val protobufLite = "3.19.4"
+    const val avs = "8.1.3"
+    const val jna = "5.6.0@aar"
 }
 
 object Plugins {
@@ -63,6 +65,9 @@ object Plugins {
 
     fun sqlDelight(scope: PluginDependenciesSpec) =
         scope.id("app.cash.sqldelight")
+
+    fun carthage(scope: PluginDependenciesSpec) =
+        scope.id("com.wire.carthage-gradle-plugin")
 }
 
 object Dependencies {
@@ -149,5 +154,10 @@ object Dependencies {
 
     object UUID {
         const val benAsherUUID = "com.benasher44:uuid:${Versions.benAsherUUID}"
+    }
+
+    object Calling {
+        const val avs =  "com.wire:avs:${Versions.avs}"
+        const val jna = "net.java.dev.jna:jna:${Versions.jna}"
     }
 }
