@@ -11,14 +11,14 @@ interface RegisterApi {
     sealed class RegisterParam(
         open val name: String
     ) {
-        internal abstract fun toBody(): NewUser
+        internal abstract fun toBody(): NewUserDTO
         data class PersonalAccount(
             val email: String,
             val emailCode: String,
             override val name: String,
             val password: String,
         ) : RegisterParam(name) {
-            override fun toBody(): NewUser = NewUser(
+            override fun toBody(): NewUserDTO = NewUserDTO(
                 email = email,
                 emailCode = emailCode,
                 password = password,

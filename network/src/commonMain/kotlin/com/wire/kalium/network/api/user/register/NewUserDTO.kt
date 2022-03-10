@@ -42,7 +42,7 @@ internal data class ActivationRequest(
 
 
 @Serializable
-internal data class NewUser(
+internal data class NewUserDTO(
     @SerialName("accent_id")
     val accentId: Int?,
     @SerialName("assets")

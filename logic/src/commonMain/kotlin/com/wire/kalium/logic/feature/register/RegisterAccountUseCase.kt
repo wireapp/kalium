@@ -7,14 +7,14 @@ import com.wire.kalium.network.api.user.register.RegisterResponse
 
 sealed class RegistrationParam(
     firstName: String,
-    LastName: String,
+    lastName: String,
     val email: String,
     val password: String,
 ) {
     val name: String
 
     init {
-        name = "$firstName $LastName"
+        name = "$firstName $lastName"
     }
 
     class PrivateAccount(
