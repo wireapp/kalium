@@ -1,9 +1,8 @@
 package com.wire.kalium.network.api.user.self
 
 import com.wire.kalium.network.api.UserId
-import com.wire.kalium.network.api.UserSsoId
-import com.wire.kalium.network.api.model.Service
 import com.wire.kalium.network.api.model.UserAsset
+import com.wire.kalium.network.api.model.Service
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -29,6 +28,7 @@ data class SelfUserInfoResponse(
     val deleted: Boolean?,
     @SerialName("assets")
     val assets: List<UserAsset>,
+    val assets: List<AvatarAssetDTO>,
     @SerialName("locale")
     val locale: String,
     @SerialName("service")
@@ -41,7 +41,10 @@ data class SelfUserInfoResponse(
     val team: String?,
     @SerialName("managed_by")
     val managedBy: ManagedBy // 'wire', 'scim'
-)
+) {
+    @SerialName("picture")
+    var picture: List<AvatarAssetDTO>? = assets
+}
 
 @Serializable
 enum class ManagedBy {

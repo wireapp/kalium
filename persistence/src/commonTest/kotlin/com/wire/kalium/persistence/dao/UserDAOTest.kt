@@ -55,7 +55,8 @@ class UserDAOTest : BaseDatabaseTest() {
     @Test
     fun givenExistingUser_ThenUserCanBeUpdated() = runTest {
         db.userDAO.insertUser(user1)
-        val updatedUser1 = UserEntity(user1.id, "John Doe", "johndoe", "email1", "phone1", 1, "team")
+        val updatedUser1 = UserEntity(user1.id, "John Doe", "johndoe", "email1", "phone1", 1,
+            "team", "preview1", "complete1")
         db.userDAO.updateUser(updatedUser1)
         val result = db.userDAO.getUserByQualifiedID(user1.id).first()
         assertEquals(result, updatedUser1)
@@ -64,7 +65,8 @@ class UserDAOTest : BaseDatabaseTest() {
     @Test
     fun givenListOfUsers_ThenUserCanBeQueriedByName() = runTest {
         db.userDAO.insertUser(user1)
-        val updatedUser1 = UserEntity(user1.id, "John Doe", "johndoe", "email1", "phone1", 1, "team")
+        val updatedUser1 = UserEntity(user1.id, "John Doe", "johndoe", "email1", "phone1", 1,
+            "team", "preview1", "complete1")
 
         val result = db.userDAO.getUserByQualifiedID(user1.id)
         assertEquals(user1, result.first())
@@ -76,7 +78,8 @@ class UserDAOTest : BaseDatabaseTest() {
     @Test
     fun givenRetrievedUser_ThenUpdatesArePropagatedThroughFlow() = runTest {
         db.userDAO.insertUser(user1)
-        val updatedUser1 = UserEntity(user1.id, "John Doe", "johndoe", "email1", "phone1", 1, "team")
+        val updatedUser1 = UserEntity(user1.id, "John Doe", "johndoe", "email1", "phone1", 1,
+            "team", "preview1", "complete1")
 
         val result = db.userDAO.getUserByQualifiedID(user1.id)
         assertEquals(user1, result.first())
@@ -97,6 +100,8 @@ class UserDAOTest : BaseDatabaseTest() {
                 phone = "testPhone1",
                 accentId = 1,
                 team = "testTeam1",
+                previewAssetId = "preview1",
+                completeAssetId = "complete1"
             )
         val user2 =
             UserEntity(
@@ -107,6 +112,8 @@ class UserDAOTest : BaseDatabaseTest() {
                 phone = "testPhone2",
                 accentId = 2,
                 team = "testTeam2",
+                previewAssetId = "preview2",
+                completeAssetId = "complete2"
             )
         val user3 =
             UserEntity(
@@ -117,6 +124,8 @@ class UserDAOTest : BaseDatabaseTest() {
                 phone = "testPhone3",
                 accentId = 3,
                 team = "testTeam3",
+                previewAssetId = "preview3",
+                completeAssetId = "complete3"
             )
         db.userDAO.insertUsers(listOf(user1, user2, user3))
         //when
@@ -137,6 +146,8 @@ class UserDAOTest : BaseDatabaseTest() {
                 phone = "testPhone1",
                 accentId = 1,
                 team = "testTeam1",
+                previewAssetId = "preview1",
+                completeAssetId = "complete1"
             )
         val user2 =
             UserEntity(
@@ -147,6 +158,8 @@ class UserDAOTest : BaseDatabaseTest() {
                 phone = "testPhone2",
                 accentId = 2,
                 team = "testTeam2",
+                previewAssetId = "preview2",
+                completeAssetId = "complete2"
             )
         val user3 =
             UserEntity(
@@ -157,6 +170,8 @@ class UserDAOTest : BaseDatabaseTest() {
                 phone = "testPhone3",
                 accentId = 3,
                 team = "testTeam3",
+                previewAssetId = "preview3",
+                completeAssetId = "complete3"
             )
         db.userDAO.insertUsers(listOf(user1, user2, user3))
         //when
@@ -177,6 +192,8 @@ class UserDAOTest : BaseDatabaseTest() {
                 phone = "testPhone1",
                 accentId = 1,
                 team = "testTeam1",
+                previewAssetId = "preview1",
+                completeAssetId = "complete1"
             )
         val user2 =
             UserEntity(
@@ -187,6 +204,8 @@ class UserDAOTest : BaseDatabaseTest() {
                 phone = "testPhone2",
                 accentId = 2,
                 team = "testTeam2",
+                previewAssetId = "preview2",
+                completeAssetId = "complete2"
             )
         val user3 =
             UserEntity(
@@ -197,6 +216,8 @@ class UserDAOTest : BaseDatabaseTest() {
                 phone = "testPhone3",
                 accentId = 3,
                 team = "testTeam3",
+                previewAssetId = "preview3",
+                completeAssetId = "complete3"
             )
         db.userDAO.insertUsers(listOf(user1, user2, user3))
         //when
@@ -220,6 +241,8 @@ class UserDAOTest : BaseDatabaseTest() {
                     phone = "testPhone1",
                     accentId = 1,
                     team = "testTeam1",
+                    previewAssetId = "preview1",
+                    completeAssetId = "complete1"
                 ),
                 UserEntity(
                     id = QualifiedID("2", "wire.com"),
@@ -229,6 +252,8 @@ class UserDAOTest : BaseDatabaseTest() {
                     phone = "testPhone2",
                     accentId = 2,
                     team = "testTeam2",
+                    previewAssetId = "preview2",
+                    completeAssetId = "complete2"
                 ),
                 UserEntity(
                     id = QualifiedID("3", "wire.com"),
@@ -238,6 +263,8 @@ class UserDAOTest : BaseDatabaseTest() {
                     phone = "testPhone3",
                     accentId = 3,
                     team = "testTeam3",
+                    previewAssetId = "preview3",
+                    completeAssetId = "complete3"
                 )
             )
             val notCommonEmailUsers = listOf(
@@ -249,6 +276,8 @@ class UserDAOTest : BaseDatabaseTest() {
                     phone = "testPhone4",
                     accentId = 4,
                     team = "testTeam4",
+                    previewAssetId = "preview4",
+                    completeAssetId = "complete4"
                 ),
                 UserEntity(
                     id = QualifiedID("5", "wire.com"),
@@ -258,6 +287,8 @@ class UserDAOTest : BaseDatabaseTest() {
                     phone = "testPhone5",
                     accentId = 5,
                     team = "testTeam5",
+                    previewAssetId = "preview5",
+                    completeAssetId = "complete5"
                 )
             )
             val mockUsers = commonEmailUsers + notCommonEmailUsers
@@ -282,6 +313,8 @@ class UserDAOTest : BaseDatabaseTest() {
                 phone = "testPhone",
                 accentId = 1,
                 team = "testTeam",
+                previewAssetId = "preview1",
+                completeAssetId = "complete1"
             ),
             UserEntity(
                 id = QualifiedID("2", "wire.com"),
@@ -291,6 +324,8 @@ class UserDAOTest : BaseDatabaseTest() {
                 phone = "testPhone2",
                 accentId = 2,
                 team = "testTeam2",
+                previewAssetId = "preview2",
+                completeAssetId = "complete2"
             ),
             UserEntity(
                 id = QualifiedID("3", "wire.com"),
@@ -300,6 +335,8 @@ class UserDAOTest : BaseDatabaseTest() {
                 phone = "testPhone3",
                 accentId = 3,
                 team = "testTeam3",
+                previewAssetId = "preview3",
+                completeAssetId = "complete3"
             )
         )
         db.userDAO.insertUsers(mockUsers)
@@ -325,6 +362,8 @@ class UserDAOTest : BaseDatabaseTest() {
                 phone = "testPhone1",
                 accentId = 1,
                 team = "testTeam1",
+                previewAssetId = "preview1",
+                completeAssetId = "complete1"
             ),
             UserEntity(
                 id = QualifiedID("2", "wire.com"),
@@ -334,6 +373,8 @@ class UserDAOTest : BaseDatabaseTest() {
                 phone = "testPhone2",
                 accentId = 2,
                 team = "testTeam2",
+                previewAssetId = "preview2",
+                completeAssetId = "complete2"
             ),
             UserEntity(
                 id = QualifiedID("3", "wire.com"),
@@ -343,6 +384,8 @@ class UserDAOTest : BaseDatabaseTest() {
                 phone = "testPhone3",
                 accentId = 3,
                 team = "testTeam3",
+                previewAssetId = "preview3",
+                completeAssetId = "complete3"
             )
         )
         db.userDAO.insertUsers(mockUsers)
@@ -369,6 +412,8 @@ class UserDAOTest : BaseDatabaseTest() {
                 phone = "testPhone1",
                 accentId = 1,
                 team = "testTeam1",
+                previewAssetId = "preview21",
+                completeAssetId = "complete1"
             ),
             UserEntity(
                 id = QualifiedID("2", "wire.com"),
@@ -378,6 +423,8 @@ class UserDAOTest : BaseDatabaseTest() {
                 phone = "testPhone2",
                 accentId = 2,
                 team = "testTeam2",
+                previewAssetId = "preview2",
+                completeAssetId = "complete2"
             ),
             UserEntity(
                 id = QualifiedID("3", "wire.com"),
@@ -387,6 +434,8 @@ class UserDAOTest : BaseDatabaseTest() {
                 phone = "testPhone3",
                 accentId = 3,
                 team = "testTeam3",
+                previewAssetId = "preview3",
+                completeAssetId = "complete3"
             )
         )
         db.userDAO.insertUsers(mockUsers)
@@ -412,6 +461,8 @@ class UserDAOTest : BaseDatabaseTest() {
                 phone = "testPhone1",
                 accentId = 1,
                 team = "testTeam1",
+                previewAssetId = "preview1",
+                completeAssetId = "complete1"
             ),
             UserEntity(
                 id = QualifiedID("2", "wire.com"),
@@ -421,6 +472,8 @@ class UserDAOTest : BaseDatabaseTest() {
                 phone = "testPhone2",
                 accentId = 2,
                 team = "testTeam2",
+                previewAssetId = "preview2",
+                completeAssetId = "complete2"
             ),
             UserEntity(
                 id = QualifiedID("3", "wire.com"),
@@ -430,6 +483,8 @@ class UserDAOTest : BaseDatabaseTest() {
                 phone = "testPhone3",
                 accentId = 3,
                 team = "testTeam3",
+                previewAssetId = "preview3",
+                completeAssetId = "complete3"
             )
         )
         db.userDAO.insertUsers(mockUsers)
@@ -456,6 +511,8 @@ class UserDAOTest : BaseDatabaseTest() {
                     phone = "testPhone1",
                     accentId = 1,
                     team = "testTeam1",
+                    previewAssetId = "preview1",
+                    completeAssetId = "complete1"
                 ),
                 UserEntity(
                     id = QualifiedID("2", "wire.com"),
@@ -465,6 +522,8 @@ class UserDAOTest : BaseDatabaseTest() {
                     phone = "testPhone2",
                     accentId = 2,
                     team = "testTeam2",
+                    previewAssetId = "preview2",
+                    completeAssetId = "complete2"
                 ),
                 UserEntity(
                     id = QualifiedID("3", "wire.com"),
@@ -474,6 +533,8 @@ class UserDAOTest : BaseDatabaseTest() {
                     phone = "testPhone3",
                     accentId = 3,
                     team = "testTeam3",
+                    previewAssetId = "preview3",
+                    completeAssetId = "complete3"
                 )
             )
             db.userDAO.insertUsers(mockUsers)

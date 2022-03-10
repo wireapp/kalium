@@ -1,7 +1,5 @@
 package com.wire.kalium.logic.data.asset
 
-import com.wire.kalium.cryptography.utils.calcMd5
-
 data class UploadedAssetId(val key: String)
 
 /**
@@ -15,8 +13,6 @@ data class UploadAssetData(
     val retentionType: RetentionType
 ) {
 
-    var md5: String = calcMd5(data)
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
@@ -27,7 +23,6 @@ data class UploadAssetData(
         if (mimeType != other.mimeType) return false
         if (isPublic != other.isPublic) return false
         if (retentionType != other.retentionType) return false
-        if (md5 != other.md5) return false
 
         return true
     }
@@ -37,7 +32,6 @@ data class UploadAssetData(
         result = 31 * result + mimeType.hashCode()
         result = 31 * result + isPublic.hashCode()
         result = 31 * result + retentionType.hashCode()
-        result = 31 * result + md5.hashCode()
         return result
     }
 }
