@@ -20,6 +20,20 @@ Run `make`, then pass the libraries in `native/libs` and the location of `libsod
 
 Note that the path needs to be adjusted for your machine.
 
+##### Troubleshooting
+
+###### Unknown host CPU architecture: arm64
+
+If you get `Unknown host CPU architecture: arm64` on Apple Silicon (M1 Mac), [follow this stack overflow answer](https://stackoverflow.com/questions/69541831/unknown-host-cpu-architecture-arm64-android-ndk-siliconm1-apple-macbook-pro).
+
+Change `/Users/<your-user>/Library/Android/sdk/ndk/<your-ndk-version-number>` to
+
+```
+#!/bin/sh
+DIR="$(cd "$(dirname "$0")" && pwd)"
+arch -x86_64 /bin/bash $DIR/build/ndk-build "$@"
+```
+
 #### Running the tests
 
 In `build.gradle.kts` your test task should look something like this:
