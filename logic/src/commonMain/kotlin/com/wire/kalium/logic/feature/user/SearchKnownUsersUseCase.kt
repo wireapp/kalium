@@ -9,7 +9,7 @@ interface SearchKnownUsersUseCase {
     suspend operator fun invoke(searchQuery: String): Flow<List<UserEntity>>
 }
 
-class SearchKnownUsersUseCaseImpl(
+internal class SearchKnownUsersUseCaseImpl(
     private val userRepository: UserRepository
 ) : SearchKnownUsersUseCase {
 
