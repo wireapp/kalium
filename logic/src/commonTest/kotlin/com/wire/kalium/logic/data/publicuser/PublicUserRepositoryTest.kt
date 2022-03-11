@@ -69,13 +69,63 @@ class PublicUserRepositoryTest {
     // when contactSearchApi.search returns success, but userApi.getMultipleUsers fails, serarchpubliccontact returns CoreFailure
     @Test
     fun adas() = runTest {
+        //given
+        given(contactSearchApi)
+            .suspendFunction(contactSearchApi::search)
+            .whenInvokedWith(any())
+            .then { TestNetworkResponseError.genericError() }
 
+        //when
+        val actual = publicUserRepository.searchPublicContact("test")
+
+        //then
+        assertIs<Either.Left<NetworkFailure>>(actual)
+
+        verify(contactSearchApi)
+            .suspendFunction(contactSearchApi::search)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+        verify(userDetailsApi)
+            .suspendFunction(userDetailsApi::getMultipleUsers)
+            .with(any())
+            .wasNotInvoked()
+
+        verify(publicUserMapper)
+            .function(publicUserMapper::fromUserDetailResponse)
+            .with(any())
+            .wasNotInvoked()
     }
 
     //when contactserach api results success, and getmultuiple user returns success then searchpubliconctact returns mapped responses
     @Test
     fun dasdadas() = runTest {
+        //given
+        given(contactSearchApi)
+            .suspendFunction(contactSearchApi::search)
+            .whenInvokedWith(any())
+            .then { TestNetworkResponseError.genericError() }
 
+        //when
+        val actual = publicUserRepository.searchPublicContact("test")
+
+        //then
+        assertIs<Either.Left<NetworkFailure>>(actual)
+
+        verify(contactSearchApi)
+            .suspendFunction(contactSearchApi::search)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+        verify(userDetailsApi)
+            .suspendFunction(userDetailsApi::getMultipleUsers)
+            .with(any())
+            .wasNotInvoked()
+
+        verify(publicUserMapper)
+            .function(publicUserMapper::fromUserDetailResponse)
+            .with(any())
+            .wasNotInvoked()
     }
 
 }
