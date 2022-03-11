@@ -31,8 +31,7 @@ actual class CoreLogic(clientLabel: String, rootProteusDirectoryPath: String) :
 
             val proteusClient: ProteusClient = ProteusClientImpl(rootProteusDirectoryPath, session.userId)
             runBlocking { proteusClient.open() }
-
-
+            
             val workScheduler = WorkScheduler(this, session)
             val syncManager = SyncManagerImpl(workScheduler)
             val encryptedSettingsHolder = EncryptedSettingsHolder("${PREFERENCE_FILE_PREFIX}-${session.userId}")

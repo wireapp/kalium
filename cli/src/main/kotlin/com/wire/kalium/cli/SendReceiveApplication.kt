@@ -10,7 +10,6 @@ import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.client.RegisterClientResult
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
