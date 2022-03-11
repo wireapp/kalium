@@ -48,11 +48,7 @@ class PublicUserRepositoryImpl(
                     .mapSuccess { userDetailsResponses ->
                         PublicUserSearchResult(
                             totalFound = contactResultValue.found,
-                            publicUsers = userDetailsResponses.map { userDetailResponse ->
-                                publicUserMapper.fromUserDetailResponse(
-                                    userDetailResponse
-                                )
-                            }
+                            publicUsers = publicUserMapper.fromUserDetailResponses(userDetailsResponses)
                         )
                     }
             }

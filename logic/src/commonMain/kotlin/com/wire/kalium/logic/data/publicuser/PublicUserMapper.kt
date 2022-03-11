@@ -8,6 +8,7 @@ import com.wire.kalium.network.api.user.details.UserDetailsResponse
 
 interface PublicUserMapper {
     fun fromUserDetailResponse(userDetailResponse: UserDetailsResponse): PublicUser
+    fun fromUserDetailResponses(userDetailResponse: List<UserDetailsResponse>): List<PublicUser>
 }
 
 class PublicUserMapperImpl : PublicUserMapper {
@@ -21,5 +22,10 @@ class PublicUserMapperImpl : PublicUserMapper {
         previewPicture = userDetailResponse.assets.getPreviewAssetOrNull()?.key,
         completePicture = userDetailResponse.assets.getCompleteAssetOrNull()?.key,
     )
+
+    override fun fromUserDetailResponses(userDetailResponse: List<UserDetailsResponse>) =
+        userDetailResponse.map {
+            fromUserDetailResponse(it)
+        }
 
 }
