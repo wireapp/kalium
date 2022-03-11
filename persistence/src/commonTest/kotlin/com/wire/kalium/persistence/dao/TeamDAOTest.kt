@@ -48,6 +48,6 @@ class TeamDAOTest : BaseDatabaseTest() {
     }
 
     private companion object {
-        val teamId = "abc-1234-def-5678-ghi-9012"
+        const val teamId = "abc-1234-def-5678-ghi-9012"
     }
 }
