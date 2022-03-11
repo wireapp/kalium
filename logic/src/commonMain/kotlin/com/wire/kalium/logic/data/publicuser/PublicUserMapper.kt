@@ -6,8 +6,13 @@ import com.wire.kalium.network.api.asset.getCompleteAssetOrNull
 import com.wire.kalium.network.api.asset.getPreviewAssetOrNull
 import com.wire.kalium.network.api.user.details.UserDetailsResponse
 
-class PublicUserMapper {
-    fun fromUserDetailResponse(userDetailResponse: UserDetailsResponse) = PublicUser(
+interface PublicUserMapper {
+    fun fromUserDetailResponse(userDetailResponse: UserDetailsResponse): PublicUser
+}
+
+class PublicUserMapperImpl : PublicUserMapper {
+
+    override fun fromUserDetailResponse(userDetailResponse: UserDetailsResponse) = PublicUser(
         id = UserId(userDetailResponse.id.value, userDetailResponse.id.domain),
         name = userDetailResponse.name,
         handle = userDetailResponse.handle,
@@ -16,4 +21,5 @@ class PublicUserMapper {
         previewPicture = userDetailResponse.assets.getPreviewAssetOrNull()?.key,
         completePicture = userDetailResponse.assets.getCompleteAssetOrNull()?.key,
     )
+
 }

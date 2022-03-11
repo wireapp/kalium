@@ -1,8 +1,8 @@
 package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.network.api.asset.ImageSize
 import com.wire.kalium.network.api.asset.AvatarAssetDTO
+import com.wire.kalium.network.api.asset.ImageSize
 import com.wire.kalium.network.api.asset.getCompleteAssetOrNull
 import com.wire.kalium.network.api.asset.getPreviewAssetOrNull
 import com.wire.kalium.network.api.user.details.UserDetailsResponse

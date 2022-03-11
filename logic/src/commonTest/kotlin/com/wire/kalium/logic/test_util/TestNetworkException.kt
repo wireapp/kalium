@@ -2,6 +2,7 @@ package com.wire.kalium.logic.test_util
 
 import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.utils.NetworkResponse
 
 object TestNetworkException {
 
@@ -36,4 +37,11 @@ object TestNetworkException {
             label = "invalid-credentials"
         )
     )
+}
+
+
+object TestNetworkResponseError{
+
+    fun <T : Any>genericError() : NetworkResponse<T> = NetworkResponse.Error(TestNetworkException.generic)
+
 }

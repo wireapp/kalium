@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.publicuser
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.publicuser.model.PublicUserSearchResult
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.mapLeft
@@ -32,7 +33,7 @@ class PublicUserRepositoryImpl(
         searchQuery: String,
         domain: String?,
         resultSize: Int?
-    ): Either<CoreFailure, PublicUserSearchResult> {
+    ): Either<NetworkFailure, PublicUserSearchResult> {
         return wrapApiRequest {
             contactSearchApi.search(
                 ContactSearchRequest(
@@ -55,7 +56,7 @@ class PublicUserRepositoryImpl(
                         )
                     }
             }
-        }.mapLeft { CoreFailure.Unknown(IllegalStateException()) }
+        }.mapLeft { NetworkFailure.ServerMiscommunication(it.kaliumException) }
     }
 
 }
