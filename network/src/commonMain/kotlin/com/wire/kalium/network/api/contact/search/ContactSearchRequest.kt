@@ -6,7 +6,7 @@ data class ContactSearchRequest(
     @SerialName("q")
     val searchQuery: String,
     @SerialName("domain")
-    val domain: String? = null,
+    val domain: String
     @SerialName("size")
     val resultSize: Int? = null
 )
