@@ -59,7 +59,7 @@ class SendReceiveApplication : CliktCommand() {
 
                     when (content) {
                         is MessageContent.Text -> println("> ${content.value}")
-                        else -> println("<unknown message>")
+                        Unknown -> { /* do nothing */ }
                     }
                 }
             }
