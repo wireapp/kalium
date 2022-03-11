@@ -45,7 +45,6 @@ class PublicUserRepositoryTest {
         publicUserRepository = PublicUserRepositoryImpl(contactSearchApi, userDetailsApi, publicUserMapper)
     }
 
-    // when contactSearchApi returns error serachpublic returns CoreFailure.Uknown
     @Test
     fun givenContactSearchApiFailure_whenSearchPublicContact_resultIsFailure() = runTest {
         //given
@@ -70,7 +69,7 @@ class PublicUserRepositoryTest {
             .then { TestNetworkResponseError.genericError() }
 
         //when
-        val actual = publicUserRepository.searchPublicContact("test")
+        publicUserRepository.searchPublicContact("test")
 
         //then
         verify(contactSearchApi)
@@ -101,7 +100,6 @@ class PublicUserRepositoryTest {
             .wasNotInvoked()
     }
 
-    // when contactSearchApi.search returns success, but userApi.getMultipleUsers fails, serarchpubliccontact returns CoreFailure
     @Test
     fun givenContactSearchApiSuccessButuserDetailsApiFailure_whenSearchPublicContact_resultIsFailure() = runTest {
         //given
@@ -121,7 +119,6 @@ class PublicUserRepositoryTest {
         assertIs<Either.Left<NetworkFailure>>(actual)
     }
 
-    // when contactSearchApi.search returns success, but userApi.getMultipleUsers fails, serarchpubliccontact returns CoreFailure
     @Test
     fun givenContactSearchApiSuccessButuserDetailsApiFailure_whenSearchPublicContact_ThenPublicUserMapperIsNotInvoked() = runTest {
         //given
@@ -144,7 +141,6 @@ class PublicUserRepositoryTest {
             .wasNotInvoked()
     }
 
-    // when contactSearchApi.search returns success, but userApi.getMultipleUsers fails, serarchpubliccontact returns CoreFailure
     @Test
     fun givenContactSearchApiSuccessButUserDetailsApiFailure_whenSearchPublicContact_ThenContactSearchApiAndUserDetailsApiIsInvoked() =
         runTest {
@@ -173,9 +169,8 @@ class PublicUserRepositoryTest {
                 .wasInvoked(exactly = once)
         }
 
-    // when contactSearchApi.search returns success, but userApi.getMultipleUsers fails, serarchpubliccontact returns CoreFailure
     @Test
-    fun when() = runTest {
+    fun givenContactSearchApiAndUserDetailsApiAndPublicUserApiReturnSuccess_WhenSearchPublicContact_ThenResultIsSuccess() = runTest {
         //given
         given(contactSearchApi)
             .suspendFunction(contactSearchApi::search)
@@ -192,34 +187,45 @@ class PublicUserRepositoryTest {
             .whenInvokedWith(any())
             .then { PUBLIC_USERS }
 
-        val expectedResult = PublicUserSearchResult(
-            totalFound = PUBLIC_USERS.size,
-            publicUsers = PUBLIC_USERS
-        )
         //when
         val actual = publicUserRepository.searchPublicContact("test")
 
+        //then
         assertIs<Either.Right<PublicUserSearchResult>>(actual)
-        assertEquals(expectedResult, actual.value)
-
-        verify(contactSearchApi)
-            .suspendFunction(contactSearchApi::search)
-            .with(any())
-            .wasInvoked(exactly = once)
-
-        verify(userDetailsApi)
-            .suspendFunction(userDetailsApi::getMultipleUsers)
-            .with(any())
-            .wasInvoked(exactly = once)
-
-        verify(publicUserMapper)
-            .function(publicUserMapper::fromUserDetailResponses)
-            .with(any())
-            .wasInvoked(exactly = once)
     }
 
     @Test
-    fun adSadasdass() = runTest {
+    fun givenContactSearchApiAndUserDetailsApiAndPublicUserApiReturnSuccess_WhenSearchPublicContact_ThenResultIsEqualToExpectedValue() =
+        runTest {
+            //given
+            given(contactSearchApi)
+                .suspendFunction(contactSearchApi::search)
+                .whenInvokedWith(any())
+                .then { NetworkResponse.Success(CONTACT_SEARCH_RESPONSE, mapOf(), 200) }
+
+            given(userDetailsApi)
+                .suspendFunction(userDetailsApi::getMultipleUsers)
+                .whenInvokedWith(any())
+                .then { NetworkResponse.Success(GET_MULTIPLE_USER_RESPONSE, mapOf(), 200) }
+
+            given(publicUserMapper)
+                .function(publicUserMapper::fromUserDetailResponses)
+                .whenInvokedWith(any())
+                .then { PUBLIC_USERS }
+
+            val expectedResult = PublicUserSearchResult(
+                totalFound = PUBLIC_USERS.size,
+                publicUsers = PUBLIC_USERS
+            )
+            //when
+            val actual = publicUserRepository.searchPublicContact("test")
+
+            assertIs<Either.Right<PublicUserSearchResult>>(actual)
+            assertEquals(expectedResult, actual.value)
+        }
+
+    @Test
+    fun givenContactSearchApiAndUserDetailsApiAndPublicUserApiReturnSuccessWithNoResult_WhenSearchPublicContact_ThenResultIsEqualToEmptyList() = runTest {
         //given
         given(contactSearchApi)
             .suspendFunction(contactSearchApi::search)
@@ -245,21 +251,6 @@ class PublicUserRepositoryTest {
 
         assertIs<Either.Right<PublicUserSearchResult>>(actual)
         assertEquals(expectedResult, actual.value)
-
-        verify(contactSearchApi)
-            .suspendFunction(contactSearchApi::search)
-            .with(any())
-            .wasInvoked(exactly = once)
-
-        verify(userDetailsApi)
-            .suspendFunction(userDetailsApi::getMultipleUsers)
-            .with(any())
-            .wasInvoked(exactly = once)
-
-        verify(publicUserMapper)
-            .function(publicUserMapper::fromUserDetailResponses)
-            .with(any())
-            .wasInvoked(exactly = once)
     }
 
     private companion object {
