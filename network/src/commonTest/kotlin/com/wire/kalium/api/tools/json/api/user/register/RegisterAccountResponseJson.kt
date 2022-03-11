@@ -1,7 +1,7 @@
 package com.wire.kalium.api.tools.json.api.user.register
 
 import com.wire.kalium.api.tools.json.ValidJsonProvider
-import com.wire.kalium.network.api.user.register.RegisterResponse
+import com.wire.kalium.network.api.model.UserDTO
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -10,9 +10,9 @@ import kotlinx.serialization.json.putJsonObject
 
 object RegisterAccountResponseJson {
 
-    private val jsonProvider = { serializable: RegisterResponse ->
+    private val jsonProvider = { serializable: UserDTO ->
         buildJsonObject {
-            put("id", serializable.id)
+            put("id", serializable.nonQualifiedId)
             put("name", serializable.name)
             putJsonArray("assets") {
                 if (serializable.assets.isNotEmpty()) {
@@ -40,7 +40,7 @@ object RegisterAccountResponseJson {
     }
 
     val validRegisterResponse = ValidJsonProvider(
-        RegisterResponse(
+        UserDTO(
             id = "user_id",
             name = "user_name_123",
             accentId = null,

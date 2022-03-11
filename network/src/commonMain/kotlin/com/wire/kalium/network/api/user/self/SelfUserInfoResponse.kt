@@ -2,7 +2,7 @@ package com.wire.kalium.network.api.user.self
 
 import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.UserSsoId
-import com.wire.kalium.network.api.model.Service
+import com.wire.kalium.network.api.model.ServiceDTO
 import com.wire.kalium.network.api.model.UserAssetDTO
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -31,7 +31,7 @@ data class SelfUserInfoResponse(
     @SerialName("locale")
     val locale: String,
     @SerialName("service")
-    val service: Service?,
+    val service: ServiceDTO?,
     @SerialName("expires_at")
     val expiresAt: String?, // Time of sending message. ,
     @SerialName("handle")
