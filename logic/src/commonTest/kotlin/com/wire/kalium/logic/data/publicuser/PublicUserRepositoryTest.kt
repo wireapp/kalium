@@ -225,33 +225,34 @@ class PublicUserRepositoryTest {
         }
 
     @Test
-    fun givenContactSearchApiAndUserDetailsApiAndPublicUserApiReturnSuccessWithNoResult_WhenSearchPublicContact_ThenResultIsEqualToEmptyList() = runTest {
-        //given
-        given(contactSearchApi)
-            .suspendFunction(contactSearchApi::search)
-            .whenInvokedWith(any())
-            .then { NetworkResponse.Success(EMPTY_CONTACT_SEARCH_RESPONSE, mapOf(), 200) }
+    fun givenContactSearchApiAndUserDetailsApiAndPublicUserApiReturnSuccessWithNoResult_WhenSearchPublicContact_ThenResultIsEqualToEmptyList() =
+        runTest {
+            //given
+            given(contactSearchApi)
+                .suspendFunction(contactSearchApi::search)
+                .whenInvokedWith(any())
+                .then { NetworkResponse.Success(EMPTY_CONTACT_SEARCH_RESPONSE, mapOf(), 200) }
 
-        given(userDetailsApi)
-            .suspendFunction(userDetailsApi::getMultipleUsers)
-            .whenInvokedWith(any())
-            .then { NetworkResponse.Success(emptyList(), mapOf(), 200) }
+            given(userDetailsApi)
+                .suspendFunction(userDetailsApi::getMultipleUsers)
+                .whenInvokedWith(any())
+                .then { NetworkResponse.Success(emptyList(), mapOf(), 200) }
 
-        given(publicUserMapper)
-            .function(publicUserMapper::fromUserDetailResponses)
-            .whenInvokedWith(any())
-            .then { emptyList() }
+            given(publicUserMapper)
+                .function(publicUserMapper::fromUserDetailResponses)
+                .whenInvokedWith(any())
+                .then { emptyList() }
 
-        val expectedResult = PublicUserSearchResult(
-            totalFound = 0,
-            publicUsers = emptyList()
-        )
-        //when
-        val actual = publicUserRepository.searchPublicContact("test")
+            val expectedResult = PublicUserSearchResult(
+                totalFound = 0,
+                publicUsers = emptyList()
+            )
+            //when
+            val actual = publicUserRepository.searchPublicContact("test")
 
-        assertIs<Either.Right<PublicUserSearchResult>>(actual)
-        assertEquals(expectedResult, actual.value)
-    }
+            assertIs<Either.Right<PublicUserSearchResult>>(actual)
+            assertEquals(expectedResult, actual.value)
+        }
 
     private companion object {
         val CONTACTS = buildList {
