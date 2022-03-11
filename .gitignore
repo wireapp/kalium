@@ -101,3 +101,5 @@ libs/
 # Carthage
 **/Carthage/Checkouts/
 
+# CLI working diretory
+.proteus
