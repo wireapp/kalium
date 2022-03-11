@@ -4,12 +4,8 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.mapLeft
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.network.api.contact.search.ContactSearchApi
-import com.wire.kalium.network.api.contact.search.ContactSearchRequest
-import com.wire.kalium.network.api.contact.search.ContactSearchResponse
 import com.wire.kalium.network.api.user.details.ListUserRequest
 import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.network.api.user.details.qualifiedIds
@@ -34,11 +30,6 @@ interface UserRepository {
     suspend fun fetchUsersByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun getSelfUser(): Flow<SelfUser>
     suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, SelfUser>
-    suspend fun searchPublicContact(
-        searchQuery: String,
-        domain: String? = null,
-        resultSize: Int? = null
-    ): Either<CoreFailure, ContactSearchResponse>
 }
 
 class UserDataSource(
@@ -46,7 +37,6 @@ class UserDataSource(
     private val metadataDAO: MetadataDAO,
     private val selfApi: SelfApi,
     private val userApi: UserDetailsApi,
-    private val contactSearchApi: ContactSearchApi,
     private val idMapper: IdMapper,
     private val userMapper: UserMapper,
     private val assetRepository: AssetRepository
@@ -107,16 +97,6 @@ class UserDataSource(
             Either.Right(userMapper.fromDaoModel(updatedUser))
         } else {
             Either.Left(CoreFailure.Unknown(IllegalStateException()))
-        }
-    }
-
-    override suspend fun searchPublicContact(
-        searchQuery: String,
-        domain: String?,
-        resultSize: Int?
-    ): Either<CoreFailure, ContactSearchResponse> {
-        return wrapApiRequest { contactSearchApi.search(ContactSearchRequest(searchQuery, domain, resultSize)) }.mapLeft {
-            CoreFailure.Unknown(NullPointerException())
         }
     }
 

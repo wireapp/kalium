@@ -2,7 +2,6 @@ package com.wire.kalium.network.utils
 
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.client.statement.HttpResponse
-import io.ktor.http.HttpHeaders
 import io.ktor.http.parseServerSetCookieHeader
 import io.ktor.util.toMap
 import kotlin.contracts.ExperimentalContracts
@@ -42,4 +41,14 @@ fun <T : Any> NetworkResponse<T>.isSuccessful(): Boolean {
         returns(false) implies (this@isSuccessful is NetworkResponse.Error)
     }
     return this@isSuccessful is NetworkResponse.Success
+}
+
+suspend fun <T : Any, R : Any> NetworkResponse<T>.flatMap(
+    fn: suspend (NetworkResponse.Success<T>) -> NetworkResponse<R>
+): NetworkResponse<R> {
+    return if (isSuccessful()) {
+        fn(this)
+    } else {
+        NetworkResponse.Error(this.kException)
+    }
 }

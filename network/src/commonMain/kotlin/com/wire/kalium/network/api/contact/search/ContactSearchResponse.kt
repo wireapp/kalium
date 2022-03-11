@@ -8,16 +8,16 @@ data class ContactSearchResponse(
     @SerialName("documents") val documents: List<ContactDTO>,
     @SerialName("found") val found: Int,
     @SerialName("returned") val returned: Int,
-    @SerialName("search_policy") val search_policy: SearchPolicyDTO,
+    @SerialName("search_policy") val searchPolicy: SearchPolicyDTO,
     @SerialName("took") val took: Int
 )
 
 data class ContactDTO(
-    @SerialName("accent_id") val accent_id: Int,
+    @SerialName("accent_id") val accentId: Int,
     @SerialName("handle") val handle: String,
     @SerialName("id") val id: String,
     @SerialName("name") val name: String,
-    @SerialName("qualified_id") val qualified_id: UserId,
+    @SerialName("qualified_id") val qualifiedID: UserId,
     @SerialName("team") val team: String
 )
 
