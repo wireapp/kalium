@@ -15,8 +15,6 @@ sealed class CoreFailure {
     data class Unknown(val rootCause: Throwable?) : CoreFailure()
 
     abstract class FeatureFailure : CoreFailure()
-
-    object MissingSelfUser: CoreFailure()
 }
 
 sealed class NetworkFailure(internal val kaliumException: KaliumException) : CoreFailure() {
