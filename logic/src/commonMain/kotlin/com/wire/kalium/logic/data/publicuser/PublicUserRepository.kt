@@ -18,7 +18,7 @@ import com.wire.kalium.network.utils.mapSuccess
 interface PublicUserRepository {
     suspend fun searchPublicContact(
         searchQuery: String,
-        domain: String? = null,
+        domain: String,
         resultSize: Int? = null
     ): Either<CoreFailure, PublicUserSearchResult>
 }
@@ -31,7 +31,7 @@ class PublicUserRepositoryImpl(
 
     override suspend fun searchPublicContact(
         searchQuery: String,
-        domain: String?,
+        domain: String,
         resultSize: Int?
     ): Either<NetworkFailure, PublicUserSearchResult> {
         return wrapApiRequest {
