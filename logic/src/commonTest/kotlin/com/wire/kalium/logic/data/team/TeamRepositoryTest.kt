@@ -1,6 +1,6 @@
 package com.wire.kalium.logic.data.team
 
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.AssetId
 import com.wire.kalium.network.api.teams.TeamsApi
 import com.wire.kalium.network.utils.NetworkResponse
@@ -8,18 +8,22 @@ import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.TeamEntity
 import io.mockative.Mock
 import io.mockative.classOf
+import io.mockative.configure
 import io.mockative.given
 import io.mockative.mock
+import io.mockative.once
 import io.mockative.oneOf
+import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
-import kotlin.test.assertEquals
 
 class TeamRepositoryTest {
 
     @Mock
-    private val teamDAO = mock(classOf<TeamDAO>())
+    private val teamDAO = configure(mock(classOf<TeamDAO>())){
+        stubsUnitByDefault = true
+    }
 
     @Mock
     private val teamMapper = mock(classOf<TeamMapper>())
@@ -39,7 +43,7 @@ class TeamRepositoryTest {
     }
 
     @Test
-    fun givenSelfUserExists_whenGettingTeamInfo_thenTeamInfoShouldBeReturned() = runTest {
+    fun givenSelfUserExists_whenGettingTeamInfo_thenTeamInfoShouldBeSuccessful() = runTest {
         val team = TeamsApi.Team(
             creator = "creator",
             icon = AssetId(),
@@ -70,11 +74,16 @@ class TeamRepositoryTest {
             .whenInvokedWith(oneOf(team))
             .then { teamEntity }
 
-        given(teamDAO)
-            .coroutine { insertTeam(team = teamEntity) }
-            .then { } // returns Unit
-
         val result = teamRepository.fetchTeamById(teamId = "teamId")
-        assertEquals(Either.Right(Unit), result)
+
+        // Verifies that teamDAO insertTeam was called with the correct mapped values
+        verify(teamDAO)
+            .suspendFunction(teamDAO::insertTeam)
+            .with(oneOf(teamEntity))
+            .wasInvoked(exactly = once)
+
+
+        // Verifies that when fetching team by id, it succeeded
+        result.shouldSucceed()
     }
 }
