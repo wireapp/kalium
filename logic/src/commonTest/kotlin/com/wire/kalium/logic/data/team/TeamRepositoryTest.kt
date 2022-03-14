@@ -1,12 +1,17 @@
 package com.wire.kalium.logic.data.team
 
+import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.AssetId
+import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.api.teams.TeamsApi
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.TeamEntity
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.classOf
 import io.mockative.configure
 import io.mockative.given
@@ -17,6 +22,7 @@ import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class TeamRepositoryTest {
 
@@ -85,5 +91,19 @@ class TeamRepositoryTest {
 
         // Verifies that when fetching team by id, it succeeded
         result.shouldSucceed()
+    }
+
+    @Test
+    fun givenTeamApiFails_whenGettingTeamInfo_thenTheFailureIsPropagated() = runTest {
+        given(teamsApi)
+            .suspendFunction(teamsApi::getTeamInfo)
+            .whenInvokedWith(any())
+            .thenReturn(NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))))
+
+        val result = teamRepository.fetchTeamById(teamId = "teamId")
+
+        result.shouldFail {
+            assertEquals(it::class, NetworkFailure.ServerMiscommunication::class)
+        }
     }
 }
