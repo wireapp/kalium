@@ -2,7 +2,6 @@ package com.wire.kalium.network.api.conversation
 
 import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.UserId
-import com.wire.kalium.network.api.model.ConversationAccess
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -22,8 +21,6 @@ sealed class AddParticipantResponse {
     data class UserAdded(
         @SerialName("type")
         val eventType: String,
-        @SerialName("data")
-        val data: EventData,
         @SerialName("qualified_conversation")
         val qualifiedConversationId: ConversationId,
         @SerialName("qualified_from")

@@ -3,7 +3,7 @@ package com.wire.kalium.network.api.user.register
 
 import com.wire.kalium.network.api.TeamId
 import com.wire.kalium.network.api.model.Service
-import com.wire.kalium.network.api.model.UserAsset
+import com.wire.kalium.network.api.model.UserAssetDTO
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -12,7 +12,7 @@ data class RegisterResponse(
     @SerialName("accent_id")
     val accentId: Int?,
     @SerialName("assets")
-    val assets: List<UserAsset>,
+    val assets: List<UserAssetDTO>,
     @SerialName("deleted")
     val deleted: Boolean?,
     @SerialName("email")

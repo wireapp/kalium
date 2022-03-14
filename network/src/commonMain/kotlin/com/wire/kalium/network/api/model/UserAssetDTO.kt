@@ -4,17 +4,20 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class UserAsset(
+data class UserAssetDTO(
     @SerialName("key")
     val key: String,
     @SerialName("size")
-    val size: AssetSize?,
+    val size: AssetSizeDTO?,
     @SerialName("type")
-    val type: AssetType
+    val type: UserAssetTypeDTO
 )
 
+fun List<UserAssetDTO>?.getPreviewAssetOrNull() = this?.firstOrNull { it.size == AssetSizeDTO.PREVIEW }
+fun List<UserAssetDTO>?.getCompleteAssetOrNull() = this?.firstOrNull { it.size == AssetSizeDTO.COMPLETE }
+
 @Serializable
-enum class AssetSize {
+enum class AssetSizeDTO {
     @SerialName("preview")
     PREVIEW,
 
@@ -27,7 +30,7 @@ enum class AssetSize {
 }
 
 @Serializable
-enum class AssetType {
+enum class UserAssetTypeDTO {
     @SerialName("image")
     IMAGE;
 
