@@ -6,7 +6,6 @@ import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
-import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.utils.io.errors.IOException
 import io.mockative.Mock
@@ -81,7 +80,7 @@ class DeleteClientUseCaseTest {
     private companion object {
         val CLIENT = TestClient.CLIENT
         val DELETE_CLIENT_PARAMETERS = DeleteClientParam("pass", CLIENT.clientId)
-        val TEST_FAILURE = NetworkFailure.NoNetworkConnection(KaliumException.NetworkUnavailableError(IOException("no internet")))
+        val TEST_FAILURE = NetworkFailure.ServerMiscommunication(KaliumException.GenericError(IOException("no internet")))
 
     }
 }
