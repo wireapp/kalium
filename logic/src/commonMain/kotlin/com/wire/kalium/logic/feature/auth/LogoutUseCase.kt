@@ -8,7 +8,7 @@ import com.wire.kalium.logic.functional.onSuccess
 class LogoutUseCase(
     private val logoutRepository: LogoutRepository,
     private val sessionRepository: SessionRepository,
-    private val authSession: AuthSession,
+    private val userId: String,
     private val authenticatedDataSourceSet: AuthenticatedDataSourceSet
 ) {
     suspend operator fun invoke() {
@@ -18,7 +18,7 @@ class LogoutUseCase(
         logoutRepository.logout()
         authenticatedDataSourceSet.database.nuke()
         authenticatedDataSourceSet.kaliumPreferencesSettings.nuke()
-        sessionRepository.deleteSession(authSession.userId)
+        sessionRepository.deleteSession(userId)
         sessionRepository.getSessions().onSuccess {
             sessionRepository.updateCurrentSession(it.first().userId)
         }

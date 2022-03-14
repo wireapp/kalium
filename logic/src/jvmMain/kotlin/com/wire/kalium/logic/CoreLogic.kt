@@ -1,5 +1,6 @@
 package com.wire.kalium.logic
 
+import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
@@ -9,6 +10,10 @@ actual class CoreLogic(clientLabel: String, rootProteusDirectoryPath: String) :
         clientLabel = clientLabel,
         rootProteusDirectoryPath = rootProteusDirectoryPath
     ) {
+    override fun getSessionRepo(): SessionRepository {
+        TODO("Not yet implemented")
+    }
+
     override fun getAuthenticationScope(): AuthenticationScope {
         TODO("Not yet implemented")
     }
