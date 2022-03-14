@@ -61,4 +61,5 @@ actual class Database(name: String, passphrase: String) {
 
     actual fun nuke(): Boolean {
         TODO("Not yet implemented")
+    }
 }
