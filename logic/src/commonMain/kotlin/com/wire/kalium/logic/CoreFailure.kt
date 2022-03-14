@@ -17,21 +17,20 @@ sealed class CoreFailure {
     abstract class FeatureFailure : CoreFailure()
 }
 
-sealed class NetworkFailure(internal val kaliumException: KaliumException) : CoreFailure() {
+sealed class NetworkFailure : CoreFailure() {
     // exposed as Throwable to the app if needed for logging
-    val cause: Throwable get() = kaliumException
     /**
      * Failed to establish a connection with the necessary servers in order to pull/push data.
      * Caused by weak - complete lack of - internet connection.
      */
-    class NoNetworkConnection(kaliumException: KaliumException) : NetworkFailure(kaliumException)
+    class NoNetworkConnection() : NetworkFailure()
 
     /**
      * Server internal error, or we can't parse the response,
      * or anything API-related that is out of control from the user.
      * Either fix our app or our backend.
      */
-    class ServerMiscommunication(kaliumException: KaliumException) : NetworkFailure(kaliumException)
+    class ServerMiscommunication(val kaliumException: KaliumException) : NetworkFailure()
 }
 
 class ProteusFailure(internal val proteusException: ProteusException) : CoreFailure()
@@ -41,7 +40,6 @@ inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<T>): Eith
     return when (val result = networkCall()) {
         is NetworkResponse.Success -> Either.Right(result.value)
         is NetworkResponse.Error -> when (result.kException) {
-            is KaliumException.NetworkUnavailableError -> Either.Left(NetworkFailure.NoNetworkConnection(result.kException))
             else -> Either.Left(NetworkFailure.ServerMiscommunication(result.kException))
         }
     }
