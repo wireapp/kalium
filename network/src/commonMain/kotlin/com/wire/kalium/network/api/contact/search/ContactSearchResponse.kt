@@ -15,7 +15,7 @@ data class ContactSearchResponse(
 data class ContactDTO(
     @SerialName("accent_id") val accentId: Int,
     @SerialName("handle") val handle: String,
-    @SerialName("id") val id: String,
+    @SerialName("id") val id: String?,
     @SerialName("name") val name: String,
     @SerialName("qualified_id") val qualifiedID: UserId,
     @SerialName("team") val team: String
