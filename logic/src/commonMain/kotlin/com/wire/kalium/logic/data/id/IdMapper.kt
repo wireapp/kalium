@@ -1,7 +1,6 @@
 package com.wire.kalium.logic.data.id
 
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.ConversationId
 import com.wire.kalium.network.api.user.client.SimpleClientResponse
 
 internal typealias NetworkQualifiedId = com.wire.kalium.network.api.QualifiedID

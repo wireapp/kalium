@@ -97,3 +97,9 @@ libs/
 .classpath
 .project
 .settings
+
+# Carthage
+**/Carthage/Checkouts/
+
+# CLI working diretory
+.proteus

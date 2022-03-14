@@ -31,7 +31,8 @@ interface UserRepository {
     suspend fun fetchKnownUsers(): Either<CoreFailure, Unit>
     suspend fun fetchUsersByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun getSelfUser(): Flow<SelfUser>
-    suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, Unit>
+    suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, SelfUser>
+    suspend fun searchKnownUsersByNameOrHandleOrEmail(searchQuery: String): Flow<List<UserEntity>>
 }
 
 class UserDataSource(
@@ -55,7 +56,7 @@ class UserDataSource(
             // doesn't have a return value, and this team fetch doesn't make sense adding to GetSelfUserUseCase
             // as we don't want to be fetching the user team everytime we get the user.
             user.team?.let { teamId -> teamRepository.fetchTeamById(teamId = teamId) }
-            assetRepository.saveUserPictureAsset(listOf(user.previewAssetId, user.completeAssetId))
+            assetRepository.downloadUsersPictureAssets(listOf(user.previewAssetId, user.completeAssetId))
             userDAO.insertUser(user)
             metadataDAO.insertValue(Json.encodeToString(user.id), SELF_USER_ID_KEY)
             Either.Right(Unit)
@@ -76,10 +77,7 @@ class UserDataSource(
             }.coFold({
                 Either.Left(it)
             }, {
-                val usersToBePersisted = it.map(userMapper::fromApiModelToDaoModel)
-                // Save (in case there is no data) a reference to the asset id (profile picture)
-                assetRepository.saveUserPictureAsset(mapAssetsForUsersToBePersisted(usersToBePersisted))
-                userDAO.insertUsers(usersToBePersisted)
+                userDAO.insertUsers(it.map(userMapper::fromApiModelToDaoModel))
                 Either.Right(Unit)
             })
         }
@@ -94,16 +92,7 @@ class UserDataSource(
         }
     }
 
-    private fun mapAssetsForUsersToBePersisted(usersToBePersisted: List<UserEntity>): List<UserAssetId> {
-        val assetsId = mutableListOf<UserAssetId>()
-        usersToBePersisted.map {
-            assetsId.add(it.completeAssetId)
-            assetsId.add(it.previewAssetId)
-        }
-        return assetsId
-    }
-
-    override suspend fun updateSelfUser(newName: String?, newAccent: Int?, newAssetId: String?): Either<CoreFailure, Unit> {
+    override suspend fun updateSelfUser(newName: String?, newAccent: Int?, newAssetId: String?): Either<CoreFailure, SelfUser> {
         val user =
             getSelfUser().firstOrNull() ?: return Either.Left(CoreFailure.Unknown(NullPointerException()))
 
@@ -111,12 +100,16 @@ class UserDataSource(
         val updatedSelf = selfApi.updateSelf(updateRequest)
 
         return if (updatedSelf.isSuccessful()) {
-            userDAO.updateUser(userMapper.fromUpdateRequestToDaoModel(user, updateRequest))
-            Either.Right(Unit)
+            val updatedUser = userMapper.fromUpdateRequestToDaoModel(user, updateRequest)
+            userDAO.updateUser(updatedUser)
+            Either.Right(userMapper.fromDaoModel(updatedUser))
         } else {
             Either.Left(CoreFailure.Unknown(IllegalStateException()))
         }
     }
+
+    override suspend fun searchKnownUsersByNameOrHandleOrEmail(searchQuery: String) =
+        userDAO.getUserByNameOrHandleOrEmail(searchQuery)
 
     companion object {
         const val SELF_USER_ID_KEY = "selfUserID"

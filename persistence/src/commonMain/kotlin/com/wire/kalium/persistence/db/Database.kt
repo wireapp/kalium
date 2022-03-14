@@ -16,4 +16,9 @@ expect class Database {
     val clientDAO: ClientDAO
     val assetDAO: AssetDAO
     val teamDAO: TeamDAO
+
+    /**
+     * drops DB connection and delete the DB file
+     */
+    fun nuke(): Boolean
 }

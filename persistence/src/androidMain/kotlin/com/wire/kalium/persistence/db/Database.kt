@@ -26,9 +26,10 @@ import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import net.sqlcipher.database.SupportFactory
 import java.security.SecureRandom
 
-actual class Database(context: Context, name: String, kaliumPreferences: KaliumPreferences) {
+actual class Database(private val context: Context, private val name: String, kaliumPreferences: KaliumPreferences) {
 
-    val database: AppDatabase
+    private val driver: AndroidSqliteDriver
+    private val database: AppDatabase
 
     init {
         val supportFactory = SupportFactory(getOrGenerateSecretKey(kaliumPreferences).toByteArray())
@@ -40,7 +41,7 @@ actual class Database(context: Context, name: String, kaliumPreferences: KaliumP
             }
         }
 
-        val driver = AndroidSqliteDriver(
+        driver = AndroidSqliteDriver(
             schema = AppDatabase.Schema,
             context = context,
             name = name,
@@ -82,6 +83,11 @@ actual class Database(context: Context, name: String, kaliumPreferences: KaliumP
 
     actual val teamDAO: TeamDAO
         get() = TeamDAOImpl(database.teamsQueries)
+
+    actual fun nuke(): Boolean {
+        driver.close()
+        return context.deleteDatabase(name)
+    }
 
     private fun getOrGenerateSecretKey(kaliumPreferences: KaliumPreferences): String {
         val databaseKey = kaliumPreferences.getString(DATABASE_SECRET_KEY)

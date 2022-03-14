@@ -4,7 +4,10 @@ import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.UserId
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PlainMessageBlob
@@ -17,11 +20,16 @@ import io.ktor.utils.io.core.toByteArray
 class ConversationEventReceiver(
     private val proteusClient: ProteusClient,
     private val messageRepository: MessageRepository,
-    private val protoContentMapper: ProtoContentMapper
+    private val conversationRepository: ConversationRepository,
+    private val protoContentMapper: ProtoContentMapper,
+    private val memberMapper: MemberMapper,
+    private val idMapper: IdMapper
 ) : EventReceiver<Event.Conversation> {
     override suspend fun onEvent(event: Event.Conversation) {
         when (event) {
             is Event.Conversation.NewMessage -> handleNewMessage(event)
+            is Event.Conversation.MemberJoin -> handleMemberJoin(event)
+            is Event.Conversation.MemberLeave -> handleMemberLeave(event)
         }
     }
 
@@ -53,4 +61,20 @@ class ConversationEventReceiver(
                 }
         }
     }
+
+    //TODO: insert a message to show a user added to the conversation
+    private suspend fun handleMemberJoin(event: Event.Conversation.MemberJoin) = conversationRepository
+        .persistMembers(
+            memberMapper.fromEventToDaoModel(event.members.users),
+            idMapper.toDaoModel(event.conversationId)
+        )
+
+    //TODO: insert a message to show a user deleted to the conversation
+    private suspend fun handleMemberLeave(event: Event.Conversation.MemberLeave) =
+        event.members.qualifiedUserIds.forEach { userId ->
+            conversationRepository.deleteMember(
+                idMapper.toDaoModel(event.conversationId), idMapper.fromApiToDao(userId)
+            )
+        }
+
 }

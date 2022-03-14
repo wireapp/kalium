@@ -29,6 +29,8 @@ object Versions {
     const val sqlDelight = "2.0.0-SNAPSHOT"
     const val wireJvmMessageProto = "1.36.0"
     const val protobufLite = "3.19.4"
+    const val avs = "8.1.3"
+    const val jna = "5.6.0@aar"
 }
 
 object Plugins {
@@ -63,6 +65,9 @@ object Plugins {
 
     fun sqlDelight(scope: PluginDependenciesSpec) =
         scope.id("app.cash.sqldelight")
+
+    fun carthage(scope: PluginDependenciesSpec) =
+        scope.id("com.wire.carthage-gradle-plugin")
 }
 
 object Dependencies {
@@ -124,6 +129,7 @@ object Dependencies {
         const val utils = "io.ktor:ktor-utils:${Versions.ktor2}"
         const val mock = "io.ktor:ktor-client-mock:${Versions.ktor2}"
         const val okHttp = "io.ktor:ktor-client-okhttp:${Versions.ktor2}"
+        const val iosHttp = "io.ktor:ktor-client-ios:${Versions.ktor2}"
     }
 
     object SqlDelight {
@@ -148,5 +154,10 @@ object Dependencies {
 
     object UUID {
         const val benAsherUUID = "com.benasher44:uuid:${Versions.benAsherUUID}"
+    }
+
+    object Calling {
+        const val avs =  "com.wire:avs:${Versions.avs}"
+        const val jna = "net.java.dev.jna:jna:${Versions.jna}"
     }
 }

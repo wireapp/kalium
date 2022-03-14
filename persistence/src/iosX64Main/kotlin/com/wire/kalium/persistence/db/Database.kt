@@ -58,4 +58,7 @@ actual class Database(name: String, passphrase: String) {
 
     actual val teamDAO: TeamDAO
         get() = TeamDAOImpl(database.teamsQueries)
+
+    actual fun nuke(): Boolean {
+        TODO("Not yet implemented")
 }
