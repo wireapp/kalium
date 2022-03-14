@@ -43,7 +43,7 @@ fun <T : Any> NetworkResponse<T>.isSuccessful(): Boolean {
     return this@isSuccessful is NetworkResponse.Success
 }
 
-suspend fun <T : Any, R : Any> NetworkResponse<T>.flatMap(
+internal suspend fun <T : Any, R : Any> NetworkResponse<T>.flatMap(
     fn: suspend (NetworkResponse.Success<T>) -> NetworkResponse<R>
 ): NetworkResponse<R> {
     return if (isSuccessful()) {
