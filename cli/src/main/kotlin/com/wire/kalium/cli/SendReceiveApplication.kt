@@ -55,15 +55,15 @@ class SendReceiveApplication : CliktCommand() {
         launch(Dispatchers.Default) {
             userSession.messages.getRecentMessages(conversationID, limit = 1).collect {
                 for (message in it) {
-                    val content = message.content
-
-                    when (content) {
+                    when (val content = message.content) {
                         is MessageContent.Text -> println("> ${content.value}")
-                        Unknown -> { /* do nothing */ }
+                        MessageContent.Unknown -> { /* do nothing */ }
                     }
                 }
             }
+
         }
+
 
         while (true) {
             val message = readLine()!!
