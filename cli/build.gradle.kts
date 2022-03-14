@@ -9,9 +9,8 @@ dependencies {
     implementation(project(":logic"))
 
     implementation(Dependencies.Cli.cliKt)
-    //implementation(Dependencies.Ktor.core)
-    //implementation(Dependencies.Ktor.core2)
     implementation(Dependencies.Ktor.utils)
     implementation(Dependencies.Ktor.okHttp)
     implementation(Dependencies.OkHttp.loggingInterceptor)
+    implementation(Dependencies.Coroutines.core)
 }
