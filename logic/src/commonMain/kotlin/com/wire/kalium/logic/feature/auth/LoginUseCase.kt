@@ -43,25 +43,22 @@ class LoginUseCase(
             }
             else -> return@suspending AuthenticationResult.Failure.InvalidUserIdentifier
         }.coFold({
-                 when(it) {
-                     is NetworkFailure.ServerMiscommunication -> {
-                         when (it.kaliumException) {
-                             is KaliumException.InvalidRequestError -> {
-                                 if (it.kaliumException.isInvalidCredentials()) {
-                                     AuthenticationResult.Failure.InvalidCredentials
-                                 } else {
-                                     AuthenticationResult.Failure.Generic(it)
-                                 }
-                             }
-                             else -> AuthenticationResult.Failure.Generic(it)
-                         }
-                     }
-                         is NetworkFailure.NoNetworkConnection -> AuthenticationResult.Failure.Generic(it)
-                 }
+            when (it) {
+                is NetworkFailure.ServerMiscommunication -> handleServerMiscommunication(it)
+                is NetworkFailure.NoNetworkConnection -> AuthenticationResult.Failure.Generic(it)
+            }
         }, {
             sessionRepository.storeSession(it)
             sessionRepository.updateCurrentSession(it.userId)
             AuthenticationResult.Success(it)
         })
+    }
+
+    private fun handleServerMiscommunication(error: NetworkFailure.ServerMiscommunication): AuthenticationResult.Failure {
+        return if (error.kaliumException is KaliumException.InvalidRequestError && error.kaliumException.isInvalidCredentials()) {
+            AuthenticationResult.Failure.InvalidCredentials
+        } else {
+            AuthenticationResult.Failure.Generic(error)
+        }
     }
 }
