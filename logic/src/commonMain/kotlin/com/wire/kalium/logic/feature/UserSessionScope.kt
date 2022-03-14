@@ -143,7 +143,10 @@ abstract class UserSessionScopeCommon(
         get() = ConversationEventReceiver(
             authenticatedDataSourceSet.proteusClient,
             messageRepository,
-            protoContentMapper
+            conversationRepository,
+            protoContentMapper,
+            memberMapper,
+            idMapper
         )
 
     private val preKeyRemoteRepository: PreKeyRemoteRepository

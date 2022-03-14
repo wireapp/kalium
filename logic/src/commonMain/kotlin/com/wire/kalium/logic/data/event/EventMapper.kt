@@ -13,6 +13,8 @@ class EventMapper(private val idMapper: IdMapper) {
         return eventResponse.payload?.map { eventContentDTO ->
             when (eventContentDTO) {
                 is EventContentDTO.Conversation.NewMessageDTO -> newMessage(id, eventContentDTO)
+                is EventContentDTO.Conversation.MemberJoinDTO -> memberJoin(id, eventContentDTO)
+                is EventContentDTO.Conversation.MemberLeaveDTO -> memberLeave(id, eventContentDTO)
                 is EventContentDTO.User.NewClientDTO, EventContentDTO.Unknown -> Event.Unknown(id)
             }
         } ?: listOf()
@@ -28,5 +30,27 @@ class EventMapper(private val idMapper: IdMapper) {
         ClientId(eventContentDTO.data.sender),
         eventContentDTO.time,
         eventContentDTO.data.text
+    )
+
+    private fun memberJoin(
+        id: String,
+        eventContentDTO: EventContentDTO.Conversation.MemberJoinDTO
+    ) = Event.Conversation.MemberJoin(
+        id,
+        idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
+        idMapper.fromApiModel(eventContentDTO.qualifiedFrom),
+        members = eventContentDTO.members,
+        from = eventContentDTO.from
+    )
+
+    private fun memberLeave(
+        id: String,
+        eventContentDTO: EventContentDTO.Conversation.MemberLeaveDTO
+    ) = Event.Conversation.MemberLeave(
+        id,
+        idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
+        idMapper.fromApiModel(eventContentDTO.qualifiedFrom),
+        members = eventContentDTO.members,
+        from = eventContentDTO.from
     )
 }
