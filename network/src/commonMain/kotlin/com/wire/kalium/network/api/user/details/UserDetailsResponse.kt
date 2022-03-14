@@ -1,7 +1,7 @@
 package com.wire.kalium.network.api.user.details
 
 import com.wire.kalium.network.api.UserId
-import com.wire.kalium.network.api.asset.AvatarAssetDTO
+import com.wire.kalium.network.api.model.UserAssetDTO
 import com.wire.kalium.network.api.user.LegalHoldStatusResponse
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -14,5 +14,5 @@ data class UserDetailsResponse(
     @SerialName("legalhold_status") val legalHoldStatus: LegalHoldStatusResponse,
     @SerialName("team") val team: String?,
     @SerialName("accent_id") val accentId: Int,
-    @SerialName("assets") val assets: List<AvatarAssetDTO>
+    @SerialName("assets") val assets: List<UserAssetDTO>
 )

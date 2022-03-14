@@ -1,12 +1,14 @@
 package com.wire.kalium.network.api.user.self
 
 import com.wire.kalium.network.api.UserId
-import com.wire.kalium.network.api.asset.AvatarAssetDTO
+import com.wire.kalium.network.api.UserSsoId
 import com.wire.kalium.network.api.model.Service
+import com.wire.kalium.network.api.model.UserAssetDTO
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
+// TODO: rename to UserDTO
 data class SelfUserInfoResponse(
     @SerialName("email")
     val email: String?,
@@ -25,7 +27,7 @@ data class SelfUserInfoResponse(
     @SerialName("deleted")
     val deleted: Boolean?,
     @SerialName("assets")
-    val assets: List<AvatarAssetDTO>,
+    val assets: List<UserAssetDTO>,
     @SerialName("locale")
     val locale: String,
     @SerialName("service")
@@ -38,10 +40,7 @@ data class SelfUserInfoResponse(
     val team: String?,
     @SerialName("managed_by")
     val managedBy: ManagedBy // 'wire', 'scim'
-) {
-    @SerialName("picture")
-    var picture: List<AvatarAssetDTO>? = assets
-}
+)
 
 @Serializable
 enum class ManagedBy {

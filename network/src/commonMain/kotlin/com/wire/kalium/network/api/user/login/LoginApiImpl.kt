@@ -1,6 +1,7 @@
 package com.wire.kalium.network.api.user.login
 
 import com.wire.kalium.network.api.ErrorResponse
+import com.wire.kalium.network.api.NonQualifiedUserId
 import com.wire.kalium.network.api.RefreshTokenProperties
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.exceptions.KaliumException
@@ -27,7 +28,7 @@ class LoginApiImpl(private val httpClient: HttpClient) : LoginApi {
 
     @Serializable
     data class LoginResponse(
-        @SerialName("user") val userId: String,
+        @SerialName("user") val userId: NonQualifiedUserId,
         @SerialName("expires_in") val expiresIn: Long,
         @SerialName("access_token") val accessToken: String,
         @SerialName("token_type") val tokenType: String

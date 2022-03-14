@@ -9,4 +9,5 @@ internal object NetworkErrorLabel {
     const val DOMAIN_BLOCKED = "domain-blocked-for-registration"
     const val KEY_EXISTS = "key-exists"
     const val BLACKLISTED_EMAIL = "blacklisted-email"
+    const val INVALID_CODE = "invalid-code"
 }
