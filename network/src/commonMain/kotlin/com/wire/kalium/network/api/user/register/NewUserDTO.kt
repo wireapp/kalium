@@ -3,7 +3,10 @@ package com.wire.kalium.network.api.user.register
 
 import com.wire.kalium.network.api.AssetId
 import com.wire.kalium.network.api.AssetKey
-import com.wire.kalium.network.api.model.UserAsset
+import com.wire.kalium.network.api.TeamId
+import com.wire.kalium.network.api.UserSsoId
+import com.wire.kalium.network.api.model.UserAssetDTO
+import com.wire.kalium.network.api.user.self.ManagedBy
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -38,21 +41,25 @@ internal data class ActivationRequest(
 
 
 @Serializable
-internal data class RegisterRequest(
+internal data class NewUserDTO(
     @SerialName("accent_id")
     val accentId: Int?,
     @SerialName("assets")
-    val assets: List<UserAsset>?,
+    val assets: List<UserAssetDTO>?,
     @SerialName("email")
     val email: String?,
     @SerialName("email_code")
     val emailCode: String?,
+    @SerialName("expires_in")
+    val expiresIn: Int?,
     @SerialName("invitation_code")
     val invitationCode: String?, // Mutually exclusive with team|team_code ,
     @SerialName("label")
     val label: String?, // An optional label to associate with the access cookie, if one is granted during account creation.
     @SerialName("locale")
     val locale: String?,
+    @SerialName("managed_by")
+    val managedBy: ManagedBy?,
     @SerialName("name")
     val name: String,
     @SerialName("password")
@@ -61,14 +68,22 @@ internal data class RegisterRequest(
     val phone: String?,
     @SerialName("phone_code")
     val phoneCode: String?,
+    @SerialName("sso_id")
+    val ssoID: UserSsoId?,
     @SerialName("team")
-    val newBindingTeam: NewBindingTeam?,
+    val newBindingTeamDTO: NewBindingTeamDTO?,
     @SerialName("team_code")
-    val teamCode: String?
+    val teamCode: String?,
+    @SerialName("team_id")
+    val teamID: TeamId?,
+    @SerialName("uuid")
+    val uuid: String?
 )
 
 @Serializable
-data class NewBindingTeam(
+data class NewBindingTeamDTO(
+    @SerialName("currency")
+    val currency: String?,
     @SerialName("icon")
     val iconAssetId: AssetId,
     @SerialName("icon_key")
