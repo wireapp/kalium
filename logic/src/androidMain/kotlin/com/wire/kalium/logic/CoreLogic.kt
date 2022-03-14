@@ -70,7 +70,7 @@ actual class CoreLogic(
                 userScopeStorage[session] = it
             }
         }
-        return UserSessionScope(appContext, session, dataSourceSet)
+        return UserSessionScope(appContext, session, dataSourceSet, sessionRepository)
     }
 
     private companion object {
