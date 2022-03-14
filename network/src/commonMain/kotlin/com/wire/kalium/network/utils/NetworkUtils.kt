@@ -1,6 +1,7 @@
 package com.wire.kalium.network.utils
 
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.kaliumLogger
 import io.ktor.client.call.body
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.RedirectResponseException
@@ -8,7 +9,6 @@ import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.HttpStatusCode
-import io.ktor.utils.io.errors.IOException
 import kotlinx.serialization.SerializationException
 
 
@@ -73,14 +73,13 @@ inline fun <T : Any, U : Any> NetworkResponse<T>. mapSuccess(mapping: ((T) -> U)
     if (isSuccessful()) {
         NetworkResponse.Success(mapping(this.value), this.headers, this.httpCode)
     } else {
-        NetworkResponse.Error(kException)
+        this
     }
 
-fun <E : KaliumException> NetworkResponse<E>.onFailure(fn: (NetworkResponse.Error<E>) -> Unit): NetworkResponse<E> =
+internal fun <T : Any> NetworkResponse<T>.onFailure(fn: (NetworkResponse.Error) -> Unit): NetworkResponse<T> =
     this.apply { if (this is NetworkResponse.Error) fn(this) }
 
-
-fun <T : Any> NetworkResponse<T>.onSuccess(fn: (NetworkResponse.Success<T>) -> Unit): NetworkResponse<T> =
+internal fun <T : Any> NetworkResponse<T>.onSuccess(fn: (NetworkResponse.Success<T>) -> Unit): NetworkResponse<T> =
     this.apply { if (this is NetworkResponse.Success) fn(this) }
 
 internal suspend inline fun <reified BodyType : Any> wrapKaliumResponse(performRequest: () -> HttpResponse): NetworkResponse<BodyType> =
@@ -98,15 +97,19 @@ internal suspend inline fun <reified BodyType : Any> wrapKaliumResponse(performR
             }
             is ClientRequestException -> {
                 // 400 .. 499
-                when(e.response.status) {
-                    // TODO: log if 401 got to this step, since it need to be handled by the http client
-                    // for 401 error the BE return response with content-type: text/html which our ktor client
+                when (e.response.status) {
+
+                    // for 401 error the BE return response with content-type: text/html which kalium ktor client
                     // has no idea how to parse -> app crash
-                    HttpStatusCode.Unauthorized -> NetworkResponse.Error(KaliumException.Unauthorized(e.response.status.value))
+                    HttpStatusCode.Unauthorized -> {
+                        kaliumLogger.e("Unauthorized request", e)
+                        NetworkResponse.Error(KaliumException.Unauthorized(e.response.status.value))
+                    }
 
                     // TODO: try catch the parsing of error body
                     else -> NetworkResponse.Error(kException = KaliumException.InvalidRequestError(e.response.body()))
-                }            }
+                }
+            }
             is ServerResponseException -> {
                 // 500 .. 599
                 // TODO: do 500 errors have body
@@ -120,14 +123,7 @@ internal suspend inline fun <reified BodyType : Any> wrapKaliumResponse(performR
         NetworkResponse.Error(
             kException = KaliumException.GenericError(cause = e)
         )
-    } catch (e: IOException) {
-        // TODO: does Ktor throw IOException on time-out/no-internet connection
-        NetworkResponse.Error(
-            kException = KaliumException.NetworkUnavailableError(cause = e)
-        )
-
     } catch (e: Exception) {
-        // TODO: should we catch 'Em all
         NetworkResponse.Error(
             kException = KaliumException.GenericError(e)
         )
