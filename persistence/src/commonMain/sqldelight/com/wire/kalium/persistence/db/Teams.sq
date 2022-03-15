@@ -1,0 +1,14 @@
+CREATE TABLE Team (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT
+);
+
+insertTeam:
+INSERT INTO Team(id, name)
+VALUES (?, ?)
+ON CONFLICT(id) DO UPDATE SET name = excluded.name;
+
+selectTeamById:
+SELECT id, name
+FROM Team
+WHERE id = ?;
