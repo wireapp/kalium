@@ -2,9 +2,9 @@ package com.wire.kalium.api.tools.json.api.user.register
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.tools.json.model.ErrorResponseJson
+import com.wire.kalium.network.api.model.UserDTO
 import com.wire.kalium.network.api.user.register.RegisterApi
 import com.wire.kalium.network.api.user.register.RegisterApiImpl
-import com.wire.kalium.network.api.user.register.RegisterResponse
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
@@ -32,7 +32,7 @@ class RegisterApiTest : ApiTest {
         val registerApi: RegisterApi = RegisterApiImpl(httpClient)
         val result = registerApi.register(VALID_PERSONAL_ACCOUNT_REQUEST.serializableData, TEST_HOST)
 
-        assertIs<NetworkResponse.Success<RegisterResponse>>(result)
+        assertIs<NetworkResponse.Success<UserDTO>>(result)
         assertEquals(VALID_REGISTER_RESPONSE.serializableData, result.value)
     }
 
@@ -75,7 +75,7 @@ class RegisterApiTest : ApiTest {
         val registerApi: RegisterApi = RegisterApiImpl(httpClient)
         val result = registerApi.requestActivationCode(VALID_SEND_ACTIVATE_EMAIL.serializableData, TEST_HOST)
 
-        assertIs<NetworkResponse.Success<RegisterResponse>>(result)
+        assertIs<NetworkResponse.Success<UserDTO>>(result)
         assertIs<Unit>(result.value)
     }
 
@@ -119,7 +119,7 @@ class RegisterApiTest : ApiTest {
         val registerApi: RegisterApi = RegisterApiImpl(httpClient)
         val result = registerApi.activate(VALID_ACTIVATE_EMAIL.serializableData, TEST_HOST)
 
-        assertIs<NetworkResponse.Success<RegisterResponse>>(result)
+        assertIs<NetworkResponse.Success<UserDTO>>(result)
         assertIs<Unit>(result.value)
     }
 
@@ -149,7 +149,7 @@ class RegisterApiTest : ApiTest {
 
     private companion object {
         val VALID_PERSONAL_ACCOUNT_REQUEST = RegisterAccountJson.validPersonalAccountRegister
-        val VALID_REGISTER_RESPONSE = RegisterAccountResponseJson.validRegisterResponse
+        val VALID_REGISTER_RESPONSE = UserDTOJson.valid
         val VALID_SEND_ACTIVATE_EMAIL = RequestActivationCodeJson.validActivateEmail
         val VALID_ACTIVATE_EMAIL = ActivationRequestJson.validActivateEmail
         val ERROR_RESPONSE = ErrorResponseJson.valid

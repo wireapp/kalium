@@ -3,8 +3,9 @@ package com.wire.kalium.logic.data.register
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
+import com.wire.kalium.network.api.UserId
+import com.wire.kalium.network.api.model.UserDTO
 import com.wire.kalium.network.api.user.register.RegisterApi
-import com.wire.kalium.network.api.user.register.RegisterResponse
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
 import io.mockative.classOf
@@ -12,12 +13,14 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class RegisterAccountRepositoryTest {
     @Mock
     private val registerApi: RegisterApi = mock(classOf<RegisterApi>())
@@ -109,16 +112,22 @@ class RegisterAccountRepositoryTest {
         val code = "123456"
         val name = "user_name"
         val password = "password"
-        val expected = RegisterResponse(
-            id = "user_id",
+        val expected = UserDTO(
+            id = UserId("user_id", "domain.com"),
             name = name,
             email = email,
-            accentId = null,
+            accentId = 1,
             assets = listOf(),
             deleted = null,
             handle = null,
             service = null,
-            teamId = null
+            teamId = null,
+            expiresAt = "",
+            nonQualifiedId = "",
+            locale = "",
+            managedBy = null,
+            phone = null,
+            ssoID = null
         )
 
         given(registerApi)
@@ -132,7 +141,7 @@ class RegisterAccountRepositoryTest {
 
         val actual = registerAccountRepository.registerWithEmail(email, code, name, password, TEST_API_HOST)
 
-        assertIs<Either.Right<RegisterResponse>>(actual)
+        assertIs<Either.Right<UserDTO>>(actual)
         assertEquals(expected, actual.value)
 
         verify(registerApi)

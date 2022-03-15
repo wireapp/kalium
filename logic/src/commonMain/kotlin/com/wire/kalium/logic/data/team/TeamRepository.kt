@@ -28,10 +28,8 @@ internal class TeamDataSource(
             teamsApi.getTeamInfo(
                 teamId = teamId
             )
-        }.map { team ->
-            teamMapper.fromApiModelToDaoModel(
-                team = team
-            )
+        }.map { teamDTO ->
+            teamMapper.fromDtoToEntity(teamDTO)
         }.coFold({
             Either.Left(it)
         }, { team ->

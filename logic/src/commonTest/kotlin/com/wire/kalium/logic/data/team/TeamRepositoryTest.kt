@@ -5,6 +5,7 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.AssetId
 import com.wire.kalium.network.api.ErrorResponse
+import com.wire.kalium.network.api.model.TeamDTO
 import com.wire.kalium.network.api.teams.TeamsApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -27,7 +28,7 @@ import kotlin.test.assertEquals
 class TeamRepositoryTest {
 
     @Mock
-    private val teamDAO = configure(mock(classOf<TeamDAO>())){
+    private val teamDAO = configure(mock(classOf<TeamDAO>())) {
         stubsUnitByDefault = true
     }
 
@@ -42,41 +43,27 @@ class TeamRepositoryTest {
     @BeforeTest
     fun setUp() {
         teamRepository = TeamDataSource(
-            teamDAO = teamDAO,
-            teamMapper = teamMapper,
-            teamsApi = teamsApi
+            teamDAO = teamDAO, teamMapper = teamMapper, teamsApi = teamsApi
         )
     }
 
     @Test
     fun givenSelfUserExists_whenGettingTeamInfo_thenTeamInfoShouldBeSuccessful() = runTest {
-        val team = TeamsApi.Team(
-            creator = "creator",
-            icon = AssetId(),
-            name = "teamName",
-            id = "teamId",
-            iconKey = null,
-            binding = false
+        val team = TeamDTO(
+            creator = "creator", icon = AssetId(), name = "teamName", id = "teamId", iconKey = null, binding = false
         )
 
         given(teamsApi)
             .suspendFunction(teamsApi::getTeamInfo)
             .whenInvokedWith(oneOf("teamId"))
-            .then {
-                NetworkResponse.Success(
-                    value = team,
-                    headers = mapOf(),
-                    httpCode = 200
-                )
-            }
+            .then { NetworkResponse.Success(value = team, headers = mapOf(), httpCode = 200) }
 
         val teamEntity = TeamEntity(
-            id = "teamId",
-            name = "teamName"
+            id = "teamId", name = "teamName"
         )
 
         given(teamMapper)
-            .function(teamMapper::fromApiModelToDaoModel)
+            .function(teamMapper::fromDtoToEntity)
             .whenInvokedWith(oneOf(team))
             .then { teamEntity }
 

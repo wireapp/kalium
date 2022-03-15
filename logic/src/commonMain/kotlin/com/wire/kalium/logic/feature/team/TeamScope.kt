@@ -7,7 +7,7 @@ class TeamScope(
     private val userRepository: UserRepository,
     private val teamRepository: TeamRepository
 ) {
-    val syncSelfTeamUseCase: SyncSelfTeamUseCase get() = SyncSelfTeamUseCaseImpl(
+    internal val syncSelfTeamUseCase: SyncSelfTeamUseCase get() = SyncSelfTeamUseCaseImpl(
         userRepository = userRepository,
         teamRepository = teamRepository
     )
