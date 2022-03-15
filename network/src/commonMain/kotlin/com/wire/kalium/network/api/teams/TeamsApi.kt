@@ -13,7 +13,8 @@ interface TeamsApi {
 
     @Serializable
     data class TeamsResponse(
-        @SerialName("has_more") val hasMore: Boolean, val convTeamInfos: List<TeamDTO>
+        @SerialName("has_more") val hasMore: Boolean,
+        val convTeamInfos: List<TeamDTO>
     )
 
 
@@ -21,7 +22,8 @@ interface TeamsApi {
     data class TeamMemberList(
         // Please note that this is intentionally cased differently form the has_more in TeamsResponse
         // because the backend response contains a different casing
-        @SerialName("hasMore") val hasMore: Boolean, val members: List<TeamMember>
+        @SerialName("hasMore") val hasMore: Boolean,
+        val members: List<TeamMember>
     )
 
     @Serializable

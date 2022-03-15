@@ -36,7 +36,7 @@ internal data class ActivationRequest(
 )
 
 @Serializable
-data class NewBindingTeamDTO(
+internal data class NewBindingTeamDTO(
     @SerialName("currency")
     val currency: String?,
     @SerialName("icon")

@@ -113,7 +113,7 @@ class RegisterAccountRepositoryTest {
         val name = "user_name"
         val password = "password"
         val expected = UserDTO(
-            id = UserId("user_uuid", "domain.com"),
+            id = UserId("user_id", "domain.com"),
             name = name,
             email = email,
             accentId = 1,
