@@ -2,16 +2,10 @@ package com.wire.kalium.api.tools.json.api.user.register
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.tools.json.model.ErrorResponseJson
-import com.wire.kalium.network.api.model.UserDTO
-import com.wire.kalium.network.api.user.register.RegisterApi
-import com.wire.kalium.network.api.user.register.RegisterApiImpl
-import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Ignore
 import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertIs
 
 // test ignored until mocking is added to network
 @Ignore
@@ -32,11 +26,12 @@ class RegisterApiTest : ApiTest {
                 assertBodyContent(VALID_PERSONAL_ACCOUNT_REQUEST.rawJson)
             }
         )
-        val registerApi: RegisterApi = RegisterApiImpl(httpClient)
-        val result = registerApi.register(VALID_PERSONAL_ACCOUNT_REQUEST.serializableData, TEST_HOST)
+        TODO()
+        //val registerApi: RegisterApi = RegisterApiImpl(httpClient)
+        //val result = registerApi.register(VALID_PERSONAL_ACCOUNT_REQUEST.serializableData, TEST_HOST)
 
-        assertIs<NetworkResponse.Success<UserDTO>>(result)
-        assertEquals(VALID_REGISTER_RESPONSE.serializableData, result.value)
+        //assertIs<NetworkResponse.Success<UserDTO>>(result)
+        //assertEquals(VALID_REGISTER_RESPONSE.serializableData, result.value)
     }
 
     @Test
@@ -54,10 +49,11 @@ class RegisterApiTest : ApiTest {
                 assertBodyContent(VALID_PERSONAL_ACCOUNT_REQUEST.rawJson)
             }
         )
-        val registerApi: RegisterApi = RegisterApiImpl(httpClient)
-        val result = registerApi.register(VALID_PERSONAL_ACCOUNT_REQUEST.serializableData, TEST_HOST)
+        TODO()
+        //val registerApi: RegisterApi = RegisterApiImpl(httpClient)
+        //val result = registerApi.register(VALID_PERSONAL_ACCOUNT_REQUEST.serializableData, TEST_HOST)
 
-        assertIs<NetworkResponse.Error>(result)
+        //assertIs<NetworkResponse.Error>(result)
     }
 
     @Test
@@ -75,11 +71,12 @@ class RegisterApiTest : ApiTest {
                 assertBodyContent(VALID_PERSONAL_ACCOUNT_REQUEST.rawJson)
             }
         )
-        val registerApi: RegisterApi = RegisterApiImpl(httpClient)
-        val result = registerApi.requestActivationCode(VALID_SEND_ACTIVATE_EMAIL.serializableData, TEST_HOST)
+        TODO()
+        //val registerApi: RegisterApi = RegisterApiImpl(httpClient)
+        //val result = registerApi.requestActivationCode(VALID_SEND_ACTIVATE_EMAIL.serializableData, TEST_HOST)
 
-        assertIs<NetworkResponse.Success<UserDTO>>(result)
-        assertIs<Unit>(result.value)
+        //assertIs<NetworkResponse.Success<UserDTO>>(result)
+        //assertIs<Unit>(result.value)
     }
 
 
@@ -98,10 +95,11 @@ class RegisterApiTest : ApiTest {
                 assertBodyContent(VALID_PERSONAL_ACCOUNT_REQUEST.rawJson)
             }
         )
-        val registerApi: RegisterApi = RegisterApiImpl(httpClient)
-        val result = registerApi.requestActivationCode(VALID_SEND_ACTIVATE_EMAIL.serializableData, TEST_HOST)
+        TODO()
+        //val registerApi: RegisterApi = RegisterApiImpl(httpClient)
+        //val result = registerApi.requestActivationCode(VALID_SEND_ACTIVATE_EMAIL.serializableData, TEST_HOST)
 
-        assertIs<NetworkResponse.Error>(result)
+        //assertIs<NetworkResponse.Error>(result)
     }
 
     @Test
@@ -119,11 +117,12 @@ class RegisterApiTest : ApiTest {
                 assertBodyContent(VALID_ACTIVATE_EMAIL.rawJson)
             }
         )
-        val registerApi: RegisterApi = RegisterApiImpl(httpClient)
-        val result = registerApi.activate(VALID_ACTIVATE_EMAIL.serializableData, TEST_HOST)
+        TODO()
+        //val registerApi: RegisterApi = RegisterApiImpl(httpClient)
+        //val result = registerApi.activate(VALID_ACTIVATE_EMAIL.serializableData, TEST_HOST)
 
-        assertIs<NetworkResponse.Success<UserDTO>>(result)
-        assertIs<Unit>(result.value)
+        //assertIs<NetworkResponse.Success<UserDTO>>(result)
+        //assertIs<Unit>(result.value)
     }
 
 
@@ -142,10 +141,11 @@ class RegisterApiTest : ApiTest {
                 assertBodyContent(VALID_PERSONAL_ACCOUNT_REQUEST.rawJson)
             }
         )
-        val registerApi: RegisterApi = RegisterApiImpl(httpClient)
-        val result = registerApi.activate(VALID_ACTIVATE_EMAIL.serializableData, TEST_HOST)
+        TODO()
+        //val registerApi: RegisterApi = RegisterApiImpl(httpClient)
+        //val result = registerApi.activate(VALID_ACTIVATE_EMAIL.serializableData, TEST_HOST)
 
-        assertIs<NetworkResponse.Error>(result)
+        //assertIs<NetworkResponse.Error>(result)
     }
 
 
