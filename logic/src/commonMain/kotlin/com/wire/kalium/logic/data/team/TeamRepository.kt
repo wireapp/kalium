@@ -24,7 +24,7 @@ internal class TeamDataSource(
                 teamId = teamId
             )
         }.map { team ->
-            teamMapper.fromApiModelToDaoModel(
+            teamMapper.fromDtoToEntity(
                 team = team
             )
         }.coFold({

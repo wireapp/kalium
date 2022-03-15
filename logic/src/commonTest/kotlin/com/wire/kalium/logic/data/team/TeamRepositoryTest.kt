@@ -76,7 +76,7 @@ class TeamRepositoryTest {
         )
 
         given(teamMapper)
-            .function(teamMapper::fromApiModelToDaoModel)
+            .function(teamMapper::fromDtoToEntity)
             .whenInvokedWith(oneOf(team))
             .then { teamEntity }
 

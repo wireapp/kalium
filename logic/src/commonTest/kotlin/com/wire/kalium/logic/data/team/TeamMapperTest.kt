@@ -33,7 +33,7 @@ class TeamMapperTest {
             name = "teamName"
         )
 
-        val result = teamMapper.fromApiModelToDaoModel(
+        val result = teamMapper.fromDtoToEntity(
             team = apiModel
         )
 
