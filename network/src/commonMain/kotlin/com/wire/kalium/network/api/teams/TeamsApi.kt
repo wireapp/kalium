@@ -13,7 +13,8 @@ interface TeamsApi {
 
     @Serializable
     data class TeamsResponse(
-        @SerialName("has_more") val hasMore: Boolean, val convTeamInfos: List<TeamDTO>
+        @SerialName("has_more") val hasMore: Boolean,
+        val convTeamInfos: List<TeamDTO>
     )
 
 
