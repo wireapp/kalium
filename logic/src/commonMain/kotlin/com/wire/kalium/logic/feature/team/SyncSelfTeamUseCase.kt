@@ -6,11 +6,11 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
 import kotlinx.coroutines.flow.first
 
-interface SyncSelfTeamUseCase {
+internal interface SyncSelfTeamUseCase {
     suspend operator fun invoke(): Either<CoreFailure, Unit>
 }
 
-class SyncSelfTeamUseCaseImpl(
+internal class SyncSelfTeamUseCaseImpl(
     private val userRepository: UserRepository,
     private val teamRepository: TeamRepository
 ) : SyncSelfTeamUseCase {
