@@ -1,5 +1,7 @@
 package com.wire.kalium.network.api.user.register
 
+import com.wire.kalium.network.api.model.NewUserDTO
+import com.wire.kalium.network.api.model.UserDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
@@ -11,14 +13,14 @@ interface RegisterApi {
     sealed class RegisterParam(
         open val name: String
     ) {
-        internal abstract fun toBody(): RegisterRequest
+        internal abstract fun toBody(): NewUserDTO
         data class PersonalAccount(
             val email: String,
             val emailCode: String,
             override val name: String,
             val password: String,
         ) : RegisterParam(name) {
-            override fun toBody(): RegisterRequest = RegisterRequest(
+            override fun toBody(): NewUserDTO = NewUserDTO(
                 email = email,
                 emailCode = emailCode,
                 password = password,
@@ -30,8 +32,13 @@ interface RegisterApi {
                 locale = null,
                 phone = null,
                 phoneCode = null,
-                newBindingTeam = null,
+                newBindingTeamDTO = null,
                 teamCode = null,
+                expiresIn = null,
+                managedBy = null,
+                ssoID = null,
+                teamID = null,
+                uuid = null
             )
         }
     }
@@ -58,7 +65,7 @@ interface RegisterApi {
     suspend fun register(
         param: RegisterParam,
         apiBaseUrl: String
-    ): NetworkResponse<RegisterResponse>
+    ): NetworkResponse<UserDTO>
 
     suspend fun requestActivationCode(
         param: RequestActivationCodeParam,
@@ -75,7 +82,7 @@ interface RegisterApi {
 class RegisterApiImpl(private val httpClient: HttpClient) : RegisterApi {
     override suspend fun register(
         param: RegisterApi.RegisterParam, apiBaseUrl: String
-    ): NetworkResponse<RegisterResponse> =
+    ): NetworkResponse<UserDTO> =
         wrapKaliumResponse {
             httpClient.post {
                 url {

@@ -1,5 +1,3 @@
-import kotlin.Boolean;
-
 CREATE TABLE Asset (
     key TEXT NOT NULL,
     domain TEXT NOT NULL,

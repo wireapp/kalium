@@ -16,11 +16,15 @@ interface KaliumPreferences {
     fun <T> putSerializable(key: String, value: T, kSerializer: KSerializer<T>)
     fun <T> putSerializable(key: String, value: () -> T, kSerializer: KSerializer<T>) = putSerializable(key, value(), kSerializer)
     fun <T> getSerializable(key: String, kSerializer: KSerializer<T>): T?
+
+    fun nuke()
 }
 
 class KaliumPreferencesSettings(
     private val encryptedSettings: Settings
 ) : KaliumPreferences {
+
+    override fun nuke() = encryptedSettings.clear()
 
     override fun remove(key: String) = encryptedSettings.remove(key)
 

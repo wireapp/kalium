@@ -11,7 +11,8 @@ fun newUserEntity(id: String = "test") =
         email = "email$id",
         phone = "phone$id",
         accentId = 1,
-        team = "team"
+        team = "team",
+        null, null
     )
 
 fun newUserEntity(qualifiedID: QualifiedID, id: String = "test") =
@@ -22,7 +23,8 @@ fun newUserEntity(qualifiedID: QualifiedID, id: String = "test") =
         email = "email$id",
         phone = "phone$id",
         accentId = 1,
-        team = "team"
+        team = "team",
+        null, null
     )
 
 fun newUserEntity(
@@ -32,7 +34,9 @@ fun newUserEntity(
     email: String = "testEmail@wire.com",
     phone: String = "testPhone",
     accentId: Int = 1,
-    team: String = "testTeam"
+    team: String = "testTeam",
+    previewAssetId: String = "previewAssetId",
+    completeAssetId: String = "completeAssetId",
 ): UserEntity {
     return UserEntity(
         id = QualifiedID(id, "wire.com"),
@@ -42,5 +46,7 @@ fun newUserEntity(
         phone = phone,
         accentId = accentId,
         team = team,
+        previewAssetId = previewAssetId,
+        completeAssetId = completeAssetId
     )
 }

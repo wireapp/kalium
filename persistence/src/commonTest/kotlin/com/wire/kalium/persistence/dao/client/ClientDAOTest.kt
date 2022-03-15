@@ -2,8 +2,8 @@ package com.wire.kalium.persistence.dao.client
 
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.QualifiedID
-import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserDAO
+import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -64,7 +64,7 @@ class ClientDAOTest : BaseDatabaseTest() {
         clientDAO.insertClients(listOf(insertedClient, insertedClient2))
 
         val unrelatedUserId = QualifiedID("unrelated", "user")
-        val unrelatedUser = UserEntity(unrelatedUserId, "name", "handle", "email", "phone", 1, "team")
+        val unrelatedUser = newUserEntity(unrelatedUserId)
         val unrelatedInsertedClient = Client(unrelatedUserId, "id1")
         userDAO.insertUser(unrelatedUser)
         clientDAO.insertClient(unrelatedInsertedClient)
@@ -102,6 +102,6 @@ class ClientDAOTest : BaseDatabaseTest() {
 
     private companion object {
         val userId = QualifiedID("test", "domain")
-        val user = UserEntity(userId, "name", "handle", "email", "phone", 1, "team")
+        val user = newUserEntity(userId)
     }
 }

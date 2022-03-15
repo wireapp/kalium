@@ -3,6 +3,7 @@ package com.wire.kalium.persistence.db
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.MetadataDAO
+import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
@@ -20,4 +21,10 @@ actual class Database {
         get() = TODO("Not yet implemented")
     actual val assetDAO: AssetDAO
         get() = TODO("Not yet implemented")
+    actual val teamDAO: TeamDAO
+        get() = TODO("Not yet implemented")
+
+    actual fun nuke(): Boolean {
+        TODO("Not yet implemented")
+    }
 }

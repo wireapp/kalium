@@ -32,10 +32,13 @@ kotlin {
         }
     }
     android()
+    iosX64()
 
     sourceSets {
         val commonMain by getting {
             dependencies {
+                api(project(":logger"))
+
                 // coroutines
                 implementation(Dependencies.Coroutines.core) {
                     version {
@@ -86,5 +89,10 @@ kotlin {
             }
         }
         val androidTest by getting
+        val iosX64Main by getting {
+            dependencies {
+                implementation(Dependencies.Ktor.iosHttp)
+            }
+        }
     }
 }

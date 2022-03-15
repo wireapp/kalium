@@ -9,6 +9,8 @@ import com.wire.kalium.persistence.dao.ConversationDAOImpl
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.MetadataDAOImpl
 import com.wire.kalium.persistence.dao.QualifiedIDAdapter
+import com.wire.kalium.persistence.dao.TeamDAO
+import com.wire.kalium.persistence.dao.TeamDAOImpl
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserDAOImpl
 import com.wire.kalium.persistence.dao.asset.AssetDAO
@@ -57,4 +59,11 @@ actual class Database {
 
     actual val assetDAO: AssetDAO
         get() = AssetDAOImpl(database.assetsQueries)
+
+    actual val teamDAO: TeamDAO
+        get() = TeamDAOImpl(database.teamsQueries)
+
+    actual fun nuke(): Boolean {
+        TODO("Not yet implemented")
+    }
 }

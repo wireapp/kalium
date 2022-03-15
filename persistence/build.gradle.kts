@@ -55,6 +55,9 @@ kotlin {
     js(IR) {
         browser {
             testTask {
+                // TODO: Re-enable when JS persistence is supported
+                // Removed as it's currently not implemented
+                this.enabled = false
                 useMocha {
                     timeout = "5s"
                 }
@@ -77,6 +80,8 @@ kotlin {
                 implementation(Dependencies.SqlDelight.primitiveAdapters)
                 implementation(Dependencies.Kotlinx.serialization)
                 implementation(Dependencies.MultiplatformSettings.settings)
+
+                api(project(":logger"))
             }
         }
         val commonTest by getting {

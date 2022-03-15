@@ -1,6 +1,7 @@
 package com.wire.kalium.api.tools.json.api.message
 
 import com.wire.kalium.api.ApiTest
+import com.wire.kalium.api.tools.IgnoreIOS
 import com.wire.kalium.api.tools.json.ValidJsonProvider
 import com.wire.kalium.network.api.message.MessageApi
 import com.wire.kalium.network.api.message.MessageApiImp
@@ -17,6 +18,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
+@IgnoreIOS
 class MessageApiTest : ApiTest {
     // valid
     @Test
@@ -149,15 +151,15 @@ class MessageApiTest : ApiTest {
         }
 
 
-private companion object {
-    val TEST_USER_LIST = listOf("user_1", "user_2", "user_3")
-    const val TEST_CONVERSATION_ID = "33d8dee6-7a55-4551-97d2-bd7a5160cd4e"
-    const val SEND_MESSAGE_PATH = "/conversations/$TEST_CONVERSATION_ID/otr/messages"
-    val DEFAULT_PARAMETERS_RESPONSE = SendMessageRequestJson.validDefaultParameters
-    val SUCCESS_RESPONSE = SendMessageResponseJson.validMessageSentJson
-    val MISSING_ERROR_RESPONSE = SendMessageResponseJson.missingUsersResponse
-    val DELETED_ERROR_RESPONSE = SendMessageResponseJson.deletedUsersResponse
-    val REDUNDANT_ERROR_RESPONSE = SendMessageResponseJson.redundantUsersResponse
+    private companion object {
+        val TEST_USER_LIST = listOf("user_1", "user_2", "user_3")
+        const val TEST_CONVERSATION_ID = "33d8dee6-7a55-4551-97d2-bd7a5160cd4e"
+        const val SEND_MESSAGE_PATH = "/conversations/$TEST_CONVERSATION_ID/otr/messages"
+        val DEFAULT_PARAMETERS_RESPONSE = SendMessageRequestJson.validDefaultParameters
+        val SUCCESS_RESPONSE = SendMessageResponseJson.validMessageSentJson
+        val MISSING_ERROR_RESPONSE = SendMessageResponseJson.missingUsersResponse
+        val DELETED_ERROR_RESPONSE = SendMessageResponseJson.deletedUsersResponse
+        val REDUNDANT_ERROR_RESPONSE = SendMessageResponseJson.redundantUsersResponse
 
-}
+    }
 }

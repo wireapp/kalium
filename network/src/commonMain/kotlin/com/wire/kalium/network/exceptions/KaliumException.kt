@@ -6,6 +6,7 @@ import com.wire.kalium.network.api.message.SendMessageResponse
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.BAD_REQUEST
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.BLACKLISTED_EMAIL
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.DOMAIN_BLOCKED
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.INVALID_CODE
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.INVALID_CREDENTIALS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.INVALID_EMAIL
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.KEY_EXISTS
@@ -35,12 +36,6 @@ sealed class KaliumException() : Exception() {
      * Generic errors e.g. Serialization errors
      */
     class GenericError(override val cause: Throwable) : KaliumException()
-
-    /**
-     * IOException ?
-     */
-    class NetworkUnavailableError(override val cause: Throwable) :
-        KaliumException()
 
     sealed class FeatureError() : KaliumException()
 }
@@ -86,4 +81,8 @@ fun KaliumException.InvalidRequestError.isBlackListedEmail(): Boolean {
 
 fun KaliumException.InvalidRequestError.isInvalidEmail(): Boolean {
     return errorResponse.label == INVALID_EMAIL
+}
+
+fun KaliumException.InvalidRequestError.isInvalidCode(): Boolean {
+    return errorResponse.label == INVALID_CODE
 }
