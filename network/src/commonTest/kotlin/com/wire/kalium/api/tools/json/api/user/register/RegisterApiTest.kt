@@ -8,10 +8,13 @@ import com.wire.kalium.network.api.user.register.RegisterApiImpl
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
+// test ignored until mocking is added to network
+@Ignore
 class RegisterApiTest : ApiTest {
 
     @Test

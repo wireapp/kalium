@@ -3,7 +3,7 @@ package com.wire.kalium.network.api.user.register
 import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.api.RefreshTokenProperties
 import com.wire.kalium.network.api.SessionDTO
-import com.wire.kalium.network.api.auth.AuthApi
+import com.wire.kalium.network.api.auth.AccessTokenApi
 import com.wire.kalium.network.api.model.NewUserDTO
 import com.wire.kalium.network.api.model.UserDTO
 import com.wire.kalium.network.exceptions.KaliumException
@@ -83,7 +83,7 @@ interface RegisterApi {
 
 
 class RegisterApiImpl(
-    private val httpClient: HttpClient, private val authApi: AuthApi
+    private val httpClient: HttpClient, private val accessTokenApi: AccessTokenApi
 ) : RegisterApi {
     override suspend fun register(
         param: RegisterApi.RegisterParam, apiBaseUrl: String
@@ -98,7 +98,7 @@ class RegisterApiImpl(
         }
     }.flatMap { registerResponse ->
         registerResponse.cookies[RefreshTokenProperties.COOKIE_NAME]?.let { refreshToken ->
-            authApi.renewAccessToken(refreshToken).mapSuccess { accessTokenDTO ->
+            accessTokenApi.getToken(refreshToken).mapSuccess { accessTokenDTO ->
                     Pair(
                         registerResponse.value,
                         SessionDTO(registerResponse.value.id.value, accessTokenDTO.tokenType, accessTokenDTO.value, refreshToken)

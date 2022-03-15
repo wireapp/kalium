@@ -5,9 +5,12 @@ import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 
 interface LogoutApi {
     suspend fun logout(): NetworkResponse<Unit>
+    suspend fun removeCookiesByIds(removeCookiesByIdsRequest: RemoveCookiesByIdsRequest): NetworkResponse<Unit>
+    suspend fun removeCookiesByLabels(removeCookiesWithIdsRequest: RemoveCookiesByLabels): NetworkResponse<Unit>
 }
 
 class LogoutImpl(private val httpClient: HttpClient, private val refreshToken: String) : LogoutApi {
@@ -18,9 +21,25 @@ class LogoutImpl(private val httpClient: HttpClient, private val refreshToken: S
         }
     }
 
+    override suspend fun removeCookiesByIds(removeCookiesByIdsRequest: RemoveCookiesByIdsRequest): NetworkResponse<Unit> =
+        wrapKaliumResponse {
+            httpClient.post("$PATH_COOKIES/$PATH_REMOVE") {
+                setBody(removeCookiesByIdsRequest)
+            }
+        }
+
+    override suspend fun removeCookiesByLabels(removeCookiesWithIdsRequest: RemoveCookiesByLabels): NetworkResponse<Unit> =
+        wrapKaliumResponse {
+            httpClient.post("$PATH_COOKIES/$PATH_REMOVE") {
+                setBody(removeCookiesWithIdsRequest)
+            }
+        }
+
     private companion object {
         const val PATH_ACCESS = "access"
         const val PATH_LOGOUT = "logout"
         const val HEADER_KEY_COOKIE = "cookie"
+        const val PATH_COOKIES = "cookies"
+        const val PATH_REMOVE = "remove"
     }
 }
