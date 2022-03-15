@@ -35,7 +35,8 @@ sealed class NetworkResponse<out T : Any> {
 }
 
 @OptIn(ExperimentalContracts::class)
-internal fun <T : Any> NetworkResponse<T>.isSuccessful(): Boolean {
+// TODO: make internal
+fun <T : Any> NetworkResponse<T>.isSuccessful(): Boolean {
     contract {
         returns(true) implies (this@isSuccessful is NetworkResponse.Success)
         returns(false) implies (this@isSuccessful is NetworkResponse.Error)
