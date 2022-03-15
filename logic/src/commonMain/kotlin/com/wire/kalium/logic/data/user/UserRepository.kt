@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.user
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.wrapApiRequest
@@ -41,7 +42,8 @@ class UserDataSource(
     private val userApi: UserDetailsApi,
     private val idMapper: IdMapper,
     private val userMapper: UserMapper,
-    private val assetRepository: AssetRepository
+    private val assetRepository: AssetRepository,
+    private val teamRepository: TeamRepository
 ) : UserRepository {
 
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = suspending {
@@ -50,6 +52,10 @@ class UserDataSource(
         }.coFold({
             Either.Left(it)
         }, { user ->
+            // Fetching self user team here because SyncSelfUserUseCase is (which is using this function)
+            // doesn't have a return value, and this team fetch doesn't make sense adding to GetSelfUserUseCase
+            // as we don't want to be fetching the user team everytime we get the user.
+            user.team?.let { teamId -> teamRepository.fetchTeamById(teamId = teamId) }
             assetRepository.downloadUsersPictureAssets(listOf(user.previewAssetId, user.completeAssetId))
             userDAO.insertUser(user)
             metadataDAO.insertValue(Json.encodeToString(user.id), SELF_USER_ID_KEY)

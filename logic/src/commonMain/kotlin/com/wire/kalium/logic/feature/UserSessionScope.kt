@@ -40,6 +40,9 @@ import com.wire.kalium.logic.data.prekey.remote.PreKeyListMapper
 import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteDataSource
 import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteRepository
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.team.TeamDataSource
+import com.wire.kalium.logic.data.team.TeamMapperImpl
+import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserMapperImpl
 import com.wire.kalium.logic.data.user.UserRepository
@@ -77,6 +80,7 @@ abstract class UserSessionScopeCommon(
     private val conversationMapper: ConversationMapper get() = ConversationMapperImpl(idMapper, memberMapper)
     private val userMapper = UserMapperImpl(idMapper)
     private val database: Database = authenticatedDataSourceSet.database
+    private val teamMapper = TeamMapperImpl()
 
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(
@@ -98,6 +102,13 @@ abstract class UserSessionScopeCommon(
             sendMessageFailureMapper
         )
 
+    private val teamRepository: TeamRepository
+        get() = TeamDataSource(
+            teamDAO = database.teamDAO,
+            teamMapper = teamMapper,
+            teamsApi = authenticatedDataSourceSet.authenticatedNetworkContainer.teamsApi
+        )
+
     private val userRepository: UserRepository
         get() = UserDataSource(
             database.userDAO,
@@ -106,7 +117,8 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
             idMapper,
             userMapper,
-            assetRepository
+            assetRepository,
+            teamRepository
         )
 
     protected abstract val clientConfig: ClientConfig
@@ -184,7 +196,11 @@ abstract class UserSessionScopeCommon(
             userRepository,
             syncManager
         )
-    val users: UserScope get() = UserScope(userRepository, syncManager, assetRepository)
-
+    val users: UserScope get() = UserScope(
+        userRepository = userRepository,
+        syncManager = syncManager,
+        assetRepository = assetRepository
+    )
     val logout: LogoutUseCase get() = LogoutUseCase(logoutRepository, sessionRepository, session.userId, authenticatedDataSourceSet)
+
 }
