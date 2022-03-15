@@ -3,8 +3,8 @@ package com.wire.kalium.logic.data.register
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
+import com.wire.kalium.network.api.model.UserDTO
 import com.wire.kalium.network.api.user.register.RegisterApi
-import com.wire.kalium.network.api.user.register.RegisterResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
@@ -110,7 +110,7 @@ class RegisterAccountRepositoryTest {
         val code = "123456"
         val name = "user_name"
         val password = "password"
-        val expected = RegisterResponse(
+        val expected = UserDTO(
             id = "user_id",
             name = name,
             email = email,
@@ -133,7 +133,7 @@ class RegisterAccountRepositoryTest {
 
         val actual = registerAccountRepository.registerWithEmail(email, code, name, password, TEST_API_HOST)
 
-        assertIs<Either.Right<RegisterResponse>>(actual)
+        assertIs<Either.Right<UserDTO>>(actual)
         assertEquals(expected, actual.value)
 
         verify(registerApi)
@@ -156,7 +156,7 @@ class RegisterAccountRepositoryTest {
                     TEST_API_HOST
                 )
             }
-            .then { NetworkResponse.Error<KaliumException>(expected) as NetworkResponse<RegisterResponse> }
+            .then { NetworkResponse.Error<KaliumException>(expected) as NetworkResponse<UserDTO> }
 
         val actual = registerAccountRepository.registerWithEmail(email, code, name, password, TEST_API_HOST)
 
