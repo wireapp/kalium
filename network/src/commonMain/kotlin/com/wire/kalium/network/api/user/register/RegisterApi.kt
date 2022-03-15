@@ -1,8 +1,15 @@
 package com.wire.kalium.network.api.user.register
 
+import com.wire.kalium.network.api.ErrorResponse
+import com.wire.kalium.network.api.RefreshTokenProperties
+import com.wire.kalium.network.api.SessionDTO
+import com.wire.kalium.network.api.auth.AuthApi
 import com.wire.kalium.network.api.model.NewUserDTO
 import com.wire.kalium.network.api.model.UserDTO
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.flatMap
+import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.request.post
@@ -48,78 +55,83 @@ interface RegisterApi {
         data class Email(
             val email: String
         ) : RequestActivationCodeParam() {
-            override fun toBody(): RequestActivationRequest = RequestActivationRequest(email = email, null, null, null)
+            override fun toBody(): RequestActivationRequest = RequestActivationRequest(email, null, null, null)
         }
     }
 
     sealed class ActivationParam(val dryRun: Boolean = true) {
         internal abstract fun toBody(): ActivationRequest
         data class Email(
-            val email: String,
-            val code: String
+            val email: String, val code: String
         ) : ActivationParam() {
             override fun toBody(): ActivationRequest = ActivationRequest(code = code, dryRun = dryRun, email = email, null, null, null)
         }
     }
 
     suspend fun register(
-        param: RegisterParam,
-        apiBaseUrl: String
-    ): NetworkResponse<UserDTO>
+        param: RegisterParam, apiBaseUrl: String
+    ): NetworkResponse<Pair<UserDTO, SessionDTO>>
 
     suspend fun requestActivationCode(
-        param: RequestActivationCodeParam,
-        apiBaseUrl: String
+        param: RequestActivationCodeParam, apiBaseUrl: String
     ): NetworkResponse<Unit>
 
     suspend fun activate(
-        param: ActivationParam,
-        apiBaseUrl: String
+        param: ActivationParam, apiBaseUrl: String
     ): NetworkResponse<Unit>
 }
 
 
-class RegisterApiImpl(private val httpClient: HttpClient) : RegisterApi {
+class RegisterApiImpl(
+    private val httpClient: HttpClient, private val authApi: AuthApi
+) : RegisterApi {
     override suspend fun register(
         param: RegisterApi.RegisterParam, apiBaseUrl: String
-    ): NetworkResponse<UserDTO> =
-        wrapKaliumResponse {
-            httpClient.post {
-                url {
-                    host = apiBaseUrl
-                    pathSegments = listOf(REGISTER_PATH)
-                    protocol = URLProtocol.HTTPS
-                }
-                setBody(param.toBody())
+    ): NetworkResponse<Pair<UserDTO, SessionDTO>> = wrapKaliumResponse<UserDTO> {
+        httpClient.post {
+            url {
+                host = apiBaseUrl
+                pathSegments = listOf(REGISTER_PATH)
+                protocol = URLProtocol.HTTPS
             }
+            setBody(param.toBody())
         }
+    }.flatMap { registerResponse ->
+        registerResponse.cookies[RefreshTokenProperties.COOKIE_NAME]?.let { refreshToken ->
+            authApi.renewAccessToken(refreshToken).mapSuccess { accessTokenDTO ->
+                    Pair(
+                        registerResponse.value,
+                        SessionDTO(registerResponse.value.id.value, accessTokenDTO.tokenType, accessTokenDTO.value, refreshToken)
+                    )
+                }
+        } ?: run {
+            NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "no cookie was found", "missing-refreshToken")))
+        }
+    }
 
     override suspend fun requestActivationCode(
-        param: RegisterApi.RequestActivationCodeParam,
-        apiBaseUrl: String
-    ): NetworkResponse<Unit> =
-        wrapKaliumResponse {
-            httpClient.post {
-                url {
-                    host = apiBaseUrl
-                    pathSegments = listOf(ACTIVATE_PATH, SEND_PATH)
-                    protocol = URLProtocol.HTTPS
-                }
-                setBody(param.toBody())
+        param: RegisterApi.RequestActivationCodeParam, apiBaseUrl: String
+    ): NetworkResponse<Unit> = wrapKaliumResponse {
+        httpClient.post {
+            url {
+                host = apiBaseUrl
+                pathSegments = listOf(ACTIVATE_PATH, SEND_PATH)
+                protocol = URLProtocol.HTTPS
             }
+            setBody(param.toBody())
         }
+    }
 
-    override suspend fun activate(param: RegisterApi.ActivationParam, apiBaseUrl: String): NetworkResponse<Unit> =
-        wrapKaliumResponse {
-            httpClient.post {
-                url {
-                    host = apiBaseUrl
-                    pathSegments = listOf(ACTIVATE_PATH)
-                    protocol = URLProtocol.HTTPS
-                }
-                setBody(param.toBody())
+    override suspend fun activate(param: RegisterApi.ActivationParam, apiBaseUrl: String): NetworkResponse<Unit> = wrapKaliumResponse {
+        httpClient.post {
+            url {
+                host = apiBaseUrl
+                pathSegments = listOf(ACTIVATE_PATH)
+                protocol = URLProtocol.HTTPS
             }
+            setBody(param.toBody())
         }
+    }
 
 
     private companion object {
