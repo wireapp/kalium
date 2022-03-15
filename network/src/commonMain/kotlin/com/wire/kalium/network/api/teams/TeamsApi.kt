@@ -82,7 +82,8 @@ interface TeamsApi {
      * @return a list of teams, represented by [TeamsApi.TeamsResponse] wrapped in a [NetworkResponse]
      * @param[size] limits the number of teams returned
      * @param[option] one of [GetTeamsOption.LimitTo] or [GetTeamsOption.StartFrom]
-    */
+     */
     suspend fun getTeams(size: Int?, option: GetTeamsOption?): NetworkResponse<TeamsResponse>
     suspend fun getTeamMembers(teamId: TeamId, limitTo: Int?): NetworkResponse<TeamMemberList>
+    suspend fun getTeamInfo(teamId: TeamId): NetworkResponse<Team>
 }

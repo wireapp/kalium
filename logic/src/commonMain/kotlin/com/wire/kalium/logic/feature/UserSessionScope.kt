@@ -37,6 +37,9 @@ import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.prekey.remote.PreKeyListMapper
 import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteDataSource
 import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteRepository
+import com.wire.kalium.logic.data.team.TeamDataSource
+import com.wire.kalium.logic.data.team.TeamMapperImpl
+import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.publicuser.PublicUserMapper
 import com.wire.kalium.logic.data.publicuser.PublicUserMapperImpl
 import com.wire.kalium.logic.data.publicuser.PublicUserRepository
@@ -77,6 +80,7 @@ abstract class UserSessionScopeCommon(
     private val userMapper = UserMapperImpl(idMapper)
     private val publicUserMapper: PublicUserMapper = PublicUserMapperImpl()
     private val database: Database = authenticatedDataSourceSet.database
+    private val teamMapper = TeamMapperImpl()
 
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(
@@ -98,6 +102,13 @@ abstract class UserSessionScopeCommon(
             sendMessageFailureMapper
         )
 
+    private val teamRepository: TeamRepository
+        get() = TeamDataSource(
+            teamDAO = database.teamDAO,
+            teamMapper = teamMapper,
+            teamsApi = authenticatedDataSourceSet.authenticatedNetworkContainer.teamsApi
+        )
+
     private val userRepository: UserRepository
         get() = UserDataSource(
             database.userDAO,
@@ -106,7 +117,8 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
             idMapper,
             userMapper,
-            assetRepository
+            assetRepository,
+            teamRepository
         )
 
     private val publicUserRepository: PublicUserRepository
@@ -189,11 +201,9 @@ abstract class UserSessionScopeCommon(
             userRepository,
             syncManager
         )
-    val users: UserScope
-        get() = UserScope(
-            userRepository,
-            publicUserRepository,
-            syncManager,
-            assetRepository
-        )
+    val users: UserScope get() = UserScope(
+        userRepository = userRepository,
+       publicUserRepository, syncManager = syncManager,
+        assetRepository = assetRepository
+    )
 }
