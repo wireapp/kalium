@@ -31,17 +31,15 @@ actual class CoreLogic(
 ) : CoreLogicCommon(clientLabel, rootProteusDirectoryPath) {
 
     override fun getSessionRepo(): SessionRepository {
-        val sessionPreferences = KaliumPreferencesSettings(EncryptedSettingsHolder(appContext, SHARED_PREFERENCE_FILE_NAME).encryptedSettings)
+        val sessionPreferences =
+            KaliumPreferencesSettings(EncryptedSettingsHolder(appContext, SHARED_PREFERENCE_FILE_NAME).encryptedSettings)
         val sessionStorage: SessionStorage = SessionStorageImpl(sessionPreferences)
         val sessionLocalRepository: SessionLocalRepository = SessionLocalDataSource(sessionStorage, sessionMapper)
         return SessionDataSource(sessionLocalRepository)
     }
 
     override fun getAuthenticationScope(): AuthenticationScope =
-        AuthenticationScope(
-            clientLabel = clientLabel,
-            applicationContext = appContext
-        )
+        AuthenticationScope(clientLabel, sessionRepository, appContext)
 
     override fun getSessionScope(session: AuthSession): UserSessionScope {
         val dataSourceSet = userScopeStorage[session] ?: run {

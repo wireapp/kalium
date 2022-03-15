@@ -24,7 +24,7 @@ actual class CoreLogic(clientLabel: String, rootProteusDirectoryPath: String) :
     }
 
     override fun getAuthenticationScope(): AuthenticationScope {
-        return AuthenticationScope(".", clientLabel)
+        return AuthenticationScope(".", clientLabel, sessionRepository)
     }
 
     override fun getSessionScope(session: AuthSession): UserSessionScope {
