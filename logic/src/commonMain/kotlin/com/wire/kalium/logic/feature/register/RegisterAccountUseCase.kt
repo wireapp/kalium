@@ -3,7 +3,7 @@ package com.wire.kalium.logic.feature.register
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
-import com.wire.kalium.network.api.user.register.RegisterResponse
+import com.wire.kalium.network.api.model.UserDTO
 
 sealed class RegistrationParam(
     firstName: String,
@@ -47,7 +47,7 @@ class RegisterAccountUseCase(
 }
 
 sealed class RegisterResult {
-    class Success(val value: RegisterResponse) : RegisterResult()
+    class Success(val value: UserDTO) : RegisterResult()
     sealed class Failure : RegisterResult() {
         class Generic(val failure: NetworkFailure) : RegisterResult()
     }

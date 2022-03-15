@@ -2,6 +2,7 @@ package com.wire.kalium.network.api.teams
 
 import com.wire.kalium.network.api.NonQualifiedConversationId
 import com.wire.kalium.network.api.TeamId
+import com.wire.kalium.network.api.model.TeamDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
@@ -16,7 +17,7 @@ class TeamsApiImp(private val httpClient: HttpClient) : TeamsApi {
             httpClient.delete("/$PATH_TEAMS/$teamId/$PATH_CONVERSATIONS/$conversationId")
         }
 
-    override suspend fun getTeamInfo(teamId: TeamId): NetworkResponse<TeamsApi.Team> =
+    override suspend fun getTeamInfo(teamId: TeamId): NetworkResponse<TeamDTO> =
         wrapKaliumResponse {
             httpClient.get("/$PATH_TEAMS/$teamId")
         }
@@ -24,18 +25,15 @@ class TeamsApiImp(private val httpClient: HttpClient) : TeamsApi {
     override suspend fun getTeams(size: Int?, option: TeamsApi.GetTeamsOption?): NetworkResponse<TeamsApi.TeamsResponse> =
         wrapKaliumResponse {
             when (option) {
-                is TeamsApi.GetTeamsOption.StartFrom ->
-                    httpClient.get("/$PATH_TEAMS") {
-                        size?.let { parameter(QUERY_KEY_SIZE, it) }
-                        parameter(QUERY_KEY_START, option.teamId)
-                    }
-                is TeamsApi.GetTeamsOption.LimitTo ->
-                    httpClient.get("/$PATH_TEAMS") {
-                        size?.let { parameter(QUERY_KEY_SIZE, it) }
-                        parameter(QUERY_KEY_IDS, option.teamIds.joinToString(","))
-                    }
-                null ->
-                    httpClient.get("/$PATH_TEAMS")
+                is TeamsApi.GetTeamsOption.StartFrom -> httpClient.get("/$PATH_TEAMS") {
+                    size?.let { parameter(QUERY_KEY_SIZE, it) }
+                    parameter(QUERY_KEY_START, option.teamId)
+                }
+                is TeamsApi.GetTeamsOption.LimitTo -> httpClient.get("/$PATH_TEAMS") {
+                    size?.let { parameter(QUERY_KEY_SIZE, it) }
+                    parameter(QUERY_KEY_IDS, option.teamIds.joinToString(","))
+                }
+                null -> httpClient.get("/$PATH_TEAMS")
             }
         }
 

@@ -1,5 +1,7 @@
 package com.wire.kalium.network.api.user.register
 
+import com.wire.kalium.network.api.model.NewUserDTO
+import com.wire.kalium.network.api.model.UserDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
@@ -63,7 +65,7 @@ interface RegisterApi {
     suspend fun register(
         param: RegisterParam,
         apiBaseUrl: String
-    ): NetworkResponse<RegisterResponse>
+    ): NetworkResponse<UserDTO>
 
     suspend fun requestActivationCode(
         param: RequestActivationCodeParam,
@@ -80,7 +82,7 @@ interface RegisterApi {
 class RegisterApiImpl(private val httpClient: HttpClient) : RegisterApi {
     override suspend fun register(
         param: RegisterApi.RegisterParam, apiBaseUrl: String
-    ): NetworkResponse<RegisterResponse> =
+    ): NetworkResponse<UserDTO> =
         wrapKaliumResponse {
             httpClient.post {
                 url {

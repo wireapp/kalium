@@ -1,17 +1,14 @@
 package com.wire.kalium.logic.data.team
 
-import com.wire.kalium.network.api.teams.TeamsApi
+import com.wire.kalium.network.api.model.TeamDTO
 import com.wire.kalium.persistence.dao.TeamEntity
 
 interface TeamMapper {
-    fun fromApiModelToDaoModel(team: TeamsApi.Team): TeamEntity
+    fun fromDtoToEntity(teamDTO: TeamDTO): TeamEntity
 }
 
-internal class TeamMapperImpl: TeamMapper {
+internal class TeamMapperImpl : TeamMapper {
 
-    override fun fromApiModelToDaoModel(team: TeamsApi.Team): TeamEntity =
-        TeamEntity(
-            id = team.id,
-            name = team.name
-        )
+    override fun fromDtoToEntity(teamDTO: TeamDTO): TeamEntity =
+        TeamEntity(teamDTO.id, teamDTO.name)
 }
