@@ -12,14 +12,14 @@ import com.wire.kalium.persistence.db.Conversation as SQLDelightConversation
 import com.wire.kalium.persistence.db.Member as SQLDelightMember
 
 class ConversationMapper {
-    fun toModel(conversation: SQLDelightConversation): Conversation {
-        return Conversation(conversation.qualified_id, conversation.name)
+    fun toModel(conversation: SQLDelightConversation): ConversationEntity {
+        return ConversationEntity(conversation.qualified_id, conversation.name)
     }
 }
 
 class MemberMapper {
-    fun toModel(member: SQLDelightMember): Member {
-        return Member(member.user)
+    fun toModel(member: SQLDelightMember): MemberEntity {
+        return MemberEntity(member.user)
     }
 }
 
@@ -32,30 +32,30 @@ class ConversationDAOImpl(
     private val memberMapper = MemberMapper()
     private val conversationMapper = ConversationMapper()
 
-    override suspend fun insertConversation(conversation: Conversation) {
-        conversationQueries.insertConversation(conversation.id, conversation.name)
+    override suspend fun insertConversation(conversationEntity: ConversationEntity) {
+        conversationQueries.insertConversation(conversationEntity.id, conversationEntity.name)
     }
 
-    override suspend fun insertConversations(conversations: List<Conversation>) {
+    override suspend fun insertConversations(conversationEntities: List<ConversationEntity>) {
         conversationQueries.transaction {
-            for (conversation: Conversation in conversations) {
-                conversationQueries.insertConversation(conversation.id, conversation.name)
+            for (conversationEntity: ConversationEntity in conversationEntities) {
+                conversationQueries.insertConversation(conversationEntity.id, conversationEntity.name)
             }
         }
     }
 
-    override suspend fun updateConversation(conversation: Conversation) {
-        conversationQueries.updateConversation(conversation.name, conversation.id)
+    override suspend fun updateConversation(conversationEntity: ConversationEntity) {
+        conversationQueries.updateConversation(conversationEntity.name, conversationEntity.id)
     }
 
-    override suspend fun getAllConversations(): Flow<List<Conversation>> {
+    override suspend fun getAllConversations(): Flow<List<ConversationEntity>> {
         return conversationQueries.selectAllConversations()
             .asFlow()
             .mapToList()
             .map { it.map(conversationMapper::toModel) }
     }
 
-    override suspend fun getConversationByQualifiedID(qualifiedID: QualifiedID): Flow<Conversation?> {
+    override suspend fun getConversationByQualifiedID(qualifiedID: QualifiedID): Flow<ConversationEntity?> {
         return conversationQueries.selectByQualifiedId(qualifiedID)
             .asFlow()
             .mapToOneOrNull()
@@ -66,16 +66,16 @@ class ConversationDAOImpl(
         conversationQueries.deleteConversation(qualifiedID)
     }
 
-    override suspend fun insertMember(member: Member, conversationID: QualifiedID) {
+    override suspend fun insertMember(member: MemberEntity, conversationID: QualifiedID) {
         memberQueries.transaction {
             userQueries.insertOrIgnoreUserId(member.user)
             memberQueries.insertMember(member.user, conversationID)
         }
     }
 
-    override suspend fun insertMembers(members: List<Member>, conversationID: QualifiedID) {
+    override suspend fun insertMembers(members: List<MemberEntity>, conversationID: QualifiedID) {
         memberQueries.transaction {
-            for (member: Member in members) {
+            for (member: MemberEntity in members) {
                 userQueries.insertOrIgnoreUserId(member.user)
                 memberQueries.insertMember(member.user, conversationID)
             }
@@ -87,7 +87,7 @@ class ConversationDAOImpl(
         memberQueries.deleteMember(conversationID, userID)
     }
 
-    override suspend fun getAllMembers(qualifiedID: QualifiedID): Flow<List<Member>> {
+    override suspend fun getAllMembers(qualifiedID: QualifiedID): Flow<List<MemberEntity>> {
         return memberQueries.selectAllMembersByConversation(qualifiedID)
             .asFlow()
             .mapToList()

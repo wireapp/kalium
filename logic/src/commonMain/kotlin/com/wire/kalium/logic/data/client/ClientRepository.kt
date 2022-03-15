@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.Client as ClientEntity
@@ -56,10 +57,10 @@ class ClientDataSource(
         return clientRemoteRepository.fetchClientInfo(clientId)
     }
 
-    override suspend fun saveNewClients(userId: UserId, clients: List<ClientId>) : Either<CoreFailure, Unit> {
-        val mappedUserId = userMapper.toUserIdPersistence(userId)
-        val mappedClients = clients.map { ClientEntity(mappedUserId, it.value) }
-        clientDAO.insertClients(mappedClients)
-        return Either.Right(Unit)
-    }
+    override suspend fun saveNewClients(userId: UserId, clients: List<ClientId>): Either<CoreFailure, Unit> =
+        wrapStorageRequest {
+            val mappedUserId = userMapper.toUserIdPersistence(userId)
+            val mappedClients = clients.map { ClientEntity(mappedUserId, it.value) }
+            clientDAO.insertClients(mappedClients)
+        }
 }

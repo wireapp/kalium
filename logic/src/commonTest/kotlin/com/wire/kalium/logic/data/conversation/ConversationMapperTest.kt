@@ -8,7 +8,13 @@ import com.wire.kalium.network.api.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.conversation.ConversationOtherMembersResponse
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.ConversationSelfMemberResponse
-import io.mockative.*
+import io.mockative.Mock
+import io.mockative.any
+import io.mockative.classOf
+import io.mockative.given
+import io.mockative.mock
+import io.mockative.once
+import io.mockative.verify
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -46,7 +52,7 @@ class ConversationMapperTest {
             .whenInvokedWith(any())
             .then { transformedMemberInfo }
 
-        val mappedResponse = conversationMapper.fromApiModel(response)
+        val mappedResponse = conversationMapper.fromDTO(response)
 
         assertEquals(mappedResponse.name, response.name)
     }
@@ -70,7 +76,7 @@ class ConversationMapperTest {
             .whenInvokedWith(any())
             .then { transformedMemberInfo }
 
-        val mappedResponse = conversationMapper.fromApiModel(response)
+        val mappedResponse = conversationMapper.fromDTO(response)
 
         verify(idMapper)
             .invocation { idMapper.fromApiModel(originalConversationId) }
@@ -98,7 +104,7 @@ class ConversationMapperTest {
             .whenInvokedWith(any())
             .then { transformedMemberInfo }
 
-        conversationMapper.fromApiModel(response)
+        conversationMapper.fromDTO(response)
 
         verify(idMapper)
             .invocation { idMapper.fromApiModel(originalConversationId) }
