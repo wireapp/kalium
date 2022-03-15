@@ -50,7 +50,7 @@ abstract class AuthenticationScopeCommon(
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
 
     val login: LoginUseCase
-        get() = LoginUseCase(
+        get() = LoginUseCaseImpl(
             loginRepository,
             sessionRepository,
             validateEmailUseCase,

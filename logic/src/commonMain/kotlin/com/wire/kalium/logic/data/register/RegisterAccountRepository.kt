@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.register
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.model.UserDTO
 import com.wire.kalium.network.api.user.register.RegisterApi
 
@@ -15,7 +16,7 @@ interface RegisterAccountRepository {
         name: String,
         password: String,
         baseApiHost: String
-    ): Either<NetworkFailure, UserDTO>
+    ): Either<NetworkFailure, Pair<UserDTO, SessionDTO>>
 }
 
 class RegisterAccountDataSource(
@@ -33,7 +34,7 @@ class RegisterAccountDataSource(
         name: String,
         password: String,
         baseApiHost: String
-    ): Either<NetworkFailure, UserDTO> =
+    ): Either<NetworkFailure, Pair<UserDTO, SessionDTO>> =
         register(RegisterApi.RegisterParam.PersonalAccount(email, code, name, password), baseApiHost)
 
 

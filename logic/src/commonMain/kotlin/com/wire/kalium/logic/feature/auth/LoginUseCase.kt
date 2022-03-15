@@ -28,7 +28,7 @@ interface LoginUseCase {
     ): AuthenticationResult
 }
 
-class LoginUseCaseImpl(
+internal class LoginUseCaseImpl(
     private val loginRepository: LoginRepository,
     private val sessionRepository: SessionRepository,
     private val validateEmailUseCase: ValidateEmailUseCase,
