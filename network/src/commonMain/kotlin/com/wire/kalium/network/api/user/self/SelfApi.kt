@@ -1,5 +1,6 @@
 package com.wire.kalium.network.api.user.self
 
+import com.wire.kalium.network.api.model.UserDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
@@ -9,7 +10,7 @@ import io.ktor.client.request.setBody
 
 class SelfApi(private val httpClient: HttpClient) {
 
-    suspend fun getSelfInfo(): NetworkResponse<SelfUserInfoResponse> =
+    suspend fun getSelfInfo(): NetworkResponse<UserDTO> =
         wrapKaliumResponse {
             httpClient.get(PATH_SELF)
         }
