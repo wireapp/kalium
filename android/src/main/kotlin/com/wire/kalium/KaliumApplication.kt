@@ -1,7 +1,7 @@
 package com.wire.kalium
 
 import android.app.Application
-import androidx.work.*
+import androidx.work.Configuration
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.CoreLogger
 import com.wire.kalium.logic.CoreLogic
@@ -17,7 +17,7 @@ class KaliumApplication: Application(), Configuration.Provider {
 
         val rootProteusDir = File(this.filesDir, "proteus")
         coreLogic = CoreLogic(
-            applicationContext = applicationContext,
+            appContext = applicationContext,
             clientLabel = "kalium",
             rootProteusDirectoryPath = rootProteusDir.absolutePath
         )
