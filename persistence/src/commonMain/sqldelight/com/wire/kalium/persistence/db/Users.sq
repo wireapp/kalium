@@ -22,7 +22,7 @@ DELETE FROM User WHERE qualified_id = ?;
 insertUser:
 INSERT INTO User(qualified_id, name, handle, email, phone, accent_id, team, preview_asset_id, complete_asset_id)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
-ON CONFLICT(qualified_id) DO UPDATE SET name = excluded.name, handle = excluded.handle, preview_asset_id = excluded.preview_asset_id, complete_asset_id = excluded.complete_asset_id;
+ON CONFLICT(qualified_id) DO UPDATE SET name = excluded.name, handle = excluded.handle, accent_id = excluded.accent_id, team = excluded.team, preview_asset_id = excluded.preview_asset_id, complete_asset_id = excluded.complete_asset_id;
 
 insertOrIgnoreUserId:
 INSERT OR IGNORE INTO User(qualified_id)

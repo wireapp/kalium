@@ -1,14 +1,17 @@
 package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.network.api.TeamId
 import com.wire.kalium.network.api.model.AssetSizeDTO
 import com.wire.kalium.network.api.model.UserAssetDTO
 import com.wire.kalium.network.api.model.UserAssetTypeDTO
 import com.wire.kalium.network.api.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.model.getPreviewAssetOrNull
+import com.wire.kalium.network.api.teams.TeamsApi
 import com.wire.kalium.network.api.user.details.UserDetailsResponse
 import com.wire.kalium.network.api.user.self.SelfUserInfoResponse
 import com.wire.kalium.network.api.user.self.UserUpdateRequest
+import com.wire.kalium.persistence.dao.QualifiedID
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserId as UserIdEntity
 
@@ -27,6 +30,11 @@ interface UserMapper {
     fun fromModelToUpdateApiModel(user: SelfUser, newName: String?, newAccent: Int?, newAssetId: String?): UserUpdateRequest
     fun fromUpdateRequestToDaoModel(user: SelfUser, updateRequest: UserUpdateRequest): UserEntity
     fun toUserIdPersistence(userId: UserId): UserIdEntity
+    fun fromTeamMemberToDaoModel(
+        teamId: TeamId,
+        teamMember: TeamsApi.TeamMember,
+        userDomain: String
+    ): UserEntity
 }
 
 internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
@@ -121,4 +129,27 @@ internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
     }
 
     override fun toUserIdPersistence(userId: UserId) = UserIdEntity(userId.value, userId.domain)
+
+    /**
+     * Null and default/hardcoded values will be replaced later when fetching known users.
+     */
+    override fun fromTeamMemberToDaoModel(
+        teamId: TeamId,
+        teamMember: TeamsApi.TeamMember,
+        userDomain: String
+    ): UserEntity =
+        UserEntity(
+            id = QualifiedID(
+                value = teamMember.nonQualifiedUserId,
+                domain = userDomain
+            ),
+            name = null,
+            handle = null,
+            email = null,
+            phone = null,
+            accentId = 1,
+            team = teamId,
+            previewAssetId = null,
+            completeAssetId = null
+        )
 }

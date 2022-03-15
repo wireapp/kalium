@@ -111,9 +111,11 @@ abstract class UserSessionScopeCommon(
 
     private val teamRepository: TeamRepository
         get() = TeamDataSource(
+            userDAO = database.userDAO,
             teamDAO = database.teamDAO,
             teamMapper = teamMapper,
-            teamsApi = authenticatedDataSourceSet.authenticatedNetworkContainer.teamsApi
+            teamsApi = authenticatedDataSourceSet.authenticatedNetworkContainer.teamsApi,
+            userMapper = userMapper
         )
 
     protected abstract val clientConfig: ClientConfig

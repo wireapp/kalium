@@ -16,7 +16,13 @@ class SyncSelfTeamUseCaseImpl(
 ) : SyncSelfTeamUseCase {
 
     override suspend fun invoke(): Either<CoreFailure, Unit> =
-        userRepository.getSelfUser().first().team?.let { teamId ->
-            teamRepository.fetchTeamById(teamId = teamId)
+        userRepository.getSelfUser().first().let { user ->
+            user.team?.let { teamId ->
+                teamRepository.fetchTeamById(teamId = teamId)
+                teamRepository.fetchMembersByTeamId(
+                    teamId = teamId,
+                    userDomain = user.id.domain
+                )
+            }
         } ?: Either.Right(Unit)
 }
