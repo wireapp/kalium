@@ -9,7 +9,7 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 
-object RegisterAccountResponseJson {
+object UserDTOJson {
 
     private val jsonProvider = { serializable: UserDTO ->
         buildJsonObject {
@@ -55,7 +55,7 @@ object RegisterAccountResponseJson {
         }.toString()
     }
 
-    val validRegisterResponse = ValidJsonProvider(
+    val valid = ValidJsonProvider(
         UserDTO(
             id = UserId("user_id", "domain.com"),
             name = "user_name_123",

@@ -149,7 +149,7 @@ class RegisterApiTest : ApiTest {
 
     private companion object {
         val VALID_PERSONAL_ACCOUNT_REQUEST = RegisterAccountJson.validPersonalAccountRegister
-        val VALID_REGISTER_RESPONSE = RegisterAccountResponseJson.validRegisterResponse
+        val VALID_REGISTER_RESPONSE = UserDTOJson.valid
         val VALID_SEND_ACTIVATE_EMAIL = RequestActivationCodeJson.validActivateEmail
         val VALID_ACTIVATE_EMAIL = ActivationRequestJson.validActivateEmail
         val ERROR_RESPONSE = ErrorResponseJson.valid

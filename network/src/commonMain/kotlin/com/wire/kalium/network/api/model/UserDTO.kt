@@ -5,7 +5,6 @@ import com.wire.kalium.network.api.TeamId
 import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.UserSsoId
 import com.wire.kalium.network.api.user.register.NewBindingTeamDTO
-import com.wire.kalium.network.api.user.self.ManagedBy
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -50,3 +49,16 @@ internal data class NewUserDTO(
     @SerialName("team_id") val teamID: TeamId?,
     @SerialName("uuid") val uuid: String?
 )
+
+@Serializable
+enum class ManagedBy {
+    @SerialName("wire")
+    Wire,
+
+    @SerialName("scim")
+    Scim;
+
+    override fun toString(): String {
+        return this.name.lowercase()
+    }
+}
