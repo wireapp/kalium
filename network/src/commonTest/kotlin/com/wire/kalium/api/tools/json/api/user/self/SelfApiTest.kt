@@ -1,6 +1,7 @@
 package com.wire.kalium.api.tools.json.api.user.self
 
 import com.wire.kalium.api.ApiTest
+import com.wire.kalium.api.tools.json.api.user.register.UserDTOJson
 import com.wire.kalium.api.tools.json.model.ErrorResponseJson
 import com.wire.kalium.network.api.user.self.SelfApi
 import com.wire.kalium.network.exceptions.KaliumException
@@ -48,7 +49,7 @@ class SelfApiTest : ApiTest {
 
     private companion object {
         const val PATH_SELF = "/self"
-        val VALID_SELF_RESPONSE = SelfUserInfoResponseJson.valid
+        val VALID_SELF_RESPONSE = UserDTOJson.valid
         val ERROR_RESPONSE = ErrorResponseJson.valid.serializableData
     }
 }

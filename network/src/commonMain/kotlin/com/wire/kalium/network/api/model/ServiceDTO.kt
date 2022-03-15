@@ -3,9 +3,9 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class Service(
+data class ServiceDTO(
     @SerialName("id")
-    val id: String?,
+    val id: String,
     @SerialName("provider")
-    val provider: String?
+    val provider: String
 )
