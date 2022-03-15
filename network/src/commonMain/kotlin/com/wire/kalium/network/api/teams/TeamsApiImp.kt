@@ -16,6 +16,11 @@ class TeamsApiImp(private val httpClient: HttpClient) : TeamsApi {
             httpClient.delete("/$PATH_TEAMS/$teamId/$PATH_CONVERSATIONS/$conversationId")
         }
 
+    override suspend fun getTeamInfo(teamId: TeamId): NetworkResponse<TeamsApi.Team> =
+        wrapKaliumResponse {
+            httpClient.get("/$PATH_TEAMS/$teamId")
+        }
+
     override suspend fun getTeams(size: Int?, option: TeamsApi.GetTeamsOption?): NetworkResponse<TeamsApi.TeamsResponse> =
         wrapKaliumResponse {
             when (option) {

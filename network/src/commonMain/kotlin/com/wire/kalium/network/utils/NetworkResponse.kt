@@ -2,7 +2,6 @@ package com.wire.kalium.network.utils
 
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.client.statement.HttpResponse
-import io.ktor.http.HttpHeaders
 import io.ktor.http.parseServerSetCookieHeader
 import io.ktor.util.toMap
 import kotlin.contracts.ExperimentalContracts
@@ -11,6 +10,7 @@ import kotlin.contracts.contract
 sealed class NetworkResponse<out T : Any> {
     data class Success<out T : Any>(
         val value: T,
+        // TODO: to be deleted since data in the headers have to be extracted in network and not exposed
         val headers: Map<String, String?>,
         val httpCode: Int
     ) : NetworkResponse<T>() {
@@ -32,7 +32,7 @@ sealed class NetworkResponse<out T : Any> {
         }
     }
 
-    data class Error<out E : KaliumException>(val kException: KaliumException) : NetworkResponse<E>()
+    data class Error(val kException: KaliumException) : NetworkResponse<Nothing>()
 }
 
 @OptIn(ExperimentalContracts::class)

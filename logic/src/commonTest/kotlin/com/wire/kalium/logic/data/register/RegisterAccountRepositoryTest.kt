@@ -3,9 +3,8 @@ package com.wire.kalium.logic.data.register
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
-import com.wire.kalium.network.api.model.UserDTO
 import com.wire.kalium.network.api.user.register.RegisterApi
-import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.api.user.register.RegisterResponse
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
 import io.mockative.classOf
@@ -54,11 +53,11 @@ class RegisterAccountRepositoryTest {
         val email = "user@domain.de"
         given(registerApi)
             .coroutine { requestActivationCode(RegisterApi.RequestActivationCodeParam.Email(email), TEST_API_HOST) }
-            .then { NetworkResponse.Error<KaliumException>(expected) as NetworkResponse<Unit> }
+            .then { NetworkResponse.Error(expected) }
 
         val actual = registerAccountRepository.requestEmailActivationCode(email, TEST_API_HOST)
 
-        assertIs<Either.Left<NetworkFailure>>(actual)
+        assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(actual)
         assertEquals(expected, actual.value.kaliumException)
         verify(registerApi)
             .coroutine { requestActivationCode(RegisterApi.RequestActivationCodeParam.Email(email), TEST_API_HOST) }
@@ -92,11 +91,11 @@ class RegisterAccountRepositoryTest {
         val code = "123456"
         given(registerApi)
             .coroutine { activate(RegisterApi.ActivationParam.Email(email, code), TEST_API_HOST) }
-            .then { NetworkResponse.Error<KaliumException>(expected) as NetworkResponse<Unit> }
+            .then { NetworkResponse.Error(expected) }
 
         val actual = registerAccountRepository.verifyActivationCode(email, code, TEST_API_HOST)
 
-        assertIs<Either.Left<NetworkFailure>>(actual)
+        assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(actual)
         assertEquals(expected, actual.value.kaliumException)
 
         verify(registerApi)
@@ -110,7 +109,7 @@ class RegisterAccountRepositoryTest {
         val code = "123456"
         val name = "user_name"
         val password = "password"
-        val expected = UserDTO(
+        val expected = RegisterResponse(
             id = "user_id",
             name = name,
             email = email,
@@ -133,7 +132,7 @@ class RegisterAccountRepositoryTest {
 
         val actual = registerAccountRepository.registerWithEmail(email, code, name, password, TEST_API_HOST)
 
-        assertIs<Either.Right<UserDTO>>(actual)
+        assertIs<Either.Right<RegisterResponse>>(actual)
         assertEquals(expected, actual.value)
 
         verify(registerApi)
@@ -156,11 +155,11 @@ class RegisterAccountRepositoryTest {
                     TEST_API_HOST
                 )
             }
-            .then { NetworkResponse.Error<KaliumException>(expected) as NetworkResponse<UserDTO> }
+            .then { NetworkResponse.Error(expected) }
 
         val actual = registerAccountRepository.registerWithEmail(email, code, name, password, TEST_API_HOST)
 
-        assertIs<Either.Left<NetworkFailure>>(actual)
+        assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(actual)
         assertEquals(expected, actual.value.kaliumException)
 
         verify(registerApi)

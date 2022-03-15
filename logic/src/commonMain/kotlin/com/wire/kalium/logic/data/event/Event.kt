@@ -3,6 +3,8 @@ package com.wire.kalium.logic.data.event
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.network.api.conversation.ConversationMembers
+import com.wire.kalium.network.api.conversation.ConversationUsers
 
 sealed class Event(open val id: String) {
 
@@ -16,6 +18,22 @@ sealed class Event(open val id: String) {
             val senderClientId: ClientId,
             val time: String,
             val content: String
+        ) : Conversation(id, conversationId)
+
+        data class MemberJoin(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val addedBy: UserId,
+            val members: ConversationMembers,
+            val from: String
+        ) : Conversation(id, conversationId)
+
+        data class MemberLeave(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val removedBy: UserId,
+            val members: ConversationUsers,
+            val from: String
         ) : Conversation(id, conversationId)
     }
 

@@ -3,10 +3,7 @@ package com.wire.kalium.logic.feature.register
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
-import com.wire.kalium.logic.feature.auth.AuthSession
-import com.wire.kalium.logic.feature.auth.AuthenticationResult
-import com.wire.kalium.logic.feature.auth.LoginUseCase
-import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.network.api.user.register.RegisterResponse
 
 sealed class RegistrationParam(
     firstName: String,
@@ -31,35 +28,27 @@ sealed class RegistrationParam(
 
 class RegisterAccountUseCase(
     private val registerAccountRepository: RegisterAccountRepository,
-    private val loginUseCase: LoginUseCase
 ) {
-    suspend operator fun invoke(param: RegistrationParam, serverConfig: ServerConfig): RegisterResult = suspending {
-        return@suspending when (param) {
+    suspend operator fun invoke(param: RegistrationParam, serverConfig: ServerConfig): RegisterResult {
+        return when (param) {
             is RegistrationParam.PrivateAccount -> {
                 with(param) {
                     registerAccountRepository.registerWithEmail(email, emailActivationCode, name, password, serverConfig.apiBaseUrl)
                 }
             }
-        }.coFold(
+        }.fold(
             {
                 RegisterResult.Failure.Generic(it)
             }, {
-                when (val result = loginUseCase(param.email, param.password, true, serverConfig)) {
-                    is AuthenticationResult.Success -> {
-                        RegisterResult.Success(result.userSession)
-                    }
-                    is AuthenticationResult.Failure -> {
-                        RegisterResult.Failure.Login(result)
-                    }
-                }
+                // TODO: login user
+                RegisterResult.Success(it)
             })
     }
 }
 
 sealed class RegisterResult {
-    class Success(val value: AuthSession) : RegisterResult()
+    class Success(val value: RegisterResponse) : RegisterResult()
     sealed class Failure : RegisterResult() {
-        class Login(val failure: AuthenticationResult.Failure) : RegisterResult()
         class Generic(val failure: NetworkFailure) : RegisterResult()
     }
 }

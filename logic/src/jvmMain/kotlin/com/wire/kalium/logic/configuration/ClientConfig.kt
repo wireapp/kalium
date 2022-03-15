@@ -2,21 +2,22 @@ package com.wire.kalium.logic.configuration
 
 import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.client.DeviceType
+import java.net.InetAddress
 
 actual class ClientConfig {
     actual fun deviceType(): DeviceType {
-        TODO("Not yet implemented")
+        return DeviceType.Desktop
     }
 
     actual fun deviceModelName(): String {
-        TODO("Not yet implemented")
+        return System.getProperty("os.name")
     }
 
     actual fun deviceName(): String {
-        TODO("Not yet implemented")
+        return InetAddress.getLocalHost().hostName
     }
 
     actual fun clientType(): ClientType {
-        TODO("Not yet implemented")
+        return ClientType.Temporary
     }
 }
