@@ -1,5 +1,6 @@
 package com.wire.kalium.network.api.conversation
 
+import com.wire.kalium.network.api.TeamId
 import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.model.ConversationAccess
 import kotlinx.serialization.SerialName
@@ -19,20 +20,19 @@ data class CreateConversationRequest(
     @SerialName("access_role")
     val conversationAccess: ConversationAccess,
     @SerialName("team")
-    val team: Team,
+    val convTeamInfo: ConvTeamInfo,
     @SerialName("message_timer")
     val messageTimer: Int?, // Per-conversation message time
     @SerialName("receipt_mode")
     val receiptMode: Int,
     @SerialName("conversation_role")
     val conversationRole: String, // Role name, between 2 and 128 chars, 'wire_' prefix is reserved
-                                    // for roles designed by Wire (i.e., no custom roles can have the same prefix)
+    // for roles designed by Wire (i.e., no custom roles can have the same prefix)
 )
 
 @Serializable
-data class Team(
-    @SerialName("managed")
-    val managed: Boolean,
-    @SerialName("teamid")
-    val teamId: String
+data class ConvTeamInfo(
+    @Deprecated("Not parsed any more")
+    @SerialName("managed") val managed: Boolean,
+    @SerialName("teamid") val teamId: TeamId
 )

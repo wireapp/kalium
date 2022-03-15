@@ -78,7 +78,7 @@ class AuthenticatedNetworkContainer(
                     val refreshedResponse = authApi.renewAccessToken(sessionDTO.refreshToken)
 
                     return@refreshTokens if (refreshedResponse.isSuccessful()) {
-                        BearerTokens(refreshedResponse.value.accessToken, TODO("Get the 🍪"))
+                        BearerTokens(refreshedResponse.value.value, TODO("Get the 🍪"))
                     } else {
                         // TODO: if the refreshToken is expired logout ?
                         null
