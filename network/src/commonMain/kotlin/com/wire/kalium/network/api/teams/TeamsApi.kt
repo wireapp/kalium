@@ -1,9 +1,9 @@
 package com.wire.kalium.network.api.teams
 
-import com.wire.kalium.network.api.AssetId
 import com.wire.kalium.network.api.NonQualifiedConversationId
-import com.wire.kalium.network.api.TeamId
 import com.wire.kalium.network.api.NonQualifiedUserId
+import com.wire.kalium.network.api.TeamId
+import com.wire.kalium.network.api.model.TeamDTO
 import com.wire.kalium.network.api.user.LegalHoldStatusResponse
 import com.wire.kalium.network.utils.NetworkResponse
 import kotlinx.serialization.SerialName
@@ -14,18 +14,9 @@ interface TeamsApi {
     @Serializable
     data class TeamsResponse(
         @SerialName("has_more") val hasMore: Boolean,
-        val teams: List<Team>
+        val convTeamInfos: List<TeamDTO>
     )
 
-    @Serializable
-    data class Team(
-        val creator: String,
-        val icon: AssetId,
-        val name: String,
-        val id: TeamId,
-        @SerialName("icon_key") val iconKey: AssetId?,
-        val binding: Boolean
-    )
 
     @Serializable
     data class TeamMemberList(
@@ -46,8 +37,7 @@ interface TeamsApi {
 
     @Serializable
     data class Permissions(
-        val copy: Int,
-        @SerialName("self") val own: Int
+        val copy: Int, @SerialName("self") val own: Int
     )
 
     sealed interface GetTeamsOptionsInterface
@@ -85,5 +75,5 @@ interface TeamsApi {
      */
     suspend fun getTeams(size: Int?, option: GetTeamsOption?): NetworkResponse<TeamsResponse>
     suspend fun getTeamMembers(teamId: TeamId, limitTo: Int?): NetworkResponse<TeamMemberList>
-    suspend fun getTeamInfo(teamId: TeamId): NetworkResponse<Team>
+    suspend fun getTeamInfo(teamId: TeamId): NetworkResponse<TeamDTO>
 }
