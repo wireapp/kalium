@@ -23,6 +23,8 @@ import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.location.LocationMapper
+import com.wire.kalium.logic.data.logout.LogoutDataSource
+import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.message.MessageDataSource
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessageMapperImpl
@@ -37,6 +39,7 @@ import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.prekey.remote.PreKeyListMapper
 import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteDataSource
 import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteRepository
+import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.team.TeamDataSource
 import com.wire.kalium.logic.data.team.TeamMapperImpl
 import com.wire.kalium.logic.data.team.TeamRepository
@@ -44,6 +47,7 @@ import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserMapperImpl
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.auth.AuthSession
+import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.message.MessageScope
@@ -62,7 +66,8 @@ expect class UserSessionScope : UserSessionScopeCommon
 
 abstract class UserSessionScopeCommon(
     private val session: AuthSession,
-    private val authenticatedDataSourceSet: AuthenticatedDataSourceSet
+    private val authenticatedDataSourceSet: AuthenticatedDataSourceSet,
+    private val sessionRepository: SessionRepository
 ) {
 
     private val encryptedSettingsHolder: EncryptedSettingsHolder = authenticatedDataSourceSet.encryptedSettingsHolder
@@ -171,11 +176,14 @@ abstract class UserSessionScopeCommon(
             preKeyRemoteRepository,
             authenticatedDataSourceSet.proteusClient
         )
-    val listenToEvents: ListenToEventsUseCase get() = ListenToEventsUseCase(
-        syncManager = syncManager,
-        eventRepository = eventRepository,
-        conversationEventReceiver = conversationEventReceiver
-    )
+
+    private val logoutRepository: LogoutRepository = LogoutDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi)
+    val listenToEvents: ListenToEventsUseCase
+        get() = ListenToEventsUseCase(
+            syncManager = syncManager,
+            eventRepository = eventRepository,
+            conversationEventReceiver = conversationEventReceiver
+        )
     val client: ClientScope get() = ClientScope(clientRepository, preKeyRepository)
     val conversations: ConversationScope get() = ConversationScope(conversationRepository, syncManager)
     val messages: MessageScope
@@ -193,4 +201,6 @@ abstract class UserSessionScopeCommon(
         syncManager = syncManager,
         assetRepository = assetRepository
     )
+    val logout: LogoutUseCase get() = LogoutUseCase(logoutRepository, sessionRepository, session.userId, authenticatedDataSourceSet)
+
 }
