@@ -11,15 +11,5 @@ data class AccessTokenDTO (
     @SerialName("expires_in")
     val expiresIn: Int,
     @SerialName("token_type")
-    val tokenType: AccessTokenTypeDTO
+    val tokenType: String
 )
-
-@Serializable
-enum class AccessTokenTypeDTO {
-    @SerialName("Bearer")
-    BEARER {
-        override fun toString(): String {
-            return "Bearer"
-        }
-    };
-}
