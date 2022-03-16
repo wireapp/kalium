@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.team
 
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.AssetId
@@ -11,6 +12,7 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.TeamEntity
+import com.wire.kalium.persistence.dao.UserDAO
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -33,7 +35,15 @@ class TeamRepositoryTest {
     }
 
     @Mock
+    private val userDAO = configure(mock(classOf<UserDAO>())) {
+        stubsUnitByDefault = true
+    }
+
+    @Mock
     private val teamMapper = mock(classOf<TeamMapper>())
+
+    @Mock
+    private val userMapper = mock(classOf<UserMapper>())
 
     @Mock
     private val teamsApi = mock(classOf<TeamsApi>())
@@ -43,7 +53,7 @@ class TeamRepositoryTest {
     @BeforeTest
     fun setUp() {
         teamRepository = TeamDataSource(
-            teamDAO = teamDAO, teamMapper = teamMapper, teamsApi = teamsApi
+            teamDAO = teamDAO, teamMapper = teamMapper, teamsApi = teamsApi, userDAO = userDAO, userMapper = userMapper
         )
     }
 

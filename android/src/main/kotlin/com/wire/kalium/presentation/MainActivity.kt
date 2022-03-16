@@ -59,7 +59,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private suspend fun login(authenticationScope: AuthenticationScope): AuthSession? {
-        val result = authenticationScope.login("jacob.persson+summer1@wire.com", "hepphepp", false, serverConfig)
+        val result = authenticationScope.login("alexandretest", "Teste@12", false, serverConfig)
 
         if (result !is AuthenticationResult.Success) {
             throw RuntimeException(
