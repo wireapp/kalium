@@ -6,8 +6,6 @@ import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
-import com.wire.kalium.network.api.ErrorResponse
-import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.any
@@ -43,7 +41,7 @@ class LoginUseCaseTest {
 
     @BeforeTest
     fun setup() {
-        loginUseCase = LoginUseCase(loginRepository, sessionRepository, validateEmailUseCase, validateUserHandleUseCase)
+        loginUseCase = LoginUseCaseImpl(loginRepository, sessionRepository, validateEmailUseCase, validateUserHandleUseCase)
     }
 
     @Test
