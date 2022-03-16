@@ -45,4 +45,5 @@ WHERE name LIKE ('%' || :searchQuery || '%')
 OR  handle LIKE  ('%' || :searchQuery || '%')
 OR  email LIKE  ('%' || :searchQuery || '%');
 
-
+updateUserhandle:
+UPDATE User SET handle = ? WHERE qualified_id = ?;

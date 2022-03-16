@@ -10,4 +10,6 @@ internal object NetworkErrorLabel {
     const val KEY_EXISTS = "key-exists"
     const val BLACKLISTED_EMAIL = "blacklisted-email"
     const val INVALID_CODE = "invalid-code"
+    const val INVALID_HANDLE = "invalid-handle"
+    const val HANDLE_EXISTS = "handle-exists"
 }

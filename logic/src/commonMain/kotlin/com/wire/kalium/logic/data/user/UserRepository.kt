@@ -6,7 +6,6 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.user.details.ListUserRequest
@@ -36,6 +35,7 @@ interface UserRepository {
     suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, SelfUser>
     suspend fun searchKnownUsersByNameOrHandleOrEmail(searchQuery: String): Flow<List<UserEntity>>
     suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit>
+    suspend fun updateLocalSelfUserHandle(handle: String)
 }
 
 class UserDataSource(
@@ -49,22 +49,26 @@ class UserDataSource(
     private val teamRepository: TeamRepository
 ) : UserRepository {
 
+    private suspend fun getSelfUserId(): QualifiedIDEntity {
+        val encodedValue = metadataDAO.valueByKey(SELF_USER_ID_KEY).firstOrNull()
+        return encodedValue?.let { Json.decodeFromString<QualifiedIDEntity>(it) }
+            ?: run { throw IllegalStateException() }
+    }
+
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = suspending {
         wrapApiRequest { selfApi.getSelfInfo() }.map {
             userMapper.fromApiModelToDaoModel(it)
-        }.coFold({
-            Either.Left(it)
-        }, { user ->
+        }.flatMap { userEntity ->
             // Fetching self user team here because SyncSelfUserUseCase is (which is using this function)
             // doesn't have a return value, and this team fetch doesn't make sense adding to GetSelfUserUseCase
             // as we don't want to be fetching the user team everytime we get the user.
-            user.team?.let { teamId -> teamRepository.fetchTeamById(teamId = teamId) }
-            assetRepository.downloadUsersPictureAssets(listOf(user.previewAssetId, user.completeAssetId))
+            userEntity.team?.let { teamId -> teamRepository.fetchTeamById(teamId = teamId) }
+            assetRepository.downloadUsersPictureAssets(listOf(userEntity.previewAssetId, userEntity.completeAssetId))
             // TODO: handle storage error
-            userDAO.insertUser(user)
-            metadataDAO.insertValue(Json.encodeToString(user.id), SELF_USER_ID_KEY)
+            userDAO.insertUser(userEntity)
+            metadataDAO.insertValue(Json.encodeToString(userEntity.id), SELF_USER_ID_KEY)
             Either.Right(Unit)
-        })
+        }
     }
 
     override suspend fun fetchKnownUsers(): Either<CoreFailure, Unit> {
@@ -79,13 +83,11 @@ class UserDataSource(
         return suspending {
             wrapApiRequest {
                 userApi.getMultipleUsers(ListUserRequest.qualifiedIds(ids.map(idMapper::toApiModel)))
-            }.coFold({
-                Either.Left(it)
-            }, {
+            }.flatMap {
                 // TODO: handle storage error
                 userDAO.insertUsers(it.map(userMapper::fromApiModelToDaoModel))
                 Either.Right(Unit)
-            })
+            }
         }
     }
 
@@ -108,10 +110,10 @@ class UserDataSource(
             wrapApiRequest { selfApi.updateSelf(updateRequest) }
                 .map { userMapper.fromUpdateRequestToDaoModel(user, updateRequest) }
                 .flatMap {
-                // TODO: handle storage error
-                userDAO.updateUser(it)
-                Either.Right(userMapper.fromDaoModel(it))
-            }
+                    // TODO: handle storage error
+                    userDAO.updateUser(it)
+                    Either.Right(userMapper.fromDaoModel(it))
+                }
         }
     }
 
@@ -119,11 +121,15 @@ class UserDataSource(
     override suspend fun searchKnownUsersByNameOrHandleOrEmail(searchQuery: String) =
         userDAO.getUserByNameOrHandleOrEmail(searchQuery)
 
-    override suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit> = wrapApiRequest {
-        selfApi.changeHandle(ChangeHandleRequest(handle))
-    }.flatMap {
-         TODO("store handle locally")
+    override suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit> = suspending {
+        wrapApiRequest {
+            selfApi.changeHandle(ChangeHandleRequest(handle))
+        }
     }
+
+    override suspend fun updateLocalSelfUserHandle(handle: String) =
+        userDAO.updateUserHandle(getSelfUserId(), handle)
+
 
     companion object {
         const val SELF_USER_ID_KEY = "selfUserID"
