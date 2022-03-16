@@ -5,6 +5,8 @@ import com.wire.kalium.network.api.asset.AssetApi
 import com.wire.kalium.network.api.asset.AssetApiImpl
 import com.wire.kalium.network.api.auth.AuthApi
 import com.wire.kalium.network.api.auth.AuthApiImp
+import com.wire.kalium.network.api.contact.search.ContactSearchApi
+import com.wire.kalium.network.api.contact.search.ContactSearchApiImpl
 import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.conversation.ConversationApiImp
 import com.wire.kalium.network.api.message.MessageApi
@@ -58,6 +60,8 @@ class AuthenticatedNetworkContainer(
     val selfApi: SelfApi get() = SelfApi(authenticatedHttpClient)
 
     val userDetailsApi: UserDetailsApi get() = UserDetailsApiImp(authenticatedHttpClient)
+
+    val contactSearchApi : ContactSearchApi get() = ContactSearchApiImpl(authenticatedHttpClient)
 
     internal val authenticatedHttpClient by lazy {
         provideBaseHttpClient(engine, HttpClientOptions.DefaultHost(backendConfig)) {
