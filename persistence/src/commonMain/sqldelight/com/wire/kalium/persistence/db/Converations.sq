@@ -4,7 +4,8 @@ import com.wire.kalium.persistence.dao.ConversationEntity;
 CREATE TABLE Conversation (
     qualified_id TEXT AS QualifiedID NOT NULL PRIMARY KEY,
     name TEXT,
-    type TEXT AS ConversationEntity.Type NOT NULL
+    type TEXT AS ConversationEntity.Type NOT NULL,
+    team_id TEXT
 );
 
 deleteAllConverations:
@@ -14,7 +15,7 @@ deleteConversation:
 DELETE FROM Conversation WHERE qualified_id = ?;
 
 insertConversation:
-INSERT INTO Conversation(qualified_id, name, type) VALUES(?, ?, ?) ON CONFLICT(qualified_id) DO UPDATE SET name = excluded.name;
+INSERT OR REPLACE INTO Conversation(qualified_id, name, type) VALUES(?, ?, ?);
 
 updateConversation:
 UPDATE Conversation

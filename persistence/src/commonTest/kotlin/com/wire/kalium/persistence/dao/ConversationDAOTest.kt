@@ -11,21 +11,6 @@ import kotlin.test.assertNull
 
 class ConversationDAOTest : BaseDatabaseTest() {
 
-    private val user1 = newUserEntity(id = "1")
-    private val user2 = newUserEntity(id = "2")
-
-    private val conversationEntity1 = ConversationEntity(
-        QualifiedID("1", "wire.com"), "conversation1",
-        ConversationEntity.Type.ONE_ON_ONE
-    )
-    private val conversationEntity2 = ConversationEntity(
-        QualifiedID("2", "wire.com"), "conversation2",
-        ConversationEntity.Type.ONE_ON_ONE
-    )
-
-    private val member1 = Member(user1.id)
-    private val member2 = Member(user2.id)
-
     private lateinit var conversationDAO: ConversationDAO
 
     @BeforeTest
@@ -62,8 +47,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenExistingConversation_ThenConversationCanBeUpdated() = runTest {
         conversationDAO.insertConversation(conversationEntity1)
-        var updatedConversation1Entity =
-            ConversationEntity(conversationEntity1.id, "Updated conversation1", ConversationEntity.Type.ONE_ON_ONE)
+        val updatedConversation1Entity =
+            ConversationEntity(conversationEntity1.id, "Updated conversation1", ConversationEntity.Type.ONE_ON_ONE, teamId)
         conversationDAO.updateConversation(updatedConversation1Entity)
         val result = conversationDAO.getConversationByQualifiedID(conversationEntity1.id).first()
         assertEquals(result, updatedConversation1Entity)
@@ -72,8 +57,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenExistingConversation_ThenConversationIsUpdatedOnInsert() = runTest {
         conversationDAO.insertConversation(conversationEntity1)
-        var updatedConversation1Entity =
-            ConversationEntity(conversationEntity1.id, "Updated conversation1", ConversationEntity.Type.ONE_ON_ONE)
+        val updatedConversation1Entity =
+            ConversationEntity(conversationEntity1.id, "Updated conversation1", ConversationEntity.Type.ONE_ON_ONE, null)
         conversationDAO.insertConversation(updatedConversation1Entity)
         val result = conversationDAO.getConversationByQualifiedID(conversationEntity1.id).first()
         assertEquals(result, updatedConversation1Entity)
@@ -102,5 +87,24 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertMembers(listOf(member1, member2), conversationEntity1.id)
 
         assertEquals(conversationDAO.getAllMembers(conversationEntity1.id).first().toSet(), setOf(member1, member2))
+    }
+
+    private companion object {
+        val user1 = newUserEntity(id = "1")
+        val user2 = newUserEntity(id = "2")
+
+        val teamId = "teamId"
+
+        val conversationEntity1 = ConversationEntity(
+            QualifiedID("1", "wire.com"), "conversation1",
+            ConversationEntity.Type.ONE_ON_ONE, teamId
+        )
+        val conversationEntity2 = ConversationEntity(
+            QualifiedID("2", "wire.com"), "conversation2",
+            ConversationEntity.Type.ONE_ON_ONE, null
+        )
+
+        val member1 = Member(user1.id)
+        val member2 = Member(user2.id)
     }
 }

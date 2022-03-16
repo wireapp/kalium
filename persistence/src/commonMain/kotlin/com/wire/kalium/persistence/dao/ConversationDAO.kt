@@ -5,7 +5,8 @@ import kotlinx.coroutines.flow.Flow
 data class ConversationEntity(
     val id: QualifiedID,
     val name: String?,
-    val type: Type
+    val type: Type,
+    val teamId: String?
 ) {
     enum class Type { SELF, ONE_ON_ONE, GROUP }
 }

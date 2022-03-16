@@ -1,6 +1,7 @@
 package com.wire.kalium.network.api.conversation
 
 import com.wire.kalium.network.api.ConversationId
+import com.wire.kalium.network.api.TeamId
 import com.wire.kalium.network.api.UserId
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -23,7 +24,10 @@ data class ConversationResponse(
     val type: Type,
 
     @SerialName("message_timer")
-    val messageTimer: Int?
+    val messageTimer: Int?,
+
+    @SerialName("team")
+    val teamId: TeamId?
 ){
 
     val isOneOnOneConversation: Boolean
