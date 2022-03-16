@@ -19,31 +19,52 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class RequestActivationCodeUseCaseTest {
+class VerifyActivationCodeUseCaseTest {
     @Mock
     private val registerAccountRepository = mock(classOf<RegisterAccountRepository>())
 
-    private lateinit var requestActivationCodeUseCase: RequestActivationCodeUseCase
+    private lateinit var verifyActivationCodeUseCase: VerifyActivationCodeUseCase
 
     @BeforeTest
     fun setup() {
-        requestActivationCodeUseCase = RequestActivationCodeUseCase(registerAccountRepository)
+        verifyActivationCodeUseCase = VerifyActivationCodeUseCase(registerAccountRepository)
     }
 
     @Test
     fun givenRepositoryCallIsSuccessful_thenSaucesIsPropagated() = runTest {
         val email = TEST_EMAIL
         val serverConfig = TEST_SERVER_CONFIG
+        val code = TEST_CODE
         given(registerAccountRepository)
-            .coroutine { requestEmailActivationCode(email, serverConfig.apiBaseUrl) }
+            .coroutine { verifyActivationCode(email, code, serverConfig.apiBaseUrl) }
             .then { Either.Right(Unit) }
 
-        val actual = requestActivationCodeUseCase(email, serverConfig)
+        val actual = verifyActivationCodeUseCase(email, code, serverConfig)
 
-        assertIs<RequestActivationCodeResult.Success>(actual)
+        assertIs<VerifyActivationCodeResult.Success>(actual)
 
         verify(registerAccountRepository)
-            .coroutine { requestEmailActivationCode(email, serverConfig.apiBaseUrl) }
+            .coroutine { verifyActivationCode(email, code, serverConfig.apiBaseUrl) }
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenRepositoryCallFailWithInvalidCode_thenInvalidCodeIsPropagated() = runTest {
+        val email = TEST_EMAIL
+        val serverConfig = TEST_SERVER_CONFIG
+        val code = TEST_CODE
+        val expected = NetworkFailure.ServerMiscommunication(TestNetworkException.invalidCode)
+
+        given(registerAccountRepository)
+            .coroutine { verifyActivationCode(email, code, serverConfig.apiBaseUrl) }
+            .then { Either.Left(expected) }
+
+        val actual = verifyActivationCodeUseCase(email, code, serverConfig)
+
+        assertIs<VerifyActivationCodeResult.Failure.InvalidCode>(actual)
+
+        verify(registerAccountRepository)
+            .coroutine { verifyActivationCode(email, code, serverConfig.apiBaseUrl) }
             .wasInvoked(exactly = once)
     }
 
@@ -51,24 +72,27 @@ class RequestActivationCodeUseCaseTest {
     fun givenRepositoryCallFail_thenErrorIsPropagated() = runTest {
         val email = TEST_EMAIL
         val serverConfig = TEST_SERVER_CONFIG
+        val code = TEST_CODE
         val expected = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
+
         given(registerAccountRepository)
-            .coroutine { requestEmailActivationCode(email, serverConfig.apiBaseUrl) }
+            .coroutine { verifyActivationCode(email, code, serverConfig.apiBaseUrl) }
             .then { Either.Left(expected) }
 
-        val actual = requestActivationCodeUseCase(email, serverConfig)
+        val actual = verifyActivationCodeUseCase(email, code, serverConfig)
 
-        assertIs<RequestActivationCodeResult.Failure.Generic>(actual)
+        assertIs<VerifyActivationCodeResult.Failure.Generic>(actual)
         assertEquals(expected, actual.failure)
 
         verify(registerAccountRepository)
-            .coroutine { requestEmailActivationCode(email, serverConfig.apiBaseUrl) }
+            .coroutine { verifyActivationCode(email, code, serverConfig.apiBaseUrl) }
             .wasInvoked(exactly = once)
     }
 
 
     private companion object {
         const val TEST_EMAIL = """user@domain.com"""
+        const val TEST_CODE = "123456"
         val TEST_SERVER_CONFIG: ServerConfig = ServerConfig(
             apiBaseUrl = "apiBaseUrl.com",
             accountsBaseUrl = "accountsUrl.com",
@@ -82,3 +106,4 @@ class RequestActivationCodeUseCaseTest {
     }
 
 }
+

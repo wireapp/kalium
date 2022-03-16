@@ -36,4 +36,12 @@ object TestNetworkException {
             label = "invalid-credentials"
         )
     )
+
+    val invalidCode = KaliumException.InvalidRequestError(
+        ErrorResponse(
+            404,
+            message = "invalid code",
+            label = "invalid-code"
+        )
+    )
 }
