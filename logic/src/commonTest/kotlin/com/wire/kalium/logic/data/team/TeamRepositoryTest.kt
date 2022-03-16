@@ -116,7 +116,6 @@ class TeamRepositoryTest {
             legalHoldStatus = LegalHoldStatusResponse.NO_CONSENT,
             createdBy = "nonQualiefiedUserId1",
             permissions = TeamsApi.Permissions(copy = 1, own = 1)
-
         )
 
         val teamMembersList = TeamsApi.TeamMemberList(
