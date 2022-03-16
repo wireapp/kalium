@@ -80,7 +80,7 @@ class ContactDTOSearchApiTest : ApiTest {
                 ContactSearchRequest(
                     searchQuery = DUMMY_SEARCH_QUERY,
                     domain = DUMMY_DOMAIN,
-                    resultSize = DUMMY_SIZE
+                    maxResultSize = DUMMY_SIZE
                 )
             )
         }

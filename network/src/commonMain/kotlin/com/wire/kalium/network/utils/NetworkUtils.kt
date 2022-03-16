@@ -69,13 +69,12 @@ internal fun String.splitSetCookieHeader(): List<String> {
  * @return A new [NetworkResponse.Success] with the mapped result,
  * or [NetworkResponse.Error] if it was never a success to begin with
  */
-inline fun <T : Any, U : Any> NetworkResponse<T>.mapSuccess(mapping: ((T) -> U)): NetworkResponse<U> =
+inline fun <T : Any, U : Any> NetworkResponse<T>. mapSuccess(mapping: ((T) -> U)): NetworkResponse<U> =
     if (isSuccessful()) {
         NetworkResponse.Success(mapping(this.value), this.headers, this.httpCode)
     } else {
         NetworkResponse.Error(kException)
     }
-
 
 fun <E : KaliumException> NetworkResponse<E>.onFailure(fn: (NetworkResponse.Error<E>) -> Unit): NetworkResponse<E> =
     this.apply { if (this is NetworkResponse.Error) fn(this) }
@@ -83,7 +82,6 @@ fun <E : KaliumException> NetworkResponse<E>.onFailure(fn: (NetworkResponse.Erro
 
 fun <T : Any> NetworkResponse<T>.onSuccess(fn: (NetworkResponse.Success<T>) -> Unit): NetworkResponse<T> =
     this.apply { if (this is NetworkResponse.Success) fn(this) }
-
 
 internal suspend inline fun <reified BodyType : Any> wrapKaliumResponse(performRequest: () -> HttpResponse): NetworkResponse<BodyType> =
     try {

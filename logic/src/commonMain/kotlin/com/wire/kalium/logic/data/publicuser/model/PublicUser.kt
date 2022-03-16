@@ -6,7 +6,7 @@ import com.wire.kalium.logic.data.user.UserId
 
 data class PublicUser(
     override val id: UserId,
-    val name: String?,
+    val name: String,
     val handle: String?,
     val email: String? = null,
     val phone: String? = null,

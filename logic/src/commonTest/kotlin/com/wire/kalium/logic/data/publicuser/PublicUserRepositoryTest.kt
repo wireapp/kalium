@@ -7,9 +7,10 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.network.api.QualifiedID
 import com.wire.kalium.network.api.UserId
-import com.wire.kalium.network.api.contact.search.Contact
+import com.wire.kalium.network.api.contact.search.ContactDTO
 import com.wire.kalium.network.api.contact.search.ContactSearchApi
 import com.wire.kalium.network.api.contact.search.ContactSearchResponse
+import com.wire.kalium.network.api.contact.search.SearchPolicyDTO
 import com.wire.kalium.network.api.user.LegalHoldStatusResponse
 import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.network.api.user.details.UserDetailsResponse
@@ -54,7 +55,7 @@ class PublicUserRepositoryTest {
             .then { TestNetworkResponseError.genericError() }
 
         //when
-        val actual = publicUserRepository.searchPublicContact("test")
+        val actual = publicUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
 
         //then
         assertIs<Either.Left<NetworkFailure>>(actual)
@@ -69,7 +70,7 @@ class PublicUserRepositoryTest {
             .then { TestNetworkResponseError.genericError() }
 
         //when
-        publicUserRepository.searchPublicContact("test")
+        val actual = publicUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
 
         //then
         verify(contactSearchApi)
@@ -87,7 +88,7 @@ class PublicUserRepositoryTest {
             .then { TestNetworkResponseError.genericError() }
 
         //when
-        publicUserRepository.searchPublicContact("test")
+        val actual = publicUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
         //then
         verify(userDetailsApi)
             .suspendFunction(userDetailsApi::getMultipleUsers)
@@ -113,7 +114,7 @@ class PublicUserRepositoryTest {
             .whenInvokedWith(any())
             .then { TestNetworkResponseError.genericError() }
         //when
-        val actual = publicUserRepository.searchPublicContact("test")
+        val actual = publicUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
 
         //then
         assertIs<Either.Left<NetworkFailure>>(actual)
@@ -132,7 +133,7 @@ class PublicUserRepositoryTest {
             .whenInvokedWith(any())
             .then { TestNetworkResponseError.genericError() }
         //when
-        publicUserRepository.searchPublicContact("test")
+        val actual = publicUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
 
         //then
         verify(publicUserMapper)
@@ -155,7 +156,7 @@ class PublicUserRepositoryTest {
                 .whenInvokedWith(any())
                 .then { TestNetworkResponseError.genericError() }
             //when
-            publicUserRepository.searchPublicContact("test")
+            val actual = publicUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
 
             //then
             verify(contactSearchApi)
@@ -188,7 +189,7 @@ class PublicUserRepositoryTest {
             .then { PUBLIC_USERS }
 
         //when
-        val actual = publicUserRepository.searchPublicContact("test")
+        val actual = publicUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
 
         //then
         assertIs<Either.Right<PublicUserSearchResult>>(actual)
@@ -218,7 +219,7 @@ class PublicUserRepositoryTest {
                 publicUsers = PUBLIC_USERS
             )
             //when
-            val actual = publicUserRepository.searchPublicContact("test")
+            val actual = publicUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
 
             assertIs<Either.Right<PublicUserSearchResult>>(actual)
             assertEquals(expectedResult, actual.value)
@@ -248,17 +249,21 @@ class PublicUserRepositoryTest {
                 publicUsers = emptyList()
             )
             //when
-            val actual = publicUserRepository.searchPublicContact("test")
+            val actual = publicUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
 
             assertIs<Either.Right<PublicUserSearchResult>>(actual)
             assertEquals(expectedResult, actual.value)
         }
 
     private companion object {
+        val TEST_QUERY = "testQuery"
+        val TEST_DOMAIN = "testDomain"
+
+
         val CONTACTS = buildList {
             for (i in 1..5) {
                 add(
-                    Contact(
+                    ContactDTO(
                         accentId = i,
                         handle = "handle$i",
                         id = "id$i",
@@ -292,7 +297,7 @@ class PublicUserRepositoryTest {
             documents = CONTACTS,
             found = CONTACTS.size,
             returned = 5,
-            searchPolicy = "searchPolicy",
+            searchPolicy = SearchPolicyDTO.FULL_SEARCH,
             took = 100,
         )
 
@@ -300,7 +305,7 @@ class PublicUserRepositoryTest {
             documents = emptyList(),
             found = 0,
             returned = 0,
-            searchPolicy = "searchPolicy",
+            searchPolicy = SearchPolicyDTO.FULL_SEARCH,
             took = 100,
         )
 

@@ -47,7 +47,6 @@ class SuspendableEitherScope {
             is Right -> fn(value)
         }
 
-
     suspend fun <L, R> Either<L, R>.onFailure(fn: suspend (failure: L) -> Unit): Either<L, R> =
         this.apply { if (this is Left) fn(value) }
 
