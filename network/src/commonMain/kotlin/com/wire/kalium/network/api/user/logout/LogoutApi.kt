@@ -28,10 +28,10 @@ class LogoutImpl(private val httpClient: HttpClient, private val refreshToken: S
             }
         }
 
-    override suspend fun removeCookiesByLabels(removeCookiesWithIdsRequest: RemoveCookiesByLabels): NetworkResponse<Unit> =
+    override suspend fun removeCookiesByLabels(removeCookiesByLabelsRequest: RemoveCookiesByLabels): NetworkResponse<Unit> =
         wrapKaliumResponse {
             httpClient.post("$PATH_COOKIES/$PATH_REMOVE") {
-                setBody(removeCookiesWithIdsRequest)
+                setBody(removeCookiesByLabelsRequest)
             }
         }
 
