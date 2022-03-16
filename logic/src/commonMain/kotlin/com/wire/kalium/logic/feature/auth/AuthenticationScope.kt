@@ -9,9 +9,16 @@ import com.wire.kalium.logic.configuration.ServerConfigRemoteRepository
 import com.wire.kalium.logic.configuration.ServerConfigRepository
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.auth.login.LoginRepositoryImpl
+import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.IdMapperImpl
+import com.wire.kalium.logic.data.register.RegisterAccountDataSource
+import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.session.SessionMapperImpl
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.user.UserMapper
+import com.wire.kalium.logic.data.user.UserMapperImpl
+import com.wire.kalium.logic.feature.register.RegisterScope
 import com.wire.kalium.logic.feature.session.GetSessionsUseCase
 import com.wire.kalium.logic.feature.session.SessionScope
 import com.wire.kalium.network.LoginNetworkContainer
@@ -42,15 +49,23 @@ abstract class AuthenticationScopeCommon(
     private val serverConfigRepository: ServerConfigRepository get() = ServerConfigDataSource(serverConfigRemoteRepository)
 
     private val sessionMapper: SessionMapper get() = SessionMapperImpl(serverConfigMapper)
+    private val idMapper: IdMapper get() = IdMapperImpl()
+    private val userMapper: UserMapper get() = UserMapperImpl(idMapper)
 
     private val loginRepository: LoginRepository get() = LoginRepositoryImpl(loginNetworkContainer.loginApi, clientLabel, sessionMapper)
 
+    private val registerAccountRepository: RegisterAccountRepository
+        get() = RegisterAccountDataSource(
+            loginNetworkContainer.registerApi,
+            userMapper,
+            sessionMapper
+        )
 
     private val validateEmailUseCase: ValidateEmailUseCase get() = ValidateEmailUseCaseImpl()
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
 
     val login: LoginUseCase
-        get() = LoginUseCase(
+        get() = LoginUseCaseImpl(
             loginRepository,
             sessionRepository,
             validateEmailUseCase,
@@ -60,4 +75,5 @@ abstract class AuthenticationScopeCommon(
     val getSessions: GetSessionsUseCase get() = GetSessionsUseCase(sessionRepository)
     val getServerConfig: GetServerConfigUseCase get() = GetServerConfigUseCase(serverConfigRepository)
     val session: SessionScope get() = SessionScope(sessionRepository)
+    val register: RegisterScope get() = RegisterScope(registerAccountRepository, sessionRepository)
 }

@@ -3,8 +3,8 @@ package com.wire.kalium.network
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.asset.AssetApi
 import com.wire.kalium.network.api.asset.AssetApiImpl
-import com.wire.kalium.network.api.auth.AuthApi
-import com.wire.kalium.network.api.auth.AuthApiImp
+import com.wire.kalium.network.api.auth.AccessTokenApi
+import com.wire.kalium.network.api.auth.AccessTokenApiImpl
 import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.conversation.ConversationApiImp
 import com.wire.kalium.network.api.message.MessageApi
@@ -38,7 +38,7 @@ class AuthenticatedNetworkContainer(
     private val engine: HttpClientEngine = defaultHttpEngine(),
 //    private val onTokenUpdate: (newTokenInfo: Pair<String, String>) -> Unit // Idea to let the network handle the refresh token automatically
 ) {
-    private val authApi: AuthApi get() = AuthApiImp(authenticatedHttpClient)
+    private val accessTokenApi: AccessTokenApi get() = AccessTokenApiImpl(authenticatedHttpClient)
 
     val logoutApi: LogoutApi get() = LogoutImpl(authenticatedHttpClient, sessionDTO.refreshToken)
 
@@ -76,7 +76,7 @@ class AuthenticatedNetworkContainer(
                     )
                 }
                 refreshTokens {
-                    val refreshedResponse = authApi.renewAccessToken(sessionDTO.refreshToken)
+                    val refreshedResponse = accessTokenApi.getToken(sessionDTO.refreshToken)
 
                     return@refreshTokens if (refreshedResponse.isSuccessful()) {
                         BearerTokens(refreshedResponse.value.value, TODO("Get the 🍪"))
