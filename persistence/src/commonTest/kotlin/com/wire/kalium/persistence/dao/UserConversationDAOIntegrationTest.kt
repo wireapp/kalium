@@ -16,7 +16,7 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
     private val conversationEntity1 =
         ConversationEntity(
             QualifiedID("1", "wire.com"), "conversation1",
-            ConversationEntity.Type.ONE_ON_ONE
+            ConversationEntity.Type.ONE_ON_ONE, "teamID"
         )
 
     private val member1 = Member(user1.id)
