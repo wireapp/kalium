@@ -49,4 +49,12 @@ internal class ConversationMapperImpl(private val idMapper: IdMapper) : Conversa
         }
     }
 
+    private fun getOneOnOneConnectionState(apiModel: ConversationResponse): ConversationDetails.OneOne.ConnectionState =
+        when (apiModel.type) {
+            ConversationResponse.Type.WAIT_FOR_CONNECTION -> ConversationDetails.OneOne.ConnectionState.OUTGOING
+            ConversationResponse.Type.INCOMING_CONNECTION -> ConversationDetails.OneOne.ConnectionState.INCOMING
+            // Fake team 1:1 conversations
+            ConversationResponse.Type.GROUP -> ConversationDetails.OneOne.ConnectionState.ACCEPTED
+            else -> ConversationDetails.OneOne.ConnectionState.ACCEPTED
+        }
 }
