@@ -226,7 +226,7 @@ class PublicUserRepositoryTest {
         }
 
     @Test
-    fun givenContactSearchApiAndUserDetailsApiAndPublicUserApiReturnSuccessWithNoResult_WhenSearchPublicContact_ThenResultIsEqualToEmptyList() =
+    fun givenAValidUserSearchWithEmptyResults_WhenSearchingSomeText_ThenResultIsAnEmptyList() =
         runTest {
             //given
             given(contactSearchApi)
