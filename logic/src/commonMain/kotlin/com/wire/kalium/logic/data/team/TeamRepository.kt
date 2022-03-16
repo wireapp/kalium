@@ -53,12 +53,13 @@ internal class TeamDataSource(
                         userDomain = userDomain
                     )
                 }
-            } else { listOf() }
-        }.coFold({
-            Either.Left(it)
-        }, { teamMembers ->
+            } else {
+                listOf()
+            }
+        }.flatMap { teamMembers ->
+            // TODO: catch storage exceptions: https://github.com/wireapp/kalium/pull/275
             userDAO.insertUsers(teamMembers)
             Either.Right(Unit)
-        })
+        }
     }
 }
