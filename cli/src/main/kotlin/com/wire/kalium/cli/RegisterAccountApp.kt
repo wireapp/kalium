@@ -4,8 +4,8 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.ServerConfig
+import com.wire.kalium.logic.feature.register.RegisterParam
 import com.wire.kalium.logic.feature.register.RegisterResult
-import com.wire.kalium.logic.feature.register.RegistrationParam
 import com.wire.kalium.logic.feature.register.RequestActivationCodeResult
 import kotlinx.coroutines.runBlocking
 import java.util.Scanner
@@ -62,7 +62,7 @@ class RegisterAccountApp : CliktCommand() {
         val reader = Scanner(System.`in`)
         echo("Enter the activation code: ")
         code = reader.nextInt()
-        val param = RegistrationParam.PrivateAccount(
+        val param = RegisterParam.PrivateAccount(
             "test",
             "test",
             email = email,

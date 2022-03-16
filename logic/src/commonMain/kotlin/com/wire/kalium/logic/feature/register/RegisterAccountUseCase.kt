@@ -6,7 +6,7 @@ import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.feature.auth.AuthSession
 
-sealed class RegistrationParam(
+sealed class RegisterParam(
     firstName: String,
     lastName: String,
     val email: String,
@@ -24,15 +24,15 @@ sealed class RegistrationParam(
         email: String,
         password: String,
         val emailActivationCode: String
-    ) : RegistrationParam(firstName, LastName, email, password)
+    ) : RegisterParam(firstName, LastName, email, password)
 }
 
 class RegisterAccountUseCase(
     private val registerAccountRepository: RegisterAccountRepository,
 ) {
-    suspend operator fun invoke(param: RegistrationParam, serverConfig: ServerConfig): RegisterResult {
+    suspend operator fun invoke(param: RegisterParam, serverConfig: ServerConfig): RegisterResult {
         return when (param) {
-            is RegistrationParam.PrivateAccount -> {
+            is RegisterParam.PrivateAccount -> {
                 with(param) {
                     registerAccountRepository.registerWithEmail(email, emailActivationCode, name, password, serverConfig)
                 }
@@ -41,7 +41,6 @@ class RegisterAccountUseCase(
             {
                 RegisterResult.Failure.Generic(it)
             }, {
-                // TODO: login user
                 RegisterResult.Success(it)
             })
     }
