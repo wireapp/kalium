@@ -12,38 +12,6 @@ data class Conversation(val id: ConversationId, val name: String?, val type: Typ
     enum class Type { SELF, ONE_ON_ONE, GROUP }
 }
 
-sealed class ConversationDetails(val conversation: Conversation) {
-
-    class Self(conversation: Conversation) : ConversationDetails(conversation)
-
-    class OneOne(
-        conversation: Conversation,
-        val contactName: String,
-        val connectionState: ConnectionState,
-        val federationStatus: FederationStatus,
-        val legalHoldStatus: LegalHoldStatus
-    ) : ConversationDetails(conversation) {
-        enum class ConnectionState {
-            // The other user has sent a connection request to this one
-            INCOMING,
-
-            // This user has sent a connection request to another user
-            OUTGOING,
-
-            // The connection is complete and the conversation is in its normal state
-            ACCEPTED
-        }
-
-    }
-
-    class Group(conversation: Conversation) : ConversationDetails(conversation)
-
-    enum class FederationStatus {
-        NONE, GUEST, EXTERNAL
-    }
-}
-
-
 class MembersInfo(val self: Member, val otherMembers: List<Member>)
 
 class Member(override val id: UserId) : User()
