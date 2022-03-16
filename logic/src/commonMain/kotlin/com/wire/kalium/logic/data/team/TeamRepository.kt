@@ -45,6 +45,11 @@ internal class TeamDataSource(
                 limitTo = null
             )
         }.map { teamMemberList ->
+            /**
+             * If hasMore is true, then this result should be discarded and not stored locally,
+             * otherwise the user will see random team members when opening the search UI.
+             * If the result has has_more field set to false, then these users are stored locally to be used in a search later.
+             */
             if (teamMemberList.hasMore.not()) {
                 teamMemberList.members.map { teamMember ->
                     userMapper.fromTeamMemberToDaoModel(
