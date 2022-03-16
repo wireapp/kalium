@@ -2,7 +2,6 @@ package com.wire.kalium.network.utils
 
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.client.statement.HttpResponse
-import io.ktor.http.HttpHeaders
 import io.ktor.http.parseServerSetCookieHeader
 import io.ktor.util.toMap
 import kotlin.contracts.ExperimentalContracts

@@ -8,7 +8,7 @@ import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
-class ContactDTOSearchApiTest : ApiTest {
+class ContactSearchApiTest : ApiTest {
 
     @Test
     fun givenRequestWithSearchQuery_whenCallingSearchContact_ThenRequestShouldReturnExpectedAssertion() =
