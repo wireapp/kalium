@@ -11,7 +11,6 @@ import com.wire.kalium.network.api.user.details.ListUserRequest
 import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.network.api.user.details.qualifiedIds
 import com.wire.kalium.network.api.user.self.SelfApi
-import com.wire.kalium.network.utils.isSuccessful
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserEntity
@@ -57,6 +56,7 @@ class UserDataSource(
             // as we don't want to be fetching the user team everytime we get the user.
             user.team?.let { teamId -> teamRepository.fetchTeamById(teamId = teamId) }
             assetRepository.downloadUsersPictureAssets(listOf(user.previewAssetId, user.completeAssetId))
+            // TODO: handle storage error
             userDAO.insertUser(user)
             metadataDAO.insertValue(Json.encodeToString(user.id), SELF_USER_ID_KEY)
             Either.Right(Unit)
@@ -64,6 +64,7 @@ class UserDataSource(
     }
 
     override suspend fun fetchKnownUsers(): Either<CoreFailure, Unit> {
+        // TODO: handle storage error
         val ids = userDAO.getAllUsers().first().map { userEntry ->
             idMapper.fromDaoModel(userEntry.id)
         }
@@ -77,6 +78,7 @@ class UserDataSource(
             }.coFold({
                 Either.Left(it)
             }, {
+                // TODO: handle storage error
                 userDAO.insertUsers(it.map(userMapper::fromApiModelToDaoModel))
                 Either.Right(Unit)
             })
@@ -84,6 +86,7 @@ class UserDataSource(
     }
 
     override suspend fun getSelfUser(): Flow<SelfUser> {
+        // TODO: handle storage error
         return metadataDAO.valueByKey(SELF_USER_ID_KEY).filterNotNull().flatMapMerge { encodedValue ->
             val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
             userDAO.getUserByQualifiedID(selfUserID)
@@ -92,21 +95,22 @@ class UserDataSource(
         }
     }
 
+    // FIXME: user info can be updated with null, null and null
     override suspend fun updateSelfUser(newName: String?, newAccent: Int?, newAssetId: String?): Either<CoreFailure, SelfUser> {
         val user =
             getSelfUser().firstOrNull() ?: return Either.Left(CoreFailure.Unknown(NullPointerException()))
-
         val updateRequest = userMapper.fromModelToUpdateApiModel(user, newName, newAccent, newAssetId)
-        val updatedSelf = selfApi.updateSelf(updateRequest)
-
-        return if (updatedSelf.isSuccessful()) {
-            val updatedUser = userMapper.fromUpdateRequestToDaoModel(user, updateRequest)
-            userDAO.updateUser(updatedUser)
-            Either.Right(userMapper.fromDaoModel(updatedUser))
-        } else {
-            Either.Left(CoreFailure.Unknown(IllegalStateException()))
+        return suspending {
+            wrapApiRequest { selfApi.updateSelf(updateRequest) }
+                .map { userMapper.fromUpdateRequestToDaoModel(user, updateRequest) }
+                .flatMap {
+                // TODO: handle storage error
+                userDAO.updateUser(it)
+                Either.Right(userMapper.fromDaoModel(it))
+            }
         }
     }
+
 
     override suspend fun searchKnownUsersByNameOrHandleOrEmail(searchQuery: String) =
         userDAO.getUserByNameOrHandleOrEmail(searchQuery)
