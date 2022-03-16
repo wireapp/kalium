@@ -3,8 +3,6 @@ package com.wire.kalium.network
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.asset.AssetApi
 import com.wire.kalium.network.api.asset.AssetApiImpl
-import com.wire.kalium.network.api.auth.AuthApi
-import com.wire.kalium.network.api.auth.AuthApiImp
 import com.wire.kalium.network.api.contact.search.ContactSearchApi
 import com.wire.kalium.network.api.contact.search.ContactSearchApiImpl
 import com.wire.kalium.network.api.conversation.ConversationApi
@@ -39,7 +37,7 @@ class AuthenticatedNetworkContainer(
     private val engine: HttpClientEngine = defaultHttpEngine(),
 //    private val onTokenUpdate: (newTokenInfo: Pair<String, String>) -> Unit // Idea to let the network handle the refresh token automatically
 ) {
-    private val authApi: AuthApi get() = AuthApiImp(authenticatedHttpClient)
+    private val accessTokenApi: AccessTokenApi get() = AccessTokenApiImpl(authenticatedHttpClient)
 
     val logoutApi: LogoutApi get() = LogoutImpl(authenticatedHttpClient, sessionDTO.refreshToken)
 
@@ -61,7 +59,7 @@ class AuthenticatedNetworkContainer(
 
     val userDetailsApi: UserDetailsApi get() = UserDetailsApiImp(authenticatedHttpClient)
 
-    val contactSearchApi : ContactSearchApi get() = ContactSearchApiImpl(authenticatedHttpClient)
+    val contactSearchApi: ContactSearchApi get() = ContactSearchApiImpl(authenticatedHttpClient)
 
     internal val authenticatedHttpClient by lazy {
         provideBaseHttpClient(engine, HttpClientOptions.DefaultHost(backendConfig)) {
@@ -79,7 +77,7 @@ class AuthenticatedNetworkContainer(
                     )
                 }
                 refreshTokens {
-                    val refreshedResponse = authApi.renewAccessToken(sessionDTO.refreshToken)
+                    val refreshedResponse = accessTokenApi.getToken(sessionDTO.refreshToken)
 
                     return@refreshTokens if (refreshedResponse.isSuccessful()) {
                         BearerTokens(refreshedResponse.value.value, TODO("Get the 🍪"))

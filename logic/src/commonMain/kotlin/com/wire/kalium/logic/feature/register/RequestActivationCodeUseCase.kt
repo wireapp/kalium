@@ -7,15 +7,14 @@ import com.wire.kalium.logic.data.register.RegisterAccountRepository
 class RequestActivationCodeUseCase(
     private val registerAccountRepository: RegisterAccountRepository
 ) {
-    suspend operator fun invoke(email: String, serverConfig: ServerConfig): RequestActivationCodeResult {
-
-        return registerAccountRepository.requestEmailActivationCode(email, serverConfig.apiBaseUrl)
+    suspend operator fun invoke(email: String, serverConfig: ServerConfig): RequestActivationCodeResult =
+        registerAccountRepository.requestEmailActivationCode(email, serverConfig.apiBaseUrl)
             .fold({
                 RequestActivationCodeResult.Failure.Generic(it)
             }, {
                 RequestActivationCodeResult.Success
             })
-    }
+
 }
 
 sealed class RequestActivationCodeResult {

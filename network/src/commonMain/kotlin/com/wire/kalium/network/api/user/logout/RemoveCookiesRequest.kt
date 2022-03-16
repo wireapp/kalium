@@ -1,4 +1,4 @@
-package com.wire.kalium.network.api.auth
+package com.wire.kalium.network.api.user.logout
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
