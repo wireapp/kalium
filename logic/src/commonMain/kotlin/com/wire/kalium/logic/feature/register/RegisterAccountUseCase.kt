@@ -29,11 +29,11 @@ sealed class RegisterParam(
 
     class PrivateAccount(
         firstName: String,
-        LastName: String,
+        lastName: String,
         email: String,
         password: String,
         val emailActivationCode: String
-    ) : RegisterParam(firstName, LastName, email, password)
+    ) : RegisterParam(firstName, lastName, email, password)
 }
 
 class RegisterAccountUseCase(
@@ -69,13 +69,11 @@ class RegisterAccountUseCase(
                 isKeyExists() -> RegisterResult.Failure.AccountAlreadyExists
                 isBlackListedEmail() -> RegisterResult.Failure.BlackListed
                 isUserCreationRestricted() -> RegisterResult.Failure.UserCreationRestricted
-                isTooMAnyMembers() -> RegisterResult.Failure.TeamMaxMembers
+                isTooMAnyMembers() -> RegisterResult.Failure.TeamMembersLimitReached
                 isDomainBlockedForRegistration() -> RegisterResult.Failure.EmailDomainBlocked
                 else -> RegisterResult.Failure.Generic(NetworkFailure.ServerMiscommunication(this))
             }
         }
-
-
 }
 
 
@@ -86,7 +84,7 @@ sealed class RegisterResult {
         object AccountAlreadyExists : Failure()
         object InvalidActivationCode : Failure()
         object UserCreationRestricted : Failure()
-        object TeamMaxMembers : Failure()
+        object TeamMembersLimitReached : Failure()
         object BlackListed : Failure()
         object InvalidEmail : Failure()
         class Generic(val failure: NetworkFailure) : Failure()

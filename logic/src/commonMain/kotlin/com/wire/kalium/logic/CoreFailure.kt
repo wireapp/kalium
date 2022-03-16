@@ -30,7 +30,7 @@ sealed class NetworkFailure : CoreFailure() {
      * or anything API-related that is out of control from the user.
      * Either fix our app or our backend.
      */
-    class ServerMiscommunication(val kaliumException: KaliumException) : NetworkFailure()
+    data class ServerMiscommunication(val kaliumException: KaliumException) : NetworkFailure()
 }
 
 class ProteusFailure(internal val proteusException: ProteusException) : CoreFailure()
