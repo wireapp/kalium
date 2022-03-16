@@ -45,6 +45,11 @@ internal class TeamDataSource(
                 limitTo = null
             )
         }.map { teamMemberList ->
+            /**
+             * When hasMore is true then we should discard the results and not store them locally, otherwise the user will see random
+             * team members when opening the search UI.
+             * For more information: https://wearezeta.atlassian.net/wiki/spaces/ENGINEERIN/pages/15566946/Full+state+synchronization#Slow-sync
+             */
             if (teamMemberList.hasMore.not()) {
                 teamMemberList.members.map { teamMember ->
                     userMapper.fromTeamMemberToDaoModel(
