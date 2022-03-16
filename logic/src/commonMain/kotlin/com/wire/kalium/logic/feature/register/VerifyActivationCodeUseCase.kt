@@ -9,9 +9,8 @@ import com.wire.kalium.network.exceptions.isInvalidCode
 class VerifyActivationCodeUseCase(
     private val registerAccountRepository: RegisterAccountRepository
 ) {
-    suspend operator fun invoke(email: String, code: String, serverConfig: ServerConfig): VerifyActivationCodeResult {
-
-        return registerAccountRepository.verifyActivationCode(email, code, serverConfig.apiBaseUrl)
+    suspend operator fun invoke(email: String, code: String, serverConfig: ServerConfig): VerifyActivationCodeResult =
+        registerAccountRepository.verifyActivationCode(email, code, serverConfig.apiBaseUrl)
             .fold({
                 if (
                     it is NetworkFailure.ServerMiscommunication &&
@@ -25,7 +24,7 @@ class VerifyActivationCodeUseCase(
             }, {
                 VerifyActivationCodeResult.Success
             })
-    }
+
 }
 
 sealed class VerifyActivationCodeResult {
