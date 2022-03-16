@@ -13,7 +13,7 @@ import com.wire.kalium.persistence.db.Member as SQLDelightMember
 
 class ConversationMapper {
     fun toModel(conversation: SQLDelightConversation): ConversationEntity {
-        return ConversationEntity(conversation.qualified_id, conversation.name, conversation.type)
+        return ConversationEntity(conversation.qualified_id, conversation.name, conversation.type, conversation.team_id)
     }
 }
 

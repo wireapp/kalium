@@ -77,13 +77,14 @@ abstract class UserSessionScopeCommon(
 
     private val idMapper: IdMapper get() = IdMapperImpl()
     private val memberMapper: MemberMapper get() = MemberMapperImpl(idMapper)
-    private val conversationMapper: ConversationMapper get() = ConversationMapperImpl(idMapper, memberMapper)
+    private val conversationMapper: ConversationMapper get() = ConversationMapperImpl(idMapper)
     private val userMapper = UserMapperImpl(idMapper)
     private val database: Database = authenticatedDataSourceSet.database
     private val teamMapper = TeamMapperImpl()
 
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(
+            userRepository,
             database.conversationDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi, idMapper, conversationMapper, memberMapper
