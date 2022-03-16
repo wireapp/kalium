@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.register
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
+import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.feature.auth.AuthSession
 
@@ -29,6 +30,7 @@ sealed class RegisterParam(
 
 class RegisterAccountUseCase(
     private val registerAccountRepository: RegisterAccountRepository,
+    private val sessionRepository: SessionRepository
 ) {
     suspend operator fun invoke(param: RegisterParam, serverConfig: ServerConfig): RegisterResult {
         return when (param) {
@@ -41,6 +43,8 @@ class RegisterAccountUseCase(
             {
                 RegisterResult.Failure.Generic(it)
             }, {
+                sessionRepository.storeSession(it.second)
+                sessionRepository.updateCurrentSession(it.second.userId)
                 RegisterResult.Success(it)
             })
     }
