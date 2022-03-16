@@ -1,15 +1,18 @@
 package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.user.details.ListUserRequest
 import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.network.api.user.details.qualifiedIds
+import com.wire.kalium.network.api.user.self.ChangeHandleRequest
 import com.wire.kalium.network.api.user.self.SelfApi
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.UserDAO
@@ -32,6 +35,7 @@ interface UserRepository {
     suspend fun getSelfUser(): Flow<SelfUser>
     suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, SelfUser>
     suspend fun searchKnownUsersByNameOrHandleOrEmail(searchQuery: String): Flow<List<UserEntity>>
+    suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit>
 }
 
 class UserDataSource(
@@ -114,6 +118,12 @@ class UserDataSource(
 
     override suspend fun searchKnownUsersByNameOrHandleOrEmail(searchQuery: String) =
         userDAO.getUserByNameOrHandleOrEmail(searchQuery)
+
+    override suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit> = wrapApiRequest {
+        selfApi.changeHandle(ChangeHandleRequest(handle))
+    }.flatMap {
+         TODO("store handle locally")
+    }
 
     companion object {
         const val SELF_USER_ID_KEY = "selfUserID"
