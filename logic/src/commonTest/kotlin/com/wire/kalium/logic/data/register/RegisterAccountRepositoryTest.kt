@@ -1,14 +1,23 @@
 package com.wire.kalium.logic.data.register
 
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.configuration.ServerConfig
+import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.session.SessionMapper
+import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.UserMapper
+import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.model.UserDTO
+import com.wire.kalium.network.api.model.getCompleteAssetOrNull
+import com.wire.kalium.network.api.model.getPreviewAssetOrNull
 import com.wire.kalium.network.api.user.register.RegisterApi
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
@@ -26,11 +35,17 @@ class RegisterAccountRepositoryTest {
     @Mock
     private val registerApi: RegisterApi = mock(classOf<RegisterApi>())
 
+    @Mock
+    private val userMapper = mock(classOf<UserMapper>())
+
+    @Mock
+    private val sessionMapper = mock(classOf<SessionMapper>())
+
     private lateinit var registerAccountRepository: RegisterAccountRepository
 
     @BeforeTest
     fun setup() {
-        registerAccountRepository = RegisterAccountDataSource(registerApi)
+        registerAccountRepository = RegisterAccountDataSource(registerApi, userMapper, sessionMapper)
     }
 
     @Test
@@ -110,22 +125,49 @@ class RegisterAccountRepositoryTest {
         val code = CODE
         val password = PASSWORD
         val name = NAME
-        val expected = Pair(TEST_USER, SESSION)
+        val serverConfig = TEST_SERVER_CONFIG
+        val selfUser = with(TEST_USER) {
+            SelfUser(
+                id = QualifiedID(value = id.value, domain = id.domain),
+                name = name,
+                handle = handle,
+                email = email,
+                phone = phone,
+                accentId = accentId,
+                team = teamId,
+                previewPicture = assets.getPreviewAssetOrNull()?.key,
+                completePicture = assets.getCompleteAssetOrNull()?.key
+            )
+        }
+        val authSession = with(SESSION) { AuthSession(userIdValue, accessToken, refreshToken, tokenType, serverConfig) }
+        val expected = Pair(selfUser, authSession)
 
         given(registerApi)
             .coroutine {
                 register(
-                    RegisterApi.RegisterParam.PersonalAccount(email, code, name, password), TEST_API_HOST
+                    RegisterApi.RegisterParam.PersonalAccount(email, code, name, password), serverConfig.apiBaseUrl
                 )
-            }.then { NetworkResponse.Success(expected, mapOf(), 200) }
+            }.then { NetworkResponse.Success(Pair(TEST_USER, SESSION), mapOf(), 200) }
+        given(userMapper)
+            .invocation { fromDtoToSelfUser(TEST_USER) }
+            .then { selfUser }
+        given(sessionMapper)
+            .invocation { fromSessionDTO(SESSION, serverConfig) }
+            .then { authSession }
 
-        val actual = registerAccountRepository.registerWithEmail(email, code, name, password, TEST_API_HOST)
+        val actual = registerAccountRepository.registerWithEmail(email, code, name, password, serverConfig)
 
-        assertIs<Either.Right<Pair<UserDTO, SessionDTO>>>(actual)
+        assertIs<Either.Right<Pair<SelfUser, AuthSession>>>(actual)
         assertEquals(expected, actual.value)
 
         verify(registerApi)
-            .coroutine { register(RegisterApi.RegisterParam.PersonalAccount(email, code, name, password), TEST_API_HOST) }
+            .coroutine { register(RegisterApi.RegisterParam.PersonalAccount(email, code, name, password), serverConfig.apiBaseUrl) }
+            .wasInvoked(exactly = once)
+        verify(sessionMapper)
+            .invocation { fromSessionDTO(SESSION, serverConfig) }
+            .wasInvoked(exactly = once)
+        verify(userMapper)
+            .invocation { fromDtoToSelfUser(TEST_USER) }
             .wasInvoked(exactly = once)
     }
 
@@ -140,20 +182,44 @@ class RegisterAccountRepositoryTest {
         given(registerApi)
             .coroutine {
                 register(
-                    RegisterApi.RegisterParam.PersonalAccount(email, code, name, password), TEST_API_HOST
+                    RegisterApi.RegisterParam.PersonalAccount(email, code, name, password), TEST_SERVER_CONFIG.apiBaseUrl
                 )
             }.then { NetworkResponse.Error(expected) }
 
-        val actual = registerAccountRepository.registerWithEmail(email, code, name, password, TEST_API_HOST)
+        val actual = registerAccountRepository.registerWithEmail(email, code, name, password, TEST_SERVER_CONFIG)
 
         assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(actual)
         assertEquals(expected, actual.value.kaliumException)
 
-        verify(registerApi).coroutine { register(RegisterApi.RegisterParam.PersonalAccount(email, code, name, password), TEST_API_HOST) }
-            .wasInvoked(exactly = once)
+        verify(registerApi).coroutine {
+            register(
+                RegisterApi.RegisterParam.PersonalAccount(email, code, name, password),
+                TEST_SERVER_CONFIG.apiBaseUrl
+            )
+        }.wasInvoked(exactly = once)
+        verify(sessionMapper)
+            .function(sessionMapper::fromSessionDTO)
+            .with(any(), any())
+            .wasNotInvoked()
+
+
+        verify(userMapper)
+            .function(userMapper::fromDtoToSelfUser)
+            .with(any())
+            .wasNotInvoked()
+
     }
 
     private companion object {
+        val TEST_SERVER_CONFIG: ServerConfig = ServerConfig(
+            apiBaseUrl = "apiBaseUrl.com",
+            accountsBaseUrl = "accountsUrl.com",
+            webSocketBaseUrl = "webSocketUrl.com",
+            blackListUrl = "blackListUrl.com",
+            teamsUrl = "teamsUrl.com",
+            websiteUrl = "websiteUrl.com",
+            title = "Test Title"
+        )
         const val TEST_API_HOST = """test.wire.com"""
         const val NAME = "user_name"
         const val EMAIL = "user@domain.de"

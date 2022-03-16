@@ -3,7 +3,8 @@ package com.wire.kalium.logic.feature.register
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
-import com.wire.kalium.network.api.model.UserDTO
+import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.feature.auth.AuthSession
 
 sealed class RegistrationParam(
     firstName: String,
@@ -33,7 +34,7 @@ class RegisterAccountUseCase(
         return when (param) {
             is RegistrationParam.PrivateAccount -> {
                 with(param) {
-                    registerAccountRepository.registerWithEmail(email, emailActivationCode, name, password, serverConfig.apiBaseUrl)
+                    registerAccountRepository.registerWithEmail(email, emailActivationCode, name, password, serverConfig)
                 }
             }
         }.fold(
@@ -47,7 +48,7 @@ class RegisterAccountUseCase(
 }
 
 sealed class RegisterResult {
-    class Success(val value: UserDTO) : RegisterResult()
+    class Success(val value: Pair<SelfUser, AuthSession>) : RegisterResult()
     sealed class Failure : RegisterResult() {
         class Generic(val failure: NetworkFailure) : RegisterResult()
     }
