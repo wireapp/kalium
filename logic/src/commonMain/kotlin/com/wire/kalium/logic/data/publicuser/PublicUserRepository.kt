@@ -52,6 +52,6 @@ class PublicUserRepositoryImpl(
                     )
                 }
             }
-        }.mapLeft { NetworkFailure.ServerMiscommunication(it.kaliumException) }
+        }
     }
 }
