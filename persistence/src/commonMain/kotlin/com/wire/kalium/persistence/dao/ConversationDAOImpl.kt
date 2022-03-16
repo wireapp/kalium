@@ -33,19 +33,34 @@ class ConversationDAOImpl(
     private val conversationMapper = ConversationMapper()
 
     override suspend fun insertConversation(conversationEntity: ConversationEntity) {
-        conversationQueries.insertConversation(conversationEntity.id, conversationEntity.name, conversationEntity.type)
+        conversationQueries.insertConversation(
+            conversationEntity.id,
+            conversationEntity.name,
+            conversationEntity.type,
+            conversationEntity.teamId
+        )
     }
 
     override suspend fun insertConversations(conversationEntities: List<ConversationEntity>) {
         conversationQueries.transaction {
             for (conversationEntity: ConversationEntity in conversationEntities) {
-                conversationQueries.insertConversation(conversationEntity.id, conversationEntity.name, conversationEntity.type)
+                conversationQueries.insertConversation(
+                    conversationEntity.id,
+                    conversationEntity.name,
+                    conversationEntity.type,
+                    conversationEntity.teamId
+                )
             }
         }
     }
 
     override suspend fun updateConversation(conversationEntity: ConversationEntity) {
-        conversationQueries.updateConversation(conversationEntity.name, conversationEntity.id)
+        conversationQueries.updateConversation(
+            conversationEntity.name,
+            conversationEntity.type,
+            conversationEntity.teamId,
+            conversationEntity.id
+        )
     }
 
     override suspend fun getAllConversations(): Flow<List<ConversationEntity>> {

@@ -15,11 +15,11 @@ deleteConversation:
 DELETE FROM Conversation WHERE qualified_id = ?;
 
 insertConversation:
-INSERT OR REPLACE INTO Conversation(qualified_id, name, type) VALUES(?, ?, ?);
+INSERT OR REPLACE INTO Conversation(qualified_id, name, type, team_id) VALUES(?, ?, ?, ?);
 
 updateConversation:
 UPDATE Conversation
-SET name = ?
+SET name = ?, type = ?, team_id = ?
 WHERE qualified_id = ?;
 
 selectAllConversations:

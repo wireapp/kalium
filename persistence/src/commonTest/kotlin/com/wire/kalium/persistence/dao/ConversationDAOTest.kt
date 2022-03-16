@@ -32,8 +32,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversations(listOf(conversationEntity1, conversationEntity2))
         val result1 = conversationDAO.getConversationByQualifiedID(conversationEntity1.id).first()
         val result2 = conversationDAO.getConversationByQualifiedID(conversationEntity2.id).first()
-        assertEquals(result1, conversationEntity1)
-        assertEquals(result2, conversationEntity2)
+        assertEquals(conversationEntity1, result1)
+        assertEquals(conversationEntity2, result2)
     }
 
     @Test
@@ -93,7 +93,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         val user1 = newUserEntity(id = "1")
         val user2 = newUserEntity(id = "2")
 
-        val teamId = "teamId"
+        const val teamId = "teamId"
 
         val conversationEntity1 = ConversationEntity(
             QualifiedID("1", "wire.com"), "conversation1",
