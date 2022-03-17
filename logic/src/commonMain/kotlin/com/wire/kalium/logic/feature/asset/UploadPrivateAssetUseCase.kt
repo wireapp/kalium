@@ -13,6 +13,7 @@ interface UploadPrivateAssetUseCase {
      * Function allowing the upload of a user profile picture (avatar)
      * This first will upload the data as an asset and then will link this asset with the [User]
      *
+     * @param mimeType mime type of the asset to be sent
      * @param assetEncryptedData binary data of the actual asset to be sent
      * @return an [Either] tuple containing [CoreFailure] in case of an error or the [UploadedAssetId] containing the identifier of the
      * successfully uploaded asset
