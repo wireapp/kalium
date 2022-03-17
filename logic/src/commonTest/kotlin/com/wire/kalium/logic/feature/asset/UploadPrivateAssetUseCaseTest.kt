@@ -8,22 +8,19 @@ import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.onFailure
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
+import io.mockative.once
+import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.internal.ThreadSafeHeapNode
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UploadPrivateAssetUseCaseTest {
@@ -56,7 +53,7 @@ class UploadPrivateAssetUseCaseTest {
         val dummyByteArray = "A".encodeToByteArray()
         val mimeType = ImageAsset.JPEG
         val arrangement = Arrangement()
-            .withError(expectedException)
+            .withAssetRepositoryError(expectedException)
             .arrange()
 
         // When
@@ -103,7 +100,8 @@ class UploadPrivateAssetUseCaseTest {
                 .thenReturn(Either.Right(fakeSelfUser()))
             return this
         }
-        fun withError(genericError: CoreFailure): Arrangement {
+
+        fun withAssetRepositoryError(genericError: CoreFailure): Arrangement {
             given(assetRepository)
                 .suspendFunction(assetRepository::uploadAndPersistPrivateAsset)
                 .whenInvokedWith(any(), any())
