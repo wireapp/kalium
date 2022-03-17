@@ -35,10 +35,7 @@ class LoginApiImpl(private val httpClient: HttpClient) : LoginApi {
     )
 
     private fun LoginResponse.toSessionDto(refreshToken: String): SessionDTO = SessionDTO(
-        userIdValue = userId,
-        tokenType = tokenType,
-        accessToken = accessToken,
-        refreshToken = refreshToken
+        userIdValue = userId, tokenType = tokenType, accessToken = accessToken, refreshToken = refreshToken
     )
 
 
@@ -50,9 +47,7 @@ class LoginApiImpl(private val httpClient: HttpClient) : LoginApi {
     }
 
     override suspend fun login(
-        param: LoginApi.LoginParam,
-        persist: Boolean,
-        apiBaseUrl: String
+        param: LoginApi.LoginParam, persist: Boolean, apiBaseUrl: String
     ): NetworkResponse<SessionDTO> {
 
         val result = wrapKaliumResponse<LoginResponse> {
