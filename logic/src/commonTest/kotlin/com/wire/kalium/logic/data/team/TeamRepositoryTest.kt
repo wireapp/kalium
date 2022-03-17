@@ -4,17 +4,19 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.AssetId
 import com.wire.kalium.network.api.ErrorResponse
-import com.wire.kalium.network.api.model.TeamDTO
 import com.wire.kalium.network.api.teams.TeamsApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.generator.TeamGenerator
+import com.wire.kalium.persistence.dao.QualifiedID
 import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.TeamEntity
 import com.wire.kalium.persistence.dao.UserDAO
+import com.wire.kalium.persistence.dao.UserEntity
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.configure
 import io.mockative.given
@@ -59,8 +61,9 @@ class TeamRepositoryTest {
 
     @Test
     fun givenSelfUserExists_whenGettingTeamInfo_thenTeamInfoShouldBeSuccessful() = runTest {
-        val team = TeamDTO(
-            creator = "creator", icon = AssetId(), name = "teamName", id = "teamId", iconKey = null, binding = false
+        val team = TeamGenerator.createTeam(
+            id = "teamId",
+            name = "teamName"
         )
 
         given(teamsApi)
@@ -98,6 +101,70 @@ class TeamRepositoryTest {
             .thenReturn(NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))))
 
         val result = teamRepository.fetchTeamById(teamId = "teamId")
+
+        result.shouldFail {
+            assertEquals(it::class, NetworkFailure.ServerMiscommunication::class)
+        }
+    }
+
+    @Test
+    fun givenTeamIdAndUserDomain_whenFetchingTeamMembers_thenTeamMembersShouldBeSuccessful() = runTest {
+        val teamMember = TeamGenerator.createTeamMember(
+            nonQualifiedUserId = "teamMember1"
+        )
+
+        val teamMembersList = TeamsApi.TeamMemberList(
+            hasMore = false,
+            members = listOf(
+                teamMember
+            )
+        )
+
+        given(teamsApi)
+            .suspendFunction(teamsApi::getTeamMembers)
+            .whenInvokedWith(oneOf("teamId"), oneOf(null))
+            .thenReturn(NetworkResponse.Success(value = teamMembersList, headers = mapOf(), httpCode = 200))
+
+        val mappedTeamMember = UserEntity(
+            id = QualifiedID(
+                value = "teamMember1",
+                domain = "userDomain"
+            ),
+            name = null,
+            handle = null,
+            email = null,
+            phone = null,
+            accentId = 1,
+            team = "teamId",
+            previewAssetId = null,
+            completeAssetId = null
+        )
+
+        given(userMapper)
+            .function(userMapper::fromTeamMemberToDaoModel)
+            .whenInvokedWith(oneOf("teamId"), oneOf(teamMember), oneOf("userDomain"))
+            .thenReturn(mappedTeamMember)
+
+        val result = teamRepository.fetchMembersByTeamId(teamId = "teamId", userDomain = "userDomain")
+
+        // Verifies that userDAO insertUsers was called with the correct mapped values
+        verify(userDAO)
+            .suspendFunction(userDAO::insertUsers)
+            .with(oneOf(listOf(mappedTeamMember)))
+            .wasInvoked(exactly = once)
+
+        // Verifies that when fetching members by team id, it succeeded
+        result.shouldSucceed()
+    }
+
+    @Test
+    fun givenTeamApiFails_whenGettingTeamMembers_thenTheFailureIsPropagated() = runTest {
+        given(teamsApi)
+            .suspendFunction(teamsApi::getTeamMembers)
+            .whenInvokedWith(any(), anything())
+            .thenReturn(NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))))
+
+        val result = teamRepository.fetchMembersByTeamId(teamId = "teamId", userDomain = "userDomain")
 
         result.shouldFail {
             assertEquals(it::class, NetworkFailure.ServerMiscommunication::class)
