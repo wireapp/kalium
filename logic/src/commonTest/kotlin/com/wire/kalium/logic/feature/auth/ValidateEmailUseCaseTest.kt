@@ -18,7 +18,7 @@ class ValidateEmailUseCaseTest {
     @Test
     fun `given a validateEmailUseCase is invoked, when email is inValid, then return false`() {
         INVALID_EMAILS.forEach { inValidEmail ->
-            assertFalse { validateEmailUseCase(inValidEmail) }
+            assertFalse(message = "$inValidEmail is valid ") { validateEmailUseCase(inValidEmail) }
         }
     }
 
@@ -41,11 +41,10 @@ class ValidateEmailUseCaseTest {
 
         val INVALID_EMAILS = listOf(
             "example.com",
-
-            // these values are commented out because of the changes to validateEmailUseCase
-            // to check only if '@' exist somewhere
-            //".test@domain.com",
-            //" email@domain.de",
+            ".test@domain.com",
+            "test..test@domain.com",
+            " email@domain.de",
+            "test@domain@domain.com"
         )
     }
 }

@@ -51,6 +51,7 @@ import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.message.MessageScope
+import com.wire.kalium.logic.feature.team.TeamScope
 import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.sync.ConversationEventReceiver
 import com.wire.kalium.logic.sync.ListenToEventsUseCase
@@ -103,13 +104,6 @@ abstract class UserSessionScopeCommon(
             sendMessageFailureMapper
         )
 
-    private val teamRepository: TeamRepository
-        get() = TeamDataSource(
-            teamDAO = database.teamDAO,
-            teamMapper = teamMapper,
-            teamsApi = authenticatedDataSourceSet.authenticatedNetworkContainer.teamsApi
-        )
-
     private val userRepository: UserRepository
         get() = UserDataSource(
             database.userDAO,
@@ -118,8 +112,16 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
             idMapper,
             userMapper,
-            assetRepository,
-            teamRepository
+            assetRepository
+        )
+
+    private val teamRepository: TeamRepository
+        get() = TeamDataSource(
+            userDAO = database.userDAO,
+            teamDAO = database.teamDAO,
+            teamMapper = teamMapper,
+            teamsApi = authenticatedDataSourceSet.authenticatedNetworkContainer.teamsApi,
+            userMapper = userMapper
         )
 
     protected abstract val clientConfig: ClientConfig
@@ -203,5 +205,8 @@ abstract class UserSessionScopeCommon(
         assetRepository = assetRepository
     )
     val logout: LogoutUseCase get() = LogoutUseCase(logoutRepository, sessionRepository, session.userId, authenticatedDataSourceSet)
-
+    val team: TeamScope get() = TeamScope(
+        userRepository = userRepository,
+        teamRepository = teamRepository
+    )
 }
