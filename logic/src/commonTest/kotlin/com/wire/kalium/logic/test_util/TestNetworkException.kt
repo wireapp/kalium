@@ -25,7 +25,36 @@ object TestNetworkException {
         ErrorResponse(400, message = "invalid handle", label = "invalid-handle")
     )
 
+    val invalidCode = KaliumException.InvalidRequestError(
+        ErrorResponse(404, message = "invalid code", label = "invalid-code")
+    )
+
     val handleExists = KaliumException.InvalidRequestError(
         ErrorResponse(409, message = "handle exists", label = "handle-exists")
     )
+
+    val invalidEmail = KaliumException.InvalidRequestError(
+        ErrorResponse(400, "invalid email", "invalid-email")
+    )
+
+    val keyExists = KaliumException.InvalidRequestError(
+        ErrorResponse(409, "The given e-mail address or phone number is in use.", "key-exists")
+    )
+
+    val blackListedEmail = KaliumException.InvalidRequestError(
+        ErrorResponse(403, "blacklisted email", "blacklisted-email")
+    )
+
+    val userCreationRestricted = KaliumException.InvalidRequestError(
+    ErrorResponse(403, "user creation restricted", "user-creation-restricted")
+    )
+
+    val tooManyTeamMembers = KaliumException.InvalidRequestError(
+        ErrorResponse(403, "too many team members", "too-many-team-members")
+    )
+
+    val domainBlockedForRegistration = KaliumException.InvalidRequestError(
+        ErrorResponse(451, "domain blocked for registration", "domain-blocked-for-registration")
+    )
+
 }
