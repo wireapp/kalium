@@ -4,7 +4,6 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.wrapApiRequest
@@ -46,8 +45,7 @@ class UserDataSource(
     private val userApi: UserDetailsApi,
     private val idMapper: IdMapper,
     private val userMapper: UserMapper,
-    private val assetRepository: AssetRepository,
-    private val teamRepository: TeamRepository
+    private val assetRepository: AssetRepository
 ) : UserRepository {
 
     private suspend fun getSelfUserId(): QualifiedIDEntity {
@@ -57,23 +55,17 @@ class UserDataSource(
     }
 
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = suspending {
-        wrapApiRequest { selfApi.getSelfInfo() }.map {
-            userMapper.fromApiModelToDaoModel(it)
-        }.flatMap { userEntity ->
-            // Fetching self user team here because SyncSelfUserUseCase is (which is using this function)
-            // doesn't have a return value, and this team fetch doesn't make sense adding to GetSelfUserUseCase
-            // as we don't want to be fetching the user team everytime we get the user.
-            userEntity.team?.let { teamId -> teamRepository.fetchTeamById(teamId = teamId) }
-            assetRepository.downloadUsersPictureAssets(listOf(userEntity.previewAssetId, userEntity.completeAssetId))
-            // TODO: handle storage error
-            userDAO.insertUser(userEntity)
-            metadataDAO.insertValue(Json.encodeToString(userEntity.id), SELF_USER_ID_KEY)
-            Either.Right(Unit)
-        }
+        wrapApiRequest { selfApi.getSelfInfo() }
+            .map { userMapper.fromApiModelToDaoModel(it) }
+            .flatMap { userEntity ->
+                assetRepository.downloadUsersPictureAssets(listOf(userEntity.previewAssetId, userEntity.completeAssetId))
+                userDAO.insertUser(userEntity)
+                metadataDAO.insertValue(Json.encodeToString(userEntity.id), SELF_USER_ID_KEY)
+                Either.Right(Unit)
+            }
     }
 
     override suspend fun fetchKnownUsers(): Either<CoreFailure, Unit> {
-        // TODO: handle storage error
         val ids = userDAO.getAllUsers().first().map { userEntry ->
             idMapper.fromDaoModel(userEntry.id)
         }
