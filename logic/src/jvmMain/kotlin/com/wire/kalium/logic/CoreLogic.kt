@@ -2,12 +2,16 @@ package com.wire.kalium.logic
 
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.ProteusClientImpl
+import com.wire.kalium.logic.data.session.SessionDataSource
+import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.session.local.SessionLocalDataSource
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.sync.SyncManagerImpl
 import com.wire.kalium.logic.sync.WorkScheduler
 import com.wire.kalium.network.AuthenticatedNetworkContainer
+import com.wire.kalium.persistence.client.SessionStorageImpl
 import com.wire.kalium.persistence.db.Database
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
@@ -18,8 +22,15 @@ actual class CoreLogic(clientLabel: String, rootProteusDirectoryPath: String) :
         clientLabel = clientLabel,
         rootProteusDirectoryPath = rootProteusDirectoryPath
     ) {
+    override fun getSessionRepo(): SessionRepository {
+        val kaliumPreferences = KaliumPreferencesSettings(EncryptedSettingsHolder(".pref").encryptedSettings)
+        val sessionStorage = SessionStorageImpl(kaliumPreferences)
+        val sessionLocalRepository = SessionLocalDataSource(sessionStorage, sessionMapper)
+        return SessionDataSource(sessionLocalRepository)
+    }
+
     override fun getAuthenticationScope(): AuthenticationScope {
-        return AuthenticationScope(".", clientLabel)
+        return AuthenticationScope(".", clientLabel, sessionRepository)
     }
 
     override fun getSessionScope(session: AuthSession): UserSessionScope {
@@ -31,7 +42,7 @@ actual class CoreLogic(clientLabel: String, rootProteusDirectoryPath: String) :
 
             val proteusClient: ProteusClient = ProteusClientImpl(rootProteusDirectoryPath, session.userId)
             runBlocking { proteusClient.open() }
-            
+
             val workScheduler = WorkScheduler(this, session)
             val syncManager = SyncManagerImpl(workScheduler)
             val encryptedSettingsHolder = EncryptedSettingsHolder("${PREFERENCE_FILE_PREFIX}-${session.userId}")
@@ -51,7 +62,7 @@ actual class CoreLogic(clientLabel: String, rootProteusDirectoryPath: String) :
             }
         }
 
-        return UserSessionScope(session, dataSourceSet)
+        return UserSessionScope(session, dataSourceSet, sessionRepository)
     }
 
     private companion object {

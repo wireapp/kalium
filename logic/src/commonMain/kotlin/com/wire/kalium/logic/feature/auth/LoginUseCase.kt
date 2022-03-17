@@ -19,13 +19,22 @@ sealed class AuthenticationResult {
     }
 }
 
-class LoginUseCase(
+interface LoginUseCase {
+    suspend operator fun invoke(
+        userIdentifier: String,
+        password: String,
+        shouldPersistClient: Boolean,
+        serverConfig: ServerConfig
+    ): AuthenticationResult
+}
+
+internal class LoginUseCaseImpl(
     private val loginRepository: LoginRepository,
     private val sessionRepository: SessionRepository,
     private val validateEmailUseCase: ValidateEmailUseCase,
     private val validateUserHandleUseCase: ValidateUserHandleUseCase
-) {
-    suspend operator fun invoke(
+) : LoginUseCase {
+    override suspend operator fun invoke(
         userIdentifier: String,
         password: String,
         shouldPersistClient: Boolean,
