@@ -4,13 +4,11 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.AssetId
 import com.wire.kalium.network.api.ErrorResponse
-import com.wire.kalium.network.api.model.TeamDTO
 import com.wire.kalium.network.api.teams.TeamsApi
-import com.wire.kalium.network.api.user.LegalHoldStatusResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.generator.TeamGenerator
 import com.wire.kalium.persistence.dao.QualifiedID
 import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.TeamEntity
@@ -63,8 +61,9 @@ class TeamRepositoryTest {
 
     @Test
     fun givenSelfUserExists_whenGettingTeamInfo_thenTeamInfoShouldBeSuccessful() = runTest {
-        val team = TeamDTO(
-            creator = "creator", icon = AssetId(), name = "teamName", id = "teamId", iconKey = null, binding = false
+        val team = TeamGenerator.createTeam(
+            id = "teamId",
+            name = "teamName"
         )
 
         given(teamsApi)
@@ -110,12 +109,8 @@ class TeamRepositoryTest {
 
     @Test
     fun givenTeamIdAndUserDomain_whenFetchingTeamMembers_thenTeamMembersShouldBeSuccessful() = runTest {
-        val teamMember = TeamsApi.TeamMember(
-            nonQualifiedUserId = "teamMember1",
-            createdAt = "01011970",
-            legalHoldStatus = LegalHoldStatusResponse.NO_CONSENT,
-            createdBy = "nonQualiefiedUserId1",
-            permissions = TeamsApi.Permissions(copy = 1, own = 1)
+        val teamMember = TeamGenerator.createTeamMember(
+            nonQualifiedUserId = "teamMember1"
         )
 
         val teamMembersList = TeamsApi.TeamMemberList(

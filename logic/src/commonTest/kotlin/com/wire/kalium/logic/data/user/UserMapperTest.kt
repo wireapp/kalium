@@ -1,8 +1,7 @@
 package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.network.api.teams.TeamsApi
-import com.wire.kalium.network.api.user.LegalHoldStatusResponse
+import com.wire.kalium.network.utils.generator.TeamGenerator
 import com.wire.kalium.persistence.dao.QualifiedID
 import com.wire.kalium.persistence.dao.UserEntity
 import io.mockative.Mock
@@ -27,12 +26,8 @@ class UserMapperTest {
 
     @Test
     fun givenTeamMemberApiModel_whenMappingFromApiResponse_thenDaoModelIsReturned() = runTest {
-        val apiModel = TeamsApi.TeamMember(
-            nonQualifiedUserId = "teamMember1",
-            createdAt = "01011970",
-            legalHoldStatus = LegalHoldStatusResponse.NO_CONSENT,
-            createdBy = "nonQualiefiedUserId1",
-            permissions = TeamsApi.Permissions(copy = 1, own = 1)
+        val apiModel = TeamGenerator.createTeamMember(
+            nonQualifiedUserId = "teamMember1"
         )
 
         val expectedResult = UserEntity(
