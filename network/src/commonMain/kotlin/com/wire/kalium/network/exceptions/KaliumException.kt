@@ -5,13 +5,15 @@ import com.wire.kalium.network.api.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.api.message.SendMessageResponse
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.BAD_REQUEST
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.BLACKLISTED_EMAIL
-import com.wire.kalium.network.exceptions.NetworkErrorLabel.DOMAIN_BLOCKED
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.DOMAIN_BLOCKED_FOR_REGISTRATION
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.INVALID_CODE
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.INVALID_CREDENTIALS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.INVALID_EMAIL
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.KEY_EXISTS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MISSING_AUTH
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.TOO_MANY_CLIENTS
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.TOO_MANY_MEMBERS
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.USER_CREATION_RESTRICTED
 
 sealed class KaliumException() : Exception() {
 
@@ -67,8 +69,8 @@ fun KaliumException.InvalidRequestError.isBadRequest(): Boolean {
     return errorResponse.label == BAD_REQUEST
 }
 
-fun KaliumException.InvalidRequestError.isDomainBlocked(): Boolean {
-    return errorResponse.label == DOMAIN_BLOCKED
+fun KaliumException.InvalidRequestError.isDomainBlockedForRegistration(): Boolean {
+    return errorResponse.label == DOMAIN_BLOCKED_FOR_REGISTRATION
 }
 
 fun KaliumException.InvalidRequestError.isKeyExists(): Boolean {
@@ -85,4 +87,12 @@ fun KaliumException.InvalidRequestError.isInvalidEmail(): Boolean {
 
 fun KaliumException.InvalidRequestError.isInvalidCode(): Boolean {
     return errorResponse.label == INVALID_CODE
+}
+
+fun KaliumException.InvalidRequestError.isUserCreationRestricted(): Boolean {
+    return errorResponse.label == USER_CREATION_RESTRICTED
+}
+
+fun KaliumException.InvalidRequestError.isTooMAnyMembers(): Boolean {
+    return errorResponse.label == TOO_MANY_MEMBERS
 }
