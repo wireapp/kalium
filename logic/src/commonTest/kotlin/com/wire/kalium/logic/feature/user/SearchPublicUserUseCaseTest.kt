@@ -56,6 +56,7 @@ class SearchPublicUserUseCaseTest {
             .thenReturn(expected)
         //when
         val actual = searchPublicUserUseCase(TEST_QUERY, TEST_DOMAIN)
+
         //then
         assertIs<Either.Left<CoreFailure>>(actual)
         assertEquals(expected, actual)
