@@ -61,8 +61,9 @@ abstract class AuthenticationScopeCommon(
             sessionMapper
         )
 
-    private val validateEmailUseCase: ValidateEmailUseCase get() = ValidateEmailUseCaseImpl()
-    private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
+    val validateEmailUseCase: ValidateEmailUseCase get() = ValidateEmailUseCaseImpl()
+    val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
+    val validatePasswordUseCase: ValidatePasswordUseCase get() = ValidatePasswordUseCaseImpl()
 
     val login: LoginUseCase
         get() = LoginUseCaseImpl(
