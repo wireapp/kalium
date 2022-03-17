@@ -15,7 +15,7 @@ class ContactSearchApiImpl(private val httpClient: HttpClient) : ContactSearchAp
                     parameter(QUERY_KEY_SEARCH_QUERY, searchQuery)
 
                     parameter(QUERY_KEY_DOMAIN, domain)
-                    resultSize?.let { parameter(QUERY_KEY_SIZE, it) }
+                    maxResultSize?.let { parameter(QUERY_KEY_SIZE, it) }
                 }
             }
         }
