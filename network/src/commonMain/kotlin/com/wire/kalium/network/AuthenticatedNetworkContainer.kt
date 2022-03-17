@@ -3,6 +3,8 @@ package com.wire.kalium.network
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.asset.AssetApi
 import com.wire.kalium.network.api.asset.AssetApiImpl
+import com.wire.kalium.network.api.auth.AccessTokenApi
+import com.wire.kalium.network.api.auth.AccessTokenApiImpl
 import com.wire.kalium.network.api.contact.search.ContactSearchApi
 import com.wire.kalium.network.api.contact.search.ContactSearchApiImpl
 import com.wire.kalium.network.api.conversation.ConversationApi
