@@ -37,6 +37,10 @@ import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.prekey.remote.PreKeyListMapper
 import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteDataSource
 import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteRepository
+import com.wire.kalium.logic.data.publicuser.PublicUserMapper
+import com.wire.kalium.logic.data.publicuser.PublicUserMapperImpl
+import com.wire.kalium.logic.data.publicuser.PublicUserRepository
+import com.wire.kalium.logic.data.publicuser.PublicUserRepositoryImpl
 import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserMapperImpl
 import com.wire.kalium.logic.data.user.UserRepository
@@ -71,6 +75,7 @@ abstract class UserSessionScopeCommon(
     private val memberMapper: MemberMapper get() = MemberMapperImpl(idMapper)
     private val conversationMapper: ConversationMapper get() = ConversationMapperImpl(idMapper, memberMapper)
     private val userMapper = UserMapperImpl(idMapper)
+    private val publicUserMapper: PublicUserMapper = PublicUserMapperImpl()
     private val database: Database = authenticatedDataSourceSet.database
 
     private val conversationRepository: ConversationRepository
@@ -102,6 +107,13 @@ abstract class UserSessionScopeCommon(
             idMapper,
             userMapper,
             assetRepository
+        )
+
+    private val publicUserRepository: PublicUserRepository
+        get() = PublicUserRepositoryImpl(
+            authenticatedDataSourceSet.authenticatedNetworkContainer.contactSearchApi,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
+            publicUserMapper
         )
 
     protected abstract val clientConfig: ClientConfig
@@ -156,11 +168,12 @@ abstract class UserSessionScopeCommon(
             preKeyRemoteRepository,
             authenticatedDataSourceSet.proteusClient
         )
-    val listenToEvents: ListenToEventsUseCase get() = ListenToEventsUseCase(
-        syncManager = syncManager,
-        eventRepository = eventRepository,
-        conversationEventReceiver = conversationEventReceiver
-    )
+    val listenToEvents: ListenToEventsUseCase
+        get() = ListenToEventsUseCase(
+            syncManager = syncManager,
+            eventRepository = eventRepository,
+            conversationEventReceiver = conversationEventReceiver
+        )
     val client: ClientScope get() = ClientScope(clientRepository, preKeyRepository)
     val conversations: ConversationScope get() = ConversationScope(conversationRepository, syncManager)
     val messages: MessageScope
@@ -173,5 +186,11 @@ abstract class UserSessionScopeCommon(
             userRepository,
             syncManager
         )
-    val users: UserScope get() = UserScope(userRepository, syncManager, assetRepository)
+    val users: UserScope
+        get() = UserScope(
+            userRepository,
+            publicUserRepository,
+            syncManager,
+            assetRepository
+        )
 }

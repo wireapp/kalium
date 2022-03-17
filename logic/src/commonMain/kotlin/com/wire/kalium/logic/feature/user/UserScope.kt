@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.publicuser.PublicUserRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.asset.GetPublicAssetUseCaseImpl
 import com.wire.kalium.logic.feature.asset.GetPublicAssetUseCase
@@ -8,6 +9,7 @@ import com.wire.kalium.logic.sync.SyncManager
 
 class UserScope(
     private val userRepository: UserRepository,
+    private val publicUserRepository: PublicUserRepository,
     private val syncManager: SyncManager,
     private val assetRepository: AssetRepository
 ) {
@@ -16,4 +18,5 @@ class UserScope(
     val syncContacts: SyncContactsUseCase get() = SyncContactsUseCaseImpl(userRepository)
     val uploadUserAvatar: UploadUserAvatarUseCase get() = UploadUserAvatarUseCaseImpl(userRepository, assetRepository)
     val getPublicAsset: GetPublicAssetUseCase get() = GetPublicAssetUseCaseImpl(assetRepository)
+    val searchPublicUser: SearchPublicUserUseCase get() = SearchPublicUserUseCaseImpl(publicUserRepository)
 }
