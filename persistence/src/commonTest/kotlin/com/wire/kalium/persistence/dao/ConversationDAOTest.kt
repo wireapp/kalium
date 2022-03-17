@@ -14,8 +14,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
     private val user1 = newUserEntity(id = "1")
     private val user2 = newUserEntity(id = "2")
 
-    private val conversation1 = Conversation(QualifiedID("1", "wire.com"), "conversation1")
-    private val conversation2 = Conversation(QualifiedID("2", "wire.com"), "conversation2")
+    private val conversation1 = Conversation(QualifiedIDEntity("1", "wire.com"), "conversation1")
+    private val conversation2 = Conversation(QualifiedIDEntity("2", "wire.com"), "conversation2")
 
     private val member1 = Member(user1.id)
     private val member2 = Member(user2.id)

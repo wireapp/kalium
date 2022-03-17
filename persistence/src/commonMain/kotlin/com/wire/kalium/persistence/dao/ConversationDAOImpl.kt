@@ -55,25 +55,25 @@ class ConversationDAOImpl(
             .map { it.map(conversationMapper::toModel) }
     }
 
-    override suspend fun getConversationByQualifiedID(qualifiedID: QualifiedID): Flow<Conversation?> {
+    override suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<Conversation?> {
         return conversationQueries.selectByQualifiedId(qualifiedID)
             .asFlow()
             .mapToOneOrNull()
             .map { it?.let { conversationMapper.toModel(it) } }
     }
 
-    override suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedID) {
+    override suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity) {
         conversationQueries.deleteConversation(qualifiedID)
     }
 
-    override suspend fun insertMember(member: Member, conversationID: QualifiedID) {
+    override suspend fun insertMember(member: Member, conversationID: QualifiedIDEntity) {
         memberQueries.transaction {
             userQueries.insertOrIgnoreUserId(member.user)
             memberQueries.insertMember(member.user, conversationID)
         }
     }
 
-    override suspend fun insertMembers(members: List<Member>, conversationID: QualifiedID) {
+    override suspend fun insertMembers(members: List<Member>, conversationID: QualifiedIDEntity) {
         memberQueries.transaction {
             for (member: Member in members) {
                 userQueries.insertOrIgnoreUserId(member.user)
@@ -83,11 +83,11 @@ class ConversationDAOImpl(
 
     }
 
-    override suspend fun deleteMemberByQualifiedID(conversationID: QualifiedID, userID: QualifiedID) {
+    override suspend fun deleteMemberByQualifiedID(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity) {
         memberQueries.deleteMember(conversationID, userID)
     }
 
-    override suspend fun getAllMembers(qualifiedID: QualifiedID): Flow<List<Member>> {
+    override suspend fun getAllMembers(qualifiedID: QualifiedIDEntity): Flow<List<Member>> {
         return memberQueries.selectAllMembersByConversation(qualifiedID)
             .asFlow()
             .mapToList()
