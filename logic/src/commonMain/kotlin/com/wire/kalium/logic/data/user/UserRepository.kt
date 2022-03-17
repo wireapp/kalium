@@ -93,8 +93,7 @@ class UserDataSource(
     }
 
     override suspend fun updateSelfUser(newName: String?, newAccent: Int?, newAssetId: String?): Either<CoreFailure, SelfUser> {
-        val user =
-            getSelfUser().firstOrNull() ?: return Either.Left(CoreFailure.Unknown(NullPointerException()))
+        val user = getSelfUser().firstOrNull() ?: return Either.Left(CoreFailure.Unknown(NullPointerException()))
 
         val updateRequest = userMapper.fromModelToUpdateApiModel(user, newName, newAccent, newAssetId)
         val updatedSelf = selfApi.updateSelf(updateRequest)
