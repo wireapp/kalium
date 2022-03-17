@@ -58,3 +58,10 @@ object TestNetworkResponseError{
     fun <T : Any>genericError() : NetworkResponse<T> = NetworkResponse.Error(TestNetworkException.generic)
 
 }
+
+
+object TestNetworkResponseError{
+
+    fun <T : Any>genericError() : NetworkResponse<T> = NetworkResponse.Error(TestNetworkException.generic)
+
+}
