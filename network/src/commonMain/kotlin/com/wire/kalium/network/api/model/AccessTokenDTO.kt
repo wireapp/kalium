@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 
 
 @Serializable
-data class AccessTokenDTO(
+internal data class AccessTokenDTO(
     @SerialName("user") val userId: NonQualifiedUserId,
     @SerialName("access_token") val value: String,
     @SerialName("expires_in") val expiresIn: Int,
