@@ -2,8 +2,8 @@ package com.wire.kalium.logic.data.publicuser
 
 import com.wire.kalium.logic.data.publicuser.model.PublicUser
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.network.api.asset.getCompleteAssetOrNull
-import com.wire.kalium.network.api.asset.getPreviewAssetOrNull
+import com.wire.kalium.network.api.model.getCompleteAssetOrNull
+import com.wire.kalium.network.api.model.getPreviewAssetOrNull
 import com.wire.kalium.network.api.user.details.UserDetailsResponse
 
 interface PublicUserMapper {
