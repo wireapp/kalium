@@ -28,7 +28,8 @@ class ContactSearchApiTest : ApiTest {
             val contactSearchApi: ContactSearchApi = ContactSearchApiImpl(httpClient)
             contactSearchApi.search(
                 ContactSearchRequest(
-                    searchQuery = DUMMY_SEARCH_QUERY
+                    searchQuery = DUMMY_SEARCH_QUERY,
+                    domain = DUMMY_DOMAIN
                 )
             )
         }
