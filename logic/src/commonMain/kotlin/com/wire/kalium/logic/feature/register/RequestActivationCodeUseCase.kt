@@ -3,6 +3,11 @@ package com.wire.kalium.logic.feature.register
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isInvalidEmail
+import com.wire.kalium.network.exceptions.isBlackListedEmail
+import com.wire.kalium.network.exceptions.isKeyExists
+import com.wire.kalium.network.exceptions.isDomainBlockedForRegistration
 
 class RequestActivationCodeUseCase(
     private val registerAccountRepository: RegisterAccountRepository
@@ -11,7 +16,15 @@ class RequestActivationCodeUseCase(
 
         return registerAccountRepository.requestEmailActivationCode(email, serverConfig.apiBaseUrl)
             .fold({
-                RequestActivationCodeResult.Failure.Generic(it)
+                if(it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError)
+                    when {
+                        it.kaliumException.isInvalidEmail() -> RequestActivationCodeResult.Failure.InvalidEmail
+                        it.kaliumException.isBlackListedEmail() -> RequestActivationCodeResult.Failure.BlacklistedEmail
+                        it.kaliumException.isKeyExists() -> RequestActivationCodeResult.Failure.AlreadyInUse
+                        it.kaliumException.isDomainBlockedForRegistration() -> RequestActivationCodeResult.Failure.DomainBlocked
+                        else -> RequestActivationCodeResult.Failure.Generic(it)
+                    }
+                else RequestActivationCodeResult.Failure.Generic(it)
             }, {
                 RequestActivationCodeResult.Success
             })
@@ -21,6 +34,10 @@ class RequestActivationCodeUseCase(
 sealed class RequestActivationCodeResult {
     object Success : RequestActivationCodeResult()
     sealed class Failure : RequestActivationCodeResult() {
+        object InvalidEmail : Failure()
+        object BlacklistedEmail : Failure()
+        object AlreadyInUse : Failure()
+        object DomainBlocked : Failure()
         class Generic(val failure: NetworkFailure) : Failure()
     }
 }
