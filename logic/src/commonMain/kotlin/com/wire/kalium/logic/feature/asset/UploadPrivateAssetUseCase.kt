@@ -10,7 +10,7 @@ import com.wire.kalium.logic.functional.suspending
 
 interface UploadPrivateAssetUseCase {
     /**
-     * Function allowing the upload of a user profile picture (avatar)
+     * Function allowing the upload of a private encrypted asset converted to a stream of bytes
      * This first will upload the data as an asset and then will link this asset with the [User]
      *
      * @param mimeType mime type of the asset to be sent
