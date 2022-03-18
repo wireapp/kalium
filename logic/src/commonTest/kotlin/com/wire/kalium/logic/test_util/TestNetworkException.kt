@@ -22,8 +22,16 @@ object TestNetworkException {
         ErrorResponse(403, message = "invalid credentials", label = "invalid-credentials")
     )
 
+    val invalidHandle = KaliumException.InvalidRequestError(
+        ErrorResponse(400, message = "invalid handle", label = "invalid-handle")
+    )
+
     val invalidCode = KaliumException.InvalidRequestError(
         ErrorResponse(404, message = "invalid code", label = "invalid-code")
+    )
+
+    val handleExists = KaliumException.InvalidRequestError(
+        ErrorResponse(409, message = "handle exists", label = "handle-exists")
     )
 
     val invalidEmail = KaliumException.InvalidRequestError(
