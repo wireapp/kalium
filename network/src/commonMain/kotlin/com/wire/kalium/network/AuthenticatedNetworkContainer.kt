@@ -23,6 +23,7 @@ import com.wire.kalium.network.api.user.details.UserDetailsApiImp
 import com.wire.kalium.network.api.user.logout.LogoutApi
 import com.wire.kalium.network.api.user.logout.LogoutImpl
 import com.wire.kalium.network.api.user.self.SelfApi
+import com.wire.kalium.network.api.user.self.SelfApiImpl
 import com.wire.kalium.network.tools.BackendConfig
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.client.HttpClientConfig
@@ -55,7 +56,7 @@ class AuthenticatedNetworkContainer(
 
     val teamsApi: TeamsApi get() = TeamsApiImp(authenticatedHttpClient)
 
-    val selfApi: SelfApi get() = SelfApi(authenticatedHttpClient)
+    val selfApi: SelfApi get() = SelfApiImpl(authenticatedHttpClient)
 
     val userDetailsApi: UserDetailsApi get() = UserDetailsApiImp(authenticatedHttpClient)
 
