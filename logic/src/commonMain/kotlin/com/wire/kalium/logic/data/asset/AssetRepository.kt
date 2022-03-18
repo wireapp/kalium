@@ -30,7 +30,7 @@ internal class AssetDataSource(
     }
 
     override suspend fun uploadAndPersistPrivateAsset(mimeType: AssetType, assetData: ByteArray): Either<CoreFailure, UploadedAssetId> {
-        val uploadAssetData = UploadAssetData(assetData, mimeType, false, RetentionType.ETERNAL)
+        val uploadAssetData = UploadAssetData(assetData, mimeType, false, RetentionType.PERSISTENT)
         return doUploadAndPersistAsset(uploadAssetData)
     }
 
