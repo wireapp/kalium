@@ -1,8 +1,12 @@
 package com.wire.kalium.persistence.dao.message
 
+import com.squareup.sqldelight.runtime.coroutines.asFlow
+import com.squareup.sqldelight.runtime.coroutines.mapToList
+import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.dao.QualifiedID
 import com.wire.kalium.persistence.db.MessagesQueries
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import com.wire.kalium.persistence.db.Message as SQLDelightMessage
 
 class MessageMapper {
