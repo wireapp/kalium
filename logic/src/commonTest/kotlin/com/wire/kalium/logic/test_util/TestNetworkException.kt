@@ -2,6 +2,7 @@ package com.wire.kalium.logic.test_util
 
 import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.utils.NetworkResponse
 
 object TestNetworkException {
 
@@ -56,5 +57,11 @@ object TestNetworkException {
     val domainBlockedForRegistration = KaliumException.InvalidRequestError(
         ErrorResponse(451, "domain blocked for registration", "domain-blocked-for-registration")
     )
+
+}
+
+object TestNetworkResponseError{
+
+    fun <T : Any>genericError() : NetworkResponse<T> = NetworkResponse.Error(TestNetworkException.generic)
 
 }
