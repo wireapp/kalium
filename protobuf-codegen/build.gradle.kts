@@ -9,49 +9,11 @@ import com.google.protobuf.gradle.protoc
 
 plugins {
     Plugins.jvm(this)
-//    Plugins.multiplatform(this)
     Plugins.protobuf(this)
 }
 
 group = "com.wire.kalium"
 version = "0.0.1-SNAPSHOT"
-
-//sourceSets{
-//    create("protobuf"){
-//        proto{
-//            srcDir("src/protobuf/proto")
-//        }
-//    }
-//}
-
-//kotlin {
-//    jvm {
-//        compilations.all {
-//            kotlinOptions.jvmTarget = "1.8"
-//            kotlinOptions.freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
-//        }
-//        testRuns["test"].executionTask.configure {
-//            useJUnit()
-//        }
-//    }
-//    android()
-//    iosX64()
-//    js(IR) {
-//        browser {
-//            commonWebpackConfig {
-//                cssSupport.enabled = true
-//            }
-//        }
-//    }
-//
-//    sourceSets {
-//        val commonMain by getting {
-//            dependencies {
-//                implementation("pro.streem.pbandk:pbandk-runtime:${Versions.pbandk}")
-//            }
-//        }
-//    }
-//}
 
 protobuf {
     protoc {

@@ -152,8 +152,7 @@ object Dependencies {
     }
 
     object Protobuf {
-        const val wireJvmMessageProto = "com.wire:generic-message-proto:${Versions.wireJvmMessageProto}"
-        const val protobufLite = "com.google.protobuf:protobuf-javalite:${Versions.protobufLite}"
+        const val pbandkRuntime = "pro.streem.pbandk:pbandk-runtime:${Versions.pbandk}"
     }
 
     object UUID {
