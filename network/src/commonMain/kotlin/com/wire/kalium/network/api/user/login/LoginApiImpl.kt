@@ -1,10 +1,10 @@
 package com.wire.kalium.network.api.user.login
 
-import com.wire.kalium.network.api.ErrorResponse
-import com.wire.kalium.network.api.NonQualifiedUserId
 import com.wire.kalium.network.api.RefreshTokenProperties
 import com.wire.kalium.network.api.SessionDTO
-import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.api.model.AccessTokenDTO
+import com.wire.kalium.network.api.model.toSessionDto
+import com.wire.kalium.network.utils.CustomErrors
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
@@ -26,19 +26,6 @@ class LoginApiImpl(private val httpClient: HttpClient) : LoginApi {
         @SerialName("label") val label: String
     )
 
-    @Serializable
-    data class LoginResponse(
-        @SerialName("user") val userId: NonQualifiedUserId,
-        @SerialName("expires_in") val expiresIn: Long,
-        @SerialName("access_token") val accessToken: String,
-        @SerialName("token_type") val tokenType: String
-    )
-
-    private fun LoginResponse.toSessionDto(refreshToken: String): SessionDTO = SessionDTO(
-        userIdValue = userId, tokenType = tokenType, accessToken = accessToken, refreshToken = refreshToken
-    )
-
-
     private fun LoginApi.LoginParam.toRequestBody(): LoginRequest {
         return when (this) {
             is LoginApi.LoginParam.LoginWithEmail -> LoginRequest(email = email, password = password, label = label)
@@ -50,7 +37,7 @@ class LoginApiImpl(private val httpClient: HttpClient) : LoginApi {
         param: LoginApi.LoginParam, persist: Boolean, apiBaseUrl: String
     ): NetworkResponse<SessionDTO> {
 
-        val result = wrapKaliumResponse<LoginResponse> {
+        val result = wrapKaliumResponse<AccessTokenDTO> {
             httpClient.post {
                 url.set(host = apiBaseUrl, path = PATH_LOGIN)
                 url.protocol = URLProtocol.HTTPS
@@ -63,7 +50,7 @@ class LoginApiImpl(private val httpClient: HttpClient) : LoginApi {
             is NetworkResponse.Success -> {
                 val refreshToken = result.cookies[RefreshTokenProperties.COOKIE_NAME]
                 if (refreshToken == null) {
-                    NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "no cookie was found", "missing-refreshToken")))
+                    CustomErrors.MISSING_REFRESH_TOKEN
                 } else {
                     NetworkResponse.Success(result.value.toSessionDto(refreshToken), result.headers, result.httpCode)
                 }

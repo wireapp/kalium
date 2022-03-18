@@ -1,22 +1,25 @@
 package com.wire.kalium.network.api.user.register
 
-import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.api.RefreshTokenProperties
 import com.wire.kalium.network.api.SessionDTO
-import com.wire.kalium.network.api.auth.AccessTokenApi
+import com.wire.kalium.network.api.model.AccessTokenDTO
 import com.wire.kalium.network.api.model.NewUserDTO
 import com.wire.kalium.network.api.model.UserDTO
-import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.api.model.toSessionDto
+import com.wire.kalium.network.utils.CustomErrors
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
+import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.http.HttpHeaders
 import io.ktor.http.URLProtocol
 
 interface RegisterApi {
+
     sealed class RegisterParam(
         open val name: String
     ) {
@@ -83,8 +86,20 @@ interface RegisterApi {
 
 
 class RegisterApiImpl(
-    private val httpClient: HttpClient, private val accessTokenApi: AccessTokenApi
+    private val httpClient: HttpClient
 ) : RegisterApi {
+
+    private suspend fun getToken(refreshToken: String, apiBaseUrl: String): NetworkResponse<AccessTokenDTO> = wrapKaliumResponse {
+        httpClient.post {
+            url {
+                host = apiBaseUrl
+                pathSegments = listOf(PATH_ACCESS)
+                protocol = URLProtocol.HTTPS
+            }
+            header(HttpHeaders.Cookie, "${RefreshTokenProperties.COOKIE_NAME}=$refreshToken")
+        }
+    }
+
     override suspend fun register(
         param: RegisterApi.RegisterParam, apiBaseUrl: String
     ): NetworkResponse<Pair<UserDTO, SessionDTO>> = wrapKaliumResponse<UserDTO> {
@@ -98,14 +113,13 @@ class RegisterApiImpl(
         }
     }.flatMap { registerResponse ->
         registerResponse.cookies[RefreshTokenProperties.COOKIE_NAME]?.let { refreshToken ->
-            accessTokenApi.getToken(refreshToken).mapSuccess { accessTokenDTO ->
-                    Pair(
-                        registerResponse.value,
-                        SessionDTO(registerResponse.value.id.value, accessTokenDTO.tokenType, accessTokenDTO.value, refreshToken)
-                    )
-                }
+            getToken(refreshToken, apiBaseUrl).mapSuccess { accessTokenDTO ->
+                Pair(
+                    registerResponse.value, accessTokenDTO.toSessionDto(refreshToken)
+                )
+            }
         } ?: run {
-            NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "no cookie was found", "missing-refreshToken")))
+            CustomErrors.MISSING_REFRESH_TOKEN
         }
     }
 
@@ -138,6 +152,7 @@ class RegisterApiImpl(
         const val REGISTER_PATH = "register"
         const val ACTIVATE_PATH = "activate"
         const val SEND_PATH = "send"
+        const val PATH_ACCESS = "access"
     }
 
 }
