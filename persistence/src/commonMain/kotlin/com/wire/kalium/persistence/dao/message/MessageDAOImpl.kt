@@ -1,12 +1,8 @@
 package com.wire.kalium.persistence.dao.message
 
-import com.squareup.sqldelight.runtime.coroutines.asFlow
-import com.squareup.sqldelight.runtime.coroutines.mapToList
-import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.dao.QualifiedID
 import com.wire.kalium.persistence.db.MessagesQueries
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import com.wire.kalium.persistence.db.Message as SQLDelightMessage
 
 class MessageMapper {
@@ -66,6 +62,9 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             message.id,
             message.conversationId
         )
+
+    override suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedID) =
+        queries.updateMessageStatus(status, id, conversationId)
 
     override suspend fun getAllMessages(): Flow<List<MessageEntity>> =
         queries.selectAllMessages()

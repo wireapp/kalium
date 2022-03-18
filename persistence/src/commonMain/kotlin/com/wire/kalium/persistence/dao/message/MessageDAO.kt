@@ -23,6 +23,7 @@ interface MessageDAO {
     suspend fun insertMessage(message: MessageEntity)
     suspend fun insertMessages(messages: List<MessageEntity>)
     suspend fun updateMessage(message: MessageEntity)
+    suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedID)
     suspend fun getAllMessages(): Flow<List<MessageEntity>>
     suspend fun getMessageById(id: String, conversationId: QualifiedID): Flow<MessageEntity?>
     suspend fun getMessageByConversation(conversationId: QualifiedID, limit: Int): Flow<List<MessageEntity>>

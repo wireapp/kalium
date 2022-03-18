@@ -36,6 +36,11 @@ UPDATE Message
 SET content = ?, date = ?, sender_user_id = ?, sender_client_id = ?, status = ?
 WHERE id = ? AND conversation_id = ?;
 
+updateMessageStatus:
+UPDATE Message
+SET status = ?
+WHERE id = ? AND conversation_id = ?;
+
 selectAllMessages:
 SELECT * FROM Message;
 
