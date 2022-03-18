@@ -22,7 +22,7 @@ class DeleteMessageUseCase(
     private val messageSender: MessageSender
 ) {
 
-    suspend operator fun invoke(conversationId: ConversationId, messageId: String, deleteForEveryOne: Boolean): Either<CoreFailure, Unit> {
+    suspend operator fun invoke(conversationId: ConversationId, messageId: String, deleteForEveryone: Boolean): Either<CoreFailure, Unit> {
         syncManager.waitForSlowSyncToComplete()
         val selfUser = userRepository.getSelfUser().first()
 
