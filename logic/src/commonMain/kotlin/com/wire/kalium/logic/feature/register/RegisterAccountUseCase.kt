@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.feature.auth.AuthSession
+import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isBlackListedEmail
 import com.wire.kalium.network.exceptions.isDomainBlockedForRegistration
@@ -40,14 +41,18 @@ class RegisterAccountUseCase(
     private val registerAccountRepository: RegisterAccountRepository,
     private val sessionRepository: SessionRepository
 ) {
-    suspend operator fun invoke(param: RegisterParam, serverConfig: ServerConfig): RegisterResult {
-        return when (param) {
+    suspend operator fun invoke(
+        param: RegisterParam,
+        serverConfig: ServerConfig,
+        shouldStoreSession: suspend (AuthSession) -> Boolean = { true }
+    ): RegisterResult = suspending {
+        when (param) {
             is RegisterParam.PrivateAccount -> {
                 with(param) {
                     registerAccountRepository.registerWithEmail(email, emailActivationCode, name, password, serverConfig)
                 }
             }
-        }.fold(
+        }.coFold(
             {
                 if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
                     handleSpecialErrors(it.kaliumException)
@@ -55,8 +60,10 @@ class RegisterAccountUseCase(
                     RegisterResult.Failure.Generic(it)
                 }
             }, {
-                sessionRepository.storeSession(it.second)
-                sessionRepository.updateCurrentSession(it.second.userId)
+                if(shouldStoreSession(it.second)) {
+                    sessionRepository.storeSession(it.second)
+                    sessionRepository.updateCurrentSession(it.second.userId)
+                }
                 RegisterResult.Success(it)
             })
     }
