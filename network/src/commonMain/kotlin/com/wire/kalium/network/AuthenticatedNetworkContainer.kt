@@ -39,7 +39,7 @@ class AuthenticatedNetworkContainer(
     private val engine: HttpClientEngine = defaultHttpEngine(),
 //    private val onTokenUpdate: (newTokenInfo: Pair<String, String>) -> Unit // Idea to let the network handle the refresh token automatically
 ) {
-    private val accessTokenApi: AccessTokenApi get() = AccessTokenApiImpl(authenticatedHttpClient)
+    val accessTokenApi: AccessTokenApi get() = AccessTokenApiImpl(authenticatedHttpClient)
 
     val logoutApi: LogoutApi get() = LogoutImpl(authenticatedHttpClient, sessionDTO.refreshToken)
 
