@@ -2,6 +2,7 @@ package com.wire.kalium.logic.test_util
 
 import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.utils.NetworkResponse
 
 object TestNetworkException {
 
@@ -21,8 +22,16 @@ object TestNetworkException {
         ErrorResponse(403, message = "invalid credentials", label = "invalid-credentials")
     )
 
+    val invalidHandle = KaliumException.InvalidRequestError(
+        ErrorResponse(400, message = "invalid handle", label = "invalid-handle")
+    )
+
     val invalidCode = KaliumException.InvalidRequestError(
         ErrorResponse(404, message = "invalid code", label = "invalid-code")
+    )
+
+    val handleExists = KaliumException.InvalidRequestError(
+        ErrorResponse(409, message = "handle exists", label = "handle-exists")
     )
 
     val invalidEmail = KaliumException.InvalidRequestError(
@@ -48,5 +57,11 @@ object TestNetworkException {
     val domainBlockedForRegistration = KaliumException.InvalidRequestError(
         ErrorResponse(451, "domain blocked for registration", "domain-blocked-for-registration")
     )
+
+}
+
+object TestNetworkResponseError{
+
+    fun <T : Any>genericError() : NetworkResponse<T> = NetworkResponse.Error(TestNetworkException.generic)
 
 }
