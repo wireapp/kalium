@@ -1,0 +1,108 @@
+/*
+ * Wire
+ * Copyright (C) 2021 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ *
+ */
+
+syntax = "proto2";
+
+package proteus;
+
+option java_package = "com.wire.messages";
+option java_outer_classname = "Otr";
+option optimize_for = LITE_RUNTIME;
+
+message UserId {
+    required bytes uuid = 1;
+}
+
+message QualifiedUserId {
+    required string id     = 1;
+    required string domain = 2;
+}
+
+message ClientId {
+    required uint64 client = 1;
+}
+
+message ClientEntry {
+    required ClientId client = 1;
+    required bytes    text   = 2;
+}
+
+message UserEntry {
+    required UserId      user    = 1;
+    repeated ClientEntry clients = 2;
+}
+
+message QualifiedUserEntry {
+    required string domain = 1;
+    repeated UserEntry entries = 2;
+}
+
+enum Priority {
+    // 0 is reserved for errors
+    LOW_PRIORITY = 1;
+    HIGH_PRIORITY = 2;
+};
+
+// deprecated, use QualifiedNewOtrMessage
+message NewOtrMessage {
+    required ClientId  sender          = 1;
+    repeated UserEntry recipients      = 2;
+    optional bool      native_push     = 3 [default = true];
+    optional bytes     blob            = 4;
+    optional Priority  native_priority = 5;
+    optional bool      transient       = 6;
+    repeated UserId    report_missing  = 7;
+}
+
+message QualifiedNewOtrMessage {
+    required ClientId                  sender          = 1;
+    repeated QualifiedUserEntry        recipients      = 2;
+    optional bool                      native_push     = 3 [default = true];
+    optional bytes                     blob            = 4;
+    optional Priority                  native_priority = 5;
+    optional bool                      transient       = 6;
+    // For more details please refer to backend swagger at
+    // https://staging-nginz-https.zinfra.io/api/swagger-ui/
+    oneof client_mismatch_strategy {
+        ClientMismatchStrategy.ReportAll  report_all   = 7;
+        ClientMismatchStrategy.IgnoreAll  ignore_all   = 8;
+        ClientMismatchStrategy.ReportOnly report_only  = 9;
+        ClientMismatchStrategy.IgnoreOnly ignore_only  = 10;
+    }
+}
+
+message ClientMismatchStrategy {
+    message ReportAll {}
+    message IgnoreAll {}
+
+    message ReportOnly {
+        repeated QualifiedUserId user_ids = 1;
+    }
+
+    message IgnoreOnly {
+        repeated QualifiedUserId user_ids = 1;
+    }
+}
+
+message OtrAssetMeta {
+    required ClientId  sender      = 1;
+    repeated UserEntry recipients  = 2;
+    optional bool      isInline    = 3 [default = false];
+    optional bool      native_push = 4 [default = true];
+}

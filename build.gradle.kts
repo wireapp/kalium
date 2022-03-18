@@ -19,6 +19,7 @@ buildscript {
         classpath("app.cash.sqldelight:gradle-plugin:$sqlDelightVersion")
         classpath("com.wire:carthage-gradle-plugin:0.0.1")
         classpath("org.jetbrains.dokka:dokka-gradle-plugin:$dokkaVersion")
+        classpath("com.google.protobuf:protobuf-gradle-plugin:0.8.18")
     }
 }
 
