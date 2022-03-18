@@ -13,6 +13,8 @@ class MessageMapperImpl(private val idMapper: IdMapper) : MessageMapper {
     override fun fromMessageToEntity(message: Message): MessageEntity {
         val stringContent = when (val content = message.content) {
             is MessageContent.Text -> content.value
+            is MessageContent.DeleteMessage -> content.messageId
+            is MessageContent.HideMessage -> content.messageId
             MessageContent.Unknown -> null
         }
         val status = when (message.status) {

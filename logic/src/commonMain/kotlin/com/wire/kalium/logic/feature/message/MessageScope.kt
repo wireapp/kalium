@@ -45,5 +45,9 @@ class MessageScope(
             syncManager,
             messageSender
         )
+
+    val deleteMessage: DeleteMessageUseCase
+        get() = DeleteMessageUseCase(messageRepository, userRepository, clientRepository, syncManager, messageSender)
+
     val getRecentMessages: GetRecentMessagesUseCase get() = GetRecentMessagesUseCase(messageRepository)
 }
