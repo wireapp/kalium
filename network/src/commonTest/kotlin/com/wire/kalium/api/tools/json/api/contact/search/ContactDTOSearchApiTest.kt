@@ -11,30 +11,6 @@ import kotlin.test.Test
 class ContactDTOSearchApiTest : ApiTest {
 
     @Test
-    fun givenRequestWithSearchQuery_whenCallingSearchContact_ThenRequestShouldReturnExpectedAssertion() =
-        runTest {
-            val httpClient = mockAuthenticatedHttpClient(
-                responseBody = "",
-                statusCode = HttpStatusCode.OK,
-                assertion = {
-                    assertGet()
-                    assertQueryExist(QUERY_KEY_SEARCH_QUERY)
-                    assertQueryDoesNotExist(QUERY_KEY_SIZE)
-                    assertQueryDoesNotExist(QUERY_KEY_DOMAIN)
-                    assertQueryParameter(QUERY_KEY_SEARCH_QUERY, hasValue = DUMMY_SEARCH_QUERY)
-                }
-            )
-
-            val contactSearchApi: ContactSearchApi = ContactSearchApiImpl(httpClient)
-            contactSearchApi.search(
-                ContactSearchRequest(
-                    searchQuery = DUMMY_SEARCH_QUERY,
-                    domain = DUMMY_DOMAIN
-                )
-            )
-        }
-
-    @Test
     fun givenRequestWithSearchQueryAndDomain_whenCallingSearchContact_ThenRequestShouldReturnExpectedAssertion() =
         runTest {
             val httpClient = mockAuthenticatedHttpClient(
