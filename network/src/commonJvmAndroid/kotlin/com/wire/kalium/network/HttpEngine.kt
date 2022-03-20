@@ -31,5 +31,19 @@ actual fun defaultHttpEngine(): HttpClientEngine {
                 }
             }
         })
+        addInterceptor(RefreshTokenWorkAround())
+    }
+}
+
+class RefreshTokenWorkAround : Interceptor {
+    override fun intercept(chain: Interceptor.Chain): Response {
+        return chain.call().request().let { request ->
+            chain.proceed(request)
+        }.let { response ->
+            when (response.code) {
+                401 -> response.newBuilder().addHeader("WWW-Authenticate", "Bearer").build()
+                else -> response
+            }
+        }
     }
 }
