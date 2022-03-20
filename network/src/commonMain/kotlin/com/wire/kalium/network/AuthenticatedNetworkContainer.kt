@@ -3,7 +3,6 @@ package com.wire.kalium.network
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.asset.AssetApi
 import com.wire.kalium.network.api.asset.AssetApiImpl
-import com.wire.kalium.network.api.auth.AccessTokenApi
 import com.wire.kalium.network.api.auth.AccessTokenApiImpl
 import com.wire.kalium.network.api.contact.search.ContactSearchApi
 import com.wire.kalium.network.api.contact.search.ContactSearchApiImpl
@@ -40,7 +39,6 @@ class AuthenticatedNetworkContainer(
     private val engine: HttpClientEngine = defaultHttpEngine(),
 //    private val onTokenUpdate: (newTokenInfo: Pair<String, String>) -> Unit // Idea to let the network handle the refresh token automatically
 ) {
-    val accessTokenApi: AccessTokenApi get() = AccessTokenApiImpl(authenticatedHttpClient)
 
     val logoutApi: LogoutApi get() = LogoutImpl(authenticatedHttpClient, sessionDTO.refreshToken)
 
@@ -71,19 +69,22 @@ class AuthenticatedNetworkContainer(
     }
 
     private fun HttpClientConfig<*>.installAuth() {
-        Auth {
+        install(Auth) {
             bearer {
+                // TODO: store the new token locally
+                var access = sessionDTO.accessToken
+                var refresh = sessionDTO.refreshToken
                 loadTokens {
                     BearerTokens(
-                        accessToken = sessionDTO.accessToken,
-                        refreshToken = sessionDTO.refreshToken
+                        accessToken = access,
+                        refreshToken = refresh
                     )
                 }
                 refreshTokens {
-                    val refreshedResponse = accessTokenApi.getToken(sessionDTO.refreshToken)
-
+                    val refreshedResponse = AccessTokenApiImpl(client).getToken(oldTokens!!.refreshToken)
                     return@refreshTokens if (refreshedResponse.isSuccessful()) {
-                        BearerTokens(refreshedResponse.value.value, TODO("Get the 🍪"))
+                        access = refreshedResponse.value.value
+                        BearerTokens(refreshedResponse.value.value, refresh)
                     } else {
                         // TODO: if the refreshToken is expired logout ?
                         null
