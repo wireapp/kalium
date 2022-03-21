@@ -21,7 +21,7 @@ interface AssetRepository {
 internal class AssetDataSource(
     private val assetApi: AssetApi,
     private val assetDao: AssetDAO,
-    private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
+    private val assetMapper: AssetMapper = MapperProvider.assetMapper()
     ) : AssetRepository {
 
     override suspend fun uploadAndPersistPublicAsset(mimeType: AssetType, assetData: ByteArray): Either<NetworkFailure, UploadedAssetId> {

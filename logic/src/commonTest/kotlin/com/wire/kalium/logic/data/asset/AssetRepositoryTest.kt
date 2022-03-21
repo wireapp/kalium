@@ -43,7 +43,7 @@ class AssetRepositoryTest {
 
     @BeforeTest
     fun setUp() {
-        assetRepository = AssetDataSource(assetApi, assetMapper, assetDAO)
+        assetRepository = AssetDataSource(assetApi, assetDAO, assetMapper)
     }
 
     @Test
