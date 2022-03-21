@@ -4,7 +4,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.network.api.user.client.SimpleClientResponse
 
 internal typealias NetworkQualifiedId = com.wire.kalium.network.api.QualifiedID
-internal typealias PersistenceQualifiedId = com.wire.kalium.persistence.dao.QualifiedID
+internal typealias PersistenceQualifiedId = com.wire.kalium.persistence.dao.QualifiedIDEntity
 
 interface IdMapper {
     fun fromApiModel(networkId: NetworkQualifiedId): QualifiedID
