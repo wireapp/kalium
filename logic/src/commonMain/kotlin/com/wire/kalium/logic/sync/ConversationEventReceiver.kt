@@ -12,6 +12,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContentMapper
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.logic.wrapCryptoRequest
@@ -22,8 +23,8 @@ class ConversationEventReceiver(
     private val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
     private val protoContentMapper: ProtoContentMapper,
-    private val memberMapper: MemberMapper,
-    private val idMapper: IdMapper
+    private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
+    private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : EventReceiver<Event.Conversation> {
     override suspend fun onEvent(event: Event.Conversation) {
         when (event) {

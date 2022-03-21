@@ -2,25 +2,24 @@ package com.wire.kalium.persistence.dao
 
 import kotlinx.coroutines.flow.Flow
 
-// TODO: add conversation / user table
-data class ConversationEntity(
-    val id: QualifiedID,
+data class Conversation(
+    val id: QualifiedIDEntity,
     val name: String?
 )
 
-data class MemberEntity(
-    val user: QualifiedID
+data class Member(
+    val user: QualifiedIDEntity
 )
 
 interface ConversationDAO {
-    suspend fun insertConversation(conversationEntity: ConversationEntity)
-    suspend fun insertConversations(conversationEntities: List<ConversationEntity>)
-    suspend fun updateConversation(conversationEntity: ConversationEntity)
-    suspend fun getAllConversations(): Flow<List<ConversationEntity>>
-    suspend fun getConversationByQualifiedID(qualifiedID: QualifiedID): Flow<ConversationEntity?>
-    suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedID)
-    suspend fun insertMember(member: MemberEntity, conversationID: QualifiedID)
-    suspend fun insertMembers(members: List<MemberEntity>, conversationID: QualifiedID)
-    suspend fun deleteMemberByQualifiedID(conversationID: QualifiedID, userID: QualifiedID)
-    suspend fun getAllMembers(qualifiedID: QualifiedID): Flow<List<MemberEntity>>
+    suspend fun insertConversation(conversation: Conversation)
+    suspend fun insertConversations(conversations: List<Conversation>)
+    suspend fun updateConversation(conversation: Conversation)
+    suspend fun getAllConversations(): Flow<List<Conversation>>
+    suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<Conversation?>
+    suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity)
+    suspend fun insertMember(member: Member, conversationID: QualifiedIDEntity)
+    suspend fun insertMembers(members: List<Member>, conversationID: QualifiedIDEntity)
+    suspend fun deleteMemberByQualifiedID(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity)
+    suspend fun getAllMembers(qualifiedID: QualifiedIDEntity): Flow<List<Member>>
 }

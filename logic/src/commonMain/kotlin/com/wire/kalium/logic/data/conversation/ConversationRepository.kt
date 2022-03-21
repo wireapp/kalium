@@ -4,6 +4,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.wrapApiRequest
@@ -11,8 +12,8 @@ import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.persistence.dao.ConversationDAO
-import com.wire.kalium.persistence.dao.MemberEntity
-import com.wire.kalium.persistence.dao.QualifiedID
+import com.wire.kalium.persistence.dao.Member
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -23,18 +24,18 @@ interface ConversationRepository {
     suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>>
     suspend fun getConversationDetails(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation>>
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
-    suspend fun persistMember(memberEntity: MemberEntity, conversationID: QualifiedID): Either<CoreFailure, Unit>
-    suspend fun persistMembers(memberEntity: List<MemberEntity>, conversationID: QualifiedID): Either<CoreFailure, Unit>
-    suspend fun deleteMember(conversationID: QualifiedID, userID: QualifiedID): Either<CoreFailure, Unit>
+    suspend fun persistMember(member: Member, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
+    suspend fun persistMembers(members: List<Member>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
+    suspend fun deleteMember(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity): Either<CoreFailure, Unit>
 }
 
 class ConversationDataSource(
     private val conversationDAO: ConversationDAO,
     private val conversationApi: ConversationApi,
     private val clientApi: ClientApi,
-    private val idMapper: IdMapper,
-    private val conversationMapper: ConversationMapper,
-    private val memberMapper: MemberMapper
+    private val idMapper: IdMapper = MapperProvider.idMapper(),
+    private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
+    private val memberMapper: MemberMapper = MapperProvider.memberMapper()
 ) : ConversationRepository {
 
     // FIXME: fetchConversations() returns only the first page
@@ -71,20 +72,17 @@ class ConversationDataSource(
         conversationDAO.getAllMembers(idMapper.toDaoModel(conversationId)).first().map { idMapper.fromDaoModel(it.user) }
     }
 
-    override suspend fun persistMember(memberEntity: MemberEntity, conversationID: QualifiedID): Either<CoreFailure, Unit> =
-        wrapStorageRequest {
-            conversationDAO.insertMember(memberEntity, conversationID)
-        }
+
+    override suspend fun persistMember(member: Member, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit> =
+        wrapStorageRequest { conversationDAO.insertMember(member, conversationID) }
+
+    override suspend fun persistMembers(members: List<Member>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit> =
+        wrapStorageRequest { conversationDAO.insertMembers(members, conversationID) }
 
 
-    override suspend fun persistMembers(memberEntity: List<MemberEntity>, conversationID: QualifiedID): Either<StorageFailure, Unit> =
-        wrapStorageRequest {
-            conversationDAO.insertMembers(memberEntity, conversationID)
-        }
+    override suspend fun deleteMember(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity): Either<CoreFailure, Unit> =
+        wrapStorageRequest { conversationDAO.deleteMemberByQualifiedID(conversationID, userID) }
 
-    override suspend fun deleteMember(conversationID: QualifiedID, userID: QualifiedID): Either<CoreFailure, Unit> = wrapStorageRequest {
-        conversationDAO.deleteMemberByQualifiedID(conversationID, userID)
-    }
 
     /**
      * Fetches a list of all recipients for a given conversation including this very client

@@ -2,7 +2,7 @@ package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.network.utils.generator.TeamGenerator
-import com.wire.kalium.persistence.dao.QualifiedID
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import io.mockative.Mock
 import io.mockative.classOf
@@ -31,7 +31,7 @@ class UserMapperTest {
         )
 
         val expectedResult = UserEntity(
-            id = QualifiedID(
+            id = QualifiedIDEntity(
                 value = "teamMember1",
                 domain = "userDomain"
             ),

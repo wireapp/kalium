@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.configuration
 
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
@@ -12,7 +13,7 @@ interface ServerConfigRemoteRepository {
 
 class ServerConfigRemoteDataSource(
     private val remoteConfigApi: ServerConfigApi,
-    private val serverConfigMapper: ServerConfigMapper
+    private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
 ) : ServerConfigRemoteRepository {
 
     override suspend fun fetchServerConfig(remoteConfigUrl: String): Either<NetworkFailure, ServerConfig> = wrapApiRequest {

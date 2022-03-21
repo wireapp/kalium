@@ -1,9 +1,5 @@
 package com.wire.kalium.logic
 
-import com.wire.kalium.logic.configuration.ServerConfigMapper
-import com.wire.kalium.logic.configuration.ServerConfigMapperImpl
-import com.wire.kalium.logic.data.session.SessionMapper
-import com.wire.kalium.logic.data.session.SessionMapperImpl
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthSession
@@ -16,9 +12,6 @@ abstract class CoreLogicCommon(
     protected val clientLabel: String,
     protected val rootProteusDirectoryPath: String
 ) {
-
-    protected val serverConfigMapper: ServerConfigMapper get() = ServerConfigMapperImpl()
-    protected val sessionMapper: SessionMapper get() = SessionMapperImpl(serverConfigMapper)
 
     val sessionRepository: SessionRepository by lazy {
         getSessionRepo()
