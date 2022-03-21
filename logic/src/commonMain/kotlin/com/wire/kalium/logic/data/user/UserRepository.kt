@@ -4,6 +4,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.wrapApiRequest
@@ -43,9 +44,9 @@ class UserDataSource(
     private val metadataDAO: MetadataDAO,
     private val selfApi: SelfApi,
     private val userApi: UserDetailsApi,
-    private val idMapper: IdMapper,
-    private val userMapper: UserMapper,
-    private val assetRepository: AssetRepository
+    private val assetRepository: AssetRepository,
+    private val idMapper: IdMapper = MapperProvider.idMapper(),
+    private val userMapper: UserMapper = MapperProvider.userMapper()
 ) : UserRepository {
 
     private suspend fun getSelfUserId(): QualifiedIDEntity {
