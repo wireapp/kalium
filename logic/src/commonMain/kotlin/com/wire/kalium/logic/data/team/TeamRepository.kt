@@ -19,9 +19,9 @@ interface TeamRepository {
 internal class TeamDataSource(
     private val userDAO: UserDAO,
     private val teamDAO: TeamDAO,
-    private val teamMapper: TeamMapper,
     private val teamsApi: TeamsApi,
-    private val userMapper: UserMapper = MapperProvider.userMapper()
+    private val userMapper: UserMapper = MapperProvider.userMapper(),
+    private val teamMapper: TeamMapper = MapperProvider.teamMapper(),
 ) : TeamRepository {
 
     override suspend fun fetchTeamById(teamId: TeamId): Either<CoreFailure, Unit> = suspending {

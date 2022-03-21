@@ -1,11 +1,13 @@
 package com.wire.kalium.logic.data.client.remote
 
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientMapper
 import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.data.client.RegisterClientParam
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
@@ -20,7 +22,8 @@ interface ClientRemoteRepository {
 
 class ClientRemoteDataSource(
     private val clientApi: ClientApi,
-    private val clientMapper: ClientMapper
+    private val clientConfig: ClientConfig,
+    private val clientMapper: ClientMapper= MapperProvider.clientMapper(clientConfig)
 ) : ClientRemoteRepository {
 
     override suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client> =

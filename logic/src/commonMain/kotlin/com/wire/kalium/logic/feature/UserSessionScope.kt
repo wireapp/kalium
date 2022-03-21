@@ -5,7 +5,6 @@ import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.asset.AssetDataSource
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.client.ClientDataSource
-import com.wire.kalium.logic.data.client.ClientMapper
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
@@ -13,24 +12,19 @@ import com.wire.kalium.logic.data.conversation.ConversationDataSource
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.EventDataSource
 import com.wire.kalium.logic.data.event.EventRepository
-import com.wire.kalium.logic.data.location.LocationMapper
 import com.wire.kalium.logic.data.logout.LogoutDataSource
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.message.MessageDataSource
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.prekey.PreKeyDataSource
-import com.wire.kalium.logic.data.prekey.PreKeyMapper
-import com.wire.kalium.logic.data.prekey.PreKeyMapperImpl
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
-import com.wire.kalium.logic.data.prekey.remote.PreKeyListMapper
 import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteDataSource
 import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteRepository
 import com.wire.kalium.logic.data.publicuser.PublicUserRepository
 import com.wire.kalium.logic.data.publicuser.PublicUserRepositoryImpl
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.team.TeamDataSource
-import com.wire.kalium.logic.data.team.TeamMapperImpl
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserRepository
@@ -66,7 +60,6 @@ abstract class UserSessionScopeCommon(
 
 
     private val database: Database = authenticatedDataSourceSet.database
-    private val teamMapper = TeamMapperImpl()
 
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(
@@ -92,10 +85,9 @@ abstract class UserSessionScopeCommon(
 
     private val teamRepository: TeamRepository
         get() = TeamDataSource(
-            userDAO = database.userDAO,
-            teamDAO = database.teamDAO,
-            teamMapper = teamMapper,
-            teamsApi = authenticatedDataSourceSet.authenticatedNetworkContainer.teamsApi
+            database.userDAO,
+            database.teamDAO,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.teamsApi
         )
 
     private val publicUserRepository: PublicUserRepository
@@ -106,14 +98,9 @@ abstract class UserSessionScopeCommon(
 
     protected abstract val clientConfig: ClientConfig
 
-    private val preyKeyMapper: PreKeyMapper get() = PreKeyMapperImpl()
-    private val preKeyListMapper: PreKeyListMapper get() = PreKeyListMapper(preyKeyMapper)
-    private val locationMapper: LocationMapper get() = LocationMapper()
-    private val clientMapper: ClientMapper get() = ClientMapper(preyKeyMapper, locationMapper, clientConfig)
-
     private val clientRemoteRepository: ClientRemoteRepository
         get() = ClientRemoteDataSource(
-            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi, clientMapper
+            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi, clientConfig
         )
 
     private val clientRegistrationStorage: ClientRegistrationStorage
@@ -138,10 +125,7 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.proteusClient, messageRepository, conversationRepository, protoContentMapper
         )
 
-    private val preKeyRemoteRepository: PreKeyRemoteRepository
-        get() = PreKeyRemoteDataSource(
-            authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi, preKeyListMapper
-        )
+    private val preKeyRemoteRepository: PreKeyRemoteRepository get() = PreKeyRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi)
     private val preKeyRepository: PreKeyRepository
         get() = PreKeyDataSource(
             preKeyRemoteRepository, authenticatedDataSourceSet.proteusClient
@@ -149,9 +133,7 @@ abstract class UserSessionScopeCommon(
 
     private val logoutRepository: LogoutRepository = LogoutDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi)
     val listenToEvents: ListenToEventsUseCase
-        get() = ListenToEventsUseCase(
-            syncManager = syncManager, eventRepository = eventRepository, conversationEventReceiver = conversationEventReceiver
-        )
+        get() = ListenToEventsUseCase(syncManager, eventRepository, conversationEventReceiver)
     val client: ClientScope get() = ClientScope(clientRepository, preKeyRepository)
     val conversations: ConversationScope get() = ConversationScope(conversationRepository, syncManager)
     val messages: MessageScope
@@ -168,5 +150,4 @@ abstract class UserSessionScopeCommon(
     val logout: LogoutUseCase get() = LogoutUseCase(logoutRepository, sessionRepository, session.userId, authenticatedDataSourceSet)
 
     val team: TeamScope get() = TeamScope(userRepository, teamRepository)
-
 }
