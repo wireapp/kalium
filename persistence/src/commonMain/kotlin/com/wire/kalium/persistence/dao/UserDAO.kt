@@ -32,4 +32,5 @@ interface UserDAO {
     suspend fun getUserByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserEntity?>
     suspend fun getUserByNameOrHandleOrEmail(searchQuery: String): Flow<List<UserEntity>>
     suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity)
+    suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String)
 }
