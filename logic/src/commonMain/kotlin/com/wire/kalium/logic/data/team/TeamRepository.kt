@@ -2,6 +2,7 @@ package com.wire.kalium.logic.data.team
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.user.UserMapper
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.wrapApiRequest
@@ -20,7 +21,7 @@ internal class TeamDataSource(
     private val teamDAO: TeamDAO,
     private val teamMapper: TeamMapper,
     private val teamsApi: TeamsApi,
-    private val userMapper: UserMapper
+    private val userMapper: UserMapper = MapperProvider.userMapper()
 ) : TeamRepository {
 
     override suspend fun fetchTeamById(teamId: TeamId): Either<CoreFailure, Unit> = suspending {

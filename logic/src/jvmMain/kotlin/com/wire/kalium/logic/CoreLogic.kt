@@ -5,6 +5,7 @@ import com.wire.kalium.cryptography.ProteusClientImpl
 import com.wire.kalium.logic.data.session.SessionDataSource
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.session.local.SessionLocalDataSource
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
@@ -25,7 +26,7 @@ actual class CoreLogic(clientLabel: String, rootProteusDirectoryPath: String) :
     override fun getSessionRepo(): SessionRepository {
         val kaliumPreferences = KaliumPreferencesSettings(EncryptedSettingsHolder(".pref").encryptedSettings)
         val sessionStorage = SessionStorageImpl(kaliumPreferences)
-        val sessionLocalRepository = SessionLocalDataSource(sessionStorage, sessionMapper)
+        val sessionLocalRepository = SessionLocalDataSource(sessionStorage)
         return SessionDataSource(sessionLocalRepository)
     }
 
@@ -36,8 +37,8 @@ actual class CoreLogic(clientLabel: String, rootProteusDirectoryPath: String) :
     override fun getSessionScope(session: AuthSession): UserSessionScope {
         val dataSourceSet = userScopeStorage[session] ?: run {
             val networkContainer = AuthenticatedNetworkContainer(
-                sessionDTO = sessionMapper.toSessionDTO(session),
-                backendConfig = serverConfigMapper.toBackendConfig(serverConfig = session.serverConfig)
+                sessionDTO = MapperProvider.sessionMapper().toSessionDTO(session),
+                backendConfig = MapperProvider.serverConfigMapper().toBackendConfig(serverConfig = session.serverConfig)
             )
 
             val proteusClient: ProteusClient = ProteusClientImpl(rootProteusDirectoryPath, session.userId)
