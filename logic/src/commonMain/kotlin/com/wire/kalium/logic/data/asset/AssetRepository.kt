@@ -4,7 +4,6 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.asset.AssetApi
@@ -26,15 +25,15 @@ internal class AssetDataSource(
 
     override suspend fun uploadAndPersistPublicAsset(mimeType: AssetType, assetData: ByteArray): Either<NetworkFailure, UploadedAssetId> {
         val uploadAssetData = UploadAssetData(assetData, mimeType, true, RetentionType.ETERNAL)
-        return doUploadAndPersistAsset(uploadAssetData)
+        return uploadAndPersistAsset(uploadAssetData)
     }
 
     override suspend fun uploadAndPersistPrivateAsset(mimeType: AssetType, assetData: ByteArray): Either<CoreFailure, UploadedAssetId> {
         val uploadAssetData = UploadAssetData(assetData, mimeType, false, RetentionType.PERSISTENT)
-        return doUploadAndPersistAsset(uploadAssetData)
+        return uploadAndPersistAsset(uploadAssetData)
     }
 
-    private suspend fun doUploadAndPersistAsset(uploadAssetData: UploadAssetData): Either<NetworkFailure, UploadedAssetId> = suspending {
+    private suspend fun uploadAndPersistAsset(uploadAssetData: UploadAssetData): Either<NetworkFailure, UploadedAssetId> = suspending {
         wrapApiRequest {
             // we should also consider for avatar images, the compression for preview vs complete picture
             assetMapper.toMetadataApiModel(uploadAssetData).let { metaData ->
