@@ -3,8 +3,8 @@ package com.wire.kalium.logic.data.publicuser
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.publicuser.model.PublicUserSearchResult
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.mapLeft
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.contact.search.ContactSearchApi
@@ -25,7 +25,7 @@ interface PublicUserRepository {
 class PublicUserRepositoryImpl(
     private val contactSearchApi: ContactSearchApi,
     private val userApi: UserDetailsApi,
-    private val publicUserMapper: PublicUserMapper,
+    private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper()
 ) : PublicUserRepository {
 
     override suspend fun searchPublicContact(
