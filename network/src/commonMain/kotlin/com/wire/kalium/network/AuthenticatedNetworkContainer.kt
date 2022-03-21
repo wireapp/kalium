@@ -37,7 +37,6 @@ class AuthenticatedNetworkContainer(
     private val backendConfig: BackendConfig,
     private val sessionDTO: SessionDTO,
     private val engine: HttpClientEngine = defaultHttpEngine(),
-//    private val onTokenUpdate: (newTokenInfo: Pair<String, String>) -> Unit // Idea to let the network handle the refresh token automatically
 ) {
 
     val logoutApi: LogoutApi get() = LogoutImpl(authenticatedHttpClient, sessionDTO.refreshToken)
@@ -60,7 +59,7 @@ class AuthenticatedNetworkContainer(
 
     val userDetailsApi: UserDetailsApi get() = UserDetailsApiImp(authenticatedHttpClient)
 
-    val contactSearchApi : ContactSearchApi get() = ContactSearchApiImpl(authenticatedHttpClient)
+    val contactSearchApi: ContactSearchApi get() = ContactSearchApiImpl(authenticatedHttpClient)
 
     internal val authenticatedHttpClient by lazy {
         provideBaseHttpClient(engine, HttpClientOptions.DefaultHost(backendConfig)) {
@@ -75,16 +74,14 @@ class AuthenticatedNetworkContainer(
                 var access = sessionDTO.accessToken
                 var refresh = sessionDTO.refreshToken
                 loadTokens {
-                    BearerTokens(
-                        accessToken = access,
-                        refreshToken = refresh
-                    )
+                    BearerTokens(accessToken = access, refreshToken = refresh)
                 }
                 refreshTokens {
                     val refreshedResponse = AccessTokenApiImpl(client).getToken(oldTokens!!.refreshToken)
                     return@refreshTokens if (refreshedResponse.isSuccessful()) {
-                        access = refreshedResponse.value.value
-                        BearerTokens(refreshedResponse.value.value, refresh)
+                        refreshedResponse.value.first.let { access = it.value }
+                        refreshedResponse.value.second?.let { refresh = it.value }
+                        BearerTokens(access, refresh)
                     } else {
                         // TODO: if the refreshToken is expired logout ?
                         null
