@@ -1,9 +1,7 @@
 package com.wire.kalium.network
 
-import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.asset.AssetApi
 import com.wire.kalium.network.api.asset.AssetApiImpl
-import com.wire.kalium.network.api.auth.AccessTokenApiImpl
 import com.wire.kalium.network.api.contact.search.ContactSearchApi
 import com.wire.kalium.network.api.contact.search.ContactSearchApiImpl
 import com.wire.kalium.network.api.conversation.ConversationApi
@@ -25,21 +23,18 @@ import com.wire.kalium.network.api.user.logout.LogoutApi
 import com.wire.kalium.network.api.user.logout.LogoutImpl
 import com.wire.kalium.network.api.user.self.SelfApi
 import com.wire.kalium.network.api.user.self.SelfApiImpl
+import com.wire.kalium.network.session.UserSessionManager
+import com.wire.kalium.network.session.installAuth
 import com.wire.kalium.network.tools.BackendConfig
-import com.wire.kalium.network.utils.isSuccessful
-import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.HttpClientEngine
-import io.ktor.client.plugins.auth.Auth
-import io.ktor.client.plugins.auth.providers.BearerTokens
-import io.ktor.client.plugins.auth.providers.bearer
 
 class AuthenticatedNetworkContainer(
-    private val backendConfig: BackendConfig,
-    private val sessionDTO: SessionDTO,
+    private val userSessionManager: UserSessionManager,
     private val engine: HttpClientEngine = defaultHttpEngine(),
 ) {
+    private val backendConfig: BackendConfig = userSessionManager.userConfig().second
 
-    val logoutApi: LogoutApi get() = LogoutImpl(authenticatedHttpClient, sessionDTO.refreshToken)
+    val logoutApi: LogoutApi get() = LogoutImpl(authenticatedHttpClient, userSessionManager)
 
     val clientApi: ClientApi get() = ClientApiImpl(authenticatedHttpClient)
 
@@ -63,31 +58,7 @@ class AuthenticatedNetworkContainer(
 
     internal val authenticatedHttpClient by lazy {
         provideBaseHttpClient(engine, HttpClientOptions.DefaultHost(backendConfig)) {
-            installAuth()
-        }
-    }
-
-    private fun HttpClientConfig<*>.installAuth() {
-        install(Auth) {
-            bearer {
-                // TODO: store the new token locally
-                var access = sessionDTO.accessToken
-                var refresh = sessionDTO.refreshToken
-                loadTokens {
-                    BearerTokens(accessToken = access, refreshToken = refresh)
-                }
-                refreshTokens {
-                    val refreshedResponse = AccessTokenApiImpl(client).getToken(oldTokens!!.refreshToken)
-                    return@refreshTokens if (refreshedResponse.isSuccessful()) {
-                        refreshedResponse.value.first.let { access = it.value }
-                        refreshedResponse.value.second?.let { refresh = it.value }
-                        BearerTokens(access, refresh)
-                    } else {
-                        // TODO: if the refreshToken is expired logout ?
-                        null
-                    }
-                }
-            }
+            installAuth(userSessionManager)
         }
     }
 }
