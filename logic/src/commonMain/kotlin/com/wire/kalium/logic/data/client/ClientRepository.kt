@@ -34,10 +34,8 @@ class ClientDataSource(
         return clientRemoteRepository.registerClient(param)
     }
 
-    override suspend fun persistClientId(clientId: ClientId): Either<CoreFailure, Unit> {
-        clientRegistrationStorage.registeredClientId = clientId.value
-        return Either.Right(Unit)
-    }
+    override suspend fun persistClientId(clientId: ClientId): Either<CoreFailure, Unit> =
+        wrapStorageRequest { clientRegistrationStorage.registeredClientId = clientId.value }
 
     override suspend fun currentClientId(): Either<CoreFailure, ClientId> {
         return clientRegistrationStorage.registeredClientId?.let { clientId ->
@@ -59,9 +57,9 @@ class ClientDataSource(
     }
 
     override suspend fun saveNewClients(userId: UserId, clients: List<ClientId>): Either<CoreFailure, Unit> =
-        wrapStorageRequest {
-            val mappedUserId = userMapper.toUserIdPersistence(userId)
-            val mappedClients = clients.map { ClientEntity(mappedUserId, it.value) }
-            clientDAO.insertClients(mappedClients)
+        userMapper.toUserIdPersistence(userId).let { userEntity ->
+            clients.map { ClientEntity(userEntity, it.value) }.let { clientEntityList ->
+                wrapStorageRequest { clientDAO.insertClients(clientEntityList) }
+            }
         }
 }

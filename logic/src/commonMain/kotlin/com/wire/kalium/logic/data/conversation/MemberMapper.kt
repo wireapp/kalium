@@ -5,7 +5,7 @@ import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.conversation.ConversationMember
 import com.wire.kalium.network.api.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.user.client.SimpleClientResponse
-import com.wire.kalium.persistence.dao.MemberEntity as PersistedMember
+import com.wire.kalium.persistence.dao.Member as PersistedMember
 
 interface MemberMapper {
     fun fromApiModel(conversationMembersResponse: ConversationMembersResponse): MembersInfo
