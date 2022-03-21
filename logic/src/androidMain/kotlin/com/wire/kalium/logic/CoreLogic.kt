@@ -26,7 +26,7 @@ import kotlinx.coroutines.runBlocking
 actual class CoreLogic(
     private val appContext: Context,
     clientLabel: String,
-    rootProteusDirectoryPath: String
+    rootProteusDirectoryPath: String,
 ) : CoreLogicCommon(clientLabel, rootProteusDirectoryPath) {
 
     override fun getSessionRepo(): SessionRepository {
@@ -41,7 +41,7 @@ actual class CoreLogic(
 
     override fun getSessionScope(session: AuthSession): UserSessionScope {
         val dataSourceSet = userScopeStorage[session] ?: run {
-            val networkContainer = AuthenticatedNetworkContainer(UserSessionManagerImpl(sessionRepository, session.userId))
+            val networkContainer = AuthenticatedNetworkContainer(UserSessionManagerImpl(sessionRepository, session.userId, sessionMapper))
             val proteusClient: ProteusClient = ProteusClientImpl(rootProteusDirectoryPath, session.userId)
             runBlocking { proteusClient.open() }
 
@@ -49,6 +49,7 @@ actual class CoreLogic(
             val syncManager = SyncManagerImpl(workScheduler)
             val encryptedSettingsHolder = EncryptedSettingsHolder(appContext, "${PREFERENCE_FILE_PREFIX}-${session.userId}")
             val userPreferencesSettings = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
+            // FIXME: should the DB name be uniq per user ?
             val database = Database(appContext, "main.db", userPreferencesSettings)
             AuthenticatedDataSourceSet(
                 networkContainer,
