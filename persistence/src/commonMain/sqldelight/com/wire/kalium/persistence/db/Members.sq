@@ -1,8 +1,8 @@
-import com.wire.kalium.persistence.dao.QualifiedID;
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 
 CREATE TABLE Member (
-    user TEXT AS QualifiedID NOT NULL,
-    conversation TEXT AS QualifiedID NOT NULL,
+    user TEXT AS QualifiedIDEntity NOT NULL,
+    conversation TEXT AS QualifiedIDEntity NOT NULL,
     FOREIGN KEY (user) REFERENCES User(qualified_id),
     FOREIGN KEY (conversation) REFERENCES Conversation(qualified_id)
 );
