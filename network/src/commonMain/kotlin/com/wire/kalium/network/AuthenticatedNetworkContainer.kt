@@ -3,8 +3,10 @@ package com.wire.kalium.network
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.asset.AssetApi
 import com.wire.kalium.network.api.asset.AssetApiImpl
-import com.wire.kalium.network.api.auth.AuthApi
-import com.wire.kalium.network.api.auth.AuthApiImp
+import com.wire.kalium.network.api.auth.AccessTokenApi
+import com.wire.kalium.network.api.auth.AccessTokenApiImpl
+import com.wire.kalium.network.api.contact.search.ContactSearchApi
+import com.wire.kalium.network.api.contact.search.ContactSearchApiImpl
 import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.conversation.ConversationApiImp
 import com.wire.kalium.network.api.message.MessageApi
@@ -23,6 +25,7 @@ import com.wire.kalium.network.api.user.details.UserDetailsApiImp
 import com.wire.kalium.network.api.user.logout.LogoutApi
 import com.wire.kalium.network.api.user.logout.LogoutImpl
 import com.wire.kalium.network.api.user.self.SelfApi
+import com.wire.kalium.network.api.user.self.SelfApiImpl
 import com.wire.kalium.network.tools.BackendConfig
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.client.HttpClientConfig
@@ -37,7 +40,7 @@ class AuthenticatedNetworkContainer(
     private val engine: HttpClientEngine = defaultHttpEngine(),
 //    private val onTokenUpdate: (newTokenInfo: Pair<String, String>) -> Unit // Idea to let the network handle the refresh token automatically
 ) {
-    private val authApi: AuthApi get() = AuthApiImp(authenticatedHttpClient)
+    val accessTokenApi: AccessTokenApi get() = AccessTokenApiImpl(authenticatedHttpClient)
 
     val logoutApi: LogoutApi get() = LogoutImpl(authenticatedHttpClient, sessionDTO.refreshToken)
 
@@ -55,9 +58,11 @@ class AuthenticatedNetworkContainer(
 
     val teamsApi: TeamsApi get() = TeamsApiImp(authenticatedHttpClient)
 
-    val selfApi: SelfApi get() = SelfApi(authenticatedHttpClient)
+    val selfApi: SelfApi get() = SelfApiImpl(authenticatedHttpClient)
 
     val userDetailsApi: UserDetailsApi get() = UserDetailsApiImp(authenticatedHttpClient)
+
+    val contactSearchApi : ContactSearchApi get() = ContactSearchApiImpl(authenticatedHttpClient)
 
     internal val authenticatedHttpClient by lazy {
         provideBaseHttpClient(engine, HttpClientOptions.DefaultHost(backendConfig)) {
@@ -75,10 +80,10 @@ class AuthenticatedNetworkContainer(
                     )
                 }
                 refreshTokens {
-                    val refreshedResponse = authApi.renewAccessToken(sessionDTO.refreshToken)
+                    val refreshedResponse = accessTokenApi.getToken(sessionDTO.refreshToken)
 
                     return@refreshTokens if (refreshedResponse.isSuccessful()) {
-                        BearerTokens(refreshedResponse.value.accessToken, TODO("Get the 🍪"))
+                        BearerTokens(refreshedResponse.value.value, TODO("Get the 🍪"))
                     } else {
                         // TODO: if the refreshToken is expired logout ?
                         null

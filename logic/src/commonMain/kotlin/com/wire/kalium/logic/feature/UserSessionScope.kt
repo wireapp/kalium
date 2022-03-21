@@ -23,6 +23,8 @@ import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.location.LocationMapper
+import com.wire.kalium.logic.data.logout.LogoutDataSource
+import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.message.MessageDataSource
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessageMapperImpl
@@ -37,16 +39,23 @@ import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.prekey.remote.PreKeyListMapper
 import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteDataSource
 import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteRepository
+import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.team.TeamDataSource
 import com.wire.kalium.logic.data.team.TeamMapperImpl
 import com.wire.kalium.logic.data.team.TeamRepository
+import com.wire.kalium.logic.data.publicuser.PublicUserMapper
+import com.wire.kalium.logic.data.publicuser.PublicUserMapperImpl
+import com.wire.kalium.logic.data.publicuser.PublicUserRepository
+import com.wire.kalium.logic.data.publicuser.PublicUserRepositoryImpl
 import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserMapperImpl
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.auth.AuthSession
+import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.message.MessageScope
+import com.wire.kalium.logic.feature.team.TeamScope
 import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.sync.ConversationEventReceiver
 import com.wire.kalium.logic.sync.ListenToEventsUseCase
@@ -62,7 +71,8 @@ expect class UserSessionScope : UserSessionScopeCommon
 
 abstract class UserSessionScopeCommon(
     private val session: AuthSession,
-    private val authenticatedDataSourceSet: AuthenticatedDataSourceSet
+    private val authenticatedDataSourceSet: AuthenticatedDataSourceSet,
+    private val sessionRepository: SessionRepository
 ) {
 
     private val encryptedSettingsHolder: EncryptedSettingsHolder = authenticatedDataSourceSet.encryptedSettingsHolder
@@ -74,6 +84,7 @@ abstract class UserSessionScopeCommon(
     private val memberMapper: MemberMapper get() = MemberMapperImpl(idMapper)
     private val conversationMapper: ConversationMapper get() = ConversationMapperImpl(idMapper, memberMapper)
     private val userMapper = UserMapperImpl(idMapper)
+    private val publicUserMapper: PublicUserMapper = PublicUserMapperImpl()
     private val database: Database = authenticatedDataSourceSet.database
     private val teamMapper = TeamMapperImpl()
 
@@ -97,13 +108,6 @@ abstract class UserSessionScopeCommon(
             sendMessageFailureMapper
         )
 
-    private val teamRepository: TeamRepository
-        get() = TeamDataSource(
-            teamDAO = database.teamDAO,
-            teamMapper = teamMapper,
-            teamsApi = authenticatedDataSourceSet.authenticatedNetworkContainer.teamsApi
-        )
-
     private val userRepository: UserRepository
         get() = UserDataSource(
             database.userDAO,
@@ -112,8 +116,23 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
             idMapper,
             userMapper,
-            assetRepository,
-            teamRepository
+            assetRepository
+        )
+
+    private val teamRepository: TeamRepository
+        get() = TeamDataSource(
+            userDAO = database.userDAO,
+            teamDAO = database.teamDAO,
+            teamMapper = teamMapper,
+            teamsApi = authenticatedDataSourceSet.authenticatedNetworkContainer.teamsApi,
+            userMapper = userMapper
+        )
+
+    private val publicUserRepository: PublicUserRepository
+        get() = PublicUserRepositoryImpl(
+            authenticatedDataSourceSet.authenticatedNetworkContainer.contactSearchApi,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
+            publicUserMapper
         )
 
     protected abstract val clientConfig: ClientConfig
@@ -171,11 +190,14 @@ abstract class UserSessionScopeCommon(
             preKeyRemoteRepository,
             authenticatedDataSourceSet.proteusClient
         )
-    val listenToEvents: ListenToEventsUseCase get() = ListenToEventsUseCase(
-        syncManager = syncManager,
-        eventRepository = eventRepository,
-        conversationEventReceiver = conversationEventReceiver
-    )
+
+    private val logoutRepository: LogoutRepository = LogoutDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi)
+    val listenToEvents: ListenToEventsUseCase
+        get() = ListenToEventsUseCase(
+            syncManager = syncManager,
+            eventRepository = eventRepository,
+            conversationEventReceiver = conversationEventReceiver
+        )
     val client: ClientScope get() = ClientScope(clientRepository, preKeyRepository)
     val conversations: ConversationScope get() = ConversationScope(conversationRepository, syncManager)
     val messages: MessageScope
@@ -188,9 +210,17 @@ abstract class UserSessionScopeCommon(
             userRepository,
             syncManager
         )
-    val users: UserScope get() = UserScope(
+    val users: UserScope
+        get() = UserScope(
+            userRepository = userRepository,
+            publicUserRepository, syncManager = syncManager,
+            assetRepository = assetRepository
+        )
+    val logout: LogoutUseCase get() = LogoutUseCase(logoutRepository, sessionRepository, session.userId, authenticatedDataSourceSet)
+
+    val team: TeamScope get() = TeamScope(
         userRepository = userRepository,
-        syncManager = syncManager,
-        assetRepository = assetRepository
+        teamRepository = teamRepository
     )
+
 }

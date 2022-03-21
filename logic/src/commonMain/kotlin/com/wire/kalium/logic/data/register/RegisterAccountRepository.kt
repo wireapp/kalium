@@ -1,25 +1,28 @@
 package com.wire.kalium.logic.data.register
 
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.configuration.ServerConfig
+import com.wire.kalium.logic.data.session.SessionMapper
+import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.UserMapper
+import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.user.register.RegisterApi
-import com.wire.kalium.network.api.user.register.RegisterResponse
 
 interface RegisterAccountRepository {
     suspend fun requestEmailActivationCode(email: String, baseApiHost: String): Either<NetworkFailure, Unit>
     suspend fun verifyActivationCode(email: String, code: String, baseApiHost: String): Either<NetworkFailure, Unit>
     suspend fun registerWithEmail(
-        email: String,
-        code: String,
-        name: String,
-        password: String,
-        baseApiHost: String
-    ): Either<NetworkFailure, RegisterResponse>
+        email: String, code: String, name: String, password: String, serverConfig: ServerConfig
+    ): Either<NetworkFailure, Pair<SelfUser, AuthSession>>
 }
 
 class RegisterAccountDataSource(
-    private val registerApi: RegisterApi
+    private val registerApi: RegisterApi,
+    private val userMapper: UserMapper,
+    private val sessionMapper: SessionMapper
 ) : RegisterAccountRepository {
     override suspend fun requestEmailActivationCode(email: String, baseApiHost: String): Either<NetworkFailure, Unit> =
         requestActivation(RegisterApi.RequestActivationCodeParam.Email(email), baseApiHost)
@@ -28,24 +31,22 @@ class RegisterAccountDataSource(
         activateUser(RegisterApi.ActivationParam.Email(email, code), baseApiHost)
 
     override suspend fun registerWithEmail(
-        email: String,
-        code: String,
-        name: String,
-        password: String,
-        baseApiHost: String
-    ): Either<NetworkFailure, RegisterResponse> =
-        register(RegisterApi.RegisterParam.PersonalAccount(email, code, name, password), baseApiHost)
+        email: String, code: String, name: String, password: String, serverConfig: ServerConfig
+    ): Either<NetworkFailure, Pair<SelfUser, AuthSession>> =
+        register(RegisterApi.RegisterParam.PersonalAccount(email, code, name, password), serverConfig)
 
 
     private suspend fun requestActivation(
-        param: RegisterApi.RequestActivationCodeParam,
-        baseApiHost: String
-    ): Either<NetworkFailure, Unit> =
-        wrapApiRequest { registerApi.requestActivationCode(param, baseApiHost) }
+        param: RegisterApi.RequestActivationCodeParam, baseApiHost: String
+    ): Either<NetworkFailure, Unit> = wrapApiRequest { registerApi.requestActivationCode(param, baseApiHost) }
 
-    private suspend fun activateUser(param: RegisterApi.ActivationParam, baseApiHost: String) =
+    private suspend fun activateUser(param: RegisterApi.ActivationParam, baseApiHost: String): Either<NetworkFailure, Unit> =
         wrapApiRequest { registerApi.activate(param, baseApiHost) }
 
-    private suspend fun register(param: RegisterApi.RegisterParam, baseApiHost: String) =
-        wrapApiRequest { registerApi.register(param, baseApiHost) }
+    private suspend fun register(param: RegisterApi.RegisterParam, serverConfig: ServerConfig) =
+        wrapApiRequest { registerApi.register(param, serverConfig.apiBaseUrl) }.map {
+            Pair(
+                userMapper.fromDtoToSelfUser(it.first), sessionMapper.fromSessionDTO(it.second, serverConfig)
+            )
+        }
 }

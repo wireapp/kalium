@@ -34,7 +34,7 @@ class LoginApiTest : ApiTest {
             },
             headers = mapOf("set-cookie" to "zuid=$refreshToken")
         )
-        val expected = with(VALID_LOGIN_RESPONSE.serializableData) { SessionDTO(userIdValue = userId, accessToken = accessToken, tokenType = tokenType, refreshToken = refreshToken) }
+        val expected = with(VALID_LOGIN_RESPONSE.serializableData) { SessionDTO(userIdValue = userId, accessToken = value, tokenType = tokenType, refreshToken = refreshToken) }
         val loginApi: LoginApi = LoginApiImpl(httpClient)
 
         val response = loginApi.login(LOGIN_WITH_EMAIL_REQUEST.serializableData, false, TEST_HOST)
@@ -58,7 +58,7 @@ class LoginApiTest : ApiTest {
 
     private companion object {
         val LOGIN_WITH_EMAIL_REQUEST = LoginWithEmailRequestJson.validLoginWithEmail
-        val VALID_LOGIN_RESPONSE = LoginResponseJson.valid
+        val VALID_LOGIN_RESPONSE = AccessTokenDTOJson.valid
         val ERROR_RESPONSE = ErrorResponseJson.valid.serializableData
         const val QUERY_PERSIST = "persist"
         const val PATH_LOGIN = "/login"

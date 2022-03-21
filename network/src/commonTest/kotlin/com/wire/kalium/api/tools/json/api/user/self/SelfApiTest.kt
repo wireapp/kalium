@@ -1,8 +1,9 @@
 package com.wire.kalium.api.tools.json.api.user.self
 
 import com.wire.kalium.api.ApiTest
+import com.wire.kalium.api.tools.json.api.user.register.UserDTOJson
 import com.wire.kalium.api.tools.json.model.ErrorResponseJson
-import com.wire.kalium.network.api.user.self.SelfApi
+import com.wire.kalium.network.api.user.self.SelfApiImpl
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
@@ -27,7 +28,7 @@ class SelfApiTest : ApiTest {
                     assertPathEqual(PATH_SELF)
                 }
             )
-            val selfApi = SelfApi(httpClient)
+            val selfApi = SelfApiImpl(httpClient)
             val response = selfApi.getSelfInfo()
             assertTrue(response.isSuccessful())
             assertEquals(response.value, VALID_SELF_RESPONSE.serializableData)
@@ -39,7 +40,7 @@ class SelfApiTest : ApiTest {
             ErrorResponseJson.valid.rawJson,
             statusCode = HttpStatusCode.BadRequest
         )
-        val selfApi = SelfApi(httpClient)
+        val selfApi = SelfApiImpl(httpClient)
         val response = selfApi.getSelfInfo()
         assertFalse(response.isSuccessful())
         assertTrue(response.kException is KaliumException.InvalidRequestError)
@@ -48,7 +49,7 @@ class SelfApiTest : ApiTest {
 
     private companion object {
         const val PATH_SELF = "/self"
-        val VALID_SELF_RESPONSE = SelfUserInfoResponseJson.valid
+        val VALID_SELF_RESPONSE = UserDTOJson.valid
         val ERROR_RESPONSE = ErrorResponseJson.valid.serializableData
     }
 }

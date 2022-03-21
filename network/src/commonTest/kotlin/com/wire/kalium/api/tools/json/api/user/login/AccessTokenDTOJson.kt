@@ -2,23 +2,23 @@ package com.wire.kalium.api.tools.json.api.user.login
 
 import com.wire.kalium.api.tools.json.FaultyJsonProvider
 import com.wire.kalium.api.tools.json.ValidJsonProvider
-import com.wire.kalium.network.api.user.login.LoginApiImpl
+import com.wire.kalium.network.api.model.AccessTokenDTO
 
-object LoginResponseJson {
-    private val jsonProvider = { serializable: LoginApiImpl.LoginResponse ->
+object AccessTokenDTOJson {
+    private val jsonProvider = { serializable: AccessTokenDTO ->
         """
         |{
         |  "expires_in": ${serializable.expiresIn},
-        |  "access_token": "${serializable.accessToken}",
+        |  "access_token": "${serializable.value}",
         |  "user": "${serializable.userId}",
         |  "token_type": "${serializable.tokenType}"
         |}
         """.trimMargin()
     }
     val valid = ValidJsonProvider(
-        LoginApiImpl.LoginResponse(
+        AccessTokenDTO(
             userId = "user_id",
-            accessToken = "Nlrhltkj-NgJUjEVevHz8Ilgy_pyWCT2b0kQb-GlnamyswanghN9DcC3an5RUuA7sh1_nC3hv2ZzMRlIhPM7Ag==.v=1.k=1.d=1637254939." +
+            value = "Nlrhltkj-NgJUjEVevHz8Ilgy_pyWCT2b0kQb-GlnamyswanghN9DcC3an5RUuA7sh1_nC3hv2ZzMRlIhPM7Ag==.v=1.k=1.d=1637254939." +
                     "t=a.l=.u=75ebeb16-a860-4be4-84a7-157654b492cf.c=18401233206926541098",
             expiresIn = 900,
             tokenType = "Bearer"
