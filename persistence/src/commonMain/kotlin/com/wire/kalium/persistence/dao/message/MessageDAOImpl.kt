@@ -3,7 +3,7 @@ package com.wire.kalium.persistence.dao.message
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
-import com.wire.kalium.persistence.dao.QualifiedID
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.db.MessagesQueries
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -26,7 +26,7 @@ class MessageMapper {
 class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
     private val mapper = MessageMapper()
 
-    override suspend fun deleteMessage(id: String, conversationsId: QualifiedID) = queries.deleteMessage(id, conversationsId)
+    override suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity) = queries.deleteMessage(id, conversationsId)
 
     override suspend fun deleteAllMessages() = queries.deleteAllMessages()
 
@@ -73,13 +73,13 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             .mapToList()
             .map { entryList -> entryList.map(mapper::toModel) }
 
-    override suspend fun getMessageById(id: String, conversationId: QualifiedID): Flow<MessageEntity?> =
+    override suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?> =
         queries.selectById(id, conversationId)
             .asFlow()
             .mapToOneOrNull()
             .map { msg -> msg?.let(mapper::toModel) }
 
-    override suspend fun getMessageByConversation(conversationId: QualifiedID, limit: Int): Flow<List<MessageEntity>> =
+    override suspend fun getMessageByConversation(conversationId: QualifiedIDEntity, limit: Int): Flow<List<MessageEntity>> =
         queries.selectByConversationId(conversationId, limit.toLong())
             .asFlow()
             .mapToList()

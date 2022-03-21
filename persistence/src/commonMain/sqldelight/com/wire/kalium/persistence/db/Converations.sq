@@ -1,8 +1,8 @@
-import com.wire.kalium.persistence.dao.QualifiedID;
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.ConversationEntity;
 
 CREATE TABLE Conversation (
-    qualified_id TEXT AS QualifiedID NOT NULL PRIMARY KEY,
+    qualified_id TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY,
     name TEXT,
     type TEXT AS ConversationEntity.Type NOT NULL,
     team_id TEXT

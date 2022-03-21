@@ -11,9 +11,9 @@ import com.wire.kalium.network.api.model.getPreviewAssetOrNull
 import com.wire.kalium.network.api.teams.TeamsApi
 import com.wire.kalium.network.api.user.details.UserDetailsResponse
 import com.wire.kalium.network.api.user.self.UserUpdateRequest
-import com.wire.kalium.persistence.dao.QualifiedID
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserEntity
-import com.wire.kalium.persistence.dao.UserId as UserIdEntity
+import com.wire.kalium.persistence.dao.UserIDEntity as UserIdEntity
 
 interface UserMapper {
     fun fromDtoToSelfUser(userDTO: UserDTO): SelfUser
@@ -133,7 +133,7 @@ internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
         userDomain: String
     ): UserEntity =
         UserEntity(
-            id = QualifiedID(
+            id = QualifiedIDEntity(
                 value = teamMember.nonQualifiedUserId,
                 domain = userDomain
             ),

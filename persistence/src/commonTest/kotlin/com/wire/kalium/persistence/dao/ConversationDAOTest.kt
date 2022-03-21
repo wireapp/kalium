@@ -96,11 +96,11 @@ class ConversationDAOTest : BaseDatabaseTest() {
         const val teamId = "teamId"
 
         val conversationEntity1 = ConversationEntity(
-            QualifiedID("1", "wire.com"), "conversation1",
+            QualifiedIDEntity("1", "wire.com"), "conversation1",
             ConversationEntity.Type.ONE_ON_ONE, teamId
         )
         val conversationEntity2 = ConversationEntity(
-            QualifiedID("2", "wire.com"), "conversation2",
+            QualifiedIDEntity("2", "wire.com"), "conversation2",
             ConversationEntity.Type.ONE_ON_ONE, null
         )
 
