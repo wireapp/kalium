@@ -13,7 +13,7 @@ import io.ktor.client.plugins.auth.providers.bearer
 
 interface UserSessionManager {
     fun userConfig(): Pair<SessionDTO, BackendConfig>
-    fun updateSession(accessToken: AccessTokenDTO, refreshTokenDTO: RefreshTokenDTO?): SessionDTO
+    fun updateSession(newAccessToken: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO
 }
 
 
@@ -35,7 +35,7 @@ fun HttpClientConfig<*>.installAuth(userSessionManager: UserSessionManager) {
                         userSessionManager.updateSession(response.value.first, response.value.second)
                         BearerTokens(access, refresh)
                     }
-                    is NetworkResponse.Error -> TODO()
+                    is NetworkResponse.Error -> TODO() // crash the app when the cookie expire
                 }
 
             }
