@@ -9,6 +9,7 @@ import com.wire.kalium.network.api.conversation.ConversationOtherMembersResponse
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.ConversationSelfMemberResponse
 import com.wire.kalium.persistence.dao.ConversationEntity
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -19,7 +20,6 @@ import io.mockative.verify
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import com.wire.kalium.persistence.dao.QualifiedID as QualifiedIDEntity
 
 class ConversationMapperTest {
 
