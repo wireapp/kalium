@@ -5,11 +5,10 @@ import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.ProteusClientImpl
 import com.wire.kalium.logic.data.session.SessionDataSource
 import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.data.session.local.SessionLocalDataSource
-import com.wire.kalium.logic.data.session.local.SessionLocalRepository
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
+import com.wire.kalium.logic.network.UserSessionManagerImpl
 import com.wire.kalium.logic.sync.SyncManagerImpl
 import com.wire.kalium.logic.sync.WorkScheduler
 import com.wire.kalium.network.AuthenticatedNetworkContainer
@@ -34,8 +33,7 @@ actual class CoreLogic(
         val sessionPreferences =
             KaliumPreferencesSettings(EncryptedSettingsHolder(appContext, SHARED_PREFERENCE_FILE_NAME).encryptedSettings)
         val sessionStorage: SessionStorage = SessionStorageImpl(sessionPreferences)
-        val sessionLocalRepository: SessionLocalRepository = SessionLocalDataSource(sessionStorage, sessionMapper)
-        return SessionDataSource(sessionLocalRepository)
+        return SessionDataSource(sessionStorage, sessionMapper)
     }
 
     override fun getAuthenticationScope(): AuthenticationScope =
@@ -43,11 +41,7 @@ actual class CoreLogic(
 
     override fun getSessionScope(session: AuthSession): UserSessionScope {
         val dataSourceSet = userScopeStorage[session] ?: run {
-            val networkContainer = AuthenticatedNetworkContainer(
-                sessionDTO = sessionMapper.toSessionDTO(session),
-                backendConfig = serverConfigMapper.toBackendConfig(serverConfig = session.serverConfig)
-            )
-
+            val networkContainer = AuthenticatedNetworkContainer(UserSessionManagerImpl(sessionRepository, session.userId))
             val proteusClient: ProteusClient = ProteusClientImpl(rootProteusDirectoryPath, session.userId)
             runBlocking { proteusClient.open() }
 

@@ -11,9 +11,9 @@ import io.ktor.client.plugins.auth.Auth
 import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.auth.providers.bearer
 
-abstract class UserSessionManager(protected val userId: String) {
-    abstract fun userConfig(): Pair<SessionDTO, BackendConfig>
-    abstract fun updateSession(accessToken: AccessTokenDTO, refreshTokenDTO: RefreshTokenDTO?): SessionDTO
+interface UserSessionManager {
+    fun userConfig(): Pair<SessionDTO, BackendConfig>
+    fun updateSession(accessToken: AccessTokenDTO, refreshTokenDTO: RefreshTokenDTO?): SessionDTO
 }
 
 
