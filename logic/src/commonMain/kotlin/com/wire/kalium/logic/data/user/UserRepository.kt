@@ -24,7 +24,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import com.wire.kalium.persistence.dao.QualifiedID as QualifiedIDEntity
+import com.wire.kalium.persistence.dao.QualifiedIDEntity as QualifiedIDEntity
 
 // FIXME: missing unit test
 interface UserRepository {
