@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.suspending
@@ -31,9 +32,9 @@ class ConversationDataSource(
     private val conversationDAO: ConversationDAO,
     private val conversationApi: ConversationApi,
     private val clientApi: ClientApi,
-    private val idMapper: IdMapper,
-    private val conversationMapper: ConversationMapper,
-    private val memberMapper: MemberMapper
+    private val idMapper: IdMapper = MapperProvider.idMapper(),
+    private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
+    private val memberMapper: MemberMapper = MapperProvider.memberMapper()
 ) : ConversationRepository {
 
     // TODO: this need a review after the new wrapApiRequest
