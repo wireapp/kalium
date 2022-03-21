@@ -4,8 +4,8 @@ import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.db.MetadataQueries
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.mapNotNull
 
+// TODO: suggestion implement with preference
 class MetadataDAOImpl(private val metadataQueries: MetadataQueries): MetadataDAO {
 
     override suspend fun insertValue(value: String, key: String) {
