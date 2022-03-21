@@ -5,6 +5,8 @@ import com.wire.kalium.logic.data.publicuser.PublicUserRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.asset.GetPublicAssetUseCase
 import com.wire.kalium.logic.feature.asset.GetPublicAssetUseCaseImpl
+import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
+import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 
 class UserScope(
