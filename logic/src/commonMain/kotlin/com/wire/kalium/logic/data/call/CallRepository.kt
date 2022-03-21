@@ -17,8 +17,6 @@ internal class CallDataSource(
     override suspend fun getCallConfigResponse(limit: Int?): Either<CoreFailure, String> = suspending {
         wrapApiRequest {
             callApi.getCallConfig(limit = limit)
-        }.flatMap {
-            Either.Right(it)
         }
     }
 }
