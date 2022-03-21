@@ -1,8 +1,8 @@
 package com.wire.kalium.persistence.client
 
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
-import com.wire.kalium.persistence.model.PreferencesResult
 import com.wire.kalium.persistence.model.PersistenceSession
+import com.wire.kalium.persistence.model.PreferencesResult
 import kotlinx.serialization.Serializable
 import kotlin.jvm.JvmInline
 
@@ -20,7 +20,7 @@ interface SessionStorage {
     /**
      * returns the current active user session
      */
-     fun currentSession(): PersistenceSession?
+    fun currentSession(): PersistenceSession?
 
     /**
      * changes the current active user session
@@ -31,6 +31,11 @@ interface SessionStorage {
      * return all stored session as a userId to session map
      */
     fun allSessions(): PreferencesResult<Map<String, PersistenceSession>>
+
+    /**
+     * return stored session associated with a userId
+     */
+    fun userSession(userId: String): PreferencesResult<PersistenceSession>
 
     /**
      * returns true if there is any session saved and false otherwise
@@ -76,7 +81,7 @@ class SessionStorageImpl(
         }
     }
 
-    override  fun currentSession(): PersistenceSession? =
+    override fun currentSession(): PersistenceSession? =
         kaliumPreferences.getString(CURRENT_SESSION_KEY)?.let { userId ->
             when (val result = allSessions()) {
                 is PreferencesResult.Success -> result.data[userId]
@@ -96,6 +101,17 @@ class SessionStorageImpl(
                 PreferencesResult.Success(it.s)
             }
         } ?: run { PreferencesResult.DataNotFound }
+    }
+
+    override fun userSession(userId: String): PreferencesResult<PersistenceSession> = with(allSessions()) {
+        when(this) {
+            is PreferencesResult.Success -> this.data[userId]?.let {
+                PreferencesResult.Success(it)
+            } ?: run {
+                PreferencesResult.DataNotFound
+            }
+            PreferencesResult.DataNotFound -> PreferencesResult.DataNotFound
+        }
     }
 
     override fun sessionsExist(): Boolean = kaliumPreferences.hasValue(SESSIONS_KEY)
