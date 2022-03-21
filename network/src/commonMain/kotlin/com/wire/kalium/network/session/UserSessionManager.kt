@@ -4,6 +4,8 @@ import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.auth.AccessTokenApiImpl
 import com.wire.kalium.network.api.model.AccessTokenDTO
 import com.wire.kalium.network.api.model.RefreshTokenDTO
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isInvalidCredentials
 import com.wire.kalium.network.tools.BackendConfig
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.client.HttpClientConfig
@@ -36,9 +38,14 @@ fun HttpClientConfig<*>.installAuth(userSessionManager: UserSessionManager) {
                         userSessionManager.updateSession(response.value.first, response.value.second)
                         BearerTokens(access, refresh)
                     }
-                    is NetworkResponse.Error -> TODO() // crash the app when the cookie expire
+                    is NetworkResponse.Error -> {
+                        // 403 [label=invalid-credentials] Authentication failed.
+                        if (response.kException is KaliumException.InvalidRequestError && response.kException.isInvalidCredentials()) {
+                            userSessionManager.onSessionExpiry()
+                        }
+                        null
+                    }
                 }
-
             }
         }
     }

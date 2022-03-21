@@ -38,4 +38,8 @@ internal class UserSessionManagerImpl(
                 sessionMapper.toSessionDTO(it)
             }
         })
+
+    override fun onSessionExpiry() {
+        TODO("Not yet implemented")
+    }
 }
