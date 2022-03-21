@@ -40,7 +40,7 @@ class UploadUserAvatarUseCaseTest {
         val expected = UploadedAssetId("some_key")
         given(assetRepository)
             .suspendFunction(assetRepository::uploadAndPersistPublicAsset)
-            .whenInvokedWith(any())
+            .whenInvokedWith(any(), any())
             .thenReturn(Either.Right(expected))
 
         given(userRepository)
@@ -48,14 +48,14 @@ class UploadUserAvatarUseCaseTest {
             .whenInvokedWith(eq(null), eq(null), eq(expected.key))
             .thenReturn(Either.Right(stubSelfUser()))
 
-        val actual = uploadUserAvatarUseCase("image/jpg", "A".encodeToByteArray())
+        val actual = uploadUserAvatarUseCase("A".encodeToByteArray())
 
         assertEquals(UploadAvatarResult.Success::class, actual::class)
         assertEquals("some_key", (actual as UploadAvatarResult.Success).userAssetId)
 
         verify(assetRepository)
             .suspendFunction(assetRepository::uploadAndPersistPublicAsset)
-            .with(any())
+            .with(any(), any())
             .wasInvoked(exactly = once)
 
         verify(userRepository)
@@ -69,17 +69,17 @@ class UploadUserAvatarUseCaseTest {
         val expected = UploadedAssetId("some_key")
         given(assetRepository)
             .suspendFunction(assetRepository::uploadAndPersistPublicAsset)
-            .whenInvokedWith(any())
+            .whenInvokedWith(any(), any())
             .thenReturn(Either.Left(CoreFailure.Unknown(Throwable("an error"))))
 
-        val actual = uploadUserAvatarUseCase("image/jpg", "A".encodeToByteArray())
+        val actual = uploadUserAvatarUseCase("A".encodeToByteArray())
 
         assertEquals(UploadAvatarResult.Failure::class, actual::class)
         assertEquals(CoreFailure.Unknown::class, (actual as UploadAvatarResult.Failure).coreFailure::class)
 
         verify(assetRepository)
             .suspendFunction(assetRepository::uploadAndPersistPublicAsset)
-            .with(any())
+            .with(any(), any())
             .wasInvoked(exactly = once)
 
         verify(userRepository)
