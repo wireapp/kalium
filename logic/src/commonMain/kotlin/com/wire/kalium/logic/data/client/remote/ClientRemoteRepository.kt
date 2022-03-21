@@ -23,7 +23,7 @@ interface ClientRemoteRepository {
 class ClientRemoteDataSource(
     private val clientApi: ClientApi,
     private val clientConfig: ClientConfig,
-    private val clientMapper: ClientMapper= MapperProvider.clientMapper(clientConfig)
+    private val clientMapper: ClientMapper = MapperProvider.clientMapper(clientConfig)
 ) : ClientRemoteRepository {
 
     override suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client> =
