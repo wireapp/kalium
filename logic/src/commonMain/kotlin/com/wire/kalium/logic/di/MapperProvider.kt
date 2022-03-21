@@ -30,7 +30,7 @@ import com.wire.kalium.logic.data.team.TeamMapperImpl
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.data.user.UserMapperImpl
 
-object MapperProvider {
+internal object MapperProvider {
     fun idMapper(): IdMapper = IdMapperImpl()
     fun serverConfigMapper(): ServerConfigMapper = ServerConfigMapperImpl()
     fun sessionMapper(): SessionMapper = SessionMapperImpl(serverConfigMapper())
