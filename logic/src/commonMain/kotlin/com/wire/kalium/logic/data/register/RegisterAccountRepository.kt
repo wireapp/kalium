@@ -5,6 +5,7 @@ import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserMapper
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
@@ -21,8 +22,8 @@ interface RegisterAccountRepository {
 
 class RegisterAccountDataSource(
     private val registerApi: RegisterApi,
-    private val userMapper: UserMapper,
-    private val sessionMapper: SessionMapper
+    private val userMapper: UserMapper = MapperProvider.userMapper(),
+    private val sessionMapper: SessionMapper = MapperProvider.sessionMapper()
 ) : RegisterAccountRepository {
     override suspend fun requestEmailActivationCode(email: String, baseApiHost: String): Either<NetworkFailure, Unit> =
         requestActivation(RegisterApi.RequestActivationCodeParam.Email(email), baseApiHost)
