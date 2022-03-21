@@ -87,7 +87,7 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
         queries.deleteUser(qualifiedID)
     }
 
-    override suspend fun updateUserHandle(qualifiedID: QualifiedID, handle: String) {
+    override suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String) {
         queries.updateUserhandle(handle, qualifiedID)
     }
 }
