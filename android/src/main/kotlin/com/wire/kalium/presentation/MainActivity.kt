@@ -24,6 +24,7 @@ import com.wire.kalium.logic.feature.asset.PublicAssetResult
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
+import com.wire.kalium.logic.feature.conversation.GetConversationsUseCase
 import kotlinx.coroutines.flow.first
 
 class MainActivity : ComponentActivity() {
@@ -39,7 +40,14 @@ class MainActivity : ComponentActivity() {
     private fun loginAndFetchConversationList(coreLogic: CoreLogic) = lifecycleScope.launchWhenCreated {
         login(coreLogic.getAuthenticationScope())?.let {
             val session = coreLogic.getSessionScope(it)
-            val conversations = session.conversations.getConversations().first()
+            val conversations = session.conversations.getConversations().let { result ->
+                when(result) {
+                    is GetConversationsUseCase.Result.Failure -> {
+                        throw IllegalStateException(result.storageFailure.rootCause)
+                    }
+                    is GetConversationsUseCase.Result.Success -> result.convFlow.first()
+                }
+            }
 
             // Uploading image code
 //            val imageContent = applicationContext.assets.open("moon1.jpg").readBytes()
