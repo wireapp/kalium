@@ -25,12 +25,14 @@ jobs:
         id: cryptobox-cache
         with:
             path: |
-              native/libs/cryptobox/libcryptobox-jni.dylib
-              native/libs/cryptobox/libcryptobox.dylib
+              native/libs/libcryptobox-jni.dylib
+              native/libs/libcryptobox.dylib
             key: cryptobox-build-macOS
       - name: Build Native dependencies
         if: steps.cryptobox-cache.outputs.cache-hit != 'true'
-        run: make
+        run: |
+          ls native/libs
+          make
       - name: Test with Gradle
         run: ./gradlew allTests
       - name: Android Instrumentation Tests
