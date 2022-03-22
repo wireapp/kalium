@@ -21,15 +21,17 @@ internal class AccessTokenApiImpl(private val httpClient: HttpClient) : AccessTo
             httpClient.post(PATH_ACCESS) {
                 header(HttpHeaders.Cookie, "${RefreshTokenProperties.COOKIE_NAME}=$refreshToken")
             }
-        }.flatMap { response ->
-            response.cookies[RefreshTokenProperties.COOKIE_NAME].let { newRefreshToken ->
+        }.flatMap { accessTokenResponse ->
+            accessTokenResponse.cookies[RefreshTokenProperties.COOKIE_NAME].let { newRefreshToken ->
                 newRefreshToken?.let {
                     NetworkResponse.Success(
-                        Pair(response.value, RefreshTokenDTO(newRefreshToken)), response.headers, response.httpCode
+                        Pair(accessTokenResponse.value, RefreshTokenDTO(newRefreshToken)),
+                        accessTokenResponse.headers,
+                        accessTokenResponse.httpCode
                     )
                 } ?: run {
                     NetworkResponse.Success(
-                        Pair(response.value, null), response.headers, response.httpCode
+                        Pair(accessTokenResponse.value, null), accessTokenResponse.headers, accessTokenResponse.httpCode
                     )
                 }
             }

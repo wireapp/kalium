@@ -8,7 +8,7 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
-import com.wire.kalium.logic.network.UserSessionManagerImpl
+import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.sync.SyncManagerImpl
 import com.wire.kalium.logic.sync.WorkScheduler
 import com.wire.kalium.network.AuthenticatedNetworkContainer
@@ -41,7 +41,7 @@ actual class CoreLogic(
 
     override fun getSessionScope(session: AuthSession): UserSessionScope {
         val dataSourceSet = userScopeStorage[session] ?: run {
-            val networkContainer = AuthenticatedNetworkContainer(UserSessionManagerImpl(sessionRepository, session.userId, sessionMapper))
+            val networkContainer = AuthenticatedNetworkContainer(SessionManagerImpl(sessionRepository, session.userId, sessionMapper))
             val proteusClient: ProteusClient = ProteusClientImpl(rootProteusDirectoryPath, session.userId)
             runBlocking { proteusClient.open() }
 

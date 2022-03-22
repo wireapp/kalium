@@ -4,8 +4,6 @@ import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.auth.AccessTokenApiImpl
 import com.wire.kalium.network.api.model.AccessTokenDTO
 import com.wire.kalium.network.api.model.RefreshTokenDTO
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isInvalidCredentials
 import com.wire.kalium.network.tools.BackendConfig
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.client.HttpClientConfig
@@ -13,19 +11,23 @@ import io.ktor.client.plugins.auth.Auth
 import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.auth.providers.bearer
 
-interface UserSessionManager {
-    fun userConfig(): Pair<SessionDTO, BackendConfig>
-    fun updateSession(accessToken: AccessTokenDTO, refreshTokenDTO: RefreshTokenDTO?): SessionDTO
-    fun onSessionExpiry()
+interface SessionManager {
+    fun session(): Pair<SessionDTO, BackendConfig>
+    fun updateSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO
+    fun onSessionExpired()
 }
 
 
-fun HttpClientConfig<*>.installAuth(userSessionManager: UserSessionManager) {
+fun HttpClientConfig<*>.installAuth(sessionManager: SessionManager) {
     install(Auth) {
         bearer {
-            val _userSession = userSessionManager.userConfig().first
-            var access = _userSession.accessToken
-            var refresh = _userSession.refreshToken
+            // memory cache the tokens
+            var access: String
+            var refresh: String
+            sessionManager.session().first.also { storedSession ->
+                access = storedSession.accessToken
+                refresh = storedSession.refreshToken
+            }
 
             loadTokens {
                 BearerTokens(accessToken = access, refreshToken = refresh)
@@ -35,16 +37,10 @@ fun HttpClientConfig<*>.installAuth(userSessionManager: UserSessionManager) {
                     is NetworkResponse.Success -> {
                         response.value.first.let { newAccessToken -> access = newAccessToken.value }
                         response.value.second?.let { newRefreshToken -> refresh = newRefreshToken.value }
-                        userSessionManager.updateSession(response.value.first, response.value.second)
+                        sessionManager.updateSession(response.value.first, response.value.second)
                         BearerTokens(access, refresh)
                     }
-                    is NetworkResponse.Error -> {
-                        // 403 [label=invalid-credentials] Authentication failed.
-                        if (response.kException is KaliumException.InvalidRequestError && response.kException.isInvalidCredentials()) {
-                            userSessionManager.onSessionExpiry()
-                        }
-                        null
-                    }
+                    is NetworkResponse.Error -> TODO("crash the app if session refresh failed")
                 }
             }
         }
