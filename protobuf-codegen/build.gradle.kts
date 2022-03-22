@@ -17,7 +17,7 @@ version = "0.0.1-SNAPSHOT"
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:4.0.0-rc-2"
+        artifact = "com.google.protobuf:protoc:3.19.4"
     }
     plugins {
         id("pbandk") {
