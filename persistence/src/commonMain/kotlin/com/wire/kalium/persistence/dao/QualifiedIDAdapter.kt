@@ -2,14 +2,14 @@ package com.wire.kalium.persistence.dao
 
 import app.cash.sqldelight.ColumnAdapter
 
-class QualifiedIDAdapter: ColumnAdapter<QualifiedID, String> {
+class QualifiedIDAdapter: ColumnAdapter<QualifiedIDEntity, String> {
 
-    override fun decode(databaseValue: String): QualifiedID {
+    override fun decode(databaseValue: String): QualifiedIDEntity {
         val components = databaseValue.split("@")
-        return QualifiedID(components.first(), components.last())
+        return QualifiedIDEntity(components.first(), components.last())
     }
 
-    override fun encode(value: QualifiedID): String {
+    override fun encode(value: QualifiedIDEntity): String {
         return "${value.value}@${value.domain}"
     }
 

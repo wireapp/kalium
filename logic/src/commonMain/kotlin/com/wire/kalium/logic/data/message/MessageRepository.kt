@@ -3,10 +3,10 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.SendMessageFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
-import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.network.api.message.MessageApi
 import com.wire.kalium.network.api.message.MessagePriority
 import com.wire.kalium.network.exceptions.QualifiedSendMessageError
@@ -29,9 +29,9 @@ interface MessageRepository {
 class MessageDataSource(
     private val messageApi: MessageApi,
     private val messageDAO: MessageDAO,
-    private val messageMapper: MessageMapper,
-    private val idMapper: IdMapper,
-    private val sendMessageFailureMapper: SendMessageFailureMapper
+    private val messageMapper: MessageMapper = MapperProvider.messageMapper(),
+    private val idMapper: IdMapper = MapperProvider.idMapper(),
+    private val sendMessageFailureMapper: SendMessageFailureMapper = MapperProvider.sendMessageFailureMapper()
 ) : MessageRepository {
 
     override suspend fun getMessagesForConversation(conversationId: ConversationId, limit: Int): Flow<List<Message>> {

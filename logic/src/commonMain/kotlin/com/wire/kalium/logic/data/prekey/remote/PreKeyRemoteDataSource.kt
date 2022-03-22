@@ -1,12 +1,10 @@
 package com.wire.kalium.logic.data.prekey.remote
 
-import com.wire.kalium.cryptography.PreKeyCrypto
-import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.prekey.QualifiedUserPreKeyInfo
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
@@ -20,7 +18,7 @@ interface PreKeyRemoteRepository {
 
 class PreKeyRemoteDataSource(
     private val preKeyApi: PreKeyApi,
-    private val preKeyListMapper: PreKeyListMapper
+    private val preKeyListMapper: PreKeyListMapper = MapperProvider.preKeyListMapper()
 ) : PreKeyRemoteRepository {
 
     //TODO unit test to be created later
