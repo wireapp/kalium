@@ -10,7 +10,7 @@ class ProtoContentMapperTest {
 
     @BeforeTest
     fun setup(){
-        protoContentMapper = provideProtoContentMapper()
+        protoContentMapper = ProtoContentMapperImpl()
     }
 
     @Test
