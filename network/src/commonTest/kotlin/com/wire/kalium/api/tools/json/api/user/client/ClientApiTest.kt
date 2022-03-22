@@ -48,10 +48,30 @@ class ClientApiTest : ApiTest {
         assertEquals((errorResponse.kException as KaliumException.InvalidRequestError).errorResponse, ERROR_RESPONSE)
     }
 
+    @Test
+    fun givenAValidUpdateClientRequest_whenCallingTheUpdateClientEndpoint_theRequestShouldBeConfiguredCorrectly() =
+        runTest {
+            val httpClient = mockAuthenticatedHttpClient(
+                "",
+                statusCode = HttpStatusCode.OK,
+                assertion = {
+                    assertPut()
+                    assertJson()
+                    assertNoQueryParams()
+                    assertPathEqual("$PATH_CLIENTS/$VALID_CLIENT_ID")
+                }
+            )
+            val clientApi: ClientApi = ClientApiImpl(httpClient)
+            val response = clientApi.updateClient(UPDATE_CLIENT_REQUEST.serializableData, VALID_CLIENT_ID)
+            assertTrue(response.isSuccessful())
+        }
+
     private companion object {
+        const val VALID_CLIENT_ID = "39s3ds2020sda"
         const val PATH_CLIENTS = "/clients"
         val REGISTER_CLIENT_REQUEST = RegisterClientRequestJson.valid
         val VALID_REGISTER_CLIENT_RESPONSE = ClientResponseJson.valid
+        val UPDATE_CLIENT_REQUEST = UpdateClientRequestJson.valid
         val ERROR_RESPONSE = ErrorResponseJson.valid.serializableData
     }
 }

@@ -58,11 +58,11 @@ abstract class UserSessionScopeCommon(
     private val eventInfoStorage: EventInfoStorage
         get() = EventInfoStorageImpl(userPreferencesSettings)
 
-
     private val database: Database = authenticatedDataSourceSet.database
 
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(
+            userRepository,
             database.conversationDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi

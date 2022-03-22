@@ -2,21 +2,25 @@ package com.wire.kalium.persistence.dao
 
 import kotlinx.coroutines.flow.Flow
 
-data class Conversation(
+data class ConversationEntity(
     val id: QualifiedIDEntity,
-    val name: String?
-) { }
+    val name: String?,
+    val type: Type,
+    val teamId: String?
+) {
+    enum class Type { SELF, ONE_ON_ONE, GROUP }
+}
 
 data class Member(
     val user: QualifiedIDEntity
-) { }
+)
 
 interface ConversationDAO {
-    suspend fun insertConversation(conversation: Conversation)
-    suspend fun insertConversations(conversations: List<Conversation>)
-    suspend fun updateConversation(conversation: Conversation)
-    suspend fun getAllConversations(): Flow<List<Conversation>>
-    suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<Conversation?>
+    suspend fun insertConversation(conversationEntity: ConversationEntity)
+    suspend fun insertConversations(conversationEntities: List<ConversationEntity>)
+    suspend fun updateConversation(conversationEntity: ConversationEntity)
+    suspend fun getAllConversations(): Flow<List<ConversationEntity>>
+    suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>
     suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity)
     suspend fun insertMember(member: Member, conversationID: QualifiedIDEntity)
     suspend fun insertMembers(members: List<Member>, conversationID: QualifiedIDEntity)

@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.feature.auth.AuthSession
+import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isBlackListedEmail
 import com.wire.kalium.network.exceptions.isDomainBlockedForRegistration
@@ -21,11 +22,7 @@ sealed class RegisterParam(
     val email: String,
     val password: String,
 ) {
-    val name: String
-
-    init {
-        name = "$firstName $lastName"
-    }
+    val name: String = "$firstName $lastName"
 
     class PrivateAccount(
         firstName: String,
@@ -34,20 +31,41 @@ sealed class RegisterParam(
         password: String,
         val emailActivationCode: String
     ) : RegisterParam(firstName, lastName, email, password)
+
+    class Team(
+        firstName: String,
+        lastName: String,
+        email: String,
+        password: String,
+        val emailActivationCode: String,
+        val teamName: String,
+        val teamIcon: String
+    ) : RegisterParam(firstName, lastName, email, password)
 }
 
 class RegisterAccountUseCase(
     private val registerAccountRepository: RegisterAccountRepository,
     private val sessionRepository: SessionRepository
 ) {
-    suspend operator fun invoke(param: RegisterParam, serverConfig: ServerConfig): RegisterResult {
-        return when (param) {
+    suspend operator fun invoke(
+        param: RegisterParam,
+        serverConfig: ServerConfig,
+        shouldStoreSession:Boolean = true
+    ): RegisterResult = suspending {
+        when (param) {
             is RegisterParam.PrivateAccount -> {
                 with(param) {
-                    registerAccountRepository.registerWithEmail(email, emailActivationCode, name, password, serverConfig)
+                    registerAccountRepository.registerPersonalAccountWithEmail(email, emailActivationCode, name, password, serverConfig)
                 }
             }
-        }.fold(
+            is RegisterParam.Team -> {
+                with(param) {
+                    registerAccountRepository.registerTeamWithEmail(
+                        email, emailActivationCode, name, password, teamName, teamIcon, serverConfig
+                    )
+                }
+            }
+        }.coFold(
             {
                 if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
                     handleSpecialErrors(it.kaliumException)
@@ -55,8 +73,10 @@ class RegisterAccountUseCase(
                     RegisterResult.Failure.Generic(it)
                 }
             }, {
-                sessionRepository.storeSession(it.second)
-                sessionRepository.updateCurrentSession(it.second.userId)
+                if(shouldStoreSession) {
+                    sessionRepository.storeSession(it.second)
+                    sessionRepository.updateCurrentSession(it.second.userId)
+                }
                 RegisterResult.Success(it)
             })
     }

@@ -10,6 +10,7 @@ typealias NonQualifiedUserId = String
 typealias TeamId = String
 typealias AssetId = String
 typealias AssetKey = String
+typealias MLSPublicKey = String
 
 @Serializable
 data class QualifiedID(
