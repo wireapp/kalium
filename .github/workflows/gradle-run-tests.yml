@@ -27,7 +27,7 @@ jobs:
             path: native/libs/*
             key: ${{ runner.os }}-cryptobox-build
       - name: Build Native dependencies
-        if: steps.cryptobox-cache.cache-hit != 'true'
+        if: steps.cryptobox-cache.outputs.cache-hit != 'true'
         run: make
       - name: Test with Gradle
         run: ./gradlew allTests
