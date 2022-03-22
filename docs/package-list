@@ -437,6 +437,7 @@ com.wire.kalium.network.api.call
 com.wire.kalium.network.api.configuration
 com.wire.kalium.network.api.contact.search
 com.wire.kalium.network.api.conversation
+com.wire.kalium.network.api.keypackage
 com.wire.kalium.network.api.message
 com.wire.kalium.network.api.model
 com.wire.kalium.network.api.notification
