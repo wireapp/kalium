@@ -366,10 +366,6 @@ $dokka.location:com.wire.kalium.cryptography/UserId///PointingToDeclaration/cry
 $dokka.location:com.wire.kalium.cryptography/UserId/UserId/#kotlin.String/PointingToDeclaration/cryptography/cryptography/com.wire.kalium.cryptography/-user-id/-user-id.html
 $dokka.location:com.wire.kalium.cryptography/UserId/toString/#/PointingToDeclaration/cryptography/cryptography/com.wire.kalium.cryptography/-user-id/to-string.html
 $dokka.location:com.wire.kalium.cryptography/UserId/value/#/PointingToDeclaration/cryptography/cryptography/com.wire.kalium.cryptography/-user-id/value.html
-$dokka.location:com.wire.kalium.logic.data.message/ProtoContentMapperImpl///PointingToDeclaration/logic/com.wire.kalium.logic.data.message/[jvm]-proto-content-mapper-impl/index.html
-$dokka.location:com.wire.kalium.logic.data.message/ProtoContentMapperImpl/ProtoContentMapperImpl/#/PointingToDeclaration/logic/com.wire.kalium.logic.data.message/[jvm]-proto-content-mapper-impl/-proto-content-mapper-impl.html
-$dokka.location:com.wire.kalium.logic.data.message/ProtoContentMapperImpl/decodeFromProtobuf/#com.wire.kalium.logic.data.message.PlainMessageBlob/PointingToDeclaration/logic/com.wire.kalium.logic.data.message/[jvm]-proto-content-mapper-impl/decode-from-protobuf.html
-$dokka.location:com.wire.kalium.logic.data.message/ProtoContentMapperImpl/encodeToProtobuf/#com.wire.kalium.logic.data.message.ProtoContent/PointingToDeclaration/logic/com.wire.kalium.logic.data.message/[jvm]-proto-content-mapper-impl/encode-to-protobuf.html
 $dokka.location:com.wire.kalium.logic/CoreLogic/getAuthenticationScope/#/PointingToDeclaration/logic/com.wire.kalium.logic/-core-logic/[jvm]get-authentication-scope.html
 $dokka.location:com.wire.kalium.logic/CoreLogic/getSessionScope/#com.wire.kalium.logic.feature.auth.AuthSession/PointingToDeclaration/logic/com.wire.kalium.logic/-core-logic/[jvm]get-session-scope.html
 $dokka.location:com.wire.kalium.network.api.message/EnvelopeProtoMapperImpl///PointingToDeclaration/network/com.wire.kalium.network.api.message/[jvm]-envelope-proto-mapper-impl/index.html
@@ -399,6 +395,7 @@ com.wire.kalium.logic
 com.wire.kalium.logic.configuration
 com.wire.kalium.logic.data.asset
 com.wire.kalium.logic.data.auth.login
+com.wire.kalium.logic.data.call
 com.wire.kalium.logic.data.client
 com.wire.kalium.logic.data.client.remote
 com.wire.kalium.logic.data.conversation
@@ -436,6 +433,7 @@ com.wire.kalium.network
 com.wire.kalium.network.api
 com.wire.kalium.network.api.asset
 com.wire.kalium.network.api.auth
+com.wire.kalium.network.api.call
 com.wire.kalium.network.api.configuration
 com.wire.kalium.network.api.contact.search
 com.wire.kalium.network.api.conversation
