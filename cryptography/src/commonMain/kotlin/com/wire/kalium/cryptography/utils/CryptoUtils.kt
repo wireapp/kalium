@@ -16,5 +16,3 @@ expect fun encryptDataWithAES256(data: ByteArray): Pair<ByteArray, SymmetricSecr
  * @return the decrypted data as a byte array
  */
 expect fun decryptDataWithAES256(data: ByteArray, secretKey: SymmetricSecretKey): ByteArray
-
-typealias SymmetricSecretKey = ByteArray
