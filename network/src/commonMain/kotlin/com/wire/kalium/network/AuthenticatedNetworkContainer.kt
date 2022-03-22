@@ -11,6 +11,8 @@ import com.wire.kalium.network.api.contact.search.ContactSearchApi
 import com.wire.kalium.network.api.contact.search.ContactSearchApiImpl
 import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.conversation.ConversationApiImp
+import com.wire.kalium.network.api.keypackage.KeyPackageApi
+import com.wire.kalium.network.api.keypackage.KeyPackageApiImpl
 import com.wire.kalium.network.api.message.MessageApi
 import com.wire.kalium.network.api.message.MessageApiImp
 import com.wire.kalium.network.api.message.provideEnvelopeProtoMapper
@@ -51,6 +53,8 @@ class AuthenticatedNetworkContainer(
     val messageApi: MessageApi get() = MessageApiImp(authenticatedHttpClient, provideEnvelopeProtoMapper())
 
     val conversationApi: ConversationApi get() = ConversationApiImp(authenticatedHttpClient)
+
+    val keyPackageApi: KeyPackageApi get() = KeyPackageApiImpl(authenticatedHttpClient)
 
     val preKeyApi: PreKeyApi get() = PreKeyApiImpl(authenticatedHttpClient)
 
