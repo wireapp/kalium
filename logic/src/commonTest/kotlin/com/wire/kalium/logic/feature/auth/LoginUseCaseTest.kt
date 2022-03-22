@@ -45,7 +45,7 @@ class LoginUseCaseTest {
     }
 
     @Test
-    fun givenLoginUserCaseIsInvoked_whenEmailHasLeadingOrTrailingSpaces_thenCleanUserIdentifierIsUsedToAuthenticate() =
+    fun givenEmailHasLeadingOrTrailingSpaces_thenCleanEmailIsUsedToAuthenticate() =
         runTest {
             val cleanEmail = "user@email.de"
             val password = "password"
@@ -71,7 +71,7 @@ class LoginUseCaseTest {
         }
 
     @Test
-    fun givenLoginUserCaseIsInvoked_whenUserHandleHasLeadingOrTrailingSpaces_thenCleanUserIdentifierIsUsedToAuthenticate() =
+    fun givenUserHandleHasLeadingOrTrailingSpaces_thenCleanUserIdentifierIsUsedToAuthenticate() =
         runTest {
             val cleanHandle = "usere"
             val password = "password"
@@ -98,9 +98,8 @@ class LoginUseCaseTest {
         }
 
     @Test
-    fun `given LoginUseCase is invoked, When ValidateEmailUseCase, loginWithEmail and storeSession return success, then returns success`() =
+    fun givenStoreSessionIsTrue_andEverythingElseSucceeds_whenLoggingInUsingEmail_thenStoreTheSessionAndReturnSuccess() =
         runTest {
-
             given(validateEmailUseCase).invocation { invoke(TEST_EMAIL) }.then { true }
             given(validateUserHandleUseCase).invocation { invoke(TEST_EMAIL) }.then { false }
             given(loginRepository).coroutine { loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG) }.then {
@@ -123,7 +122,7 @@ class LoginUseCaseTest {
         }
 
     @Test
-    fun `given LoginUseCase is invoked, When ValidateEmailUseCase return false and validateUserHandleUseCase loginWithEmail and storeSession return success, then returns success`() =
+    fun givenStoreSessionIsTrue_andEverythingElseSucceeds_whenLoggingInUsingUserHandle_thenStoreTheSessionAndReturnSuccess() =
         runTest {
             // given
             given(validateEmailUseCase).invocation { invoke(TEST_HANDLE) }.then { false }
@@ -160,7 +159,23 @@ class LoginUseCaseTest {
         }
 
     @Test
-    fun `given LoginUseCase is invoked, When ValidateEmailUseCase and validateUserHandleUseCase return false, then returns InvalidUserIdentifier`() =
+    fun givenStoreSessionIsFalse_andEverythingElseSucceeds_whenLoggingIn_thenDoNotStoreTheSessionAndReturnSuccess() =
+        runTest {
+            given(validateEmailUseCase).invocation { invoke(TEST_EMAIL) }.then { true }
+            given(validateUserHandleUseCase).invocation { invoke(TEST_EMAIL) }.then { false }
+            given(loginRepository).coroutine { loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG) }
+                .then { Either.Right(TEST_AUTH_SESSION) }
+
+            val loginUserCaseResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG, false)
+
+            assertEquals(loginUserCaseResult, AuthenticationResult.Success(TEST_AUTH_SESSION))
+
+            verify(sessionRepository).coroutine { storeSession(TEST_AUTH_SESSION) }.wasNotInvoked()
+            verify(sessionRepository).coroutine { updateCurrentSession(TEST_AUTH_SESSION.userId) }.wasNotInvoked()
+        }
+
+    @Test
+    fun givenEmailIsInvalid_whenLoggingInUsingEmail_thenReturnInvalidUserIdentifier() =
         runTest {
             given(validateEmailUseCase).invocation { invoke(TEST_EMAIL) }.then { false }
             given(validateUserHandleUseCase).invocation { invoke(TEST_EMAIL) }.then { false }
@@ -174,7 +189,7 @@ class LoginUseCaseTest {
         }
 
     @Test
-    fun `given LoginUseCase is invoked, When loginRepository return InvalidCredentials, return InvalidCredentials`() =
+    fun givenWrongPassword_whenLoggingIn_thenReturnInvalidCredentials() =
         runTest {
             val invalidCredentialsFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.invalidCredentials)
             given(validateEmailUseCase).invocation { invoke(TEST_EMAIL) }.then { true }
