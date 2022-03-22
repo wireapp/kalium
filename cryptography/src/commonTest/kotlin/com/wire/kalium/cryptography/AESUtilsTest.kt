@@ -8,7 +8,6 @@ import io.ktor.utils.io.core.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-
 class AESUtilsTest {
 
     @Test
@@ -16,12 +15,13 @@ class AESUtilsTest {
     @IgnoreIOS
     fun givenRawByteArray_whenEncryptedAndDecryptedWithAES256_returnsExpectedOriginalByteArray() {
         val testMessage = "Hello Crypto World"
-        val inputByteArray = testMessage.toByteArray(Charsets.UTF_8)
+        val inputByteArray = testMessage.toByteArray()
 
         val (encryptedData, symmetricKey) = encryptDataWithAES256(inputByteArray)
-        val decryptedData = decryptDataWithAES256(encryptedData, symmetricKey).contentToString()
+        val decryptedData = decryptDataWithAES256(encryptedData, symmetricKey)
+        val decodedMessage = String(decryptedData)
 
-        assertEquals(decryptedData, testMessage)
+        assertEquals(decodedMessage, testMessage)
 
     }
 }
