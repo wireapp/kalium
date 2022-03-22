@@ -31,7 +31,6 @@ jobs:
       - name: Build Native dependencies
         if: steps.cryptobox-cache.outputs.cache-hit != 'true'
         run: |
-          ls -l native/libs
           make
       - name: Test with Gradle
         run: ./gradlew allTests
@@ -40,6 +39,7 @@ jobs:
         with:
           api-level: 29
           script: |
+            ls -l native/libs
             ./gradlew cryptography:connectedAndroidTest
             ./gradlew persistence:connectedAndroidTest
       - name: Publish Unit Test Results
