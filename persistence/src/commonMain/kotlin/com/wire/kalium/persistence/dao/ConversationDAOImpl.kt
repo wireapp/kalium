@@ -12,8 +12,8 @@ import com.wire.kalium.persistence.db.Conversation as SQLDelightConversation
 import com.wire.kalium.persistence.db.Member as SQLDelightMember
 
 class ConversationMapper {
-    fun toModel(conversation: SQLDelightConversation): Conversation {
-        return Conversation(conversation.qualified_id, conversation.name)
+    fun toModel(conversation: SQLDelightConversation): ConversationEntity {
+        return ConversationEntity(conversation.qualified_id, conversation.name, conversation.type, conversation.team_id)
     }
 }
 
@@ -32,48 +32,63 @@ class ConversationDAOImpl(
     private val memberMapper = MemberMapper()
     private val conversationMapper = ConversationMapper()
 
-    override suspend fun insertConversation(conversation: Conversation) {
-        conversationQueries.insertConversation(conversation.id, conversation.name)
+    override suspend fun insertConversation(conversationEntity: ConversationEntity) {
+        conversationQueries.insertConversation(
+            conversationEntity.id,
+            conversationEntity.name,
+            conversationEntity.type,
+            conversationEntity.teamId
+        )
     }
 
-    override suspend fun insertConversations(conversations: List<Conversation>) {
+    override suspend fun insertConversations(conversationEntities: List<ConversationEntity>) {
         conversationQueries.transaction {
-            for (conversation: Conversation in conversations) {
-                conversationQueries.insertConversation(conversation.id, conversation.name)
+            for (conversationEntity: ConversationEntity in conversationEntities) {
+                conversationQueries.insertConversation(
+                    conversationEntity.id,
+                    conversationEntity.name,
+                    conversationEntity.type,
+                    conversationEntity.teamId
+                )
             }
         }
     }
 
-    override suspend fun updateConversation(conversation: Conversation) {
-        conversationQueries.updateConversation(conversation.name, conversation.id)
+    override suspend fun updateConversation(conversationEntity: ConversationEntity) {
+        conversationQueries.updateConversation(
+            conversationEntity.name,
+            conversationEntity.type,
+            conversationEntity.teamId,
+            conversationEntity.id
+        )
     }
 
-    override suspend fun getAllConversations(): Flow<List<Conversation>> {
+    override suspend fun getAllConversations(): Flow<List<ConversationEntity>> {
         return conversationQueries.selectAllConversations()
             .asFlow()
             .mapToList()
             .map { it.map(conversationMapper::toModel) }
     }
 
-    override suspend fun getConversationByQualifiedID(qualifiedID: QualifiedID): Flow<Conversation?> {
+    override suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?> {
         return conversationQueries.selectByQualifiedId(qualifiedID)
             .asFlow()
             .mapToOneOrNull()
             .map { it?.let { conversationMapper.toModel(it) } }
     }
 
-    override suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedID) {
+    override suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity) {
         conversationQueries.deleteConversation(qualifiedID)
     }
 
-    override suspend fun insertMember(member: Member, conversationID: QualifiedID) {
+    override suspend fun insertMember(member: Member, conversationID: QualifiedIDEntity) {
         memberQueries.transaction {
             userQueries.insertOrIgnoreUserId(member.user)
             memberQueries.insertMember(member.user, conversationID)
         }
     }
 
-    override suspend fun insertMembers(members: List<Member>, conversationID: QualifiedID) {
+    override suspend fun insertMembers(members: List<Member>, conversationID: QualifiedIDEntity) {
         memberQueries.transaction {
             for (member: Member in members) {
                 userQueries.insertOrIgnoreUserId(member.user)
@@ -83,11 +98,11 @@ class ConversationDAOImpl(
 
     }
 
-    override suspend fun deleteMemberByQualifiedID(conversationID: QualifiedID, userID: QualifiedID) {
+    override suspend fun deleteMemberByQualifiedID(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity) {
         memberQueries.deleteMember(conversationID, userID)
     }
 
-    override suspend fun getAllMembers(qualifiedID: QualifiedID): Flow<List<Member>> {
+    override suspend fun getAllMembers(qualifiedID: QualifiedIDEntity): Flow<List<Member>> {
         return memberQueries.selectAllMembersByConversation(qualifiedID)
             .asFlow()
             .mapToList()

@@ -9,6 +9,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 
 interface ClientApi {
@@ -22,6 +23,8 @@ interface ClientApi {
     suspend fun deleteClient(password: String, clientID: String): NetworkResponse<Unit>
 
     suspend fun fetchClientInfo(clientID: String): NetworkResponse<ClientResponse>
+
+    suspend fun updateClient(updateClientRequest: UpdateClientRequest, clientID: String): NetworkResponse<Unit>
 }
 
 
@@ -60,6 +63,11 @@ class ClientApiImpl(private val httpClient: HttpClient) : ClientApi {
 
     override suspend fun fetchClientInfo(clientID: String): NetworkResponse<ClientResponse> =
         wrapKaliumResponse { httpClient.get("$PATH_CLIENTS/$clientID") }
+
+    override suspend fun updateClient(updateClientRequest: UpdateClientRequest, clientID: String): NetworkResponse<Unit> =
+        wrapKaliumResponse { httpClient.put("$PATH_CLIENTS/$clientID") {
+            setBody(updateClientRequest)
+        } }
 
     private companion object {
         const val PATH_USERS = "users"

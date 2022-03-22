@@ -34,7 +34,7 @@ actual class CoreLogic(
         val sessionPreferences =
             KaliumPreferencesSettings(EncryptedSettingsHolder(appContext, FileNameUtil.appPrefFile()).encryptedSettings)
         val sessionStorage: SessionStorage = SessionStorageImpl(sessionPreferences)
-        return SessionDataSource(sessionStorage, sessionMapper)
+        return SessionDataSource(sessionStorage)
     }
 
     override fun getAuthenticationScope(): AuthenticationScope =
@@ -42,7 +42,7 @@ actual class CoreLogic(
 
     override fun getSessionScope(userId: NonQualifiedUserId): UserSessionScope {
         val dataSourceSet = userScopeStorage[userId] ?: run {
-            val networkContainer = AuthenticatedNetworkContainer(SessionManagerImpl(sessionRepository, userId, sessionMapper, serverConfigMapper))
+            val networkContainer = AuthenticatedNetworkContainer(SessionManagerImpl(sessionRepository, userId))
             val proteusClient: ProteusClient = ProteusClientImpl(rootProteusDirectoryPath, userId)
             runBlocking { proteusClient.open() }
 
@@ -50,8 +50,7 @@ actual class CoreLogic(
             val syncManager = SyncManagerImpl(workScheduler)
             val encryptedSettingsHolder = EncryptedSettingsHolder(appContext, FileNameUtil.userPrefFile(userId))
             val userPreferencesSettings = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
-            val database = Database(appContext,
-                userId, userPreferencesSettings)
+            val database = Database(appContext, userId, userPreferencesSettings)
             AuthenticatedDataSourceSet(
                 networkContainer,
                 proteusClient,

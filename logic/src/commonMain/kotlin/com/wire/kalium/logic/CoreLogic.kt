@@ -17,19 +17,14 @@ abstract class CoreLogicCommon(
     protected val rootProteusDirectoryPath: String
 ) {
 
-    protected val serverConfigMapper: ServerConfigMapper get() = ServerConfigMapperImpl()
-    protected val sessionMapper: SessionMapper get() = SessionMapperImpl(serverConfigMapper)
-
     val sessionRepository: SessionRepository by lazy {
         getSessionRepo()
     }
     protected abstract fun getSessionRepo(): SessionRepository
 
 
-    // TODO: hashMapOf<USerID, AuthenticatedDataSourceSet>()
     protected val userScopeStorage = hashMapOf<NonQualifiedUserId, AuthenticatedDataSourceSet>()
-    // TODO: - Update UserSession when token is refreshed
-    //       - Delete UserSession and DataSourceSets when user logs-out
+    //  TODO:     - Delete UserSession and DataSourceSets when user logs-out
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     abstract fun getAuthenticationScope(): AuthenticationScope

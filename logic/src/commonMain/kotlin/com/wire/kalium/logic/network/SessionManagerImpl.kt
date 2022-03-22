@@ -3,6 +3,7 @@ package com.wire.kalium.logic.network
 import com.wire.kalium.logic.configuration.ServerConfigMapper
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.network.api.NonQualifiedUserId
 import com.wire.kalium.network.api.SessionDTO
@@ -14,8 +15,8 @@ import com.wire.kalium.network.tools.BackendConfig
 class SessionManagerImpl(
     private val sessionRepository: SessionRepository,
     private val userId: NonQualifiedUserId,
-    private val sessionMapper: SessionMapper,
-    private val serverConfigMapper: ServerConfigMapper
+    private val sessionMapper: SessionMapper = MapperProvider.sessionMapper(),
+    private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
 ) : SessionManager {
     override fun session(): Pair<SessionDTO, BackendConfig> = sessionRepository.userSession(userId).fold({
         TODO("no session is stored to the user")

@@ -26,7 +26,7 @@ actual class CoreLogic(clientLabel: String, rootProteusDirectoryPath: String) :
     override fun getSessionRepo(): SessionRepository {
         val kaliumPreferences = KaliumPreferencesSettings(EncryptedSettingsHolder(".pref").encryptedSettings)
         val sessionStorage = SessionStorageImpl(kaliumPreferences)
-        return SessionDataSource(sessionStorage, sessionMapper)
+        return SessionDataSource(sessionStorage)
     }
 
     override fun getAuthenticationScope(): AuthenticationScope {

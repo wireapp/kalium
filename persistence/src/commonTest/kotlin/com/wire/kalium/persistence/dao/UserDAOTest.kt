@@ -57,7 +57,7 @@ class UserDAOTest : BaseDatabaseTest() {
     fun givenExistingUser_ThenUserCanBeUpdated() = runTest {
         db.userDAO.insertUser(user1)
         val updatedUser1 = UserEntity(
-            user1.id, "John Doe", "johndoe", "email1", "phone1", 1, "team", UserAssetId(), UserAssetId()
+            user1.id, "John Doe", "johndoe", "email1", "phone1", 1, "team", UserAssetIdEntity(), UserAssetIdEntity()
         )
         db.userDAO.updateUser(updatedUser1)
         val result = db.userDAO.getUserByQualifiedID(user1.id).first()
@@ -68,7 +68,7 @@ class UserDAOTest : BaseDatabaseTest() {
     fun givenListOfUsers_ThenUserCanBeQueriedByName() = runTest {
         db.userDAO.insertUser(user1)
         val updatedUser1 = UserEntity(
-            user1.id, "John Doe", "johndoe", "email1", "phone1", 1, "team", UserAssetId(), UserAssetId()
+            user1.id, "John Doe", "johndoe", "email1", "phone1", 1, "team", UserAssetIdEntity(), UserAssetIdEntity()
         )
 
         val result = db.userDAO.getUserByQualifiedID(user1.id)
@@ -144,7 +144,7 @@ class UserDAOTest : BaseDatabaseTest() {
             )
             val notCommonEmailUsers = listOf(
                 UserEntity(
-                    id = QualifiedID("4", "wire.com"),
+                    id = QualifiedIDEntity("4", "wire.com"),
                     name = "testName4",
                     handle = "testHandle4",
                     email = "someDifferentEmail1@wire.com",
@@ -154,7 +154,7 @@ class UserDAOTest : BaseDatabaseTest() {
                     null, null
                 ),
                 UserEntity(
-                    id = QualifiedID("5", "wire.com"),
+                    id = QualifiedIDEntity("5", "wire.com"),
                     name = "testName5",
                     handle = "testHandle5",
                     email = "someDifferentEmail2@wire.com",
@@ -252,9 +252,9 @@ class UserDAOTest : BaseDatabaseTest() {
         }
 
     private companion object {
-        val USER_ENTITY_1  = newUserEntity(QualifiedID("1", "wire.com"))
-        val USER_ENTITY_2 = newUserEntity(QualifiedID("2", "wire.com"))
-        val USER_ENTITY_3 = newUserEntity(QualifiedID("3", "wire.com"))
+        val USER_ENTITY_1  = newUserEntity(QualifiedIDEntity("1", "wire.com"))
+        val USER_ENTITY_2 = newUserEntity(QualifiedIDEntity("2", "wire.com"))
+        val USER_ENTITY_3 = newUserEntity(QualifiedIDEntity("3", "wire.com"))
     }
 
 }

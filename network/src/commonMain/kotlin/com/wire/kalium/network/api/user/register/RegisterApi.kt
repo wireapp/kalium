@@ -6,6 +6,7 @@ import com.wire.kalium.network.api.model.AccessTokenDTO
 import com.wire.kalium.network.api.model.NewUserDTO
 import com.wire.kalium.network.api.model.UserDTO
 import com.wire.kalium.network.api.model.toSessionDto
+import com.wire.kalium.network.api.user.register.NewBindingTeamDTO
 import com.wire.kalium.network.utils.CustomErrors
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap
@@ -24,6 +25,7 @@ interface RegisterApi {
         open val name: String
     ) {
         internal abstract fun toBody(): NewUserDTO
+
         data class PersonalAccount(
             val email: String,
             val emailCode: String,
@@ -43,6 +45,41 @@ interface RegisterApi {
                 phone = null,
                 phoneCode = null,
                 newBindingTeamDTO = null,
+                teamCode = null,
+                expiresIn = null,
+                managedBy = null,
+                ssoID = null,
+                teamID = null,
+                uuid = null
+            )
+        }
+
+        data class TeamAccount(
+            val email: String,
+            val emailCode: String,
+            override val name: String,
+            val password: String,
+            val teamName: String,
+            val teamIcon: String
+        ) : RegisterParam(name) {
+            override fun toBody(): NewUserDTO = NewUserDTO(
+                email = email,
+                emailCode = emailCode,
+                password = password,
+                name = name,
+                accentId = null,
+                assets = null,
+                invitationCode = null,
+                label = null,
+                locale = null,
+                phone = null,
+                phoneCode = null,
+                newBindingTeamDTO = NewBindingTeamDTO(
+                    currency = null,
+                    iconAssetId = teamIcon,
+                    iconKey = null,
+                    name = teamName,
+                ),
                 teamCode = null,
                 expiresIn = null,
                 managedBy = null,
