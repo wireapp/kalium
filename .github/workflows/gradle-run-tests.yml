@@ -24,8 +24,10 @@ jobs:
         uses: actions/cache@v2
         id: cryptobox-cache
         with:
-            path: native/libs/*
-            key: ${{ runner.os }}-cryptobox-build
+            path: |
+              native/libs/cryptobox/libcryptobox-jni.dylib
+              native/libs/cryptobox/libcryptobox.dylib
+            key: cryptobox-build-macOS
       - name: Build Native dependencies
         if: steps.cryptobox-cache.outputs.cache-hit != 'true'
         run: make
