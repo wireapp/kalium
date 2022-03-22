@@ -120,7 +120,7 @@ class RegisterAccountRepositoryTest {
     }
 
     @Test
-    fun givenApiRequestRequestSuccess_whenRegisteringWithEmail_thenSuccessIsPropagated() = runTest {
+    fun givenApiRequestRequestSuccess_whenRegisteringPersonalAccountWithEmail_thenSuccessIsPropagated() = runTest {
         val email = EMAIL
         val code = CODE
         val password = PASSWORD
@@ -155,13 +155,67 @@ class RegisterAccountRepositoryTest {
             .invocation { fromSessionDTO(SESSION, serverConfig) }
             .then { authSession }
 
-        val actual = registerAccountRepository.registerWithEmail(email, code, name, password, serverConfig)
+        val actual = registerAccountRepository.registerPersonalAccountWithEmail(email, code, name, password, serverConfig)
 
         assertIs<Either.Right<Pair<SelfUser, AuthSession>>>(actual)
         assertEquals(expected, actual.value)
 
         verify(registerApi)
             .coroutine { register(RegisterApi.RegisterParam.PersonalAccount(email, code, name, password), serverConfig.apiBaseUrl) }
+            .wasInvoked(exactly = once)
+        verify(sessionMapper)
+            .invocation { fromSessionDTO(SESSION, serverConfig) }
+            .wasInvoked(exactly = once)
+        verify(userMapper)
+            .invocation { fromDtoToSelfUser(TEST_USER) }
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenApiRequestRequestSuccess_whenRegisteringTeamAccountWithEmail_thenSuccessIsPropagated() = runTest {
+        val email = EMAIL
+        val code = CODE
+        val password = PASSWORD
+        val name = NAME
+        val teamName = TEAM_NAME
+        val teamIcon = TEAM_ICON
+        val serverConfig = TEST_SERVER_CONFIG
+        val selfUser = with(TEST_USER) {
+            SelfUser(
+                id = QualifiedID(value = id.value, domain = id.domain),
+                name = name,
+                handle = handle,
+                email = email,
+                phone = phone,
+                accentId = accentId,
+                team = teamId,
+                previewPicture = assets.getPreviewAssetOrNull()?.key,
+                completePicture = assets.getCompleteAssetOrNull()?.key
+            )
+        }
+        val authSession = with(SESSION) { AuthSession(userIdValue, accessToken, refreshToken, tokenType, serverConfig) }
+        val expected = Pair(selfUser, authSession)
+
+        given(registerApi)
+            .coroutine {
+                register(RegisterApi.RegisterParam.TeamAccount(email, code, name, password, teamName, teamIcon), serverConfig.apiBaseUrl)
+            }.then { NetworkResponse.Success(Pair(TEST_USER, SESSION), mapOf(), 200) }
+        given(userMapper)
+            .invocation { fromDtoToSelfUser(TEST_USER) }
+            .then { selfUser }
+        given(sessionMapper)
+            .invocation { fromSessionDTO(SESSION, serverConfig) }
+            .then { authSession }
+
+        val actual = registerAccountRepository.registerTeamWithEmail(email, code, name, password, teamName, teamIcon, serverConfig)
+
+        assertIs<Either.Right<Pair<SelfUser, AuthSession>>>(actual)
+        assertEquals(expected, actual.value)
+
+        verify(registerApi)
+            .coroutine {
+                register(RegisterApi.RegisterParam.TeamAccount(email, code, name, password, teamName, teamIcon), serverConfig.apiBaseUrl)
+            }
             .wasInvoked(exactly = once)
         verify(sessionMapper)
             .invocation { fromSessionDTO(SESSION, serverConfig) }
@@ -186,7 +240,7 @@ class RegisterAccountRepositoryTest {
                 )
             }.then { NetworkResponse.Error(expected) }
 
-        val actual = registerAccountRepository.registerWithEmail(email, code, name, password, TEST_SERVER_CONFIG)
+        val actual = registerAccountRepository.registerPersonalAccountWithEmail(email, code, name, password, TEST_SERVER_CONFIG)
 
         assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(actual)
         assertEquals(expected, actual.value.kaliumException)
@@ -225,6 +279,8 @@ class RegisterAccountRepositoryTest {
         const val EMAIL = "user@domain.de"
         const val CODE = "123456"
         const val PASSWORD = "password"
+        const val TEAM_NAME = "teamName"
+        const val TEAM_ICON = "teamIcon"
         val SESSION: SessionDTO = SessionDTO("user_id", "tokenType", "access_token", "refresh_token")
         val TEST_USER: UserDTO = UserDTO(
             id = UserId("user_id", "domain.com"),

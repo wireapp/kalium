@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.session
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.SessionFailure
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.Either
@@ -10,6 +11,7 @@ import com.wire.kalium.persistence.model.PreferencesResult
 
 interface SessionRepository {
     fun storeSession(autSession: AuthSession)
+
     // TODO: exposing all session is unnecessary since we only need the IDs of the users getAllSessions(): Either<SessionFailure, List<UserIDs>>
     fun allSessions(): Either<SessionFailure, List<AuthSession>>
     fun userSession(userIdValue: String): Either<SessionFailure, AuthSession>
@@ -20,22 +22,22 @@ interface SessionRepository {
 }
 
 internal class SessionDataSource(
-    private val sessionStorage: SessionStorage, private val sessionMapper: SessionMapper
+    private val sessionStorage: SessionStorage, private val sessionMapper: SessionMapper = MapperProvider.sessionMapper()
 ) : SessionRepository {
     override fun storeSession(autSession: AuthSession) = sessionStorage.addSession(sessionMapper.toPersistenceSession(autSession))
 
-    override fun allSessions(): Either<SessionFailure, List<AuthSession>> =
-        when (val result = sessionStorage.allSessions()) {
-            is PreferencesResult.Success -> Either.Right(result.data.values.toList().map { sessionMapper.fromPersistenceSession(it) })
-            is PreferencesResult.DataNotFound -> Either.Left(SessionFailure.NoSessionFound)
-        }
-
-    override fun userSession(userIdValue: String): Either<SessionFailure, AuthSession> = when(val result = sessionStorage.userSession(userIdValue)) {
-        is PreferencesResult.Success -> Either.Right(sessionMapper.fromPersistenceSession(result.data))
-        PreferencesResult.DataNotFound -> Either.Left(SessionFailure.NoSessionFound)
+    override fun allSessions(): Either<SessionFailure, List<AuthSession>> = when (val result = sessionStorage.allSessions()) {
+        is PreferencesResult.Success -> Either.Right(result.data.values.toList().map { sessionMapper.fromPersistenceSession(it) })
+        is PreferencesResult.DataNotFound -> Either.Left(SessionFailure.NoSessionFound)
     }
 
-    override fun doesSessionExist(userIdValue: String): Either<CoreFailure, Boolean> =  allSessions().flatMap { sessionsList ->
+    override fun userSession(userIdValue: String): Either<SessionFailure, AuthSession> =
+        when (val result = sessionStorage.userSession(userIdValue)) {
+            is PreferencesResult.Success -> Either.Right(sessionMapper.fromPersistenceSession(result.data))
+            PreferencesResult.DataNotFound -> Either.Left(SessionFailure.NoSessionFound)
+        }
+
+    override fun doesSessionExist(userIdValue: String): Either<CoreFailure, Boolean> = allSessions().flatMap { sessionsList ->
         sessionsList.forEach {
             if (it.userId == userIdValue) {
                 Either.Right(true)

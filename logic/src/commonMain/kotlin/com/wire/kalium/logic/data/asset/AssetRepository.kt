@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.asset
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.user.UserAssetId
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.wrapApiRequest
@@ -19,9 +20,9 @@ interface AssetRepository {
 
 internal class AssetDataSource(
     private val assetApi: AssetApi,
-    private val assetMapper: AssetMapper,
-    private val assetDao: AssetDAO
-) : AssetRepository {
+    private val assetDao: AssetDAO,
+    private val assetMapper: AssetMapper = MapperProvider.assetMapper()
+    ) : AssetRepository {
 
     override suspend fun uploadAndPersistPublicAsset(mimeType: AssetType, assetData: ByteArray): Either<NetworkFailure, UploadedAssetId> {
         val uploadAssetData = UploadAssetData(assetData, mimeType, true, RetentionType.ETERNAL)

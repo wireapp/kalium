@@ -17,7 +17,6 @@ import com.wire.kalium.persistence.client.SessionStorageImpl
 import com.wire.kalium.persistence.db.Database
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
-import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.runBlocking
 
 /**
