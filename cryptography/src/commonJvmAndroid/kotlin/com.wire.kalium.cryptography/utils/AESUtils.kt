@@ -7,14 +7,14 @@ import javax.crypto.spec.SecretKeySpec
 
 internal class AESEncrypt {
 
-    internal fun encrypt(unencryptedData: ByteArray): Pair<ByteArray, ByteArray> {
+    internal fun encrypt(unencryptedData: ByteArray): Pair<ByteArray, SymmetricSecretKey> {
 
         // Secret symmetric key generation
         val keygen = KeyGenerator.getInstance(KEY_ALGORITHM)
         keygen.init(256)
         val key = keygen.generateKey()
 
-        val cipher = Cipher.getInstance(KEY_ALGORITHM_PADDING)
+        val cipher = Cipher.getInstance(KEY_ALGORITHM_CONFIGURATION)
         cipher.init(Cipher.ENCRYPT_MODE, key)
         val cipherData = cipher.doFinal(unencryptedData)
 
@@ -28,7 +28,7 @@ internal class AESEncrypt {
 internal class AESDecrypt(private val secretKey: ByteArray) {
 
     internal fun decrypt(encryptedData: ByteArray): ByteArray {
-        val cipher = Cipher.getInstance(KEY_ALGORITHM_PADDING)
+        val cipher = Cipher.getInstance(KEY_ALGORITHM_CONFIGURATION)
 
         val symmetricAESKey = SecretKeySpec(secretKey, 0, secretKey.size, KEY_ALGORITHM)
         cipher.init(Cipher.DECRYPT_MODE, symmetricAESKey, IvParameterSpec(ByteArray(16)))
@@ -41,4 +41,4 @@ internal class AESDecrypt(private val secretKey: ByteArray) {
 }
 
 private const val KEY_ALGORITHM = "AES"
-private const val KEY_ALGORITHM_PADDING = "AES/CBC/PKCS5PADDING"
+private const val KEY_ALGORITHM_CONFIGURATION = "AES/CBC/PKCS5PADDING"
