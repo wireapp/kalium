@@ -9,7 +9,7 @@ import com.wire.kalium.network.api.teams.TeamsApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.generator.TeamGenerator
-import com.wire.kalium.persistence.dao.QualifiedID
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.TeamEntity
 import com.wire.kalium.persistence.dao.UserDAO
@@ -126,7 +126,7 @@ class TeamRepositoryTest {
             .thenReturn(NetworkResponse.Success(value = teamMembersList, headers = mapOf(), httpCode = 200))
 
         val mappedTeamMember = UserEntity(
-            id = QualifiedID(
+            id = QualifiedIDEntity(
                 value = "teamMember1",
                 domain = "userDomain"
             ),

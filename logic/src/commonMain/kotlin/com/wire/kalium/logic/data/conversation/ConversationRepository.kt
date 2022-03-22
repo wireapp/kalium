@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.suspending
@@ -11,7 +12,7 @@ import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.Member
-import com.wire.kalium.persistence.dao.QualifiedID
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -22,18 +23,18 @@ interface ConversationRepository {
     suspend fun getConversationList(): Flow<List<Conversation>>
     suspend fun getConversationDetails(conversationId: ConversationId): Flow<Conversation>
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
-    suspend fun persistMember(member: Member, conversationID: QualifiedID): Either<CoreFailure, Unit>
-    suspend fun persistMembers(members: List<Member>, conversationID: QualifiedID): Either<CoreFailure, Unit>
-    suspend fun deleteMember(conversationID: QualifiedID, userID: QualifiedID): Either<CoreFailure, Unit>
+    suspend fun persistMember(member: Member, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
+    suspend fun persistMembers(members: List<Member>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
+    suspend fun deleteMember(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity): Either<CoreFailure, Unit>
 }
 
 class ConversationDataSource(
     private val conversationDAO: ConversationDAO,
     private val conversationApi: ConversationApi,
     private val clientApi: ClientApi,
-    private val idMapper: IdMapper,
-    private val conversationMapper: ConversationMapper,
-    private val memberMapper: MemberMapper
+    private val idMapper: IdMapper = MapperProvider.idMapper(),
+    private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
+    private val memberMapper: MemberMapper = MapperProvider.memberMapper()
 ) : ConversationRepository {
 
     // TODO: this need a review after the new wrapApiRequest
@@ -68,19 +69,19 @@ class ConversationDataSource(
         return conversationDAO.getAllMembers(idMapper.toDaoModel(conversationId)).first().map { idMapper.fromDaoModel(it.user) }
     }
 
-    override suspend fun persistMember(member: Member, conversationID: QualifiedID): Either<CoreFailure, Unit> {
+    override suspend fun persistMember(member: Member, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit> {
         conversationDAO.insertMember(member, conversationID)
         //TODO: Handle failures
         return Either.Right(Unit)
     }
 
-    override suspend fun persistMembers(members: List<Member>, conversationID: QualifiedID): Either<CoreFailure, Unit> {
+    override suspend fun persistMembers(members: List<Member>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit> {
         conversationDAO.insertMembers(members, conversationID)
         //TODO: Handle failures
         return Either.Right(Unit)
     }
 
-    override suspend fun deleteMember(conversationID: QualifiedID, userID: QualifiedID): Either<CoreFailure, Unit> {
+    override suspend fun deleteMember(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity): Either<CoreFailure, Unit> {
         conversationDAO.deleteMemberByQualifiedID(conversationID, userID)
         //TODO: Handle failures
         return Either.Right(Unit)
