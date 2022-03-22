@@ -127,7 +127,7 @@ class RegisterAccountUseCaseTest {
         val expected = Pair(user, session)
 
         given(registerAccountRepository)
-            .coroutine { registerWithEmail(param.email, param.emailActivationCode, param.name, param.password, serverConfig) }
+            .coroutine { registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password, serverConfig) }
             .then { Either.Right(expected) }
 
         val actual = registerAccountUseCase(param, serverConfig, false)
@@ -136,7 +136,7 @@ class RegisterAccountUseCaseTest {
         assertEquals(expected, actual.value)
 
         verify(registerAccountRepository)
-            .coroutine { registerWithEmail(param.email, param.emailActivationCode, param.name, param.password, serverConfig) }
+            .coroutine { registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password, serverConfig) }
             .wasInvoked(exactly = once)
         verify(sessionRepository)
             .invocation { storeSession(session) }
