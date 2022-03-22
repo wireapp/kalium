@@ -20,8 +20,7 @@ import androidx.work.WorkerParameters
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.R
 import com.wire.kalium.logic.feature.UserSessionScope
-import com.wire.kalium.logic.feature.auth.AuthSession
-import kotlinx.serialization.decodeFromString
+import com.wire.kalium.network.api.NonQualifiedUserId
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlin.reflect.KClass
@@ -83,32 +82,30 @@ class WrapperWorkerFactory(private val coreLogic: CoreLogic) : WorkerFactory() {
             return null // delegate to default factory
         }
 
-        val userSessionEncoded = workerParameters.inputData.getString(WrapperWorkerFactory.SESSION_KEY)
+        val userId = workerParameters.inputData.getString(WrapperWorkerFactory.USER_ID_KEY)
         val innerWorkerClassName = workerParameters.inputData.getString(WrapperWorkerFactory.WORKER_CLASS_KEY)
 
-        if (userSessionEncoded == null || innerWorkerClassName == null) {
-            throw RuntimeException("No session was specified")
+        if (userId == null || innerWorkerClassName == null) {
+            throw RuntimeException("No user id was specified")
         }
-
-        val userSession: AuthSession = Json.decodeFromString(userSessionEncoded)
         val constructor = Class.forName(innerWorkerClassName).getDeclaredConstructor(UserSessionScope::class.java)
-        val innerWorker = constructor.newInstance(coreLogic.getSessionScope(userSession))
+        val innerWorker = constructor.newInstance(coreLogic.getSessionScope(userId))
         return WrapperWorker(innerWorker as UserSessionWorker, appContext, workerParameters)
     }
 
     companion object {
         const val WORKER_CLASS_KEY = "worker_class"
-        const val SESSION_KEY = "session"
+        const val USER_ID_KEY = "user-id-worker-param"
     }
 
 }
 
-actual class WorkScheduler(private val context: Context, private val session: AuthSession) {
+actual class WorkScheduler(private val context: Context, private val userId: NonQualifiedUserId) {
 
     actual fun schedule(work: KClass<out UserSessionWorker>, name: String) {
         val inputData = Data.Builder()
             .putString(WrapperWorkerFactory.WORKER_CLASS_KEY, work.java.canonicalName)
-            .putString(WrapperWorkerFactory.SESSION_KEY, Json.encodeToString(session))
+            .putString(WrapperWorkerFactory.USER_ID_KEY, Json.encodeToString(userId))
             .build()
         val request = OneTimeWorkRequest.Builder(WrapperWorker::class.java)
             .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)

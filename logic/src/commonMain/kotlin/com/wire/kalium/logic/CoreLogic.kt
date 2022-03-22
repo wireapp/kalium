@@ -6,8 +6,8 @@ import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.session.SessionMapperImpl
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.UserSessionScope
-import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
+import com.wire.kalium.network.api.NonQualifiedUserId
 
 expect class CoreLogic : CoreLogicCommon
 
@@ -27,7 +27,7 @@ abstract class CoreLogicCommon(
 
 
     // TODO: hashMapOf<USerID, AuthenticatedDataSourceSet>()
-    protected val userScopeStorage = hashMapOf<AuthSession, AuthenticatedDataSourceSet>()
+    protected val userScopeStorage = hashMapOf<NonQualifiedUserId, AuthenticatedDataSourceSet>()
     // TODO: - Update UserSession when token is refreshed
     //       - Delete UserSession and DataSourceSets when user logs-out
 
@@ -35,11 +35,11 @@ abstract class CoreLogicCommon(
     abstract fun getAuthenticationScope(): AuthenticationScope
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
-    abstract fun getSessionScope(session: AuthSession): UserSessionScope
+    abstract fun getSessionScope(userId: NonQualifiedUserId): UserSessionScope
 
     suspend fun <T> authenticationScope(action: suspend AuthenticationScope.() -> T)
             : T = getAuthenticationScope().action()
 
-    suspend fun <T> sessionScope(session: AuthSession, action: suspend UserSessionScope.() -> T)
-            : T = getSessionScope(session).action()
+    suspend fun <T> sessionScope(userId: NonQualifiedUserId, action: suspend UserSessionScope.() -> T)
+            : T = getSessionScope(userId).action()
 }
