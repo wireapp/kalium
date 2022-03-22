@@ -18,14 +18,14 @@ internal class SessionManagerImpl(
     private val serverConfigMapper: ServerConfigMapper
 ) : SessionManager {
     override fun session(): Pair<SessionDTO, BackendConfig> = sessionRepository.userSession(userId).fold({
-        TODO()
+        TODO("no session is stored to the user")
     }, { session ->
         Pair(sessionMapper.toSessionDTO(session), serverConfigMapper.toBackendConfig(session.serverConfig))
     })
 
     override fun updateSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO =
         sessionRepository.userSession(userId).fold({
-            TODO()
+            TODO("no session is stored to the user")
         }, { authSession ->
             AuthSession(
                 authSession.userId,
