@@ -104,7 +104,7 @@ class SessionStorageImpl(
     }
 
     override fun userSession(userId: String): PreferencesResult<PersistenceSession> = with(allSessions()) {
-        when(this) {
+        when (this) {
             is PreferencesResult.Success -> this.data[userId]?.let {
                 PreferencesResult.Success(it)
             } ?: run {

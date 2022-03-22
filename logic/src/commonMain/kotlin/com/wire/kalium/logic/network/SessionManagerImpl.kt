@@ -11,7 +11,7 @@ import com.wire.kalium.network.api.model.RefreshTokenDTO
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.tools.BackendConfig
 
-internal class SessionManagerImpl(
+class SessionManagerImpl(
     private val sessionRepository: SessionRepository,
     private val userId: NonQualifiedUserId,
     private val sessionMapper: SessionMapper,

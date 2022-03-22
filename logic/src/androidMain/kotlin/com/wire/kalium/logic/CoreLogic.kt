@@ -17,6 +17,7 @@ import com.wire.kalium.persistence.client.SessionStorageImpl
 import com.wire.kalium.persistence.db.Database
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
+import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.runBlocking
 
 /**
@@ -31,7 +32,7 @@ actual class CoreLogic(
 
     override fun getSessionRepo(): SessionRepository {
         val sessionPreferences =
-            KaliumPreferencesSettings(EncryptedSettingsHolder(appContext, SHARED_PREFERENCE_FILE_NAME).encryptedSettings)
+            KaliumPreferencesSettings(EncryptedSettingsHolder(appContext, FileNameUtil.appPrefFile()).encryptedSettings)
         val sessionStorage: SessionStorage = SessionStorageImpl(sessionPreferences)
         return SessionDataSource(sessionStorage, sessionMapper)
     }
@@ -47,10 +48,9 @@ actual class CoreLogic(
 
             val workScheduler = WorkScheduler(appContext, session)
             val syncManager = SyncManagerImpl(workScheduler)
-            val encryptedSettingsHolder = EncryptedSettingsHolder(appContext, "${PREFERENCE_FILE_PREFIX}-${session.userId}")
+            val encryptedSettingsHolder = EncryptedSettingsHolder(appContext, FileNameUtil.userPrefFile(session.userId))
             val userPreferencesSettings = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
-            // FIXME: should the DB name be unique per user ?
-            val database = Database(appContext, "main.db", userPreferencesSettings)
+            val database = Database(appContext, session.userId, userPreferencesSettings)
             AuthenticatedDataSourceSet(
                 networkContainer,
                 proteusClient,
@@ -64,10 +64,5 @@ actual class CoreLogic(
             }
         }
         return UserSessionScope(appContext, session, dataSourceSet, sessionRepository)
-    }
-
-    private companion object {
-        private const val SHARED_PREFERENCE_FILE_NAME = "app-preference"
-        private const val PREFERENCE_FILE_PREFIX = "user-pref"
     }
 }
