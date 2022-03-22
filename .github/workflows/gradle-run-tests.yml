@@ -31,7 +31,6 @@ jobs:
       - name: Build Native dependencies
         if: steps.cryptobox-cache.outputs.cache-hit != 'true'
         run: |
-          ls native/libs
           make
       - name: Test with Gradle
         run: ./gradlew allTests
