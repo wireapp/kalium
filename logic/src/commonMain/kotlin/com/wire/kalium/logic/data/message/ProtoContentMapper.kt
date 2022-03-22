@@ -1,10 +1,10 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.protobuf.GenericMessage
-import com.wire.kalium.protobuf.Text
 import com.wire.kalium.protobuf.decodeFromByteArray
 import com.wire.kalium.protobuf.encodeToByteArray
+import com.wire.kalium.protobuf.messages.GenericMessage
+import com.wire.kalium.protobuf.messages.Text
 
 interface ProtoContentMapper {
     fun encodeToProtobuf(protoContent: ProtoContent): PlainMessageBlob

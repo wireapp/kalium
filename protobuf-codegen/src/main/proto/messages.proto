@@ -19,7 +19,7 @@
 
 syntax = "proto2";
 
-import "qualified_user_id.proto";
+option java_package = "com.wire.kalium.protobuf.messages";
 
 message GenericMessage {
     required string message_id = 1; // client generated random id, preferably UUID
@@ -46,6 +46,11 @@ message GenericMessage {
         ButtonActionConfirmation buttonActionConfirmation = 22;
         DataTransfer dataTransfer = 23; // client-side synchronization across devices of the same user
     }
+}
+
+message QualifiedUserId {
+    required string id     = 1;
+    required string domain = 2;
 }
 
 message QualifiedConversationId {

@@ -21,10 +21,15 @@ syntax = "proto2";
 
 package proteus;
 
-import "qualified_user_id.proto";
+option java_package = "com.wire.kalium.protobuf.otr";
 
 message UserId {
     required bytes uuid = 1;
+}
+
+message QualifiedUserId {
+    required string id     = 1;
+    required string domain = 2;
 }
 
 message ClientId {

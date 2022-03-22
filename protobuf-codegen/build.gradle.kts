@@ -30,9 +30,7 @@ protobuf {
                 remove("java")
             }
             task.plugins {
-                id("pbandk") {
-                    option("kotlin_package=com.wire.kalium.protobuf")
-                }
+                id("pbandk")
             }
         }
     }

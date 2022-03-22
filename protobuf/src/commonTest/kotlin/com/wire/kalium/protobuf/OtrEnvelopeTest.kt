@@ -1,5 +1,7 @@
 package com.wire.kalium.protobuf
 
+import com.wire.kalium.protobuf.otr.ClientId
+import com.wire.kalium.protobuf.otr.QualifiedNewOtrMessage
 import pbandk.decodeFromByteArray
 import pbandk.encodeToByteArray
 import kotlin.test.Test
@@ -15,8 +17,6 @@ class OtrEnvelopeTest {
 
         val byteArray = otrMessage.encodeToByteArray()
         val decoded = QualifiedNewOtrMessage.decodeFromByteArray(byteArray)
-
-        GenericMessage().encodeToByteArray()
 
         assertEquals(clientId, decoded.sender)
     }
