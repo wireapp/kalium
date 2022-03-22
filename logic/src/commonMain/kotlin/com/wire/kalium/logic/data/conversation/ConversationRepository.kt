@@ -2,7 +2,9 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
@@ -29,6 +31,7 @@ interface ConversationRepository {
 }
 
 class ConversationDataSource(
+    private val userRepository: UserRepository,
     private val conversationDAO: ConversationDAO,
     private val conversationApi: ConversationApi,
     private val clientApi: ClientApi,
@@ -40,8 +43,11 @@ class ConversationDataSource(
     // TODO: this need a review after the new wrapApiRequest
     // FIXME: fetchConversations() returns only the first page
     override suspend fun fetchConversations(): Either<CoreFailure, Unit> = suspending {
+        val selfUserTeamId = userRepository.getSelfUser().first().team
         wrapApiRequest { conversationApi.conversationsByBatch(null, 100) }.map { conversationPagingResponse ->
-            conversationDAO.insertConversations(conversationPagingResponse.conversations.map(conversationMapper::fromApiModelToDaoModel))
+            conversationDAO.insertConversations(conversationPagingResponse.conversations.map { conversationResponse ->
+                conversationMapper.fromApiModelToDaoModel(conversationResponse, selfUserTeamId?.let { TeamId(it) })
+            })
             conversationPagingResponse.conversations.forEach { conversationsResponse ->
                 conversationDAO.insertMembers(
                     memberMapper.fromApiModelToDaoModel(conversationsResponse.members),
