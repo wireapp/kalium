@@ -33,13 +33,14 @@ jobs:
         run: |
           make
       - name: Test with Gradle
-        run: ./gradlew allTests
+        run: |
+          ls -l native/libs
+          ./gradlew allTests
       - name: Android Instrumentation Tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 29
           script: |
-            ls -l native/libs
             ./gradlew cryptography:connectedAndroidTest
             ./gradlew persistence:connectedAndroidTest
       - name: Publish Unit Test Results
