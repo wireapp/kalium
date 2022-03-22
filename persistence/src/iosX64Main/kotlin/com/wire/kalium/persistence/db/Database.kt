@@ -25,16 +25,18 @@ actual class Database(name: String, passphrase: String) {
 
     init {
         val driver = NativeSqliteDriver(AppDatabase.Schema, name)
-        database = AppDatabase(driver,
+        database = AppDatabase(
+            driver,
             Client.Adapter(user_idAdapter = QualifiedIDAdapter()),
-            Conversation.Adapter(qualified_idAdapter = QualifiedIDAdapter()),
+            Conversation.Adapter(qualified_idAdapter = QualifiedIDAdapter(), typeAdapter = EnumColumnAdapter()),
             Member.Adapter(userAdapter = QualifiedIDAdapter(), conversationAdapter = QualifiedIDAdapter()),
             Message.Adapter(
                 conversation_idAdapter = QualifiedIDAdapter(),
                 sender_user_idAdapter = QualifiedIDAdapter(),
                 statusAdapter = EnumColumnAdapter()
             ),
-            User.Adapter(qualified_idAdapter = QualifiedIDAdapter(), IntColumnAdapter))
+            User.Adapter(qualified_idAdapter = QualifiedIDAdapter(), IntColumnAdapter)
+        )
         driver.execute(null, "PRAGMA foreign_keys=ON", 0)
     }
 
