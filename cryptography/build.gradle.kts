@@ -44,7 +44,10 @@ kotlin {
             useJUnit()
 
             if (System.getProperty("os.name").contains("Mac", true)) {
-                jvmArgs = jvmArgs?.plus(listOf("-Djava.library.path=/usr/local/lib/:../native/libs"))
+                val nativeLibsPath = rootProject.file("native/libs").absolutePath
+                println("Files in $nativeLibsPath:")
+                File(nativeLibsPath).list().forEach(::println)
+                jvmArgs = jvmArgs?.plus(listOf("-Djava.library.path=/usr/local/lib/:$nativeLibsPath"))
             }
         }
     }
