@@ -1,6 +1,6 @@
 package com.wire.kalium.cryptography.utils
 
-actual fun encryptDataWithAES256(data: ByteArray): ByteArray {
+actual fun encryptDataWithAES256(data: ByteArray): Pair<ByteArray,ByteArray> {
     TODO("Not yet implemented")
 }
 

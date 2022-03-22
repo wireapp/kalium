@@ -10,7 +10,7 @@ actual fun calcMd5(bytes: ByteArray): String = bytes.let {
     return hash.encodeBase64()
 }
 
-actual fun encryptDataWithAES256(data: ByteArray): ByteArray {
+actual fun encryptDataWithAES256(data: ByteArray): Pair<ByteArray,ByteArray> {
     TODO("Not yet implemented")
 }
 

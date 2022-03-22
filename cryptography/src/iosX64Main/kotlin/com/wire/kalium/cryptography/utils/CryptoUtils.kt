@@ -21,7 +21,7 @@ private fun toData(data: ByteArray): NSData = memScoped {
     NSData.create(bytes = allocArrayOf(data), length = data.size.toULong())
 }
 
-actual fun encryptDataWithAES256(data: ByteArray): ByteArray {
+actual fun encryptDataWithAES256(data: ByteArray): Pair<ByteArray,ByteArray> {
     TODO("Not yet implemented")
 }
 

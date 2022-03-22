@@ -10,9 +10,9 @@ actual fun calcMd5(bytes: ByteArray): String = bytes.let {
     return hash.encodeBase64()
 }
 
-actual fun encryptDataWithAES256(data: ByteArray): ByteArray {
+actual fun encryptDataWithAES256(data: ByteArray): Pair<ByteArray, ByteArray> {
     val (encryptedData, secretKey) = AESEncrypt().encrypt(data)
-    return encryptedData
+    return encryptedData to secretKey
 }
 
 actual fun decryptDataWithAES256(data: ByteArray, secretKey: ByteArray): ByteArray = AESDecrypt(secretKey).decrypt(data)
