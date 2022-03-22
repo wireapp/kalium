@@ -6,8 +6,6 @@ import com.wire.kalium.logic.data.asset.AssetDataSource
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.asset.AssetMapperImpl
 import com.wire.kalium.logic.data.asset.AssetRepository
-import com.wire.kalium.logic.data.call.CallDataSource
-import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientDataSource
 import com.wire.kalium.logic.data.client.ClientMapper
 import com.wire.kalium.logic.data.client.ClientRepository
@@ -54,7 +52,6 @@ import com.wire.kalium.logic.data.user.UserMapperImpl
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
-import com.wire.kalium.logic.feature.call.CallScope
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.message.MessageScope
@@ -136,11 +133,6 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.authenticatedNetworkContainer.contactSearchApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
             publicUserMapper
-        )
-
-    private val callRepository: CallRepository
-        get() = CallDataSource(
-            callApi = authenticatedDataSourceSet.authenticatedNetworkContainer.callApi
         )
 
     protected abstract val clientConfig: ClientConfig
@@ -229,8 +221,5 @@ abstract class UserSessionScopeCommon(
     val team: TeamScope get() = TeamScope(
         userRepository = userRepository,
         teamRepository = teamRepository
-    )
-    val call: CallScope get() = CallScope(
-        callRepository = callRepository
     )
 }

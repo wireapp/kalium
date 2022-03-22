@@ -40,7 +40,6 @@ class MainActivity : ComponentActivity() {
         login(coreLogic.getAuthenticationScope())?.let {
             val session = coreLogic.getSessionScope(it)
             val conversations = session.conversations.getConversations().first()
-            val callConfiguration = session.call.getCallConfigUseCase(limit = 10)
 
             // Uploading image code
 //            val imageContent = applicationContext.assets.open("moon1.jpg").readBytes()
@@ -54,7 +53,7 @@ class MainActivity : ComponentActivity() {
             }
 
             setContent {
-                MainLayout(conversations, selfUser, avatarAsset, callConfiguration)
+                MainLayout(conversations, selfUser, avatarAsset)
             }
         }
     }
@@ -74,7 +73,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun MainLayout(conversations: List<Conversation>, selfUser: SelfUser, avatarAsset: ByteArray?, callConfig: String) {
+fun MainLayout(conversations: List<Conversation>, selfUser: SelfUser, avatarAsset: ByteArray?) {
     Column {
         Text("Conversation count:")
         Text("${conversations.size}")
@@ -95,12 +94,5 @@ fun MainLayout(conversations: List<Conversation>, selfUser: SelfUser, avatarAsse
                 modifier = Modifier.size(300.dp)
             )
         }
-
-        Divider(
-            modifier = Modifier.fillMaxWidth(),
-            thickness = 0.5.dp
-        )
-        Text(text = "Call Config:")
-        Text(callConfig)
     }
 }
