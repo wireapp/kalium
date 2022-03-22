@@ -23,18 +23,18 @@ import com.wire.kalium.network.api.user.logout.LogoutApi
 import com.wire.kalium.network.api.user.logout.LogoutImpl
 import com.wire.kalium.network.api.user.self.SelfApi
 import com.wire.kalium.network.api.user.self.SelfApiImpl
-import com.wire.kalium.network.session.UserSessionManager
+import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.session.installAuth
 import io.ktor.client.engine.HttpClientEngine
 
 class AuthenticatedNetworkContainer(
-    private val userSessionManager: UserSessionManager,
+    private val sessionManager: SessionManager,
     private val engine: HttpClientEngine = defaultHttpEngine(),
 ) {
 
-    private val backendConfig = userSessionManager.userConfig().second
+    private val backendConfig = sessionManager.session().second
 
-    val logoutApi: LogoutApi get() = LogoutImpl(authenticatedHttpClient, userSessionManager)
+    val logoutApi: LogoutApi get() = LogoutImpl(authenticatedHttpClient, sessionManager)
 
     val clientApi: ClientApi get() = ClientApiImpl(authenticatedHttpClient)
 
@@ -58,7 +58,7 @@ class AuthenticatedNetworkContainer(
 
     internal val authenticatedHttpClient by lazy {
         provideBaseHttpClient(engine, HttpClientOptions.DefaultHost(backendConfig)) {
-            installAuth(userSessionManager)
+            installAuth(sessionManager)
         }
     }
 }

@@ -13,7 +13,7 @@ import io.ktor.client.plugins.auth.providers.bearer
 
 interface SessionManager {
     fun session(): Pair<SessionDTO, BackendConfig>
-    fun updateSession(newAccessToken: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO
+    fun updateSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO
     fun onSessionExpired()
 }
 
