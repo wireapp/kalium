@@ -11,17 +11,17 @@ import io.ktor.client.plugins.auth.Auth
 import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.auth.providers.bearer
 
-interface UserSessionManager {
-    fun userConfig(): Pair<SessionDTO, BackendConfig>
-    fun updateSession(accessToken: AccessTokenDTO, refreshTokenDTO: RefreshTokenDTO?): SessionDTO
-    fun onSessionExpiry()
+interface SessionManager {
+    fun session(): Pair<SessionDTO, BackendConfig>
+    fun updateSession(newAccessToken: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO
+    fun onSessionExpired()
 }
 
 
-fun HttpClientConfig<*>.installAuth(userSessionManager: UserSessionManager) {
+fun HttpClientConfig<*>.installAuth(sessionManager: SessionManager) {
     install(Auth) {
         bearer {
-            val _userSession = userSessionManager.userConfig().first
+            val _userSession = sessionManager.session().first
             var access = _userSession.accessToken
             var refresh = _userSession.refreshToken
 
@@ -33,12 +33,11 @@ fun HttpClientConfig<*>.installAuth(userSessionManager: UserSessionManager) {
                     is NetworkResponse.Success -> {
                         response.value.first.let { newAccessToken -> access = newAccessToken.value }
                         response.value.second?.let { newRefreshToken -> refresh = newRefreshToken.value }
-                        userSessionManager.updateSession(response.value.first, response.value.second)
+                        sessionManager.updateSession(response.value.first, response.value.second)
                         BearerTokens(access, refresh)
                     }
-                    is NetworkResponse.Error -> TODO()
+                    is NetworkResponse.Error -> TODO("crash the app if session refresh failed")
                 }
-
             }
         }
     }
