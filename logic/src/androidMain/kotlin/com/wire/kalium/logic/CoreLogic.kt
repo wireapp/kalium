@@ -49,7 +49,7 @@ actual class CoreLogic(
             val syncManager = SyncManagerImpl(workScheduler)
             val encryptedSettingsHolder = EncryptedSettingsHolder(appContext, "${PREFERENCE_FILE_PREFIX}-${session.userId}")
             val userPreferencesSettings = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
-            // FIXME: should the DB name be uniq per user ?
+            // FIXME: should the DB name be unique per user ?
             val database = Database(appContext, "main.db", userPreferencesSettings)
             AuthenticatedDataSourceSet(
                 networkContainer,
