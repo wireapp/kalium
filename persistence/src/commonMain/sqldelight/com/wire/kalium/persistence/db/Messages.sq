@@ -1,12 +1,12 @@
-import com.wire.kalium.persistence.dao.QualifiedID;
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.message.MessageEntity;
 
 CREATE TABLE Message (
       id TEXT NOT NULL,
       content TEXT,
-      conversation_id TEXT AS QualifiedID NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
       date TEXT NOT NULL,
-      sender_user_id TEXT AS QualifiedID NOT NULL,
+      sender_user_id TEXT AS QualifiedIDEntity NOT NULL,
       sender_client_id TEXT NOT NULL,
       status TEXT AS MessageEntity.Status NOT NULL,
       FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id),

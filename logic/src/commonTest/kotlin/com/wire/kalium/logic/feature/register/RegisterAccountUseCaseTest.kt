@@ -48,7 +48,9 @@ class RegisterAccountUseCaseTest {
         val expected = Pair(user, session)
 
         given(registerAccountRepository)
-            .coroutine { registerWithEmail(param.email, param.emailActivationCode, param.name, param.password, serverConfig) }
+            .coroutine {
+                registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password, serverConfig)
+            }
             .then { Either.Right(expected) }
         given(sessionRepository)
             .invocation { storeSession(expected.second) }
@@ -63,7 +65,50 @@ class RegisterAccountUseCaseTest {
         assertEquals(expected, actual.value)
 
         verify(registerAccountRepository)
-            .coroutine { registerWithEmail(param.email, param.emailActivationCode, param.name, param.password, serverConfig) }
+            .coroutine {
+                registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password, serverConfig)
+            }
+            .wasInvoked(exactly = once)
+        verify(sessionRepository)
+            .invocation { storeSession(session) }
+            .wasInvoked(exactly = once)
+        verify(sessionRepository)
+            .invocation { updateCurrentSession(session.userId) }
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenRepositoryCallIsSuccessful_whenRegisteringTeamAccount_thenSuccessIsPropagated() = runTest {
+        val serverConfig = TEST_SERVER_CONFIG
+        val param = TEST_TEAM_ACCOUNT_PARAM
+        val user = TEST_SELF_USER
+        val session = TEST_AUTH_SESSION
+        val expected = Pair(user, session)
+
+        given(registerAccountRepository)
+            .coroutine {
+                registerTeamWithEmail(
+                    param.email, param.emailActivationCode, param.name, param.password, param.teamName, param.teamIcon, serverConfig
+                )
+            }
+            .then { Either.Right(expected) }
+        given(sessionRepository)
+            .invocation { storeSession(expected.second) }
+            .then { Unit } // Unit here is intentional since this will change after using wrapStorageRequest
+        given(sessionRepository)
+            .invocation { updateCurrentSession(expected.second.userId) }
+            .then { Unit } // Unit here is intentional since this will change after using wrapStorageRequest
+
+        val actual = registerAccountUseCase(param, serverConfig)
+
+        assertIs<RegisterResult.Success>(actual)
+        assertEquals(expected, actual.value)
+
+        verify(registerAccountRepository)
+            .coroutine { registerTeamWithEmail(
+                param.email, param.emailActivationCode, param.name, param.password, param.teamName, param.teamIcon, serverConfig
+            )
+            }
             .wasInvoked(exactly = once)
         verify(sessionRepository)
             .invocation { storeSession(session) }
@@ -108,7 +153,9 @@ class RegisterAccountUseCaseTest {
         val expected = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
 
         given(registerAccountRepository)
-            .coroutine { registerWithEmail(param.email, param.emailActivationCode, param.name, param.password, serverConfig) }
+            .coroutine {
+                registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password, serverConfig)
+            }
             .then { Either.Left(expected) }
 
         val actual = registerAccountUseCase(param, serverConfig)
@@ -117,7 +164,9 @@ class RegisterAccountUseCaseTest {
         assertEquals(expected, actual.failure)
 
         verify(registerAccountRepository)
-            .coroutine { registerWithEmail(param.email, param.emailActivationCode, param.name, param.password, serverConfig) }
+            .coroutine {
+                registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password, serverConfig)
+            }
             .wasInvoked(exactly = once)
         verify(sessionRepository)
             .function(sessionRepository::storeSession)
@@ -160,7 +209,9 @@ class RegisterAccountUseCaseTest {
         val expected = NetworkFailure.ServerMiscommunication(kaliumException)
 
         given(registerAccountRepository)
-            .coroutine { registerWithEmail(param.email, param.emailActivationCode, param.name, param.password, serverConfig) }
+            .coroutine {
+                registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password, serverConfig)
+            }
             .then { Either.Left(expected) }
 
         val actual = registerAccountUseCase(param, serverConfig)
@@ -169,7 +220,9 @@ class RegisterAccountUseCaseTest {
         assertEquals(error, actual)
 
         verify(registerAccountRepository)
-            .coroutine { registerWithEmail(param.email, param.emailActivationCode, param.name, param.password, serverConfig) }
+            .coroutine {
+                registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password, serverConfig)
+            }
             .wasInvoked(exactly = once)
         verify(sessionRepository)
             .function(sessionRepository::storeSession)
@@ -197,6 +250,10 @@ class RegisterAccountUseCaseTest {
         )
         val TEST_PRIVATE_ACCOUNT_PARAM = RegisterParam.PrivateAccount(
             firstName = "first", lastName = "last", email = TEST_EMAIL, password = TEST_PASSWORD, emailActivationCode = TEST_CODE
+        )
+        val TEST_TEAM_ACCOUNT_PARAM = RegisterParam.Team(
+            firstName = "first", lastName = "last", email = TEST_EMAIL, password = TEST_PASSWORD, emailActivationCode = TEST_CODE,
+            teamName = "teamName", teamIcon = "teamIcon"
         )
         val TEST_SELF_USER = SelfUser(
             id = UserId(value = "user_id", domain = "domain.com"),

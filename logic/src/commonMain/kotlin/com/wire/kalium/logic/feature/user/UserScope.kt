@@ -5,6 +5,8 @@ import com.wire.kalium.logic.data.publicuser.PublicUserRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.asset.GetPublicAssetUseCase
 import com.wire.kalium.logic.feature.asset.GetPublicAssetUseCaseImpl
+import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
+import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 
 class UserScope(
@@ -13,6 +15,7 @@ class UserScope(
     private val syncManager: SyncManager,
     private val assetRepository: AssetRepository
 ) {
+    private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
     val getSelfUser: GetSelfUserUseCase get() = GetSelfUserUseCase(userRepository, syncManager)
     val syncSelfUser: SyncSelfUserUseCase get() = SyncSelfUserUseCase(userRepository)
     val syncContacts: SyncContactsUseCase get() = SyncContactsUseCaseImpl(userRepository)
@@ -20,4 +23,5 @@ class UserScope(
     val searchKnownUsers: SearchKnownUsersUseCase get() = SearchKnownUsersUseCaseImpl(userRepository)
     val getPublicAsset: GetPublicAssetUseCase get() = GetPublicAssetUseCaseImpl(assetRepository)
     val searchPublicUser: SearchPublicUserUseCase get() = SearchPublicUserUseCaseImpl(publicUserRepository)
+    val setUserHandle: SetUserHandleUseCase get() = SetUserHandleUseCase(userRepository, validateUserHandleUseCase)
 }

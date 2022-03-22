@@ -1,6 +1,7 @@
 package com.wire.kalium.network.api.conversation
 
 import com.wire.kalium.network.api.ConversationId
+import com.wire.kalium.network.api.TeamId
 import com.wire.kalium.network.api.UserId
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -19,12 +20,31 @@ data class ConversationResponse(
     @SerialName("qualified_id")
     val id: ConversationId,
 
-    @SerialName("type")
-    val type: Int,
+    @Serializable(with = ConversationTypeSerializer::class)
+    val type: Type,
 
     @SerialName("message_timer")
-    val messageTimer: Int?
-)
+    val messageTimer: Int?,
+
+    @SerialName("team")
+    val teamId: TeamId?
+){
+
+    val isOneOnOneConversation: Boolean
+        get() = type in setOf(
+            Type.ONE_TO_ONE,
+            Type.WAIT_FOR_CONNECTION,
+            Type.INCOMING_CONNECTION
+        )
+
+    enum class Type(val id: Int) {
+        GROUP(0), SELF(1), ONE_TO_ONE(2), WAIT_FOR_CONNECTION(3), INCOMING_CONNECTION(4);
+
+        companion object {
+            fun fromId(id: Int): Type = values().first { type -> type.id == id }
+        }
+    }
+}
 
 @Serializable
 data class ConversationMembersResponse(

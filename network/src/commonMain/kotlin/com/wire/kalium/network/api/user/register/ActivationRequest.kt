@@ -42,7 +42,7 @@ internal data class NewBindingTeamDTO(
     @SerialName("icon")
     val iconAssetId: AssetId,
     @SerialName("icon_key")
-    val iconKey: AssetKey,
+    val iconKey: AssetKey?,
     @SerialName("name")
     val name: String
 )

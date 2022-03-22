@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.session.local
 
 import com.wire.kalium.logic.data.session.SessionMapper
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.SessionFailure
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.Either
@@ -17,7 +18,7 @@ interface SessionLocalRepository {
 
 class SessionLocalDataSource(
     private val sessionStorage: SessionStorage,
-    private val sessionMapper: SessionMapper
+    private val sessionMapper: SessionMapper = MapperProvider.sessionMapper()
 ) : SessionLocalRepository {
 
     override fun storeSession(autSession: AuthSession) =
