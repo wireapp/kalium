@@ -26,6 +26,7 @@ abstract class CoreLogicCommon(
     protected abstract fun getSessionRepo(): SessionRepository
 
 
+    // TODO: hashMapOf<USerID, AuthenticatedDataSourceSet>()
     protected val userScopeStorage = hashMapOf<AuthSession, AuthenticatedDataSourceSet>()
     // TODO: - Update UserSession when token is refreshed
     //       - Delete UserSession and DataSourceSets when user logs-out

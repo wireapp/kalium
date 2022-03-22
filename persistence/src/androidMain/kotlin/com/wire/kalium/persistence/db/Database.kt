@@ -23,11 +23,12 @@ import com.wire.kalium.persistence.dao.client.ClientDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
+import com.wire.kalium.persistence.util.FileNameUtil
 import net.sqlcipher.database.SupportFactory
 import java.security.SecureRandom
 
-actual class Database(private val context: Context, private val name: String, kaliumPreferences: KaliumPreferences) {
-
+actual class Database(private val context: Context, userId: String, kaliumPreferences: KaliumPreferences) {
+    private val dbName = FileNameUtil.userDBName(userId)
     private val driver: AndroidSqliteDriver
     private val database: AppDatabase
 
@@ -44,7 +45,7 @@ actual class Database(private val context: Context, private val name: String, ka
         driver = AndroidSqliteDriver(
             schema = AppDatabase.Schema,
             context = context,
-            name = name,
+            name = dbName,
             factory = supportFactory,
             callback = onConnectCallback
         )
@@ -86,7 +87,7 @@ actual class Database(private val context: Context, private val name: String, ka
 
     actual fun nuke(): Boolean {
         driver.close()
-        return context.deleteDatabase(name)
+        return context.deleteDatabase(dbName)
     }
 
     private fun getOrGenerateSecretKey(kaliumPreferences: KaliumPreferences): String {
