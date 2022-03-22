@@ -21,11 +21,7 @@ sealed class RegisterParam(
     val email: String,
     val password: String,
 ) {
-    val name: String
-
-    init {
-        name = "$firstName $lastName"
-    }
+    val name: String = "$firstName $lastName"
 
     class PrivateAccount(
         firstName: String,
@@ -33,6 +29,16 @@ sealed class RegisterParam(
         email: String,
         password: String,
         val emailActivationCode: String
+    ) : RegisterParam(firstName, lastName, email, password)
+
+    class Team(
+        firstName: String,
+        lastName: String,
+        email: String,
+        password: String,
+        val emailActivationCode: String,
+        val teamName: String,
+        val teamIcon: String
     ) : RegisterParam(firstName, lastName, email, password)
 }
 
@@ -44,7 +50,14 @@ class RegisterAccountUseCase(
         return when (param) {
             is RegisterParam.PrivateAccount -> {
                 with(param) {
-                    registerAccountRepository.registerWithEmail(email, emailActivationCode, name, password, serverConfig)
+                    registerAccountRepository.registerPersonalAccountWithEmail(email, emailActivationCode, name, password, serverConfig)
+                }
+            }
+            is RegisterParam.Team -> {
+                with(param) {
+                    registerAccountRepository.registerTeamWithEmail(
+                        email, emailActivationCode, name, password, teamName, teamIcon, serverConfig
+                    )
                 }
             }
         }.fold(
