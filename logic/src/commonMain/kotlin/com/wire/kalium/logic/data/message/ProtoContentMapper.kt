@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.protobuf.decodeFromByteArray
 import com.wire.kalium.protobuf.encodeToByteArray
+import com.wire.kalium.protobuf.messages.Calling
 import com.wire.kalium.protobuf.messages.GenericMessage
 import com.wire.kalium.protobuf.messages.Text
 
@@ -19,6 +20,9 @@ class ProtoContentMapperImpl: ProtoContentMapper {
         val content = when (messageContent) {
             is MessageContent.Text -> {
                 GenericMessage.Content.Text(Text(content = messageContent.value))
+            }
+            is MessageContent.Calling -> {
+                GenericMessage.Content.Calling(calling = Calling(content = messageContent.value))
             }
             else -> {
                 throw IllegalArgumentException("Unexpected message content type: $messageContent")
@@ -39,7 +43,7 @@ class ProtoContentMapperImpl: ProtoContentMapper {
             is GenericMessage.Content.Availability -> MessageContent.Unknown
             is GenericMessage.Content.ButtonAction -> MessageContent.Unknown
             is GenericMessage.Content.ButtonActionConfirmation -> MessageContent.Unknown
-            is GenericMessage.Content.Calling -> MessageContent.Unknown
+            is GenericMessage.Content.Calling -> MessageContent.Calling(value = protoContent.value.content)
             is GenericMessage.Content.Cleared -> MessageContent.Unknown
             is GenericMessage.Content.ClientAction -> MessageContent.Unknown
             is GenericMessage.Content.Composite -> MessageContent.Unknown
