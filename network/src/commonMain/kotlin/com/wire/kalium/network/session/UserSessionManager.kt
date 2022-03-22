@@ -21,9 +21,13 @@ interface SessionManager {
 fun HttpClientConfig<*>.installAuth(sessionManager: SessionManager) {
     install(Auth) {
         bearer {
-            val _userSession = sessionManager.session().first
-            var access = _userSession.accessToken
-            var refresh = _userSession.refreshToken
+            // memory cache the tokens
+            var access: String
+            var refresh: String
+            sessionManager.session().first.also { storedSession ->
+                access = storedSession.accessToken
+                refresh = storedSession.refreshToken
+            }
 
             loadTokens {
                 BearerTokens(accessToken = access, refreshToken = refresh)
