@@ -54,9 +54,9 @@ internal class AssetDataSource(
 
         wrapApiRequest {
             assetApi.downloadAsset(assetKey, null)
-        }.map { assetData ->
-            assetDao.insertAsset(assetMapper.fromUserAssetToDaoModel(assetKey, assetData))
-            assetData
+        }.flatMap { assetData ->
+            wrapStorageRequest { assetDao.insertAsset(assetMapper.fromUserAssetToDaoModel(assetKey, assetData)) }
+                .map { assetData }
         }
     }
 
