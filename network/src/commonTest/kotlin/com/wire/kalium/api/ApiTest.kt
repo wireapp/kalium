@@ -3,6 +3,10 @@ package com.wire.kalium.api
 import com.wire.kalium.api.tools.testCredentials
 import com.wire.kalium.network.AuthenticatedNetworkContainer
 import com.wire.kalium.network.LoginNetworkContainer
+import com.wire.kalium.network.api.SessionDTO
+import com.wire.kalium.network.api.model.AccessTokenDTO
+import com.wire.kalium.network.api.model.RefreshTokenDTO
+import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.tools.BackendConfig
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -24,7 +28,40 @@ import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
+class TestSessionManager : SessionManager {
+    private val serverConfig = TEST_BACKEND_CONFIG
+    private var session = testCredentials
+
+    override fun session(): Pair<SessionDTO, BackendConfig> = Pair(session, serverConfig)
+
+    override fun updateSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO =
+        SessionDTO(
+            session.userIdValue,
+            newAccessTokenDTO.tokenType,
+            newAccessTokenDTO.value,
+            newRefreshTokenDTO?.value ?: session.refreshToken
+        )
+
+    override fun onSessionExpired() {
+        TODO("Not yet implemented")
+    }
+
+    companion object {
+        val TEST_BACKEND_CONFIG =
+            BackendConfig(
+                "test.api.com", "test.account.com", "test.ws.com",
+                "test.blacklist", "test.teams.com", "test.wire.com", "Test Title"
+            )
+
+        val SESSION = testCredentials
+    }
+
+}
+
 interface ApiTest {
+
+    val TEST_SESSION_NAMAGER: TestSessionManager get() = TestSessionManager()
+
     /**
      * creates an authenticated mock Ktor Http client
      * @param responseBody the response body as Json string
@@ -53,8 +90,7 @@ interface ApiTest {
         }
         return AuthenticatedNetworkContainer(
             engine = mockEngine,
-            sessionDTO = testCredentials,
-            backendConfig = TEST_BACKEND_CONFIG
+            sessionManager = TEST_SESSION_NAMAGER
         ).authenticatedHttpClient
     }
 
@@ -119,8 +155,7 @@ interface ApiTest {
         }
         return AuthenticatedNetworkContainer(
             engine = mockEngine,
-            sessionDTO = testCredentials,
-            backendConfig = TEST_BACKEND_CONFIG
+            sessionManager = TEST_SESSION_NAMAGER
         ).authenticatedHttpClient
     }
 
@@ -186,14 +221,4 @@ interface ApiTest {
     // host
     fun HttpRequestData.assertHostEqual(expectedHost: String) = assertEquals(expected = expectedHost, actual = this.url.host)
     fun HttpRequestData.assertHttps() = assertEquals(expected = URLProtocol.HTTPS, actual = this.url.protocol)
-
-    companion object {
-        val TEST_BACKEND_CONFIG =
-            BackendConfig(
-                "test.api.com", "test.account.com", "test.ws.com",
-                "test.blacklist", "test.teams.com", "test.wire.com", "Test Title"
-            )
-
-        val SESSION = testCredentials
-    }
 }
