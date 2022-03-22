@@ -9,3 +9,11 @@ actual fun calcMd5(bytes: ByteArray): String = bytes.let {
     val hash = md.digest()
     return hash.encodeBase64()
 }
+
+actual fun encryptDataWithAES256(data: ByteArray): ByteArray {
+    TODO("Not yet implemented")
+}
+
+actual fun decryptDataWithAES256(data: ByteArray, secretKey: ByteArray): ByteArray {
+    TODO("Not yet implemented")
+}

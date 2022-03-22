@@ -20,3 +20,11 @@ actual fun calcMd5(bytes: ByteArray): String {
 private fun toData(data: ByteArray): NSData = memScoped {
     NSData.create(bytes = allocArrayOf(data), length = data.size.toULong())
 }
+
+actual fun encryptDataWithAES256(data: ByteArray): ByteArray {
+    TODO("Not yet implemented")
+}
+
+actual fun decryptDataWithAES256(data: ByteArray, secretKey: ByteArray): ByteArray {
+    TODO("Not yet implemented")
+}

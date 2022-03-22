@@ -33,6 +33,9 @@ android {
         }
     }
 }
+dependencies {
+    implementation("androidx.security:security-crypto-ktx:1.1.0-alpha03")
+}
 
 kotlin {
     jvm {
