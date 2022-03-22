@@ -1,5 +1,6 @@
 package com.wire.kalium.network.api.user.client
 
+import com.wire.kalium.network.api.MLSPublicKey
 import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.prekey.PreKeyDTO
 import kotlinx.serialization.SerialName
@@ -76,3 +77,14 @@ data class ListClientsOfUsersRequest(
 data class PasswordRequest(
     @SerialName("password") val password: String
 )
+
+@Serializable
+data class UpdateClientRequest(
+    @SerialName("mls_public_keys") val mlsPublicKeys: Map<MLSPublicKeyTypeDTO, MLSPublicKey>
+)
+
+@Serializable
+enum class MLSPublicKeyTypeDTO {
+    @SerialName("ed25519")
+    ED25519;
+}
