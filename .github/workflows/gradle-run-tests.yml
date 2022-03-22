@@ -20,6 +20,12 @@ jobs:
           cache: gradle
       - name: Validate Gradle wrapper
         uses: gradle/wrapper-validation-action@e6e38bacfdf1a337459f332974bb2327a31aaf4b
+      - name: Native dependencies cache
+        uses: actions/cache@v2
+        id: cryptobox-cache
+        with:
+            path: /native/libs/*
+            key: native-libs
       - name: Build Native dependencies
         run: make
       - name: Test with Gradle

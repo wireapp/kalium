@@ -1,8 +1,28 @@
 JAVA_HOME := $(shell /usr/libexec/java_home)
 CRYPTOBOX_C_VERSION := "v1.1.3"
 LIBSODIUM_VERSION := "1.0.18-RELEASE"
+ARTIFACTS_PATH := native/libs
+LIBCRYPTOBOX_ARTIFACT_FILE := libcryptobox.dylib
+LIBCRYPTOBOX_JNI_ARTIFACT_FILE := libcryptobox-jni.dylib
 
+ifneq ("$(wildcard native/libs/libcryptobox.dylib)","")
+    CRYPTOBOX_EXISTS = TRUE
+else
+    CRYPTOBOX_EXISTS = FALSE
+endif
+
+ifneq ("$(wildcard native/libs/libcryptobox-jni.dylib)","")
+    CRYPTOBOX_JNI_EXISTS = TRUE
+else
+    CRYPTOBOX_JNI_EXISTS = FALSE
+endif
+
+ifeq ($(CRYPTOBOX_JNI_EXISTS)$(CRYPTOBOX_JNI_EXISTS), TRUETRUE)
+all:
+	@echo "Both cryptobox.dylib and cryptobox-jni.dylib were detected. Skipping build"
+else
 all: install-rust prepare-native cryptobox-c libsodium cryptobox4j copy-all-libs
+endif
 
 .PHONY: install-rust
 install-rust:
@@ -62,10 +82,10 @@ cryptobox4j-compile: cryptobox4j-clone
 		-lsodium \
 		-shared \
 		-fPIC \
-		-Wl,-install_name,libcryptobox-jni.dylib \
-		-o build/lib/libcryptobox-jni.dylib
+		-Wl,-install_name,${LIBCRYPTOBOX_JNI_ARTIFACT_FILE} \
+		-o build/lib/${LIBCRYPTOBOX_JNI_ARTIFACT_FILE}
 
 copy-all-libs:
 	cd native && \
-	cp cryptobox4j/build/lib/libcryptobox-jni.dylib libs/ && \
-	cp cryptobox-c/target/release/libcryptobox.dylib libs/
+	cp cryptobox4j/build/lib/${LIBCRYPTOBOX_JNI_ARTIFACT_FILE} libs/ && \
+	cp cryptobox-c/target/release/${LIBCRYPTOBOX_ARTIFACT_FILE} libs/
