@@ -44,7 +44,7 @@ class RegisterAccountUseCase(
     suspend operator fun invoke(
         param: RegisterParam,
         serverConfig: ServerConfig,
-        shouldStoreSession: suspend (AuthSession) -> Boolean = { true }
+        shouldStoreSession:Boolean = true
     ): RegisterResult = suspending {
         when (param) {
             is RegisterParam.PrivateAccount -> {
@@ -60,7 +60,7 @@ class RegisterAccountUseCase(
                     RegisterResult.Failure.Generic(it)
                 }
             }, {
-                if(shouldStoreSession(it.second)) {
+                if(shouldStoreSession) {
                     sessionRepository.storeSession(it.second)
                     sessionRepository.updateCurrentSession(it.second.userId)
                 }

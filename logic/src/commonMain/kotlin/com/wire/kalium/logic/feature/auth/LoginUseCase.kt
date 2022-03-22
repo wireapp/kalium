@@ -25,7 +25,7 @@ interface LoginUseCase {
         password: String,
         shouldPersistClient: Boolean,
         serverConfig: ServerConfig,
-        shouldStoreSession: suspend (AuthSession) -> Boolean = { true }
+        shouldStoreSession: Boolean = true
     ): AuthenticationResult
 }
 
@@ -40,7 +40,7 @@ internal class LoginUseCaseImpl(
         password: String,
         shouldPersistClient: Boolean,
         serverConfig: ServerConfig,
-        shouldStoreSession: suspend (AuthSession) -> Boolean
+        shouldStoreSession: Boolean
     ): AuthenticationResult = suspending {
         // remove White Spaces around userIdentifier
         val cleanUserIdentifier = userIdentifier.trim()
@@ -59,7 +59,7 @@ internal class LoginUseCaseImpl(
                 is NetworkFailure.NoNetworkConnection -> AuthenticationResult.Failure.Generic(it)
             }
         }, {
-            if(shouldStoreSession(it)) {
+            if(shouldStoreSession) {
                 sessionRepository.storeSession(it)
                 sessionRepository.updateCurrentSession(it.userId)
             }

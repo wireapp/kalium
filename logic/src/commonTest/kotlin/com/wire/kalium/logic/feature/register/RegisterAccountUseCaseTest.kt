@@ -74,7 +74,7 @@ class RegisterAccountUseCaseTest {
     }
 
     @Test
-    fun givenRepositoryCallIsSuccessful_shouldStoreSessionReturnsFalse_whenRegisteringPersonalAccount_thenDoNotStoreSessionAndReturnSuccess() = runTest {
+    fun givenRepositoryCallIsSuccessful_shouldStoreSessionIsFalse_whenRegisteringPersonalAccount_thenDoNotStoreSessionAndReturnSuccess() = runTest {
         val serverConfig = TEST_SERVER_CONFIG
         val param = TEST_PRIVATE_ACCOUNT_PARAM
         val user = TEST_SELF_USER
@@ -85,7 +85,7 @@ class RegisterAccountUseCaseTest {
             .coroutine { registerWithEmail(param.email, param.emailActivationCode, param.name, param.password, serverConfig) }
             .then { Either.Right(expected) }
 
-        val actual = registerAccountUseCase(param, serverConfig) { false }
+        val actual = registerAccountUseCase(param, serverConfig, false)
 
         assertIs<RegisterResult.Success>(actual)
         assertEquals(expected, actual.value)
