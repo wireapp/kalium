@@ -38,7 +38,6 @@ internal class AESDecrypt(private val secretKey: ByteArray) {
         // We ignore the first 16 bytes as they are reserved for the Initialization Vector
         return decryptedData.copyOfRange(16, decryptedData.size)
     }
-
 }
 
 private const val KEY_ALGORITHM = "AES"

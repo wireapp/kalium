@@ -14,14 +14,16 @@ class AESUtilsTest {
     @IgnoreJS
     @IgnoreIOS
     fun givenRawByteArray_whenEncryptedAndDecryptedWithAES256_returnsExpectedOriginalByteArray() {
+        // Given
         val testMessage = "Hello Crypto World"
         val inputByteArray = testMessage.toByteArray()
 
+        // When
         val (encryptedData, symmetricKey) = encryptDataWithAES256(inputByteArray)
         val decryptedData = decryptDataWithAES256(encryptedData, symmetricKey)
         val decodedMessage = String(decryptedData)
 
+        // Then
         assertEquals(decodedMessage, testMessage)
-
     }
 }
