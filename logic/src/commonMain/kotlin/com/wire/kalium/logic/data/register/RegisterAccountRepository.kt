@@ -15,8 +15,11 @@ import com.wire.kalium.network.api.user.register.RegisterApi
 interface RegisterAccountRepository {
     suspend fun requestEmailActivationCode(email: String, baseApiHost: String): Either<NetworkFailure, Unit>
     suspend fun verifyActivationCode(email: String, code: String, baseApiHost: String): Either<NetworkFailure, Unit>
-    suspend fun registerWithEmail(
+    suspend fun registerPersonalAccountWithEmail(
         email: String, code: String, name: String, password: String, serverConfig: ServerConfig
+    ): Either<NetworkFailure, Pair<SelfUser, AuthSession>>
+    suspend fun registerTeamWithEmail(
+        email: String, code: String, name: String, password: String, teamName: String, teamIcon: String, serverConfig: ServerConfig
     ): Either<NetworkFailure, Pair<SelfUser, AuthSession>>
 }
 
@@ -31,11 +34,15 @@ class RegisterAccountDataSource(
     override suspend fun verifyActivationCode(email: String, code: String, baseApiHost: String): Either<NetworkFailure, Unit> =
         activateUser(RegisterApi.ActivationParam.Email(email, code), baseApiHost)
 
-    override suspend fun registerWithEmail(
+    override suspend fun registerPersonalAccountWithEmail(
         email: String, code: String, name: String, password: String, serverConfig: ServerConfig
     ): Either<NetworkFailure, Pair<SelfUser, AuthSession>> =
         register(RegisterApi.RegisterParam.PersonalAccount(email, code, name, password), serverConfig)
 
+    override suspend fun registerTeamWithEmail(
+        email: String, code: String, name: String, password: String, teamName: String, teamIcon: String, serverConfig: ServerConfig
+    ): Either<NetworkFailure, Pair<SelfUser, AuthSession>> =
+        register(RegisterApi.RegisterParam.TeamAccount(email, code, name, password, teamName, teamIcon), serverConfig)
 
     private suspend fun requestActivation(
         param: RegisterApi.RequestActivationCodeParam, baseApiHost: String
