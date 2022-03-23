@@ -4,6 +4,8 @@ import com.wire.kalium.logic.AuthenticatedDataSourceSet
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.asset.AssetDataSource
 import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.call.CallDataSource
+import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientDataSource
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
@@ -97,6 +99,11 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi
         )
 
+    private val callRepository: CallRepository
+        get() = CallDataSource(
+            callApi = authenticatedDataSourceSet.authenticatedNetworkContainer.callApi
+        )
+
     protected abstract val clientConfig: ClientConfig
 
     private val clientRemoteRepository: ClientRemoteRepository
@@ -123,7 +130,8 @@ abstract class UserSessionScopeCommon(
     private val callManager by lazy {
         CallManager(
             userRepository = userRepository,
-            clientRepository = clientRepository
+            clientRepository = clientRepository,
+            callRepository = callRepository
         )
     }
     protected abstract val protoContentMapper: ProtoContentMapper
