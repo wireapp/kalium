@@ -11,6 +11,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.UserId
+import com.wire.kalium.network.api.model.AuthenticationResult
 import com.wire.kalium.network.api.model.UserDTO
 import com.wire.kalium.network.api.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.model.getPreviewAssetOrNull
@@ -126,7 +127,7 @@ class RegisterAccountRepositoryTest {
         val password = PASSWORD
         val name = NAME
         val serverConfig = TEST_SERVER_CONFIG
-        val selfUser = with(TEST_USER) {
+        val selfUser = with(USER_DTO) {
             SelfUser(
                 id = QualifiedID(value = id.value, domain = id.domain),
                 name = name,
@@ -147,9 +148,9 @@ class RegisterAccountRepositoryTest {
                 register(
                     RegisterApi.RegisterParam.PersonalAccount(email, code, name, password), serverConfig.apiBaseUrl
                 )
-            }.then { NetworkResponse.Success(Pair(TEST_USER, SESSION), mapOf(), 200) }
+            }.then { NetworkResponse.Success(TEST_AUTH_RESULT, mapOf(), 200) }
         given(userMapper)
-            .invocation { fromDtoToSelfUser(TEST_USER) }
+            .invocation { fromDtoToSelfUser(USER_DTO) }
             .then { selfUser }
         given(sessionMapper)
             .invocation { fromSessionDTO(SESSION, serverConfig) }
@@ -167,7 +168,7 @@ class RegisterAccountRepositoryTest {
             .invocation { fromSessionDTO(SESSION, serverConfig) }
             .wasInvoked(exactly = once)
         verify(userMapper)
-            .invocation { fromDtoToSelfUser(TEST_USER) }
+            .invocation { fromDtoToSelfUser(USER_DTO) }
             .wasInvoked(exactly = once)
     }
 
@@ -180,7 +181,7 @@ class RegisterAccountRepositoryTest {
         val teamName = TEAM_NAME
         val teamIcon = TEAM_ICON
         val serverConfig = TEST_SERVER_CONFIG
-        val selfUser = with(TEST_USER) {
+        val selfUser = with(USER_DTO) {
             SelfUser(
                 id = QualifiedID(value = id.value, domain = id.domain),
                 name = name,
@@ -199,9 +200,9 @@ class RegisterAccountRepositoryTest {
         given(registerApi)
             .coroutine {
                 register(RegisterApi.RegisterParam.TeamAccount(email, code, name, password, teamName, teamIcon), serverConfig.apiBaseUrl)
-            }.then { NetworkResponse.Success(Pair(TEST_USER, SESSION), mapOf(), 200) }
+            }.then { NetworkResponse.Success(TEST_AUTH_RESULT, mapOf(), 200) }
         given(userMapper)
-            .invocation { fromDtoToSelfUser(TEST_USER) }
+            .invocation { fromDtoToSelfUser(USER_DTO) }
             .then { selfUser }
         given(sessionMapper)
             .invocation { fromSessionDTO(SESSION, serverConfig) }
@@ -221,7 +222,7 @@ class RegisterAccountRepositoryTest {
             .invocation { fromSessionDTO(SESSION, serverConfig) }
             .wasInvoked(exactly = once)
         verify(userMapper)
-            .invocation { fromDtoToSelfUser(TEST_USER) }
+            .invocation { fromDtoToSelfUser(USER_DTO) }
             .wasInvoked(exactly = once)
     }
 
@@ -282,7 +283,7 @@ class RegisterAccountRepositoryTest {
         const val TEAM_NAME = "teamName"
         const val TEAM_ICON = "teamIcon"
         val SESSION: SessionDTO = SessionDTO("user_id", "tokenType", "access_token", "refresh_token")
-        val TEST_USER: UserDTO = UserDTO(
+        val USER_DTO: UserDTO = UserDTO(
             id = UserId("user_id", "domain.com"),
             name = NAME,
             email = EMAIL,
@@ -299,5 +300,6 @@ class RegisterAccountRepositoryTest {
             phone = null,
             ssoID = null
         )
+        val TEST_AUTH_RESULT = AuthenticationResult(SESSION, USER_DTO)
     }
 }

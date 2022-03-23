@@ -7,7 +7,7 @@ import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.feature.auth.AuthSession
-import com.wire.kalium.logic.feature.auth.AuthenticationResult
+import com.wire.kalium.logic.feature.auth.LoginResult
 import com.wire.kalium.logic.feature.client.RegisterClientResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -74,7 +74,7 @@ class SendReceiveApplication : CliktCommand() {
     private suspend fun login(username: String, password: String): AuthSession {
         val result = coreLogic.getAuthenticationScope().login(username, password, false, serverConfig)
 
-        if (result !is AuthenticationResult.Success) {
+        if (result !is LoginResult.Success) {
             throw RuntimeException(
                 "There was an error on the login :(" +
                         "Check the credentials and the internet connection and try again"

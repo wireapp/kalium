@@ -22,8 +22,8 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.feature.asset.PublicAssetResult
 import com.wire.kalium.logic.feature.auth.AuthSession
-import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
+import com.wire.kalium.logic.feature.auth.LoginResult
 import kotlinx.coroutines.flow.first
 
 class MainActivity : ComponentActivity() {
@@ -61,7 +61,7 @@ class MainActivity : ComponentActivity() {
     private suspend fun login(authenticationScope: AuthenticationScope): AuthSession? {
         val result = authenticationScope.login("jacob.persson+summer1@wire.com", "hepphepp", false, serverConfig)
 
-        if (result !is AuthenticationResult.Success) {
+        if (result !is LoginResult.Success) {
             throw RuntimeException(
                 "There was an error on the login :(" +
                     "Check the credentials and the internet connection and try again"
