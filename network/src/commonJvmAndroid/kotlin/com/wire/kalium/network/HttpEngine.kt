@@ -31,8 +31,8 @@ private fun Request.handleProtoHeader(): Request =
     }
 
 /**
- * Ktor need "WWW-Authenticate" to be set by BE in-order for the refresh to work
- * sees issue https://youtrack.jetbrains.com/issue/KTOR-2806
+ * Ktor need "WWW-Authenticate" to be set by BE in-order for the tokens refresh to work
+ * see issue https://youtrack.jetbrains.com/issue/KTOR-2806
  * BE does not set "WWW-Authenticate"
  *
  * checks for 401 response -> add WWW-Authenticate header
