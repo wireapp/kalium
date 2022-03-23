@@ -42,9 +42,10 @@ kotlin {
         }
         testRuns["test"].executionTask.configure {
             useJUnit()
-
+            val runArgs = project.gradle.startParameter.systemPropertiesArgs.entries.map { "-D${it.key}=${it.value}" }
+            jvmArgs(runArgs)
             if (System.getProperty("os.name").contains("Mac", true)) {
-                jvmArgs = jvmArgs?.plus(listOf("-Djava.library.path=/usr/local/lib/:../native/libs"))
+                jvmArgs("-Djava.library.path=/usr/local/lib/:../native/libs")
             }
         }
     }
