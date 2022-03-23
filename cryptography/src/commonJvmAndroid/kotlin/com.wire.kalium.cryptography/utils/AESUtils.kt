@@ -7,36 +7,44 @@ import javax.crypto.spec.SecretKeySpec
 
 internal class AESEncrypt {
 
-    internal fun encrypt(unencryptedData: ByteArray): Pair<ByteArray, SymmetricSecretKey> {
-
-        // Secret symmetric key generation
-        val keygen = KeyGenerator.getInstance(KEY_ALGORITHM)
-        keygen.init(256)
-        val key = keygen.generateKey()
-
+    internal fun encrypt(assetData: PlainData, key: AES256Key): EncryptedData {
+        // Fetch AES256 Algorithm
         val cipher = Cipher.getInstance(KEY_ALGORITHM_CONFIGURATION)
-        cipher.init(Cipher.ENCRYPT_MODE, key)
-        val cipherData = cipher.doFinal(unencryptedData)
+
+        // Parse Secret Key from our custom AES256Key model object
+        val symmetricAESKey = SecretKeySpec(key.data, 0, key.data.size, KEY_ALGORITHM)
+
+        // Do the encryption
+        cipher.init(Cipher.ENCRYPT_MODE, symmetricAESKey)
+        val cipherData = cipher.doFinal(assetData.data)
 
         // We prefix the first 16 bytes of the final encoded array with the Initialization Vector
-        val finalEncodedArray = cipher.iv + cipherData
+        return EncryptedData(cipher.iv + cipherData)
+    }
 
-        return finalEncodedArray to key.encoded
+    internal fun generateRandomAES256Key(): AES256Key {
+        // AES256 Symmetric secret key generation
+        val keygen = KeyGenerator.getInstance(KEY_ALGORITHM)
+        keygen.init(256)
+        return AES256Key(keygen.generateKey().encoded)
     }
 }
 
-internal class AESDecrypt(private val secretKey: ByteArray) {
+internal class AESDecrypt(private val secretKey: AES256Key) {
 
-    internal fun decrypt(encryptedData: ByteArray): ByteArray {
+    internal fun decrypt(encryptedData: EncryptedData): PlainData {
+        // Fetch AES256 Algorithm
         val cipher = Cipher.getInstance(KEY_ALGORITHM_CONFIGURATION)
 
-        val symmetricAESKey = SecretKeySpec(secretKey, 0, secretKey.size, KEY_ALGORITHM)
-        cipher.init(Cipher.DECRYPT_MODE, symmetricAESKey, IvParameterSpec(ByteArray(16)))
+        // Parse Secret Key from our custom AES256Key model object
+        val symmetricAESKey = SecretKeySpec(secretKey.data, 0, secretKey.data.size, KEY_ALGORITHM)
 
-        val decryptedData = cipher.doFinal(encryptedData)
+        // Do the decryption
+        cipher.init(Cipher.DECRYPT_MODE, symmetricAESKey, IvParameterSpec(ByteArray(16)))
+        val decryptedData = cipher.doFinal(encryptedData.data)
 
         // We ignore the first 16 bytes as they are reserved for the Initialization Vector
-        return decryptedData.copyOfRange(16, decryptedData.size)
+        return PlainData(decryptedData.copyOfRange(16, decryptedData.size))
     }
 }
 
