@@ -22,7 +22,7 @@ internal class AssetDataSource(
     private val assetApi: AssetApi,
     private val assetDao: AssetDAO,
     private val assetMapper: AssetMapper = MapperProvider.assetMapper()
-    ) : AssetRepository {
+) : AssetRepository {
 
     override suspend fun uploadAndPersistPublicAsset(mimeType: AssetType, assetData: ByteArray): Either<NetworkFailure, UploadedAssetId> {
         val uploadAssetData = UploadAssetData(assetData, mimeType, true, RetentionType.ETERNAL)
