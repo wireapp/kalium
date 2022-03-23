@@ -1,12 +1,11 @@
 package com.wire.kalium.network.api.user.register
 
 import com.wire.kalium.network.api.RefreshTokenProperties
-import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.model.AccessTokenDTO
+import com.wire.kalium.network.api.model.AuthenticationResult
 import com.wire.kalium.network.api.model.NewUserDTO
 import com.wire.kalium.network.api.model.UserDTO
 import com.wire.kalium.network.api.model.toSessionDto
-import com.wire.kalium.network.api.user.register.NewBindingTeamDTO
 import com.wire.kalium.network.utils.CustomErrors
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap
@@ -110,7 +109,7 @@ interface RegisterApi {
 
     suspend fun register(
         param: RegisterParam, apiBaseUrl: String
-    ): NetworkResponse<Pair<UserDTO, SessionDTO>>
+    ): NetworkResponse<AuthenticationResult>
 
     suspend fun requestActivationCode(
         param: RequestActivationCodeParam, apiBaseUrl: String
@@ -139,7 +138,7 @@ class RegisterApiImpl(
 
     override suspend fun register(
         param: RegisterApi.RegisterParam, apiBaseUrl: String
-    ): NetworkResponse<Pair<UserDTO, SessionDTO>> = wrapKaliumResponse<UserDTO> {
+    ): NetworkResponse<AuthenticationResult> = wrapKaliumResponse<UserDTO> {
         httpClient.post {
             url {
                 host = apiBaseUrl
@@ -151,9 +150,7 @@ class RegisterApiImpl(
     }.flatMap { registerResponse ->
         registerResponse.cookies[RefreshTokenProperties.COOKIE_NAME]?.let { refreshToken ->
             getToken(refreshToken, apiBaseUrl).mapSuccess { accessTokenDTO ->
-                Pair(
-                    registerResponse.value, accessTokenDTO.toSessionDto(refreshToken)
-                )
+                AuthenticationResult(accessTokenDTO.toSessionDto(refreshToken), registerResponse.value)
             }
         } ?: run {
             CustomErrors.MISSING_REFRESH_TOKEN
@@ -183,7 +180,6 @@ class RegisterApiImpl(
             setBody(param.toBody())
         }
     }
-
 
     private companion object {
         const val REGISTER_PATH = "register"
