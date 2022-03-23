@@ -21,8 +21,6 @@ import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.R
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.network.api.NonQualifiedUserId
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import kotlin.reflect.KClass
 
 
@@ -105,7 +103,7 @@ actual class WorkScheduler(private val context: Context, private val userId: Non
     actual fun schedule(work: KClass<out UserSessionWorker>, name: String) {
         val inputData = Data.Builder()
             .putString(WrapperWorkerFactory.WORKER_CLASS_KEY, work.java.canonicalName)
-            .putString(WrapperWorkerFactory.USER_ID_KEY, Json.encodeToString(userId))
+            .putString(WrapperWorkerFactory.USER_ID_KEY, userId)
             .build()
         val request = OneTimeWorkRequest.Builder(WrapperWorker::class.java)
             .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
@@ -117,5 +115,4 @@ actual class WorkScheduler(private val context: Context, private val userId: Non
             request
         ).enqueue()
     }
-
 }
