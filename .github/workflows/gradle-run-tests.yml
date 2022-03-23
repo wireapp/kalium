@@ -12,14 +12,17 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
+
       - name: Set up JDK 11
         uses: actions/setup-java@v2
         with:
           java-version: '11'
           distribution: 'adopt'
           cache: gradle
+
       - name: Validate Gradle wrapper
         uses: gradle/wrapper-validation-action@e6e38bacfdf1a337459f332974bb2327a31aaf4b
+
       - name: Native dependencies cache
         uses: actions/cache@v2
         id: cryptobox-cache
@@ -29,13 +32,48 @@ jobs:
               native/libs/libcryptobox.dylib
               /usr/local/lib/libsodium*
             key: cryptobox-sodium-build-macOS
+
+      - name: Build Native dependencies
+        if: steps.cryptobox-cache.outputs.cache-hit != 'true'
+        run: make
+
       - name: Archive Cryptobox libs for debugging
         uses: actions/upload-artifact@v3
         with:
             name: native-libs
             path: native/libs
+
       - name: Archive LibSodium libs for debugging
         uses: actions/upload-artifact@v3
         with:
             name: sodium-libs
             path: /usr/local/lib/libsodium*
+
+      - name: Test with Gradle
+        run: |
+          ls -l native/libs
+          ./gradlew allTests
+
+      - name: Android Instrumentation Tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 29
+          script: |
+            ./gradlew cryptography:connectedAndroidTest
+            ./gradlew persistence:connectedAndroidTest
+
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action/composite@v1.25
+        if: always()
+        with:
+          files: |
+            **/build/test-results/testDebugUnitTest/**/*.xml
+            **/build/test-results/**/*.xml
+            **/build/outputs/androidTest-results/**/*.xml
+
+      - name: Cleanup Gradle Cache
+        # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
+        # Restoring these files from a GitHub Actions cache might cause problems for future builds.
+        run: |
+          rm -f ~/.gradle/caches/modules-2/modules-2.lock
+          rm -f ~/.gradle/caches/modules-2/gc.properties
