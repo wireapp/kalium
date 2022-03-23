@@ -7,6 +7,6 @@ import com.sun.jna.Pointer
 * The version parameter specifies the config obtained version to use
 * for calling.
 */
-interface ReadyHandler : Callback {
+fun interface ReadyHandler : Callback {
     fun onReady(version: Int, arg: Pointer?)
 }

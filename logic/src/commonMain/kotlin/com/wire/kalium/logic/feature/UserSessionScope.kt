@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
+import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.message.MessageScope
@@ -119,10 +120,19 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.authenticatedNetworkContainer.notificationApi, eventInfoStorage, clientRepository
         )
 
+    private val callManager: CallManager = CallManager(
+        userRepository = userRepository,
+        clientRepository = clientRepository
+    )
     protected abstract val protoContentMapper: ProtoContentMapper
     private val conversationEventReceiver: ConversationEventReceiver
         get() = ConversationEventReceiver(
-            authenticatedDataSourceSet.proteusClient, messageRepository, conversationRepository, protoContentMapper
+            authenticatedDataSourceSet.proteusClient,
+            messageRepository,
+            conversationRepository,
+            userRepository,
+            protoContentMapper,
+            callManager
         )
 
     private val preKeyRemoteRepository: PreKeyRemoteRepository get() = PreKeyRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi)

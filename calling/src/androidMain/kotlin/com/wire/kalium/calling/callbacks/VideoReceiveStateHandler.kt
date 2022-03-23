@@ -10,7 +10,7 @@ import com.sun.jna.Pointer
  *   VIDEO_STATE_PAUSED       = 3
  *   VIDEO_STATE_SCREENSHARE  = 4
  */
-interface VideoReceiveStateHandler : Callback {
+fun interface VideoReceiveStateHandler : Callback {
     fun onVideoReceiveStateChanged(
         conversationId: String,
         userId: String,
