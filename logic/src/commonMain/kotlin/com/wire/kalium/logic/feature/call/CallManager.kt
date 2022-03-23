@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.call
 
+import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -8,7 +9,8 @@ import kotlinx.coroutines.flow.Flow
 
 expect class CallManager(
     userRepository: UserRepository,
-    clientRepository: ClientRepository
+    clientRepository: ClientRepository,
+    callRepository: CallRepository
 ) {
 
     suspend fun activeCallsIDs(): Flow<List<String>>

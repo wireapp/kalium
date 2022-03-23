@@ -120,10 +120,12 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.authenticatedNetworkContainer.notificationApi, eventInfoStorage, clientRepository
         )
 
-    private val callManager: CallManager = CallManager(
-        userRepository = userRepository,
-        clientRepository = clientRepository
-    )
+    private val callManager by lazy {
+        CallManager(
+            userRepository = userRepository,
+            clientRepository = clientRepository
+        )
+    }
     protected abstract val protoContentMapper: ProtoContentMapper
     private val conversationEventReceiver: ConversationEventReceiver
         get() = ConversationEventReceiver(

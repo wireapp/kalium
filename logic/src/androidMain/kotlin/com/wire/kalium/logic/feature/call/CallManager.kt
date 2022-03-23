@@ -7,6 +7,7 @@ import com.wire.kalium.calling.callbacks.LogHandler
 import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.calling.types.Size_t
 import com.wire.kalium.calling.types.Uint32_t
+import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.asString
 import com.wire.kalium.logic.data.message.Message
@@ -16,10 +17,12 @@ import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.runBlocking
 
 actual class CallManager actual constructor(
     private val userRepository: UserRepository,
-    private val clientRepository: ClientRepository
+    private val clientRepository: ClientRepository,
+    private val callRepository: CallRepository
 ) {
 
     private lateinit var calling: Calling
@@ -107,6 +110,19 @@ actual class CallManager actual constructor(
             },
             callConfigRequestHandler = { inst: Handle, arg: Pointer? ->
                 kaliumLogger.d("WCALL_CREATE -> callConfigRequestHandler")
+                val config = runBlocking {
+                    callRepository.getCallConfigResponse(limit = null)
+                        .fold({
+                            TODO("")
+                        }, {
+                            it
+                        })
+                }
+                calling.wcall_config_update(
+                    inst = wCall!!,
+                    error = 0, // TODO: http error from internal json
+                    jsonString = config
+                )
                 0
             },
             constantBitRateStateChangeHandler = { userId: String,
@@ -137,11 +153,12 @@ actual class CallManager actual constructor(
             msg = msg,
             len = msg.size,
             curr_time = Uint32_t(value = System.currentTimeMillis() / 1000),
-            msg_time = Uint32_t(value = (System.currentTimeMillis() / 1000) - 10), // TODO: add correct variable
+            msg_time = Uint32_t(value = (System.currentTimeMillis() / 1000) + 10), // TODO: add correct variable
             convId = message.conversationId.asString(),
             userId = message.senderUserId.asString(),
             clientId = message.senderClientId.value
         )
+        kaliumLogger.d("Passed through onCallingMessageReceived()")
     }
 
     actual suspend fun activeCallsIDs(): Flow<List<String>> {
