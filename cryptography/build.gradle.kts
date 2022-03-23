@@ -45,8 +45,6 @@ kotlin {
 
             if (System.getProperty("os.name").contains("Mac", true)) {
                 val nativeLibsPath = rootProject.file("native/libs").absolutePath
-                println("Files in $nativeLibsPath:")
-                File(nativeLibsPath).list().forEach(::println)
                 jvmArgs = jvmArgs?.plus(listOf("-Djava.library.path=/usr/local/lib/:$nativeLibsPath"))
             }
         }

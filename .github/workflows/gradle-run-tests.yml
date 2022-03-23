@@ -32,6 +32,11 @@ jobs:
         if: steps.cryptobox-cache.outputs.cache-hit != 'true'
         run: |
           make
+      - name: Archive Native libs for debugging
+        uses: actions/upload-artifact@v3
+        with:
+            name: native-libs
+            path: native/libs
       - name: Test with Gradle
         run: |
           ls -l native/libs
