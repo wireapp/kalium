@@ -1,7 +1,6 @@
 JAVA_HOME := $(shell /usr/libexec/java_home)
 CRYPTOBOX_C_VERSION := "v1.1.3"
 LIBSODIUM_VERSION := "1.0.18-RELEASE"
-ARTIFACTS_PATH := native/libs
 LIBCRYPTOBOX_ARTIFACT_FILE := libcryptobox.dylib
 LIBCRYPTOBOX_JNI_ARTIFACT_FILE := libcryptobox-jni.dylib
 
