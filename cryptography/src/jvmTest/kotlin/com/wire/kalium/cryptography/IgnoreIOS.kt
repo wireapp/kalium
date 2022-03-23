@@ -1,4 +1,4 @@
-package com.wire.kalium.api.tools
+package com.wire.kalium.cryptography
 
 @Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
 actual annotation class IgnoreIOS

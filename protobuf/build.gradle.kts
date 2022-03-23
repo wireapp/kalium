@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile
 
 plugins {
     Plugins.androidLibrary(this)
@@ -67,7 +68,7 @@ kotlin {
     }
 }
 
-val compileTasks = tasks.matching { it is KotlinCompile }
+val compileTasks = tasks.matching { it is KotlinCompile || it is KotlinNativeCompile }
 
 codegenProject.tasks
     .matching { it.name == "generateProto" }
