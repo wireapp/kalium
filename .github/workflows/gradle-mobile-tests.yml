@@ -1,4 +1,4 @@
-name: "Gradle Run Tests"
+name: "Android & iOS Tests"
 
 on:
   pull_request:
@@ -23,36 +23,11 @@ jobs:
       - name: Validate Gradle wrapper
         uses: gradle/wrapper-validation-action@e6e38bacfdf1a337459f332974bb2327a31aaf4b
 
-      - name: Native dependencies cache
-        uses: actions/cache@v2
-        id: cryptobox-cache
-        with:
-            path: |
-              native/libs/libcryptobox-jni.dylib
-              native/libs/libcryptobox.dylib
-              /usr/local/lib/libsodium*
-            key: cryptobox-sodium-build-macOS
+      - name: iOS Tests
+        run: ./gradlew iosX64Test
 
-      - name: Build Native dependencies
-        if: steps.cryptobox-cache.outputs.cache-hit != 'true'
-        run: make
-
-      - name: Archive Cryptobox libs for debugging
-        uses: actions/upload-artifact@v3
-        with:
-            name: native-libs
-            path: native/libs
-
-      - name: Archive LibSodium libs for debugging
-        uses: actions/upload-artifact@v3
-        with:
-            name: sodium-libs
-            path: /usr/local/lib/libsodium*
-
-      - name: Test with Gradle
-        run: |
-          ls -l native/libs
-          ./gradlew allTests
+      - name: Android Unit Test
+        run: ./gradlew testDebugUnitTest
 
       - name: Android Instrumentation Tests
         uses: reactivecircus/android-emulator-runner@v2
