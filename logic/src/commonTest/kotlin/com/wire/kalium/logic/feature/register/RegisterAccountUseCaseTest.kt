@@ -86,7 +86,8 @@ class RegisterAccountUseCaseTest {
         val actual = registerAccountUseCase(param, serverConfig)
 
         assertIs<RegisterResult.Failure.Generic>(actual)
-        assertEquals(expected, actual.failure)
+        assertIs<NetworkFailure.ServerMiscommunication>(actual.failure)
+        assertEquals(expected.kaliumException, (actual.failure as NetworkFailure.ServerMiscommunication).kaliumException)
 
         verify(registerAccountRepository)
             .coroutine { registerWithEmail(param.email, param.emailActivationCode, param.name, param.password, serverConfig) }
