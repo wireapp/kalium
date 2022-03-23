@@ -5,7 +5,7 @@ on:
     types: [ opened, synchronize ] # Don't rerun on `edited` to save time
 
 jobs:
-  jvm-js-tests:
+  gradle-run-tests:
     runs-on: ubuntu-20.04
     container: wirebot/cryptobox:1.1.1
     steps:
@@ -18,6 +18,9 @@ jobs:
         run: |
           ./gradlew jvmTest -Djava.library.path=$LD_LIBRARY_PATH
           ./gradlew jsTest
+
+      - name: Install Pip for test result publishing
+        run: sudo apt-get install python3-pip
 
       - name: Publish Unit Test Results
         uses: EnricoMi/publish-unit-test-result-action/composite@v1.25
