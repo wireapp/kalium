@@ -3,7 +3,9 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
@@ -30,6 +32,7 @@ interface ConversationRepository {
 }
 
 class ConversationDataSource(
+    private val userRepository: UserRepository,
     private val conversationDAO: ConversationDAO,
     private val conversationApi: ConversationApi,
     private val clientApi: ClientApi,
@@ -41,8 +44,11 @@ class ConversationDataSource(
     // FIXME: fetchConversations() returns only the first page
     // TODO: rewrite to use wrapStorageRequest
     override suspend fun fetchConversations(): Either<CoreFailure, Unit> = suspending {
+        val selfUserTeamId = userRepository.getSelfUser().first().team
         wrapApiRequest { conversationApi.conversationsByBatch(null, 100) }.map { conversationPagingResponse ->
-            conversationDAO.insertConversations(conversationPagingResponse.conversations.map(conversationMapper::fromApiModelToDaoModel))
+            conversationDAO.insertConversations(conversationPagingResponse.conversations.map { conversationResponse ->
+                conversationMapper.fromApiModelToDaoModel(conversationResponse, selfUserTeamId?.let { TeamId(it) })
+            })
             conversationPagingResponse.conversations.forEach { conversationsResponse ->
                 conversationDAO.insertMembers(
                     memberMapper.fromApiModelToDaoModel(conversationsResponse.members),
@@ -54,7 +60,7 @@ class ConversationDataSource(
 
 
     override suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>> = wrapStorageRequest {
-        conversationDAO.getAllConversations().map { it.map(conversationMapper::fromEntity) }
+        conversationDAO.getAllConversations().map { it.map(conversationMapper::fromDaoModel) }
     }
 
 
@@ -62,7 +68,7 @@ class ConversationDataSource(
         wrapStorageRequest {
             conversationDAO.getConversationByQualifiedID(idMapper.toDaoModel(conversationId))
                 .filterNotNull()
-                .map(conversationMapper::fromEntity)
+                .map(conversationMapper::fromDaoModel)
         }
 
     /**

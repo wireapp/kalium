@@ -5,10 +5,14 @@ import com.wire.kalium.network.api.asset.AssetApi
 import com.wire.kalium.network.api.asset.AssetApiImpl
 import com.wire.kalium.network.api.auth.AccessTokenApi
 import com.wire.kalium.network.api.auth.AccessTokenApiImpl
+import com.wire.kalium.network.api.call.CallApi
+import com.wire.kalium.network.api.call.CallApiImpl
 import com.wire.kalium.network.api.contact.search.ContactSearchApi
 import com.wire.kalium.network.api.contact.search.ContactSearchApiImpl
 import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.conversation.ConversationApiImp
+import com.wire.kalium.network.api.keypackage.KeyPackageApi
+import com.wire.kalium.network.api.keypackage.KeyPackageApiImpl
 import com.wire.kalium.network.api.message.MessageApi
 import com.wire.kalium.network.api.message.MessageApiImp
 import com.wire.kalium.network.api.message.provideEnvelopeProtoMapper
@@ -50,6 +54,8 @@ class AuthenticatedNetworkContainer(
 
     val conversationApi: ConversationApi get() = ConversationApiImp(authenticatedHttpClient)
 
+    val keyPackageApi: KeyPackageApi get() = KeyPackageApiImpl(authenticatedHttpClient)
+
     val preKeyApi: PreKeyApi get() = PreKeyApiImpl(authenticatedHttpClient)
 
     val assetApi: AssetApi get() = AssetApiImpl(authenticatedHttpClient)
@@ -63,6 +69,8 @@ class AuthenticatedNetworkContainer(
     val userDetailsApi: UserDetailsApi get() = UserDetailsApiImp(authenticatedHttpClient)
 
     val contactSearchApi : ContactSearchApi get() = ContactSearchApiImpl(authenticatedHttpClient)
+
+    val callApi: CallApi get() = CallApiImpl(authenticatedHttpClient)
 
     internal val authenticatedHttpClient by lazy {
         provideBaseHttpClient(engine, HttpClientOptions.DefaultHost(backendConfig)) {

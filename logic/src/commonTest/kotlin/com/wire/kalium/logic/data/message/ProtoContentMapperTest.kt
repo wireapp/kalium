@@ -10,7 +10,7 @@ class ProtoContentMapperTest {
 
     @BeforeTest
     fun setup(){
-        protoContentMapper = provideProtoContentMapper()
+        protoContentMapper = ProtoContentMapperImpl()
     }
 
     @Test
@@ -24,7 +24,19 @@ class ProtoContentMapperTest {
         assertEquals(decoded, protoContent)
     }
 
+    @Test
+    fun givenCallingContent_whenMappingToProtoDataAndBack_thenTheContentsShouldMatchTheOriginal(){
+        val callingContent = MessageContent.Calling("Calling")
+        val protoContent = ProtoContent(TEST_CALLING_UUID, callingContent)
+
+        val encoded = protoContentMapper.encodeToProtobuf(protoContent)
+        val decoded = protoContentMapper.decodeFromProtobuf(encoded)
+
+        assertEquals(decoded, protoContent)
+    }
+
     private companion object{
         const val TEST_MESSAGE_UUID = "testUuid"
+        const val TEST_CALLING_UUID = "callingUuid"
     }
 }

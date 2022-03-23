@@ -38,7 +38,7 @@ internal object MapperProvider {
     fun teamMapper(): TeamMapper = TeamMapperImpl()
     fun messageMapper(): MessageMapper = MessageMapperImpl(idMapper())
     fun memberMapper(): MemberMapper = MemberMapperImpl(idMapper())
-    fun conversationMapper(): ConversationMapper = ConversationMapperImpl(idMapper(), memberMapper())
+    fun conversationMapper(): ConversationMapper = ConversationMapperImpl(idMapper())
     fun publicUserMapper(): PublicUserMapper = PublicUserMapperImpl()
     fun sendMessageFailureMapper(): SendMessageFailureMapper = SendMessageFailureMapperImpl()
     fun assetMapper(): AssetMapper = AssetMapperImpl()
