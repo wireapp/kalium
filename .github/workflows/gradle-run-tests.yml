@@ -27,16 +27,11 @@ jobs:
             path: |
               native/libs/libcryptobox-jni.dylib
               native/libs/libcryptobox.dylib
-            key: cryptobox-build-macOS
+              /usr/local/lib/libsodium*
+            key: cryptobox-sodium-build-macOS
       - name: Build Native dependencies
         if: steps.cryptobox-cache.outputs.cache-hit != 'true'
-        run: |
-          make
-      - name: Archive Native libs for debugging
-        uses: actions/upload-artifact@v3
-        with:
-            name: native-libs
-            path: native/libs
+        run: make
       - name: Test with Gradle
         run: |
           ls -l native/libs
