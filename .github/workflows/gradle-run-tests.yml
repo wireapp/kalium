@@ -29,31 +29,13 @@ jobs:
               native/libs/libcryptobox.dylib
               /usr/local/lib/libsodium*
             key: cryptobox-sodium-build-macOS
-      - name: Build Native dependencies
-        if: steps.cryptobox-cache.outputs.cache-hit != 'true'
-        run: make
-      - name: Test with Gradle
-        run: |
-          ls -l native/libs
-          ./gradlew allTests
-      - name: Android Instrumentation Tests
-        uses: reactivecircus/android-emulator-runner@v2
+      - name: Archive Cryptobox libs for debugging
+        uses: actions/upload-artifact@v3
         with:
-          api-level: 29
-          script: |
-            ./gradlew cryptography:connectedAndroidTest
-            ./gradlew persistence:connectedAndroidTest
-      - name: Publish Unit Test Results
-        uses: EnricoMi/publish-unit-test-result-action/composite@v1.25
-        if: always()
+            name: native-libs
+            path: native/libs
+      - name: Archive LibSodium libs for debugging
+        uses: actions/upload-artifact@v3
         with:
-          files: |
-            **/build/test-results/testDebugUnitTest/**/*.xml
-            **/build/test-results/**/*.xml
-            **/build/outputs/androidTest-results/**/*.xml
-      - name: Cleanup Gradle Cache
-        # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
-        # Restoring these files from a GitHub Actions cache might cause problems for future builds.
-        run: |
-          rm -f ~/.gradle/caches/modules-2/modules-2.lock
-          rm -f ~/.gradle/caches/modules-2/gc.properties
+            name: sodium-libs
+            path: /usr/local/lib/libsodium*
