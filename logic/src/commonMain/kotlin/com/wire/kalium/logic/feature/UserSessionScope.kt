@@ -21,13 +21,13 @@ import com.wire.kalium.logic.data.prekey.PreKeyDataSource
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteDataSource
 import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteRepository
-import com.wire.kalium.logic.data.publicuser.PublicUserRepository
-import com.wire.kalium.logic.data.publicuser.PublicUserRepositoryImpl
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.team.TeamDataSource
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.wireuser.WireUserRepository
+import com.wire.kalium.logic.data.wireuser.WireUserRepositoryImpl
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.client.ClientScope
@@ -69,7 +69,6 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi
         )
 
-
     private val messageRepository: MessageRepository
         get() = MessageDataSource(
             authenticatedDataSourceSet.authenticatedNetworkContainer.messageApi, database.messageDAO
@@ -91,8 +90,9 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.authenticatedNetworkContainer.teamsApi
         )
 
-    private val publicUserRepository: PublicUserRepository
-        get() = PublicUserRepositoryImpl(
+    private val publicUserRepository: WireUserRepository
+        get() = WireUserRepositoryImpl(
+            database.userDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.contactSearchApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi
         )

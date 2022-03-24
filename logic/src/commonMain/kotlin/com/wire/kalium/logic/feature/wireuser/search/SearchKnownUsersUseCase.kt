@@ -14,6 +14,6 @@ internal class SearchKnownUsersUseCaseImpl(
 
     // TODO:this use case is going to be refactor once we return Either from DAO's
     override suspend operator fun invoke(searchQuery: String): Flow<WireUserSearchResult> =
-        wireUserRepository.searchKnownUsersByNameOrHandleOrEmail(searchQuery).map { WireUserSearchResult(it) }
+        wireUserRepository.searchKnownUsersByNameOrHandleOrEmail(searchQuery)
 
 }

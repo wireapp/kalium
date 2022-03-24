@@ -1,7 +1,8 @@
 package com.wire.kalium.logic.data.wireuser
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.wireuser.model.WireUser
+import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.wireuser.search.WireUserSearchResult
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.wrapApiRequest
@@ -15,28 +16,32 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 interface WireUserRepository {
-    suspend fun searchKnownUsersByNameOrHandleOrEmail(searchQuery: String): Flow<List<WireUser>>
-    suspend fun searchPublicContact(searchQuery: String, domain: String, maxResultSize: Int? = null): Either<CoreFailure, List<WireUser>>
+    suspend fun searchKnownUsersByNameOrHandleOrEmail(searchQuery: String): Flow<WireUserSearchResult>
+    suspend fun searchPublicContact(
+        searchQuery: String,
+        domain: String,
+        maxResultSize: Int? = null
+    ): Either<CoreFailure, WireUserSearchResult>
 }
 
 class WireUserRepositoryImpl(
     private val userDAO: UserDAO,
-    private val wireUserMapper: WireUserMapper,
     private val contactSearchApi: ContactSearchApi,
-    private val userDetailsApi: UserDetailsApi
+    private val userDetailsApi: UserDetailsApi,
+    private val wireUserMapper: WireUserMapper = MapperProvider.wireUserMapper()
 ) : WireUserRepository {
 
     override suspend fun searchKnownUsersByNameOrHandleOrEmail(searchQuery: String) =
         userDAO.getUserByNameOrHandleOrEmail(searchQuery)
             .map {
-                it.map { userEntity -> wireUserMapper.fromDaoModelToWireUser(userEntity) }
+                WireUserSearchResult(it.map { userEntity -> wireUserMapper.fromDaoModelToWireUser(userEntity) })
             }
 
     override suspend fun searchPublicContact(
         searchQuery: String,
         domain: String,
         maxResultSize: Int?
-    ): Either<CoreFailure, List<WireUser>> {
+    ): Either<CoreFailure, WireUserSearchResult> {
         return suspending {
             wrapApiRequest {
                 contactSearchApi.search(
@@ -50,7 +55,7 @@ class WireUserRepositoryImpl(
                 wrapApiRequest {
                     userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(contactResultValue.documents.map { it.qualifiedID }))
                 }.map { userDetailsResponses ->
-                    userDetailsResponses.map { wireUserMapper.fromUserDetailResponse(it) }
+                    WireUserSearchResult(userDetailsResponses.map { wireUserMapper.fromUserDetailResponse(it) })
                 }
             }
         }

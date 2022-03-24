@@ -43,7 +43,6 @@ interface UserRepository {
 class UserDataSource(
     private val userDAO: UserDAO,
     private val metadataDAO: MetadataDAO,
-    private val contactSearchApi: ContactSearchApi,
     private val selfApi: SelfApi,
     private val userDetailsApi: UserDetailsApi,
     private val assetRepository: AssetRepository,

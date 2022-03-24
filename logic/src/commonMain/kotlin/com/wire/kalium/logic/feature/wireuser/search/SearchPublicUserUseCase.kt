@@ -1,7 +1,6 @@
 package com.wire.kalium.logic.feature.wireuser.search
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.wireuser.WireUserRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
@@ -28,6 +27,6 @@ internal class SearchPublicUserUseCaseImpl(
             searchQuery = searchQuery,
             domain = domain,
             maxResultSize = maxResultSize
-        ).map { WireUserSearchResult((it)) }
+        )
 }
 
