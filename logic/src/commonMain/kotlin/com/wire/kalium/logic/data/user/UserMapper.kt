@@ -19,7 +19,9 @@ interface UserMapper {
     fun fromDtoToSelfUser(userDTO: UserDTO): SelfUser
     fun fromApiModelToDaoModel(userDetailsResponse: UserDetailsResponse): UserEntity
     fun fromApiModelToDaoModel(userDTO: UserDTO): UserEntity
-    fun fromDaoModel(userEntity: UserEntity): SelfUser
+    fun fromDaoModelToSelfUser(userEntity: UserEntity): SelfUser
+    fun fromDaoModelToWireUser(userEntity: UserEntity): WireUser
+    fun fromUserDetailResponse(userDetailResponse: UserDetailsResponse): WireUser
 
     /**
      * Maps the user data to be updated. if the parameters [newName] [newAccent] [newAssetId] are nulls,
@@ -67,7 +69,7 @@ internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
         )
     }
 
-    override fun fromDaoModel(userEntity: UserEntity) = SelfUser(
+    override fun fromDaoModelToSelfUser(userEntity: UserEntity) = SelfUser(
         idMapper.fromDaoModel(userEntity.id),
         userEntity.name,
         userEntity.handle,
@@ -77,6 +79,28 @@ internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
         userEntity.team,
         userEntity.previewAssetId,
         userEntity.completeAssetId
+    )
+
+    override fun fromDaoModelToWireUser(userEntity: UserEntity) = WireUser(
+        idMapper.fromDaoModel(userEntity.id),
+        userEntity.name,
+        userEntity.handle,
+        userEntity.email,
+        userEntity.phone,
+        userEntity.accentId,
+        userEntity.team,
+        userEntity.previewAssetId,
+        userEntity.completeAssetId
+    )
+
+    override fun fromUserDetailResponse(userDetailResponse: UserDetailsResponse) = WireUser(
+        id = UserId(userDetailResponse.id.value, userDetailResponse.id.domain),
+        name = userDetailResponse.name,
+        handle = userDetailResponse.handle,
+        accentId = userDetailResponse.accentId,
+        team = userDetailResponse.team,
+        previewPicture = userDetailResponse.assets.getPreviewAssetOrNull()?.key,
+        completePicture = userDetailResponse.assets.getCompleteAssetOrNull()?.key,
     )
 
     override fun fromModelToUpdateApiModel(

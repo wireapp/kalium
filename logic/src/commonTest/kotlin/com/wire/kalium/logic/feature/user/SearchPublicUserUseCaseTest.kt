@@ -5,6 +5,8 @@ import com.wire.kalium.logic.data.publicuser.PublicUserRepository
 import com.wire.kalium.logic.data.publicuser.model.PublicUser
 import com.wire.kalium.logic.data.publicuser.model.PublicUserSearchResult
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.user.search.SearchPublicUserUseCase
+import com.wire.kalium.logic.feature.user.search.SearchPublicUserUseCaseImpl
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.anything
