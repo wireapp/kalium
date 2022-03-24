@@ -1,4 +1,4 @@
-name: "Android & iOS Tests"
+name: "Android Tests"
 
 on:
   pull_request:
@@ -47,9 +47,6 @@ jobs:
             emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
             disable-animations: false
             script: echo "Generated AVD snapshot for caching."
-
-      - name: iOS Tests
-        run: ./gradlew iosX64Test
 
       - name: Android Unit Test
         run: ./gradlew testDebugUnitTest
