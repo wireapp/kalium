@@ -1,12 +1,12 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.publicuser.PublicUserRepository
-import com.wire.kalium.logic.data.publicuser.model.PublicUser
-import com.wire.kalium.logic.data.publicuser.model.PublicUserSearchResult
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.wireuser.WireUserRepository
+import com.wire.kalium.logic.data.wireuser.model.WireUser
 import com.wire.kalium.logic.feature.wireuser.search.SearchPublicUserUseCase
 import com.wire.kalium.logic.feature.wireuser.search.SearchPublicUserUseCaseImpl
+import com.wire.kalium.logic.feature.wireuser.search.WireUserSearchResult
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.anything
@@ -22,13 +22,13 @@ import kotlin.test.assertIs
 class SearchPublicUserUseCaseTest {
 
     @Mock
-    private val publicUserRepository = mock(classOf<PublicUserRepository>())
+    private val wireUserRepository = mock(classOf<WireUserRepository>())
 
     private lateinit var searchPublicUserUseCase: SearchPublicUserUseCase
 
     @BeforeTest
     fun setUp() {
-        searchPublicUserUseCase = SearchPublicUserUseCaseImpl(publicUserRepository)
+        searchPublicUserUseCase = SearchPublicUserUseCaseImpl(wireUserRepository)
     }
 
     @Test
@@ -36,14 +36,14 @@ class SearchPublicUserUseCaseTest {
         //given
         val expected = Either.Right(VALID_SEARCH_PUBLIC_RESULT)
 
-        given(publicUserRepository)
-            .suspendFunction(publicUserRepository::searchPublicContact)
+        given(wireUserRepository)
+            .suspendFunction(wireUserRepository::searchPublicContact)
             .whenInvokedWith(anything(), anything(), anything())
             .thenReturn(expected)
         //when
         val actual = searchPublicUserUseCase(TEST_QUERY, TEST_DOMAIN)
         //then
-        assertIs<Either.Right<PublicUserSearchResult>>(actual)
+        assertIs<Either.Right<WireUserSearchResult>>(actual)
         assertEquals(expected, actual)
     }
 
@@ -52,8 +52,8 @@ class SearchPublicUserUseCaseTest {
         //given
         val expected = TEST_CORE_FAILURE
 
-        given(publicUserRepository)
-            .suspendFunction(publicUserRepository::searchPublicContact)
+        given(wireUserRepository)
+            .suspendFunction(wireUserRepository::searchPublicContact)
             .whenInvokedWith(anything(), anything(), anything())
             .thenReturn(expected)
         //when
@@ -70,11 +70,10 @@ class SearchPublicUserUseCaseTest {
 
         val TEST_CORE_FAILURE = Either.Left(CoreFailure.Unknown(IllegalStateException()))
 
-        val VALID_SEARCH_PUBLIC_RESULT = PublicUserSearchResult(
-            totalFound = 5,
-            publicUsers = buildList {
+        val VALID_SEARCH_PUBLIC_RESULT = WireUserSearchResult(
+            wireUsers = buildList {
                 for (i in 0..5) {
-                    PublicUser(
+                    WireUser(
                         id = UserId(i.toString(), "domain$i"),
                         name = "name$i",
                         handle = null,
