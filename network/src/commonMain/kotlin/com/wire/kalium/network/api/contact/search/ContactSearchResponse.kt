@@ -4,6 +4,7 @@ import com.wire.kalium.network.api.UserId
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+@Serializable
 data class ContactSearchResponse(
     @SerialName("documents") val documents: List<ContactDTO>,
     @SerialName("found") val found: Int,
@@ -12,13 +13,14 @@ data class ContactSearchResponse(
     @SerialName("took") val took: Int
 )
 
+@Serializable
 data class ContactDTO(
     @SerialName("accent_id") val accentId: Int?,
     @SerialName("handle") val handle: String?,
     @SerialName("id") val id: String?,
     @SerialName("name") val name: String,
     @SerialName("qualified_id") val qualifiedID: UserId,
-    @SerialName("team") val team: String
+    @SerialName("team") val team: String?
 )
 
 @Serializable
