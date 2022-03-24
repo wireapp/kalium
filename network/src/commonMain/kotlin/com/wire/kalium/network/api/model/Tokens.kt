@@ -4,6 +4,7 @@ import com.wire.kalium.network.api.NonQualifiedUserId
 import com.wire.kalium.network.api.SessionDTO
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.jvm.JvmInline
 
 
 @Serializable
@@ -17,3 +18,6 @@ data class AccessTokenDTO(
 internal fun AccessTokenDTO.toSessionDto(refreshToken: String): SessionDTO = SessionDTO(
     userIdValue = userId, tokenType = tokenType, accessToken = value, refreshToken = refreshToken
 )
+
+@JvmInline
+value class RefreshTokenDTO(val value: String)

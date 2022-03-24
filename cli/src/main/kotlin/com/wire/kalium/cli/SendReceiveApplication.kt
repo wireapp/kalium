@@ -32,7 +32,7 @@ class SendReceiveApplication : CliktCommand() {
 
     override fun run() = runBlocking {
         val authSession = login(email, password)
-        val userSession = coreLogic.getSessionScope(authSession)
+        val userSession = coreLogic.getSessionScope(authSession.userId)
 
         when (userSession.client.register(password, emptyList())) {
             is RegisterClientResult.Failure -> throw RuntimeException("Client registration failed")

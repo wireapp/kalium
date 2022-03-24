@@ -30,23 +30,18 @@ import com.wire.kalium.network.api.user.logout.LogoutApi
 import com.wire.kalium.network.api.user.logout.LogoutImpl
 import com.wire.kalium.network.api.user.self.SelfApi
 import com.wire.kalium.network.api.user.self.SelfApiImpl
-import com.wire.kalium.network.tools.BackendConfig
-import com.wire.kalium.network.utils.isSuccessful
-import io.ktor.client.HttpClientConfig
+import com.wire.kalium.network.session.SessionManager
+import com.wire.kalium.network.session.installAuth
 import io.ktor.client.engine.HttpClientEngine
-import io.ktor.client.plugins.auth.Auth
-import io.ktor.client.plugins.auth.providers.BearerTokens
-import io.ktor.client.plugins.auth.providers.bearer
 
 class AuthenticatedNetworkContainer(
-    private val backendConfig: BackendConfig,
-    private val sessionDTO: SessionDTO,
+    private val sessionManager: SessionManager,
     private val engine: HttpClientEngine = defaultHttpEngine(),
-//    private val onTokenUpdate: (newTokenInfo: Pair<String, String>) -> Unit // Idea to let the network handle the refresh token automatically
 ) {
-    val accessTokenApi: AccessTokenApi get() = AccessTokenApiImpl(authenticatedHttpClient)
 
-    val logoutApi: LogoutApi get() = LogoutImpl(authenticatedHttpClient, sessionDTO.refreshToken)
+    private val backendConfig = sessionManager.session().second
+
+    val logoutApi: LogoutApi get() = LogoutImpl(authenticatedHttpClient, sessionManager)
 
     val clientApi: ClientApi get() = ClientApiImpl(authenticatedHttpClient)
 
@@ -68,36 +63,13 @@ class AuthenticatedNetworkContainer(
 
     val userDetailsApi: UserDetailsApi get() = UserDetailsApiImp(authenticatedHttpClient)
 
-    val contactSearchApi : ContactSearchApi get() = ContactSearchApiImpl(authenticatedHttpClient)
+    val contactSearchApi: ContactSearchApi get() = ContactSearchApiImpl(authenticatedHttpClient)
 
     val callApi: CallApi get() = CallApiImpl(authenticatedHttpClient)
 
     internal val authenticatedHttpClient by lazy {
         provideBaseHttpClient(engine, HttpClientOptions.DefaultHost(backendConfig)) {
-            installAuth()
-        }
-    }
-
-    private fun HttpClientConfig<*>.installAuth() {
-        Auth {
-            bearer {
-                loadTokens {
-                    BearerTokens(
-                        accessToken = sessionDTO.accessToken,
-                        refreshToken = sessionDTO.refreshToken
-                    )
-                }
-                refreshTokens {
-                    val refreshedResponse = accessTokenApi.getToken(sessionDTO.refreshToken)
-
-                    return@refreshTokens if (refreshedResponse.isSuccessful()) {
-                        BearerTokens(refreshedResponse.value.value, TODO("Get the 🍪"))
-                    } else {
-                        // TODO: if the refreshToken is expired logout ?
-                        null
-                    }
-                }
-            }
+            installAuth(sessionManager)
         }
     }
 }
