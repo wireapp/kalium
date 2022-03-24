@@ -6,12 +6,12 @@ import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 
-class ContactSearchApiImpl(private val httpClient: HttpClient) : ContactSearchApi {
+class WireUserSearchApiImpl(private val httpClient: HttpClient) : WireUserSearchApi {
 
-    override suspend fun search(contactSearchRequest: ContactSearchRequest): NetworkResponse<ContactSearchResponse> =
+    override suspend fun search(wireUserSearchRequest: WireUserSearchRequest): NetworkResponse<WireUserSearchResponse> =
         wrapKaliumResponse {
             httpClient.get("/$PATH_CONTACT_SEARCH") {
-                with(contactSearchRequest) {
+                with(wireUserSearchRequest) {
                     parameter(QUERY_KEY_SEARCH_QUERY, searchQuery)
 
                     parameter(QUERY_KEY_DOMAIN, domain)

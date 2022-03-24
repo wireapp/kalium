@@ -11,8 +11,8 @@ import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.network.api.QualifiedID
 import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.contact.search.ContactDTO
-import com.wire.kalium.network.api.contact.search.ContactSearchApi
-import com.wire.kalium.network.api.contact.search.ContactSearchResponse
+import com.wire.kalium.network.api.contact.search.WireUserSearchApi
+import com.wire.kalium.network.api.contact.search.WireUserSearchResponse
 import com.wire.kalium.network.api.contact.search.SearchPolicyDTO
 import com.wire.kalium.network.api.user.LegalHoldStatusResponse
 import com.wire.kalium.network.api.user.details.UserDetailsApi
@@ -35,7 +35,7 @@ import kotlin.test.assertIs
 class WireUserRepositoryTest {
 
     @Mock
-    private val contactSearchApi: ContactSearchApi = mock(classOf<ContactSearchApi>())
+    private val wireUserSearchApi: WireUserSearchApi = mock(classOf<WireUserSearchApi>())
 
     @Mock
     private val userDetailsApi: UserDetailsApi = mock(classOf<UserDetailsApi>())
@@ -50,19 +50,19 @@ class WireUserRepositoryTest {
 
     @BeforeTest
     fun setup() {
-        wireUserRepository = WireUserRepositoryImpl(userDAO, contactSearchApi, userDetailsApi, wireUserMapper)
+        wireUserRepository = WireUserRepositoryImpl(userDAO, wireUserSearchApi, userDetailsApi, wireUserMapper)
     }
 
     @Test
     fun givenContactSearchApiFailure_whenSearchPublicContact_resultIsFailure() = runTest {
         //given
-        given(contactSearchApi)
-            .suspendFunction(contactSearchApi::search)
+        given(wireUserSearchApi)
+            .suspendFunction(wireUserSearchApi::search)
             .whenInvokedWith(any())
             .then { TestNetworkResponseError.genericError() }
 
         //when
-        val actual = wireUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
+        val actual = wireUserRepository.searchWireContact(TEST_QUERY, TEST_DOMAIN)
 
         //then
         assertIs<Either.Left<NetworkFailure>>(actual)
@@ -71,17 +71,17 @@ class WireUserRepositoryTest {
     @Test
     fun givenContactSearchApiFailure_whenSearchPublicContact_thenOnlyContactSearchApiISInvoked() = runTest {
         //given
-        given(contactSearchApi)
-            .suspendFunction(contactSearchApi::search)
+        given(wireUserSearchApi)
+            .suspendFunction(wireUserSearchApi::search)
             .whenInvokedWith(any())
             .then { TestNetworkResponseError.genericError() }
 
         //when
-        val actual = wireUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
+        val actual = wireUserRepository.searchWireContact(TEST_QUERY, TEST_DOMAIN)
 
         //then
-        verify(contactSearchApi)
-            .suspendFunction(contactSearchApi::search)
+        verify(wireUserSearchApi)
+            .suspendFunction(wireUserSearchApi::search)
             .with(any())
             .wasInvoked(exactly = once)
     }
@@ -89,13 +89,13 @@ class WireUserRepositoryTest {
     @Test
     fun givenContactSearchApiFailure_whenSearchPublicContact_thenUserDetailsApiAndPublicUserMapperIsNotInvoked() = runTest {
         //given
-        given(contactSearchApi)
-            .suspendFunction(contactSearchApi::search)
+        given(wireUserSearchApi)
+            .suspendFunction(wireUserSearchApi::search)
             .whenInvokedWith(any())
             .then { TestNetworkResponseError.genericError() }
 
         //when
-        val actual = wireUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
+        val actual = wireUserRepository.searchWireContact(TEST_QUERY, TEST_DOMAIN)
         //then
         verify(userDetailsApi)
             .suspendFunction(userDetailsApi::getMultipleUsers)
@@ -111,8 +111,8 @@ class WireUserRepositoryTest {
     @Test
     fun givenContactSearchApiSuccessButuserDetailsApiFailure_whenSearchPublicContact_resultIsFailure() = runTest {
         //given
-        given(contactSearchApi)
-            .suspendFunction(contactSearchApi::search)
+        given(wireUserSearchApi)
+            .suspendFunction(wireUserSearchApi::search)
             .whenInvokedWith(any())
             .then { NetworkResponse.Success(CONTACT_SEARCH_RESPONSE, mapOf(), 200) }
 
@@ -121,7 +121,7 @@ class WireUserRepositoryTest {
             .whenInvokedWith(any())
             .then { TestNetworkResponseError.genericError() }
         //when
-        val actual = wireUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
+        val actual = wireUserRepository.searchWireContact(TEST_QUERY, TEST_DOMAIN)
 
         //then
         assertIs<Either.Left<NetworkFailure>>(actual)
@@ -130,8 +130,8 @@ class WireUserRepositoryTest {
     @Test
     fun givenContactSearchApiSuccessButuserDetailsApiFailure_whenSearchPublicContact_ThenPublicUserMapperIsNotInvoked() = runTest {
         //given
-        given(contactSearchApi)
-            .suspendFunction(contactSearchApi::search)
+        given(wireUserSearchApi)
+            .suspendFunction(wireUserSearchApi::search)
             .whenInvokedWith(any())
             .then { NetworkResponse.Success(CONTACT_SEARCH_RESPONSE, mapOf(), 200) }
 
@@ -140,7 +140,7 @@ class WireUserRepositoryTest {
             .whenInvokedWith(any())
             .then { TestNetworkResponseError.genericError() }
         //when
-        val actual = wireUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
+        val actual = wireUserRepository.searchWireContact(TEST_QUERY, TEST_DOMAIN)
 
         //then
         verify(wireUserMapper)
@@ -153,8 +153,8 @@ class WireUserRepositoryTest {
     fun givenContactSearchApiSuccessButUserDetailsApiFailure_whenSearchPublicContact_ThenContactSearchApiAndUserDetailsApiIsInvoked() =
         runTest {
             //given
-            given(contactSearchApi)
-                .suspendFunction(contactSearchApi::search)
+            given(wireUserSearchApi)
+                .suspendFunction(wireUserSearchApi::search)
                 .whenInvokedWith(any())
                 .then { NetworkResponse.Success(CONTACT_SEARCH_RESPONSE, mapOf(), 200) }
 
@@ -163,11 +163,11 @@ class WireUserRepositoryTest {
                 .whenInvokedWith(any())
                 .then { TestNetworkResponseError.genericError() }
             //when
-            val actual = wireUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
+            val actual = wireUserRepository.searchWireContact(TEST_QUERY, TEST_DOMAIN)
 
             //then
-            verify(contactSearchApi)
-                .suspendFunction(contactSearchApi::search)
+            verify(wireUserSearchApi)
+                .suspendFunction(wireUserSearchApi::search)
                 .with(any())
                 .wasInvoked(exactly = once)
 
@@ -180,8 +180,8 @@ class WireUserRepositoryTest {
     @Test
     fun givenContactSearchApiAndUserDetailsApiAndPublicUserApiReturnSuccess_WhenSearchPublicContact_ThenResultIsSuccess() = runTest {
         //given
-        given(contactSearchApi)
-            .suspendFunction(contactSearchApi::search)
+        given(wireUserSearchApi)
+            .suspendFunction(wireUserSearchApi::search)
             .whenInvokedWith(any())
             .then { NetworkResponse.Success(CONTACT_SEARCH_RESPONSE, mapOf(), 200) }
 
@@ -196,7 +196,7 @@ class WireUserRepositoryTest {
             .then { PUBLIC_USERS }
 
         //when
-        val actual = wireUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
+        val actual = wireUserRepository.searchWireContact(TEST_QUERY, TEST_DOMAIN)
 
         //then
         assertIs<Either.Right<WireUserSearchResult>>(actual)
@@ -206,8 +206,8 @@ class WireUserRepositoryTest {
     fun givenContactSearchApiAndUserDetailsApiAndPublicUserApiReturnSuccess_WhenSearchPublicContact_ThenResultIsEqualToExpectedValue() =
         runTest {
             //given
-            given(contactSearchApi)
-                .suspendFunction(contactSearchApi::search)
+            given(wireUserSearchApi)
+                .suspendFunction(wireUserSearchApi::search)
                 .whenInvokedWith(any())
                 .then { NetworkResponse.Success(CONTACT_SEARCH_RESPONSE, mapOf(), 200) }
 
@@ -225,7 +225,7 @@ class WireUserRepositoryTest {
                 wireUsers = PUBLIC_USERS
             )
             //when
-            val actual = wireUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
+            val actual = wireUserRepository.searchWireContact(TEST_QUERY, TEST_DOMAIN)
 
             assertIs<Either.Right<WireUserSearchResult>>(actual)
             assertEquals(expectedResult, actual.value)
@@ -235,8 +235,8 @@ class WireUserRepositoryTest {
     fun givenAValidUserSearchWithEmptyResults_WhenSearchingSomeText_ThenResultIsAnEmptyList() =
         runTest {
             //given
-            given(contactSearchApi)
-                .suspendFunction(contactSearchApi::search)
+            given(wireUserSearchApi)
+                .suspendFunction(wireUserSearchApi::search)
                 .whenInvokedWith(any())
                 .then { NetworkResponse.Success(EMPTY_CONTACT_SEARCH_RESPONSE, mapOf(), 200) }
 
@@ -254,7 +254,7 @@ class WireUserRepositoryTest {
                 wireUsers = emptyList()
             )
             //when
-            val actual = wireUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
+            val actual = wireUserRepository.searchWireContact(TEST_QUERY, TEST_DOMAIN)
 
             assertIs<Either.Right<WireUserSearchResult>>(actual)
             assertEquals(expectedResult, actual.value)
@@ -298,7 +298,7 @@ class WireUserRepositoryTest {
             }
         }
 
-        val CONTACT_SEARCH_RESPONSE = ContactSearchResponse(
+        val CONTACT_SEARCH_RESPONSE = WireUserSearchResponse(
             documents = CONTACTS,
             found = CONTACTS.size,
             returned = 5,
@@ -306,7 +306,7 @@ class WireUserRepositoryTest {
             took = 100,
         )
 
-        val EMPTY_CONTACT_SEARCH_RESPONSE = ContactSearchResponse(
+        val EMPTY_CONTACT_SEARCH_RESPONSE = WireUserSearchResponse(
             documents = emptyList(),
             found = 0,
             returned = 0,

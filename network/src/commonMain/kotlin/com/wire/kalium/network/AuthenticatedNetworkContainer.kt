@@ -1,14 +1,11 @@
 package com.wire.kalium.network
 
-import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.asset.AssetApi
 import com.wire.kalium.network.api.asset.AssetApiImpl
-import com.wire.kalium.network.api.auth.AccessTokenApi
-import com.wire.kalium.network.api.auth.AccessTokenApiImpl
 import com.wire.kalium.network.api.call.CallApi
 import com.wire.kalium.network.api.call.CallApiImpl
-import com.wire.kalium.network.api.contact.search.ContactSearchApi
-import com.wire.kalium.network.api.contact.search.ContactSearchApiImpl
+import com.wire.kalium.network.api.contact.search.WireUserSearchApi
+import com.wire.kalium.network.api.contact.search.WireUserSearchApiImpl
 import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.conversation.ConversationApiImp
 import com.wire.kalium.network.api.keypackage.KeyPackageApi
@@ -63,7 +60,7 @@ class AuthenticatedNetworkContainer(
 
     val userDetailsApi: UserDetailsApi get() = UserDetailsApiImp(authenticatedHttpClient)
 
-    val contactSearchApi: ContactSearchApi get() = ContactSearchApiImpl(authenticatedHttpClient)
+    val wireUserSearchApi: WireUserSearchApi get() = WireUserSearchApiImpl(authenticatedHttpClient)
 
     val callApi: CallApi get() = CallApiImpl(authenticatedHttpClient)
 

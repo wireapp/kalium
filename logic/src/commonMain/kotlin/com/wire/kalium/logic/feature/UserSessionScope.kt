@@ -28,7 +28,6 @@ import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.wireuser.WireUserRepository
 import com.wire.kalium.logic.data.wireuser.WireUserRepositoryImpl
-import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
@@ -93,7 +92,7 @@ abstract class UserSessionScopeCommon(
     private val publicUserRepository: WireUserRepository
         get() = WireUserRepositoryImpl(
             database.userDAO,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.contactSearchApi,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.wireUserSearchApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi
         )
 

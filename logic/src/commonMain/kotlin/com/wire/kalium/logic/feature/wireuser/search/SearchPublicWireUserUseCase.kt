@@ -22,7 +22,7 @@ internal class SearchPublicWireWireUserUseCaseImpl(
         domain: String,
         maxResultSize: Int?
     ): Either<CoreFailure, WireUserSearchResult> =
-        wireUserRepository.searchPublicContact(
+        wireUserRepository.searchWireContact(
             searchQuery = searchQuery,
             domain = domain,
             maxResultSize = maxResultSize

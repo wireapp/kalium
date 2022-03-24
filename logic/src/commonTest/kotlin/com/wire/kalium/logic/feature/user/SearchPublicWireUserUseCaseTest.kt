@@ -37,7 +37,7 @@ class SearchPublicWireUserUseCaseTest {
         val expected = Either.Right(VALID_SEARCH_PUBLIC_RESULT)
 
         given(wireUserRepository)
-            .suspendFunction(wireUserRepository::searchPublicContact)
+            .suspendFunction(wireUserRepository::searchWireContact)
             .whenInvokedWith(anything(), anything(), anything())
             .thenReturn(expected)
         //when
@@ -53,7 +53,7 @@ class SearchPublicWireUserUseCaseTest {
         val expected = TEST_CORE_FAILURE
 
         given(wireUserRepository)
-            .suspendFunction(wireUserRepository::searchPublicContact)
+            .suspendFunction(wireUserRepository::searchWireContact)
             .whenInvokedWith(anything(), anything(), anything())
             .thenReturn(expected)
         //when
