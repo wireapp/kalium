@@ -4,10 +4,12 @@ import com.wire.kalium.network.api.AssetId
 import com.wire.kalium.network.api.NonQualifiedUserId
 import com.wire.kalium.network.api.TeamId
 import com.wire.kalium.network.api.model.TeamDTO
-import com.wire.kalium.network.api.teams.TeamsApi.TeamMember
 import com.wire.kalium.network.api.teams.TeamsApi.Permissions
+import com.wire.kalium.network.api.teams.TeamsApi.TeamMember
 import com.wire.kalium.network.api.user.LegalHoldStatusResponse
 
+
+// TODO: Move to test
 object TeamGenerator {
 
     fun createTeam(

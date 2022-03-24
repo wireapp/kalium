@@ -19,7 +19,7 @@ class LogoutUseCase(
         authenticatedDataSourceSet.database.nuke()
         authenticatedDataSourceSet.kaliumPreferencesSettings.nuke()
         sessionRepository.deleteSession(userId)
-        sessionRepository.getSessions().onSuccess {
+        sessionRepository.allSessions().onSuccess {
             sessionRepository.updateCurrentSession(it.first().userId)
         }
     }
