@@ -38,6 +38,7 @@ import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.sync.ConversationEventReceiver
 import com.wire.kalium.logic.sync.ListenToEventsUseCase
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.network.api.NonQualifiedUserId
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
 import com.wire.kalium.persistence.db.Database
@@ -48,7 +49,7 @@ import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 expect class UserSessionScope : UserSessionScopeCommon
 
 abstract class UserSessionScopeCommon(
-    private val session: AuthSession,
+    private val userId: NonQualifiedUserId,
     private val authenticatedDataSourceSet: AuthenticatedDataSourceSet,
     private val sessionRepository: SessionRepository
 ) {
@@ -147,7 +148,7 @@ abstract class UserSessionScopeCommon(
             syncManager
         )
     val users: UserScope get() = UserScope(userRepository, publicUserRepository, syncManager, assetRepository)
-    val logout: LogoutUseCase get() = LogoutUseCase(logoutRepository, sessionRepository, session.userId, authenticatedDataSourceSet)
+    val logout: LogoutUseCase get() = LogoutUseCase(logoutRepository, sessionRepository, userId, authenticatedDataSourceSet)
 
     val team: TeamScope get() = TeamScope(userRepository, teamRepository)
 }
