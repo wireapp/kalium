@@ -50,7 +50,7 @@ class WireUserRepositoryTest {
 
     @BeforeTest
     fun setup() {
-        wireUserRepository = WireUserRepositoryImpl(userDAO, contactSearchApi, userDetailsApi, publicUserMapper)
+        wireUserRepository = WireUserRepositoryImpl(userDAO, contactSearchApi, userDetailsApi, wireUserMapper)
     }
 
     @Test
@@ -102,8 +102,8 @@ class WireUserRepositoryTest {
             .with(any())
             .wasNotInvoked()
 
-        verify(publicUserMapper)
-            .function(publicUserMapper::fromUserDetailResponse)
+        verify(wireUserMapper)
+            .function(wireUserMapper::fromUserDetailResponse)
             .with(any())
             .wasNotInvoked()
     }
@@ -143,8 +143,8 @@ class WireUserRepositoryTest {
         val actual = wireUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
 
         //then
-        verify(publicUserMapper)
-            .function(publicUserMapper::fromUserDetailResponse)
+        verify(wireUserMapper)
+            .function(wireUserMapper::fromUserDetailResponse)
             .with(any())
             .wasNotInvoked()
     }
@@ -190,8 +190,8 @@ class WireUserRepositoryTest {
             .whenInvokedWith(any())
             .then { NetworkResponse.Success(GET_MULTIPLE_USER_RESPONSE, mapOf(), 200) }
 
-        given(publicUserMapper)
-            .function(publicUserMapper::fromUserDetailResponses)
+        given(wireUserMapper)
+            .function(wireUserMapper::fromUserDetailResponses)
             .whenInvokedWith(any())
             .then { PUBLIC_USERS }
 
@@ -216,8 +216,8 @@ class WireUserRepositoryTest {
                 .whenInvokedWith(any())
                 .then { NetworkResponse.Success(GET_MULTIPLE_USER_RESPONSE, mapOf(), 200) }
 
-            given(publicUserMapper)
-                .function(publicUserMapper::fromUserDetailResponses)
+            given(wireUserMapper)
+                .function(wireUserMapper::fromUserDetailResponses)
                 .whenInvokedWith(any())
                 .then { PUBLIC_USERS }
 
@@ -245,8 +245,8 @@ class WireUserRepositoryTest {
                 .whenInvokedWith(any())
                 .then { NetworkResponse.Success(emptyList(), mapOf(), 200) }
 
-            given(publicUserMapper)
-                .function(publicUserMapper::fromUserDetailResponses)
+            given(wireUserMapper)
+                .function(wireUserMapper::fromUserDetailResponses)
                 .whenInvokedWith(any())
                 .then { emptyList() }
 

@@ -4,8 +4,8 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.wireuser.WireUserRepository
 import com.wire.kalium.logic.data.wireuser.model.WireUser
-import com.wire.kalium.logic.feature.wireuser.search.SearchPublicUserUseCase
-import com.wire.kalium.logic.feature.wireuser.search.SearchPublicUserUseCaseImpl
+import com.wire.kalium.logic.feature.wireuser.search.SearchPublicWireUserUseCase
+import com.wire.kalium.logic.feature.wireuser.search.SearchPublicWireWireUserUseCaseImpl
 import com.wire.kalium.logic.feature.wireuser.search.WireUserSearchResult
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -19,16 +19,16 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-class SearchPublicUserUseCaseTest {
+class SearchPublicWireUserUseCaseTest {
 
     @Mock
     private val wireUserRepository = mock(classOf<WireUserRepository>())
 
-    private lateinit var searchPublicUserUseCase: SearchPublicUserUseCase
+    private lateinit var searchPublicWireUserUseCase: SearchPublicWireUserUseCase
 
     @BeforeTest
     fun setUp() {
-        searchPublicUserUseCase = SearchPublicUserUseCaseImpl(wireUserRepository)
+        searchPublicWireUserUseCase = SearchPublicWireWireUserUseCaseImpl(wireUserRepository)
     }
 
     @Test
@@ -41,7 +41,7 @@ class SearchPublicUserUseCaseTest {
             .whenInvokedWith(anything(), anything(), anything())
             .thenReturn(expected)
         //when
-        val actual = searchPublicUserUseCase(TEST_QUERY, TEST_DOMAIN)
+        val actual = searchPublicWireUserUseCase(TEST_QUERY, TEST_DOMAIN)
         //then
         assertIs<Either.Right<WireUserSearchResult>>(actual)
         assertEquals(expected, actual)
@@ -57,7 +57,7 @@ class SearchPublicUserUseCaseTest {
             .whenInvokedWith(anything(), anything(), anything())
             .thenReturn(expected)
         //when
-        val actual = searchPublicUserUseCase(TEST_QUERY, TEST_DOMAIN)
+        val actual = searchPublicWireUserUseCase(TEST_QUERY, TEST_DOMAIN)
 
         //then
         assertIs<Either.Left<CoreFailure>>(actual)

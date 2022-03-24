@@ -3,10 +3,9 @@ package com.wire.kalium.logic.feature.wireuser.search
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.wireuser.WireUserRepository
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.map
 
 
-interface SearchPublicUserUseCase {
+interface SearchPublicWireUserUseCase {
     suspend operator fun invoke(
         searchQuery: String,
         domain: String,
@@ -14,9 +13,9 @@ interface SearchPublicUserUseCase {
     ): Either<CoreFailure, WireUserSearchResult>
 }
 
-internal class SearchPublicUserUseCaseImpl(
+internal class SearchPublicWireWireUserUseCaseImpl(
     private val wireUserRepository: WireUserRepository
-) : SearchPublicUserUseCase {
+) : SearchPublicWireUserUseCase {
 
     override suspend fun invoke(
         searchQuery: String,
