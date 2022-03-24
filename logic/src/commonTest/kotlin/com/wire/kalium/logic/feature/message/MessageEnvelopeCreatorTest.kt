@@ -31,7 +31,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
-import com.wire.kalium.cryptography.UserId as CryptoUserId
+import com.wire.kalium.cryptography.PlainUserId as CryptoUserId
 
 class MessageEnvelopeCreatorTest {
 
