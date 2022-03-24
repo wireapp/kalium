@@ -12,7 +12,7 @@ actual class MLSClientImpl actual constructor(
     databaseKey: String,
     clientId: CryptoQualifiedClientId) : MLSClient {
 
-    private var coreCrypto: CoreCrypto
+    private val coreCrypto: CoreCrypto
     private val keyRotationDuration: Duration = Duration.ofDays(30)
 
     init {
