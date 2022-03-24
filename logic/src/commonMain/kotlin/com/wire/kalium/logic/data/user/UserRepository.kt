@@ -4,6 +4,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.wireuser.model.WireUser
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
@@ -35,8 +36,6 @@ interface UserRepository {
     suspend fun fetchUsersByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun getSelfUser(): Flow<SelfUser>
     suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, SelfUser>
-    suspend fun searchKnownUsersByNameOrHandleOrEmail(searchQuery: String): Flow<List<WireUser>>
-    suspend fun searchPublicContact(searchQuery: String, domain: String, maxResultSize: Int? = null): Either<CoreFailure, List<WireUser>>
     suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit>
     suspend fun updateLocalSelfUserHandle(handle: String)
 }
@@ -110,36 +109,6 @@ class UserDataSource(
                     userDAO.updateUser(it)
                     Either.Right(userMapper.fromDaoModelToSelfUser(it))
                 }
-        }
-    }
-
-    override suspend fun searchKnownUsersByNameOrHandleOrEmail(searchQuery: String) =
-        userDAO.getUserByNameOrHandleOrEmail(searchQuery)
-            .map {
-                it.map { userEntity -> userMapper.fromDaoModelToWireUser(userEntity) }
-            }
-
-    override suspend fun searchPublicContact(
-        searchQuery: String,
-        domain: String,
-        maxResultSize: Int?
-    ): Either<CoreFailure, List<WireUser>> {
-        return suspending {
-            wrapApiRequest {
-                contactSearchApi.search(
-                    ContactSearchRequest(
-                        searchQuery = searchQuery,
-                        domain = domain,
-                        maxResultSize = maxResultSize
-                    )
-                )
-            }.flatMap { contactResultValue ->
-                wrapApiRequest {
-                    userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(contactResultValue.documents.map { it.qualifiedID }))
-                }.map { userDetailsResponses ->
-                    userDetailsResponses.map { userMapper.fromUserDetailResponse(it) }
-                }
-            }
         }
     }
 

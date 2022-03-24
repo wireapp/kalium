@@ -7,10 +7,10 @@ import com.wire.kalium.logic.feature.asset.GetPublicAssetUseCase
 import com.wire.kalium.logic.feature.asset.GetPublicAssetUseCaseImpl
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
-import com.wire.kalium.logic.feature.user.search.SearchKnownUsersUseCase
-import com.wire.kalium.logic.feature.user.search.SearchKnownUsersUseCaseImpl
-import com.wire.kalium.logic.feature.user.search.SearchPublicUserUseCase
-import com.wire.kalium.logic.feature.user.search.SearchPublicUserUseCaseImpl
+import com.wire.kalium.logic.feature.wireuser.search.SearchKnownUsersUseCase
+import com.wire.kalium.logic.feature.wireuser.search.SearchKnownUsersUseCaseImpl
+import com.wire.kalium.logic.feature.wireuser.search.SearchPublicUserUseCase
+import com.wire.kalium.logic.feature.wireuser.search.SearchPublicUserUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 
 class UserScope(

@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.wireuser.model.WireUser
 import com.wire.kalium.network.api.TeamId
 import com.wire.kalium.network.api.model.AssetSizeDTO
 import com.wire.kalium.network.api.model.UserAssetDTO
@@ -20,9 +21,6 @@ interface UserMapper {
     fun fromApiModelToDaoModel(userDetailsResponse: UserDetailsResponse): UserEntity
     fun fromApiModelToDaoModel(userDTO: UserDTO): UserEntity
     fun fromDaoModelToSelfUser(userEntity: UserEntity): SelfUser
-    fun fromDaoModelToWireUser(userEntity: UserEntity): WireUser
-    fun fromUserDetailResponse(userDetailResponse: UserDetailsResponse): WireUser
-
     /**
      * Maps the user data to be updated. if the parameters [newName] [newAccent] [newAssetId] are nulls,
      * it indicates that not updation should be made.
@@ -79,28 +77,6 @@ internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
         userEntity.team,
         userEntity.previewAssetId,
         userEntity.completeAssetId
-    )
-
-    override fun fromDaoModelToWireUser(userEntity: UserEntity) = WireUser(
-        idMapper.fromDaoModel(userEntity.id),
-        userEntity.name,
-        userEntity.handle,
-        userEntity.email,
-        userEntity.phone,
-        userEntity.accentId,
-        userEntity.team,
-        userEntity.previewAssetId,
-        userEntity.completeAssetId
-    )
-
-    override fun fromUserDetailResponse(userDetailResponse: UserDetailsResponse) = WireUser(
-        id = UserId(userDetailResponse.id.value, userDetailResponse.id.domain),
-        name = userDetailResponse.name,
-        handle = userDetailResponse.handle,
-        accentId = userDetailResponse.accentId,
-        team = userDetailResponse.team,
-        previewPicture = userDetailResponse.assets.getPreviewAssetOrNull()?.key,
-        completePicture = userDetailResponse.assets.getCompleteAssetOrNull()?.key,
     )
 
     override fun fromModelToUpdateApiModel(
