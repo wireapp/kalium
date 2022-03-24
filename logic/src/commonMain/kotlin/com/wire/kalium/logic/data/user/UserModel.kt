@@ -8,7 +8,6 @@ abstract class User {
     abstract val id: UserId
 }
 
-
 data class SelfUser(
     override val id: UserId,
     val name: String?,
@@ -20,6 +19,5 @@ data class SelfUser(
     val previewPicture: UserAssetId?,
     val completePicture: UserAssetId?
 ) : User()
-
 
 typealias UserAssetId = String
