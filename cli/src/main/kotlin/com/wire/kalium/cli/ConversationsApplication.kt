@@ -12,12 +12,36 @@ import com.wire.kalium.logic.configuration.ServerConfigMapperImpl
 import com.wire.kalium.network.AuthenticatedNetworkContainer
 import com.wire.kalium.network.LoginNetworkContainer
 import com.wire.kalium.network.NetworkLogger
+import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.asset.AssetMetadataRequest
+import com.wire.kalium.network.api.model.AccessTokenDTO
 import com.wire.kalium.network.api.model.AssetRetentionType
+import com.wire.kalium.network.api.model.RefreshTokenDTO
 import com.wire.kalium.network.api.user.login.LoginApi
+import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.tools.BackendConfig
 import com.wire.kalium.network.utils.isSuccessful
 import kotlinx.coroutines.runBlocking
+
+class InMemorySessionManager(
+    private val backendConfig: BackendConfig,
+    private var session: SessionDTO
+) : SessionManager {
+
+    override fun session(): Pair<SessionDTO, BackendConfig> = Pair(session, backendConfig)
+
+    override fun updateSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO =
+        SessionDTO(
+            session.userIdValue,
+            newAccessTokenDTO.tokenType,
+            newAccessTokenDTO.value,
+            newRefreshTokenDTO?.value ?: session.refreshToken
+        )
+
+    override fun onSessionExpired() {
+        throw IllegalAccessError("cookie expired userId: ${session().first.userIdValue}")
+    }
+}
 
 class ConversationsApplication : CliktCommand() {
     private val email: String by option(help = "wire account email").required()
@@ -39,7 +63,7 @@ class ConversationsApplication : CliktCommand() {
         } else {
             val authResult = loginResult.value
             // TODO: Get them 🍪 refresh token
-            val networkModule = AuthenticatedNetworkContainer(sessionDTO = authResult.session, backendConfig = backendConfig)
+            val networkModule = AuthenticatedNetworkContainer( InMemorySessionManager(backendConfig, authResult.session))
             val conversationsResponse = networkModule.conversationApi.conversationsByBatch(null, 100)
 
             if (!conversationsResponse.isSuccessful()) {
@@ -50,7 +74,6 @@ class ConversationsApplication : CliktCommand() {
                     println("ID:${it.id}, Name: ${it.name}")
                 }
             }
-
             uploadTestAsset(networkModule)
         }
     }

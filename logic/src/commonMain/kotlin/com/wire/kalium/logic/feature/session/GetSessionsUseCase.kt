@@ -7,8 +7,8 @@ import com.wire.kalium.logic.functional.Either
 class GetSessionsUseCase(
     private val sessionRepository: SessionRepository
 ) {
-    suspend operator fun invoke(): GetAllSessionsResult =
-        when (val result = sessionRepository.getSessions()) {
+    operator fun invoke(): GetAllSessionsResult =
+        when (val result = sessionRepository.allSessions()) {
             is Either.Left -> {
                 if (result.value is SessionFailure.NoSessionFound) {
                     GetAllSessionsResult.Failure.NoSessionFound

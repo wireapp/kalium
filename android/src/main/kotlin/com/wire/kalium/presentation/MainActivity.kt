@@ -38,7 +38,7 @@ class MainActivity : ComponentActivity() {
 
     private fun loginAndFetchConversationList(coreLogic: CoreLogic) = lifecycleScope.launchWhenCreated {
         login(coreLogic.getAuthenticationScope())?.let {
-            val session = coreLogic.getSessionScope(it)
+            val session = coreLogic.getSessionScope(it.userId)
             val conversations = session.conversations.getConversations().first()
 
             // Uploading image code

@@ -1,4 +1,4 @@
-package com.wire.kalium.persistence.Util
+package com.wire.kalium.persistence.util
 
 import kotlinx.serialization.json.Json
 
