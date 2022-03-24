@@ -9,6 +9,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
+import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.sync.SyncManagerImpl
 import com.wire.kalium.logic.sync.WorkScheduler
 import com.wire.kalium.network.AuthenticatedNetworkContainer
@@ -65,6 +66,9 @@ actual class CoreLogic(clientLabel: String, rootProteusDirectoryPath: String) :
 
         return UserSessionScope(session, dataSourceSet, sessionRepository)
     }
+
+    override val globalCallManager: GlobalCallManager
+        get() = TODO("Not yet implemented")
 
     private companion object {
         private const val PREFERENCE_FILE_PREFIX = "user-pref"

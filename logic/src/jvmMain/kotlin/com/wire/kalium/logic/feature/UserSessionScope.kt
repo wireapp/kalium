@@ -9,7 +9,7 @@ import com.wire.kalium.logic.feature.auth.AuthSession
 
 actual class UserSessionScope(
     session: AuthSession, authenticatedDataSourceSet: AuthenticatedDataSourceSet, sessionRepository: SessionRepository
-) : UserSessionScopeCommon(session, authenticatedDataSourceSet, sessionRepository) {
+) : UserSessionScopeCommon(session, authenticatedDataSourceSet, sessionRepository, globalCallManager = TODO("")) {
     override val clientConfig: ClientConfig get() = ClientConfig()
 
     override val protoContentMapper: ProtoContentMapper get() = ProtoContentMapperImpl()
