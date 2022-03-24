@@ -55,7 +55,7 @@ class WireUserRepositoryImpl(
                 wrapApiRequest {
                     userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(contactResultValue.documents.map { it.qualifiedID }))
                 }.map { userDetailsResponses ->
-                    WireUserSearchResult(userDetailsResponses.map { wireUserMapper.fromUserDetailResponse(it) })
+                    WireUserSearchResult(wireUserMapper.fromUserDetailResponses(userDetailsResponses))
                 }
             }
         }

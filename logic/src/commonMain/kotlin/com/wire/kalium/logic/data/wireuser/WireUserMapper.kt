@@ -11,6 +11,7 @@ import com.wire.kalium.persistence.dao.UserEntity
 interface WireUserMapper {
     fun fromDaoModelToWireUser(userEntity: UserEntity): WireUser
     fun fromUserDetailResponse(userDetailResponse: UserDetailsResponse): WireUser
+    fun fromUserDetailResponses(userDetailResponse: List<UserDetailsResponse>): List<WireUser>
 }
 
 class WireUserMapperImpl(private val idMapper: IdMapper) : WireUserMapper {
@@ -37,5 +38,7 @@ class WireUserMapperImpl(private val idMapper: IdMapper) : WireUserMapper {
         completePicture = userDetailResponse.assets.getCompleteAssetOrNull()?.key,
     )
 
+    override fun fromUserDetailResponses(userDetailResponse: List<UserDetailsResponse>) =
+        userDetailResponse.map { fromUserDetailResponse(it) }
 
 }

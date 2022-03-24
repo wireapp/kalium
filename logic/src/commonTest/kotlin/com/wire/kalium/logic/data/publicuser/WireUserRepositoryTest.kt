@@ -1,8 +1,11 @@
 package com.wire.kalium.logic.data.publicuser
 
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.data.publicuser.model.PublicUser
-import com.wire.kalium.logic.data.publicuser.model.PublicUserSearchResult
+import com.wire.kalium.logic.data.wireuser.WireUserMapper
+import com.wire.kalium.logic.data.wireuser.WireUserRepository
+import com.wire.kalium.logic.data.wireuser.WireUserRepositoryImpl
+import com.wire.kalium.logic.data.wireuser.model.WireUser
+import com.wire.kalium.logic.feature.wireuser.search.WireUserSearchResult
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.network.api.QualifiedID
@@ -15,6 +18,7 @@ import com.wire.kalium.network.api.user.LegalHoldStatusResponse
 import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.network.api.user.details.UserDetailsResponse
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.persistence.dao.UserDAO
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -28,7 +32,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-class PublicUserRepositoryTest {
+class WireUserRepositoryTest {
 
     @Mock
     private val contactSearchApi: ContactSearchApi = mock(classOf<ContactSearchApi>())
@@ -37,13 +41,16 @@ class PublicUserRepositoryTest {
     private val userDetailsApi: UserDetailsApi = mock(classOf<UserDetailsApi>())
 
     @Mock
-    private val publicUserMapper: PublicUserMapper = mock(classOf<PublicUserMapper>())
+    private val publicUserMapper: WireUserMapper = mock(classOf<WireUserMapper>())
 
-    private lateinit var publicUserRepository: PublicUserRepository
+    @Mock
+    private val userDAO: UserDAO = mock(classOf<UserDAO>())
+
+    private lateinit var wireUserRepository: WireUserRepository
 
     @BeforeTest
     fun setup() {
-        publicUserRepository = PublicUserRepositoryImpl(contactSearchApi, userDetailsApi, publicUserMapper)
+        wireUserRepository = WireUserRepositoryImpl(userDAO, contactSearchApi, userDetailsApi, publicUserMapper)
     }
 
     @Test
@@ -55,7 +62,7 @@ class PublicUserRepositoryTest {
             .then { TestNetworkResponseError.genericError() }
 
         //when
-        val actual = publicUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
+        val actual = wireUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
 
         //then
         assertIs<Either.Left<NetworkFailure>>(actual)
@@ -70,7 +77,7 @@ class PublicUserRepositoryTest {
             .then { TestNetworkResponseError.genericError() }
 
         //when
-        val actual = publicUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
+        val actual = wireUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
 
         //then
         verify(contactSearchApi)
@@ -88,7 +95,7 @@ class PublicUserRepositoryTest {
             .then { TestNetworkResponseError.genericError() }
 
         //when
-        val actual = publicUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
+        val actual = wireUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
         //then
         verify(userDetailsApi)
             .suspendFunction(userDetailsApi::getMultipleUsers)
@@ -96,7 +103,7 @@ class PublicUserRepositoryTest {
             .wasNotInvoked()
 
         verify(publicUserMapper)
-            .function(publicUserMapper::fromUserDetailResponses)
+            .function(publicUserMapper::fromUserDetailResponse)
             .with(any())
             .wasNotInvoked()
     }
@@ -114,7 +121,7 @@ class PublicUserRepositoryTest {
             .whenInvokedWith(any())
             .then { TestNetworkResponseError.genericError() }
         //when
-        val actual = publicUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
+        val actual = wireUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
 
         //then
         assertIs<Either.Left<NetworkFailure>>(actual)
@@ -133,11 +140,11 @@ class PublicUserRepositoryTest {
             .whenInvokedWith(any())
             .then { TestNetworkResponseError.genericError() }
         //when
-        val actual = publicUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
+        val actual = wireUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
 
         //then
         verify(publicUserMapper)
-            .function(publicUserMapper::fromUserDetailResponses)
+            .function(publicUserMapper::fromUserDetailResponse)
             .with(any())
             .wasNotInvoked()
     }
@@ -156,7 +163,7 @@ class PublicUserRepositoryTest {
                 .whenInvokedWith(any())
                 .then { TestNetworkResponseError.genericError() }
             //when
-            val actual = publicUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
+            val actual = wireUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
 
             //then
             verify(contactSearchApi)
@@ -189,10 +196,10 @@ class PublicUserRepositoryTest {
             .then { PUBLIC_USERS }
 
         //when
-        val actual = publicUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
+        val actual = wireUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
 
         //then
-        assertIs<Either.Right<PublicUserSearchResult>>(actual)
+        assertIs<Either.Right<WireUserSearchResult>>(actual)
     }
 
     @Test
@@ -214,14 +221,13 @@ class PublicUserRepositoryTest {
                 .whenInvokedWith(any())
                 .then { PUBLIC_USERS }
 
-            val expectedResult = PublicUserSearchResult(
-                totalFound = PUBLIC_USERS.size,
-                publicUsers = PUBLIC_USERS
+            val expectedResult = WireUserSearchResult(
+                wireUsers = PUBLIC_USERS
             )
             //when
-            val actual = publicUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
+            val actual = wireUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
 
-            assertIs<Either.Right<PublicUserSearchResult>>(actual)
+            assertIs<Either.Right<WireUserSearchResult>>(actual)
             assertEquals(expectedResult, actual.value)
         }
 
@@ -244,14 +250,13 @@ class PublicUserRepositoryTest {
                 .whenInvokedWith(any())
                 .then { emptyList() }
 
-            val expectedResult = PublicUserSearchResult(
-                totalFound = 0,
-                publicUsers = emptyList()
+            val expectedResult = WireUserSearchResult(
+                wireUsers = emptyList()
             )
             //when
-            val actual = publicUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
+            val actual = wireUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
 
-            assertIs<Either.Right<PublicUserSearchResult>>(actual)
+            assertIs<Either.Right<WireUserSearchResult>>(actual)
             assertEquals(expectedResult, actual.value)
         }
 
@@ -278,7 +283,7 @@ class PublicUserRepositoryTest {
         val PUBLIC_USERS = buildList {
             for (i in 1..5) {
                 add(
-                    PublicUser(
+                    WireUser(
                         id = com.wire.kalium.logic.data.user.UserId(value = "value$i", domain = "domain$i"),
                         name = "name$i",
                         handle = "handle$i",
