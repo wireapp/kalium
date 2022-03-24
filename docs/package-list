@@ -13,7 +13,7 @@ $dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/newLastPreKey/#/P
 $dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/newPreKeys/#kotlin.Int#kotlin.Int/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[jvm]new-pre-keys.html
 $dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/open/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[jvm]open.html
 $dokka.location:com.wire.kalium.logic/CoreLogic/getAuthenticationScope/#/PointingToDeclaration/logic/com.wire.kalium.logic/-core-logic/[jvm]get-authentication-scope.html
-$dokka.location:com.wire.kalium.logic/CoreLogic/getSessionScope/#com.wire.kalium.logic.feature.auth.AuthSession/PointingToDeclaration/logic/com.wire.kalium.logic/-core-logic/[jvm]get-session-scope.html
+$dokka.location:com.wire.kalium.logic/CoreLogic/getSessionScope/#kotlin.String/PointingToDeclaration/logic/com.wire.kalium.logic/-core-logic/[jvm]get-session-scope.html
 $dokka.location:com.wire.kalium.network.api.message/EnvelopeProtoMapperImpl///PointingToDeclaration/network/com.wire.kalium.network.api.message/[jvm]-envelope-proto-mapper-impl/index.html
 $dokka.location:com.wire.kalium.network.api.message/EnvelopeProtoMapperImpl/EnvelopeProtoMapperImpl/#/PointingToDeclaration/network/com.wire.kalium.network.api.message/[jvm]-envelope-proto-mapper-impl/-envelope-proto-mapper-impl.html
 $dokka.location:com.wire.kalium.network.api.message/EnvelopeProtoMapperImpl/encodeToProtobuf/#com.wire.kalium.network.api.message.MessageApi.Parameters.QualifiedDefaultParameters/PointingToDeclaration/network/com.wire.kalium.network.api.message/[jvm]-envelope-proto-mapper-impl/encode-to-protobuf.html
@@ -56,7 +56,6 @@ com.wire.kalium.logic.data.publicuser
 com.wire.kalium.logic.data.publicuser.model
 com.wire.kalium.logic.data.register
 com.wire.kalium.logic.data.session
-com.wire.kalium.logic.data.session.local
 com.wire.kalium.logic.data.team
 com.wire.kalium.logic.data.user
 com.wire.kalium.logic.failure
@@ -71,6 +70,7 @@ com.wire.kalium.logic.feature.session
 com.wire.kalium.logic.feature.team
 com.wire.kalium.logic.feature.user
 com.wire.kalium.logic.functional
+com.wire.kalium.logic.network
 com.wire.kalium.logic.sync
 com.wire.kalium.logic.util
 module:network
@@ -99,12 +99,12 @@ com.wire.kalium.network.api.user.logout
 com.wire.kalium.network.api.user.register
 com.wire.kalium.network.api.user.self
 com.wire.kalium.network.exceptions
+com.wire.kalium.network.session
 com.wire.kalium.network.tools
 com.wire.kalium.network.utils
 com.wire.kalium.network.utils.generator
 module:persistence
 com.wire.kalium.persistence
-com.wire.kalium.persistence.Util
 com.wire.kalium.persistence.client
 com.wire.kalium.persistence.dao
 com.wire.kalium.persistence.dao.asset
@@ -114,3 +114,4 @@ com.wire.kalium.persistence.db
 com.wire.kalium.persistence.event
 com.wire.kalium.persistence.kmm_settings
 com.wire.kalium.persistence.model
+com.wire.kalium.persistence.util
