@@ -41,7 +41,7 @@ class WireUserRepositoryTest {
     private val userDetailsApi: UserDetailsApi = mock(classOf<UserDetailsApi>())
 
     @Mock
-    private val publicUserMapper: WireUserMapper = mock(classOf<WireUserMapper>())
+    private val wireUserMapper: WireUserMapper = mock(classOf<WireUserMapper>())
 
     @Mock
     private val userDAO: UserDAO = mock(classOf<UserDAO>())
