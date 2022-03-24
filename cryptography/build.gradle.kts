@@ -93,6 +93,7 @@ kotlin {
             dependencies {
                 implementation(Dependencies.Cryptography.cryptobox4j)
                 implementation(Dependencies.Cryptography.javaxCrypto)
+                implementation("com.wire:core-crypto-jvm:0.0.1")
             }
         }
         val jvmTest by getting

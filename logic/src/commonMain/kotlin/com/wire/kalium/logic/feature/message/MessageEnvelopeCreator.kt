@@ -15,7 +15,7 @@ import com.wire.kalium.logic.data.message.RecipientEntry
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.wrapCryptoRequest
-import com.wire.kalium.cryptography.UserId as CryptoUserId
+import com.wire.kalium.cryptography.PlainUserId as CryptoUserId
 
 interface MessageEnvelopeCreator {
 

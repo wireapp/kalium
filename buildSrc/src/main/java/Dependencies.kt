@@ -35,6 +35,7 @@ object Versions {
     const val pbandk = "0.13.0"
     const val avs = "8.1.3"
     const val jna = "5.6.0@aar"
+    const val mlsClient = "0.0.1"
 }
 
 object Plugins {
@@ -116,6 +117,8 @@ object Dependencies {
         const val cryptoboxAndroid = "com.wire:cryptobox-android:${Versions.cryptoboxAndroid}"
         const val cryptobox4j = "com.wire:cryptobox4j:${Versions.cryptobox4j}"
         const val javaxCrypto = "androidx.security:security-crypto-ktx:${Versions.javaxCrypto}"
+        const val mlsClientJvm = "com.wire:core-crypto-jvm:${Versions.mlsClient}"
+        const val mlsClientAndroid = "com.wire:core-crypto-android:${Versions.mlsClient}"
     }
 
     object Cli {
