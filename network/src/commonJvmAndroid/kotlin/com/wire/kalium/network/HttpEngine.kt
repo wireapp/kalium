@@ -26,7 +26,7 @@ actual fun defaultHttpEngine(): HttpClientEngine {
  */
 private fun Request.handleProtoHeader(): Request =
     when (headers["Content-Type"] == "application/octet-stream") {
-        true -> newBuilder().header("Content-Type", "application/x-protobuf").build()
+        true -> this.newBuilder().header("Content-Type", "application/x-protobuf").build()
         false -> this
     }
 
