@@ -11,6 +11,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
+import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.sync.SyncManagerImpl
 import com.wire.kalium.logic.sync.WorkScheduler
 import com.wire.kalium.network.AuthenticatedNetworkContainer
@@ -71,6 +72,10 @@ actual class CoreLogic(
         }
         return UserSessionScope(appContext, session, dataSourceSet, sessionRepository)
     }
+
+    override val globalCallManager: GlobalCallManager = GlobalCallManager(
+        appContext = appContext
+    )
 
     private companion object {
         private const val SHARED_PREFERENCE_FILE_NAME = "app-preference"

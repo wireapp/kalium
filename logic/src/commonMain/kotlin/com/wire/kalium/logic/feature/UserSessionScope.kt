@@ -33,6 +33,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.call.CallManager
+import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.message.MessageScope
@@ -53,7 +54,8 @@ expect class UserSessionScope : UserSessionScopeCommon
 abstract class UserSessionScopeCommon(
     private val session: AuthSession,
     private val authenticatedDataSourceSet: AuthenticatedDataSourceSet,
-    private val sessionRepository: SessionRepository
+    private val sessionRepository: SessionRepository,
+    private val globalCallManager: GlobalCallManager
 ) {
 
     private val encryptedSettingsHolder: EncryptedSettingsHolder = authenticatedDataSourceSet.encryptedSettingsHolder
@@ -128,10 +130,10 @@ abstract class UserSessionScopeCommon(
         )
 
     private val callManager by lazy {
-        CallManager(
+        globalCallManager.getCallManagerForClient(
+            callRepository = callRepository,
             userRepository = userRepository,
-            clientRepository = clientRepository,
-            callRepository = callRepository
+            clientRepository = clientRepository
         )
     }
     protected abstract val protoContentMapper: ProtoContentMapper

@@ -63,12 +63,9 @@ class ConversationEventReceiver(
                         event.senderClientId,
                         Message.Status.SENT
                     )
-                    //TODO Multiplatform logging
                     kaliumLogger.i("Message received: $message")
                     if (message.content is MessageContent.Calling) {
-                        kaliumLogger.d("handleNewMessage() - MessageContent.Calling - Starting")
-                        callManager.start()
-                        kaliumLogger.d("handleNewMessage() - MessageContent.Calling")
+                        kaliumLogger.d("ConversationEventReceiver - MessageContent.Calling")
                         callManager.onCallingMessageReceived(
                             message = message,
                             content = message.content

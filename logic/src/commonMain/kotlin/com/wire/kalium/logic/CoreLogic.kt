@@ -4,6 +4,7 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
+import com.wire.kalium.logic.feature.call.GlobalCallManager
 
 expect class CoreLogic : CoreLogicCommon
 
@@ -34,4 +35,6 @@ abstract class CoreLogicCommon(
 
     suspend fun <T> sessionScope(session: AuthSession, action: suspend UserSessionScope.() -> T)
             : T = getSessionScope(session).action()
+
+    protected abstract val globalCallManager: GlobalCallManager
 }

@@ -61,6 +61,6 @@ interface Calling : Library {
     fun wcall_recv_msg(inst: Handle, msg: ByteArray, len: Int, curr_time: Uint32_t, msg_time: Uint32_t, convId: String, userId: String, clientId: String): Int
 
     companion object {
-        val INSTANCE = Native.load("avs", Calling::class.java)
+        val INSTANCE by lazy { Native.load("avs", Calling::class.java)!! }
     }
 }
