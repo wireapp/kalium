@@ -3,7 +3,7 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.wireuser.SearchUserRepository
-import com.wire.kalium.logic.data.wireuser.model.WireUser
+import com.wire.kalium.logic.data.wireuser.model.PublicUser
 import com.wire.kalium.logic.feature.wireuser.search.SearchPublicWireUserUseCase
 import com.wire.kalium.logic.feature.wireuser.search.SearchPublicWireWireUserUseCaseImpl
 import com.wire.kalium.logic.feature.wireuser.search.WireUserSearchResult
@@ -19,7 +19,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-class SearchPublicWireUserUseCaseTest {
+class SearchPublicPublicUserUseCaseTest {
 
     @Mock
     private val wireUserRepository = mock(classOf<SearchUserRepository>())
@@ -71,9 +71,9 @@ class SearchPublicWireUserUseCaseTest {
         val TEST_CORE_FAILURE = Either.Left(CoreFailure.Unknown(IllegalStateException()))
 
         val VALID_SEARCH_PUBLIC_RESULT = WireUserSearchResult(
-            wireUsers = buildList {
+            publicUsers = buildList {
                 for (i in 0..5) {
-                    WireUser(
+                    PublicUser(
                         id = UserId(i.toString(), "domain$i"),
                         name = "name$i",
                         handle = null,

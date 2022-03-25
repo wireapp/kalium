@@ -11,7 +11,6 @@ import com.wire.kalium.logic.feature.wireuser.search.SearchKnownUsersUseCase
 import com.wire.kalium.logic.feature.wireuser.search.SearchKnownUsersUseCaseImpl
 import com.wire.kalium.logic.feature.wireuser.search.SearchPublicUserUseCaseImpl
 import com.wire.kalium.logic.feature.wireuser.search.SearchPublicWireUserUseCase
-import com.wire.kalium.logic.feature.wireuser.search.SearchPublicWireWireUserUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 
 class UserScope(

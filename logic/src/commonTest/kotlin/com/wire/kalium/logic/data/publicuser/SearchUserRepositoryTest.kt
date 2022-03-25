@@ -4,7 +4,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.wireuser.WireUserMapper
 import com.wire.kalium.logic.data.wireuser.SearchUserRepository
 import com.wire.kalium.logic.data.wireuser.SearchUserRepositoryImpl
-import com.wire.kalium.logic.data.wireuser.model.WireUser
+import com.wire.kalium.logic.data.wireuser.model.PublicUser
 import com.wire.kalium.logic.feature.wireuser.search.WireUserSearchResult
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
@@ -222,7 +222,7 @@ class SearchUserRepositoryTest {
                 .then { PUBLIC_USERS }
 
             val expectedResult = WireUserSearchResult(
-                wireUsers = PUBLIC_USERS
+                publicUsers = PUBLIC_USERS
             )
             //when
             val actual = searchUserRepository.searchWireContact(TEST_QUERY, TEST_DOMAIN)
@@ -251,7 +251,7 @@ class SearchUserRepositoryTest {
                 .then { emptyList() }
 
             val expectedResult = WireUserSearchResult(
-                wireUsers = emptyList()
+                publicUsers = emptyList()
             )
             //when
             val actual = searchUserRepository.searchWireContact(TEST_QUERY, TEST_DOMAIN)
@@ -283,7 +283,7 @@ class SearchUserRepositoryTest {
         val PUBLIC_USERS = buildList {
             for (i in 1..5) {
                 add(
-                    WireUser(
+                    PublicUser(
                         id = com.wire.kalium.logic.data.user.UserId(value = "value$i", domain = "domain$i"),
                         name = "name$i",
                         handle = "handle$i",
