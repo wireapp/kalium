@@ -4,8 +4,8 @@ import com.wire.kalium.network.api.asset.AssetApi
 import com.wire.kalium.network.api.asset.AssetApiImpl
 import com.wire.kalium.network.api.call.CallApi
 import com.wire.kalium.network.api.call.CallApiImpl
-import com.wire.kalium.network.api.contact.search.WireUserSearchApi
-import com.wire.kalium.network.api.contact.search.WireUserSearchApiImpl
+import com.wire.kalium.network.api.contact.search.UserSearchApi
+import com.wire.kalium.network.api.contact.search.UserSearchApiImpl
 import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.conversation.ConversationApiImp
 import com.wire.kalium.network.api.keypackage.KeyPackageApi
@@ -60,7 +60,7 @@ class AuthenticatedNetworkContainer(
 
     val userDetailsApi: UserDetailsApi get() = UserDetailsApiImp(authenticatedHttpClient)
 
-    val wireUserSearchApi: WireUserSearchApi get() = WireUserSearchApiImpl(authenticatedHttpClient)
+    val userSearchApi: UserSearchApi get() = UserSearchApiImpl(authenticatedHttpClient)
 
     val callApi: CallApi get() = CallApiImpl(authenticatedHttpClient)
 

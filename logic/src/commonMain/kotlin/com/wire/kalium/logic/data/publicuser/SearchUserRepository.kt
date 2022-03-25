@@ -1,13 +1,13 @@
-package com.wire.kalium.logic.data.wireuser
+package com.wire.kalium.logic.data.publicuser
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.feature.wireuser.search.WireUserSearchResult
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.network.api.contact.search.WireUserSearchApi
-import com.wire.kalium.network.api.contact.search.WireUserSearchRequest
+import com.wire.kalium.network.api.contact.search.UserSearchApi
+import com.wire.kalium.network.api.contact.search.UserSearchRequest
 import com.wire.kalium.network.api.user.details.ListUserRequest
 import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.network.api.user.details.qualifiedIds
@@ -16,36 +16,36 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 interface SearchUserRepository {
-    suspend fun searchKnownUsersByNameOrHandleOrEmail(searchQuery: String): Flow<WireUserSearchResult>
-    suspend fun searchWireContact(
+    suspend fun searchKnownUsers(searchQuery: String): Flow<UserSearchResult>
+    suspend fun searchUserDirectory(
         searchQuery: String,
         domain: String,
         maxResultSize: Int? = null
-    ): Either<CoreFailure, WireUserSearchResult>
+    ): Either<CoreFailure, UserSearchResult>
 }
 
 class SearchUserRepositoryImpl(
     private val userDAO: UserDAO,
-    private val wireUserSearchApi: WireUserSearchApi,
+    private val userSearchApi: UserSearchApi,
     private val userDetailsApi: UserDetailsApi,
-    private val wireUserMapper: WireUserMapper = MapperProvider.wireUserMapper()
+    private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper()
 ) : SearchUserRepository {
 
-    override suspend fun searchKnownUsersByNameOrHandleOrEmail(searchQuery: String) =
+    override suspend fun searchKnownUsers(searchQuery: String) =
         userDAO.getUserByNameOrHandleOrEmail(searchQuery)
             .map {
-                WireUserSearchResult(it.map { userEntity -> wireUserMapper.fromDaoModelToWireUser(userEntity) })
+                UserSearchResult(it.map { userEntity -> publicUserMapper.fromDaoModelToPublicUser(userEntity) })
             }
 
-    override suspend fun searchWireContact(
+    override suspend fun searchUserDirectory(
         searchQuery: String,
         domain: String,
         maxResultSize: Int?
-    ): Either<CoreFailure, WireUserSearchResult> {
+    ): Either<CoreFailure, UserSearchResult> {
         return suspending {
             wrapApiRequest {
-                wireUserSearchApi.search(
-                    WireUserSearchRequest(
+                userSearchApi.search(
+                    UserSearchRequest(
                         searchQuery = searchQuery,
                         domain = domain,
                         maxResultSize = maxResultSize
@@ -55,7 +55,7 @@ class SearchUserRepositoryImpl(
                 wrapApiRequest {
                     userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(contactResultValue.documents.map { it.qualifiedID }))
                 }.map { userDetailsResponses ->
-                    WireUserSearchResult(wireUserMapper.fromUserDetailResponses(userDetailsResponses))
+                    UserSearchResult(publicUserMapper.fromUserDetailResponses(userDetailsResponses))
                 }
             }
         }

@@ -1,10 +1,7 @@
 package com.wire.kalium.logic.data.publicuser
 
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.data.wireuser.WireUserMapper
-import com.wire.kalium.logic.data.wireuser.SearchUserRepository
-import com.wire.kalium.logic.data.wireuser.SearchUserRepositoryImpl
-import com.wire.kalium.logic.data.wireuser.model.PublicUser
+import com.wire.kalium.logic.data.publicuser.model.PublicUser
 import com.wire.kalium.logic.feature.wireuser.search.WireUserSearchResult
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
@@ -12,7 +9,7 @@ import com.wire.kalium.network.api.QualifiedID
 import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.contact.search.ContactDTO
 import com.wire.kalium.network.api.contact.search.WireUserSearchApi
-import com.wire.kalium.network.api.contact.search.WireUserSearchResponse
+import com.wire.kalium.network.api.contact.search.UserSearchResponse
 import com.wire.kalium.network.api.contact.search.SearchPolicyDTO
 import com.wire.kalium.network.api.user.LegalHoldStatusResponse
 import com.wire.kalium.network.api.user.details.UserDetailsApi
@@ -41,7 +38,7 @@ class SearchUserRepositoryTest {
     private val userDetailsApi: UserDetailsApi = mock(classOf<UserDetailsApi>())
 
     @Mock
-    private val wireUserMapper: WireUserMapper = mock(classOf<WireUserMapper>())
+    private val publicUserMapper: PublicUserMapper = mock(classOf<PublicUserMapper>())
 
     @Mock
     private val userDAO: UserDAO = mock(classOf<UserDAO>())
@@ -50,7 +47,7 @@ class SearchUserRepositoryTest {
 
     @BeforeTest
     fun setup() {
-        searchUserRepository = SearchUserRepositoryImpl(userDAO, wireUserSearchApi, userDetailsApi, wireUserMapper)
+        searchUserRepository = SearchUserRepositoryImpl(userDAO, wireUserSearchApi, userDetailsApi, publicUserMapper)
     }
 
     @Test
@@ -102,8 +99,8 @@ class SearchUserRepositoryTest {
             .with(any())
             .wasNotInvoked()
 
-        verify(wireUserMapper)
-            .function(wireUserMapper::fromUserDetailResponse)
+        verify(publicUserMapper)
+            .function(publicUserMapper::fromUserDetailResponse)
             .with(any())
             .wasNotInvoked()
     }
@@ -143,8 +140,8 @@ class SearchUserRepositoryTest {
         val actual = searchUserRepository.searchWireContact(TEST_QUERY, TEST_DOMAIN)
 
         //then
-        verify(wireUserMapper)
-            .function(wireUserMapper::fromUserDetailResponse)
+        verify(publicUserMapper)
+            .function(publicUserMapper::fromUserDetailResponse)
             .with(any())
             .wasNotInvoked()
     }
@@ -190,8 +187,8 @@ class SearchUserRepositoryTest {
             .whenInvokedWith(any())
             .then { NetworkResponse.Success(GET_MULTIPLE_USER_RESPONSE, mapOf(), 200) }
 
-        given(wireUserMapper)
-            .function(wireUserMapper::fromUserDetailResponses)
+        given(publicUserMapper)
+            .function(publicUserMapper::fromUserDetailResponses)
             .whenInvokedWith(any())
             .then { PUBLIC_USERS }
 
@@ -216,8 +213,8 @@ class SearchUserRepositoryTest {
                 .whenInvokedWith(any())
                 .then { NetworkResponse.Success(GET_MULTIPLE_USER_RESPONSE, mapOf(), 200) }
 
-            given(wireUserMapper)
-                .function(wireUserMapper::fromUserDetailResponses)
+            given(publicUserMapper)
+                .function(publicUserMapper::fromUserDetailResponses)
                 .whenInvokedWith(any())
                 .then { PUBLIC_USERS }
 
@@ -245,8 +242,8 @@ class SearchUserRepositoryTest {
                 .whenInvokedWith(any())
                 .then { NetworkResponse.Success(emptyList(), mapOf(), 200) }
 
-            given(wireUserMapper)
-                .function(wireUserMapper::fromUserDetailResponses)
+            given(publicUserMapper)
+                .function(publicUserMapper::fromUserDetailResponses)
                 .whenInvokedWith(any())
                 .then { emptyList() }
 
@@ -298,7 +295,7 @@ class SearchUserRepositoryTest {
             }
         }
 
-        val CONTACT_SEARCH_RESPONSE = WireUserSearchResponse(
+        val CONTACT_SEARCH_RESPONSE = UserSearchResponse(
             documents = CONTACTS,
             found = CONTACTS.size,
             returned = 5,
@@ -306,7 +303,7 @@ class SearchUserRepositoryTest {
             took = 100,
         )
 
-        val EMPTY_CONTACT_SEARCH_RESPONSE = WireUserSearchResponse(
+        val EMPTY_CONTACT_SEARCH_RESPONSE = UserSearchResponse(
             documents = emptyList(),
             found = 0,
             returned = 0,

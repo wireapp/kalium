@@ -5,7 +5,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class WireUserSearchResponse(
+data class UserSearchResponse(
     @SerialName("documents") val documents: List<ContactDTO>,
     @SerialName("found") val found: Int,
     @SerialName("returned") val returned: Int,

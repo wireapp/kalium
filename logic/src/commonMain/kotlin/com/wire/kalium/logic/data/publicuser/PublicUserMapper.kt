@@ -1,22 +1,22 @@
-package com.wire.kalium.logic.data.wireuser
+package com.wire.kalium.logic.data.publicuser
 
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.wireuser.model.PublicUser
+import com.wire.kalium.logic.data.publicuser.model.PublicUser
 import com.wire.kalium.network.api.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.model.getPreviewAssetOrNull
 import com.wire.kalium.network.api.user.details.UserDetailsResponse
 import com.wire.kalium.persistence.dao.UserEntity
 
-interface WireUserMapper {
-    fun fromDaoModelToWireUser(userEntity: UserEntity): PublicUser
+interface PublicUserMapper {
+    fun fromDaoModelToPublicUser(userEntity: UserEntity): PublicUser
     fun fromUserDetailResponse(userDetailResponse: UserDetailsResponse): PublicUser
     fun fromUserDetailResponses(userDetailResponse: List<UserDetailsResponse>): List<PublicUser>
 }
 
-class WireUserMapperImpl(private val idMapper: IdMapper) : WireUserMapper {
+class PublicUserMapperImpl(private val idMapper: IdMapper) : PublicUserMapper {
 
-    override fun fromDaoModelToWireUser(userEntity: UserEntity) = PublicUser(
+    override fun fromDaoModelToPublicUser(userEntity: UserEntity) = PublicUser(
         idMapper.fromDaoModel(userEntity.id),
         userEntity.name,
         userEntity.handle,

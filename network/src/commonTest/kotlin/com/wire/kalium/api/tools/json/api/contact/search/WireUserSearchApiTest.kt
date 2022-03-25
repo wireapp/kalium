@@ -2,8 +2,8 @@ package com.wire.kalium.api.tools.json.api.contact.search
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.network.api.contact.search.WireUserSearchApi
-import com.wire.kalium.network.api.contact.search.WireUserSearchApiImpl
-import com.wire.kalium.network.api.contact.search.WireUserSearchRequest
+import com.wire.kalium.network.api.contact.search.UserSearchApiImpl
+import com.wire.kalium.network.api.contact.search.UserSearchRequest
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -26,9 +26,9 @@ class WireUserSearchApiTest : ApiTest {
                 }
             )
 
-            val wireUserSearchApi: WireUserSearchApi = WireUserSearchApiImpl(httpClient)
+            val wireUserSearchApi: WireUserSearchApi = UserSearchApiImpl(httpClient)
             wireUserSearchApi.search(
-                WireUserSearchRequest(
+                UserSearchRequest(
                     searchQuery = DUMMY_SEARCH_QUERY,
                     domain = DUMMY_DOMAIN,
                 )
@@ -52,9 +52,9 @@ class WireUserSearchApiTest : ApiTest {
                 }
             )
 
-            val wireUserSearchApi: WireUserSearchApi = WireUserSearchApiImpl(httpClient)
+            val wireUserSearchApi: WireUserSearchApi = UserSearchApiImpl(httpClient)
             wireUserSearchApi.search(
-                WireUserSearchRequest(
+                UserSearchRequest(
                     searchQuery = DUMMY_SEARCH_QUERY,
                     domain = DUMMY_DOMAIN,
                     maxResultSize = DUMMY_SIZE

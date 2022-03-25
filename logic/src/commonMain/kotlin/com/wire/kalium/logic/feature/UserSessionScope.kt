@@ -26,8 +26,8 @@ import com.wire.kalium.logic.data.team.TeamDataSource
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.wireuser.SearchUserRepository
-import com.wire.kalium.logic.data.wireuser.SearchUserRepositoryImpl
+import com.wire.kalium.logic.data.publicuser.SearchUserRepository
+import com.wire.kalium.logic.data.publicuser.SearchUserRepositoryImpl
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
@@ -92,7 +92,7 @@ abstract class UserSessionScopeCommon(
     private val publicUserRepository: SearchUserRepository
         get() = SearchUserRepositoryImpl(
             database.userDAO,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.wireUserSearchApi,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.userSearchApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi
         )
 

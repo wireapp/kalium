@@ -1,28 +1,29 @@
-package com.wire.kalium.logic.feature.wireuser.search
+package com.wire.kalium.logic.feature.publicuser
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.wireuser.SearchUserRepository
+import com.wire.kalium.logic.data.publicuser.SearchUserRepository
+import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.functional.Either
 
 
-interface SearchPublicWireUserUseCase {
+interface SearchUserDirectoryUseCase {
     suspend operator fun invoke(
         searchQuery: String,
         domain: String,
         maxResultSize: Int? = null
-    ): Either<CoreFailure, WireUserSearchResult>
+    ): Either<CoreFailure, UserSearchResult>
 }
 
-internal class SearchPublicUserUseCaseImpl(
+internal class SearchUserDirectoryUseCaseImpl(
     private val searchUserRepository: SearchUserRepository
-) : SearchPublicWireUserUseCase {
+) : SearchUserDirectoryUseCase {
 
     override suspend fun invoke(
         searchQuery: String,
         domain: String,
         maxResultSize: Int?
-    ): Either<CoreFailure, WireUserSearchResult> =
-        searchUserRepository.searchWireContact(
+    ): Either<CoreFailure, UserSearchResult> =
+        searchUserRepository.searchUserDirectory(
             searchQuery = searchQuery,
             domain = domain,
             maxResultSize = maxResultSize

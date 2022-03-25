@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.data.wireuser.model
+package com.wire.kalium.logic.data.publicuser.model
 
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserAssetId
