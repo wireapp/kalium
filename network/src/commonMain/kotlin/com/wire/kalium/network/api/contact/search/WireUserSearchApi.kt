@@ -5,7 +5,7 @@ import com.wire.kalium.network.utils.NetworkResponse
 interface UserSearchApi {
 
     suspend fun search(
-        wireUserSearchRequest: WireUserSearchRequest
+        wireUserSearchRequest: UserSearchRequest
     ): NetworkResponse<WireUserSearchResponse>
 
 }
