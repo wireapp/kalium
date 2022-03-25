@@ -9,11 +9,15 @@ import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContentMapper
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.logic.wrapCryptoRequest
 import io.ktor.utils.io.core.toByteArray
@@ -22,10 +26,13 @@ class ConversationEventReceiver(
     private val proteusClient: ProteusClient,
     private val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
+    private val userRepository: UserRepository,
     private val protoContentMapper: ProtoContentMapper,
+    private val callManager: CallManager,
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : EventReceiver<Event.Conversation> {
+
     override suspend fun onEvent(event: Event.Conversation) {
         when (event) {
             is Event.Conversation.NewMessage -> handleNewMessage(event)
@@ -56,9 +63,17 @@ class ConversationEventReceiver(
                         event.senderClientId,
                         Message.Status.SENT
                     )
-                    //TODO Multiplatform logging
-                    println("Message received: $message")
-                    messageRepository.persistMessage(message)
+                    kaliumLogger.i("Message received: $message")
+                    if (message.content is MessageContent.Calling) {
+                        kaliumLogger.d("ConversationEventReceiver - MessageContent.Calling")
+                        callManager.onCallingMessageReceived(
+                            message = message,
+                            content = message.content
+                        )
+                    } else {
+                        kaliumLogger.d("")
+                        messageRepository.persistMessage(message)
+                    }
                 }
         }
     }

@@ -6,3 +6,5 @@ data class QualifiedID(
 )
 
 typealias ConversationId = QualifiedID
+
+fun QualifiedID.asString() = "$value@$domain"

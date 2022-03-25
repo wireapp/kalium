@@ -17,6 +17,7 @@ import com.wire.kalium.calling.callbacks.SFTRequestHandler
 import com.wire.kalium.calling.callbacks.SendHandler
 import com.wire.kalium.calling.callbacks.VideoReceiveStateHandler
 import com.wire.kalium.calling.types.Handle
+import com.wire.kalium.calling.types.Uint32_t
 
 // A magic number used to initialize AVS (required for all mobile platforms).
 const val ENVIRONMENT_DEFAULT = 0
@@ -57,7 +58,9 @@ interface Calling : Library {
 
     fun wcall_get_mute(inst: Int): Int
 
+    fun wcall_recv_msg(inst: Handle, msg: ByteArray, len: Int, curr_time: Uint32_t, msg_time: Uint32_t, convId: String, userId: String, clientId: String): Int
+
     companion object {
-        val INSTANCE = Native.load("avs", Calling::class.java)
+        val INSTANCE by lazy { Native.load("avs", Calling::class.java)!! }
     }
 }

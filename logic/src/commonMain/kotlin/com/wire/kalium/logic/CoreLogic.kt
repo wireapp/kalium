@@ -8,6 +8,7 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.network.api.NonQualifiedUserId
+import com.wire.kalium.logic.feature.call.GlobalCallManager
 
 expect class CoreLogic : CoreLogicCommon
 
@@ -37,4 +38,6 @@ abstract class CoreLogicCommon(
 
     suspend fun <T> sessionScope(userId: NonQualifiedUserId, action: suspend UserSessionScope.() -> T)
             : T = getSessionScope(userId).action()
+
+    protected abstract val globalCallManager: GlobalCallManager
 }

@@ -8,6 +8,7 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.network.SessionManagerImpl
+import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.sync.SyncManagerImpl
 import com.wire.kalium.logic.sync.WorkScheduler
 import com.wire.kalium.network.AuthenticatedNetworkContainer
@@ -63,6 +64,16 @@ actual class CoreLogic(
                 userScopeStorage[userId] = it
             }
         }
-        return UserSessionScope(appContext, userId, dataSourceSet, sessionRepository)
+        return UserSessionScope(
+            appContext,
+            userId,
+            dataSourceSet,
+            sessionRepository,
+            globalCallManager
+        )
     }
+
+    override val globalCallManager: GlobalCallManager = GlobalCallManager(
+        appContext = appContext
+    )
 }
