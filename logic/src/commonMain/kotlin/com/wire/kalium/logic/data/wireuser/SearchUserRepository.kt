@@ -15,7 +15,7 @@ import com.wire.kalium.persistence.dao.UserDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-interface WireUserRepository {
+interface SearchUserRepository {
     suspend fun searchKnownUsersByNameOrHandleOrEmail(searchQuery: String): Flow<WireUserSearchResult>
     suspend fun searchWireContact(
         searchQuery: String,
@@ -24,12 +24,12 @@ interface WireUserRepository {
     ): Either<CoreFailure, WireUserSearchResult>
 }
 
-class WireUserRepositoryImpl(
+class SearchUserRepositoryImpl(
     private val userDAO: UserDAO,
     private val wireUserSearchApi: WireUserSearchApi,
     private val userDetailsApi: UserDetailsApi,
     private val wireUserMapper: WireUserMapper = MapperProvider.wireUserMapper()
-) : WireUserRepository {
+) : SearchUserRepository {
 
     override suspend fun searchKnownUsersByNameOrHandleOrEmail(searchQuery: String) =
         userDAO.getUserByNameOrHandleOrEmail(searchQuery)

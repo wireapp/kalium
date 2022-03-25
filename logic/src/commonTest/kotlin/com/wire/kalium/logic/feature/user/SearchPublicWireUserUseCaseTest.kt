@@ -2,7 +2,7 @@ package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.wireuser.WireUserRepository
+import com.wire.kalium.logic.data.wireuser.SearchUserRepository
 import com.wire.kalium.logic.data.wireuser.model.WireUser
 import com.wire.kalium.logic.feature.wireuser.search.SearchPublicWireUserUseCase
 import com.wire.kalium.logic.feature.wireuser.search.SearchPublicWireWireUserUseCaseImpl
@@ -22,7 +22,7 @@ import kotlin.test.assertIs
 class SearchPublicWireUserUseCaseTest {
 
     @Mock
-    private val wireUserRepository = mock(classOf<WireUserRepository>())
+    private val wireUserRepository = mock(classOf<SearchUserRepository>())
 
     private lateinit var searchPublicWireUserUseCase: SearchPublicWireUserUseCase
 

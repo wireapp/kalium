@@ -2,8 +2,8 @@ package com.wire.kalium.logic.data.publicuser
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.wireuser.WireUserMapper
-import com.wire.kalium.logic.data.wireuser.WireUserRepository
-import com.wire.kalium.logic.data.wireuser.WireUserRepositoryImpl
+import com.wire.kalium.logic.data.wireuser.SearchUserRepository
+import com.wire.kalium.logic.data.wireuser.SearchUserRepositoryImpl
 import com.wire.kalium.logic.data.wireuser.model.WireUser
 import com.wire.kalium.logic.feature.wireuser.search.WireUserSearchResult
 import com.wire.kalium.logic.functional.Either
@@ -32,7 +32,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-class WireUserRepositoryTest {
+class SearchUserRepositoryTest {
 
     @Mock
     private val wireUserSearchApi: WireUserSearchApi = mock(classOf<WireUserSearchApi>())
@@ -46,11 +46,11 @@ class WireUserRepositoryTest {
     @Mock
     private val userDAO: UserDAO = mock(classOf<UserDAO>())
 
-    private lateinit var wireUserRepository: WireUserRepository
+    private lateinit var searchUserRepository: SearchUserRepository
 
     @BeforeTest
     fun setup() {
-        wireUserRepository = WireUserRepositoryImpl(userDAO, wireUserSearchApi, userDetailsApi, wireUserMapper)
+        searchUserRepository = SearchUserRepositoryImpl(userDAO, wireUserSearchApi, userDetailsApi, wireUserMapper)
     }
 
     @Test
@@ -62,7 +62,7 @@ class WireUserRepositoryTest {
             .then { TestNetworkResponseError.genericError() }
 
         //when
-        val actual = wireUserRepository.searchWireContact(TEST_QUERY, TEST_DOMAIN)
+        val actual = searchUserRepository.searchWireContact(TEST_QUERY, TEST_DOMAIN)
 
         //then
         assertIs<Either.Left<NetworkFailure>>(actual)
@@ -77,7 +77,7 @@ class WireUserRepositoryTest {
             .then { TestNetworkResponseError.genericError() }
 
         //when
-        val actual = wireUserRepository.searchWireContact(TEST_QUERY, TEST_DOMAIN)
+        val actual = searchUserRepository.searchWireContact(TEST_QUERY, TEST_DOMAIN)
 
         //then
         verify(wireUserSearchApi)
@@ -95,7 +95,7 @@ class WireUserRepositoryTest {
             .then { TestNetworkResponseError.genericError() }
 
         //when
-        val actual = wireUserRepository.searchWireContact(TEST_QUERY, TEST_DOMAIN)
+        val actual = searchUserRepository.searchWireContact(TEST_QUERY, TEST_DOMAIN)
         //then
         verify(userDetailsApi)
             .suspendFunction(userDetailsApi::getMultipleUsers)
@@ -121,7 +121,7 @@ class WireUserRepositoryTest {
             .whenInvokedWith(any())
             .then { TestNetworkResponseError.genericError() }
         //when
-        val actual = wireUserRepository.searchWireContact(TEST_QUERY, TEST_DOMAIN)
+        val actual = searchUserRepository.searchWireContact(TEST_QUERY, TEST_DOMAIN)
 
         //then
         assertIs<Either.Left<NetworkFailure>>(actual)
@@ -140,7 +140,7 @@ class WireUserRepositoryTest {
             .whenInvokedWith(any())
             .then { TestNetworkResponseError.genericError() }
         //when
-        val actual = wireUserRepository.searchWireContact(TEST_QUERY, TEST_DOMAIN)
+        val actual = searchUserRepository.searchWireContact(TEST_QUERY, TEST_DOMAIN)
 
         //then
         verify(wireUserMapper)
@@ -163,7 +163,7 @@ class WireUserRepositoryTest {
                 .whenInvokedWith(any())
                 .then { TestNetworkResponseError.genericError() }
             //when
-            val actual = wireUserRepository.searchWireContact(TEST_QUERY, TEST_DOMAIN)
+            val actual = searchUserRepository.searchWireContact(TEST_QUERY, TEST_DOMAIN)
 
             //then
             verify(wireUserSearchApi)
@@ -196,7 +196,7 @@ class WireUserRepositoryTest {
             .then { PUBLIC_USERS }
 
         //when
-        val actual = wireUserRepository.searchWireContact(TEST_QUERY, TEST_DOMAIN)
+        val actual = searchUserRepository.searchWireContact(TEST_QUERY, TEST_DOMAIN)
 
         //then
         assertIs<Either.Right<WireUserSearchResult>>(actual)
@@ -225,7 +225,7 @@ class WireUserRepositoryTest {
                 wireUsers = PUBLIC_USERS
             )
             //when
-            val actual = wireUserRepository.searchWireContact(TEST_QUERY, TEST_DOMAIN)
+            val actual = searchUserRepository.searchWireContact(TEST_QUERY, TEST_DOMAIN)
 
             assertIs<Either.Right<WireUserSearchResult>>(actual)
             assertEquals(expectedResult, actual.value)
@@ -254,7 +254,7 @@ class WireUserRepositoryTest {
                 wireUsers = emptyList()
             )
             //when
-            val actual = wireUserRepository.searchWireContact(TEST_QUERY, TEST_DOMAIN)
+            val actual = searchUserRepository.searchWireContact(TEST_QUERY, TEST_DOMAIN)
 
             assertIs<Either.Right<WireUserSearchResult>>(actual)
             assertEquals(expectedResult, actual.value)
