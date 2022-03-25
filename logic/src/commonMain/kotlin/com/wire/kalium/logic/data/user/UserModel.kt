@@ -20,5 +20,4 @@ data class SelfUser(
     val completePicture: UserAssetId?
 ) : User()
 
-
 typealias UserAssetId = String

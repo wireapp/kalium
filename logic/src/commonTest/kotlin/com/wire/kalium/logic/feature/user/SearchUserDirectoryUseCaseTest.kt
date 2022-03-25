@@ -1,10 +1,12 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.publicuser.PublicUserRepository
-import com.wire.kalium.logic.data.publicuser.model.PublicUser
-import com.wire.kalium.logic.data.publicuser.model.PublicUserSearchResult
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.publicuser.SearchUserRepository
+import com.wire.kalium.logic.data.publicuser.model.PublicUser
+import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
+import com.wire.kalium.logic.feature.publicuser.SearchUserDirectoryUseCase
+import com.wire.kalium.logic.feature.publicuser.SearchUserDirectoryUseCaseImpl
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.anything
@@ -17,16 +19,16 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-class SearchPublicUserUseCaseTest {
+class SearchUserDirectoryUseCaseTest {
 
     @Mock
-    private val publicUserRepository = mock(classOf<PublicUserRepository>())
+    private val searchUserRepository = mock(classOf<SearchUserRepository>())
 
-    private lateinit var searchPublicUserUseCase: SearchPublicUserUseCase
+    private lateinit var searchUserDirectoryUseCase: SearchUserDirectoryUseCase
 
     @BeforeTest
     fun setUp() {
-        searchPublicUserUseCase = SearchPublicUserUseCaseImpl(publicUserRepository)
+        searchUserDirectoryUseCase = SearchUserDirectoryUseCaseImpl(searchUserRepository)
     }
 
     @Test
@@ -34,14 +36,14 @@ class SearchPublicUserUseCaseTest {
         //given
         val expected = Either.Right(VALID_SEARCH_PUBLIC_RESULT)
 
-        given(publicUserRepository)
-            .suspendFunction(publicUserRepository::searchPublicContact)
+        given(searchUserRepository)
+            .suspendFunction(searchUserRepository::searchUserDirectory)
             .whenInvokedWith(anything(), anything(), anything())
             .thenReturn(expected)
         //when
-        val actual = searchPublicUserUseCase(TEST_QUERY, TEST_DOMAIN)
+        val actual = searchUserDirectoryUseCase(TEST_QUERY, TEST_DOMAIN)
         //then
-        assertIs<Either.Right<PublicUserSearchResult>>(actual)
+        assertIs<Either.Right<UserSearchResult>>(actual)
         assertEquals(expected, actual)
     }
 
@@ -50,12 +52,12 @@ class SearchPublicUserUseCaseTest {
         //given
         val expected = TEST_CORE_FAILURE
 
-        given(publicUserRepository)
-            .suspendFunction(publicUserRepository::searchPublicContact)
+        given(searchUserRepository)
+            .suspendFunction(searchUserRepository::searchUserDirectory)
             .whenInvokedWith(anything(), anything(), anything())
             .thenReturn(expected)
         //when
-        val actual = searchPublicUserUseCase(TEST_QUERY, TEST_DOMAIN)
+        val actual = searchUserDirectoryUseCase(TEST_QUERY, TEST_DOMAIN)
 
         //then
         assertIs<Either.Left<CoreFailure>>(actual)
@@ -68,9 +70,8 @@ class SearchPublicUserUseCaseTest {
 
         val TEST_CORE_FAILURE = Either.Left(CoreFailure.Unknown(IllegalStateException()))
 
-        val VALID_SEARCH_PUBLIC_RESULT = PublicUserSearchResult(
-            totalFound = 5,
-            publicUsers = buildList {
+        val VALID_SEARCH_PUBLIC_RESULT = UserSearchResult(
+            result = buildList {
                 for (i in 0..5) {
                     PublicUser(
                         id = UserId(i.toString(), "domain$i"),
