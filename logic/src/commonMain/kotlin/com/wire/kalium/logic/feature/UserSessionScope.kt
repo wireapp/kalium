@@ -30,9 +30,8 @@ import com.wire.kalium.logic.data.team.TeamDataSource
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
-import com.wire.kalium.logic.feature.call.CallManager
+import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
@@ -173,4 +172,6 @@ abstract class UserSessionScopeCommon(
     val logout: LogoutUseCase get() = LogoutUseCase(logoutRepository, sessionRepository, userId, authenticatedDataSourceSet)
 
     val team: TeamScope get() = TeamScope(userRepository, teamRepository)
+
+    val calls: CallsScope get() = CallsScope(callManager, syncManager)
 }
