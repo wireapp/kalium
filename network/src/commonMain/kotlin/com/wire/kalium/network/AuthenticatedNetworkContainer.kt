@@ -27,9 +27,12 @@ import com.wire.kalium.network.api.user.logout.LogoutApi
 import com.wire.kalium.network.api.user.logout.LogoutImpl
 import com.wire.kalium.network.api.user.self.SelfApi
 import com.wire.kalium.network.api.user.self.SelfApiImpl
+import com.wire.kalium.network.serialization.mls
+import com.wire.kalium.network.serialization.xprotobuf
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.session.installAuth
 import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.plugins.ContentNegotiation
 
 class AuthenticatedNetworkContainer(
     private val sessionManager: SessionManager,
@@ -67,6 +70,10 @@ class AuthenticatedNetworkContainer(
     internal val authenticatedHttpClient by lazy {
         provideBaseHttpClient(engine, HttpClientOptions.DefaultHost(backendConfig)) {
             installAuth(sessionManager)
+            install(ContentNegotiation) {
+                mls()
+                xprotobuf()
+            }
         }
     }
 }
