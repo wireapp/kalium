@@ -9,6 +9,7 @@ import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
 import com.wire.kalium.logic.feature.wireuser.search.SearchKnownUsersUseCase
 import com.wire.kalium.logic.feature.wireuser.search.SearchKnownUsersUseCaseImpl
+import com.wire.kalium.logic.feature.wireuser.search.SearchPublicUserUseCaseImpl
 import com.wire.kalium.logic.feature.wireuser.search.SearchPublicWireUserUseCase
 import com.wire.kalium.logic.feature.wireuser.search.SearchPublicWireWireUserUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
@@ -26,6 +27,6 @@ class UserScope(
     val uploadUserAvatar: UploadUserAvatarUseCase get() = UploadUserAvatarUseCaseImpl(userRepository, assetRepository)
     val searchKnownUsers: SearchKnownUsersUseCase get() = SearchKnownUsersUseCaseImpl(searchUserRepository)
     val getPublicAsset: GetPublicAssetUseCase get() = GetPublicAssetUseCaseImpl(assetRepository)
-    val searchPublicWireUser: SearchPublicWireUserUseCase get() = SearchPublicWireWireUserUseCaseImpl(searchUserRepository)
+    val searchPublicWireUser: SearchPublicWireUserUseCase get() = SearchPublicUserUseCaseImpl(searchUserRepository)
     val setUserHandle: SetUserHandleUseCase get() = SetUserHandleUseCase(userRepository, validateUserHandleUseCase)
 }
