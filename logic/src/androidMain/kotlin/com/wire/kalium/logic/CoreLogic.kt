@@ -70,7 +70,13 @@ actual class CoreLogic(
                 userScopeStorage[session] = it
             }
         }
-        return UserSessionScope(appContext, session, dataSourceSet, sessionRepository)
+        return UserSessionScope(
+            appContext,
+            session,
+            dataSourceSet,
+            sessionRepository,
+            globalCallManager
+        )
     }
 
     override val globalCallManager: GlobalCallManager = GlobalCallManager(

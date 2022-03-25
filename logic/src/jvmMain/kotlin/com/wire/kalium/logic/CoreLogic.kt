@@ -64,11 +64,15 @@ actual class CoreLogic(clientLabel: String, rootProteusDirectoryPath: String) :
             }
         }
 
-        return UserSessionScope(session, dataSourceSet, sessionRepository)
+        return UserSessionScope(
+            session,
+            dataSourceSet,
+            sessionRepository,
+            globalCallManager
+        )
     }
 
-    override val globalCallManager: GlobalCallManager
-        get() = TODO("Not yet implemented")
+    override val globalCallManager: GlobalCallManager = GlobalCallManager()
 
     private companion object {
         private const val PREFERENCE_FILE_PREFIX = "user-pref"

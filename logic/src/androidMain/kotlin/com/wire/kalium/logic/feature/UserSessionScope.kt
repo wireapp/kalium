@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.auth.AuthSession
+import com.wire.kalium.logic.feature.call.GlobalCallManager
 
 /**
  * This class is only for platform specific variables,
@@ -16,8 +17,9 @@ actual class UserSessionScope(
     private val applicationContext: Context,
     private val session: AuthSession,
     authenticatedDataSourceSet: AuthenticatedDataSourceSet,
-    sessionRepository: SessionRepository
-) : UserSessionScopeCommon(session, authenticatedDataSourceSet, sessionRepository) {
+    sessionRepository: SessionRepository,
+    globalCallManager: GlobalCallManager
+) : UserSessionScopeCommon(session, authenticatedDataSourceSet, sessionRepository, globalCallManager) {
 
     override val clientConfig: ClientConfig get() = ClientConfig(applicationContext)
 
