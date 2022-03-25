@@ -26,8 +26,8 @@ class UserSearchApiTest : ApiTest {
                 }
             )
 
-            val wireUserSearchApi: UserSearchApi = UserSearchApiImpl(httpClient)
-            wireUserSearchApi.search(
+            val userSearchApi: UserSearchApi = UserSearchApiImpl(httpClient)
+            userSearchApi.search(
                 UserSearchRequest(
                     searchQuery = DUMMY_SEARCH_QUERY,
                     domain = DUMMY_DOMAIN,
@@ -52,8 +52,8 @@ class UserSearchApiTest : ApiTest {
                 }
             )
 
-            val wireUserSearchApi: UserSearchApi = UserSearchApiImpl(httpClient)
-            wireUserSearchApi.search(
+            val userSearchApi: UserSearchApi = UserSearchApiImpl(httpClient)
+            userSearchApi.search(
                 UserSearchRequest(
                     searchQuery = DUMMY_SEARCH_QUERY,
                     domain = DUMMY_DOMAIN,
