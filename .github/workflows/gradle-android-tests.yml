@@ -46,6 +46,7 @@ jobs:
             force-avd-creation: false
             emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
             disable-animations: false
+            disk-size: 2048MB
             script: echo "Generated AVD snapshot for caching."
 
       - name: Android Unit Test
