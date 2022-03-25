@@ -1,14 +1,14 @@
 package com.wire.kalium.api.tools.json.api.contact.search
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.network.api.contact.search.WireUserSearchApi
+import com.wire.kalium.network.api.contact.search.UserSearchApi
 import com.wire.kalium.network.api.contact.search.UserSearchApiImpl
 import com.wire.kalium.network.api.contact.search.UserSearchRequest
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
-class WireUserSearchApiTest : ApiTest {
+class UserSearchApiTest : ApiTest {
 
     @Test
     fun givenRequestWithSearchQueryAndDomain_whenCallingSearchContact_ThenRequestShouldReturnExpectedAssertion() =
@@ -26,7 +26,7 @@ class WireUserSearchApiTest : ApiTest {
                 }
             )
 
-            val wireUserSearchApi: WireUserSearchApi = UserSearchApiImpl(httpClient)
+            val wireUserSearchApi: UserSearchApi = UserSearchApiImpl(httpClient)
             wireUserSearchApi.search(
                 UserSearchRequest(
                     searchQuery = DUMMY_SEARCH_QUERY,
@@ -52,7 +52,7 @@ class WireUserSearchApiTest : ApiTest {
                 }
             )
 
-            val wireUserSearchApi: WireUserSearchApi = UserSearchApiImpl(httpClient)
+            val wireUserSearchApi: UserSearchApi = UserSearchApiImpl(httpClient)
             wireUserSearchApi.search(
                 UserSearchRequest(
                     searchQuery = DUMMY_SEARCH_QUERY,
