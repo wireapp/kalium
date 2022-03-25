@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 interface SearchUserRepository {
-    suspend fun searchKnownUsersByNameOrHandleOrEmail(searchQuery: String): Flow<WireUserSearchResult>
+    suspend fun searchKnownUsers(searchQuery: String): Flow<WireUserSearchResult>
     suspend fun searchUserDirectory(
         searchQuery: String,
         domain: String,
