@@ -202,8 +202,9 @@ interface ApiTest {
 
     // content type
     fun HttpRequestData.assertJson() = assertContentType(ContentType.Application.Json)
-    private fun HttpRequestData.assertContentType(contentType: ContentType) =
-        assertContains(this.body.contentType?.contentType ?: "", contentType.contentType)
+    fun HttpRequestData.assertContentType(contentType: ContentType) =
+        assertTrue(contentType.match(this.body.contentType ?: ContentType.Any), "contentType: $contentType doesn't match ${this.body.contentType}")
+//        assertContains(this.body.contentType?.contentType ?: "", contentType.contentType)
 
     // path
     fun HttpRequestData.assertPathEqual(path: String) = assertEquals(path, this.url.encodedPath)
