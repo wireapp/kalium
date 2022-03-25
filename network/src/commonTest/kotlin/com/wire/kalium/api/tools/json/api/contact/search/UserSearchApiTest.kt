@@ -72,3 +72,4 @@ class UserSearchApiTest : ApiTest {
         const val QUERY_KEY_DOMAIN = "domain"
     }
 }
+
