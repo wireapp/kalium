@@ -22,13 +22,13 @@ import kotlin.test.assertIs
 class SearchUserDirectoryUseCaseTest {
 
     @Mock
-    private val wireUserRepository = mock(classOf<SearchUserRepository>())
+    private val searchUserRepository = mock(classOf<SearchUserRepository>())
 
     private lateinit var searchUserDirectoryUseCase: SearchUserDirectoryUseCase
 
     @BeforeTest
     fun setUp() {
-        searchUserDirectoryUseCase = SearchUserDirectoryUseCaseImpl(wireUserRepository)
+        searchUserDirectoryUseCase = SearchUserDirectoryUseCaseImpl(searchUserRepository)
     }
 
     @Test
@@ -36,8 +36,8 @@ class SearchUserDirectoryUseCaseTest {
         //given
         val expected = Either.Right(VALID_SEARCH_PUBLIC_RESULT)
 
-        given(wireUserRepository)
-            .suspendFunction(wireUserRepository::searchUserDirectory)
+        given(searchUserRepository)
+            .suspendFunction(searchUserRepository::searchUserDirectory)
             .whenInvokedWith(anything(), anything(), anything())
             .thenReturn(expected)
         //when
@@ -52,8 +52,8 @@ class SearchUserDirectoryUseCaseTest {
         //given
         val expected = TEST_CORE_FAILURE
 
-        given(wireUserRepository)
-            .suspendFunction(wireUserRepository::searchUserDirectory)
+        given(searchUserRepository)
+            .suspendFunction(searchUserRepository::searchUserDirectory)
             .whenInvokedWith(anything(), anything(), anything())
             .thenReturn(expected)
         //when

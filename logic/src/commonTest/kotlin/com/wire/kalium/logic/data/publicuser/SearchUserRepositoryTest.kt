@@ -32,7 +32,7 @@ import kotlin.test.assertIs
 class SearchUserRepositoryTest {
 
     @Mock
-    private val wireUserSearchApi: UserSearchApi = mock(classOf<UserSearchApi>())
+    private val userSearchApi: UserSearchApi = mock(classOf<UserSearchApi>())
 
     @Mock
     private val userDetailsApi: UserDetailsApi = mock(classOf<UserDetailsApi>())
@@ -47,14 +47,14 @@ class SearchUserRepositoryTest {
 
     @BeforeTest
     fun setup() {
-        searchUserRepository = SearchUserRepositoryImpl(userDAO, wireUserSearchApi, userDetailsApi, publicUserMapper)
+        searchUserRepository = SearchUserRepositoryImpl(userDAO, userSearchApi, userDetailsApi, publicUserMapper)
     }
 
     @Test
     fun givenContactSearchApiFailure_whenSearchPublicContact_resultIsFailure() = runTest {
         //given
-        given(wireUserSearchApi)
-            .suspendFunction(wireUserSearchApi::search)
+        given(userSearchApi)
+            .suspendFunction(userSearchApi::search)
             .whenInvokedWith(any())
             .then { TestNetworkResponseError.genericError() }
 
@@ -68,8 +68,8 @@ class SearchUserRepositoryTest {
     @Test
     fun givenContactSearchApiFailure_whenSearchPublicContact_thenOnlyContactSearchApiISInvoked() = runTest {
         //given
-        given(wireUserSearchApi)
-            .suspendFunction(wireUserSearchApi::search)
+        given(userSearchApi)
+            .suspendFunction(userSearchApi::search)
             .whenInvokedWith(any())
             .then { TestNetworkResponseError.genericError() }
 
@@ -77,8 +77,8 @@ class SearchUserRepositoryTest {
         val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
 
         //then
-        verify(wireUserSearchApi)
-            .suspendFunction(wireUserSearchApi::search)
+        verify(userSearchApi)
+            .suspendFunction(userSearchApi::search)
             .with(any())
             .wasInvoked(exactly = once)
     }
@@ -86,8 +86,8 @@ class SearchUserRepositoryTest {
     @Test
     fun givenContactSearchApiFailure_whenSearchPublicContact_thenUserDetailsApiAndPublicUserMapperIsNotInvoked() = runTest {
         //given
-        given(wireUserSearchApi)
-            .suspendFunction(wireUserSearchApi::search)
+        given(userSearchApi)
+            .suspendFunction(userSearchApi::search)
             .whenInvokedWith(any())
             .then { TestNetworkResponseError.genericError() }
 
@@ -108,8 +108,8 @@ class SearchUserRepositoryTest {
     @Test
     fun givenContactSearchApiSuccessButuserDetailsApiFailure_whenSearchPublicContact_resultIsFailure() = runTest {
         //given
-        given(wireUserSearchApi)
-            .suspendFunction(wireUserSearchApi::search)
+        given(userSearchApi)
+            .suspendFunction(userSearchApi::search)
             .whenInvokedWith(any())
             .then { NetworkResponse.Success(CONTACT_SEARCH_RESPONSE, mapOf(), 200) }
 
@@ -127,8 +127,8 @@ class SearchUserRepositoryTest {
     @Test
     fun givenContactSearchApiSuccessButuserDetailsApiFailure_whenSearchPublicContact_ThenPublicUserMapperIsNotInvoked() = runTest {
         //given
-        given(wireUserSearchApi)
-            .suspendFunction(wireUserSearchApi::search)
+        given(userSearchApi)
+            .suspendFunction(userSearchApi::search)
             .whenInvokedWith(any())
             .then { NetworkResponse.Success(CONTACT_SEARCH_RESPONSE, mapOf(), 200) }
 
@@ -150,8 +150,8 @@ class SearchUserRepositoryTest {
     fun givenContactSearchApiSuccessButUserDetailsApiFailure_whenSearchPublicContact_ThenContactSearchApiAndUserDetailsApiIsInvoked() =
         runTest {
             //given
-            given(wireUserSearchApi)
-                .suspendFunction(wireUserSearchApi::search)
+            given(userSearchApi)
+                .suspendFunction(userSearchApi::search)
                 .whenInvokedWith(any())
                 .then { NetworkResponse.Success(CONTACT_SEARCH_RESPONSE, mapOf(), 200) }
 
@@ -163,8 +163,8 @@ class SearchUserRepositoryTest {
             val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
 
             //then
-            verify(wireUserSearchApi)
-                .suspendFunction(wireUserSearchApi::search)
+            verify(userSearchApi)
+                .suspendFunction(userSearchApi::search)
                 .with(any())
                 .wasInvoked(exactly = once)
 
@@ -177,8 +177,8 @@ class SearchUserRepositoryTest {
     @Test
     fun givenContactSearchApiAndUserDetailsApiAndPublicUserApiReturnSuccess_WhenSearchPublicContact_ThenResultIsSuccess() = runTest {
         //given
-        given(wireUserSearchApi)
-            .suspendFunction(wireUserSearchApi::search)
+        given(userSearchApi)
+            .suspendFunction(userSearchApi::search)
             .whenInvokedWith(any())
             .then { NetworkResponse.Success(CONTACT_SEARCH_RESPONSE, mapOf(), 200) }
 
@@ -203,8 +203,8 @@ class SearchUserRepositoryTest {
     fun givenContactSearchApiAndUserDetailsApiAndPublicUserApiReturnSuccess_WhenSearchPublicContact_ThenResultIsEqualToExpectedValue() =
         runTest {
             //given
-            given(wireUserSearchApi)
-                .suspendFunction(wireUserSearchApi::search)
+            given(userSearchApi)
+                .suspendFunction(userSearchApi::search)
                 .whenInvokedWith(any())
                 .then { NetworkResponse.Success(CONTACT_SEARCH_RESPONSE, mapOf(), 200) }
 
@@ -232,8 +232,8 @@ class SearchUserRepositoryTest {
     fun givenAValidUserSearchWithEmptyResults_WhenSearchingSomeText_ThenResultIsAnEmptyList() =
         runTest {
             //given
-            given(wireUserSearchApi)
-                .suspendFunction(wireUserSearchApi::search)
+            given(userSearchApi)
+                .suspendFunction(userSearchApi::search)
                 .whenInvokedWith(any())
                 .then { NetworkResponse.Success(EMPTY_CONTACT_SEARCH_RESPONSE, mapOf(), 200) }
 
