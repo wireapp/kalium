@@ -1,12 +1,14 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.data.asset.AssetRepository
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.asset.GetPublicAssetUseCase
 import com.wire.kalium.logic.feature.asset.GetPublicAssetUseCaseImpl
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
+import com.wire.kalium.logic.feature.publicuser.GetAllKnownUsersUseCase
+import com.wire.kalium.logic.feature.publicuser.GetAllKnownUsersUseCaseImpl
 import com.wire.kalium.logic.feature.publicuser.SearchKnownUsersUseCase
 import com.wire.kalium.logic.feature.publicuser.SearchKnownUsersUseCaseImpl
 import com.wire.kalium.logic.feature.publicuser.SearchUserDirectoryUseCase
@@ -28,4 +30,5 @@ class UserScope(
     val getPublicAsset: GetPublicAssetUseCase get() = GetPublicAssetUseCaseImpl(assetRepository)
     val searchUserDirectory: SearchUserDirectoryUseCase get() = SearchUserDirectoryUseCaseImpl(searchUserRepository)
     val setUserHandle: SetUserHandleUseCase get() = SetUserHandleUseCase(userRepository, validateUserHandleUseCase)
+    val getAllKnownUsers: GetAllKnownUsersUseCase get() = GetAllKnownUsersUseCaseImpl(userRepository)
 }
