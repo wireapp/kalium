@@ -21,7 +21,10 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.launch
 
 actual class CallManager(
@@ -34,6 +37,9 @@ actual class CallManager(
     private val job = SupervisorJob() // TODO clear job method
     private val scope = CoroutineScope(job + Dispatchers.IO)
     private val deferredHandle: Deferred<Handle>
+
+    private val _calls = MutableStateFlow(listOf<Call>())
+    actual val allCalls = _calls.asStateFlow()
 
     private val clientId: Deferred<ClientId> = scope.async(start = CoroutineStart.LAZY) {
         clientRepository.currentClientId().fold({
@@ -51,6 +57,21 @@ actual class CallManager(
 
     init {
         deferredHandle = startHandleAsync()
+    }
+
+    private fun updateCallById(conversationId: String, updateItem: (item: Call?) -> Call) = _calls.getAndUpdate {
+        it.map { call ->
+            if (call.conversationId == conversationId) updateItem(call) else call
+        }
+    }
+
+    private fun updateCallStatusById(conversationId: String, status: String) {
+        updateCallById(conversationId) {
+            it?.copy(status = status) ?: Call(
+                conversationId = conversationId,
+                status = status
+            )
+        }
     }
 
     private fun startHandleAsync() = scope.async(start = CoroutineStart.LAZY) {
@@ -72,19 +93,39 @@ actual class CallManager(
             incomingCallHandler = { conversationId: String, messageTime: Uint32_t, userId: String, clientId: String, isVideoCall: Boolean,
                                     shouldRing: Boolean, conversationType: Int, arg: Pointer? ->
                 kaliumLogger.i("startHandleAsync -> incomingCallHandler")
+                updateCallStatusById(
+                    conversationId = conversationId,
+                    status = "Incoming"
+                )
             },
             missedCallHandler = { conversationId: String, messageTime: Uint32_t, userId: String, isVideoCall: Boolean, arg: Pointer? ->
                 kaliumLogger.i("startHandleAsync -> missedCallHandler")
+                updateCallStatusById(
+                    conversationId = conversationId,
+                    status = "Missed"
+                )
             },
             answeredCallHandler = { conversationId: String, arg: Pointer? ->
                 kaliumLogger.i("startHandleAsync -> answeredCallHandler")
+                updateCallStatusById(
+                    conversationId = conversationId,
+                    status = "Answered"
+                )
             },
             establishedCallHandler = { conversationId: String, userId: String, clientId: String, arg: Pointer? ->
                 kaliumLogger.i("startHandleAsync -> establishedCallHandler")
+                updateCallStatusById(
+                    conversationId = conversationId,
+                    status = "Established"
+                )
             },
             closeCallHandler = { reason: Int, conversationId: String, messageTime: Uint32_t, userId: String, clientId: String,
                                  arg: Pointer? ->
                 kaliumLogger.i("startHandleAsync -> closeCallHandler")
+                updateCallStatusById(
+                    conversationId = conversationId,
+                    status = "Close"
+                )
             },
             metricsHandler = { conversationId: String, metricsJson: String, arg: Pointer? ->
                 kaliumLogger.i("startHandleAsync -> metricsHandler")
