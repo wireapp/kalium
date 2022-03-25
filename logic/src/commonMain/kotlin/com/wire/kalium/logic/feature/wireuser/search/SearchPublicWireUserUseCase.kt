@@ -13,7 +13,7 @@ interface SearchPublicWireUserUseCase {
     ): Either<CoreFailure, WireUserSearchResult>
 }
 
-internal class SearchPublicWireWireUserUseCaseImpl(
+internal class SearchPublicUserUseCaseImpl(
     private val searchUserRepository: SearchUserRepository
 ) : SearchPublicWireUserUseCase {
 
