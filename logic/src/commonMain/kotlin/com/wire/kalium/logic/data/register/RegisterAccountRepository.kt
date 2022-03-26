@@ -18,7 +18,6 @@ interface RegisterAccountRepository {
     suspend fun registerPersonalAccountWithEmail(
         email: String, code: String, name: String, password: String, serverConfig: ServerConfig
     ): Either<NetworkFailure, Pair<SelfUser, AuthSession>>
-
     suspend fun registerTeamWithEmail(
         email: String, code: String, name: String, password: String, teamName: String, teamIcon: String, serverConfig: ServerConfig
     ): Either<NetworkFailure, Pair<SelfUser, AuthSession>>
@@ -53,7 +52,9 @@ class RegisterAccountDataSource(
         wrapApiRequest { registerApi.activate(param, baseApiHost) }
 
     private suspend fun register(param: RegisterApi.RegisterParam, serverConfig: ServerConfig) =
-        wrapApiRequest { registerApi.register(param, serverConfig.apiBaseUrl) }.map { authResult ->
-            Pair(userMapper.fromDtoToSelfUser(authResult.selfUser), sessionMapper.fromSessionDTO(authResult.session, serverConfig))
+        wrapApiRequest { registerApi.register(param, serverConfig.apiBaseUrl) }.map {
+            Pair(
+                userMapper.fromDtoToSelfUser(it.first), sessionMapper.fromSessionDTO(it.second, serverConfig)
+            )
         }
 }
