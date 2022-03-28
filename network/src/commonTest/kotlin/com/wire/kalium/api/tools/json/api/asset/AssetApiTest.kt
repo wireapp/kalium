@@ -29,7 +29,6 @@ class AssetApiTest : ApiTest {
             statusCode = HttpStatusCode.Created,
             assertion = {
                 assertPost()
-                assertJson()
                 assertNoQueryParams()
                 assertAuthorizationHeaderExist()
                 assertPathEqual(PATH_PUBLIC_ASSETS)
@@ -56,7 +55,6 @@ class AssetApiTest : ApiTest {
             statusCode = HttpStatusCode.Created,
             assertion = {
                 assertPost()
-                assertJson()
                 assertNoQueryParams()
                 assertAuthorizationHeaderExist()
                 assertPathEqual(PATH_PUBLIC_ASSETS)
@@ -83,7 +81,6 @@ class AssetApiTest : ApiTest {
             statusCode = HttpStatusCode.BadRequest,
             assertion = {
                 assertPost()
-                assertJson()
                 assertNoQueryParams()
                 assertAuthorizationHeaderExist()
                 assertPathEqual(PATH_PUBLIC_ASSETS)

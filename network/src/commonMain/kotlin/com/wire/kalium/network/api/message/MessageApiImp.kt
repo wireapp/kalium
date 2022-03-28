@@ -5,6 +5,7 @@ import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.QualifiedSendMessageError
 import com.wire.kalium.network.exceptions.SendMessageError
+import com.wire.kalium.network.serialization.XProtoBuf
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
@@ -111,9 +112,7 @@ class MessageApiImp(
         return try {
             val response = httpClient.post("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}$PATH_PROTEUS_MESSAGE") {
                 setBody(envelopeProtoMapper.encodeToProtobuf(parameters))
-                // This technically doesn't work, Ktor will replace with application/octet-stream anyway
-                // But if this ever gets improved, we're already on the right track
-                contentType(ContentType.Application.ProtoBuf)
+                contentType(ContentType.Application.XProtoBuf)
             }
             NetworkResponse.Success(httpResponse = response, value = response.body<QualifiedSendMessageResponse.MessageSent>())
         } catch (e: ResponseException) {

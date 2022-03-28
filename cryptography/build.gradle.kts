@@ -19,6 +19,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
+        isCoreLibraryDesugaringEnabled = true
     }
     sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
     // Remove Android Unit tests, as it's currently impossible to run native-through-NDK code on simple Unit tests.
@@ -49,7 +50,12 @@ kotlin {
             }
         }
     }
-    android()
+    android() {
+        dependencies {
+            coreLibraryDesugaring(Dependencies.Android.desugarJdkLibs)
+        }
+    }
+
     js(IR) {
         browser {
             commonWebpackConfig {
@@ -93,6 +99,7 @@ kotlin {
             dependencies {
                 implementation(Dependencies.Cryptography.cryptobox4j)
                 implementation(Dependencies.Cryptography.javaxCrypto)
+                implementation(Dependencies.Cryptography.mlsClientJvm)
             }
         }
         val jvmTest by getting
@@ -108,6 +115,7 @@ kotlin {
             dependencies {
                 implementation(Dependencies.Cryptography.cryptoboxAndroid)
                 implementation(Dependencies.Cryptography.javaxCrypto)
+                implementation(Dependencies.Cryptography.mlsClientAndroid)
             }
         }
         val androidAndroidTest by getting {

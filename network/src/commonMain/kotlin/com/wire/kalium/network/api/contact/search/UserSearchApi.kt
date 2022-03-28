@@ -2,10 +2,10 @@ package com.wire.kalium.network.api.contact.search
 
 import com.wire.kalium.network.utils.NetworkResponse
 
-interface ContactSearchApi {
+interface UserSearchApi {
 
     suspend fun search(
-        contactSearchRequest: ContactSearchRequest
-    ): NetworkResponse<ContactSearchResponse>
+        userSearchRequest: UserSearchRequest
+    ): NetworkResponse<UserSearchResponse>
 
 }

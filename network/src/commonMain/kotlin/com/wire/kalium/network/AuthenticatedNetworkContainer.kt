@@ -1,14 +1,11 @@
 package com.wire.kalium.network
 
-import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.asset.AssetApi
 import com.wire.kalium.network.api.asset.AssetApiImpl
-import com.wire.kalium.network.api.auth.AccessTokenApi
-import com.wire.kalium.network.api.auth.AccessTokenApiImpl
 import com.wire.kalium.network.api.call.CallApi
 import com.wire.kalium.network.api.call.CallApiImpl
-import com.wire.kalium.network.api.contact.search.ContactSearchApi
-import com.wire.kalium.network.api.contact.search.ContactSearchApiImpl
+import com.wire.kalium.network.api.contact.search.UserSearchApi
+import com.wire.kalium.network.api.contact.search.UserSearchApiImpl
 import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.conversation.ConversationApiImp
 import com.wire.kalium.network.api.keypackage.KeyPackageApi
@@ -30,9 +27,12 @@ import com.wire.kalium.network.api.user.logout.LogoutApi
 import com.wire.kalium.network.api.user.logout.LogoutImpl
 import com.wire.kalium.network.api.user.self.SelfApi
 import com.wire.kalium.network.api.user.self.SelfApiImpl
+import com.wire.kalium.network.serialization.mls
+import com.wire.kalium.network.serialization.xprotobuf
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.session.installAuth
 import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.plugins.ContentNegotiation
 
 class AuthenticatedNetworkContainer(
     private val sessionManager: SessionManager,
@@ -63,13 +63,17 @@ class AuthenticatedNetworkContainer(
 
     val userDetailsApi: UserDetailsApi get() = UserDetailsApiImp(authenticatedHttpClient)
 
-    val contactSearchApi: ContactSearchApi get() = ContactSearchApiImpl(authenticatedHttpClient)
+    val userSearchApi: UserSearchApi get() = UserSearchApiImpl(authenticatedHttpClient)
 
     val callApi: CallApi get() = CallApiImpl(authenticatedHttpClient)
 
     internal val authenticatedHttpClient by lazy {
         provideBaseHttpClient(engine, HttpClientOptions.DefaultHost(backendConfig)) {
             installAuth(sessionManager)
+            install(ContentNegotiation) {
+                mls()
+                xprotobuf()
+            }
         }
     }
 }
