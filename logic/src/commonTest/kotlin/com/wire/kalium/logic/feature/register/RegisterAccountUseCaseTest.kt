@@ -266,6 +266,6 @@ class RegisterAccountUseCaseTest {
             previewPicture = null,
             completePicture = null
         )
-        val TEST_AUTH_SESSION = AuthSession(TEST_SELF_USER.id.value, "access_token", "refresh_token", "token_type", TEST_SERVER_CONFIG)
+        val TEST_AUTH_SESSION = AuthSession(TEST_SELF_USER.id, "access_token", "refresh_token", "token_type", TEST_SERVER_CONFIG)
     }
 }

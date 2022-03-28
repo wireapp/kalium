@@ -36,7 +36,7 @@ class TestSessionManager : SessionManager {
 
     override fun updateSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO =
         SessionDTO(
-            session.userIdValue,
+            session.userId,
             newAccessTokenDTO.tokenType,
             newAccessTokenDTO.value,
             newRefreshTokenDTO?.value ?: session.refreshToken

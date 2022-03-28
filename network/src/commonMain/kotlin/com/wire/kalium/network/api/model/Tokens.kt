@@ -17,7 +17,7 @@ data class AccessTokenDTO(
 )
 
 internal fun AccessTokenDTO.toSessionDto(refreshToken: String, qualifiedID: QualifiedID): SessionDTO = SessionDTO(
-    userIdValue = qualifiedID,
+    userId = qualifiedID,
     tokenType = tokenType,
     accessToken = value,
     refreshToken = refreshToken

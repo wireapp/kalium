@@ -53,7 +53,7 @@ class LoginApiTest : ApiTest {
         )
         val expected = with(VALID_ACCESS_TOKEN_RESPONSE.serializableData) {
             SessionDTO(
-                userIdValue = VALID_SELF_RESPONSE.serializableData.id,
+                userId = VALID_SELF_RESPONSE.serializableData.id,
                 accessToken = value,
                 tokenType = tokenType,
                 refreshToken = refreshToken

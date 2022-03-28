@@ -1,5 +1,6 @@
 package com.wire.kalium.persistence.client
 
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.model.PersistenceSession
 import com.wire.kalium.persistence.model.PreferencesResult
@@ -15,7 +16,7 @@ interface SessionStorage {
     /**
      * delete a session from the local storage
      */
-    fun deleteSession(userId: String)
+    fun deleteSession(userId: QualifiedIDEntity)
 
     /**
      * returns the current active user session
@@ -25,17 +26,17 @@ interface SessionStorage {
     /**
      * changes the current active user session
      */
-    fun setCurrentSession(userId: String)
+    fun setCurrentSession(userId: QualifiedIDEntity)
 
     /**
      * return all stored session as a userId to session map
      */
-    fun allSessions(): PreferencesResult<Map<String, PersistenceSession>>
+    fun allSessions(): PreferencesResult<Map<QualifiedIDEntity, PersistenceSession>>
 
     /**
      * return stored session associated with a userId
      */
-    fun userSession(userId: String): PreferencesResult<PersistenceSession>
+    fun userSession(userId: QualifiedIDEntity): PreferencesResult<PersistenceSession>
 
     /**
      * returns true if there is any session saved and false otherwise
@@ -59,7 +60,7 @@ class SessionStorageImpl(
             }
         }
 
-    override fun deleteSession(userId: String) {
+    override fun deleteSession(userId: QualifiedIDEntity) {
         when (val result = allSessions()) {
             is PreferencesResult.Success -> {
                 // save the new map if the remove did not return null (session was deleted)
@@ -82,7 +83,7 @@ class SessionStorageImpl(
     }
 
     override fun currentSession(): PersistenceSession? =
-        kaliumPreferences.getString(CURRENT_SESSION_KEY)?.let { userId ->
+        kaliumPreferences.getSerializable(CURRENT_SESSION_KEY, QualifiedIDEntity.serializer())?.let { userId ->
             when (val result = allSessions()) {
                 is PreferencesResult.Success -> result.data[userId]
                 PreferencesResult.DataNotFound -> null
@@ -90,9 +91,10 @@ class SessionStorageImpl(
         }
 
 
-    override fun setCurrentSession(userId: String) = kaliumPreferences.putString(CURRENT_SESSION_KEY, userId)
+    override fun setCurrentSession(userId: QualifiedIDEntity) =
+        kaliumPreferences.putSerializable(CURRENT_SESSION_KEY, userId, QualifiedIDEntity.serializer())
 
-    override fun allSessions(): PreferencesResult<Map<String, PersistenceSession>> {
+    override fun allSessions(): PreferencesResult<Map<QualifiedIDEntity, PersistenceSession>> {
         return kaliumPreferences.getSerializable(SESSIONS_KEY, SessionsMap.serializer())?.let {
             if (it.s.isEmpty()) {
                 // the sessions hashMap is empty
@@ -103,7 +105,7 @@ class SessionStorageImpl(
         } ?: run { PreferencesResult.DataNotFound }
     }
 
-    override fun userSession(userId: String): PreferencesResult<PersistenceSession> = with(allSessions()) {
+    override fun userSession(userId: QualifiedIDEntity): PreferencesResult<PersistenceSession> = with(allSessions()) {
         when (this) {
             is PreferencesResult.Success -> this.data[userId]?.let {
                 PreferencesResult.Success(it)
@@ -133,4 +135,4 @@ class SessionStorageImpl(
 // At runtime an object of 'SessionsMap' contains just 'Map<String, PersistenceSession>'
 @Serializable
 @JvmInline
-private value class SessionsMap(val s: Map<String, PersistenceSession>)
+private value class SessionsMap(val s: Map<QualifiedIDEntity, PersistenceSession>)
