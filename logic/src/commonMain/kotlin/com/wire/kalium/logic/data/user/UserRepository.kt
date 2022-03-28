@@ -4,6 +4,8 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.publicuser.PublicUserMapper
+import com.wire.kalium.logic.data.publicuser.model.PublicUser
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
@@ -35,6 +37,7 @@ interface UserRepository {
     suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, SelfUser>
     suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit>
     suspend fun updateLocalSelfUserHandle(handle: String)
+    suspend fun getAllKnownUsers(): Flow<List<PublicUser>>
 }
 
 class UserDataSource(
@@ -44,7 +47,8 @@ class UserDataSource(
     private val userDetailsApi: UserDetailsApi,
     private val assetRepository: AssetRepository,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
-    private val userMapper: UserMapper = MapperProvider.userMapper()
+    private val userMapper: UserMapper = MapperProvider.userMapper(),
+    private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper()
 ) : UserRepository {
 
     private suspend fun getSelfUserId(): QualifiedIDEntity {
@@ -117,6 +121,8 @@ class UserDataSource(
     override suspend fun updateLocalSelfUserHandle(handle: String) =
         userDAO.updateUserHandle(getSelfUserId(), handle)
 
+    override suspend fun getAllKnownUsers() =
+        userDAO.getAllUsers().map { it.map { userEntity -> publicUserMapper.fromDaoModelToPublicUser(userEntity) } }
 
     companion object {
         const val SELF_USER_ID_KEY = "selfUserID"
