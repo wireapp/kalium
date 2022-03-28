@@ -5,7 +5,6 @@ import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.model.AccessTokenDTO
 import com.wire.kalium.network.api.model.NewUserDTO
 import com.wire.kalium.network.api.model.UserDTO
-import com.wire.kalium.network.api.model.toSessionDto
 import com.wire.kalium.network.utils.CustomErrors
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap
@@ -151,7 +150,8 @@ class RegisterApiImpl(
         registerResponse.cookies[RefreshTokenProperties.COOKIE_NAME]?.let { refreshToken ->
             getToken(refreshToken, apiBaseUrl).mapSuccess { accessTokenDTO ->
                 Pair(
-                    registerResponse.value, accessTokenDTO.toSessionDto(refreshToken)
+                    registerResponse.value,
+                    SessionDTO(registerResponse.value.id, accessTokenDTO.tokenType, accessTokenDTO.value, refreshToken)
                 )
             }
         } ?: run {
