@@ -2,19 +2,20 @@ package com.wire.kalium.logic.data.publicuser
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.publicuser.model.PublicUser
-import com.wire.kalium.logic.data.publicuser.model.PublicUserSearchResult
+import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.network.api.QualifiedID
 import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.contact.search.ContactDTO
-import com.wire.kalium.network.api.contact.search.ContactSearchApi
-import com.wire.kalium.network.api.contact.search.ContactSearchResponse
+import com.wire.kalium.network.api.contact.search.UserSearchResponse
 import com.wire.kalium.network.api.contact.search.SearchPolicyDTO
+import com.wire.kalium.network.api.contact.search.UserSearchApi
 import com.wire.kalium.network.api.user.LegalHoldStatusResponse
 import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.network.api.user.details.UserDetailsResponse
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.persistence.dao.UserDAO
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -28,10 +29,10 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-class PublicUserRepositoryTest {
+class SearchUserRepositoryTest {
 
     @Mock
-    private val contactSearchApi: ContactSearchApi = mock(classOf<ContactSearchApi>())
+    private val userSearchApi: UserSearchApi = mock(classOf<UserSearchApi>())
 
     @Mock
     private val userDetailsApi: UserDetailsApi = mock(classOf<UserDetailsApi>())
@@ -39,23 +40,26 @@ class PublicUserRepositoryTest {
     @Mock
     private val publicUserMapper: PublicUserMapper = mock(classOf<PublicUserMapper>())
 
-    private lateinit var publicUserRepository: PublicUserRepository
+    @Mock
+    private val userDAO: UserDAO = mock(classOf<UserDAO>())
+
+    private lateinit var searchUserRepository: SearchUserRepository
 
     @BeforeTest
     fun setup() {
-        publicUserRepository = PublicUserRepositoryImpl(contactSearchApi, userDetailsApi, publicUserMapper)
+        searchUserRepository = SearchUserRepositoryImpl(userDAO, userSearchApi, userDetailsApi, publicUserMapper)
     }
 
     @Test
     fun givenContactSearchApiFailure_whenSearchPublicContact_resultIsFailure() = runTest {
         //given
-        given(contactSearchApi)
-            .suspendFunction(contactSearchApi::search)
+        given(userSearchApi)
+            .suspendFunction(userSearchApi::search)
             .whenInvokedWith(any())
             .then { TestNetworkResponseError.genericError() }
 
         //when
-        val actual = publicUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
+        val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
 
         //then
         assertIs<Either.Left<NetworkFailure>>(actual)
@@ -64,17 +68,17 @@ class PublicUserRepositoryTest {
     @Test
     fun givenContactSearchApiFailure_whenSearchPublicContact_thenOnlyContactSearchApiISInvoked() = runTest {
         //given
-        given(contactSearchApi)
-            .suspendFunction(contactSearchApi::search)
+        given(userSearchApi)
+            .suspendFunction(userSearchApi::search)
             .whenInvokedWith(any())
             .then { TestNetworkResponseError.genericError() }
 
         //when
-        val actual = publicUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
+        val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
 
         //then
-        verify(contactSearchApi)
-            .suspendFunction(contactSearchApi::search)
+        verify(userSearchApi)
+            .suspendFunction(userSearchApi::search)
             .with(any())
             .wasInvoked(exactly = once)
     }
@@ -82,13 +86,13 @@ class PublicUserRepositoryTest {
     @Test
     fun givenContactSearchApiFailure_whenSearchPublicContact_thenUserDetailsApiAndPublicUserMapperIsNotInvoked() = runTest {
         //given
-        given(contactSearchApi)
-            .suspendFunction(contactSearchApi::search)
+        given(userSearchApi)
+            .suspendFunction(userSearchApi::search)
             .whenInvokedWith(any())
             .then { TestNetworkResponseError.genericError() }
 
         //when
-        val actual = publicUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
+        val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
         //then
         verify(userDetailsApi)
             .suspendFunction(userDetailsApi::getMultipleUsers)
@@ -96,7 +100,7 @@ class PublicUserRepositoryTest {
             .wasNotInvoked()
 
         verify(publicUserMapper)
-            .function(publicUserMapper::fromUserDetailResponses)
+            .function(publicUserMapper::fromUserDetailResponse)
             .with(any())
             .wasNotInvoked()
     }
@@ -104,8 +108,8 @@ class PublicUserRepositoryTest {
     @Test
     fun givenContactSearchApiSuccessButuserDetailsApiFailure_whenSearchPublicContact_resultIsFailure() = runTest {
         //given
-        given(contactSearchApi)
-            .suspendFunction(contactSearchApi::search)
+        given(userSearchApi)
+            .suspendFunction(userSearchApi::search)
             .whenInvokedWith(any())
             .then { NetworkResponse.Success(CONTACT_SEARCH_RESPONSE, mapOf(), 200) }
 
@@ -114,7 +118,7 @@ class PublicUserRepositoryTest {
             .whenInvokedWith(any())
             .then { TestNetworkResponseError.genericError() }
         //when
-        val actual = publicUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
+        val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
 
         //then
         assertIs<Either.Left<NetworkFailure>>(actual)
@@ -123,8 +127,8 @@ class PublicUserRepositoryTest {
     @Test
     fun givenContactSearchApiSuccessButuserDetailsApiFailure_whenSearchPublicContact_ThenPublicUserMapperIsNotInvoked() = runTest {
         //given
-        given(contactSearchApi)
-            .suspendFunction(contactSearchApi::search)
+        given(userSearchApi)
+            .suspendFunction(userSearchApi::search)
             .whenInvokedWith(any())
             .then { NetworkResponse.Success(CONTACT_SEARCH_RESPONSE, mapOf(), 200) }
 
@@ -133,11 +137,11 @@ class PublicUserRepositoryTest {
             .whenInvokedWith(any())
             .then { TestNetworkResponseError.genericError() }
         //when
-        val actual = publicUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
+        val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
 
         //then
         verify(publicUserMapper)
-            .function(publicUserMapper::fromUserDetailResponses)
+            .function(publicUserMapper::fromUserDetailResponse)
             .with(any())
             .wasNotInvoked()
     }
@@ -146,8 +150,8 @@ class PublicUserRepositoryTest {
     fun givenContactSearchApiSuccessButUserDetailsApiFailure_whenSearchPublicContact_ThenContactSearchApiAndUserDetailsApiIsInvoked() =
         runTest {
             //given
-            given(contactSearchApi)
-                .suspendFunction(contactSearchApi::search)
+            given(userSearchApi)
+                .suspendFunction(userSearchApi::search)
                 .whenInvokedWith(any())
                 .then { NetworkResponse.Success(CONTACT_SEARCH_RESPONSE, mapOf(), 200) }
 
@@ -156,11 +160,11 @@ class PublicUserRepositoryTest {
                 .whenInvokedWith(any())
                 .then { TestNetworkResponseError.genericError() }
             //when
-            val actual = publicUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
+            val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
 
             //then
-            verify(contactSearchApi)
-                .suspendFunction(contactSearchApi::search)
+            verify(userSearchApi)
+                .suspendFunction(userSearchApi::search)
                 .with(any())
                 .wasInvoked(exactly = once)
 
@@ -173,8 +177,8 @@ class PublicUserRepositoryTest {
     @Test
     fun givenContactSearchApiAndUserDetailsApiAndPublicUserApiReturnSuccess_WhenSearchPublicContact_ThenResultIsSuccess() = runTest {
         //given
-        given(contactSearchApi)
-            .suspendFunction(contactSearchApi::search)
+        given(userSearchApi)
+            .suspendFunction(userSearchApi::search)
             .whenInvokedWith(any())
             .then { NetworkResponse.Success(CONTACT_SEARCH_RESPONSE, mapOf(), 200) }
 
@@ -189,18 +193,18 @@ class PublicUserRepositoryTest {
             .then { PUBLIC_USERS }
 
         //when
-        val actual = publicUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
+        val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
 
         //then
-        assertIs<Either.Right<PublicUserSearchResult>>(actual)
+        assertIs<Either.Right<UserSearchResult>>(actual)
     }
 
     @Test
     fun givenContactSearchApiAndUserDetailsApiAndPublicUserApiReturnSuccess_WhenSearchPublicContact_ThenResultIsEqualToExpectedValue() =
         runTest {
             //given
-            given(contactSearchApi)
-                .suspendFunction(contactSearchApi::search)
+            given(userSearchApi)
+                .suspendFunction(userSearchApi::search)
                 .whenInvokedWith(any())
                 .then { NetworkResponse.Success(CONTACT_SEARCH_RESPONSE, mapOf(), 200) }
 
@@ -214,14 +218,13 @@ class PublicUserRepositoryTest {
                 .whenInvokedWith(any())
                 .then { PUBLIC_USERS }
 
-            val expectedResult = PublicUserSearchResult(
-                totalFound = PUBLIC_USERS.size,
-                publicUsers = PUBLIC_USERS
+            val expectedResult = UserSearchResult(
+                result = PUBLIC_USERS
             )
             //when
-            val actual = publicUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
+            val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
 
-            assertIs<Either.Right<PublicUserSearchResult>>(actual)
+            assertIs<Either.Right<UserSearchResult>>(actual)
             assertEquals(expectedResult, actual.value)
         }
 
@@ -229,8 +232,8 @@ class PublicUserRepositoryTest {
     fun givenAValidUserSearchWithEmptyResults_WhenSearchingSomeText_ThenResultIsAnEmptyList() =
         runTest {
             //given
-            given(contactSearchApi)
-                .suspendFunction(contactSearchApi::search)
+            given(userSearchApi)
+                .suspendFunction(userSearchApi::search)
                 .whenInvokedWith(any())
                 .then { NetworkResponse.Success(EMPTY_CONTACT_SEARCH_RESPONSE, mapOf(), 200) }
 
@@ -244,14 +247,13 @@ class PublicUserRepositoryTest {
                 .whenInvokedWith(any())
                 .then { emptyList() }
 
-            val expectedResult = PublicUserSearchResult(
-                totalFound = 0,
-                publicUsers = emptyList()
+            val expectedResult = UserSearchResult(
+                result = emptyList()
             )
             //when
-            val actual = publicUserRepository.searchPublicContact(TEST_QUERY, TEST_DOMAIN)
+            val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
 
-            assertIs<Either.Right<PublicUserSearchResult>>(actual)
+            assertIs<Either.Right<UserSearchResult>>(actual)
             assertEquals(expectedResult, actual.value)
         }
 
@@ -293,7 +295,7 @@ class PublicUserRepositoryTest {
             }
         }
 
-        val CONTACT_SEARCH_RESPONSE = ContactSearchResponse(
+        val CONTACT_SEARCH_RESPONSE = UserSearchResponse(
             documents = CONTACTS,
             found = CONTACTS.size,
             returned = 5,
@@ -301,7 +303,7 @@ class PublicUserRepositoryTest {
             took = 100,
         )
 
-        val EMPTY_CONTACT_SEARCH_RESPONSE = ContactSearchResponse(
+        val EMPTY_CONTACT_SEARCH_RESPONSE = UserSearchResponse(
             documents = emptyList(),
             found = 0,
             returned = 0,

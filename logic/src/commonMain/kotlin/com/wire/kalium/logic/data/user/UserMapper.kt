@@ -19,8 +19,7 @@ interface UserMapper {
     fun fromDtoToSelfUser(userDTO: UserDTO): SelfUser
     fun fromApiModelToDaoModel(userDetailsResponse: UserDetailsResponse): UserEntity
     fun fromApiModelToDaoModel(userDTO: UserDTO): UserEntity
-    fun fromDaoModel(userEntity: UserEntity): SelfUser
-
+    fun fromDaoModelToSelfUser(userEntity: UserEntity): SelfUser
     /**
      * Maps the user data to be updated. if the parameters [newName] [newAccent] [newAssetId] are nulls,
      * it indicates that not updation should be made.
@@ -67,7 +66,7 @@ internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
         )
     }
 
-    override fun fromDaoModel(userEntity: UserEntity) = SelfUser(
+    override fun fromDaoModelToSelfUser(userEntity: UserEntity) = SelfUser(
         idMapper.fromDaoModel(userEntity.id),
         userEntity.name,
         userEntity.handle,
