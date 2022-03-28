@@ -50,5 +50,5 @@ abstract class AuthenticationScopeCommon(
     val getSessions: GetSessionsUseCase get() = GetSessionsUseCase(sessionRepository)
     val getServerConfig: GetServerConfigUseCase get() = GetServerConfigUseCase(serverConfigRepository)
     val session: SessionScope get() = SessionScope(sessionRepository)
-    val register: RegisterScope get() = RegisterScope(registerAccountRepository, sessionRepository)
+    val register: RegisterScope get() = RegisterScope(registerAccountRepository)
 }
