@@ -31,7 +31,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
-import com.wire.kalium.cryptography.PlainUserId as CryptoUserId
+import com.wire.kalium.cryptography.PlainUserId
 
 class MessageEnvelopeCreatorTest {
 
@@ -70,7 +70,7 @@ class MessageEnvelopeCreatorTest {
             recipient.clients.forEach { client ->
                 verify(proteusClient)
                     .suspendFunction(proteusClient::encrypt)
-                    .with(eq(plainData), eq(CryptoSessionId(CryptoUserId(recipient.member.id.value), CryptoClientId(client.value))))
+                    .with(eq(plainData), eq(CryptoSessionId(PlainUserId(recipient.member.id.value), CryptoClientId(client.value))))
                     .wasInvoked(exactly = once)
             }
         }

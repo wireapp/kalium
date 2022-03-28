@@ -15,7 +15,7 @@ import com.wire.kalium.logic.data.message.RecipientEntry
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.wrapCryptoRequest
-import com.wire.kalium.cryptography.PlainUserId as CryptoUserId
+import com.wire.kalium.cryptography.PlainUserId
 
 interface MessageEnvelopeCreator {
 
@@ -40,7 +40,7 @@ class MessageEnvelopeCreatorImpl(
 
         recipients.foldToEitherWhileRight(mutableListOf<RecipientEntry>()) { recipient, recipientAccumulator ->
             recipient.clients.foldToEitherWhileRight(mutableListOf<ClientPayload>()) { client, clientAccumulator ->
-                val session = CryptoSessionId(CryptoUserId(recipient.member.id.value), CryptoClientId(client.value))
+                val session = CryptoSessionId(PlainUserId(recipient.member.id.value), CryptoClientId(client.value))
 
                 // TODO: en/decryption repo
                 wrapCryptoRequest { EncryptedMessageBlob(proteusClient.encrypt(content.data, session)) }
