@@ -7,6 +7,7 @@ import com.wire.kalium.network.api.message.MLSMessageApiImpl
 import com.wire.kalium.network.api.message.MessageApi
 import com.wire.kalium.network.api.message.MessageApiImp
 import com.wire.kalium.network.api.message.provideEnvelopeProtoMapper
+import com.wire.kalium.network.serialization.Mls
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
@@ -28,7 +29,7 @@ class MLSMessageApiTest: ApiTest {
                 assertion =
                 {
                     assertPost()
-                    assertContentType(ContentType("message", "mls"))
+                    assertContentType(ContentType.Message.Mls)
                     assertPathEqual(PATH_MESSAGE)
                 }
             )
@@ -46,7 +47,7 @@ class MLSMessageApiTest: ApiTest {
                 assertion =
                 {
                     assertPost()
-                    assertContentType(ContentType("message", "mls"))
+                    assertContentType(ContentType.Message.Mls)
                     assertPathEqual(PATH_WELCOME_MESSAGE)
                 }
             )
