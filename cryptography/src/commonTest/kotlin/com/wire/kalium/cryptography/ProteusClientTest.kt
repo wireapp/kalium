@@ -9,10 +9,10 @@ import kotlin.test.assertNotNull
 @ExperimentalJsExport
 class ProteusClientTest: BaseProteusClientTest() {
 
-    data class SampleUser(val id: UserId, val name: String)
+    data class SampleUser(val id: PlainUserId, val name: String)
 
-    private val alice = SampleUser(UserId("aliceId"), "Alice")
-    private val bob = SampleUser(UserId("bobId"), "Bob")
+    private val alice = SampleUser(PlainUserId("aliceId"), "Alice")
+    private val bob = SampleUser(PlainUserId("bobId"), "Bob")
     val aliceSessionId = CryptoSessionId(alice.id, CryptoClientId("aliceClient"))
     val bobSessionId = CryptoSessionId(alice.id, CryptoClientId("aliceClient"))
 

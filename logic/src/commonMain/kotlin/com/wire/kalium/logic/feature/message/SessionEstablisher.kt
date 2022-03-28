@@ -14,7 +14,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.wrapCryptoRequest
-import com.wire.kalium.cryptography.UserId as CryptoUserId
+import com.wire.kalium.cryptography.PlainUserId
 
 interface SessionEstablisher {
 
@@ -99,7 +99,7 @@ class SessionEstablisherImpl(
         client: ClientId
     ): Either<ProteusFailure, Boolean> =
         wrapCryptoRequest {
-            val cryptoSessionID = CryptoSessionId(CryptoUserId(recipientUserId), CryptoClientId(client.value))
+            val cryptoSessionID = CryptoSessionId(PlainUserId(recipientUserId), CryptoClientId(client.value))
             proteusClient.doesSessionExist(cryptoSessionID)
         }
 }
