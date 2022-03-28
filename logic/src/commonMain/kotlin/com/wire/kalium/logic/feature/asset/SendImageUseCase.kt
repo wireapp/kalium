@@ -51,7 +51,7 @@ internal class SendImageUseCaseImpl(
             val encryptedData = encryptDataWithAES256(PlainData(imageRawData))
 
             // Calculate the SHA
-            val sha256 = calcSHA256(imageRawData)
+            val sha256 = calcSHA256(encryptedData.data)
 
             // Upload the asset encrypted data
             val result = assetDataSource.uploadAndPersistPrivateAsset(ImageAsset.JPEG, encryptedData.data).flatMap { assetId ->
