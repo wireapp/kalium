@@ -24,6 +24,12 @@ class ProtoContentMapperImpl: ProtoContentMapper {
             is MessageContent.Calling -> {
                 GenericMessage.Content.Calling(calling = Calling(content = messageContent.value))
             }
+//            is MessageContent.AssetContent.ImageAsset -> {
+//                GenericMessage.Content.Asset(original = messageContent.value.original)
+//            }
+//            is MessageContent.AssetContent.FileAsset -> {
+//                GenericMessage.Content.Asset(original = messageContent.value.original)
+//            }
             else -> {
                 throw IllegalArgumentException("Unexpected message content type: $messageContent")
             }
@@ -39,7 +45,7 @@ class ProtoContentMapperImpl: ProtoContentMapper {
         kaliumLogger.d("Received message $genericMessage")
         val content = when (val protoContent = genericMessage.content) {
             is GenericMessage.Content.Text -> MessageContent.Text(protoContent.value.content)
-            is GenericMessage.Content.Asset -> MessageContent.Unknown
+//            is GenericMessage.Content.Asset -> MessageContent.AssetContent.FileAsset(protoContent.value.content)
             is GenericMessage.Content.Availability -> MessageContent.Unknown
             is GenericMessage.Content.ButtonAction -> MessageContent.Unknown
             is GenericMessage.Content.ButtonActionConfirmation -> MessageContent.Unknown
@@ -59,7 +65,7 @@ class ProtoContentMapperImpl: ProtoContentMapper {
             is GenericMessage.Content.LastRead -> MessageContent.Unknown
             is GenericMessage.Content.Location -> MessageContent.Unknown
             is GenericMessage.Content.Reaction -> MessageContent.Unknown
-            null -> {
+            else -> {
                 kaliumLogger.w("Null content when parsing protobuf. Message UUID = $genericMessage.")
                 MessageContent.Unknown
             }
