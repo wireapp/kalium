@@ -4,7 +4,7 @@ import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
 import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.cryptography.ProteusClient
-import com.wire.kalium.cryptography.UserId
+import com.wire.kalium.cryptography.PlainUserId
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.ProteusFailure
@@ -100,7 +100,7 @@ class SessionEstablisherTest {
 
         verify(proteusClient)
             .suspendFunction(proteusClient::doesSessionExist)
-            .with(eq(CryptoSessionId(UserId(TEST_USER_ID_1.value), CryptoClientId(TEST_CLIENT_ID_1.value))))
+            .with(eq(CryptoSessionId(PlainUserId(TEST_USER_ID_1.value), CryptoClientId(TEST_CLIENT_ID_1.value))))
             .wasInvoked(exactly = once)
     }
 
@@ -161,7 +161,7 @@ class SessionEstablisherTest {
 
         sessionEstablisher.prepareRecipientsForNewOutgoingMessage(listOf(TEST_RECIPIENT_1))
 
-        val cryptoSessionId = CryptoSessionId(UserId(TEST_RECIPIENT_1.member.id.value), CryptoClientId(clientPreKeyInfo.clientId))
+        val cryptoSessionId = CryptoSessionId(PlainUserId(TEST_RECIPIENT_1.member.id.value), CryptoClientId(clientPreKeyInfo.clientId))
         verify(proteusClient)
             .suspendFunction(proteusClient::createSession)
             .with(eq(preKey), eq(cryptoSessionId))
