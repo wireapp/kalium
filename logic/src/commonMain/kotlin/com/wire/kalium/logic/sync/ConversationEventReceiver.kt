@@ -3,7 +3,7 @@ package com.wire.kalium.logic.sync
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
 import com.wire.kalium.cryptography.ProteusClient
-import com.wire.kalium.cryptography.UserId
+import com.wire.kalium.cryptography.PlainUserId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.event.Event
@@ -38,7 +38,7 @@ class ConversationEventReceiver(
         val decodedContentBytes = Base64.decodeFromBase64(event.content.toByteArray())
 
         //TODO Use domain when creating CryptoSession too
-        val cryptoSessionId = CryptoSessionId(UserId(event.senderUserId.value), CryptoClientId(event.senderClientId.value))
+        val cryptoSessionId = CryptoSessionId(PlainUserId(event.senderUserId.value), CryptoClientId(event.senderClientId.value))
         suspending {
             wrapCryptoRequest { proteusClient.decrypt(decodedContentBytes, cryptoSessionId) }.map { PlainMessageBlob(it) }
 

@@ -35,6 +35,8 @@ object Versions {
     const val pbandk = "0.13.0"
     const val avs = "8.1.3"
     const val jna = "5.6.0@aar"
+    const val mlsClient = "0.0.1"
+    const val desugarJdk = "1.1.5"
 }
 
 object Plugins {
@@ -93,6 +95,7 @@ object Dependencies {
         const val coroutines = "org.jetbrains.kotlinx:kotlinx-coroutines-android:${Versions.coroutines}"
         const val ktor = "io.ktor:ktor-client-android:${Versions.ktor2}"
         const val securityCrypto = "androidx.security:security-crypto:${Versions.androidSecurity}"
+        const val desugarJdkLibs = "com.android.tools:desugar_jdk_libs:${Versions.desugarJdk}"
     }
 
     object MultiplatformSettings {
@@ -116,6 +119,8 @@ object Dependencies {
         const val cryptoboxAndroid = "com.wire:cryptobox-android:${Versions.cryptoboxAndroid}"
         const val cryptobox4j = "com.wire:cryptobox4j:${Versions.cryptobox4j}"
         const val javaxCrypto = "androidx.security:security-crypto-ktx:${Versions.javaxCrypto}"
+        const val mlsClientJvm = "com.wire:core-crypto-jvm:${Versions.mlsClient}"
+        const val mlsClientAndroid = "com.wire:core-crypto-android:${Versions.mlsClient}"
     }
 
     object Cli {
