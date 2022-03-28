@@ -11,6 +11,7 @@ import com.wire.kalium.persistence.model.PreferencesResult
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.random.Random
+import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -22,15 +23,20 @@ class SessionDAOTest {
     private val settings: Settings = MockSettings()
 
     private val kaliumPreferences: KaliumPreferences = KaliumPreferencesSettings(settings)
-    private val sessionStorage: SessionStorage = SessionStorageImpl(kaliumPreferences)
+    private lateinit var sessionStorage: SessionStorage
 
     @BeforeTest
     fun setUp() {
+        sessionStorage = SessionStorageImpl(kaliumPreferences)
+    }
+
+    @AfterTest
+    fun clear() {
         settings.clear()
     }
 
     @Test
-    fun givenASSession_WhenCallingAddSession_ThenTheSessionCanBeStoredLocally() = runTest {
+    fun givenASession_WhenCallingAddSession_ThenTheSessionCanBeStoredLocally() = runTest {
         val persistenceSession =
             PersistenceSession(
                 QualifiedIDEntity("user_id_1", "user_domain_1"),
