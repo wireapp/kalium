@@ -1,6 +1,8 @@
 package com.wire.kalium.logic.data.session
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.SessionFailure
 import com.wire.kalium.logic.feature.auth.AuthSession
@@ -11,17 +13,20 @@ import com.wire.kalium.persistence.model.PreferencesResult
 
 interface SessionRepository {
     fun storeSession(autSession: AuthSession)
+
     // TODO: exposing all session is unnecessary since we only need the IDs of the users getAllSessions(): Either<SessionFailure, List<UserIDs>>
     fun allSessions(): Either<SessionFailure, List<AuthSession>>
-    fun userSession(userIdValue: String): Either<SessionFailure, AuthSession>
-    fun doesSessionExist(userIdValue: String): Either<CoreFailure, Boolean>
-    fun updateCurrentSession(userIdValue: String)
+    fun userSession(userId: UserId): Either<SessionFailure, AuthSession>
+    fun doesSessionExist(userId: UserId): Either<CoreFailure, Boolean>
+    fun updateCurrentSession(userId: UserId)
     fun currentSession(): Either<SessionFailure, AuthSession>
-    fun deleteSession(userIdValue: String)
+    fun deleteSession(userId: UserId)
 }
 
 internal class SessionDataSource(
-    private val sessionStorage: SessionStorage, private val sessionMapper: SessionMapper = MapperProvider.sessionMapper()
+    private val sessionStorage: SessionStorage,
+    private val sessionMapper: SessionMapper = MapperProvider.sessionMapper(),
+    private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : SessionRepository {
     override fun storeSession(autSession: AuthSession) = sessionStorage.addSession(sessionMapper.toPersistenceSession(autSession))
 
@@ -31,14 +36,18 @@ internal class SessionDataSource(
             is PreferencesResult.DataNotFound -> Either.Left(SessionFailure.NoSessionFound)
         }
 
-    override fun userSession(userIdValue: String): Either<SessionFailure, AuthSession> = when(val result = sessionStorage.userSession(userIdValue)) {
-        is PreferencesResult.Success -> Either.Right(sessionMapper.fromPersistenceSession(result.data))
-        PreferencesResult.DataNotFound -> Either.Left(SessionFailure.NoSessionFound)
-    }
+    override fun userSession(userId: UserId): Either<SessionFailure, AuthSession> =
+        idMapper.toDaoModel(userId).let { userIdEntity ->
+            when (val result = sessionStorage.userSession(userIdEntity)) {
+                is PreferencesResult.Success -> Either.Right(sessionMapper.fromPersistenceSession(result.data))
+                PreferencesResult.DataNotFound -> Either.Left(SessionFailure.NoSessionFound)
+            }
+        }
 
-    override fun doesSessionExist(userIdValue: String): Either<CoreFailure, Boolean> =  allSessions().flatMap { sessionsList ->
+
+    override fun doesSessionExist(userId: UserId): Either<CoreFailure, Boolean> = allSessions().flatMap { sessionsList ->
         sessionsList.forEach {
-            if (it.userId == userIdValue) {
+            if (it.userId == userId) {
                 Either.Right(true)
             }
         }
@@ -46,7 +55,7 @@ internal class SessionDataSource(
     }
 
 
-    override fun updateCurrentSession(userIdValue: String) = sessionStorage.setCurrentSession(userIdValue)
+    override fun updateCurrentSession(userId: UserId) = sessionStorage.setCurrentSession(idMapper.toDaoModel(userId))
 
     override fun currentSession(): Either<SessionFailure, AuthSession> = sessionStorage.currentSession()?.let { currentSession ->
         return@let Either.Right(sessionMapper.fromPersistenceSession(currentSession))
@@ -54,7 +63,7 @@ internal class SessionDataSource(
         return@run Either.Left(SessionFailure.NoSessionFound)
     }
 
-    override fun deleteSession(userIdValue: String) = sessionStorage.deleteSession(userIdValue)
+    override fun deleteSession(userId: UserId) = sessionStorage.deleteSession(idMapper.toDaoModel(userId))
 }
 
 

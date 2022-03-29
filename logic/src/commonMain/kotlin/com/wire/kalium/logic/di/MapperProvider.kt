@@ -21,19 +21,19 @@ import com.wire.kalium.logic.data.message.SendMessageFailureMapperImpl
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.logic.data.prekey.PreKeyMapperImpl
 import com.wire.kalium.logic.data.prekey.remote.PreKeyListMapper
+import com.wire.kalium.logic.data.publicuser.PublicUserMapper
+import com.wire.kalium.logic.data.publicuser.PublicUserMapperImpl
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.session.SessionMapperImpl
 import com.wire.kalium.logic.data.team.TeamMapper
 import com.wire.kalium.logic.data.team.TeamMapperImpl
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.data.user.UserMapperImpl
-import com.wire.kalium.logic.data.publicuser.PublicUserMapper
-import com.wire.kalium.logic.data.publicuser.PublicUserMapperImpl
 
 internal object MapperProvider {
     fun idMapper(): IdMapper = IdMapperImpl()
     fun serverConfigMapper(): ServerConfigMapper = ServerConfigMapperImpl()
-    fun sessionMapper(): SessionMapper = SessionMapperImpl(serverConfigMapper())
+    fun sessionMapper(): SessionMapper = SessionMapperImpl(serverConfigMapper(), idMapper())
     fun userMapper(): UserMapper = UserMapperImpl(idMapper())
     fun teamMapper(): TeamMapper = TeamMapperImpl()
     fun messageMapper(): MessageMapper = MessageMapperImpl(idMapper())

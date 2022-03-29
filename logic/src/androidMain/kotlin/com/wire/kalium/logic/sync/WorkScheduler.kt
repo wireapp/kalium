@@ -19,8 +19,11 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.R
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
-import com.wire.kalium.network.api.NonQualifiedUserId
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import kotlin.reflect.KClass
 
 
@@ -80,7 +83,7 @@ class WrapperWorkerFactory(private val coreLogic: CoreLogic) : WorkerFactory() {
             return null // delegate to default factory
         }
 
-        val userId = workerParameters.inputData.getString(WrapperWorkerFactory.USER_ID_KEY)
+        val userId = workerParameters.getSerializable<UserId>(WrapperWorkerFactory.USER_ID_KEY)
         val innerWorkerClassName = workerParameters.inputData.getString(WrapperWorkerFactory.WORKER_CLASS_KEY)
 
         if (userId == null || innerWorkerClassName == null) {
@@ -98,12 +101,12 @@ class WrapperWorkerFactory(private val coreLogic: CoreLogic) : WorkerFactory() {
 
 }
 
-actual class WorkScheduler(private val context: Context, private val userId: NonQualifiedUserId) {
+actual class WorkScheduler(private val context: Context, private val userId: UserId) {
 
     actual fun schedule(work: KClass<out UserSessionWorker>, name: String) {
         val inputData = Data.Builder()
             .putString(WrapperWorkerFactory.WORKER_CLASS_KEY, work.java.canonicalName)
-            .putString(WrapperWorkerFactory.USER_ID_KEY, userId)
+            .putSerializable(WrapperWorkerFactory.USER_ID_KEY, userId)
             .build()
         val request = OneTimeWorkRequest.Builder(WrapperWorker::class.java)
             .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
@@ -116,3 +119,6 @@ actual class WorkScheduler(private val context: Context, private val userId: Non
         ).enqueue()
     }
 }
+
+private inline fun <reified T> Data.Builder.putSerializable(key: String, value: T) = putString(key, Json.encodeToString(value))
+private inline fun <reified T> WorkerParameters.getSerializable(key: String): T? = inputData.getString(key)?.let { Json.decodeFromString(it) }
