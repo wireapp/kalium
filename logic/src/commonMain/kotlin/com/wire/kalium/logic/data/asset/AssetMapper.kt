@@ -1,13 +1,17 @@
 package com.wire.kalium.logic.data.asset
 
 import com.wire.kalium.cryptography.utils.calcMd5
-import com.wire.kalium.logic.data.message.AssetProtoContent
-import com.wire.kalium.logic.data.message.AssetProtoContent.AssetMetadata.Image
+import com.wire.kalium.logic.data.message.AssetContent
+import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
+import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
+import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Video
+import com.wire.kalium.logic.data.message.AssetContent.RemoteData.EncryptionAlgorithm.AES_CBC
+import com.wire.kalium.logic.data.message.AssetContent.RemoteData.EncryptionAlgorithm.AES_GCM
 import com.wire.kalium.network.api.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.asset.AssetResponse
 import com.wire.kalium.network.api.model.AssetRetentionType
 import com.wire.kalium.persistence.dao.asset.AssetEntity
-import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.message.BaseMessageEntity
 import kotlinx.datetime.Clock
 
 interface AssetMapper {
@@ -15,7 +19,7 @@ interface AssetMapper {
     fun fromApiUploadResponseToDomainModel(asset: AssetResponse): UploadedAssetId
     fun fromUploadedAssetToDaoModel(uploadAssetData: UploadAssetData, uploadedAssetResponse: AssetResponse): AssetEntity
     fun fromUserAssetToDaoModel(assetKey: String, data: ByteArray): AssetEntity
-    fun fromMessageEntityToAssetProtoContent(messageEntity: MessageEntity): AssetProtoContent
+    fun fromMessageEntityToAssetContent(messageEntity: BaseMessageEntity): AssetContent
 }
 
 class AssetMapperImpl : AssetMapper {
@@ -51,30 +55,40 @@ class AssetMapperImpl : AssetMapper {
         )
     }
 
-    override fun fromMessageEntityToAssetProtoContent(messageEntity: MessageEntity): AssetProtoContent {
-        // TODO: Complete mapping once all the necessary extra fields for the Asset Message have been added to the DB
-        return AssetProtoContent(
-            original = AssetProtoContent.Original(
-                mimeType = "*/*", // TODO: add a mimeType to the MessageEntity table
-                size = 0, // TODO: add a size field to the MessageEntity table
-                name = "", // TODO: map the asset name from the exif info or the original file title?
-                metadata = getAssetMessageMetadata(null),
-                source = null, // TODO: add a source field to the MessageEntity DB table
-                caption = null // TODO: add a caption field to the MessageEntity DB table
-            ),
-            preview = null,
-            uploadStatus = null
-        )
-    }
-
-    private fun getAssetMessageMetadata(mimeType: String?): AssetProtoContent.AssetMetadata {
-       return when {
-            mimeType?.contains("image/") ?: false -> Image(width = 0, height = 0, tag = null)
-            // TODO: retrieve the image dimensions from the assetEntity object once these fields have been added to the DB table
-            else -> Image(
-                width = 0,
-                height = 0,
-                tag = null
+    override fun fromMessageEntityToAssetContent(messageEntity: BaseMessageEntity): AssetContent {
+        with(messageEntity) {
+            return AssetContent(
+                mimeType = assetMimeType ?: "*/*",
+                size = assetSize ?: 0,
+                name = assetName ?: "",
+                metadata = when {
+                    assetMimeType?.contains("image/") == true -> Image(
+                        width = assetImageWidth ?: 0,
+                        height = assetImageHeight ?: 0
+                    )
+                    assetMimeType?.contains("video/") == true -> Video(
+                        width = assetVideoWidth,
+                        height = assetVideoHeight,
+                        durationMs = assetVideoDurationMs
+                    )
+                    assetMimeType?.contains("audio/") == true -> Audio(
+                        durationMs = assetAudioDurationMs,
+                        normalizedLoudness = assetAudioNormalizedLoudness
+                    )
+                    else -> null
+                },
+                remoteData = AssetContent.RemoteData(
+                    otrKey = assetOtrKey ?: ByteArray(16),
+                    sha256 = assetSha256Key ?: ByteArray(16),
+                    assetId = assetId,
+                    assetToken = assetToken,
+                    assetDomain = assetDomain,
+                    encryptionAlgorithm = when {
+                        assetEncryptionAlgorithm?.contains("CBC") == true -> AES_CBC
+                        assetEncryptionAlgorithm?.contains("GCM") == true -> AES_GCM
+                        else -> AES_CBC
+                    }
+                )
             )
         }
     }

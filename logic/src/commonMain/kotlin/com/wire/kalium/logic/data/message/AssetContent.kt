@@ -1,31 +1,14 @@
 package com.wire.kalium.logic.data.message
 
-import com.wire.kalium.logic.data.conversation.LegalHoldStatus
-
-data class AssetProtoContent(
-    val original: Original,
-    val preview: Preview? = null,
-    val uploadStatus: UploadStatus? = null,
-    val expectsReadConfirmation: Boolean? = false,
-    val legalHoldStatus: LegalHoldStatus? = null
+data class AssetContent(
+    val size: Int,
+    val name: String? = null,
+    val mimeType: String,
+    val metadata: AssetMetadata? = null,
+    val remoteData: RemoteData
 ) {
-    data class Original(
-        val mimeType: String,
-        val size: Int,
-        val name: String? = null,
-        val metadata: AssetMetadata? = null,
-        val source: String? = null,
-        val caption: String? = null
-    )
-
-    data class Preview(
-        val mimeType: String,
-        val size: String,
-        val remoteData: RemoteData
-    )
-
     sealed class AssetMetadata {
-        data class Image(val width: Int, val height: Int, val tag: String?) : AssetMetadata()
+        data class Image(val width: Int, val height: Int) : AssetMetadata()
         data class Video(val width: Int?, val height: Int?, val durationMs: Long?) : AssetMetadata()
         data class Audio(val durationMs: Long?, val normalizedLoudness: ByteArray?) : AssetMetadata() {
             override fun equals(other: Any?): Boolean {
@@ -86,14 +69,5 @@ data class AssetProtoContent(
             result = 31 * result + (encryptionAlgorithm?.hashCode() ?: 0)
             return result
         }
-    }
-
-    sealed class UploadStatus {
-        data class Pending(val reason: NotUploaded): UploadStatus()
-        data class Uploaded(val remoteData: RemoteData): UploadStatus()
-    }
-
-    enum class NotUploaded {
-        CANCELED, FAILED
     }
 }

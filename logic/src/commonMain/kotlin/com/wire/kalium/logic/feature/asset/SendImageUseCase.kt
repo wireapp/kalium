@@ -1,18 +1,14 @@
 package com.wire.kalium.logic.feature.asset
 
 import com.benasher44.uuid.uuid4
-import com.wire.kalium.cryptography.utils.AES256Key
-import com.wire.kalium.cryptography.utils.PlainData
-import com.wire.kalium.cryptography.utils.calcSHA256
-import com.wire.kalium.cryptography.utils.encryptDataWithAES256
-import com.wire.kalium.cryptography.utils.generateRandomAES256Key
+import com.wire.kalium.cryptography.utils.*
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.ImageAsset
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ConversationId
-import com.wire.kalium.logic.data.message.AssetProtoContent
+import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -21,7 +17,7 @@ import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.kaliumLogger
-import io.ktor.utils.io.core.toByteArray
+import io.ktor.utils.io.core.*
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 
@@ -79,8 +75,8 @@ internal class SendImageUseCaseImpl(
         clientRepository.currentClientId().flatMap { currentClientId ->
             val message = Message(
                 id = generatedMessageUuid,
-                content = MessageContent.AssetContent.ImageAsset(
-                    provideAssetProtoContent(
+                content = MessageContent.Asset(
+                    provideAssetMessageContent(
                         dataSize = dataSize,
                         sha256 = sha256,
                         otrKey = otrKey,
@@ -102,18 +98,19 @@ internal class SendImageUseCaseImpl(
         }
     }
 
-    private fun provideAssetProtoContent(dataSize: Int, sha256: String, otrKey: AES256Key, assetId: UploadedAssetId): AssetProtoContent {
-        return AssetProtoContent(
-            original = AssetProtoContent.Original(ImageAsset.JPEG.name, dataSize),
-            uploadStatus = AssetProtoContent.UploadStatus.Uploaded(
-                remoteData = AssetProtoContent.RemoteData(
-                    otrKey = otrKey.data,
-                    sha256 = sha256.toByteArray(),
-                    assetId = assetId.key,
-                    encryptionAlgorithm = AssetProtoContent.RemoteData.EncryptionAlgorithm.AES_CBC,
-                    assetDomain = null,
-                    assetToken = null
-                )
+    private fun provideAssetMessageContent(dataSize: Int, sha256: String, otrKey: AES256Key, assetId: UploadedAssetId): AssetContent {
+        return AssetContent(
+            size = dataSize,
+            name = "",
+            mimeType = ImageAsset.JPEG.name,
+            metadata = AssetContent.AssetMetadata.Image(0, 0),
+            remoteData = AssetContent.RemoteData(
+                otrKey = otrKey.data,
+                sha256 = sha256.toByteArray(),
+                assetId = assetId.key,
+                encryptionAlgorithm = AssetContent.RemoteData.EncryptionAlgorithm.AES_CBC,
+                assetDomain = null,
+                assetToken = null
             )
         )
     }

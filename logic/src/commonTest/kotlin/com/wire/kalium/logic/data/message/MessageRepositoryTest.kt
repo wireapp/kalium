@@ -6,8 +6,9 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.message.MessageApi
+import com.wire.kalium.persistence.dao.message.BaseMessageEntity.Status.SENT
+import com.wire.kalium.persistence.dao.message.BaseMessageEntity.TextMessageEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
-import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.mockative.Mock
 import io.mockative.anything
 import io.mockative.configure
@@ -49,7 +50,7 @@ class MessageRepositoryTest {
     }
 
     @Test
-    fun givenAnConversationId_whenGettingMessagesOfConversation_thenShouldUseIdMapperToMapTheConversationId() = runTest {
+    fun givenAConversationId_whenGettingMessagesOfConversation_thenShouldUseIdMapperToMapTheConversationId() = runTest {
         val mappedId = TEST_QUALIFIED_ID_ENTITY
         given(idMapper)
             .function(idMapper::toDaoModel)
@@ -75,7 +76,7 @@ class MessageRepositoryTest {
     }
 
     @Test
-    fun givenAnMessageEntityAndMapper_whenGettingMessagesOfConversation_thenTheMapperShouldBeUsed() = runTest {
+    fun givenABaseMessageEntityAndMapper_whenGettingMessagesOfConversation_thenTheMapperShouldBeUsed() = runTest {
         val entity = TEST_MESSAGE_ENTITY
         val mappedMessage = TEST_MESSAGE
         given(messageMapper)
@@ -104,7 +105,7 @@ class MessageRepositoryTest {
     }
 
     @Test
-    fun givenAnMessage_whenPersisting_thenTheDAOShouldBeUsedWithMappedValues() = runTest {
+    fun givenAMessage_whenPersisting_thenTheDAOShouldBeUsedWithMappedValues() = runTest {
         val message = TEST_MESSAGE
         val mappedEntity = TEST_MESSAGE_ENTITY
         given(messageMapper)
@@ -133,9 +134,14 @@ class MessageRepositoryTest {
     private companion object {
         val TEST_QUALIFIED_ID_ENTITY = PersistenceQualifiedId("value", "domain")
         val TEST_MESSAGE_ENTITY =
-            MessageEntity(
-                "uid", "content", TEST_QUALIFIED_ID_ENTITY, "date",
-                TEST_QUALIFIED_ID_ENTITY, "sender", MessageEntity.Status.SENT
+            TextMessageEntity(
+                id = "uid",
+                content = "content",
+                conversationId = TEST_QUALIFIED_ID_ENTITY,
+                date = "date",
+                senderUserId = TEST_QUALIFIED_ID_ENTITY,
+                senderClientId = "sender",
+                status = SENT
             )
         val TEST_CONVERSATION_ID = ConversationId("value", "domain")
         val TEST_CLIENT_ID = ClientId("clientId")
