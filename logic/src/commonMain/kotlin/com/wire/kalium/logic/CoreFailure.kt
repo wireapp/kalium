@@ -42,7 +42,10 @@ class ProteusFailure(internal val proteusException: ProteusException) : CoreFail
     val rootCause: Throwable get() = proteusException
 }
 
-class StorageFailure(val rootCause: Throwable) : CoreFailure()
+sealed class StorageFailure : CoreFailure() {
+    object DataNotFound : StorageFailure()
+    class Generic(val rootCause: Throwable) : StorageFailure()
+}
 
 inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<T>): Either<NetworkFailure, T> {
     // TODO: check for internet connection and return NoNetworkConnection
@@ -68,10 +71,10 @@ inline fun <T : Any> wrapCryptoRequest(cryptoRequest: () -> T): Either<ProteusFa
     }
 }
 
-inline fun <T : Any> wrapStorageRequest(storageRequest: () -> T): Either<StorageFailure, T> {
+inline fun <T : Any> wrapStorageRequest(storageRequest: () -> T?): Either<StorageFailure, T> {
     return try {
-        Either.Right(storageRequest())
+        storageRequest()?.let { data -> Either.Right(data) } ?: Either.Left(StorageFailure.DataNotFound)
     } catch (e: Exception) {
-        Either.Left(StorageFailure(e))
+        Either.Left(StorageFailure.Generic(e))
     }
 }

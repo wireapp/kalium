@@ -15,12 +15,14 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.random.Random
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class LoginUseCaseTest {
 
     @Mock
@@ -54,7 +56,8 @@ class LoginUseCaseTest {
             given(loginRepository).coroutine { loginWithEmail(cleanEmail, password, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG) }.then {
                 Either.Right(TEST_AUTH_SESSION)
             }
-            given(sessionRepository).coroutine { storeSession(TEST_AUTH_SESSION) }
+            given(sessionRepository).invocation { storeSession(TEST_AUTH_SESSION) }.then { Either.Right(Unit) }
+            given(sessionRepository).invocation { updateCurrentSession(TEST_AUTH_SESSION.userId) }.then { Either.Right(Unit) }
 
             val loginUserCaseResult = loginUseCase("   user@email.de  ", password, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG)
 
@@ -67,7 +70,7 @@ class LoginUseCaseTest {
             }.wasInvoked(exactly = once)
             verify(loginRepository).suspendFunction(loginRepository::loginWithHandle).with(any(), any(), any(), any()).wasNotInvoked()
 
-            verify(sessionRepository).coroutine { storeSession(TEST_AUTH_SESSION) }.wasInvoked(exactly = once)
+            verify(sessionRepository).invocation { storeSession(TEST_AUTH_SESSION) }.wasInvoked(exactly = once)
         }
 
     @Test
@@ -80,7 +83,8 @@ class LoginUseCaseTest {
             given(loginRepository).coroutine { loginWithHandle(cleanHandle, password, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG) }.then {
                 Either.Right(TEST_AUTH_SESSION)
             }
-            given(sessionRepository).coroutine { storeSession(TEST_AUTH_SESSION) }
+            given(sessionRepository).invocation { storeSession(TEST_AUTH_SESSION) }.then { Either.Right(Unit) }
+            given(sessionRepository).invocation { updateCurrentSession(TEST_AUTH_SESSION.userId) }.then { Either.Right(Unit) }
 
             val loginUserCaseResult = loginUseCase("   usere  ", password, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG)
 
@@ -105,7 +109,8 @@ class LoginUseCaseTest {
             given(loginRepository).coroutine { loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG) }.then {
                 Either.Right(TEST_AUTH_SESSION)
             }
-            given(sessionRepository).coroutine { storeSession(TEST_AUTH_SESSION) }
+            given(sessionRepository).invocation { storeSession(TEST_AUTH_SESSION) }.then { Either.Right(Unit) }
+            given(sessionRepository).invocation { updateCurrentSession(TEST_AUTH_SESSION.userId) }.then { Either.Right(Unit) }
 
             val loginUserCaseResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG)
 
@@ -130,7 +135,8 @@ class LoginUseCaseTest {
             given(loginRepository).coroutine { loginWithHandle(TEST_HANDLE, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG) }.then {
                 Either.Right(TEST_AUTH_SESSION)
             }
-            given(sessionRepository).coroutine { storeSession(TEST_AUTH_SESSION) }
+            given(sessionRepository).invocation { storeSession(TEST_AUTH_SESSION) }.then { Either.Right(Unit) }
+            given(sessionRepository).invocation { updateCurrentSession(TEST_AUTH_SESSION.userId) }.then { Either.Right(Unit) }
 
             // when
             val loginUserCaseResult = loginUseCase(TEST_HANDLE, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG)

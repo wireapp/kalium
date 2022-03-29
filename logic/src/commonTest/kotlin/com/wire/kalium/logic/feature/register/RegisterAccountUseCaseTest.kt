@@ -54,10 +54,10 @@ class RegisterAccountUseCaseTest {
             .then { Either.Right(expected) }
         given(sessionRepository)
             .invocation { storeSession(expected.second) }
-            .then { Unit } // Unit here is intentional since this will change after using wrapStorageRequest
+            .then { Either.Right(Unit) }
         given(sessionRepository)
             .invocation { updateCurrentSession(expected.second.userId) }
-            .then { Unit } // Unit here is intentional since this will change after using wrapStorageRequest
+            .then { Either.Right(Unit) }
 
         val actual = registerAccountUseCase(param, serverConfig)
 
@@ -94,10 +94,10 @@ class RegisterAccountUseCaseTest {
             .then { Either.Right(expected) }
         given(sessionRepository)
             .invocation { storeSession(expected.second) }
-            .then { Unit } // Unit here is intentional since this will change after using wrapStorageRequest
+            .then { Either.Right(Unit) }
         given(sessionRepository)
             .invocation { updateCurrentSession(expected.second.userId) }
-            .then { Unit } // Unit here is intentional since this will change after using wrapStorageRequest
+            .then { Either.Right(Unit) }
 
         val actual = registerAccountUseCase(param, serverConfig)
 
@@ -105,9 +105,10 @@ class RegisterAccountUseCaseTest {
         assertEquals(expected, actual.value)
 
         verify(registerAccountRepository)
-            .coroutine { registerTeamWithEmail(
-                param.email, param.emailActivationCode, param.name, param.password, param.teamName, param.teamIcon, serverConfig
-            )
+            .coroutine {
+                registerTeamWithEmail(
+                    param.email, param.emailActivationCode, param.name, param.password, param.teamName, param.teamIcon, serverConfig
+                )
             }
             .wasInvoked(exactly = once)
         verify(sessionRepository)
@@ -119,32 +120,49 @@ class RegisterAccountUseCaseTest {
     }
 
     @Test
-    fun givenRepositoryCallIsSuccessful_shouldStoreSessionIsFalse_whenRegisteringPersonalAccount_thenDoNotStoreSessionAndReturnSuccess() = runTest {
-        val serverConfig = TEST_SERVER_CONFIG
-        val param = TEST_PRIVATE_ACCOUNT_PARAM
-        val user = TEST_SELF_USER
-        val session = TEST_AUTH_SESSION
-        val expected = Pair(user, session)
+    fun givenRepositoryCallIsSuccessful_shouldStoreSessionIsFalse_whenRegisteringPersonalAccount_thenDoNotStoreSessionAndReturnSuccess() =
+        runTest {
+            val serverConfig = TEST_SERVER_CONFIG
+            val param = TEST_PRIVATE_ACCOUNT_PARAM
+            val user = TEST_SELF_USER
+            val session = TEST_AUTH_SESSION
+            val expected = Pair(user, session)
 
-        given(registerAccountRepository)
-            .coroutine { registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password, serverConfig) }
-            .then { Either.Right(expected) }
+            given(registerAccountRepository)
+                .coroutine {
+                    registerPersonalAccountWithEmail(
+                        param.email,
+                        param.emailActivationCode,
+                        param.name,
+                        param.password,
+                        serverConfig
+                    )
+                }
+                .then { Either.Right(expected) }
 
-        val actual = registerAccountUseCase(param, serverConfig, false)
+            val actual = registerAccountUseCase(param, serverConfig, false)
 
-        assertIs<RegisterResult.Success>(actual)
-        assertEquals(expected, actual.value)
+            assertIs<RegisterResult.Success>(actual)
+            assertEquals(expected, actual.value)
 
-        verify(registerAccountRepository)
-            .coroutine { registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password, serverConfig) }
-            .wasInvoked(exactly = once)
-        verify(sessionRepository)
-            .invocation { storeSession(session) }
-            .wasNotInvoked()
-        verify(sessionRepository)
-            .invocation { updateCurrentSession(session.userId) }
-            .wasNotInvoked()
-    }
+            verify(registerAccountRepository)
+                .coroutine {
+                    registerPersonalAccountWithEmail(
+                        param.email,
+                        param.emailActivationCode,
+                        param.name,
+                        param.password,
+                        serverConfig
+                    )
+                }
+                .wasInvoked(exactly = once)
+            verify(sessionRepository)
+                .invocation { storeSession(session) }
+                .wasNotInvoked()
+            verify(sessionRepository)
+                .invocation { updateCurrentSession(session.userId) }
+                .wasNotInvoked()
+        }
 
     @Test
     fun givenRepositoryCallFailWithGenericError_whenRegisteringPersonalAccount_thenErrorIsPropagated() = runTest {

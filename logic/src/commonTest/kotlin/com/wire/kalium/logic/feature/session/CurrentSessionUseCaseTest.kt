@@ -1,8 +1,8 @@
 package com.wire.kalium.logic.feature.session
 
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.failure.SessionFailure
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -45,7 +45,7 @@ class CurrentSessionUseCaseTest {
 
     @Test
     fun givenAUserID_whenCurrentSessionFailWithNoSessionFound_thenTheErrorIsPropagated() = runTest {
-        val expected: SessionFailure = SessionFailure.NoSessionFound
+        val expected: StorageFailure = StorageFailure.DataNotFound
 
         given(sessionRepository).invocation { currentSession() }.then { Either.Left(expected) }
 

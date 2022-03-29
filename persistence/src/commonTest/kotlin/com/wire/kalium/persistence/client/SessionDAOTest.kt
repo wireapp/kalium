@@ -6,7 +6,6 @@ import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
 import com.wire.kalium.persistence.model.NetworkConfig
 import com.wire.kalium.persistence.model.PersistenceSession
-import com.wire.kalium.persistence.model.PreferencesResult
 import kotlinx.coroutines.test.runTest
 import kotlin.random.Random
 import kotlin.test.BeforeTest

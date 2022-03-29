@@ -26,6 +26,7 @@ import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.conversation.GetConversationsUseCase
 import kotlinx.coroutines.flow.first
+import java.io.IOException
 
 class MainActivity : ComponentActivity() {
 
@@ -43,7 +44,7 @@ class MainActivity : ComponentActivity() {
             val conversations = session.conversations.getConversations().let { result ->
                 when(result) {
                     is GetConversationsUseCase.Result.Failure -> {
-                        throw IllegalStateException(result.storageFailure.rootCause)
+                        throw IOException()
                     }
                     is GetConversationsUseCase.Result.Success -> result.convFlow.first()
                 }
