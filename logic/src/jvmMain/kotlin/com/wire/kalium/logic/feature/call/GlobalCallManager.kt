@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 actual class GlobalCallManager {
 
     actual fun getCallManagerForClient(
+        userId: String,
         callRepository: CallRepository,
         userRepository: UserRepository,
         clientRepository: ClientRepository

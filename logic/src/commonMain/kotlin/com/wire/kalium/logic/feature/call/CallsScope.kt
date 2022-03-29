@@ -7,7 +7,7 @@ class CallsScope(
     private val syncManager: SyncManager
 ) {
 
-    val getOngoingCallsUseCase: GetOngoingCallsUseCase get() = GetOngoingCallsUseCaseImpl(
+    val getOngoingCalls: GetOngoingCallsUseCase get() = GetOngoingCallsUseCaseImpl(
         callManager = callManager,
         syncManager = syncManager
     )

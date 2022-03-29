@@ -131,6 +131,7 @@ abstract class UserSessionScopeCommon(
 
     private val callManager by lazy {
         globalCallManager.getCallManagerForClient(
+            userId = userId,
             callRepository = callRepository,
             userRepository = userRepository,
             clientRepository = clientRepository

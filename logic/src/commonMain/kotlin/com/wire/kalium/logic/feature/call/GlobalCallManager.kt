@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 expect class GlobalCallManager {
 
     fun getCallManagerForClient(
+        userId: String,
         callRepository: CallRepository,
         userRepository: UserRepository,
         clientRepository: ClientRepository

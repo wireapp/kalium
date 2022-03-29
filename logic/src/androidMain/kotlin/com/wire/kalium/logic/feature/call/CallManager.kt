@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.getAndUpdate
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 actual class CallManager(
@@ -59,18 +60,25 @@ actual class CallManager(
         deferredHandle = startHandleAsync()
     }
 
-    private fun updateCallById(conversationId: String, updateItem: (item: Call?) -> Call) = _calls.getAndUpdate {
-        it.map { call ->
-            if (call.conversationId == conversationId) updateItem(call) else call
-        }
-    }
-
     private fun updateCallStatusById(conversationId: String, status: String) {
-        updateCallById(conversationId) {
-            it?.copy(status = status) ?: Call(
-                conversationId = conversationId,
-                status = status
-            )
+        _calls.update {
+            mutableListOf<Call>().apply {
+                addAll(it)
+
+                val callIndex = it.indexOfFirst { call -> call.conversationId == conversationId }
+                if (callIndex == -1) {
+                    add(
+                        Call(
+                            conversationId = conversationId,
+                            status = status
+                        )
+                    )
+                } else {
+                    this[callIndex] = this[callIndex].copy(
+                        status = status
+                    )
+                }
+            }
         }
     }
 

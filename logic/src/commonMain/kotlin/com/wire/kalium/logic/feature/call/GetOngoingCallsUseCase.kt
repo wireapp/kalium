@@ -14,6 +14,6 @@ internal class GetOngoingCallsUseCaseImpl(
 
     override suspend operator fun invoke(): Flow<List<Call>> {
         syncManager.waitForSlowSyncToComplete()
-        return callManager.ongoingCalls
+        return callManager.allCalls
     }
 }
