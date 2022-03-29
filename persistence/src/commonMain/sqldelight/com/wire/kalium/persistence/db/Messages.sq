@@ -1,14 +1,32 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
-import com.wire.kalium.persistence.dao.message.MessageEntity;
+import com.wire.kalium.persistence.dao.message.BaseMessageEntity;
+import kotlin.Int;
 
 CREATE TABLE Message (
       id TEXT NOT NULL,
+
+      -- Text message field
       content TEXT,
+
+      -- Asset message fields
+      asset_mime_type TEXT,
+      asset_size INTEGER AS Int,
+      asset_name TEXT,
+      asset_image_width INTEGER AS Int,
+      asset_image_height INTEGER AS Int,
+      asset_otr_key BLOB,
+      asset_sha256 BLOB,
+      asset_id TEXT,
+      asset_token TEXT,
+      asset_domain TEXT,
+      asset_encryption_algorithm TEXT,
+
+      -- Base message fields
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
       date TEXT NOT NULL,
       sender_user_id TEXT AS QualifiedIDEntity NOT NULL,
       sender_client_id TEXT NOT NULL,
-      status TEXT AS MessageEntity.Status NOT NULL,
+      status TEXT AS BaseMessageEntity.Status NOT NULL,
       FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id),
       FOREIGN KEY (sender_user_id) REFERENCES User(qualified_id),
       PRIMARY KEY (id, conversation_id)
@@ -21,10 +39,22 @@ deleteMessage:
 DELETE FROM Message WHERE  id = ? AND conversation_id = ?;
 
 insertMessage:
-INSERT INTO Message(id, content, conversation_id, date, sender_user_id, sender_client_id, status)
-VALUES(?, ?, ?, ?, ? ,?, ?)
+INSERT INTO Message(id, content, asset_mime_type, asset_size, asset_name, asset_image_width, asset_image_height, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, conversation_id, date, sender_user_id, sender_client_id, status)
+VALUES(?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?,?,?,?,?,?,?)
 ON CONFLICT(id, conversation_id) DO UPDATE SET
 id = excluded.id,
+content = excluded.content,
+asset_mime_type = excluded.asset_mime_type,
+asset_size = excluded.asset_size,
+asset_name = excluded.asset_name,
+asset_image_width = excluded.asset_image_width,
+asset_image_height = excluded.asset_image_height,
+asset_otr_key = excluded.asset_otr_key,
+asset_sha256 = excluded.asset_sha256,
+asset_id = excluded.asset_id,
+asset_token = excluded.asset_token,
+asset_domain = excluded.asset_domain,
+asset_encryption_algorithm = excluded.asset_encryption_algorithm,
 content = excluded.content,
 date = excluded.date,
 sender_user_id = excluded.sender_user_id,
@@ -33,7 +63,7 @@ status = excluded.status;
 
 updateMessages:
 UPDATE Message
-SET content = ?, date = ?, sender_user_id = ?, sender_client_id = ?, status = ?
+SET content = ?, asset_mime_type = ?, asset_size = ?, asset_name = ?, asset_image_width = ?, asset_image_height = ?, asset_otr_key = ?, asset_sha256 = ?, asset_id = ?, asset_token = ?, asset_domain = ?, asset_encryption_algorithm = ?, date = ?, sender_user_id = ?, sender_client_id = ?, status = ?
 WHERE id = ? AND conversation_id = ?;
 
 selectAllMessages:

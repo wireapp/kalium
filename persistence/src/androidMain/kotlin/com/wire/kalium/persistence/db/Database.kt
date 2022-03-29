@@ -58,7 +58,10 @@ actual class Database(private val context: Context, userId: String, kaliumPrefer
             Message.Adapter(
                 conversation_idAdapter = QualifiedIDAdapter(),
                 sender_user_idAdapter = QualifiedIDAdapter(),
-                statusAdapter = EnumColumnAdapter()
+                statusAdapter = EnumColumnAdapter(),
+                asset_image_widthAdapter = IntColumnAdapter,
+                asset_image_heightAdapter = IntColumnAdapter,
+                asset_sizeAdapter = IntColumnAdapter
             ),
             User.Adapter(qualified_idAdapter = QualifiedIDAdapter(), IntColumnAdapter)
         )

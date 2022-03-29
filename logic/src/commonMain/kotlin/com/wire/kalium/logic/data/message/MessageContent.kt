@@ -6,10 +6,7 @@ sealed class MessageContent {
 
     data class Calling(val value: String) : MessageContent()
 
-    sealed class AssetContent : MessageContent() {
-        data class ImageAsset(val value: AssetProtoContent) : AssetContent()
-        data class FileAsset(val value: AssetProtoContent) : AssetContent()
-    }
+    data class Asset(val value: AssetContent) : MessageContent()
 
     object Unknown : MessageContent()
 }
