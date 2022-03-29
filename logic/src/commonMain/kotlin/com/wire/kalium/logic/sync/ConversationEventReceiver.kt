@@ -9,6 +9,7 @@ import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContentMapper
@@ -58,7 +59,12 @@ class ConversationEventReceiver(
                     )
                     //TODO Multiplatform logging
                     println("Message received: $message")
-                    messageRepository.persistMessage(message)
+                    when (message.content) {
+                        is MessageContent.Text -> messageRepository.persistMessage(message)
+                        is MessageContent.DeleteMessage -> messageRepository.softDeleteMessage(messageUuid = message.content.messageId)
+                        is MessageContent.HideMessage -> messageRepository.hideMessage(messageUuid = message.content.messageId)
+                        is MessageContent.Unknown -> println("Unknown Message received: $message")
+                    }
                 }
         }
     }

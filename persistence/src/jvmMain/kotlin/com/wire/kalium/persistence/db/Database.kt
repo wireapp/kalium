@@ -35,7 +35,8 @@ actual class Database {
             Message.Adapter(
                 conversation_idAdapter = QualifiedIDAdapter(),
                 sender_user_idAdapter = QualifiedIDAdapter(),
-                statusAdapter = EnumColumnAdapter()
+                statusAdapter = EnumColumnAdapter(),
+                deletionAdapter = EnumColumnAdapter()
             ),
             User.Adapter(qualified_idAdapter = QualifiedIDAdapter(), IntColumnAdapter)
         )
