@@ -58,7 +58,7 @@ class LoginApiImpl(private val httpClient: HttpClient) : LoginApi {
             }.mapSuccess { Pair(accessTokenDTOResponse.value, it) }
         }.flatMap { tokensPairResponse ->
             // this is a hack to get the user QualifiedUserId on login
-            // TODO: remove this one login endpoint return a QualifiedUserId
+            // TODO: remove this one when login endpoint return a QualifiedUserId
             wrapKaliumResponse<UserDTO> {
                 httpClient.get {
                     url.set(host = apiBaseUrl, path = PATH_SELF)
