@@ -9,6 +9,8 @@ import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
 import com.wire.kalium.logic.feature.publicuser.GetAllKnownUsersUseCase
 import com.wire.kalium.logic.feature.publicuser.GetAllKnownUsersUseCaseImpl
+import com.wire.kalium.logic.feature.publicuser.GetKnownUserUseCase
+import com.wire.kalium.logic.feature.publicuser.GetKnownUserUseCaseImpl
 import com.wire.kalium.logic.feature.publicuser.SearchKnownUsersUseCase
 import com.wire.kalium.logic.feature.publicuser.SearchKnownUsersUseCaseImpl
 import com.wire.kalium.logic.feature.publicuser.SearchUserDirectoryUseCase
@@ -31,4 +33,5 @@ class UserScope(
     val searchUserDirectory: SearchUserDirectoryUseCase get() = SearchUserDirectoryUseCaseImpl(searchUserRepository)
     val setUserHandle: SetUserHandleUseCase get() = SetUserHandleUseCase(userRepository, validateUserHandleUseCase)
     val getAllKnownUsers: GetAllKnownUsersUseCase get() = GetAllKnownUsersUseCaseImpl(userRepository)
+    val getKnownUser: GetKnownUserUseCase get() = GetKnownUserUseCaseImpl(userRepository)
 }
