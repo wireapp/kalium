@@ -1,11 +1,11 @@
 package com.wire.kalium.logic.data.client
 
+import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.MLSClientImpl
-import com.wire.kalium.cryptography.CryptoQualifiedClientId
-import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
@@ -21,7 +21,7 @@ actual class MLSClientProviderImpl actual constructor(
     private val userRepository: UserRepository, // TODO we can remove this when have the qualifiedID on login
     private val clientRepository: ClientRepository,
     private val kaliumPreferences: KaliumPreferences
-): MLSClientProvider {
+) : MLSClientProvider {
 
     override suspend fun getMLSClient(clientId: ClientId?): Either<CoreFailure, MLSClient> = suspending {
         userRepository.fetchSelfUser()
@@ -32,17 +32,17 @@ actual class MLSClientProviderImpl actual constructor(
         File(location).mkdirs()
 
         val mlsClient = clientId?.let { clientId ->
-            println("Creating MLS Client: ${clientId.value}")
-            Either.Right(MLSClientImpl(
-                "$location/$$KEYSTORE_NAME",
+            Either.Right(
+                MLSClientImpl(
+                "$location/$KEYSTORE_NAME",
                 getOrGenerateSecretKey(),
                 CryptoQualifiedClientId(clientId.value, userId)
-            ))
+            )
+            )
         } ?: run {
             clientRepository.currentClientId().map { clientId ->
-                println("Creating MLS Client: ${clientId.value}")
                 MLSClientImpl(
-                    "$location/$$KEYSTORE_NAME",
+                    "$location/$KEYSTORE_NAME",
                     getOrGenerateSecretKey(),
                     CryptoQualifiedClientId(clientId.value, userId)
                 )
@@ -75,4 +75,5 @@ actual class MLSClientProviderImpl actual constructor(
         const val KEYSTORE_SECRET_LENGTH = 48
         const val KEYSTORE_NAME = "keystore"
     }
+
 }

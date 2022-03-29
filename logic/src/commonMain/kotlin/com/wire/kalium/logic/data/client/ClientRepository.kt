@@ -16,7 +16,7 @@ import com.wire.kalium.persistence.dao.client.Client as ClientEntity
 
 interface ClientRepository {
     suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client>
-    suspend fun registerMLSClient(publicKey: ByteArray): Either<CoreFailure, Unit>
+    suspend fun registerMLSClient(clientId: ClientId, publicKey: ByteArray): Either<CoreFailure, Unit>
     suspend fun persistClientId(clientId: ClientId): Either<CoreFailure, Unit>
     suspend fun currentClientId(): Either<CoreFailure, ClientId>
     suspend fun deleteClient(param: DeleteClientParam): Either<NetworkFailure, Unit>
@@ -66,9 +66,7 @@ class ClientDataSource(
         return Either.Right(Unit)
     }
 
-    override suspend fun registerMLSClient(publicKey: ByteArray): Either<CoreFailure, Unit> = suspending {
-        currentClientId().flatMap { clientId ->
-            clientRemoteRepository.registerMLSClient(clientId, publicKey.encodeBase64())
-        }
+    override suspend fun registerMLSClient(clientId: ClientId, publicKey: ByteArray): Either<CoreFailure, Unit> = suspending {
+        clientRemoteRepository.registerMLSClient(clientId, publicKey.encodeBase64())
     }
 }

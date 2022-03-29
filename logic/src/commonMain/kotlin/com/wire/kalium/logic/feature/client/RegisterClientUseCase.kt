@@ -74,7 +74,7 @@ class RegisterClientUseCaseImpl(
             clientRepository.registerClient(registerClientParam).flatMap { client ->
                 // TODO when https://github.com/wireapp/core-crypto/issues/11 is implemented we
                 // can remove registerMLSClient() and supply the MLS public key in registerClient().
-                mlsClientProvider.getMLSClient(client.clientId).flatMap { clientRepository.registerMLSClient(it.getPublicKey()) }
+                mlsClientProvider.getMLSClient(client.clientId).flatMap { clientRepository.registerMLSClient(client.clientId, it.getPublicKey()) }
                     .flatMap { keyPackageRepository.uploadNewKeyPackages(client.clientId) }
                     .flatMap { clientRepository.persistClientId(client.clientId) }
                     .map { client }

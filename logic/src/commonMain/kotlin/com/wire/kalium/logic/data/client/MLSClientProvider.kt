@@ -13,6 +13,8 @@ interface MLSClientProvider {
 
 }
 
-expect class MLSClientProviderImpl(userRepository: UserRepository,
-                                   clientRepository: ClientRepository,
-                                   kaliumPreferences: KaliumPreferences) : MLSClientProvider
+expect class MLSClientProviderImpl(
+    rootKeyStorePath: String,
+    userRepository: UserRepository,
+    clientRepository: ClientRepository,
+    kaliumPreferences: KaliumPreferences) : MLSClientProvider

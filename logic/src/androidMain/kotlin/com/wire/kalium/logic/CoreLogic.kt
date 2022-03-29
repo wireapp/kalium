@@ -52,6 +52,7 @@ actual class CoreLogic(
             val userPreferencesSettings = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
             val database = Database(appContext, userId, userPreferencesSettings)
             AuthenticatedDataSourceSet(
+                rootProteusDirectoryPath,
                 networkContainer,
                 proteusClient,
                 workScheduler,

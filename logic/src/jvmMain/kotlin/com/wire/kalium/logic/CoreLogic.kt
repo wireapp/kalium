@@ -47,6 +47,7 @@ actual class CoreLogic(clientLabel: String, rootProteusDirectoryPath: String) :
             val database = Database()
 
             AuthenticatedDataSourceSet(
+                rootProteusDirectoryPath,
                 networkContainer,
                 proteusClient,
                 workScheduler,
