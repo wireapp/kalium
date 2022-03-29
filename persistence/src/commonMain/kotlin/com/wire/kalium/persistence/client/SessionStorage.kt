@@ -1,6 +1,7 @@
 package com.wire.kalium.persistence.client
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.model.PersistenceSession
 import com.wire.kalium.persistence.model.PreferencesResult
@@ -26,17 +27,17 @@ interface SessionStorage {
     /**
      * changes the current active user session
      */
-    fun setCurrentSession(userId: QualifiedIDEntity)
+    fun setCurrentSession(userId: UserIDEntity)
 
     /**
      * return all stored session as a userId to session map
      */
-    fun allSessions(): PreferencesResult<Map<QualifiedIDEntity, PersistenceSession>>
+    fun allSessions(): PreferencesResult<Map<UserIDEntity, PersistenceSession>>
 
     /**
      * return stored session associated with a userId
      */
-    fun userSession(userId: QualifiedIDEntity): PreferencesResult<PersistenceSession>
+    fun userSession(userId: UserIDEntity): PreferencesResult<PersistenceSession>
 
     /**
      * returns true if there is any session saved and false otherwise

@@ -7,7 +7,6 @@ import com.wire.kalium.logic.data.session.SessionDataSource
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
-import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.sync.SyncManagerImpl
 import com.wire.kalium.logic.sync.WorkScheduler
@@ -17,7 +16,7 @@ import com.wire.kalium.persistence.client.SessionStorageImpl
 import com.wire.kalium.persistence.db.Database
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
-import com.wire.kalium.persistence.util.FileNameUtil
+import com.wire.kalium.persistence.kmm_settings.SettingOptions
 import kotlinx.coroutines.runBlocking
 
 /**
@@ -32,25 +31,25 @@ actual class CoreLogic(
 
     override fun getSessionRepo(): SessionRepository {
         val sessionPreferences =
-            KaliumPreferencesSettings(EncryptedSettingsHolder(appContext, FileNameUtil.appPrefFile()).encryptedSettings)
+            KaliumPreferencesSettings(EncryptedSettingsHolder(appContext, SettingOptions.AppSettings).encryptedSettings)
         val sessionStorage: SessionStorage = SessionStorageImpl(sessionPreferences)
         return SessionDataSource(sessionStorage)
     }
 
-    override fun getAuthenticationScope(): AuthenticationScope =
-        AuthenticationScope(clientLabel, sessionRepository, appContext)
-
     override fun getSessionScope(userId: UserId): UserSessionScope {
         val dataSourceSet = userScopeStorage[userId] ?: run {
             val networkContainer = AuthenticatedNetworkContainer(SessionManagerImpl(sessionRepository, userId))
-            val proteusClient: ProteusClient = ProteusClientImpl(rootProteusDirectoryPath, userId.value)
+            val proteusClient: ProteusClient = ProteusClientImpl(rootProteusDirectoryPath, idMapper.toCryptoQualifiedIDId(userId))
             runBlocking { proteusClient.open() }
 
             val workScheduler = WorkScheduler(appContext, userId)
             val syncManager = SyncManagerImpl(workScheduler)
-            val encryptedSettingsHolder = EncryptedSettingsHolder(appContext, FileNameUtil.userPrefFile(userId.value))
+
+            val userIDEntity = idMapper.toDaoModel(userId)
+            val encryptedSettingsHolder =
+                EncryptedSettingsHolder(appContext, SettingOptions.UserSettings(userIDEntity))
             val userPreferencesSettings = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
-            val database = Database(appContext, userId.value, userPreferencesSettings)
+            val database = Database(appContext, userIDEntity, userPreferencesSettings)
             AuthenticatedDataSourceSet(
                 networkContainer,
                 proteusClient,
