@@ -48,16 +48,18 @@ internal class AssetDataSource(
     }
 
     override suspend fun downloadPublicAsset(assetKey: String): Either<CoreFailure, ByteArray> = suspending {
-        // TODO: handle storage error
-        val persistedAsset = assetDao.getAssetByKey(assetKey).firstOrNull()
-        if (persistedAsset != null) return@suspending Either.Right(persistedAsset.rawData)
+        wrapStorageRequest { assetDao.getAssetByKey(assetKey).firstOrNull() }
+            .coFold({
+                wrapApiRequest { assetApi.downloadAsset(assetKey, null) }
+                    .flatMap { assetData ->
+                        wrapStorageRequest { assetDao.insertAsset(assetMapper.fromUserAssetToDaoModel(assetKey, assetData)) }
+                            .map { assetData }
+                    }
+            }, {
+                Either.Right(it.rawData)
+            })
 
-        wrapApiRequest {
-            assetApi.downloadAsset(assetKey, null)
-        }.flatMap { assetData ->
-            wrapStorageRequest { assetDao.insertAsset(assetMapper.fromUserAssetToDaoModel(assetKey, assetData)) }
-                .map { assetData }
-        }
+
     }
 
     override suspend fun downloadUsersPictureAssets(assetId: List<UserAssetId?>): Either<CoreFailure, Unit> = suspending {
