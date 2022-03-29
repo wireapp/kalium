@@ -10,6 +10,8 @@ data class PlainUserId(val value: String) {
     override fun toString() = value
 }
 
+typealias CryptoUserID = CryptoQualifiedID
+
 data class CryptoQualifiedID(
     val value: String,
     val domain: String

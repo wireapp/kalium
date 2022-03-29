@@ -39,7 +39,7 @@ actual class CoreLogic(
     override fun getSessionScope(userId: UserId): UserSessionScope {
         val dataSourceSet = userScopeStorage[userId] ?: run {
             val networkContainer = AuthenticatedNetworkContainer(SessionManagerImpl(sessionRepository, userId))
-            val proteusClient: ProteusClient = ProteusClientImpl(rootProteusDirectoryPath, userId.value)
+            val proteusClient: ProteusClient = ProteusClientImpl(rootProteusDirectoryPath, idMapper.toCryptoQualifiedIDId(userId))
             runBlocking { proteusClient.open() }
 
             val workScheduler = WorkScheduler(appContext, userId)
