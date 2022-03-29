@@ -15,6 +15,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.util.toTimeInMillis
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
@@ -24,7 +25,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -159,12 +159,16 @@ actual class CallManager(
     actual suspend fun onCallingMessageReceived(message: Message, content: MessageContent.Calling) =
         withCalling {
             val msg = content.value.toByteArray()
+
+            val currTime = System.currentTimeMillis()
+            val msgTime = message.date.toTimeInMillis()
+
             wcall_recv_msg(
                 inst = deferredHandle.await(),
                 msg = msg,
                 len = msg.size,
-                curr_time = Uint32_t(value = System.currentTimeMillis() / 1000),
-                msg_time = Uint32_t(value = (System.currentTimeMillis() / 1000) + 10), // TODO: add correct variable
+                curr_time = Uint32_t(value = currTime / 1000),
+                msg_time = Uint32_t(value = msgTime / 1000),
                 convId = message.conversationId.asString(),
                 userId = message.senderUserId.asString(),
                 clientId = message.senderClientId.value
