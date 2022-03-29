@@ -2,7 +2,6 @@ package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.data.user.SelfUser
 
 
 class AddAuthenticatedUserUseCase(
@@ -16,16 +15,14 @@ class AddAuthenticatedUserUseCase(
         }
     }
 
-    operator fun invoke(user: SelfUser, authSession: AuthSession, replace: Boolean = false): Result =
+    operator fun invoke(authSession: AuthSession, replace: Boolean = false): Result =
         sessionRepository.doesSessionExist(authSession.userId).fold(
             {
                 Result.Failure.Generic(it)
             }, {
                 when (it) {
                     true -> onUserExist(authSession, replace)
-                    false -> {
-                        storeUser(authSession)
-                    }
+                    false -> storeUser(authSession)
                 }
             }
         )

@@ -7,7 +7,6 @@ import com.wire.kalium.logic.data.session.SessionDataSource
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
-import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.sync.SyncManagerImpl
 import com.wire.kalium.logic.sync.WorkScheduler
@@ -37,9 +36,6 @@ actual class CoreLogic(
         return SessionDataSource(sessionStorage)
     }
 
-    override fun getAuthenticationScope(): AuthenticationScope =
-        AuthenticationScope(clientLabel, sessionRepository, appContext)
-
     override fun getSessionScope(userId: UserId): UserSessionScope {
         val dataSourceSet = userScopeStorage[userId] ?: run {
             val networkContainer = AuthenticatedNetworkContainer(SessionManagerImpl(sessionRepository, userId))
@@ -48,10 +44,12 @@ actual class CoreLogic(
 
             val workScheduler = WorkScheduler(appContext, userId)
             val syncManager = SyncManagerImpl(workScheduler)
+
+            val userIDEntity = idMapper.toDaoModel(userId)
             val encryptedSettingsHolder =
-                EncryptedSettingsHolder(appContext, SettingOptions.UserSettings(idMapper.toDaoModel(userId)))
+                EncryptedSettingsHolder(appContext, SettingOptions.UserSettings(userIDEntity))
             val userPreferencesSettings = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
-            val database = Database(appContext, userId.value, userPreferencesSettings)
+            val database = Database(appContext, userIDEntity, userPreferencesSettings)
             AuthenticatedDataSourceSet(
                 networkContainer,
                 proteusClient,

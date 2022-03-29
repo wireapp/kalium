@@ -6,7 +6,6 @@ import com.wire.kalium.logic.data.session.SessionDataSource
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
-import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.sync.SyncManagerImpl
 import com.wire.kalium.logic.sync.WorkScheduler
@@ -25,10 +24,6 @@ actual class CoreLogic(clientLabel: String, rootProteusDirectoryPath: String) : 
         val kaliumPreferences = KaliumPreferencesSettings(EncryptedSettingsHolder(SettingOptions.AppSettings).encryptedSettings)
         val sessionStorage = SessionStorageImpl(kaliumPreferences)
         return SessionDataSource(sessionStorage)
-    }
-
-    override fun getAuthenticationScope(): AuthenticationScope {
-        return AuthenticationScope( clientLabel, sessionRepository)
     }
 
     override fun getSessionScope(userId: UserId): UserSessionScope {
