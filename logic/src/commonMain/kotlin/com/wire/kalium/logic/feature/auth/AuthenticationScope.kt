@@ -15,9 +15,7 @@ import com.wire.kalium.logic.feature.session.GetSessionsUseCase
 import com.wire.kalium.logic.feature.session.SessionScope
 import com.wire.kalium.network.LoginNetworkContainer
 
-expect class AuthenticationScope : AuthenticationScopeCommon
-
-abstract class AuthenticationScopeCommon(
+class AuthenticationScope(
     private val clientLabel: String, private val sessionRepository: SessionRepository
 ) {
 

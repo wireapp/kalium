@@ -2,7 +2,7 @@ package com.wire.kalium.persistence.util
 
 import com.wire.kalium.persistence.dao.UserIDEntity
 
-object FileNameUtil {
+internal object FileNameUtil {
     fun appPrefFile() = SHARED_PREFERENCE_FILE_NAME
 
     fun userPrefFile(userId: UserIDEntity) = "$USER_PREFERENCE_FILE_PREFIX-${userId.value}@${userId.domain}".filter { RESERVED_CHARS.contains(it) }
