@@ -1,12 +1,15 @@
 package com.wire.kalium.logic.feature.client
 
+import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.client.ClientCapability
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.RegisterClientParam
+import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
@@ -37,11 +40,17 @@ class RegisterClientUseCaseTest {
     @Mock
     private val preKeyRepository = mock(classOf<PreKeyRepository>())
 
+    @Mock
+    private val keyPackageRepository = mock(classOf<KeyPackageRepository>())
+
+    @Mock
+    private val mlsClientProvider = mock(classOf<MLSClientProvider>())
+
     private lateinit var registerClient: RegisterClientUseCase
 
     @BeforeTest
     fun setup() {
-        registerClient = RegisterClientUseCaseImpl(clientRepository, preKeyRepository)
+        registerClient = RegisterClientUseCaseImpl(clientRepository, preKeyRepository, keyPackageRepository, mlsClientProvider)
 
         given(preKeyRepository)
             .suspendFunction(preKeyRepository::generateNewPreKeys)
@@ -145,6 +154,73 @@ class RegisterClientUseCaseTest {
     }
 
     @Test
+    fun givenMLSClientRegistrationFails_whenRegistering_thenNoPersistenceShouldBeDone() = runTest {
+        val registeredClient = CLIENT
+        given(clientRepository)
+            .suspendFunction(clientRepository::registerClient)
+            .whenInvokedWith(anything())
+            .then { Either.Right(registeredClient) }
+
+        given(mlsClientProvider)
+            .suspendFunction(mlsClientProvider::getMLSClient)
+            .whenInvokedWith(eq(CLIENT.clientId))
+            .then { Either.Right(MLS_CLIENT) }
+
+        given(MLS_CLIENT)
+            .function(MLS_CLIENT::getPublicKey)
+            .whenInvoked()
+            .thenReturn( MLS_PUBLIC_KEY )
+
+        given(clientRepository)
+            .suspendFunction(clientRepository::registerMLSClient)
+            .whenInvokedWith(eq(MLS_PUBLIC_KEY))
+            .then { Either.Left(TEST_FAILURE) }
+
+        registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
+
+        verify(clientRepository)
+            .suspendFunction(clientRepository::persistClientId)
+            .with(anything())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenKeyPackageUploadFails_whenRegistering_thenNoPersistenceShouldBeDone() = runTest {
+        val registeredClient = CLIENT
+        given(clientRepository)
+            .suspendFunction(clientRepository::registerClient)
+            .whenInvokedWith(anything())
+            .then { Either.Right(registeredClient) }
+
+        given(mlsClientProvider)
+            .suspendFunction(mlsClientProvider::getMLSClient)
+            .whenInvokedWith(eq(CLIENT.clientId))
+            .then { Either.Right(MLS_CLIENT) }
+
+        given(MLS_CLIENT)
+            .function(MLS_CLIENT::getPublicKey)
+            .whenInvoked()
+            .thenReturn( MLS_PUBLIC_KEY )
+
+        given(clientRepository)
+            .suspendFunction(clientRepository::registerMLSClient)
+            .whenInvokedWith(eq(MLS_PUBLIC_KEY))
+            .then { Either.Right(Unit) }
+
+        given(keyPackageRepository)
+            .suspendFunction(keyPackageRepository::uploadNewKeyPackages)
+            .whenInvokedWith(anything(), eq(100))
+            .thenReturn( Either.Left(TEST_FAILURE))
+
+        registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
+
+        verify(clientRepository)
+            .suspendFunction(clientRepository::persistClientId)
+            .with(anything())
+            .wasNotInvoked()
+    }
+
+    @Test
     fun givenRegisteringSucceeds_whenRegistering_thenThePersistenceShouldBeCalledWithCorrectId() = runTest {
         val registeredClient = CLIENT
         given(clientRepository)
@@ -156,6 +232,26 @@ class RegisterClientUseCaseTest {
             .suspendFunction(clientRepository::persistClientId)
             .whenInvokedWith(anything())
             .then { Either.Right(Unit) }
+
+        given(mlsClientProvider)
+            .suspendFunction(mlsClientProvider::getMLSClient)
+            .whenInvokedWith(eq(CLIENT.clientId))
+            .then { Either.Right(MLS_CLIENT) }
+
+        given(MLS_CLIENT)
+            .function(MLS_CLIENT::getPublicKey)
+            .whenInvoked()
+            .thenReturn( MLS_PUBLIC_KEY )
+
+        given(clientRepository)
+            .suspendFunction(clientRepository::registerMLSClient)
+            .whenInvokedWith(eq(MLS_PUBLIC_KEY))
+            .then { Either.Right(Unit) }
+
+        given(keyPackageRepository)
+            .suspendFunction(keyPackageRepository::uploadNewKeyPackages)
+            .whenInvokedWith(anything(), eq(100))
+            .thenReturn( Either.Right(Unit))
 
         registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
 
@@ -196,6 +292,26 @@ class RegisterClientUseCaseTest {
             .suspendFunction(clientRepository::persistClientId)
             .whenInvokedWith(anything())
             .then { Either.Right(Unit) }
+
+        given(mlsClientProvider)
+            .suspendFunction(mlsClientProvider::getMLSClient)
+            .whenInvokedWith(eq(CLIENT.clientId))
+            .then { Either.Right(MLS_CLIENT) }
+
+        given(MLS_CLIENT)
+            .function(MLS_CLIENT::getPublicKey)
+            .whenInvoked()
+            .thenReturn( MLS_PUBLIC_KEY )
+
+        given(clientRepository)
+            .suspendFunction(clientRepository::registerMLSClient)
+            .whenInvokedWith(eq(MLS_PUBLIC_KEY))
+            .then { Either.Right(Unit) }
+
+        given(keyPackageRepository)
+            .suspendFunction(keyPackageRepository::uploadNewKeyPackages)
+            .whenInvokedWith(anything(), eq(100))
+            .thenReturn( Either.Right(Unit))
 
         val result = registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
 
@@ -249,6 +365,10 @@ class RegisterClientUseCaseTest {
             capabilities = TEST_CAPABILITIES
         )
         val CLIENT = TestClient.CLIENT
+
+        @Mock
+        val MLS_CLIENT = mock(classOf<MLSClient>())
+        val MLS_PUBLIC_KEY = "public_key".encodeToByteArray()
 
         val TEST_FAILURE = NetworkFailure.ServerMiscommunication(KaliumException.GenericError(IOException("no internet")))
     }

@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.id
 
+import com.wire.kalium.cryptography.CryptoQualifiedID
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.network.api.user.client.SimpleClientResponse
 
@@ -12,6 +13,7 @@ interface IdMapper {
     fun fromDaoModel(persistenceId: PersistenceQualifiedId): QualifiedID
     fun toApiModel(qualifiedID: QualifiedID): NetworkQualifiedId
     fun toDaoModel(qualifiedID: QualifiedID): PersistenceQualifiedId
+    fun toCryptoModel(qualifiedID: QualifiedID): CryptoQualifiedID
     fun fromApiToDao(qualifiedID: NetworkQualifiedId): PersistenceQualifiedId
 }
 
@@ -26,6 +28,8 @@ internal class IdMapperImpl : IdMapper {
     override fun toApiModel(qualifiedID: QualifiedID) = NetworkQualifiedId(value = qualifiedID.value, domain = qualifiedID.domain)
 
     override fun toDaoModel(qualifiedID: QualifiedID): PersistenceQualifiedId = PersistenceQualifiedId(value = qualifiedID.value, domain = qualifiedID.domain)
+
+    override fun toCryptoModel(qualifiedID: QualifiedID): CryptoQualifiedID = CryptoQualifiedID(value = qualifiedID.value, domain = qualifiedID.domain)
 
     override fun fromApiToDao(qualifiedID: NetworkQualifiedId) = PersistenceQualifiedId(value = qualifiedID.value, domain = qualifiedID.domain)
 }

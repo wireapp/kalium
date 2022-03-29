@@ -1,18 +1,24 @@
 package com.wire.kalium.logic.feature.client
 
+import com.wire.kalium.cryptography.MLSClientImpl
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientCapability
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.RegisterClientParam
+import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase.Companion.FIRST_KEY_ID
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMissingAuth
 import com.wire.kalium.network.exceptions.isTooManyClients
+import kotlinx.coroutines.flow.first
 
 sealed class RegisterClientResult {
     class Success(val client: Client) : RegisterClientResult()
@@ -40,7 +46,9 @@ interface RegisterClientUseCase {
 
 class RegisterClientUseCaseImpl(
     private val clientRepository: ClientRepository,
-    private val preKeyRepository: PreKeyRepository
+    private val preKeyRepository: PreKeyRepository,
+    private val keyPackageRepository: KeyPackageRepository,
+    private val mlsClientProvider: MLSClientProvider
 ) : RegisterClientUseCase {
 
     override suspend operator fun invoke(
@@ -64,9 +72,12 @@ class RegisterClientUseCaseImpl(
             RegisterClientResult.Failure.Generic(it)
         }, { registerClientParam ->
             clientRepository.registerClient(registerClientParam).flatMap { client ->
-                clientRepository.persistClientId(client.clientId).map {
-                    client
-                }
+                // TODO when https://github.com/wireapp/core-crypto/issues/11 is implemented we
+                // can remove registerMLSClient() and supply the MLS public key in registerClient().
+                mlsClientProvider.getMLSClient(client.clientId).flatMap { clientRepository.registerMLSClient(it.getPublicKey()) }
+                    .flatMap { keyPackageRepository.uploadNewKeyPackages(client.clientId) }
+                    .flatMap { clientRepository.persistClientId(client.clientId) }
+                    .map { client }
             }.fold({ failure ->
                 if(failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError)
                     when {
