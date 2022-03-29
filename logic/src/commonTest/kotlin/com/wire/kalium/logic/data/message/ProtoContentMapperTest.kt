@@ -49,7 +49,7 @@ class ProtoContentMapperTest {
 
     @Test
     fun givenHideMessageContent_whenMappingToProtoDataAndBack_thenTheContentsShouldMatchTheOriginal() {
-        val messageContent = MessageContent.HideMessage(
+        val messageContent = MessageContent.DeleteForMe(
             TEST_MESSAGE_UUID, conversationId = ConversationId(
                 TEST_MESSAGE_UUID,
                 TEST_MESSAGE_UUID

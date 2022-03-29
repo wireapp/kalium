@@ -10,6 +10,7 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
@@ -35,7 +36,8 @@ class DeleteMessageUseCase(
                     content = if (deleteForEveryone)
                         MessageContent.DeleteMessage(messageId)
                     else
-                        MessageContent.HideMessage(messageId, conversationId),
+                        //set the conversationId as self
+                        MessageContent.DeleteForMe(messageId, conversationId),
                     conversationId = conversationId,
                     date = Clock.System.now().toString(),
                     senderUserId = selfUser.id,
@@ -46,7 +48,7 @@ class DeleteMessageUseCase(
             }.flatMap {
                 messageRepository.deleteMessage(messageId, conversationId)
             }.onFailure {
-                println(it)
+                kaliumLogger.w("delete message failure: $it")
                 if (it is CoreFailure.Unknown) {
                     //TODO Did I write multiplatform logging today?
                     it.rootCause?.printStackTrace()

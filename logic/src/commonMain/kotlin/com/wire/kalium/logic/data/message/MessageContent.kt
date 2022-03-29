@@ -6,6 +6,6 @@ sealed class MessageContent {
     data class Text(val value: String): MessageContent()
     data class Calling(val value: String): MessageContent()
     data class DeleteMessage(val messageId: String) : MessageContent()
-    data class HideMessage(val messageId: String, val conversationId: ConversationId) : MessageContent()
+    data class DeleteForMe(val messageId: String, val conversationId: ConversationId) : MessageContent()
     object Unknown: MessageContent()
 }

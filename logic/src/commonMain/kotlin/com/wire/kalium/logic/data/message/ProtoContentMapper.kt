@@ -31,7 +31,7 @@ class ProtoContentMapperImpl: ProtoContentMapper {
             is MessageContent.DeleteMessage -> {
                 GenericMessage.Content.Deleted(MessageDelete(messageId = messageContent.messageId))
             }
-            is MessageContent.HideMessage -> {
+            is MessageContent.DeleteForMe -> {
                 val qualifiedConversationId = QualifiedConversationId(id = messageContent.conversationId.value, domain = messageContent.conversationId.domain)
                 GenericMessage.Content.Hidden(MessageHide(conversationId = messageContent.conversationId.value, messageId = messageContent.messageId, qualifiedConversationId = qualifiedConversationId))
             }
@@ -67,7 +67,7 @@ class ProtoContentMapperImpl: ProtoContentMapper {
             is GenericMessage.Content.Hidden -> {
                 val hiddenMessage = genericMessage.hidden
                 if (hiddenMessage != null) {
-                    MessageContent.HideMessage(
+                    MessageContent.DeleteForMe(
                         hiddenMessage.messageId,
                         ConversationId(hiddenMessage.qualifiedConversationId?.id!!,
                             hiddenMessage.qualifiedConversationId?.domain!!)

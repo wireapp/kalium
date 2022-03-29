@@ -62,7 +62,7 @@ class ConversationEventReceiver(
                     when (message.content) {
                         is MessageContent.Text -> messageRepository.persistMessage(message)
                         is MessageContent.DeleteMessage -> messageRepository.softDeleteMessage(messageUuid = message.content.messageId)
-                        is MessageContent.HideMessage -> messageRepository.hideMessage(messageUuid = message.content.messageId)
+                        is MessageContent.DeleteForMe -> messageRepository.hideMessage(messageUuid = message.content.messageId)
                         is MessageContent.Unknown -> println("Unknown Message received: $message")
                     }
                 }
