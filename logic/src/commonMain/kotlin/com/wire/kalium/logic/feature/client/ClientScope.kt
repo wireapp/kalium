@@ -12,4 +12,5 @@ class ClientScope(
     val register: RegisterClientUseCase get() = RegisterClientUseCaseImpl(clientRepository, preKeyRepository)
     val selfClients: SelfClientsUseCase get() = SelfClientsUseCaseImpl(clientRepository)
     val deleteClient: DeleteClientUseCase get() = DeleteClientUseCaseImpl(clientRepository)
+    val currentClientId: CurrentClientIdUseCase get() = CurrentClientIdUseCaseImpl(clientRepository)
 }
