@@ -1,7 +1,9 @@
 package com.wire.kalium.logic
 
+import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 
@@ -10,7 +12,8 @@ expect class CoreLogic : CoreLogicCommon
 abstract class CoreLogicCommon(
     // TODO: can client label be replaced with clientConfig.deviceName() ?
     protected val clientLabel: String,
-    protected val rootProteusDirectoryPath: String
+    protected val rootProteusDirectoryPath: String,
+    protected val idMapper: IdMapper = MapperProvider.idMapper()
 ) {
 
     val sessionRepository: SessionRepository by lazy {

@@ -17,7 +17,7 @@ import com.wire.kalium.persistence.client.SessionStorageImpl
 import com.wire.kalium.persistence.db.Database
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
-import com.wire.kalium.persistence.util.FileNameUtil
+import com.wire.kalium.persistence.kmm_settings.SettingOptions
 import kotlinx.coroutines.runBlocking
 
 /**
@@ -32,7 +32,7 @@ actual class CoreLogic(
 
     override fun getSessionRepo(): SessionRepository {
         val sessionPreferences =
-            KaliumPreferencesSettings(EncryptedSettingsHolder(appContext, FileNameUtil.appPrefFile()).encryptedSettings)
+            KaliumPreferencesSettings(EncryptedSettingsHolder(appContext, SettingOptions.AppSettings).encryptedSettings)
         val sessionStorage: SessionStorage = SessionStorageImpl(sessionPreferences)
         return SessionDataSource(sessionStorage)
     }
@@ -48,7 +48,8 @@ actual class CoreLogic(
 
             val workScheduler = WorkScheduler(appContext, userId)
             val syncManager = SyncManagerImpl(workScheduler)
-            val encryptedSettingsHolder = EncryptedSettingsHolder(appContext, FileNameUtil.userPrefFile(userId.value))
+            val encryptedSettingsHolder =
+                EncryptedSettingsHolder(appContext, SettingOptions.UserSettings(idMapper.toDaoModel(userId)))
             val userPreferencesSettings = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
             val database = Database(appContext, userId.value, userPreferencesSettings)
             AuthenticatedDataSourceSet(
