@@ -6,6 +6,7 @@ import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
 import com.wire.kalium.persistence.model.NetworkConfig
 import com.wire.kalium.persistence.model.PersistenceSession
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.random.Random
 import kotlin.test.BeforeTest
@@ -13,7 +14,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-class SessionDAOTest {
+@OptIn(ExperimentalCoroutinesApi::class)
+class SessionStorageTest {
 
     private val settings: Settings = MockSettings()
 
@@ -38,7 +40,7 @@ class SessionDAOTest {
         val sessionsMap = mapOf(persistenceSession.userId to persistenceSession)
         sessionStorage.addSession(persistenceSession)
 
-        assertEquals(PreferencesResult.Success(sessionsMap), sessionStorage.allSessions())
+        assertEquals(sessionsMap, sessionStorage.allSessions())
     }
 
     @Test
@@ -60,13 +62,12 @@ class SessionDAOTest {
             )
 
         val sessionsMapExpectedValue =
-            PreferencesResult.Success(
                 mapOf(
                     session1.userId to session1,
                     sessionToDelete.userId to sessionToDelete
-                )
+
             )
-        val afterDeleteExpectedValue = PreferencesResult.Success(mapOf(session1.userId to session1))
+        val afterDeleteExpectedValue = mapOf(session1.userId to session1)
 
         sessionStorage.addSession(session1)
         sessionStorage.addSession(sessionToDelete)
