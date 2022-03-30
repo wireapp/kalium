@@ -1,5 +1,6 @@
 package com.wire.kalium.persistence.model
 
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -15,10 +16,7 @@ data class NetworkConfig(
 
 @Serializable
 data class PersistenceSession(
-    // TODO: replace string with UserId value/domain
-    val userId: String,
-    //val clientId: String,
-    //val domain: String,
+    val userId: QualifiedIDEntity,
     val tokenType: String,
     val accessToken: String,
     val refreshToken: String,

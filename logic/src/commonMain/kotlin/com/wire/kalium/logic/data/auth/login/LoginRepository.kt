@@ -56,5 +56,4 @@ class LoginRepositoryImpl(
         wrapApiRequest {
             loginApi.login(param = loginParam, persist = persistClient, apiBaseUrl = serverConfig.apiBaseUrl)
         }.map { sessionMapper.fromSessionDTO(it, serverConfig) }
-
 }
