@@ -40,7 +40,7 @@ actual class MLSClientProviderImpl actual constructor(
 
     private fun mlsClient(userId: CryptoUserID, clientId: ClientId, location: String): MLSClient {
         return MLSClientImpl(
-            "$location/$$KEYSTORE_NAME",
+            "$location/$KEYSTORE_NAME",
             getOrGenerateSecretKey(),
             CryptoQualifiedClientId(clientId.value, userId)
         )
