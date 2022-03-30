@@ -9,9 +9,9 @@ import com.wire.kalium.calling.ENVIRONMENT_DEFAULT
 import com.wire.kalium.calling.callbacks.LogHandler
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.network.api.NonQualifiedUserId
 import com.waz.log.LogHandler as NativeLogHandler
 
 actual class GlobalCallManager(
@@ -20,7 +20,7 @@ actual class GlobalCallManager(
 
     private lateinit var mediaManager: MediaManager
     private lateinit var flowManager: FlowManager
-    private val callManagerHolder = hashMapOf<String, CallManager>()
+    private val callManagerHolder = hashMapOf<QualifiedID, CallManager>()
 
     private val calling by lazy {
         initiateMediaManager()
@@ -39,7 +39,7 @@ actual class GlobalCallManager(
      * Get a [CallManager] for a session, shouldn't be instantiated more than one CallManager for a single session.
      */
     actual fun getCallManagerForClient(
-        userId: NonQualifiedUserId,
+        userId: QualifiedID,
         callRepository: CallRepository,
         userRepository: UserRepository,
         clientRepository: ClientRepository
