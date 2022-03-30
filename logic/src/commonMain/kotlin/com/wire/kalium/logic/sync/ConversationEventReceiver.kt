@@ -67,7 +67,7 @@ class ConversationEventReceiver(
                         is MessageContent.DeleteMessage ->
                             messageRepository.getMessageById(messageUuid =  message.content.messageId,
                                 conversationId =  message.conversationId).onSuccess {
-                                if(message.senderUserId == it.senderUserId)
+                                if (message.senderUserId == it.senderUserId)
                                     messageRepository.softDeleteMessage(messageUuid = message.content.messageId, message.conversationId)
                                 else kaliumLogger.i(message = "Delete message requested by someone other than the sender: $message")
                             }
