@@ -66,11 +66,16 @@ class ProtoContentMapperImpl: ProtoContentMapper {
             is GenericMessage.Content.External -> MessageContent.Unknown
             is GenericMessage.Content.Hidden -> {
                 val hiddenMessage = genericMessage.hidden
+                if (hiddenMessage != null) {
                     MessageContent.DeleteForMe(
-                        hiddenMessage!!.messageId,
-                        ConversationId(hiddenMessage.qualifiedConversationId?.id!!,
-                            hiddenMessage.qualifiedConversationId?.domain!!)
+                        hiddenMessage.messageId,
+                        ConversationId(hiddenMessage.qualifiedConversationId!!.id,
+                            hiddenMessage.qualifiedConversationId!!.domain)
                     )
+                } else {
+                    kaliumLogger.w("Hidden message is null. Message UUID = $genericMessage.")
+                    MessageContent.Unknown
+                }
             }
             is GenericMessage.Content.Image -> MessageContent.Unknown
             is GenericMessage.Content.Knock -> MessageContent.Unknown
