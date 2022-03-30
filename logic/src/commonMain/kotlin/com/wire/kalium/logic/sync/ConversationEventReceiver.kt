@@ -15,6 +15,7 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.Base64
@@ -63,8 +64,15 @@ class ConversationEventReceiver(
                     kaliumLogger.i(message = "Message received: $message")
                     when (message.content) {
                         is MessageContent.Text -> messageRepository.persistMessage(message)
-                        is MessageContent.DeleteMessage -> messageRepository.softDeleteMessage(messageUuid = message.content.messageId, message.conversationId)
-                        is MessageContent.DeleteForMe -> messageRepository.hideMessage(messageUuid = message.content.messageId, message.content.conversationId)
+                        is MessageContent.DeleteMessage ->
+                            messageRepository.getMessageById(messageUuid =  message.content.messageId,
+                                conversationId =  message.conversationId).onSuccess {
+                                if(message.senderUserId == it.senderUserId)
+                                    messageRepository.softDeleteMessage(messageUuid = message.content.messageId, message.conversationId)
+                                else kaliumLogger.i(message = "Delete message requested by someone other than the sender: $message")
+                            }
+                        is MessageContent.DeleteForMe -> messageRepository.hideMessage(messageUuid = message.content.messageId,
+                            message.content.conversationId)
                         is MessageContent.Unknown -> kaliumLogger.i(message = "Unknown Message received: $message")
                     }
                 }
