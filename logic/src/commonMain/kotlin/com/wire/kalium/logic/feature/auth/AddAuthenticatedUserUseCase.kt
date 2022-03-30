@@ -2,13 +2,14 @@ package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.user.UserId
 
 
 class AddAuthenticatedUserUseCase(
     private val sessionRepository: SessionRepository
 ) {
     sealed class Result {
-        object Success : Result()
+        data class Success(val userId: UserId) : Result()
         sealed class Failure : Result() {
             object UserAlreadyExists : Failure()
             class Generic(val genericFailure: CoreFailure) : Failure()
@@ -30,7 +31,7 @@ class AddAuthenticatedUserUseCase(
     private fun storeUser(authSession: AuthSession): Result {
         sessionRepository.storeSession(authSession)
         sessionRepository.updateCurrentSession(authSession.userId)
-        return Result.Success
+        return Result.Success(authSession.userId)
     }
 
     private fun onUserExist(newSession: AuthSession, replace: Boolean): Result =

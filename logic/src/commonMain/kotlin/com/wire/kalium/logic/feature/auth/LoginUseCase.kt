@@ -4,7 +4,6 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.auth.login.LoginRepository
-import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isInvalidCredentials
@@ -24,14 +23,12 @@ interface LoginUseCase {
         userIdentifier: String,
         password: String,
         shouldPersistClient: Boolean,
-        serverConfig: ServerConfig,
-        shouldStoreSession: Boolean = true
+        serverConfig: ServerConfig
     ): AuthenticationResult
 }
 
 internal class LoginUseCaseImpl(
     private val loginRepository: LoginRepository,
-    private val sessionRepository: SessionRepository,
     private val validateEmailUseCase: ValidateEmailUseCase,
     private val validateUserHandleUseCase: ValidateUserHandleUseCase
 ) : LoginUseCase {
@@ -39,8 +36,7 @@ internal class LoginUseCaseImpl(
         userIdentifier: String,
         password: String,
         shouldPersistClient: Boolean,
-        serverConfig: ServerConfig,
-        shouldStoreSession: Boolean
+        serverConfig: ServerConfig
     ): AuthenticationResult = suspending {
         // remove White Spaces around userIdentifier
         val cleanUserIdentifier = userIdentifier.trim()
@@ -59,10 +55,6 @@ internal class LoginUseCaseImpl(
                 is NetworkFailure.NoNetworkConnection -> AuthenticationResult.Failure.Generic(it)
             }
         }, {
-            if(shouldStoreSession) {
-                sessionRepository.storeSession(it)
-                sessionRepository.updateCurrentSession(it.userId)
-            }
             AuthenticationResult.Success(it)
         })
     }
