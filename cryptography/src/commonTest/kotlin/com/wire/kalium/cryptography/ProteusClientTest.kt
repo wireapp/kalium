@@ -1,18 +1,19 @@
 package com.wire.kalium.cryptography
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
 import kotlin.js.ExperimentalJsExport
 import kotlin.test.Test
-import kotlinx.coroutines.test.runTest
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
-@ExperimentalJsExport
+@OptIn(ExperimentalCoroutinesApi::class, ExperimentalJsExport::class)
 class ProteusClientTest: BaseProteusClientTest() {
 
-    data class SampleUser(val id: PlainUserId, val name: String)
+    data class SampleUser(val id: CryptoUserID, val name: String)
 
-    private val alice = SampleUser(PlainUserId("aliceId"), "Alice")
-    private val bob = SampleUser(PlainUserId("bobId"), "Bob")
+    private val alice = SampleUser(CryptoUserID("aliceId", "aliceDomain"), "Alice")
+    private val bob = SampleUser(CryptoUserID("bobId", "bobDomain"), "Bob")
     val aliceSessionId = CryptoSessionId(alice.id, CryptoClientId("aliceClient"))
     val bobSessionId = CryptoSessionId(alice.id, CryptoClientId("aliceClient"))
 
@@ -61,7 +62,7 @@ class ProteusClientTest: BaseProteusClientTest() {
         aliceClient.decrypt(encryptedMessage1, bobSessionId)
 
         val message2 = "Hi again Alice!"
-        val encryptedMessage2 = bobClient.encrypt(message2.encodeToByteArray(), aliceSessionId)!!
+        val encryptedMessage2 = bobClient.encrypt(message2.encodeToByteArray(), aliceSessionId)
         val decryptedMessage2 = aliceClient.decrypt(encryptedMessage2, bobSessionId)
 
         assertEquals(message2, decryptedMessage2.decodeToString())

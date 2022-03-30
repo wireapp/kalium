@@ -6,7 +6,7 @@ import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.network.api.NonQualifiedUserId
+import com.wire.kalium.logic.data.user.UserId
 
 /**
  * This class is only for platform specific variables,
@@ -14,7 +14,7 @@ import com.wire.kalium.network.api.NonQualifiedUserId
  */
 actual class UserSessionScope(
     private val applicationContext: Context,
-    userId: NonQualifiedUserId,
+    userId: UserId,
     authenticatedDataSourceSet: AuthenticatedDataSourceSet,
     sessionRepository: SessionRepository
 ) : UserSessionScopeCommon(userId, authenticatedDataSourceSet, sessionRepository) {

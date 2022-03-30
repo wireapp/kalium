@@ -7,7 +7,7 @@ import com.wire.kalium.cryptography.exceptions.ProteusException
 import java.io.File
 import java.util.UUID
 
-actual class ProteusClientImpl actual constructor(rootDir: String, userId: String) : ProteusClient {
+actual class ProteusClientImpl actual constructor(rootDir: String, userId: CryptoUserID) : ProteusClient {
 
     private val path: String
     private lateinit var box: CryptoBox

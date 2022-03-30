@@ -8,12 +8,12 @@ import com.russhwolf.settings.Settings
 
 actual class EncryptedSettingsHolder(
     applicationContext: Context,
-    fileName: String,
+    options: SettingOptions,
     masterKeyAlias: String = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
 ) {
     actual val encryptedSettings: Settings = AndroidSettings(
         EncryptedSharedPreferences.create(
-            fileName,
+            options.fileName,
             masterKeyAlias,
             applicationContext,
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
