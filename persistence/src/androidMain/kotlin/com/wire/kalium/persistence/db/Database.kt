@@ -16,6 +16,7 @@ import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.TeamDAOImpl
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserDAOImpl
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetDAOImpl
 import com.wire.kalium.persistence.dao.client.ClientDAO
@@ -27,7 +28,7 @@ import com.wire.kalium.persistence.util.FileNameUtil
 import net.sqlcipher.database.SupportFactory
 import java.security.SecureRandom
 
-actual class Database(private val context: Context, userId: String, kaliumPreferences: KaliumPreferences) {
+actual class Database(private val context: Context, userId: UserIDEntity, kaliumPreferences: KaliumPreferences) {
     private val dbName = FileNameUtil.userDBName(userId)
     private val driver: AndroidSqliteDriver
     private val database: AppDatabase

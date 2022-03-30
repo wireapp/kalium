@@ -15,6 +15,9 @@ object AccessTokenDTOJson {
         |}
         """.trimMargin()
     }
+
+    fun createValid(accessTokenDTO: AccessTokenDTO) = ValidJsonProvider(accessTokenDTO, jsonProvider)
+
     val valid = ValidJsonProvider(
         AccessTokenDTO(
             userId = "user_id",

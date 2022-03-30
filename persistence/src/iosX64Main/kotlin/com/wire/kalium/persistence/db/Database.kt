@@ -12,19 +12,21 @@ import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.TeamDAOImpl
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserDAOImpl
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetDAOImpl
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
+import com.wire.kalium.persistence.util.FileNameUtil
 
-actual class Database(name: String, passphrase: String) {
+actual class Database(userId: UserIDEntity, passphrase: String) {
 
     val database: AppDatabase
 
     init {
-        val driver = NativeSqliteDriver(AppDatabase.Schema, name)
+        val driver = NativeSqliteDriver(AppDatabase.Schema, FileNameUtil.userDBName(userId))
         database = AppDatabase(
             driver,
             Client.Adapter(user_idAdapter = QualifiedIDAdapter()),

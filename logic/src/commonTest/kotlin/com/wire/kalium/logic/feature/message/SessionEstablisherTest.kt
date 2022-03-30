@@ -2,9 +2,9 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
+import com.wire.kalium.cryptography.CryptoUserID
 import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.cryptography.ProteusClient
-import com.wire.kalium.cryptography.PlainUserId
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.ProteusFailure
@@ -19,6 +19,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.anything
 import io.mockative.configure
@@ -27,12 +28,14 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
+@OptIn(ConfigurationApi::class, ExperimentalCoroutinesApi::class)
 class SessionEstablisherTest {
 
     @Mock
@@ -100,7 +103,7 @@ class SessionEstablisherTest {
 
         verify(proteusClient)
             .suspendFunction(proteusClient::doesSessionExist)
-            .with(eq(CryptoSessionId(PlainUserId(TEST_USER_ID_1.value), CryptoClientId(TEST_CLIENT_ID_1.value))))
+            .with(eq(CryptoSessionId(CryptoUserID(TEST_USER_ID_1.value, TEST_USER_ID_1.domain), CryptoClientId(TEST_CLIENT_ID_1.value))))
             .wasInvoked(exactly = once)
     }
 
@@ -161,7 +164,7 @@ class SessionEstablisherTest {
 
         sessionEstablisher.prepareRecipientsForNewOutgoingMessage(listOf(TEST_RECIPIENT_1))
 
-        val cryptoSessionId = CryptoSessionId(PlainUserId(TEST_RECIPIENT_1.member.id.value), CryptoClientId(clientPreKeyInfo.clientId))
+        val cryptoSessionId = CryptoSessionId(CryptoUserID(TEST_USER_ID_1.value, TEST_USER_ID_1.domain), CryptoClientId(clientPreKeyInfo.clientId))
         verify(proteusClient)
             .suspendFunction(proteusClient::createSession)
             .with(eq(preKey), eq(cryptoSessionId))

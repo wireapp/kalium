@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import com.wire.kalium.persistence.db.Message as SQLDelightMessage
 
-class MessageMapper {
+internal class MessageMapper {
     fun toModel(msg: SQLDelightMessage): MessageEntity {
         return MessageEntity(
             id = msg.id,
