@@ -29,16 +29,13 @@ class DeleteMessageUseCase(
 
         return suspending {
             val generatedMessageUuid = uuid4().toString()
-
             clientRepository.currentClientId().flatMap { currentClientId ->
                 val message = Message(
                     id = generatedMessageUuid,
-                    content = if (deleteForEveryone)
-                        MessageContent.DeleteMessage(messageId)
-                    else
-                        //set the conversationId as self
-                        MessageContent.DeleteForMe(messageId, conversationId),
-                    conversationId = conversationId,
+                    content = if (deleteForEveryone) MessageContent.DeleteMessage(messageId)
+                    else MessageContent.DeleteForMe(messageId, conversationId),
+                    conversationId = if (deleteForEveryone) conversationId
+                    else /*todo: replace with the conversationId for Self conversation*/ conversationId,
                     date = Clock.System.now().toString(),
                     senderUserId = selfUser.id,
                     senderClientId = currentClientId,
