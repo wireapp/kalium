@@ -38,7 +38,8 @@ class AuthenticationScope(
     val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
     val validatePasswordUseCase: ValidatePasswordUseCase get() = ValidatePasswordUseCaseImpl()
 
-    val login: LoginUseCase get() = LoginUseCaseImpl(loginRepository, sessionRepository, validateEmailUseCase, validateUserHandleUseCase)
+    val addAuthenticatedAccount: AddAuthenticatedUserUseCase get() = AddAuthenticatedUserUseCase(sessionRepository)
+    val login: LoginUseCase get() = LoginUseCaseImpl(loginRepository, validateEmailUseCase, validateUserHandleUseCase)
     val getSessions: GetSessionsUseCase get() = GetSessionsUseCase(sessionRepository)
     val getServerConfig: GetServerConfigUseCase get() = GetServerConfigUseCase(serverConfigRepository)
     val session: SessionScope get() = SessionScope(sessionRepository)
