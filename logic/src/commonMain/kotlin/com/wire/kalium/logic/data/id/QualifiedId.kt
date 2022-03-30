@@ -8,3 +8,10 @@ data class QualifiedID(
 typealias ConversationId = QualifiedID
 
 fun QualifiedID.asString() = "$value@$domain"
+
+fun String.toConversationId() = split("@").let {
+    ConversationId(
+        value = it.first(),
+        domain = it.last()
+    )
+}

@@ -13,6 +13,10 @@ expect class CallManager {
 
 val CallManager.ongoingCalls get() = allCalls.map {
     it.filter { call ->
-        call.status in listOf("Incoming", "Answered", "Established")
+        call.status in listOf(
+            CallStatus.INCOMING,
+            CallStatus.ANSWERED,
+            CallStatus.ESTABLISHED
+        )
     }
 }

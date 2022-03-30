@@ -10,6 +10,7 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.asString
+import com.wire.kalium.logic.data.id.toConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
@@ -60,16 +61,16 @@ actual class CallManager(
         deferredHandle = startHandleAsync()
     }
 
-    private fun updateCallStatusById(conversationId: String, status: String) {
+    private fun updateCallStatusById(conversationId: String, status: CallStatus) {
         _calls.update {
             mutableListOf<Call>().apply {
                 addAll(it)
 
-                val callIndex = it.indexOfFirst { call -> call.conversationId == conversationId }
+                val callIndex = it.indexOfFirst { call -> call.conversationId.asString() == conversationId }
                 if (callIndex == -1) {
                     add(
                         Call(
-                            conversationId = conversationId,
+                            conversationId = conversationId.toConversationId(),
                             status = status
                         )
                     )
@@ -103,28 +104,28 @@ actual class CallManager(
                 kaliumLogger.i("startHandleAsync -> incomingCallHandler")
                 updateCallStatusById(
                     conversationId = conversationId,
-                    status = "Incoming"
+                    status = CallStatus.INCOMING
                 )
             },
             missedCallHandler = { conversationId: String, messageTime: Uint32_t, userId: String, isVideoCall: Boolean, arg: Pointer? ->
                 kaliumLogger.i("startHandleAsync -> missedCallHandler")
                 updateCallStatusById(
                     conversationId = conversationId,
-                    status = "Missed"
+                    status = CallStatus.MISSED
                 )
             },
             answeredCallHandler = { conversationId: String, arg: Pointer? ->
                 kaliumLogger.i("startHandleAsync -> answeredCallHandler")
                 updateCallStatusById(
                     conversationId = conversationId,
-                    status = "Answered"
+                    status = CallStatus.ANSWERED
                 )
             },
             establishedCallHandler = { conversationId: String, userId: String, clientId: String, arg: Pointer? ->
                 kaliumLogger.i("startHandleAsync -> establishedCallHandler")
                 updateCallStatusById(
                     conversationId = conversationId,
-                    status = "Established"
+                    status = CallStatus.ESTABLISHED
                 )
             },
             closeCallHandler = { reason: Int, conversationId: String, messageTime: Uint32_t, userId: String, clientId: String,
@@ -132,7 +133,7 @@ actual class CallManager(
                 kaliumLogger.i("startHandleAsync -> closeCallHandler")
                 updateCallStatusById(
                     conversationId = conversationId,
-                    status = "Close"
+                    status = CallStatus.CLOSED
                 )
             },
             metricsHandler = { conversationId: String, metricsJson: String, arg: Pointer? ->
