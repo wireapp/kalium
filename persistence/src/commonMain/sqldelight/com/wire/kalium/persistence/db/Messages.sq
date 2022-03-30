@@ -10,7 +10,7 @@ CREATE TABLE Message (
       sender_user_id TEXT AS QualifiedIDEntity NOT NULL,
       sender_client_id TEXT NOT NULL,
       status TEXT AS MessageEntity.Status NOT NULL,
-      deletion TEXT AS MessageEntity.Deletion NOT NULL DEFAULT 'neutral',
+      visibility TEXT AS MessageEntity.Visibility NOT NULL DEFAULT 'visible',
       FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id),
       FOREIGN KEY (sender_user_id) REFERENCES User(qualified_id),
       PRIMARY KEY (id, conversation_id)
@@ -25,13 +25,13 @@ DELETE FROM Message WHERE  id = ? AND conversation_id = ?;
 deleteMessageById:
 DELETE FROM Message WHERE  id = ?;
 
-updateDeleteStatus:
+updateMessageVisibility:
 UPDATE Message
-SET deletion = ?, content = ?
+SET visibility = ?, content = ?
 WHERE id = ?;
 
 insertMessage:
-INSERT INTO Message(id, content, conversation_id, date, sender_user_id, sender_client_id, status, deletion)
+INSERT INTO Message(id, content, conversation_id, date, sender_user_id, sender_client_id, status, visibility)
 VALUES(?, ?, ?, ?, ? ,?, ?, ?)
 ON CONFLICT(id, conversation_id) DO UPDATE SET
 id = excluded.id,

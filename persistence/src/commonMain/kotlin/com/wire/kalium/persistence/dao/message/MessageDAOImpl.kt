@@ -30,8 +30,8 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
 
     override suspend fun deleteMessage(id: String) = queries.deleteMessageById(id)
 
-    override suspend fun updateDeleteStatus(deleteStatus: MessageEntity.Deletion, content: String?, id: String) =
-        queries.updateDeleteStatus(deleteStatus, content, id)
+    override suspend fun updateMessageVisibility(deleteStatus: MessageEntity.Visibility, content: String?, id: String) =
+        queries.updateMessageVisibility(deleteStatus, content, id)
 
     override suspend fun deleteAllMessages() = queries.deleteAllMessages()
 
@@ -44,7 +44,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             message.senderUserId,
             message.senderClientId,
             message.status,
-            message.deleted
+            message.visibility
         )
 
     override suspend fun insertMessages(messages: List<MessageEntity>) =
@@ -58,7 +58,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
                     message.senderUserId,
                     message.senderClientId,
                     message.status,
-                    message.deleted
+                    message.visibility
                 )
             }
         }

@@ -50,7 +50,6 @@ class DeleteMessageUseCase(
             }.onFailure {
                 kaliumLogger.w("delete message failure: $it")
                 if (it is CoreFailure.Unknown) {
-                    //TODO Did I write multiplatform logging today?
                     it.rootCause?.printStackTrace()
                 }
             }

@@ -15,6 +15,7 @@ import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.logic.wrapCryptoRequest
 import io.ktor.utils.io.core.toByteArray
@@ -58,12 +59,12 @@ class ConversationEventReceiver(
                         Message.Status.SENT
                     )
                     //TODO Multiplatform logging
-                    println("Message received: $message")
+                    kaliumLogger.i(message = "Message received: $message")
                     when (message.content) {
                         is MessageContent.Text -> messageRepository.persistMessage(message)
                         is MessageContent.DeleteMessage -> messageRepository.softDeleteMessage(messageUuid = message.content.messageId)
                         is MessageContent.DeleteForMe -> messageRepository.hideMessage(messageUuid = message.content.messageId)
-                        is MessageContent.Unknown -> println("Unknown Message received: $message")
+                        is MessageContent.Unknown -> kaliumLogger.i(message = "Unknown Message received: $message")
                     }
                 }
         }

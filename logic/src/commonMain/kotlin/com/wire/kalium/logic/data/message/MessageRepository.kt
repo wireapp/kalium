@@ -6,7 +6,6 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.SendMessageFailure
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.network.api.message.MessageApi
 import com.wire.kalium.network.api.message.MessagePriority
 import com.wire.kalium.network.exceptions.QualifiedSendMessageError
@@ -66,13 +65,13 @@ class MessageDataSource(
     }
 
     override suspend fun softDeleteMessage(messageUuid: String): Either<CoreFailure, Unit> {
-        messageDAO.updateDeleteStatus(deleteStatus = MessageEntity.Deletion.DELETED, id = messageUuid, content = "--DELETED--")
+        messageDAO.updateMessageVisibility(visibility = MessageEntity.Visibility.DELETED, id = messageUuid, content = "--DELETED--")
         //TODO: Handle failures
         return Either.Right(Unit)
     }
 
     override suspend fun hideMessage(messageUuid: String): Either<CoreFailure, Unit> {
-        messageDAO.updateDeleteStatus(deleteStatus = MessageEntity.Deletion.HIDDEN, id = messageUuid, content = "--HIDDEN--")
+        messageDAO.updateMessageVisibility(visibility = MessageEntity.Visibility.HIDDEN, id = messageUuid, content = "--HIDDEN--")
         //TODO: Handle failures
         return Either.Right(Unit)
     }

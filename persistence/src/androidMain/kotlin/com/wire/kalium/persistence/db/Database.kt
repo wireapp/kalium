@@ -59,7 +59,7 @@ actual class Database(private val context: Context, userId: String, kaliumPrefer
                 conversation_idAdapter = QualifiedIDAdapter(),
                 sender_user_idAdapter = QualifiedIDAdapter(),
                 statusAdapter = EnumColumnAdapter(),
-                deletionAdapter = EnumColumnAdapter()
+                visibilityAdapter = EnumColumnAdapter()
             ),
             User.Adapter(qualified_idAdapter = QualifiedIDAdapter(), IntColumnAdapter)
         )

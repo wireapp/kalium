@@ -11,21 +11,21 @@ data class MessageEntity(
     val senderUserId: QualifiedIDEntity,
     val senderClientId: String,
     val status: Status,
-    val deleted: Deletion = Deletion.Neutral
+    val visibility: Visibility = Visibility.VISIBLE
 ) {
     enum class Status {
         PENDING, SENT, READ, FAILED
     }
 
-    enum class Deletion {
-        Neutral, DELETED, HIDDEN
+    enum class Visibility {
+        VISIBLE, DELETED, HIDDEN
     }
 }
 
 interface MessageDAO {
     suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity)
     suspend fun deleteMessage(id: String)
-    suspend fun updateDeleteStatus(deleteStatus: MessageEntity.Deletion, content: String? = null, id: String)
+    suspend fun updateMessageVisibility(visibility: MessageEntity.Visibility, content: String? = null, id: String)
     suspend fun deleteAllMessages()
     suspend fun insertMessage(message: MessageEntity)
     suspend fun insertMessages(messages: List<MessageEntity>)
