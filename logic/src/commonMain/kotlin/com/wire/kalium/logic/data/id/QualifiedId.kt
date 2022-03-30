@@ -1,5 +1,7 @@
 package com.wire.kalium.logic.data.id
 
+private const val VALUE_DOMAIN_SEPARATOR = "@"
+
 data class QualifiedID(
     val value: String,
     val domain: String
@@ -7,11 +9,15 @@ data class QualifiedID(
 
 typealias ConversationId = QualifiedID
 
-fun QualifiedID.asString() = "$value@$domain"
+fun QualifiedID.asString() = "$value$VALUE_DOMAIN_SEPARATOR$domain"
 
-fun String.toConversationId() = split("@").let {
-    ConversationId(
-        value = it.first(),
-        domain = it.last()
+fun String.toConversationId(): ConversationId {
+    val (value, domain) = if (contains(VALUE_DOMAIN_SEPARATOR)) {
+        split(VALUE_DOMAIN_SEPARATOR).let { Pair(it.first(), it.last()) }
+    } else { Pair(this@toConversationId, "") }
+
+    return ConversationId(
+        value = value,
+        domain = domain
     )
 }
