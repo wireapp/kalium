@@ -9,7 +9,7 @@ data class QualifiedID(
 
 typealias ConversationId = QualifiedID
 
-fun QualifiedID.asString() = "$value$VALUE_DOMAIN_SEPARATOR$domain"
+fun QualifiedID.asString() = if(domain.isEmpty()) value else "$value$VALUE_DOMAIN_SEPARATOR$domain"
 
 fun String.toConversationId(): ConversationId {
     val (value, domain) = if (contains(VALUE_DOMAIN_SEPARATOR)) {
