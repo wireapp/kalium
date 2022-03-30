@@ -1,3 +1,4 @@
+
 package com.wire.kalium.logic.data.message
 import com.wire.kalium.logic.data.conversation.ConversationId
 
