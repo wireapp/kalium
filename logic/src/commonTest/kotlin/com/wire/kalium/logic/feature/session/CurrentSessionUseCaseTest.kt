@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.session
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -62,6 +63,6 @@ class CurrentSessionUseCaseTest {
         fun randomServerConfig(): ServerConfig =
             ServerConfig(randomString, randomString, randomString, randomString, randomString, randomString, randomString)
 
-        fun randomAuthSession(): AuthSession = AuthSession(randomString, randomString, randomString, randomString, randomServerConfig())
+        fun randomAuthSession(): AuthSession = AuthSession(UserId("user_id", "domain.de"), randomString, randomString, randomString, randomServerConfig())
     }
 }

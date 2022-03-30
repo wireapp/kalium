@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.session
 
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.Either
 import io.mockative.ConfigurationApi
@@ -50,7 +51,7 @@ class SaveSessionUseCaseTest {
         )
         val TEST_AUTH_SESSION =
             AuthSession(
-                userId = "user_id",
+                userId = UserId("user_id", "domain.de"),
                 accessToken = "access_token",
                 refreshToken = "refresh_token",
                 tokenType = "token_type",
