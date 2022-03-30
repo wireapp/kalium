@@ -67,7 +67,7 @@ abstract class UserSessionScopeCommon(
     private val mlsClientProvider: MLSClientProvider
         get() = MLSClientProviderImpl(
             authenticatedDataSourceSet.authenticatedRootDir,
-            userRepository,
+            userId,
             clientRepository,
             authenticatedDataSourceSet.kaliumPreferencesSettings)
 

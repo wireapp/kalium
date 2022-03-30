@@ -1,54 +1,49 @@
 package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
+import com.wire.kalium.cryptography.CryptoUserID
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.MLSClientImpl
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import io.ktor.util.encodeBase64
-import kotlinx.coroutines.flow.first
 import java.io.File
 import java.security.SecureRandom
 
 actual class MLSClientProviderImpl actual constructor(
     private val rootKeyStorePath: String,
-    private val userRepository: UserRepository, // TODO we can remove this when have the qualifiedID on login
+    private val userId: UserId,
     private val clientRepository: ClientRepository,
     private val kaliumPreferences: KaliumPreferences
 ) : MLSClientProvider {
 
     override suspend fun getMLSClient(clientId: ClientId?): Either<CoreFailure, MLSClient> = suspending {
-        userRepository.fetchSelfUser()
-        val userId = MapperProvider.idMapper().toCryptoModel(userRepository.getSelfUser().first().id)
         val location = "$rootKeyStorePath/${userId.domain}/${userId.value}"
+        val cryptoUserId = CryptoUserID(userId.value, userId.domain)
 
         // Make sure all intermediate directories exists
         File(location).mkdirs()
 
         val mlsClient = clientId?.let { clientId ->
-            Either.Right(
-                MLSClientImpl(
-                "$location/$KEYSTORE_NAME",
-                getOrGenerateSecretKey(),
-                CryptoQualifiedClientId(clientId.value, userId)
-            )
-            )
+            Either.Right(mlsClient(cryptoUserId, clientId, location))
         } ?: run {
             clientRepository.currentClientId().map { clientId ->
-                MLSClientImpl(
-                    "$location/$KEYSTORE_NAME",
-                    getOrGenerateSecretKey(),
-                    CryptoQualifiedClientId(clientId.value, userId)
-                )
+                mlsClient(cryptoUserId, clientId, location)
             }
         }
         mlsClient
+    }
+
+    private fun mlsClient(userId: CryptoUserID, clientId: ClientId, location: String): MLSClient {
+        return MLSClientImpl(
+            "$location/$$KEYSTORE_NAME",
+            getOrGenerateSecretKey(),
+            CryptoQualifiedClientId(clientId.value, userId)
+        )
     }
 
     private fun getOrGenerateSecretKey(): String {
