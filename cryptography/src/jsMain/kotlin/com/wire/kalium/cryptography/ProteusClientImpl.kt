@@ -13,9 +13,9 @@ import org.khronos.webgl.ArrayBuffer
 import org.khronos.webgl.Int8Array
 import org.khronos.webgl.Uint8Array
 
-actual class ProteusClientImpl actual constructor(rootDir: String, userId: String) : ProteusClient {
+actual class ProteusClientImpl actual constructor(rootDir: String, userId: CryptoUserID) : ProteusClient {
 
-    private val userId: String
+    private val userId: CryptoUserID
     private lateinit var box: Cryptobox
 
     init {
@@ -24,7 +24,7 @@ actual class ProteusClientImpl actual constructor(rootDir: String, userId: Strin
 
     override suspend fun open() {
         val engine = MemoryEngine()
-        engine.init(userId).await()
+        engine.init(userId.toString()).await()
 
         box = Cryptobox(engine)
         box.create().await()
