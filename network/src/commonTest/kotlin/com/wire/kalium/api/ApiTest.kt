@@ -22,11 +22,11 @@ import io.ktor.http.content.TextContent
 import io.ktor.http.headersOf
 import io.ktor.utils.io.ByteReadChannel
 import kotlinx.serialization.json.buildJsonObject
-import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import kotlin.test.fail
 
 class TestSessionManager : SessionManager {
     private val serverConfig = TEST_BACKEND_CONFIG
@@ -36,7 +36,7 @@ class TestSessionManager : SessionManager {
 
     override fun updateSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO =
         SessionDTO(
-            session.userIdValue,
+            session.userId,
             newAccessTokenDTO.tokenType,
             newAccessTokenDTO.value,
             newRefreshTokenDTO?.value ?: session.refreshToken
@@ -133,6 +133,39 @@ interface ApiTest {
         ).anonymousHttpClient
     }
 
+    class TestRequestHandler(
+        val path: String,
+        val responseBody: String,
+        val statusCode: HttpStatusCode,
+        val assertion: (HttpRequestData.() -> Unit) = {},
+        val headers: Map<String, String>? = null
+    )
+
+    fun mockUnauthenticatedHttpClient(
+        expectedRequests: List<TestRequestHandler>
+    ): HttpClient {
+        val mockEngine = MockEngine { currentRequest ->
+            expectedRequests.forEach { request ->
+                val head: Map<String, List<String>> = (request.headers?.let {
+                    mutableMapOf(HttpHeaders.ContentType to "application/json").plus(request.headers).mapValues { listOf(it.value) }
+                } ?: run {
+                    mapOf(HttpHeaders.ContentType to "application/json").mapValues { listOf(it.value) }
+                })
+                if (request.path == currentRequest.url.encodedPath) {
+                    return@MockEngine respond(
+                        content = ByteReadChannel(request.responseBody),
+                        status = request.statusCode,
+                        headers = HeadersImpl(head)
+                    )
+                }
+            }
+            fail("no expected response was found for ${currentRequest.method.value}:${currentRequest.url}")
+        }
+        return LoginNetworkContainer(
+            engine = mockEngine
+        ).anonymousHttpClient
+    }
+
     /**
      * Creates a mock Ktor Http client
      * @param responseBody the response body as a ByteArray
@@ -201,9 +234,9 @@ interface ApiTest {
     fun HttpRequestData.assertOptions() = this.assertMethodType(HttpMethod.Options)
 
     // content type
-    fun HttpRequestData.assertJson() = assertContentType(ContentType.Application.Json)
-    private fun HttpRequestData.assertContentType(contentType: ContentType) =
-        assertContains(this.body.contentType?.contentType ?: "", contentType.contentType)
+    fun HttpRequestData.assertJson() = assertContentType(ContentType.Application.Json.withParameter("charset", "UTF-8"))
+    fun HttpRequestData.assertContentType(contentType: ContentType) =
+        assertTrue(contentType.match(this.body.contentType ?: ContentType.Any), "contentType: ${this.body.contentType} doesn't match expected contentType: $contentType")
 
     // path
     fun HttpRequestData.assertPathEqual(path: String) = assertEquals(path, this.url.encodedPath)

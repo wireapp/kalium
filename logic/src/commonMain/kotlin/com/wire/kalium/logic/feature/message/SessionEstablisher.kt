@@ -2,19 +2,21 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
+import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.createSessions
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Recipient
+import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.prekey.QualifiedUserPreKeyInfo
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.wrapCryptoRequest
-import com.wire.kalium.cryptography.UserId as CryptoUserId
 
 interface SessionEstablisher {
 
@@ -29,7 +31,8 @@ interface SessionEstablisher {
 
 class SessionEstablisherImpl(
     private val proteusClient: ProteusClient,
-    private val preKeyRepository: PreKeyRepository
+    private val preKeyRepository: PreKeyRepository,
+    private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : SessionEstablisher {
     override suspend fun prepareRecipientsForNewOutgoingMessage(
         recipients: List<Recipient>
@@ -59,12 +62,18 @@ class SessionEstablisherImpl(
         }
 
 
-    private fun getMapOfSessionIdsToPreKeys(preKeyInfoList: List<QualifiedUserPreKeyInfo>) =
-        preKeyInfoList.associate { userInfo ->
-            userInfo.userId.value to userInfo.clientsInfo.associate { clientInfo ->
-                clientInfo.clientId to clientInfo.preKey
+    private fun getMapOfSessionIdsToPreKeys(preKeyInfoList: List<QualifiedUserPreKeyInfo>): Map<String, Map<String, Map<String, PreKeyCrypto>>> {
+        val acc = mutableMapOf<String, Map<String, Map<String, PreKeyCrypto>>>()
+        preKeyInfoList.forEach {
+            val userToClientsToPreKeyMap = preKeyInfoList.associate { userInfo ->
+                userInfo.userId.value to userInfo.clientsInfo.associate { clientInfo ->
+                    clientInfo.clientId to clientInfo.preKey
+                }
             }
+            acc[it.userId.domain] = userToClientsToPreKeyMap
         }
+        return acc
+    }
 
     private suspend fun getAllMissingClients(
         detailedContacts: List<Recipient>
@@ -84,8 +93,7 @@ class SessionEstablisherImpl(
     ): Either<ProteusFailure, List<ClientId>> =
         suspending {
             recipient.clients.foldToEitherWhileRight(mutableListOf<ClientId>()) { client, clientIdAccumulator ->
-                //TODO Use domain too
-                doesSessionExist(recipient.member.id.value, client).map { sessionExists ->
+                doesSessionExist(recipient.member.id, client).map { sessionExists ->
                     if (!sessionExists) {
                         clientIdAccumulator += client
                     }
@@ -95,11 +103,11 @@ class SessionEstablisherImpl(
         }
 
     private suspend fun doesSessionExist(
-        recipientUserId: String,
+        recipientUserId: UserId,
         client: ClientId
     ): Either<ProteusFailure, Boolean> =
         wrapCryptoRequest {
-            val cryptoSessionID = CryptoSessionId(CryptoUserId(recipientUserId), CryptoClientId(client.value))
+            val cryptoSessionID = CryptoSessionId(idMapper.toCryptoQualifiedIDId(recipientUserId), CryptoClientId(client.value))
             proteusClient.doesSessionExist(cryptoSessionID)
         }
 }

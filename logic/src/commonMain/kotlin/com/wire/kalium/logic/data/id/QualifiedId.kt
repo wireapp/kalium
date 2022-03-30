@@ -1,11 +1,14 @@
 package com.wire.kalium.logic.data.id
 
-private const val VALUE_DOMAIN_SEPARATOR = "@"
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class QualifiedID(
     val value: String,
     val domain: String
 )
+
+private const val VALUE_DOMAIN_SEPARATOR = "@"
 
 typealias ConversationId = QualifiedID
 

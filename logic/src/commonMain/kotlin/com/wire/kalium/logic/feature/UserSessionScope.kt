@@ -14,6 +14,7 @@ import com.wire.kalium.logic.data.conversation.ConversationDataSource
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.EventDataSource
 import com.wire.kalium.logic.data.event.EventRepository
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.logout.LogoutDataSource
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.message.MessageDataSource
@@ -23,8 +24,8 @@ import com.wire.kalium.logic.data.prekey.PreKeyDataSource
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteDataSource
 import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteRepository
-import com.wire.kalium.logic.data.publicuser.PublicUserRepository
-import com.wire.kalium.logic.data.publicuser.PublicUserRepositoryImpl
+import com.wire.kalium.logic.data.publicuser.SearchUserRepository
+import com.wire.kalium.logic.data.publicuser.SearchUserRepositoryImpl
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.team.TeamDataSource
 import com.wire.kalium.logic.data.team.TeamRepository
@@ -41,7 +42,6 @@ import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.sync.ConversationEventReceiver
 import com.wire.kalium.logic.sync.ListenToEventsUseCase
 import com.wire.kalium.logic.sync.SyncManager
-import com.wire.kalium.network.api.NonQualifiedUserId
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
 import com.wire.kalium.persistence.db.Database
@@ -52,7 +52,7 @@ import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 expect class UserSessionScope : UserSessionScopeCommon
 
 abstract class UserSessionScopeCommon(
-    private val userId: NonQualifiedUserId,
+    private val userId: QualifiedID,
     private val authenticatedDataSourceSet: AuthenticatedDataSourceSet,
     private val sessionRepository: SessionRepository,
     private val globalCallManager: GlobalCallManager
@@ -72,7 +72,6 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi
         )
-
 
     private val messageRepository: MessageRepository
         get() = MessageDataSource(
@@ -95,9 +94,10 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.authenticatedNetworkContainer.teamsApi
         )
 
-    private val publicUserRepository: PublicUserRepository
-        get() = PublicUserRepositoryImpl(
-            authenticatedDataSourceSet.authenticatedNetworkContainer.contactSearchApi,
+    private val publicUserRepository: SearchUserRepository
+        get() = SearchUserRepositoryImpl(
+            database.userDAO,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.userSearchApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi
         )
 

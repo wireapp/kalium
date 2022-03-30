@@ -3,16 +3,7 @@ package com.wire.kalium.cryptography
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import kotlin.coroutines.cancellation.CancellationException
 
-data class CryptoClientId(val value: String) {
-    override fun toString() = value
-}
-
-data class UserId(val value: String) {
-    override fun toString() = value
-}
-
-data class CryptoSessionId(val userId: UserId, val cryptoClientId: CryptoClientId) {
-    //TODO Take domain into consideration here too
+data class CryptoSessionId(val userId: CryptoUserID, val cryptoClientId: CryptoClientId) {
     val value: String = "${userId}_${cryptoClientId}"
 }
 
@@ -57,16 +48,17 @@ interface ProteusClient {
     suspend fun encryptWithPreKey(message: ByteArray, preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId): ByteArray
 }
 
-expect class ProteusClientImpl(rootDir: String, userId: String): ProteusClient
+expect class ProteusClientImpl(rootDir: String, userId: CryptoUserID) : ProteusClient
 
-suspend fun ProteusClient.createSessions(preKeysCrypto: Map<String, Map<String, PreKeyCrypto>>) {
-    for (userId in preKeysCrypto.keys) {
-        val clients = preKeysCrypto.getValue(userId)
-        for (clientId in clients.keys) {
-            val pk = clients[clientId]
-            if (pk != null) {
-                val id = CryptoSessionId(UserId(userId), CryptoClientId(clientId))
-                createSession(pk, id)
+suspend fun ProteusClient.createSessions(preKeysCrypto: Map<String, Map<String, Map<String, PreKeyCrypto>>>) {
+    preKeysCrypto.forEach { domainMap ->
+        val domain = domainMap.key
+        domainMap.value.forEach { userToClientsMap ->
+            val userId = userToClientsMap.key
+            userToClientsMap.value.forEach { clientsToPreKeyMap ->
+                val clientId = clientsToPreKeyMap.key
+                val id = CryptoSessionId(CryptoUserID(userId, domain), CryptoClientId(clientId))
+                createSession(clientsToPreKeyMap.value, id)
             }
         }
     }

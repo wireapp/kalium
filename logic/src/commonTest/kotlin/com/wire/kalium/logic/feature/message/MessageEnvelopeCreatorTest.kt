@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
+import com.wire.kalium.cryptography.CryptoUserID
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.ProteusFailure
@@ -25,14 +26,15 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
-import com.wire.kalium.cryptography.UserId as CryptoUserId
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class MessageEnvelopeCreatorTest {
 
     @Mock
@@ -70,7 +72,7 @@ class MessageEnvelopeCreatorTest {
             recipient.clients.forEach { client ->
                 verify(proteusClient)
                     .suspendFunction(proteusClient::encrypt)
-                    .with(eq(plainData), eq(CryptoSessionId(CryptoUserId(recipient.member.id.value), CryptoClientId(client.value))))
+                    .with(eq(plainData), eq(CryptoSessionId(CryptoUserID(recipient.member.id.value, recipient.member.id.domain), CryptoClientId(client.value))))
                     .wasInvoked(exactly = once)
             }
         }
