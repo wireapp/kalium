@@ -3,15 +3,12 @@ package com.wire.kalium.logic.feature.auth
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.auth.login.LoginRepository
-import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
-import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
-import io.mockative.configure
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
@@ -29,10 +26,6 @@ class LoginUseCaseTest {
     @Mock
     val loginRepository = mock(classOf<LoginRepository>())
 
-    @OptIn(ConfigurationApi::class)
-    @Mock
-    val sessionRepository: SessionRepository = configure(mock(classOf<SessionRepository>())) { stubsUnitByDefault = true }
-
     @Mock
     val validateEmailUseCase = mock(classOf<ValidateEmailUseCase>())
 
@@ -44,7 +37,7 @@ class LoginUseCaseTest {
 
     @BeforeTest
     fun setup() {
-        loginUseCase = LoginUseCaseImpl(loginRepository, sessionRepository, validateEmailUseCase, validateUserHandleUseCase)
+        loginUseCase = LoginUseCaseImpl(loginRepository, validateEmailUseCase, validateUserHandleUseCase)
     }
 
     @Test
@@ -57,8 +50,6 @@ class LoginUseCaseTest {
             given(loginRepository).coroutine { loginWithEmail(cleanEmail, password, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG) }.then {
                 Either.Right(TEST_AUTH_SESSION)
             }
-            given(sessionRepository).invocation { storeSession(TEST_AUTH_SESSION) }.then { Either.Right(Unit) }
-            given(sessionRepository).invocation { updateCurrentSession(TEST_AUTH_SESSION.userId) }.then { Either.Right(Unit) }
 
             val loginUserCaseResult = loginUseCase("   user@email.de  ", password, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG)
 
@@ -70,8 +61,6 @@ class LoginUseCaseTest {
                 loginWithEmail(cleanEmail, password, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG)
             }.wasInvoked(exactly = once)
             verify(loginRepository).suspendFunction(loginRepository::loginWithHandle).with(any(), any(), any(), any()).wasNotInvoked()
-
-            verify(sessionRepository).invocation { storeSession(TEST_AUTH_SESSION) }.wasInvoked(exactly = once)
         }
 
     @Test
@@ -84,8 +73,6 @@ class LoginUseCaseTest {
             given(loginRepository).coroutine { loginWithHandle(cleanHandle, password, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG) }.then {
                 Either.Right(TEST_AUTH_SESSION)
             }
-            given(sessionRepository).invocation { storeSession(TEST_AUTH_SESSION) }.then { Either.Right(Unit) }
-            given(sessionRepository).invocation { updateCurrentSession(TEST_AUTH_SESSION.userId) }.then { Either.Right(Unit) }
 
             val loginUserCaseResult = loginUseCase("   usere  ", password, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG)
 
@@ -98,8 +85,6 @@ class LoginUseCaseTest {
             }.wasInvoked(exactly = once)
 
             verify(loginRepository).suspendFunction(loginRepository::loginWithEmail).with(any(), any(), any(), any()).wasNotInvoked()
-
-            verify(sessionRepository).coroutine { storeSession(TEST_AUTH_SESSION) }.wasInvoked(exactly = once)
         }
 
     @Test
@@ -110,8 +95,6 @@ class LoginUseCaseTest {
             given(loginRepository).coroutine { loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG) }.then {
                 Either.Right(TEST_AUTH_SESSION)
             }
-            given(sessionRepository).invocation { storeSession(TEST_AUTH_SESSION) }.then { Either.Right(Unit) }
-            given(sessionRepository).invocation { updateCurrentSession(TEST_AUTH_SESSION.userId) }.then { Either.Right(Unit) }
 
             val loginUserCaseResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG)
 
@@ -123,8 +106,6 @@ class LoginUseCaseTest {
                 loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG)
             }.wasInvoked(exactly = once)
             verify(loginRepository).suspendFunction(loginRepository::loginWithHandle).with(any(), any(), any(), any()).wasNotInvoked()
-
-            verify(sessionRepository).coroutine { storeSession(TEST_AUTH_SESSION) }.wasInvoked(exactly = once)
         }
 
     @Test
@@ -136,8 +117,6 @@ class LoginUseCaseTest {
             given(loginRepository).coroutine { loginWithHandle(TEST_HANDLE, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG) }.then {
                 Either.Right(TEST_AUTH_SESSION)
             }
-            given(sessionRepository).invocation { storeSession(TEST_AUTH_SESSION) }.then { Either.Right(Unit) }
-            given(sessionRepository).invocation { updateCurrentSession(TEST_AUTH_SESSION.userId) }.then { Either.Right(Unit) }
 
             // when
             val loginUserCaseResult = loginUseCase(TEST_HANDLE, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG)
@@ -157,12 +136,6 @@ class LoginUseCaseTest {
             verify(loginRepository)
                 .suspendFunction(loginRepository::loginWithEmail).with(any(), any(), any(), any())
                 .wasNotInvoked()
-            verify(sessionRepository)
-                .coroutine { storeSession(TEST_AUTH_SESSION) }
-                .wasInvoked(exactly = once)
-            verify(sessionRepository)
-                .coroutine { updateCurrentSession(TEST_AUTH_SESSION.userId) }
-                .wasInvoked(exactly = once)
         }
 
     @Test
@@ -173,12 +146,9 @@ class LoginUseCaseTest {
             given(loginRepository).coroutine { loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG) }
                 .then { Either.Right(TEST_AUTH_SESSION) }
 
-            val loginUserCaseResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG, false)
+            val loginUserCaseResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG)
 
             assertEquals(loginUserCaseResult, AuthenticationResult.Success(TEST_AUTH_SESSION))
-
-            verify(sessionRepository).coroutine { storeSession(TEST_AUTH_SESSION) }.wasNotInvoked()
-            verify(sessionRepository).coroutine { updateCurrentSession(TEST_AUTH_SESSION.userId) }.wasNotInvoked()
         }
 
     @Test
@@ -226,14 +196,6 @@ class LoginUseCaseTest {
                 .suspendFunction(loginRepository::loginWithHandle)
                 .with(any(), any(), any(), any())
                 .wasNotInvoked()
-            verify(sessionRepository)
-                .function(sessionRepository::storeSession)
-                .with(any())
-                .wasNotInvoked()
-            verify(sessionRepository)
-                .function(sessionRepository::updateCurrentSession)
-                .with(any())
-                .wasNotInvoked()
 
             // user handle
             val loginHandleResult = loginUseCase(TEST_HANDLE, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG)
@@ -251,14 +213,6 @@ class LoginUseCaseTest {
             verify(loginRepository)
                 .suspendFunction(loginRepository::loginWithEmail)
                 .with(any(), any(), any(), any())
-                .wasNotInvoked()
-            verify(sessionRepository)
-                .function(sessionRepository::storeSession)
-                .with(any())
-                .wasNotInvoked()
-            verify(sessionRepository)
-                .function(sessionRepository::updateCurrentSession)
-                .with(any())
                 .wasNotInvoked()
         }
 
