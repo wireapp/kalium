@@ -1,13 +1,11 @@
 package com.wire.kalium.logic
 
-import com.wire.kalium.logic.configuration.ServerConfigMapper
-import com.wire.kalium.logic.configuration.ServerConfigMapperImpl
-import com.wire.kalium.logic.data.session.SessionMapper
-import com.wire.kalium.logic.data.session.SessionMapperImpl
+import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
-import com.wire.kalium.network.api.NonQualifiedUserId
 
 expect class CoreLogic : CoreLogicCommon
 
@@ -15,7 +13,8 @@ abstract class CoreLogicCommon(
     // TODO: can client label be replaced with clientConfig.deviceName() ?
     protected val clientLabel: String,
     // TODO rename to rootAccountDirectoryPath?
-    protected val rootProteusDirectoryPath: String
+    protected val rootProteusDirectoryPath: String,
+    protected val idMapper: IdMapper = MapperProvider.idMapper()
 ) {
 
     val sessionRepository: SessionRepository by lazy {
@@ -24,18 +23,18 @@ abstract class CoreLogicCommon(
     protected abstract fun getSessionRepo(): SessionRepository
 
 
-    protected val userScopeStorage = hashMapOf<NonQualifiedUserId, AuthenticatedDataSourceSet>()
+    protected val userScopeStorage = hashMapOf<UserId, AuthenticatedDataSourceSet>()
     //  TODO:     - Delete UserSession and DataSourceSets when user logs-out
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
-    abstract fun getAuthenticationScope(): AuthenticationScope
+    fun getAuthenticationScope(): AuthenticationScope = AuthenticationScope( clientLabel, sessionRepository)
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
-    abstract fun getSessionScope(userId: NonQualifiedUserId): UserSessionScope
+    abstract fun getSessionScope(userId: UserId): UserSessionScope
 
     suspend fun <T> authenticationScope(action: suspend AuthenticationScope.() -> T)
             : T = getAuthenticationScope().action()
 
-    suspend fun <T> sessionScope(userId: NonQualifiedUserId, action: suspend UserSessionScope.() -> T)
+    suspend fun <T> sessionScope(userId: UserId, action: suspend UserSessionScope.() -> T)
             : T = getSessionScope(userId).action()
 }
