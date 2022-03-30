@@ -49,6 +49,6 @@ class MessageScope(
     val getRecentMessages: GetRecentMessagesUseCase get() = GetRecentMessagesUseCase(messageRepository)
 
     val deleteMessage: DeleteMessageUseCase
-        get() = DeleteMessageUseCase(messageRepository, userRepository, clientRepository, syncManager, messageSender)
+        get() = DeleteMessageUseCase(messageRepository, userRepository, clientRepository, syncManager, messageSender, conversationRepository)
 
 }

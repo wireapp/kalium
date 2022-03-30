@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.UserId
@@ -21,6 +22,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 interface ConversationRepository {
+    suspend fun getSelfConversationId(): ConversationId
     suspend fun fetchConversations(): Either<CoreFailure, Unit>
     suspend fun getConversationList(): Flow<List<Conversation>>
     suspend fun getConversationDetails(conversationId: ConversationId): Flow<Conversation>
@@ -57,6 +59,7 @@ class ConversationDataSource(
         }
     }
 
+    override suspend fun getSelfConversationId(): ConversationId = idMapper.fromDaoModel(conversationDAO.getSelfConversationId())
 
     override suspend fun getConversationList(): Flow<List<Conversation>> {
         return conversationDAO.getAllConversations().map { it.map(conversationMapper::fromDaoModel) }

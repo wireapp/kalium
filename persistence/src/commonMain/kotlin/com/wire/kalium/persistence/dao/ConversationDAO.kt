@@ -16,6 +16,7 @@ data class Member(
 )
 
 interface ConversationDAO {
+    suspend fun getSelfConversationId(): QualifiedIDEntity
     suspend fun insertConversation(conversationEntity: ConversationEntity)
     suspend fun insertConversations(conversationEntities: List<ConversationEntity>)
     suspend fun updateConversation(conversationEntity: ConversationEntity)
