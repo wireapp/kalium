@@ -11,8 +11,9 @@ import java.util.prefs.Preferences
 
 @OptIn(ExperimentalSettingsImplementation::class)
 actual class EncryptedSettingsHolder(
-    preferencesFilePath: String
+    options: SettingOptions
 ) {
-    private val preferences: Preferences = Preferences.userRoot().node(preferencesFilePath)
+    private val preferences: Preferences = Preferences.userRoot().node(options.fileName)
+    // TODO: JvmPreferencesSettings is not encrypted
     actual val encryptedSettings: Settings = JvmPreferencesSettings(preferences)
 }

@@ -2,35 +2,44 @@ package com.wire.kalium.persistence.client
 
 import com.russhwolf.settings.MockSettings
 import com.russhwolf.settings.Settings
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
 import com.wire.kalium.persistence.model.NetworkConfig
 import com.wire.kalium.persistence.model.PersistenceSession
 import com.wire.kalium.persistence.model.PreferencesResult
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.random.Random
+import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class SessionDAOTest {
 
     private val settings: Settings = MockSettings()
 
     private val kaliumPreferences: KaliumPreferences = KaliumPreferencesSettings(settings)
-    private val sessionStorage: SessionStorage = SessionStorageImpl(kaliumPreferences)
+    private lateinit var sessionStorage: SessionStorage
 
     @BeforeTest
     fun setUp() {
+        sessionStorage = SessionStorageImpl(kaliumPreferences)
+    }
+
+    @AfterTest
+    fun clear() {
         settings.clear()
     }
 
     @Test
-    fun givenASSession_WhenCallingAddSession_ThenTheSessionCanBeStoredLocally() = runTest {
+    fun givenASession_WhenCallingAddSession_ThenTheSessionCanBeStoredLocally() = runTest {
         val persistenceSession =
             PersistenceSession(
-                "user_id_1",
+                QualifiedIDEntity("user_id_1", "user_domain_1"),
                 "JWT",
                 Random.nextBytes(32).decodeToString(),
                 Random.nextBytes(32).decodeToString(),
@@ -45,7 +54,7 @@ class SessionDAOTest {
     @Test
     fun givenAnExistingSession_WhenCallingDeleteSession_ThenItWillBeRemoved() = runTest {
         val session1 = PersistenceSession(
-            "user_id_1",
+            QualifiedIDEntity("user_id_1", "user_domain_1"),
             "JWT",
             Random.nextBytes(32).decodeToString(),
             Random.nextBytes(32).decodeToString(),
@@ -53,7 +62,7 @@ class SessionDAOTest {
         )
         val sessionToDelete =
             PersistenceSession(
-                "user_id_2",
+                QualifiedIDEntity("user_id_2", "user_domain_2"),
                 "JWT",
                 Random.nextBytes(32).decodeToString(),
                 Random.nextBytes(32).decodeToString(),
@@ -83,7 +92,7 @@ class SessionDAOTest {
         assertNull(sessionStorage.currentSession())
         val session1 =
             PersistenceSession(
-                "user_id_1",
+                QualifiedIDEntity("user_id_1", "user_domain_1"),
                 "Bearer",
                 Random.nextBytes(32).decodeToString(),
                 Random.nextBytes(32).decodeToString(),
@@ -92,7 +101,7 @@ class SessionDAOTest {
 
         val session2 =
             PersistenceSession(
-                "user_id_2",
+                QualifiedIDEntity("user_id_2", "user_domain_2"),
                 "Bearer",
                 Random.nextBytes(32).decodeToString(),
                 Random.nextBytes(32).decodeToString(),
@@ -102,7 +111,7 @@ class SessionDAOTest {
         sessionStorage.addSession(session1)
         sessionStorage.addSession(session2)
 
-        sessionStorage.setCurrentSession("user_id_1")
+        sessionStorage.setCurrentSession(QualifiedIDEntity("user_id_1", "user_domain_1"))
 
         assertEquals(session1, sessionStorage.currentSession())
     }

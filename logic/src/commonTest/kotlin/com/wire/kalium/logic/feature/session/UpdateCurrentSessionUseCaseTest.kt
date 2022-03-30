@@ -1,9 +1,9 @@
 package com.wire.kalium.logic.feature.session
 
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.user.UserId
 import io.mockative.ConfigurationApi
 import io.mockative.Mock
-import io.mockative.any
 import io.mockative.classOf
 import io.mockative.configure
 import io.mockative.given
@@ -29,10 +29,10 @@ class UpdateCurrentSessionUseCaseTest {
 
     @Test
     fun givenAUserId_whenUpdateCurrentSessionUseCaseIsInvoked_thenUpdateCurrentSessionIsCalled() = runTest {
-        val userId = "user_id"
+        val userId = UserId("user_id", "domain.de")
         given(sessionRepository).coroutine { updateCurrentSession(userId) }
 
-        updateCurrentSessionUseCase("user_id")
+        updateCurrentSessionUseCase(userId)
 
         verify(sessionRepository).coroutine { updateCurrentSession(userId) }.wasInvoked(exactly = once)
     }

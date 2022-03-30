@@ -5,12 +5,12 @@ import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.api.SessionDTO
-import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.model.UserDTO
 import com.wire.kalium.network.api.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.model.getPreviewAssetOrNull
@@ -29,6 +29,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import com.wire.kalium.network.api.UserId as UserIdDTO
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RegisterAccountRepositoryTest {
@@ -139,7 +140,7 @@ class RegisterAccountRepositoryTest {
                 completePicture = assets.getCompleteAssetOrNull()?.key
             )
         }
-        val authSession = with(SESSION) { AuthSession(userIdValue, accessToken, refreshToken, tokenType, serverConfig) }
+        val authSession = with(SESSION) { AuthSession(UserId(userId.value, userId.domain), accessToken, refreshToken, tokenType, serverConfig) }
         val expected = Pair(selfUser, authSession)
 
         given(registerApi)
@@ -193,7 +194,7 @@ class RegisterAccountRepositoryTest {
                 completePicture = assets.getCompleteAssetOrNull()?.key
             )
         }
-        val authSession = with(SESSION) { AuthSession(userIdValue, accessToken, refreshToken, tokenType, serverConfig) }
+        val authSession = with(SESSION) { AuthSession(UserId(userId.value, userId.domain), accessToken, refreshToken, tokenType, serverConfig) }
         val expected = Pair(selfUser, authSession)
 
         given(registerApi)
@@ -281,9 +282,10 @@ class RegisterAccountRepositoryTest {
         const val PASSWORD = "password"
         const val TEAM_NAME = "teamName"
         const val TEAM_ICON = "teamIcon"
-        val SESSION: SessionDTO = SessionDTO("user_id", "tokenType", "access_token", "refresh_token")
+        val USERID_DTO = UserIdDTO("user_id", "domain.com")
+        val SESSION: SessionDTO = SessionDTO(USERID_DTO, "tokenType", "access_token", "refresh_token")
         val TEST_USER: UserDTO = UserDTO(
-            id = UserId("user_id", "domain.com"),
+            id = USERID_DTO,
             name = NAME,
             email = EMAIL,
             accentId = 1,
