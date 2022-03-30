@@ -11,6 +11,7 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.network.api.NonQualifiedUserId
 import com.waz.log.LogHandler as NativeLogHandler
 
 actual class GlobalCallManager(
@@ -38,7 +39,7 @@ actual class GlobalCallManager(
      * Get a [CallManager] for a session, shouldn't be instantiated more than one CallManager for a single session.
      */
     actual fun getCallManagerForClient(
-        userId: String,
+        userId: NonQualifiedUserId,
         callRepository: CallRepository,
         userRepository: UserRepository,
         clientRepository: ClientRepository
