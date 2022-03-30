@@ -30,8 +30,8 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
 
     override suspend fun deleteMessage(id: String) = queries.deleteMessageById(id)
 
-    override suspend fun updateMessageVisibility(deleteStatus: MessageEntity.Visibility, content: String?, id: String) =
-        queries.updateMessageVisibility(deleteStatus, content, id)
+    override suspend fun updateMessageVisibility(visibility: MessageEntity.Visibility, conversationId: QualifiedIDEntity, content: String?, id: String) =
+        queries.updateMessageVisibility(visibility, content, id)
 
     override suspend fun deleteAllMessages() = queries.deleteAllMessages()
 

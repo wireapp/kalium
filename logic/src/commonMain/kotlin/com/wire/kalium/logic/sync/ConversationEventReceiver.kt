@@ -7,6 +7,7 @@ import com.wire.kalium.cryptography.PlainUserId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -62,8 +63,8 @@ class ConversationEventReceiver(
                     kaliumLogger.i(message = "Message received: $message")
                     when (message.content) {
                         is MessageContent.Text -> messageRepository.persistMessage(message)
-                        is MessageContent.DeleteMessage -> messageRepository.softDeleteMessage(messageUuid = message.content.messageId)
-                        is MessageContent.DeleteForMe -> messageRepository.hideMessage(messageUuid = message.content.messageId)
+                        is MessageContent.DeleteMessage -> messageRepository.softDeleteMessage(messageUuid = message.content.messageId, message.conversationId)
+                        is MessageContent.DeleteForMe -> messageRepository.hideMessage(messageUuid = message.content.messageId, message.content.conversationId)
                         is MessageContent.Unknown -> kaliumLogger.i(message = "Unknown Message received: $message")
                     }
                 }

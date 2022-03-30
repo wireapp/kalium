@@ -28,7 +28,7 @@ DELETE FROM Message WHERE  id = ?;
 updateMessageVisibility:
 UPDATE Message
 SET visibility = ?, content = ?
-WHERE id = ?;
+WHERE id = ? AND conversation_id = ?;
 
 insertMessage:
 INSERT INTO Message(id, content, conversation_id, date, sender_user_id, sender_client_id, status, visibility)

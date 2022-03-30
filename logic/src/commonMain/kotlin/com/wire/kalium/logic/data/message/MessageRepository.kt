@@ -22,8 +22,8 @@ interface MessageRepository {
     suspend fun persistMessage(message: Message): Either<CoreFailure, Unit>
     suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun deleteMessage(messageUuid: String): Either<CoreFailure, Unit>
-    suspend fun softDeleteMessage(messageUuid: String): Either<CoreFailure, Unit>
-    suspend fun hideMessage(messageUuid: String): Either<CoreFailure, Unit>
+    suspend fun softDeleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
+    suspend fun hideMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun markMessageAsSent(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit>
     suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message>
 
@@ -64,14 +64,14 @@ class MessageDataSource(
         return Either.Right(Unit)
     }
 
-    override suspend fun softDeleteMessage(messageUuid: String): Either<CoreFailure, Unit> {
-        messageDAO.updateMessageVisibility(visibility = MessageEntity.Visibility.DELETED, id = messageUuid, content = "--DELETED--")
+    override suspend fun softDeleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit> {
+        messageDAO.updateMessageVisibility(visibility = MessageEntity.Visibility.DELETED, conversationId = idMapper.toDaoModel(conversationId), id = messageUuid, content = "--DELETED--")
         //TODO: Handle failures
         return Either.Right(Unit)
     }
 
-    override suspend fun hideMessage(messageUuid: String): Either<CoreFailure, Unit> {
-        messageDAO.updateMessageVisibility(visibility = MessageEntity.Visibility.HIDDEN, id = messageUuid, content = "--HIDDEN--")
+    override suspend fun hideMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit> {
+        messageDAO.updateMessageVisibility(visibility = MessageEntity.Visibility.HIDDEN, conversationId = idMapper.toDaoModel(conversationId), id = messageUuid, content = "--HIDDEN--")
         //TODO: Handle failures
         return Either.Right(Unit)
     }
