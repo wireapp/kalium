@@ -65,13 +65,13 @@ class MessageDataSource(
     }
 
     override suspend fun softDeleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit> {
-        messageDAO.updateMessageVisibility(visibility = MessageEntity.Visibility.DELETED, conversationId = idMapper.toDaoModel(conversationId), id = messageUuid, content = "--DELETED--")
+        messageDAO.updateMessageVisibility(visibility = MessageEntity.Visibility.DELETED, conversationId = idMapper.toDaoModel(conversationId), id = messageUuid)
         //TODO: Handle failures
         return Either.Right(Unit)
     }
 
     override suspend fun hideMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit> {
-        messageDAO.updateMessageVisibility(visibility = MessageEntity.Visibility.HIDDEN, conversationId = idMapper.toDaoModel(conversationId), id = messageUuid, content = "--HIDDEN--")
+        messageDAO.updateMessageVisibility(visibility = MessageEntity.Visibility.HIDDEN, conversationId = idMapper.toDaoModel(conversationId), id = messageUuid)
         //TODO: Handle failures
         return Either.Right(Unit)
     }
