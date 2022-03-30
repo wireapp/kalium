@@ -1,7 +1,8 @@
 package com.wire.kalium.logic.feature.session
 
+import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.failure.SessionFailure
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.suspending
 
@@ -10,15 +11,17 @@ sealed class CurrentSessionResult {
 
     sealed class Failure : CurrentSessionResult() {
         object SessionNotFound : Failure()
+        class Generic(coreFailure: CoreFailure) : Failure()
     }
 }
 
 class CurrentSessionUseCase(private val sessionRepository: SessionRepository) {
     suspend operator fun invoke(): CurrentSessionResult = suspending {
         sessionRepository.currentSession()
-    }.fold({ sessionFailure ->
-        when (sessionFailure) {
-            is SessionFailure.NoSessionFound -> CurrentSessionResult.Failure.SessionNotFound
+    }.fold({
+        when (it) {
+            StorageFailure.DataNotFound -> CurrentSessionResult.Failure.SessionNotFound
+            is StorageFailure.Generic -> CurrentSessionResult.Failure.Generic(it)
         }
     }, { authSession ->
         CurrentSessionResult.Success(authSession)
