@@ -18,39 +18,38 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 @OptIn(ConfigurationApi::class, ExperimentalCoroutinesApi::class)
-class CurrentClientIdUseCaseTest {
+class NeedsToRegisterClientUseCaseTest {
 
     @Mock
     private val clientRepository = configure(mock(classOf<ClientRepository>())) {
         stubsUnitByDefault = true
     }
 
-    private lateinit var currentClientIdUseCase: CurrentClientIdUseCase
+    private lateinit var needsToRegisterClientUseCase: NeedsToRegisterClientUseCase
 
     @BeforeTest
     fun setup() {
-        currentClientIdUseCase = CurrentClientIdUseCaseImpl(clientRepository)
+        needsToRegisterClientUseCase = NeedsToRegisterClientUseCaseImpl(clientRepository)
     }
 
     @Test
-    fun givenClientIdIsRegistered_thenReturnSuccess() = runTest {
+    fun givenClientIdIsRegistered_thenReturnFalse() = runTest {
         given(clientRepository)
             .coroutine { clientRepository.currentClientId() }
             .then { Either.Right(CLIENT_ID) }
 
-        val actual = currentClientIdUseCase.invoke()
-        assertIs<CurrentClientIdResult.Success>(actual)
-        assertEquals(CLIENT_ID, actual.clientId)
+        val actual = needsToRegisterClientUseCase.invoke()
+        assertEquals(actual, false)
     }
 
     @Test
-    fun givenClientIdIsNotRegistered_thenReturnMissingClientRegistration() = runTest {
+    fun givenClientIdIsNotRegistered_thenReturnTrue() = runTest {
         given(clientRepository)
             .coroutine { clientRepository.currentClientId() }
             .then { Either.Left(CoreFailure.MissingClientRegistration) }
 
-        val actual = currentClientIdUseCase.invoke()
-        assertIs<CurrentClientIdResult.MissingClientRegistration>(actual)
+        val actual = needsToRegisterClientUseCase.invoke()
+        assertEquals(actual, true)
     }
 
     private companion object {
