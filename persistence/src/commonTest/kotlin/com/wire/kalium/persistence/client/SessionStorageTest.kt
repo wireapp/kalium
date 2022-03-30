@@ -47,7 +47,7 @@ class SessionDAOTest {
         val sessionsMap = mapOf(persistenceSession.userId to persistenceSession)
         sessionStorage.addSession(persistenceSession)
 
-        assertEquals(sessionsMap.values, sessionStorage.allSessions())
+        assertEquals(sessionsMap, sessionStorage.allSessions())
     }
 
     @Test
