@@ -88,9 +88,9 @@ class ConversationDAOImpl(
         }
     }
 
-    override suspend fun insertMembers(members: List<Member>, conversationID: QualifiedIDEntity) {
+    override suspend fun insertMembers(memberList: List<Member>, conversationID: QualifiedIDEntity) {
         memberQueries.transaction {
-            for (member: Member in members) {
+            for (member: Member in memberList) {
                 userQueries.insertOrIgnoreUserId(member.user)
                 memberQueries.insertMember(member.user, conversationID)
             }
@@ -108,5 +108,4 @@ class ConversationDAOImpl(
             .mapToList()
             .map { it.map(memberMapper::toModel) }
     }
-
 }
