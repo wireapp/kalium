@@ -3,7 +3,6 @@ package com.wire.kalium.logic.feature.register
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
-import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.suspending
@@ -44,13 +43,11 @@ sealed class RegisterParam(
 }
 
 class RegisterAccountUseCase(
-    private val registerAccountRepository: RegisterAccountRepository,
-    private val sessionRepository: SessionRepository
+    private val registerAccountRepository: RegisterAccountRepository
 ) {
     suspend operator fun invoke(
         param: RegisterParam,
-        serverConfig: ServerConfig,
-        shouldStoreSession:Boolean = true
+        serverConfig: ServerConfig
     ): RegisterResult = suspending {
         when (param) {
             is RegisterParam.PrivateAccount -> {
@@ -73,10 +70,6 @@ class RegisterAccountUseCase(
                     RegisterResult.Failure.Generic(it)
                 }
             }, {
-                if(shouldStoreSession) {
-                    sessionRepository.storeSession(it.second)
-                    sessionRepository.updateCurrentSession(it.second.userId)
-                }
                 RegisterResult.Success(it)
             })
     }

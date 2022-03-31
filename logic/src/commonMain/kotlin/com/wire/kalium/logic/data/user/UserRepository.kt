@@ -38,6 +38,7 @@ interface UserRepository {
     suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit>
     suspend fun updateLocalSelfUserHandle(handle: String)
     suspend fun getAllKnownUsers(): Flow<List<PublicUser>>
+    suspend fun getKnownUser(userId: UserId): Flow<PublicUser?>
 }
 
 class UserDataSource(
@@ -123,6 +124,10 @@ class UserDataSource(
 
     override suspend fun getAllKnownUsers() =
         userDAO.getAllUsers().map { it.map { userEntity -> publicUserMapper.fromDaoModelToPublicUser(userEntity) } }
+
+    override suspend fun getKnownUser(userId: UserId) =
+        userDAO.getUserByQualifiedID(qualifiedID = idMapper.toDaoModel(userId))
+            .map { userEntity -> userEntity?.let { publicUserMapper.fromDaoModelToPublicUser(userEntity) } }
 
     companion object {
         const val SELF_USER_ID_KEY = "selfUserID"

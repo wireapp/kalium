@@ -3,7 +3,6 @@ package com.wire.kalium.logic.feature.register
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
-import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.auth.AuthSession
@@ -11,7 +10,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
-import io.mockative.any
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
@@ -29,14 +27,11 @@ class RegisterAccountUseCaseTest {
     @Mock
     private val registerAccountRepository = mock(classOf<RegisterAccountRepository>())
 
-    @Mock
-    private val sessionRepository = mock(classOf<SessionRepository>())
-
     private lateinit var registerAccountUseCase: RegisterAccountUseCase
 
     @BeforeTest
     fun setup() {
-        registerAccountUseCase = RegisterAccountUseCase(registerAccountRepository, sessionRepository)
+        registerAccountUseCase = RegisterAccountUseCase(registerAccountRepository)
     }
 
     @Test
@@ -52,12 +47,6 @@ class RegisterAccountUseCaseTest {
                 registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password, serverConfig)
             }
             .then { Either.Right(expected) }
-        given(sessionRepository)
-            .invocation { storeSession(expected.second) }
-            .then { Unit } // Unit here is intentional since this will change after using wrapStorageRequest
-        given(sessionRepository)
-            .invocation { updateCurrentSession(expected.second.userId) }
-            .then { Unit } // Unit here is intentional since this will change after using wrapStorageRequest
 
         val actual = registerAccountUseCase(param, serverConfig)
 
@@ -68,12 +57,6 @@ class RegisterAccountUseCaseTest {
             .coroutine {
                 registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password, serverConfig)
             }
-            .wasInvoked(exactly = once)
-        verify(sessionRepository)
-            .invocation { storeSession(session) }
-            .wasInvoked(exactly = once)
-        verify(sessionRepository)
-            .invocation { updateCurrentSession(session.userId) }
             .wasInvoked(exactly = once)
     }
 
@@ -92,12 +75,6 @@ class RegisterAccountUseCaseTest {
                 )
             }
             .then { Either.Right(expected) }
-        given(sessionRepository)
-            .invocation { storeSession(expected.second) }
-            .then { Unit } // Unit here is intentional since this will change after using wrapStorageRequest
-        given(sessionRepository)
-            .invocation { updateCurrentSession(expected.second.userId) }
-            .then { Unit } // Unit here is intentional since this will change after using wrapStorageRequest
 
         val actual = registerAccountUseCase(param, serverConfig)
 
@@ -105,45 +82,43 @@ class RegisterAccountUseCaseTest {
         assertEquals(expected, actual.value)
 
         verify(registerAccountRepository)
-            .coroutine { registerTeamWithEmail(
-                param.email, param.emailActivationCode, param.name, param.password, param.teamName, param.teamIcon, serverConfig
-            )
+            .coroutine {
+                registerTeamWithEmail(
+                    param.email, param.emailActivationCode, param.name, param.password, param.teamName, param.teamIcon, serverConfig
+                )
             }
-            .wasInvoked(exactly = once)
-        verify(sessionRepository)
-            .invocation { storeSession(session) }
-            .wasInvoked(exactly = once)
-        verify(sessionRepository)
-            .invocation { updateCurrentSession(session.userId) }
             .wasInvoked(exactly = once)
     }
 
     @Test
-    fun givenRepositoryCallIsSuccessful_shouldStoreSessionIsFalse_whenRegisteringPersonalAccount_thenDoNotStoreSessionAndReturnSuccess() = runTest {
-        val serverConfig = TEST_SERVER_CONFIG
-        val param = TEST_PRIVATE_ACCOUNT_PARAM
-        val user = TEST_SELF_USER
-        val session = TEST_AUTH_SESSION
-        val expected = Pair(user, session)
+    fun givenRepositoryCallIsSuccessful_shouldStoreSessionIsFalse_whenRegisteringPersonalAccount_thenDoNotStoreSessionAndReturnSuccess() =
+        runTest {
+            val serverConfig = TEST_SERVER_CONFIG
+            val param = TEST_PRIVATE_ACCOUNT_PARAM
+            val user = TEST_SELF_USER
+            val session = TEST_AUTH_SESSION
+            val expected = Pair(user, session)
 
-        given(registerAccountRepository)
-            .coroutine { registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password, serverConfig) }
-            .then { Either.Right(expected) }
+            given(registerAccountRepository)
+                .coroutine {
+                    registerPersonalAccountWithEmail(
+                        param.email,
+                        param.emailActivationCode,
+                        param.name,
+                        param.password,
+                        serverConfig
+                    )
+                }
+                .then { Either.Right(expected) }
 
-        val actual = registerAccountUseCase(param, serverConfig, false)
+        val actual = registerAccountUseCase(param, serverConfig)
 
-        assertIs<RegisterResult.Success>(actual)
-        assertEquals(expected, actual.value)
+            assertIs<RegisterResult.Success>(actual)
+            assertEquals(expected, actual.value)
 
         verify(registerAccountRepository)
             .coroutine { registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password, serverConfig) }
             .wasInvoked(exactly = once)
-        verify(sessionRepository)
-            .invocation { storeSession(session) }
-            .wasNotInvoked()
-        verify(sessionRepository)
-            .invocation { updateCurrentSession(session.userId) }
-            .wasNotInvoked()
     }
 
     @Test
@@ -161,21 +136,14 @@ class RegisterAccountUseCaseTest {
         val actual = registerAccountUseCase(param, serverConfig)
 
         assertIs<RegisterResult.Failure.Generic>(actual)
-        assertEquals(expected, actual.failure)
+        assertIs<NetworkFailure.ServerMiscommunication>(actual.failure)
+        assertEquals(expected.kaliumException, (actual.failure as NetworkFailure.ServerMiscommunication).kaliumException)
 
         verify(registerAccountRepository)
             .coroutine {
                 registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password, serverConfig)
             }
             .wasInvoked(exactly = once)
-        verify(sessionRepository)
-            .function(sessionRepository::storeSession)
-            .with(any())
-            .wasNotInvoked()
-        verify(sessionRepository)
-            .function(sessionRepository::updateCurrentSession)
-            .with(any())
-            .wasNotInvoked()
     }
 
     @Test
@@ -224,14 +192,6 @@ class RegisterAccountUseCaseTest {
                 registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password, serverConfig)
             }
             .wasInvoked(exactly = once)
-        verify(sessionRepository)
-            .function(sessionRepository::storeSession)
-            .with(any())
-            .wasNotInvoked()
-        verify(sessionRepository)
-            .function(sessionRepository::updateCurrentSession)
-            .with(any())
-            .wasNotInvoked()
     }
 
 
@@ -266,6 +226,6 @@ class RegisterAccountUseCaseTest {
             previewPicture = null,
             completePicture = null
         )
-        val TEST_AUTH_SESSION = AuthSession(TEST_SELF_USER.id.value, "access_token", "refresh_token", "token_type", TEST_SERVER_CONFIG)
+        val TEST_AUTH_SESSION = AuthSession(TEST_SELF_USER.id, "access_token", "refresh_token", "token_type", TEST_SERVER_CONFIG)
     }
 }

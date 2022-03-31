@@ -55,6 +55,8 @@ object UserDTOJson {
         }.toString()
     }
 
+    fun createValid(userDTO: UserDTO) = ValidJsonProvider(userDTO, jsonProvider)
+
     val valid = ValidJsonProvider(
         UserDTO(
             id = UserId("user_id", "domain.com"),

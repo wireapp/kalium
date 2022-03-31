@@ -28,10 +28,8 @@ class ClientRemoteDataSource(
 
     override suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client> =
         wrapApiRequest { clientApi.registerClient(clientMapper.toRegisterClientRequest(param)) }
-            .fold(
-                { networkFailure -> Either.Left(networkFailure) },
-                { clientResponse -> Either.Right(clientMapper.fromClientResponse(clientResponse)) }
-            )
+            .map { clientResponse -> clientMapper.fromClientResponse(clientResponse) }
+
 
     override suspend fun deleteClient(param: DeleteClientParam): Either<NetworkFailure, Unit> =
         wrapApiRequest { clientApi.deleteClient(param.password, param.clientId.value) }
