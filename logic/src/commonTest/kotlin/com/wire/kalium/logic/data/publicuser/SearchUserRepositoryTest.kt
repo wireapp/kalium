@@ -321,7 +321,12 @@ class SearchUserRepositoryTest {
                         name = "name$i",
                         legalHoldStatus = LegalHoldStatusResponse.ENABLED,
                         teamId = "team$i",
-                        assets = emptyList()
+                        assets = emptyList(),
+                        deleted = null,
+                        email = null,
+                        expiresAt = null,
+                        nonQualifiedId = "value$i",
+                        service = null
                     )
                 )
             }
