@@ -22,6 +22,17 @@ import com.wire.kalium.calling.types.Uint32_t
 // A magic number used to initialize AVS (required for all mobile platforms).
 const val ENVIRONMENT_DEFAULT = 0
 
+/**
+ * WCALL_CALL_TYPE_NORMAL          0
+ * WCALL_CALL_TYPE_VIDEO           1
+ * WCALL_CALL_TYPE_FORCED_AUDIO    2
+ */
+object CallType {
+    const val CALL_TYPE_NORMAL = 0
+    const val CALL_TYPE_VIDEO = 1
+    const val CALL_TYPE_FORCED_AUDIO = 2
+}
+
 interface Calling : Library {
 
     fun wcall_create(
@@ -43,6 +54,8 @@ interface Calling : Library {
     ): Handle
 
     fun wcall_start(inst: Handle, conversationId: String, callType: Int, convType: Int, audioCbr: Int): Int
+
+    fun wcall_answer(inst: Handle, conversationId: String, callType: Int, cbrEnabled: Boolean)
 
     fun wcall_config_update(inst: Handle, error: Int, jsonString: String)
 

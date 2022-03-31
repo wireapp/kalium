@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.call
 
 import com.sun.jna.Pointer
+import com.wire.kalium.calling.CallType
 import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.callbacks.CallConfigRequestHandler
 import com.wire.kalium.calling.types.Handle
@@ -79,6 +80,23 @@ actual class CallManager(
                         status = status
                     )
                 }
+            }.also {
+                kaliumLogger.d("ANSWERING_CALL -> Entering .also")
+                scope.launch {
+                    kaliumLogger.d("ANSWERING_CALL -> Entering scope.launch")
+                    withCalling {
+                        kaliumLogger.d("ANSWERING_CALL -> Entering withCalling")
+                        calling.wcall_answer(
+                            inst = deferredHandle.await(),
+                            conversationId = conversationId,
+                            callType = CallType.CALL_TYPE_NORMAL,
+                            cbrEnabled = false
+                        )
+                        kaliumLogger.d("ANSWERING_CALL -> wcall_answer sent")
+                    }
+                    kaliumLogger.d("ANSWERING_CALL -> End scope.launch")
+                }
+                kaliumLogger.d("ANSWERING_CALL -> End .also")
             }
         }
     }
