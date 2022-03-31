@@ -2,14 +2,16 @@ package com.wire.kalium.logic.data.asset
 
 import com.wire.kalium.cryptography.utils.calcMd5
 import com.wire.kalium.logic.data.message.AssetContent
-import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.*
+import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
+import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
+import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Video
 import com.wire.kalium.logic.data.message.AssetContent.RemoteData.EncryptionAlgorithm.AES_CBC
 import com.wire.kalium.logic.data.message.AssetContent.RemoteData.EncryptionAlgorithm.AES_GCM
 import com.wire.kalium.network.api.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.asset.AssetResponse
 import com.wire.kalium.network.api.model.AssetRetentionType
 import com.wire.kalium.persistence.dao.asset.AssetEntity
-import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityContent.AssetMessageContent
 import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.protobuf.messages.EncryptionAlgorithm
 import kotlinx.datetime.Clock
@@ -19,7 +21,7 @@ interface AssetMapper {
     fun fromApiUploadResponseToDomainModel(asset: AssetResponse): UploadedAssetId
     fun fromUploadedAssetToDaoModel(uploadAssetData: UploadAssetData, uploadedAssetResponse: AssetResponse): AssetEntity
     fun fromUserAssetToDaoModel(assetKey: String, data: ByteArray): AssetEntity
-    fun fromAssetEntityToAssetContent(assetContentEntity: MessageEntity.MessageEntityContent.AssetMessageContent): AssetContent
+    fun fromAssetEntityToAssetContent(assetContentEntity: AssetMessageContent): AssetContent
     fun fromProtoAssetMessageToAssetContent(protoAssetMessage: Asset): AssetContent
 }
 
@@ -56,28 +58,13 @@ class AssetMapperImpl : AssetMapper {
         )
     }
 
-    override fun fromAssetEntityToAssetContent(assetContentEntity: MessageEntity.MessageEntityContent.AssetMessageContent): AssetContent {
+    override fun fromAssetEntityToAssetContent(assetContentEntity: AssetMessageContent): AssetContent {
         with(assetContentEntity) {
             return AssetContent(
                 mimeType = assetMimeType,
                 size = assetSize,
                 name = assetName,
-                metadata = when {
-                    assetMimeType.contains("image/") -> Image(
-                        width = assetImageWidth ?: 0,
-                        height = assetImageHeight ?: 0
-                    )
-                    assetMimeType.contains("video/") -> Video(
-                        width = assetVideoWidth,
-                        height = assetVideoHeight,
-                        durationMs = assetVideoDurationMs
-                    )
-                    assetMimeType.contains("audio/") -> Audio(
-                        durationMs = assetAudioDurationMs,
-                        normalizedLoudness = assetAudioNormalizedLoudness
-                    )
-                    else -> null
-                },
+                metadata = getAssetContentMetadata(assetMimeType, assetContentEntity),
                 remoteData = AssetContent.RemoteData(
                     otrKey = assetOtrKey,
                     sha256 = assetSha256Key,
@@ -93,6 +80,26 @@ class AssetMapperImpl : AssetMapper {
             )
         }
     }
+
+    private fun getAssetContentMetadata(assetMimeType: String, assetContentEntity: AssetMessageContent): AssetContent.AssetMetadata? =
+        with(assetContentEntity) {
+            when {
+                assetMimeType.contains("image/") -> Image(
+                    width = assetImageWidth ?: 0,
+                    height = assetImageHeight ?: 0
+                )
+                assetMimeType.contains("video/") -> Video(
+                    width = assetVideoWidth,
+                    height = assetVideoHeight,
+                    durationMs = assetVideoDurationMs
+                )
+                assetMimeType.contains("audio/") -> Audio(
+                    durationMs = assetAudioDurationMs,
+                    normalizedLoudness = assetAudioNormalizedLoudness
+                )
+                else -> null
+            }
+        }
 
     override fun fromProtoAssetMessageToAssetContent(protoAssetMessage: Asset): AssetContent {
         with(protoAssetMessage) {
