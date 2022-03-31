@@ -9,7 +9,7 @@ import com.wire.kalium.network.api.model.UserDTO
 import com.wire.kalium.network.api.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.model.getPreviewAssetOrNull
 import com.wire.kalium.network.api.teams.TeamsApi
-import com.wire.kalium.network.api.user.details.UserDetailsResponse
+import com.wire.kalium.network.api.user.details.UserProfileDTO
 import com.wire.kalium.network.api.user.self.UserUpdateRequest
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserEntity
@@ -17,7 +17,7 @@ import com.wire.kalium.persistence.dao.UserIDEntity as UserIdEntity
 
 interface UserMapper {
     fun fromDtoToSelfUser(userDTO: UserDTO): SelfUser
-    fun fromApiModelToDaoModel(userDetailsResponse: UserDetailsResponse): UserEntity
+    fun fromApiModelToDaoModel(userProfileDTO: UserProfileDTO): UserEntity
     fun fromApiModelToDaoModel(userDTO: UserDTO): UserEntity
     fun fromDaoModelToSelfUser(userEntity: UserEntity): SelfUser
     /**
@@ -52,17 +52,17 @@ internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
         )
     }
 
-    override fun fromApiModelToDaoModel(userDetailsResponse: UserDetailsResponse): UserEntity {
+    override fun fromApiModelToDaoModel(userProfileDTO: UserProfileDTO): UserEntity {
         return UserEntity(
-            id = idMapper.fromApiToDao(userDetailsResponse.id),
-            name = userDetailsResponse.name,
-            handle = userDetailsResponse.handle,
+            id = idMapper.fromApiToDao(userProfileDTO.id),
+            name = userProfileDTO.name,
+            handle = userProfileDTO.handle,
             email = null,
             phone = null,
-            accentId = userDetailsResponse.accentId,
-            team = userDetailsResponse.team,
-            previewAssetId = userDetailsResponse.assets.getPreviewAssetOrNull()?.key,
-            completeAssetId = userDetailsResponse.assets.getCompleteAssetOrNull()?.key
+            accentId = userProfileDTO.accentId,
+            team = userProfileDTO.teamId,
+            previewAssetId = userProfileDTO.assets.getPreviewAssetOrNull()?.key,
+            completeAssetId = userProfileDTO.assets.getCompleteAssetOrNull()?.key
         )
     }
 

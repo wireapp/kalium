@@ -44,7 +44,7 @@ object UserDTOJson {
                 }
             }
             serializable.teamId?.let { put("team", it) }
-            serializable.managedBy?.let { put("managed_by", it.toString()) }
+            serializable.managedByDTO?.let { put("managed_by", it.toString()) }
             serializable.ssoID?.let { userSsoID ->
                 putJsonObject("sso_id") {
                     put("subject", userSsoID.subject)
@@ -71,7 +71,7 @@ object UserDTOJson {
             expiresAt = "",
             nonQualifiedId = "",
             locale = "",
-            managedBy = null,
+            managedByDTO = null,
             phone = null,
             ssoID = null
         ), jsonProvider
