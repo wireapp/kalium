@@ -7,6 +7,7 @@ import com.wire.kalium.persistence.db.ConverationsQueries
 import com.wire.kalium.persistence.db.MembersQueries
 import com.wire.kalium.persistence.db.UsersQueries
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import com.wire.kalium.persistence.db.Conversation as SQLDelightConversation
 import com.wire.kalium.persistence.db.Member as SQLDelightMember
@@ -31,6 +32,8 @@ class ConversationDAOImpl(
 
     private val memberMapper = MemberMapper()
     private val conversationMapper = ConversationMapper()
+
+    override suspend fun getSelfConversationId() = getAllConversations().first().first { it.type == ConversationEntity.Type.SELF }.id
 
     override suspend fun insertConversation(conversationEntity: ConversationEntity) {
         conversationQueries.insertConversation(
@@ -88,9 +91,9 @@ class ConversationDAOImpl(
         }
     }
 
-    override suspend fun insertMembers(members: List<Member>, conversationID: QualifiedIDEntity) {
+    override suspend fun insertMembers(memberList: List<Member>, conversationID: QualifiedIDEntity) {
         memberQueries.transaction {
-            for (member: Member in members) {
+            for (member: Member in memberList) {
                 userQueries.insertOrIgnoreUserId(member.user)
                 memberQueries.insertMember(member.user, conversationID)
             }
@@ -108,5 +111,4 @@ class ConversationDAOImpl(
             .mapToList()
             .map { it.map(memberMapper::toModel) }
     }
-
 }

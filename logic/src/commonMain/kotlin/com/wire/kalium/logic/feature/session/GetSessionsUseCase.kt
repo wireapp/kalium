@@ -1,21 +1,18 @@
 package com.wire.kalium.logic.feature.session
 
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.failure.SessionFailure
-import com.wire.kalium.logic.functional.Either
 
 class GetSessionsUseCase(
     private val sessionRepository: SessionRepository
 ) {
-    operator fun invoke(): GetAllSessionsResult =
-        when (val result = sessionRepository.allSessions()) {
-            is Either.Left -> {
-                if (result.value is SessionFailure.NoSessionFound) {
-                    GetAllSessionsResult.Failure.NoSessionFound
-                } else GetAllSessionsResult.Failure.Generic(result.value)
+    operator fun invoke(): GetAllSessionsResult = sessionRepository.allSessions().fold(
+        {
+            when (it) {
+                StorageFailure.DataNotFound -> GetAllSessionsResult.Failure.NoSessionFound
+                is StorageFailure.Generic -> GetAllSessionsResult.Failure.Generic(it)
             }
-            is Either.Right -> GetAllSessionsResult.Success(result.value)
-        }
-
-
+        }, {
+            GetAllSessionsResult.Success(it)
+        })
 }

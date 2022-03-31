@@ -96,7 +96,8 @@ class SetUserHandleUseCaseTest {
         val actual = setUserHandleUseCase(handle)
 
         assertIs<SetUserHandleResult.Failure.Generic>(actual)
-        assertEquals(expected, actual.error)
+        assertIs<NetworkFailure.ServerMiscommunication>(actual.error)
+        assertEquals(expected.kaliumException, (actual.error as NetworkFailure.ServerMiscommunication).kaliumException)
 
         verify(validateHandleUseCase)
             .invocation { invoke(handle) }
