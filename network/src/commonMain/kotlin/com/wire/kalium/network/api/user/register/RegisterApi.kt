@@ -45,7 +45,7 @@ interface RegisterApi {
                 newBindingTeamDTO = null,
                 teamCode = null,
                 expiresIn = null,
-                managedBy = null,
+                managedByDTO = null,
                 ssoID = null,
                 teamID = null,
                 uuid = null
@@ -80,7 +80,7 @@ interface RegisterApi {
                 ),
                 teamCode = null,
                 expiresIn = null,
-                managedBy = null,
+                managedByDTO = null,
                 ssoID = null,
                 teamID = null,
                 uuid = null
