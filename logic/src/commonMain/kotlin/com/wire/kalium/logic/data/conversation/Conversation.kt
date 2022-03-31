@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
 typealias ConversationId = QualifiedID
@@ -17,7 +18,7 @@ sealed class ConversationDetails(val conversation: Conversation) {
 
     class OneOne(
         conversation: Conversation,
-        val contactName: String,
+        val otherUser: OtherUser,
         val connectionState: ConnectionState,
         val federationStatus: FederationStatus,
         val legalHoldStatus: LegalHoldStatus
