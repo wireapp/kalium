@@ -3,54 +3,41 @@ package com.wire.kalium.logic.feature
 import com.wire.kalium.logic.AuthenticatedDataSourceSet
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.asset.AssetDataSource
-import com.wire.kalium.logic.data.asset.AssetMapper
-import com.wire.kalium.logic.data.asset.AssetMapperImpl
 import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.call.CallDataSource
+import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientDataSource
-import com.wire.kalium.logic.data.client.ClientMapper
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ConversationDataSource
-import com.wire.kalium.logic.data.conversation.ConversationMapper
-import com.wire.kalium.logic.data.conversation.ConversationMapperImpl
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.MemberMapper
-import com.wire.kalium.logic.data.conversation.MemberMapperImpl
 import com.wire.kalium.logic.data.event.EventDataSource
-import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.event.EventRepository
-import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.id.IdMapperImpl
-import com.wire.kalium.logic.data.location.LocationMapper
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.logout.LogoutDataSource
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.message.MessageDataSource
-import com.wire.kalium.logic.data.message.MessageMapper
-import com.wire.kalium.logic.data.message.MessageMapperImpl
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.ProtoContentMapper
-import com.wire.kalium.logic.data.message.SendMessageFailureMapper
-import com.wire.kalium.logic.data.message.SendMessageFailureMapperImpl
 import com.wire.kalium.logic.data.prekey.PreKeyDataSource
-import com.wire.kalium.logic.data.prekey.PreKeyMapper
-import com.wire.kalium.logic.data.prekey.PreKeyMapperImpl
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
-import com.wire.kalium.logic.data.prekey.remote.PreKeyListMapper
 import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteDataSource
 import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteRepository
+import com.wire.kalium.logic.data.publicuser.SearchUserRepository
+import com.wire.kalium.logic.data.publicuser.SearchUserRepositoryImpl
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.team.TeamDataSource
-import com.wire.kalium.logic.data.team.TeamMapperImpl
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserDataSource
-import com.wire.kalium.logic.data.user.UserMapperImpl
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
+import com.wire.kalium.logic.feature.call.CallsScope
+import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.message.MessageScope
+import com.wire.kalium.logic.feature.team.TeamScope
 import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.sync.ConversationEventReceiver
 import com.wire.kalium.logic.sync.ListenToEventsUseCase
@@ -65,9 +52,10 @@ import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 expect class UserSessionScope : UserSessionScopeCommon
 
 abstract class UserSessionScopeCommon(
-    private val session: AuthSession,
+    private val userId: QualifiedID,
     private val authenticatedDataSourceSet: AuthenticatedDataSourceSet,
-    private val sessionRepository: SessionRepository
+    private val sessionRepository: SessionRepository,
+    private val globalCallManager: GlobalCallManager
 ) {
 
     private val encryptedSettingsHolder: EncryptedSettingsHolder = authenticatedDataSourceSet.encryptedSettingsHolder
@@ -75,39 +63,19 @@ abstract class UserSessionScopeCommon(
     private val eventInfoStorage: EventInfoStorage
         get() = EventInfoStorageImpl(userPreferencesSettings)
 
-    private val idMapper: IdMapper get() = IdMapperImpl()
-    private val memberMapper: MemberMapper get() = MemberMapperImpl(idMapper)
-    private val conversationMapper: ConversationMapper get() = ConversationMapperImpl(idMapper)
-    private val userMapper = UserMapperImpl(idMapper)
     private val database: Database = authenticatedDataSourceSet.database
-    private val teamMapper = TeamMapperImpl()
 
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(
             userRepository,
             database.conversationDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi, idMapper, conversationMapper, memberMapper
+            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi
         )
-
-    private val messageMapper: MessageMapper get() = MessageMapperImpl(idMapper)
-
-    private val sendMessageFailureMapper: SendMessageFailureMapper get() = SendMessageFailureMapperImpl()
 
     private val messageRepository: MessageRepository
         get() = MessageDataSource(
-            authenticatedDataSourceSet.authenticatedNetworkContainer.messageApi,
-            database.messageDAO,
-            messageMapper,
-            idMapper,
-            sendMessageFailureMapper
-        )
-
-    private val teamRepository: TeamRepository
-        get() = TeamDataSource(
-            teamDAO = database.teamDAO,
-            teamMapper = teamMapper,
-            teamsApi = authenticatedDataSourceSet.authenticatedNetworkContainer.teamsApi
+            authenticatedDataSourceSet.authenticatedNetworkContainer.messageApi, database.messageDAO
         )
 
     private val userRepository: UserRepository
@@ -116,75 +84,79 @@ abstract class UserSessionScopeCommon(
             database.metadataDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.selfApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
-            idMapper,
-            userMapper,
-            assetRepository,
-            teamRepository
+            assetRepository
+        )
+
+    private val teamRepository: TeamRepository
+        get() = TeamDataSource(
+            database.userDAO,
+            database.teamDAO,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.teamsApi
+        )
+
+    private val publicUserRepository: SearchUserRepository
+        get() = SearchUserRepositoryImpl(
+            database.userDAO,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.userSearchApi,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi
+        )
+
+    private val callRepository: CallRepository
+        get() = CallDataSource(
+            callApi = authenticatedDataSourceSet.authenticatedNetworkContainer.callApi
         )
 
     protected abstract val clientConfig: ClientConfig
 
-    private val preyKeyMapper: PreKeyMapper get() = PreKeyMapperImpl()
-    private val preKeyListMapper: PreKeyListMapper get() = PreKeyListMapper(preyKeyMapper)
-    private val locationMapper: LocationMapper get() = LocationMapper()
-    private val clientMapper: ClientMapper get() = ClientMapper(preyKeyMapper, locationMapper, clientConfig)
-
     private val clientRemoteRepository: ClientRemoteRepository
         get() = ClientRemoteDataSource(
-            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
-            clientMapper
+            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi, clientConfig
         )
 
     private val clientRegistrationStorage: ClientRegistrationStorage
         get() = ClientRegistrationStorageImpl(userPreferencesSettings)
 
     private val clientRepository: ClientRepository
-        get() = ClientDataSource(clientRemoteRepository, clientRegistrationStorage, database.clientDAO, userMapper)
+        get() = ClientDataSource(clientRemoteRepository, clientRegistrationStorage, database.clientDAO)
 
-    private val assetMapper: AssetMapper get() = AssetMapperImpl()
     private val assetRepository: AssetRepository
-        get() = AssetDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.assetApi, assetMapper, database.assetDAO)
+        get() = AssetDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.assetApi, database.assetDAO)
 
     val syncManager: SyncManager get() = authenticatedDataSourceSet.syncManager
 
-    private val eventMapper: EventMapper get() = EventMapper(idMapper)
     private val eventRepository: EventRepository
         get() = EventDataSource(
-            authenticatedDataSourceSet.authenticatedNetworkContainer.notificationApi,
-            eventInfoStorage,
-            clientRepository,
-            eventMapper
+            authenticatedDataSourceSet.authenticatedNetworkContainer.notificationApi, eventInfoStorage, clientRepository
         )
 
+    private val callManager by lazy {
+        globalCallManager.getCallManagerForClient(
+            userId = userId,
+            callRepository = callRepository,
+            userRepository = userRepository,
+            clientRepository = clientRepository
+        )
+    }
     protected abstract val protoContentMapper: ProtoContentMapper
     private val conversationEventReceiver: ConversationEventReceiver
         get() = ConversationEventReceiver(
             authenticatedDataSourceSet.proteusClient,
             messageRepository,
             conversationRepository,
+            userRepository,
             protoContentMapper,
-            memberMapper,
-            idMapper
+            callManager
         )
 
-    private val preKeyRemoteRepository: PreKeyRemoteRepository
-        get() = PreKeyRemoteDataSource(
-            authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi,
-            preKeyListMapper
-        )
+    private val preKeyRemoteRepository: PreKeyRemoteRepository get() = PreKeyRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi)
     private val preKeyRepository: PreKeyRepository
         get() = PreKeyDataSource(
-            preKeyRemoteRepository,
-            authenticatedDataSourceSet.proteusClient
+            preKeyRemoteRepository, authenticatedDataSourceSet.proteusClient
         )
 
     private val logoutRepository: LogoutRepository = LogoutDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi)
     val listenToEvents: ListenToEventsUseCase
-        get() = ListenToEventsUseCase(
-            syncManager = syncManager,
-            eventRepository = eventRepository,
-            conversationEventReceiver = conversationEventReceiver
-        )
+        get() = ListenToEventsUseCase(syncManager, eventRepository, conversationEventReceiver)
     val client: ClientScope get() = ClientScope(clientRepository, preKeyRepository)
     val conversations: ConversationScope get() = ConversationScope(conversationRepository, syncManager)
     val messages: MessageScope
@@ -197,11 +169,10 @@ abstract class UserSessionScopeCommon(
             userRepository,
             syncManager
         )
-    val users: UserScope get() = UserScope(
-        userRepository = userRepository,
-        syncManager = syncManager,
-        assetRepository = assetRepository
-    )
-    val logout: LogoutUseCase get() = LogoutUseCase(logoutRepository, sessionRepository, session.userId, authenticatedDataSourceSet)
+    val users: UserScope get() = UserScope(userRepository, publicUserRepository, syncManager, assetRepository)
+    val logout: LogoutUseCase get() = LogoutUseCase(logoutRepository, sessionRepository, userId, authenticatedDataSourceSet)
 
+    val team: TeamScope get() = TeamScope(userRepository, teamRepository)
+
+    val calls: CallsScope get() = CallsScope(callManager, syncManager)
 }

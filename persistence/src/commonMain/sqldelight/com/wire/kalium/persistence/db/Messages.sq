@@ -1,14 +1,16 @@
-import com.wire.kalium.persistence.dao.QualifiedID;
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.message.MessageEntity;
+import com.wire.kalium.persistence.dao.message.MessageEntity.Status;
 
 CREATE TABLE Message (
       id TEXT NOT NULL,
       content TEXT,
-      conversation_id TEXT AS QualifiedID NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
       date TEXT NOT NULL,
-      sender_user_id TEXT AS QualifiedID NOT NULL,
+      sender_user_id TEXT AS QualifiedIDEntity NOT NULL,
       sender_client_id TEXT NOT NULL,
       status TEXT AS MessageEntity.Status NOT NULL,
+      visibility TEXT AS MessageEntity.Visibility NOT NULL DEFAULT 'visible',
       FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id),
       FOREIGN KEY (sender_user_id) REFERENCES User(qualified_id),
       PRIMARY KEY (id, conversation_id)
@@ -20,9 +22,17 @@ DELETE FROM Message;
 deleteMessage:
 DELETE FROM Message WHERE  id = ? AND conversation_id = ?;
 
+deleteMessageById:
+DELETE FROM Message WHERE  id = ?;
+
+updateMessageVisibility:
+UPDATE Message
+SET visibility = ?, content = ?
+WHERE id = ? AND conversation_id = ?;
+
 insertMessage:
-INSERT INTO Message(id, content, conversation_id, date, sender_user_id, sender_client_id, status)
-VALUES(?, ?, ?, ?, ? ,?, ?)
+INSERT INTO Message(id, content, conversation_id, date, sender_user_id, sender_client_id, status, visibility)
+VALUES(?, ?, ?, ?, ? ,?, ?, ?)
 ON CONFLICT(id, conversation_id) DO UPDATE SET
 id = excluded.id,
 content = excluded.content,
@@ -34,6 +44,11 @@ status = excluded.status;
 updateMessages:
 UPDATE Message
 SET content = ?, date = ?, sender_user_id = ?, sender_client_id = ?, status = ?
+WHERE id = ? AND conversation_id = ?;
+
+updateMessageStatus:
+UPDATE Message
+SET status = ?
 WHERE id = ? AND conversation_id = ?;
 
 selectAllMessages:

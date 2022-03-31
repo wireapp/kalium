@@ -1,7 +1,8 @@
 package com.wire.kalium.cryptography
 
+import carthage.WireCryptobox.EncryptionContext
+import carthage.WireCryptobox.EncryptionSessionIdentifier
 import com.wire.kalium.cryptography.exceptions.ProteusException
-import carthage.WireCryptobox.*
 import kotlinx.cinterop.ObjCObjectVar
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.alloc
@@ -22,7 +23,7 @@ import platform.Foundation.create
 import platform.Foundation.valueForKey
 import platform.posix.memcpy
 
-actual class ProteusClientImpl actual constructor(private val rootDir: String, private val userId: String) : ProteusClient {
+actual class ProteusClientImpl actual constructor(private val rootDir: String, private val userId: CryptoUserID) : ProteusClient {
 
     private var box: EncryptionContext? = null
 
@@ -182,7 +183,7 @@ actual class ProteusClientImpl actual constructor(private val rootDir: String, p
         }
 
         private fun toSessionId(sessionId: CryptoSessionId): EncryptionSessionIdentifier {
-            return EncryptionSessionIdentifier(null, sessionId.userId.value, sessionId.cryptoClientId.value)
+            return EncryptionSessionIdentifier(sessionId.userId.domain, sessionId.userId.value, sessionId.cryptoClientId.value)
         }
 
         private fun toException(error: NSError): ProteusException {

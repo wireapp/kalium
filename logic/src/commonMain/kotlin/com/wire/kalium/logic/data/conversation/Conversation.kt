@@ -5,8 +5,6 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.network.api.conversation.ConversationResponse
-
 typealias ConversationId = QualifiedID
 
 data class Conversation(val id: ConversationId, val name: String?, val type: Type, val teamId: TeamId?) {

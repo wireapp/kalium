@@ -38,6 +38,10 @@ android {
         freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
     }
 
+    packagingOptions {
+        resources.pickFirsts.add("google/protobuf/*.proto")
+    }
+
 //    sourceSets { map { it.java.srcDir("src/${it.name}/kotlin") } }
 }
 

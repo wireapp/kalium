@@ -12,6 +12,7 @@ object Versions {
     const val composeCompiler = "1.1.0-rc02"
     const val cryptobox4j = "1.1.1"
     const val cryptoboxAndroid = "1.1.3"
+    const val javaxCrypto = "1.1.0-alpha03"
     const val kover = "0.4.4"
     const val ktor2 = "2.0.0-beta-1"
     const val okHttp = "4.9.3"
@@ -27,10 +28,15 @@ object Versions {
     const val multiplatformSettings = "0.8.1"
     const val androidSecurity = "1.0.0"
     const val sqlDelight = "2.0.0-SNAPSHOT"
+    @Deprecated("A new implementation is available. Use the protobuf project instead.")
     const val wireJvmMessageProto = "1.36.0"
+    @Deprecated("A new implementation is available. Use the protobuf project instead.")
     const val protobufLite = "3.19.4"
+    const val pbandk = "0.13.0"
     const val avs = "8.1.3"
     const val jna = "5.6.0@aar"
+    const val mlsClient = "0.0.1"
+    const val desugarJdk = "1.1.5"
 }
 
 object Plugins {
@@ -60,6 +66,9 @@ object Plugins {
     fun multiplatform(scope: PluginDependenciesSpec) =
         scope.id("org.jetbrains.kotlin.multiplatform")
 
+    fun protobuf(scope: PluginDependenciesSpec) =
+        scope.id("com.google.protobuf")
+
     fun serialization(scope: PluginDependenciesSpec) =
         scope.kotlin("plugin.serialization") version Versions.kotlin
 
@@ -86,6 +95,7 @@ object Dependencies {
         const val coroutines = "org.jetbrains.kotlinx:kotlinx-coroutines-android:${Versions.coroutines}"
         const val ktor = "io.ktor:ktor-client-android:${Versions.ktor2}"
         const val securityCrypto = "androidx.security:security-crypto:${Versions.androidSecurity}"
+        const val desugarJdkLibs = "com.android.tools:desugar_jdk_libs:${Versions.desugarJdk}"
     }
 
     object MultiplatformSettings {
@@ -108,6 +118,9 @@ object Dependencies {
     object Cryptography {
         const val cryptoboxAndroid = "com.wire:cryptobox-android:${Versions.cryptoboxAndroid}"
         const val cryptobox4j = "com.wire:cryptobox4j:${Versions.cryptobox4j}"
+        const val javaxCrypto = "androidx.security:security-crypto-ktx:${Versions.javaxCrypto}"
+        const val mlsClientJvm = "com.wire:core-crypto-jvm:${Versions.mlsClient}"
+        const val mlsClientAndroid = "com.wire:core-crypto-android:${Versions.mlsClient}"
     }
 
     object Cli {
@@ -148,8 +161,11 @@ object Dependencies {
     }
 
     object Protobuf {
+        @Deprecated("A new implementation is available. Use the protobuf project instead.")
         const val wireJvmMessageProto = "com.wire:generic-message-proto:${Versions.wireJvmMessageProto}"
+        @Deprecated("A new implementation is available. Use the protobuf project instead.")
         const val protobufLite = "com.google.protobuf:protobuf-javalite:${Versions.protobufLite}"
+        const val pbandkRuntime = "pro.streem.pbandk:pbandk-runtime:${Versions.pbandk}"
     }
 
     object UUID {

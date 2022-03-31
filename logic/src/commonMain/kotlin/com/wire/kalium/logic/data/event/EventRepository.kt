@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.event
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.network.api.notification.NotificationApi
@@ -29,7 +30,7 @@ class EventDataSource(
     private val notificationApi: NotificationApi,
     private val eventInfoStorage: EventInfoStorage,
     private val clientRepository: ClientRepository,
-    private val eventMapper: EventMapper
+    private val eventMapper: EventMapper = MapperProvider.eventMapper()
 ) : EventRepository {
 
     override suspend fun events(): Flow<Either<CoreFailure, Event>> = suspending {

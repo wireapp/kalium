@@ -4,12 +4,12 @@ import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.client.Client
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertFails
 import kotlin.test.assertTrue
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.runTest
 
 class UserClientDAOIntegrationTest : BaseDatabaseTest() {
 
@@ -44,7 +44,7 @@ class UserClientDAOIntegrationTest : BaseDatabaseTest() {
     }
 
     private companion object {
-        val userId = QualifiedID("test", "domain")
+        val userId = QualifiedIDEntity("test", "domain")
         val user = newUserEntity(qualifiedID = userId)
         val client = Client(user.id, "id1")
     }

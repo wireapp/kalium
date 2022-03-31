@@ -41,8 +41,9 @@ kotlin {
                 implementation(project(":network"))
                 implementation(project(":cryptography"))
                 implementation(project(":persistence"))
+                implementation(project(":protobuf"))
                 api(project(":logger"))
-                api(project(":calling"))
+                implementation(project(":calling"))
 
                 // coroutines
                 implementation(Dependencies.Coroutines.core) {
@@ -68,25 +69,11 @@ kotlin {
                 implementation(Dependencies.Test.mockative)
             }
         }
-        fun KotlinSourceSet.addCommonKotlinJvmSourceDir() {
-            kotlin.srcDir("src/commonJvmAndroid/kotlin")
-        }
-        val jvmMain by getting {
-            addCommonKotlinJvmSourceDir()
-            dependencies {
-                implementation(Dependencies.Protobuf.wireJvmMessageProto)
-            }
-        }
+        val jvmMain by getting {}
         val jvmTest by getting
         val androidMain by getting {
-            addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(Dependencies.Android.work)
-                implementation(Dependencies.Protobuf.wireJvmMessageProto) {
-                    // Don't use the runtime Protobuf included in wire. We can use Protobuf Lite instead
-                    exclude(module = "protobuf-java")
-                }
-                implementation(Dependencies.Protobuf.protobufLite)
             }
         }
         val androidTest by getting

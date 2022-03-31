@@ -3,13 +3,13 @@ package com.wire.kalium.persistence.dao.message
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
-import com.wire.kalium.persistence.dao.QualifiedID
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.db.MessagesQueries
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import com.wire.kalium.persistence.db.Message as SQLDelightMessage
 
-class MessageMapper {
+internal class MessageMapper {
     fun toModel(msg: SQLDelightMessage): MessageEntity {
         return MessageEntity(
             id = msg.id,
@@ -26,7 +26,12 @@ class MessageMapper {
 class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
     private val mapper = MessageMapper()
 
-    override suspend fun deleteMessage(id: String, conversationsId: QualifiedID) = queries.deleteMessage(id, conversationsId)
+    override suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity) = queries.deleteMessage(id, conversationsId)
+
+    override suspend fun deleteMessage(id: String) = queries.deleteMessageById(id)
+
+    override suspend fun updateMessageVisibility(visibility: MessageEntity.Visibility, id: String, conversationId: QualifiedIDEntity,) =
+        queries.updateMessageVisibility(visibility, "", id, conversationId)
 
     override suspend fun deleteAllMessages() = queries.deleteAllMessages()
 
@@ -38,7 +43,8 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             message.date,
             message.senderUserId,
             message.senderClientId,
-            message.status
+            message.status,
+            message.visibility
         )
 
     override suspend fun insertMessages(messages: List<MessageEntity>) =
@@ -51,7 +57,8 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
                     message.date,
                     message.senderUserId,
                     message.senderClientId,
-                    message.status
+                    message.status,
+                    message.visibility
                 )
             }
         }
@@ -67,19 +74,22 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             message.conversationId
         )
 
+    override suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity) =
+        queries.updateMessageStatus(status, id, conversationId)
+
     override suspend fun getAllMessages(): Flow<List<MessageEntity>> =
         queries.selectAllMessages()
             .asFlow()
             .mapToList()
             .map { entryList -> entryList.map(mapper::toModel) }
 
-    override suspend fun getMessageById(id: String, conversationId: QualifiedID): Flow<MessageEntity?> =
+    override suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?> =
         queries.selectById(id, conversationId)
             .asFlow()
             .mapToOneOrNull()
             .map { msg -> msg?.let(mapper::toModel) }
 
-    override suspend fun getMessageByConversation(conversationId: QualifiedID, limit: Int): Flow<List<MessageEntity>> =
+    override suspend fun getMessageByConversation(conversationId: QualifiedIDEntity, limit: Int): Flow<List<MessageEntity>> =
         queries.selectByConversationId(conversationId, limit.toLong())
             .asFlow()
             .mapToList()

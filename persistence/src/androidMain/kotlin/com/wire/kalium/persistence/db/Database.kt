@@ -16,6 +16,7 @@ import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.TeamDAOImpl
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserDAOImpl
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetDAOImpl
 import com.wire.kalium.persistence.dao.client.ClientDAO
@@ -23,11 +24,12 @@ import com.wire.kalium.persistence.dao.client.ClientDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
+import com.wire.kalium.persistence.util.FileNameUtil
 import net.sqlcipher.database.SupportFactory
 import java.security.SecureRandom
 
-actual class Database(private val context: Context, private val name: String, kaliumPreferences: KaliumPreferences) {
-
+actual class Database(private val context: Context, userId: UserIDEntity, kaliumPreferences: KaliumPreferences) {
+    private val dbName = FileNameUtil.userDBName(userId)
     private val driver: AndroidSqliteDriver
     private val database: AppDatabase
 
@@ -44,7 +46,7 @@ actual class Database(private val context: Context, private val name: String, ka
         driver = AndroidSqliteDriver(
             schema = AppDatabase.Schema,
             context = context,
-            name = name,
+            name = dbName,
             factory = supportFactory,
             callback = onConnectCallback
         )
@@ -52,12 +54,13 @@ actual class Database(private val context: Context, private val name: String, ka
         database = AppDatabase(
             driver,
             Client.Adapter(user_idAdapter = QualifiedIDAdapter()),
-            Conversation.Adapter(qualified_idAdapter = QualifiedIDAdapter()),
+            Conversation.Adapter(qualified_idAdapter = QualifiedIDAdapter(), typeAdapter = EnumColumnAdapter()),
             Member.Adapter(userAdapter = QualifiedIDAdapter(), conversationAdapter = QualifiedIDAdapter()),
             Message.Adapter(
                 conversation_idAdapter = QualifiedIDAdapter(),
                 sender_user_idAdapter = QualifiedIDAdapter(),
-                statusAdapter = EnumColumnAdapter()
+                statusAdapter = EnumColumnAdapter(),
+                visibilityAdapter = EnumColumnAdapter()
             ),
             User.Adapter(qualified_idAdapter = QualifiedIDAdapter(), IntColumnAdapter)
         )
@@ -86,7 +89,7 @@ actual class Database(private val context: Context, private val name: String, ka
 
     actual fun nuke(): Boolean {
         driver.close()
-        return context.deleteDatabase(name)
+        return context.deleteDatabase(dbName)
     }
 
     private fun getOrGenerateSecretKey(kaliumPreferences: KaliumPreferences): String {

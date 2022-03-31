@@ -3,7 +3,7 @@ package com.wire.kalium.persistence.kmm_settings
 import com.russhwolf.settings.Settings
 import com.russhwolf.settings.get
 import com.russhwolf.settings.set
-import com.wire.kalium.persistence.Util.JsonSerializer
+import com.wire.kalium.persistence.util.JsonSerializer
 import kotlinx.serialization.KSerializer
 
 interface KaliumPreferences {

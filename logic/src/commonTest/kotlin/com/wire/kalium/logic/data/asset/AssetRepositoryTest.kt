@@ -1,7 +1,6 @@
 package com.wire.kalium.logic.data.asset
 
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.ErrorResponse
@@ -22,12 +21,14 @@ import io.mockative.once
 import io.mockative.thenDoNothing
 import io.mockative.twice
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class AssetRepositoryTest {
 
     @Mock
@@ -42,7 +43,7 @@ class AssetRepositoryTest {
 
     @BeforeTest
     fun setUp() {
-        assetRepository = AssetDataSource(assetApi, assetMapper, assetDAO)
+        assetRepository = AssetDataSource(assetApi, assetDAO, assetMapper)
     }
 
     @Test
@@ -63,9 +64,36 @@ class AssetRepositoryTest {
                 )
             )
 
-        val uploadAssetMetadata = UploadAssetData("the_image".encodeToByteArray(), ImageAsset.JPG, true, RetentionType.ETERNAL)
+        val actual = assetRepository.uploadAndPersistPublicAsset(assetData = "the_image".encodeToByteArray(), mimeType = ImageAsset.JPEG)
 
-        val actual = assetRepository.uploadAndPersistPublicAsset(uploadAssetMetadata)
+        actual.shouldSucceed {
+            assertEquals("some_key", it.key)
+        }
+
+        verify(assetApi).suspendFunction(assetApi::uploadAsset)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenValidParams_whenUploadingPrivateAssets_thenShouldSucceedWithAMappedResponse() = runTest {
+        given(assetDAO)
+            .suspendFunction(assetDAO::insertAsset)
+            .whenInvokedWith(any())
+            .thenDoNothing()
+
+        given(assetApi)
+            .suspendFunction(assetApi::uploadAsset)
+            .whenInvokedWith(any(), any())
+            .thenReturn(
+                NetworkResponse.Success(
+                    AssetResponse("some_key", "some_domain", "some_expiration_val", "some_token"),
+                    mapOf(),
+                    200
+                )
+            )
+
+        val actual = assetRepository.uploadAndPersistPrivateAsset(assetData = "the_image".encodeToByteArray(), mimeType = ImageAsset.JPEG)
 
         actual.shouldSucceed {
             assertEquals("some_key", it.key)
@@ -83,9 +111,25 @@ class AssetRepositoryTest {
             .whenInvokedWith(any(), any())
             .thenReturn(NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))))
 
-        val uploadAssetMetadata = UploadAssetData("the_image".encodeToByteArray(), ImageAsset.JPG, true, RetentionType.ETERNAL)
+        val actual = assetRepository.uploadAndPersistPublicAsset(assetData = "the_image".encodeToByteArray(), mimeType = ImageAsset.JPEG)
 
-        val actual = assetRepository.uploadAndPersistPublicAsset(uploadAssetMetadata)
+        actual.shouldFail {
+            assertEquals(it::class, NetworkFailure.ServerMiscommunication::class)
+        }
+
+        verify(assetApi).suspendFunction(assetApi::uploadAsset)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAnError_whenUploadingPrivateAssets_thenShouldFail() = runTest {
+        given(assetApi)
+            .suspendFunction(assetApi::uploadAsset)
+            .whenInvokedWith(any(), any())
+            .thenReturn(NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))))
+
+        val actual = assetRepository.uploadAndPersistPrivateAsset(assetData = "the_image".encodeToByteArray(), mimeType = ImageAsset.JPEG)
 
         actual.shouldFail {
             assertEquals(it::class, NetworkFailure.ServerMiscommunication::class)
@@ -98,7 +142,7 @@ class AssetRepositoryTest {
 
     @Test
     fun givenAListOfAssets_whenSavingAssets_thenShouldSucceed() = runTest {
-        val assetsIdToPersist = listOf<UserAssetId>("assetId1", "assetId2")
+        val assetsIdToPersist = listOf("assetId1", "assetId2")
         val expectedImage = "my_image_asset".toByteArray()
 
         assetsIdToPersist.forEach { assetKey ->

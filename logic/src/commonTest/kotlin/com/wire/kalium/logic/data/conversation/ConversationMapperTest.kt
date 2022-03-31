@@ -1,7 +1,6 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.UserId
@@ -9,6 +8,8 @@ import com.wire.kalium.network.api.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.conversation.ConversationOtherMembersResponse
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.ConversationSelfMemberResponse
+import com.wire.kalium.persistence.dao.ConversationEntity
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -19,7 +20,6 @@ import io.mockative.verify
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import com.wire.kalium.persistence.dao.QualifiedID as QualifiedIDEntity
 
 class ConversationMapperTest {
 
@@ -66,6 +66,43 @@ class ConversationMapperTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenAFakeTeamOneOnOneConversationResponse_whenMappingFromConversationResponseToDaoModel_thenShouldMapToOneOnOneConversation() {
+        val response = CONVERSATION_RESPONSE.copy(
+            // Looks like a Group
+            type = ConversationResponse.Type.GROUP,
+            // No Name
+            name = null,
+            // Only one other participant
+            members = CONVERSATION_RESPONSE.members.copy(otherMembers = listOf(OTHER_MEMBERS.first())),
+            // Same team as user
+            teamId = SELF_USER_TEAM_ID.value
+        )
+
+        given(idMapper)
+            .function(idMapper::fromApiToDao)
+            .whenInvokedWith(any())
+            .then { QualifiedIDEntity("transformed", "tDomain") }
+
+        val result = conversationMapper.fromApiModelToDaoModel(response, SELF_USER_TEAM_ID)
+
+        assertEquals(ConversationEntity.Type.ONE_ON_ONE, result.type)
+    }
+
+    @Test
+    fun givenAGroupConversationResponseWithoutName_whenMappingFromConversationResponseToDaoModel_thenShouldMapToGroupType() {
+        val response = CONVERSATION_RESPONSE.copy(type = ConversationResponse.Type.GROUP, name = null)
+
+        given(idMapper)
+            .function(idMapper::fromApiToDao)
+            .whenInvokedWith(any())
+            .then { QualifiedIDEntity("transformed", "tDomain") }
+
+        val result = conversationMapper.fromApiModelToDaoModel(response, SELF_USER_TEAM_ID)
+
+        assertEquals(ConversationEntity.Type.GROUP, result.type)
+    }
+
     private companion object {
         val ORIGINAL_CONVERSATION_ID = ConversationId("original", "oDomain")
         val SELF_USER_TEAM_ID = TeamId("teamID")
@@ -79,7 +116,7 @@ class ConversationMapperTest {
             ORIGINAL_CONVERSATION_ID,
             ConversationResponse.Type.GROUP,
             null,
-            SELF_USER_TEAM_ID.value
+            null
         )
     }
 }

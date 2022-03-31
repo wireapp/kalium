@@ -2,6 +2,7 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.persistence.dao.message.MessageEntity
 
 interface MessageMapper {
@@ -13,6 +14,12 @@ class MessageMapperImpl(private val idMapper: IdMapper) : MessageMapper {
     override fun fromMessageToEntity(message: Message): MessageEntity {
         val stringContent = when (val content = message.content) {
             is MessageContent.Text -> content.value
+            is MessageContent.Calling -> {
+                kaliumLogger.w("fromMessageToEntity - Calling")
+                null
+            }
+            is MessageContent.DeleteMessage -> content.messageId
+            is MessageContent.DeleteForMe -> content.messageId
             MessageContent.Unknown -> null
         }
         val status = when (message.status) {

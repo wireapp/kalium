@@ -5,11 +5,10 @@ import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.ProteusClientImpl
 import com.wire.kalium.logic.data.session.SessionDataSource
 import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.data.session.local.SessionLocalDataSource
-import com.wire.kalium.logic.data.session.local.SessionLocalRepository
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
-import com.wire.kalium.logic.feature.auth.AuthSession
-import com.wire.kalium.logic.feature.auth.AuthenticationScope
+import com.wire.kalium.logic.network.SessionManagerImpl
+import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.sync.SyncManagerImpl
 import com.wire.kalium.logic.sync.WorkScheduler
 import com.wire.kalium.network.AuthenticatedNetworkContainer
@@ -18,6 +17,7 @@ import com.wire.kalium.persistence.client.SessionStorageImpl
 import com.wire.kalium.persistence.db.Database
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
+import com.wire.kalium.persistence.kmm_settings.SettingOptions
 import kotlinx.coroutines.runBlocking
 
 /**
@@ -27,35 +27,30 @@ import kotlinx.coroutines.runBlocking
 actual class CoreLogic(
     private val appContext: Context,
     clientLabel: String,
-    rootProteusDirectoryPath: String
+    rootProteusDirectoryPath: String,
 ) : CoreLogicCommon(clientLabel, rootProteusDirectoryPath) {
 
     override fun getSessionRepo(): SessionRepository {
         val sessionPreferences =
-            KaliumPreferencesSettings(EncryptedSettingsHolder(appContext, SHARED_PREFERENCE_FILE_NAME).encryptedSettings)
+            KaliumPreferencesSettings(EncryptedSettingsHolder(appContext, SettingOptions.AppSettings).encryptedSettings)
         val sessionStorage: SessionStorage = SessionStorageImpl(sessionPreferences)
-        val sessionLocalRepository: SessionLocalRepository = SessionLocalDataSource(sessionStorage, sessionMapper)
-        return SessionDataSource(sessionLocalRepository)
+        return SessionDataSource(sessionStorage)
     }
 
-    override fun getAuthenticationScope(): AuthenticationScope =
-        AuthenticationScope(clientLabel, sessionRepository, appContext)
-
-    override fun getSessionScope(session: AuthSession): UserSessionScope {
-        val dataSourceSet = userScopeStorage[session] ?: run {
-            val networkContainer = AuthenticatedNetworkContainer(
-                sessionDTO = sessionMapper.toSessionDTO(session),
-                backendConfig = serverConfigMapper.toBackendConfig(serverConfig = session.serverConfig)
-            )
-
-            val proteusClient: ProteusClient = ProteusClientImpl(rootProteusDirectoryPath, session.userId)
+    override fun getSessionScope(userId: UserId): UserSessionScope {
+        val dataSourceSet = userScopeStorage[userId] ?: run {
+            val networkContainer = AuthenticatedNetworkContainer(SessionManagerImpl(sessionRepository, userId))
+            val proteusClient: ProteusClient = ProteusClientImpl(rootProteusDirectoryPath, idMapper.toCryptoQualifiedIDId(userId))
             runBlocking { proteusClient.open() }
 
-            val workScheduler = WorkScheduler(appContext, session)
+            val workScheduler = WorkScheduler(appContext, userId)
             val syncManager = SyncManagerImpl(workScheduler)
-            val encryptedSettingsHolder = EncryptedSettingsHolder(appContext, "${PREFERENCE_FILE_PREFIX}-${session.userId}")
+
+            val userIDEntity = idMapper.toDaoModel(userId)
+            val encryptedSettingsHolder =
+                EncryptedSettingsHolder(appContext, SettingOptions.UserSettings(userIDEntity))
             val userPreferencesSettings = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
-            val database = Database(appContext, "main.db", userPreferencesSettings)
+            val database = Database(appContext, userIDEntity, userPreferencesSettings)
             AuthenticatedDataSourceSet(
                 networkContainer,
                 proteusClient,
@@ -65,14 +60,19 @@ actual class CoreLogic(
                 userPreferencesSettings,
                 encryptedSettingsHolder
             ).also {
-                userScopeStorage[session] = it
+                userScopeStorage[userId] = it
             }
         }
-        return UserSessionScope(appContext, session, dataSourceSet, sessionRepository)
+        return UserSessionScope(
+            appContext,
+            userId,
+            dataSourceSet,
+            sessionRepository,
+            globalCallManager
+        )
     }
 
-    private companion object {
-        private const val SHARED_PREFERENCE_FILE_NAME = "app-preference"
-        private const val PREFERENCE_FILE_PREFIX = "user-pref"
-    }
+    override val globalCallManager: GlobalCallManager = GlobalCallManager(
+        appContext = appContext
+    )
 }

@@ -69,7 +69,7 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
         .mapToList()
         .map { entryList -> entryList.map(mapper::toModel) }
 
-    override suspend fun getUserByQualifiedID(qualifiedID: QualifiedID): Flow<UserEntity?> {
+    override suspend fun getUserByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserEntity?> {
         return queries.selectByQualifiedId(qualifiedID)
             .asFlow()
             .mapToOneOrNull()
@@ -83,7 +83,11 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
             .map { entryList -> entryList.map(mapper::toModel) }
     }
 
-    override suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedID) {
+    override suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity) {
         queries.deleteUser(qualifiedID)
+    }
+
+    override suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String) {
+        queries.updateUserhandle(handle, qualifiedID)
     }
 }

@@ -1,13 +1,18 @@
 package com.wire.kalium.network.api.user.login
 
-import com.wire.kalium.network.api.ErrorResponse
-import com.wire.kalium.network.api.NonQualifiedUserId
 import com.wire.kalium.network.api.RefreshTokenProperties
 import com.wire.kalium.network.api.SessionDTO
-import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.api.model.AccessTokenDTO
+import com.wire.kalium.network.api.model.UserDTO
+import com.wire.kalium.network.api.model.toSessionDto
+import com.wire.kalium.network.utils.CustomErrors
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.flatMap
+import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
+import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -26,22 +31,6 @@ class LoginApiImpl(private val httpClient: HttpClient) : LoginApi {
         @SerialName("label") val label: String
     )
 
-    @Serializable
-    data class LoginResponse(
-        @SerialName("user") val userId: NonQualifiedUserId,
-        @SerialName("expires_in") val expiresIn: Long,
-        @SerialName("access_token") val accessToken: String,
-        @SerialName("token_type") val tokenType: String
-    )
-
-    private fun LoginResponse.toSessionDto(refreshToken: String): SessionDTO = SessionDTO(
-        userIdValue = userId,
-        tokenType = tokenType,
-        accessToken = accessToken,
-        refreshToken = refreshToken
-    )
-
-
     private fun LoginApi.LoginParam.toRequestBody(): LoginRequest {
         return when (this) {
             is LoginApi.LoginParam.LoginWithEmail -> LoginRequest(email = email, password = password, label = label)
@@ -49,13 +38,11 @@ class LoginApiImpl(private val httpClient: HttpClient) : LoginApi {
         }
     }
 
-    override suspend fun login(
-        param: LoginApi.LoginParam,
-        persist: Boolean,
-        apiBaseUrl: String
-    ): NetworkResponse<SessionDTO> {
 
-        val result = wrapKaliumResponse<LoginResponse> {
+    override suspend fun login(
+        param: LoginApi.LoginParam, persist: Boolean, apiBaseUrl: String
+    ): NetworkResponse<SessionDTO> =
+        wrapKaliumResponse<AccessTokenDTO> {
             httpClient.post {
                 url.set(host = apiBaseUrl, path = PATH_LOGIN)
                 url.protocol = URLProtocol.HTTPS
@@ -63,22 +50,31 @@ class LoginApiImpl(private val httpClient: HttpClient) : LoginApi {
                 parameter(QUERY_PERSIST, persist)
                 setBody(param.toRequestBody())
             }
-        }
-        return when (result) {
-            is NetworkResponse.Success -> {
-                val refreshToken = result.cookies[RefreshTokenProperties.COOKIE_NAME]
-                if (refreshToken == null) {
-                    NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "no cookie was found", "missing-refreshToken")))
-                } else {
-                    NetworkResponse.Success(result.value.toSessionDto(refreshToken), result.headers, result.httpCode)
+        }.flatMap { accessTokenDTOResponse ->
+            with(accessTokenDTOResponse) {
+                cookies[RefreshTokenProperties.COOKIE_NAME]?.let { refreshToken ->
+                    NetworkResponse.Success(refreshToken, headers, httpCode)
+                } ?: CustomErrors.MISSING_REFRESH_TOKEN
+            }.mapSuccess { Pair(accessTokenDTOResponse.value, it) }
+        }.flatMap { tokensPairResponse ->
+            // this is a hack to get the user QualifiedUserId on login
+            // TODO: remove this one when login endpoint return a QualifiedUserId
+            wrapKaliumResponse<UserDTO> {
+                httpClient.get {
+                    url.set(host = apiBaseUrl, path = PATH_SELF)
+                    url.protocol = URLProtocol.HTTPS
+                    bearerAuth(tokensPairResponse.value.first.value)
+                }
+            }.mapSuccess {
+                with(tokensPairResponse.value) {
+                    first.toSessionDto(second, it.id)
                 }
             }
-            is NetworkResponse.Error -> NetworkResponse.Error(result.kException)
         }
-    }
 
 
     private companion object {
+        const val PATH_SELF = "self"
         const val PATH_LOGIN = "login"
         const val QUERY_PERSIST = "persist"
     }

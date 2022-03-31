@@ -19,6 +19,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
+        isCoreLibraryDesugaringEnabled = true
     }
     sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
     // Remove Android Unit tests, as it's currently impossible to run native-through-NDK code on simple Unit tests.
@@ -42,13 +43,19 @@ kotlin {
         }
         testRuns["test"].executionTask.configure {
             useJUnit()
-
+            val runArgs = project.gradle.startParameter.systemPropertiesArgs.entries.map { "-D${it.key}=${it.value}" }
+            jvmArgs(runArgs)
             if (System.getProperty("os.name").contains("Mac", true)) {
-                jvmArgs = jvmArgs?.plus(listOf("-Djava.library.path=/usr/local/lib/:../native/libs"))
+                jvmArgs("-Djava.library.path=/usr/local/lib/:../native/libs")
             }
         }
     }
-    android()
+    android() {
+        dependencies {
+            coreLibraryDesugaring(Dependencies.Android.desugarJdkLibs)
+        }
+    }
+
     js(IR) {
         browser {
             commonWebpackConfig {
@@ -84,9 +91,15 @@ kotlin {
                 implementation(Dependencies.Coroutines.test)
             }
         }
+        fun org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet.addCommonKotlinJvmSourceDir() {
+            kotlin.srcDir("src/commonJvmAndroid/kotlin")
+        }
         val jvmMain by getting {
+            addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(Dependencies.Cryptography.cryptobox4j)
+                implementation(Dependencies.Cryptography.javaxCrypto)
+                implementation(Dependencies.Cryptography.mlsClientJvm)
             }
         }
         val jvmTest by getting
@@ -98,8 +111,11 @@ kotlin {
         }
         val jsTest by getting
         val androidMain by getting {
+            addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(Dependencies.Cryptography.cryptoboxAndroid)
+                implementation(Dependencies.Cryptography.javaxCrypto)
+                implementation(Dependencies.Cryptography.mlsClientAndroid)
             }
         }
         val androidAndroidTest by getting {

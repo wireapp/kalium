@@ -9,6 +9,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.client.RegisterClientResult
+import com.wire.kalium.logic.feature.conversation.GetConversationsUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -31,14 +32,22 @@ class SendReceiveApplication : CliktCommand() {
 
     override fun run() = runBlocking {
         val authSession = login(email, password)
-        val userSession = coreLogic.getSessionScope(authSession)
+        val userSession = coreLogic.getSessionScope(authSession.userId)
 
         when (userSession.client.register(password, emptyList())) {
             is RegisterClientResult.Failure -> throw RuntimeException("Client registration failed")
             is RegisterClientResult.Success -> Unit
         }
 
-        val conversations = userSession.conversations.getConversations().first()
+        val conversations = userSession.conversations.getConversations().let {
+            when(it) {
+                is GetConversationsUseCase.Result.Failure -> {
+                    echo(it.storageFailure.rootCause)
+                    return@runBlocking
+                }
+                is GetConversationsUseCase.Result.Success -> it.convFlow.first()
+            }
+        }
 
         conversations.forEachIndexed { index, conversation ->
             println("$index) ${conversation.id.value}  Name: ${conversation.name}")

@@ -5,11 +5,15 @@ import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.feature.auth.AuthSession
+import com.wire.kalium.logic.feature.call.GlobalCallManager
+import com.wire.kalium.logic.data.user.UserId
 
 actual class UserSessionScope(
-    session: AuthSession, authenticatedDataSourceSet: AuthenticatedDataSourceSet, sessionRepository: SessionRepository
-) : UserSessionScopeCommon(session, authenticatedDataSourceSet, sessionRepository) {
+    userId: UserId,
+    authenticatedDataSourceSet: AuthenticatedDataSourceSet,
+    sessionRepository: SessionRepository,
+    globalCallManager: GlobalCallManager
+) : UserSessionScopeCommon(userId, authenticatedDataSourceSet, sessionRepository, globalCallManager) {
     override val clientConfig: ClientConfig get() = ClientConfig()
 
     override val protoContentMapper: ProtoContentMapper get() = ProtoContentMapperImpl()

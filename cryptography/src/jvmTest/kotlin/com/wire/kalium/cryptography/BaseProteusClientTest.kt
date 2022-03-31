@@ -4,9 +4,9 @@ import java.nio.file.Files
 
 actual open class BaseProteusClientTest {
 
-    actual fun createProteusClient(userId: UserId): ProteusClient {
+    actual fun createProteusClient(userId: CryptoUserID): ProteusClient {
         val root = Files.createTempDirectory("proteus").toFile().absolutePath
-        return ProteusClientImpl(root, userId.value)
+        return ProteusClientImpl(root, userId)
     }
 
 }

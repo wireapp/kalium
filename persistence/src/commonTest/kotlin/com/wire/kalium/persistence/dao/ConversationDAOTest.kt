@@ -24,7 +24,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     fun givenConversation_ThenConversationCanBeInserted() = runTest {
         conversationDAO.insertConversation(conversationEntity1)
         val result = conversationDAO.getConversationByQualifiedID(conversationEntity1.id).first()
-        assertEquals(result, conversationEntity1)
+        assertEquals(conversationEntity1, result)
     }
 
     @Test
@@ -32,8 +32,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversations(listOf(conversationEntity1, conversationEntity2))
         val result1 = conversationDAO.getConversationByQualifiedID(conversationEntity1.id).first()
         val result2 = conversationDAO.getConversationByQualifiedID(conversationEntity2.id).first()
-        assertEquals(result1, conversationEntity1)
-        assertEquals(result2, conversationEntity2)
+        assertEquals(conversationEntity1, result1)
+        assertEquals(conversationEntity2, result2)
     }
 
     @Test
@@ -51,7 +51,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             ConversationEntity(conversationEntity1.id, "Updated conversation1", ConversationEntity.Type.ONE_ON_ONE, teamId)
         conversationDAO.updateConversation(updatedConversation1Entity)
         val result = conversationDAO.getConversationByQualifiedID(conversationEntity1.id).first()
-        assertEquals(result, updatedConversation1Entity)
+        assertEquals(updatedConversation1Entity, result)
     }
 
     @Test
@@ -61,7 +61,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             ConversationEntity(conversationEntity1.id, "Updated conversation1", ConversationEntity.Type.ONE_ON_ONE, null)
         conversationDAO.insertConversation(updatedConversation1Entity)
         val result = conversationDAO.getConversationByQualifiedID(conversationEntity1.id).first()
-        assertEquals(result, updatedConversation1Entity)
+        assertEquals(updatedConversation1Entity, result)
     }
 
     @Test
@@ -69,7 +69,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.insertMember(member1, conversationEntity1.id)
 
-        assertEquals(conversationDAO.getAllMembers(conversationEntity1.id).first(), listOf(member1))
+        assertEquals(listOf(member1), conversationDAO.getAllMembers(conversationEntity1.id).first())
     }
 
     @Test
@@ -78,7 +78,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertMember(member1, conversationEntity1.id)
         conversationDAO.deleteMemberByQualifiedID(conversationEntity1.id, member1.user)
 
-        assertEquals(conversationDAO.getAllMembers(conversationEntity1.id).first(), emptyList())
+        assertEquals(emptyList(), conversationDAO.getAllMembers(conversationEntity1.id).first())
     }
 
     @Test
@@ -86,21 +86,21 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.insertMembers(listOf(member1, member2), conversationEntity1.id)
 
-        assertEquals(conversationDAO.getAllMembers(conversationEntity1.id).first().toSet(), setOf(member1, member2))
+        assertEquals(setOf(member1, member2), conversationDAO.getAllMembers(conversationEntity1.id).first().toSet())
     }
 
     private companion object {
         val user1 = newUserEntity(id = "1")
         val user2 = newUserEntity(id = "2")
 
-        val teamId = "teamId"
+        const val teamId = "teamId"
 
         val conversationEntity1 = ConversationEntity(
-            QualifiedID("1", "wire.com"), "conversation1",
+            QualifiedIDEntity("1", "wire.com"), "conversation1",
             ConversationEntity.Type.ONE_ON_ONE, teamId
         )
         val conversationEntity2 = ConversationEntity(
-            QualifiedID("2", "wire.com"), "conversation2",
+            QualifiedIDEntity("2", "wire.com"), "conversation2",
             ConversationEntity.Type.ONE_ON_ONE, null
         )
 

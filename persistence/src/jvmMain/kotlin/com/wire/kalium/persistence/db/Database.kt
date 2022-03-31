@@ -30,12 +30,13 @@ actual class Database {
         database = AppDatabase(
             driver,
             Client.Adapter(user_idAdapter = QualifiedIDAdapter()),
-            Conversation.Adapter(qualified_idAdapter = QualifiedIDAdapter(), EnumColumnAdapter()),
+            Conversation.Adapter(qualified_idAdapter = QualifiedIDAdapter(), typeAdapter = EnumColumnAdapter()),
             Member.Adapter(userAdapter = QualifiedIDAdapter(), conversationAdapter = QualifiedIDAdapter()),
             Message.Adapter(
                 conversation_idAdapter = QualifiedIDAdapter(),
                 sender_user_idAdapter = QualifiedIDAdapter(),
-                statusAdapter = EnumColumnAdapter()
+                statusAdapter = EnumColumnAdapter(),
+                visibilityAdapter = EnumColumnAdapter()
             ),
             User.Adapter(qualified_idAdapter = QualifiedIDAdapter(), IntColumnAdapter)
         )

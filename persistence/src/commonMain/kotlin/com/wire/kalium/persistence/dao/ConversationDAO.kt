@@ -3,7 +3,7 @@ package com.wire.kalium.persistence.dao
 import kotlinx.coroutines.flow.Flow
 
 data class ConversationEntity(
-    val id: QualifiedID,
+    val id: QualifiedIDEntity,
     val name: String?,
     val type: Type,
     val teamId: String?
@@ -12,18 +12,19 @@ data class ConversationEntity(
 }
 
 data class Member(
-    val user: QualifiedID
+    val user: QualifiedIDEntity
 )
 
 interface ConversationDAO {
+    suspend fun getSelfConversationId(): QualifiedIDEntity
     suspend fun insertConversation(conversationEntity: ConversationEntity)
     suspend fun insertConversations(conversationEntities: List<ConversationEntity>)
     suspend fun updateConversation(conversationEntity: ConversationEntity)
     suspend fun getAllConversations(): Flow<List<ConversationEntity>>
-    suspend fun getConversationByQualifiedID(qualifiedID: QualifiedID): Flow<ConversationEntity?>
-    suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedID)
-    suspend fun insertMember(member: Member, conversationID: QualifiedID)
-    suspend fun insertMembers(members: List<Member>, conversationID: QualifiedID)
-    suspend fun deleteMemberByQualifiedID(conversationID: QualifiedID, userID: QualifiedID)
-    suspend fun getAllMembers(qualifiedID: QualifiedID): Flow<List<Member>>
+    suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>
+    suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity)
+    suspend fun insertMember(member: Member, conversationID: QualifiedIDEntity)
+    suspend fun insertMembers(memberList: List<Member>, conversationID: QualifiedIDEntity)
+    suspend fun deleteMemberByQualifiedID(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity)
+    suspend fun getAllMembers(qualifiedID: QualifiedIDEntity): Flow<List<Member>>
 }
