@@ -7,9 +7,11 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.exceptions.KaliumException
+import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
+import io.mockative.configure
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
@@ -21,16 +23,16 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-@OptIn(ExperimentalCoroutinesApi::class)
+@OptIn(ExperimentalCoroutinesApi::class, ConfigurationApi::class)
 class SetUserHandleUseCaseTest {
     @Mock
     private val validateHandleUseCase = mock(classOf<ValidateUserHandleUseCase>())
 
     @Mock
-    private val userRepository = mock(classOf<UserRepository>())
+    private val userRepository = configure(mock(classOf<UserRepository>())) { stubsUnitByDefault = true }
 
     @Mock
-    private val syncManager = mock(classOf<SyncManager>())
+    private val syncManager = configure(mock(classOf<SyncManager>())) { stubsUnitByDefault = true }
 
     private lateinit var setUserHandleUseCase: SetUserHandleUseCase
 
@@ -49,9 +51,6 @@ class SetUserHandleUseCaseTest {
         given(userRepository)
             .coroutine { updateSelfHandle(handle) }
             .then { Either.Right(Unit) }
-        given(userRepository)
-            .coroutine { updateLocalSelfUserHandle(handle) }
-            .then { }
         given(syncManager)
             .coroutine { syncManager.isSlowSyncOngoing() }
             .then { false }
@@ -84,18 +83,12 @@ class SetUserHandleUseCaseTest {
         given(userRepository)
             .coroutine { updateSelfHandle(handle) }
             .then { Either.Right(Unit) }
-        given(userRepository)
-            .coroutine { updateLocalSelfUserHandle(handle) }
-            .then { }
         given(syncManager)
             .coroutine { syncManager.isSlowSyncOngoing() }
             .then { true }
         given(syncManager)
             .coroutine { syncManager.isSlowSyncCompleted() }
             .then { true }
-        given(syncManager)
-            .coroutine { syncManager.waitForSlowSyncToComplete() }
-            .then { }
 
         val actual = setUserHandleUseCase(handle)
 
@@ -155,6 +148,9 @@ class SetUserHandleUseCaseTest {
             .function(validateHandleUseCase::invoke)
             .whenInvokedWith(any())
             .then { false }
+        given(syncManager)
+            .coroutine { syncManager.isSlowSyncOngoing() }
+            .then { false }
 
         val actual = setUserHandleUseCase(handle)
 
@@ -181,6 +177,9 @@ class SetUserHandleUseCaseTest {
         given(userRepository)
             .coroutine { updateSelfHandle(handle) }
             .then { Either.Left(expected) }
+        given(syncManager)
+            .coroutine { syncManager.isSlowSyncOngoing() }
+            .then { false }
 
         val actual = setUserHandleUseCase(handle)
 
@@ -214,6 +213,9 @@ class SetUserHandleUseCaseTest {
         given(userRepository)
             .coroutine { updateSelfHandle(handle) }
             .then { Either.Left(error) }
+        given(syncManager)
+            .coroutine { syncManager.isSlowSyncOngoing() }
+            .then { false }
 
         val actual = setUserHandleUseCase(handle)
 

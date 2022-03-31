@@ -26,19 +26,15 @@ class SetUserHandleUseCase(
     private val syncManager: SyncManager
 ) {
     suspend operator fun invoke(handle: String): SetUserHandleResult = suspending {
+        if (syncManager.isSlowSyncOngoing()) syncManager.waitForSlowSyncToComplete()
         when (validateUserHandleUseCase(handle)) {
             true -> userRepository.updateSelfHandle(handle).coFold(
                 {
-                    if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
+                    if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError)
                         handleSpecificError(it.kaliumException)
-                    } else {
-                        SetUserHandleResult.Failure.Generic(it)
-                    }
+                    else SetUserHandleResult.Failure.Generic(it)
                 }, {
-                    if (syncManager.isSlowSyncOngoing())
-                        syncManager.waitForSlowSyncToComplete()
-                    if (syncManager.isSlowSyncCompleted())
-                        userRepository.updateLocalSelfUserHandle(handle)
+                    if (syncManager.isSlowSyncCompleted()) userRepository.updateLocalSelfUserHandle(handle)
                     SetUserHandleResult.Success
                 }
             )
