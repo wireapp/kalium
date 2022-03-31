@@ -5,7 +5,7 @@ import com.sun.jna.Pointer
 import com.wire.kalium.calling.types.Size_t
 
 /* Send calling message otr data */
-interface SendHandler : Callback {
+fun interface SendHandler : Callback {
     fun onSend(
         context: Pointer?,
         conversationId: String,
