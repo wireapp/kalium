@@ -2,9 +2,7 @@ package com.wire.kalium.logic.data.asset
 
 import com.wire.kalium.cryptography.utils.calcMd5
 import com.wire.kalium.logic.data.message.AssetContent
-import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
-import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
-import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Video
+import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.*
 import com.wire.kalium.logic.data.message.AssetContent.RemoteData.EncryptionAlgorithm.AES_CBC
 import com.wire.kalium.logic.data.message.AssetContent.RemoteData.EncryptionAlgorithm.AES_GCM
 import com.wire.kalium.network.api.asset.AssetMetadataRequest
@@ -103,7 +101,7 @@ class AssetMapperImpl : AssetMapper {
                 name = original?.name,
                 mimeType = original?.mimeType ?: "*/*",
                 metadata = when (val metadataType = original?.metaData) {
-                    is Asset.ImageMetaData -> Image(width = metadataType.width, height = metadataType.height)
+                    is Asset.Original.MetaData.Image -> Image(width = metadataType.value.width, height = metadataType.value.height)
                     null -> null
                     else -> null
                 },
