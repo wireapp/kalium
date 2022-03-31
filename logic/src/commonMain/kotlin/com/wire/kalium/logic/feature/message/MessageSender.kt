@@ -8,7 +8,6 @@ import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.failure.SendMessageFailure
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.sync.SyncManager
 
@@ -68,19 +67,16 @@ class MessageSenderImpl(
         envelope: MessageEnvelope,
         messageUuid: Message,
     ): Either<CoreFailure, Unit> = suspending {
-        val sendResult = messageRepository.sendEnvelope(conversationId, envelope)
-
-        if (sendResult.isRight()) {
-            return@suspending Either.Right(Unit)
-        }
-
-        when (val failure = sendResult.value) {
-            is SendMessageFailure.ClientsHaveChanged -> {
-                messageSendFailureHandler.handleClientsHaveChangedFailure(failure).flatMap {
-                    getRecipientsAndAttemptSend(conversationId, messageUuid)
+        messageRepository.sendEnvelope(conversationId, envelope).coFold(
+            {
+                when (it) {
+                    is SendMessageFailure.Unknown -> Either.Left(it)
+                    is SendMessageFailure.ClientsHaveChanged -> messageSendFailureHandler.handleClientsHaveChangedFailure(it).flatMap {
+                        getRecipientsAndAttemptSend(conversationId, messageUuid)
+                    }
                 }
-            }
-            else -> Either.Left(failure)
-        }
+            }, {
+                Either.Right(Unit)
+            })
     }
 }
