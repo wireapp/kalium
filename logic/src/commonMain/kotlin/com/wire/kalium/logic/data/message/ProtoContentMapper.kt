@@ -38,9 +38,11 @@ class ProtoContentMapperImpl : ProtoContentMapper {
                                 size = size.toLong(),
                                 name = name,
                                 metaData = when (metadata) {
-                                    is AssetContent.AssetMetadata.Image -> Asset.ImageMetaData(
-                                        width = metadata.width,
-                                        height = metadata.height,
+                                    is AssetContent.AssetMetadata.Image -> Original.MetaData.Image(
+                                        Asset.ImageMetaData(
+                                            width = metadata.width,
+                                            height = metadata.height,
+                                        )
                                     )
                                     else -> null
                                 }
