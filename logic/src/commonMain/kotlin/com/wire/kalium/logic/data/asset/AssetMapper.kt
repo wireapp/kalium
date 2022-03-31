@@ -12,6 +12,8 @@ import com.wire.kalium.network.api.asset.AssetResponse
 import com.wire.kalium.network.api.model.AssetRetentionType
 import com.wire.kalium.persistence.dao.asset.AssetEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.protobuf.messages.Asset
+import com.wire.kalium.protobuf.messages.EncryptionAlgorithm
 import kotlinx.datetime.Clock
 
 interface AssetMapper {
@@ -20,6 +22,7 @@ interface AssetMapper {
     fun fromUploadedAssetToDaoModel(uploadAssetData: UploadAssetData, uploadedAssetResponse: AssetResponse): AssetEntity
     fun fromUserAssetToDaoModel(assetKey: String, data: ByteArray): AssetEntity
     fun fromAssetEntityToAssetContent(assetContentEntity: MessageEntity.MessageEntityContent.AssetMessageContent): AssetContent
+    fun fromProtoAssetMessageToAssetContent(protoAssetMessage: Asset): AssetContent
 }
 
 class AssetMapperImpl : AssetMapper {
@@ -60,7 +63,7 @@ class AssetMapperImpl : AssetMapper {
             return AssetContent(
                 mimeType = assetMimeType,
                 size = assetSize,
-                name = assetName ?: "",
+                name = assetName,
                 metadata = when {
                     assetMimeType.contains("image/") -> Image(
                         width = assetImageWidth ?: 0,
@@ -78,8 +81,8 @@ class AssetMapperImpl : AssetMapper {
                     else -> null
                 },
                 remoteData = AssetContent.RemoteData(
-                    otrKey = assetOtrKey ?: ByteArray(16),
-                    sha256 = assetSha256Key ?: ByteArray(16),
+                    otrKey = assetOtrKey,
+                    sha256 = assetSha256Key,
                     assetId = assetId,
                     assetToken = assetToken,
                     assetDomain = assetDomain,
@@ -89,6 +92,35 @@ class AssetMapperImpl : AssetMapper {
                         else -> AES_CBC
                     }
                 )
+            )
+        }
+    }
+
+    override fun fromProtoAssetMessageToAssetContent(protoAssetMessage: Asset): AssetContent {
+        with(protoAssetMessage) {
+            return AssetContent(
+                size = original?.size?.toInt() ?: 0,
+                name = original?.name,
+                mimeType = original?.mimeType ?: "*/*",
+                metadata = when (val metadataType = original?.metaData) {
+                    is Asset.ImageMetaData -> Image(width = metadataType.width, height = metadataType.height)
+                    null -> null
+                    else -> null
+                },
+                remoteData = with((status as Asset.Status.Uploaded).value) {
+                    AssetContent.RemoteData(
+                        otrKey = otrKey.array,
+                        sha256 = sha256.array,
+                        assetId = assetId ?: "",
+                        assetDomain = assetDomain,
+                        assetToken = assetToken,
+                        encryptionAlgorithm = when (encryption) {
+                            EncryptionAlgorithm.AES_CBC -> AES_CBC
+                            EncryptionAlgorithm.AES_GCM -> AES_GCM
+                            else -> null
+                        }
+                    )
+                }
             )
         }
     }

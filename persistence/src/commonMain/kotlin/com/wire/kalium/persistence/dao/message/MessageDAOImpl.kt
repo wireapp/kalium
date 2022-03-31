@@ -4,7 +4,8 @@ import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.*
+import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.ASSET
+import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.TEXT
 import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityContent.AssetMessageContent
 import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityContent.TextMessageContent
 import com.wire.kalium.persistence.db.MessagesQueries
@@ -16,17 +17,27 @@ class MessageMapper {
     fun toModel(msg: SQLDelightMessage): MessageEntity {
 
         return MessageEntity(
-//            content = when (msg.content_type) {
-//                TEXT -> TextMessageContent(messageBody = msg.text_body ?: "")
-//                ASSET -> { AssetMessageContent(
-//                    assetMimeType = msg.asset_mime_type ?: "",
-//                    assetSize = ,
-//                    ass
-//                )}
-//            },
-            contentType = TEXT,
-            content = TextMessageContent(messageBody = msg.text_body ?: ""),
+            content = when (msg.content_type) {
+                TEXT -> TextMessageContent(messageBody = msg.text_body ?: "")
+                ASSET -> {
+                    AssetMessageContent(
+                        assetMimeType = msg.asset_mime_type ?: "",
+                        assetSize = msg.asset_size ?: 0,
+                        assetName = msg.asset_name ?: "",
+                        assetImageWidth = msg.asset_image_width ?: 0,
+                        assetImageHeight = msg.asset_image_height ?: 0,
+                        assetOtrKey = msg.asset_otr_key ?: ByteArray(16),
+                        assetSha256Key = msg.asset_sha256 ?: ByteArray(16),
+                        assetId = msg.asset_id ?: "",
+                        assetToken = msg.asset_token ?: "",
+                        assetDomain = msg.asset_domain ?: "",
+                        assetEncryptionAlgorithm = msg.asset_encryption_algorithm ?: "",
+                    )
+                }
+            },
+
             // Common Message fields
+            contentType = msg.content_type,
             id = msg.id,
             conversationId = msg.conversation_id,
             date = msg.date,
