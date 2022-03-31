@@ -19,8 +19,8 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
             ConversationEntity.Type.ONE_ON_ONE, "teamID"
         )
 
-    private val member1 = Member(user1.id)
-    private val member2 = Member(user2.id)
+    private val member1 = MemberEntity(user1.id)
+    private val member2 = MemberEntity(user2.id)
 
     private lateinit var conversationDAO: ConversationDAO
     private lateinit var userDAO: UserDAO
