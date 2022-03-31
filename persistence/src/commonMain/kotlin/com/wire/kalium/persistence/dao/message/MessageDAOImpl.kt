@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import com.wire.kalium.persistence.db.Message as SQLDelightMessage
 
-class MessageMapper {
+internal class MessageMapper {
     fun toModel(msg: SQLDelightMessage): MessageEntity {
         return MessageEntity(
             id = msg.id,
@@ -28,6 +28,11 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
 
     override suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity) = queries.deleteMessage(id, conversationsId)
 
+    override suspend fun deleteMessage(id: String) = queries.deleteMessageById(id)
+
+    override suspend fun updateMessageVisibility(visibility: MessageEntity.Visibility, id: String, conversationId: QualifiedIDEntity,) =
+        queries.updateMessageVisibility(visibility, "", id, conversationId)
+
     override suspend fun deleteAllMessages() = queries.deleteAllMessages()
 
     override suspend fun insertMessage(message: MessageEntity) =
@@ -38,7 +43,8 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             message.date,
             message.senderUserId,
             message.senderClientId,
-            message.status
+            message.status,
+            message.visibility
         )
 
     override suspend fun insertMessages(messages: List<MessageEntity>) =
@@ -51,7 +57,8 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
                     message.date,
                     message.senderUserId,
                     message.senderClientId,
-                    message.status
+                    message.status,
+                    message.visibility
                 )
             }
         }
@@ -66,6 +73,9 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             message.id,
             message.conversationId
         )
+
+    override suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity) =
+        queries.updateMessageStatus(status, id, conversationId)
 
     override suspend fun getAllMessages(): Flow<List<MessageEntity>> =
         queries.selectAllMessages()
