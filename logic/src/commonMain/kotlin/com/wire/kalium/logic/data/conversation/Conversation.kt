@@ -32,7 +32,6 @@ sealed class ConversationDetails(val conversation: Conversation) {
             // The connection is complete and the conversation is in its normal state
             ACCEPTED
         }
-
     }
 
     class Group(conversation: Conversation) : ConversationDetails(conversation)
