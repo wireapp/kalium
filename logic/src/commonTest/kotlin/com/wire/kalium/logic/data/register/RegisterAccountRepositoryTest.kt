@@ -297,7 +297,7 @@ class RegisterAccountRepositoryTest {
             expiresAt = "",
             nonQualifiedId = "",
             locale = "",
-            managedBy = null,
+            managedByDTO = null,
             phone = null,
             ssoID = null
         )
