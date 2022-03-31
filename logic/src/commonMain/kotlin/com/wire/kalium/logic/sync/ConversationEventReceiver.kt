@@ -8,6 +8,7 @@ import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContentMapper
@@ -36,7 +37,8 @@ class ConversationEventReceiver(
     private suspend fun handleNewMessage(event: Event.Conversation.NewMessage) {
         val decodedContentBytes = Base64.decodeFromBase64(event.content.toByteArray())
 
-        val cryptoSessionId = CryptoSessionId(idMapper.toCryptoQualifiedIDId(event.senderUserId), CryptoClientId(event.senderClientId.value))
+        val cryptoSessionId =
+            CryptoSessionId(idMapper.toCryptoQualifiedIDId(event.senderUserId), CryptoClientId(event.senderClientId.value))
         suspending {
             wrapCryptoRequest { proteusClient.decrypt(decodedContentBytes, cryptoSessionId) }.map { PlainMessageBlob(it) }
 
@@ -46,13 +48,18 @@ class ConversationEventReceiver(
                 }.onSuccess { plainMessageBlob ->
                     val protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)
                     val message = Message(
-                        protoContent.messageUid,
-                        protoContent.messageContent,
-                        event.conversationId,
-                        event.time,
-                        event.senderUserId,
-                        event.senderClientId,
-                        Message.Status.SENT
+                        id = protoContent.messageUid,
+                        content = protoContent.messageContent,
+                        contentType = when (protoContent.messageContent) {
+                            is MessageContent.Asset -> Message.ContentType.ASSET
+                            is MessageContent.Text -> Message.ContentType.TEXT
+                            else -> Message.ContentType.TEXT // parse as text for the default case
+                        },
+                        conversationId = event.conversationId,
+                        date = event.time,
+                        senderUserId = event.senderUserId,
+                        senderClientId = event.senderClientId,
+                        status = Message.Status.SENT
                     )
                     //TODO Multiplatform logging
                     println("Message received: $message")

@@ -83,13 +83,14 @@ internal class SendImageUseCaseImpl(
                         assetId = assetId
                     )
                 ),
+                contentType = Message.ContentType.ASSET,
                 conversationId = conversationId,
                 date = Clock.System.now().toString(),
                 senderUserId = selfUser.id,
                 senderClientId = currentClientId,
                 status = Message.Status.PENDING
             )
-//            messageRepository.persistMessage(message) // Persist the asset message when the DB has been updated
+            messageRepository.persistMessage(message) // Persist the asset message when the DB has been updated
             Either.Right(Unit)
         }.flatMap {
             messageSender.trySendingOutgoingMessage(conversationId, generatedMessageUuid)

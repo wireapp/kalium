@@ -6,8 +6,8 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.message.MessageApi
-import com.wire.kalium.persistence.dao.message.BaseMessageEntity.Status.SENT
-import com.wire.kalium.persistence.dao.message.BaseMessageEntity.TextMessageEntity
+import com.wire.kalium.persistence.dao.message.MessageEntity.Status.SENT
+import com.wire.kalium.persistence.dao.message.MessageEntity.TextMessageEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import io.mockative.Mock
 import io.mockative.anything

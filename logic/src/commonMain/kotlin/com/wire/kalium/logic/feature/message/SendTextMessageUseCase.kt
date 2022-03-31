@@ -33,6 +33,7 @@ class SendTextMessageUseCase(
                 val message = Message(
                     id = generatedMessageUuid,
                     content = MessageContent.Text(text),
+                    contentType = Message.ContentType.ASSET,
                     conversationId = conversationId,
                     date = Clock.System.now().toString(),
                     senderUserId = selfUser.id,

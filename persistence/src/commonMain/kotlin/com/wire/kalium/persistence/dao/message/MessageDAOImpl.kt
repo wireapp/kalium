@@ -4,43 +4,29 @@ import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.message.BaseMessageEntity.AssetMessageEntity
-import com.wire.kalium.persistence.dao.message.BaseMessageEntity.TextMessageEntity
+import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.*
+import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityContent.AssetMessageContent
+import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityContent.TextMessageContent
 import com.wire.kalium.persistence.db.MessagesQueries
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import com.wire.kalium.persistence.db.Message as SQLDelightMessage
 
 class MessageMapper {
-    fun toModel(msg: SQLDelightMessage): BaseMessageEntity {
+    fun toModel(msg: SQLDelightMessage): MessageEntity {
 
-        return when {
-            msg.content == null && msg.asset_mime_type != null -> AssetMessageEntity(
-                // Asset Message fields
-                assetMimeType = msg.asset_mime_type,
-
-                // Common Message fields
-                id = msg.id,
-                conversationId = msg.conversation_id,
-                date = msg.date,
-                senderUserId = msg.sender_user_id,
-                senderClientId = msg.sender_client_id,
-                status = msg.status
-            )
-            else -> TextMessageEntity(
-                content = msg.content,
-                id = msg.id,
-                conversationId = msg.conversation_id,
-                date = msg.date,
-                senderUserId = msg.sender_user_id,
-                senderClientId = msg.sender_client_id,
-                status = msg.status
-            )
-        }
-    }
-
-    fun toAssetModel(msg: SQLDelightMessage): BaseMessageEntity {
-        return AssetMessageEntity(
+        return MessageEntity(
+//            content = when (msg.content_type) {
+//                TEXT -> TextMessageContent(messageBody = msg.text_body ?: "")
+//                ASSET -> { AssetMessageContent(
+//                    assetMimeType = msg.asset_mime_type ?: "",
+//                    assetSize = ,
+//                    ass
+//                )}
+//            },
+            contentType = TEXT,
+            content = TextMessageContent(messageBody = msg.text_body ?: ""),
+            // Common Message fields
             id = msg.id,
             conversationId = msg.conversation_id,
             date = msg.date,
@@ -58,21 +44,25 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
 
     override suspend fun deleteAllMessages() = queries.deleteAllMessages()
 
-    override suspend fun insertMessage(message: BaseMessageEntity) =
+    override suspend fun insertMessage(message: MessageEntity) =
         queries.insertMessage(
             id = message.id,
-            content = message.content,
-            asset_mime_type = message.assetMimeType,
-            asset_size = message.assetSize,
-            asset_name = message.assetName,
-            asset_image_width = message.assetImageWidth,
-            asset_image_height = message.assetImageHeight,
-            asset_otr_key = message.assetOtrKey,
-            asset_sha256 = message.assetSha256Key,
-            asset_id = message.assetId,
-            asset_token = message.assetToken,
-            asset_domain = message.assetDomain,
-            asset_encryption_algorithm = message.assetEncryptionAlgorithm,
+            text_body = when (message.content) {
+                is TextMessageContent -> message.content.messageBody
+                else -> null
+            },
+            content_type = message.contentType,
+            asset_mime_type = if (message.content is AssetMessageContent) message.content.assetMimeType else null,
+            asset_size = if (message.content is AssetMessageContent) message.content.assetSize else null,
+            asset_name = if (message.content is AssetMessageContent) message.content.assetName else null,
+            asset_image_width = if (message.content is AssetMessageContent) message.content.assetImageWidth else null,
+            asset_image_height = if (message.content is AssetMessageContent) message.content.assetImageHeight else null,
+            asset_otr_key = if (message.content is AssetMessageContent) message.content.assetOtrKey else null,
+            asset_sha256 = if (message.content is AssetMessageContent) message.content.assetSha256Key else null,
+            asset_id = if (message.content is AssetMessageContent) message.content.assetId else null,
+            asset_token = if (message.content is AssetMessageContent) message.content.assetToken else null,
+            asset_domain = if (message.content is AssetMessageContent) message.content.assetDomain else null,
+            asset_encryption_algorithm = if (message.content is AssetMessageContent) message.content.assetEncryptionAlgorithm else null,
             conversation_id = message.conversationId,
             date = message.date,
             sender_user_id = message.senderUserId,
@@ -80,23 +70,27 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             status = message.status
         )
 
-    override suspend fun insertMessages(messages: List<BaseMessageEntity>) =
+    override suspend fun insertMessages(messages: List<MessageEntity>) =
         queries.transaction {
             messages.forEach { message ->
                 queries.insertMessage(
                     id = message.id,
-                    content = message.content,
-                    asset_mime_type = message.assetMimeType,
-                    asset_size = message.assetSize,
-                    asset_name = message.assetName,
-                    asset_image_width = message.assetImageWidth,
-                    asset_image_height = message.assetImageHeight,
-                    asset_otr_key = message.assetOtrKey,
-                    asset_sha256 = message.assetSha256Key,
-                    asset_id = message.assetId,
-                    asset_token = message.assetToken,
-                    asset_domain = message.assetDomain,
-                    asset_encryption_algorithm = message.assetEncryptionAlgorithm,
+                    text_body = when (message.content) {
+                        is TextMessageContent -> message.content.messageBody
+                        else -> null
+                    },
+                    content_type = message.contentType,
+                    asset_mime_type = if (message.content is AssetMessageContent) message.content.assetMimeType else null,
+                    asset_size = if (message.content is AssetMessageContent) message.content.assetSize else null,
+                    asset_name = if (message.content is AssetMessageContent) message.content.assetMimeType else null,
+                    asset_image_width = if (message.content is AssetMessageContent) message.content.assetImageWidth else null,
+                    asset_image_height = if (message.content is AssetMessageContent) message.content.assetImageHeight else null,
+                    asset_otr_key = if (message.content is AssetMessageContent) message.content.assetOtrKey else null,
+                    asset_sha256 = if (message.content is AssetMessageContent) message.content.assetSha256Key else null,
+                    asset_id = if (message.content is AssetMessageContent) message.content.assetId else null,
+                    asset_token = if (message.content is AssetMessageContent) message.content.assetToken else null,
+                    asset_domain = if (message.content is AssetMessageContent) message.content.assetDomain else null,
+                    asset_encryption_algorithm = if (message.content is AssetMessageContent) message.content.assetEncryptionAlgorithm else null,
                     conversation_id = message.conversationId,
                     date = message.date,
                     sender_user_id = message.senderUserId,
@@ -106,21 +100,25 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             }
         }
 
-    override suspend fun updateMessage(message: BaseMessageEntity) =
+    override suspend fun updateMessage(message: MessageEntity) =
         queries.updateMessages(
             id = message.id,
-            content = message.content,
-            asset_mime_type = message.assetMimeType,
-            asset_size = message.assetSize,
-            asset_name = message.assetName,
-            asset_image_width = message.assetImageWidth,
-            asset_image_height = message.assetImageHeight,
-            asset_otr_key = message.assetOtrKey,
-            asset_sha256 = message.assetSha256Key,
-            asset_id = message.assetId,
-            asset_token = message.assetToken,
-            asset_domain = message.assetDomain,
-            asset_encryption_algorithm = message.assetEncryptionAlgorithm,
+            text_body = when (message.content) {
+                is TextMessageContent -> message.content.messageBody
+                else -> null
+            },
+            content_type = message.contentType,
+            asset_mime_type = if (message.content is AssetMessageContent) message.content.assetMimeType else null,
+            asset_size = if (message.content is AssetMessageContent) message.content.assetSize else null,
+            asset_name = if (message.content is AssetMessageContent) message.content.assetMimeType else null,
+            asset_image_width = if (message.content is AssetMessageContent) message.content.assetImageWidth else null,
+            asset_image_height = if (message.content is AssetMessageContent) message.content.assetImageHeight else null,
+            asset_otr_key = if (message.content is AssetMessageContent) message.content.assetOtrKey else null,
+            asset_sha256 = if (message.content is AssetMessageContent) message.content.assetSha256Key else null,
+            asset_id = if (message.content is AssetMessageContent) message.content.assetId else null,
+            asset_token = if (message.content is AssetMessageContent) message.content.assetToken else null,
+            asset_domain = if (message.content is AssetMessageContent) message.content.assetDomain else null,
+            asset_encryption_algorithm = if (message.content is AssetMessageContent) message.content.assetEncryptionAlgorithm else null,
             conversation_id = message.conversationId,
             date = message.date,
             sender_user_id = message.senderUserId,
@@ -128,19 +126,19 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             status = message.status
         )
 
-    override suspend fun getAllMessages(): Flow<List<BaseMessageEntity>> =
+    override suspend fun getAllMessages(): Flow<List<MessageEntity>> =
         queries.selectAllMessages()
             .asFlow()
             .mapToList()
             .map { entryList -> entryList.map(mapper::toModel) }
 
-    override suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): Flow<BaseMessageEntity?> =
+    override suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?> =
         queries.selectById(id, conversationId)
             .asFlow()
             .mapToOneOrNull()
             .map { msg -> msg?.let(mapper::toModel) }
 
-    override suspend fun getMessageByConversation(conversationId: QualifiedIDEntity, limit: Int): Flow<List<BaseMessageEntity>> =
+    override suspend fun getMessageByConversation(conversationId: QualifiedIDEntity, limit: Int): Flow<List<MessageEntity>> =
         queries.selectByConversationId(conversationId, limit.toLong())
             .asFlow()
             .mapToList()

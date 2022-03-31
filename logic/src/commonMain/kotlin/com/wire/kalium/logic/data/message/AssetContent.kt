@@ -37,7 +37,7 @@ data class AssetContent(
     data class RemoteData(
         val otrKey: ByteArray,
         val sha256: ByteArray,
-        val assetId: String?,
+        val assetId: String,
         val assetToken: String?,
         val assetDomain: String?,
         val encryptionAlgorithm: EncryptionAlgorithm?

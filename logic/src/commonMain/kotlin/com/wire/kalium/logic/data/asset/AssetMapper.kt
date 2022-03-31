@@ -11,7 +11,7 @@ import com.wire.kalium.network.api.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.asset.AssetResponse
 import com.wire.kalium.network.api.model.AssetRetentionType
 import com.wire.kalium.persistence.dao.asset.AssetEntity
-import com.wire.kalium.persistence.dao.message.BaseMessageEntity
+import com.wire.kalium.persistence.dao.message.MessageEntity
 import kotlinx.datetime.Clock
 
 interface AssetMapper {
@@ -19,7 +19,7 @@ interface AssetMapper {
     fun fromApiUploadResponseToDomainModel(asset: AssetResponse): UploadedAssetId
     fun fromUploadedAssetToDaoModel(uploadAssetData: UploadAssetData, uploadedAssetResponse: AssetResponse): AssetEntity
     fun fromUserAssetToDaoModel(assetKey: String, data: ByteArray): AssetEntity
-    fun fromMessageEntityToAssetContent(messageEntity: BaseMessageEntity): AssetContent
+    fun fromAssetEntityToAssetContent(assetContentEntity: MessageEntity.MessageEntityContent.AssetMessageContent): AssetContent
 }
 
 class AssetMapperImpl : AssetMapper {
@@ -49,29 +49,29 @@ class AssetMapperImpl : AssetMapper {
         return AssetEntity(
             key = assetKey,
             domain = "", // is it possible to know this on contacts sync avatars ?
-            mimeType = "",
+            mimeType = ImageAsset.JPEG.name,
             rawData = data,
             downloadedDate = Clock.System.now().toEpochMilliseconds()
         )
     }
 
-    override fun fromMessageEntityToAssetContent(messageEntity: BaseMessageEntity): AssetContent {
-        with(messageEntity) {
+    override fun fromAssetEntityToAssetContent(assetContentEntity: MessageEntity.MessageEntityContent.AssetMessageContent): AssetContent {
+        with(assetContentEntity) {
             return AssetContent(
-                mimeType = assetMimeType ?: "*/*",
-                size = assetSize ?: 0,
+                mimeType = assetMimeType,
+                size = assetSize,
                 name = assetName ?: "",
                 metadata = when {
-                    assetMimeType?.contains("image/") == true -> Image(
+                    assetMimeType.contains("image/") -> Image(
                         width = assetImageWidth ?: 0,
                         height = assetImageHeight ?: 0
                     )
-                    assetMimeType?.contains("video/") == true -> Video(
+                    assetMimeType.contains("video/") -> Video(
                         width = assetVideoWidth,
                         height = assetVideoHeight,
                         durationMs = assetVideoDurationMs
                     )
-                    assetMimeType?.contains("audio/") == true -> Audio(
+                    assetMimeType.contains("audio/") -> Audio(
                         durationMs = assetAudioDurationMs,
                         normalizedLoudness = assetAudioNormalizedLoudness
                     )
