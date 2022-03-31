@@ -42,7 +42,7 @@ class SetUserHandleUseCaseTest {
         given(validateHandleUseCase)
             .function(validateHandleUseCase::invoke)
             .whenInvokedWith(any())
-            .then { ValidateUserHandleResult(true, "") }
+            .then { ValidateUserHandleResult.Valid }
         given(userRepository)
             .coroutine { updateSelfHandle(handle) }
             .then { Either.Right(Unit) }
@@ -66,7 +66,7 @@ class SetUserHandleUseCaseTest {
         given(validateHandleUseCase)
             .function(validateHandleUseCase::invoke)
             .whenInvokedWith(any())
-            .then { ValidateUserHandleResult(false, "") }
+            .then { ValidateUserHandleResult.Invalid.InvalidCharacters("") }
 
         val actual = setUserHandleUseCase(handle)
 
@@ -89,7 +89,7 @@ class SetUserHandleUseCaseTest {
         given(validateHandleUseCase)
             .function(validateHandleUseCase::invoke)
             .whenInvokedWith(any())
-            .then { ValidateUserHandleResult(true, "") }
+            .then { ValidateUserHandleResult.Valid }
         given(userRepository)
             .coroutine { updateSelfHandle(handle) }
             .then { Either.Left(expected) }
@@ -121,7 +121,7 @@ class SetUserHandleUseCaseTest {
         given(validateHandleUseCase)
             .function(validateHandleUseCase::invoke)
             .whenInvokedWith(any())
-            .then { ValidateUserHandleResult(true, "") }
+            .then { ValidateUserHandleResult.Valid }
         given(userRepository)
             .coroutine { updateSelfHandle(handle) }
             .then { Either.Left(error) }

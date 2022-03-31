@@ -5,10 +5,16 @@ interface ValidateUserHandleUseCase {
 }
 class ValidateUserHandleUseCaseImpl: ValidateUserHandleUseCase  {
     override operator fun invoke(handle: String): ValidateUserHandleResult {
-        val handleWithoutInvalidChars = handle.replace(Regex(HANDLE_FORBIDDEN_CHARACTERS_REGEX), "")
-        val hasValidChars = handle == handleWithoutInvalidChars
-        val hasValidLength = handleWithoutInvalidChars.length in HANDLE_MIN_LENGTH..HANDLE_MAX_LENGTH
-        return ValidateUserHandleResult(hasValidChars && hasValidLength, handleWithoutInvalidChars)
+        val handleWithoutInvalidCharacters = handle.replace(Regex(HANDLE_FORBIDDEN_CHARACTERS_REGEX), "")
+        val hasValidCharacters = handle == handleWithoutInvalidCharacters
+        val tooShort = handleWithoutInvalidCharacters.length < HANDLE_MIN_LENGTH
+        val tooLong = handleWithoutInvalidCharacters.length > HANDLE_MAX_LENGTH
+        return when {
+            tooShort -> ValidateUserHandleResult.Invalid.TooShort(handleWithoutInvalidCharacters)
+            tooLong -> ValidateUserHandleResult.Invalid.TooLong(handleWithoutInvalidCharacters)
+            !hasValidCharacters -> ValidateUserHandleResult.Invalid.InvalidCharacters(handleWithoutInvalidCharacters)
+            else -> ValidateUserHandleResult.Valid
+        }
     }
 
     private companion object {
@@ -18,4 +24,12 @@ class ValidateUserHandleUseCaseImpl: ValidateUserHandleUseCase  {
     }
 }
 
-data class ValidateUserHandleResult(val isValid: Boolean, val handleWithoutInvalidChars: String)
+sealed class ValidateUserHandleResult() {
+    object Valid: ValidateUserHandleResult()
+    sealed class Invalid(open val handleWithoutInvalidCharacters: String): ValidateUserHandleResult() {
+        data class InvalidCharacters(override val handleWithoutInvalidCharacters: String): Invalid(handleWithoutInvalidCharacters)
+        data class TooShort(override val handleWithoutInvalidCharacters: String): Invalid(handleWithoutInvalidCharacters)
+        data class TooLong(override val handleWithoutInvalidCharacters: String): Invalid(handleWithoutInvalidCharacters)
+    }
+    val isValid: Boolean get() = this == Valid
+}

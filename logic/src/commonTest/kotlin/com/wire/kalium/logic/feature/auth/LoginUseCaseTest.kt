@@ -46,7 +46,7 @@ class LoginUseCaseTest {
             val cleanEmail = TEST_EMAIL
             given(validateEmailUseCase).invocation { invoke(cleanEmail) }.then { true }
             given(validateUserHandleUseCase).invocation { invoke(cleanEmail) }
-                .then { ValidateUserHandleResult(false, "") }
+                .then { ValidateUserHandleResult.Invalid.InvalidCharacters("") }
             given(loginRepository).coroutine { loginWithEmail(cleanEmail, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG) }.then {
                 Either.Right(TEST_AUTH_SESSION)
             }
@@ -69,7 +69,7 @@ class LoginUseCaseTest {
             val cleanHandle = TEST_HANDLE
             given(validateEmailUseCase).invocation { invoke(cleanHandle) }.then { false }
             given(validateUserHandleUseCase).invocation { invoke(cleanHandle) }
-                .then { ValidateUserHandleResult(true, "") }
+                .then { ValidateUserHandleResult.Valid }
             given(loginRepository).coroutine { loginWithHandle(cleanHandle, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG) }.then {
                 Either.Right(TEST_AUTH_SESSION)
             }
@@ -92,7 +92,7 @@ class LoginUseCaseTest {
         runTest {
             given(validateEmailUseCase).invocation { invoke(TEST_EMAIL) }.then { true }
             given(validateUserHandleUseCase).invocation { invoke(TEST_EMAIL) }
-                .then { ValidateUserHandleResult(false, "") }
+                .then { ValidateUserHandleResult.Invalid.InvalidCharacters("") }
             given(loginRepository).coroutine { loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG) }.then {
                 Either.Right(TEST_AUTH_SESSION)
             }
@@ -115,7 +115,7 @@ class LoginUseCaseTest {
             // given
             given(validateEmailUseCase).invocation { invoke(TEST_HANDLE) }.then { false }
             given(validateUserHandleUseCase).invocation { invoke(TEST_HANDLE) }
-                .then { ValidateUserHandleResult(true, "") }
+                .then { ValidateUserHandleResult.Valid }
             given(loginRepository).coroutine { loginWithHandle(TEST_HANDLE, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG) }.then {
                 Either.Right(TEST_AUTH_SESSION)
             }
@@ -145,7 +145,7 @@ class LoginUseCaseTest {
         runTest {
             given(validateEmailUseCase).invocation { invoke(TEST_EMAIL) }.then { true }
             given(validateUserHandleUseCase).invocation { invoke(TEST_EMAIL) }
-                .then { ValidateUserHandleResult(false, "") }
+                .then { ValidateUserHandleResult.Invalid.InvalidCharacters("") }
             given(loginRepository).coroutine { loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG) }
                 .then { Either.Right(TEST_AUTH_SESSION) }
 
@@ -159,7 +159,7 @@ class LoginUseCaseTest {
         runTest {
             given(validateEmailUseCase).invocation { invoke(TEST_EMAIL) }.then { false }
             given(validateUserHandleUseCase).invocation { invoke(TEST_EMAIL) }
-                .then { ValidateUserHandleResult(false, "") }
+                .then { ValidateUserHandleResult.Invalid.InvalidCharacters("") }
 
             val loginUserCaseResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG)
 
@@ -175,13 +175,13 @@ class LoginUseCaseTest {
             val invalidCredentialsFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.invalidCredentials)
             given(validateEmailUseCase).invocation { invoke(TEST_EMAIL) }.then { true }
             given(validateUserHandleUseCase).invocation { invoke(TEST_EMAIL) }
-                .then { ValidateUserHandleResult(false, "") }
+                .then { ValidateUserHandleResult.Invalid.InvalidCharacters("") }
             given(loginRepository).coroutine { loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG) }
                 .then { Either.Left(invalidCredentialsFailure) }
 
             given(validateEmailUseCase).invocation { invoke(TEST_HANDLE) }.then { false }
             given(validateUserHandleUseCase).invocation { invoke(TEST_HANDLE) }
-                .then { ValidateUserHandleResult(true, "") }
+                .then { ValidateUserHandleResult.Valid }
             given(loginRepository).coroutine { loginWithHandle(TEST_HANDLE, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG) }
                 .then { Either.Left(invalidCredentialsFailure) }
 
