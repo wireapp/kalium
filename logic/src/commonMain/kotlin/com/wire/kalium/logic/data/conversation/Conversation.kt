@@ -1,12 +1,11 @@
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.PlainId
-import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
-typealias ConversationId = QualifiedID
 
 data class Conversation(val id: ConversationId, val name: String?, val type: Type, val teamId: TeamId?) {
     enum class Type { SELF, ONE_ON_ONE, GROUP }

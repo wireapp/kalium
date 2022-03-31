@@ -1,22 +1,22 @@
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.protobuf.decodeFromByteArray
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.Calling
 import com.wire.kalium.protobuf.messages.GenericMessage
-import com.wire.kalium.protobuf.messages.Text
 import com.wire.kalium.protobuf.messages.MessageDelete
 import com.wire.kalium.protobuf.messages.MessageHide
-import com.wire.kalium.logic.data.conversation.ConversationId
 import com.wire.kalium.protobuf.messages.QualifiedConversationId
+import com.wire.kalium.protobuf.messages.Text
 
 interface ProtoContentMapper {
     fun encodeToProtobuf(protoContent: ProtoContent): PlainMessageBlob
     fun decodeFromProtobuf(encodedContent: PlainMessageBlob): ProtoContent
 }
 
-class ProtoContentMapperImpl: ProtoContentMapper {
+class ProtoContentMapperImpl : ProtoContentMapper {
 
     override fun encodeToProtobuf(protoContent: ProtoContent): PlainMessageBlob {
         val (messageUid, messageContent) = protoContent
@@ -32,8 +32,15 @@ class ProtoContentMapperImpl: ProtoContentMapper {
                 GenericMessage.Content.Deleted(MessageDelete(messageId = messageContent.messageId))
             }
             is MessageContent.DeleteForMe -> {
-                val qualifiedConversationId = QualifiedConversationId(id = messageContent.conversationId.value, domain = messageContent.conversationId.domain)
-                GenericMessage.Content.Hidden(MessageHide(conversationId = messageContent.conversationId.value, messageId = messageContent.messageId, qualifiedConversationId = qualifiedConversationId))
+                val qualifiedConversationId =
+                    QualifiedConversationId(id = messageContent.conversationId.value, domain = messageContent.conversationId.domain)
+                GenericMessage.Content.Hidden(
+                    MessageHide(
+                        conversationId = messageContent.conversationId.value,
+                        messageId = messageContent.messageId,
+                        qualifiedConversationId = qualifiedConversationId
+                    )
+                )
             }
             else -> {
                 throw IllegalArgumentException("Unexpected message content type: $messageContent")
@@ -69,8 +76,10 @@ class ProtoContentMapperImpl: ProtoContentMapper {
                 if (hiddenMessage != null) {
                     MessageContent.DeleteForMe(
                         hiddenMessage.messageId,
-                        ConversationId(hiddenMessage.qualifiedConversationId!!.id,
-                            hiddenMessage.qualifiedConversationId!!.domain)
+                        ConversationId(
+                            hiddenMessage.qualifiedConversationId!!.id,
+                            hiddenMessage.qualifiedConversationId!!.domain
+                        )
                     )
                 } else {
                     kaliumLogger.w("Hidden message is null. Message UUID = $genericMessage.")
