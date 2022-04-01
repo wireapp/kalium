@@ -17,6 +17,10 @@ actual fun calcMd5(bytes: ByteArray): String {
     return toData(digestData.asByteArray()).base64Encoding()
 }
 
+actual fun calcSHA256(bytes: ByteArray): String {
+    TODO("Not yet implemented")
+}
+
 private fun toData(data: ByteArray): NSData = memScoped {
     NSData.create(bytes = allocArrayOf(data), length = data.size.toULong())
 }

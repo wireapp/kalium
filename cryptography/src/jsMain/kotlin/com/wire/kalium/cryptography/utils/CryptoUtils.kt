@@ -4,6 +4,10 @@ actual fun calcMd5(bytes: ByteArray): String {
     TODO("Not yet implemented")
 }
 
+actual fun calcSHA256(bytes: ByteArray): String {
+    TODO("Not yet implemented")
+}
+
 actual fun encryptDataWithAES256(data: PlainData, key: AES256Key): EncryptedData {
     TODO("Not yet implemented")
 }
