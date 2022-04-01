@@ -69,7 +69,7 @@ class LoginUseCaseTest {
             val cleanHandle = TEST_HANDLE
             given(validateEmailUseCase).invocation { invoke(cleanHandle) }.then { false }
             given(validateUserHandleUseCase).invocation { invoke(cleanHandle) }
-                .then { ValidateUserHandleResult.Valid }
+                .then { ValidateUserHandleResult.Valid(cleanHandle) }
             given(loginRepository).coroutine { loginWithHandle(cleanHandle, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG) }.then {
                 Either.Right(TEST_AUTH_SESSION)
             }
@@ -115,7 +115,7 @@ class LoginUseCaseTest {
             // given
             given(validateEmailUseCase).invocation { invoke(TEST_HANDLE) }.then { false }
             given(validateUserHandleUseCase).invocation { invoke(TEST_HANDLE) }
-                .then { ValidateUserHandleResult.Valid }
+                .then { ValidateUserHandleResult.Valid(TEST_HANDLE) }
             given(loginRepository).coroutine { loginWithHandle(TEST_HANDLE, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG) }.then {
                 Either.Right(TEST_AUTH_SESSION)
             }
@@ -181,7 +181,7 @@ class LoginUseCaseTest {
 
             given(validateEmailUseCase).invocation { invoke(TEST_HANDLE) }.then { false }
             given(validateUserHandleUseCase).invocation { invoke(TEST_HANDLE) }
-                .then { ValidateUserHandleResult.Valid }
+                .then { ValidateUserHandleResult.Valid(TEST_HANDLE) }
             given(loginRepository).coroutine { loginWithHandle(TEST_HANDLE, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_SERVER_CONFIG) }
                 .then { Either.Left(invalidCredentialsFailure) }
 
