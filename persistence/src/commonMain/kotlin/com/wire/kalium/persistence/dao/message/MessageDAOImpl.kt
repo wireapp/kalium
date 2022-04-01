@@ -37,7 +37,6 @@ class MessageMapper {
             },
 
             // Common Message fields
-            contentType = msg.content_type,
             id = msg.id,
             conversationId = msg.conversation_id,
             date = msg.date,
@@ -74,7 +73,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
                 is TextMessageContent -> message.content.messageBody
                 else -> null
             },
-            content_type = message.contentType,
+            content_type = contentTypeOf(message.content),
             asset_mime_type = if (message.content is AssetMessageContent) message.content.assetMimeType else null,
             asset_size = if (message.content is AssetMessageContent) message.content.assetSize else null,
             asset_name = if (message.content is AssetMessageContent) message.content.assetMimeType else null,
@@ -98,11 +97,11 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
     override suspend fun updateMessage(message: MessageEntity) =
         queries.updateMessages(
             id = message.id,
-            text_body = when (message.contentType) {
-                TEXT -> (message.content as TextMessageContent).messageBody
+            text_body = when (message.content) {
+                is TextMessageContent -> message.content.messageBody
                 else -> null
             },
-            content_type = message.contentType,
+            content_type = contentTypeOf(message.content),
             asset_mime_type = if (message.content is AssetMessageContent) message.content.assetMimeType else null,
             asset_size = if (message.content is AssetMessageContent) message.content.assetSize else null,
             asset_name = if (message.content is AssetMessageContent) message.content.assetMimeType else null,
@@ -122,6 +121,11 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             status = message.status
         )
 
+    private fun contentTypeOf(content: MessageEntity.MessageEntityContent): MessageEntity.ContentType = when (content) {
+        is TextMessageContent -> TEXT
+        is AssetMessageContent -> ASSET
+    }
+    
     override suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity) =
         queries.updateMessageStatus(status, id, conversationId)
 

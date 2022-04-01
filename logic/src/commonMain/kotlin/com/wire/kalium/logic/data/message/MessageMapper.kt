@@ -23,10 +23,10 @@ class MessageMapperImpl(private val idMapper: IdMapper) : MessageMapper {
             Message.Status.READ -> MessageEntity.Status.READ
             Message.Status.FAILED -> MessageEntity.Status.FAILED
         }
-        val (messageContent, contentType) = when (message.content) {
-            is MessageContent.Text -> TextMessageContent(messageBody = message.content.value) to MessageEntity.ContentType.TEXT
-            is MessageContent.DeleteMessage -> TextMessageContent(messageBody = message.content.messageId) to MessageEntity.ContentType.TEXT
-            is MessageContent.DeleteForMe -> TextMessageContent(messageBody = message.content.messageId) to MessageEntity.ContentType.TEXT
+        val messageContent = when (message.content) {
+            is MessageContent.Text -> TextMessageContent(messageBody = message.content.value)
+            is MessageContent.DeleteMessage -> TextMessageContent(messageBody = message.content.messageId)
+            is MessageContent.DeleteForMe -> TextMessageContent(messageBody = message.content.messageId)
             is MessageContent.Asset -> {
                 with(message.content.value) {
                     AssetMessageContent(
@@ -44,15 +44,14 @@ class MessageMapperImpl(private val idMapper: IdMapper) : MessageMapper {
                         assetSha256Key = remoteData.sha256,
                         assetId = remoteData.assetId,
                         assetEncryptionAlgorithm = remoteData.encryptionAlgorithm?.name
-                    ) to MessageEntity.ContentType.ASSET
+                    )
                 }
             }
-            else -> TextMessageContent(messageBody = "") to MessageEntity.ContentType.TEXT // Text as default type
+            else -> TextMessageContent(messageBody = "")
         }
 
         return MessageEntity(
             content = messageContent,
-            contentType = contentType,
             id = message.id,
             conversationId = idMapper.toDaoModel(message.conversationId),
             date = message.date,

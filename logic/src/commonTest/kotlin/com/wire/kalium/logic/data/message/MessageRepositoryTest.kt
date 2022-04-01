@@ -137,7 +137,6 @@ class MessageRepositoryTest {
             MessageEntity(
                 id = "uid",
                 content = MessageEntity.MessageEntityContent.TextMessageContent("content"),
-                contentType = MessageEntity.ContentType.TEXT,
                 conversationId = TEST_QUALIFIED_ID_ENTITY,
                 date = "date",
                 senderUserId = TEST_QUALIFIED_ID_ENTITY,

@@ -5,7 +5,6 @@ import kotlinx.coroutines.flow.Flow
 
 data class MessageEntity(
     val id: String,
-    internal val contentType: ContentType,
     val content: MessageEntityContent,
     val conversationId: QualifiedIDEntity,
     val date: String,
