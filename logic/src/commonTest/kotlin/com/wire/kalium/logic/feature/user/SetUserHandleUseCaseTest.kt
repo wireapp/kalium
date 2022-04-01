@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.auth.ValidateUserHandleResult
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
@@ -47,7 +48,7 @@ class SetUserHandleUseCaseTest {
         given(validateHandleUseCase)
             .function(validateHandleUseCase::invoke)
             .whenInvokedWith(any())
-            .then { true }
+            .then { ValidateUserHandleResult.Valid }
         given(userRepository)
             .coroutine { updateSelfHandle(handle) }
             .then { Either.Right(Unit) }
@@ -79,7 +80,7 @@ class SetUserHandleUseCaseTest {
         given(validateHandleUseCase)
             .function(validateHandleUseCase::invoke)
             .whenInvokedWith(any())
-            .then { true }
+            .then { ValidateUserHandleResult.Valid }
         given(userRepository)
             .coroutine { updateSelfHandle(handle) }
             .then { Either.Right(Unit) }
@@ -114,7 +115,7 @@ class SetUserHandleUseCaseTest {
         given(validateHandleUseCase)
             .function(validateHandleUseCase::invoke)
             .whenInvokedWith(any())
-            .then { true }
+            .then { ValidateUserHandleResult.Valid }
         given(userRepository)
             .coroutine { updateSelfHandle(handle) }
             .then { Either.Right(Unit) }
@@ -147,7 +148,7 @@ class SetUserHandleUseCaseTest {
         given(validateHandleUseCase)
             .function(validateHandleUseCase::invoke)
             .whenInvokedWith(any())
-            .then { false }
+            .then { ValidateUserHandleResult.Invalid.InvalidCharacters("") }
         given(syncManager)
             .coroutine { syncManager.isSlowSyncOngoing() }
             .then { false }
@@ -173,7 +174,7 @@ class SetUserHandleUseCaseTest {
         given(validateHandleUseCase)
             .function(validateHandleUseCase::invoke)
             .whenInvokedWith(any())
-            .then { true }
+            .then { ValidateUserHandleResult.Valid }
         given(userRepository)
             .coroutine { updateSelfHandle(handle) }
             .then { Either.Left(expected) }
@@ -210,7 +211,7 @@ class SetUserHandleUseCaseTest {
         given(validateHandleUseCase)
             .function(validateHandleUseCase::invoke)
             .whenInvokedWith(any())
-            .then { true }
+            .then { ValidateUserHandleResult.Valid }
         given(userRepository)
             .coroutine { updateSelfHandle(handle) }
             .then { Either.Left(error) }

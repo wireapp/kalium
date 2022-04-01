@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.auth.ValidateUserHandleResult
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.sync.SyncManager
@@ -28,7 +29,7 @@ class SetUserHandleUseCase(
     suspend operator fun invoke(handle: String): SetUserHandleResult = suspending {
         if (syncManager.isSlowSyncOngoing()) syncManager.waitForSlowSyncToComplete()
         when (validateUserHandleUseCase(handle)) {
-            true -> userRepository.updateSelfHandle(handle).coFold(
+            ValidateUserHandleResult.Valid -> userRepository.updateSelfHandle(handle).coFold(
                 {
                     if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError)
                         handleSpecificError(it.kaliumException)
@@ -38,7 +39,7 @@ class SetUserHandleUseCase(
                     SetUserHandleResult.Success
                 }
             )
-            false -> SetUserHandleResult.Failure.InvalidHandle
+            else -> SetUserHandleResult.Failure.InvalidHandle
         }
     }
 
