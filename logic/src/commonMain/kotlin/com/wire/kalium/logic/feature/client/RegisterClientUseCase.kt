@@ -74,7 +74,56 @@ class RegisterClientUseCaseImpl(
             clientRepository.registerClient(registerClientParam).flatMap { client ->
                 // TODO when https://github.com/wireapp/core-crypto/issues/11 is implemented we
                 // can remove registerMLSClient() and supply the MLS public key in registerClient().
-                mlsClientProvider.getMLSClient(client.clientId).flatMap { clientRepository.registerMLSClient(client.clientId, it.getPublicKey()) }
+    override suspend operator fun invoke(
+        password: String,
+        capabilities: List<ClientCapability>?,
+        preKeysToSend: Int
+    ): RegisterClientResult = suspending {
+        generateProteusPreKeys(preKeysToSend, password, capabilities).coFold({
+            RegisterClientResult.Failure.Generic(it)
+        }, { registerClientParam ->
+            clientRepository.registerClient(registerClientParam).flatMap { client ->
+                createMLSClient(client)
+            }.fold({ failure ->
+                if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError)
+                    when {
+                        failure.kaliumException.isTooManyClients() -> RegisterClientResult.Failure.TooManyClients
+                        failure.kaliumException.isMissingAuth() -> RegisterClientResult.Failure.InvalidCredentials
+                        else -> RegisterClientResult.Failure.Generic(failure)
+                    }
+                else RegisterClientResult.Failure.Generic(failure)
+            }, { client ->
+                RegisterClientResult.Success(client)
+            })
+        })
+    }
+
+    private suspend fun createMLSClient(client: Client): Either<CoreFailure, Client> = suspending {
+        // TODO when https://github.com/wireapp/core-crypto/issues/11 is implemented we
+        // can remove registerMLSClient() and supply the MLS public key in registerClient().
+        mlsClientProvider.getMLSClient(client.clientId)
+            .flatMap { clientRepository.registerMLSClient(client.clientId, it.getPublicKey()) }
+            .flatMap { keyPackageRepository.uploadNewKeyPackages(client.clientId) }
+            .flatMap { clientRepository.persistClientId(client.clientId) }
+            .map { client }
+    }
+
+    private suspend fun generateProteusPreKeys(
+        preKeysToSend: Int,
+        password: String,
+        capabilities: List<ClientCapability>?
+    ) = preKeyRepository.generateNewPreKeys(FIRST_KEY_ID, preKeysToSend).flatMap { preKeys ->
+        preKeyRepository.generateNewLastKey().flatMap { lastKey ->
+            Either.Right(
+                RegisterClientParam(
+                    password = password,
+                    capabilities = capabilities,
+                    preKeys = preKeys,
+                    lastKey = lastKey
+                )
+            )
+        }
+    }
                     .flatMap { keyPackageRepository.uploadNewKeyPackages(client.clientId) }
                     .flatMap { clientRepository.persistClientId(client.clientId) }
                     .map { client }
