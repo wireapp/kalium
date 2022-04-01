@@ -8,10 +8,10 @@ data class Message(
     val id: String,
     val content: MessageContent,
     val conversationId: ConversationId,
-    val date: String,
-    val senderUserId: UserId,
-    val senderClientId: ClientId,
-    val status: Status
+    val date: String = "",
+    val senderUserId: UserId = UserId("", ""),
+    val senderClientId: ClientId = ClientId(""),
+    val status: Status? = Status.SENT
 ) {
     enum class Status {
         PENDING, SENT, READ, FAILED

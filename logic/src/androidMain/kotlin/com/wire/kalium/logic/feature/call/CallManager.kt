@@ -15,6 +15,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.toTimeInMillis
 import kotlinx.coroutines.CoroutineScope
@@ -33,8 +34,12 @@ actual class CallManager(
     private val calling: Calling,
     private val callRepository: CallRepository,
     private val userRepository: UserRepository,
-    private val clientRepository: ClientRepository
+    private val clientRepository: ClientRepository,
+    val messageSender: MessageSender
 ) : CallConfigRequestHandler {
+
+    private val TAG = "startHandleAsync"
+    private val UTF8_ENCODING = "UTF-8"
 
     private val job = SupervisorJob() // TODO clear job method
     private val scope = CoroutineScope(job + Dispatchers.IO)
@@ -88,41 +93,45 @@ actual class CallManager(
             userId = userId.await().asString(),
             clientId = clientId.await().value,
             readyHandler = { version: Int, arg: Pointer? ->
-                kaliumLogger.i("startHandleAsync -> readyHandler")
+                kaliumLogger.i("$TAG -> readyHandler")
             },
             sendHandler = { context: Pointer?, conversationId: String, userIdSelf: String, clientIdSelf: String, userIdDestination: String?,
                             clientIdDestination: String?, data: Pointer?, length: Size_t, isTransient: Boolean, arg: Pointer? ->
-                kaliumLogger.i("startHandleAsync -> sendHandler")
+                kaliumLogger.i("$TAG -> sendHandler")
+                scope.launch {
+                    val messageString = data?.getString(0, UTF8_ENCODING)
+                    messageString?.let { senCallingMessage(conversationId.toConversationId(), it) }
+                }
                 0
             },
             sftRequestHandler = { ctx: Pointer?, url: String, data: Pointer?, length: Size_t, arg: Pointer? ->
-                kaliumLogger.i("startHandleAsync -> sftRequestHandler")
+                kaliumLogger.i("$TAG -> sftRequestHandler")
                 0
             },
             incomingCallHandler = { conversationId: String, messageTime: Uint32_t, userId: String, clientId: String, isVideoCall: Boolean,
                                     shouldRing: Boolean, conversationType: Int, arg: Pointer? ->
-                kaliumLogger.i("startHandleAsync -> incomingCallHandler")
+                kaliumLogger.i("$TAG -> incomingCallHandler")
                 updateCallStatusById(
                     conversationId = conversationId,
                     status = CallStatus.INCOMING
                 )
             },
             missedCallHandler = { conversationId: String, messageTime: Uint32_t, userId: String, isVideoCall: Boolean, arg: Pointer? ->
-                kaliumLogger.i("startHandleAsync -> missedCallHandler")
+                kaliumLogger.i("$TAG -> missedCallHandler")
                 updateCallStatusById(
                     conversationId = conversationId,
                     status = CallStatus.MISSED
                 )
             },
             answeredCallHandler = { conversationId: String, arg: Pointer? ->
-                kaliumLogger.i("startHandleAsync -> answeredCallHandler")
+                kaliumLogger.i("$TAG -> answeredCallHandler")
                 updateCallStatusById(
                     conversationId = conversationId,
                     status = CallStatus.ANSWERED
                 )
             },
             establishedCallHandler = { conversationId: String, userId: String, clientId: String, arg: Pointer? ->
-                kaliumLogger.i("startHandleAsync -> establishedCallHandler")
+                kaliumLogger.i("$TAG -> establishedCallHandler")
                 updateCallStatusById(
                     conversationId = conversationId,
                     status = CallStatus.ESTABLISHED
@@ -130,21 +139,21 @@ actual class CallManager(
             },
             closeCallHandler = { reason: Int, conversationId: String, messageTime: Uint32_t, userId: String, clientId: String,
                                  arg: Pointer? ->
-                kaliumLogger.i("startHandleAsync -> closeCallHandler")
+                kaliumLogger.i("$TAG -> closeCallHandler")
                 updateCallStatusById(
                     conversationId = conversationId,
                     status = CallStatus.CLOSED
                 )
             },
             metricsHandler = { conversationId: String, metricsJson: String, arg: Pointer? ->
-                kaliumLogger.i("startHandleAsync -> metricsHandler")
+                kaliumLogger.i("$TAG -> metricsHandler")
             },
             callConfigRequestHandler = this@CallManager,
             constantBitRateStateChangeHandler = { userId: String, clientId: String, isEnabled: Boolean, arg: Pointer? ->
-                kaliumLogger.i("startHandleAsync -> constantBitRateStateChangeHandler")
+                kaliumLogger.i("$TAG -> constantBitRateStateChangeHandler")
             },
             videoReceiveStateHandler = { conversationId: String, userId: String, clientId: String, state: Int, arg: Pointer? ->
-                kaliumLogger.i("startHandleAsync -> videoReceiveStateHandler")
+                kaliumLogger.i("$TAG -> videoReceiveStateHandler")
             },
             arg = null
         ).also {
