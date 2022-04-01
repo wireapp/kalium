@@ -20,7 +20,7 @@ data class UserDTO(
     @SerialName("id") val nonQualifiedId: NonQualifiedUserId,
     @SerialName("name") val name: String,
     @SerialName("locale") val locale: String,
-    @SerialName("managed_by") val managedBy: ManagedBy?,
+    @SerialName("managed_by") val managedByDTO: ManagedByDTO?,
     @SerialName("phone") val phone: String?,
     @SerialName("qualified_id") val id: UserId,
     @SerialName("service") val service: ServiceDTO?,
@@ -38,7 +38,7 @@ internal data class NewUserDTO(
     @SerialName("invitation_code") val invitationCode: String?, // Mutually exclusive with team|team_code ,
     @SerialName("label") val label: String?, // An optional label to associate with the access cookie, if one is granted during account creation.
     @SerialName("locale") val locale: String?,
-    @SerialName("managed_by") val managedBy: ManagedBy?,
+    @SerialName("managed_by") val managedByDTO: ManagedByDTO?,
     @SerialName("name") val name: String,
     @SerialName("password") val password: String?,
     @SerialName("phone") val phone: String?,
@@ -51,12 +51,12 @@ internal data class NewUserDTO(
 )
 
 @Serializable
-enum class ManagedBy {
+enum class ManagedByDTO {
     @SerialName("wire")
-    Wire,
+    WIRE,
 
     @SerialName("scim")
-    Scim;
+    SCIM;
 
     override fun toString(): String {
         return this.name.lowercase()

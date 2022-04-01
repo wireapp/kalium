@@ -128,7 +128,7 @@ class LoginApiTest : ApiTest {
             expiresAt = "",
             nonQualifiedId = "",
             locale = "",
-            managedBy = null,
+            managedByDTO = null,
             phone = null,
             ssoID = null
         )
