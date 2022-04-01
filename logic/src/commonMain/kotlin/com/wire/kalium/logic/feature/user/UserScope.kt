@@ -31,7 +31,7 @@ class UserScope(
     val searchKnownUsers: SearchKnownUsersUseCase get() = SearchKnownUsersUseCaseImpl(searchUserRepository)
     val getPublicAsset: GetPublicAssetUseCase get() = GetPublicAssetUseCaseImpl(assetRepository)
     val searchUserDirectory: SearchUserDirectoryUseCase get() = SearchUserDirectoryUseCaseImpl(searchUserRepository)
-    val setUserHandle: SetUserHandleUseCase get() = SetUserHandleUseCase(userRepository, validateUserHandleUseCase)
+    val setUserHandle: SetUserHandleUseCase get() = SetUserHandleUseCase(userRepository, validateUserHandleUseCase, syncManager)
     val getAllKnownUsers: GetAllKnownUsersUseCase get() = GetAllKnownUsersUseCaseImpl(userRepository)
     val getKnownUser: GetKnownUserUseCase get() = GetKnownUserUseCaseImpl(userRepository)
 }
