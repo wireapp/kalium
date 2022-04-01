@@ -93,7 +93,6 @@ internal class SendImageUseCaseImpl(
                 status = Message.Status.PENDING
             )
             messageRepository.persistMessage(message) // Persist the asset message when the DB has been updated
-            Either.Right(Unit)
         }.flatMap {
             messageSender.trySendingOutgoingMessage(conversationId, generatedMessageUuid)
         }.onFailure {
