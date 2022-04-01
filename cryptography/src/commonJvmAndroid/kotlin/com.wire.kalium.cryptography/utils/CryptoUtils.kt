@@ -10,6 +10,12 @@ actual fun calcMd5(bytes: ByteArray): String = bytes.let {
     return hash.encodeBase64()
 }
 
+actual fun calcSHA256(bytes: ByteArray): String {
+    val md = MessageDigest.getInstance("SHA-256")
+    val digest = md.digest(bytes)
+    return digest.fold("") { str, it -> str + "%02x".format(it) }
+}
+
 actual fun encryptDataWithAES256(data: PlainData, key: AES256Key): EncryptedData = AESEncrypt().encrypt(data, key)
 
 actual fun decryptDataWithAES256(data: EncryptedData, secretKey: AES256Key): PlainData = AESDecrypt(secretKey).decrypt(data)
