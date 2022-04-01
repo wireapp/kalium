@@ -1,24 +1,36 @@
 package com.wire.kalium.logic.feature.auth
 
 interface ValidateUserHandleUseCase {
-    operator fun invoke(handle: String): Boolean
+    operator fun invoke(handle: String): ValidateUserHandleResult
 }
-class ValidateUserHandleUseCaseImpl: ValidateUserHandleUseCase  {
-    override operator fun invoke(handle: String): Boolean {
+
+class ValidateUserHandleUseCaseImpl : ValidateUserHandleUseCase {
+    override operator fun invoke(handle: String): ValidateUserHandleResult {
+        val handleWithoutInvalidCharacters = handle.replace(Regex(HANDLE_FORBIDDEN_CHARACTERS_REGEX), "")
+        val hasValidCharacters = handle == handleWithoutInvalidCharacters
+        val tooShort = handleWithoutInvalidCharacters.length < HANDLE_MIN_LENGTH
+        val tooLong = handleWithoutInvalidCharacters.length > HANDLE_MAX_LENGTH
         return when {
-            isHandleTooShort(handle) -> false
-            !validateHandle(handle) -> false
-            else -> true
+            !hasValidCharacters -> ValidateUserHandleResult.Invalid.InvalidCharacters(handleWithoutInvalidCharacters)
+            tooShort -> ValidateUserHandleResult.Invalid.TooShort(handleWithoutInvalidCharacters)
+            tooLong -> ValidateUserHandleResult.Invalid.TooLong(handleWithoutInvalidCharacters)
+            else -> ValidateUserHandleResult.Valid(handle)
         }
     }
 
-    private fun validateHandle(handle: String) =
-        handle.matches(HANDLE_REGEX)
-
-    private fun isHandleTooShort(handle: String) = handle.length < HANDEL_MIN_LENGTH
-
     private companion object {
-        private const val HANDEL_MIN_LENGTH = 2
-        private val HANDLE_REGEX = """^[a-z0-9_]*$""".toRegex()
+        private const val HANDLE_FORBIDDEN_CHARACTERS_REGEX = "[^a-z0-9_]"
+        private const val HANDLE_MIN_LENGTH = 2
+        private const val HANDLE_MAX_LENGTH = 255
     }
+}
+
+sealed class ValidateUserHandleResult(val handle: String) {
+    class Valid(handle: String) : ValidateUserHandleResult(handle)
+    sealed class Invalid(handleWithoutInvalidCharacters: String) : ValidateUserHandleResult(handleWithoutInvalidCharacters) {
+        class InvalidCharacters(handleWithoutInvalidCharacters: String) : Invalid(handleWithoutInvalidCharacters)
+        class TooShort(handleWithoutInvalidCharacters: String) : Invalid(handleWithoutInvalidCharacters)
+        class TooLong(handleWithoutInvalidCharacters: String) : Invalid(handleWithoutInvalidCharacters)
+    }
+    val isValid: Boolean get() = this is Valid
 }

@@ -15,7 +15,7 @@ import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.persistence.dao.ConversationDAO
-import com.wire.kalium.persistence.dao.MemberEntity
+import com.wire.kalium.persistence.dao.Member
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.flow.Flow
@@ -32,8 +32,8 @@ interface ConversationRepository {
     suspend fun getConversationDetailsById(conversationID: ConversationId): Flow<ConversationDetails>
     suspend fun getConversationDetails(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation>>
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
-    suspend fun persistMember(member: MemberEntity, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
-    suspend fun persistMembers(members: List<MemberEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
+    suspend fun persistMember(member: Member, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
+    suspend fun persistMembers(members: List<Member>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun deleteMember(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity): Either<CoreFailure, Unit>
 }
 
@@ -97,7 +97,6 @@ class ConversationDataSource(
                         ConversationDetails.OneOne(
                             conversation, otherUser,
                             ConversationDetails.OneOne.ConnectionState.ACCEPTED, //TODO Get actual connection state
-                            ConversationDetails.FederationStatus.NONE, //TODO Get actual federation status,
                             LegalHoldStatus.DISABLED //TODO get actual legal hold status
                         )
                     }
@@ -121,11 +120,12 @@ class ConversationDataSource(
         conversationDAO.getAllMembers(idMapper.toDaoModel(conversationId)).first().map { idMapper.fromDaoModel(it.user) }
     }
 
-    override suspend fun persistMember(member: MemberEntity, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit> =
+    override suspend fun persistMember(member: Member, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit> =
         wrapStorageRequest { conversationDAO.insertMember(member, conversationID) }
 
-    override suspend fun persistMembers(members: List<MemberEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit> =
+    override suspend fun persistMembers(members: List<Member>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit> =
         wrapStorageRequest { conversationDAO.insertMembers(members, conversationID) }
+
 
     override suspend fun deleteMember(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity): Either<CoreFailure, Unit> =
         wrapStorageRequest { conversationDAO.deleteMemberByQualifiedID(conversationID, userID) }
