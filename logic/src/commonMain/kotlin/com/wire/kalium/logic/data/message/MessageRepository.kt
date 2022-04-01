@@ -26,6 +26,9 @@ interface MessageRepository {
     suspend fun hideMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun markMessageAsSent(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit>
     suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message>
+    suspend fun getMessagesForNotification(): Flow<List<Message>>
+    suspend fun markAllMessagesAsNotified(): Either<CoreFailure, Unit>
+    suspend fun markMessagesAsNotifiedByConversation(conversationId: ConversationId): Either<CoreFailure, Unit>
 
     // TODO: change the return type to Either<CoreFailure, Unit>
     suspend fun sendEnvelope(conversationId: ConversationId, envelope: MessageEnvelope): Either<SendMessageFailure, Unit>
@@ -84,6 +87,21 @@ class MessageDataSource(
                 .map(messageMapper::fromEntityToMessage)
                 .first()
         )
+    }
+
+    override suspend fun getMessagesForNotification(): Flow<List<Message>> {
+        return messageDAO.getMessagesForNotification()
+            .map { messageList -> messageList.map(messageMapper::fromEntityToMessage) }
+    }
+
+    override suspend fun markAllMessagesAsNotified(): Either<CoreFailure, Unit> {
+        //TODO handle failures
+        return Either.Right(messageDAO.markAllMessagesAsNotified())
+    }
+
+    override suspend fun markMessagesAsNotifiedByConversation(conversationId: ConversationId): Either<CoreFailure, Unit> {
+        //TODO handle failures
+        return Either.Right(messageDAO.markMessagesAsNotifiedByConversation(idMapper.toDaoModel(conversationId)))
     }
 
     override suspend fun markMessageAsSent(conversationId: ConversationId, messageUuid: String) =

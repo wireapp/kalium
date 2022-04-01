@@ -4,6 +4,7 @@ import app.cash.sqldelight.EnumColumnAdapter
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
+import com.wire.kalium.persistence.dao.BooleanAdapter
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationDAOImpl
 import com.wire.kalium.persistence.dao.MetadataDAO
@@ -36,7 +37,8 @@ actual class Database {
                 conversation_idAdapter = QualifiedIDAdapter(),
                 sender_user_idAdapter = QualifiedIDAdapter(),
                 statusAdapter = EnumColumnAdapter(),
-                visibilityAdapter = EnumColumnAdapter()
+                visibilityAdapter = EnumColumnAdapter(),
+                shouldNotifyAdapter = BooleanAdapter()
             ),
             User.Adapter(qualified_idAdapter = QualifiedIDAdapter(), IntColumnAdapter)
         )

@@ -18,7 +18,8 @@ internal class MessageMapper {
             date = msg.date,
             senderUserId = msg.sender_user_id,
             senderClientId = msg.sender_client_id,
-            status = msg.status
+            status = msg.status,
+            shouldNotify = msg.shouldNotify ?: true
         )
     }
 }
@@ -94,4 +95,16 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             .asFlow()
             .mapToList()
             .map { entryList -> entryList.map(mapper::toModel) }
+
+    override suspend fun getMessagesForNotification(): Flow<List<MessageEntity>> =
+        queries.selectByNotificationFlag()
+            .asFlow()
+            .mapToList()
+            .map { entryList -> entryList.map(mapper::toModel) }
+
+    override suspend fun markAllMessagesAsNotified() =
+        queries.updateNotificationFlagForAll()
+
+    override suspend fun markMessagesAsNotifiedByConversation(conversationId: QualifiedIDEntity) =
+        queries.updateNotificationFlagByConversation(conversationId)
 }

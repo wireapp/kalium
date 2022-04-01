@@ -11,7 +11,8 @@ data class MessageEntity(
     val senderUserId: QualifiedIDEntity,
     val senderClientId: String,
     val status: Status,
-    val visibility: Visibility = Visibility.VISIBLE
+    val visibility: Visibility = Visibility.VISIBLE,
+    val shouldNotify: Boolean = true
 ) {
     enum class Status {
         PENDING, SENT, READ, FAILED
@@ -34,4 +35,7 @@ interface MessageDAO {
     suspend fun getAllMessages(): Flow<List<MessageEntity>>
     suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?>
     suspend fun getMessageByConversation(conversationId: QualifiedIDEntity, limit: Int): Flow<List<MessageEntity>>
+    suspend fun getMessagesForNotification(): Flow<List<MessageEntity>>
+    suspend fun markAllMessagesAsNotified()
+    suspend fun markMessagesAsNotifiedByConversation(conversationId: QualifiedIDEntity)
 }

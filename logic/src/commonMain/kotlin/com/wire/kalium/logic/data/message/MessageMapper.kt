@@ -35,7 +35,9 @@ class MessageMapperImpl(private val idMapper: IdMapper) : MessageMapper {
             message.date,
             idMapper.toDaoModel(message.senderUserId),
             message.senderClientId.value,
-            status
+            status,
+            MessageEntity.Visibility.VISIBLE,
+            message.shouldNotify
         )
     }
 

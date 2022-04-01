@@ -1,6 +1,6 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.message.MessageEntity;
-import com.wire.kalium.persistence.dao.message.MessageEntity.Status;
+import kotlin.Boolean;
 
 CREATE TABLE Message (
       id TEXT NOT NULL,
@@ -11,6 +11,7 @@ CREATE TABLE Message (
       sender_client_id TEXT NOT NULL,
       status TEXT AS MessageEntity.Status NOT NULL,
       visibility TEXT AS MessageEntity.Visibility NOT NULL DEFAULT 'visible',
+      shouldNotify INTEGER AS Boolean DEFAULT 1,
       FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id),
       FOREIGN KEY (sender_user_id) REFERENCES User(qualified_id),
       PRIMARY KEY (id, conversation_id)
@@ -29,6 +30,21 @@ updateMessageVisibility:
 UPDATE Message
 SET visibility = ?, content = ?
 WHERE id = ? AND conversation_id = ?;
+
+updateNotificationFlagByConversation:
+UPDATE Message
+SET shouldNotify = 0
+WHERE conversation_id = ? AND shouldNotify = 1;
+
+updateNotificationFlagForAll:
+UPDATE Message
+SET shouldNotify = 0
+WHERE shouldNotify = 1;
+
+-- updateNotificationFlag:
+-- UPDATE Message
+-- SET shouldNotify = 0
+-- WHERE id = ? AND conversation_id = ?;
 
 insertMessage:
 INSERT INTO Message(id, content, conversation_id, date, sender_user_id, sender_client_id, status, visibility)
@@ -59,3 +75,6 @@ SELECT * FROM Message WHERE id = ? AND conversation_id = ?;
 
 selectByConversationId:
 SELECT * FROM Message WHERE conversation_id = ? ORDER BY date DESC LIMIT ?;
+
+selectByNotificationFlag:
+SELECT * FROM Message WHERE shouldNotify = 1 ORDER BY date DESC;

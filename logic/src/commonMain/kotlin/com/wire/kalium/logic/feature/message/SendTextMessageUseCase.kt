@@ -37,7 +37,8 @@ class SendTextMessageUseCase(
                     date = Clock.System.now().toString(),
                     senderUserId = selfUser.id,
                     senderClientId = currentClientId,
-                    status = Message.Status.PENDING
+                    status = Message.Status.PENDING,
+                    shouldNotify = false
                 )
                 messageRepository.persistMessage(message)
             }.flatMap {
