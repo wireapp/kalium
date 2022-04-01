@@ -104,7 +104,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             ConversationEntity.Type.ONE_ON_ONE, null
         )
 
-        val member1 = MemberEntity(user1.id)
-        val member2 = MemberEntity(user2.id)
+        val member1 = Member(user1.id)
+        val member2 = Member(user2.id)
     }
 }

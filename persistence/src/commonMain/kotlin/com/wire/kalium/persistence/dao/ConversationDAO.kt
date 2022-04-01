@@ -11,7 +11,7 @@ data class ConversationEntity(
     enum class Type { SELF, ONE_ON_ONE, GROUP }
 }
 
-data class MemberEntity(
+data class Member(
     val user: QualifiedIDEntity
 )
 
@@ -23,8 +23,8 @@ interface ConversationDAO {
     suspend fun getAllConversations(): Flow<List<ConversationEntity>>
     suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>
     suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity)
-    suspend fun insertMember(member: MemberEntity, conversationID: QualifiedIDEntity)
-    suspend fun insertMembers(memberList: List<MemberEntity>, conversationID: QualifiedIDEntity)
+    suspend fun insertMember(member: Member, conversationID: QualifiedIDEntity)
+    suspend fun insertMembers(memberList: List<Member>, conversationID: QualifiedIDEntity)
     suspend fun deleteMemberByQualifiedID(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity)
-    suspend fun getAllMembers(qualifiedID: QualifiedIDEntity): Flow<List<MemberEntity>>
+    suspend fun getAllMembers(qualifiedID: QualifiedIDEntity): Flow<List<Member>>
 }

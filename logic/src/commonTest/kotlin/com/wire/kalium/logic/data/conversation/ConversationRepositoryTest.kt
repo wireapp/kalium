@@ -8,7 +8,7 @@ import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
-import com.wire.kalium.persistence.dao.MemberEntity
+import com.wire.kalium.persistence.dao.Member
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.given
@@ -101,7 +101,7 @@ class ConversationRepositoryTest {
         given(conversationDAO)
             .suspendFunction(conversationDAO::getAllMembers)
             .whenInvokedWith(any())
-            .thenReturn(flowOf(listOf(MemberEntity(TestUser.ENTITY_ID))))
+            .thenReturn(flowOf(listOf(Member(TestUser.ENTITY_ID))))
 
         given(userRepository)
             .suspendFunction(userRepository::getKnownUser)
@@ -137,7 +137,7 @@ class ConversationRepositoryTest {
         given(conversationDAO)
             .suspendFunction(conversationDAO::getAllMembers)
             .whenInvokedWith(any())
-            .thenReturn(flowOf(listOf(MemberEntity(TestUser.ENTITY_ID))))
+            .thenReturn(flowOf(listOf(Member(TestUser.ENTITY_ID))))
 
         given(userRepository)
             .suspendFunction(userRepository::getKnownUser)

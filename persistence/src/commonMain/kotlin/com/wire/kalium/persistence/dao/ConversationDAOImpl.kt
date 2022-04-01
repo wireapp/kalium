@@ -19,8 +19,8 @@ class ConversationMapper {
 }
 
 class MemberMapper {
-    fun toModel(member: SQLDelightMember): MemberEntity {
-        return MemberEntity(member.user)
+    fun toModel(member: SQLDelightMember): Member {
+        return Member(member.user)
     }
 }
 
@@ -84,16 +84,16 @@ class ConversationDAOImpl(
         conversationQueries.deleteConversation(qualifiedID)
     }
 
-    override suspend fun insertMember(member: MemberEntity, conversationID: QualifiedIDEntity) {
+    override suspend fun insertMember(member: Member, conversationID: QualifiedIDEntity) {
         memberQueries.transaction {
             userQueries.insertOrIgnoreUserId(member.user)
             memberQueries.insertMember(member.user, conversationID)
         }
     }
 
-    override suspend fun insertMembers(memberList: List<MemberEntity>, conversationID: QualifiedIDEntity) {
+    override suspend fun insertMembers(memberList: List<Member>, conversationID: QualifiedIDEntity) {
         memberQueries.transaction {
-            for (member: MemberEntity in memberList) {
+            for (member: Member in memberList) {
                 userQueries.insertOrIgnoreUserId(member.user)
                 memberQueries.insertMember(member.user, conversationID)
             }
@@ -105,7 +105,7 @@ class ConversationDAOImpl(
         memberQueries.deleteMember(conversationID, userID)
     }
 
-    override suspend fun getAllMembers(qualifiedID: QualifiedIDEntity): Flow<List<MemberEntity>> {
+    override suspend fun getAllMembers(qualifiedID: QualifiedIDEntity): Flow<List<Member>> {
         return memberQueries.selectAllMembersByConversation(qualifiedID)
             .asFlow()
             .mapToList()
