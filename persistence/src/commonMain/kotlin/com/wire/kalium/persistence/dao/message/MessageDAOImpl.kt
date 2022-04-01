@@ -60,7 +60,14 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
 
     override suspend fun deleteAllMessages() = queries.deleteAllMessages()
 
-    override suspend fun insertMessage(message: MessageEntity) =
+    override suspend fun insertMessage(message: MessageEntity) = insertInDB(message)
+
+    override suspend fun insertMessages(messages: List<MessageEntity>) =
+        queries.transaction {
+            messages.forEach { insertInDB(it) }
+        }
+
+    private fun insertInDB(message: MessageEntity) {
         queries.insertMessage(
             id = message.id,
             text_body = when (message.content) {
@@ -70,7 +77,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             content_type = message.contentType,
             asset_mime_type = if (message.content is AssetMessageContent) message.content.assetMimeType else null,
             asset_size = if (message.content is AssetMessageContent) message.content.assetSize else null,
-            asset_name = if (message.content is AssetMessageContent) message.content.assetName else null,
+            asset_name = if (message.content is AssetMessageContent) message.content.assetMimeType else null,
             asset_image_width = if (message.content is AssetMessageContent) message.content.assetImageWidth else null,
             asset_image_height = if (message.content is AssetMessageContent) message.content.assetImageHeight else null,
             asset_otr_key = if (message.content is AssetMessageContent) message.content.assetOtrKey else null,
@@ -83,40 +90,10 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             date = message.date,
             sender_user_id = message.senderUserId,
             sender_client_id = message.senderClientId,
-            status = message.status,
-            visibility = message.visibility
+            visibility = message.visibility,
+            status = message.status
         )
-
-    override suspend fun insertMessages(messages: List<MessageEntity>) =
-        queries.transaction {
-            messages.forEach { message ->
-                queries.insertMessage(
-                    id = message.id,
-                    text_body = when (message.content) {
-                        is TextMessageContent -> message.content.messageBody
-                        else -> null
-                    },
-                    content_type = message.contentType,
-                    asset_mime_type = if (message.content is AssetMessageContent) message.content.assetMimeType else null,
-                    asset_size = if (message.content is AssetMessageContent) message.content.assetSize else null,
-                    asset_name = if (message.content is AssetMessageContent) message.content.assetMimeType else null,
-                    asset_image_width = if (message.content is AssetMessageContent) message.content.assetImageWidth else null,
-                    asset_image_height = if (message.content is AssetMessageContent) message.content.assetImageHeight else null,
-                    asset_otr_key = if (message.content is AssetMessageContent) message.content.assetOtrKey else null,
-                    asset_sha256 = if (message.content is AssetMessageContent) message.content.assetSha256Key else null,
-                    asset_id = if (message.content is AssetMessageContent) message.content.assetId else null,
-                    asset_token = if (message.content is AssetMessageContent) message.content.assetToken else null,
-                    asset_domain = if (message.content is AssetMessageContent) message.content.assetDomain else null,
-                    asset_encryption_algorithm = if (message.content is AssetMessageContent) message.content.assetEncryptionAlgorithm else null,
-                    conversation_id = message.conversationId,
-                    date = message.date,
-                    sender_user_id = message.senderUserId,
-                    sender_client_id = message.senderClientId,
-                    status = message.status,
-                    visibility = message.visibility
-                )
-            }
-        }
+    }
 
     override suspend fun updateMessage(message: MessageEntity) =
         queries.updateMessages(
@@ -141,6 +118,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             date = message.date,
             sender_user_id = message.senderUserId,
             sender_client_id = message.senderClientId,
+            visibility = message.visibility,
             status = message.status
         )
 

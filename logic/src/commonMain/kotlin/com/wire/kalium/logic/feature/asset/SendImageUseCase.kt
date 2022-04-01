@@ -113,7 +113,7 @@ internal class SendImageUseCaseImpl(
                 sha256 = sha256.toByteArray(),
                 assetId = assetId.key,
                 encryptionAlgorithm = AssetContent.RemoteData.EncryptionAlgorithm.AES_CBC,
-                assetDomain = null,
+                assetDomain = null,  // TODO: fill in the assetDomain, it's returned by the BE when uploading an asset.
                 assetToken = null
             )
         )
