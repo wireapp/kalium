@@ -46,7 +46,7 @@ class SendReceiveApplication : CliktCommand() {
         val conversations = userSession.conversations.getConversations().let {
             when(it) {
                 is GetConversationsUseCase.Result.Failure -> {
-                    echo(it.storageFailure.rootCause)
+                    echo(it.storageFailure)
                     return@runBlocking
                 }
                 is GetConversationsUseCase.Result.Success -> it.convFlow.first()
