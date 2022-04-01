@@ -63,21 +63,20 @@ class MessageMapperImpl(private val idMapper: IdMapper) : MessageMapper {
     }
 
     override fun fromEntityToMessage(message: MessageEntity): Message {
-        val messageContent = message.content
-        val (content, contentType) = when (messageContent) {
+        val content = when (val messageContent = message.content) {
             // It's a text message
             is TextMessageContent -> {
-                MessageContent.Text(messageContent.messageBody) to Message.ContentType.TEXT
+                MessageContent.Text(messageContent.messageBody)
             }
 
             // It's an asset message
             is AssetMessageContent -> {
                 MessageContent.Asset(
                     MapperProvider.assetMapper().fromAssetEntityToAssetContent(messageContent)
-                ) to Message.ContentType.ASSET
+                )
             }
 
-            else -> MessageContent.Unknown to Message.ContentType.TEXT // Text as default type
+            else -> MessageContent.Unknown
         }
         val status = when (message.status) {
             MessageEntity.Status.PENDING -> Message.Status.PENDING
@@ -88,7 +87,6 @@ class MessageMapperImpl(private val idMapper: IdMapper) : MessageMapper {
         return Message(
             message.id,
             content,
-            contentType,
             idMapper.fromDaoModel(message.conversationId),
             message.date,
             idMapper.fromDaoModel(message.senderUserId),

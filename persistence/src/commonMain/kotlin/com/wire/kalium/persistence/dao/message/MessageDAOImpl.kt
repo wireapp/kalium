@@ -98,8 +98,8 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
     override suspend fun updateMessage(message: MessageEntity) =
         queries.updateMessages(
             id = message.id,
-            text_body = when (message.content) {
-                is TextMessageContent -> message.content.messageBody
+            text_body = when (message.contentType) {
+                TEXT -> (message.content as TextMessageContent).messageBody
                 else -> null
             },
             content_type = message.contentType,

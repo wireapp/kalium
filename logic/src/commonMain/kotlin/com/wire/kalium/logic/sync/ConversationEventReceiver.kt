@@ -59,11 +59,6 @@ class ConversationEventReceiver(
                     val message = Message(
                         id = protoContent.messageUid,
                         content = protoContent.messageContent,
-                        contentType = when (protoContent.messageContent) {
-                            is MessageContent.Asset -> Message.ContentType.ASSET
-                            is MessageContent.Text -> Message.ContentType.TEXT
-                            else -> Message.ContentType.TEXT // parse as text for the default case
-                        },
                         conversationId = event.conversationId,
                         date = event.time,
                         senderUserId = event.senderUserId,

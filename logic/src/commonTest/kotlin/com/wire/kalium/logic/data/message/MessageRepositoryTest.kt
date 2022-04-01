@@ -7,7 +7,7 @@ import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.message.MessageApi
 import com.wire.kalium.persistence.dao.message.MessageEntity.Status.SENT
-import com.wire.kalium.persistence.dao.message.MessageEntity.TextMessageEntity
+import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import io.mockative.Mock
 import io.mockative.anything
@@ -134,9 +134,10 @@ class MessageRepositoryTest {
     private companion object {
         val TEST_QUALIFIED_ID_ENTITY = PersistenceQualifiedId("value", "domain")
         val TEST_MESSAGE_ENTITY =
-            TextMessageEntity(
+            MessageEntity(
                 id = "uid",
-                content = "content",
+                content = MessageEntity.MessageEntityContent.TextMessageContent("content"),
+                contentType = MessageEntity.ContentType.TEXT,
                 conversationId = TEST_QUALIFIED_ID_ENTITY,
                 date = "date",
                 senderUserId = TEST_QUALIFIED_ID_ENTITY,

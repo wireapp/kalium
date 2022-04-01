@@ -38,7 +38,6 @@ class DeleteMessageUseCase(
                         messageId,
                         conversationId
                     ),
-                    contentType = Message.ContentType.TEXT,
                     conversationId = if (deleteForEveryone) conversationId else conversationRepository.getSelfConversationId(),
                     date = Clock.System.now().toString(),
                     senderUserId = selfUser.id,

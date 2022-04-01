@@ -8,7 +8,6 @@ import com.wire.kalium.persistence.dao.message.MessageEntity
 data class Message(
     val id: String,
     val content: MessageContent,
-    val contentType: ContentType,
     val conversationId: ConversationId,
     val date: String,
     val senderUserId: UserId,
@@ -17,9 +16,5 @@ data class Message(
 ) {
     enum class Status {
         PENDING, SENT, READ, FAILED
-    }
-
-    enum class ContentType {
-        TEXT, ASSET
     }
 }

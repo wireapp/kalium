@@ -86,7 +86,6 @@ internal class SendImageUseCaseImpl(
                         assetId = assetId
                     )
                 ),
-                contentType = Message.ContentType.ASSET,
                 conversationId = conversationId,
                 date = Clock.System.now().toString(),
                 senderUserId = selfUser.id,
