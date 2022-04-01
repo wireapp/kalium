@@ -4,15 +4,7 @@ import app.cash.sqldelight.EnumColumnAdapter
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
-import com.wire.kalium.persistence.dao.ConversationDAO
-import com.wire.kalium.persistence.dao.ConversationDAOImpl
-import com.wire.kalium.persistence.dao.MetadataDAO
-import com.wire.kalium.persistence.dao.MetadataDAOImpl
-import com.wire.kalium.persistence.dao.QualifiedIDAdapter
-import com.wire.kalium.persistence.dao.TeamDAO
-import com.wire.kalium.persistence.dao.TeamDAOImpl
-import com.wire.kalium.persistence.dao.UserDAO
-import com.wire.kalium.persistence.dao.UserDAOImpl
+import com.wire.kalium.persistence.dao.*
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetDAOImpl
 import com.wire.kalium.persistence.dao.client.ClientDAO
@@ -36,6 +28,10 @@ actual class Database {
                 conversation_idAdapter = QualifiedIDAdapter(),
                 sender_user_idAdapter = QualifiedIDAdapter(),
                 statusAdapter = EnumColumnAdapter(),
+                asset_image_widthAdapter = IntColumnAdapter,
+                asset_image_heightAdapter = IntColumnAdapter,
+                asset_sizeAdapter = IntColumnAdapter,
+                content_typeAdapter = ContentTypeAdapter(),
                 visibilityAdapter = EnumColumnAdapter()
             ),
             User.Adapter(qualified_idAdapter = QualifiedIDAdapter(), IntColumnAdapter)

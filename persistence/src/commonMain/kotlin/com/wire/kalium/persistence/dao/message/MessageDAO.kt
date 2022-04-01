@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.Flow
 
 data class MessageEntity(
     val id: String,
-    val content: String?,
+    val content: MessageEntityContent,
     val conversationId: QualifiedIDEntity,
     val date: String,
     val senderUserId: QualifiedIDEntity,
@@ -13,8 +13,34 @@ data class MessageEntity(
     val status: Status,
     val visibility: Visibility = Visibility.VISIBLE
 ) {
+    sealed class MessageEntityContent {
+        data class TextMessageContent(val messageBody: String) : MessageEntityContent()
+        data class AssetMessageContent(
+            val assetMimeType: String,
+            val assetSize: Int,
+            val assetName: String? = null,
+            val assetImageWidth: Int? = null,
+            val assetImageHeight: Int? = null,
+            val assetVideoWidth: Int? = null,
+            val assetVideoHeight: Int? = null,
+            val assetVideoDurationMs: Long? = null,
+            val assetAudioDurationMs: Long? = null,
+            val assetAudioNormalizedLoudness: ByteArray? = null,
+            val assetOtrKey: ByteArray,
+            val assetSha256Key: ByteArray,
+            val assetId: String,
+            val assetToken: String? = null,
+            val assetDomain: String? = null,
+            val assetEncryptionAlgorithm: String?,
+        ) : MessageEntityContent()
+    }
+
     enum class Status {
         PENDING, SENT, READ, FAILED
+    }
+
+    enum class ContentType {
+        TEXT, ASSET
     }
 
     enum class Visibility {
