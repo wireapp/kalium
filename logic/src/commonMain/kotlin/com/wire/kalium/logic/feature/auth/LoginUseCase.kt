@@ -45,7 +45,7 @@ internal class LoginUseCaseImpl(
             validateEmailUseCase(cleanUserIdentifier) -> {
                 loginRepository.loginWithEmail(cleanUserIdentifier, password, shouldPersistClient, serverConfig)
             }
-            validateUserHandleUseCase(cleanUserIdentifier) -> {
+            validateUserHandleUseCase(cleanUserIdentifier).isValid -> {
                 loginRepository.loginWithHandle(cleanUserIdentifier, password, shouldPersistClient, serverConfig)
             }
             else -> return@suspending AuthenticationResult.Failure.InvalidUserIdentifier
