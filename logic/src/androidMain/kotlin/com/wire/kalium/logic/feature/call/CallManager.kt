@@ -38,9 +38,6 @@ actual class CallManager(
     val messageSender: MessageSender
 ) : CallConfigRequestHandler {
 
-    private val TAG = "startHandleAsync"
-    private val UTF8_ENCODING = "UTF-8"
-
     private val job = SupervisorJob() // TODO clear job method
     private val scope = CoroutineScope(job + Dispatchers.IO)
     private val deferredHandle: Deferred<Handle>
@@ -206,5 +203,10 @@ actual class CallManager(
         }
 
         return 0
+    }
+
+    companion object {
+        private const val TAG = "startHandleAsync"
+        private const val UTF8_ENCODING = "UTF-8"
     }
 }
