@@ -4,6 +4,8 @@ import com.wire.kalium.logic.AuthenticatedDataSourceSet
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.asset.AssetDataSource
 import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.call.CallDataSource
+import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientDataSource
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
@@ -34,6 +36,8 @@ import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
+import com.wire.kalium.logic.feature.call.CallsScope
+import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.message.MessageScope
@@ -54,7 +58,8 @@ expect class UserSessionScope : UserSessionScopeCommon
 abstract class UserSessionScopeCommon(
     private val userId: QualifiedID,
     private val authenticatedDataSourceSet: AuthenticatedDataSourceSet,
-    private val sessionRepository: SessionRepository
+    private val sessionRepository: SessionRepository,
+    private val globalCallManager: GlobalCallManager
 ) {
 
     private val encryptedSettingsHolder: EncryptedSettingsHolder = authenticatedDataSourceSet.encryptedSettingsHolder
@@ -107,6 +112,11 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi
         )
 
+    private val callRepository: CallRepository
+        get() = CallDataSource(
+            callApi = authenticatedDataSourceSet.authenticatedNetworkContainer.callApi
+        )
+
     protected abstract val clientConfig: ClientConfig
 
     private val clientRemoteRepository: ClientRemoteRepository
@@ -130,10 +140,23 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.authenticatedNetworkContainer.notificationApi, eventInfoStorage, clientRepository
         )
 
+    private val callManager by lazy {
+        globalCallManager.getCallManagerForClient(
+            userId = userId,
+            callRepository = callRepository,
+            userRepository = userRepository,
+            clientRepository = clientRepository
+        )
+    }
     protected abstract val protoContentMapper: ProtoContentMapper
     private val conversationEventReceiver: ConversationEventReceiver
         get() = ConversationEventReceiver(
-            authenticatedDataSourceSet.proteusClient, messageRepository, conversationRepository, protoContentMapper
+            authenticatedDataSourceSet.proteusClient,
+            messageRepository,
+            conversationRepository,
+            userRepository,
+            protoContentMapper,
+            callManager
         )
 
     private val preKeyRemoteRepository: PreKeyRemoteRepository get() = PreKeyRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi)
@@ -167,4 +190,6 @@ abstract class UserSessionScopeCommon(
     val logout: LogoutUseCase get() = LogoutUseCase(logoutRepository, sessionRepository, userId, authenticatedDataSourceSet)
 
     val team: TeamScope get() = TeamScope(userRepository, teamRepository)
+
+    val calls: CallsScope get() = CallsScope(callManager, syncManager)
 }

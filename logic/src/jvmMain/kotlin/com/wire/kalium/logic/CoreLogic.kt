@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.network.SessionManagerImpl
+import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.sync.SyncManagerImpl
 import com.wire.kalium.logic.sync.WorkScheduler
 import com.wire.kalium.network.AuthenticatedNetworkContainer
@@ -53,6 +54,14 @@ actual class CoreLogic(clientLabel: String, rootProteusDirectoryPath: String) : 
             }
         }
 
-        return UserSessionScope(userId, dataSourceSet, sessionRepository)
+        return UserSessionScope(
+            userId,
+            dataSourceSet,
+            sessionRepository,
+            globalCallManager
+        )
     }
+
+    override val globalCallManager: GlobalCallManager = GlobalCallManager()
+
 }

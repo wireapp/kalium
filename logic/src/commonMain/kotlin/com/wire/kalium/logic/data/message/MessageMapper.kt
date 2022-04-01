@@ -18,6 +18,8 @@ class MessageMapperImpl(private val idMapper: IdMapper) : MessageMapper {
                 kaliumLogger.w("fromMessageToEntity - Calling")
                 null
             }
+            is MessageContent.DeleteMessage -> content.messageId
+            is MessageContent.DeleteForMe -> content.messageId
             MessageContent.Unknown -> null
         }
         val status = when (message.status) {

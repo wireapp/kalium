@@ -9,6 +9,7 @@ import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import io.ktor.util.encodeBase64
@@ -35,10 +36,8 @@ class ClientDataSource(
         return clientRemoteRepository.registerClient(param)
     }
 
-    override suspend fun persistClientId(clientId: ClientId): Either<CoreFailure, Unit> {
-        clientRegistrationStorage.registeredClientId = clientId.value
-        return Either.Right(Unit)
-    }
+    override suspend fun persistClientId(clientId: ClientId): Either<CoreFailure, Unit> =
+        wrapStorageRequest { clientRegistrationStorage.registeredClientId = clientId.value }
 
     override suspend fun currentClientId(): Either<CoreFailure, ClientId> {
         return clientRegistrationStorage.registeredClientId?.let { clientId ->
@@ -59,14 +58,14 @@ class ClientDataSource(
         return clientRemoteRepository.fetchClientInfo(clientId)
     }
 
-    override suspend fun saveNewClients(userId: UserId, clients: List<ClientId>) : Either<CoreFailure, Unit> {
-        val mappedUserId = userMapper.toUserIdPersistence(userId)
-        val mappedClients = clients.map { ClientEntity(mappedUserId, it.value) }
-        clientDAO.insertClients(mappedClients)
-        return Either.Right(Unit)
-    }
-
     override suspend fun registerMLSClient(clientId: ClientId, publicKey: ByteArray): Either<CoreFailure, Unit> = suspending {
         clientRemoteRepository.registerMLSClient(clientId, publicKey.encodeBase64())
     }
+  
+    override suspend fun saveNewClients(userId: UserId, clients: List<ClientId>): Either<CoreFailure, Unit> =
+        userMapper.toUserIdPersistence(userId).let { userEntity ->
+            clients.map { ClientEntity(userEntity, it.value) }.let { clientEntityList ->
+                wrapStorageRequest { clientDAO.insertClients(clientEntityList) }
+            }
+        }
 }

@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.auth.ValidateUserHandleResult
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
@@ -41,7 +42,7 @@ class SetUserHandleUseCaseTest {
         given(validateHandleUseCase)
             .function(validateHandleUseCase::invoke)
             .whenInvokedWith(any())
-            .then { true }
+            .then { ValidateUserHandleResult.Valid }
         given(userRepository)
             .coroutine { updateSelfHandle(handle) }
             .then { Either.Right(Unit) }
@@ -65,7 +66,7 @@ class SetUserHandleUseCaseTest {
         given(validateHandleUseCase)
             .function(validateHandleUseCase::invoke)
             .whenInvokedWith(any())
-            .then { false }
+            .then { ValidateUserHandleResult.Invalid.InvalidCharacters("") }
 
         val actual = setUserHandleUseCase(handle)
 
@@ -88,7 +89,7 @@ class SetUserHandleUseCaseTest {
         given(validateHandleUseCase)
             .function(validateHandleUseCase::invoke)
             .whenInvokedWith(any())
-            .then { true }
+            .then { ValidateUserHandleResult.Valid }
         given(userRepository)
             .coroutine { updateSelfHandle(handle) }
             .then { Either.Left(expected) }
@@ -96,7 +97,8 @@ class SetUserHandleUseCaseTest {
         val actual = setUserHandleUseCase(handle)
 
         assertIs<SetUserHandleResult.Failure.Generic>(actual)
-        assertEquals(expected, actual.error)
+        assertIs<NetworkFailure.ServerMiscommunication>(actual.error)
+        assertEquals(expected.kaliumException, (actual.error as NetworkFailure.ServerMiscommunication).kaliumException)
 
         verify(validateHandleUseCase)
             .invocation { invoke(handle) }
@@ -119,7 +121,7 @@ class SetUserHandleUseCaseTest {
         given(validateHandleUseCase)
             .function(validateHandleUseCase::invoke)
             .whenInvokedWith(any())
-            .then { true }
+            .then { ValidateUserHandleResult.Valid }
         given(userRepository)
             .coroutine { updateSelfHandle(handle) }
             .then { Either.Left(error) }

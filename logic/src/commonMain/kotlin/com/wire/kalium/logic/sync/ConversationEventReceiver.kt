@@ -6,13 +6,20 @@ import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContentMapper
+import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.call.CallManager
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.logic.wrapCryptoRequest
 import io.ktor.utils.io.core.toByteArray
@@ -21,10 +28,13 @@ class ConversationEventReceiver(
     private val proteusClient: ProteusClient,
     private val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
+    private val userRepository: UserRepository,
     private val protoContentMapper: ProtoContentMapper,
+    private val callManager: CallManager,
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : EventReceiver<Event.Conversation> {
+
     override suspend fun onEvent(event: Event.Conversation) {
         when (event) {
             is Event.Conversation.NewMessage -> handleNewMessage(event)
@@ -54,11 +64,39 @@ class ConversationEventReceiver(
                         event.senderClientId,
                         Message.Status.SENT
                     )
-                    //TODO Multiplatform logging
-                    println("Message received: $message")
-                    messageRepository.persistMessage(message)
+                    kaliumLogger.i(message = "Message received: $message")
+                    when (message.content) {
+                        is MessageContent.Text -> messageRepository.persistMessage(message)
+                        is MessageContent.DeleteMessage ->
+                            if (isSenderVerified(message.content.messageId, message.conversationId, message.senderUserId))
+                                messageRepository.softDeleteMessage(messageUuid = message.content.messageId, message.conversationId)
+                            else kaliumLogger.i(message = "Delete message sender is not verified: $message")
+                        is MessageContent.DeleteForMe ->
+                            if (isSenderVerified(message.content.messageId, message.conversationId, message.senderUserId))
+                                messageRepository.hideMessage(messageUuid = message.content.messageId, message.content.conversationId)
+                            else kaliumLogger.i(message = "Delete message sender is not verified: $message")
+                        is MessageContent.Calling -> {
+                            kaliumLogger.d("ConversationEventReceiver - MessageContent.Calling")
+                            callManager.onCallingMessageReceived(
+                                message = message,
+                                content = message.content
+                            )
+                        }
+                        is MessageContent.Unknown -> kaliumLogger.i(message = "Unknown Message received: $message")
+                    }
                 }
         }
+    }
+
+    private suspend fun isSenderVerified(messageId: String, conversationId: ConversationId, senderUserId: UserId): Boolean {
+        var verified = false
+        messageRepository.getMessageById(
+            messageUuid = messageId,
+            conversationId = conversationId
+        ).onSuccess {
+            verified = senderUserId == it.senderUserId
+        }
+        return verified
     }
 
     //TODO: insert a message to show a user added to the conversation

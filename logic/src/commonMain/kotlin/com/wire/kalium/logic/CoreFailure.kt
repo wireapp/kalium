@@ -18,7 +18,6 @@ sealed class CoreFailure {
 }
 
 sealed class NetworkFailure : CoreFailure() {
-    // exposed as Throwable to the app if needed for logging
     /**
      * Failed to establish a connection with the necessary servers in order to pull/push data.
      * Caused by weak - complete lack of - internet connection.
@@ -30,18 +29,35 @@ sealed class NetworkFailure : CoreFailure() {
      * or anything API-related that is out of control from the user.
      * Either fix our app or our backend.
      */
-    data class ServerMiscommunication(val kaliumException: KaliumException) : NetworkFailure()
+    class ServerMiscommunication(internal val kaliumException: KaliumException) : NetworkFailure() {
+        constructor(cause: Throwable) : this(KaliumException.GenericError(cause))
+
+        val rootCause: Throwable get() = kaliumException
+    }
 }
 
-class ProteusFailure(internal val proteusException: ProteusException) : CoreFailure()
+class ProteusFailure(internal val proteusException: ProteusException) : CoreFailure() {
+    constructor(cause: Throwable) : this(ProteusException("Unknown error caught from logic", code = ProteusException.Code.UNKNOWN_ERROR))
+
+    val rootCause: Throwable get() = proteusException
+}
+
+sealed class StorageFailure : CoreFailure() {
+    object DataNotFound : StorageFailure()
+    class Generic(val rootCause: Throwable) : StorageFailure()
+}
 
 inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<T>): Either<NetworkFailure, T> {
     // TODO: check for internet connection and return NoNetworkConnection
-    return when (val result = networkCall()) {
-        is NetworkResponse.Success -> Either.Right(result.value)
-        is NetworkResponse.Error -> when (result.kException) {
-            else -> Either.Left(NetworkFailure.ServerMiscommunication(result.kException))
+    return try {
+        when (val result = networkCall()) {
+            is NetworkResponse.Success -> Either.Right(result.value)
+            is NetworkResponse.Error -> when (result.kException) {
+                else -> Either.Left(NetworkFailure.ServerMiscommunication(result.kException))
+            }
         }
+    } catch (e: Exception) {
+        Either.Left(NetworkFailure.ServerMiscommunication(e))
     }
 }
 
@@ -50,5 +66,15 @@ inline fun <T : Any> wrapCryptoRequest(cryptoRequest: () -> T): Either<ProteusFa
         Either.Right(cryptoRequest())
     } catch (e: ProteusException) {
         Either.Left(ProteusFailure(e))
+    } catch (e: Exception) {
+        Either.Left(ProteusFailure(e))
+    }
+}
+
+inline fun <T : Any> wrapStorageRequest(storageRequest: () -> T?): Either<StorageFailure, T> {
+    return try {
+        storageRequest()?.let { data -> Either.Right(data) } ?: Either.Left(StorageFailure.DataNotFound)
+    } catch (e: Exception) {
+        Either.Left(StorageFailure.Generic(e))
     }
 }

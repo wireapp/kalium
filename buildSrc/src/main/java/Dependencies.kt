@@ -27,7 +27,7 @@ object Versions {
     const val ktxSerialization = "1.3.2"
     const val multiplatformSettings = "0.8.1"
     const val androidSecurity = "1.0.0"
-    const val sqlDelight = "2.0.0-SNAPSHOT"
+    const val sqlDelight = "2.0.0-alpha01"
     @Deprecated("A new implementation is available. Use the protobuf project instead.")
     const val wireJvmMessageProto = "1.36.0"
     @Deprecated("A new implementation is available. Use the protobuf project instead.")

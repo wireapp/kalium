@@ -35,7 +35,8 @@ actual class Database(userId: UserIDEntity, passphrase: String) {
             Message.Adapter(
                 conversation_idAdapter = QualifiedIDAdapter(),
                 sender_user_idAdapter = QualifiedIDAdapter(),
-                statusAdapter = EnumColumnAdapter()
+                statusAdapter = EnumColumnAdapter(),
+                visibilityAdapter = EnumColumnAdapter()
             ),
             User.Adapter(qualified_idAdapter = QualifiedIDAdapter(), IntColumnAdapter)
         )

@@ -21,7 +21,7 @@ sealed class SetUserHandleResult {
 class SetUserHandleUseCase(
     private val userRepository: UserRepository, private val validateUserHandleUseCase: ValidateUserHandleUseCase
 ) {
-    suspend operator fun invoke(handle: String): SetUserHandleResult = when (validateUserHandleUseCase(handle)) {
+    suspend operator fun invoke(handle: String): SetUserHandleResult = when (validateUserHandleUseCase(handle).isValid) {
         true -> userRepository.updateSelfHandle(handle).fold({
             if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
                 handleSpecificError(it.kaliumException)
