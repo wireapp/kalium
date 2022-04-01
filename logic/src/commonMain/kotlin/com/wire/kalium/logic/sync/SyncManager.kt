@@ -14,6 +14,8 @@ enum class SyncState {
 interface SyncManager {
     fun completeSlowSync()
     suspend fun waitForSlowSyncToComplete()
+    suspend fun isSlowSyncOngoing(): Boolean
+    suspend fun isSlowSyncCompleted(): Boolean
 }
 
 class SyncManagerImpl(private val workScheduler: WorkScheduler) : SyncManager {
@@ -41,4 +43,7 @@ class SyncManagerImpl(private val workScheduler: WorkScheduler) : SyncManager {
             workScheduler.schedule(SlowSyncWorker::class, SlowSyncWorker.name)
         }
     }
+
+    override suspend fun isSlowSyncOngoing(): Boolean = internalSyncState.first() == SyncState.SLOW_SYNC
+    override suspend fun isSlowSyncCompleted(): Boolean = internalSyncState.first() == SyncState.COMPLETED
 }

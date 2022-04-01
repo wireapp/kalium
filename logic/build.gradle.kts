@@ -43,7 +43,7 @@ kotlin {
                 implementation(project(":persistence"))
                 implementation(project(":protobuf"))
                 api(project(":logger"))
-                api(project(":calling"))
+                implementation(project(":calling"))
 
                 // coroutines
                 implementation(Dependencies.Coroutines.core) {
