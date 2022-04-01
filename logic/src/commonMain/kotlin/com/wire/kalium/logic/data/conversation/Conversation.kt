@@ -20,7 +20,6 @@ sealed class ConversationDetails(val conversation: Conversation) {
         conversation: Conversation,
         val otherUser: OtherUser,
         val connectionState: ConnectionState,
-        val federationStatus: FederationStatus,
         val legalHoldStatus: LegalHoldStatus
     ) : ConversationDetails(conversation) {
         enum class ConnectionState {
@@ -36,10 +35,6 @@ sealed class ConversationDetails(val conversation: Conversation) {
     }
 
     class Group(conversation: Conversation) : ConversationDetails(conversation)
-
-    enum class FederationStatus {
-        NONE, GUEST, EXTERNAL
-    }
 }
 
 class MembersInfo(val self: Member, val otherMembers: List<Member>)
