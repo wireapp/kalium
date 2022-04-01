@@ -8,12 +8,16 @@ import com.wire.kalium.logic.data.call.CallDataSource
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientDataSource
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.client.MLSClientProviderImpl
 import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ConversationDataSource
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.EventDataSource
 import com.wire.kalium.logic.data.event.EventRepository
+import com.wire.kalium.logic.data.keypackage.KeyPackageDataSource
+import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.logout.LogoutDataSource
 import com.wire.kalium.logic.data.logout.LogoutRepository
@@ -64,6 +68,13 @@ abstract class UserSessionScopeCommon(
         get() = EventInfoStorageImpl(userPreferencesSettings)
 
     private val database: Database = authenticatedDataSourceSet.database
+
+    private val mlsClientProvider: MLSClientProvider
+        get() = MLSClientProviderImpl(
+            authenticatedDataSourceSet.authenticatedRootDir,
+            userId,
+            clientRepository,
+            authenticatedDataSourceSet.kaliumPreferencesSettings)
 
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(
@@ -154,10 +165,16 @@ abstract class UserSessionScopeCommon(
             preKeyRemoteRepository, authenticatedDataSourceSet.proteusClient
         )
 
+    private val keyPackageRepository: KeyPackageRepository
+        get() = KeyPackageDataSource(
+            authenticatedDataSourceSet.authenticatedNetworkContainer.keyPackageApi,
+            mlsClientProvider
+        )
+
     private val logoutRepository: LogoutRepository = LogoutDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi)
     val listenToEvents: ListenToEventsUseCase
         get() = ListenToEventsUseCase(syncManager, eventRepository, conversationEventReceiver)
-    val client: ClientScope get() = ClientScope(clientRepository, preKeyRepository)
+    val client: ClientScope get() = ClientScope(clientRepository, preKeyRepository, keyPackageRepository, mlsClientProvider)
     val conversations: ConversationScope get() = ConversationScope(conversationRepository, syncManager)
     val messages: MessageScope
         get() = MessageScope(

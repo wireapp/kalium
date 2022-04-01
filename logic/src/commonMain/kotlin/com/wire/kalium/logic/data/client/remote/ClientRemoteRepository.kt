@@ -12,9 +12,12 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.user.client.ClientApi
+import com.wire.kalium.network.api.user.client.MLSPublicKeyTypeDTO
+import com.wire.kalium.network.api.user.client.UpdateClientRequest
 
 interface ClientRemoteRepository {
     suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client>
+    suspend fun registerMLSClient(clientId: ClientId, publicKey: String) : Either<NetworkFailure, Unit>
     suspend fun deleteClient(param: DeleteClientParam): Either<NetworkFailure, Unit>
     suspend fun fetchClientInfo(clientId: ClientId): Either<NetworkFailure, Client>
     suspend fun fetchSelfUserClients(): Either<NetworkFailure, List<Client>>
@@ -30,6 +33,9 @@ class ClientRemoteDataSource(
         wrapApiRequest { clientApi.registerClient(clientMapper.toRegisterClientRequest(param)) }
             .map { clientResponse -> clientMapper.fromClientResponse(clientResponse) }
 
+
+    override suspend fun registerMLSClient(clientId: ClientId, publicKey: String): Either<NetworkFailure, Unit> =
+        wrapApiRequest { clientApi.updateClient(UpdateClientRequest(mapOf(Pair(MLSPublicKeyTypeDTO.ED25519, publicKey))), clientId.value) }
 
     override suspend fun deleteClient(param: DeleteClientParam): Either<NetworkFailure, Unit> =
         wrapApiRequest { clientApi.deleteClient(param.password, param.clientId.value) }

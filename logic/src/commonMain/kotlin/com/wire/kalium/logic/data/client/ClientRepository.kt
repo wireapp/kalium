@@ -8,13 +8,16 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.dao.client.ClientDAO
+import io.ktor.util.encodeBase64
 import com.wire.kalium.persistence.dao.client.Client as ClientEntity
 
 interface ClientRepository {
     suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client>
+    suspend fun registerMLSClient(clientId: ClientId, publicKey: ByteArray): Either<CoreFailure, Unit>
     suspend fun persistClientId(clientId: ClientId): Either<CoreFailure, Unit>
     suspend fun currentClientId(): Either<CoreFailure, ClientId>
     suspend fun deleteClient(param: DeleteClientParam): Either<NetworkFailure, Unit>
@@ -22,7 +25,6 @@ interface ClientRepository {
     suspend fun clientInfo(clientId: ClientId /* = com.wire.kalium.logic.data.id.PlainId */): Either<NetworkFailure, Client>
     suspend fun saveNewClients(userId: UserId, clients: List<ClientId>): Either<CoreFailure, Unit>
 }
-
 
 class ClientDataSource(
     private val clientRemoteRepository: ClientRemoteRepository,
@@ -56,6 +58,10 @@ class ClientDataSource(
         return clientRemoteRepository.fetchClientInfo(clientId)
     }
 
+    override suspend fun registerMLSClient(clientId: ClientId, publicKey: ByteArray): Either<CoreFailure, Unit> = suspending {
+        clientRemoteRepository.registerMLSClient(clientId, publicKey.encodeBase64())
+    }
+  
     override suspend fun saveNewClients(userId: UserId, clients: List<ClientId>): Either<CoreFailure, Unit> =
         userMapper.toUserIdPersistence(userId).let { userEntity ->
             clients.map { ClientEntity(userEntity, it.value) }.let { clientEntityList ->
