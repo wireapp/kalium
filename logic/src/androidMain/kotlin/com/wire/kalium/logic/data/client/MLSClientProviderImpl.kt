@@ -23,7 +23,7 @@ actual class MLSClientProviderImpl actual constructor(
 
     override suspend fun getMLSClient(clientId: ClientId?): Either<CoreFailure, MLSClient> = suspending {
         val location = "$rootKeyStorePath/${userId.domain}/${userId.value}"
-        val cryptoUserId = CryptoUserID(userId.value, userId.domain)
+        val cryptoUserId = CryptoUserID(value = userId.value, domain = userId.domain)
 
         // Make sure all intermediate directories exists
         File(location).mkdirs()
