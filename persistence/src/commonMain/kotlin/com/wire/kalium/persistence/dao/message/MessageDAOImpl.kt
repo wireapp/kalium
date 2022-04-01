@@ -53,6 +53,11 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
 
     override suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity) = queries.deleteMessage(id, conversationsId)
 
+    override suspend fun deleteMessage(id: String) = queries.deleteMessageById(id)
+
+    override suspend fun updateMessageVisibility(visibility: MessageEntity.Visibility, id: String, conversationId: QualifiedIDEntity) =
+        queries.updateMessageVisibility(visibility, "", id, conversationId)
+
     override suspend fun deleteAllMessages() = queries.deleteAllMessages()
 
     override suspend fun insertMessage(message: MessageEntity) =
@@ -78,7 +83,8 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             date = message.date,
             sender_user_id = message.senderUserId,
             sender_client_id = message.senderClientId,
-            status = message.status
+            status = message.status,
+            visibility = message.visibility
         )
 
     override suspend fun insertMessages(messages: List<MessageEntity>) =
@@ -106,7 +112,8 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
                     date = message.date,
                     sender_user_id = message.senderUserId,
                     sender_client_id = message.senderClientId,
-                    status = message.status
+                    status = message.status,
+                    visibility = message.visibility
                 )
             }
         }
@@ -136,6 +143,9 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             sender_client_id = message.senderClientId,
             status = message.status
         )
+
+    override suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity) =
+        queries.updateMessageStatus(status, id, conversationId)
 
     override suspend fun getAllMessages(): Flow<List<MessageEntity>> =
         queries.selectAllMessages()

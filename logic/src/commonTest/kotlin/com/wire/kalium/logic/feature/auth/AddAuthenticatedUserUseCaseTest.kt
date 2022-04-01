@@ -34,8 +34,8 @@ class AddAuthenticatedUserUseCaseTest {
         val session = TEST_SESSION
         given(sessionRepository).invocation { doesSessionExist(session.userId) }.then { Either.Right(false) }
 
-        given(sessionRepository).invocation { storeSession(session) }.then { Unit }
-        given(sessionRepository).invocation { updateCurrentSession(session.userId) }.then { Unit }
+        given(sessionRepository).invocation { storeSession(session) }.then { Either.Right(Unit) }
+        given(sessionRepository).invocation { updateCurrentSession(session.userId) }.then { Either.Right(Unit) }
 
         val actual = addAuthenticatedUserUseCase(session, false)
 
@@ -64,8 +64,8 @@ class AddAuthenticatedUserUseCaseTest {
         val newSession = TEST_SESSION
         given(sessionRepository).invocation { doesSessionExist(newSession.userId) }.then { Either.Right(true) }
         given(sessionRepository).invocation { userSession(newSession.userId) }.then { Either.Right(oldSession) }
-        given(sessionRepository).invocation { storeSession(newSession) }.then { Unit }
-        given(sessionRepository).invocation { updateCurrentSession(newSession.userId) }.then { Unit }
+        given(sessionRepository).invocation { storeSession(newSession) }.then { Either.Right(Unit) }
+        given(sessionRepository).invocation { updateCurrentSession(newSession.userId) }.then { Either.Right(Unit) }
 
         val actual = addAuthenticatedUserUseCase(newSession, true)
 

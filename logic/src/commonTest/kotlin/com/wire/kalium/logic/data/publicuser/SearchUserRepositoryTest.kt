@@ -8,12 +8,12 @@ import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.network.api.QualifiedID
 import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.contact.search.ContactDTO
-import com.wire.kalium.network.api.contact.search.UserSearchResponse
 import com.wire.kalium.network.api.contact.search.SearchPolicyDTO
 import com.wire.kalium.network.api.contact.search.UserSearchApi
+import com.wire.kalium.network.api.contact.search.UserSearchResponse
 import com.wire.kalium.network.api.user.LegalHoldStatusResponse
 import com.wire.kalium.network.api.user.details.UserDetailsApi
-import com.wire.kalium.network.api.user.details.UserDetailsResponse
+import com.wire.kalium.network.api.user.details.UserProfileDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.UserDAO
 import io.mockative.Mock
@@ -314,14 +314,19 @@ class SearchUserRepositoryTest {
         val GET_MULTIPLE_USER_RESPONSE = buildList {
             for (i in 1..5) {
                 add(
-                    UserDetailsResponse(
+                    UserProfileDTO(
                         accentId = i,
                         handle = "handle$i",
                         id = QualifiedID(value = "value$i", domain = "domain$i"),
                         name = "name$i",
                         legalHoldStatus = LegalHoldStatusResponse.ENABLED,
-                        team = "team$i",
-                        assets = emptyList()
+                        teamId = "team$i",
+                        assets = emptyList(),
+                        deleted = null,
+                        email = null,
+                        expiresAt = null,
+                        nonQualifiedId = "value$i",
+                        service = null
                     )
                 )
             }

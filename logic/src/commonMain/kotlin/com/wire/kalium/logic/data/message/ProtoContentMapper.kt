@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.logic.data.conversation.ConversationId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.protobuf.decodeFromByteArray
@@ -9,6 +10,9 @@ import com.wire.kalium.protobuf.messages.Asset.Original
 import com.wire.kalium.protobuf.messages.Calling
 import com.wire.kalium.protobuf.messages.EncryptionAlgorithm
 import com.wire.kalium.protobuf.messages.GenericMessage
+import com.wire.kalium.protobuf.messages.MessageDelete
+import com.wire.kalium.protobuf.messages.MessageHide
+import com.wire.kalium.protobuf.messages.QualifiedConversationId
 import com.wire.kalium.protobuf.messages.Text
 import pbandk.ByteArr
 
@@ -65,6 +69,20 @@ class ProtoContentMapperImpl : ProtoContentMapper {
                     )
                 }
             }
+            is MessageContent.DeleteMessage -> {
+                GenericMessage.Content.Deleted(MessageDelete(messageId = messageContent.messageId))
+            }
+            is MessageContent.DeleteForMe -> {
+                val qualifiedConversationId =
+                    QualifiedConversationId(id = messageContent.conversationId.value, domain = messageContent.conversationId.domain)
+                GenericMessage.Content.Hidden(
+                    MessageHide(
+                        conversationId = messageContent.conversationId.value,
+                        messageId = messageContent.messageId,
+                        qualifiedConversationId = qualifiedConversationId
+                    )
+                )
+            }
             else -> {
                 throw IllegalArgumentException("Unexpected message content type: $messageContent")
             }
@@ -92,12 +110,26 @@ class ProtoContentMapperImpl : ProtoContentMapper {
             is GenericMessage.Content.Composite -> MessageContent.Unknown
             is GenericMessage.Content.Confirmation -> MessageContent.Unknown
             is GenericMessage.Content.DataTransfer -> MessageContent.Unknown
-            is GenericMessage.Content.Deleted -> MessageContent.Unknown
+            is GenericMessage.Content.Deleted -> MessageContent.DeleteMessage(genericMessage.messageId)
             is GenericMessage.Content.Edited -> MessageContent.Unknown
             is GenericMessage.Content.Ephemeral -> MessageContent.Unknown
             is GenericMessage.Content.External -> MessageContent.Unknown
-            is GenericMessage.Content.Hidden -> MessageContent.Unknown
             is GenericMessage.Content.Image -> MessageContent.Unknown // Deprecated in favor of GenericMessage.Content.Asset
+            is GenericMessage.Content.Hidden -> {
+                val hiddenMessage = genericMessage.hidden
+                if (hiddenMessage != null) {
+                    MessageContent.DeleteForMe(
+                        hiddenMessage.messageId,
+                        ConversationId(
+                            hiddenMessage.qualifiedConversationId!!.id,
+                            hiddenMessage.qualifiedConversationId!!.domain
+                        )
+                    )
+                } else {
+                    kaliumLogger.w("Hidden message is null. Message UUID = $genericMessage.")
+                    MessageContent.Unknown
+                }
+            }
             is GenericMessage.Content.Knock -> MessageContent.Unknown
             is GenericMessage.Content.LastRead -> MessageContent.Unknown
             is GenericMessage.Content.Location -> MessageContent.Unknown
@@ -107,7 +139,6 @@ class ProtoContentMapperImpl : ProtoContentMapper {
                 MessageContent.Unknown
             }
         }
-
         return ProtoContent(genericMessage.messageId, content)
     }
 }

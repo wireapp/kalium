@@ -1,6 +1,6 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
-import com.wire.kalium.persistence.dao.message.MessageEntity;
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
+import com.wire.kalium.persistence.dao.message.MessageEntity;
 import kotlin.Int;
 
 CREATE TABLE Message (
@@ -29,6 +29,7 @@ CREATE TABLE Message (
       sender_user_id TEXT AS QualifiedIDEntity NOT NULL,
       sender_client_id TEXT NOT NULL,
       status TEXT AS MessageEntity.Status NOT NULL,
+      visibility TEXT AS MessageEntity.Visibility NOT NULL DEFAULT 'visible',
       FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id),
       FOREIGN KEY (sender_user_id) REFERENCES User(qualified_id),
       PRIMARY KEY (id, conversation_id)
@@ -40,9 +41,17 @@ DELETE FROM Message;
 deleteMessage:
 DELETE FROM Message WHERE  id = ? AND conversation_id = ?;
 
+deleteMessageById:
+DELETE FROM Message WHERE  id = ?;
+
+updateMessageVisibility:
+UPDATE Message
+SET visibility = ?, text_body = ?
+WHERE id = ? AND conversation_id = ?;
+
 insertMessage:
-INSERT INTO Message(id, text_body, asset_mime_type, asset_size, asset_name, asset_image_width, asset_image_height, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, content_type, conversation_id, date, sender_user_id, sender_client_id, status)
-VALUES(?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?,?,?, ?,?,?,?,?)
+INSERT INTO Message(id, text_body, asset_mime_type, asset_size, asset_name, asset_image_width, asset_image_height, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, content_type, conversation_id, date, sender_user_id, sender_client_id, status, visibility)
+VALUES(?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(id, conversation_id) DO UPDATE SET
 id = excluded.id,
 text_body = excluded.text_body,
@@ -67,6 +76,11 @@ status = excluded.status;
 updateMessages:
 UPDATE Message
 SET text_body = ?, asset_mime_type = ?, asset_size = ?, asset_name = ?, asset_image_width = ?, asset_image_height = ?, asset_otr_key = ?, asset_sha256 = ?, asset_id = ?, asset_token = ?, asset_domain = ?, asset_encryption_algorithm = ?, content_type = ?, date = ?, sender_user_id = ?, sender_client_id = ?, status = ?
+WHERE id = ? AND conversation_id = ?;
+
+updateMessageStatus:
+UPDATE Message
+SET status = ?
 WHERE id = ? AND conversation_id = ?;
 
 selectAllMessages:

@@ -2,7 +2,9 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.*
+import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
+import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
+import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Video
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityContent.AssetMessageContent
@@ -23,7 +25,8 @@ class MessageMapperImpl(private val idMapper: IdMapper) : MessageMapper {
         }
         val (messageContent, contentType) = when (message.content) {
             is MessageContent.Text -> TextMessageContent(messageBody = message.content.value) to MessageEntity.ContentType.TEXT
-
+            is MessageContent.DeleteMessage -> TextMessageContent(messageBody = message.content.messageId) to MessageEntity.ContentType.TEXT
+            is MessageContent.DeleteForMe -> TextMessageContent(messageBody = message.content.messageId) to MessageEntity.ContentType.TEXT
             is MessageContent.Asset -> {
                 with(message.content.value) {
                     AssetMessageContent(

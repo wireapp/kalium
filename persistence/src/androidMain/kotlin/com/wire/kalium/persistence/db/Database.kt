@@ -64,7 +64,8 @@ actual class Database(private val context: Context, userId: UserIDEntity, kalium
                 asset_image_widthAdapter = IntColumnAdapter,
                 asset_image_heightAdapter = IntColumnAdapter,
                 asset_sizeAdapter = IntColumnAdapter,
-                content_typeAdapter = ContentTypeAdapter()
+                content_typeAdapter = ContentTypeAdapter(),
+                visibilityAdapter = EnumColumnAdapter()
             ),
             User.Adapter(qualified_idAdapter = QualifiedIDAdapter(), IntColumnAdapter)
         )
