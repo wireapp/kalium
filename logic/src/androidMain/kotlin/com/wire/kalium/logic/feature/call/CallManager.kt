@@ -15,6 +15,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.toUserId
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.toTimeInMillis
@@ -97,7 +98,7 @@ actual class CallManager(
                 kaliumLogger.i("$TAG -> sendHandler")
                 scope.launch {
                     val messageString = data?.getString(0, UTF8_ENCODING)
-                    messageString?.let { sendCallingMessage(conversationId.toConversationId(), it) }
+                    messageString?.let { sendCallingMessage(conversationId.toConversationId(), userIdSelf.toUserId(), ClientId(clientIdSelf), it) }
                 }
                 0
             },

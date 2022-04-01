@@ -8,7 +8,7 @@ data class QualifiedID(
     val domain: String
 )
 
-private const val VALUE_DOMAIN_SEPARATOR = "@"
+const val VALUE_DOMAIN_SEPARATOR = "@"
 
 typealias ConversationId = QualifiedID
 
