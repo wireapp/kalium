@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.persistence.dao.message.MessageEntity
 
 data class Message(
     val id: String,

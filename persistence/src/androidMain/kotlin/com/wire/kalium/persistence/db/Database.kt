@@ -7,6 +7,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import app.cash.sqldelight.EnumColumnAdapter
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
+import com.wire.kalium.persistence.dao.ContentTypeAdapter
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationDAOImpl
 import com.wire.kalium.persistence.dao.MetadataDAO
@@ -60,6 +61,10 @@ actual class Database(private val context: Context, userId: UserIDEntity, kalium
                 conversation_idAdapter = QualifiedIDAdapter(),
                 sender_user_idAdapter = QualifiedIDAdapter(),
                 statusAdapter = EnumColumnAdapter(),
+                asset_image_widthAdapter = IntColumnAdapter,
+                asset_image_heightAdapter = IntColumnAdapter,
+                asset_sizeAdapter = IntColumnAdapter,
+                content_typeAdapter = ContentTypeAdapter(),
                 visibilityAdapter = EnumColumnAdapter()
             ),
             User.Adapter(qualified_idAdapter = QualifiedIDAdapter(), IntColumnAdapter)

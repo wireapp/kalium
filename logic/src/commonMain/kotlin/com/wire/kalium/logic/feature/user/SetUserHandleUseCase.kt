@@ -26,21 +26,25 @@ class SetUserHandleUseCase(
     private val validateUserHandleUseCase: ValidateUserHandleUseCase,
     private val syncManager: SyncManager
 ) {
-    suspend operator fun invoke(handle: String): SetUserHandleResult = suspending {
+    suspend operator fun invoke(_handle: String): SetUserHandleResult = suspending {
         if (syncManager.isSlowSyncOngoing()) syncManager.waitForSlowSyncToComplete()
-        when (validateUserHandleUseCase(handle)) {
-            ValidateUserHandleResult.Valid -> userRepository.updateSelfHandle(handle).coFold(
-                {
-                    if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError)
-                        handleSpecificError(it.kaliumException)
-                    else SetUserHandleResult.Failure.Generic(it)
-                }, {
-                    if (syncManager.isSlowSyncCompleted()) userRepository.updateLocalSelfUserHandle(handle)
-                    SetUserHandleResult.Success
-                }
-            )
-            else -> SetUserHandleResult.Failure.InvalidHandle
+        validateUserHandleUseCase(_handle).let { handleState ->
+            when (handleState) {
+                is ValidateUserHandleResult.Valid -> userRepository.updateSelfHandle(handleState.handle).coFold(
+                    {
+                        if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError)
+                            handleSpecificError(it.kaliumException)
+                        else SetUserHandleResult.Failure.Generic(it)
+                    }, {
+                        if (syncManager.isSlowSyncCompleted()) userRepository.updateLocalSelfUserHandle(handleState.handle)
+                        SetUserHandleResult.Success
+                    }
+                )
+                else -> SetUserHandleResult.Failure.InvalidHandle
+            }
+
         }
+
     }
 
     private fun handleSpecificError(error: KaliumException.InvalidRequestError): SetUserHandleResult.Failure = with(error) {

@@ -48,7 +48,7 @@ class SetUserHandleUseCaseTest {
         given(validateHandleUseCase)
             .function(validateHandleUseCase::invoke)
             .whenInvokedWith(any())
-            .then { ValidateUserHandleResult.Valid }
+            .then { ValidateUserHandleResult.Valid(handle) }
         given(userRepository)
             .coroutine { updateSelfHandle(handle) }
             .then { Either.Right(Unit) }
@@ -80,7 +80,7 @@ class SetUserHandleUseCaseTest {
         given(validateHandleUseCase)
             .function(validateHandleUseCase::invoke)
             .whenInvokedWith(any())
-            .then { ValidateUserHandleResult.Valid }
+            .then { ValidateUserHandleResult.Valid(handle) }
         given(userRepository)
             .coroutine { updateSelfHandle(handle) }
             .then { Either.Right(Unit) }
@@ -115,7 +115,7 @@ class SetUserHandleUseCaseTest {
         given(validateHandleUseCase)
             .function(validateHandleUseCase::invoke)
             .whenInvokedWith(any())
-            .then { ValidateUserHandleResult.Valid }
+            .then { ValidateUserHandleResult.Valid(handle) }
         given(userRepository)
             .coroutine { updateSelfHandle(handle) }
             .then { Either.Right(Unit) }
@@ -174,7 +174,7 @@ class SetUserHandleUseCaseTest {
         given(validateHandleUseCase)
             .function(validateHandleUseCase::invoke)
             .whenInvokedWith(any())
-            .then { ValidateUserHandleResult.Valid }
+            .then { ValidateUserHandleResult.Valid(handle) }
         given(userRepository)
             .coroutine { updateSelfHandle(handle) }
             .then { Either.Left(expected) }
@@ -211,7 +211,7 @@ class SetUserHandleUseCaseTest {
         given(validateHandleUseCase)
             .function(validateHandleUseCase::invoke)
             .whenInvokedWith(any())
-            .then { ValidateUserHandleResult.Valid }
+            .then { ValidateUserHandleResult.Valid(handle) }
         given(userRepository)
             .coroutine { updateSelfHandle(handle) }
             .then { Either.Left(error) }

@@ -46,7 +46,8 @@ class ConversationEventReceiver(
     private suspend fun handleNewMessage(event: Event.Conversation.NewMessage) {
         val decodedContentBytes = Base64.decodeFromBase64(event.content.toByteArray())
 
-        val cryptoSessionId = CryptoSessionId(idMapper.toCryptoQualifiedIDId(event.senderUserId), CryptoClientId(event.senderClientId.value))
+        val cryptoSessionId =
+            CryptoSessionId(idMapper.toCryptoQualifiedIDId(event.senderUserId), CryptoClientId(event.senderClientId.value))
         suspending {
             wrapCryptoRequest { proteusClient.decrypt(decodedContentBytes, cryptoSessionId) }.map { PlainMessageBlob(it) }
 
@@ -56,13 +57,13 @@ class ConversationEventReceiver(
                 }.onSuccess { plainMessageBlob ->
                     val protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)
                     val message = Message(
-                        protoContent.messageUid,
-                        protoContent.messageContent,
-                        event.conversationId,
-                        event.time,
-                        event.senderUserId,
-                        event.senderClientId,
-                        Message.Status.SENT
+                        id = protoContent.messageUid,
+                        content = protoContent.messageContent,
+                        conversationId = event.conversationId,
+                        date = event.time,
+                        senderUserId = event.senderUserId,
+                        senderClientId = event.senderClientId,
+                        status = Message.Status.SENT
                     )
                     kaliumLogger.i(message = "Message received: $message")
                     when (message.content) {
