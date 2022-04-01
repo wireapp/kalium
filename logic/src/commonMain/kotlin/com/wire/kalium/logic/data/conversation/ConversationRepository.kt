@@ -97,7 +97,6 @@ class ConversationDataSource(
                         ConversationDetails.OneOne(
                             conversation, otherUser,
                             ConversationDetails.OneOne.ConnectionState.ACCEPTED, //TODO Get actual connection state
-                            ConversationDetails.FederationStatus.NONE, //TODO Get actual federation status,
                             LegalHoldStatus.DISABLED //TODO get actual legal hold status
                         )
                     }
