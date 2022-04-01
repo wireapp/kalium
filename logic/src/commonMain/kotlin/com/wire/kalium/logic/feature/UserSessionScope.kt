@@ -20,7 +20,6 @@ import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.message.MessageDataSource
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.ProtoContentMapper
-import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.prekey.PreKeyDataSource
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteDataSource
@@ -133,15 +132,11 @@ abstract class UserSessionScopeCommon(
     private val sessionEstablisher: SessionEstablisher
         get() = SessionEstablisherImpl(authenticatedDataSourceSet.proteusClient, preKeyRepository)
 
-    private val protoContentMapper: ProtoContentMapper
-        get() = ProtoContentMapperImpl()
-
     private val messageEnvelopeCreator: MessageEnvelopeCreator
         get() = MessageEnvelopeCreatorImpl(authenticatedDataSourceSet.proteusClient, protoContentMapper)
 
     private val messageSender: MessageSender
-        get() = MessageSenderImpl(messageRepository, conversationRepository, syncManager,  database.clientDAO)
-
+        get() = MessageSenderImpl(messageRepository, conversationRepository, syncManager, messageSendFailureHandler, sessionEstablisher, messageEnvelopeCreator)
 
     private val assetRepository: AssetRepository
         get() = AssetDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.assetApi, database.assetDAO)
