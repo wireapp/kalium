@@ -41,7 +41,14 @@ actual class CoreLogic(clientLabel: String, rootProteusDirectoryPath: String) : 
             val database = Database()
 
             AuthenticatedDataSourceSet(
-                networkContainer, proteusClient, workScheduler, syncManager, database, userPreferencesSettings, encryptedSettingsHolder
+                rootProteusDirectoryPath,
+                networkContainer,
+                proteusClient,
+                workScheduler,
+                syncManager,
+                database,
+                userPreferencesSettings,
+                encryptedSettingsHolder
             ).also {
                 userScopeStorage[userId] = it
             }

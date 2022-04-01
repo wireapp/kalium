@@ -9,6 +9,7 @@ import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
 
 class AuthenticatedDataSourceSet(
+    val authenticatedRootDir: String,
     val authenticatedNetworkContainer: AuthenticatedNetworkContainer,
     val proteusClient: ProteusClient,
     val workScheduler: WorkScheduler,
