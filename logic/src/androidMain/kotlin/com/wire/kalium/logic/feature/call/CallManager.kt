@@ -100,7 +100,7 @@ actual class CallManager(
                 kaliumLogger.i("$TAG -> sendHandler")
                 scope.launch {
                     val messageString = data?.getString(0, UTF8_ENCODING)
-                    messageString?.let { senCallingMessage(conversationId.toConversationId(), it) }
+                    messageString?.let { sendCallingMessage(conversationId.toConversationId(), it) }
                 }
                 0
             },
