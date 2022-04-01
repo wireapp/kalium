@@ -24,6 +24,7 @@ $dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/getLocalFingerpri
 $dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/newLastPreKey/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[jvm]new-last-pre-key.html
 $dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/newPreKeys/#kotlin.Int#kotlin.Int/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[jvm]new-pre-keys.html
 $dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/open/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[jvm]open.html
+$dokka.location:com.wire.kalium.logic.data.client/MLSClientProviderImpl/getMLSClient/#com.wire.kalium.logic.data.id.PlainId?/PointingToDeclaration/logic/com.wire.kalium.logic.data.client/-m-l-s-client-provider-impl/[jvm]get-m-l-s-client.html
 $dokka.location:com.wire.kalium.logic/CoreLogic/getSessionScope/#com.wire.kalium.logic.data.id.QualifiedID/PointingToDeclaration/logic/com.wire.kalium.logic/-core-logic/[jvm]get-session-scope.html
 $dokka.location:com.wire.kalium.network.api.message/EnvelopeProtoMapperImpl///PointingToDeclaration/network/com.wire.kalium.network.api.message/[jvm]-envelope-proto-mapper-impl/index.html
 $dokka.location:com.wire.kalium.network.api.message/EnvelopeProtoMapperImpl/EnvelopeProtoMapperImpl/#/PointingToDeclaration/network/com.wire.kalium.network.api.message/[jvm]-envelope-proto-mapper-impl/-envelope-proto-mapper-impl.html
@@ -58,6 +59,7 @@ com.wire.kalium.logic.data.client.remote
 com.wire.kalium.logic.data.conversation
 com.wire.kalium.logic.data.event
 com.wire.kalium.logic.data.id
+com.wire.kalium.logic.data.keypackage
 com.wire.kalium.logic.data.location
 com.wire.kalium.logic.data.logout
 com.wire.kalium.logic.data.message
