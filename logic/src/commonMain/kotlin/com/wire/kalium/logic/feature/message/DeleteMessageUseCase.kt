@@ -34,10 +34,11 @@ class DeleteMessageUseCase(
             clientRepository.currentClientId().flatMap { currentClientId ->
                 val message = Message(
                     id = generatedMessageUuid,
-                    content = if (deleteForEveryone) MessageContent.DeleteMessage(messageId)
-                    else MessageContent.DeleteForMe(messageId, conversationId),
-                    conversationId = if (deleteForEveryone) conversationId
-                    else conversationRepository.getSelfConversationId(),
+                    content = if (deleteForEveryone) MessageContent.DeleteMessage(messageId) else MessageContent.DeleteForMe(
+                        messageId,
+                        conversationId
+                    ),
+                    conversationId = if (deleteForEveryone) conversationId else conversationRepository.getSelfConversationId(),
                     date = Clock.System.now().toString(),
                     senderUserId = selfUser.id,
                     senderClientId = currentClientId,
