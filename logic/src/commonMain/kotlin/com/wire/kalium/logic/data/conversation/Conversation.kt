@@ -11,12 +11,12 @@ data class Conversation(val id: ConversationId, val name: String?, val type: Typ
     enum class Type { SELF, ONE_ON_ONE, GROUP }
 }
 
-sealed class ConversationDetails(val conversation: Conversation) {
+sealed class ConversationDetails(open val conversation: Conversation) {
 
-    class Self(conversation: Conversation) : ConversationDetails(conversation)
+    data class Self(override val conversation: Conversation) : ConversationDetails(conversation)
 
-    class OneOne(
-        conversation: Conversation,
+    data class OneOne(
+        override val conversation: Conversation,
         val otherUser: OtherUser,
         val connectionState: ConnectionState,
         val legalHoldStatus: LegalHoldStatus
@@ -33,7 +33,7 @@ sealed class ConversationDetails(val conversation: Conversation) {
         }
     }
 
-    class Group(conversation: Conversation) : ConversationDetails(conversation)
+    data class Group(override val conversation: Conversation) : ConversationDetails(conversation)
 }
 
 class MembersInfo(val self: Member, val otherMembers: List<Member>)
