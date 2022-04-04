@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.protobuf.decodeFromByteArray
 import com.wire.kalium.protobuf.encodeToByteArray
