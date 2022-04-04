@@ -1,7 +1,7 @@
 import com.android.build.gradle.internal.tasks.factory.dependsOn
 
 buildscript {
-    val kotlinVersion = "1.6.10"
+    val kotlinVersion = "1.6.20"
     val dokkaVersion = "1.6.10"
     val sqlDelightVersion = "2.0.0-alpha01"
     val protobufCodegenVersion = "0.8.18"
