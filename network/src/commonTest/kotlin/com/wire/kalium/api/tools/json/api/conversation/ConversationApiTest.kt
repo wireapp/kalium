@@ -12,7 +12,7 @@ import kotlin.test.assertTrue
 class ConversationApiTest: ApiTest {
 
     @Test
-    fun given_whenCallingCreateNewConversation_thenTheRequestShouldBeConfiguredCorrectly() = runTest {
+    fun givenACreateNewConversationRequest_whenCallingCreateNewConversation_thenTheRequestShouldBeConfiguredCorrectly() = runTest {
         val httpClient = mockAuthenticatedHttpClient(
             CREATE_CONVERSATION_RESPONSE,
             statusCode = HttpStatusCode.Created,
