@@ -3,6 +3,8 @@ package com.wire.kalium.cli
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
+import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.logic.CoreLogger
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.message.MessageContent
@@ -31,6 +33,8 @@ class SendReceiveApplication : CliktCommand() {
     }
 
     override fun run() = runBlocking {
+        CoreLogger.setLoggingLevel(KaliumLogLevel.DEBUG)
+
         val authSession = login(email, password)
         val userSession = coreLogic.getSessionScope(authSession.userId)
 
@@ -42,7 +46,7 @@ class SendReceiveApplication : CliktCommand() {
         val conversations = userSession.conversations.getConversations().let {
             when(it) {
                 is GetConversationsUseCase.Result.Failure -> {
-                    echo(it.storageFailure.rootCause)
+                    echo(it.storageFailure)
                     return@runBlocking
                 }
                 is GetConversationsUseCase.Result.Success -> it.convFlow.first()

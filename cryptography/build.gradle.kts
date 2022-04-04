@@ -98,7 +98,6 @@ kotlin {
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(Dependencies.Cryptography.cryptobox4j)
-                implementation(Dependencies.Cryptography.javaxCrypto)
                 implementation(Dependencies.Cryptography.mlsClientJvm)
             }
         }
