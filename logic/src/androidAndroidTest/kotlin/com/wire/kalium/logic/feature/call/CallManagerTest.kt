@@ -11,6 +11,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.message.MessageSender
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -36,6 +37,9 @@ class CallManagerTest {
     @Mock
     private val clientRepository = mock(classOf<ClientRepository>())
 
+    @Mock
+    private val messageSender = mock(classOf<MessageSender>())
+
     private lateinit var callManager: CallManager
 
     @BeforeTest
@@ -44,7 +48,8 @@ class CallManagerTest {
             calling = calling,
             callRepository = callRepository,
             userRepository = userRepository,
-            clientRepository = clientRepository
+            clientRepository = clientRepository,
+            messageSender = messageSender
         )
     }
 
