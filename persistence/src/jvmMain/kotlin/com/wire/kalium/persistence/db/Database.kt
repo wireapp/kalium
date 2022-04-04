@@ -22,8 +22,14 @@ actual class Database {
         database = AppDatabase(
             driver,
             Client.Adapter(user_idAdapter = QualifiedIDAdapter()),
-            Conversation.Adapter(qualified_idAdapter = QualifiedIDAdapter(), typeAdapter = EnumColumnAdapter()),
-            Member.Adapter(userAdapter = QualifiedIDAdapter(), conversationAdapter = QualifiedIDAdapter()),
+            Conversation.Adapter(
+                qualified_idAdapter = QualifiedIDAdapter(),
+                typeAdapter = EnumColumnAdapter(),
+                group_stateAdapter = EnumColumnAdapter(),
+                protocolAdapter = EnumColumnAdapter()),
+            Member.Adapter(
+                userAdapter = QualifiedIDAdapter(),
+                conversationAdapter = QualifiedIDAdapter()),
             Message.Adapter(
                 conversation_idAdapter = QualifiedIDAdapter(),
                 sender_user_idAdapter = QualifiedIDAdapter(),

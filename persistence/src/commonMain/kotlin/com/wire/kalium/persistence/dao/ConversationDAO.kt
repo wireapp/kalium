@@ -6,9 +6,16 @@ data class ConversationEntity(
     val id: QualifiedIDEntity,
     val name: String?,
     val type: Type,
-    val teamId: String?
+    val teamId: String?,
+    val groupId: String?,
+    val groupState: GroupState,
+    val protocol: Protocol
 ) {
     enum class Type { SELF, ONE_ON_ONE, GROUP }
+
+    enum class GroupState { PENDING, PENDING_WELCOME_MESSAGE, ESTABLISHED }
+
+    enum class Protocol { PROTEUS, MLS }
 }
 
 data class Member(
@@ -20,6 +27,7 @@ interface ConversationDAO {
     suspend fun insertConversation(conversationEntity: ConversationEntity)
     suspend fun insertConversations(conversationEntities: List<ConversationEntity>)
     suspend fun updateConversation(conversationEntity: ConversationEntity)
+    suspend fun updateConversationGroupState(groupState: ConversationEntity.GroupState, groupId: String)
     suspend fun getAllConversations(): Flow<List<ConversationEntity>>
     suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>
     suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity)

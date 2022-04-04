@@ -5,22 +5,30 @@ CREATE TABLE Conversation (
     qualified_id TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY,
     name TEXT,
     type TEXT AS ConversationEntity.Type NOT NULL,
-    team_id TEXT
+    team_id TEXT,
+    group_id TEXT,
+    group_state TEXT AS ConversationEntity.GroupState NOT NULL,
+    protocol TEXT AS ConversationEntity.Protocol NOT NULL
 );
 
-deleteAllConverations:
+deleteAllConversations:
 DELETE FROM Conversation;
 
 deleteConversation:
 DELETE FROM Conversation WHERE qualified_id = ?;
 
 insertConversation:
-INSERT OR REPLACE INTO Conversation(qualified_id, name, type, team_id) VALUES(?, ?, ?, ?);
+INSERT OR REPLACE INTO Conversation(qualified_id, name, type, team_id, group_id, group_state, protocol) VALUES(?, ?, ?, ?, ?, ?, ?);
 
 updateConversation:
 UPDATE Conversation
 SET name = ?, type = ?, team_id = ?
 WHERE qualified_id = ?;
+
+updateConversationGroupState:
+UPDATE Conversation
+SET group_state = ?
+WHERE group_id = ?;
 
 selectAllConversations:
 SELECT * FROM Conversation;

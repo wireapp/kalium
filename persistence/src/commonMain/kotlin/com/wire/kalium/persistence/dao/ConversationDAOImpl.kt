@@ -14,7 +14,14 @@ import com.wire.kalium.persistence.db.Member as SQLDelightMember
 
 class ConversationMapper {
     fun toModel(conversation: SQLDelightConversation): ConversationEntity {
-        return ConversationEntity(conversation.qualified_id, conversation.name, conversation.type, conversation.team_id)
+        return ConversationEntity(
+            conversation.qualified_id,
+            conversation.name,
+            conversation.type,
+            conversation.team_id,
+            conversation.group_id,
+            conversation.group_state,
+            conversation.protocol)
     }
 }
 
@@ -40,7 +47,10 @@ class ConversationDAOImpl(
             conversationEntity.id,
             conversationEntity.name,
             conversationEntity.type,
-            conversationEntity.teamId
+            conversationEntity.teamId,
+            conversationEntity.groupId,
+            conversationEntity.groupState,
+            conversationEntity.protocol
         )
     }
 
@@ -51,7 +61,10 @@ class ConversationDAOImpl(
                     conversationEntity.id,
                     conversationEntity.name,
                     conversationEntity.type,
-                    conversationEntity.teamId
+                    conversationEntity.teamId,
+                    conversationEntity.groupId,
+                    conversationEntity.groupState,
+                    conversationEntity.protocol
                 )
             }
         }
@@ -64,6 +77,10 @@ class ConversationDAOImpl(
             conversationEntity.teamId,
             conversationEntity.id
         )
+    }
+
+    override suspend fun updateConversationGroupState(groupState: ConversationEntity.GroupState, groupId: String) {
+        conversationQueries.updateConversationGroupState(groupState, groupId)
     }
 
     override suspend fun getAllConversations(): Flow<List<ConversationEntity>> {
