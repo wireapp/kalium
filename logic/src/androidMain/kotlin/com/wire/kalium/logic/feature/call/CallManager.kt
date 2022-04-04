@@ -10,6 +10,7 @@ import com.wire.kalium.calling.types.Uint32_t
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.asString
 import com.wire.kalium.logic.data.id.toConversationId
 import com.wire.kalium.logic.data.message.Message
@@ -83,23 +84,6 @@ actual class CallManager(
                         status = status
                     )
                 }
-            }.also {
-                kaliumLogger.d("ANSWERING_CALL -> Entering .also")
-                scope.launch {
-                    kaliumLogger.d("ANSWERING_CALL -> Entering scope.launch")
-                    withCalling {
-                        kaliumLogger.d("ANSWERING_CALL -> Entering withCalling")
-                        calling.wcall_answer(
-                            inst = deferredHandle.await(),
-                            conversationId = conversationId,
-                            callType = CallType.CALL_TYPE_NORMAL,
-                            cbrEnabled = false
-                        )
-                        kaliumLogger.d("ANSWERING_CALL -> wcall_answer sent")
-                    }
-                    kaliumLogger.d("ANSWERING_CALL -> End scope.launch")
-                }
-                kaliumLogger.d("ANSWERING_CALL -> End .also")
             }
         }
     }
@@ -114,11 +98,18 @@ actual class CallManager(
                 kaliumLogger.i("$TAG -> readyHandler")
             },
             sendHandler = { _, conversationId, avsSelfUserId, avsSelfClientId, _, _, data, _, _, _ ->
-                if(selfUserId == avsSelfUserId && selfClientId == avsSelfClientId) AvsCallBackError.INVALID_ARGUMENT.value
+                if (selfUserId == avsSelfUserId && selfClientId == avsSelfClientId) AvsCallBackError.INVALID_ARGUMENT.value
                 else {
                     scope.launch {
                         val messageString = data?.getString(0, UTF8_ENCODING)
-                        messageString?.let { sendCallingMessage(conversationId.toConversationId(), avsSelfUserId.toUserId(), ClientId(avsSelfClientId), it) }
+                        messageString?.let {
+                            sendCallingMessage(
+                                conversationId.toConversationId(),
+                                avsSelfUserId.toUserId(),
+                                ClientId(avsSelfClientId),
+                                it
+                            )
+                        }
                     }
                     AvsCallBackError.None.value
                 }
@@ -204,6 +195,17 @@ actual class CallManager(
             )
             kaliumLogger.d("onCallingMessageReceived -> Passed through")
         }
+
+    actual suspend fun answerCall(conversationId: ConversationId) = withCalling {
+        kaliumLogger.d("ANSWERING_CALL -> Entering withCalling")
+        calling.wcall_answer(
+            inst = deferredHandle.await(),
+            conversationId = conversationId.asString(),
+            callType = CallType.CALL_TYPE_NORMAL,
+            cbrEnabled = false
+        )
+        kaliumLogger.d("ANSWERING_CALL -> wcall_answer sent")
+    }
 
     override fun onConfigRequest(inst: Handle, arg: Pointer?): Int {
         scope.launch {
