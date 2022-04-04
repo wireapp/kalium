@@ -87,20 +87,23 @@ actual class CallManager(
     }
 
     private fun startHandleAsync() = scope.async(start = CoroutineStart.LAZY) {
+        val selfUserId = userId.await().asString()
+        val selfClientId = clientId.await().value
         calling.wcall_create(
-            userId = userId.await().asString(),
-            clientId = clientId.await().value,
+            userId = selfUserId,
+            clientId = selfClientId,
             readyHandler = { version: Int, arg: Pointer? ->
                 kaliumLogger.i("$TAG -> readyHandler")
             },
-            sendHandler = { context: Pointer?, conversationId: String, userIdSelf: String, clientIdSelf: String, userIdDestination: String?,
-                            clientIdDestination: String?, data: Pointer?, length: Size_t, isTransient: Boolean, arg: Pointer? ->
-                kaliumLogger.i("$TAG -> sendHandler")
-                scope.launch {
-                    val messageString = data?.getString(0, UTF8_ENCODING)
-                    messageString?.let { sendCallingMessage(conversationId.toConversationId(), userIdSelf.toUserId(), ClientId(clientIdSelf), it) }
+            sendHandler = { _, conversationId, avsSelfUserId, avsSelfClientId, _, _, data, _, _, _ ->
+                if(selfUserId == avsSelfUserId && selfClientId == avsSelfClientId) AvsCallBackError.INVALID_ARGUMENT.value
+                else {
+                    scope.launch {
+                        val messageString = data?.getString(0, UTF8_ENCODING)
+                        messageString?.let { sendCallingMessage(conversationId.toConversationId(), avsSelfUserId.toUserId(), ClientId(avsSelfClientId), it) }
+                    }
+                    AvsCallBackError.None.value
                 }
-                0
             },
             sftRequestHandler = { ctx: Pointer?, url: String, data: Pointer?, length: Size_t, arg: Pointer? ->
                 kaliumLogger.i("$TAG -> sftRequestHandler")
