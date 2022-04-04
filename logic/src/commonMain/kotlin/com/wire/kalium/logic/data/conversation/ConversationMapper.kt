@@ -2,24 +2,63 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.network.api.conversation.ConvProtocol
 import com.wire.kalium.network.api.conversation.ConversationResponse
+import com.wire.kalium.network.api.model.ConversationAccess
+import com.wire.kalium.network.api.model.ConversationAccessRole
 import com.wire.kalium.persistence.dao.ConversationEntity as PersistedConversation
+import com.wire.kalium.persistence.dao.ConversationEntity.Protocol as PersistedProtocol
+import com.wire.kalium.persistence.dao.ConversationEntity.GroupState as PersistedGroupState
 
 interface ConversationMapper {
-    fun fromApiModelToDaoModel(apiModel: ConversationResponse, selfUserTeamId: TeamId?): PersistedConversation
+    fun fromApiModelToDaoModel(apiModel: ConversationResponse, groupCreation: Boolean, selfUserTeamId: TeamId?): PersistedConversation
+    fun fromApiModelToDaoModel(apiModel: ConvProtocol): PersistedProtocol
     fun fromDaoModel(daoModel: PersistedConversation): Conversation
+    fun toApiModel(access: ConverationOptions.Access): ConversationAccess
+    fun toApiModel(accessRole: ConverationOptions.AccessRole): ConversationAccessRole
+    fun toApiModel(protocol: ConverationOptions.Protocol): ConvProtocol
 }
 
 internal class ConversationMapperImpl(private val idMapper: IdMapper) : ConversationMapper {
 
-    override fun fromApiModelToDaoModel(apiModel: ConversationResponse, selfUserTeamId: TeamId?): PersistedConversation =
+    override fun fromApiModelToDaoModel(apiModel: ConversationResponse, groupCreation: Boolean, selfUserTeamId: TeamId?): PersistedConversation =
         PersistedConversation(
-            idMapper.fromApiToDao(apiModel.id), apiModel.name, apiModel.getConversationType(selfUserTeamId), apiModel.teamId
+            idMapper.fromApiToDao(apiModel.id),
+            apiModel.name,
+            apiModel.getConversationType(selfUserTeamId),
+            apiModel.teamId,
+            apiModel.groupId,
+            groupState = if (groupCreation) PersistedGroupState.PENDING else PersistedGroupState.PENDING_WELCOME_MESSAGE,
+            fromApiModelToDaoModel(apiModel.protocol)
         )
 
+    override fun fromApiModelToDaoModel(apiModel: ConvProtocol): PersistedProtocol = when (apiModel) {
+        ConvProtocol.PROTEUS -> PersistedProtocol.PROTEUS
+        ConvProtocol.MLS -> PersistedProtocol.MLS
+    }
+
     override fun fromDaoModel(daoModel: PersistedConversation): Conversation = Conversation(
-        idMapper.fromDaoModel(daoModel.id), daoModel.name, daoModel.type.fromDaoModel(), daoModel.teamId?.let { TeamId(it) }
+        idMapper.fromDaoModel(daoModel.id), daoModel.name, daoModel.type.fromDaoModel(), daoModel.teamId?.let { TeamId(it) }, daoModel.groupId
     )
+
+    override fun toApiModel(access: ConverationOptions.Access): ConversationAccess = when (access) {
+        ConverationOptions.Access.PRIVATE -> ConversationAccess.PRIVATE
+        ConverationOptions.Access.CODE -> ConversationAccess.CODE
+        ConverationOptions.Access.INVITE -> ConversationAccess.INVITE
+        ConverationOptions.Access.LINK -> ConversationAccess.LINK
+    }
+
+    override fun toApiModel(access: ConverationOptions.AccessRole): ConversationAccessRole = when (access) {
+        ConverationOptions.AccessRole.TEAM_MEMBER -> ConversationAccessRole.TEAM_MEMBER
+        ConverationOptions.AccessRole.NON_TEAM_MEMBER -> ConversationAccessRole.NON_TEAM_MEMBER
+        ConverationOptions.AccessRole.GUEST -> ConversationAccessRole.GUEST
+        ConverationOptions.AccessRole.SERVICE -> ConversationAccessRole.SERVICE
+    }
+
+    override fun toApiModel(protocol: ConverationOptions.Protocol): ConvProtocol = when (protocol) {
+        ConverationOptions.Protocol.PROTEUS -> ConvProtocol.PROTEUS
+        ConverationOptions.Protocol.MLS -> ConvProtocol.MLS
+    }
 
     private fun PersistedConversation.Type.fromDaoModel(): Conversation.Type = when (this) {
         PersistedConversation.Type.SELF -> Conversation.Type.SELF

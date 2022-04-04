@@ -4,7 +4,6 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
@@ -12,18 +11,41 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.network.api.conversation.ConvTeamInfo
 import com.wire.kalium.network.api.conversation.ConversationApi
+import com.wire.kalium.network.api.conversation.CreateConversationRequest
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.persistence.dao.ConversationDAO
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import com.wire.kalium.persistence.dao.Member as MemberEntity
+
+data class ConverationOptions(
+    val access: Set<Access> = emptySet(),
+    val accessRole: Set<AccessRole> = emptySet(),
+    val readReceiptsEnabled: Boolean = false,
+    val protocol: Protocol = Protocol.PROTEUS
+) {
+    enum class Protocol {
+        PROTEUS, MLS
+    }
+
+    enum class AccessRole {
+        TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE
+    }
+
+    enum class Access {
+        PRIVATE, INVITE, LINK, CODE
+    }
+}
 
 interface ConversationRepository {
     suspend fun getSelfConversationId(): ConversationId
@@ -37,10 +59,12 @@ interface ConversationRepository {
     suspend fun persistMember(member: MemberEntity, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun persistMembers(members: List<MemberEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun deleteMember(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity): Either<CoreFailure, Unit>
+    suspend fun createGroupConversation(name: String, members: List<Member>, options: ConverationOptions): Either<CoreFailure, Conversation>
 }
 
 class ConversationDataSource(
     private val userRepository: UserRepository,
+    private val mlsConversationRepository: MLSConversationRepository,
     private val conversationDAO: ConversationDAO,
     private val conversationApi: ConversationApi,
     private val clientApi: ClientApi,
@@ -55,7 +79,7 @@ class ConversationDataSource(
         val selfUserTeamId = userRepository.getSelfUser().first().team
         wrapApiRequest { conversationApi.conversationsByBatch(null, 100) }.map { conversationPagingResponse ->
             conversationDAO.insertConversations(conversationPagingResponse.conversations.map { conversationResponse ->
-                conversationMapper.fromApiModelToDaoModel(conversationResponse, selfUserTeamId?.let { TeamId(it) })
+                conversationMapper.fromApiModelToDaoModel(conversationResponse, groupCreation = false, selfUserTeamId?.let { TeamId(it) } )
             })
             conversationPagingResponse.conversations.forEach { conversationsResponse ->
                 conversationDAO.insertMembers(
@@ -141,6 +165,57 @@ class ConversationDataSource(
     override suspend fun deleteMember(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity): Either<CoreFailure, Unit> =
         wrapStorageRequest { conversationDAO.deleteMemberByQualifiedID(conversationID, userID) }
 
+    override suspend fun createGroupConversation(name: String, members: List<Member>, options: ConverationOptions): Either<CoreFailure, Conversation> = suspending {
+        wrapApiRequest {
+            conversationApi.createNewConversation(
+                CreateConversationRequest(
+                    if (options.protocol == ConverationOptions.Protocol.PROTEUS) members.map { idMapper.toApiModel(it.id) } else emptyList(),
+                    name,
+                    options.access.toList().map(conversationMapper::toApiModel),
+                    options.accessRole.toList().map(conversationMapper::toApiModel),
+                    userRepository.getSelfUser().firstOrNull()?.team?.let { ConvTeamInfo(false, it) },
+                    null,
+                    if (options.readReceiptsEnabled) 1 else 0,
+                    DEFAULT_MEMBER_ROLE,
+                    conversationMapper.toApiModel(options.protocol)
+                )
+            )
+        }.flatMap { conversationResponse ->
+            val selfUser = wrapStorageRequest {
+                userRepository.getSelfUser().first()
+            }
+
+            selfUser.flatMap { selfUser ->
+                val teamId = selfUser.team?.let { TeamId(it) }
+                val conversationEntity = conversationMapper.fromApiModelToDaoModel(conversationResponse, groupCreation = true, teamId)
+                val conversation = conversationMapper.fromDaoModel(conversationEntity)
+
+                wrapStorageRequest {
+                    conversationDAO.insertConversation(conversationEntity)
+                }.flatMap {
+                    wrapStorageRequest {
+                        if (options.protocol == ConverationOptions.Protocol.PROTEUS) {
+                            conversationDAO.insertMembers(memberMapper.fromApiModelToDaoModel(conversationResponse.members), conversationEntity.id)
+                        } else {
+                            val selfUserId = userRepository.getSelfUserId()
+                            val selfMember = Member(selfUserId)
+                            conversationDAO.insertMembers((members + selfMember).map(memberMapper::toDaoModel), conversationEntity.id)
+                            Either.Right(Unit)
+                        }
+                    }
+                }.flatMap {
+                    if (options.protocol == ConverationOptions.Protocol.PROTEUS) {
+                        Either.Right(conversation)
+                    } else {
+                        mlsConversationRepository.establishMLSGroup(conversation).flatMap {
+                            Either.Right(conversation)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * Fetches a list of all recipients for a given conversation including this very client
      */
@@ -150,5 +225,9 @@ class ConversationDataSource(
             .flatMap {
                 wrapApiRequest { clientApi.listClientsOfUsers(it) }.map { memberMapper.fromMapOfClientsResponseToRecipients(it) }
             }
+    }
+
+    companion object {
+        const val DEFAULT_MEMBER_ROLE = "wire_member"
     }
 }

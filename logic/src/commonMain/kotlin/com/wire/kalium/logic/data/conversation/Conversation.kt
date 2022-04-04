@@ -8,7 +8,7 @@ import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
 
-data class Conversation(val id: ConversationId, val name: String?, val type: Type, val teamId: TeamId?) {
+data class Conversation(val id: ConversationId, val name: String?, val type: Type, val teamId: TeamId?, val groupId: String?) {
     enum class Type { SELF, ONE_ON_ONE, GROUP }
 }
 
