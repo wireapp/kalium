@@ -184,6 +184,7 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.proteusClient,
             preKeyRepository,
             userRepository,
+            assetRepository,
             syncManager
         )
     val users: UserScope get() = UserScope(userRepository, publicUserRepository, syncManager, assetRepository)

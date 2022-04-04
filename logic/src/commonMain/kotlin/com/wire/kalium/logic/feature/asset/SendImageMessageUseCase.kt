@@ -21,7 +21,7 @@ import io.ktor.utils.io.core.*
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 
-fun interface SendImageUseCase {
+fun interface SendImageMessageUseCase {
     /**
      * Function that enables sending an image as a private asset
      *
@@ -32,20 +32,20 @@ fun interface SendImageUseCase {
     suspend operator fun invoke(conversationId: ConversationId, imageRawData: ByteArray): SendImageMessageResult
 }
 
-internal class SendImageUseCaseImpl(
+internal class SendImageMessageUseCaseImpl(
     private val messageRepository: MessageRepository,
     private val clientRepository: ClientRepository,
     private val assetDataSource: AssetRepository,
     private val userRepository: UserRepository,
     private val messageSender: MessageSender
-) : SendImageUseCase {
+) : SendImageMessageUseCase {
 
     override suspend fun invoke(conversationId: ConversationId, imageRawData: ByteArray): SendImageMessageResult = suspending {
         // Encrypt the asset data with the provided otr key
         val otrKey = generateRandomAES256Key()
-        val encryptedData = encryptDataWithAES256(PlainData(imageRawData))
+        val encryptedData = encryptDataWithAES256(PlainData(imageRawData), otrKey)
 
-        // Calculate the SHA
+        // Calculate the SHA of the encrypted data
         val sha256 = calcSHA256(encryptedData.data)
 
         // Upload the asset encrypted data
@@ -65,7 +65,7 @@ internal class SendImageUseCaseImpl(
     private suspend fun prepareAndSendAssetMessage(
         conversationId: ConversationId,
         dataSize: Int,
-        sha256: String,
+        sha256: ByteArray,
         otrKey: AES256Key,
         assetId: UploadedAssetId
     ) = suspending {
@@ -100,19 +100,19 @@ internal class SendImageUseCaseImpl(
         }
     }
 
-    private fun provideAssetMessageContent(dataSize: Int, sha256: String, otrKey: AES256Key, assetId: UploadedAssetId): AssetContent {
+    private fun provideAssetMessageContent(dataSize: Int, sha256: ByteArray, otrKey: AES256Key, assetId: UploadedAssetId): AssetContent {
         return AssetContent(
             size = dataSize,
             name = "",
             mimeType = ImageAsset.JPEG.name,
-            metadata = AssetContent.AssetMetadata.Image(0, 0),
+            metadata = AssetContent.AssetMetadata.Image(200, 200),
             remoteData = AssetContent.RemoteData(
                 otrKey = otrKey.data,
-                sha256 = sha256.toByteArray(),
+                sha256 = sha256,
                 assetId = assetId.key,
                 encryptionAlgorithm = AssetContent.RemoteData.EncryptionAlgorithm.AES_CBC,
                 assetDomain = null,  // TODO: fill in the assetDomain, it's returned by the BE when uploading an asset.
-                assetToken = null
+                assetToken = assetId.assetToken
             )
         )
     }

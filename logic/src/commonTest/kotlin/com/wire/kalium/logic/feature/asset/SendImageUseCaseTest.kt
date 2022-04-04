@@ -108,7 +108,7 @@ private class Arrangement {
     @Mock
     private val messageSender = mock(classOf<MessageSender>())
 
-    val someAssetId = UploadedAssetId("some-asset-id")
+    val someAssetId = UploadedAssetId("some-asset-id", "some-asset-token")
 
     val someClientId = ClientId("some-client-id")
 
@@ -124,7 +124,7 @@ private class Arrangement {
         "some_key"
     )
 
-    val sendImageUseCase = SendImageUseCaseImpl(messageRepository, clientRepository, assetDataSource, userRepository, messageSender)
+    val sendImageUseCase = SendImageMessageUseCaseImpl(messageRepository, clientRepository, assetDataSource, userRepository, messageSender)
 
     fun withSuccessfulResponse(): Arrangement {
         given(assetDataSource)
