@@ -4,7 +4,7 @@ actual fun calcMd5(bytes: ByteArray): String {
     TODO("Not yet implemented")
 }
 
-actual fun calcSHA256(bytes: ByteArray): String {
+actual fun calcSHA256(bytes: ByteArray): ByteArray {
     TODO("Not yet implemented")
 }
 
