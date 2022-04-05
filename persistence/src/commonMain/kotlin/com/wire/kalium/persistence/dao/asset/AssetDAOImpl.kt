@@ -10,11 +10,11 @@ import com.wire.kalium.persistence.db.Asset as SQLDelightAsset
 class AssetMapper {
     fun toModel(asset: SQLDelightAsset): AssetEntity {
         return AssetEntity(
-            asset.key,
-            asset.domain,
-            asset.mime_type,
-            asset.raw_data,
-            asset.downloaded_date
+            key = asset.key,
+            domain = asset.domain,
+            mimeType = asset.mime_type,
+            rawData = asset.raw_data,
+            downloadedDate = asset.downloaded_date
         )
     }
 }

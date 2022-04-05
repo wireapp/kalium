@@ -103,3 +103,6 @@ libs/
 
 # CLI working diretory
 .proteus
+
+# kotlin files generated from proto
+generated/
