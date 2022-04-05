@@ -21,7 +21,7 @@ actual class GlobalCallManager(
 
     private lateinit var mediaManager: MediaManager
     private lateinit var flowManager: FlowManager
-    private val callManagerHolder = hashMapOf<QualifiedID, CallManager>()
+    private val callManagerImplHolder = hashMapOf<QualifiedID, CallManagerImpl>()
 
     private val calling by lazy {
         initiateMediaManager()
@@ -37,7 +37,7 @@ actual class GlobalCallManager(
     }
     
     /**
-     * Get a [CallManager] for a session, shouldn't be instantiated more than one CallManager for a single session.
+     * Get a [CallManagerImpl] for a session, shouldn't be instantiated more than one CallManager for a single session.
      */
     actual fun getCallManagerForClient(
         userId: QualifiedID,
@@ -45,15 +45,15 @@ actual class GlobalCallManager(
         userRepository: UserRepository,
         clientRepository: ClientRepository,
         messageSender: MessageSender
-    ): CallManager {
-        return callManagerHolder[userId] ?: CallManager(
+    ): CallManagerImpl {
+        return callManagerImplHolder[userId] ?: CallManagerImpl(
             calling = calling,
             callRepository = callRepository,
             userRepository = userRepository,
             clientRepository = clientRepository,
             messageSender = messageSender
         ).also {
-            callManagerHolder[userId] = it
+            callManagerImplHolder[userId] = it
         }
     }
 

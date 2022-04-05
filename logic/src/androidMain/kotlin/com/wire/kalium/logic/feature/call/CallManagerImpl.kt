@@ -33,7 +33,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-actual class CallManager(
+actual class CallManagerImpl(
     private val calling: Calling,
     private val callRepository: CallRepository,
     private val userRepository: UserRepository,
@@ -161,7 +161,7 @@ actual class CallManager(
             metricsHandler = { conversationId: String, metricsJson: String, arg: Pointer? ->
                 kaliumLogger.i("$TAG -> metricsHandler")
             },
-            callConfigRequestHandler = this@CallManager,
+            callConfigRequestHandler = this@CallManagerImpl,
             constantBitRateStateChangeHandler = { userId: String, clientId: String, isEnabled: Boolean, arg: Pointer? ->
                 kaliumLogger.i("$TAG -> constantBitRateStateChangeHandler")
             },

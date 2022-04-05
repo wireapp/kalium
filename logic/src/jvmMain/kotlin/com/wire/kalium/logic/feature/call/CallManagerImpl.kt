@@ -7,7 +7,7 @@ import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-actual class CallManager {
+actual class CallManagerImpl {
 
     private val _calls = MutableStateFlow(listOf<Call>())
     actual val allCalls = _calls.asStateFlow()
