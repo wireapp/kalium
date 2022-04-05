@@ -1,7 +1,7 @@
 package com.wire.kalium.network
 
-import com.wire.kalium.network.tools.BackendConfig
 import com.wire.kalium.network.tools.KtxSerializer
+import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.HttpClientEngine
@@ -21,7 +21,7 @@ import io.ktor.serialization.kotlinx.json.json
 
 sealed class HttpClientOptions {
     object NoDefaultHost : HttpClientOptions()
-    data class DefaultHost(val backendConfig: BackendConfig) : HttpClientOptions()
+    data class DefaultHost(val serverConfigDTO: ServerConfigDTO) : HttpClientOptions()
 }
 
 internal fun provideBaseHttpClient(
@@ -39,7 +39,7 @@ internal fun provideBaseHttpClient(
             HttpClientOptions.NoDefaultHost -> {/* do nothing */ }
 
             is HttpClientOptions.DefaultHost -> {
-                host = options.backendConfig.apiBaseUrl
+                host = options.serverConfigDTO.apiBaseUrl
                 // the UrlProtocol is intentionally here and not default for both options
                 // since any url configuration here will get overwritten by the request configuration
                 url.protocol = URLProtocol.HTTPS

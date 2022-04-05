@@ -10,7 +10,7 @@ import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.model.AccessTokenDTO
 import com.wire.kalium.network.api.model.RefreshTokenDTO
 import com.wire.kalium.network.session.SessionManager
-import com.wire.kalium.network.tools.BackendConfig
+import com.wire.kalium.network.tools.ServerConfigDTO
 
 class SessionManagerImpl(
     private val sessionRepository: SessionRepository,
@@ -18,10 +18,10 @@ class SessionManagerImpl(
     private val sessionMapper: SessionMapper = MapperProvider.sessionMapper(),
     private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
 ) : SessionManager {
-    override fun session(): Pair<SessionDTO, BackendConfig> = sessionRepository.userSession(userId).fold({
+    override fun session(): Pair<SessionDTO, ServerConfigDTO> = sessionRepository.userSession(userId).fold({
         TODO("no session is stored to the user")
     }, { session ->
-        Pair(sessionMapper.toSessionDTO(session), serverConfigMapper.toBackendConfig(session.serverConfig))
+        Pair(sessionMapper.toSessionDTO(session), serverConfigMapper.toDTO(session.serverConfig))
     })
 
     override fun updateSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO =
