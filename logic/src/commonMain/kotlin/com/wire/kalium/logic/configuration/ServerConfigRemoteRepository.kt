@@ -18,6 +18,6 @@ class ServerConfigRemoteDataSource(
 
     override suspend fun fetchServerConfig(remoteConfigUrl: String): Either<NetworkFailure, ServerConfig> = wrapApiRequest {
         remoteConfigApi.fetchServerConfig(remoteConfigUrl)
-    }.map { serverConfigMapper.fromBackendConfig(it) }
+    }.map { serverConfigMapper.fromDTO(it) }
 
 }

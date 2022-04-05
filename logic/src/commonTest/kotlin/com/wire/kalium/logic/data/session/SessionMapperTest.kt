@@ -8,10 +8,10 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.network.api.QualifiedID
 import com.wire.kalium.network.api.SessionDTO
-import com.wire.kalium.network.tools.BackendConfig
+import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.persistence.dao.UserIDEntity
-import com.wire.kalium.persistence.model.NetworkConfig
 import com.wire.kalium.persistence.model.PersistenceSession
+import com.wire.kalium.persistence.model.ServerConfigEntity
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.given
@@ -56,13 +56,13 @@ class SessionMapperTest {
     @Test
     fun givenAnAuthSession_whenMappingToPersistenceSession_thenValuesAreMappedCorrectly() {
         val authSession: AuthSession = randomAuthSession()
-        val networkConfig = with(authSession.serverConfig) {
-            NetworkConfig(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title)
+        val serverConfigEntity = with(authSession.serverConfig) {
+            ServerConfigEntity(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title)
         }
 
         given(idMapper).invocation { toDaoModel(authSession.userId) }
             .then { PersistenceQualifiedId(authSession.userId.value, authSession.userId.domain) }
-        given(serverConfigMapper).invocation { toNetworkConfig(authSession.serverConfig) }.then { networkConfig }
+        given(serverConfigMapper).invocation { toEntity(authSession.serverConfig) }.then { serverConfigEntity }
 
         val acuteValue: PersistenceSession =
             with(authSession) {
@@ -71,25 +71,25 @@ class SessionMapperTest {
                     tokenType = tokenType,
                     accessToken = accessToken,
                     refreshToken = refreshToken,
-                    networkConfig = networkConfig
+                    serverConfigEntity = serverConfigEntity
                 )
             }
 
         val expectedValue: PersistenceSession = sessionMapper.toPersistenceSession(authSession)
         assertEquals(expectedValue, acuteValue)
-        verify(serverConfigMapper).invocation { toNetworkConfig(authSession.serverConfig) }.wasInvoked(exactly = once)
+        verify(serverConfigMapper).invocation { toEntity(authSession.serverConfig) }.wasInvoked(exactly = once)
     }
 
     @Test
     fun givenAPersistenceSession_whenMappingFromPersistenceSession_thenValuesAreMappedCorrectly() {
         val persistenceSession: PersistenceSession = randomPersistenceSession()
-        val serverConfig = with(persistenceSession.networkConfig) {
+        val serverConfig = with(persistenceSession.serverConfigEntity) {
             ServerConfig(apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title)
         }
 
         given(idMapper).invocation { fromDaoModel(persistenceSession.userId) }
             .then { UserId(persistenceSession.userId.value, persistenceSession.userId.domain) }
-        given(serverConfigMapper).invocation { fromNetworkConfig(persistenceSession.networkConfig) }.then { serverConfig }
+        given(serverConfigMapper).invocation { fromEntity(persistenceSession.serverConfigEntity) }.then { serverConfig }
 
         val acuteValue: AuthSession =
             with(persistenceSession) {
@@ -104,7 +104,7 @@ class SessionMapperTest {
 
         val expectedValue: AuthSession = sessionMapper.fromPersistenceSession(persistenceSession)
         assertEquals(expectedValue, acuteValue)
-        verify(serverConfigMapper).invocation { fromNetworkConfig(persistenceSession.networkConfig) }.wasInvoked(exactly = once)
+        verify(serverConfigMapper).invocation { fromEntity(persistenceSession.serverConfigEntity) }.wasInvoked(exactly = once)
         verify(idMapper).invocation { fromDaoModel(persistenceSession.userId) }.wasInvoked(exactly = once)
     }
 
@@ -112,8 +112,8 @@ class SessionMapperTest {
     private companion object {
         val randomString get() = Random.nextBytes(64).decodeToString()
         val userId = UserId("user_id", "user.domain.io")
-        fun randomBackendConfig(): BackendConfig =
-            BackendConfig(randomString, randomString, randomString, randomString, randomString, randomString, randomString)
+        fun randomBackendConfig(): ServerConfigDTO =
+            ServerConfigDTO(randomString, randomString, randomString, randomString, randomString, randomString, randomString)
 
         fun randomAuthSession(): AuthSession = AuthSession(userId, randomString, randomString, randomString, randomServerConfig())
         fun randomPersistenceSession(): PersistenceSession =
@@ -122,7 +122,7 @@ class SessionMapperTest {
         fun randomServerConfig(): ServerConfig =
             ServerConfig(randomString, randomString, randomString, randomString, randomString, randomString, randomString)
 
-        fun randomNetworkConfig(): NetworkConfig =
-            NetworkConfig(randomString, randomString, randomString, randomString, randomString, randomString, randomString)
+        fun randomNetworkConfig(): ServerConfigEntity =
+            ServerConfigEntity(randomString, randomString, randomString, randomString, randomString, randomString, randomString)
     }
 }
