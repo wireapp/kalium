@@ -20,6 +20,9 @@ data class ConversationResponse(
     @SerialName("qualified_id")
     val id: ConversationId,
 
+    @SerialName("group_id")
+    val groupId: String?,
+
     @Serializable(with = ConversationTypeSerializer::class)
     val type: Type,
 
@@ -27,7 +30,10 @@ data class ConversationResponse(
     val messageTimer: Int?,
 
     @SerialName("team")
-    val teamId: TeamId?
+    val teamId: TeamId?,
+
+    @SerialName("protocol")
+    val protocol: ConvProtocol
 ){
 
     val isOneOnOneConversation: Boolean
