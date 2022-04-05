@@ -9,6 +9,7 @@ import com.wire.kalium.calling.types.Uint32_t
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.asString
 import com.wire.kalium.logic.data.id.toConversationId
 import com.wire.kalium.logic.data.message.Message
@@ -18,6 +19,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.toUserId
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.util.toInt
 import com.wire.kalium.logic.util.toTimeInMillis
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -31,20 +33,20 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-actual class CallManager(
+actual class CallManagerImpl(
     private val calling: Calling,
     private val callRepository: CallRepository,
     private val userRepository: UserRepository,
     private val clientRepository: ClientRepository,
     val messageSender: MessageSender
-) : CallConfigRequestHandler {
+) : CallManager, CallConfigRequestHandler {
 
     private val job = SupervisorJob() // TODO clear job method
     private val scope = CoroutineScope(job + Dispatchers.IO)
     private val deferredHandle: Deferred<Handle>
 
     private val _calls = MutableStateFlow(listOf<Call>())
-    actual val allCalls = _calls.asStateFlow()
+    actual override val allCalls = _calls.asStateFlow()
 
     private val clientId: Deferred<ClientId> = scope.async(start = CoroutineStart.LAZY) {
         clientRepository.currentClientId().fold({
@@ -83,6 +85,12 @@ actual class CallManager(
                     )
                 }
             }
+        }
+    }
+
+    actual override suspend fun startCall(conversationId: ConversationId, callType: Int, conversationType: Int, isAudioCbr: Boolean) {
+        withCalling {
+            wcall_start(deferredHandle.await(), conversationId.asString(), callType, conversationType, isAudioCbr.toInt())
         }
     }
 
@@ -146,7 +154,7 @@ actual class CallManager(
             metricsHandler = { conversationId: String, metricsJson: String, arg: Pointer? ->
                 kaliumLogger.i("$TAG -> metricsHandler")
             },
-            callConfigRequestHandler = this@CallManager,
+            callConfigRequestHandler = this@CallManagerImpl,
             constantBitRateStateChangeHandler = { userId: String, clientId: String, isEnabled: Boolean, arg: Pointer? ->
                 kaliumLogger.i("$TAG -> constantBitRateStateChangeHandler")
             },
@@ -164,7 +172,7 @@ actual class CallManager(
         return calling.action(handle)
     }
 
-    actual suspend fun onCallingMessageReceived(message: Message, content: MessageContent.Calling) =
+    actual override suspend fun onCallingMessageReceived(message: Message, content: MessageContent.Calling) =
         withCalling {
             val msg = content.value.toByteArray()
 
