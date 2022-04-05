@@ -33,7 +33,7 @@ internal class SessionMapperImpl(
         accessToken = persistenceSession.accessToken,
         refreshToken = persistenceSession.refreshToken,
         tokenType = persistenceSession.tokenType,
-        serverConfig = serverConfigMapper.fromNetworkConfig(persistenceSession.networkConfig)
+        serverConfig = serverConfigMapper.fromEntity(persistenceSession.serverConfigEntity)
     )
 
     override fun toPersistenceSession(authSession: AuthSession): PersistenceSession = PersistenceSession(
@@ -41,7 +41,7 @@ internal class SessionMapperImpl(
         accessToken = authSession.accessToken,
         refreshToken = authSession.refreshToken,
         tokenType = authSession.tokenType,
-        networkConfig = serverConfigMapper.toNetworkConfig(authSession.serverConfig)
+        serverConfigEntity = serverConfigMapper.toEntity(authSession.serverConfig)
     )
 
 }

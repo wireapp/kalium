@@ -19,16 +19,16 @@ import com.wire.kalium.network.api.model.AssetRetentionType
 import com.wire.kalium.network.api.model.RefreshTokenDTO
 import com.wire.kalium.network.api.user.login.LoginApi
 import com.wire.kalium.network.session.SessionManager
-import com.wire.kalium.network.tools.BackendConfig
+import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.utils.isSuccessful
 import kotlinx.coroutines.runBlocking
 
 class InMemorySessionManager(
-    private val backendConfig: BackendConfig,
+    private val serverConfigDTO: ServerConfigDTO,
     private var session: SessionDTO
 ) : SessionManager {
 
-    override fun session(): Pair<SessionDTO, BackendConfig> = Pair(session, backendConfig)
+    override fun session(): Pair<SessionDTO, ServerConfigDTO> = Pair(session, serverConfigDTO)
 
     override fun updateSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO =
         SessionDTO(
@@ -51,18 +51,18 @@ class ConversationsApplication : CliktCommand() {
         NetworkLogger.setLoggingLevel(level = KaliumLogLevel.DEBUG)
 
         val serverConfigMapper: ServerConfigMapper = ServerConfigMapperImpl()
-        val backendConfig: BackendConfig = serverConfigMapper.toBackendConfig(ServerConfig.DEFAULT)
+        val serverConfigDTO: ServerConfigDTO = serverConfigMapper.toDTO(ServerConfig.DEFAULT)
         val loginContainer = LoginNetworkContainer()
 
         val loginResult = loginContainer.loginApi.login(
-            LoginApi.LoginParam.LoginWithEmail(email = email, password = password, label = "ktor"), false, backendConfig.apiBaseUrl
+            LoginApi.LoginParam.LoginWithEmail(email = email, password = password, label = "ktor"), false, serverConfigDTO.apiBaseUrl
         )
 
         if (!loginResult.isSuccessful()) {
             println("There was an error on the login :( check the credentials and the internet connection and try again please")
         } else {
             val sessionData = loginResult.value
-            val networkModule = AuthenticatedNetworkContainer(InMemorySessionManager(backendConfig, sessionData))
+            val networkModule = AuthenticatedNetworkContainer(InMemorySessionManager(serverConfigDTO, sessionData))
             val conversationsResponse = networkModule.conversationApi.conversationsByBatch(null, 100)
 
             if (!conversationsResponse.isSuccessful()) {
