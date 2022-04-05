@@ -8,7 +8,7 @@ interface GetOngoingCallsUseCase {
 }
 
 internal class GetOngoingCallsUseCaseImpl(
-    private val callManagerImpl: CallManagerImpl,
+    private val callManagerImpl: CallManager,
     private val syncManager: SyncManager
 ): GetOngoingCallsUseCase {
 
