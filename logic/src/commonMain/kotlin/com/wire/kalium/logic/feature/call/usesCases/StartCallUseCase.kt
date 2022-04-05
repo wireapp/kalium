@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.feature.call.usesCases
+package com.wire.kalium.logic.feature.call.usescase
 
 import com.wire.kalium.calling.CallType
 import com.wire.kalium.calling.CallingConversationType
