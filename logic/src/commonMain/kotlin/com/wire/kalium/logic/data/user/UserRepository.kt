@@ -5,7 +5,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.publicuser.PublicUserMapper
-import com.wire.kalium.logic.data.publicuser.model.PublicUser
+import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
@@ -37,8 +37,8 @@ interface UserRepository {
     suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, SelfUser>
     suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit>
     suspend fun updateLocalSelfUserHandle(handle: String)
-    suspend fun getAllKnownUsers(): Flow<List<PublicUser>>
-    suspend fun getKnownUser(userId: UserId): Flow<PublicUser?>
+    suspend fun getAllKnownUsers(): Flow<List<OtherUser>>
+    suspend fun getKnownUser(userId: UserId): Flow<OtherUser?>
 }
 
 class UserDataSource(

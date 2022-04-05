@@ -1,7 +1,7 @@
 package com.wire.kalium.logic.data.event
 
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.ConversationId
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.conversation.ConversationMembers
 import com.wire.kalium.network.api.conversation.ConversationUsers

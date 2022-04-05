@@ -1,7 +1,7 @@
 package com.wire.kalium.logic.data.publicuser
 
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.data.publicuser.model.PublicUser
+import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
@@ -280,7 +280,7 @@ class SearchUserRepositoryTest {
         val PUBLIC_USERS = buildList {
             for (i in 1..5) {
                 add(
-                    PublicUser(
+                    OtherUser(
                         id = com.wire.kalium.logic.data.user.UserId(value = "value$i", domain = "domain$i"),
                         name = "name$i",
                         handle = "handle$i",

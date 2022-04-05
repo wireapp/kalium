@@ -4,7 +4,7 @@ import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserId
 
-data class PublicUser(
+data class OtherUser(
     override val id: UserId,
     val name: String?,
     val handle: String?,
