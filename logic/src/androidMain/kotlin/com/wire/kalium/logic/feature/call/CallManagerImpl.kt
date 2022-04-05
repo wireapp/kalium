@@ -39,14 +39,14 @@ actual class CallManagerImpl(
     private val userRepository: UserRepository,
     private val clientRepository: ClientRepository,
     val messageSender: MessageSender
-) : CallConfigRequestHandler {
+) : CallManager, CallConfigRequestHandler {
 
     private val job = SupervisorJob() // TODO clear job method
     private val scope = CoroutineScope(job + Dispatchers.IO)
     private val deferredHandle: Deferred<Handle>
 
     private val _calls = MutableStateFlow(listOf<Call>())
-    actual val allCalls = _calls.asStateFlow()
+    override val allCalls = _calls.asStateFlow()
 
     private val clientId: Deferred<ClientId> = scope.async(start = CoroutineStart.LAZY) {
         clientRepository.currentClientId().fold({
@@ -177,7 +177,7 @@ actual class CallManagerImpl(
         return calling.action(handle)
     }
 
-    actual suspend fun onCallingMessageReceived(message: Message, content: MessageContent.Calling) =
+    override suspend fun onCallingMessageReceived(message: Message, content: MessageContent.Calling) =
         withCalling {
             val msg = content.value.toByteArray()
 
@@ -197,7 +197,7 @@ actual class CallManagerImpl(
             kaliumLogger.d("$TAG - onCallingMessageReceived")
         }
 
-    actual suspend fun answerCall(conversationId: ConversationId) = withCalling {
+    override suspend fun answerCall(conversationId: ConversationId) = withCalling {
         kaliumLogger.d("$TAG -> answerCall")
         calling.wcall_answer(
             inst = deferredHandle.await(),
