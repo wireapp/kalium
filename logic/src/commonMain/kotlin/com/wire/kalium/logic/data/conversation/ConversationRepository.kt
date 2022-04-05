@@ -29,6 +29,7 @@ interface ConversationRepository {
     suspend fun getSelfConversationId(): ConversationId
     suspend fun fetchConversations(): Either<CoreFailure, Unit>
     suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>>
+    suspend fun observeConversationList(): Flow<List<Conversation>>
     suspend fun getConversationDetailsById(conversationID: ConversationId): Flow<ConversationDetails>
     suspend fun getConversationDetails(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation>>
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
@@ -67,7 +68,11 @@ class ConversationDataSource(
     override suspend fun getSelfConversationId(): ConversationId = idMapper.fromDaoModel(conversationDAO.getSelfConversationId())
 
     override suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>> = wrapStorageRequest {
-        conversationDAO.getAllConversations().map { it.map(conversationMapper::fromDaoModel) }
+        observeConversationList()
+    }
+
+    override suspend fun observeConversationList(): Flow<List<Conversation>> {
+        return conversationDAO.getAllConversations().map { it.map(conversationMapper::fromDaoModel) }
     }
 
     /**

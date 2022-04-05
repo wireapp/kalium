@@ -9,9 +9,9 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 object TestConversation {
     val ID = ConversationId("valueConvo", "domainConvo")
 
-    val ONE_ON_ONE = Conversation(ID, "ONE_ON_ONE Name", Conversation.Type.ONE_ON_ONE, TestTeam.TEAM_ID)
-    val SELF = Conversation(ID, "SELF Name", Conversation.Type.SELF, TestTeam.TEAM_ID)
-    val GROUP = Conversation(ID, "GROUP Name", Conversation.Type.GROUP, TestTeam.TEAM_ID)
+    val ONE_ON_ONE = Conversation(ID.copy(value = "1O1 ID"), "ONE_ON_ONE Name", Conversation.Type.ONE_ON_ONE, TestTeam.TEAM_ID)
+    val SELF = Conversation(ID.copy(value = "SELF ID"), "SELF Name", Conversation.Type.SELF, TestTeam.TEAM_ID)
+    val GROUP = Conversation(ID.copy(value = "GROUP ID"), "GROUP Name", Conversation.Type.GROUP, TestTeam.TEAM_ID)
 
     val ENTITY_ID = QualifiedIDEntity("valueConversation", "domainConversation")
     val ENTITY = ConversationEntity(ENTITY_ID, "convo name", ConversationEntity.Type.SELF, "teamId")
