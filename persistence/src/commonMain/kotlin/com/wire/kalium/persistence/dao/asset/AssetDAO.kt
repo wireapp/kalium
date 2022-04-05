@@ -7,6 +7,7 @@ data class AssetEntity(
     val domain: String,
     val mimeType: String?,
     val rawData: ByteArray,
+    val assetToken: String? = null,
     val downloadedDate: Long?
 ) {
     override fun equals(other: Any?): Boolean {
