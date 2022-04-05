@@ -112,8 +112,8 @@ class AssetMapperImpl : AssetMapper {
                     null -> null
                     else -> null
                 },
-                remoteData = status?.run {
-                    with((this as? Asset.Status.Uploaded)?.value) {
+                remoteData = status.run {
+                    with((this as Asset.Status.Uploaded).value) {
                         AssetContent.RemoteData(
                             otrKey = otrKey.array,
                             sha256 = sha256.array,
@@ -127,7 +127,7 @@ class AssetMapperImpl : AssetMapper {
                             }
                         )
                     }
-                } ?: null
+                }
             )
         }
     }

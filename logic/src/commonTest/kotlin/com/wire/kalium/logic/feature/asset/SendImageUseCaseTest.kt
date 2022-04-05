@@ -42,7 +42,7 @@ class SendImageUseCaseTest {
             .arrange()
 
         // When
-        val result = sendImageUseCase.invoke(conversationId, imageToSend)
+        val result = sendImageUseCase.invoke(conversationId, imageToSend, 1, 1)
 
         // Then
         assertEquals(result, SendImageMessageResult.Success)
@@ -61,7 +61,7 @@ class SendImageUseCaseTest {
             .arrange()
 
         // When
-        val result = sendImageUseCase.invoke(conversationId, imageByteArray)
+        val result = sendImageUseCase.invoke(conversationId, imageByteArray, 1, 1)
 
         // Then
         assertTrue(result is SendImageMessageResult.Failure)
@@ -81,7 +81,7 @@ class SendImageUseCaseTest {
                 .arrange()
 
             // When
-            sendImageUseCase.invoke(conversationId, mockedImg)
+            sendImageUseCase.invoke(conversationId, mockedImg, 1, 1)
 
             // Then
             verify(arrangement.messageRepository)

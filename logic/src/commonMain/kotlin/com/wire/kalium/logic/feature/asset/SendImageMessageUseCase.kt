@@ -29,7 +29,12 @@ fun interface SendImageMessageUseCase {
      * @param assetData the raw data of the image to be uploaded to the backend and sent to the given conversation
      * @return an [Either] tuple containing a [CoreFailure] in case anything goes wrong and [Unit] in case everything succeeds
      */
-    suspend operator fun invoke(conversationId: ConversationId, imageRawData: ByteArray): SendImageMessageResult
+    suspend operator fun invoke(
+        conversationId: ConversationId,
+        imageRawData: ByteArray,
+        imgWidth: Int,
+        imgHeight: Int
+    ): SendImageMessageResult
 }
 
 internal class SendImageMessageUseCaseImpl(
@@ -40,7 +45,12 @@ internal class SendImageMessageUseCaseImpl(
     private val messageSender: MessageSender
 ) : SendImageMessageUseCase {
 
-    override suspend fun invoke(conversationId: ConversationId, imageRawData: ByteArray): SendImageMessageResult = suspending {
+    override suspend fun invoke(
+        conversationId: ConversationId,
+        imageRawData: ByteArray,
+        imgWidth: Int,
+        imgHeight: Int
+    ): SendImageMessageResult = suspending {
         // Encrypt the asset data with the provided otr key
         val otrKey = generateRandomAES256Key()
         val encryptedData = encryptDataWithAES256(PlainData(imageRawData), otrKey)
@@ -51,7 +61,7 @@ internal class SendImageMessageUseCaseImpl(
         // Upload the asset encrypted data
         assetDataSource.uploadAndPersistPrivateAsset(ImageAsset.JPEG, encryptedData.data).flatMap { assetId ->
             // Try to send the AssetMessage
-            prepareAndSendAssetMessage(conversationId, imageRawData.size, sha256, otrKey, assetId).flatMap {
+            prepareAndSendImageMessage(conversationId, imageRawData.size, sha256, otrKey, assetId, imgWidth, imgHeight).flatMap {
                 Either.Right(Unit)
             }
         }.coFold({
@@ -62,12 +72,14 @@ internal class SendImageMessageUseCaseImpl(
         })
     }
 
-    private suspend fun prepareAndSendAssetMessage(
+    private suspend fun prepareAndSendImageMessage(
         conversationId: ConversationId,
         dataSize: Int,
         sha256: ByteArray,
         otrKey: AES256Key,
-        assetId: UploadedAssetId
+        assetId: UploadedAssetId,
+        imgWidth: Int,
+        imgHeight: Int
     ) = suspending {
         // Get my current user
         val selfUser = userRepository.getSelfUser().first()
@@ -83,7 +95,9 @@ internal class SendImageMessageUseCaseImpl(
                         dataSize = dataSize,
                         sha256 = sha256,
                         otrKey = otrKey,
-                        assetId = assetId
+                        assetId = assetId,
+                        imgWidth = imgWidth,
+                        imgHeight = imgHeight
                     )
                 ),
                 conversationId = conversationId,
@@ -92,7 +106,7 @@ internal class SendImageMessageUseCaseImpl(
                 senderClientId = currentClientId,
                 status = Message.Status.PENDING
             )
-            messageRepository.persistMessage(message) // Persist the asset message when the DB has been updated
+            messageRepository.persistMessage(message)
         }.flatMap {
             messageSender.trySendingOutgoingMessage(conversationId, generatedMessageUuid)
         }.onFailure {
@@ -100,12 +114,19 @@ internal class SendImageMessageUseCaseImpl(
         }
     }
 
-    private fun provideAssetMessageContent(dataSize: Int, sha256: ByteArray, otrKey: AES256Key, assetId: UploadedAssetId): AssetContent {
+    private fun provideAssetMessageContent(
+        dataSize: Int,
+        sha256: ByteArray,
+        otrKey: AES256Key,
+        assetId: UploadedAssetId,
+        imgWidth: Int,
+        imgHeight: Int
+    ): AssetContent {
         return AssetContent(
             size = dataSize,
             name = "",
             mimeType = ImageAsset.JPEG.name,
-            metadata = AssetContent.AssetMetadata.Image(200, 200),
+            metadata = AssetContent.AssetMetadata.Image(imgWidth, imgHeight),
             remoteData = AssetContent.RemoteData(
                 otrKey = otrKey.data,
                 sha256 = sha256,
