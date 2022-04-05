@@ -3,6 +3,7 @@ package com.wire.kalium.network.api.conversation
 import com.wire.kalium.network.api.TeamId
 import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.model.ConversationAccess
+import com.wire.kalium.network.api.model.ConversationAccessRole
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -17,18 +18,31 @@ data class CreateConversationRequest(
     val name: String,
     @SerialName("access")
     val access: List<ConversationAccess>,
-    @SerialName("access_role")
-    val conversationAccess: ConversationAccess,
+    @SerialName("access_role_v2")
+    val accessRole: List<ConversationAccessRole>,
     @SerialName("team")
-    val convTeamInfo: ConvTeamInfo,
+    val convTeamInfo: ConvTeamInfo?,
     @SerialName("message_timer")
     val messageTimer: Int?, // Per-conversation message time
     @SerialName("receipt_mode")
     val receiptMode: Int,
+    // Role name, between 2 and 128 chars, 'wire_' prefix is reserved for roles
+    // designed by Wire (i.e., no custom roles can have the same prefix)
     @SerialName("conversation_role")
-    val conversationRole: String, // Role name, between 2 and 128 chars, 'wire_' prefix is reserved
-    // for roles designed by Wire (i.e., no custom roles can have the same prefix)
+    val conversationRole: String,
+    @SerialName("protocol")
+    val protocol: ConvProtocol?
 )
+
+@Serializable
+enum class ConvProtocol {
+    @SerialName("proteus") PROTEUS,
+    @SerialName("mls") MLS;
+
+    override fun toString(): String {
+        return this.name.lowercase()
+    }
+}
 
 @Serializable
 data class ConvTeamInfo(
