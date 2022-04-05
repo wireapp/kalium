@@ -256,5 +256,5 @@ class AssetRepositoryTest {
     }
 
     private fun stubAssetEntity(assetKey: String, rawData: ByteArray) =
-        AssetEntity(assetKey, "some_domain", null, rawData, 1)
+        AssetEntity(assetKey, "some_domain", null, rawData, null, 1)
 }
