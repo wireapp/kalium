@@ -40,7 +40,14 @@ import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
+import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
+import com.wire.kalium.logic.feature.message.MessageEnvelopeCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageScope
+import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
+import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.logic.feature.message.MessageSenderImpl
+import com.wire.kalium.logic.feature.message.SessionEstablisher
+import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.team.TeamScope
 import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.sync.ConversationEventReceiver
@@ -130,6 +137,18 @@ abstract class UserSessionScopeCommon(
     private val clientRepository: ClientRepository
         get() = ClientDataSource(clientRemoteRepository, clientRegistrationStorage, database.clientDAO)
 
+    private val messageSendFailureHandler: MessageSendFailureHandler
+        get() = MessageSendFailureHandler(userRepository, clientRepository)
+
+    private val sessionEstablisher: SessionEstablisher
+        get() = SessionEstablisherImpl(authenticatedDataSourceSet.proteusClient, preKeyRepository)
+
+    private val messageEnvelopeCreator: MessageEnvelopeCreator
+        get() = MessageEnvelopeCreatorImpl(authenticatedDataSourceSet.proteusClient, protoContentMapper)
+
+    private val messageSender: MessageSender
+        get() = MessageSenderImpl(messageRepository, conversationRepository, syncManager, messageSendFailureHandler, sessionEstablisher, messageEnvelopeCreator)
+
     private val assetRepository: AssetRepository
         get() = AssetDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.assetApi, database.assetDAO)
 
@@ -145,7 +164,8 @@ abstract class UserSessionScopeCommon(
             userId = userId,
             callRepository = callRepository,
             userRepository = userRepository,
-            clientRepository = clientRepository
+            clientRepository = clientRepository,
+            messageSender = messageSender
         )
     }
     protected abstract val protoContentMapper: ProtoContentMapper

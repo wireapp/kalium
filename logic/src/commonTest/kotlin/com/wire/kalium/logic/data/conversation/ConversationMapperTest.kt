@@ -4,6 +4,7 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.UserId
+import com.wire.kalium.network.api.conversation.ConvProtocol
 import com.wire.kalium.network.api.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.conversation.ConversationOtherMembersResponse
 import com.wire.kalium.network.api.conversation.ConversationResponse
@@ -114,9 +115,11 @@ class ConversationMapperTest {
             MEMBERS_RESPONSE,
             "name",
             ORIGINAL_CONVERSATION_ID,
+            null,
             ConversationResponse.Type.GROUP,
             null,
-            null
+            null,
+            ConvProtocol.PROTEUS
         )
     }
 }
