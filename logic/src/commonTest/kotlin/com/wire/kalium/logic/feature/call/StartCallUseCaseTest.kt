@@ -3,7 +3,7 @@ package com.wire.kalium.logic.feature.call
 import com.wire.kalium.calling.CallType
 import com.wire.kalium.calling.CallingConversationType
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.feature.call.usesCases.StartCallUseCase
+import com.wire.kalium.logic.feature.call.usescase.StartCallUseCase
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.eq
