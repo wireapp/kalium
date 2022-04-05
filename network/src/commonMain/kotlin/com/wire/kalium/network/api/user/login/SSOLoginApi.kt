@@ -35,7 +35,6 @@ class SSOLoginApiImpl(private val httpClient: HttpClient) : SSOLoginApi {
             httpClient.head {
                 url.set(host = apiBaseUrl, path = "$PATH_SSO/$PATH_INITIATE/${param.code}")
                 url.protocol = URLProtocol.HTTPS
-
                 when(param) {
                     is SSOLoginApi.InitiateParam.Redirect -> {
                         parameter(QUERY_SUCCESS_REDIRECT, param.success)
@@ -48,7 +47,7 @@ class SSOLoginApiImpl(private val httpClient: HttpClient) : SSOLoginApi {
 
     override suspend fun finalize(cookie: String, apiBaseUrl: String): NetworkResponse<String> = wrapKaliumResponse {
         httpClient.post {
-            url.set(host = apiBaseUrl, path = "$PATH_SSO/$PATH_INITIATE")
+            url.set(host = apiBaseUrl, path = "$PATH_SSO/$PATH_FINALIZE")
             url.protocol = URLProtocol.HTTPS
             header(HttpHeaders.Cookie, "${RefreshTokenProperties.COOKIE_NAME}=$cookie")
         }
@@ -56,22 +55,25 @@ class SSOLoginApiImpl(private val httpClient: HttpClient) : SSOLoginApi {
 
     override suspend fun metaData(apiBaseUrl: String): NetworkResponse<String> = wrapKaliumResponse {
         httpClient.get {
-            url.set(host = apiBaseUrl, path = "$PATH_SSO/$PATH_INITIATE")
+            url.set(host = apiBaseUrl, path = "$PATH_SSO/$PATH_METADATA")
             url.protocol = URLProtocol.HTTPS
         }
     }
 
     override suspend fun settings(apiBaseUrl: String): NetworkResponse<SSOSettingsResponse> = wrapKaliumResponse {
         httpClient.get {
-            url.set(host = apiBaseUrl, path = "$PATH_SSO/$PATH_INITIATE")
+            url.set(host = apiBaseUrl, path = "$PATH_SSO/$PATH_SETTINGS")
             url.protocol = URLProtocol.HTTPS
         }
     }
 
 
     private companion object {
-        const val PATH_SSO = "SSO"
+        const val PATH_SSO = "sso"
         const val PATH_INITIATE = "initiate-login"
+        const val PATH_FINALIZE = "finalize-login"
+        const val PATH_METADATA = "metadata"
+        const val PATH_SETTINGS = "settings"
         const val QUERY_SUCCESS_REDIRECT = "success_redirect"
         const val QUERY_ERROR_REDIRECT = "error_redirect"
     }
