@@ -3,7 +3,7 @@ package com.wire.kalium.api.tools.json.api.notification
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.network.api.notification.EventContentDTO
 import com.wire.kalium.network.api.notification.NotificationApiImpl
-import com.wire.kalium.network.tools.BackendConfig
+import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
@@ -89,7 +89,7 @@ class NotificationApiTest : ApiTest {
     }
 
     private companion object {
-        val BACKEND_CONFIG = BackendConfig(
+        val BACKEND_CONFIG = ServerConfigDTO(
             "apiBaseUrl", "accountsUrl",
             "websocketUrl", "blacklist", "teams", "website", "title"
         )

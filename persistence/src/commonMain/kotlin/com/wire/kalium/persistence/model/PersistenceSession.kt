@@ -4,7 +4,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class NetworkConfig(
+data class ServerConfigEntity(
     val apiBaseUrl: String,
     val accountBaseUrl: String,
     val webSocketBaseUrl: String,
@@ -20,5 +20,5 @@ data class PersistenceSession(
     val tokenType: String,
     val accessToken: String,
     val refreshToken: String,
-    val networkConfig: NetworkConfig
+    val serverConfigEntity: ServerConfigEntity
 )

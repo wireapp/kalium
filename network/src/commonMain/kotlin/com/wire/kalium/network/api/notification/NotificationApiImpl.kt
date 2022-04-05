@@ -1,7 +1,7 @@
 package com.wire.kalium.network.api.notification
 
-import com.wire.kalium.network.tools.BackendConfig
 import com.wire.kalium.network.tools.KtxSerializer
+import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.decodeFromString
 
-class NotificationApiImpl(private val httpClient: HttpClient, private val backendConfig: BackendConfig) : NotificationApi {
+class NotificationApiImpl(private val httpClient: HttpClient, private val serverConfigDTO: ServerConfigDTO) : NotificationApi {
     override suspend fun lastNotification(
         queryClient: String
     ): NetworkResponse<EventResponse> = wrapKaliumResponse {
@@ -56,7 +56,7 @@ class NotificationApiImpl(private val httpClient: HttpClient, private val backen
         path = PATH_AWAIT
     ) {
         url {
-            host = backendConfig.webSocketBaseUrl
+            host = serverConfigDTO.webSocketBaseUrl
             protocol = URLProtocol.WSS
             port = URLProtocol.WSS.defaultPort
         }
