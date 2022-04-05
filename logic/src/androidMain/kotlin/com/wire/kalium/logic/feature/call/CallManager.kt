@@ -52,13 +52,13 @@ actual class CallManager(
         clientRepository.currentClientId().fold({
             TODO("adjust correct variable calling")
         }, {
-            kaliumLogger.d("CallManager - clientId $it")
+            kaliumLogger.d("$TAG - clientId $it")
             it
         })
     }
     private val userId: Deferred<UserId> = scope.async(start = CoroutineStart.LAZY) {
         userRepository.getSelfUser().first().id.also {
-            kaliumLogger.d("CallManager - userId $it")
+            kaliumLogger.d("$TAG - userId $it")
         }
     }
 
@@ -98,8 +98,10 @@ actual class CallManager(
                 kaliumLogger.i("$TAG -> readyHandler")
             },
             sendHandler = { _, conversationId, avsSelfUserId, avsSelfClientId, _, _, data, _, _, _ ->
-                if (selfUserId == avsSelfUserId && selfClientId == avsSelfClientId) AvsCallBackError.INVALID_ARGUMENT.value
-                else {
+                if (selfUserId != avsSelfUserId && selfClientId != avsSelfClientId) {
+                    kaliumLogger.i("$TAG -> sendHandler error")
+                    AvsCallBackError.INVALID_ARGUMENT.value
+                } else {
                     scope.launch {
                         val messageString = data?.getString(0, UTF8_ENCODING)
                         messageString?.let {
@@ -111,6 +113,7 @@ actual class CallManager(
                             )
                         }
                     }
+                    kaliumLogger.i("$TAG -> sendHandler success")
                     AvsCallBackError.None.value
                 }
             },
@@ -166,9 +169,7 @@ actual class CallManager(
                 kaliumLogger.i("$TAG -> videoReceiveStateHandler")
             },
             arg = null
-        ).also {
-            kaliumLogger.d("CallManager - initialized with $it")
-        }
+        )
     }
 
     private suspend fun <T> withCalling(action: suspend Calling.(handle: Handle) -> T): T {
@@ -193,18 +194,17 @@ actual class CallManager(
                 userId = message.senderUserId.asString(),
                 clientId = message.senderClientId.value
             )
-            kaliumLogger.d("onCallingMessageReceived -> Passed through")
+            kaliumLogger.d("$TAG - onCallingMessageReceived")
         }
 
     actual suspend fun answerCall(conversationId: ConversationId) = withCalling {
-        kaliumLogger.d("ANSWERING_CALL -> Entering withCalling")
+        kaliumLogger.d("$TAG -> answerCall")
         calling.wcall_answer(
             inst = deferredHandle.await(),
             conversationId = conversationId.asString(),
             callType = CallType.CALL_TYPE_NORMAL,
             cbrEnabled = false
         )
-        kaliumLogger.d("ANSWERING_CALL -> wcall_answer sent")
     }
 
     override fun onConfigRequest(inst: Handle, arg: Pointer?): Int {
@@ -222,15 +222,15 @@ actual class CallManager(
                     error = 0, // TODO: http error from internal json
                     jsonString = config
                 )
-                kaliumLogger.i("onConfigRequest -> wcall_config_update")
             }
+            kaliumLogger.i("$TAG - onConfigRequest")
         }
 
         return 0
     }
 
     companion object {
-        private const val TAG = "startHandleAsync"
+        private const val TAG = "CallManager"
         private const val UTF8_ENCODING = "UTF-8"
     }
 }
