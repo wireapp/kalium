@@ -14,5 +14,5 @@ expect class GlobalCallManager {
         userRepository: UserRepository,
         clientRepository: ClientRepository,
         messageSender: MessageSender
-    ): CallManagerImpl
+    ): CallManager
 }

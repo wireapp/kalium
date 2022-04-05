@@ -35,7 +35,7 @@ actual class GlobalCallManager(
             kaliumLogger.i("GlobalCallManager -> wcall_init")
         }
     }
-    
+
     /**
      * Get a [CallManagerImpl] for a session, shouldn't be instantiated more than one CallManager for a single session.
      */
@@ -45,7 +45,7 @@ actual class GlobalCallManager(
         userRepository: UserRepository,
         clientRepository: ClientRepository,
         messageSender: MessageSender
-    ): CallManagerImpl {
+    ): CallManager {
         return callManagerImplHolder[userId] ?: CallManagerImpl(
             calling = calling,
             callRepository = callRepository,
