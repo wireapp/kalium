@@ -18,8 +18,6 @@ import io.ktor.util.encodeBase64
 
 interface KeyPackageRepository {
 
-//    suspend fun claimKeyPackages(userId: UserId): Either<NetworkFailure, List<KeyPackageDTO>>
-
     suspend fun claimKeyPackages(userIds: List<UserId>): Either<CoreFailure, List<KeyPackageDTO>>
 
     suspend fun uploadNewKeyPackages(clientId: ClientId, amount: Int = 100): Either<CoreFailure, Unit>
