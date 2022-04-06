@@ -23,9 +23,9 @@ import com.wire.kalium.calling.types.Uint32_t
 const val ENVIRONMENT_DEFAULT = 0
 
 /**
- * WCALL_CALL_TYPE_NORMAL          0
- * WCALL_CALL_TYPE_VIDEO           1
- * WCALL_CALL_TYPE_FORCED_AUDIO    2
+ * CALL_TYPE_NORMAL = 0 => Only Audio
+ * CALL_TYPE_VIDEO = 1 => Video/Audio
+ * CALL_TYPE_FORCED_AUDIO = 2 => No explanation yet.
  */
 object CallType {
     const val CALL_TYPE_NORMAL = 0
