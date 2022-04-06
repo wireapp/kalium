@@ -23,14 +23,20 @@ import com.wire.kalium.calling.types.Uint32_t
 const val ENVIRONMENT_DEFAULT = 0
 
 /**
- * CALL_TYPE_NORMAL = 0 => Only Audio
+ * CALL_TYPE_NORMAL = 0 => Audio Only
  * CALL_TYPE_VIDEO = 1 => Video/Audio
- * CALL_TYPE_FORCED_AUDIO = 2 => No explanation yet.
+ * CALL_TYPE_FORCED_AUDIO = 2 => Legacy Group Calls
  */
-object CallType {
-    const val CALL_TYPE_NORMAL = 0
-    const val CALL_TYPE_VIDEO = 1
-    const val CALL_TYPE_FORCED_AUDIO = 2
+enum class CallType(val value: Int) {
+    CALL_TYPE_NORMAL(0),
+    CALL_TYPE_VIDEO(1),
+
+    @Deprecated(
+        message = "was used for legacy groups calls (before conference calls). If the number of participants were above a certain limit" +
+                "you would join with CALL_TYPE_FORCED_AUDIO to signal to AVS that only audio is allowed.",
+        replaceWith = ReplaceWith("CALL_TYPE_NORMAL or CALL_TYPE_VIDEO")
+    )
+    CALL_TYPE_FORCED_AUDIO(2)
 }
 
 interface Calling : Library {
@@ -71,7 +77,16 @@ interface Calling : Library {
 
     fun wcall_get_mute(inst: Int): Int
 
-    fun wcall_recv_msg(inst: Handle, msg: ByteArray, len: Int, curr_time: Uint32_t, msg_time: Uint32_t, convId: String, userId: String, clientId: String): Int
+    fun wcall_recv_msg(
+        inst: Handle,
+        msg: ByteArray,
+        len: Int,
+        curr_time: Uint32_t,
+        msg_time: Uint32_t,
+        convId: String,
+        userId: String,
+        clientId: String
+    ): Int
 
     companion object {
         val INSTANCE by lazy { Native.load("avs", Calling::class.java)!! }

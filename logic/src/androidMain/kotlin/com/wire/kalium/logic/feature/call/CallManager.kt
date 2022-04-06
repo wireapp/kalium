@@ -202,7 +202,7 @@ actual class CallManager(
         calling.wcall_answer(
             inst = deferredHandle.await(),
             conversationId = conversationId.asString(),
-            callType = CallType.CALL_TYPE_NORMAL,
+            callType = CallType.CALL_TYPE_NORMAL.value,
             cbrEnabled = false
         )
     }
