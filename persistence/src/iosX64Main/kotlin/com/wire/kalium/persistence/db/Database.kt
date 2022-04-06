@@ -31,7 +31,12 @@ actual class Database(userId: UserIDEntity, passphrase: String) {
         database = AppDatabase(
             driver,
             Client.Adapter(user_idAdapter = QualifiedIDAdapter()),
-            Conversation.Adapter(qualified_idAdapter = QualifiedIDAdapter(), typeAdapter = EnumColumnAdapter()),
+            Conversation.Adapter(
+                qualified_idAdapter = QualifiedIDAdapter(),
+                typeAdapter = EnumColumnAdapter(),
+                group_stateAdapter = EnumColumnAdapter(),
+                protocolAdapter = EnumColumnAdapter()
+            ),
             Member.Adapter(userAdapter = QualifiedIDAdapter(), conversationAdapter = QualifiedIDAdapter()),
             Message.Adapter(
                 conversation_idAdapter = QualifiedIDAdapter(),
