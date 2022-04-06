@@ -16,14 +16,14 @@ import kotlin.test.Test
 class AnswerCallUseCaseTest {
 
     @Mock
-    private val callManagerImpl = mock(classOf<CallManager>())
+    private val callManager = mock(classOf<CallManager>())
 
     private lateinit var answerCallUseCase: AnswerCallUseCase
 
     @BeforeTest
     fun setUp() {
         answerCallUseCase = AnswerCallUseCaseImpl(
-            callManagerImpl = callManagerImpl
+            callManager = callManager
         )
     }
 
@@ -34,8 +34,8 @@ class AnswerCallUseCaseTest {
             domain = "domain1"
         )
 
-        given(callManagerImpl)
-            .suspendFunction(callManagerImpl::answerCall)
+        given(callManager)
+            .suspendFunction(callManager::answerCall)
             .whenInvokedWith(eq(conversationId))
             .thenDoNothing()
 
@@ -43,8 +43,8 @@ class AnswerCallUseCaseTest {
             conversationId = conversationId
         )
 
-        verify(callManagerImpl)
-            .suspendFunction(callManagerImpl::answerCall)
+        verify(callManager)
+            .suspendFunction(callManager::answerCall)
             .with(eq(conversationId))
             .wasInvoked(exactly = once)
     }

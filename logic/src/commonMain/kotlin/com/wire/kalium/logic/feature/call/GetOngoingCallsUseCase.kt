@@ -8,12 +8,12 @@ interface GetOngoingCallsUseCase {
 }
 
 internal class GetOngoingCallsUseCaseImpl(
-    private val callManagerImpl: CallManager,
+    private val callManager: CallManager,
     private val syncManager: SyncManager
 ) : GetOngoingCallsUseCase {
 
     override suspend operator fun invoke(): Flow<List<Call>> {
         syncManager.waitForSlowSyncToComplete()
-        return callManagerImpl.allCalls
+        return callManager.allCalls
     }
 }
