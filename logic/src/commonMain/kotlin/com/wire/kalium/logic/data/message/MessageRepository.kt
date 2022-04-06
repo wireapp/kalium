@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 interface MessageRepository {
-    suspend fun getMessagesForConversation(conversationId: ConversationId, limit: Int): Flow<List<Message>>
+    suspend fun getMessagesForConversation(conversationId: ConversationId, limit: Int, offset: Int): Flow<List<Message>>
     suspend fun persistMessage(message: Message): Either<CoreFailure, Unit>
     suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun deleteMessage(messageUuid: String): Either<CoreFailure, Unit>
@@ -42,8 +42,8 @@ class MessageDataSource(
     private val sendMessageFailureMapper: SendMessageFailureMapper = MapperProvider.sendMessageFailureMapper()
 ) : MessageRepository {
 
-    override suspend fun getMessagesForConversation(conversationId: ConversationId, limit: Int): Flow<List<Message>> {
-        return messageDAO.getMessageByConversation(idMapper.toDaoModel(conversationId), limit).map { messageList ->
+    override suspend fun getMessagesForConversation(conversationId: ConversationId, limit: Int, offset: Int): Flow<List<Message>> {
+        return messageDAO.getMessageByConversation(idMapper.toDaoModel(conversationId), limit, offset).map { messageList ->
             messageList.map(messageMapper::fromEntityToMessage)
         }
     }

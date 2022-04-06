@@ -41,10 +41,10 @@ UPDATE Message
 SET shouldNotify = 0
 WHERE shouldNotify = 1;
 
--- updateNotificationFlag:
--- UPDATE Message
--- SET shouldNotify = 0
--- WHERE id = ? AND conversation_id = ?;
+updateNotificationFlag:
+UPDATE Message
+SET shouldNotify = 0
+WHERE id = ? AND conversation_id = ?;
 
 insertMessage:
 INSERT INTO Message(id, content, conversation_id, date, sender_user_id, sender_client_id, status, visibility)
@@ -68,13 +68,13 @@ SET status = ?
 WHERE id = ? AND conversation_id = ?;
 
 selectAllMessages:
-SELECT * FROM Message;
+SELECT * FROM Message ORDER BY date DESC LIMIT ? OFFSET ?;
 
 selectById:
 SELECT * FROM Message WHERE id = ? AND conversation_id = ?;
 
 selectByConversationId:
-SELECT * FROM Message WHERE conversation_id = ? ORDER BY date DESC LIMIT ?;
+SELECT * FROM Message WHERE conversation_id = ? ORDER BY date DESC LIMIT ? OFFSET ?;
 
 selectByNotificationFlag:
 SELECT * FROM Message WHERE shouldNotify = 1 ORDER BY date DESC;

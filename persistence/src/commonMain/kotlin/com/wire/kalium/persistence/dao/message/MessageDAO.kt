@@ -32,9 +32,9 @@ interface MessageDAO {
     suspend fun insertMessages(messages: List<MessageEntity>)
     suspend fun updateMessage(message: MessageEntity)
     suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity)
-    suspend fun getAllMessages(): Flow<List<MessageEntity>>
+    suspend fun getAllMessages(limit: Int, offset: Int): Flow<List<MessageEntity>>
     suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?>
-    suspend fun getMessageByConversation(conversationId: QualifiedIDEntity, limit: Int): Flow<List<MessageEntity>>
+    suspend fun getMessageByConversation(conversationId: QualifiedIDEntity, limit: Int, offset: Int): Flow<List<MessageEntity>>
     suspend fun getMessagesForNotification(): Flow<List<MessageEntity>>
     suspend fun markAllMessagesAsNotified()
     suspend fun markMessagesAsNotifiedByConversation(conversationId: QualifiedIDEntity)

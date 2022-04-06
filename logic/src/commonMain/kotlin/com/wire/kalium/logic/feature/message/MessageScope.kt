@@ -4,7 +4,6 @@ import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
@@ -53,5 +52,5 @@ class MessageScope(
 
     val markMessagesAsNotified: MarkMessagesAsNotifiedUseCase get() = MarkMessagesAsNotifiedUseCase(messageRepository)
 
-    val getMessagesForNotification: GetMessagesForNotificationUseCase get() = GetMessagesForNotificationUseCase(messageRepository)
+    val getNotifications: GetNotificationsUseCase get() = GetNotificationsUseCase(messageRepository, userRepository, conversationRepository)
 }

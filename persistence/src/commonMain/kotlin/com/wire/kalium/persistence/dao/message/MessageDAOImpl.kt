@@ -1,5 +1,6 @@
 package com.wire.kalium.persistence.dao.message
 
+import app.cash.sqldelight.Query
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
@@ -31,7 +32,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
 
     override suspend fun deleteMessage(id: String) = queries.deleteMessageById(id)
 
-    override suspend fun updateMessageVisibility(visibility: MessageEntity.Visibility, id: String, conversationId: QualifiedIDEntity,) =
+    override suspend fun updateMessageVisibility(visibility: MessageEntity.Visibility, id: String, conversationId: QualifiedIDEntity) =
         queries.updateMessageVisibility(visibility, "", id, conversationId)
 
     override suspend fun deleteAllMessages() = queries.deleteAllMessages()
@@ -78,8 +79,8 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
     override suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity) =
         queries.updateMessageStatus(status, id, conversationId)
 
-    override suspend fun getAllMessages(): Flow<List<MessageEntity>> =
-        queries.selectAllMessages()
+    override suspend fun getAllMessages(limit: Int, offset: Int): Flow<List<MessageEntity>> =
+        queries.selectAllMessages(limit.toLong(), offset.toLong())
             .asFlow()
             .mapToList()
             .map { entryList -> entryList.map(mapper::toModel) }
@@ -90,8 +91,8 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             .mapToOneOrNull()
             .map { msg -> msg?.let(mapper::toModel) }
 
-    override suspend fun getMessageByConversation(conversationId: QualifiedIDEntity, limit: Int): Flow<List<MessageEntity>> =
-        queries.selectByConversationId(conversationId, limit.toLong())
+    override suspend fun getMessageByConversation(conversationId: QualifiedIDEntity, limit: Int, offset: Int): Flow<List<MessageEntity>> =
+        queries.selectByConversationId(conversationId, limit.toLong(), offset.toLong())
             .asFlow()
             .mapToList()
             .map { entryList -> entryList.map(mapper::toModel) }
@@ -102,9 +103,36 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             .mapToList()
             .map { entryList -> entryList.map(mapper::toModel) }
 
-    override suspend fun markAllMessagesAsNotified() =
-        queries.updateNotificationFlagForAll()
+    override suspend fun markAllMessagesAsNotified() {
+        markMessagesAsNotified { limit, offset ->
+            queries.selectAllMessages(limit, offset)
+        }
+    }
 
-    override suspend fun markMessagesAsNotifiedByConversation(conversationId: QualifiedIDEntity) =
-        queries.updateNotificationFlagByConversation(conversationId)
+    override suspend fun markMessagesAsNotifiedByConversation(conversationId: QualifiedIDEntity) {
+        markMessagesAsNotified { limit, offset ->
+            queries.selectByConversationId(conversationId, limit, offset)
+        }
+    }
+
+    private fun markMessagesAsNotified(selectMessages: (Long, Long) -> Query<SQLDelightMessage>) {
+        queries.transaction {
+            val limit: Long = 100
+            var iteration = 0
+            var isItAll = false
+            do {
+                selectMessages(limit, iteration * limit)
+                    .executeAsList()
+                    .forEach { message ->
+                        if (message.shouldNotify != true) {
+                            //we assume that all the next messages are already "shouldNotify == false" too
+                            isItAll = true
+                        } else {
+                            queries.updateNotificationFlag(message.id, message.conversation_id)
+                        }
+                    }
+                iteration++
+            } while (isItAll)
+        }
+    }
 }

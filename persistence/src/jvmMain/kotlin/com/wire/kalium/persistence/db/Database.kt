@@ -38,7 +38,7 @@ actual class Database {
                 sender_user_idAdapter = QualifiedIDAdapter(),
                 statusAdapter = EnumColumnAdapter(),
                 visibilityAdapter = EnumColumnAdapter(),
-                shouldNotifyAdapter = BooleanAdapter()
+//                shouldNotifyAdapter = BooleanAdapter()
             ),
             User.Adapter(qualified_idAdapter = QualifiedIDAdapter(), IntColumnAdapter)
         )

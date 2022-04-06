@@ -62,7 +62,7 @@ actual class Database(private val context: Context, userId: UserIDEntity, kalium
                 sender_user_idAdapter = QualifiedIDAdapter(),
                 statusAdapter = EnumColumnAdapter(),
                 visibilityAdapter = EnumColumnAdapter(),
-                shouldNotifyAdapter = BooleanAdapter()
+//                shouldNotifyAdapter = BooleanAdapter()
             ),
             User.Adapter(qualified_idAdapter = QualifiedIDAdapter(), IntColumnAdapter)
         )

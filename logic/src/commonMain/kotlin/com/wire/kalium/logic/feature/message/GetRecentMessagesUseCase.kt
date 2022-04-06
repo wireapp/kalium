@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.Flow
 
 class GetRecentMessagesUseCase(private val messageRepository: MessageRepository) {
 
-    suspend operator fun invoke(conversationId: ConversationId, limit: Int = 100): Flow<List<Message>> {
-        return messageRepository.getMessagesForConversation(conversationId, limit)
+    suspend operator fun invoke(conversationId: ConversationId, limit: Int = 100, offset: Int = 0): Flow<List<Message>> {
+        return messageRepository.getMessagesForConversation(conversationId, limit, offset)
     }
 }

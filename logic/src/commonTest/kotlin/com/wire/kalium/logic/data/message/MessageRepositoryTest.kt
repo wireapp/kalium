@@ -58,19 +58,19 @@ class MessageRepositoryTest {
 
         given(messageDAO)
             .suspendFunction(messageDAO::getMessageByConversation)
-            .whenInvokedWith(anything(), anything())
-            .then { _, _ -> flowOf(listOf()) }
+            .whenInvokedWith(anything(), anything(), anything())
+            .then { _, _, _-> flowOf(listOf()) }
 
         given(messageMapper)
             .function(messageMapper::fromEntityToMessage)
             .whenInvokedWith(anything())
             .then { TEST_MESSAGE }
 
-        messageRepository.getMessagesForConversation(TEST_CONVERSATION_ID, 0).collect()
+        messageRepository.getMessagesForConversation(TEST_CONVERSATION_ID, 0, 0).collect()
 
         verify(messageDAO)
             .suspendFunction(messageDAO::getMessageByConversation)
-            .with(eq(mappedId), anything())
+            .with(eq(mappedId), anything(), anything())
             .wasInvoked(exactly = once)
     }
 
@@ -85,15 +85,15 @@ class MessageRepositoryTest {
 
         given(messageDAO)
             .suspendFunction(messageDAO::getMessageByConversation)
-            .whenInvokedWith(anything(), anything())
-            .then { _, _ -> flowOf(listOf(entity)) }
+            .whenInvokedWith(anything(), anything(), anything())
+            .then { _, _, _ -> flowOf(listOf(entity)) }
 
         given(idMapper)
             .function(idMapper::toDaoModel)
             .whenInvokedWith(anything())
             .then { TEST_QUALIFIED_ID_ENTITY }
 
-        val messageList = messageRepository.getMessagesForConversation(TEST_CONVERSATION_ID, 0)
+        val messageList = messageRepository.getMessagesForConversation(TEST_CONVERSATION_ID, 0, 0)
             .first()
         assertEquals(listOf(mappedMessage), messageList)
 
