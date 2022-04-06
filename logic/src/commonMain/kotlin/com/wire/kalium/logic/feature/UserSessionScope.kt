@@ -195,7 +195,7 @@ abstract class UserSessionScopeCommon(
     val listenToEvents: ListenToEventsUseCase
         get() = ListenToEventsUseCase(syncManager, eventRepository, conversationEventReceiver)
     val client: ClientScope get() = ClientScope(clientRepository, preKeyRepository, keyPackageRepository, mlsClientProvider)
-    val conversations: ConversationScope get() = ConversationScope(conversationRepository, syncManager)
+    val conversations: ConversationScope get() = ConversationScope(conversationRepository, userRepository, syncManager)
     val messages: MessageScope
         get() = MessageScope(
             messageRepository,

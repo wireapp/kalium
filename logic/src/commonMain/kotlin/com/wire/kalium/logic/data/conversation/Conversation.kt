@@ -4,6 +4,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
+import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
 
@@ -39,6 +40,11 @@ sealed class ConversationDetails(open val conversation: Conversation) {
 class MembersInfo(val self: Member, val otherMembers: List<Member>)
 
 class Member(override val id: UserId) : User()
+
+sealed class MemberDetails {
+    data class Self(val selfUser: SelfUser): MemberDetails()
+    data class Other(val otherUser: OtherUser): MemberDetails()
+}
 
 typealias ClientId = PlainId
 
