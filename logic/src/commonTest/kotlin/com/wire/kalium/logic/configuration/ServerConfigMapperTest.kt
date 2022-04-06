@@ -2,6 +2,7 @@ package com.wire.kalium.logic.configuration
 
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.persistence.model.ServerConfigEntity
+import io.ktor.http.Url
 import kotlin.random.Random
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -20,7 +21,17 @@ class ServerConfigMapperTest {
     fun givenABackendConfig_whenMappingFromBackendConfig_thenValuesAreMappedCorrectly() {
         val serverConfigDTO: ServerConfigDTO = randomBackendConfig()
         val acuteValue: ServerConfig =
-            with(serverConfigDTO) { ServerConfig(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title) }
+            with(serverConfigDTO) {
+                ServerConfig(
+                    apiBaseUrl.toString(),
+                    accountsBaseUrl.toString(),
+                    webSocketBaseUrl.toString(),
+                    blackListUrl.toString(),
+                    teamsUrl.toString(),
+                    websiteUrl.toString(),
+                    title
+                )
+            }
 
         val expectedValue: ServerConfig = serverConfigMapper.fromDTO(serverConfigDTO)
         assertEquals(expectedValue, acuteValue)
@@ -30,7 +41,17 @@ class ServerConfigMapperTest {
     fun givenAServerConfig_whenMappingToBackendConfig_thenValuesAreMappedCorrectly() {
         val serverConfig: ServerConfig = randomServerConfig()
         val acuteValue: ServerConfigDTO =
-            with(serverConfig) { ServerConfigDTO(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title) }
+            with(serverConfig) {
+                ServerConfigDTO(
+                    Url(apiBaseUrl),
+                    Url(accountsBaseUrl),
+                    Url(webSocketBaseUrl),
+                    Url(blackListUrl),
+                    Url(teamsUrl),
+                    Url(websiteUrl),
+                    title
+                )
+            }
 
         val expectedValue: ServerConfigDTO = serverConfigMapper.toDTO(serverConfig)
         assertEquals(expectedValue, acuteValue)
@@ -40,7 +61,17 @@ class ServerConfigMapperTest {
     fun givenANetworkConfigEntity_whenMappingFromNetworkConfig_thenValuesAreMappedCorrectly() {
         val serverConfigEntity: ServerConfigEntity = randomNetworkConfig()
         val acuteValue: ServerConfig =
-            with(serverConfigEntity) { ServerConfig(apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title) }
+            with(serverConfigEntity) {
+                ServerConfig(
+                    apiBaseUrl,
+                    accountBaseUrl,
+                    webSocketBaseUrl,
+                    blackListUrl,
+                    teamsUrl,
+                    websiteUrl,
+                    title
+                )
+            }
 
         val expectedValue: ServerConfig = serverConfigMapper.fromEntity(serverConfigEntity)
         assertEquals(expectedValue, acuteValue)
@@ -50,7 +81,17 @@ class ServerConfigMapperTest {
     fun givenAServerConfig_whenMappingToNetworkConfig_thenValuesAreMappedCorrectly() {
         val serverConfig: ServerConfig = randomServerConfig()
         val acuteValue: ServerConfigEntity =
-            with(serverConfig) { ServerConfigEntity(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title) }
+            with(serverConfig) {
+                ServerConfigEntity(
+                    apiBaseUrl,
+                    accountsBaseUrl,
+                    webSocketBaseUrl,
+                    blackListUrl,
+                    teamsUrl,
+                    websiteUrl,
+                    title
+                )
+            }
 
         val expectedValue: ServerConfigEntity = serverConfigMapper.toEntity(serverConfig)
         assertEquals(expectedValue, acuteValue)
@@ -59,7 +100,15 @@ class ServerConfigMapperTest {
     private companion object {
         val randomString get() = Random.nextBytes(64).decodeToString()
         fun randomBackendConfig(): ServerConfigDTO =
-            ServerConfigDTO(randomString, randomString, randomString, randomString, randomString, randomString, randomString)
+            ServerConfigDTO(
+                Url(randomString),
+                Url(randomString),
+                Url(randomString),
+                Url(randomString),
+                Url(randomString),
+                Url(randomString),
+                randomString
+            )
 
         fun randomServerConfig(): ServerConfig =
             ServerConfig(randomString, randomString, randomString, randomString, randomString, randomString, randomString)

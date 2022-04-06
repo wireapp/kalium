@@ -2,6 +2,7 @@ package com.wire.kalium.logic.configuration
 
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.persistence.model.ServerConfigEntity
+import io.ktor.http.Url
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -47,10 +48,10 @@ interface ServerConfigMapper {
 class ServerConfigMapperImpl : ServerConfigMapper {
     // TODO: url validation check e.g. remove https:// since ktor will control the http protocol
     override fun toDTO(serverConfig: ServerConfig): ServerConfigDTO =
-        with(serverConfig) { ServerConfigDTO(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title) }
+        with(serverConfig) { ServerConfigDTO(Url(apiBaseUrl), Url(accountsBaseUrl), Url(webSocketBaseUrl), Url(blackListUrl), Url(teamsUrl), Url(websiteUrl), title) }
 
     override fun fromDTO(serverConfigDTO: ServerConfigDTO): ServerConfig =
-        with(serverConfigDTO) { ServerConfig(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title) }
+        with(serverConfigDTO) { ServerConfig(apiBaseUrl.toString(), accountsBaseUrl.toString(), webSocketBaseUrl.toString(), blackListUrl.toString(), teamsUrl.toString(), websiteUrl.toString(), title) }
 
     override fun toEntity(serverConfig: ServerConfig): ServerConfigEntity =
         with(serverConfig) {

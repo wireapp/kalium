@@ -12,6 +12,7 @@ import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.model.PersistenceSession
 import com.wire.kalium.persistence.model.ServerConfigEntity
+import io.ktor.http.Url
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.given
@@ -113,7 +114,15 @@ class SessionMapperTest {
         val randomString get() = Random.nextBytes(64).decodeToString()
         val userId = UserId("user_id", "user.domain.io")
         fun randomBackendConfig(): ServerConfigDTO =
-            ServerConfigDTO(randomString, randomString, randomString, randomString, randomString, randomString, randomString)
+            ServerConfigDTO(
+                Url(randomString),
+                Url(randomString),
+                Url(randomString),
+                Url(randomString),
+                Url(randomString),
+                Url(randomString),
+                randomString
+            )
 
         fun randomAuthSession(): AuthSession = AuthSession(userId, randomString, randomString, randomString, randomServerConfig())
         fun randomPersistenceSession(): PersistenceSession =
