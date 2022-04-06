@@ -33,20 +33,20 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-actual class CallManager(
+actual class CallManagerImpl(
     private val calling: Calling,
     private val callRepository: CallRepository,
     private val userRepository: UserRepository,
     private val clientRepository: ClientRepository,
     val messageSender: MessageSender
-) : CallConfigRequestHandler {
+) : CallManager, CallConfigRequestHandler {
 
     private val job = SupervisorJob() // TODO clear job method
     private val scope = CoroutineScope(job + Dispatchers.IO)
     private val deferredHandle: Deferred<Handle>
 
     private val _calls = MutableStateFlow(listOf<Call>())
-    actual val allCalls = _calls.asStateFlow()
+    override val allCalls = _calls.asStateFlow()
 
     private val clientId: Deferred<ClientId> = scope.async(start = CoroutineStart.LAZY) {
         clientRepository.currentClientId().fold({
@@ -161,7 +161,7 @@ actual class CallManager(
             metricsHandler = { conversationId: String, metricsJson: String, arg: Pointer? ->
                 kaliumLogger.i("$TAG -> metricsHandler")
             },
-            callConfigRequestHandler = this@CallManager,
+            callConfigRequestHandler = this@CallManagerImpl,
             constantBitRateStateChangeHandler = { userId: String, clientId: String, isEnabled: Boolean, arg: Pointer? ->
                 kaliumLogger.i("$TAG -> constantBitRateStateChangeHandler")
             },
@@ -177,7 +177,7 @@ actual class CallManager(
         return calling.action(handle)
     }
 
-    actual suspend fun onCallingMessageReceived(message: Message, content: MessageContent.Calling) =
+    override suspend fun onCallingMessageReceived(message: Message, content: MessageContent.Calling) =
         withCalling {
             val msg = content.value.toByteArray()
 
@@ -197,7 +197,7 @@ actual class CallManager(
             kaliumLogger.d("$TAG - onCallingMessageReceived")
         }
 
-    actual suspend fun answerCall(conversationId: ConversationId) = withCalling {
+    override suspend fun answerCall(conversationId: ConversationId) = withCalling {
         kaliumLogger.d("$TAG -> answerCall")
         calling.wcall_answer(
             inst = deferredHandle.await(),
