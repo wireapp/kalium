@@ -19,7 +19,7 @@ class ServerConfigMapperTest {
 
     @Test
     fun givenABackendConfig_whenMappingFromBackendConfig_thenValuesAreMappedCorrectly() {
-        val serverConfigDTO: ServerConfigDTO = randomBackendConfig()
+        val serverConfigDTO: ServerConfigDTO = serverConfigDTO()
         val acuteValue: ServerConfig =
             with(serverConfigDTO) {
                 ServerConfig(
@@ -39,7 +39,7 @@ class ServerConfigMapperTest {
 
     @Test
     fun givenAServerConfig_whenMappingToBackendConfig_thenValuesAreMappedCorrectly() {
-        val serverConfig: ServerConfig = randomServerConfig()
+        val serverConfig: ServerConfig = serverConfig()
         val acuteValue: ServerConfigDTO =
             with(serverConfig) {
                 ServerConfigDTO(
@@ -59,7 +59,7 @@ class ServerConfigMapperTest {
 
     @Test
     fun givenANetworkConfigEntity_whenMappingFromNetworkConfig_thenValuesAreMappedCorrectly() {
-        val serverConfigEntity: ServerConfigEntity = randomNetworkConfig()
+        val serverConfigEntity: ServerConfigEntity = serverConfigEntity()
         val acuteValue: ServerConfig =
             with(serverConfigEntity) {
                 ServerConfig(
@@ -79,7 +79,7 @@ class ServerConfigMapperTest {
 
     @Test
     fun givenAServerConfig_whenMappingToNetworkConfig_thenValuesAreMappedCorrectly() {
-        val serverConfig: ServerConfig = randomServerConfig()
+        val serverConfig: ServerConfig = serverConfig()
         val acuteValue: ServerConfigEntity =
             with(serverConfig) {
                 ServerConfigEntity(
@@ -99,21 +99,22 @@ class ServerConfigMapperTest {
 
     private companion object {
         val randomString get() = Random.nextBytes(64).decodeToString()
-        fun randomBackendConfig(): ServerConfigDTO =
+        fun serverConfigDTO(): ServerConfigDTO =
             ServerConfigDTO(
-                Url(randomString),
-                Url(randomString),
-                Url(randomString),
-                Url(randomString),
-                Url(randomString),
-                Url(randomString),
-                randomString
+                Url("https://test.api.com"), Url("https://test.account.com"), Url("https://test.ws.com"),
+                Url("https://test.blacklist"), Url("https://test.teams.com"), Url("https://test.wire.com"), "Test Title"
             )
 
-        fun randomServerConfig(): ServerConfig =
-            ServerConfig(randomString, randomString, randomString, randomString, randomString, randomString, randomString)
+        fun serverConfig(): ServerConfig =
+            ServerConfig(
+                "https://test.api.com", "https://test.account.com", "https://test.ws.com",
+                "https://test.blacklist", "https://test.teams.com", "https://test.wire.com", "Test Title"
+            )
 
-        fun randomNetworkConfig(): ServerConfigEntity =
-            ServerConfigEntity(randomString, randomString, randomString, randomString, randomString, randomString, randomString)
+        fun serverConfigEntity(): ServerConfigEntity =
+            ServerConfigEntity(
+                "https://test.api.com", "https://test.account.com", "https://test.ws.com",
+                "https://test.blacklist", "https://test.teams.com", "https://test.wire.com", "Test Title"
+            )
     }
 }
