@@ -1,6 +1,6 @@
 package com.wire.kalium.logic.feature.message
 
-import com.wire.kalium.logic.data.conversation.ConversationId
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
 import kotlinx.coroutines.flow.Flow

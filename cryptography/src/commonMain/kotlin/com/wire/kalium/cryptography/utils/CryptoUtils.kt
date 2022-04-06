@@ -4,6 +4,8 @@ import kotlin.jvm.JvmInline
 
 expect fun calcMd5(bytes: ByteArray): String
 
+expect fun calcSHA256(bytes: ByteArray): ByteArray
+
 /**
  * Method used to encrypt an array of bytes using the AES256 encryption algorithm
  * @param data the [PlainData] that needs to be encrypted

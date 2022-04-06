@@ -11,6 +11,7 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.kaliumLogger
 import com.waz.log.LogHandler as NativeLogHandler
 
@@ -42,13 +43,15 @@ actual class GlobalCallManager(
         userId: QualifiedID,
         callRepository: CallRepository,
         userRepository: UserRepository,
-        clientRepository: ClientRepository
+        clientRepository: ClientRepository,
+        messageSender: MessageSender
     ): CallManager {
         return callManagerHolder[userId] ?: CallManager(
             calling = calling,
             callRepository = callRepository,
             userRepository = userRepository,
-            clientRepository = clientRepository
+            clientRepository = clientRepository,
+            messageSender = messageSender
         ).also {
             callManagerHolder[userId] = it
         }

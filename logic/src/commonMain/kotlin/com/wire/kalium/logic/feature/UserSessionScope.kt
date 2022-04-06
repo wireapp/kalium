@@ -8,12 +8,16 @@ import com.wire.kalium.logic.data.call.CallDataSource
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientDataSource
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.client.MLSClientProviderImpl
 import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ConversationDataSource
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.EventDataSource
 import com.wire.kalium.logic.data.event.EventRepository
+import com.wire.kalium.logic.data.keypackage.KeyPackageDataSource
+import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.logout.LogoutDataSource
 import com.wire.kalium.logic.data.logout.LogoutRepository
@@ -36,7 +40,14 @@ import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
+import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
+import com.wire.kalium.logic.feature.message.MessageEnvelopeCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageScope
+import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
+import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.logic.feature.message.MessageSenderImpl
+import com.wire.kalium.logic.feature.message.SessionEstablisher
+import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.team.TeamScope
 import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.sync.ConversationEventReceiver
@@ -64,6 +75,13 @@ abstract class UserSessionScopeCommon(
         get() = EventInfoStorageImpl(userPreferencesSettings)
 
     private val database: Database = authenticatedDataSourceSet.database
+
+    private val mlsClientProvider: MLSClientProvider
+        get() = MLSClientProviderImpl(
+            authenticatedDataSourceSet.authenticatedRootDir,
+            userId,
+            clientRepository,
+            authenticatedDataSourceSet.kaliumPreferencesSettings)
 
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(
@@ -119,6 +137,18 @@ abstract class UserSessionScopeCommon(
     private val clientRepository: ClientRepository
         get() = ClientDataSource(clientRemoteRepository, clientRegistrationStorage, database.clientDAO)
 
+    private val messageSendFailureHandler: MessageSendFailureHandler
+        get() = MessageSendFailureHandler(userRepository, clientRepository)
+
+    private val sessionEstablisher: SessionEstablisher
+        get() = SessionEstablisherImpl(authenticatedDataSourceSet.proteusClient, preKeyRepository)
+
+    private val messageEnvelopeCreator: MessageEnvelopeCreator
+        get() = MessageEnvelopeCreatorImpl(authenticatedDataSourceSet.proteusClient, protoContentMapper)
+
+    private val messageSender: MessageSender
+        get() = MessageSenderImpl(messageRepository, conversationRepository, syncManager, messageSendFailureHandler, sessionEstablisher, messageEnvelopeCreator)
+
     private val assetRepository: AssetRepository
         get() = AssetDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.assetApi, database.assetDAO)
 
@@ -134,7 +164,8 @@ abstract class UserSessionScopeCommon(
             userId = userId,
             callRepository = callRepository,
             userRepository = userRepository,
-            clientRepository = clientRepository
+            clientRepository = clientRepository,
+            messageSender = messageSender
         )
     }
     protected abstract val protoContentMapper: ProtoContentMapper
@@ -154,11 +185,17 @@ abstract class UserSessionScopeCommon(
             preKeyRemoteRepository, authenticatedDataSourceSet.proteusClient
         )
 
+    private val keyPackageRepository: KeyPackageRepository
+        get() = KeyPackageDataSource(
+            authenticatedDataSourceSet.authenticatedNetworkContainer.keyPackageApi,
+            mlsClientProvider
+        )
+
     private val logoutRepository: LogoutRepository = LogoutDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi)
     val listenToEvents: ListenToEventsUseCase
         get() = ListenToEventsUseCase(syncManager, eventRepository, conversationEventReceiver)
-    val client: ClientScope get() = ClientScope(clientRepository, preKeyRepository)
-    val conversations: ConversationScope get() = ConversationScope(conversationRepository, syncManager)
+    val client: ClientScope get() = ClientScope(clientRepository, preKeyRepository, keyPackageRepository, mlsClientProvider)
+    val conversations: ConversationScope get() = ConversationScope(conversationRepository, userRepository, syncManager)
     val messages: MessageScope
         get() = MessageScope(
             messageRepository,
@@ -167,6 +204,7 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.proteusClient,
             preKeyRepository,
             userRepository,
+            assetRepository,
             syncManager
         )
     val users: UserScope get() = UserScope(userRepository, publicUserRepository, syncManager, assetRepository)

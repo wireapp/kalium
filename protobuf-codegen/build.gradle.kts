@@ -3,9 +3,9 @@ import com.google.protobuf.gradle.generateProtoTasks
 import com.google.protobuf.gradle.id
 import com.google.protobuf.gradle.ofSourceSet
 import com.google.protobuf.gradle.plugins
-import com.google.protobuf.gradle.remove
 import com.google.protobuf.gradle.protobuf
 import com.google.protobuf.gradle.protoc
+import com.google.protobuf.gradle.remove
 
 plugins {
     Plugins.jvm(this)
@@ -16,6 +16,7 @@ group = "com.wire.kalium"
 version = "0.0.1-SNAPSHOT"
 
 protobuf {
+    generatedFilesBaseDir = "$projectDir/generated"
     protoc {
         artifact = "com.google.protobuf:protoc:3.19.4"
     }
@@ -33,5 +34,16 @@ protobuf {
                 id("pbandk")
             }
         }
+    }
+}
+
+// Workaround to avoid compiling kotlin and java, since we are only using the generated code output
+// https://github.com/streem/pbandk/blob/master/examples/gradle-and-jvm/build.gradle.kts
+tasks {
+    compileJava {
+        enabled = false
+    }
+    compileKotlin {
+        enabled = false
     }
 }

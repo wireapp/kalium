@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.cryptography.ProteusClient
+import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -8,6 +9,8 @@ import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.asset.SendImageMessageUseCase
+import com.wire.kalium.logic.feature.asset.SendImageMessageUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 
 class MessageScope(
@@ -17,6 +20,7 @@ class MessageScope(
     private val proteusClient: ProteusClient,
     private val preKeyRepository: PreKeyRepository,
     private val userRepository: UserRepository,
+    private val assetRepository: AssetRepository,
     private val syncManager: SyncManager
 ) {
 
@@ -45,6 +49,16 @@ class MessageScope(
             syncManager,
             messageSender
         )
+
+    val sendImageMessage: SendImageMessageUseCase
+        get() = SendImageMessageUseCaseImpl(
+            messageRepository,
+            clientRepository,
+            assetRepository,
+            userRepository,
+            messageSender
+        )
+
     val getRecentMessages: GetRecentMessagesUseCase get() = GetRecentMessagesUseCase(messageRepository)
 
     val deleteMessage: DeleteMessageUseCase

@@ -7,7 +7,7 @@ import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.model.AccessTokenDTO
 import com.wire.kalium.network.api.model.RefreshTokenDTO
 import com.wire.kalium.network.session.SessionManager
-import com.wire.kalium.network.tools.BackendConfig
+import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -32,7 +32,7 @@ class TestSessionManager : SessionManager {
     private val serverConfig = TEST_BACKEND_CONFIG
     private var session = testCredentials
 
-    override fun session(): Pair<SessionDTO, BackendConfig> = Pair(session, serverConfig)
+    override fun session(): Pair<SessionDTO, ServerConfigDTO> = Pair(session, serverConfig)
 
     override fun updateSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO =
         SessionDTO(
@@ -48,7 +48,7 @@ class TestSessionManager : SessionManager {
 
     companion object {
         val TEST_BACKEND_CONFIG =
-            BackendConfig(
+            ServerConfigDTO(
                 "test.api.com", "test.account.com", "test.ws.com",
                 "test.blacklist", "test.teams.com", "test.wire.com", "Test Title"
             )

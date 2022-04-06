@@ -40,7 +40,13 @@ class ValidateUserHandleUseCaseTest {
     @Test
     fun `given a validUserHandleUseCase is invoked, when handle is invalid, then return handle without invalid chars`() {
         val result = validateUserHandleUseCase("@handle1_A")
-        assertTrue { result is ValidateUserHandleResult.Invalid.InvalidCharacters && result.handleWithoutInvalidCharacters == "handle1_" }
+        assertTrue { result is ValidateUserHandleResult.Invalid.InvalidCharacters && result.handle == "handle1_" }
+    }
+
+    @Test
+    fun `given a validUserHandleUseCase is invoked, when handle is too short and has invaled char, then return handle without invalid chars`() {
+        val result = validateUserHandleUseCase("$")
+        assertTrue { result is ValidateUserHandleResult.Invalid.InvalidCharacters && result.handle == "" }
     }
 
     private companion object {

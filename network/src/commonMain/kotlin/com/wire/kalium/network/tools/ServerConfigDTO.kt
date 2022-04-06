@@ -1,6 +1,6 @@
 package com.wire.kalium.network.tools
 
-data class BackendConfig(
+data class ServerConfigDTO(
     val apiBaseUrl: String,
     val accountsBaseUrl: String,
     val webSocketBaseUrl: String,

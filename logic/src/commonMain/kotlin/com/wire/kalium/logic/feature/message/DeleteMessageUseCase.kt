@@ -3,7 +3,7 @@ package com.wire.kalium.logic.feature.message
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.conversation.ConversationId
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -34,10 +34,11 @@ class DeleteMessageUseCase(
             clientRepository.currentClientId().flatMap { currentClientId ->
                 val message = Message(
                     id = generatedMessageUuid,
-                    content = if (deleteForEveryone) MessageContent.DeleteMessage(messageId)
-                    else MessageContent.DeleteForMe(messageId, conversationId),
-                    conversationId = if (deleteForEveryone) conversationId
-                    else conversationRepository.getSelfConversationId(),
+                    content = if (deleteForEveryone) MessageContent.DeleteMessage(messageId) else MessageContent.DeleteForMe(
+                        messageId,
+                        conversationId
+                    ),
+                    conversationId = if (deleteForEveryone) conversationId else conversationRepository.getSelfConversationId(),
                     date = Clock.System.now().toString(),
                     senderUserId = selfUser.id,
                     senderClientId = currentClientId,
