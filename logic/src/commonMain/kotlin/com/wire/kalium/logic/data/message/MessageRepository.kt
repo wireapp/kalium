@@ -1,7 +1,7 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.conversation.ConversationId
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.SendMessageFailure
@@ -65,13 +65,21 @@ class MessageDataSource(
     }
 
     override suspend fun softDeleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit> {
-        messageDAO.updateMessageVisibility(visibility = MessageEntity.Visibility.DELETED, conversationId = idMapper.toDaoModel(conversationId), id = messageUuid)
+        messageDAO.updateMessageVisibility(
+            visibility = MessageEntity.Visibility.DELETED,
+            conversationId = idMapper.toDaoModel(conversationId),
+            id = messageUuid
+        )
         //TODO: Handle failures
         return Either.Right(Unit)
     }
 
     override suspend fun hideMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit> {
-        messageDAO.updateMessageVisibility(visibility = MessageEntity.Visibility.HIDDEN, conversationId = idMapper.toDaoModel(conversationId), id = messageUuid)
+        messageDAO.updateMessageVisibility(
+            visibility = MessageEntity.Visibility.HIDDEN,
+            conversationId = idMapper.toDaoModel(conversationId),
+            id = messageUuid
+        )
         //TODO: Handle failures
         return Either.Right(Unit)
     }

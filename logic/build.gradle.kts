@@ -64,6 +64,7 @@ kotlin {
                 implementation(kotlin("test"))
                 // coroutines
                 implementation(Dependencies.Coroutines.test)
+                implementation(Dependencies.Test.turbine)
 
                 // mocking
                 implementation(Dependencies.Test.mockative)

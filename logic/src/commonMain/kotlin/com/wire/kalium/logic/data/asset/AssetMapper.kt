@@ -36,7 +36,7 @@ class AssetMapperImpl : AssetMapper {
     }
 
     override fun fromApiUploadResponseToDomainModel(asset: AssetResponse) =
-        UploadedAssetId(asset.key)
+        UploadedAssetId(asset.key, assetToken = asset.token)
 
     override fun fromUploadedAssetToDaoModel(uploadAssetData: UploadAssetData, uploadedAssetResponse: AssetResponse): AssetEntity {
         return AssetEntity(
@@ -112,19 +112,21 @@ class AssetMapperImpl : AssetMapper {
                     null -> null
                     else -> null
                 },
-                remoteData = with((status as Asset.Status.Uploaded).value) {
-                    AssetContent.RemoteData(
-                        otrKey = otrKey.array,
-                        sha256 = sha256.array,
-                        assetId = assetId ?: "",
-                        assetDomain = assetDomain,
-                        assetToken = assetToken,
-                        encryptionAlgorithm = when (encryption) {
-                            EncryptionAlgorithm.AES_CBC -> AES_CBC
-                            EncryptionAlgorithm.AES_GCM -> AES_GCM
-                            else -> null
-                        }
-                    )
+                remoteData = status.run {
+                    with((this as Asset.Status.Uploaded).value) {
+                        AssetContent.RemoteData(
+                            otrKey = otrKey.array,
+                            sha256 = sha256.array,
+                            assetId = assetId ?: "",
+                            assetDomain = assetDomain,
+                            assetToken = assetToken,
+                            encryptionAlgorithm = when (encryption) {
+                                EncryptionAlgorithm.AES_CBC -> AES_CBC
+                                EncryptionAlgorithm.AES_GCM -> AES_GCM
+                                else -> null
+                            }
+                        )
+                    }
                 }
             )
         }

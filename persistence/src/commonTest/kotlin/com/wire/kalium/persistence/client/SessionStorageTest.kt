@@ -5,8 +5,8 @@ import com.russhwolf.settings.Settings
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
-import com.wire.kalium.persistence.model.NetworkConfig
 import com.wire.kalium.persistence.model.PersistenceSession
+import com.wire.kalium.persistence.model.ServerConfigEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.random.Random
@@ -115,8 +115,8 @@ class SessionDAOTest {
 
     private companion object {
         val randomString get() = Random.nextBytes(64).decodeToString()
-        fun randomNetworkConfig(): NetworkConfig =
-            NetworkConfig(randomString, randomString, randomString, randomString, randomString, randomString, "test_network_config")
+        fun randomNetworkConfig(): ServerConfigEntity =
+            ServerConfigEntity(randomString, randomString, randomString, randomString, randomString, randomString, "test_network_config")
     }
 
 }
