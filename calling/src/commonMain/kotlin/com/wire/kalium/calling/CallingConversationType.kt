@@ -1,7 +1,7 @@
 package com.wire.kalium.calling
 
-enum class CallingConversationType(val value: Int) {
-    OneOnOne(value = 0),
-    Group(value = 1),
-    Conference(value = 2)
+enum class CallingConversationType(internal val avsValue: Int) {
+    OneOnOne(avsValue= 0),
+    Group(avsValue= 1),
+    Conference(avsValue= 2)
 }
