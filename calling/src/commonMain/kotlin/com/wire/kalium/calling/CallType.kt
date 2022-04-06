@@ -1,7 +1,6 @@
 package com.wire.kalium.calling
 
-enum class CallType(val value: Int) {
-    NORMAL(value = 0),
-    VIDEO(value = 1),
-    FORCED_AUDIO(value = 2)
+enum class CallType(val avsValue: Int) {
+    NORMAL(avsValue = 0),
+    VIDEO(avsValue = 1),
 }

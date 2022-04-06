@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.feature.call.usescase
+package com.wire.kalium.logic.feature.call.usesCase
 
 import com.wire.kalium.calling.CallType
 import com.wire.kalium.calling.CallingConversationType
@@ -8,6 +8,6 @@ import com.wire.kalium.logic.feature.call.CallManager
 class StartCallUseCase(private val callManager: CallManager) {
 
     suspend operator fun invoke(conversationId: ConversationId, callType: CallType, callingConversationType: CallingConversationType) {
-        callManager.startCall(conversationId, callType.value, callingConversationType.value)
+        callManager.startCall(conversationId, callType, callingConversationType)
     }
 }

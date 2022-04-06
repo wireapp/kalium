@@ -1,7 +1,9 @@
 package com.wire.kalium.logic.feature.call
 
 import com.sun.jna.Pointer
+import com.wire.kalium.calling.CallType
 import com.wire.kalium.calling.Calling
+import com.wire.kalium.calling.CallingConversationType
 import com.wire.kalium.calling.callbacks.CallConfigRequestHandler
 import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.calling.types.Size_t
@@ -88,9 +90,9 @@ actual class CallManagerImpl(
         }
     }
 
-    actual override suspend fun startCall(conversationId: ConversationId, callType: Int, conversationType: Int, isAudioCbr: Boolean) {
+    actual override suspend fun startCall(conversationId: ConversationId, callType: CallType, conversationType: CallingConversationType, isAudioCbr: Boolean) {
         withCalling {
-            wcall_start(deferredHandle.await(), conversationId.asString(), callType, conversationType, isAudioCbr.toInt())
+            wcall_start(deferredHandle.await(), conversationId.asString(), callType.avsValue, conversationType.avsValue, isAudioCbr.toInt())
         }
     }
 
