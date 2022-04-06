@@ -28,7 +28,7 @@ class AnswerCallUseCaseTest {
     }
 
     @Test
-    fun givenAnIncomingCallIsReceived_whenAnsweringTheIncomingCall_thenCallManagerIsCalled() = runTest {
+    fun givenAConversationId_whenAnsweringACallOfThatConversation_thenCallManagerIsCalledWithTheCorrectId() = runTest {
         val conversationId = ConversationId(
             value = "value1",
             domain = "domain1"
