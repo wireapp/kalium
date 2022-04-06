@@ -17,7 +17,7 @@ actual fun calcMd5(bytes: ByteArray): String {
     return toData(digestData.asByteArray()).base64Encoding()
 }
 
-actual fun calcSHA256(bytes: ByteArray): String {
+actual fun calcSHA256(bytes: ByteArray): ByteArray {
     TODO("Not yet implemented")
 }
 

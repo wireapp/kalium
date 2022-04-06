@@ -33,6 +33,7 @@ object Versions {
     @Deprecated("A new implementation is available. Use the protobuf project instead.")
     const val protobufLite = "3.19.4"
     const val pbandk = "0.13.0"
+    const val turbine = "0.7.0"
     const val avs = "8.1.3"
     const val jna = "5.6.0@aar"
     const val mlsClient = "0.0.1"
@@ -158,6 +159,7 @@ object Dependencies {
     object Test {
         const val mockative = "io.mockative:mockative:${Versions.mockative}"
         const val mockativeProcessor = "io.mockative:mockative-processor:${Versions.mockative}"
+        const val turbine = "app.cash.turbine:turbine:${Versions.turbine}"
     }
 
     object Protobuf {

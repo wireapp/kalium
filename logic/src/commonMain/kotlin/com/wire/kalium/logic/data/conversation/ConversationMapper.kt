@@ -48,5 +48,4 @@ internal class ConversationMapperImpl(private val idMapper: IdMapper) : Conversa
             -> PersistedConversation.Type.ONE_ON_ONE
         }
     }
-
 }

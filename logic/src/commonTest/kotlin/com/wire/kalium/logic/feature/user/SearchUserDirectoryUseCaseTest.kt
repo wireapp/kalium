@@ -3,7 +3,7 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
-import com.wire.kalium.logic.data.publicuser.model.PublicUser
+import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.feature.publicuser.SearchUserDirectoryUseCase
 import com.wire.kalium.logic.feature.publicuser.SearchUserDirectoryUseCaseImpl
@@ -73,7 +73,7 @@ class SearchUserDirectoryUseCaseTest {
         val VALID_SEARCH_PUBLIC_RESULT = UserSearchResult(
             result = buildList {
                 for (i in 0..5) {
-                    PublicUser(
+                    OtherUser(
                         id = UserId(i.toString(), "domain$i"),
                         name = "name$i",
                         handle = null,

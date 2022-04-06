@@ -1,14 +1,29 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.sync.SyncManager
 
 class ConversationScope(
-    conversationRepository: ConversationRepository,
-    syncManager: SyncManager
+    private val conversationRepository: ConversationRepository,
+    private val userRepository: UserRepository,
+    private val syncManager: SyncManager
 ) {
-    // TODO: get()
-    val getConversations: GetConversationsUseCase = GetConversationsUseCase(conversationRepository, syncManager)
-    val getConversationDetails: GetConversationDetailsUseCase = GetConversationDetailsUseCase(conversationRepository, syncManager)
-    val syncConversations: SyncConversationsUseCase = SyncConversationsUseCase(conversationRepository)
+    val getConversations: GetConversationsUseCase
+        get() = GetConversationsUseCase(conversationRepository, syncManager)
+
+    val getConversationDetails: GetConversationDetailsUseCase
+        get() = GetConversationDetailsUseCase(conversationRepository, syncManager)
+
+    val observeConversationListDetails: ObserveConversationListDetailsUseCase
+        get() = ObserveConversationListDetailsUseCase(conversationRepository, syncManager)
+
+    val observeConversationMembers: ObserveConversationMembersUseCase
+        get() = ObserveConversationMembersUseCase(conversationRepository, userRepository, syncManager)
+
+    val observeConversationDetails: ObserveConversationDetailsUseCase
+        get() = ObserveConversationDetailsUseCase(conversationRepository, syncManager)
+
+    val syncConversations: SyncConversationsUseCase
+        get() = SyncConversationsUseCase(conversationRepository)
 }

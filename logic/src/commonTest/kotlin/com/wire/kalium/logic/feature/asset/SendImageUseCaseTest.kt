@@ -5,7 +5,7 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.ConversationId
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
@@ -42,7 +42,7 @@ class SendImageUseCaseTest {
             .arrange()
 
         // When
-        val result = sendImageUseCase.invoke(conversationId, imageToSend)
+        val result = sendImageUseCase.invoke(conversationId, imageToSend, 1, 1)
 
         // Then
         assertEquals(result, SendImageMessageResult.Success)
@@ -61,7 +61,7 @@ class SendImageUseCaseTest {
             .arrange()
 
         // When
-        val result = sendImageUseCase.invoke(conversationId, imageByteArray)
+        val result = sendImageUseCase.invoke(conversationId, imageByteArray, 1, 1)
 
         // Then
         assertTrue(result is SendImageMessageResult.Failure)
@@ -81,7 +81,7 @@ class SendImageUseCaseTest {
                 .arrange()
 
             // When
-            sendImageUseCase.invoke(conversationId, mockedImg)
+            sendImageUseCase.invoke(conversationId, mockedImg, 1, 1)
 
             // Then
             verify(arrangement.messageRepository)
@@ -108,7 +108,7 @@ private class Arrangement {
     @Mock
     private val messageSender = mock(classOf<MessageSender>())
 
-    val someAssetId = UploadedAssetId("some-asset-id")
+    val someAssetId = UploadedAssetId("some-asset-id", "some-asset-token")
 
     val someClientId = ClientId("some-client-id")
 
@@ -124,7 +124,7 @@ private class Arrangement {
         "some_key"
     )
 
-    val sendImageUseCase = SendImageUseCaseImpl(messageRepository, clientRepository, assetDataSource, userRepository, messageSender)
+    val sendImageUseCase = SendImageMessageUseCaseImpl(messageRepository, clientRepository, assetDataSource, userRepository, messageSender)
 
     fun withSuccessfulResponse(): Arrangement {
         given(assetDataSource)

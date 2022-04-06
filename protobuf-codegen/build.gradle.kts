@@ -16,6 +16,7 @@ group = "com.wire.kalium"
 version = "0.0.1-SNAPSHOT"
 
 protobuf {
+    generatedFilesBaseDir = "$projectDir/generated"
     protoc {
         artifact = "com.google.protobuf:protoc:3.19.4"
     }
