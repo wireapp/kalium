@@ -4,13 +4,13 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainCoroutineDispatcher
 
-actual object KaliumDispatcher {
-    actual val default: CoroutineDispatcher
+actual object KaliumDispatcherImpl : KaliumDispatcher {
+    override val default: CoroutineDispatcher
         get() = Dispatchers.Default
-    actual val main: MainCoroutineDispatcher
+    override val main: MainCoroutineDispatcher
         get() = Dispatchers.Main
-    actual val unconfined: CoroutineDispatcher
+    override val unconfined: CoroutineDispatcher
         get() = Dispatchers.Unconfined
-    actual val io: CoroutineDispatcher
+    override val io: CoroutineDispatcher
         get() = Dispatchers.Default
 }
