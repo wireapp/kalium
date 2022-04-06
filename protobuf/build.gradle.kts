@@ -55,7 +55,7 @@ kotlin {
 
     sourceSets {
         val commonMain by getting {
-            kotlin.srcDir(codegenProject.file("build/generated/source/proto/main/pbandk"))
+            kotlin.srcDir(codegenProject.file("generated"))
             dependencies {
                 api("pro.streem.pbandk:pbandk-runtime:${Versions.pbandk}")
             }
