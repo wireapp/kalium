@@ -3,7 +3,7 @@ package com.wire.kalium.logic.feature.call
 import com.wire.kalium.calling.CallType
 import com.wire.kalium.calling.CallingConversationType
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.feature.call.usesCase.StartCallUseCase
+import com.wire.kalium.logic.feature.call.useCase.StartCallUseCase
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.eq
@@ -15,7 +15,6 @@ import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
-
 
 class StartCallUseCaseTest {
 
@@ -35,14 +34,14 @@ class StartCallUseCaseTest {
 
         given(callManager)
             .suspendFunction(callManager::startCall)
-            .whenInvokedWith(eq(conversationId), eq(CallType.NORMAL.avsValue), eq(CallingConversationType.OneOnOne.avsValue), eq(false))
+            .whenInvokedWith(eq(conversationId), eq(CallType.NORMAL), eq(CallingConversationType.OneOnOne), eq(false))
             .thenDoNothing()
 
         startCall.invoke(conversationId, CallType.NORMAL, CallingConversationType.OneOnOne)
 
         verify(callManager)
             .suspendFunction(callManager::startCall)
-            .with(eq(conversationId), eq(CallType.NORMAL.avsValue), eq(CallingConversationType.OneOnOne.avsValue), eq(false))
+            .with(eq(conversationId), eq(CallType.NORMAL), eq(CallingConversationType.OneOnOne), eq(false))
             .wasInvoked(once)
     }
 
