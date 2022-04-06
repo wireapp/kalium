@@ -15,7 +15,6 @@ import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.persistence.dao.ConversationDAO
-import com.wire.kalium.persistence.dao.Member
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.flow.Flow
@@ -24,6 +23,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import com.wire.kalium.persistence.dao.Member as MemberEntity
 
 interface ConversationRepository {
     suspend fun getSelfConversationId(): ConversationId
@@ -33,8 +33,9 @@ interface ConversationRepository {
     suspend fun getConversationDetailsById(conversationID: ConversationId): Flow<ConversationDetails>
     suspend fun getConversationDetails(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation>>
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
-    suspend fun persistMember(member: Member, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
-    suspend fun persistMembers(members: List<Member>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
+    suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Member>>
+    suspend fun persistMember(member: MemberEntity, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
+    suspend fun persistMembers(members: List<MemberEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun deleteMember(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity): Either<CoreFailure, Unit>
 }
 
@@ -118,6 +119,11 @@ class ConversationDataSource(
                 .map(conversationMapper::fromDaoModel)
         }
 
+    override suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Member>> =
+        conversationDAO.getAllMembers(idMapper.toDaoModel(conversationID)).map { members ->
+            members.map(memberMapper::fromDaoModel)
+        }
+
     /**
      * Fetches a list of all members' IDs or a given conversation including self user
      */
@@ -125,10 +131,10 @@ class ConversationDataSource(
         conversationDAO.getAllMembers(idMapper.toDaoModel(conversationId)).first().map { idMapper.fromDaoModel(it.user) }
     }
 
-    override suspend fun persistMember(member: Member, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit> =
+    override suspend fun persistMember(member: MemberEntity, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit> =
         wrapStorageRequest { conversationDAO.insertMember(member, conversationID) }
 
-    override suspend fun persistMembers(members: List<Member>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit> =
+    override suspend fun persistMembers(members: List<MemberEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit> =
         wrapStorageRequest { conversationDAO.insertMembers(members, conversationID) }
 
 
