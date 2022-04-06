@@ -17,21 +17,21 @@ data class ServerConfig(
 ) {
     companion object {
         val PRODUCTION = ServerConfig(
-            apiBaseUrl = """prod-nginz-https.wire.com""",
-            accountsBaseUrl = """account.wire.com""",
-            webSocketBaseUrl = """prod-nginz-ssl.wire.com""",
-            teamsUrl = """teams.wire.com""",
-            blackListUrl = """clientblacklist.wire.com/prod""",
-            websiteUrl = """wire.com""",
+            apiBaseUrl = """https://prod-nginz-https.wire.com""",
+            accountsBaseUrl = """https://account.wire.com""",
+            webSocketBaseUrl = """https://prod-nginz-ssl.wire.com""",
+            teamsUrl = """https://teams.wire.com""",
+            blackListUrl = """https://clientblacklist.wire.com/prod""",
+            websiteUrl = """https://wire.com""",
             title = "Production"
         )
         val STAGING = ServerConfig(
-            apiBaseUrl = """staging-nginz-https.zinfra.io""",
-            accountsBaseUrl = """wire-account-staging.zinfra.io""",
-            webSocketBaseUrl = """staging-nginz-ssl.zinfra.io""",
-            teamsUrl = """wire-teams-staging.zinfra.io""",
-            blackListUrl = """clientblacklist.wire.com/staging""",
-            websiteUrl = """wire.com""",
+            apiBaseUrl = """https://staging-nginz-https.zinfra.io""",
+            accountsBaseUrl = """https://wire-account-staging.zinfra.io""",
+            webSocketBaseUrl = """https://staging-nginz-ssl.zinfra.io""",
+            teamsUrl = """https://wire-teams-staging.zinfra.io""",
+            blackListUrl = """https://clientblacklist.wire.com/staging""",
+            websiteUrl = """https://wire.com""",
             title = "Staging"
         )
         val DEFAULT = STAGING

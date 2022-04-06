@@ -3,7 +3,6 @@ package com.wire.kalium.logic.configuration
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import io.ktor.http.Url
-import kotlin.random.Random
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -98,7 +97,6 @@ class ServerConfigMapperTest {
     }
 
     private companion object {
-        val randomString get() = Random.nextBytes(64).decodeToString()
         fun serverConfigDTO(): ServerConfigDTO =
             ServerConfigDTO(
                 Url("https://test.api.com"), Url("https://test.account.com"), Url("https://test.ws.com"),
