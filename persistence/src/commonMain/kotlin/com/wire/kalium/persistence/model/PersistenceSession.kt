@@ -12,7 +12,19 @@ data class ServerConfigEntity(
     val teamsUrl: String,
     val websiteUrl: String,
     val title: String
-)
+) {
+    companion object {
+        val PRODUCTION = ServerConfigEntity(
+            apiBaseUrl = """prod-nginz-https.wire.com""",
+            accountBaseUrl = """account.wire.com""",
+            webSocketBaseUrl = """prod-nginz-ssl.wire.com""",
+            teamsUrl = """teams.wire.com""",
+            blackListUrl = """clientblacklist.wire.com/prod""",
+            websiteUrl = """wire.com""",
+            title = "Production"
+        )
+    }
+}
 
 @Serializable
 data class PersistenceSession(
