@@ -11,4 +11,8 @@ class CallsScope(
         callManager = callManager,
         syncManager = syncManager
     )
+
+    val answerCall: AnswerCallUseCase get() = AnswerCallUseCaseImpl(
+        callManager = callManager
+    )
 }
