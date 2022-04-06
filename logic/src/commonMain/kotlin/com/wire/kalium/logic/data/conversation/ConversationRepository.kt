@@ -13,6 +13,8 @@ import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.conversation.ConversationApi
+import com.wire.kalium.network.api.conversation.CreateConversationRequest
+import com.wire.kalium.network.api.model.ConversationAccess
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -37,6 +39,7 @@ interface ConversationRepository {
     suspend fun persistMember(member: MemberEntity, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun persistMembers(members: List<MemberEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun deleteMember(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity): Either<CoreFailure, Unit>
+    suspend fun createOne2OneConversation(): Either<CoreFailure, ConversationId>
 }
 
 class ConversationDataSource(
@@ -150,5 +153,23 @@ class ConversationDataSource(
             .flatMap {
                 wrapApiRequest { clientApi.listClientsOfUsers(it) }.map { memberMapper.fromMapOfClientsResponseToRecipients(it) }
             }
+    }
+
+    override suspend fun createOne2OneConversation(): Either<CoreFailure, ConversationId> = suspending {
+        wrapApiRequest {
+            conversationApi.createOne2OneConversation(
+                createConversationRequest = CreateConversationRequest(
+                    qualifiedUsers = listOf(),
+                    name = "",
+                    access = listOf(ConversationAccess.PRIVATE),
+                    accessRole = listOf(),
+                    convTeamInfo = null,
+                    messageTimer = null,
+                    receiptMode = 0,
+                    conversationRole = "",
+                    protocol = null
+                )
+            )
+        }.map { idMapper.fromApiModel(it.id) }
     }
 }
