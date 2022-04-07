@@ -17,6 +17,7 @@ import com.wire.kalium.network.api.conversation.CreateConversationRequest
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.flow.Flow
@@ -166,26 +167,14 @@ class ConversationDataSource(
         wrapStorageRequest { conversationDAO.deleteMemberByQualifiedID(conversationID, userID) }
 
     override suspend fun createGroupConversation(name: String, members: List<Member>, options: ConverationOptions): Either<CoreFailure, Conversation> = suspending {
-        wrapApiRequest {
-            conversationApi.createNewConversation(
-                CreateConversationRequest(
-                    if (options.protocol == ConverationOptions.Protocol.PROTEUS) members.map { idMapper.toApiModel(it.id) } else emptyList(),
-                    name,
-                    options.access.toList().map(conversationMapper::toApiModel),
-                    options.accessRole.toList().map(conversationMapper::toApiModel),
-                    userRepository.getSelfUser().firstOrNull()?.team?.let { ConvTeamInfo(false, it) },
-                    null,
-                    if (options.readReceiptsEnabled) 1 else 0,
-                    DEFAULT_MEMBER_ROLE,
-                    conversationMapper.toApiModel(options.protocol)
+        wrapStorageRequest {
+            userRepository.getSelfUser().first()
+        }.flatMap { selfUser ->
+            wrapApiRequest {
+                conversationApi.createNewConversation(
+                    conversationMapper.toApiModel(name, members, selfUser.team, options)
                 )
-            )
-        }.flatMap { conversationResponse ->
-            val selfUser = wrapStorageRequest {
-                userRepository.getSelfUser().first()
-            }
-
-            selfUser.flatMap { selfUser ->
+            }.flatMap { conversationResponse ->
                 val teamId = selfUser.team?.let { TeamId(it) }
                 val conversationEntity = conversationMapper.fromApiModelToDaoModel(conversationResponse, groupCreation = true, teamId)
                 val conversation = conversationMapper.fromDaoModel(conversationEntity)
@@ -193,15 +182,10 @@ class ConversationDataSource(
                 wrapStorageRequest {
                     conversationDAO.insertConversation(conversationEntity)
                 }.flatMap {
-                    wrapStorageRequest {
-                        if (options.protocol == ConverationOptions.Protocol.PROTEUS) {
-                            conversationDAO.insertMembers(memberMapper.fromApiModelToDaoModel(conversationResponse.members), conversationEntity.id)
-                        } else {
-                            val selfUserId = userRepository.getSelfUserId()
-                            val selfMember = Member(selfUserId)
-                            conversationDAO.insertMembers((members + selfMember).map(memberMapper::toDaoModel), conversationEntity.id)
-                            Either.Right(Unit)
-                        }
+                    if (options.protocol == ConverationOptions.Protocol.PROTEUS) {
+                        persistMembersFromConversationResponse(conversationResponse)
+                    } else {
+                        persistMembersFromConversationResponseMLS(conversationResponse, members)
                     }
                 }.flatMap {
                     if (options.protocol == ConverationOptions.Protocol.PROTEUS) {
@@ -213,6 +197,26 @@ class ConversationDataSource(
                     }
                 }
             }
+        }
+    }
+
+    private suspend fun persistMembersFromConversationResponse(conversationResponse: ConversationResponse): Either<CoreFailure, Unit> {
+        return wrapStorageRequest {
+            val conversationId = idMapper.fromApiToDao(conversationResponse.id)
+            conversationDAO.insertMembers(memberMapper.fromApiModelToDaoModel(conversationResponse.members), conversationId)
+        }
+    }
+
+    /**
+     * For MLS groups we aren't allowed by the BE provide any initial members when creating
+     * the group, so we need to provide initial list of members separately.
+     */
+    private suspend fun persistMembersFromConversationResponseMLS(conversationResponse: ConversationResponse, members: List<Member>): Either<CoreFailure, Unit> {
+        return wrapStorageRequest {
+            val conversationId = idMapper.fromApiToDao(conversationResponse.id)
+            val selfUserId = userRepository.getSelfUserId()
+            val selfMember = Member(selfUserId)
+            conversationDAO.insertMembers((members + selfMember).map(memberMapper::toDaoModel), conversationId)
         }
     }
 

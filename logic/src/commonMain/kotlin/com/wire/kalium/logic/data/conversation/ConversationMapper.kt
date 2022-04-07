@@ -2,10 +2,16 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.User
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.network.api.conversation.ConvProtocol
+import com.wire.kalium.network.api.conversation.ConvTeamInfo
 import com.wire.kalium.network.api.conversation.ConversationResponse
+import com.wire.kalium.network.api.conversation.CreateConversationRequest
 import com.wire.kalium.network.api.model.ConversationAccess
 import com.wire.kalium.network.api.model.ConversationAccessRole
+import kotlinx.coroutines.flow.firstOrNull
 import com.wire.kalium.persistence.dao.ConversationEntity as PersistedConversation
 import com.wire.kalium.persistence.dao.ConversationEntity.Protocol as PersistedProtocol
 import com.wire.kalium.persistence.dao.ConversationEntity.GroupState as PersistedGroupState
@@ -17,6 +23,7 @@ interface ConversationMapper {
     fun toApiModel(access: ConverationOptions.Access): ConversationAccess
     fun toApiModel(accessRole: ConverationOptions.AccessRole): ConversationAccessRole
     fun toApiModel(protocol: ConverationOptions.Protocol): ConvProtocol
+    fun toApiModel(name: String, members: List<Member>, teamId: String?, options: ConverationOptions): CreateConversationRequest
 }
 
 internal class ConversationMapperImpl(private val idMapper: IdMapper) : ConversationMapper {
@@ -40,6 +47,19 @@ internal class ConversationMapperImpl(private val idMapper: IdMapper) : Conversa
     override fun fromDaoModel(daoModel: PersistedConversation): Conversation = Conversation(
         idMapper.fromDaoModel(daoModel.id), daoModel.name, daoModel.type.fromDaoModel(), daoModel.teamId?.let { TeamId(it) }, daoModel.groupId
     )
+
+    override fun toApiModel(name: String, members: List<Member>, teamId: String?, options: ConverationOptions) =
+        CreateConversationRequest(
+            if (options.protocol == ConverationOptions.Protocol.PROTEUS) members.map { idMapper.toApiModel(it.id) } else emptyList(),
+            name,
+            options.access.toList().map { toApiModel(it) },
+            options.accessRole.toList().map { toApiModel(it) },
+            teamId?.let { ConvTeamInfo(false, it) },
+            null,
+            if (options.readReceiptsEnabled) 1 else 0,
+            ConversationDataSource.DEFAULT_MEMBER_ROLE,
+            toApiModel(options.protocol)
+        )
 
     override fun toApiModel(access: ConverationOptions.Access): ConversationAccess = when (access) {
         ConverationOptions.Access.PRIVATE -> ConversationAccess.PRIVATE
