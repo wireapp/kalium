@@ -37,6 +37,11 @@ interface ConversationRepository {
     suspend fun persistMember(member: MemberEntity, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun persistMembers(members: List<MemberEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun deleteMember(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity): Either<CoreFailure, Unit>
+    suspend fun updateMutedStatus(
+        conversationId: ConversationId,
+        mutedStatus: MutedConversationStatus,
+        mutedStatusTimestamp: Long
+    ): Either<CoreFailure, Unit>
 }
 
 class ConversationDataSource(
@@ -46,7 +51,8 @@ class ConversationDataSource(
     private val clientApi: ClientApi,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
-    private val memberMapper: MemberMapper = MapperProvider.memberMapper()
+    private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
+    private val conversationStatusMapper: ConversationStatusMapper = MapperProvider.conversationStatusMapper()
 ) : ConversationRepository {
 
     // FIXME: fetchConversations() returns only the first page
@@ -150,5 +156,20 @@ class ConversationDataSource(
             .flatMap {
                 wrapApiRequest { clientApi.listClientsOfUsers(it) }.map { memberMapper.fromMapOfClientsResponseToRecipients(it) }
             }
+    }
+
+    override suspend fun updateMutedStatus(
+        conversationId: ConversationId,
+        mutedStatus: MutedConversationStatus,
+        mutedStatusTimestamp: Long
+    ): Either<CoreFailure, Unit> = suspending {
+        wrapApiRequest {
+            conversationApi.updateConversationMemberState(
+                memberUpdateRequest = conversationStatusMapper.mutedStatusToApiModel(mutedStatus, mutedStatusTimestamp),
+                conversationId = idMapper.toApiModel(conversationId)
+            )
+        }.map {
+            // TODO: later persist this locally to conversation_table: muted_status and muted_time
+        }
     }
 }
