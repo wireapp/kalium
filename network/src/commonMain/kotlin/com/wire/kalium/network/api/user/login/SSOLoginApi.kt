@@ -9,12 +9,10 @@ import io.ktor.client.request.accept
 import io.ktor.client.request.get
 import io.ktor.client.request.head
 import io.ktor.client.request.header
-import io.ktor.client.request.host
 import io.ktor.client.request.post
 import io.ktor.client.statement.request
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
-import io.ktor.http.URLProtocol
 import io.ktor.http.Url
 import io.ktor.http.isSuccess
 
@@ -60,16 +58,14 @@ class SSOLoginApiImpl(private val httpClient: HttpClient) : SSOLoginApi {
     }
 
     override suspend fun metaData(apiBaseUrl: Url): NetworkResponse<String> = wrapKaliumResponse {
-        httpClient.get("$PATH_SSO/$PATH_METADATA") {
-            host = apiBaseUrl.host
-            url.protocol = URLProtocol.HTTPS
+        httpClient.get {
+            setUrl(apiBaseUrl, listOf(PATH_SSO, PATH_METADATA))
         }
     }
 
     override suspend fun settings(apiBaseUrl: Url): NetworkResponse<SSOSettingsResponse> = wrapKaliumResponse {
-        httpClient.get("$PATH_SSO/$PATH_SETTINGS") {
-            host = apiBaseUrl.host
-            url.protocol = URLProtocol.HTTPS
+        httpClient.get {
+            setUrl(apiBaseUrl, listOf(PATH_SSO, PATH_SETTINGS))
         }
     }
 

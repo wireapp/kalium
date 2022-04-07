@@ -16,7 +16,6 @@ import com.wire.kalium.network.api.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.model.getPreviewAssetOrNull
 import com.wire.kalium.network.api.user.register.RegisterApi
 import com.wire.kalium.network.utils.NetworkResponse
-import io.ktor.http.Url
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -58,7 +57,7 @@ class RegisterAccountRepositoryTest {
             .coroutine { requestActivationCode(RegisterApi.RequestActivationCodeParam.Email(email), TEST_API_HOST) }
             .then { NetworkResponse.Success(expected, mapOf(), 200) }
 
-        val actual = registerAccountRepository.requestEmailActivationCode(email, TEST_API_HOST.toString())
+        val actual = registerAccountRepository.requestEmailActivationCode(email, TEST_API_HOST)
 
         assertIs<Either.Right<Unit>>(actual)
         assertEquals(expected, actual.value)
@@ -76,7 +75,7 @@ class RegisterAccountRepositoryTest {
             .coroutine { requestActivationCode(RegisterApi.RequestActivationCodeParam.Email(email), TEST_API_HOST) }
             .then { NetworkResponse.Error(expected) }
 
-        val actual = registerAccountRepository.requestEmailActivationCode(email, TEST_API_HOST.toString())
+        val actual = registerAccountRepository.requestEmailActivationCode(email, TEST_API_HOST)
 
         assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(actual)
         assertEquals(expected, actual.value.kaliumException)
@@ -95,7 +94,7 @@ class RegisterAccountRepositoryTest {
             .coroutine { activate(RegisterApi.ActivationParam.Email(email, code), TEST_API_HOST) }
             .then { NetworkResponse.Success(expected, mapOf(), 200) }
 
-        val actual = registerAccountRepository.verifyActivationCode(email, code, TEST_API_HOST.toString())
+        val actual = registerAccountRepository.verifyActivationCode(email, code, TEST_API_HOST)
 
         assertIs<Either.Right<Unit>>(actual)
         assertEquals(expected, actual.value)
@@ -113,7 +112,7 @@ class RegisterAccountRepositoryTest {
         given(registerApi).coroutine { activate(RegisterApi.ActivationParam.Email(email, code), TEST_API_HOST) }
             .then { NetworkResponse.Error(expected) }
 
-        val actual = registerAccountRepository.verifyActivationCode(email, code, TEST_API_HOST.toString())
+        val actual = registerAccountRepository.verifyActivationCode(email, code, TEST_API_HOST)
 
         assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(actual)
         assertEquals(expected, actual.value.kaliumException)
@@ -147,7 +146,7 @@ class RegisterAccountRepositoryTest {
         given(registerApi)
             .coroutine {
                 register(
-                    RegisterApi.RegisterParam.PersonalAccount(email, code, name, password), Url(serverConfig.apiBaseUrl)
+                    RegisterApi.RegisterParam.PersonalAccount(email, code, name, password), serverConfig.apiBaseUrl
                 )
             }.then { NetworkResponse.Success(Pair(TEST_USER, SESSION), mapOf(), 200) }
         given(userMapper)
@@ -163,7 +162,7 @@ class RegisterAccountRepositoryTest {
         assertEquals(expected, actual.value)
 
         verify(registerApi)
-            .coroutine { register(RegisterApi.RegisterParam.PersonalAccount(email, code, name, password), Url(serverConfig.apiBaseUrl)) }
+            .coroutine { register(RegisterApi.RegisterParam.PersonalAccount(email, code, name, password), serverConfig.apiBaseUrl) }
             .wasInvoked(exactly = once)
         verify(sessionMapper)
             .invocation { fromSessionDTO(SESSION, serverConfig) }
@@ -200,7 +199,7 @@ class RegisterAccountRepositoryTest {
 
         given(registerApi)
             .coroutine {
-                register(RegisterApi.RegisterParam.TeamAccount(email, code, name, password, teamName, teamIcon), Url(serverConfig.apiBaseUrl))
+                register(RegisterApi.RegisterParam.TeamAccount(email, code, name, password, teamName, teamIcon), serverConfig.apiBaseUrl)
             }.then { NetworkResponse.Success(Pair(TEST_USER, SESSION), mapOf(), 200) }
         given(userMapper)
             .invocation { fromDtoToSelfUser(TEST_USER) }
@@ -216,7 +215,7 @@ class RegisterAccountRepositoryTest {
 
         verify(registerApi)
             .coroutine {
-                register(RegisterApi.RegisterParam.TeamAccount(email, code, name, password, teamName, teamIcon), Url(serverConfig.apiBaseUrl))
+                register(RegisterApi.RegisterParam.TeamAccount(email, code, name, password, teamName, teamIcon), serverConfig.apiBaseUrl)
             }
             .wasInvoked(exactly = once)
         verify(sessionMapper)
@@ -238,7 +237,7 @@ class RegisterAccountRepositoryTest {
         given(registerApi)
             .coroutine {
                 register(
-                    RegisterApi.RegisterParam.PersonalAccount(email, code, name, password), Url(TEST_SERVER_CONFIG.apiBaseUrl)
+                    RegisterApi.RegisterParam.PersonalAccount(email, code, name, password), TEST_SERVER_CONFIG.apiBaseUrl
                 )
             }.then { NetworkResponse.Error(expected) }
 
@@ -250,7 +249,7 @@ class RegisterAccountRepositoryTest {
         verify(registerApi).coroutine {
             register(
                 RegisterApi.RegisterParam.PersonalAccount(email, code, name, password),
-                Url(TEST_SERVER_CONFIG.apiBaseUrl)
+                TEST_SERVER_CONFIG.apiBaseUrl
             )
         }.wasInvoked(exactly = once)
         verify(sessionMapper)
@@ -276,7 +275,7 @@ class RegisterAccountRepositoryTest {
             websiteUrl = "websiteUrl.com",
             title = "Test Title"
         )
-        val TEST_API_HOST = Url("""test.wire.com""")
+        const val TEST_API_HOST = """test.wire.com"""
         const val NAME = "user_name"
         const val EMAIL = "user@domain.de"
         const val CODE = "123456"

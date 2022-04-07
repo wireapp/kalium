@@ -16,7 +16,6 @@ import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.HttpHeaders
-import io.ktor.http.Url
 
 interface RegisterApi {
 
@@ -108,15 +107,15 @@ interface RegisterApi {
     }
 
     suspend fun register(
-        param: RegisterParam, apiBaseUrl: Url
+        param: RegisterParam, apiBaseUrl: String
     ): NetworkResponse<Pair<UserDTO, SessionDTO>>
 
     suspend fun requestActivationCode(
-        param: RequestActivationCodeParam, apiBaseUrl: Url
+        param: RequestActivationCodeParam, apiBaseUrl: String
     ): NetworkResponse<Unit>
 
     suspend fun activate(
-        param: ActivationParam, apiBaseUrl: Url
+        param: ActivationParam, apiBaseUrl: String
     ): NetworkResponse<Unit>
 }
 
@@ -125,7 +124,7 @@ class RegisterApiImpl(
     private val httpClient: HttpClient
 ) : RegisterApi {
 
-    private suspend fun getToken(refreshToken: String, apiBaseUrl: Url): NetworkResponse<AccessTokenDTO> = wrapKaliumResponse {
+    private suspend fun getToken(refreshToken: String, apiBaseUrl: String): NetworkResponse<AccessTokenDTO> = wrapKaliumResponse {
         httpClient.post {
             setUrl(apiBaseUrl, listOf(PATH_ACCESS))
             header(HttpHeaders.Cookie, "${RefreshTokenProperties.COOKIE_NAME}=$refreshToken")
@@ -133,7 +132,7 @@ class RegisterApiImpl(
     }
 
     override suspend fun register(
-        param: RegisterApi.RegisterParam, apiBaseUrl: Url
+        param: RegisterApi.RegisterParam, apiBaseUrl: String
     ): NetworkResponse<Pair<UserDTO, SessionDTO>> = wrapKaliumResponse<UserDTO> {
         httpClient.post {
             setUrl(apiBaseUrl, listOf(REGISTER_PATH))
@@ -153,7 +152,7 @@ class RegisterApiImpl(
     }
 
     override suspend fun requestActivationCode(
-        param: RegisterApi.RequestActivationCodeParam, apiBaseUrl: Url
+        param: RegisterApi.RequestActivationCodeParam, apiBaseUrl: String
     ): NetworkResponse<Unit> = wrapKaliumResponse {
         httpClient.post {
             setUrl(apiBaseUrl, listOf(ACTIVATE_PATH, SEND_PATH))
@@ -161,7 +160,7 @@ class RegisterApiImpl(
         }
     }
 
-    override suspend fun activate(param: RegisterApi.ActivationParam, apiBaseUrl: Url): NetworkResponse<Unit> = wrapKaliumResponse {
+    override suspend fun activate(param: RegisterApi.ActivationParam, apiBaseUrl: String): NetworkResponse<Unit> = wrapKaliumResponse {
         httpClient.post {
             setUrl(apiBaseUrl, listOf(ACTIVATE_PATH))
             setBody(param.toBody())
