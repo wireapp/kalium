@@ -14,6 +14,15 @@ import io.ktor.http.URLProtocol
 import io.ktor.http.Url
 import kotlinx.serialization.SerializationException
 
+internal fun HttpRequestBuilder.setWSSUrl(baseUrl: Url, path: List<String> = listOf()) {
+    url {
+        host = baseUrl.host
+        pathSegments = baseUrl.pathSegments + path
+        protocol = URLProtocol.WSS
+        port = URLProtocol.WSS.defaultPort
+    }
+}
+
 internal fun HttpRequestBuilder.setUrl(baseUrl: Url, path: List<String> = listOf()) {
     url {
         host = baseUrl.host
