@@ -11,9 +11,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.conversation.ConvTeamInfo
 import com.wire.kalium.network.api.conversation.ConversationApi
-import com.wire.kalium.network.api.conversation.CreateConversationRequest
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.logic.data.id.TeamId
@@ -23,30 +21,10 @@ import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import com.wire.kalium.persistence.dao.Member as MemberEntity
-
-data class ConverationOptions(
-    val access: Set<Access> = emptySet(),
-    val accessRole: Set<AccessRole> = emptySet(),
-    val readReceiptsEnabled: Boolean = false,
-    val protocol: Protocol = Protocol.PROTEUS
-) {
-    enum class Protocol {
-        PROTEUS, MLS
-    }
-
-    enum class AccessRole {
-        TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE
-    }
-
-    enum class Access {
-        PRIVATE, INVITE, LINK, CODE
-    }
-}
 
 interface ConversationRepository {
     suspend fun getSelfConversationId(): ConversationId
@@ -161,7 +139,6 @@ class ConversationDataSource(
 
     override suspend fun persistMembers(members: List<MemberEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit> =
         wrapStorageRequest { conversationDAO.insertMembers(members, conversationID) }
-
 
     override suspend fun deleteMember(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity): Either<CoreFailure, Unit> =
         wrapStorageRequest { conversationDAO.deleteMemberByQualifiedID(conversationID, userID) }
