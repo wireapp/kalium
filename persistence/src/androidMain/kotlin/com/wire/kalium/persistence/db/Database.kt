@@ -58,7 +58,7 @@ actual class Database(private val context: Context, userId: UserIDEntity, kalium
             Conversation.Adapter(
                 qualified_idAdapter = QualifiedIDAdapter(),
                 typeAdapter = EnumColumnAdapter(),
-                group_stateAdapter = EnumColumnAdapter(),
+                mls_group_stateAdapter = EnumColumnAdapter(),
                 protocolAdapter = EnumColumnAdapter()
             ),
             Member.Adapter(userAdapter = QualifiedIDAdapter(), conversationAdapter = QualifiedIDAdapter()),

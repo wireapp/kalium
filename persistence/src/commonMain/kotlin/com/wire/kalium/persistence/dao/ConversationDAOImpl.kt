@@ -20,7 +20,7 @@ class ConversationMapper {
             conversation.type,
             conversation.team_id,
             protocolInfo = when (conversation.protocol) {
-                ConversationEntity.Protocol.MLS -> ConversationEntity.ProtocolInfo.MLS(conversation.group_id ?: "", conversation.group_state)
+                ConversationEntity.Protocol.MLS -> ConversationEntity.ProtocolInfo.MLS(conversation.mls_group_id ?: "", conversation.mls_group_state)
                 ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
             })
     }
