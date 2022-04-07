@@ -61,7 +61,7 @@ class SendReceiveApplication : CliktCommand() {
         conversations.forEachIndexed { index, conversation ->
             println("$index) ${conversation.id.value}  Name: ${conversation.name}")
         }
-        
+
         print("Enter conversation index: ")
         val conversationIndex = readLine()!!.toInt()
         val conversationID = conversations.get(conversationIndex).id
