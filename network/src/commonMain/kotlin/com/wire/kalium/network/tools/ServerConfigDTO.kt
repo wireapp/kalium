@@ -1,11 +1,13 @@
 package com.wire.kalium.network.tools
 
+import io.ktor.http.Url
+
 data class ServerConfigDTO(
-    val apiBaseUrl: String,
-    val accountsBaseUrl: String,
-    val webSocketBaseUrl: String,
-    val blackListUrl: String,
-    val teamsUrl: String,
-    val websiteUrl: String,
+    val apiBaseUrl: Url,
+    val accountsBaseUrl: Url,
+    val webSocketBaseUrl: Url,
+    val blackListUrl: Url,
+    val teamsUrl: Url,
+    val websiteUrl: Url,
     val title: String
 )

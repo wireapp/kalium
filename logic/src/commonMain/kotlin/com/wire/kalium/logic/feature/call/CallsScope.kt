@@ -17,4 +17,6 @@ class CallsScope(
     )
 
     val startCall: StartCallUseCase get() = StartCallUseCase(callManager)
+
+    val answerCall: AnswerCallUseCase get() = AnswerCallUseCaseImpl(callManager)
 }

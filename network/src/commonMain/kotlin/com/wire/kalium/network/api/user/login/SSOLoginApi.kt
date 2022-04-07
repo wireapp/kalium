@@ -11,6 +11,7 @@ import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.http.HttpHeaders
 import io.ktor.http.URLProtocol
+import io.ktor.http.Url
 import io.ktor.http.set
 
 interface SSOLoginApi {
@@ -32,8 +33,8 @@ interface SSOLoginApi {
 class SSOLoginApiImpl(private val httpClient: HttpClient) : SSOLoginApi {
     override suspend fun initiate(param: SSOLoginApi.InitiateParam, apiBaseUrl: String): NetworkResponse<SSOResponse> =
         wrapKaliumResponse {
-            httpClient.head {
-                url.set(host = apiBaseUrl, path = "$PATH_SSO/$PATH_INITIATE/${param.code}")
+            httpClient.head("$PATH_SSO/$PATH_INITIATE/${param.code}") {
+                Url(apiBaseUrl).host
                 url.protocol = URLProtocol.HTTPS
                 when(param) {
                     is SSOLoginApi.InitiateParam.Redirect -> {

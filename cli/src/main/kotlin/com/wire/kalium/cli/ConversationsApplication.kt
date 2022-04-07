@@ -55,7 +55,7 @@ class ConversationsApplication : CliktCommand() {
         val loginContainer = LoginNetworkContainer()
 
         val loginResult = loginContainer.loginApi.login(
-            LoginApi.LoginParam.LoginWithEmail(email = email, password = password, label = "ktor"), false, serverConfigDTO.apiBaseUrl
+            LoginApi.LoginParam.LoginWithEmail(email = email, password = password, label = "ktor"), false, serverConfigDTO.apiBaseUrl.toString()
         )
 
         if (!loginResult.isSuccessful()) {
