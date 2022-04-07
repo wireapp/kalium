@@ -6,6 +6,7 @@ import com.wire.kalium.network.api.user.login.SSOLoginApiImpl
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.Url
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -32,7 +33,7 @@ class SSOLoginApiTest: ApiTest {
         val actual = ssoApi.initiate(param, TEST_HOST)
 
         assertIs<NetworkResponse.Success<String>>(actual)
-        assertEquals("https://$TEST_HOST$PATH_SSO_INITIATE/$ssoCode", actual.value)
+        assertEquals("${TEST_HOST}sso/initiate-login/$ssoCode", actual.value)
     }
 
     @Test
@@ -44,8 +45,6 @@ class SSOLoginApiTest: ApiTest {
             statusCode = HttpStatusCode.OK,
             assertion = {
                 assertHead()
-                //assertQueryParameter("success_redirect", param.success)
-                //assertQueryParameter("error_redirect", param.error)
                 assertPathEqual("$PATH_SSO_INITIATE/$ssoCode")
             }
         )
@@ -53,7 +52,7 @@ class SSOLoginApiTest: ApiTest {
         val actual = ssoApi.initiate(param, TEST_HOST)
 
         assertIs<NetworkResponse.Success<String>>(actual)
-        assertEquals("https://$TEST_HOST$PATH_SSO_INITIATE/$ssoCode?success_redirect=${param.success}&error_redirect=${param.error}", actual.value)
+        assertEquals("${TEST_HOST}sso/initiate-login/$ssoCode?success_redirect=${param.success}&error_redirect=${param.error}", actual.value)
     }
 
     @Test
@@ -79,7 +78,7 @@ class SSOLoginApiTest: ApiTest {
         const val PATH_SSO_INITIATE = "/sso/initiate-login"
         const val PATH_SSO_FINALIZE = "/sso/finalize-login"
 
-        const val TEST_HOST = """test-https.wire.com"""
+        val TEST_HOST = Url("""https://test-https.wire.com""")
     }
 
 }
