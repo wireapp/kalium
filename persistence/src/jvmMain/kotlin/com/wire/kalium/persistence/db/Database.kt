@@ -11,14 +11,28 @@ import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
+import java.io.File
+import java.util.Properties
 
-actual class Database {
+actual class Database(private val storePath: File) {
 
-    val database: AppDatabase
+    private val database: AppDatabase
 
     init {
-        val driver: SqlDriver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
-        AppDatabase.Schema.create(driver)
+        val databasePath = storePath.resolve(DATABASE_NAME)
+        val databaseExists = databasePath.exists()
+
+        // Make sure all intermediate directories exist
+        storePath.mkdirs()
+
+        val driver: SqlDriver = JdbcSqliteDriver(
+            "jdbc:sqlite:${databasePath.absolutePath}",
+            Properties(1).apply { put("foreign_keys", "true") })
+
+        if (!databaseExists) {
+          AppDatabase.Schema.create(driver)
+        }
+
         database = AppDatabase(
             driver,
             Client.Adapter(user_idAdapter = QualifiedIDAdapter()),
@@ -36,7 +50,6 @@ actual class Database {
             ),
             User.Adapter(qualified_idAdapter = QualifiedIDAdapter(), IntColumnAdapter)
         )
-        driver.execute(null, "PRAGMA foreign_keys=ON", 0)
     }
 
     actual val userDAO: UserDAO
@@ -61,6 +74,10 @@ actual class Database {
         get() = TeamDAOImpl(database.teamsQueries)
 
     actual fun nuke(): Boolean {
-        TODO("Not yet implemented")
+        return storePath.resolve(DATABASE_NAME).delete()
+    }
+
+    private companion object {
+        const val DATABASE_NAME = "main.db"
     }
 }
