@@ -19,6 +19,13 @@ sqldelight {
     }
 }
 
+sqldelight {
+    database("KaliumDatabase") {
+        dialect = "app.cash.sqldelight:sqlite-3-24-dialect:${Versions.sqlDelight}"
+        packageName = "com.wire.kalium.persistence.kalium_db"
+    }
+}
+
 android {
     compileSdk = Android.Sdk.compile
     sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
