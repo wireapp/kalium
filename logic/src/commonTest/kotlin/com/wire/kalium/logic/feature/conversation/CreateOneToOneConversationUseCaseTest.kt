@@ -1,12 +1,10 @@
 package com.wire.kalium.logic.feature.conversation
 
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.any
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
@@ -23,11 +21,11 @@ class CreateOneToOneConversationUseCaseTest {
     @Mock
     private val conversationRepository = mock(classOf<ConversationRepository>())
 
-    private lateinit var createOneToOneConverastionUsecase: CreateOneToOneConversationUseCase
+    private lateinit var createOneToOneConversationUseCase: CreateOneToOneConversationUseCase
 
     @BeforeTest
     fun setUp() {
-        createOneToOneConverastionUsecase = CreateOneToOneConversationUseCase(
+        createOneToOneConversationUseCase = CreateOneToOneConversationUseCase(
             conversationRepository = conversationRepository
         )
     }
@@ -43,7 +41,7 @@ class CreateOneToOneConversationUseCaseTest {
             .coroutine { createOne2OneConversationWithTeamMate(USER_ID) }
             .then { Either.Right(CONVERSATION_ID) }
         //when
-        val result = createOneToOneConverastionUsecase.invoke(USER_ID)
+        val result = createOneToOneConversationUseCase.invoke(USER_ID)
         //then
         assertIs<CreateConversationResult.Success>(result)
 
@@ -59,7 +57,7 @@ class CreateOneToOneConversationUseCaseTest {
             .coroutine { getOne2OneConversationByUserId(USER_ID) }
             .then { Either.Right(USER_ID) }
         //when
-        val result = createOneToOneConverastionUsecase.invoke(USER_ID)
+        val result = createOneToOneConversationUseCase.invoke(USER_ID)
         //then
         assertIs<CreateConversationResult.Success>(result)
 
