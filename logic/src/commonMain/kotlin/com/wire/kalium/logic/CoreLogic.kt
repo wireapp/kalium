@@ -13,8 +13,7 @@ expect class CoreLogic : CoreLogicCommon
 abstract class CoreLogicCommon(
     // TODO: can client label be replaced with clientConfig.deviceName() ?
     protected val clientLabel: String,
-    // TODO rename to rootAccountDirectoryPath?
-    protected val rootProteusDirectoryPath: String,
+    protected val rootPath: String,
     protected val idMapper: IdMapper = MapperProvider.idMapper()
 ) {
 

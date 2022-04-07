@@ -17,7 +17,7 @@ class LogoutUseCase(
         // TODO: clear crypto files ?
         authenticatedDataSourceSet.proteusClient.close()
         logoutRepository.logout()
-        authenticatedDataSourceSet.database.nuke()
+        authenticatedDataSourceSet.userDatabaseProvider.nuke()
         authenticatedDataSourceSet.kaliumPreferencesSettings.nuke()
         sessionRepository.deleteSession(userId)
         sessionRepository.allSessions().onSuccess {
