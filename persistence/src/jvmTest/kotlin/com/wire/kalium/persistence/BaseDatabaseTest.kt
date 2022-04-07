@@ -1,7 +1,7 @@
 package com.wire.kalium.persistence
 
-import com.wire.kalium.persistence.db.Database
 import java.nio.file.Files
+import com.wire.kalium.persistence.db.UserDatabaseProvider
 
 actual open class BaseDatabaseTest actual constructor() {
 
@@ -11,8 +11,8 @@ actual open class BaseDatabaseTest actual constructor() {
         databaseFile.delete()
     }
 
-    actual fun createDatabase(): Database {
-        return Database(databaseFile)
+    actual fun createDatabase(): UserDatabaseProvider {
+        return UserDatabaseProvider(databaseFile)
     }
 
 }

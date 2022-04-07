@@ -6,13 +6,13 @@ import com.wire.kalium.logic.data.session.SessionDataSource
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
-import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.feature.call.GlobalCallManager
+import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.sync.SyncManagerImpl
 import com.wire.kalium.logic.sync.WorkScheduler
 import com.wire.kalium.network.AuthenticatedNetworkContainer
 import com.wire.kalium.persistence.client.SessionStorageImpl
-import com.wire.kalium.persistence.db.Database
+import com.wire.kalium.persistence.db.UserDatabaseProvider
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
 import com.wire.kalium.persistence.kmm_settings.SettingOptions
@@ -42,7 +42,7 @@ actual class CoreLogic(clientLabel: String, rootPath: String) : CoreLogicCommon(
             val syncManager = SyncManagerImpl(workScheduler)
             val encryptedSettingsHolder = EncryptedSettingsHolder(SettingOptions.UserSettings(idMapper.toDaoModel(userId)))
             val userPreferencesSettings = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
-            val database = Database(File(rootStoragePath))
+            val userDatabase = UserDatabaseProvider(File(rootStoragePath))
 
             AuthenticatedDataSourceSet(
                 rootAccountPath,
@@ -50,7 +50,7 @@ actual class CoreLogic(clientLabel: String, rootPath: String) : CoreLogicCommon(
                 proteusClient,
                 workScheduler,
                 syncManager,
-                database,
+                userDatabase,
                 userPreferencesSettings,
                 encryptedSettingsHolder
             ).also {
