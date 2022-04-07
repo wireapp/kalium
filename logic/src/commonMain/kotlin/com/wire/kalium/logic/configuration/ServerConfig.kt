@@ -2,6 +2,7 @@ package com.wire.kalium.logic.configuration
 
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.persistence.model.ServerConfigEntity
+import io.ktor.http.Url
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -16,21 +17,21 @@ data class ServerConfig(
 ) {
     companion object {
         val PRODUCTION = ServerConfig(
-            apiBaseUrl = """prod-nginz-https.wire.com""",
-            accountsBaseUrl = """account.wire.com""",
-            webSocketBaseUrl = """prod-nginz-ssl.wire.com""",
-            teamsUrl = """teams.wire.com""",
-            blackListUrl = """clientblacklist.wire.com/prod""",
-            websiteUrl = """wire.com""",
+            apiBaseUrl = """https://prod-nginz-https.wire.com""",
+            accountsBaseUrl = """https://account.wire.com""",
+            webSocketBaseUrl = """https://prod-nginz-ssl.wire.com""",
+            teamsUrl = """https://teams.wire.com""",
+            blackListUrl = """https://clientblacklist.wire.com/prod""",
+            websiteUrl = """https://wire.com""",
             title = "Production"
         )
         val STAGING = ServerConfig(
-            apiBaseUrl = """staging-nginz-https.zinfra.io""",
-            accountsBaseUrl = """wire-account-staging.zinfra.io""",
-            webSocketBaseUrl = """staging-nginz-ssl.zinfra.io""",
-            teamsUrl = """wire-teams-staging.zinfra.io""",
-            blackListUrl = """clientblacklist.wire.com/staging""",
-            websiteUrl = """wire.com""",
+            apiBaseUrl = """https://staging-nginz-https.zinfra.io""",
+            accountsBaseUrl = """https://wire-account-staging.zinfra.io""",
+            webSocketBaseUrl = """https://staging-nginz-ssl.zinfra.io""",
+            teamsUrl = """https://wire-teams-staging.zinfra.io""",
+            blackListUrl = """https://clientblacklist.wire.com/staging""",
+            websiteUrl = """https://wire.com""",
             title = "Staging"
         )
         val DEFAULT = STAGING
@@ -47,10 +48,10 @@ interface ServerConfigMapper {
 class ServerConfigMapperImpl : ServerConfigMapper {
     // TODO: url validation check e.g. remove https:// since ktor will control the http protocol
     override fun toDTO(serverConfig: ServerConfig): ServerConfigDTO =
-        with(serverConfig) { ServerConfigDTO(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title) }
+        with(serverConfig) { ServerConfigDTO(Url(apiBaseUrl), Url(accountsBaseUrl), Url(webSocketBaseUrl), Url(blackListUrl), Url(teamsUrl), Url(websiteUrl), title) }
 
     override fun fromDTO(serverConfigDTO: ServerConfigDTO): ServerConfig =
-        with(serverConfigDTO) { ServerConfig(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title) }
+        with(serverConfigDTO) { ServerConfig(apiBaseUrl.toString(), accountsBaseUrl.toString(), webSocketBaseUrl.toString(), blackListUrl.toString(), teamsUrl.toString(), websiteUrl.toString(), title) }
 
     override fun toEntity(serverConfig: ServerConfig): ServerConfigEntity =
         with(serverConfig) {
