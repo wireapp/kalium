@@ -22,17 +22,16 @@ actual class MLSClientProviderImpl actual constructor(
 ): MLSClientProvider {
 
     override suspend fun getMLSClient(clientId: ClientId?): Either<CoreFailure, MLSClient> = suspending {
-        val location = "$rootKeyStorePath/${userId.domain}/${userId.value}"
         val cryptoUserId = CryptoUserID(userId.value, userId.domain)
 
         // Make sure all intermediate directories exists
-        File(location).mkdirs()
+        File(rootKeyStorePath).mkdirs()
 
         val mlsClient = clientId?.let { clientId ->
-            Either.Right(mlsClient(cryptoUserId, clientId, location))
+            Either.Right(mlsClient(cryptoUserId, clientId, rootKeyStorePath))
         } ?: run {
             clientRepository.currentClientId().map { clientId ->
-                mlsClient(cryptoUserId, clientId, location)
+                mlsClient(cryptoUserId, clientId, rootKeyStorePath)
             }
         }
         mlsClient

@@ -27,8 +27,8 @@ import kotlinx.coroutines.runBlocking
 actual class CoreLogic(
     private val appContext: Context,
     clientLabel: String,
-    rootProteusDirectoryPath: String,
-) : CoreLogicCommon(clientLabel, rootProteusDirectoryPath) {
+    rootPath: String,
+) : CoreLogicCommon(clientLabel, rootPath) {
 
     override fun getSessionRepo(): SessionRepository {
         val sessionPreferences =
@@ -39,8 +39,10 @@ actual class CoreLogic(
 
     override fun getSessionScope(userId: UserId): UserSessionScope {
         val dataSourceSet = userScopeStorage[userId] ?: run {
+            val rootAccountPath = "$rootPath/${userId.domain}/${userId.value}"
+            val rootProteusPath = "$rootAccountPath/proteus"
             val networkContainer = AuthenticatedNetworkContainer(SessionManagerImpl(sessionRepository, userId))
-            val proteusClient: ProteusClient = ProteusClientImpl(rootProteusDirectoryPath, idMapper.toCryptoQualifiedIDId(userId))
+            val proteusClient: ProteusClient = ProteusClientImpl(rootProteusPath, idMapper.toCryptoQualifiedIDId(userId))
             runBlocking { proteusClient.open() }
 
             val workScheduler = WorkScheduler(appContext, userId)
@@ -52,7 +54,7 @@ actual class CoreLogic(
             val userPreferencesSettings = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
             val database = Database(appContext, userIDEntity, userPreferencesSettings)
             AuthenticatedDataSourceSet(
-                rootProteusDirectoryPath,
+                rootAccountPath,
                 networkContainer,
                 proteusClient,
                 workScheduler,
