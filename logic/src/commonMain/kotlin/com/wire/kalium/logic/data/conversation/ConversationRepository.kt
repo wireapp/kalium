@@ -20,9 +20,13 @@ import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import com.wire.kalium.persistence.dao.Member as MemberEntity
@@ -40,6 +44,7 @@ interface ConversationRepository {
     suspend fun persistMembers(members: List<MemberEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun deleteMember(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun createOne2OneConversationWithTeamMate(otherUserId: UserId): Either<CoreFailure, ConversationId>
+    suspend fun getOne2OneConversationByUserId(otherUserId: UserId): Either<CoreFailure, ConversationId?>
 }
 
 class ConversationDataSource(
@@ -170,5 +175,16 @@ class ConversationDataSource(
             )
         )
     }.map { idMapper.fromApiModel(it.id) }
+
+    override suspend fun getOne2OneConversationByUserId(otherUserId: UserId): Either<StorageFailure, ConversationId?> {
+        return wrapStorageRequest {
+            observeConversationList()
+                .flatMapMerge { it.asFlow() }
+                .flatMapMerge { getConversationDetailsById(it.id) }
+                .filterIsInstance<ConversationDetails.OneOne>()
+                .firstOrNull { otherUserId == it.otherUser.id }
+                ?.conversation?.id
+        }
+    }
 
 }
