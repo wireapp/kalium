@@ -34,14 +34,14 @@ class StartCallUseCaseTest {
 
         given(callManager)
             .suspendFunction(callManager::startCall)
-            .whenInvokedWith(eq(conversationId), eq(CallType.NORMAL), eq(CallingConversationType.OneOnOne), eq(false))
+            .whenInvokedWith(eq(conversationId), eq(CallType.AUDIO), eq(CallingConversationType.OneOnOne), eq(false))
             .thenDoNothing()
 
-        startCall.invoke(conversationId, CallType.NORMAL, CallingConversationType.OneOnOne)
+        startCall.invoke(conversationId, CallType.AUDIO, CallingConversationType.OneOnOne)
 
         verify(callManager)
             .suspendFunction(callManager::startCall)
-            .with(eq(conversationId), eq(CallType.NORMAL), eq(CallingConversationType.OneOnOne), eq(false))
+            .with(eq(conversationId), eq(CallType.AUDIO), eq(CallingConversationType.OneOnOne), eq(false))
             .wasInvoked(once)
     }
 

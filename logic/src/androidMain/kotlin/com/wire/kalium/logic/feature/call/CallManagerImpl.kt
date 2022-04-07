@@ -113,12 +113,7 @@ actual class CallManagerImpl(
                     scope.launch {
                         val messageString = data?.getString(0, UTF8_ENCODING)
                         messageString?.let {
-                            sendCallingMessage(
-                                conversationId.toConversationId(),
-                                avsSelfUserId.toUserId(),
-                                ClientId(avsSelfClientId),
-                                it
-                            )
+                            sendCallingMessage(conversationId.toConversationId(), avsSelfUserId.toUserId(), ClientId(avsSelfClientId), it)
                         }
                     }
                     kaliumLogger.i("$TAG -> sendHandler success")
@@ -210,7 +205,7 @@ actual class CallManagerImpl(
         calling.wcall_answer(
             inst = deferredHandle.await(),
             conversationId = conversationId.asString(),
-            callType = CallType.CALL_TYPE_NORMAL.value,
+            callType = CallType.AUDIO.avsValue,
             cbrEnabled = false
         )
     }
