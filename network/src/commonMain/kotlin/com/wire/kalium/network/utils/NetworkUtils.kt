@@ -14,12 +14,17 @@ import io.ktor.http.URLProtocol
 import io.ktor.http.Url
 import kotlinx.serialization.SerializationException
 
-internal fun HttpRequestBuilder.setUrl(baseUrl: Url, path: List<String>) {
+internal fun HttpRequestBuilder.setUrl(baseUrl: Url, path: List<String> = listOf()) {
     url {
         host = baseUrl.host
         pathSegments = baseUrl.pathSegments + path
         protocol = URLProtocol.HTTPS
     }
+}
+
+internal fun HttpRequestBuilder.setUrl(baseUrl: String, path: List<String> = listOf()) {
+    val parsedUrl = Url(baseUrl)
+    setUrl(parsedUrl, path)
 }
 
 internal fun String.splitSetCookieHeader(): List<String> {
@@ -79,7 +84,7 @@ internal fun String.splitSetCookieHeader(): List<String> {
  * @return A new [NetworkResponse.Success] with the mapped result,
  * or [NetworkResponse.Error] if it was never a success to begin with
  */
-internal inline fun <T : Any, U : Any> NetworkResponse<T>. mapSuccess(mapping: ((T) -> U)): NetworkResponse<U> =
+internal inline fun <T : Any, U : Any> NetworkResponse<T>.mapSuccess(mapping: ((T) -> U)): NetworkResponse<U> =
     if (isSuccessful()) {
         NetworkResponse.Success(mapping(this.value), this.headers, this.httpCode)
     } else {

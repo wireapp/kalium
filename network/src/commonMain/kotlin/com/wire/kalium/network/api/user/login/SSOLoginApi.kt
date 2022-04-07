@@ -2,6 +2,7 @@ package com.wire.kalium.network.api.user.login
 
 import com.wire.kalium.network.api.RefreshTokenProperties
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.setUrl
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
@@ -10,9 +11,7 @@ import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.http.HttpHeaders
-import io.ktor.http.URLProtocol
 import io.ktor.http.Url
-import io.ktor.http.set
 
 interface SSOLoginApi {
 
@@ -33,9 +32,8 @@ interface SSOLoginApi {
 class SSOLoginApiImpl(private val httpClient: HttpClient) : SSOLoginApi {
     override suspend fun initiate(param: SSOLoginApi.InitiateParam, apiBaseUrl: String): NetworkResponse<SSOResponse> =
         wrapKaliumResponse {
-            httpClient.head("$PATH_SSO/$PATH_INITIATE/${param.code}") {
-                Url(apiBaseUrl).host
-                url.protocol = URLProtocol.HTTPS
+            httpClient.head {
+                setUrl(Url(apiBaseUrl), listOf(PATH_SSO, PATH_INITIATE, param.code))
                 when(param) {
                     is SSOLoginApi.InitiateParam.Redirect -> {
                         parameter(QUERY_SUCCESS_REDIRECT, param.success)
@@ -48,23 +46,20 @@ class SSOLoginApiImpl(private val httpClient: HttpClient) : SSOLoginApi {
 
     override suspend fun finalize(cookie: String, apiBaseUrl: String): NetworkResponse<String> = wrapKaliumResponse {
         httpClient.post {
-            url.set(host = apiBaseUrl, path = "$PATH_SSO/$PATH_FINALIZE")
-            url.protocol = URLProtocol.HTTPS
+            setUrl(apiBaseUrl, listOf(PATH_SSO, PATH_FINALIZE))
             header(HttpHeaders.Cookie, "${RefreshTokenProperties.COOKIE_NAME}=$cookie")
         }
     }
 
     override suspend fun metaData(apiBaseUrl: String): NetworkResponse<String> = wrapKaliumResponse {
         httpClient.get {
-            url.set(host = apiBaseUrl, path = "$PATH_SSO/$PATH_METADATA")
-            url.protocol = URLProtocol.HTTPS
+            setUrl(apiBaseUrl, listOf(PATH_SSO, PATH_METADATA))
         }
     }
 
     override suspend fun settings(apiBaseUrl: String): NetworkResponse<SSOSettingsResponse> = wrapKaliumResponse {
         httpClient.get {
-            url.set(host = apiBaseUrl, path = "$PATH_SSO/$PATH_SETTINGS")
-            url.protocol = URLProtocol.HTTPS
+            setUrl(apiBaseUrl, listOf(PATH_SSO, PATH_SETTINGS))
         }
     }
 
