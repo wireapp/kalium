@@ -12,17 +12,17 @@ import kotlinx.coroutines.flow.asStateFlow
 actual class CallManagerImpl : CallManager {
 
     private val _calls = MutableStateFlow(listOf<Call>())
-    actual override val allCalls = _calls.asStateFlow()
+    override val allCalls = _calls.asStateFlow()
 
     init {
         kaliumLogger.w("CallManager initialized for JVM but no supported yet.")
     }
 
-    actual override suspend fun onCallingMessageReceived(message: Message, content: MessageContent.Calling) {
+    override suspend fun onCallingMessageReceived(message: Message, content: MessageContent.Calling) {
         kaliumLogger.w("onCallingMessageReceived for JVM but no supported yet.")
     }
 
-    actual override suspend fun startCall(conversationId: ConversationId, callType: CallType, conversationType: CallingConversationType, isAudioCbr: Boolean) {
+    override suspend fun startCall(conversationId: ConversationId, callType: CallType, conversationType: CallingConversationType, isAudioCbr: Boolean) {
         kaliumLogger.w("startCall for JVM but no supported yet.")
     }
 }
