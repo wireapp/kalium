@@ -48,7 +48,7 @@ actual class CallManagerImpl(
     private val deferredHandle: Deferred<Handle>
 
     private val _calls = MutableStateFlow(listOf<Call>())
-    actual override val allCalls = _calls.asStateFlow()
+    override val allCalls = _calls.asStateFlow()
 
     private val clientId: Deferred<ClientId> = scope.async(start = CoroutineStart.LAZY) {
         clientRepository.currentClientId().fold({
@@ -90,7 +90,7 @@ actual class CallManagerImpl(
         }
     }
 
-    actual override suspend fun startCall(conversationId: ConversationId, callType: CallType, conversationType: CallingConversationType, isAudioCbr: Boolean) {
+    override suspend fun startCall(conversationId: ConversationId, callType: CallType, conversationType: CallingConversationType, isAudioCbr: Boolean) {
         withCalling {
             wcall_start(deferredHandle.await(), conversationId.asString(), callType.avsValue, conversationType.avsValue, isAudioCbr.toInt())
         }
@@ -177,7 +177,7 @@ actual class CallManagerImpl(
         return calling.action(handle)
     }
 
-    actual override suspend fun onCallingMessageReceived(message: Message, content: MessageContent.Calling) =
+    override suspend fun onCallingMessageReceived(message: Message, content: MessageContent.Calling) =
         withCalling {
             val msg = content.value.toByteArray()
 
