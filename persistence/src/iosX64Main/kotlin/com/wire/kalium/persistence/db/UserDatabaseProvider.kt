@@ -28,7 +28,7 @@ import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
 import com.wire.kalium.persistence.util.FileNameUtil
 
-actual class Database(userId: UserIDEntity, passphrase: String) {
+actual class UserDatabaseProvider(userId: UserIDEntity, passphrase: String) {
 
     val database: UserDatabase
 

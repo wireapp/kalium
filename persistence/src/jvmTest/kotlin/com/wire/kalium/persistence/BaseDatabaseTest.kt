@@ -1,13 +1,13 @@
 package com.wire.kalium.persistence
 
-import com.wire.kalium.persistence.db.Database
+import com.wire.kalium.persistence.db.UserDatabaseProvider
 
 actual open class BaseDatabaseTest actual constructor() {
     actual fun deleteDatabase() {
     }
 
-    actual fun createDatabase(): Database {
-        return Database()
+    actual fun createDatabase(): UserDatabaseProvider {
+        return UserDatabaseProvider()
     }
 
 }
