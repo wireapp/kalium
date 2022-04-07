@@ -42,7 +42,7 @@ actual class CoreLogic(
             val rootAccountPath = "$rootPath/${userId.domain}/${userId.value}"
             val rootProteusPath = "$rootAccountPath/proteus"
             val networkContainer = AuthenticatedNetworkContainer(SessionManagerImpl(sessionRepository, userId))
-            val proteusClient: ProteusClient = ProteusClientImpl(rootProteusPath, idMapper.toCryptoQualifiedIDId(userId))
+            val proteusClient: ProteusClient = ProteusClientImpl(rootProteusPath)
             runBlocking { proteusClient.open() }
 
             val workScheduler = WorkScheduler(appContext, userId)
