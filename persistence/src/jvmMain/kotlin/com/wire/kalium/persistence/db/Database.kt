@@ -4,7 +4,22 @@ import app.cash.sqldelight.EnumColumnAdapter
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
-import com.wire.kalium.persistence.dao.*
+import com.wire.kalium.persistence.Client
+import com.wire.kalium.persistence.Conversation
+import com.wire.kalium.persistence.Member
+import com.wire.kalium.persistence.Message
+import com.wire.kalium.persistence.User
+import com.wire.kalium.persistence.UserDatabase
+import com.wire.kalium.persistence.dao.ContentTypeAdapter
+import com.wire.kalium.persistence.dao.ConversationDAO
+import com.wire.kalium.persistence.dao.ConversationDAOImpl
+import com.wire.kalium.persistence.dao.MetadataDAO
+import com.wire.kalium.persistence.dao.MetadataDAOImpl
+import com.wire.kalium.persistence.dao.QualifiedIDAdapter
+import com.wire.kalium.persistence.dao.TeamDAO
+import com.wire.kalium.persistence.dao.TeamDAOImpl
+import com.wire.kalium.persistence.dao.UserDAO
+import com.wire.kalium.persistence.dao.UserDAOImpl
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetDAOImpl
 import com.wire.kalium.persistence.dao.client.ClientDAO
@@ -14,12 +29,12 @@ import com.wire.kalium.persistence.dao.message.MessageDAOImpl
 
 actual class Database {
 
-    val database: AppDatabase
+    val database: UserDatabase
 
     init {
         val driver: SqlDriver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
-        AppDatabase.Schema.create(driver)
-        database = AppDatabase(
+        UserDatabase.Schema.create(driver)
+        database = UserDatabase(
             driver,
             Client.Adapter(user_idAdapter = QualifiedIDAdapter()),
             Conversation.Adapter(qualified_idAdapter = QualifiedIDAdapter(), typeAdapter = EnumColumnAdapter()),

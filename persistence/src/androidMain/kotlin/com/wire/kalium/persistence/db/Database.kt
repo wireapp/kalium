@@ -7,6 +7,12 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import app.cash.sqldelight.EnumColumnAdapter
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
+import com.wire.kalium.persistence.Client
+import com.wire.kalium.persistence.Conversation
+import com.wire.kalium.persistence.Member
+import com.wire.kalium.persistence.Message
+import com.wire.kalium.persistence.User
+import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.ContentTypeAdapter
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationDAOImpl
@@ -32,12 +38,12 @@ import java.security.SecureRandom
 actual class Database(private val context: Context, userId: UserIDEntity, kaliumPreferences: KaliumPreferences) {
     private val dbName = FileNameUtil.userDBName(userId)
     private val driver: AndroidSqliteDriver
-    private val database: AppDatabase
+    private val database: UserDatabase
 
     init {
         val supportFactory = SupportFactory(getOrGenerateSecretKey(kaliumPreferences).toByteArray())
 
-        val onConnectCallback = object : AndroidSqliteDriver.Callback(AppDatabase.Schema) {
+        val onConnectCallback = object : AndroidSqliteDriver.Callback(UserDatabase.Schema) {
             override fun onOpen(db: SupportSQLiteDatabase) {
                 super.onOpen(db)
                 db.execSQL("PRAGMA foreign_keys=ON;")
@@ -45,14 +51,14 @@ actual class Database(private val context: Context, userId: UserIDEntity, kalium
         }
 
         driver = AndroidSqliteDriver(
-            schema = AppDatabase.Schema,
+            schema = UserDatabase.Schema,
             context = context,
             name = dbName,
             factory = supportFactory,
             callback = onConnectCallback
         )
 
-        database = AppDatabase(
+        database = UserDatabase(
             driver,
             Client.Adapter(user_idAdapter = QualifiedIDAdapter()),
             Conversation.Adapter(qualified_idAdapter = QualifiedIDAdapter(), typeAdapter = EnumColumnAdapter()),

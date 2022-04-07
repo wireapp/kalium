@@ -3,6 +3,12 @@ package com.wire.kalium.persistence.db
 import app.cash.sqldelight.EnumColumnAdapter
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.driver.native.NativeSqliteDriver
+import com.wire.kalium.persistence.Client
+import com.wire.kalium.persistence.Conversation
+import com.wire.kalium.persistence.Member
+import com.wire.kalium.persistence.Message
+import com.wire.kalium.persistence.User
+import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.ContentTypeAdapter
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationDAOImpl
@@ -24,11 +30,11 @@ import com.wire.kalium.persistence.util.FileNameUtil
 
 actual class Database(userId: UserIDEntity, passphrase: String) {
 
-    val database: AppDatabase
+    val database: UserDatabase
 
     init {
-        val driver = NativeSqliteDriver(AppDatabase.Schema, FileNameUtil.userDBName(userId))
-        database = AppDatabase(
+        val driver = NativeSqliteDriver(UserDatabase.Schema, FileNameUtil.userDBName(userId))
+        database = UserDatabase(
             driver,
             Client.Adapter(user_idAdapter = QualifiedIDAdapter()),
             Conversation.Adapter(qualified_idAdapter = QualifiedIDAdapter(), typeAdapter = EnumColumnAdapter()),

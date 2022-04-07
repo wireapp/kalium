@@ -2,7 +2,7 @@ package com.wire.kalium.persistence.dao
 
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
-import com.wire.kalium.persistence.db.MetadataQueries
+import com.wire.kalium.persistence.MetadataQueries
 import kotlinx.coroutines.flow.Flow
 
 // TODO: suggestion implement with preference
