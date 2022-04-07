@@ -16,7 +16,7 @@ sqldelight {
     database("UserDatabase") {
         dialect = "app.cash.sqldelight:sqlite-3-24-dialect:${Versions.sqlDelight}"
         packageName = "com.wire.kalium.persistence"
-        sourceFolders = listOf("user_db")
+        sourceFolders = listOf("db_user")
     }
 }
 
