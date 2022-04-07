@@ -13,7 +13,6 @@ interface MemberMapper {
     fun fromApiModelToDaoModel(conversationMembersResponse: ConversationMembersResponse): List<PersistedMember>
     fun fromEventToDaoModel(members: List<ConversationMember>): List<PersistedMember>
     fun fromDaoModel(entity: PersistedMember): Member
-//    fun toApiModel(members: List<Member>): List<>
     fun toDaoModel(member: Member): PersistedMember
 }
 
