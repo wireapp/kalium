@@ -39,7 +39,7 @@ internal fun provideBaseHttpClient(
             HttpClientOptions.NoDefaultHost -> {/* do nothing */ }
 
             is HttpClientOptions.DefaultHost -> {
-                host = options.serverConfigDTO.apiBaseUrl
+                host = options.serverConfigDTO.apiBaseUrl.host
                 // the UrlProtocol is intentionally here and not default for both options
                 // since any url configuration here will get overwritten by the request configuration
                 url.protocol = URLProtocol.HTTPS
