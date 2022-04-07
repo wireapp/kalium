@@ -16,6 +16,8 @@ import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.network.api.conversation.ConversationResponse
+import com.wire.kalium.persistence.dao.ConversationEntity
+import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.flow.Flow
@@ -159,18 +161,14 @@ class ConversationDataSource(
                 wrapStorageRequest {
                     conversationDAO.insertConversation(conversationEntity)
                 }.flatMap {
-                    if (options.protocol == ConverationOptions.Protocol.PROTEUS) {
-                        persistMembersFromConversationResponse(conversationResponse)
-                    } else {
-                        persistMembersFromConversationResponseMLS(conversationResponse, members)
+                    when (conversationEntity.protocolInfo) {
+                        is ProtocolInfo.Proteus -> persistMembersFromConversationResponse(conversationResponse)
+                        is ProtocolInfo.MLS -> persistMembersFromConversationResponseMLS(conversationResponse, members)
                     }
                 }.flatMap {
-                    if (options.protocol == ConverationOptions.Protocol.PROTEUS) {
-                        Either.Right(conversation)
-                    } else {
-                        mlsConversationRepository.establishMLSGroup(conversation).flatMap {
-                            Either.Right(conversation)
-                        }
+                    when (conversationEntity.protocolInfo) {
+                        is ProtocolInfo.Proteus -> Either.Right(conversation)
+                        is ProtocolInfo.MLS -> mlsConversationRepository.establishMLSGroup((conversationEntity.protocolInfo as ProtocolInfo.MLS).groupId).flatMap { Either.Right(conversation) }
                     }
                 }
             }

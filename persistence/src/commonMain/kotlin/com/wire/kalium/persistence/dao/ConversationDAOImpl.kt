@@ -19,10 +19,12 @@ class ConversationMapper {
             conversation.name,
             conversation.type,
             conversation.team_id,
-            conversation.group_id,
-            conversation.group_state,
-            conversation.protocol)
+            protocolInfo = when (conversation.protocol) {
+                ConversationEntity.Protocol.MLS -> ConversationEntity.ProtocolInfo.MLS(conversation.group_id ?: "", conversation.group_state)
+                ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
+            })
     }
+
 }
 
 class MemberMapper {
@@ -43,31 +45,28 @@ class ConversationDAOImpl(
     override suspend fun getSelfConversationId() = getAllConversations().first().first { it.type == ConversationEntity.Type.SELF }.id
 
     override suspend fun insertConversation(conversationEntity: ConversationEntity) {
+        nonSuspendingInsertConversation(conversationEntity)
+    }
+
+    override suspend fun insertConversations(conversationEntities: List<ConversationEntity>) {
+        conversationQueries.transaction {
+
+            for (conversationEntity: ConversationEntity in conversationEntities) {
+                nonSuspendingInsertConversation(conversationEntity)
+            }
+        }
+    }
+
+    private fun nonSuspendingInsertConversation(conversationEntity: ConversationEntity) {
         conversationQueries.insertConversation(
             conversationEntity.id,
             conversationEntity.name,
             conversationEntity.type,
             conversationEntity.teamId,
-            conversationEntity.groupId,
-            conversationEntity.groupState,
-            conversationEntity.protocol
+            if (conversationEntity.protocolInfo is ConversationEntity.ProtocolInfo.MLS) conversationEntity.protocolInfo.groupId else null,
+            if (conversationEntity.protocolInfo is ConversationEntity.ProtocolInfo.MLS) conversationEntity.protocolInfo.groupState else ConversationEntity.GroupState.ESTABLISHED,
+            if (conversationEntity.protocolInfo is ConversationEntity.ProtocolInfo.MLS) ConversationEntity.Protocol.MLS else ConversationEntity.Protocol.PROTEUS
         )
-    }
-
-    override suspend fun insertConversations(conversationEntities: List<ConversationEntity>) {
-        conversationQueries.transaction {
-            for (conversationEntity: ConversationEntity in conversationEntities) {
-                conversationQueries.insertConversation(
-                    conversationEntity.id,
-                    conversationEntity.name,
-                    conversationEntity.type,
-                    conversationEntity.teamId,
-                    conversationEntity.groupId,
-                    conversationEntity.groupState,
-                    conversationEntity.protocol
-                )
-            }
-        }
     }
 
     override suspend fun updateConversation(conversationEntity: ConversationEntity) {
@@ -92,6 +91,13 @@ class ConversationDAOImpl(
 
     override suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?> {
         return conversationQueries.selectByQualifiedId(qualifiedID)
+            .asFlow()
+            .mapToOneOrNull()
+            .map { it?.let { conversationMapper.toModel(it) } }
+    }
+
+    override suspend fun getConversationByGroupID(groupID: String): Flow<ConversationEntity?> {
+        return conversationQueries.selectByGroupId(groupID)
             .asFlow()
             .mapToOneOrNull()
             .map { it?.let { conversationMapper.toModel(it) } }

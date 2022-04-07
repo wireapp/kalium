@@ -35,3 +35,6 @@ SELECT * FROM Conversation;
 
 selectByQualifiedId:
 SELECT * FROM Conversation WHERE qualified_id = ?;
+
+selectByGroupId:
+SELECT * FROM Conversation WHERE group_id = ?;

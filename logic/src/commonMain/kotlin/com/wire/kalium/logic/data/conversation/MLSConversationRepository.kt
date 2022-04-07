@@ -5,7 +5,6 @@ import com.wire.kalium.cryptography.CryptoQualifiedID
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -22,22 +21,20 @@ import kotlinx.coroutines.flow.first
 
 interface MLSConversationRepository {
 
-    suspend fun establishMLSGroup(conversation: Conversation): Either<CoreFailure, Unit>
+    suspend fun establishMLSGroup(groupID: String): Either<CoreFailure, Unit>
 
 }
 
 class MLSConversationDataSource(
-    val keyPackageRepository: KeyPackageRepository,
-    val mlsClientProvider: MLSClientProvider,
-    val mlsMessageApi: MLSMessageApi,
-    val conversationDAO: ConversationDAO,
-    val idMapper: IdMapper = MapperProvider.idMapper()
+    private val keyPackageRepository: KeyPackageRepository,
+    private val mlsClientProvider: MLSClientProvider,
+    private val mlsMessageApi: MLSMessageApi,
+    private val conversationDAO: ConversationDAO,
+    private val idMapper: IdMapper = MapperProvider.idMapper()
 ): MLSConversationRepository {
 
-    override suspend fun establishMLSGroup(conversation: Conversation): Either<CoreFailure, Unit> = suspending  {
-        val groupID: String = conversation.groupId?.let { it } ?: run { return@suspending Either.Left(CoreFailure.MissingClientRegistration) }
-
-        getConversationMembers(conversation.id).flatMap { members ->
+    override suspend fun establishMLSGroup(groupID: String): Either<CoreFailure, Unit> = suspending  {
+        getConversationMembers(groupID).flatMap { members ->
             establishMLSGroup(groupID, members)
         }
     }
@@ -71,8 +68,9 @@ class MLSConversationDataSource(
         }
     }
 
-    private suspend fun getConversationMembers(conversationId: ConversationId): Either<StorageFailure, List<UserId>> = wrapStorageRequest {
-        conversationDAO.getAllMembers(idMapper.toDaoModel(conversationId)).first().map { idMapper.fromDaoModel(it.user) }
+    private suspend fun getConversationMembers(groupID: String): Either<StorageFailure, List<UserId>> = wrapStorageRequest {
+        val conversationID = conversationDAO.getConversationByGroupID(groupID).first()?.id ?: return Either.Left(StorageFailure.DataNotFound)
+        conversationDAO.getAllMembers(conversationID).first().map { idMapper.fromDaoModel(it.user) }
     }
 
 }

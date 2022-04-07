@@ -19,9 +19,7 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
             "conversation1",
             ConversationEntity.Type.ONE_ON_ONE,
             "teamID",
-            null,
-            ConversationEntity.GroupState.ESTABLISHED,
-            ConversationEntity.Protocol.PROTEUS
+            ConversationEntity.ProtocolInfo.Proteus
         )
 
     private val member1 = Member(user1.id)

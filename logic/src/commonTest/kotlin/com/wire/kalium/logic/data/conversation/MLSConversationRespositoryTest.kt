@@ -55,6 +55,11 @@ class MLSConversationRespositoryTest {
     @Test
     fun givenConversation_whenCallingEstablishMLSGroup_thenGroupIsCreatedAndWelcomeMessageIsSent() = runTest {
         given(conversationDAO)
+            .suspendFunction(conversationDAO::getConversationByGroupID)
+            .whenInvokedWith(anything())
+            .then { flowOf(TestConversation.ENTITY) }
+
+        given(conversationDAO)
             .suspendFunction(conversationDAO::getAllMembers)
             .whenInvokedWith(anything())
             .then { flowOf(MEMBERS) }
@@ -84,7 +89,7 @@ class MLSConversationRespositoryTest {
             .whenInvokedWith(anything(), anything())
             .thenDoNothing()
 
-        val result = mlsConversationRepository.establishMLSGroup(TestConversation.GROUP)
+        val result = mlsConversationRepository.establishMLSGroup(GROUP_ID)
 
         result.shouldSucceed()
 
@@ -98,7 +103,7 @@ class MLSConversationRespositoryTest {
     }
 
     private companion object {
-        val GROUP_ID = TestConversation.GROUP.groupId!!
+        val GROUP_ID = "groupId"
         val MEMBERS = listOf(Member(TestUser.ENTITY_ID))
         val KEY_PACKAGE = KeyPackageDTO(
             "client1",

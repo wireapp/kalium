@@ -54,11 +54,18 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenExistingConversation_ThenConversationCanBeRetrievedByGroupID() = runTest {
+        conversationDAO.insertConversation(conversationEntity2)
+        val result = conversationDAO.getConversationByGroupID((conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId).first()
+        assertEquals(conversationEntity2, result)
+    }
+
+    @Test
     fun givenExistingConversation_ThenConversationGroupStateCanBeUpdated() = runTest {
-        conversationDAO.insertConversation(conversationEntity1)
-        conversationDAO.updateConversationGroupState(ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE, conversationEntity1.groupId!!)
-        val result = conversationDAO.getConversationByQualifiedID(conversationEntity1.id).first()
-        assertEquals(result?.groupState, ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE)
+        conversationDAO.insertConversation(conversationEntity2)
+        conversationDAO.updateConversationGroupState(ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE, (conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId)
+        val result = conversationDAO.getConversationByQualifiedID(conversationEntity2.id).first()
+        assertEquals((result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState, ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE)
     }
 
     @Test
@@ -106,18 +113,14 @@ class ConversationDAOTest : BaseDatabaseTest() {
             "conversation1",
             ConversationEntity.Type.ONE_ON_ONE,
             teamId,
-            "group1",
-            ConversationEntity.GroupState.ESTABLISHED,
-            ConversationEntity.Protocol.PROTEUS
+            ConversationEntity.ProtocolInfo.Proteus
         )
         val conversationEntity2 = ConversationEntity(
             QualifiedIDEntity("2", "wire.com"),
             "conversation2",
             ConversationEntity.Type.ONE_ON_ONE,
             null,
-            "group2",
-            ConversationEntity.GroupState.ESTABLISHED,
-            ConversationEntity.Protocol.PROTEUS
+            ConversationEntity.ProtocolInfo.MLS("group2", ConversationEntity.GroupState.ESTABLISHED)
         )
 
         val member1 = Member(user1.id)
