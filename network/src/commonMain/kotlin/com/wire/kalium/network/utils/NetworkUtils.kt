@@ -7,10 +7,20 @@ import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.RedirectResponseException
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.ServerResponseException
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.URLProtocol
+import io.ktor.http.Url
 import kotlinx.serialization.SerializationException
 
+internal fun HttpRequestBuilder.setUrl(baseUrl: Url, path: List<String>) {
+    url {
+        host = baseUrl.host
+        pathSegments = baseUrl.pathSegments + path
+        protocol = URLProtocol.HTTPS
+    }
+}
 
 internal fun String.splitSetCookieHeader(): List<String> {
     var comma = indexOf(',')
