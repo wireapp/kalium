@@ -23,14 +23,13 @@ import platform.Foundation.create
 import platform.Foundation.valueForKey
 import platform.posix.memcpy
 
-actual class ProteusClientImpl actual constructor(private val rootDir: String, private val userId: CryptoUserID) : ProteusClient {
+actual class ProteusClientImpl actual constructor(private val rootDir: String) : ProteusClient {
 
     private var box: EncryptionContext? = null
 
     override suspend fun open() {
-        val path = "${rootDir}/${userId}"
-        NSFileManager.defaultManager.createDirectoryAtPath(path, withIntermediateDirectories = true, null, null)
-        box = EncryptionContext(NSURL.fileURLWithPath(path))
+        NSFileManager.defaultManager.createDirectoryAtPath(rootDir, withIntermediateDirectories = true, null, null)
+        box = EncryptionContext(NSURL.fileURLWithPath(rootDir))
     }
 
     override fun close() {
