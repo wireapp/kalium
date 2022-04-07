@@ -13,8 +13,8 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContentMapper
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.functional.onSuccess
@@ -67,7 +67,7 @@ class ConversationEventReceiver(
                     )
                     kaliumLogger.i(message = "Message received: $message")
                     when (message.content) {
-                        is MessageContent.Text -> messageRepository.persistMessage(message)
+                        is MessageContent.Text, is MessageContent.Asset -> messageRepository.persistMessage(message)
                         is MessageContent.DeleteMessage ->
                             if (isSenderVerified(message.content.messageId, message.conversationId, message.senderUserId))
                                 messageRepository.softDeleteMessage(messageUuid = message.content.messageId, message.conversationId)
