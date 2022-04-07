@@ -40,11 +40,11 @@ class CallManagerTest {
     @Mock
     private val messageSender = mock(classOf<MessageSender>())
 
-    private lateinit var callManager: CallManager
+    private lateinit var callManagerImpl: CallManagerImpl
 
     @BeforeTest
     fun setUp() {
-        callManager = CallManager(
+        callManagerImpl = CallManagerImpl(
             calling = calling,
             callRepository = callRepository,
             userRepository = userRepository,
@@ -58,7 +58,7 @@ class CallManagerTest {
         val baseHandle = Handle(value = 0)
         val expectedConversationId = "conversationId"
 
-        callManager.onCallingMessageReceived(
+        callManagerImpl.onCallingMessageReceived(
             message = CALL_MESSAGE,
             content = CALL_CONTENT
         )
