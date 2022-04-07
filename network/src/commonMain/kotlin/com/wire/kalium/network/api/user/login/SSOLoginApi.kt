@@ -9,11 +9,12 @@ import io.ktor.client.request.accept
 import io.ktor.client.request.get
 import io.ktor.client.request.head
 import io.ktor.client.request.header
+import io.ktor.client.request.host
 import io.ktor.client.request.post
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.URLProtocol
-import io.ktor.http.set
+import io.ktor.http.Url
 
 interface SSOLoginApi {
 
@@ -22,51 +23,51 @@ interface SSOLoginApi {
         class Redirect(val success: String, val error: String, code: String) : InitiateParam(code)
     }
 
-    suspend fun initiate(param: InitiateParam, apiBaseUrl: String): NetworkResponse<String>
+    suspend fun initiate(param: InitiateParam, apiBaseUrl: Url): NetworkResponse<String>
 
-    suspend fun finalize(cookie: String, apiBaseUrl: String): NetworkResponse<String>
+    suspend fun finalize(cookie: String, apiBaseUrl: Url): NetworkResponse<String>
 
-    suspend fun metaData(apiBaseUrl: String): NetworkResponse<String> // TODO: ask about the response model since it's xml in swagger with no model
+    suspend fun metaData(apiBaseUrl: Url): NetworkResponse<String> // TODO: ask about the response model since it's xml in swagger with no model
 
-    suspend fun settings(apiBaseUrl: String): NetworkResponse<SSOSettingsResponse>
+    suspend fun settings(apiBaseUrl: Url): NetworkResponse<SSOSettingsResponse>
 }
 
 class SSOLoginApiImpl(private val httpClient: HttpClient) : SSOLoginApi {
-    override suspend fun initiate(param: SSOLoginApi.InitiateParam, apiBaseUrl: String): NetworkResponse<String> {
+    override suspend fun initiate(param: SSOLoginApi.InitiateParam, apiBaseUrl: Url): NetworkResponse<String> {
         val path = when (param) {
             is SSOLoginApi.InitiateParam.NoRedirect -> "$PATH_SSO/$PATH_INITIATE/${param.code}"
             // ktor will encode the query param as URL so a way around it to append the query to the path string
             is SSOLoginApi.InitiateParam.Redirect -> "$PATH_SSO/$PATH_INITIATE/${param.code}?$QUERY_SUCCESS_REDIRECT=${param.success}&$QUERY_ERROR_REDIRECT=${param.error}"
         }
         return wrapKaliumResponse<Unit> {
-            httpClient.head {
-                url.set(host = apiBaseUrl, path = path)
+            httpClient.head(path) {
+                host = apiBaseUrl.host
                 url.protocol = URLProtocol.HTTPS
                 accept(ContentType.Text.Plain)
             }
         }.mapSuccess {
-            "https://$apiBaseUrl/$path"
+            "https://${apiBaseUrl.host}/$path"
         }
     }
 
-    override suspend fun finalize(cookie: String, apiBaseUrl: String): NetworkResponse<String> = wrapKaliumResponse {
-        httpClient.post {
-            url.set(host = apiBaseUrl, path = "$PATH_SSO/$PATH_FINALIZE")
+    override suspend fun finalize(cookie: String, apiBaseUrl: Url): NetworkResponse<String> = wrapKaliumResponse {
+        httpClient.post("$PATH_SSO/$PATH_FINALIZE") {
+            host = apiBaseUrl.host
             url.protocol = URLProtocol.HTTPS
             header(HttpHeaders.Cookie, "${RefreshTokenProperties.COOKIE_NAME}=$cookie")
         }
     }
 
-    override suspend fun metaData(apiBaseUrl: String): NetworkResponse<String> = wrapKaliumResponse {
-        httpClient.get {
-            url.set(host = apiBaseUrl, path = "$PATH_SSO/$PATH_METADATA")
+    override suspend fun metaData(apiBaseUrl: Url): NetworkResponse<String> = wrapKaliumResponse {
+        httpClient.get("$PATH_SSO/$PATH_METADATA") {
+            host = apiBaseUrl.host
             url.protocol = URLProtocol.HTTPS
         }
     }
 
-    override suspend fun settings(apiBaseUrl: String): NetworkResponse<SSOSettingsResponse> = wrapKaliumResponse {
-        httpClient.get {
-            url.set(host = apiBaseUrl, path = "$PATH_SSO/$PATH_SETTINGS")
+    override suspend fun settings(apiBaseUrl: Url): NetworkResponse<SSOSettingsResponse> = wrapKaliumResponse {
+        httpClient.get("$PATH_SSO/$PATH_SETTINGS") {
+            host = apiBaseUrl.host
             url.protocol = URLProtocol.HTTPS
         }
     }
