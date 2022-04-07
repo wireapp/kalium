@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.framework.TestConversation
@@ -38,6 +39,24 @@ class UpdateConversationMutedStatusUseCaseTest {
 
         val result = updateConversationMutedStatus(conversationId, MutedConversationStatus.ALL_MUTED)
         assertEquals(ConversationUpdateStatusResult.Success::class, result::class)
+
+        verify(conversationRepository)
+            .suspendFunction(conversationRepository::updateMutedStatus)
+            .with(any(), eq(MutedConversationStatus.ALL_MUTED), any())
+            .wasInvoked(exactly = once)
+
+    }
+
+    @Test
+    fun givenAConversationId_whenChangingInvokingAChangeAndFails_thenShouldDelegateTheCallAnReturnAFailureResult() = runTest {
+        val conversationId = TestConversation.ID
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::updateMutedStatus)
+            .whenInvokedWith(any(), eq(MutedConversationStatus.ALL_MUTED), any())
+            .thenReturn(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
+
+        val result = updateConversationMutedStatus(conversationId, MutedConversationStatus.ALL_MUTED)
+        assertEquals(ConversationUpdateStatusResult.Failure::class, result::class)
 
         verify(conversationRepository)
             .suspendFunction(conversationRepository::updateMutedStatus)
