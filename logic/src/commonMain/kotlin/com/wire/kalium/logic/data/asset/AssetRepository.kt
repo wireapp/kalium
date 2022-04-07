@@ -62,7 +62,10 @@ internal class AssetDataSource(
         return uploadAndPersistAsset(uploadAssetData)
     }
 
-    override suspend fun uploadAndPersistPrivateAsset(mimeType: AssetType, encryptedAssetData: ByteArray): Either<CoreFailure, UploadedAssetId> {
+    override suspend fun uploadAndPersistPrivateAsset(
+        mimeType: AssetType,
+        encryptedAssetData: ByteArray
+    ): Either<CoreFailure, UploadedAssetId> {
         val uploadAssetData = UploadAssetData(encryptedAssetData, mimeType, false, RetentionType.PERSISTENT)
         return uploadAndPersistAsset(uploadAssetData)
     }
@@ -91,14 +94,14 @@ internal class AssetDataSource(
     private suspend fun downloadAsset(assetKey: String, assetToken: String?): Either<CoreFailure, ByteArray> = suspending {
         wrapStorageRequest { assetDao.getAssetByKey(assetKey).firstOrNull() }
             .coFold({
-                wrapApiRequest { assetApi.downloadAsset(assetKey, assetToken) }
-                    .flatMap { assetData ->
-                        wrapStorageRequest { assetDao.insertAsset(assetMapper.fromUserAssetToDaoModel(assetKey, assetData)) }
-                            .map { assetData }
-                    }
-            }, {
-                Either.Right(it.rawData)
-            })
+                wrapApiRequest {
+                    // Backend sends asset messages with empty asset tokens
+                    assetApi.downloadAsset(assetKey, assetToken?.ifEmpty { null })
+                }.flatMap { assetData ->
+                    wrapStorageRequest { assetDao.insertAsset(assetMapper.fromUserAssetToDaoModel(assetKey, assetData)) }
+                        .map { assetData }
+                }
+            }, { Either.Right(it.rawData) })
     }
 
     override suspend fun downloadUsersPictureAssets(assetIdList: List<UserAssetId?>): Either<CoreFailure, Unit> = suspending {
