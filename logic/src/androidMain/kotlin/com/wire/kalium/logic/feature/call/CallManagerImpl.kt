@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.call
 
 import com.sun.jna.Pointer
+import com.wire.kalium.calling.CallType
 import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.callbacks.CallConfigRequestHandler
 import com.wire.kalium.calling.types.Handle
@@ -9,6 +10,7 @@ import com.wire.kalium.calling.types.Uint32_t
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.asString
 import com.wire.kalium.logic.data.id.toConversationId
 import com.wire.kalium.logic.data.message.Message
@@ -31,32 +33,32 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-actual class CallManager(
+actual class CallManagerImpl(
     private val calling: Calling,
     private val callRepository: CallRepository,
     private val userRepository: UserRepository,
     private val clientRepository: ClientRepository,
     val messageSender: MessageSender
-) : CallConfigRequestHandler {
+) : CallManager, CallConfigRequestHandler {
 
     private val job = SupervisorJob() // TODO clear job method
     private val scope = CoroutineScope(job + Dispatchers.IO)
     private val deferredHandle: Deferred<Handle>
 
     private val _calls = MutableStateFlow(listOf<Call>())
-    actual val allCalls = _calls.asStateFlow()
+    override val allCalls = _calls.asStateFlow()
 
     private val clientId: Deferred<ClientId> = scope.async(start = CoroutineStart.LAZY) {
         clientRepository.currentClientId().fold({
             TODO("adjust correct variable calling")
         }, {
-            kaliumLogger.d("CallManager - clientId $it")
+            kaliumLogger.d("$TAG - clientId $it")
             it
         })
     }
     private val userId: Deferred<UserId> = scope.async(start = CoroutineStart.LAZY) {
         userRepository.getSelfUser().first().id.also {
-            kaliumLogger.d("CallManager - userId $it")
+            kaliumLogger.d("$TAG - userId $it")
         }
     }
 
@@ -96,12 +98,22 @@ actual class CallManager(
                 kaliumLogger.i("$TAG -> readyHandler")
             },
             sendHandler = { _, conversationId, avsSelfUserId, avsSelfClientId, _, _, data, _, _, _ ->
-                if(selfUserId == avsSelfUserId && selfClientId == avsSelfClientId) AvsCallBackError.INVALID_ARGUMENT.value
-                else {
+                if (selfUserId != avsSelfUserId && selfClientId != avsSelfClientId) {
+                    kaliumLogger.i("$TAG -> sendHandler error")
+                    AvsCallBackError.INVALID_ARGUMENT.value
+                } else {
                     scope.launch {
                         val messageString = data?.getString(0, UTF8_ENCODING)
-                        messageString?.let { sendCallingMessage(conversationId.toConversationId(), avsSelfUserId.toUserId(), ClientId(avsSelfClientId), it) }
+                        messageString?.let {
+                            sendCallingMessage(
+                                conversationId.toConversationId(),
+                                avsSelfUserId.toUserId(),
+                                ClientId(avsSelfClientId),
+                                it
+                            )
+                        }
                     }
+                    kaliumLogger.i("$TAG -> sendHandler success")
                     AvsCallBackError.None.value
                 }
             },
@@ -149,7 +161,7 @@ actual class CallManager(
             metricsHandler = { conversationId: String, metricsJson: String, arg: Pointer? ->
                 kaliumLogger.i("$TAG -> metricsHandler")
             },
-            callConfigRequestHandler = this@CallManager,
+            callConfigRequestHandler = this@CallManagerImpl,
             constantBitRateStateChangeHandler = { userId: String, clientId: String, isEnabled: Boolean, arg: Pointer? ->
                 kaliumLogger.i("$TAG -> constantBitRateStateChangeHandler")
             },
@@ -157,9 +169,7 @@ actual class CallManager(
                 kaliumLogger.i("$TAG -> videoReceiveStateHandler")
             },
             arg = null
-        ).also {
-            kaliumLogger.d("CallManager - initialized with $it")
-        }
+        )
     }
 
     private suspend fun <T> withCalling(action: suspend Calling.(handle: Handle) -> T): T {
@@ -167,7 +177,7 @@ actual class CallManager(
         return calling.action(handle)
     }
 
-    actual suspend fun onCallingMessageReceived(message: Message, content: MessageContent.Calling) =
+    override suspend fun onCallingMessageReceived(message: Message, content: MessageContent.Calling) =
         withCalling {
             val msg = content.value.toByteArray()
 
@@ -184,8 +194,18 @@ actual class CallManager(
                 userId = message.senderUserId.asString(),
                 clientId = message.senderClientId.value
             )
-            kaliumLogger.d("onCallingMessageReceived -> Passed through")
+            kaliumLogger.d("$TAG - onCallingMessageReceived")
         }
+
+    override suspend fun answerCall(conversationId: ConversationId) = withCalling {
+        kaliumLogger.d("$TAG -> answerCall")
+        calling.wcall_answer(
+            inst = deferredHandle.await(),
+            conversationId = conversationId.asString(),
+            callType = CallType.CALL_TYPE_NORMAL.value,
+            cbrEnabled = false
+        )
+    }
 
     override fun onConfigRequest(inst: Handle, arg: Pointer?): Int {
         scope.launch {
@@ -202,15 +222,15 @@ actual class CallManager(
                     error = 0, // TODO: http error from internal json
                     jsonString = config
                 )
-                kaliumLogger.i("onConfigRequest -> wcall_config_update")
             }
+            kaliumLogger.i("$TAG - onConfigRequest")
         }
 
         return 0
     }
 
     companion object {
-        private const val TAG = "startHandleAsync"
+        private const val TAG = "CallManager"
         private const val UTF8_ENCODING = "UTF-8"
     }
 }
