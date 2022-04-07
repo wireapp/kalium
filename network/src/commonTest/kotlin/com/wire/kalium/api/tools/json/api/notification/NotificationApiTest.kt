@@ -1,16 +1,18 @@
 package com.wire.kalium.api.tools.json.api.notification
 
 import com.wire.kalium.api.ApiTest
+import com.wire.kalium.api.TEST_BACKEND_CONFIG
 import com.wire.kalium.network.api.notification.EventContentDTO
 import com.wire.kalium.network.api.notification.NotificationApiImpl
-import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class NotificationApiTest : ApiTest {
 
     @Test
@@ -29,7 +31,7 @@ class NotificationApiTest : ApiTest {
                 assertQueryParameter(SINCE_QUERY_KEY, since)
             }
         )
-        val notificationsApi = NotificationApiImpl(httpClient, BACKEND_CONFIG)
+        val notificationsApi = NotificationApiImpl(httpClient, TEST_BACKEND_CONFIG)
 
         notificationsApi.notificationsByBatch(limit, clientId, since)
     }
@@ -49,7 +51,7 @@ class NotificationApiTest : ApiTest {
                 assertQueryDoesNotExist(SINCE_QUERY_KEY)
             }
         )
-        val notificationsApi = NotificationApiImpl(httpClient, BACKEND_CONFIG)
+        val notificationsApi = NotificationApiImpl(httpClient, TEST_BACKEND_CONFIG)
 
         notificationsApi.getAllNotifications(limit, clientId)
     }
@@ -60,7 +62,7 @@ class NotificationApiTest : ApiTest {
             NotificationEventsResponseJson.notificationsWithUnknownEventAtFirstPosition,
             statusCode = HttpStatusCode.OK
         )
-        val notificationsApi = NotificationApiImpl(httpClient, BACKEND_CONFIG)
+        val notificationsApi = NotificationApiImpl(httpClient, TEST_BACKEND_CONFIG)
 
         val result = notificationsApi.notificationsByBatch(1, "", "")
 
@@ -77,7 +79,7 @@ class NotificationApiTest : ApiTest {
             NotificationEventsResponseJson.notificationsWithUnknownEventAtFirstPosition,
             statusCode = HttpStatusCode.OK
         )
-        val notificationsApi = NotificationApiImpl(httpClient, BACKEND_CONFIG)
+        val notificationsApi = NotificationApiImpl(httpClient, TEST_BACKEND_CONFIG)
 
         val result = notificationsApi.getAllNotifications(1, "")
 
@@ -89,10 +91,6 @@ class NotificationApiTest : ApiTest {
     }
 
     private companion object {
-        val BACKEND_CONFIG = ServerConfigDTO(
-            "apiBaseUrl", "accountsUrl",
-            "websocketUrl", "blacklist", "teams", "website", "title"
-        )
         const val PATH_NOTIFICATIONS = "/notifications"
         const val SIZE_QUERY_KEY = "size"
         const val CLIENT_QUERY_KEY = "client"

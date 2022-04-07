@@ -47,12 +47,6 @@ class TestSessionManager : SessionManager {
     }
 
     companion object {
-        val TEST_BACKEND_CONFIG =
-            ServerConfigDTO(
-                "test.api.com", "test.account.com", "test.ws.com",
-                "test.blacklist", "test.teams.com", "test.wire.com", "Test Title"
-            )
-
         val SESSION = testCredentials
     }
 
