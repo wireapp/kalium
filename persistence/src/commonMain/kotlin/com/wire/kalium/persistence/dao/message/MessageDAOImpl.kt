@@ -127,7 +127,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
         is TextMessageContent -> TEXT
         is AssetMessageContent -> ASSET
     }
-    
+
     override suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity) =
         queries.updateMessageStatus(status, id, conversationId)
 
@@ -171,20 +171,30 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
         queries.transaction {
             val limit: Long = 100
             var iteration = 0
-            var isItAll = false
+            var doneFlag = false
             do {
-                selectMessages(limit, iteration * limit)
-                    .executeAsList()
-                    .forEach { message ->
-                        if (message.shouldNotify != true) {
-                            //we assume that all the next messages are already "shouldNotify == false" too
-                            isItAll = true
-                        } else {
-                            queries.updateNotificationFlag(message.id, message.conversation_id)
-                        }
+                run {
+                    val nextPortion = selectMessages(limit, iteration * limit).executeAsList()
+
+                    if (nextPortion.isEmpty()) {
+                        doneFlag = true
+                        return@run
                     }
-                iteration++
-            } while (isItAll)
+
+                    nextPortion
+                        .forEach { message ->
+                            if (message.shouldNotify == false) {
+                                //we assume that all the next messages are already "shouldNotify == false" too
+                                doneFlag = true
+                                return@run
+                            } else {
+                                queries.updateNotificationFlag(message.id, message.conversation_id)
+                            }
+                        }
+
+                    iteration++
+                }
+            } while (!doneFlag)
         }
     }
 }

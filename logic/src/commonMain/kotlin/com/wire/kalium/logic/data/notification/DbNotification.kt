@@ -1,6 +1,6 @@
 package com.wire.kalium.logic.data.notification
 
-import com.wire.kalium.logic.data.conversation.ConversationId
+import com.wire.kalium.logic.data.id.ConversationId
 
 data class DbNotificationConversation(
     val id: ConversationId,
