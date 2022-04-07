@@ -50,15 +50,15 @@ internal class ConversationMapperImpl(private val idMapper: IdMapper) : Conversa
 
     override fun toApiModel(name: String, members: List<Member>, teamId: String?, options: ConverationOptions) =
         CreateConversationRequest(
-            if (options.protocol == ConverationOptions.Protocol.PROTEUS) members.map { idMapper.toApiModel(it.id) } else emptyList(),
-            name,
-            options.access.toList().map { toApiModel(it) },
-            options.accessRole.toList().map { toApiModel(it) },
-            teamId?.let { ConvTeamInfo(false, it) },
-            null,
-            if (options.readReceiptsEnabled) 1 else 0,
-            ConversationDataSource.DEFAULT_MEMBER_ROLE,
-            toApiModel(options.protocol)
+            qualifiedUsers = if (options.protocol == ConverationOptions.Protocol.PROTEUS) members.map { idMapper.toApiModel(it.id) } else emptyList(),
+            name = name,
+            access = options.access.toList().map { toApiModel(it) },
+            accessRole = options.accessRole.toList().map { toApiModel(it) },
+            convTeamInfo = teamId?.let { ConvTeamInfo(false, it) },
+            messageTimer = null,
+            receiptMode =  if (options.readReceiptsEnabled) 1 else 0,
+            conversationRole = ConversationDataSource.DEFAULT_MEMBER_ROLE,
+            protocol = toApiModel(options.protocol)
         )
 
     override fun toApiModel(access: ConverationOptions.Access): ConversationAccess = when (access) {
