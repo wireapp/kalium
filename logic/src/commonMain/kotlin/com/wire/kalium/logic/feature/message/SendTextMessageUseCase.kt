@@ -10,6 +10,7 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
@@ -43,8 +44,8 @@ class SendTextMessageUseCase(
             }.flatMap {
                 messageSender.trySendingOutgoingMessage(conversationId, generatedMessageUuid)
             }.onFailure {
-                println(it)
-                if(it is CoreFailure.Unknown){
+                kaliumLogger.e("There was an error trying to send the message $it")
+                if (it is CoreFailure.Unknown) {
                     //TODO Did I write multiplatform logging today?
                     it.rootCause?.printStackTrace()
                 }

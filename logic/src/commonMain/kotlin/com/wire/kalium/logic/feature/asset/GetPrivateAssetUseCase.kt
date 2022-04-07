@@ -43,8 +43,8 @@ internal class GetPrivateAssetUseCaseImpl(private val assetDataSource: AssetRepo
             PrivateAssetResult.Failure(it)
         }, { encodedAsset ->
             // Decrypt the asset data
-            val decodedAsset = decryptDataWithAES256(EncryptedData(encodedAsset), AES256Key(encodedAsset)).data
-            PrivateAssetResult.Success(decodedAsset)
+            val rawAsset = decryptDataWithAES256(EncryptedData(encodedAsset), AES256Key(encryptionKey)).data
+            PrivateAssetResult.Success(rawAsset)
         })
     }
 }
