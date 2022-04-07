@@ -2,13 +2,15 @@ package com.wire.kalium.network.api.user.login
 
 import com.wire.kalium.network.api.RefreshTokenProperties
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
+import io.ktor.client.request.accept
 import io.ktor.client.request.get
 import io.ktor.client.request.head
 import io.ktor.client.request.header
-import io.ktor.client.request.parameter
 import io.ktor.client.request.post
+import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.URLProtocol
 import io.ktor.http.set
@@ -16,11 +18,11 @@ import io.ktor.http.set
 interface SSOLoginApi {
 
     sealed class InitiateParam(val code: String) {
-        class NoRedirect(code: String): InitiateParam(code)
-        class Redirect(val success: String, val error: String, code: String): InitiateParam(code)
+        class NoRedirect(code: String) : InitiateParam(code)
+        class Redirect(val success: String, val error: String, code: String) : InitiateParam(code)
     }
 
-    suspend fun initiate(param: InitiateParam, apiBaseUrl: String): NetworkResponse<SSOResponse>
+    suspend fun initiate(param: InitiateParam, apiBaseUrl: String): NetworkResponse<String>
 
     suspend fun finalize(cookie: String, apiBaseUrl: String): NetworkResponse<String>
 
@@ -30,20 +32,22 @@ interface SSOLoginApi {
 }
 
 class SSOLoginApiImpl(private val httpClient: HttpClient) : SSOLoginApi {
-    override suspend fun initiate(param: SSOLoginApi.InitiateParam, apiBaseUrl: String): NetworkResponse<SSOResponse> =
-        wrapKaliumResponse {
-            httpClient.head {
-                url.set(host = apiBaseUrl, path = "$PATH_SSO/$PATH_INITIATE/${param.code}")
-                url.protocol = URLProtocol.HTTPS
-                when(param) {
-                    is SSOLoginApi.InitiateParam.Redirect -> {
-                        parameter(QUERY_SUCCESS_REDIRECT, param.success)
-                        parameter(QUERY_ERROR_REDIRECT, param.error)
-                    }
-                    is SSOLoginApi.InitiateParam.NoRedirect -> Unit // do nothing
-                }
-            }
+    override suspend fun initiate(param: SSOLoginApi.InitiateParam, apiBaseUrl: String): NetworkResponse<String> {
+        val path = when (param) {
+            is SSOLoginApi.InitiateParam.NoRedirect -> "$PATH_SSO/$PATH_INITIATE/${param.code}"
+            // ktor will encode the query param as URL so a way around it to append the query to the path string
+            is SSOLoginApi.InitiateParam.Redirect -> "$PATH_SSO/$PATH_INITIATE/${param.code}?$QUERY_SUCCESS_REDIRECT=${param.success}&$QUERY_ERROR_REDIRECT=${param.error}"
         }
+        return wrapKaliumResponse<Unit> {
+            httpClient.head {
+                url.set(host = apiBaseUrl, path = path)
+                url.protocol = URLProtocol.HTTPS
+                accept(ContentType.Text.Plain)
+            }
+        }.mapSuccess {
+            "https://$apiBaseUrl/$path"
+        }
+    }
 
     override suspend fun finalize(cookie: String, apiBaseUrl: String): NetworkResponse<String> = wrapKaliumResponse {
         httpClient.post {
