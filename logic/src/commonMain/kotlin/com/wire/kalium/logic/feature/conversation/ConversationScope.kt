@@ -26,4 +26,7 @@ class ConversationScope(
 
     val syncConversations: SyncConversationsUseCase
         get() = SyncConversationsUseCase(conversationRepository)
+
+    val updateConversationMutedStatus: UpdateConversationMutedStatusUseCase
+        get() = UpdateConversationMutedStatusUseCaseImpl(conversationRepository)
 }
