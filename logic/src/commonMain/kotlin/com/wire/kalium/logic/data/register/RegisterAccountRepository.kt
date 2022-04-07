@@ -11,6 +11,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.user.register.RegisterApi
+import io.ktor.http.Url
 
 interface RegisterAccountRepository {
     suspend fun requestEmailActivationCode(email: String, baseApiHost: String): Either<NetworkFailure, Unit>
@@ -45,14 +46,14 @@ class RegisterAccountDataSource(
         register(RegisterApi.RegisterParam.TeamAccount(email, code, name, password, teamName, teamIcon), serverConfig)
 
     private suspend fun requestActivation(
-        param: RegisterApi.RequestActivationCodeParam, baseApiHost: String
-    ): Either<NetworkFailure, Unit> = wrapApiRequest { registerApi.requestActivationCode(param, baseApiHost) }
+        param: RegisterApi.RequestActivationCodeParam, baseApiUrl: String
+    ): Either<NetworkFailure, Unit> = wrapApiRequest { registerApi.requestActivationCode(param, Url(baseApiUrl)) }
 
-    private suspend fun activateUser(param: RegisterApi.ActivationParam, baseApiHost: String): Either<NetworkFailure, Unit> =
-        wrapApiRequest { registerApi.activate(param, baseApiHost) }
+    private suspend fun activateUser(param: RegisterApi.ActivationParam, baseApiUrl: String): Either<NetworkFailure, Unit> =
+        wrapApiRequest { registerApi.activate(param, Url(baseApiUrl)) }
 
     private suspend fun register(param: RegisterApi.RegisterParam, serverConfig: ServerConfig) =
-        wrapApiRequest { registerApi.register(param, serverConfig.apiBaseUrl) }.map {
+        wrapApiRequest { registerApi.register(param, Url(serverConfig.apiBaseUrl)) }.map {
             Pair(
                 userMapper.fromDtoToSelfUser(it.first), sessionMapper.fromSessionDTO(it.second, serverConfig)
             )
