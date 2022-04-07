@@ -12,6 +12,7 @@ import com.wire.kalium.persistence.dao.client.ClientDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
 import java.io.File
+import java.util.Properties
 
 actual class Database(private val storePath: File) {
 
@@ -24,7 +25,9 @@ actual class Database(private val storePath: File) {
         // Make sure all intermediate directories exist
         storePath.mkdirs()
 
-        val driver: SqlDriver = JdbcSqliteDriver("jdbc:sqlite:${databasePath.absolutePath}")
+        val driver: SqlDriver = JdbcSqliteDriver(
+            "jdbc:sqlite:${databasePath.absolutePath}",
+            Properties(1).apply { put("foreign_keys", "true") })
 
         if (!databaseExists) {
           AppDatabase.Schema.create(driver)
@@ -47,7 +50,6 @@ actual class Database(private val storePath: File) {
             ),
             User.Adapter(qualified_idAdapter = QualifiedIDAdapter(), IntColumnAdapter)
         )
-        driver.execute(null, "PRAGMA foreign_keys=ON", 0)
     }
 
     actual val userDAO: UserDAO
