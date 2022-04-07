@@ -14,11 +14,7 @@ interface CallManager {
     val allCalls: StateFlow<List<Call>>
 }
 
-expect class CallManagerImpl: CallManager {
-    override suspend fun onCallingMessageReceived(message: Message, content: MessageContent.Calling)
-    override val allCalls: StateFlow<List<Call>>
-    override suspend fun startCall(conversationId: ConversationId, callType: CallType, conversationType: CallingConversationType, isAudioCbr: Boolean)
-}
+expect class CallManagerImpl: CallManager
 
 val CallManager.ongoingCalls get() = allCalls.map {
     it.filter { call ->
