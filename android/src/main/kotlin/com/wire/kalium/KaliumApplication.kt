@@ -15,11 +15,11 @@ class KaliumApplication: Application(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
 
-        val rootProteusDir = File(this.filesDir, "proteus")
+        val rootDir = File(this.filesDir, "accounts")
         coreLogic = CoreLogic(
             appContext = applicationContext,
             clientLabel = "kalium",
-            rootProteusDirectoryPath = rootProteusDir.absolutePath
+            rootPath = rootDir.absolutePath
         )
         CoreLogger.setLoggingLevel(
             level = KaliumLogLevel.DEBUG
