@@ -37,7 +37,12 @@ actual class UserDatabaseProvider(userId: UserIDEntity, passphrase: String) {
         database = UserDatabase(
             driver,
             Client.Adapter(user_idAdapter = QualifiedIDAdapter()),
-            Conversation.Adapter(qualified_idAdapter = QualifiedIDAdapter(), typeAdapter = EnumColumnAdapter()),
+            Conversation.Adapter(
+                qualified_idAdapter = QualifiedIDAdapter(),
+                typeAdapter = EnumColumnAdapter(),
+                mls_group_stateAdapter = EnumColumnAdapter(),
+                protocolAdapter = EnumColumnAdapter()
+            ),
             Member.Adapter(userAdapter = QualifiedIDAdapter(), conversationAdapter = QualifiedIDAdapter()),
             Message.Adapter(
                 conversation_idAdapter = QualifiedIDAdapter(),

@@ -13,6 +13,7 @@ interface MemberMapper {
     fun fromApiModelToDaoModel(conversationMembersResponse: ConversationMembersResponse): List<PersistedMember>
     fun fromEventToDaoModel(members: List<ConversationMember>): List<PersistedMember>
     fun fromDaoModel(entity: PersistedMember): Member
+    fun toDaoModel(member: Member): PersistedMember
 }
 
 internal class MemberMapperImpl(private val idMapper: IdMapper) : MemberMapper {
@@ -36,6 +37,9 @@ internal class MemberMapperImpl(private val idMapper: IdMapper) : MemberMapper {
     override fun fromEventToDaoModel(members: List<ConversationMember>) = members.map { member ->
         PersistedMember(idMapper.fromApiToDao(member.qualifiedId))
     }
+
+    override fun toDaoModel(member: Member): PersistedMember =
+        PersistedMember(idMapper.toDaoModel(member.id))
 
     override fun fromMapOfClientsResponseToRecipients(qualifiedMap: Map<UserId, List<SimpleClientResponse>>): List<Recipient> =
         qualifiedMap.entries.map { entry ->
