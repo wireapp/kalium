@@ -3,13 +3,13 @@ package com.wire.kalium.network.api.notification
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.setWSSUrl
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.websocket.webSocketSession
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.http.HttpMethod
-import io.ktor.http.URLProtocol
 import io.ktor.websocket.Frame
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -22,7 +22,7 @@ class NotificationApiImpl(private val httpClient: HttpClient, private val server
     override suspend fun lastNotification(
         queryClient: String
     ): NetworkResponse<EventResponse> = wrapKaliumResponse {
-        httpClient.get("$PATH_NOTIFICATIONS$PATH_LAST") {
+        httpClient.get("$PATH_NOTIFICATIONS/$PATH_LAST") {
             parameter(CLIENT_QUERY_KEY, queryClient)
         }
     }
@@ -52,14 +52,9 @@ class NotificationApiImpl(private val httpClient: HttpClient, private val server
 
     @ExperimentalSerializationApi
     override suspend fun listenToLiveEvents(clientId: String): Flow<EventResponse> = httpClient.webSocketSession(
-        method = HttpMethod.Get,
-        path = PATH_AWAIT
+        method = HttpMethod.Get
     ) {
-        url {
-            host = serverConfigDTO.webSocketBaseUrl.host
-            protocol = URLProtocol.WSS
-            port = URLProtocol.WSS.defaultPort
-        }
+        setWSSUrl(serverConfigDTO.webSocketBaseUrl, PATH_AWAIT)
         parameter(CLIENT_QUERY_KEY, clientId)
     }.incoming
         .consumeAsFlow()
@@ -81,9 +76,9 @@ class NotificationApiImpl(private val httpClient: HttpClient, private val server
         }
 
     private companion object {
-        const val PATH_AWAIT = "/await"
-        const val PATH_NOTIFICATIONS = "/notifications"
-        const val PATH_LAST = "/last"
+        const val PATH_AWAIT = "await"
+        const val PATH_NOTIFICATIONS = "notifications"
+        const val PATH_LAST = "last"
         const val SIZE_QUERY_KEY = "size"
         const val CLIENT_QUERY_KEY = "client"
         const val SINCE_QUERY_KEY = "since"
