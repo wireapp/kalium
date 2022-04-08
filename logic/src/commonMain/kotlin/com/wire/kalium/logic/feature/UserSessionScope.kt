@@ -18,9 +18,9 @@ import com.wire.kalium.logic.data.conversation.MLSConversationDataSource
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.event.EventDataSource
 import com.wire.kalium.logic.data.event.EventRepository
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.keypackage.KeyPackageDataSource
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
-import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.logout.LogoutDataSource
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.message.MessageDataSource
@@ -57,7 +57,7 @@ import com.wire.kalium.logic.sync.ListenToEventsUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
-import com.wire.kalium.persistence.db.Database
+import com.wire.kalium.persistence.db.UserDatabaseProvider
 import com.wire.kalium.persistence.event.EventInfoStorage
 import com.wire.kalium.persistence.event.EventInfoStorageImpl
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
@@ -76,7 +76,7 @@ abstract class UserSessionScopeCommon(
     private val eventInfoStorage: EventInfoStorage
         get() = EventInfoStorageImpl(userPreferencesSettings)
 
-    private val database: Database = authenticatedDataSourceSet.database
+    private val userDatabaseProvider: UserDatabaseProvider = authenticatedDataSourceSet.userDatabaseProvider
 
     private val mlsClientProvider: MLSClientProvider
         get() = MLSClientProviderImpl(
@@ -96,20 +96,20 @@ abstract class UserSessionScopeCommon(
         get() = ConversationDataSource(
             userRepository,
             mlsConversationRepository,
-            database.conversationDAO,
+            userDatabaseProvider.conversationDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi
         )
 
     private val messageRepository: MessageRepository
         get() = MessageDataSource(
-            authenticatedDataSourceSet.authenticatedNetworkContainer.messageApi, database.messageDAO
+            authenticatedDataSourceSet.authenticatedNetworkContainer.messageApi, userDatabaseProvider.messageDAO
         )
 
     private val userRepository: UserRepository
         get() = UserDataSource(
-            database.userDAO,
-            database.metadataDAO,
+            userDatabaseProvider.userDAO,
+            userDatabaseProvider.metadataDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.selfApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
             assetRepository
@@ -117,14 +117,14 @@ abstract class UserSessionScopeCommon(
 
     private val teamRepository: TeamRepository
         get() = TeamDataSource(
-            database.userDAO,
-            database.teamDAO,
+            userDatabaseProvider.userDAO,
+            userDatabaseProvider.teamDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.teamsApi
         )
 
     private val publicUserRepository: SearchUserRepository
         get() = SearchUserRepositoryImpl(
-            database.userDAO,
+            userDatabaseProvider.userDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userSearchApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi
         )
@@ -145,7 +145,7 @@ abstract class UserSessionScopeCommon(
         get() = ClientRegistrationStorageImpl(userPreferencesSettings)
 
     private val clientRepository: ClientRepository
-        get() = ClientDataSource(clientRemoteRepository, clientRegistrationStorage, database.clientDAO)
+        get() = ClientDataSource(clientRemoteRepository, clientRegistrationStorage, userDatabaseProvider.clientDAO)
 
     private val messageSendFailureHandler: MessageSendFailureHandler
         get() = MessageSendFailureHandler(userRepository, clientRepository)
@@ -160,7 +160,7 @@ abstract class UserSessionScopeCommon(
         get() = MessageSenderImpl(messageRepository, conversationRepository, syncManager, messageSendFailureHandler, sessionEstablisher, messageEnvelopeCreator)
 
     private val assetRepository: AssetRepository
-        get() = AssetDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.assetApi, database.assetDAO)
+        get() = AssetDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.assetApi, userDatabaseProvider.assetDAO)
 
     val syncManager: SyncManager get() = authenticatedDataSourceSet.syncManager
 

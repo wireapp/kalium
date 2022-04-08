@@ -3,14 +3,14 @@ package com.wire.kalium.persistence.dao
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
-import com.wire.kalium.persistence.db.ConverationsQueries
-import com.wire.kalium.persistence.db.MembersQueries
-import com.wire.kalium.persistence.db.UsersQueries
+import com.wire.kalium.persistence.ConverationsQueries
+import com.wire.kalium.persistence.MembersQueries
+import com.wire.kalium.persistence.UsersQueries
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import com.wire.kalium.persistence.db.Conversation as SQLDelightConversation
-import com.wire.kalium.persistence.db.Member as SQLDelightMember
+import com.wire.kalium.persistence.Conversation as SQLDelightConversation
+import com.wire.kalium.persistence.Member as SQLDelightMember
 
 class ConversationMapper {
     fun toModel(conversation: SQLDelightConversation): ConversationEntity {

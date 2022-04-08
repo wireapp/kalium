@@ -2,7 +2,7 @@ package com.wire.kalium.persistence
 
 import co.touchlab.sqliter.DatabaseFileContext.deleteDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
-import com.wire.kalium.persistence.db.Database
+import com.wire.kalium.persistence.db.UserDatabaseProvider
 import com.wire.kalium.persistence.util.FileNameUtil
 
 actual open class BaseDatabaseTest actual constructor() {
@@ -12,8 +12,8 @@ actual open class BaseDatabaseTest actual constructor() {
         deleteDatabase(FileNameUtil.userDBName(userId))
     }
 
-    actual fun createDatabase(): Database {
-        return Database(userId, "123456789")
+    actual fun createDatabase(): UserDatabaseProvider {
+        return UserDatabaseProvider(userId, "123456789")
     }
 
 }

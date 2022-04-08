@@ -1,12 +1,14 @@
 package com.wire.kalium.persistence.db
 
-import android.content.Context
-import android.os.Build
-import android.util.Base64
-import androidx.sqlite.db.SupportSQLiteDatabase
 import app.cash.sqldelight.EnumColumnAdapter
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
-import app.cash.sqldelight.driver.android.AndroidSqliteDriver
+import app.cash.sqldelight.driver.native.NativeSqliteDriver
+import com.wire.kalium.persistence.Client
+import com.wire.kalium.persistence.Conversation
+import com.wire.kalium.persistence.Member
+import com.wire.kalium.persistence.Message
+import com.wire.kalium.persistence.User
+import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.ContentTypeAdapter
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationDAOImpl
@@ -24,35 +26,15 @@ import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.util.FileNameUtil
-import net.sqlcipher.database.SupportFactory
-import java.security.SecureRandom
 
-actual class Database(private val context: Context, userId: UserIDEntity, kaliumPreferences: KaliumPreferences) {
-    private val dbName = FileNameUtil.userDBName(userId)
-    private val driver: AndroidSqliteDriver
-    private val database: AppDatabase
+actual class UserDatabaseProvider(userId: UserIDEntity, passphrase: String) {
+
+    val database: UserDatabase
 
     init {
-        val supportFactory = SupportFactory(getOrGenerateSecretKey(kaliumPreferences).toByteArray())
-
-        val onConnectCallback = object : AndroidSqliteDriver.Callback(AppDatabase.Schema) {
-            override fun onOpen(db: SupportSQLiteDatabase) {
-                super.onOpen(db)
-                db.execSQL("PRAGMA foreign_keys=ON;")
-            }
-        }
-
-        driver = AndroidSqliteDriver(
-            schema = AppDatabase.Schema,
-            context = context,
-            name = dbName,
-            factory = supportFactory,
-            callback = onConnectCallback
-        )
-
-        database = AppDatabase(
+        val driver = NativeSqliteDriver(UserDatabase.Schema, FileNameUtil.userDBName(userId))
+        database = UserDatabase(
             driver,
             Client.Adapter(user_idAdapter = QualifiedIDAdapter()),
             Conversation.Adapter(
@@ -74,6 +56,7 @@ actual class Database(private val context: Context, userId: UserIDEntity, kalium
             ),
             User.Adapter(qualified_idAdapter = QualifiedIDAdapter(), IntColumnAdapter)
         )
+        driver.execute(null, "PRAGMA foreign_keys=ON", 0)
     }
 
     actual val userDAO: UserDAO
@@ -98,39 +81,6 @@ actual class Database(private val context: Context, userId: UserIDEntity, kalium
         get() = TeamDAOImpl(database.teamsQueries)
 
     actual fun nuke(): Boolean {
-        driver.close()
-        return context.deleteDatabase(dbName)
+        TODO("Not yet implemented")
     }
-
-    private fun getOrGenerateSecretKey(kaliumPreferences: KaliumPreferences): String {
-        val databaseKey = kaliumPreferences.getString(DATABASE_SECRET_KEY)
-
-        return if (databaseKey == null) {
-            val secretKey = generateSecretKey()
-            kaliumPreferences.putString(DATABASE_SECRET_KEY, secretKey)
-            secretKey
-        } else {
-            databaseKey
-        }
-    }
-
-    private fun generateSecretKey(): String {
-        // TODO review with security
-
-        val random = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            SecureRandom.getInstanceStrong()
-        } else {
-            SecureRandom()
-        }
-        val password = ByteArray(DATABASE_SECRET_LENGTH)
-        random.nextBytes(password)
-
-        return Base64.encodeToString(password, Base64.DEFAULT)
-    }
-
-    companion object {
-        private const val DATABASE_SECRET_KEY = "databaseSecret"
-        private const val DATABASE_SECRET_LENGTH = 48
-    }
-
 }

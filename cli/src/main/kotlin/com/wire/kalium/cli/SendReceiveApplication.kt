@@ -7,7 +7,6 @@ import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.CoreLogger
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.ServerConfig
-import com.wire.kalium.logic.data.conversation.ConverationOptions
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.auth.AuthSession
