@@ -89,7 +89,7 @@ abstract class UserSessionScopeCommon(
     get() = MLSConversationDataSource(
         keyPackageRepository,
         mlsClientProvider,authenticatedDataSourceSet.authenticatedNetworkContainer.mlsMessageApi,
-        database.conversationDAO
+        userDatabaseProvider.conversationDAO
     )
 
     private val conversationRepository: ConversationRepository
