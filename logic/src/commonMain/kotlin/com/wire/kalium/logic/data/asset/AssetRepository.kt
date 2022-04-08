@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.firstOrNull
 
 interface AssetRepository {
     /**
-     * Method used to upload a public asset
+     * Method used to upload and persist to local memory a public asset
      * @param mimeType type of the asset to be uploaded
      * @param rawAssetData unencrypted data to be uploaded
      * @return [Either] a [CoreFailure] if anything went wrong, or the [UploadedAssetId] of the asset if successful
@@ -21,7 +21,7 @@ interface AssetRepository {
     suspend fun uploadAndPersistPublicAsset(mimeType: AssetType, rawAssetData: ByteArray): Either<CoreFailure, UploadedAssetId>
 
     /**
-     * Method used to upload a private asset
+     * Method used to upload and persist to local memory a private asset
      * @param mimeType type of the asset to be uploaded
      * @param encryptedAssetData encrypted data to be uploaded
      * @return [Either] a [CoreFailure] if anything went wrong, or the [UploadedAssetId] of the asset if successful
@@ -29,14 +29,14 @@ interface AssetRepository {
     suspend fun uploadAndPersistPrivateAsset(mimeType: AssetType, encryptedAssetData: ByteArray): Either<CoreFailure, UploadedAssetId>
 
     /**
-     * Method used to download a public asset and persist it in local memory
+     * Method used to download and persist to local memory a public asset
      * @param assetKey the asset identifier
      * @return [Either] a [CoreFailure] if anything went wrong, or the asset as a decoded ByteArray of data
      */
     suspend fun downloadPublicAsset(assetKey: String): Either<CoreFailure, ByteArray>
 
     /**
-     * Method used to download a private asset and persist it in local memory
+     * Method used to download and persist to local memory a private asset
      * @param assetKey the asset identifier
      * @param assetToken the asset token used to provide an extra layer of asset/user authentication
      * @return [Either] a [CoreFailure] if anything went wrong, or the asset as an encoded ByteArray of data
