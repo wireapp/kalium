@@ -11,7 +11,7 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.kaliumLogger
 
-interface GetPrivateAssetUseCase {
+interface GetMessageAssetUseCase {
     /**
      * Function that enables fetching a message asset locally or if it doesn't exist, downloading and decrypting it as a ByteArray
      *
@@ -25,10 +25,10 @@ interface GetPrivateAssetUseCase {
     ): PrivateAssetResult
 }
 
-internal class GetPrivateAssetUseCaseImpl(
+internal class GetMessageAssetUseCaseImpl(
     private val assetDataSource: AssetRepository,
     private val messageRepository: MessageRepository
-) : GetPrivateAssetUseCase {
+) : GetMessageAssetUseCase {
     override suspend fun invoke(
         conversationId: ConversationId,
         messageId: String
