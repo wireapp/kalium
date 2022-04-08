@@ -56,7 +56,7 @@ class NotificationApiImpl(private val httpClient: HttpClient, private val server
         path = PATH_AWAIT
     ) {
         url {
-            host = serverConfigDTO.webSocketBaseUrl
+            host = serverConfigDTO.webSocketBaseUrl.host
             protocol = URLProtocol.WSS
             port = URLProtocol.WSS.defaultPort
         }

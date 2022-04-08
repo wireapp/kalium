@@ -30,7 +30,7 @@ class ConversationEventReceiver(
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
     private val protoContentMapper: ProtoContentMapper,
-    private val callManager: CallManager,
+    private val callManagerImpl: CallManager,
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : EventReceiver<Event.Conversation> {
@@ -78,7 +78,7 @@ class ConversationEventReceiver(
                             else kaliumLogger.i(message = "Delete message sender is not verified: $message")
                         is MessageContent.Calling -> {
                             kaliumLogger.d("ConversationEventReceiver - MessageContent.Calling")
-                            callManager.onCallingMessageReceived(
+                            callManagerImpl.onCallingMessageReceived(
                                 message = message,
                                 content = message.content
                             )
