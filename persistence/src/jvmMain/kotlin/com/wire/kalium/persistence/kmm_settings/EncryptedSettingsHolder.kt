@@ -13,7 +13,7 @@ import java.util.prefs.Preferences
 actual class EncryptedSettingsHolder(
     options: SettingOptions
 ) {
-    private val preferences: Preferences = Preferences.userRoot().node(options.fileName)
+    private val preferences: Preferences = Preferences.userNodeForPackage(EncryptedSettingsHolder::class.java).node(options.fileName)
     // TODO: JvmPreferencesSettings is not encrypted
     actual val encryptedSettings: Settings = JvmPreferencesSettings(preferences)
 }
