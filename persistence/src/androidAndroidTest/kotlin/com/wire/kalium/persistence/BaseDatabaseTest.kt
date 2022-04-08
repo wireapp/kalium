@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.russhwolf.settings.MockSettings
 import com.wire.kalium.persistence.dao.UserIDEntity
-import com.wire.kalium.persistence.db.Database
+import com.wire.kalium.persistence.db.UserDatabaseProvider
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
 import com.wire.kalium.persistence.util.FileNameUtil
 
@@ -17,8 +17,8 @@ actual open class BaseDatabaseTest actual constructor() {
         context.deleteDatabase(FileNameUtil.userDBName(userId))
     }
 
-    actual fun createDatabase(): Database {
-        return Database(ApplicationProvider.getApplicationContext(), userId, preferences)
+    actual fun createDatabase(): UserDatabaseProvider {
+        return UserDatabaseProvider(ApplicationProvider.getApplicationContext(), userId, preferences)
     }
 
 }

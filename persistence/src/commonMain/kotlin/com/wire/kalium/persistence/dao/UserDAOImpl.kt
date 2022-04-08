@@ -3,10 +3,10 @@ package com.wire.kalium.persistence.dao
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
-import com.wire.kalium.persistence.db.UsersQueries
+import com.wire.kalium.persistence.UsersQueries
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import com.wire.kalium.persistence.db.User as SQLDelightUser
+import com.wire.kalium.persistence.User as SQLDelightUser
 
 class UserMapper {
     fun toModel(user: SQLDelightUser): UserEntity {

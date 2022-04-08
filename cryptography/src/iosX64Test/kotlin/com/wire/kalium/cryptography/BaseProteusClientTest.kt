@@ -5,8 +5,8 @@ import platform.Foundation.NSURL
 
 actual open class BaseProteusClientTest actual constructor() {
     actual fun createProteusClient(userId: CryptoUserID): ProteusClient {
-        val rootDir = NSURL.fileURLWithPath(NSTemporaryDirectory() + "/proteus", isDirectory = true)
-        return ProteusClientImpl(rootDir.absoluteString!!, userId)
+        val rootDir = NSURL.fileURLWithPath(NSTemporaryDirectory() + "/proteus/${userId.value}", isDirectory = true)
+        return ProteusClientImpl(rootDir.absoluteString!!)
     }
 
 }
