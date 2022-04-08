@@ -5,6 +5,7 @@ import com.wire.kalium.api.tools.json.model.QualifiedIDSamples
 import com.wire.kalium.network.api.conversation.ConvProtocol
 import com.wire.kalium.network.api.conversation.ConvTeamInfo
 import com.wire.kalium.network.api.conversation.CreateConversationRequest
+import com.wire.kalium.network.api.conversation.ReceiptMode
 import com.wire.kalium.network.api.model.ConversationAccess
 import com.wire.kalium.network.api.model.ConversationAccessRole
 
@@ -18,7 +19,7 @@ object CreateConversationRequestJson {
         listOf(ConversationAccessRole.TEAM_MEMBER),
         ConvTeamInfo(false, "teamID"),
         0,
-        0,
+        ReceiptMode.DISABLED,
         "WIRE_MEMBER",
         ConvProtocol.PROTEUS)
     ) {
@@ -40,7 +41,7 @@ object CreateConversationRequestJson {
         |           "id": "${it.qualifiedUsers[0].value}"
         |       }
         |   ],
-        |   "receipt_mode": ${it.receiptMode},
+        |   "receipt_mode": ${it.receiptMode.value},
         |   "team": {
         |       "managed": "false",
         |       "teamid": "${it.convTeamInfo?.teamId}"
