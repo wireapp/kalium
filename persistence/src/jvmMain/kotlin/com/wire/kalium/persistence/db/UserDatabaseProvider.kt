@@ -2,7 +2,14 @@ package com.wire.kalium.persistence.db
 
 import app.cash.sqldelight.EnumColumnAdapter
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
-import app.cash.sqldelight.driver.native.NativeSqliteDriver
+import app.cash.sqldelight.db.SqlDriver
+import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
+import com.wire.kalium.persistence.Client
+import com.wire.kalium.persistence.Conversation
+import com.wire.kalium.persistence.Member
+import com.wire.kalium.persistence.Message
+import com.wire.kalium.persistence.User
+import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.ContentTypeAdapter
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationDAOImpl
@@ -13,26 +20,45 @@ import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.TeamDAOImpl
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserDAOImpl
-import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetDAOImpl
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
-import com.wire.kalium.persistence.util.FileNameUtil
+import java.io.File
+import java.util.Properties
 
-actual class Database(userId: UserIDEntity, passphrase: String) {
+actual class UserDatabaseProvider(private val storePath: File) {
 
-    val database: AppDatabase
+    private val database: UserDatabase
 
     init {
-        val driver = NativeSqliteDriver(AppDatabase.Schema, FileNameUtil.userDBName(userId))
-        database = AppDatabase(
+        val databasePath = storePath.resolve(DATABASE_NAME)
+        val databaseExists = databasePath.exists()
+
+        // Make sure all intermediate directories exist
+        storePath.mkdirs()
+
+        val driver: SqlDriver = JdbcSqliteDriver(
+            "jdbc:sqlite:${databasePath.absolutePath}",
+            Properties(1).apply { put("foreign_keys", "true") })
+
+        if (!databaseExists) {
+            UserDatabase.Schema.create(driver)
+        }
+
+        database = UserDatabase(
             driver,
             Client.Adapter(user_idAdapter = QualifiedIDAdapter()),
-            Conversation.Adapter(qualified_idAdapter = QualifiedIDAdapter(), typeAdapter = EnumColumnAdapter()),
-            Member.Adapter(userAdapter = QualifiedIDAdapter(), conversationAdapter = QualifiedIDAdapter()),
+            Conversation.Adapter(
+                qualified_idAdapter = QualifiedIDAdapter(),
+                typeAdapter = EnumColumnAdapter(),
+                mls_group_stateAdapter = EnumColumnAdapter(),
+                protocolAdapter = EnumColumnAdapter()),
+            Member.Adapter(
+                userAdapter = QualifiedIDAdapter(),
+                conversationAdapter = QualifiedIDAdapter()),
             Message.Adapter(
                 conversation_idAdapter = QualifiedIDAdapter(),
                 sender_user_idAdapter = QualifiedIDAdapter(),
@@ -45,7 +71,6 @@ actual class Database(userId: UserIDEntity, passphrase: String) {
             ),
             User.Adapter(qualified_idAdapter = QualifiedIDAdapter(), IntColumnAdapter)
         )
-        driver.execute(null, "PRAGMA foreign_keys=ON", 0)
     }
 
     actual val userDAO: UserDAO
@@ -70,6 +95,10 @@ actual class Database(userId: UserIDEntity, passphrase: String) {
         get() = TeamDAOImpl(database.teamsQueries)
 
     actual fun nuke(): Boolean {
-        TODO("Not yet implemented")
+        return storePath.resolve(DATABASE_NAME).delete()
+    }
+
+    private companion object {
+        const val DATABASE_NAME = "main.db"
     }
 }
