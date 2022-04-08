@@ -126,7 +126,7 @@ class RegisterApiImpl(
 
     private suspend fun getToken(refreshToken: String, apiBaseUrl: String): NetworkResponse<AccessTokenDTO> = wrapKaliumResponse {
         httpClient.post {
-            setUrl(apiBaseUrl, listOf(PATH_ACCESS))
+            setUrl(apiBaseUrl, PATH_ACCESS)
             header(HttpHeaders.Cookie, "${RefreshTokenProperties.COOKIE_NAME}=$refreshToken")
         }
     }
@@ -135,7 +135,7 @@ class RegisterApiImpl(
         param: RegisterApi.RegisterParam, apiBaseUrl: String
     ): NetworkResponse<Pair<UserDTO, SessionDTO>> = wrapKaliumResponse<UserDTO> {
         httpClient.post {
-            setUrl(apiBaseUrl, listOf(REGISTER_PATH))
+            setUrl(apiBaseUrl, REGISTER_PATH)
             setBody(param.toBody())
         }
     }.flatMap { registerResponse ->
@@ -155,14 +155,14 @@ class RegisterApiImpl(
         param: RegisterApi.RequestActivationCodeParam, apiBaseUrl: String
     ): NetworkResponse<Unit> = wrapKaliumResponse {
         httpClient.post {
-            setUrl(apiBaseUrl, listOf(ACTIVATE_PATH, SEND_PATH))
+            setUrl(apiBaseUrl, ACTIVATE_PATH, SEND_PATH)
             setBody(param.toBody())
         }
     }
 
     override suspend fun activate(param: RegisterApi.ActivationParam, apiBaseUrl: String): NetworkResponse<Unit> = wrapKaliumResponse {
         httpClient.post {
-            setUrl(apiBaseUrl, listOf(ACTIVATE_PATH))
+            setUrl(apiBaseUrl, ACTIVATE_PATH)
             setBody(param.toBody())
         }
     }

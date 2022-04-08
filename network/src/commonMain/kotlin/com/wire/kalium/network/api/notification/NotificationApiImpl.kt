@@ -54,7 +54,7 @@ class NotificationApiImpl(private val httpClient: HttpClient, private val server
     override suspend fun listenToLiveEvents(clientId: String): Flow<EventResponse> = httpClient.webSocketSession(
         method = HttpMethod.Get
     ) {
-        setWSSUrl(serverConfigDTO.webSocketBaseUrl, listOf(PATH_AWAIT))
+        setWSSUrl(serverConfigDTO.webSocketBaseUrl, PATH_AWAIT)
         parameter(CLIENT_QUERY_KEY, clientId)
     }.incoming
         .consumeAsFlow()

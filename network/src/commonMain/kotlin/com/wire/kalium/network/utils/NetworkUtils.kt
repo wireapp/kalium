@@ -14,7 +14,7 @@ import io.ktor.http.URLProtocol
 import io.ktor.http.Url
 import kotlinx.serialization.SerializationException
 
-internal fun HttpRequestBuilder.setWSSUrl(baseUrl: Url, path: List<String> = listOf()) {
+internal fun HttpRequestBuilder.setWSSUrl(baseUrl: Url, vararg path: String) {
     url {
         host = baseUrl.host
         pathSegments = baseUrl.pathSegments + path
@@ -23,17 +23,21 @@ internal fun HttpRequestBuilder.setWSSUrl(baseUrl: Url, path: List<String> = lis
     }
 }
 
-internal fun HttpRequestBuilder.setUrl(baseUrl: Url, path: List<String> = listOf()) {
+internal fun HttpRequestBuilder.setUrl(baseUrl: Url, vararg path: String) {
+    setHttpsUrl(baseUrl, path.toList())
+}
+
+internal fun HttpRequestBuilder.setUrl(baseUrl: String, vararg path: String) {
+    val parsedUrl = Url(baseUrl)
+    setHttpsUrl(parsedUrl, path.toList())
+}
+
+private fun HttpRequestBuilder.setHttpsUrl(baseUrl: Url, path: List<String>) {
     url {
         host = baseUrl.host
         pathSegments = baseUrl.pathSegments + path
         protocol = URLProtocol.HTTPS
     }
-}
-
-internal fun HttpRequestBuilder.setUrl(baseUrl: String, path: List<String> = listOf()) {
-    val parsedUrl = Url(baseUrl)
-    setUrl(parsedUrl, path)
 }
 
 internal fun String.splitSetCookieHeader(): List<String> {

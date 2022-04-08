@@ -44,7 +44,7 @@ class LoginApiImpl(private val httpClient: HttpClient) : LoginApi {
     ): NetworkResponse<SessionDTO> =
         wrapKaliumResponse<AccessTokenDTO> {
             httpClient.post {
-                setUrl(Url(apiBaseUrl), listOf(PATH_LOGIN))
+                setUrl(Url(apiBaseUrl), PATH_LOGIN)
                 parameter(QUERY_PERSIST, persist)
                 setBody(param.toRequestBody())
             }
@@ -59,7 +59,7 @@ class LoginApiImpl(private val httpClient: HttpClient) : LoginApi {
             // TODO: remove this one when login endpoint return a QualifiedUserId
             wrapKaliumResponse<UserDTO> {
                 httpClient.get {
-                    setUrl(Url(apiBaseUrl), listOf(PATH_SELF))
+                    setUrl(Url(apiBaseUrl), PATH_SELF)
                     bearerAuth(tokensPairResponse.value.first.value)
                 }
             }.mapSuccess {

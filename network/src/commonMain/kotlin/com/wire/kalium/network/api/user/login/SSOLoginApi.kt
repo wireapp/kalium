@@ -40,7 +40,7 @@ class SSOLoginApiImpl(private val httpClient: HttpClient) : SSOLoginApi {
             is SSOLoginApi.InitiateParam.Redirect -> "$PATH_SSO/$PATH_INITIATE/${param.code}?$QUERY_SUCCESS_REDIRECT=${param.success}&$QUERY_ERROR_REDIRECT=${param.error}"
         }
         val response = httpClient.head {
-            setUrl(apiBaseUrl, listOf(path))
+            setUrl(apiBaseUrl, path)
             accept(ContentType.Text.Plain)
         }
         return if (response.status.isSuccess()) {
@@ -52,20 +52,20 @@ class SSOLoginApiImpl(private val httpClient: HttpClient) : SSOLoginApi {
 
     override suspend fun finalize(cookie: String, apiBaseUrl: Url): NetworkResponse<String> = wrapKaliumResponse {
         httpClient.post {
-            setUrl(apiBaseUrl, listOf(PATH_SSO, PATH_FINALIZE))
+            setUrl(apiBaseUrl, PATH_SSO, PATH_FINALIZE)
             header(HttpHeaders.Cookie, "${RefreshTokenProperties.COOKIE_NAME}=$cookie")
         }
     }
 
     override suspend fun metaData(apiBaseUrl: Url): NetworkResponse<String> = wrapKaliumResponse {
         httpClient.get {
-            setUrl(apiBaseUrl, listOf(PATH_SSO, PATH_METADATA))
+            setUrl(apiBaseUrl, PATH_SSO, PATH_METADATA)
         }
     }
 
     override suspend fun settings(apiBaseUrl: Url): NetworkResponse<SSOSettingsResponse> = wrapKaliumResponse {
         httpClient.get {
-            setUrl(apiBaseUrl, listOf(PATH_SSO, PATH_SETTINGS))
+            setUrl(apiBaseUrl, PATH_SSO, PATH_SETTINGS)
         }
     }
 
