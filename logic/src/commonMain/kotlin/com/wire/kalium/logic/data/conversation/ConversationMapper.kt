@@ -6,6 +6,7 @@ import com.wire.kalium.network.api.conversation.ConvProtocol
 import com.wire.kalium.network.api.conversation.ConvTeamInfo
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.CreateConversationRequest
+import com.wire.kalium.network.api.conversation.ReceiptMode
 import com.wire.kalium.network.api.model.ConversationAccess
 import com.wire.kalium.network.api.model.ConversationAccessRole
 import com.wire.kalium.persistence.dao.ConversationEntity.GroupState
@@ -51,7 +52,7 @@ internal class ConversationMapperImpl(private val idMapper: IdMapper) : Conversa
             accessRole = options.accessRole.toList().map { toApiModel(it) },
             convTeamInfo = teamId?.let { ConvTeamInfo(false, it) },
             messageTimer = null,
-            receiptMode =  if (options.readReceiptsEnabled) 1 else 0,
+            receiptMode =  if (options.readReceiptsEnabled) ReceiptMode.ENABLED else ReceiptMode.DISABLED,
             conversationRole = ConversationDataSource.DEFAULT_MEMBER_ROLE,
             protocol = toApiModel(options.protocol)
         )
