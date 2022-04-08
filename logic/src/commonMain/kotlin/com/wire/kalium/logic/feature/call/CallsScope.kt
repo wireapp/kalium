@@ -1,8 +1,8 @@
 package com.wire.kalium.logic.feature.call
 
-import com.wire.kalium.logic.feature.call.useCase.GetOngoingCallsUseCase
-import com.wire.kalium.logic.feature.call.useCase.GetOngoingCallsUseCaseImpl
-import com.wire.kalium.logic.feature.call.useCase.StartCallUseCase
+import com.wire.kalium.logic.feature.call.usecase.GetOngoingCallsUseCase
+import com.wire.kalium.logic.feature.call.usecase.GetOngoingCallsUseCaseImpl
+import com.wire.kalium.logic.feature.call.usecase.StartCallUseCase
 import com.wire.kalium.logic.sync.SyncManager
 
 class CallsScope(

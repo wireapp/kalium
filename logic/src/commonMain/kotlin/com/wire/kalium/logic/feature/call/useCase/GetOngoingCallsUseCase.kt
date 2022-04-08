@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.feature.call.useCase
+package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallManager
