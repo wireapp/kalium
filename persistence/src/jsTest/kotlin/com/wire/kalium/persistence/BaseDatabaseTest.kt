@@ -1,6 +1,6 @@
 package com.wire.kalium.persistence
 
-import com.wire.kalium.persistence.db.Database
+import com.wire.kalium.persistence.db.UserDatabaseProvider
 
 actual open class BaseDatabaseTest actual constructor() {
 
@@ -8,7 +8,7 @@ actual open class BaseDatabaseTest actual constructor() {
         // TODO delete test database
     }
 
-    actual fun createDatabase(): Database {
+    actual fun createDatabase(): UserDatabaseProvider {
         TODO("Not yet implemented")
     }
 
