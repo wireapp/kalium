@@ -61,7 +61,7 @@ class MessageScope(
             messageSender
         )
 
-    val getImageAssetMessage: GetMessageAssetUseCase
+    val getAssetMessage: GetMessageAssetUseCase
         get() = GetMessageAssetUseCaseImpl(
             assetRepository,
             messageRepository

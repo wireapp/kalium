@@ -22,7 +22,7 @@ interface GetMessageAssetUseCase {
     suspend operator fun invoke(
         conversationId: ConversationId,
         messageId: String,
-    ): PrivateAssetResult
+    ): MessageAssetResult
 }
 
 internal class GetMessageAssetUseCaseImpl(
@@ -32,10 +32,10 @@ internal class GetMessageAssetUseCaseImpl(
     override suspend fun invoke(
         conversationId: ConversationId,
         messageId: String
-    ): PrivateAssetResult = suspending {
+    ): MessageAssetResult = suspending {
         messageRepository.getMessageById(conversationId = conversationId, messageUuid = messageId).coFold({
             kaliumLogger.e("There was an error retrieving the asset message $messageId")
-            PrivateAssetResult.Failure(it)
+            MessageAssetResult.Failure(it)
         }, { message ->
             val (assetKey, assetToken, encryptionKey) = when (val content = message.content) {
                 is MessageContent.Asset -> {
@@ -44,22 +44,22 @@ internal class GetMessageAssetUseCaseImpl(
                     }
                 }
                 // This should never happen
-                else -> return@coFold PrivateAssetResult.Failure(
+                else -> return@coFold MessageAssetResult.Failure(
                     CoreFailure.Unknown(IllegalStateException("The message associated to this id, was not an asset message"))
                 )
             }
-            assetDataSource.downloadPrivateAsset(assetKey = assetKey, assetToken).coFold({
+            assetDataSource.downloadPrivateAsset(assetKey = assetKey, assetToken = assetToken).coFold({
                 kaliumLogger.e("There was an error downloading asset with id => $assetKey")
-                PrivateAssetResult.Failure(it)
+                MessageAssetResult.Failure(it)
             }, { encodedAsset ->
                 val rawAsset = decryptDataWithAES256(EncryptedData(encodedAsset), AES256Key(encryptionKey)).data
-                PrivateAssetResult.Success(rawAsset)
+                MessageAssetResult.Success(rawAsset)
             })
         })
     }
 }
 
-sealed class PrivateAssetResult {
-    class Success(val decodedAsset: ByteArray) : PrivateAssetResult()
-    class Failure(val coreFailure: CoreFailure) : PrivateAssetResult()
+sealed class MessageAssetResult {
+    class Success(val decodedAsset: ByteArray) : MessageAssetResult()
+    class Failure(val coreFailure: CoreFailure) : MessageAssetResult()
 }
