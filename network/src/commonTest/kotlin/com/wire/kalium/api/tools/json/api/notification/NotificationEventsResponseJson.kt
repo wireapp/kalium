@@ -1,6 +1,8 @@
 package com.wire.kalium.api.tools.json.api.notification
 
 import com.wire.kalium.api.tools.json.ValidJsonProvider
+import com.wire.kalium.network.api.ConversationId
+import com.wire.kalium.network.api.QualifiedID
 import com.wire.kalium.network.api.notification.EventContentDTO
 import com.wire.kalium.network.api.notification.user.NewClientEventData
 
@@ -34,6 +36,33 @@ object NotificationEventsResponseJson {
         ), newClientSerializer
     )
 
+    private val mlsWelcomeSerializer = { eventData: EventContentDTO.Conversation.MLSWelcomeDTO ->
+        """
+            |{
+            |  "type": "conversation.mls-welcome",
+            |  "qualified_conversation": {
+            |     "id": "${eventData.qualifiedConversation.value}",
+            |     "domain": "${eventData.qualifiedConversation.domain}"
+            |  },
+            |  "qualified_from": {
+            |     "id": "${eventData.qualifiedFrom.value}",
+            |     "domain": "${eventData.qualifiedFrom.domain}"
+            |  },
+            |  "data": "${eventData.message}",
+            |  "from": "${eventData.from}"
+            |}
+        """.trimMargin()
+    }
+
+    private val mlsWelcome = ValidJsonProvider(
+        EventContentDTO.Conversation.MLSWelcomeDTO(
+            ConversationId("e16babfa-308b-414e-b6e0-c59517f723db", "staging.zinfra.io"),
+            QualifiedID("76ebeb16-a849-4be4-84a7-157654b492cf","staging.zinfra.io"),
+            "AQABAAAAibLvHZAyYCHDxb+y8axOIdEAILa77VeJo1Yd8AfJKE009zwUxXuu7mAamu",
+            "71ff8872e468a970"
+        ), mlsWelcomeSerializer
+    )
+
     val notificationsWithUnknownEventAtFirstPosition = """
         {
           "time": "2022-02-15T12:54:30Z",
@@ -52,6 +81,12 @@ object NotificationEventsResponseJson {
                 ${clientAdd.rawJson}
               ],
               "id": "f484ad9b-8037-11ec-8001-22000a0fe467"
+            },
+            {
+              "payload": [
+                ${mlsWelcome.rawJson}
+              ],
+              "id": "7e676173-b715-11ec-8001-22000a252765"
             },
             {
               "payload": [
