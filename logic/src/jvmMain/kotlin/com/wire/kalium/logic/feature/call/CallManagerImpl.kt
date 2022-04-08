@@ -1,5 +1,7 @@
 package com.wire.kalium.logic.feature.call
 
+import com.wire.kalium.calling.CallType
+import com.wire.kalium.calling.CallingConversationType
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -18,6 +20,10 @@ actual class CallManagerImpl : CallManager {
 
     override suspend fun onCallingMessageReceived(message: Message, content: MessageContent.Calling) {
         kaliumLogger.w("onCallingMessageReceived for JVM but not supported yet.")
+    }
+
+    override suspend fun startCall(conversationId: ConversationId, callType: CallType, conversationType: CallingConversationType, isAudioCbr: Boolean) {
+        kaliumLogger.w("startCall for JVM but no supported yet.")
     }
 
     override suspend fun answerCall(conversationId: ConversationId) {

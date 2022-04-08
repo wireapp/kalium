@@ -140,6 +140,6 @@ class LoginApiTest : ApiTest {
         const val QUERY_PERSIST = "persist"
         const val PATH_LOGIN = "/login"
         const val PATH_SELF = "/self"
-        const val TEST_HOST = """test-https.wire.com"""
+        const val TEST_HOST = """https://test-https.wire.com"""
     }
 }
