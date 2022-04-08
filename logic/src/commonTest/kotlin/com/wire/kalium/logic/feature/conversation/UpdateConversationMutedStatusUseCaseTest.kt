@@ -30,7 +30,7 @@ class UpdateConversationMutedStatusUseCaseTest {
     }
 
     @Test
-    fun givenAConversationId_whenChangingInvokingAChange_thenShouldDelegateTheCallAnReturnASuccessResult() = runTest {
+    fun givenAConversationId_whenInvokingAMutedStatusChange_thenShouldDelegateTheCallAndReturnASuccessResult() = runTest {
         val conversationId = TestConversation.ID
         given(conversationRepository)
             .suspendFunction(conversationRepository::updateMutedStatus)
@@ -48,7 +48,7 @@ class UpdateConversationMutedStatusUseCaseTest {
     }
 
     @Test
-    fun givenAConversationId_whenChangingInvokingAChangeAndFails_thenShouldDelegateTheCallAnReturnAFailureResult() = runTest {
+    fun givenAConversationId_whenInvokingAMutedStatusChangeAndFails_thenShouldDelegateTheCallAndReturnAFailureResult() = runTest {
         val conversationId = TestConversation.ID
         given(conversationRepository)
             .suspendFunction(conversationRepository::updateMutedStatus)

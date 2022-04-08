@@ -14,7 +14,7 @@ interface UpdateConversationMutedStatusUseCase {
      *
      * @param conversationId the id of the conversation where status wants to be changed
      * @param mutedConversationStatus new status to set the given conversation
-     * @return an [ConversationUpdateStatusResult] containing Success or Failure casesø
+     * @return an [ConversationUpdateStatusResult] containing Success or Failure cases
      */
     suspend operator fun invoke(
         conversationId: ConversationId,
