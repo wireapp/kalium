@@ -41,7 +41,7 @@ interface AssetRepository {
      * @param assetToken the asset token used to provide an extra layer of asset/user authentication
      * @return [Either] a [CoreFailure] if anything went wrong, or the asset as an encoded ByteArray of data
      */
-    suspend fun downloadPrivateAsset(assetKey: String, assetToken: String): Either<CoreFailure, ByteArray>
+    suspend fun downloadPrivateAsset(assetKey: String, assetToken: String?): Either<CoreFailure, ByteArray>
 
     /**
      * Method used to download the list of avatar pictures of the current logged in user

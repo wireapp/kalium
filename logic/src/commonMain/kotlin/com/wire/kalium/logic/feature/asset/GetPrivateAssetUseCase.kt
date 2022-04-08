@@ -22,7 +22,7 @@ interface GetPrivateAssetUseCase {
      */
     suspend operator fun invoke(
         assetKey: UserAssetId,
-        assetToken: String,
+        assetToken: String?,
         conversationId: ConversationId,
         messageId: String,
         encryptionKey: ByteArray
@@ -32,7 +32,7 @@ interface GetPrivateAssetUseCase {
 internal class GetPrivateAssetUseCaseImpl(private val assetDataSource: AssetRepository) : GetPrivateAssetUseCase {
     override suspend fun invoke(
         assetKey: UserAssetId,
-        assetToken: String,
+        assetToken: String?,
         conversationId: ConversationId,
         messageId: String,
         encryptionKey: ByteArray
