@@ -6,7 +6,8 @@ import com.wire.kalium.cryptography.utils.decryptDataWithAES256
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.user.UserAssetId
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.kaliumLogger
 
@@ -14,35 +15,46 @@ interface GetPrivateAssetUseCase {
     /**
      * Function that enables fetching a message asset locally or if it doesn't exist, downloading and decrypting it as a ByteArray
      *
-     * @param assetKey the asset identifier
-     * @param assetToken the asset token used to provide an extra layer of asset/user authentication
      * @param conversationId the conversation ID the asset message belongs to
-     * @param encryptionKey the private encryption key needed to decrypt the message once it has been downloaded
+     * @param messageId the message Identifier
      * @return [PublicAssetResult] with a [ByteArray] in case of success or [CoreFailure] on failure
      */
     suspend operator fun invoke(
-        assetKey: UserAssetId,
-        assetToken: String?,
         conversationId: ConversationId,
         messageId: String,
-        encryptionKey: ByteArray
     ): PrivateAssetResult
 }
 
-internal class GetPrivateAssetUseCaseImpl(private val assetDataSource: AssetRepository) : GetPrivateAssetUseCase {
+internal class GetPrivateAssetUseCaseImpl(
+    private val assetDataSource: AssetRepository,
+    private val messageRepository: MessageRepository
+) : GetPrivateAssetUseCase {
     override suspend fun invoke(
-        assetKey: UserAssetId,
-        assetToken: String?,
         conversationId: ConversationId,
-        messageId: String,
-        encryptionKey: ByteArray
+        messageId: String
     ): PrivateAssetResult = suspending {
-        assetDataSource.downloadPrivateAsset(assetKey, assetToken).coFold({
-            kaliumLogger.e("There was an error downloading asset with id => $assetKey")
+        messageRepository.getMessageById(conversationId = conversationId, messageUuid = messageId).coFold({
+            kaliumLogger.e("There was an error retrieving the asset message $messageId")
             PrivateAssetResult.Failure(it)
-        }, { encodedAsset ->
-            val rawAsset = decryptDataWithAES256(EncryptedData(encodedAsset), AES256Key(encryptionKey)).data
-            PrivateAssetResult.Success(rawAsset)
+        }, { message ->
+            val (assetKey, assetToken, encryptionKey) = when (val content = message.content) {
+                is MessageContent.Asset -> {
+                    with(content.value.remoteData) {
+                        Triple(assetId, assetToken, otrKey)
+                    }
+                }
+                // This should never happen
+                else -> return@coFold PrivateAssetResult.Failure(
+                    CoreFailure.Unknown(IllegalStateException("The message associated to this id, was not an asset message"))
+                )
+            }
+            assetDataSource.downloadPrivateAsset(assetKey = assetKey, assetToken).coFold({
+                kaliumLogger.e("There was an error downloading asset with id => $assetKey")
+                PrivateAssetResult.Failure(it)
+            }, { encodedAsset ->
+                val rawAsset = decryptDataWithAES256(EncryptedData(encodedAsset), AES256Key(encryptionKey)).data
+                PrivateAssetResult.Success(rawAsset)
+            })
         })
     }
 }

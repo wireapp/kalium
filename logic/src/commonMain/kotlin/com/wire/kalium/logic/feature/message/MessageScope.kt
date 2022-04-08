@@ -63,7 +63,8 @@ class MessageScope(
 
     val getImageAssetMessage: GetPrivateAssetUseCase
         get() = GetPrivateAssetUseCaseImpl(
-            assetRepository
+            assetRepository,
+            messageRepository
         )
 
     val getRecentMessages: GetRecentMessagesUseCase get() = GetRecentMessagesUseCase(messageRepository)
