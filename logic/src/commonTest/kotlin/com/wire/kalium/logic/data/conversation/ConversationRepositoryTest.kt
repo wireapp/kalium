@@ -6,16 +6,21 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.user.client.ClientApi
+import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.Member
+import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.given
 import io.mockative.mock
+import io.mockative.once
+import io.mockative.verify
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Clock
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -155,5 +160,24 @@ class ConversationRepositoryTest {
 
             awaitComplete()
         }
+    }
+
+    @Test
+    fun givenAWantToMuteAConversation_whenCallingUpdateMutedStatus_thenShouldDelegateCallToConversationApi() = runTest {
+        given(conversationApi)
+            .suspendFunction(conversationApi::updateConversationMemberState)
+            .whenInvokedWith(any(), any())
+            .thenReturn(NetworkResponse.Success(Unit, mapOf(), HttpStatusCode.OK.value))
+
+        conversationRepository.updateMutedStatus(
+            TestConversation.ID,
+            MutedConversationStatus.ALL_MUTED,
+            Clock.System.now().toEpochMilliseconds()
+        )
+
+        verify(conversationApi)
+            .suspendFunction(conversationApi::updateConversationMemberState)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
     }
 }
