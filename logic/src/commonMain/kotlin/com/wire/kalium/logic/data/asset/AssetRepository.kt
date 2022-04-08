@@ -84,24 +84,23 @@ internal class AssetDataSource(
     }
 
     override suspend fun downloadPublicAsset(assetKey: String): Either<CoreFailure, ByteArray> = suspending {
-        downloadAsset(assetKey, null)
+        downloadAsset(assetKey = assetKey, assetToken = null)
     }
 
-    override suspend fun downloadPrivateAsset(assetKey: String, assetToken: String): Either<CoreFailure, ByteArray> = suspending {
-        downloadAsset(assetKey, assetToken)
+    override suspend fun downloadPrivateAsset(assetKey: String, assetToken: String?): Either<CoreFailure, ByteArray> = suspending {
+        downloadAsset(assetKey = assetKey, assetToken = assetToken)
     }
 
     private suspend fun downloadAsset(assetKey: String, assetToken: String?): Either<CoreFailure, ByteArray> = suspending {
-        wrapStorageRequest { assetDao.getAssetByKey(assetKey).firstOrNull() }
-            .coFold({
-                wrapApiRequest {
-                    // Backend sends asset messages with empty asset tokens
-                    assetApi.downloadAsset(assetKey, assetToken?.ifEmpty { null })
-                }.flatMap { assetData ->
-                    wrapStorageRequest { assetDao.insertAsset(assetMapper.fromUserAssetToDaoModel(assetKey, assetData)) }
-                        .map { assetData }
-                }
-            }, { Either.Right(it.rawData) })
+        wrapStorageRequest { assetDao.getAssetByKey(assetKey).firstOrNull() }.coFold({
+            wrapApiRequest {
+                // Backend sends asset messages with empty asset tokens
+                assetApi.downloadAsset(assetKey, assetToken?.ifEmpty { null })
+            }.flatMap { assetData ->
+                wrapStorageRequest { assetDao.insertAsset(assetMapper.fromUserAssetToDaoModel(assetKey, assetData)) }
+                    .map { assetData }
+            }
+        }, { Either.Right(it.rawData) })
     }
 
     override suspend fun downloadUsersPictureAssets(assetIdList: List<UserAssetId?>): Either<CoreFailure, Unit> = suspending {

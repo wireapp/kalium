@@ -37,12 +37,10 @@ internal class GetPrivateAssetUseCaseImpl(private val assetDataSource: AssetRepo
         messageId: String,
         encryptionKey: ByteArray
     ): PrivateAssetResult = suspending {
-        // Download the encrypted asset
         assetDataSource.downloadPrivateAsset(assetKey, assetToken).coFold({
             kaliumLogger.e("There was an error downloading asset with id => $assetKey")
             PrivateAssetResult.Failure(it)
         }, { encodedAsset ->
-            // Decrypt the asset data
             val rawAsset = decryptDataWithAES256(EncryptedData(encodedAsset), AES256Key(encryptionKey)).data
             PrivateAssetResult.Success(rawAsset)
         })
