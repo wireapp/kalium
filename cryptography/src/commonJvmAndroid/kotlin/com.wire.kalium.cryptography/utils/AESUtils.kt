@@ -25,7 +25,7 @@ internal class AESEncrypt {
     internal fun generateRandomAES256Key(): AES256Key {
         // AES256 Symmetric secret key generation
         val keygen = KeyGenerator.getInstance(KEY_ALGORITHM)
-        keygen.init(128)
+        keygen.init(256)
         return AES256Key(keygen.generateKey().encoded)
     }
 }
