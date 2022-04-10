@@ -1,12 +1,14 @@
 package com.wire.kalium.logic.data.keypackage
 
 import com.wire.kalium.cryptography.MLSClient
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.keypackage.ClaimedKeyPackageList
 import com.wire.kalium.network.api.keypackage.KeyPackage
 import com.wire.kalium.network.api.keypackage.KeyPackageApi
@@ -34,20 +36,23 @@ class KeyPackageRepositoryTest {
     private val keyPackageApi = mock(classOf<KeyPackageApi>())
 
     @Mock
+    private val clientRepository = mock(classOf<ClientRepository>())
+
+    @Mock
     private val mlsClientProvider = mock(classOf<MLSClientProvider>())
 
     private lateinit var keyPackageRepository: KeyPackageRepository
 
     @BeforeTest
     fun setup() {
-        keyPackageRepository = KeyPackageDataSource(keyPackageApi, mlsClientProvider)
+        keyPackageRepository = KeyPackageDataSource(clientRepository, keyPackageApi, mlsClientProvider)
     }
 
     @Test
     fun givenExistingClient_whenUploadingKeyPackages_thenKeyPackagesShouldBeGeneratedAndPassedToApi() = runTest {
         given(mlsClientProvider)
             .suspendFunction(mlsClientProvider::getMLSClient)
-            .whenInvokedWith(eq(CLIENT_ID))
+            .whenInvokedWith(eq(SELF_CLIENT_ID))
             .then { Either.Right(MLS_CLIENT) }
 
         given(MLS_CLIENT)
@@ -60,11 +65,11 @@ class KeyPackageRepositoryTest {
             .whenInvokedWith(anything(), anything())
             .thenReturn( NetworkResponse.Success(Unit, mapOf(), 200) )
 
-        keyPackageRepository.uploadNewKeyPackages(CLIENT_ID, 1)
+        keyPackageRepository.uploadNewKeyPackages(SELF_CLIENT_ID, 1)
 
         verify(keyPackageApi)
             .suspendFunction(keyPackageApi::uploadKeyPackages)
-            .with(eq(CLIENT_ID.value), eq(KEY_PACKAGES_BASE64))
+            .with(eq(SELF_CLIENT_ID.value), eq(KEY_PACKAGES_BASE64))
             .wasInvoked(once)
     }
 
@@ -72,10 +77,10 @@ class KeyPackageRepositoryTest {
     fun givenExistingClient_whenGettingAvailableKeyPackageCount_thenResultShouldBePropagated() = runTest {
         given(keyPackageApi)
             .suspendFunction(keyPackageApi::getAvailableKeyPackageCount)
-            .whenInvokedWith(eq(CLIENT_ID.value))
+            .whenInvokedWith(eq(SELF_CLIENT_ID.value))
             .thenReturn( NetworkResponse.Success(KEY_PACKAGE_COUNT, mapOf(), 200) )
 
-        val keyPackageCount = keyPackageRepository.getAvailableKeyPackageCount(CLIENT_ID)
+        val keyPackageCount = keyPackageRepository.getAvailableKeyPackageCount(SELF_CLIENT_ID)
 
         assertIs<Either.Right<Int>>(keyPackageCount)
         assertEquals(KEY_PACKAGE_COUNT, keyPackageCount.value)
@@ -88,20 +93,28 @@ class KeyPackageRepositoryTest {
             .whenInvokedWith(eq(MapperProvider.idMapper().toApiModel(USER_ID)))
             .thenReturn( NetworkResponse.Success(CLAIMED_KEY_PACKAGES, mapOf(), 200) )
 
-        val claimedKeyPackages = keyPackageRepository.claimKeyPackages(USER_ID)
+        given(clientRepository)
+            .suspendFunction(clientRepository::currentClientId)
+            .whenInvoked()
+            .then { Either.Right(SELF_CLIENT_ID) }
 
-        assertIs<Either.Right<ClaimedKeyPackageList>>(claimedKeyPackages)
-        assertEquals(CLAIMED_KEY_PACKAGES, claimedKeyPackages.value)
+        val result = keyPackageRepository.claimKeyPackages(listOf(USER_ID))
+
+        result.shouldSucceed { keyPackages ->
+            assertEquals(listOf(CLAIMED_KEY_PACKAGES.keyPackages[1]), keyPackages)
+        }
     }
 
     private companion object {
         const val KEY_PACKAGE_COUNT = 100
-        val CLIENT_ID: ClientId = PlainId("client_id")
+        val SELF_CLIENT_ID: ClientId = PlainId("client_self")
+        val OTHER_CLIENT_ID: ClientId = PlainId("client_other")
         val USER_ID = UserId("user_id", "wire.com")
         val KEY_PACKAGES = listOf("keypackage".encodeToByteArray())
         val KEY_PACKAGES_BASE64 = KEY_PACKAGES.map { it.encodeBase64() }
         val CLAIMED_KEY_PACKAGES = ClaimedKeyPackageList(listOf(
-            KeyPackageDTO("client123", "wire.com", KeyPackage(), KeyPackageRef(), "user_id")
+            KeyPackageDTO(SELF_CLIENT_ID.value, "wire.com", KeyPackage(), KeyPackageRef(), "user_id"),
+            KeyPackageDTO(OTHER_CLIENT_ID.value, "wire.com", KeyPackage(), KeyPackageRef(), "user_id")
         ))
 
         @Mock

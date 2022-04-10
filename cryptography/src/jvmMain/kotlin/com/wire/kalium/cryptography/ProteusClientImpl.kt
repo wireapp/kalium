@@ -5,15 +5,14 @@ import com.wire.bots.cryptobox.CryptoException
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import java.io.File
 import java.util.Base64
-import java.util.UUID
 
-actual class ProteusClientImpl actual constructor(rootDir: String, userId: CryptoUserID): ProteusClient {
+actual class ProteusClientImpl actual constructor(rootDir: String): ProteusClient {
 
     private val path: String
     private lateinit var box: CryptoBox
 
     init {
-        path = String.format("%s/%s", rootDir, userId)
+        path = rootDir
     }
 
     override suspend fun open() {
@@ -84,14 +83,6 @@ actual class ProteusClientImpl actual constructor(rootDir: String, userId: Crypt
 
         private fun toPreKey(preKey: com.wire.bots.cryptobox.PreKey): PreKeyCrypto =
             PreKeyCrypto(preKey.id, Base64.getEncoder().encodeToString(preKey.data))
-
-        private fun createId(userId: UUID?, clientId: String?): String? {
-            return String.format("%s_%s", userId, clientId)
-        }
-
-        private fun createId(userId: String, clientId: String): String {
-            return String.format("%s_%s", userId, clientId)
-        }
     }
 
 }

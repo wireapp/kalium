@@ -8,10 +8,12 @@ import com.wire.kalium.logic.CoreLogger
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.client.RegisterClientResult
 import com.wire.kalium.logic.feature.conversation.GetConversationsUseCase
+import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -22,7 +24,7 @@ class SendReceiveApplication : CliktCommand() {
     private val email: String by option(help = "Wire account email").required()
     private val password: String by option(help = "Wire account password").required()
     private val environment: String? by option(help = "Choose backend environment: can be production or staging")
-    private val coreLogic = CoreLogic("Kalium CLI", ".proteus")
+    private val coreLogic = CoreLogic("Kalium CLI", "$HOME_DIRECTORY/.kalium/accounts")
 
     private val serverConfig: ServerConfig by lazy {
         if (environment == "production") {
@@ -35,12 +37,14 @@ class SendReceiveApplication : CliktCommand() {
     override fun run() = runBlocking {
         CoreLogger.setLoggingLevel(KaliumLogLevel.DEBUG)
 
-        val authSession = login(email, password)
+        val authSession = restoreSession() ?: login(email, password)
         val userSession = coreLogic.getSessionScope(authSession.userId)
 
-        when (userSession.client.register(password, emptyList())) {
-            is RegisterClientResult.Failure -> throw RuntimeException("Client registration failed")
-            is RegisterClientResult.Success -> Unit
+        if (userSession.client.needsToRegisterClient()) {
+            when (userSession.client.register(password, emptyList())) {
+                is RegisterClientResult.Failure -> throw RuntimeException("Client registration failed")
+                is RegisterClientResult.Success -> Unit
+            }
         }
 
         val conversations = userSession.conversations.getConversations().let {
@@ -77,24 +81,38 @@ class SendReceiveApplication : CliktCommand() {
 
         }
 
-
         while (true) {
             val message = readLine()!!
             userSession.messages.sendTextMessage(conversationID, message)
         }
     }
 
-    private suspend fun login(username: String, password: String): AuthSession {
-        val result = coreLogic.getAuthenticationScope().login(username, password, false, serverConfig)
-
-        if (result !is AuthenticationResult.Success) {
-            throw RuntimeException(
-                "There was an error on the login :(" +
-                        "Check the credentials and the internet connection and try again"
-            )
+    private suspend fun restoreSession(): AuthSession? {
+        return coreLogic.authenticationScope {
+            when (val currentSessionResult = session.currentSession()) {
+                is CurrentSessionResult.Success -> currentSessionResult.authSession
+                else -> null
+            }
         }
+    }
 
-        return result.userSession
+    private suspend fun login(username: String, password: String): AuthSession {
+       return  coreLogic.authenticationScope {
+           val loginResult = login(username, password, true, serverConfig)
+           if (loginResult !is AuthenticationResult.Success) {
+               throw RuntimeException("Login failed, check your credentials")
+           }
+
+           val addAccountResult = addAuthenticatedAccount(loginResult.userSession, true)
+           if (addAccountResult !is AddAuthenticatedUserUseCase.Result.Success) {
+                throw RuntimeException("Failed to save session")
+           }
+           loginResult.userSession
+        }
+    }
+
+    companion object {
+        val HOME_DIRECTORY: String = System.getProperty("user.home")
     }
 
 }

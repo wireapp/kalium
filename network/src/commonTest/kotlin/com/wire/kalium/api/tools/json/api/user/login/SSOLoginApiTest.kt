@@ -45,14 +45,14 @@ class SSOLoginApiTest: ApiTest {
             statusCode = HttpStatusCode.OK,
             assertion = {
                 assertHead()
-                assertPathEqual("$PATH_SSO_INITIATE/$ssoCode")
+                assertPathEqual("$PATH_SSO_INITIATE/$ssoCode%3Fsuccess_redirect=${param.success}&error_redirect=${param.error}")
             }
         )
         val ssoApi: SSOLoginApi = SSOLoginApiImpl(httpClient)
         val actual = ssoApi.initiate(param, TEST_HOST)
 
         assertIs<NetworkResponse.Success<String>>(actual)
-        assertEquals("${TEST_HOST}sso/initiate-login/$ssoCode?success_redirect=${param.success}&error_redirect=${param.error}", actual.value)
+        assertEquals("${TEST_HOST}sso/initiate-login/$ssoCode%3Fsuccess_redirect=${param.success}&error_redirect=${param.error}", actual.value)
     }
 
     @Test

@@ -14,6 +14,8 @@ import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ConversationDataSource
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MLSConversationDataSource
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.event.EventDataSource
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -78,14 +80,22 @@ abstract class UserSessionScopeCommon(
 
     private val mlsClientProvider: MLSClientProvider
         get() = MLSClientProviderImpl(
-            authenticatedDataSourceSet.authenticatedRootDir,
+            "${authenticatedDataSourceSet.authenticatedRootDir}/mls",
             userId,
             clientRepository,
             authenticatedDataSourceSet.kaliumPreferencesSettings)
 
+    private val mlsConversationRepository: MLSConversationRepository
+    get() = MLSConversationDataSource(
+        keyPackageRepository,
+        mlsClientProvider,authenticatedDataSourceSet.authenticatedNetworkContainer.mlsMessageApi,
+        userDatabaseProvider.conversationDAO
+    )
+
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(
             userRepository,
+            mlsConversationRepository,
             userDatabaseProvider.conversationDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi
@@ -187,6 +197,7 @@ abstract class UserSessionScopeCommon(
 
     private val keyPackageRepository: KeyPackageRepository
         get() = KeyPackageDataSource(
+            clientRepository,
             authenticatedDataSourceSet.authenticatedNetworkContainer.keyPackageApi,
             mlsClientProvider
         )

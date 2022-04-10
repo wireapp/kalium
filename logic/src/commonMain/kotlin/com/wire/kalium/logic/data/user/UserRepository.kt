@@ -4,6 +4,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.publicuser.PublicUserMapper
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.di.MapperProvider
@@ -34,6 +35,7 @@ interface UserRepository {
     suspend fun fetchKnownUsers(): Either<CoreFailure, Unit>
     suspend fun fetchUsersByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun getSelfUser(): Flow<SelfUser>
+    suspend fun getSelfUserId(): QualifiedID
     suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, SelfUser>
     suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit>
     suspend fun updateLocalSelfUserHandle(handle: String)
@@ -52,7 +54,11 @@ class UserDataSource(
     private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper()
 ) : UserRepository {
 
-    private suspend fun getSelfUserId(): QualifiedIDEntity {
+    override suspend fun getSelfUserId(): QualifiedID {
+        return idMapper.fromDaoModel(_getSelfUserId())
+    }
+
+    private suspend fun _getSelfUserId(): QualifiedIDEntity {
         val encodedValue = metadataDAO.valueByKey(SELF_USER_ID_KEY).firstOrNull()
         return encodedValue?.let { Json.decodeFromString<QualifiedIDEntity>(it) }
             ?: run { throw IllegalStateException() }
@@ -120,7 +126,7 @@ class UserDataSource(
     }
 
     override suspend fun updateLocalSelfUserHandle(handle: String) =
-        userDAO.updateUserHandle(getSelfUserId(), handle)
+        userDAO.updateUserHandle(_getSelfUserId(), handle)
 
     override suspend fun getAllKnownUsers() =
         userDAO.getAllUsers().map { it.map { userEntity -> publicUserMapper.fromDaoModelToPublicUser(userEntity) } }
