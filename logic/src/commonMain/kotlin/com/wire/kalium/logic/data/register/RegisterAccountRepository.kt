@@ -45,11 +45,11 @@ class RegisterAccountDataSource(
         register(RegisterApi.RegisterParam.TeamAccount(email, code, name, password, teamName, teamIcon), serverConfig)
 
     private suspend fun requestActivation(
-        param: RegisterApi.RequestActivationCodeParam, baseApiHost: String
-    ): Either<NetworkFailure, Unit> = wrapApiRequest { registerApi.requestActivationCode(param, baseApiHost) }
+        param: RegisterApi.RequestActivationCodeParam, baseApiUrl: String
+    ): Either<NetworkFailure, Unit> = wrapApiRequest { registerApi.requestActivationCode(param, baseApiUrl) }
 
-    private suspend fun activateUser(param: RegisterApi.ActivationParam, baseApiHost: String): Either<NetworkFailure, Unit> =
-        wrapApiRequest { registerApi.activate(param, baseApiHost) }
+    private suspend fun activateUser(param: RegisterApi.ActivationParam, baseApiUrl: String): Either<NetworkFailure, Unit> =
+        wrapApiRequest { registerApi.activate(param, baseApiUrl) }
 
     private suspend fun register(param: RegisterApi.RegisterParam, serverConfig: ServerConfig) =
         wrapApiRequest { registerApi.register(param, serverConfig.apiBaseUrl) }.map {
