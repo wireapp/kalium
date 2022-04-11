@@ -55,7 +55,7 @@ class ServerConfigMapperImpl : ServerConfigMapper {
 
     override fun toEntity(serverConfig: ServerConfig): ServerConfigEntity =
         with(serverConfig) {
-            ServerConfigEntity(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, serverConfig.title)
+            ServerConfigEntity(null, apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, serverConfig.title)
         }
 
     override fun fromEntity(serverConfigEntity: ServerConfigEntity): ServerConfig =

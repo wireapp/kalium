@@ -1,8 +1,8 @@
 CREATE TABLE ServerConfiguration (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-    apiBaseUrl TEXT NOT NULL,
+    apiBaseUrl TEXT NOT NULL UNIQUE,
     accountBaseUrl TEXT NOT NULL,
-    webSocketBaseUrl TEXT NOT NULL,
+    webSocketBaseUrl TEXT NOT NULL UNIQUE,
     blackListUrl TEXT NOT NULL,
     teamsUrl TEXT NOT NULL,
     websiteUrl TEXT NOT NULL,

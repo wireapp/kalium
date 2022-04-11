@@ -10,13 +10,22 @@ import kotlinx.coroutines.flow.map
 
 internal class ServerConfigMapper() {
     fun toModel(serverConfiguration: ServerConfiguration) = with(serverConfiguration) {
-        ServerConfigEntity(apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title)
+        ServerConfigEntity(id.toInt(), apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title)
     }
 }
 
 interface ServerConfigurationDAO {
     fun deleteById(id: Int)
-    fun insert(serverConfigEntity: ServerConfigEntity): ServerConfigEntity
+    fun insert(
+        apiBaseUrl: String,
+        accountBaseUrl: String,
+        webSocketBaseUrl: String,
+        blackListUrl: String,
+        teamsUrl: String,
+        websiteUrl: String,
+        title: String
+    )
+
     fun allConfigFlow(): Flow<List<ServerConfigEntity>>
     fun allConfig(): List<ServerConfigEntity>
     fun configById(id: Int): ServerConfigEntity?
@@ -27,9 +36,15 @@ class ServerConfigurationDAOImpl(private val queries: ServerConfigurationQueries
 
     override fun deleteById(id: Int) = queries.deleteById(id.toLong())
 
-    override fun insert(serverConfigEntity: ServerConfigEntity): ServerConfigEntity = with(serverConfigEntity) {
-        queries.insert(apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title)
-    }.let { serverConfigEntity }
+    override fun insert(
+        apiBaseUrl: String,
+        accountBaseUrl: String,
+        webSocketBaseUrl: String,
+        blackListUrl: String,
+        teamsUrl: String,
+        websiteUrl: String,
+        title: String
+    ) = queries.insert(apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title)
 
     override fun allConfigFlow(): Flow<List<ServerConfigEntity>> =
         queries.storedConfig().asFlow().mapToList().map { it.map(mapper::toModel) }
