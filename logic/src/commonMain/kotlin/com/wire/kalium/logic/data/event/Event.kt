@@ -35,6 +35,13 @@ sealed class Event(open val id: String) {
             val members: ConversationUsers,
             val from: String
         ) : Conversation(id, conversationId)
+
+        data class MLSWelcome(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val senderUserId: UserId,
+            val message: String
+        ) : Conversation(id, conversationId)
     }
 
     data class Unknown(override val id: String): Event(id)
