@@ -1,10 +1,16 @@
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.LegalHoldStatus
+import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
+import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
@@ -34,19 +40,22 @@ class GetOrCreateOneToOneConversationUseCaseTest {
     fun givenConversationDoesNotExist_whenCallingTheUseCase_ThenDoNotCreateAConversationButReturnExisting() = runTest {
         //given
         given(conversationRepository)
-            .coroutine { getOne2OneConversationDetailsByUserId(USER_ID) }
-            .then { Either.Right(null) }
+            .suspendFunction(conversationRepository::getOne2OneConversationDetailsByUserId)
+            .whenInvokedWith(anything())
+            .thenReturn(Either.Right(null))
 
         given(conversationRepository)
-            .coroutine { createOne2OneConversationWithTeamMate(USER_ID) }
-            .then { Either.Right(CONVERSATION_ID) }
+            .suspendFunction(conversationRepository::createGroupConversation)
+            .whenInvokedWith(anything(), anything(), anything())
+            .thenReturn(Either.Right(CONVERSATION))
         //when
         val result = getOrCreateOneToOneConversationUseCase.invoke(USER_ID)
         //then
         assertIs<CreateConversationResult.Success>(result)
 
         verify(conversationRepository)
-            .coroutine { createOne2OneConversationWithTeamMate(USER_ID) }
+            .suspendFunction(conversationRepository::createGroupConversation)
+            .with(anything(), anything(), anything())
             .wasInvoked(exactly = once)
     }
 
@@ -55,20 +64,40 @@ class GetOrCreateOneToOneConversationUseCaseTest {
         //given
         given(conversationRepository)
             .coroutine { getOne2OneConversationDetailsByUserId(USER_ID) }
-            .then { Either.Right(USER_ID) }
+            .then { Either.Right(CONVERSATION_DETAILS) }
         //when
         val result = getOrCreateOneToOneConversationUseCase.invoke(USER_ID)
         //then
         assertIs<CreateConversationResult.Success>(result)
 
         verify(conversationRepository)
-            .coroutine { createOne2OneConversationWithTeamMate(USER_ID) }
+            .coroutine { createGroupConversation(members = MEMBER) }
             .wasNotInvoked()
     }
 
     private companion object {
         val USER_ID = UserId(value = "userId", domain = "domainId")
+        val MEMBER = listOf(Member(USER_ID))
         val CONVERSATION_ID = ConversationId(value = "userId", domain = "domainId")
+        val CONVERSATION = Conversation(id = CONVERSATION_ID, name = null, type = Conversation.Type.ONE_ON_ONE, teamId = null)
+        val OTHER_USER = OtherUser(
+            id =
+            USER_ID,
+            name = null,
+            handle = null,
+            email = null,
+            phone = null,
+            accentId = 0,
+            team = null,
+            previewPicture = null,
+            completePicture = null
+        )
+        val CONVERSATION_DETAILS = ConversationDetails.OneOne(
+            CONVERSATION,
+            OTHER_USER,
+            ConversationDetails.OneOne.ConnectionState.ACCEPTED,
+            LegalHoldStatus.ENABLED
+        )
     }
 
 }

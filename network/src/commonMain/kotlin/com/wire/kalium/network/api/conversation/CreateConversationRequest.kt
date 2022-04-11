@@ -15,7 +15,7 @@ data class CreateConversationRequest(
     // the name is optional in swagger but this should not be the case
     // since there is endpoint for one2one and self conversations
     @SerialName("name")
-    val name: String,
+    val name: String?,
     @SerialName("access")
     val access: List<ConversationAccess>,
     @SerialName("access_role_v2")

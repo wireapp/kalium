@@ -4,21 +4,18 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.conversation.ConversationApi
-import com.wire.kalium.network.api.conversation.CreateConversationRequest
+import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.persistence.dao.ConversationDAO
-import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.network.api.conversation.ConversationResponse
-import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import io.ktor.utils.io.errors.IOException
@@ -46,9 +43,8 @@ interface ConversationRepository {
     suspend fun persistMember(member: MemberEntity, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun persistMembers(members: List<MemberEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun deleteMember(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity): Either<CoreFailure, Unit>
-    suspend fun createOne2OneConversationWithTeamMate(otherUserId: UserId): Either<CoreFailure, ConversationId>
     suspend fun getOne2OneConversationDetailsByUserId(otherUserId: UserId): Either<CoreFailure, ConversationDetails.OneOne?>
-    suspend fun createGroupConversation(name: String, members: List<Member>, options: ConverationOptions): Either<CoreFailure, Conversation>
+    suspend fun createGroupConversation(name: String? = null, members: List<Member>, options: ConverationOptions = ConverationOptions()): Either<CoreFailure, Conversation>
 }
 
 class ConversationDataSource(
@@ -153,7 +149,7 @@ class ConversationDataSource(
     override suspend fun deleteMember(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity): Either<CoreFailure, Unit> =
         wrapStorageRequest { conversationDAO.deleteMemberByQualifiedID(conversationID, userID) }
 
-    override suspend fun createGroupConversation(name: String, members: List<Member>, options: ConverationOptions): Either<CoreFailure, Conversation> = suspending {
+    override suspend fun createGroupConversation(name: String?, members: List<Member>, options: ConverationOptions): Either<CoreFailure, Conversation> = suspending {
         wrapStorageRequest {
             userRepository.getSelfUser().first()
         }.flatMap { selfUser ->
@@ -214,22 +210,6 @@ class ConversationDataSource(
             }
     }
 
-    override suspend fun createOne2OneConversationWithTeamMate(otherUserId: UserId): Either<CoreFailure, ConversationId> = wrapApiRequest {
-        conversationApi.createNewConversation(
-            createConversationRequest = CreateConversationRequest(
-                qualifiedUsers = listOf(idMapper.toApiModel(otherUserId)),
-                access = emptyList(),
-                accessRole = listOf(),
-                convTeamInfo = null,
-                messageTimer = null,
-                receiptMode = 0,
-                conversationRole = "",
-                protocol = null,
-                name = ""
-            )
-        )
-    }.map { idMapper.fromApiModel(it.id) }
-
     override suspend fun getOne2OneConversationDetailsByUserId(otherUserId: UserId): Either<StorageFailure, ConversationDetails.OneOne?> {
         return wrapStorageRequest {
             observeConversationList()
@@ -245,5 +225,4 @@ class ConversationDataSource(
     }
 }
 
-}
 

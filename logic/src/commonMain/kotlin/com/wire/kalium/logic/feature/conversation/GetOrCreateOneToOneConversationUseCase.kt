@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
@@ -17,7 +18,7 @@ class GetOrCreateOneToOneConversationUseCase(
                 if (conversation != null) {
                     Either.Right(conversation.conversation.id)
                 } else {
-                    conversationRepository.createOne2OneConversationWithTeamMate(otherUserId)
+                    conversationRepository.createGroupConversation(members = listOf(Member(otherUserId))).map { it.id }
                 }
             }
         }.fold(
