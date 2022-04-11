@@ -1,16 +1,15 @@
 CREATE TABLE ServerConfiguration (
-    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    title TEXT PRIMARY KEY NOT NULL,
     apiBaseUrl TEXT NOT NULL UNIQUE,
     accountBaseUrl TEXT NOT NULL,
     webSocketBaseUrl TEXT NOT NULL UNIQUE,
     blackListUrl TEXT NOT NULL,
     teamsUrl TEXT NOT NULL,
-    websiteUrl TEXT NOT NULL,
-    title TEXT NOT NULL
+    websiteUrl TEXT NOT NULL
 );
 
-deleteById:
-DELETE FROM ServerConfiguration WHERE id = ?;
+deleteByTitle:
+DELETE FROM ServerConfiguration WHERE title = ?;
 
 insert:
 INSERT OR IGNORE INTO ServerConfiguration( apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title)
@@ -19,5 +18,5 @@ VALUES( ?, ?, ?, ?, ?, ?, ?);
 storedConfig:
 SELECT * FROM ServerConfiguration;
 
-getById:
-SELECT * FROM ServerConfiguration WHERE id = ?;
+getByTitle:
+SELECT * FROM ServerConfiguration WHERE title = ?;

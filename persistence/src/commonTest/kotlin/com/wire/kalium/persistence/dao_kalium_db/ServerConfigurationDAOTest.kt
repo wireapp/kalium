@@ -35,7 +35,7 @@ class ServerConfigurationDAOTest : KaliumDBBaseTest() {
     fun givenServerConfig_ThenItCanBeInsertedAndRetrieved() {
         val expect = config1
         insertConfig(expect)
-        val actual = db.serverConfigurationDAO.configById(expect.id!!)
+        val actual = db.serverConfigurationDAO.configByTitle(expect.title)
 
         assertEquals(expect, actual)
     }
@@ -43,7 +43,7 @@ class ServerConfigurationDAOTest : KaliumDBBaseTest() {
     @Test
     fun givenExistingConfig_thenItCanBeDeleted() {
         insertConfig(config1)
-        db.serverConfigurationDAO.deleteById(config1.id!!)
+        db.serverConfigurationDAO.deleteByTitle(config1.title)
 
         val result = db.serverConfigurationDAO.allConfig()
         assertEquals(0, result.size)

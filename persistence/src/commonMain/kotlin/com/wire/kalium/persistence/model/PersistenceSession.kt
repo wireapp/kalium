@@ -5,7 +5,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class ServerConfigEntity(
-    val id: Int?, // TODO: remove nullability
     val apiBaseUrl: String,
     val accountBaseUrl: String,
     val webSocketBaseUrl: String,

@@ -116,7 +116,7 @@ class SessionDAOTest {
     private companion object {
         val randomString get() = Random.nextBytes(64).decodeToString()
         fun randomNetworkConfig(): ServerConfigEntity =
-            ServerConfigEntity(null ,randomString, randomString, randomString, randomString, randomString, randomString, "test_network_config")
+            ServerConfigEntity(randomString, randomString, randomString, randomString, randomString, randomString, "test_network_config")
     }
 
 }

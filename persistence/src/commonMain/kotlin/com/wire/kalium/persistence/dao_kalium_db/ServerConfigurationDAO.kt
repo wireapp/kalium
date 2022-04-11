@@ -10,12 +10,12 @@ import kotlinx.coroutines.flow.map
 
 internal class ServerConfigMapper() {
     fun toModel(serverConfiguration: ServerConfiguration) = with(serverConfiguration) {
-        ServerConfigEntity(id.toInt(), apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title)
+        ServerConfigEntity(apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title)
     }
 }
 
 interface ServerConfigurationDAO {
-    fun deleteById(id: Int)
+    fun deleteByTitle(title: String)
     fun insert(
         apiBaseUrl: String,
         accountBaseUrl: String,
@@ -28,13 +28,13 @@ interface ServerConfigurationDAO {
 
     fun allConfigFlow(): Flow<List<ServerConfigEntity>>
     fun allConfig(): List<ServerConfigEntity>
-    fun configById(id: Int): ServerConfigEntity?
+    fun configByTitle(title: String): ServerConfigEntity?
 }
 
 class ServerConfigurationDAOImpl(private val queries: ServerConfigurationQueries) : ServerConfigurationDAO {
     private val mapper: ServerConfigMapper = ServerConfigMapper()
 
-    override fun deleteById(id: Int) = queries.deleteById(id.toLong())
+    override fun deleteByTitle(title: String) = queries.deleteByTitle(title)
 
     override fun insert(
         apiBaseUrl: String,
@@ -51,6 +51,6 @@ class ServerConfigurationDAOImpl(private val queries: ServerConfigurationQueries
 
     override fun allConfig(): List<ServerConfigEntity> = queries.storedConfig().executeAsList().map(mapper::toModel)
 
-    override fun configById(id: Int): ServerConfigEntity? = queries.getById(id.toLong()).executeAsOneOrNull()?.let { mapper.toModel(it) }
+    override fun configByTitle(title: String): ServerConfigEntity? = queries.getByTitle(title).executeAsOneOrNull()?.let { mapper.toModel(it) }
 
 }
