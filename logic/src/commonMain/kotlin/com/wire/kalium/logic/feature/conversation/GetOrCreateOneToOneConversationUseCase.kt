@@ -14,7 +14,7 @@ class GetOrCreateOneToOneConversationUseCase(
 
     suspend operator fun invoke(otherUserId: UserId): CreateConversationResult {
         return suspending {
-            conversationRepository.getOne2OneConversationDetailsByUserId(otherUserId).flatMap { conversation ->
+            conversationRepository.getOneToOneConversationDetailsByUserId(otherUserId).flatMap { conversation ->
                 if (conversation != null) {
                     Either.Right(conversation.conversation.id)
                 } else {

@@ -40,7 +40,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
     fun givenConversationDoesNotExist_whenCallingTheUseCase_ThenDoNotCreateAConversationButReturnExisting() = runTest {
         //given
         given(conversationRepository)
-            .suspendFunction(conversationRepository::getOne2OneConversationDetailsByUserId)
+            .suspendFunction(conversationRepository::getOneToOneConversationDetailsByUserId)
             .whenInvokedWith(anything())
             .thenReturn(Either.Right(null))
 
@@ -63,7 +63,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
     fun givenConversationExist_whenCallingTheUseCase_ThenCreateAConversationAndReturn() = runTest {
         //given
         given(conversationRepository)
-            .coroutine { getOne2OneConversationDetailsByUserId(USER_ID) }
+            .coroutine { getOneToOneConversationDetailsByUserId(USER_ID) }
             .then { Either.Right(CONVERSATION_DETAILS) }
         //when
         val result = getOrCreateOneToOneConversationUseCase.invoke(USER_ID)

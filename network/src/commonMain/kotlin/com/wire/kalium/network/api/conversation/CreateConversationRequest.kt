@@ -12,8 +12,6 @@ import kotlinx.serialization.Serializable
 data class CreateConversationRequest(
     @SerialName("qualified_users")
     val qualifiedUsers: List<UserId>,
-    // the name is optional in swagger but this should not be the case
-    // since there is endpoint for one2one and self conversations
     @SerialName("name")
     val name: String?,
     @SerialName("access")
@@ -36,7 +34,6 @@ data class CreateConversationRequest(
     val protocol: ConvProtocol?
 )
 
-
 @Serializable
 enum class ReceiptMode(val value: Int) {
     DISABLED(0),
@@ -45,8 +42,10 @@ enum class ReceiptMode(val value: Int) {
 
 @Serializable
 enum class ConvProtocol {
-    @SerialName("proteus") PROTEUS,
-    @SerialName("mls") MLS;
+    @SerialName("proteus")
+    PROTEUS,
+    @SerialName("mls")
+    MLS;
 
     override fun toString(): String {
         return this.name.lowercase()

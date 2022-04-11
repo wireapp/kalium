@@ -43,7 +43,7 @@ interface ConversationRepository {
     suspend fun persistMember(member: MemberEntity, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun persistMembers(members: List<MemberEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun deleteMember(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity): Either<CoreFailure, Unit>
-    suspend fun getOne2OneConversationDetailsByUserId(otherUserId: UserId): Either<CoreFailure, ConversationDetails.OneOne?>
+    suspend fun getOneToOneConversationDetailsByUserId(otherUserId: UserId): Either<CoreFailure, ConversationDetails.OneOne?>
     suspend fun createGroupConversation(name: String? = null, members: List<Member>, options: ConverationOptions = ConverationOptions()): Either<CoreFailure, Conversation>
 }
 
@@ -210,7 +210,7 @@ class ConversationDataSource(
             }
     }
 
-    override suspend fun getOne2OneConversationDetailsByUserId(otherUserId: UserId): Either<StorageFailure, ConversationDetails.OneOne?> {
+    override suspend fun getOneToOneConversationDetailsByUserId(otherUserId: UserId): Either<StorageFailure, ConversationDetails.OneOne?> {
         return wrapStorageRequest {
             observeConversationList()
                 .flatMapMerge { it.asFlow() }
