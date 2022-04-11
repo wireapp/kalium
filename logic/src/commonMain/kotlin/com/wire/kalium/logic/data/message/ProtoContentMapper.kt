@@ -98,9 +98,11 @@ class ProtoContentMapperImpl : ProtoContentMapper {
         kaliumLogger.d("Received message $genericMessage")
         val content = when (val protoContent = genericMessage.content) {
             is GenericMessage.Content.Text -> MessageContent.Text(protoContent.value.content)
-            is GenericMessage.Content.Asset -> MessageContent.Asset(
-                MapperProvider.assetMapper().fromProtoAssetMessageToAssetContent(protoContent.value)
-            )
+            is GenericMessage.Content.Asset -> {
+                if (protoContent.value.uploaded != null) MessageContent.Asset(
+                    MapperProvider.assetMapper().fromProtoAssetMessageToAssetContent(protoContent.value)
+                ) else MessageContent.Unknown // Sometimes backend sens preliminar asset messages just with img metadata, so we discard it
+            }
             is GenericMessage.Content.Availability -> MessageContent.Unknown
             is GenericMessage.Content.ButtonAction -> MessageContent.Unknown
             is GenericMessage.Content.ButtonActionConfirmation -> MessageContent.Unknown
