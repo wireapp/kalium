@@ -210,6 +210,8 @@ class ConversationDataSource(
             }
     }
 
+    //TODO: this needs some kind of optimization, we could directly get the conversation by otherUserId and
+    // not to get all the conversation first and filter them to look for the id, this could be done on DAO level
     override suspend fun getOneToOneConversationDetailsByUserId(otherUserId: UserId): Either<StorageFailure, ConversationDetails.OneOne?> {
         return wrapStorageRequest {
             observeConversationList()
