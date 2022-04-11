@@ -19,10 +19,10 @@ sqldelight {
         sourceFolders = listOf("db_user")
     }
 
-    database("KaliumDatabase") {
+    database("GlobalDatabase") {
         dialect = Dependencies.SqlDelight.dialect
         packageName = "com.wire.kalium.persistence"
-        sourceFolders = listOf("db_kalium")
+        sourceFolders = listOf("db_global")
     }
 }
 

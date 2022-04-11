@@ -1,7 +1,7 @@
 package com.wire.kalium.persistence.dao_kalium_db
 
-import com.wire.kalium.persistence.KaliumDBBaseTest
-import com.wire.kalium.persistence.db.KaliumDatabaseProvider
+import com.wire.kalium.persistence.GlobalDBBaseTest
+import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import com.wire.kalium.persistence.utils.stubs.newServerConfig
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -13,13 +13,13 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class ServerConfigurationDAOTest : KaliumDBBaseTest() {
+class ServerConfigurationDAOTest : GlobalDBBaseTest() {
 
     private val config1 = newServerConfig(id = 1)
     private val config2 = newServerConfig(id = 2)
     private val config3 = newServerConfig(id = 3)
 
-    lateinit var db: KaliumDatabaseProvider
+    lateinit var db: GlobalDatabaseProvider
 
     @BeforeTest
     fun setup() {

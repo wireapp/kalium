@@ -2,17 +2,17 @@ package com.wire.kalium.persistence.db
 
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
-import com.wire.kalium.persistence.KaliumDatabase
+import com.wire.kalium.persistence.GlobalDatabase
 import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAO
 import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAOImpl
 import com.wire.kalium.persistence.util.FileNameUtil
 import java.io.File
 import java.util.Properties
 
-actual class KaliumDatabaseProvider(private val storePath: File) {
+actual class GlobalDatabaseProvider(private val storePath: File) {
 
     private val dbName = FileNameUtil.appDBName()
-    private val database: KaliumDatabase
+    private val database: GlobalDatabase
 
 
     init {
@@ -27,10 +27,10 @@ actual class KaliumDatabaseProvider(private val storePath: File) {
             Properties(1).apply { put("foreign_keys", "true") })
 
         if (!databaseExists) {
-            KaliumDatabase.Schema.create(driver)
+            GlobalDatabase.Schema.create(driver)
         }
 
-        database = KaliumDatabase(driver)
+        database = GlobalDatabase(driver)
     }
 
     actual val serverConfigurationDAO: ServerConfigurationDAO
