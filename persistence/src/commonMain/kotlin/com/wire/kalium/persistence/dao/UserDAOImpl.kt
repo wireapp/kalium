@@ -11,15 +11,16 @@ import com.wire.kalium.persistence.db.User as SQLDelightUser
 class UserMapper {
     fun toModel(user: SQLDelightUser): UserEntity {
         return UserEntity(
-            user.qualified_id,
-            user.name,
-            user.handle,
-            user.email,
-            user.phone,
-            user.accent_id,
-            user.team,
-            user.preview_asset_id,
-            user.complete_asset_id
+            id = user.qualified_id,
+            name = user.name,
+            handle = user.handle,
+            email = user.email,
+            phone = user.phone,
+            accentId = user.accent_id,
+            team = user.team,
+            connectionStatus = user.connection_status,
+            previewAssetId = user.preview_asset_id,
+            completeAssetId = user.complete_asset_id
         )
     }
 }
@@ -37,6 +38,7 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
             user.phone,
             user.accentId,
             user.team,
+            user.connectionStatus,
             user.previewAssetId,
             user.completeAssetId
         )
@@ -53,6 +55,7 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
                     user.phone,
                     user.accentId,
                     user.team,
+                    user.connectionStatus,
                     user.previewAssetId,
                     user.completeAssetId
                 )

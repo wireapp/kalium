@@ -27,4 +27,9 @@ interface ConversationDAO {
     suspend fun insertMembers(memberList: List<Member>, conversationID: QualifiedIDEntity)
     suspend fun deleteMemberByQualifiedID(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity)
     suspend fun getAllMembers(qualifiedID: QualifiedIDEntity): Flow<List<Member>>
+    suspend fun insertOrUpdateOneOneMemberWithConnectionStatus(
+        userId: UserIDEntity,
+        status: UserEntity.ConnectionState,
+        conversationID: QualifiedIDEntity
+    )
 }
