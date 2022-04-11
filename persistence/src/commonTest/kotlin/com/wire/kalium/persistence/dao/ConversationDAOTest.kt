@@ -56,16 +56,24 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenExistingConversation_ThenConversationCanBeRetrievedByGroupID() = runTest {
         conversationDAO.insertConversation(conversationEntity2)
-        val result = conversationDAO.getConversationByGroupID((conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId).first()
+        val result =
+            conversationDAO.getConversationByGroupID((conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId)
+                .first()
         assertEquals(conversationEntity2, result)
     }
 
     @Test
     fun givenExistingConversation_ThenConversationGroupStateCanBeUpdated() = runTest {
         conversationDAO.insertConversation(conversationEntity2)
-        conversationDAO.updateConversationGroupState(ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE, (conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId)
+        conversationDAO.updateConversationGroupState(
+            ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,
+            (conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+        )
         val result = conversationDAO.getConversationByQualifiedID(conversationEntity2.id).first()
-        assertEquals((result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState, ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE)
+        assertEquals(
+            (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState,
+            ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE
+        )
     }
 
     @Test
@@ -100,6 +108,20 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertMembers(listOf(member1, member2), conversationEntity1.id)
 
         assertEquals(setOf(member1, member2), conversationDAO.getAllMembers(conversationEntity1.id).first().toSet())
+    }
+
+    @Test
+    fun givenAnExistingConversation_WhenUpdatingTheMutingStatus_ThenConversationShouldBeUpdated() = runTest {
+        conversationDAO.insertConversation(conversationEntity2)
+        conversationDAO.updateConversationMutedStatus(
+            conversationId = conversationEntity2.id,
+            mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_ALLOWED,
+            mutedStatusTimestamp = 1649702788L
+        )
+
+        val result = conversationDAO.getConversationByQualifiedID(conversationEntity2.id).first()
+
+        assertEquals(ConversationEntity.MutedStatus.ONLY_MENTIONS_ALLOWED, result?.mutedStatus)
     }
 
     private companion object {

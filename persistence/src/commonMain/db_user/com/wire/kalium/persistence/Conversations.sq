@@ -9,9 +9,9 @@ CREATE TABLE Conversation (
     team_id TEXT,
     mls_group_id TEXT,
     mls_group_state TEXT AS ConversationEntity.GroupState NOT NULL,
-    muted_status TEXT AS ConversationEntity.MutedStatus DEFAULT "all_allowed",
-    muted_time INTEGER DEFAULT 0,
-    protocol TEXT AS ConversationEntity.Protocol NOT NULL
+    protocol TEXT AS ConversationEntity.Protocol NOT NULL,
+    muted_status TEXT AS ConversationEntity.MutedStatus DEFAULT "all_allowed" NOT NULL,
+    muted_time INTEGER DEFAULT 0 NOT NULL
 );
 
 deleteAllConversations:
@@ -41,3 +41,8 @@ SELECT * FROM Conversation WHERE qualified_id = ?;
 
 selectByGroupId:
 SELECT * FROM Conversation WHERE mls_group_id = ?;
+
+updateConversationMutingStatus:
+UPDATE Conversation
+SET muted_status = ?, muted_time = ?
+WHERE qualified_id = ?;

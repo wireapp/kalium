@@ -20,9 +20,15 @@ class ConversationMapper {
             conversation.type,
             conversation.team_id,
             protocolInfo = when (conversation.protocol) {
-                ConversationEntity.Protocol.MLS -> ConversationEntity.ProtocolInfo.MLS(conversation.mls_group_id ?: "", conversation.mls_group_state)
+                ConversationEntity.Protocol.MLS -> ConversationEntity.ProtocolInfo.MLS(
+                    conversation.mls_group_id ?: "",
+                    conversation.mls_group_state
+                )
                 ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
-            })
+            },
+            mutedStatus = conversation.muted_status,
+            mutedTime = conversation.muted_time
+        )
     }
 
 }
@@ -135,5 +141,13 @@ class ConversationDAOImpl(
             .asFlow()
             .mapToList()
             .map { it.map(memberMapper::toModel) }
+    }
+
+    override suspend fun updateConversationMutedStatus(
+        conversationId: QualifiedIDEntity,
+        mutedStatus: ConversationEntity.MutedStatus,
+        mutedStatusTimestamp: Long
+    ) {
+        conversationQueries.updateConversationMutingStatus(mutedStatus, mutedStatusTimestamp, conversationId)
     }
 }

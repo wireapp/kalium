@@ -4,6 +4,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
@@ -12,10 +13,9 @@ import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.conversation.ConversationApi
+import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.persistence.dao.ConversationDAO
-import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import io.ktor.utils.io.errors.IOException
@@ -65,7 +65,7 @@ class ConversationDataSource(
         val selfUserTeamId = userRepository.getSelfUser().first().team
         wrapApiRequest { conversationApi.conversationsByBatch(null, 100) }.map { conversationPagingResponse ->
             conversationDAO.insertConversations(conversationPagingResponse.conversations.map { conversationResponse ->
-                conversationMapper.fromApiModelToDaoModel(conversationResponse, groupCreation = false, selfUserTeamId?.let { TeamId(it) } )
+                conversationMapper.fromApiModelToDaoModel(conversationResponse, groupCreation = false, selfUserTeamId?.let { TeamId(it) })
             })
             conversationPagingResponse.conversations.forEach { conversationsResponse ->
                 conversationDAO.insertMembers(
@@ -151,7 +151,11 @@ class ConversationDataSource(
     override suspend fun deleteMember(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity): Either<CoreFailure, Unit> =
         wrapStorageRequest { conversationDAO.deleteMemberByQualifiedID(conversationID, userID) }
 
-    override suspend fun createGroupConversation(name: String, members: List<Member>, options: ConverationOptions): Either<CoreFailure, Conversation> = suspending {
+    override suspend fun createGroupConversation(
+        name: String,
+        members: List<Member>,
+        options: ConverationOptions
+    ): Either<CoreFailure, Conversation> = suspending {
         wrapStorageRequest {
             userRepository.getSelfUser().first()
         }.flatMap { selfUser ->
@@ -174,7 +178,8 @@ class ConversationDataSource(
                 }.flatMap {
                     when (conversationEntity.protocolInfo) {
                         is ProtocolInfo.Proteus -> Either.Right(conversation)
-                        is ProtocolInfo.MLS -> mlsConversationRepository.establishMLSGroup((conversationEntity.protocolInfo as ProtocolInfo.MLS).groupId).flatMap { Either.Right(conversation) }
+                        is ProtocolInfo.MLS -> mlsConversationRepository.establishMLSGroup((conversationEntity.protocolInfo as ProtocolInfo.MLS).groupId)
+                            .flatMap { Either.Right(conversation) }
                     }
                 }
             }
@@ -192,7 +197,10 @@ class ConversationDataSource(
      * For MLS groups we aren't allowed by the BE provide any initial members when creating
      * the group, so we need to provide initial list of members separately.
      */
-    private suspend fun persistMembersFromConversationResponseMLS(conversationResponse: ConversationResponse, members: List<Member>): Either<CoreFailure, Unit> {
+    private suspend fun persistMembersFromConversationResponseMLS(
+        conversationResponse: ConversationResponse,
+        members: List<Member>
+    ): Either<CoreFailure, Unit> {
         return wrapStorageRequest {
             val conversationId = idMapper.fromApiToDao(conversationResponse.id)
             val selfUserId = userRepository.getSelfUserId()
@@ -212,6 +220,9 @@ class ConversationDataSource(
             }
     }
 
+    /**
+     * Updates the conversation muting options status and the timestamp of the applied change, both remotely and local
+     */
     override suspend fun updateMutedStatus(
         conversationId: ConversationId,
         mutedStatus: MutedConversationStatus,
@@ -219,11 +230,15 @@ class ConversationDataSource(
     ): Either<CoreFailure, Unit> = suspending {
         wrapApiRequest {
             conversationApi.updateConversationMemberState(
-                memberUpdateRequest = conversationStatusMapper.mutedStatusToApiModel(mutedStatus, mutedStatusTimestamp),
+                memberUpdateRequest = conversationStatusMapper.toApiModel(mutedStatus, mutedStatusTimestamp),
                 conversationId = idMapper.toApiModel(conversationId)
             )
         }.map {
-            // TODO: later persist this locally to conversation_table: muted_status and muted_time
+            conversationDAO.updateConversationMutedStatus(
+                conversationId = idMapper.toDaoModel(conversationId),
+                mutedStatus = conversationStatusMapper.toDaoModel(mutedStatus),
+                mutedStatusTimestamp = mutedStatusTimestamp
+            )
         }
     }
 
