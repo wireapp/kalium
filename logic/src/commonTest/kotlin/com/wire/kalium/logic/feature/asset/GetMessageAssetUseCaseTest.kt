@@ -4,6 +4,7 @@ import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.PlainData
 import com.wire.kalium.cryptography.utils.encryptDataWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -29,7 +30,7 @@ import kotlin.test.assertTrue
 class GetMessageAssetUseCaseTest {
 
     @Test
-    fun givenACallToGetAMessageAsset_whenEverythingGoesWell_thenShouldReturnsTheAssetDecodedData() = runTest {
+    fun givenACallToGetAMessageAsset_whenEverythingGoesWell_thenShouldReturnTheAssetDecodedData() = runTest {
         // Given
         val expectedDecodedAsset = byteArrayOf(14, 2, 10, 63, -2, -1, 34, 0, 12, 4, 5, 6, 8, 9, -22, 9, 63)
         val randomAES256Key = generateRandomAES256Key()
@@ -50,7 +51,7 @@ class GetMessageAssetUseCaseTest {
     }
 
     @Test
-    fun givenACallToGetAMessageAsset_whenThereIsAMessageRepositoryError_thenShouldReturnsAFailureResult() = runTest {
+    fun givenACallToGetAMessageAsset_whenThereIsAMessageRepositoryError_thenShouldReturnAFailureResult() = runTest {
         // Given
         val someConversationId = ConversationId("some-conversation-id", "some-domain.com")
         val someMessageId = "some-message-id"
@@ -63,6 +64,24 @@ class GetMessageAssetUseCaseTest {
 
         // Then
         assertTrue(result is MessageAssetResult.Failure)
+    }
+
+    @Test
+    fun givenACallToGetAMessageAsset_whenThereIsNoInternetConnection_thenShouldReturnAFailureResult() = runTest {
+        // Given
+        val someConversationId = ConversationId("some-conversation-id", "some-domain.com")
+        val someMessageId = "some-message-id"
+        val connectionFailure = NetworkFailure.NoNetworkConnection
+        val (_, getMessageAsset) = Arrangement()
+            .withDownloadAssetErrorResponse(connectionFailure)
+            .arrange()
+
+        // When
+        val result = getMessageAsset(someConversationId, someMessageId)
+
+        // Then
+        assertTrue(result is MessageAssetResult.Failure)
+        assertEquals(result.coreFailure::class, connectionFailure::class)
     }
 
     private class Arrangement {
@@ -135,6 +154,21 @@ class GetMessageAssetUseCaseTest {
                 .suspendFunction(messageRepository::getMessageById)
                 .whenInvokedWith(any(), any())
                 .thenReturn(Either.Left(StorageFailure.DataNotFound))
+            return this
+        }
+
+        fun withDownloadAssetErrorResponse(noNetworkConnection: NetworkFailure.NoNetworkConnection): Arrangement {
+            convId = ConversationId("", "")
+            encryptionKey = ByteArray(0)
+            msgId = ""
+            given(messageRepository)
+                .suspendFunction(messageRepository::getMessageById)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Either.Right(mockedMessage))
+            given(assetDataSource)
+                .suspendFunction(assetDataSource::downloadPrivateAsset)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Either.Left(noNetworkConnection))
             return this
         }
 
