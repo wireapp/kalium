@@ -3,8 +3,8 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.asset.GetPublicAssetUseCase
-import com.wire.kalium.logic.feature.asset.GetPublicAssetUseCaseImpl
+import com.wire.kalium.logic.feature.asset.GetAvatarAssetUseCase
+import com.wire.kalium.logic.feature.asset.GetAvatarAssetUseCaseImpl
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
 import com.wire.kalium.logic.feature.publicuser.GetAllKnownUsersUseCase
@@ -29,7 +29,7 @@ class UserScope(
     val syncContacts: SyncContactsUseCase get() = SyncContactsUseCaseImpl(userRepository)
     val uploadUserAvatar: UploadUserAvatarUseCase get() = UploadUserAvatarUseCaseImpl(userRepository, assetRepository)
     val searchKnownUsers: SearchKnownUsersUseCase get() = SearchKnownUsersUseCaseImpl(searchUserRepository)
-    val getPublicAsset: GetPublicAssetUseCase get() = GetPublicAssetUseCaseImpl(assetRepository)
+    val getPublicAsset: GetAvatarAssetUseCase get() = GetAvatarAssetUseCaseImpl(assetRepository)
     val searchUserDirectory: SearchUserDirectoryUseCase get() = SearchUserDirectoryUseCaseImpl(searchUserRepository)
     val setUserHandle: SetUserHandleUseCase get() = SetUserHandleUseCase(userRepository, validateUserHandleUseCase, syncManager)
     val getAllKnownUsers: GetAllKnownUsersUseCase get() = GetAllKnownUsersUseCaseImpl(userRepository)

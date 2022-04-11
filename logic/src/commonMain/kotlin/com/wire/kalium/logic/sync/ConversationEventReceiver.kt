@@ -67,7 +67,7 @@ class ConversationEventReceiver(
                     )
                     kaliumLogger.i(message = "Message received: $message")
                     when (message.content) {
-                        is MessageContent.Text -> messageRepository.persistMessage(message)
+                        is MessageContent.Text, is MessageContent.Asset -> messageRepository.persistMessage(message)
                         is MessageContent.DeleteMessage ->
                             if (isSenderVerified(message.content.messageId, message.conversationId, message.senderUserId))
                                 messageRepository.softDeleteMessage(messageUuid = message.content.messageId, message.conversationId)
