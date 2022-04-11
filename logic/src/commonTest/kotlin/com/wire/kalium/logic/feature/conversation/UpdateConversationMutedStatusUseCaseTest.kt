@@ -34,15 +34,15 @@ class UpdateConversationMutedStatusUseCaseTest {
         val conversationId = TestConversation.ID
         given(conversationRepository)
             .suspendFunction(conversationRepository::updateMutedStatus)
-            .whenInvokedWith(any(), eq(MutedConversationStatus.ALL_MUTED), any())
+            .whenInvokedWith(any(), eq(MutedConversationStatus.AllMuted), any())
             .thenReturn(Either.Right(Unit))
 
-        val result = updateConversationMutedStatus(conversationId, MutedConversationStatus.ALL_MUTED)
+        val result = updateConversationMutedStatus(conversationId, MutedConversationStatus.AllMuted)
         assertEquals(ConversationUpdateStatusResult.Success::class, result::class)
 
         verify(conversationRepository)
             .suspendFunction(conversationRepository::updateMutedStatus)
-            .with(any(), eq(MutedConversationStatus.ALL_MUTED), any())
+            .with(any(), eq(MutedConversationStatus.AllMuted), any())
             .wasInvoked(exactly = once)
 
     }
@@ -52,15 +52,15 @@ class UpdateConversationMutedStatusUseCaseTest {
         val conversationId = TestConversation.ID
         given(conversationRepository)
             .suspendFunction(conversationRepository::updateMutedStatus)
-            .whenInvokedWith(any(), eq(MutedConversationStatus.ALL_MUTED), any())
+            .whenInvokedWith(any(), eq(MutedConversationStatus.AllMuted), any())
             .thenReturn(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
 
-        val result = updateConversationMutedStatus(conversationId, MutedConversationStatus.ALL_MUTED)
+        val result = updateConversationMutedStatus(conversationId, MutedConversationStatus.AllMuted)
         assertEquals(ConversationUpdateStatusResult.Failure::class, result::class)
 
         verify(conversationRepository)
             .suspendFunction(conversationRepository::updateMutedStatus)
-            .with(any(), eq(MutedConversationStatus.ALL_MUTED), any())
+            .with(any(), eq(MutedConversationStatus.AllMuted), any())
             .wasInvoked(exactly = once)
 
     }

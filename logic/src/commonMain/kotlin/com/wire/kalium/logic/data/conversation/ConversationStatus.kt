@@ -8,13 +8,10 @@ package com.wire.kalium.logic.data.conversation
  * 3 -> No notifications are displayed
  * ```
  */
-enum class MutedConversationStatus {
-    ALL_ALLOWED,
-    ONLY_MENTIONS_ALLOWED,
-    MENTIONS_MUTED,
-    ALL_MUTED;
-
-    companion object {
-        fun fromOrdinal(ordinal: Int): MutedConversationStatus? = values().firstOrNull { ordinal == it.ordinal }
-    }
+sealed class MutedConversationStatus(open val status: Int = 0) {
+    object AllAllowed : MutedConversationStatus(0)
+    object OnlyMentionsAllowed : MutedConversationStatus(1)
+    @Deprecated("For legacy mapping purpose only, not used")
+    private object MentionsMuted : MutedConversationStatus(2)
+    object AllMuted : MutedConversationStatus(3)
 }

@@ -322,7 +322,7 @@ class ConversationRepositoryTest {
 
         conversationRepository.updateMutedStatus(
             TestConversation.ID,
-            MutedConversationStatus.ALL_MUTED,
+            MutedConversationStatus.AllMuted,
             Clock.System.now().toEpochMilliseconds()
         )
 

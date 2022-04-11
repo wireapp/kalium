@@ -9,7 +9,7 @@ interface ConversationStatusMapper {
 class ConversationStatusMapperImpl : ConversationStatusMapper {
     override fun mutedStatusToApiModel(mutedStatus: MutedConversationStatus, mutedStatusTimestamp: Long): MemberUpdateRequest {
         return MemberUpdateRequest(
-            otrMutedStatus = MemberUpdateRequest.MutedStatus.fromOrdinal(mutedStatus.ordinal),
+            otrMutedStatus = MemberUpdateRequest.MutedStatus.fromOrdinal(mutedStatus.status),
             otrMutedRef = mutedStatusTimestamp.toString()
         )
     }

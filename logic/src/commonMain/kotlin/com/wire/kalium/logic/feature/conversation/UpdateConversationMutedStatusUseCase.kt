@@ -10,7 +10,7 @@ import kotlinx.datetime.Clock
 interface UpdateConversationMutedStatusUseCase {
     /**
      * Use case that allows a conversation to change its muted status to:
-     * [MutedConversationStatus.ALL_MUTED], [MutedConversationStatus.ALL_ALLOWED] or [MutedConversationStatus.ONLY_MENTIONS_ALLOWED]
+     * [MutedConversationStatus.AllMuted], [MutedConversationStatus.AllAllowed] or [MutedConversationStatus.OnlyMentionsAllowed]
      *
      * @param conversationId the id of the conversation where status wants to be changed
      * @param mutedConversationStatus new status to set the given conversation
@@ -34,7 +34,7 @@ internal class UpdateConversationMutedStatusUseCaseImpl(
     ): ConversationUpdateStatusResult = suspending {
         conversationRepository.updateMutedStatus(conversationId, mutedConversationStatus, mutedStatusTimestamp)
             .coFold({
-                kaliumLogger.e("Something went wrong when updating the convId ($conversationId) to (${mutedConversationStatus.name}")
+                kaliumLogger.e("Something went wrong when updating the convId ($conversationId) to (${mutedConversationStatus.status}")
                 ConversationUpdateStatusResult.Failure
             }, {
                 ConversationUpdateStatusResult.Success
