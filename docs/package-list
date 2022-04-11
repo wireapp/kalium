@@ -72,6 +72,7 @@ com.wire.kalium.logic.data.publicuser
 com.wire.kalium.logic.data.publicuser.model
 com.wire.kalium.logic.data.register
 com.wire.kalium.logic.data.session
+com.wire.kalium.logic.data.sso
 com.wire.kalium.logic.data.team
 com.wire.kalium.logic.data.user
 com.wire.kalium.logic.failure
