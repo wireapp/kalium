@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.call
 import com.sun.jna.Pointer
 import com.wire.kalium.calling.CallType
 import com.wire.kalium.calling.Calling
+import com.wire.kalium.calling.CallingConversationType
 import com.wire.kalium.calling.callbacks.CallConfigRequestHandler
 import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.calling.types.Size_t
@@ -20,6 +21,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.toUserId
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.util.toInt
 import com.wire.kalium.logic.util.toTimeInMillis
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -88,6 +90,12 @@ actual class CallManagerImpl(
         }
     }
 
+    override suspend fun startCall(conversationId: ConversationId, callType: CallType, conversationType: CallingConversationType, isAudioCbr: Boolean) {
+        withCalling {
+            wcall_start(deferredHandle.await(), conversationId.asString(), callType.avsValue, conversationType.avsValue, isAudioCbr.toInt())
+        }
+    }
+
     private fun startHandleAsync() = scope.async(start = CoroutineStart.LAZY) {
         val selfUserId = userId.await().asString()
         val selfClientId = clientId.await().value
@@ -105,12 +113,7 @@ actual class CallManagerImpl(
                     scope.launch {
                         val messageString = data?.getString(0, UTF8_ENCODING)
                         messageString?.let {
-                            sendCallingMessage(
-                                conversationId.toConversationId(),
-                                avsSelfUserId.toUserId(),
-                                ClientId(avsSelfClientId),
-                                it
-                            )
+                            sendCallingMessage(conversationId.toConversationId(), avsSelfUserId.toUserId(), ClientId(avsSelfClientId), it)
                         }
                     }
                     kaliumLogger.i("$TAG -> sendHandler success")
@@ -202,7 +205,7 @@ actual class CallManagerImpl(
         calling.wcall_answer(
             inst = deferredHandle.await(),
             conversationId = conversationId.asString(),
-            callType = CallType.CALL_TYPE_NORMAL.value,
+            callType = CallType.AUDIO.avsValue,
             cbrEnabled = false
         )
     }

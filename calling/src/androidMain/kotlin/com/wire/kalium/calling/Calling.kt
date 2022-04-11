@@ -22,23 +22,6 @@ import com.wire.kalium.calling.types.Uint32_t
 // A magic number used to initialize AVS (required for all mobile platforms).
 const val ENVIRONMENT_DEFAULT = 0
 
-/**
- * CALL_TYPE_NORMAL = 0 => Audio Only
- * CALL_TYPE_VIDEO = 1 => Video/Audio
- * CALL_TYPE_FORCED_AUDIO = 2 => Legacy Group Calls
- */
-enum class CallType(val value: Int) {
-    CALL_TYPE_NORMAL(0),
-    CALL_TYPE_VIDEO(1),
-
-    @Deprecated(
-        message = "was used for legacy groups calls (before conference calls). If the number of participants were above a certain limit" +
-                "you would join with CALL_TYPE_FORCED_AUDIO to signal to AVS that only audio is allowed.",
-        replaceWith = ReplaceWith("CALL_TYPE_NORMAL or CALL_TYPE_VIDEO")
-    )
-    CALL_TYPE_FORCED_AUDIO(2)
-}
-
 interface Calling : Library {
 
     fun wcall_create(

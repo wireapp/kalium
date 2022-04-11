@@ -7,10 +7,38 @@ import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.RedirectResponseException
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.ServerResponseException
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.URLProtocol
+import io.ktor.http.Url
 import kotlinx.serialization.SerializationException
 
+internal fun HttpRequestBuilder.setWSSUrl(baseUrl: Url, vararg path: String) {
+    url {
+        host = baseUrl.host
+        pathSegments = baseUrl.pathSegments + path
+        protocol = URLProtocol.WSS
+        port = URLProtocol.WSS.defaultPort
+    }
+}
+
+internal fun HttpRequestBuilder.setUrl(baseUrl: Url, vararg path: String) {
+    setHttpsUrl(baseUrl, path.toList())
+}
+
+internal fun HttpRequestBuilder.setUrl(baseUrl: String, vararg path: String) {
+    val parsedUrl = Url(baseUrl)
+    setHttpsUrl(parsedUrl, path.toList())
+}
+
+private fun HttpRequestBuilder.setHttpsUrl(baseUrl: Url, path: List<String>) {
+    url {
+        host = baseUrl.host
+        pathSegments = baseUrl.pathSegments + path
+        protocol = URLProtocol.HTTPS
+    }
+}
 
 internal fun String.splitSetCookieHeader(): List<String> {
     var comma = indexOf(',')
@@ -69,7 +97,7 @@ internal fun String.splitSetCookieHeader(): List<String> {
  * @return A new [NetworkResponse.Success] with the mapped result,
  * or [NetworkResponse.Error] if it was never a success to begin with
  */
-internal inline fun <T : Any, U : Any> NetworkResponse<T>. mapSuccess(mapping: ((T) -> U)): NetworkResponse<U> =
+internal inline fun <T : Any, U : Any> NetworkResponse<T>.mapSuccess(mapping: ((T) -> U)): NetworkResponse<U> =
     if (isSuccessful()) {
         NetworkResponse.Success(mapping(this.value), this.headers, this.httpCode)
     } else {
