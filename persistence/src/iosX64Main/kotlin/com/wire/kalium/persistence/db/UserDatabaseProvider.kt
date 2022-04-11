@@ -42,7 +42,7 @@ actual class UserDatabaseProvider(userId: UserIDEntity, passphrase: String) {
                 typeAdapter = EnumColumnAdapter(),
                 mls_group_stateAdapter = EnumColumnAdapter(),
                 protocolAdapter = EnumColumnAdapter(),
-                muted_statusAdapter = IntColumnAdapter
+                muted_statusAdapter = EnumColumnAdapter()
             ),
             Member.Adapter(userAdapter = QualifiedIDAdapter(), conversationAdapter = QualifiedIDAdapter()),
             Message.Adapter(
