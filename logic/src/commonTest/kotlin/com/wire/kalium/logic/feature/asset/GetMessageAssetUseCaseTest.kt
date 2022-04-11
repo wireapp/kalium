@@ -1,9 +1,9 @@
 package com.wire.kalium.logic.feature.asset
 
 import com.wire.kalium.cryptography.utils.AES256Key
+import com.wire.kalium.cryptography.utils.PlainData
+import com.wire.kalium.cryptography.utils.encryptDataWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -14,7 +14,6 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -32,12 +31,13 @@ class GetMessageAssetUseCaseTest {
     @Test
     fun givenACallToGetAMessageAsset_whenEverythingGoesWell_thenShouldReturnsTheAssetDecodedData() = runTest {
         // Given
-        val expectedDecodedAsset = byteArrayOf(14, 2, 10, 63, -2, -1, 34, 0, 12, 4, 5, 6, 8, 9, -22, 9, 14, 2, 10, 63, -2, -1, 34, 0, 12, 4, 5, 6, 8, 9, -22, 9, 14, 2, 10, 63, -2, -1, 34, 0, 12, 4, 5, 6, 8, 9, -22, 9, 14, 2, 10, 63, -2, -1, 34, 0, 12, 4, 5, 6, 8, 9, -22, 9)
+        val expectedDecodedAsset = byteArrayOf(14, 2, 10, 63, -2, -1, 34, 0, 12, 4, 5, 6, 8, 9, -22, 9, 63)
         val randomAES256Key = generateRandomAES256Key()
+        val encodedAsset = encryptDataWithAES256(PlainData(expectedDecodedAsset), randomAES256Key)
         val someConversationId = ConversationId("some-conversation-id", "some-domain.com")
         val someMessageId = "some-message-id"
         val (_, getMessageAsset) = Arrangement()
-            .withSuccessfulFlow(someConversationId, someMessageId, expectedDecodedAsset, randomAES256Key)
+            .withSuccessfulFlow(someConversationId, someMessageId, encodedAsset.data, randomAES256Key)
             .arrange()
 
         // When
@@ -45,7 +45,8 @@ class GetMessageAssetUseCaseTest {
 
         // Then
         assertTrue(result is MessageAssetResult.Success)
-        assertEquals(result.decodedAsset, expectedDecodedAsset)
+        assertEquals(result.decodedAsset.size, expectedDecodedAsset.size)
+        assertTrue(result.decodedAsset.contentEquals(expectedDecodedAsset))
     }
 
     @Test
@@ -112,7 +113,7 @@ class GetMessageAssetUseCaseTest {
         fun withSuccessfulFlow(
             conversationId: ConversationId,
             messageId: String,
-            decodedAsset: ByteArray,
+            encodedAsset: ByteArray,
             secretKey: AES256Key
         ): Arrangement {
             convId = conversationId
@@ -125,7 +126,7 @@ class GetMessageAssetUseCaseTest {
             given(assetDataSource)
                 .suspendFunction(assetDataSource::downloadPrivateAsset)
                 .whenInvokedWith(any(), any())
-                .thenReturn(Either.Right(decodedAsset))
+                .thenReturn(Either.Right(encodedAsset))
             return this
         }
 
