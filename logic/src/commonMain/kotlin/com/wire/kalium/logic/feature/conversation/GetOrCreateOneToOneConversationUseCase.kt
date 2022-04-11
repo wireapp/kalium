@@ -1,6 +1,8 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.id.ConversationId
@@ -16,20 +18,20 @@ class GetOrCreateOneToOneConversationUseCase(
         return suspending {
             conversationRepository.getOneToOneConversationDetailsByUserId(otherUserId).flatMap { conversation ->
                 if (conversation != null) {
-                    Either.Right(conversation.conversation.id)
+                    Either.Right(conversation.conversation)
                 } else {
-                    conversationRepository.createGroupConversation(members = listOf(Member(otherUserId))).map { it.id }
+                    conversationRepository.createGroupConversation(members = listOf(Member(otherUserId)))
                 }
             }
         }.fold(
             { failure -> CreateConversationResult.Failure(failure) },
-            { conversationId -> CreateConversationResult.Success(conversationId) }
+            { conversation -> CreateConversationResult.Success(conversation) }
         )
     }
 
 }
 
 sealed class CreateConversationResult {
-    data class Success(val conversationId: ConversationId) : CreateConversationResult()
+    data class Success(val conversationId: Conversation) : CreateConversationResult()
     data class Failure(val coreFailure: CoreFailure) : CreateConversationResult()
 }
