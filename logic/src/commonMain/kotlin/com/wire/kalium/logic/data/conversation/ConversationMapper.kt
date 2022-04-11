@@ -21,7 +21,7 @@ interface ConversationMapper {
     fun toApiModel(access: ConverationOptions.Access): ConversationAccess
     fun toApiModel(accessRole: ConverationOptions.AccessRole): ConversationAccessRole
     fun toApiModel(protocol: ConverationOptions.Protocol): ConvProtocol
-    fun toApiModel(name: String, members: List<Member>, teamId: String?, options: ConverationOptions): CreateConversationRequest
+    fun toApiModel(name: String?, members: List<Member>, teamId: String?, options: ConverationOptions): CreateConversationRequest
 }
 
 internal class ConversationMapperImpl(private val idMapper: IdMapper) : ConversationMapper {
@@ -44,7 +44,7 @@ internal class ConversationMapperImpl(private val idMapper: IdMapper) : Conversa
         idMapper.fromDaoModel(daoModel.id), daoModel.name, daoModel.type.fromDaoModel(), daoModel.teamId?.let { TeamId(it) }
     )
 
-    override fun toApiModel(name: String, members: List<Member>, teamId: String?, options: ConverationOptions) =
+    override fun toApiModel(name: String?, members: List<Member>, teamId: String?, options: ConverationOptions) =
         CreateConversationRequest(
             qualifiedUsers = if (options.protocol == ConverationOptions.Protocol.PROTEUS) members.map { idMapper.toApiModel(it.id) } else emptyList(),
             name = name,
