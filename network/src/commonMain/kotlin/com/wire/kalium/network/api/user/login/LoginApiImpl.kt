@@ -9,15 +9,14 @@ import com.wire.kalium.network.utils.CustomErrors
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap
 import com.wire.kalium.network.utils.mapSuccess
+import com.wire.kalium.network.utils.setUrl
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.get
-import io.ktor.client.request.host
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
-import io.ktor.http.URLProtocol
 import io.ktor.http.Url
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -44,10 +43,8 @@ class LoginApiImpl(private val httpClient: HttpClient) : LoginApi {
         param: LoginApi.LoginParam, persist: Boolean, apiBaseUrl: String
     ): NetworkResponse<SessionDTO> =
         wrapKaliumResponse<AccessTokenDTO> {
-            httpClient.post(PATH_LOGIN) {
-                host = Url(apiBaseUrl).host
-                url.protocol = URLProtocol.HTTPS
-
+            httpClient.post {
+                setUrl(Url(apiBaseUrl), PATH_LOGIN)
                 parameter(QUERY_PERSIST, persist)
                 setBody(param.toRequestBody())
             }
@@ -61,9 +58,8 @@ class LoginApiImpl(private val httpClient: HttpClient) : LoginApi {
             // this is a hack to get the user QualifiedUserId on login
             // TODO: remove this one when login endpoint return a QualifiedUserId
             wrapKaliumResponse<UserDTO> {
-                httpClient.get(PATH_SELF) {
-                    host = Url(apiBaseUrl).host
-                    url.protocol = URLProtocol.HTTPS
+                httpClient.get {
+                    setUrl(Url(apiBaseUrl), PATH_SELF)
                     bearerAuth(tokensPairResponse.value.first.value)
                 }
             }.mapSuccess {
