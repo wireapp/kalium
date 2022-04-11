@@ -7,15 +7,15 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
 
-class CreateOneToOneConversationUseCase(
+class GetOrCreateOneToOneConversationUseCase(
     private val conversationRepository: ConversationRepository,
 ) {
 
     suspend operator fun invoke(otherUserId: UserId): CreateConversationResult {
         return suspending {
-            conversationRepository.getOne2OneConversationByUserId(otherUserId).flatMap { conversationId ->
-                if (conversationId != null) {
-                    Either.Right(conversationId)
+            conversationRepository.getOne2OneConversationDetailsByUserId(otherUserId).flatMap { conversation ->
+                if (conversation != null) {
+                    Either.Right(conversation.conversation.id)
                 } else {
                     conversationRepository.createOne2OneConversationWithTeamMate(otherUserId)
                 }

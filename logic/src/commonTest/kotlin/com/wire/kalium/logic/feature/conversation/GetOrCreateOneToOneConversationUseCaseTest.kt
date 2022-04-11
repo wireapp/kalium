@@ -16,16 +16,16 @@ import kotlin.test.Test
 import kotlin.test.assertIs
 
 
-class CreateOneToOneConversationUseCaseTest {
+class GetOrCreateOneToOneConversationUseCaseTest {
 
     @Mock
     private val conversationRepository = mock(classOf<ConversationRepository>())
 
-    private lateinit var createOneToOneConversationUseCase: CreateOneToOneConversationUseCase
+    private lateinit var getOrCreateOneToOneConversationUseCase: GetOrCreateOneToOneConversationUseCase
 
     @BeforeTest
     fun setUp() {
-        createOneToOneConversationUseCase = CreateOneToOneConversationUseCase(
+        getOrCreateOneToOneConversationUseCase = GetOrCreateOneToOneConversationUseCase(
             conversationRepository = conversationRepository
         )
     }
@@ -34,14 +34,14 @@ class CreateOneToOneConversationUseCaseTest {
     fun givenConversationDoesNotExist_whenCallingTheUseCase_ThenDoNotCreateAConversationButReturnExisting() = runTest {
         //given
         given(conversationRepository)
-            .coroutine { getOne2OneConversationByUserId(USER_ID) }
+            .coroutine { getOne2OneConversationDetailsByUserId(USER_ID) }
             .then { Either.Right(null) }
 
         given(conversationRepository)
             .coroutine { createOne2OneConversationWithTeamMate(USER_ID) }
             .then { Either.Right(CONVERSATION_ID) }
         //when
-        val result = createOneToOneConversationUseCase.invoke(USER_ID)
+        val result = getOrCreateOneToOneConversationUseCase.invoke(USER_ID)
         //then
         assertIs<CreateConversationResult.Success>(result)
 
@@ -54,10 +54,10 @@ class CreateOneToOneConversationUseCaseTest {
     fun givenConversationExist_whenCallingTheUseCase_ThenCreateAConversationAndReturn() = runTest {
         //given
         given(conversationRepository)
-            .coroutine { getOne2OneConversationByUserId(USER_ID) }
+            .coroutine { getOne2OneConversationDetailsByUserId(USER_ID) }
             .then { Either.Right(USER_ID) }
         //when
-        val result = createOneToOneConversationUseCase.invoke(USER_ID)
+        val result = getOrCreateOneToOneConversationUseCase.invoke(USER_ID)
         //then
         assertIs<CreateConversationResult.Success>(result)
 

@@ -44,7 +44,7 @@ interface ConversationRepository {
     suspend fun persistMembers(members: List<MemberEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun deleteMember(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun createOne2OneConversationWithTeamMate(otherUserId: UserId): Either<CoreFailure, ConversationId>
-    suspend fun getOne2OneConversationByUserId(otherUserId: UserId): Either<CoreFailure, ConversationId?>
+    suspend fun getOne2OneConversationDetailsByUserId(otherUserId: UserId): Either<CoreFailure, ConversationDetails.OneOne?>
 }
 
 class ConversationDataSource(
@@ -176,15 +176,15 @@ class ConversationDataSource(
         )
     }.map { idMapper.fromApiModel(it.id) }
 
-    override suspend fun getOne2OneConversationByUserId(otherUserId: UserId): Either<StorageFailure, ConversationId?> {
+    override suspend fun getOne2OneConversationDetailsByUserId(otherUserId: UserId): Either<StorageFailure, ConversationDetails.OneOne?> {
         return wrapStorageRequest {
             observeConversationList()
                 .flatMapMerge { it.asFlow() }
                 .flatMapMerge { getConversationDetailsById(it.id) }
                 .filterIsInstance<ConversationDetails.OneOne>()
                 .firstOrNull { otherUserId == it.otherUser.id }
-                ?.conversation?.id
         }
     }
 
 }
+y
