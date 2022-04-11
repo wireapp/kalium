@@ -55,7 +55,9 @@ actual class UserDatabaseProvider(private val storePath: File) {
                 qualified_idAdapter = QualifiedIDAdapter(),
                 typeAdapter = EnumColumnAdapter(),
                 mls_group_stateAdapter = EnumColumnAdapter(),
-                protocolAdapter = EnumColumnAdapter()),
+                protocolAdapter = EnumColumnAdapter(),
+                muted_statusAdapter = IntColumnAdapter
+            ),
             Member.Adapter(
                 userAdapter = QualifiedIDAdapter(),
                 conversationAdapter = QualifiedIDAdapter()),
@@ -77,7 +79,7 @@ actual class UserDatabaseProvider(private val storePath: File) {
         get() = UserDAOImpl(database.usersQueries)
 
     actual val conversationDAO: ConversationDAO
-        get() = ConversationDAOImpl(database.converationsQueries, database.usersQueries, database.membersQueries)
+        get() = ConversationDAOImpl(database.conversationsQueries, database.usersQueries, database.membersQueries)
 
     actual val metadataDAO: MetadataDAO
         get() = MetadataDAOImpl(database.metadataQueries)

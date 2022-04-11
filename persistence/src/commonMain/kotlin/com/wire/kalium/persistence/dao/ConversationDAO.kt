@@ -7,7 +7,9 @@ data class ConversationEntity(
     val name: String?,
     val type: Type,
     val teamId: String?,
-    val protocolInfo: ProtocolInfo
+    val protocolInfo: ProtocolInfo,
+    val mutedStatus: MutedStatus = MutedStatus.ALL_ALLOWED,
+    val mutedTime: Long = 0
 ) {
 
     enum class Type { SELF, ONE_ON_ONE, GROUP }
@@ -15,6 +17,10 @@ data class ConversationEntity(
     enum class GroupState { PENDING, PENDING_WELCOME_MESSAGE, ESTABLISHED }
 
     enum class Protocol { PROTEUS, MLS }
+
+    enum class MutedStatus {
+        ALL_ALLOWED, ONLY_MENTIONS_ALLOWED, ALL_MUTED;
+    }
 
     sealed class ProtocolInfo {
         object Proteus: ProtocolInfo()

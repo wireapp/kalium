@@ -7,7 +7,7 @@ object MemberUpdateRequestJson {
 
     val valid = ValidJsonProvider(
         MemberUpdateRequest(
-            null, null, null, null, "2022-04-06T14:44:44Z", null
+            null, null, null, null, "2022-04-06T14:44:44Z", MemberUpdateRequest.MutedStatus.ALL_ALLOWED
         )
     ) {
         """

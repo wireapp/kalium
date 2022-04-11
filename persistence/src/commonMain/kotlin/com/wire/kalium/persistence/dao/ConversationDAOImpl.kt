@@ -3,7 +3,7 @@ package com.wire.kalium.persistence.dao
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
-import com.wire.kalium.persistence.ConverationsQueries
+import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.UsersQueries
 import kotlinx.coroutines.flow.Flow
@@ -34,7 +34,7 @@ class MemberMapper {
 }
 
 class ConversationDAOImpl(
-    private val conversationQueries: ConverationsQueries,
+    private val conversationQueries: ConversationsQueries,
     private val userQueries: UsersQueries,
     private val memberQueries: MembersQueries
 ) : ConversationDAO {
@@ -65,7 +65,9 @@ class ConversationDAOImpl(
             conversationEntity.teamId,
             if (conversationEntity.protocolInfo is ConversationEntity.ProtocolInfo.MLS) conversationEntity.protocolInfo.groupId else null,
             if (conversationEntity.protocolInfo is ConversationEntity.ProtocolInfo.MLS) conversationEntity.protocolInfo.groupState else ConversationEntity.GroupState.ESTABLISHED,
-            if (conversationEntity.protocolInfo is ConversationEntity.ProtocolInfo.MLS) ConversationEntity.Protocol.MLS else ConversationEntity.Protocol.PROTEUS
+            if (conversationEntity.protocolInfo is ConversationEntity.ProtocolInfo.MLS) ConversationEntity.Protocol.MLS else ConversationEntity.Protocol.PROTEUS,
+            conversationEntity.mutedStatus,
+            conversationEntity.mutedTime
         )
     }
 
