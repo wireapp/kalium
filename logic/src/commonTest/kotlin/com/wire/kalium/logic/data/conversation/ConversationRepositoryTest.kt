@@ -198,9 +198,11 @@ class ConversationRepositoryTest {
             .whenInvokedWith(anything(), anything())
             .thenDoNothing()
 
-        val result = conversationRepository.createGroupConversation(GROUP_NAME,
+        val result = conversationRepository.createGroupConversation(
+            GROUP_NAME,
             listOf(Member((TestUser.USER_ID))),
-            ConverationOptions(protocol = ConverationOptions.Protocol.PROTEUS))
+            ConverationOptions(protocol = ConverationOptions.Protocol.PROTEUS)
+        )
 
 
         result.shouldSucceed { }
@@ -240,9 +242,11 @@ class ConversationRepositoryTest {
             .whenInvokedWith(anything(), anything())
             .thenDoNothing()
 
-        val result = conversationRepository.createGroupConversation(GROUP_NAME,
+        val result = conversationRepository.createGroupConversation(
+            GROUP_NAME,
             listOf(Member((TestUser.USER_ID))),
-            ConverationOptions(protocol = ConverationOptions.Protocol.PROTEUS))
+            ConverationOptions(protocol = ConverationOptions.Protocol.PROTEUS)
+        )
 
 
         result.shouldSucceed { }
@@ -288,11 +292,13 @@ class ConversationRepositoryTest {
         given(mlsConversationRepository)
             .suspendFunction(mlsConversationRepository::establishMLSGroup)
             .whenInvokedWith(anything())
-            .then { Either.Right(Unit)}
+            .then { Either.Right(Unit) }
 
-        val result = conversationRepository.createGroupConversation(GROUP_NAME,
+        val result = conversationRepository.createGroupConversation(
+            GROUP_NAME,
             listOf(Member((TestUser.USER_ID))),
-            ConverationOptions(protocol = ConverationOptions.Protocol.MLS))
+            ConverationOptions(protocol = ConverationOptions.Protocol.MLS)
+        )
 
         result.shouldSucceed { }
 
@@ -320,6 +326,11 @@ class ConversationRepositoryTest {
             .whenInvokedWith(any(), any())
             .thenReturn(NetworkResponse.Success(Unit, mapOf(), HttpStatusCode.OK.value))
 
+        given(conversationDAO)
+            .suspendFunction(conversationDAO::updateConversationMutedStatus)
+            .whenInvokedWith(any(), any(), any())
+            .thenReturn(Unit)
+
         conversationRepository.updateMutedStatus(
             TestConversation.ID,
             MutedConversationStatus.AllMuted,
@@ -329,6 +340,11 @@ class ConversationRepositoryTest {
         verify(conversationApi)
             .suspendFunction(conversationApi::updateConversationMemberState)
             .with(any(), any())
+            .wasInvoked(exactly = once)
+
+        verify(conversationDAO)
+            .suspendFunction(conversationDAO::updateConversationMutedStatus)
+            .with(any(), any(), any())
             .wasInvoked(exactly = once)
     }
 

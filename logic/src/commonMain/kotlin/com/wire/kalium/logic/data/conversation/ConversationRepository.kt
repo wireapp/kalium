@@ -233,12 +233,14 @@ class ConversationDataSource(
                 memberUpdateRequest = conversationStatusMapper.toApiModel(mutedStatus, mutedStatusTimestamp),
                 conversationId = idMapper.toApiModel(conversationId)
             )
-        }.map {
-            conversationDAO.updateConversationMutedStatus(
-                conversationId = idMapper.toDaoModel(conversationId),
-                mutedStatus = conversationStatusMapper.toDaoModel(mutedStatus),
-                mutedStatusTimestamp = mutedStatusTimestamp
-            )
+        }.flatMap {
+            wrapStorageRequest {
+                conversationDAO.updateConversationMutedStatus(
+                    conversationId = idMapper.toDaoModel(conversationId),
+                    mutedStatus = conversationStatusMapper.toDaoModel(mutedStatus),
+                    mutedStatusTimestamp = mutedStatusTimestamp
+                )
+            }
         }
     }
 
