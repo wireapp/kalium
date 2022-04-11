@@ -4,8 +4,14 @@ import com.wire.kalium.network.api.TeamId
 import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.model.ConversationAccess
 import com.wire.kalium.network.api.model.ConversationAccessRole
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 
 
 @Serializable
@@ -37,10 +43,22 @@ data class CreateConversationRequest(
 )
 
 
-@Serializable
+@Serializable(with = ReceiptMode.ReceiptModeAsIntSerializer::class)
 enum class ReceiptMode(val value: Int) {
     DISABLED(0),
     ENABLED(1);
+
+    object ReceiptModeAsIntSerializer : KSerializer<ReceiptMode> {
+        override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("ReceiptMode", PrimitiveKind.INT)
+        override fun serialize(encoder: Encoder, value: ReceiptMode) {
+            encoder.encodeInt(value.value)
+        }
+
+        override fun deserialize(decoder: Decoder): ReceiptMode {
+            val value = decoder.decodeInt()
+            return if (value > 0) ReceiptMode.ENABLED else ReceiptMode.DISABLED
+        }
+    }
 }
 
 @Serializable
