@@ -184,6 +184,7 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.proteusClient,
             messageRepository,
             conversationRepository,
+            mlsConversationRepository,
             userRepository,
             protoContentMapper,
             callManager
