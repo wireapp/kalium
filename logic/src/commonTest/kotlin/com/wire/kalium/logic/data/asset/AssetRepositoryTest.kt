@@ -64,7 +64,7 @@ class AssetRepositoryTest {
                 )
             )
 
-        val actual = assetRepository.uploadAndPersistPublicAsset(assetData = "the_image".encodeToByteArray(), mimeType = ImageAsset.JPEG)
+        val actual = assetRepository.uploadAndPersistPublicAsset(rawAssetData = "the_image".encodeToByteArray(), mimeType = ImageAsset.JPEG)
 
         actual.shouldSucceed {
             assertEquals("some_key", it.key)
@@ -93,7 +93,7 @@ class AssetRepositoryTest {
                 )
             )
 
-        val actual = assetRepository.uploadAndPersistPrivateAsset(assetData = "the_image".encodeToByteArray(), mimeType = ImageAsset.JPEG)
+        val actual = assetRepository.uploadAndPersistPrivateAsset(encryptedAssetData = "the_image".encodeToByteArray(), mimeType = ImageAsset.JPEG)
 
         actual.shouldSucceed {
             assertEquals("some_key", it.key)
@@ -111,7 +111,7 @@ class AssetRepositoryTest {
             .whenInvokedWith(any(), any())
             .thenReturn(NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))))
 
-        val actual = assetRepository.uploadAndPersistPublicAsset(assetData = "the_image".encodeToByteArray(), mimeType = ImageAsset.JPEG)
+        val actual = assetRepository.uploadAndPersistPublicAsset(rawAssetData = "the_image".encodeToByteArray(), mimeType = ImageAsset.JPEG)
 
         actual.shouldFail {
             assertEquals(it::class, NetworkFailure.ServerMiscommunication::class)
@@ -129,7 +129,7 @@ class AssetRepositoryTest {
             .whenInvokedWith(any(), any())
             .thenReturn(NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))))
 
-        val actual = assetRepository.uploadAndPersistPrivateAsset(assetData = "the_image".encodeToByteArray(), mimeType = ImageAsset.JPEG)
+        val actual = assetRepository.uploadAndPersistPrivateAsset(encryptedAssetData = "the_image".encodeToByteArray(), mimeType = ImageAsset.JPEG)
 
         actual.shouldFail {
             assertEquals(it::class, NetworkFailure.ServerMiscommunication::class)
