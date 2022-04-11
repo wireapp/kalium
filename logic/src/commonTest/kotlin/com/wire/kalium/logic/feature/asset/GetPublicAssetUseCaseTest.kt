@@ -21,11 +21,11 @@ class GetPublicAssetUseCaseTest {
     @Mock
     private val assetRepository = mock(classOf<AssetRepository>())
 
-    private lateinit var getPublicAsset: GetPublicAssetUseCase
+    private lateinit var getPublicAsset: GetAvatarAssetUseCase
 
     @BeforeTest
     fun setUp() {
-        getPublicAsset = GetPublicAssetUseCaseImpl(assetRepository)
+        getPublicAsset = GetAvatarAssetUseCaseImpl(assetRepository)
     }
 
     @Test
