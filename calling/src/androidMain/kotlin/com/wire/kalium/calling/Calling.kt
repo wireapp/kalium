@@ -44,6 +44,8 @@ interface Calling : Library {
 
     fun wcall_start(inst: Handle, conversationId: String, callType: Int, convType: Int, audioCbr: Int): Int
 
+    fun wcall_answer(inst: Handle, conversationId: String, callType: Int, cbrEnabled: Boolean)
+
     fun wcall_config_update(inst: Handle, error: Int, jsonString: String)
 
     fun wcall_library_version(): String
@@ -58,7 +60,16 @@ interface Calling : Library {
 
     fun wcall_get_mute(inst: Int): Int
 
-    fun wcall_recv_msg(inst: Handle, msg: ByteArray, len: Int, curr_time: Uint32_t, msg_time: Uint32_t, convId: String, userId: String, clientId: String): Int
+    fun wcall_recv_msg(
+        inst: Handle,
+        msg: ByteArray,
+        len: Int,
+        curr_time: Uint32_t,
+        msg_time: Uint32_t,
+        convId: String,
+        userId: String,
+        clientId: String
+    ): Int
 
     companion object {
         val INSTANCE by lazy { Native.load("avs", Calling::class.java)!! }

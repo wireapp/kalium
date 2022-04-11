@@ -14,5 +14,5 @@ actual class GlobalCallManager {
         userRepository: UserRepository,
         clientRepository: ClientRepository,
         messageSender: MessageSender
-    ): CallManager = CallManager()
+    ): CallManager = CallManagerImpl()
 }

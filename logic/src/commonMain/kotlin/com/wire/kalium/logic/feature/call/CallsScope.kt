@@ -1,5 +1,8 @@
 package com.wire.kalium.logic.feature.call
 
+import com.wire.kalium.logic.feature.call.usecase.GetOngoingCallsUseCase
+import com.wire.kalium.logic.feature.call.usecase.GetOngoingCallsUseCaseImpl
+import com.wire.kalium.logic.feature.call.usecase.StartCallUseCase
 import com.wire.kalium.logic.sync.SyncManager
 
 class CallsScope(
@@ -7,8 +10,13 @@ class CallsScope(
     private val syncManager: SyncManager
 ) {
 
-    val getOngoingCalls: GetOngoingCallsUseCase get() = GetOngoingCallsUseCaseImpl(
+    val getOngoingCalls: GetOngoingCallsUseCase
+        get() = GetOngoingCallsUseCaseImpl(
         callManager = callManager,
         syncManager = syncManager
     )
+
+    val startCall: StartCallUseCase get() = StartCallUseCase(callManager)
+
+    val answerCall: AnswerCallUseCase get() = AnswerCallUseCaseImpl(callManager)
 }

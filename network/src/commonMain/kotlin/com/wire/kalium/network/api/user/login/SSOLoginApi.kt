@@ -2,68 +2,70 @@ package com.wire.kalium.network.api.user.login
 
 import com.wire.kalium.network.api.RefreshTokenProperties
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.setUrl
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
+import io.ktor.client.request.accept
 import io.ktor.client.request.get
 import io.ktor.client.request.head
 import io.ktor.client.request.header
-import io.ktor.client.request.parameter
 import io.ktor.client.request.post
+import io.ktor.client.statement.request
+import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
-import io.ktor.http.URLProtocol
-import io.ktor.http.set
+import io.ktor.http.Url
+import io.ktor.http.isSuccess
 
 interface SSOLoginApi {
 
     sealed class InitiateParam(val code: String) {
-        class NoRedirect(code: String): InitiateParam(code)
-        class Redirect(val success: String, val error: String, code: String): InitiateParam(code)
+        class NoRedirect(code: String) : InitiateParam(code)
+        class Redirect(val success: String, val error: String, code: String) : InitiateParam(code)
     }
 
-    suspend fun initiate(param: InitiateParam, apiBaseUrl: String): NetworkResponse<SSOResponse>
+    suspend fun initiate(param: InitiateParam, apiBaseUrl: Url): NetworkResponse<String>
 
-    suspend fun finalize(cookie: String, apiBaseUrl: String): NetworkResponse<String>
+    suspend fun finalize(cookie: String, apiBaseUrl: Url): NetworkResponse<String>
 
-    suspend fun metaData(apiBaseUrl: String): NetworkResponse<String> // TODO: ask about the response model since it's xml in swagger with no model
+    suspend fun metaData(apiBaseUrl: Url): NetworkResponse<String> // TODO: ask about the response model since it's xml in swagger with no model
 
-    suspend fun settings(apiBaseUrl: String): NetworkResponse<SSOSettingsResponse>
+    suspend fun settings(apiBaseUrl: Url): NetworkResponse<SSOSettingsResponse>
 }
 
 class SSOLoginApiImpl(private val httpClient: HttpClient) : SSOLoginApi {
-    override suspend fun initiate(param: SSOLoginApi.InitiateParam, apiBaseUrl: String): NetworkResponse<SSOResponse> =
-        wrapKaliumResponse {
-            httpClient.head {
-                url.set(host = apiBaseUrl, path = "$PATH_SSO/$PATH_INITIATE/${param.code}")
-                url.protocol = URLProtocol.HTTPS
-                when(param) {
-                    is SSOLoginApi.InitiateParam.Redirect -> {
-                        parameter(QUERY_SUCCESS_REDIRECT, param.success)
-                        parameter(QUERY_ERROR_REDIRECT, param.error)
-                    }
-                    is SSOLoginApi.InitiateParam.NoRedirect -> Unit // do nothing
-                }
-            }
+    override suspend fun initiate(param: SSOLoginApi.InitiateParam, apiBaseUrl: Url): NetworkResponse<String> {
+        val path = when (param) {
+            is SSOLoginApi.InitiateParam.NoRedirect -> "$PATH_SSO/$PATH_INITIATE/${param.code}"
+            // ktor will encode the query param as URL so a way around it to append the query to the path string
+            is SSOLoginApi.InitiateParam.Redirect -> "$PATH_SSO/$PATH_INITIATE/${param.code}?$QUERY_SUCCESS_REDIRECT=${param.success}&$QUERY_ERROR_REDIRECT=${param.error}"
         }
+        val response = httpClient.head {
+            setUrl(apiBaseUrl, path)
+            accept(ContentType.Text.Plain)
+        }
+        return if (response.status.isSuccess()) {
+            NetworkResponse.Success(response.request.url.toString(), response)
+        } else {
+            wrapKaliumResponse { response }
+        }
+    }
 
-    override suspend fun finalize(cookie: String, apiBaseUrl: String): NetworkResponse<String> = wrapKaliumResponse {
+    override suspend fun finalize(cookie: String, apiBaseUrl: Url): NetworkResponse<String> = wrapKaliumResponse {
         httpClient.post {
-            url.set(host = apiBaseUrl, path = "$PATH_SSO/$PATH_FINALIZE")
-            url.protocol = URLProtocol.HTTPS
+            setUrl(apiBaseUrl, PATH_SSO, PATH_FINALIZE)
             header(HttpHeaders.Cookie, "${RefreshTokenProperties.COOKIE_NAME}=$cookie")
         }
     }
 
-    override suspend fun metaData(apiBaseUrl: String): NetworkResponse<String> = wrapKaliumResponse {
+    override suspend fun metaData(apiBaseUrl: Url): NetworkResponse<String> = wrapKaliumResponse {
         httpClient.get {
-            url.set(host = apiBaseUrl, path = "$PATH_SSO/$PATH_METADATA")
-            url.protocol = URLProtocol.HTTPS
+            setUrl(apiBaseUrl, PATH_SSO, PATH_METADATA)
         }
     }
 
-    override suspend fun settings(apiBaseUrl: String): NetworkResponse<SSOSettingsResponse> = wrapKaliumResponse {
+    override suspend fun settings(apiBaseUrl: Url): NetworkResponse<SSOSettingsResponse> = wrapKaliumResponse {
         httpClient.get {
-            url.set(host = apiBaseUrl, path = "$PATH_SSO/$PATH_SETTINGS")
-            url.protocol = URLProtocol.HTTPS
+            setUrl(apiBaseUrl, PATH_SSO, PATH_SETTINGS)
         }
     }
 

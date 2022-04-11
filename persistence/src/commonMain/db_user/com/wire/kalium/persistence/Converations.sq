@@ -1,0 +1,40 @@
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import com.wire.kalium.persistence.dao.ConversationEntity;
+
+CREATE TABLE Conversation (
+    qualified_id TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY,
+    name TEXT,
+    type TEXT AS ConversationEntity.Type NOT NULL,
+    team_id TEXT,
+    mls_group_id TEXT,
+    mls_group_state TEXT AS ConversationEntity.GroupState NOT NULL,
+    protocol TEXT AS ConversationEntity.Protocol NOT NULL
+);
+
+deleteAllConversations:
+DELETE FROM Conversation;
+
+deleteConversation:
+DELETE FROM Conversation WHERE qualified_id = ?;
+
+insertConversation:
+INSERT OR REPLACE INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, protocol) VALUES(?, ?, ?, ?, ?, ?, ?);
+
+updateConversation:
+UPDATE Conversation
+SET name = ?, type = ?, team_id = ?
+WHERE qualified_id = ?;
+
+updateConversationGroupState:
+UPDATE Conversation
+SET mls_group_state = ?
+WHERE mls_group_id = ?;
+
+selectAllConversations:
+SELECT * FROM Conversation;
+
+selectByQualifiedId:
+SELECT * FROM Conversation WHERE qualified_id = ?;
+
+selectByGroupId:
+SELECT * FROM Conversation WHERE mls_group_id = ?;

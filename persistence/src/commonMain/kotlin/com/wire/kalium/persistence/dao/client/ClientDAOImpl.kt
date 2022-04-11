@@ -2,11 +2,11 @@ package com.wire.kalium.persistence.dao.client
 
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
+import com.wire.kalium.persistence.ClientsQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.db.ClientsQueries
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import com.wire.kalium.persistence.db.Client as SQLDelightClient
+import com.wire.kalium.persistence.Client as SQLDelightClient
 
 internal class ClientMapper {
     fun toModel(dbEntry: SQLDelightClient) = Client(dbEntry.user_id, dbEntry.id)
