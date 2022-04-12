@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
+import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.feature.publicuser.SearchUserDirectoryUseCase
 import com.wire.kalium.logic.feature.publicuser.SearchUserDirectoryUseCaseImpl
 import com.wire.kalium.logic.functional.Either
@@ -81,8 +82,9 @@ class SearchUserDirectoryUseCaseTest {
                         phone = null,
                         accentId = i,
                         team = null,
-                        null,
-                        null
+                        connectionStatus = ConnectionState.ACCEPTED,
+                        previewPicture = null,
+                        completePicture = null
                     )
                 }
             }

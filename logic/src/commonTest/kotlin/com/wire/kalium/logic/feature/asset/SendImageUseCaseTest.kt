@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -120,6 +121,7 @@ private class Arrangement {
         null,
         1,
         null,
+        ConnectionState.ACCEPTED,
         "some_key",
         "some_key"
     )
