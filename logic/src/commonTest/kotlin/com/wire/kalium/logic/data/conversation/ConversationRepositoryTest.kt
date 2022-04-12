@@ -11,6 +11,7 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.conversation.ConvProtocol
 import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.conversation.ConversationMembersResponse
+import com.wire.kalium.network.api.conversation.ConversationPagingResponse
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.ConversationSelfMemberResponse
 import com.wire.kalium.network.api.user.client.ClientApi
@@ -19,11 +20,15 @@ import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.Member
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
 import io.mockative.classOf
+import io.mockative.configure
+import io.mockative.eq
 import io.mockative.given
+import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.thenDoNothing
@@ -45,7 +50,9 @@ class ConversationRepositoryTest {
     private val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
 
     @Mock
-    private val conversationDAO = mock(ConversationDAO::class)
+    private val conversationDAO = configure(mock(ConversationDAO::class)) {
+        stubsUnitByDefault = true
+    }
 
     @Mock
     private val conversationApi = mock(ConversationApi::class)
@@ -64,6 +71,39 @@ class ConversationRepositoryTest {
             conversationApi,
             clientApi
         )
+    }
+
+    @Test
+    fun givenTwoPagesOfConversation_whenFetchingConversations_thenThePagesShouldBeAddedTogetherWhenPersisting() = runTest {
+        val firstResponse = ConversationPagingResponse(listOf(CONVERSATION_RESPONSE), true)
+        val lastConversationId = firstResponse.conversations.last().id.value
+
+        given(conversationApi)
+            .suspendFunction(conversationApi::conversationsByBatch)
+            .whenInvokedWith(eq(null), any())
+            .thenReturn(NetworkResponse.Success(firstResponse, emptyMap(), HttpStatusCode.OK.value))
+
+        val secondConversation = CONVERSATION_RESPONSE.copy(id = TestConversation.NETWORK_ID.copy(value = "anotherID"))
+        val secondResponse = ConversationPagingResponse(listOf(secondConversation), false)
+        given(conversationApi)
+            .suspendFunction(conversationApi::conversationsByBatch)
+            .whenInvokedWith(matching { it == lastConversationId }, any())
+            .thenReturn(NetworkResponse.Success(secondResponse, emptyMap(), HttpStatusCode.OK.value))
+
+        given(userRepository)
+            .suspendFunction(userRepository::getSelfUser)
+            .whenInvoked()
+            .thenReturn(flowOf(TestUser.SELF))
+
+        conversationRepository.fetchConversations()
+
+        verify(conversationDAO)
+            .suspendFunction(conversationDAO::insertConversations)
+            .with(matching { conversations ->
+                conversations.any { entity -> entity.id.value == firstResponse.conversations.first().id.value }
+                        && conversations.any { entity -> entity.id.value == secondResponse.conversations.first().id.value }
+            })
+            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -319,37 +359,38 @@ class ConversationRepositoryTest {
     }
 
     @Test
-    fun givenUserHasKnownContactAndConversation_WhenGettingConversationDetailsByExistingConversation_ReturnTheCorrectConversation() = runTest {
-        //given
-        given(conversationDAO)
-            .suspendFunction(conversationDAO::getAllConversations)
-            .whenInvoked()
-            .then { flowOf(CONVERSATION_ENTITIES) }
+    fun givenUserHasKnownContactAndConversation_WhenGettingConversationDetailsByExistingConversation_ReturnTheCorrectConversation() =
+        runTest {
+            //given
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::getAllConversations)
+                .whenInvoked()
+                .then { flowOf(CONVERSATION_ENTITIES) }
 
-        given(conversationDAO)
-            .suspendFunction(conversationDAO::getConversationByQualifiedID)
-            .whenInvokedWith(anything())
-            .then { flowOf(CONVERSATION_ENTITY) }
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::getConversationByQualifiedID)
+                .whenInvokedWith(anything())
+                .then { flowOf(CONVERSATION_ENTITY) }
 
-        given(userRepository)
-            .coroutine { userRepository.getSelfUser() }
-            .then { flowOf(TestUser.SELF) }
+            given(userRepository)
+                .coroutine { userRepository.getSelfUser() }
+                .then { flowOf(TestUser.SELF) }
 
-        given(conversationDAO)
-            .suspendFunction(conversationDAO::getAllMembers)
-            .whenInvokedWith(anything())
-            .thenReturn(flowOf(listOf(Member(TestUser.ENTITY_ID))))
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::getAllMembers)
+                .whenInvokedWith(anything())
+                .thenReturn(flowOf(listOf(Member(TestUser.ENTITY_ID))))
 
-        given(userRepository)
-            .suspendFunction(userRepository::getKnownUser)
-            .whenInvokedWith(any())
-            .thenReturn(flowOf(TestUser.OTHER))
+            given(userRepository)
+                .suspendFunction(userRepository::getKnownUser)
+                .whenInvokedWith(any())
+                .thenReturn(flowOf(TestUser.OTHER))
 
-        //when
-        val result = conversationRepository.getOneToOneConversationDetailsByUserId(OTHER_USER_ID)
-        //then
-        assertIs<Either.Right<ConversationDetails.OneOne>>(result)
-    }
+            //when
+            val result = conversationRepository.getOneToOneConversationDetailsByUserId(OTHER_USER_ID)
+            //then
+            assertIs<Either.Right<ConversationDetails.OneOne>>(result)
+        }
 
     companion object {
         const val GROUP_NAME = "Group Name"
