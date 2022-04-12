@@ -41,7 +41,7 @@ class SSOInitiateLoginUseCaseTest {
     fun givenCodeIsInvalid_whenInitiating_thenReturnInvalidCode() =
         runTest {
             given(validateUUIDUseCase).invocation { invoke(TEST_CODE) }.then { false }
-            val result = ssoInitiateLoginUseCase(TEST_CODE, TestServerConfig.generic)
+            val result = ssoInitiateLoginUseCase(SSOInitiateLoginUseCase.Param.NoRedirect(TEST_CODE, TestServerConfig.generic))
             assertEquals(result, SSOInitiateLoginResult.Failure.InvalidCode)
             verify(validateUUIDUseCase).invocation { invoke(TEST_CODE) }.wasInvoked(exactly = once)
         }
@@ -52,7 +52,7 @@ class SSOInitiateLoginUseCaseTest {
             given(validateUUIDUseCase).invocation { invoke(TEST_CODE) }.then { true }
             given(ssoLoginRepository).coroutine { initiate(TEST_CODE, TestServerConfig.generic) }
                 .then { Either.Left(serverMiscommunicationFailure(code = HttpStatusCode.NotFound.value)) }
-            val result = ssoInitiateLoginUseCase(TEST_CODE, TestServerConfig.generic)
+            val result = ssoInitiateLoginUseCase(SSOInitiateLoginUseCase.Param.NoRedirect(TEST_CODE, TestServerConfig.generic))
             assertEquals(result, SSOInitiateLoginResult.Failure.InvalidCode)
         }
 
@@ -62,7 +62,7 @@ class SSOInitiateLoginUseCaseTest {
             given(validateUUIDUseCase).invocation { invoke(TEST_CODE) }.then { true }
             given(ssoLoginRepository).coroutine { initiate(TEST_CODE, TestServerConfig.generic) }
                 .then { Either.Left(serverMiscommunicationFailure(code = HttpStatusCode.BadRequest.value)) }
-            val result = ssoInitiateLoginUseCase(TEST_CODE, TestServerConfig.generic)
+            val result = ssoInitiateLoginUseCase(SSOInitiateLoginUseCase.Param.NoRedirect(TEST_CODE, TestServerConfig.generic))
             assertEquals(result, SSOInitiateLoginResult.Failure.InvalidRedirect)
         }
 
@@ -72,7 +72,7 @@ class SSOInitiateLoginUseCaseTest {
             val expected = serverMiscommunicationFailure(code = HttpStatusCode.Forbidden.value)
             given(validateUUIDUseCase).invocation { invoke(TEST_CODE) }.then { true }
             given(ssoLoginRepository).coroutine { initiate(TEST_CODE, TestServerConfig.generic) }.then { Either.Left(expected) }
-            val result = ssoInitiateLoginUseCase(TEST_CODE, TestServerConfig.generic)
+            val result = ssoInitiateLoginUseCase(SSOInitiateLoginUseCase.Param.NoRedirect(TEST_CODE, TestServerConfig.generic))
             assertIs<SSOInitiateLoginResult.Failure.Generic>(result)
             assertEquals(expected, result.genericFailure)
         }
@@ -82,7 +82,7 @@ class SSOInitiateLoginUseCaseTest {
         runTest {
             given(validateUUIDUseCase).invocation { invoke(TEST_CODE) }.then { true }
             given(ssoLoginRepository).coroutine { initiate(TEST_CODE, TestServerConfig.generic) }.then { Either.Right(TEST_RESPONSE) }
-            val result = ssoInitiateLoginUseCase(TEST_CODE, TestServerConfig.generic)
+            val result = ssoInitiateLoginUseCase(SSOInitiateLoginUseCase.Param.NoRedirect(TEST_CODE, TestServerConfig.generic))
             assertEquals(result, SSOInitiateLoginResult.Success(TEST_RESPONSE))
         }
 
@@ -92,7 +92,13 @@ class SSOInitiateLoginUseCaseTest {
             given(validateUUIDUseCase).invocation { invoke(TEST_CODE) }.then { true }
             given(ssoLoginRepository).coroutine { initiate(TEST_CODE, TEST_SUCCESS, TEST_ERROR, TestServerConfig.generic) }
                 .then { Either.Right(TEST_RESPONSE) }
-            val result = ssoInitiateLoginUseCase(TEST_CODE, TestServerConfig.generic, Redirects(TEST_SUCCESS, TEST_ERROR))
+            val result = ssoInitiateLoginUseCase(
+                SSOInitiateLoginUseCase.Param.Redirect(
+                    TEST_CODE,
+                    SSORedirects(TEST_SUCCESS, TEST_ERROR),
+                    TestServerConfig.generic
+                )
+            )
             assertEquals(result, SSOInitiateLoginResult.Success(TEST_RESPONSE))
         }
 

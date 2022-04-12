@@ -19,10 +19,16 @@ sealed class SSOInitiateLoginResult {
     }
 }
 
-data class Redirects(val success: String, val error: String)
+data class SSORedirects(val success: String, val error: String)
 
 interface SSOInitiateLoginUseCase {
-    suspend operator fun invoke(code: String, serverConfig: ServerConfig, redirects: Redirects? = null): SSOInitiateLoginResult
+    sealed class Param {
+        abstract val ssoCode: String
+        abstract val serverConfig: ServerConfig
+        data class NoRedirect(override val ssoCode: String, override val serverConfig: ServerConfig): Param()
+        data class Redirect(override val ssoCode: String, val redirects: SSORedirects, override val serverConfig: ServerConfig): Param()
+    }
+    suspend operator fun invoke(param: Param): SSOInitiateLoginResult
 }
 
 internal class SSOInitiateLoginUseCaseImpl(
@@ -30,17 +36,18 @@ internal class SSOInitiateLoginUseCaseImpl(
     private val validateUUIDUseCase: ValidateUUIDUseCase
 ) : SSOInitiateLoginUseCase {
 
-    override suspend fun invoke(code: String, serverConfig: ServerConfig, redirects: Redirects?): SSOInitiateLoginResult = suspending {
-        when {
-            !validateUUIDUseCase.invoke(code) -> return@suspending SSOInitiateLoginResult.Failure.InvalidCode
-            redirects != null -> ssoLoginRepository.initiate(code, redirects.success, redirects.error, serverConfig)
-            else -> ssoLoginRepository.initiate(code, serverConfig)
-        }.coFold({
+    override suspend fun invoke(param: SSOInitiateLoginUseCase.Param): SSOInitiateLoginResult {
+        return when {
+            !validateUUIDUseCase.invoke(param.ssoCode) -> return SSOInitiateLoginResult.Failure.InvalidCode
+            param is SSOInitiateLoginUseCase.Param.Redirect ->
+                ssoLoginRepository.initiate(param.ssoCode, param.redirects.success, param.redirects.error, param.serverConfig)
+            else -> ssoLoginRepository.initiate(param.ssoCode, param.serverConfig)
+        }.fold({
             if(it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
                 if(it.kaliumException.errorResponse.code == HttpStatusCode.BadRequest.value)
-                    return@coFold SSOInitiateLoginResult.Failure.InvalidRedirect
+                    return@fold SSOInitiateLoginResult.Failure.InvalidRedirect
                 if(it.kaliumException.errorResponse.code == HttpStatusCode.NotFound.value)
-                    return@coFold SSOInitiateLoginResult.Failure.InvalidCode
+                    return@fold SSOInitiateLoginResult.Failure.InvalidCode
             }
             SSOInitiateLoginResult.Failure.Generic(it)
         }, {
