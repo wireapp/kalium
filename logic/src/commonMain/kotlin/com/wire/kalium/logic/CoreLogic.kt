@@ -7,6 +7,8 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
+import com.wire.kalium.persistence.db.GlobalDatabaseProvider
+import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 
 expect class CoreLogic : CoreLogicCommon
 
@@ -22,7 +24,8 @@ abstract class CoreLogicCommon(
     }
     protected abstract fun getSessionRepo(): SessionRepository
 
-
+    protected abstract val globalPreferences: KaliumPreferences
+    protected abstract val globalDataBase: GlobalDatabaseProvider
     protected val userScopeStorage = hashMapOf<UserId, AuthenticatedDataSourceSet>()
     //  TODO:     - Delete UserSession and DataSourceSets when user logs-out
 
