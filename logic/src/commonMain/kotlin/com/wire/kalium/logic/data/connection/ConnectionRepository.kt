@@ -3,8 +3,6 @@ package com.wire.kalium.logic.data.connection
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.user.toQualifiedIDEntity
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.isRight
@@ -14,13 +12,9 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.user.connection.Connection
 import com.wire.kalium.network.api.user.connection.ConnectionApi
-import com.wire.kalium.network.api.user.connection.ConnectionResponse
 import com.wire.kalium.network.api.user.connection.ConnectionState
 import com.wire.kalium.persistence.dao.ConversationDAO
-import com.wire.kalium.persistence.dao.Member
-import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserEntity
-import kotlinx.coroutines.flow.first
 
 interface ConnectionRepository {
     suspend fun fetchSelfUserConnections(): Either<CoreFailure, Unit>
