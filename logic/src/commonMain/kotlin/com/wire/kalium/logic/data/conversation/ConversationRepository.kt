@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
@@ -9,7 +10,11 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.isRight
+import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.conversation.ConversationApi
@@ -44,7 +49,12 @@ interface ConversationRepository {
     suspend fun persistMembers(members: List<MemberEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun deleteMember(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun getOneToOneConversationDetailsByUserId(otherUserId: UserId): Either<CoreFailure, ConversationDetails.OneOne?>
-    suspend fun createGroupConversation(name: String? = null, members: List<Member>, options: ConverationOptions = ConverationOptions()): Either<CoreFailure, Conversation>
+    suspend fun createGroupConversation(
+        name: String? = null,
+        members: List<Member>,
+        options: ConverationOptions = ConverationOptions()
+    ): Either<CoreFailure, Conversation>
+
     suspend fun updateMutedStatus(
         conversationId: ConversationId,
         mutedStatus: MutedConversationStatus,
@@ -64,20 +74,58 @@ class ConversationDataSource(
     private val conversationStatusMapper: ConversationStatusMapper = MapperProvider.conversationStatusMapper()
 ) : ConversationRepository {
 
-    // FIXME: fetchConversations() returns only the first page
-    // TODO: rewrite to use wrapStorageRequest
     override suspend fun fetchConversations(): Either<CoreFailure, Unit> = suspending {
+        kaliumLogger.d("Fetching conversations")
         val selfUserTeamId = userRepository.getSelfUser().first().team
-        wrapApiRequest { conversationApi.conversationsByBatch(null, 100) }.map { conversationPagingResponse ->
-            conversationDAO.insertConversations(conversationPagingResponse.conversations.map { conversationResponse ->
-                conversationMapper.fromApiModelToDaoModel(conversationResponse, groupCreation = false, selfUserTeamId?.let { TeamId(it) })
-            })
-            conversationPagingResponse.conversations.forEach { conversationsResponse ->
-                conversationDAO.insertMembers(
-                    memberMapper.fromApiModelToDaoModel(conversationsResponse.members),
-                    idMapper.fromApiToDao(conversationsResponse.id)
-                )
-            }
+
+        val conversationsResult = fetchAllConversationsFromAPI()
+
+        conversationsResult.onFailure { networkFailure ->
+            val throwable = (networkFailure as? NetworkFailure.ServerMiscommunication)?.rootCause
+            kaliumLogger.e("Failed to fetch all conversations due to network error", throwable)
+        }
+
+        conversationsResult.flatMap { conversations ->
+            kaliumLogger.d("Persisting fetched conversations into storage")
+            persistConversations(conversations, selfUserTeamId)
+        }
+    }
+
+    private suspend fun fetchAllConversationsFromAPI(): Either<NetworkFailure, List<ConversationResponse>> {
+        var hasMore = true
+        val allConversations = mutableListOf<ConversationResponse>()
+        var latestResult: Either<NetworkFailure, Unit> = Either.Right(Unit)
+        while (hasMore && latestResult.isRight()) {
+            latestResult = wrapApiRequest {
+                val lastConversationIdValue = allConversations.lastOrNull()?.id?.value
+                kaliumLogger.v("Fetching conversation page starting with id $lastConversationIdValue")
+                conversationApi.conversationsByBatch(lastConversationIdValue, 100)
+            }.onSuccess {
+                allConversations += it.conversations
+                hasMore = it.hasMore
+            }.map { }
+        }
+        return latestResult.map {
+            allConversations
+        }
+    }
+
+    private suspend fun persistConversations(
+        conversations: List<ConversationResponse>,
+        selfUserTeamId: String?
+    ) = wrapStorageRequest {
+        val conversationEntities = conversations.map { conversationResponse ->
+            conversationMapper.fromApiModelToDaoModel(
+                conversationResponse,
+                groupCreation = false,
+                selfUserTeamId?.let { TeamId(it) })
+        }
+        conversationDAO.insertConversations(conversationEntities)
+        conversations.forEach { conversationsResponse ->
+            conversationDAO.insertMembers(
+                memberMapper.fromApiModelToDaoModel(conversationsResponse.members),
+                idMapper.fromApiToDao(conversationsResponse.id)
+            )
         }
     }
 

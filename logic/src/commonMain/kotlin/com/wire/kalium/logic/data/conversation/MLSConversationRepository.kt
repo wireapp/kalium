@@ -5,6 +5,7 @@ import com.wire.kalium.cryptography.CryptoQualifiedID
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.first
 interface MLSConversationRepository {
 
     suspend fun establishMLSGroup(groupID: String): Either<CoreFailure, Unit>
+    suspend fun establishMLSGroupFromWelcome(welcomeEvent: Event.Conversation.MLSWelcome): Either<CoreFailure, Unit>
 
 }
 
@@ -30,8 +32,25 @@ class MLSConversationDataSource(
     private val mlsClientProvider: MLSClientProvider,
     private val mlsMessageApi: MLSMessageApi,
     private val conversationDAO: ConversationDAO,
-    private val idMapper: IdMapper = MapperProvider.idMapper()
+    private val idMapper: IdMapper = MapperProvider.idMapper(),
+    private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper()
 ): MLSConversationRepository {
+
+    override suspend fun establishMLSGroupFromWelcome(welcomeEvent: Event.Conversation.MLSWelcome): Either<CoreFailure, Unit> = suspending {
+        mlsClientProvider.getMLSClient().flatMap { client ->
+            val groupID = client.processWelcomeMessage(welcomeEvent.message.decodeBase64Bytes())
+
+            wrapStorageRequest {
+                if (conversationDAO.getConversationByGroupID(groupID).first() == null) {
+                    // Welcome arrived before the conversation create event, insert empty conversation.
+                    conversationDAO.insertConversation(conversationMapper.toDaoModel(welcomeEvent, groupID))
+                } else {
+                    // Welcome arrived after the conversation create event, update existing conversation.
+                    conversationDAO.updateConversationGroupState(ConversationEntity.GroupState.ESTABLISHED, groupID)
+                }
+            }
+        }
+    }
 
     override suspend fun establishMLSGroup(groupID: String): Either<CoreFailure, Unit> = suspending  {
         getConversationMembers(groupID).flatMap { members ->
