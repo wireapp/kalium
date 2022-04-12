@@ -1,14 +1,16 @@
 package com.wire.kalium.logic.feature.call
 
 import com.sun.jna.Pointer
-import com.wire.kalium.calling.CallType
+import com.wire.kalium.calling.CallTypeCalling
 import com.wire.kalium.calling.Calling
-import com.wire.kalium.calling.CallingConversationType
 import com.wire.kalium.calling.callbacks.CallConfigRequestHandler
 import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.calling.types.Size_t
 import com.wire.kalium.calling.types.Uint32_t
+import com.wire.kalium.logic.data.call.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.CallType
+import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
@@ -40,6 +42,7 @@ actual class CallManagerImpl(
     private val callRepository: CallRepository,
     private val userRepository: UserRepository,
     private val clientRepository: ClientRepository,
+    private val callMapper: CallMapper,
     val messageSender: MessageSender
 ) : CallManager, CallConfigRequestHandler {
 
@@ -90,9 +93,11 @@ actual class CallManagerImpl(
         }
     }
 
-    override suspend fun startCall(conversationId: ConversationId, callType: CallType, conversationType: CallingConversationType, isAudioCbr: Boolean) {
+    override suspend fun startCall(conversationId: ConversationId, callType: CallType, conversationType: ConversationType, isAudioCbr: Boolean) {
         withCalling {
-            wcall_start(deferredHandle.await(), conversationId.asString(), callType.avsValue, conversationType.avsValue, isAudioCbr.toInt())
+            val avsCallType = callMapper.toCallTypeCalling(callType)
+            val avsConversationType = callMapper.toConversationTypeCalling(conversationType)
+            wcall_start(deferredHandle.await(), conversationId.asString(), avsCallType.avsValue, avsConversationType.avsValue, isAudioCbr.toInt())
         }
     }
 
@@ -205,7 +210,7 @@ actual class CallManagerImpl(
         calling.wcall_answer(
             inst = deferredHandle.await(),
             conversationId = conversationId.asString(),
-            callType = CallType.AUDIO.avsValue,
+            callType = CallTypeCalling.AUDIO.avsValue,
             cbrEnabled = false
         )
     }
