@@ -13,18 +13,25 @@ data class MemberUpdateRequest(
     @Serializable(with = MutedStatusSerializer::class) val otrMutedStatus: MutedStatus? = null
 ) {
 
-    /**
-     * ```
-     * 0 -> All notifications are displayed
-     * 1 -> Only mentions are displayed (normal messages muted)
-     * 2 -> Only normal notifications are displayed (mentions are muted) -- legacy, not used
-     * 3 -> No notifications are displayed
-     * ```
-     */
     enum class MutedStatus {
+        /**
+         * 0 -> All notifications are displayed
+         */
         ALL_ALLOWED,
+
+        /**
+         * 1 -> Only mentions are displayed (normal messages muted)
+         */
         ONLY_MENTIONS_ALLOWED,
+
+        /**
+         * 2 -> Only normal notifications are displayed (mentions are muted) -- legacy, not used
+         */
         MENTIONS_MUTED,
+
+        /**
+         * 3 -> No notifications are displayed
+         */
         ALL_MUTED;
 
         companion object {
