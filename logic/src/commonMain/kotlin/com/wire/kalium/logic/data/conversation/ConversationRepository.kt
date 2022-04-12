@@ -25,9 +25,13 @@ import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import com.wire.kalium.persistence.dao.Member as MemberEntity
@@ -44,7 +48,8 @@ interface ConversationRepository {
     suspend fun persistMember(member: MemberEntity, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun persistMembers(members: List<MemberEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun deleteMember(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity): Either<CoreFailure, Unit>
-    suspend fun createGroupConversation(name: String, members: List<Member>, options: ConverationOptions): Either<CoreFailure, Conversation>
+    suspend fun getOneToOneConversationDetailsByUserId(otherUserId: UserId): Either<CoreFailure, ConversationDetails.OneOne?>
+    suspend fun createGroupConversation(name: String? = null, members: List<Member>, options: ConverationOptions = ConverationOptions()): Either<CoreFailure, Conversation>
 }
 
 class ConversationDataSource(
@@ -187,7 +192,7 @@ class ConversationDataSource(
         wrapStorageRequest { conversationDAO.deleteMemberByQualifiedID(conversationID, userID) }
 
     override suspend fun createGroupConversation(
-        name: String,
+        name: String?,
         members: List<Member>,
         options: ConverationOptions
     ): Either<CoreFailure, Conversation> = suspending {
@@ -255,7 +260,21 @@ class ConversationDataSource(
             }
     }
 
+    //TODO: this needs some kind of optimization, we could directly get the conversation by otherUserId and
+    // not to get all the conversation first and filter them to look for the id, this could be done on DAO level
+    override suspend fun getOneToOneConversationDetailsByUserId(otherUserId: UserId): Either<StorageFailure, ConversationDetails.OneOne?> {
+        return wrapStorageRequest {
+            observeConversationList()
+                .flatMapMerge { it.asFlow() }
+                .flatMapMerge { getConversationDetailsById(it.id) }
+                .filterIsInstance<ConversationDetails.OneOne>()
+                .firstOrNull { otherUserId == it.otherUser.id }
+        }
+    }
+
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"
     }
 }
+
+

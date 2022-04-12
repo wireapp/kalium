@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.conversation
 
 import app.cash.turbine.test
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestConversation
@@ -18,6 +19,7 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.Member
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
@@ -356,8 +358,43 @@ class ConversationRepositoryTest {
             .wasInvoked(once)
     }
 
+    @Test
+    fun givenUserHasKnownContactAndConversation_WhenGettingConversationDetailsByExistingConversation_ReturnTheCorrectConversation() =
+        runTest {
+            //given
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::getAllConversations)
+                .whenInvoked()
+                .then { flowOf(CONVERSATION_ENTITIES) }
+
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::getConversationByQualifiedID)
+                .whenInvokedWith(anything())
+                .then { flowOf(CONVERSATION_ENTITY) }
+
+            given(userRepository)
+                .coroutine { userRepository.getSelfUser() }
+                .then { flowOf(TestUser.SELF) }
+
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::getAllMembers)
+                .whenInvokedWith(anything())
+                .thenReturn(flowOf(listOf(Member(TestUser.ENTITY_ID))))
+
+            given(userRepository)
+                .suspendFunction(userRepository::getKnownUser)
+                .whenInvokedWith(any())
+                .thenReturn(flowOf(TestUser.OTHER))
+
+            //when
+            val result = conversationRepository.getOneToOneConversationDetailsByUserId(OTHER_USER_ID)
+            //then
+            assertIs<Either.Right<ConversationDetails.OneOne>>(result)
+        }
+
     companion object {
         const val GROUP_NAME = "Group Name"
+
         val CONVERSATION_RESPONSE = ConversationResponse(
             "creator",
             ConversationMembersResponse(
@@ -371,6 +408,32 @@ class ConversationRepositoryTest {
             0,
             null,
             ConvProtocol.PROTEUS
+        )
+
+        val OTHER_USER_ID = UserId("otherValue", "domain")
+
+        val CONVERSATION_ENTITY = ConversationEntity(
+            id = QualifiedIDEntity(
+                value = "testValue",
+                domain = "testDomain",
+            ),
+            name = null,
+            type = ConversationEntity.Type.ONE_ON_ONE,
+            teamId = null,
+            protocolInfo = ConversationEntity.ProtocolInfo.Proteus
+        )
+
+        val CONVERSATION_ENTITIES = listOf(
+            ConversationEntity(
+                id = QualifiedIDEntity(
+                    value = "testValue",
+                    domain = "testDomain",
+                ),
+                name = null,
+                type = ConversationEntity.Type.ONE_ON_ONE,
+                teamId = null,
+                protocolInfo = ConversationEntity.ProtocolInfo.Proteus
+            )
         )
 
     }
