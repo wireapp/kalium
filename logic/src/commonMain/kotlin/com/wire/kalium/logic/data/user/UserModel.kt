@@ -2,14 +2,8 @@ package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.VALUE_DOMAIN_SEPARATOR
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
 
 typealias UserId = QualifiedID
-
-fun UserId.toQualifiedIDEntity(): QualifiedIDEntity = QualifiedIDEntity(
-    value = value,
-    domain = domain
-)
 
 abstract class User {
     abstract val id: UserId
