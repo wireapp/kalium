@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.call
 
+import com.wire.kalium.logic.feature.call.usecase.EndCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetOngoingCallsUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetOngoingCallsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.RejectCallUseCase
@@ -20,6 +21,8 @@ class CallsScope(
     val startCall: StartCallUseCase get() = StartCallUseCase(callManager)
 
     val answerCall: AnswerCallUseCase get() = AnswerCallUseCaseImpl(callManager)
+
+    val endCal: EndCallUseCase get() = EndCallUseCase(callManager)
 
     val rejectCall: RejectCallUseCase get() = RejectCallUseCase(callManager)
 }
