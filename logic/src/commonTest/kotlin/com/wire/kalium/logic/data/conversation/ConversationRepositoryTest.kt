@@ -360,15 +360,25 @@ class ConversationRepositoryTest {
             .whenInvokedWith(any(), any())
             .thenReturn(NetworkResponse.Success(Unit, mapOf(), HttpStatusCode.OK.value))
 
+        given(conversationDAO)
+            .suspendFunction(conversationDAO::updateConversationMutedStatus)
+            .whenInvokedWith(any(), any(), any())
+            .thenReturn(Unit)
+
         conversationRepository.updateMutedStatus(
             TestConversation.ID,
-            MutedConversationStatus.ALL_MUTED,
+            MutedConversationStatus.AllMuted,
             Clock.System.now().toEpochMilliseconds()
         )
 
         verify(conversationApi)
             .suspendFunction(conversationApi::updateConversationMemberState)
             .with(any(), any())
+            .wasInvoked(exactly = once)
+
+        verify(conversationDAO)
+            .suspendFunction(conversationDAO::updateConversationMutedStatus)
+            .with(any(), any(), any())
             .wasInvoked(exactly = once)
     }
 

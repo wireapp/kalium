@@ -3,7 +3,7 @@ package com.wire.kalium.persistence.dao
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
-import com.wire.kalium.persistence.ConverationsQueries
+import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.UsersQueries
 import kotlinx.coroutines.flow.Flow
@@ -20,9 +20,15 @@ class ConversationMapper {
             conversation.type,
             conversation.team_id,
             protocolInfo = when (conversation.protocol) {
-                ConversationEntity.Protocol.MLS -> ConversationEntity.ProtocolInfo.MLS(conversation.mls_group_id ?: "", conversation.mls_group_state)
+                ConversationEntity.Protocol.MLS -> ConversationEntity.ProtocolInfo.MLS(
+                    conversation.mls_group_id ?: "",
+                    conversation.mls_group_state
+                )
                 ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
-            })
+            },
+            mutedStatus = conversation.muted_status,
+            mutedTime = conversation.muted_time
+        )
     }
 
 }
@@ -34,7 +40,7 @@ class MemberMapper {
 }
 
 class ConversationDAOImpl(
-    private val conversationQueries: ConverationsQueries,
+    private val conversationQueries: ConversationsQueries,
     private val userQueries: UsersQueries,
     private val memberQueries: MembersQueries
 ) : ConversationDAO {
@@ -65,7 +71,9 @@ class ConversationDAOImpl(
             conversationEntity.teamId,
             if (conversationEntity.protocolInfo is ConversationEntity.ProtocolInfo.MLS) conversationEntity.protocolInfo.groupId else null,
             if (conversationEntity.protocolInfo is ConversationEntity.ProtocolInfo.MLS) conversationEntity.protocolInfo.groupState else ConversationEntity.GroupState.ESTABLISHED,
-            if (conversationEntity.protocolInfo is ConversationEntity.ProtocolInfo.MLS) ConversationEntity.Protocol.MLS else ConversationEntity.Protocol.PROTEUS
+            if (conversationEntity.protocolInfo is ConversationEntity.ProtocolInfo.MLS) ConversationEntity.Protocol.MLS else ConversationEntity.Protocol.PROTEUS,
+            conversationEntity.mutedStatus,
+            conversationEntity.mutedTime
         )
     }
 
@@ -133,5 +141,13 @@ class ConversationDAOImpl(
             .asFlow()
             .mapToList()
             .map { it.map(memberMapper::toModel) }
+    }
+
+    override suspend fun updateConversationMutedStatus(
+        conversationId: QualifiedIDEntity,
+        mutedStatus: ConversationEntity.MutedStatus,
+        mutedStatusTimestamp: Long
+    ) {
+        conversationQueries.updateConversationMutingStatus(mutedStatus, mutedStatusTimestamp, conversationId)
     }
 }

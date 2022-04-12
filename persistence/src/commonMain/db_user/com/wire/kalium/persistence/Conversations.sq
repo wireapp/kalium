@@ -1,5 +1,6 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.ConversationEntity;
+import kotlin.Int;
 
 CREATE TABLE Conversation (
     qualified_id TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY,
@@ -8,7 +9,9 @@ CREATE TABLE Conversation (
     team_id TEXT,
     mls_group_id TEXT,
     mls_group_state TEXT AS ConversationEntity.GroupState NOT NULL,
-    protocol TEXT AS ConversationEntity.Protocol NOT NULL
+    protocol TEXT AS ConversationEntity.Protocol NOT NULL,
+    muted_status TEXT AS ConversationEntity.MutedStatus DEFAULT "all_allowed" NOT NULL,
+    muted_time INTEGER DEFAULT 0 NOT NULL
 );
 
 deleteAllConversations:
@@ -18,7 +21,7 @@ deleteConversation:
 DELETE FROM Conversation WHERE qualified_id = ?;
 
 insertConversation:
-INSERT OR REPLACE INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, protocol) VALUES(?, ?, ?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, protocol, muted_status, muted_time) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 updateConversation:
 UPDATE Conversation
@@ -38,3 +41,8 @@ SELECT * FROM Conversation WHERE qualified_id = ?;
 
 selectByGroupId:
 SELECT * FROM Conversation WHERE mls_group_id = ?;
+
+updateConversationMutingStatus:
+UPDATE Conversation
+SET muted_status = ?, muted_time = ?
+WHERE qualified_id = ?;
