@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.network.api.conversation.ConvProtocol
@@ -9,6 +10,7 @@ import com.wire.kalium.network.api.conversation.CreateConversationRequest
 import com.wire.kalium.network.api.conversation.ReceiptMode
 import com.wire.kalium.network.api.model.ConversationAccess
 import com.wire.kalium.network.api.model.ConversationAccessRole
+import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationEntity.GroupState
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
 import com.wire.kalium.persistence.dao.ConversationEntity as PersistedConversation
@@ -18,6 +20,7 @@ interface ConversationMapper {
     fun fromApiModelToDaoModel(apiModel: ConversationResponse, groupCreation: Boolean, selfUserTeamId: TeamId?): PersistedConversation
     fun fromApiModelToDaoModel(apiModel: ConvProtocol): PersistedProtocol
     fun fromDaoModel(daoModel: PersistedConversation): Conversation
+    fun toDaoModel(welcomeEvent: Event.Conversation.MLSWelcome, groupId: String): ConversationEntity
     fun toApiModel(access: ConverationOptions.Access): ConversationAccess
     fun toApiModel(accessRole: ConverationOptions.AccessRole): ConversationAccessRole
     fun toApiModel(protocol: ConverationOptions.Protocol): ConvProtocol
@@ -43,6 +46,15 @@ internal class ConversationMapperImpl(private val idMapper: IdMapper) : Conversa
     override fun fromDaoModel(daoModel: PersistedConversation): Conversation = Conversation(
         idMapper.fromDaoModel(daoModel.id), daoModel.name, daoModel.type.fromDaoModel(), daoModel.teamId?.let { TeamId(it) }
     )
+
+    override fun toDaoModel(welcomeEvent: Event.Conversation.MLSWelcome, groupId: String): ConversationEntity =
+        ConversationEntity(
+            idMapper.toDaoModel(welcomeEvent.conversationId),
+            name = null,
+            type = ConversationEntity.Type.GROUP,
+            teamId = null,
+            protocolInfo = ProtocolInfo.MLS(groupId, GroupState.ESTABLISHED)
+        )
 
     override fun toApiModel(name: String?, members: List<Member>, teamId: String?, options: ConverationOptions) =
         CreateConversationRequest(

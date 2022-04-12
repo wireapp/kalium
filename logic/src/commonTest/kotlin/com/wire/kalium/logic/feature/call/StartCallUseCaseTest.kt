@@ -1,7 +1,7 @@
 package com.wire.kalium.logic.feature.call
 
-import com.wire.kalium.calling.CallType
-import com.wire.kalium.calling.CallingConversationType
+import com.wire.kalium.logic.data.call.CallType
+import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.usecase.StartCallUseCase
 import io.mockative.Mock
@@ -34,14 +34,14 @@ class StartCallUseCaseTest {
 
         given(callManager)
             .suspendFunction(callManager::startCall)
-            .whenInvokedWith(eq(conversationId), eq(CallType.AUDIO), eq(CallingConversationType.OneOnOne), eq(false))
+            .whenInvokedWith(eq(conversationId), eq(CallType.AUDIO), eq(ConversationType.OneOnOne), eq(false))
             .thenDoNothing()
 
-        startCall.invoke(conversationId, CallType.AUDIO, CallingConversationType.OneOnOne)
+        startCall.invoke(conversationId, CallType.AUDIO, ConversationType.OneOnOne)
 
         verify(callManager)
             .suspendFunction(callManager::startCall)
-            .with(eq(conversationId), eq(CallType.AUDIO), eq(CallingConversationType.OneOnOne), eq(false))
+            .with(eq(conversationId), eq(CallType.AUDIO), eq(ConversationType.OneOnOne), eq(false))
             .wasInvoked(once)
     }
 
