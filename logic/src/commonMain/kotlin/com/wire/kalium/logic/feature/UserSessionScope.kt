@@ -12,13 +12,15 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.MLSClientProviderImpl
 import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
+import com.wire.kalium.logic.data.connection.ConnectionDataSource
+import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationDataSource
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.EventDataSource
 import com.wire.kalium.logic.data.event.EventRepository
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.keypackage.KeyPackageDataSource
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
-import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.logout.LogoutDataSource
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.message.MessageDataSource
@@ -39,6 +41,7 @@ import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.feature.client.ClientScope
+import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
 import com.wire.kalium.logic.feature.message.MessageEnvelopeCreatorImpl
@@ -110,6 +113,12 @@ abstract class UserSessionScopeCommon(
             database.userDAO,
             database.teamDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.teamsApi
+        )
+
+    private val connectionRepository: ConnectionRepository
+        get() = ConnectionDataSource(
+            database.conversationDAO,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.connectionApi
         )
 
     private val publicUserRepository: SearchUserRepository
@@ -213,4 +222,6 @@ abstract class UserSessionScopeCommon(
     val team: TeamScope get() = TeamScope(userRepository, teamRepository)
 
     val calls: CallsScope get() = CallsScope(callManager, syncManager)
+
+    val connection: ConnectionScope get() = ConnectionScope(connectionRepository)
 }
