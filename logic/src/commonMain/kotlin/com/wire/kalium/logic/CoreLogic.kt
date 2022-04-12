@@ -30,7 +30,7 @@ abstract class CoreLogicCommon(
     //  TODO:     - Delete UserSession and DataSourceSets when user logs-out
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
-    fun getAuthenticationScope(): AuthenticationScope = AuthenticationScope( clientLabel, sessionRepository)
+    fun getAuthenticationScope(): AuthenticationScope = AuthenticationScope( clientLabel, sessionRepository, globalDataBase)
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     abstract fun getSessionScope(userId: UserId): UserSessionScope

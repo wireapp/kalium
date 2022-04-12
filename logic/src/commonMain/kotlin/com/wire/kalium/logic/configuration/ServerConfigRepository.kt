@@ -16,17 +16,17 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 
-interface ServerConfigRepository {
+internal interface ServerConfigRepository {
     suspend fun fetchRemoteConfig(serverConfigUrl: String): Either<NetworkFailure, ServerConfigDTO>
-
     fun configList(): Either<StorageFailure, List<ServerConfig>>
     fun configFlow(): Either<StorageFailure, Flow<List<ServerConfig>>>
-    fun deleteByTitle(title: String): Either<StorageFailure, Unit>
+    fun deleteById(id: String): Either<StorageFailure, Unit>
     fun delete(serverConfig: ServerConfig): Either<StorageFailure, Unit>
     fun storeConfig(serverConfigDTO: ServerConfigDTO): Either<StorageFailure, ServerConfig>
+    fun configById(id: String): Either<StorageFailure, ServerConfig>
 }
 
-class ServerConfigDataSource(
+internal class ServerConfigDataSource(
     private val api: ServerConfigApi,
     private val dao: ServerConfigurationDAO,
     private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
@@ -42,10 +42,11 @@ class ServerConfigDataSource(
     override fun configFlow(): Either<StorageFailure, Flow<List<ServerConfig>>> =
         wrapStorageRequest { dao.allConfigFlow().map { it.map(serverConfigMapper::fromEntity) } }
 
-    override fun deleteByTitle(title: String) = wrapStorageRequest { dao.deleteById(title) }
+    override fun deleteById(id: String) = wrapStorageRequest { dao.deleteById(id) }
 
-    override fun delete(serverConfig: ServerConfig) = deleteByTitle(serverConfig.title)
-    override fun storeConfig(serverConfigDTO: ServerConfigDTO): Either<StorageFailure, ServerConfig> = wrapStorageRequest<String> {
+    override fun delete(serverConfig: ServerConfig) = deleteById(serverConfig.title)
+
+    override fun storeConfig(serverConfigDTO: ServerConfigDTO): Either<StorageFailure, ServerConfig> = wrapStorageRequest {
         val newId = uuid4().toString()
         with(serverConfigDTO) {
             dao.insert(
@@ -62,5 +63,9 @@ class ServerConfigDataSource(
         }
     }.flatMap { storedConfigId ->
         wrapStorageRequest { dao.configById(storedConfigId) }
+    }.map { serverConfigMapper.fromEntity(it) }
+
+    override fun configById(id: String): Either<StorageFailure, ServerConfig> = wrapStorageRequest {
+        dao.configById(id)
     }.map { serverConfigMapper.fromEntity(it) }
 }

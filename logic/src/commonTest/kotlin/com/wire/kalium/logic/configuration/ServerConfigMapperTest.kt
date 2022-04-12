@@ -4,7 +4,6 @@ import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import io.ktor.http.Url
 import kotlin.test.BeforeTest
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -15,28 +14,6 @@ class ServerConfigMapperTest {
     @BeforeTest
     fun setup() {
         serverConfigMapper = ServerConfigMapperImpl()
-    }
-
-    @Ignore
-    @Test
-    fun givenABackendConfig_whenMappingFromBackendConfig_thenValuesAreMappedCorrectly() {
-        val serverConfigDTO: ServerConfigDTO = serverConfigDTO()
-        val acuteValue: ServerConfig =
-            with(serverConfigDTO) {
-                ServerConfig(
-                    TODO(),
-                    apiBaseUrl.toString(),
-                    accountsBaseUrl.toString(),
-                    webSocketBaseUrl.toString(),
-                    blackListUrl.toString(),
-                    teamsUrl.toString(),
-                    websiteUrl.toString(),
-                    title
-                )
-            }
-
-        val expectedValue: ServerConfig = serverConfigMapper.fromDTO(serverConfigDTO)
-        assertEquals(expectedValue, acuteValue)
     }
 
     @Test
