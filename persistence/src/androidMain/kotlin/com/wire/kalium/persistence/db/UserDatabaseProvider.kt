@@ -105,6 +105,6 @@ actual class UserDatabaseProvider(private val context: Context, userId: UserIDEn
 
     companion object {
         // FIXME: the same key is used to enc/dec all user DBs
-        private const val DATABASE_SECRET_KEY = "databaseSecret"
+        private const val DATABASE_SECRET_KEY = "user-db-secret"
     }
 }

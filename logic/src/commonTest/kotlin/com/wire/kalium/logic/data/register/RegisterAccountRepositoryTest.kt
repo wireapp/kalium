@@ -10,6 +10,7 @@ import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
+import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.model.UserDTO
 import com.wire.kalium.network.api.model.getCompleteAssetOrNull
@@ -266,15 +267,7 @@ class RegisterAccountRepositoryTest {
     }
 
     private companion object {
-        val TEST_SERVER_CONFIG: ServerConfig = ServerConfig(
-            apiBaseUrl = "apiBaseUrl.com",
-            accountsBaseUrl = "accountsUrl.com",
-            webSocketBaseUrl = "webSocketUrl.com",
-            blackListUrl = "blackListUrl.com",
-            teamsUrl = "teamsUrl.com",
-            websiteUrl = "websiteUrl.com",
-            title = "Test Title"
-        )
+        val TEST_SERVER_CONFIG: ServerConfig = newServerConfig(1)
         const val TEST_API_HOST = """test.wire.com"""
         const val NAME = "user_name"
         const val EMAIL = "user@domain.de"

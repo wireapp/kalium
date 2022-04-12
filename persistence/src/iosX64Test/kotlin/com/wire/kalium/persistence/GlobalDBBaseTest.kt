@@ -6,7 +6,7 @@ import com.wire.kalium.persistence.util.FileNameUtil
 
 actual abstract class GlobalDBBaseTest {
     actual fun deleteDatabase() {
-        deleteDatabase(FileNameUtil.appDBName())
+        deleteDatabase(FileNameUtil.globalDBName())
     }
 
     actual fun createDatabase(): GlobalDatabaseProvider {

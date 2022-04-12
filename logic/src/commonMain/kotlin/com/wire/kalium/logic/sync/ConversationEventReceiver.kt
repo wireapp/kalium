@@ -4,6 +4,7 @@ import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
@@ -22,12 +23,14 @@ import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.logic.wrapCryptoRequest
+import io.ktor.util.decodeBase64Bytes
 import io.ktor.utils.io.core.toByteArray
 
 class ConversationEventReceiver(
     private val proteusClient: ProteusClient,
     private val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
+    private val mlsConversationRepository: MLSConversationRepository,
     private val userRepository: UserRepository,
     private val protoContentMapper: ProtoContentMapper,
     private val callManagerImpl: CallManager,
@@ -40,6 +43,7 @@ class ConversationEventReceiver(
             is Event.Conversation.NewMessage -> handleNewMessage(event)
             is Event.Conversation.MemberJoin -> handleMemberJoin(event)
             is Event.Conversation.MemberLeave -> handleMemberLeave(event)
+            is Event.Conversation.MLSWelcome -> handleMLSWelcome(event)
         }
     }
 
@@ -114,5 +118,9 @@ class ConversationEventReceiver(
                 idMapper.toDaoModel(event.conversationId), idMapper.fromApiToDao(userId)
             )
         }
+
+    private suspend fun handleMLSWelcome(event: Event.Conversation.MLSWelcome) {
+        mlsConversationRepository.establishMLSGroupFromWelcome(event)
+    }
 
 }

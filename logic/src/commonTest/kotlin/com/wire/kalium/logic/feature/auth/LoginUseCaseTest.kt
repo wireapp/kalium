@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
+import com.wire.kalium.logic.util.stubs.newServerConfig
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -227,15 +228,7 @@ class LoginUseCaseTest {
         const val TEST_HANDLE = "cool_user"
         const val TEST_PASSWORD = "123456"
         val TEST_PERSIST_CLIENT = Random.nextBoolean()
-        val TEST_SERVER_CONFIG: ServerConfig = ServerConfig(
-            apiBaseUrl = "apiBaseUrl.com",
-            accountsBaseUrl = "accountsUrl.com",
-            webSocketBaseUrl = "webSocketUrl.com",
-            blackListUrl = "blackListUrl.com",
-            teamsUrl = "teamsUrl.com",
-            websiteUrl = "websiteUrl.com",
-            title = "Test Title"
-        )
+        val TEST_SERVER_CONFIG: ServerConfig = newServerConfig(1)
         val TEST_AUTH_SESSION =
             AuthSession(
                 userId = UserId("user_id", "domain.de"),

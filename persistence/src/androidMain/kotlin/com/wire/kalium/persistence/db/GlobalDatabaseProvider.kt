@@ -12,7 +12,7 @@ import com.wire.kalium.persistence.util.FileNameUtil
 import net.sqlcipher.database.SupportFactory
 
 actual class GlobalDatabaseProvider(private val context: Context, kaliumPreferences: KaliumPreferences) {
-    private val dbName = FileNameUtil.appDBName()
+    private val dbName = FileNameUtil.globalDBName()
     private val driver: AndroidSqliteDriver
     private val database: GlobalDatabase
 
@@ -42,7 +42,7 @@ actual class GlobalDatabaseProvider(private val context: Context, kaliumPreferen
     actual fun nuke(): Boolean = DBUtil.deleteDB(driver, context, dbName)
 
     companion object {
-        private const val DATABASE_SECRET_KEY = "kalium-db-secret"
+        private const val DATABASE_SECRET_KEY = "global-db-secret"
     }
 
 

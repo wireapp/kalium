@@ -11,7 +11,7 @@ import java.util.Properties
 
 actual class GlobalDatabaseProvider(private val storePath: File) {
 
-    private val dbName = FileNameUtil.appDBName()
+    private val dbName = FileNameUtil.globalDBName()
     private val database: GlobalDatabase
 
 
