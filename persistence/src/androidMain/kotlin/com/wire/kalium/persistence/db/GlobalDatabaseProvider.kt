@@ -42,7 +42,7 @@ actual class GlobalDatabaseProvider(private val context: Context, kaliumPreferen
     actual fun nuke(): Boolean = DBUtil.deleteDB(driver, context, dbName)
 
     companion object {
-        private const val DATABASE_SECRET_KEY = "kalium-db-secret"
+        private const val DATABASE_SECRET_KEY = "global-db-secret"
     }
 
 
