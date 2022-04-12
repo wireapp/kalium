@@ -14,14 +14,14 @@ sealed class SSOMetaDataResult {
 }
 
 interface SSOMetaDataUseCase {
-    suspend operator fun invoke(cookie: String, serverConfig: ServerConfig): SSOMetaDataResult
+    suspend operator fun invoke(serverConfig: ServerConfig): SSOMetaDataResult
 }
 
 internal class SSOMetaDataUseCaseImpl(
     private val ssoLoginRepository: SSOLoginRepository
 ) : SSOMetaDataUseCase {
 
-    override suspend fun invoke(cookie: String, serverConfig: ServerConfig): SSOMetaDataResult = suspending {
+    override suspend fun invoke(serverConfig: ServerConfig): SSOMetaDataResult = suspending {
         ssoLoginRepository.metaData(serverConfig).coFold({ SSOMetaDataResult.Failure.Generic(it) }, { SSOMetaDataResult.Success(it) })
     }
 }

@@ -15,14 +15,14 @@ sealed class SSOSettingsResult {
 }
 
 interface SSOSettingsUseCase {
-    suspend operator fun invoke(cookie: String, serverConfig: ServerConfig): SSOSettingsResult
+    suspend operator fun invoke(serverConfig: ServerConfig): SSOSettingsResult
 }
 
 internal class SSOSettingsUseCaseImpl(
     private val ssoLoginRepository: SSOLoginRepository
 ) : SSOSettingsUseCase {
 
-    override suspend fun invoke(cookie: String, serverConfig: ServerConfig): SSOSettingsResult = suspending {
+    override suspend fun invoke(serverConfig: ServerConfig): SSOSettingsResult = suspending {
         ssoLoginRepository.settings(serverConfig).coFold({ SSOSettingsResult.Failure.Generic(it) }, { SSOSettingsResult.Success(it) })
     }
 }

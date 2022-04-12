@@ -4,7 +4,9 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.feature.auth.ValidateUUIDUseCase
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.test_util.TestServerConfig
+import com.wire.kalium.logic.test_util.serverMiscommunicationFailure
 import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
@@ -19,6 +21,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SSOInitiateLoginUseCaseTest {
@@ -27,7 +30,6 @@ class SSOInitiateLoginUseCaseTest {
     val ssoLoginRepository = mock(classOf<SSOLoginRepository>())
     @Mock
     val validateUUIDUseCase = mock(classOf<ValidateUUIDUseCase>())
-
     lateinit var ssoInitiateLoginUseCase: SSOInitiateLoginUseCase
 
     @BeforeTest
@@ -45,7 +47,7 @@ class SSOInitiateLoginUseCaseTest {
         }
 
     @Test
-    fun givenApiReturnsInvalidCode_whenInitiating_thenReturnInvalidRedirect() =
+    fun givenApiReturnsInvalidCode_whenInitiating_thenReturnInvalidCode() =
         runTest {
             given(validateUUIDUseCase).invocation { invoke(TEST_CODE) }.then { true }
             given(ssoLoginRepository).coroutine { initiate(TEST_CODE, TestServerConfig.generic) }
@@ -62,6 +64,17 @@ class SSOInitiateLoginUseCaseTest {
                 .then { Either.Left(serverMiscommunicationFailure(code = HttpStatusCode.BadRequest.value)) }
             val result = ssoInitiateLoginUseCase(TEST_CODE, TestServerConfig.generic)
             assertEquals(result, SSOInitiateLoginResult.Failure.InvalidRedirect)
+        }
+
+    @Test
+    fun givenApiReturnsOtherError_whenInitiating_thenReturnGenericFailure() =
+        runTest {
+            val expected = serverMiscommunicationFailure(code = HttpStatusCode.Forbidden.value)
+            given(validateUUIDUseCase).invocation { invoke(TEST_CODE) }.then { true }
+            given(ssoLoginRepository).coroutine { initiate(TEST_CODE, TestServerConfig.generic) }.then { Either.Left(expected) }
+            val result = ssoInitiateLoginUseCase(TEST_CODE, TestServerConfig.generic)
+            assertIs<SSOInitiateLoginResult.Failure.Generic>(result)
+            assertEquals(expected, result.genericFailure)
         }
 
     @Test
@@ -82,9 +95,6 @@ class SSOInitiateLoginUseCaseTest {
             val result = ssoInitiateLoginUseCase(TEST_CODE, TestServerConfig.generic, Redirects(TEST_SUCCESS, TEST_ERROR))
             assertEquals(result, SSOInitiateLoginResult.Success(TEST_RESPONSE))
         }
-
-    private fun serverMiscommunicationFailure(code: Int = HttpStatusCode.BadRequest.value, message: String = "", label: String = "") =
-        NetworkFailure.ServerMiscommunication(KaliumException.InvalidRequestError(ErrorResponse(code, message, label)))
 
     private companion object {
         const val TEST_CODE = "fd994b20-b9af-11ec-ae36-00163e9b33ca"
