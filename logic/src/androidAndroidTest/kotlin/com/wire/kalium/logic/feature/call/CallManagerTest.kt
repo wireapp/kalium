@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.call
 
 import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.types.Handle
+import com.wire.kalium.logic.data.call.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -40,6 +41,9 @@ class CallManagerTest {
     @Mock
     private val messageSender = mock(classOf<MessageSender>())
 
+    @Mock
+    private val callMapper = mock(classOf<CallMapper>())
+
     private lateinit var callManagerImpl: CallManagerImpl
 
     @BeforeTest
@@ -49,6 +53,7 @@ class CallManagerTest {
             callRepository = callRepository,
             userRepository = userRepository,
             clientRepository = clientRepository,
+            callMapper = callMapper,
             messageSender = messageSender
         )
     }

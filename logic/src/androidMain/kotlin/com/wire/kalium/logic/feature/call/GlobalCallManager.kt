@@ -7,6 +7,7 @@ import com.waz.media.manager.MediaManager
 import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.ENVIRONMENT_DEFAULT
 import com.wire.kalium.calling.callbacks.LogHandler
+import com.wire.kalium.logic.data.call.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -44,6 +45,7 @@ actual class GlobalCallManager(
         callRepository: CallRepository,
         userRepository: UserRepository,
         clientRepository: ClientRepository,
+        callMapper: CallMapper,
         messageSender: MessageSender
     ): CallManager {
         return callManagerHolder[userId] ?: CallManagerImpl(
@@ -51,6 +53,7 @@ actual class GlobalCallManager(
             callRepository = callRepository,
             userRepository = userRepository,
             clientRepository = clientRepository,
+            callMapper = callMapper,
             messageSender = messageSender
         ).also {
             callManagerHolder[userId] = it
