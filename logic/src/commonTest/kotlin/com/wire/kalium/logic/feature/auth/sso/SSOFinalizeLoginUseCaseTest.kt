@@ -36,7 +36,7 @@ class SSOFinalizeLoginUseCaseTest {
     fun givenApiReturnsInvalidCookie_whenFinalizing_thenReturnInvalidCookie() =
         runTest {
             given(ssoLoginRepository).coroutine { finalize(TEST_COOKIE, TestServerConfig.generic) }
-                .then { Either.Left(serverMiscommunicationFailure(code = HttpStatusCode.NotFound.value)) }
+                .then { Either.Left(serverMiscommunicationFailure(code = HttpStatusCode.BadRequest.value)) }
             val result = ssoFinalizeLoginUseCase(TEST_COOKIE, TestServerConfig.generic)
             assertEquals(result, SSOFinalizeLoginResult.Failure.InvalidCookie)
         }
