@@ -50,9 +50,7 @@ class ConversationRepositoryTest {
     private val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
 
     @Mock
-    private val conversationDAO = configure(mock(ConversationDAO::class)) {
-        stubsUnitByDefault = true
-    }
+    private val conversationDAO = configure(mock(ConversationDAO::class)) { stubsUnitByDefault = true }
 
     @Mock
     private val conversationApi = mock(ConversationApi::class)
