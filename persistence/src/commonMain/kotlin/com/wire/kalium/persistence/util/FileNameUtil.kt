@@ -10,7 +10,7 @@ internal object FileNameUtil {
 
     fun userDBName(userId: UserIDEntity) = "${USER_DB_PREFIX}-${userId.value}-${userId.domain}".filterFileName()
 
-    private const val KALIUM_DB_NAME = "kalium-db"
+    private const val GLOBAL_DB_NAME = "global-db"
     private const val USER_PREFERENCE_FILE_PREFIX = "user-pref"
     private const val USER_DB_PREFIX = "user-db"
     private const val SHARED_PREFERENCE_FILE_NAME = "app-preference"
