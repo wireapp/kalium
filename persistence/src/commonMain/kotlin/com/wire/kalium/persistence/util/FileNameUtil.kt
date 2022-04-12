@@ -4,7 +4,7 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 
 internal object FileNameUtil {
     fun appPrefFile() = SHARED_PREFERENCE_FILE_NAME
-    fun appDBName() = KALIUM_DB_NAME
+    fun globalDBName() = GLOBAL_DB_NAME
 
     fun userPrefFile(userId: UserIDEntity) = "$USER_PREFERENCE_FILE_PREFIX-${userId.value}-${userId.domain}".filterFileName()
 
