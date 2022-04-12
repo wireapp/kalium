@@ -15,7 +15,7 @@ internal class ServerConfigMapper() {
 }
 
 interface ServerConfigurationDAO {
-    fun deleteByTitle(id: String)
+    fun deleteById(id: String)
     fun insert(
         id: String,
         apiBaseUrl: String,
@@ -29,13 +29,13 @@ interface ServerConfigurationDAO {
 
     fun allConfigFlow(): Flow<List<ServerConfigEntity>>
     fun allConfig(): List<ServerConfigEntity>
-    fun configByTitle(id: String): ServerConfigEntity?
+    fun configById(id: String): ServerConfigEntity?
 }
 
 class ServerConfigurationDAOImpl(private val queries: ServerConfigurationQueries) : ServerConfigurationDAO {
     private val mapper: ServerConfigMapper = ServerConfigMapper()
 
-    override fun deleteByTitle(id: String) = queries.deleteById(id)
+    override fun deleteById(id: String) = queries.deleteById(id)
 
     override fun insert(
         id: String,
@@ -53,6 +53,6 @@ class ServerConfigurationDAOImpl(private val queries: ServerConfigurationQueries
 
     override fun allConfig(): List<ServerConfigEntity> = queries.storedConfig().executeAsList().map(mapper::toModel)
 
-    override fun configByTitle(id: String): ServerConfigEntity? = queries.getById(id).executeAsOneOrNull()?.let { mapper.toModel(it) }
+    override fun configById(id: String): ServerConfigEntity? = queries.getById(id).executeAsOneOrNull()?.let { mapper.toModel(it) }
 
 }
