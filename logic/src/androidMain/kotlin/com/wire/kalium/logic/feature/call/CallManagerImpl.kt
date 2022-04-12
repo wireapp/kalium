@@ -216,9 +216,9 @@ actual class CallManagerImpl(
         )
     }
 
-    override suspend fun endCall(conversationId: ConversationId) {
+    override suspend fun endCall(conversationId: ConversationId) = withCalling {
         kaliumLogger.d("$TAG -> ending Call..")
-        calling.wcall_end(inst = deferredHandle.await(), conversationId = conversationId.asString())
+        wcall_end(inst = deferredHandle.await(), conversationId = conversationId.asString())
     }
 
     override fun onConfigRequest(inst: Handle, arg: Pointer?): Int {
