@@ -2,7 +2,8 @@ package com.wire.kalium.persistence.utils.stubs
 
 import com.wire.kalium.persistence.model.ServerConfigEntity
 
-fun newServerConfig(id: Int) = ServerConfigEntity(
+internal fun newServerConfig(id: Int) = ServerConfigEntity(
+    id = "config-$id",
     apiBaseUrl = "https://server$id-apiBaseUrl.de",
     accountBaseUrl = "https://server$id-accountBaseUrl.de",
     webSocketBaseUrl = "https://server$id-webSocketBaseUrl.de",

@@ -6,12 +6,14 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.stubs.newServerConfig
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.random.Random
 import kotlin.test.BeforeTest
@@ -19,6 +21,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class CurrentSessionUseCaseTest {
     @Mock
     val sessionRepository: SessionRepository = mock(classOf<SessionRepository>())
@@ -60,9 +63,9 @@ class CurrentSessionUseCaseTest {
 
     private companion object {
         val randomString get() = Random.nextBytes(64).decodeToString()
-        fun randomServerConfig(): ServerConfig =
-            ServerConfig(randomString, randomString, randomString, randomString, randomString, randomString, randomString)
+        val TEST_SERVER_CONFIG: ServerConfig = newServerConfig(1)
 
-        fun randomAuthSession(): AuthSession = AuthSession(UserId("user_id", "domain.de"), randomString, randomString, randomString, randomServerConfig())
+        fun randomAuthSession(): AuthSession =
+            AuthSession(UserId("user_id", "domain.de"), randomString, randomString, randomString, TEST_SERVER_CONFIG)
     }
 }

@@ -41,6 +41,7 @@ class SaveSessionUseCaseTest {
 
     private companion object {
         val TEST_SERVER_CONFIG: ServerConfig = ServerConfig(
+            id = "config-1",
             apiBaseUrl = "apiBaseUrl.com",
             accountsBaseUrl = "accountsUrl.com",
             webSocketBaseUrl = "webSocketUrl.com",
