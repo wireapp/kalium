@@ -44,6 +44,7 @@ interface ConversationRepository {
     suspend fun getConversationDetailsById(conversationID: ConversationId): Flow<ConversationDetails>
     suspend fun getConversationDetails(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation>>
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
+    suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, ProtocolInfo>
     suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Member>>
     suspend fun persistMember(member: MemberEntity, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun persistMembers(members: List<MemberEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
@@ -168,6 +169,11 @@ class ConversationDataSource(
             conversationDAO.getConversationByQualifiedID(idMapper.toDaoModel(conversationId))
                 .filterNotNull()
                 .map(conversationMapper::fromDaoModel)
+        }
+
+    override suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, ProtocolInfo> =
+        wrapStorageRequest {
+            conversationDAO.getConversationByQualifiedID(idMapper.toDaoModel(conversationId)).first()?.protocolInfo
         }
 
     override suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Member>> =

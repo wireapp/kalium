@@ -43,6 +43,8 @@ import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
+import com.wire.kalium.logic.feature.message.MLSMessageCreator
+import com.wire.kalium.logic.feature.message.MLSMessageCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
 import com.wire.kalium.logic.feature.message.MessageEnvelopeCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageScope
@@ -104,7 +106,9 @@ abstract class UserSessionScopeCommon(
 
     private val messageRepository: MessageRepository
         get() = MessageDataSource(
-            authenticatedDataSourceSet.authenticatedNetworkContainer.messageApi, userDatabaseProvider.messageDAO
+            authenticatedDataSourceSet.authenticatedNetworkContainer.messageApi,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.mlsMessageApi,
+            userDatabaseProvider.messageDAO
         )
 
     private val userRepository: UserRepository
@@ -157,8 +161,12 @@ abstract class UserSessionScopeCommon(
     private val messageEnvelopeCreator: MessageEnvelopeCreator
         get() = MessageEnvelopeCreatorImpl(authenticatedDataSourceSet.proteusClient, protoContentMapper)
 
+    private val mlsMessageCreator: MLSMessageCreator
+        get() = MLSMessageCreatorImpl(mlsClientProvider, protoContentMapper)
+
+    // TODO code duplication, can't we get the MessageSender from the message scope?
     private val messageSender: MessageSender
-        get() = MessageSenderImpl(messageRepository, conversationRepository, syncManager, messageSendFailureHandler, sessionEstablisher, messageEnvelopeCreator)
+        get() = MessageSenderImpl(messageRepository, conversationRepository, syncManager, messageSendFailureHandler, sessionEstablisher, messageEnvelopeCreator, mlsMessageCreator)
 
     private val assetRepository: AssetRepository
         get() = AssetDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.assetApi, userDatabaseProvider.assetDAO)
@@ -219,6 +227,7 @@ abstract class UserSessionScopeCommon(
             conversationRepository,
             clientRepository,
             authenticatedDataSourceSet.proteusClient,
+            mlsClientProvider,
             preKeyRepository,
             userRepository,
             assetRepository,
