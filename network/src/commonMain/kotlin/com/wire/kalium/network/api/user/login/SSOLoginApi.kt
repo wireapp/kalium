@@ -18,9 +18,9 @@ import io.ktor.http.isSuccess
 
 interface SSOLoginApi {
 
-    sealed class InitiateParam(val code: String) {
-        class NoRedirect(code: String) : InitiateParam(code)
-        class Redirect(val success: String, val error: String, code: String) : InitiateParam(code)
+    sealed class InitiateParam(open val code: String) {
+        data class NoRedirect(override val code: String) : InitiateParam(code)
+        data class Redirect(val success: String, val error: String, override val code: String) : InitiateParam(code)
     }
 
     suspend fun initiate(param: InitiateParam, apiBaseUrl: Url): NetworkResponse<String>
