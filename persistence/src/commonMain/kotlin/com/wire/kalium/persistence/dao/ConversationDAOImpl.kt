@@ -101,7 +101,7 @@ class ConversationDAOImpl(
 
     }
 
-    override suspend fun insertOrUpdateOneOneMemberWithConnectionStatus(
+    override suspend fun insertOrUpdateOneToOneMemberWithConnectionStatus(
         userId: UserIDEntity,
         status: UserEntity.ConnectionState,
         conversationID: QualifiedIDEntity
