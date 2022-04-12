@@ -42,7 +42,7 @@ class SendTextMessageUseCase(
                 )
                 messageRepository.persistMessage(message)
             }.flatMap {
-                messageSender.trySendingOutgoingMessage(conversationId, generatedMessageUuid)
+                messageSender.trySendingOutgoingMessageById(conversationId, generatedMessageUuid)
             }.onFailure {
                 kaliumLogger.e("There was an error trying to send the message $it")
                 if (it is CoreFailure.Unknown) {

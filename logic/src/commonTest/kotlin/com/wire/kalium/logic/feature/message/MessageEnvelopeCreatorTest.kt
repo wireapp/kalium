@@ -9,14 +9,10 @@ import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.conversation.Recipient
-import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
@@ -66,7 +62,7 @@ class MessageEnvelopeCreatorTest {
             .whenInvokedWith(anything())
             .thenReturn(PlainMessageBlob(plainData))
 
-        messageEnvelopeCreator.createOutgoingEnvelope(recipients, TEST_MESSAGE)
+        messageEnvelopeCreator.createOutgoingEnvelope(recipients, TestMessage.TEXT_MESSAGE)
 
         recipients.forEach { recipient ->
             recipient.clients.forEach { client ->
@@ -94,9 +90,9 @@ class MessageEnvelopeCreatorTest {
             .whenInvokedWith(anything())
             .thenReturn(PlainMessageBlob(plainData))
 
-        messageEnvelopeCreator.createOutgoingEnvelope(recipients, TEST_MESSAGE)
+        messageEnvelopeCreator.createOutgoingEnvelope(recipients, TestMessage.TEXT_MESSAGE)
             .shouldSucceed { envelope ->
-                assertEquals(TEST_SENDER_CLIENT_ID, envelope.senderClientId)
+                assertEquals(TestMessage.TEXT_MESSAGE.senderClientId, envelope.senderClientId)
 
                 // Should get a corresponding contact for the envelope entry
                 // For each recipient
@@ -130,7 +126,7 @@ class MessageEnvelopeCreatorTest {
             .whenInvokedWith(anything())
             .thenReturn(PlainMessageBlob(byteArrayOf()))
 
-        messageEnvelopeCreator.createOutgoingEnvelope(TEST_RECIPIENTS, TEST_MESSAGE)
+        messageEnvelopeCreator.createOutgoingEnvelope(TEST_RECIPIENTS, TestMessage.TEXT_MESSAGE)
             .shouldFail {
                 assertIs<ProteusFailure>(it)
                 assertEquals(exception, it.proteusException)
@@ -149,7 +145,7 @@ class MessageEnvelopeCreatorTest {
             .whenInvokedWith(anything())
             .thenReturn(PlainMessageBlob(byteArrayOf()))
 
-        messageEnvelopeCreator.createOutgoingEnvelope(TEST_RECIPIENTS, TEST_MESSAGE)
+        messageEnvelopeCreator.createOutgoingEnvelope(TEST_RECIPIENTS, TestMessage.TEXT_MESSAGE)
 
         verify(proteusClient)
             .suspendFunction(proteusClient::encrypt)
@@ -158,19 +154,6 @@ class MessageEnvelopeCreatorTest {
     }
 
     private companion object {
-        val TEST_SENDER_USER_ID = TestUser.USER_ID
-        val TEST_SENDER_CLIENT_ID = TestClient.CLIENT_ID
-        const val TEST_MESSAGE_ID = "messageId"
-        val TEST_CONTENT = MessageContent.Text("Ciao!")
-        val TEST_MESSAGE = Message(
-            TEST_MESSAGE_ID,
-            TEST_CONTENT,
-            ConversationId("conv", "id"),
-            "date",
-            TEST_SENDER_USER_ID,
-            TEST_SENDER_CLIENT_ID,
-            Message.Status.PENDING
-        )
         val TEST_CONTACT_CLIENT_1 = ClientId("clientId1")
         val TEST_CONTACT_CLIENT_2 = ClientId("clientId2")
         val TEST_MEMBER_1 = Member(UserId("value1", "domain1"))
