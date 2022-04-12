@@ -12,5 +12,5 @@ suspend fun CallManagerImpl.sendCallingMessage(conversationId: ConversationId, u
     val messageContent =  MessageContent.Calling(data)
     val date = Date().toString()
     val message =  Message(UUID.randomUUID().toString(), messageContent, conversationId, date, userId, clientId, Message.Status.SENT)
-    messageSender.getRecipientsAndAttemptSend(conversationId, message)
+    messageSender.trySendingOutgoingMessage(conversationId, message)
 }
