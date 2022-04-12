@@ -43,7 +43,7 @@ class ConnectionRepositoryTest {
     }
 
     @Test
-    fun givenA() = runTest {
+    fun givenConnections_whenFetchingConnections_thenConnectionsAreInsertedOrUpdatedIntoDatabase() = runTest {
 
         given(connectionApi)
             .suspendFunction(connectionApi::fetchSelfUserConnections)
