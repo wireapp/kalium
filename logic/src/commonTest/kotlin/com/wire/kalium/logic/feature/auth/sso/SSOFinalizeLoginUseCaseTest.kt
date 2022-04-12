@@ -44,7 +44,7 @@ class SSOFinalizeLoginUseCaseTest {
     @Test
     fun givenApiReturnsGenericError_whenFinalizing_thenReturnGenericFailure() =
         runTest {
-            val expected = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
+            val expected = serverMiscommunicationFailure(code = HttpStatusCode.Forbidden.value)
             given(ssoLoginRepository).coroutine { finalize(TEST_COOKIE, TestServerConfig.generic) }.then { Either.Left(expected) }
             val result = ssoFinalizeLoginUseCase(TEST_COOKIE, TestServerConfig.generic)
             assertIs<SSOFinalizeLoginResult.Failure.Generic>(result)
