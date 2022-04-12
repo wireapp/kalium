@@ -37,14 +37,21 @@ internal class SSOInitiateLoginUseCaseImpl(
     private val validateSSOCodeUseCase: ValidateSSOCodeUseCase
 ) : SSOInitiateLoginUseCase {
 
-    override suspend fun invoke(param: SSOInitiateLoginUseCase.Param): SSOInitiateLoginResult =
-        if (validateSSOCodeUseCase.invoke(param.ssoCode) is ValidateSSOCodeResult.Invalid)
-            SSOInitiateLoginResult.Failure.InvalidCode
-        else when (param) {
-            is SSOInitiateLoginUseCase.Param.WithoutRedirect ->
-                ssoLoginRepository.initiate(param.ssoCode, param.serverConfig)
-            is SSOInitiateLoginUseCase.Param.WithRedirect ->
-                ssoLoginRepository.initiate(param.ssoCode, param.redirects.success, param.redirects.error, param.serverConfig)
+    override suspend fun invoke(param: SSOInitiateLoginUseCase.Param): SSOInitiateLoginResult = with(param) {
+        val validUuid = validateSSOCodeUseCase(ssoCode).let {
+            when (it) {
+                is ValidateSSOCodeResult.Valid -> it.uuid
+                ValidateSSOCodeResult.Invalid -> return@with SSOInitiateLoginResult.Failure.InvalidCode
+            }
+        }
+        when (this) {
+            is SSOInitiateLoginUseCase.Param.WithoutRedirect -> ssoLoginRepository.initiate(validUuid, serverConfig)
+            is SSOInitiateLoginUseCase.Param.WithRedirect -> ssoLoginRepository.initiate(
+                validUuid,
+                redirects.success,
+                redirects.error,
+                serverConfig
+            )
         }.fold({
             if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
                 if (it.kaliumException.errorResponse.code == HttpStatusCode.BadRequest.value)
@@ -56,5 +63,5 @@ internal class SSOInitiateLoginUseCaseImpl(
         }, {
             SSOInitiateLoginResult.Success(it)
         })
+    }
 }
-

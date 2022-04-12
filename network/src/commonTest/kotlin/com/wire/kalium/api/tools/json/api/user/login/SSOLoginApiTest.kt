@@ -18,41 +18,41 @@ class SSOLoginApiTest: ApiTest {
 
     @Test
     fun givenBEResponseSuccess_whenCallingInitiateSSOEndpointWithNoRedirect_thenRequestConfiguredCorrectly() = runTest{
-        val ssoCode = "wire-uuid"
-        val param = SSOLoginApi.InitiateParam.NoRedirect(ssoCode)
+        val uuid = "uuid"
+        val param = SSOLoginApi.InitiateParam.WithoutRedirect(uuid)
         val httpClient = mockAuthenticatedHttpClient(
             "",
             statusCode = HttpStatusCode.OK,
             assertion = {
                 assertHead()
                 assertNoQueryParams()
-                assertPathEqual("$PATH_SSO_INITIATE/$ssoCode")
+                assertPathEqual("$PATH_SSO_INITIATE/$uuid")
             }
         )
         val ssoApi: SSOLoginApi = SSOLoginApiImpl(httpClient)
         val actual = ssoApi.initiate(param, TEST_HOST)
 
         assertIs<NetworkResponse.Success<String>>(actual)
-        assertEquals("${TEST_HOST}sso/initiate-login/$ssoCode", actual.value)
+        assertEquals("${TEST_HOST}sso/initiate-login/$uuid", actual.value)
     }
 
     @Test
     fun givenBEResponseSuccess_whenCallingInitiateSSOEndpointWithRedirect_thenRequestConfiguredCorrectly() = runTest {
-        val ssoCode = "wire-uuid"
-        val param = SSOLoginApi.InitiateParam.Redirect(code = ssoCode, success = "wire://success", error = "wire://error")
+        val uuid = "uuid"
+        val param = SSOLoginApi.InitiateParam.WithRedirect(uuid = uuid, success = "wire://success", error = "wire://error")
         val httpClient = mockAuthenticatedHttpClient(
             "",
             statusCode = HttpStatusCode.OK,
             assertion = {
                 assertHead()
-                assertPathEqual("$PATH_SSO_INITIATE/$ssoCode%3Fsuccess_redirect=${param.success}&error_redirect=${param.error}")
+                assertPathEqual("$PATH_SSO_INITIATE/$uuid%3Fsuccess_redirect=${param.success}&error_redirect=${param.error}")
             }
         )
         val ssoApi: SSOLoginApi = SSOLoginApiImpl(httpClient)
         val actual = ssoApi.initiate(param, TEST_HOST)
 
         assertIs<NetworkResponse.Success<String>>(actual)
-        assertEquals("${TEST_HOST}sso/initiate-login/$ssoCode%3Fsuccess_redirect=${param.success}&error_redirect=${param.error}", actual.value)
+        assertEquals("${TEST_HOST}sso/initiate-login/$uuid%3Fsuccess_redirect=${param.success}&error_redirect=${param.error}", actual.value)
     }
 
     @Test

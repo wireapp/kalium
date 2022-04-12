@@ -11,13 +11,13 @@ import io.ktor.http.Url
 interface SSOLoginRepository {
 
     suspend fun initiate(
-        code: String,
+        uuid: String,
         successRedirect: String,
         errorRedirect: String,
         serverConfig: ServerConfig
     ): Either<NetworkFailure, String>
 
-    suspend fun initiate(code: String, serverConfig: ServerConfig): Either<NetworkFailure, String>
+    suspend fun initiate(uuid: String, serverConfig: ServerConfig): Either<NetworkFailure, String>
 
     suspend fun finalize(cookie: String, serverConfig: ServerConfig): Either<NetworkFailure, String>
 
@@ -29,18 +29,18 @@ interface SSOLoginRepository {
 class SSOLoginRepositoryImpl(private val ssoLoginApi: SSOLoginApi) : SSOLoginRepository {
 
     override suspend fun initiate(
-        code: String,
+        uuid: String,
         successRedirect: String,
         errorRedirect: String,
         serverConfig: ServerConfig
     ): Either<NetworkFailure, String> =
         wrapApiRequest {
-            ssoLoginApi.initiate(SSOLoginApi.InitiateParam.Redirect(successRedirect, errorRedirect, code), Url(serverConfig.apiBaseUrl))
+            ssoLoginApi.initiate(SSOLoginApi.InitiateParam.WithRedirect(successRedirect, errorRedirect, uuid), Url(serverConfig.apiBaseUrl))
         }
 
-    override suspend fun initiate(code: String, serverConfig: ServerConfig): Either<NetworkFailure, String> =
+    override suspend fun initiate(uuid: String, serverConfig: ServerConfig): Either<NetworkFailure, String> =
         wrapApiRequest {
-            ssoLoginApi.initiate(SSOLoginApi.InitiateParam.NoRedirect(code), Url(serverConfig.apiBaseUrl))
+            ssoLoginApi.initiate(SSOLoginApi.InitiateParam.WithoutRedirect(uuid), Url(serverConfig.apiBaseUrl))
         }
 
     override suspend fun finalize(cookie: String, serverConfig: ServerConfig): Either<NetworkFailure, String> =

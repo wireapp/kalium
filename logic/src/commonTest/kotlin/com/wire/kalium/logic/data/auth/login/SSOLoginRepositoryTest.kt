@@ -36,7 +36,7 @@ class SSOLoginRepositoryTest {
     @Test
     fun givenApiRequestSuccess_whenInitiatingWithoutRedirects_thenSuccessIsPropagated() =
         givenApiRequestSuccess_whenMakingRequest_thenSuccessIsPropagated(
-            { initiate(SSOLoginApi.InitiateParam.NoRedirect(TEST_CODE), Url(TestServerConfig.generic.apiBaseUrl)) } ,
+            { initiate(SSOLoginApi.InitiateParam.WithoutRedirect(TEST_CODE), Url(TestServerConfig.generic.apiBaseUrl)) } ,
             "wire/response",
             { ssoLoginRepository.initiate(TEST_CODE, TestServerConfig.generic) }
         )
@@ -44,7 +44,7 @@ class SSOLoginRepositoryTest {
     @Test
     fun givenApiRequestSuccess_whenInitiatingWithRedirects_thenSuccessIsPropagated() =
         givenApiRequestSuccess_whenMakingRequest_thenSuccessIsPropagated(
-            { initiate(SSOLoginApi.InitiateParam.Redirect(TEST_SUCCESS, TEST_ERROR, TEST_CODE), Url(TestServerConfig.generic.apiBaseUrl)) } ,
+            { initiate(SSOLoginApi.InitiateParam.WithRedirect(TEST_SUCCESS, TEST_ERROR, TEST_CODE), Url(TestServerConfig.generic.apiBaseUrl)) } ,
             "wire/response",
             { ssoLoginRepository.initiate(TEST_CODE, TEST_SUCCESS, TEST_ERROR, TestServerConfig.generic) }
         )
@@ -52,7 +52,7 @@ class SSOLoginRepositoryTest {
     @Test
     fun givenApiRequestFail_whenInitiating_thenNetworkFailureIsPropagated() =
         givenApiRequestFail_whenMakingRequest_thenNetworkFailureIsPropagated(
-            { initiate(SSOLoginApi.InitiateParam.NoRedirect(TEST_CODE), Url(TestServerConfig.generic.apiBaseUrl)) } ,
+            { initiate(SSOLoginApi.InitiateParam.WithoutRedirect(TEST_CODE), Url(TestServerConfig.generic.apiBaseUrl)) } ,
             expected = TestNetworkException.generic,
             { ssoLoginRepository.initiate(TEST_CODE, TestServerConfig.generic) }
         )
