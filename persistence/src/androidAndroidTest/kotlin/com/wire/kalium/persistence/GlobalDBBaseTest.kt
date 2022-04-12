@@ -13,7 +13,7 @@ actual abstract class GlobalDBBaseTest {
 
     actual fun deleteDatabase() {
         val context: Context = ApplicationProvider.getApplicationContext()
-        context.deleteDatabase(FileNameUtil.appDBName())
+        context.deleteDatabase(FileNameUtil.globalDBName())
     }
 
     actual fun createDatabase(): GlobalDatabaseProvider = GlobalDatabaseProvider(ApplicationProvider.getApplicationContext(), preferences)
