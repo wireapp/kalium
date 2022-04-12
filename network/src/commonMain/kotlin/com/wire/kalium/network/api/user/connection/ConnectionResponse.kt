@@ -25,31 +25,31 @@ data class Connection(
 
 @Serializable
 enum class ConnectionState {
-    // The other user has sent a connection request to this one
+    /** The other user has sent a connection request to this one */
     @SerialName("pending")
     PENDING,
 
-    // This user has sent a connection request to another user
+    /** This user has sent a connection request to another user */
     @SerialName("sent")
     SENT,
 
-    // The user has been blocked
+    /** The user has been blocked */
     @SerialName("blocked")
     BLOCKED,
 
-    // The connection has been ignored
+    /** The connection has been ignored */
     @SerialName("ignored")
     IGNORED,
 
-    // The connection has been cancelled
+    /** The connection has been cancelled */
     @SerialName("cancelled")
     CANCELLED,
 
-    // The connection is missing legal hold consent
+    /** The connection is missing legal hold consent  */
     @SerialName("missing-legalhold-consent")
     MISSING_LEGALHOLD_CONSENT,
 
-    // The connection is complete and the conversation is in its normal state
+    /** The connection is complete and the conversation is in its normal state */
     @SerialName("accepted")
     ACCEPTED
 }

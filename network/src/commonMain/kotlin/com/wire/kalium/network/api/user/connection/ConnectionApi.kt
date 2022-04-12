@@ -9,15 +9,21 @@ import kotlinx.serialization.json.buildJsonObject
 
 interface ConnectionApi {
 
-    suspend fun fetchSelfUserConnections(): NetworkResponse<ConnectionResponse>
+    suspend fun fetchSelfUserConnections(pagingState: String?): NetworkResponse<ConnectionResponse>
 }
 
 class ConnectionApiImpl(private val httpClient: HttpClient) : ConnectionApi {
 
-    override suspend fun fetchSelfUserConnections(): NetworkResponse<ConnectionResponse> =
+    override suspend fun fetchSelfUserConnections(pagingState: String?): NetworkResponse<ConnectionResponse> =
         wrapKaliumResponse {
             httpClient.post(PATH_CONNECTIONS) {
-                setBody(buildJsonObject {  })
+                setBody(
+                    buildJsonObject {
+                        pagingState?.let {
+                            "paging_state" to it
+                        }
+                    }
+                )
             }
         }
 
