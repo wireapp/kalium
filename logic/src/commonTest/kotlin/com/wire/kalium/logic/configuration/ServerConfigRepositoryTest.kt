@@ -33,14 +33,14 @@ class ServerConfigRepositoryTest {
         val serverConfigUrl = SERVER_CONFIG_URL
         val expected = Either.Right(SERVER_CONFIG)
         given(serverConfigRemoteRepository)
-            .coroutine { serverConfigRepository.fetchRemoteConfig(serverConfigUrl) }
+            .coroutine { serverConfigRepository.fetchAndStoreRemoteConfig(serverConfigUrl) }
             .then { expected }
 
-        val actual = serverConfigRepository.fetchRemoteConfig(serverConfigUrl)
+        val actual = serverConfigRepository.fetchAndStoreRemoteConfig(serverConfigUrl)
 
         actual.shouldSucceed { expected.value }
         verify(serverConfigRemoteRepository)
-            .coroutine { serverConfigRepository.fetchRemoteConfig(serverConfigUrl) }
+            .coroutine { serverConfigRepository.fetchAndStoreRemoteConfig(serverConfigUrl) }
             .wasInvoked(exactly = once)
     }
 

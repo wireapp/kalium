@@ -2,8 +2,6 @@ package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.configuration.GetServerConfigUseCase
 import com.wire.kalium.logic.configuration.ServerConfigDataSource
-import com.wire.kalium.logic.configuration.ServerConfigRemoteDataSource
-import com.wire.kalium.logic.configuration.ServerConfigRemoteRepository
 import com.wire.kalium.logic.configuration.ServerConfigRepository
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.auth.login.LoginRepositoryImpl
@@ -23,8 +21,7 @@ class AuthenticationScope(
         LoginNetworkContainer()
     }
 
-    private val serverConfigRemoteRepository: ServerConfigRemoteRepository get() = ServerConfigRemoteDataSource(loginNetworkContainer.serverConfigApi)
-    private val serverConfigRepository: ServerConfigRepository get() = ServerConfigDataSource(serverConfigRemoteRepository, TODO())
+    private val serverConfigRepository: ServerConfigRepository get() = ServerConfigDataSource(loginNetworkContainer.serverConfigApi, TODO())
 
 
     private val loginRepository: LoginRepository get() = LoginRepositoryImpl(loginNetworkContainer.loginApi, clientLabel)
