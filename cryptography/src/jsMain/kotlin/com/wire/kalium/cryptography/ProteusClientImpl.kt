@@ -17,6 +17,10 @@ actual class ProteusClientImpl actual constructor(rootDir: String) : ProteusClie
 
     private lateinit var box: Cryptobox
 
+    override fun nuke(): Boolean {
+        TODO("Not yet implemented")
+    }
+
     override suspend fun open() {
         val engine = MemoryEngine()
         engine.init("in-memory").await()

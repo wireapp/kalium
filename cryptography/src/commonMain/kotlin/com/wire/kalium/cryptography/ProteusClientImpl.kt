@@ -14,6 +14,8 @@ data class PreKeyCrypto(
 
 interface ProteusClient {
 
+    fun nuke(): Boolean
+
     @Throws(ProteusException::class, CancellationException::class)
     suspend fun open()
 

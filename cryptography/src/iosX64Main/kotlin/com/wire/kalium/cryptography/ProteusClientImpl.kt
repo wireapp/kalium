@@ -27,6 +27,8 @@ actual class ProteusClientImpl actual constructor(private val rootDir: String) :
 
     private var box: EncryptionContext? = null
 
+    override fun nuke(): Boolean = TODO("Not yet implemented")
+
     override suspend fun open() {
         NSFileManager.defaultManager.createDirectoryAtPath(rootDir, withIntermediateDirectories = true, null, null)
         box = EncryptionContext(NSURL.fileURLWithPath(rootDir))
@@ -186,7 +188,7 @@ actual class ProteusClientImpl actual constructor(private val rootDir: String) :
         }
 
         private fun toException(error: NSError): ProteusException {
-            return ProteusException(message = error.description,  code = error.code.toInt())
+            return ProteusException(message = error.description, code = error.code.toInt())
         }
     }
 

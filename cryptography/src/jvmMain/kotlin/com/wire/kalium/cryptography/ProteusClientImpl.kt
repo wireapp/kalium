@@ -6,13 +6,18 @@ import com.wire.kalium.cryptography.exceptions.ProteusException
 import java.io.File
 import java.util.Base64
 
-actual class ProteusClientImpl actual constructor(rootDir: String): ProteusClient {
+actual class ProteusClientImpl actual constructor(rootDir: String) : ProteusClient {
 
     private val path: String
     private lateinit var box: CryptoBox
 
     init {
         path = rootDir
+    }
+
+    override fun nuke(): Boolean = File(path).let {
+        if (it.exists()) it.delete()
+        else true
     }
 
     override suspend fun open() {

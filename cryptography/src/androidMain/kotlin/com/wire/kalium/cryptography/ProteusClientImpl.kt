@@ -15,6 +15,11 @@ actual class ProteusClientImpl actual constructor(rootDir: String) : ProteusClie
         path = rootDir
     }
 
+    override fun nuke(): Boolean = File(path).let {
+        if (it.exists()) it.delete()
+        else true
+    }
+
     override suspend fun open() {
         box = wrapException {
             File(path).mkdirs()
