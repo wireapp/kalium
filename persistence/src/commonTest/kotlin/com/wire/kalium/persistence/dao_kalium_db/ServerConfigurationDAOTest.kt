@@ -35,7 +35,7 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
     fun givenServerConfig_ThenItCanBeInsertedAndRetrieved() {
         val expect = config1
         insertConfig(expect)
-        val actual = db.serverConfigurationDAO.configById(expect.title)
+        val actual = db.serverConfigurationDAO.configById(expect.id)
 
         assertEquals(expect, actual)
     }
@@ -43,7 +43,7 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
     @Test
     fun givenExistingConfig_thenItCanBeDeleted() {
         insertConfig(config1)
-        db.serverConfigurationDAO.deleteById(config1.title)
+        db.serverConfigurationDAO.deleteById(config1.id)
 
         val result = db.serverConfigurationDAO.allConfig()
         assertEquals(0, result.size)

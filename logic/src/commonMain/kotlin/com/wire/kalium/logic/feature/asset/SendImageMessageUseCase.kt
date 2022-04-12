@@ -108,7 +108,7 @@ internal class SendImageMessageUseCaseImpl(
             )
             messageRepository.persistMessage(message)
         }.flatMap {
-            messageSender.trySendingOutgoingMessage(conversationId, generatedMessageUuid)
+            messageSender.trySendingOutgoingMessageById(conversationId, generatedMessageUuid)
         }.onFailure {
             kaliumLogger.e("There was an error when trying to send the asset on the conversation")
         }
