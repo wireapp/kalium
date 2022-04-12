@@ -2,6 +2,7 @@ package com.wire.kalium.logic.configuration
 
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.logic.util.stubs.newServerConfig
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.given
@@ -10,7 +11,6 @@ import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
-import kotlin.random.Random
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
@@ -45,10 +45,9 @@ class ServerConfigRepositoryTest {
     }
 
     private companion object {
-        val randomString get() = Random.nextBytes(64).decodeToString()
 
         const val SERVER_CONFIG_URL = "https://test.test/test.json"
-        val SERVER_CONFIG = ServerConfig(randomString, randomString, randomString, randomString, randomString, randomString, randomString)
+        val SERVER_CONFIG = newServerConfig(1)
     }
 
 }

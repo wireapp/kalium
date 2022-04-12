@@ -4,6 +4,7 @@ import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.stubs.newServerConfig
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -79,7 +80,7 @@ class AddAuthenticatedUserUseCaseTest {
     fun givenUserWithAlreadyStoredSessionWithDifferentServerConfig_whenInvokedWithReplace_thenUserAlreadyExistsReturned() = runTest {
         val oldSession = AuthSession(
             TEST_USERID, "access-token", "refresh-token", "type",
-            ServerConfig("apiBaseUrl", "accountsBaseUrl", "webSocketBaseUrl", "blackListUrl", "teamsUrl", "websiteUrl", "title")
+            newServerConfig(999)
         )
         val newSession = TEST_SESSION
         given(sessionRepository).invocation { doesSessionExist(newSession.userId) }.then { Either.Right(true) }
@@ -96,15 +97,7 @@ class AddAuthenticatedUserUseCaseTest {
 
     private companion object {
         val TEST_USERID = UserId("user_id", "domain.de")
-        val TEST_SERVER_CONFIG: ServerConfig = ServerConfig(
-            apiBaseUrl = "apiBaseUrl.com",
-            accountsBaseUrl = "accountsUrl.com",
-            webSocketBaseUrl = "webSocketUrl.com",
-            blackListUrl = "blackListUrl.com",
-            teamsUrl = "teamsUrl.com",
-            websiteUrl = "websiteUrl.com",
-            title = "Test Title"
-        )
+        val TEST_SERVER_CONFIG: ServerConfig = newServerConfig(1)
         val TEST_SESSION =
             AuthSession(
                 userId = TEST_USERID,

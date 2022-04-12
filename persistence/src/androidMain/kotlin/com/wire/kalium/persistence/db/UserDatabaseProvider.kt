@@ -1,14 +1,13 @@
 package com.wire.kalium.persistence.db
 
 import android.content.Context
-import android.os.Build
-import android.util.Base64
 import androidx.sqlite.db.SupportSQLiteDatabase
 import app.cash.sqldelight.EnumColumnAdapter
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.wire.kalium.persistence.Client
 import com.wire.kalium.persistence.Conversation
+import com.wire.kalium.persistence.DBUtil
 import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.User
@@ -33,7 +32,6 @@ import com.wire.kalium.persistence.dao.message.MessageDAOImpl
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.util.FileNameUtil
 import net.sqlcipher.database.SupportFactory
-import java.security.SecureRandom
 
 actual class UserDatabaseProvider(private val context: Context, userId: UserIDEntity, kaliumPreferences: KaliumPreferences) {
     private val dbName = FileNameUtil.userDBName(userId)
@@ -41,7 +39,7 @@ actual class UserDatabaseProvider(private val context: Context, userId: UserIDEn
     private val database: UserDatabase
 
     init {
-        val supportFactory = SupportFactory(getOrGenerateSecretKey(kaliumPreferences).toByteArray())
+        val supportFactory = SupportFactory(DBUtil.getOrGenerateSecretKey(kaliumPreferences, DATABASE_SECRET_KEY).toByteArray())
 
         val onConnectCallback = object : AndroidSqliteDriver.Callback(UserDatabase.Schema) {
             override fun onOpen(db: SupportSQLiteDatabase) {
@@ -103,40 +101,10 @@ actual class UserDatabaseProvider(private val context: Context, userId: UserIDEn
     actual val teamDAO: TeamDAO
         get() = TeamDAOImpl(database.teamsQueries)
 
-    actual fun nuke(): Boolean {
-        driver.close()
-        return context.deleteDatabase(dbName)
-    }
-
-    private fun getOrGenerateSecretKey(kaliumPreferences: KaliumPreferences): String {
-        val databaseKey = kaliumPreferences.getString(DATABASE_SECRET_KEY)
-
-        return if (databaseKey == null) {
-            val secretKey = generateSecretKey()
-            kaliumPreferences.putString(DATABASE_SECRET_KEY, secretKey)
-            secretKey
-        } else {
-            databaseKey
-        }
-    }
-
-    private fun generateSecretKey(): String {
-        // TODO review with security
-
-        val random = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            SecureRandom.getInstanceStrong()
-        } else {
-            SecureRandom()
-        }
-        val password = ByteArray(DATABASE_SECRET_LENGTH)
-        random.nextBytes(password)
-
-        return Base64.encodeToString(password, Base64.DEFAULT)
-    }
+    actual fun nuke(): Boolean = DBUtil.deleteDB(driver, context, dbName)
 
     companion object {
-        private const val DATABASE_SECRET_KEY = "databaseSecret"
-        private const val DATABASE_SECRET_LENGTH = 48
+        // FIXME: the same key is used to enc/dec all user DBs
+        private const val DATABASE_SECRET_KEY = "user-db-secret"
     }
-
 }
