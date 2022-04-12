@@ -12,7 +12,7 @@ import com.wire.kalium.persistence.util.FileNameUtil
 import net.sqlcipher.database.SupportFactory
 
 actual class GlobalDatabaseProvider(private val context: Context, kaliumPreferences: KaliumPreferences) {
-    private val dbName = FileNameUtil.appDBName()
+    private val dbName = FileNameUtil.globalDBName()
     private val driver: AndroidSqliteDriver
     private val database: GlobalDatabase
 

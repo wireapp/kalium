@@ -11,7 +11,7 @@ actual class GlobalDatabaseProvider(passphrase: String) {
     val database: GlobalDatabase
 
     init {
-        val driver = NativeSqliteDriver(GlobalDatabase.Schema, FileNameUtil.appDBName())
+        val driver = NativeSqliteDriver(GlobalDatabase.Schema, FileNameUtil.globalDBName())
         database = GlobalDatabase(driver)
 
         driver.execute(null, "PRAGMA foreign_keys=ON", 0)

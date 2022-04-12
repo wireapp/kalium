@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.configuration
 
+import com.benasher44.uuid.uuid4
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import io.ktor.http.Url
@@ -7,6 +8,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class ServerConfig(
+    val id: String,
     val apiBaseUrl: String,
     val accountsBaseUrl: String,
     val webSocketBaseUrl: String,
@@ -17,6 +19,7 @@ data class ServerConfig(
 ) {
     companion object {
         val PRODUCTION = ServerConfig(
+            id = uuid4().toString(),
             apiBaseUrl = """https://prod-nginz-https.wire.com""",
             accountsBaseUrl = """https://account.wire.com""",
             webSocketBaseUrl = """https://prod-nginz-ssl.wire.com""",
@@ -26,6 +29,7 @@ data class ServerConfig(
             title = "Production"
         )
         val STAGING = ServerConfig(
+            id = uuid4().toString(),
             apiBaseUrl = """https://staging-nginz-https.zinfra.io""",
             accountsBaseUrl = """https://wire-account-staging.zinfra.io""",
             webSocketBaseUrl = """https://staging-nginz-ssl.zinfra.io""",
@@ -46,21 +50,43 @@ interface ServerConfigMapper {
 }
 
 class ServerConfigMapperImpl : ServerConfigMapper {
-    // TODO: url validation check e.g. remove https:// since ktor will control the http protocol
     override fun toDTO(serverConfig: ServerConfig): ServerConfigDTO =
-        with(serverConfig) { ServerConfigDTO(Url(apiBaseUrl), Url(accountsBaseUrl), Url(webSocketBaseUrl), Url(blackListUrl), Url(teamsUrl), Url(websiteUrl), title) }
+        with(serverConfig) {
+            ServerConfigDTO(
+                Url(apiBaseUrl),
+                Url(accountsBaseUrl),
+                Url(webSocketBaseUrl),
+                Url(blackListUrl),
+                Url(teamsUrl),
+                Url(websiteUrl),
+                title
+            )
+        }
 
     override fun fromDTO(serverConfigDTO: ServerConfigDTO): ServerConfig =
-        with(serverConfigDTO) { ServerConfig(apiBaseUrl.toString(), accountsBaseUrl.toString(), webSocketBaseUrl.toString(), blackListUrl.toString(), teamsUrl.toString(), websiteUrl.toString(), title) }
+        // TODO: assigning a random uuid here is temperately and will be changed
+        with(serverConfigDTO) {
+            ServerConfig(
+                id = uuid4().toString(),
+                apiBaseUrl.toString(),
+                accountsBaseUrl.toString(),
+                webSocketBaseUrl.toString(),
+                blackListUrl.toString(),
+                teamsUrl.toString(),
+                websiteUrl.toString(),
+                title
+            )
+        }
 
     override fun toEntity(serverConfig: ServerConfig): ServerConfigEntity =
         with(serverConfig) {
-            ServerConfigEntity(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, serverConfig.title)
+            ServerConfigEntity(id, apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, serverConfig.title)
         }
 
     override fun fromEntity(serverConfigEntity: ServerConfigEntity): ServerConfig =
         with(serverConfigEntity) {
             ServerConfig(
+                id,
                 apiBaseUrl,
                 accountBaseUrl,
                 webSocketBaseUrl,
