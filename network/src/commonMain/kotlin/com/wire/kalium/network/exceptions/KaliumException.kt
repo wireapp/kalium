@@ -16,8 +16,6 @@ import com.wire.kalium.network.exceptions.NetworkErrorLabel.MISSING_AUTH
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.TOO_MANY_CLIENTS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.TOO_MANY_MEMBERS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.USER_CREATION_RESTRICTED
-import io.ktor.client.statement.HttpResponse
-import io.ktor.http.HttpStatusCode
 
 sealed class KaliumException() : Exception() {
 
