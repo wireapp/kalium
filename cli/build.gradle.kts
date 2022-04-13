@@ -4,7 +4,7 @@ plugins {
 }
 
 tasks.jar {
-    manifest.attributes["Main-Class"] = "com.wire.kalium.cli.CLIApplication"
+    manifest.attributes["Main-Class"] = "com.wire.kalium.cli.CLIApplicationKt"
     val dependencies = configurations
         .runtimeClasspath
         .get()
