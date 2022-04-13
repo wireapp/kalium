@@ -33,4 +33,8 @@ actual class CallManagerImpl : CallManager {
     override suspend fun endCall(conversationId: ConversationId) {
         kaliumLogger.w("endCall for JVM but not supported yet.")
     }
+
+    override suspend fun rejectCall(conversationId: ConversationId) {
+        kaliumLogger.w("rejectCall for JVM but not supported yet.")
+    }
 }

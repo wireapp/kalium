@@ -3,7 +3,7 @@ package com.wire.kalium.logic.data.auth.login
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
-import com.wire.kalium.logic.test_util.TestServerConfig
+import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.network.api.user.login.SSOLoginApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -36,73 +36,73 @@ class SSOLoginRepositoryTest {
     @Test
     fun givenApiRequestSuccess_whenInitiatingWithoutRedirects_thenSuccessIsPropagated() =
         givenApiRequestSuccess_whenMakingRequest_thenSuccessIsPropagated(
-            { initiate(SSOLoginApi.InitiateParam.WithoutRedirect(TEST_CODE), Url(TestServerConfig.generic.apiBaseUrl)) } ,
+            { initiate(SSOLoginApi.InitiateParam.WithoutRedirect(TEST_CODE), Url(TEST_SERVER_CONFIG.apiBaseUrl)) } ,
             "wire/response",
-            { ssoLoginRepository.initiate(TEST_CODE, TestServerConfig.generic) }
+            { ssoLoginRepository.initiate(TEST_CODE, TEST_SERVER_CONFIG) }
         )
 
     @Test
     fun givenApiRequestSuccess_whenInitiatingWithRedirects_thenSuccessIsPropagated() =
         givenApiRequestSuccess_whenMakingRequest_thenSuccessIsPropagated(
-            { initiate(SSOLoginApi.InitiateParam.WithRedirect(TEST_SUCCESS, TEST_ERROR, TEST_CODE), Url(TestServerConfig.generic.apiBaseUrl)) } ,
+            { initiate(SSOLoginApi.InitiateParam.WithRedirect(TEST_SUCCESS, TEST_ERROR, TEST_CODE), Url(TEST_SERVER_CONFIG.apiBaseUrl)) } ,
             "wire/response",
-            { ssoLoginRepository.initiate(TEST_CODE, TEST_SUCCESS, TEST_ERROR, TestServerConfig.generic) }
+            { ssoLoginRepository.initiate(TEST_CODE, TEST_SUCCESS, TEST_ERROR, TEST_SERVER_CONFIG) }
         )
 
     @Test
     fun givenApiRequestFail_whenInitiating_thenNetworkFailureIsPropagated() =
         givenApiRequestFail_whenMakingRequest_thenNetworkFailureIsPropagated(
-            { initiate(SSOLoginApi.InitiateParam.WithoutRedirect(TEST_CODE), Url(TestServerConfig.generic.apiBaseUrl)) } ,
+            { initiate(SSOLoginApi.InitiateParam.WithoutRedirect(TEST_CODE), Url(TEST_SERVER_CONFIG.apiBaseUrl)) } ,
             expected = TestNetworkException.generic,
-            { ssoLoginRepository.initiate(TEST_CODE, TestServerConfig.generic) }
+            { ssoLoginRepository.initiate(TEST_CODE, TEST_SERVER_CONFIG) }
         )
 
     @Test
     fun givenApiRequestSuccess_whenFinalizing_thenSuccessIsPropagated() =
         givenApiRequestSuccess_whenMakingRequest_thenSuccessIsPropagated(
-            apiCoroutineBlock = { finalize(TEST_COOKIE, Url(TestServerConfig.generic.apiBaseUrl)) },
+            apiCoroutineBlock = { finalize(TEST_COOKIE, Url(TEST_SERVER_CONFIG.apiBaseUrl)) },
             expected = "wire/response",
-            repositoryCoroutineBlock = { finalize(TEST_COOKIE, TestServerConfig.generic) }
+            repositoryCoroutineBlock = { finalize(TEST_COOKIE, TEST_SERVER_CONFIG) }
         )
 
     @Test
     fun givenApiRequestFail_whenFinalizing_thenNetworkFailureIsPropagated() =
         givenApiRequestFail_whenMakingRequest_thenNetworkFailureIsPropagated(
-            apiCoroutineBlock = { finalize(TEST_COOKIE, Url(TestServerConfig.generic.apiBaseUrl)) },
+            apiCoroutineBlock = { finalize(TEST_COOKIE, Url(TEST_SERVER_CONFIG.apiBaseUrl)) },
             expected = TestNetworkException.generic,
-            repositoryCoroutineBlock = { finalize(TEST_COOKIE, TestServerConfig.generic) }
+            repositoryCoroutineBlock = { finalize(TEST_COOKIE, TEST_SERVER_CONFIG) }
         )
 
     @Test
     fun givenApiRequestSuccess_whenRequestingMetaData_thenSuccessIsPropagated() =
         givenApiRequestSuccess_whenMakingRequest_thenSuccessIsPropagated(
-            apiCoroutineBlock = { metaData(Url(TestServerConfig.generic.apiBaseUrl)) },
+            apiCoroutineBlock = { metaData(Url(TEST_SERVER_CONFIG.apiBaseUrl)) },
             expected = "wire/response",
-            repositoryCoroutineBlock = { metaData(TestServerConfig.generic) }
+            repositoryCoroutineBlock = { metaData(TEST_SERVER_CONFIG) }
         )
 
     @Test
     fun givenApiRequestFail_whenRequestingMetaData_thenNetworkFailureIsPropagated() =
         givenApiRequestFail_whenMakingRequest_thenNetworkFailureIsPropagated(
-            apiCoroutineBlock = { metaData(Url(TestServerConfig.generic.apiBaseUrl)) },
+            apiCoroutineBlock = { metaData(Url(TEST_SERVER_CONFIG.apiBaseUrl)) },
             expected = TestNetworkException.generic,
-            repositoryCoroutineBlock = { metaData(TestServerConfig.generic) }
+            repositoryCoroutineBlock = { metaData(TEST_SERVER_CONFIG) }
         )
 
     @Test
     fun givenApiRequestSuccess_whenRequestingSettings_thenSuccessIsPropagated() =
         givenApiRequestSuccess_whenMakingRequest_thenSuccessIsPropagated(
-            apiCoroutineBlock = { settings(Url(TestServerConfig.generic.apiBaseUrl)) },
+            apiCoroutineBlock = { settings(Url(TEST_SERVER_CONFIG.apiBaseUrl)) },
             expected = true,
-            repositoryCoroutineBlock = { settings(TestServerConfig.generic) }
+            repositoryCoroutineBlock = { settings(TEST_SERVER_CONFIG) }
         )
 
     @Test
     fun givenApiRequestFail_whenRequestingSettings_thenNetworkFailureIsPropagated() =
         givenApiRequestFail_whenMakingRequest_thenNetworkFailureIsPropagated(
-            apiCoroutineBlock = { settings(Url(TestServerConfig.generic.apiBaseUrl)) },
+            apiCoroutineBlock = { settings(Url(TEST_SERVER_CONFIG.apiBaseUrl)) },
             expected = TestNetworkException.generic,
-            repositoryCoroutineBlock = { settings(TestServerConfig.generic) }
+            repositoryCoroutineBlock = { settings(TEST_SERVER_CONFIG) }
         )
 
     private fun <T: Any> givenApiRequestSuccess_whenMakingRequest_thenSuccessIsPropagated(
@@ -134,5 +134,6 @@ class SSOLoginRepositoryTest {
         const val TEST_COOKIE = "cookie"
         const val TEST_SUCCESS = "wire/success"
         const val TEST_ERROR = "wire/error"
+        val TEST_SERVER_CONFIG = newServerConfig(1)
     }
 }
