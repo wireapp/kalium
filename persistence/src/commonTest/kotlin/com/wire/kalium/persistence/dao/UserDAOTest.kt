@@ -57,7 +57,8 @@ class UserDAOTest : BaseDatabaseTest() {
     fun givenExistingUser_ThenUserCanBeUpdated() = runTest {
         db.userDAO.insertUser(user1)
         val updatedUser1 = UserEntity(
-            user1.id, "John Doe", "johndoe", "email1", "phone1", 1, "team", UserAssetIdEntity(), UserAssetIdEntity()
+            user1.id, "John Doe", "johndoe", "email1", "phone1", 1, "team",
+            UserEntity.ConnectionState.ACCEPTED, UserAssetIdEntity(), UserAssetIdEntity()
         )
         db.userDAO.updateUser(updatedUser1)
         val result = db.userDAO.getUserByQualifiedID(user1.id).first()
@@ -68,7 +69,8 @@ class UserDAOTest : BaseDatabaseTest() {
     fun givenListOfUsers_ThenUserCanBeQueriedByName() = runTest {
         db.userDAO.insertUser(user1)
         val updatedUser1 = UserEntity(
-            user1.id, "John Doe", "johndoe", "email1", "phone1", 1, "team", UserAssetIdEntity(), UserAssetIdEntity()
+            user1.id, "John Doe", "johndoe", "email1", "phone1", 1, "team",
+            UserEntity.ConnectionState.ACCEPTED, UserAssetIdEntity(), UserAssetIdEntity()
         )
 
         val result = db.userDAO.getUserByQualifiedID(user1.id)
@@ -81,7 +83,8 @@ class UserDAOTest : BaseDatabaseTest() {
     @Test
     fun givenRetrievedUser_ThenUpdatesArePropagatedThroughFlow() = runTest {
         db.userDAO.insertUser(user1)
-        val updatedUser1 = UserEntity(user1.id, "John Doe", "johndoe", "email1", "phone1", 1, "team", null, null)
+        val updatedUser1 = UserEntity(user1.id, "John Doe", "johndoe", "email1", "phone1", 1, "team",
+            UserEntity.ConnectionState.ACCEPTED, null, null)
 
         val result = db.userDAO.getUserByQualifiedID(user1.id)
         assertEquals(user1, result.first())
@@ -151,6 +154,7 @@ class UserDAOTest : BaseDatabaseTest() {
                     phone = "testPhone4",
                     accentId = 4,
                     team = "testTeam4",
+                    UserEntity.ConnectionState.ACCEPTED,
                     null, null
                 ),
                 UserEntity(
@@ -161,6 +165,7 @@ class UserDAOTest : BaseDatabaseTest() {
                     phone = "testPhone5",
                     accentId = 5,
                     team = "testTeam5",
+                    UserEntity.ConnectionState.ACCEPTED,
                     null, null
                 )
             )

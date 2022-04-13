@@ -1,8 +1,10 @@
 package com.wire.kalium.logic.test_util
 
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
+import io.ktor.http.HttpStatusCode
 
 object TestNetworkException {
 
@@ -65,3 +67,6 @@ object TestNetworkResponseError{
     fun <T : Any>genericError() : NetworkResponse<T> = NetworkResponse.Error(TestNetworkException.generic)
 
 }
+
+fun serverMiscommunicationFailure(code: Int = HttpStatusCode.BadRequest.value, message: String = "", label: String = "") =
+    NetworkFailure.ServerMiscommunication(KaliumException.InvalidRequestError(ErrorResponse(code, message, label)))

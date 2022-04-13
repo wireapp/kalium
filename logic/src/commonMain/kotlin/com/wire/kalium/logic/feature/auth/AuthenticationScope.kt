@@ -5,9 +5,12 @@ import com.wire.kalium.logic.configuration.ServerConfigDataSource
 import com.wire.kalium.logic.configuration.ServerConfigRepository
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.auth.login.LoginRepositoryImpl
+import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
+import com.wire.kalium.logic.data.auth.login.SSOLoginRepositoryImpl
 import com.wire.kalium.logic.data.register.RegisterAccountDataSource
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.feature.auth.sso.SSOLoginScope
 import com.wire.kalium.logic.feature.register.RegisterScope
 import com.wire.kalium.logic.feature.session.GetSessionsUseCase
 import com.wire.kalium.logic.feature.session.SessionScope
@@ -30,6 +33,7 @@ class AuthenticationScope(
         get() = RegisterAccountDataSource(
             loginNetworkContainer.registerApi
         )
+    private val ssoLoginRepository: SSOLoginRepository get() = SSOLoginRepositoryImpl(loginNetworkContainer.sso)
 
     val validateEmailUseCase: ValidateEmailUseCase get() = ValidateEmailUseCaseImpl()
     val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
@@ -41,4 +45,5 @@ class AuthenticationScope(
     val getServerConfig: GetServerConfigUseCase get() = GetServerConfigUseCase(serverConfigRepository)
     val session: SessionScope get() = SessionScope(sessionRepository)
     val register: RegisterScope get() = RegisterScope(registerAccountRepository)
+    val ssoLoginScope: SSOLoginScope get() = SSOLoginScope(ssoLoginRepository)
 }

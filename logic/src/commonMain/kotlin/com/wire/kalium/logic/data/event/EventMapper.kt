@@ -13,6 +13,7 @@ class EventMapper(private val idMapper: IdMapper) {
         return eventResponse.payload?.map { eventContentDTO ->
             when (eventContentDTO) {
                 is EventContentDTO.Conversation.NewMessageDTO -> newMessage(id, eventContentDTO)
+                is EventContentDTO.Conversation.NewConversationDTO -> newConversation(id, eventContentDTO)
                 is EventContentDTO.Conversation.MemberJoinDTO -> memberJoin(id, eventContentDTO)
                 is EventContentDTO.Conversation.MemberLeaveDTO -> memberLeave(id, eventContentDTO)
                 is EventContentDTO.Conversation.MLSWelcomeDTO -> welcomeMessage(id, eventContentDTO)
@@ -40,6 +41,16 @@ class EventMapper(private val idMapper: IdMapper) {
         ClientId(eventContentDTO.data.sender),
         eventContentDTO.time,
         eventContentDTO.data.text
+    )
+
+    private fun newConversation(
+        id: String,
+        eventContentDTO: EventContentDTO.Conversation.NewConversationDTO
+    ) = Event.Conversation.NewConversation(
+        id,
+        idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
+        eventContentDTO.time,
+        eventContentDTO.data
     )
 
     private fun memberJoin(
