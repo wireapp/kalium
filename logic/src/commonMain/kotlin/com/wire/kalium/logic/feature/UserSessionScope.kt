@@ -132,7 +132,7 @@ abstract class UserSessionScopeCommon(
 
     private val connectionRepository: ConnectionRepository
         get() = ConnectionDataSource(
-            database.conversationDAO,
+            userDatabaseProvider.conversationDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.connectionApi
         )
 

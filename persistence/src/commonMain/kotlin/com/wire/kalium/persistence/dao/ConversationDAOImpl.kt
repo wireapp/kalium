@@ -130,7 +130,7 @@ class ConversationDAOImpl(
         conversationID: QualifiedIDEntity
     ) {
         memberQueries.transaction {
-            userQueries.insertOrIgnoreUserIdWithConnectionStatus(userId, status)
+            userQueries.insertOrReplaceUserIdWithConnectionStatus(userId, status)
             memberQueries.insertMember(userId, conversationID)
         }
     }

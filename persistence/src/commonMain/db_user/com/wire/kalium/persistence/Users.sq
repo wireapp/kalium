@@ -34,7 +34,7 @@ UPDATE User
 SET name = ?, handle = ?, email = ?, accent_id = ?, preview_asset_id = ?, complete_asset_id = ?
 WHERE qualified_id = ?;
 
-insertOrIgnoreUserIdWithConnectionStatus:
+insertOrReplaceUserIdWithConnectionStatus:
 INSERT OR REPLACE INTO User(qualified_id, connection_status)
 VALUES(?, ?);
 

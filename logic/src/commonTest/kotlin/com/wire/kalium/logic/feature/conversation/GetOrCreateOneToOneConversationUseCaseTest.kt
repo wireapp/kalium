@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.conversation.LegalHoldStatus
 import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
+import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -95,7 +96,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
         val CONVERSATION_DETAILS = ConversationDetails.OneOne(
             CONVERSATION,
             OTHER_USER,
-            ConversationDetails.OneOne.ConnectionState.ACCEPTED,
+            ConnectionState.ACCEPTED,
             LegalHoldStatus.ENABLED
         )
     }
