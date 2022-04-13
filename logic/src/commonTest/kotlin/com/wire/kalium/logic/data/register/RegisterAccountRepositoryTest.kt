@@ -4,6 +4,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.session.SessionMapper
+import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapper
@@ -137,6 +138,7 @@ class RegisterAccountRepositoryTest {
                 phone = phone,
                 accentId = accentId,
                 team = teamId,
+                connectionStatus = ConnectionState.ACCEPTED,
                 previewPicture = assets.getPreviewAssetOrNull()?.key,
                 completePicture = assets.getCompleteAssetOrNull()?.key
             )
@@ -191,6 +193,7 @@ class RegisterAccountRepositoryTest {
                 phone = phone,
                 accentId = accentId,
                 team = teamId,
+                connectionStatus = ConnectionState.ACCEPTED,
                 previewPicture = assets.getPreviewAssetOrNull()?.key,
                 completePicture = assets.getCompleteAssetOrNull()?.key
             )

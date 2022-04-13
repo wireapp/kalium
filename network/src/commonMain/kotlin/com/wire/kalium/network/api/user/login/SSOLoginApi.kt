@@ -18,9 +18,9 @@ import io.ktor.http.isSuccess
 
 interface SSOLoginApi {
 
-    sealed class InitiateParam(val code: String) {
-        class NoRedirect(code: String) : InitiateParam(code)
-        class Redirect(val success: String, val error: String, code: String) : InitiateParam(code)
+    sealed class InitiateParam(open val uuid: String) {
+        data class WithoutRedirect(override val uuid: String) : InitiateParam(uuid)
+        data class WithRedirect(val success: String, val error: String, override val uuid: String) : InitiateParam(uuid)
     }
 
     suspend fun initiate(param: InitiateParam, apiBaseUrl: Url): NetworkResponse<String>
@@ -35,9 +35,9 @@ interface SSOLoginApi {
 class SSOLoginApiImpl(private val httpClient: HttpClient) : SSOLoginApi {
     override suspend fun initiate(param: SSOLoginApi.InitiateParam, apiBaseUrl: Url): NetworkResponse<String> {
         val path = when (param) {
-            is SSOLoginApi.InitiateParam.NoRedirect -> "$PATH_SSO/$PATH_INITIATE/${param.code}"
+            is SSOLoginApi.InitiateParam.WithoutRedirect -> "$PATH_SSO/$PATH_INITIATE/${param.uuid}"
             // ktor will encode the query param as URL so a way around it to append the query to the path string
-            is SSOLoginApi.InitiateParam.Redirect -> "$PATH_SSO/$PATH_INITIATE/${param.code}?$QUERY_SUCCESS_REDIRECT=${param.success}&$QUERY_ERROR_REDIRECT=${param.error}"
+            is SSOLoginApi.InitiateParam.WithRedirect -> "$PATH_SSO/$PATH_INITIATE/${param.uuid}?$QUERY_SUCCESS_REDIRECT=${param.success}&$QUERY_ERROR_REDIRECT=${param.error}"
         }
         val response = httpClient.head {
             setUrl(apiBaseUrl, path)

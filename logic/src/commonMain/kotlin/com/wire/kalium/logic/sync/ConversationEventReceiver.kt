@@ -9,6 +9,7 @@ import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -18,13 +19,17 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.call.CallManager
+import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.logic.wrapCryptoRequest
+import com.wire.kalium.logic.wrapStorageRequest
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.utils.io.core.toByteArray
+import kotlinx.coroutines.flow.first
 
 class ConversationEventReceiver(
     private val proteusClient: ProteusClient,
@@ -41,6 +46,7 @@ class ConversationEventReceiver(
     override suspend fun onEvent(event: Event.Conversation) {
         when (event) {
             is Event.Conversation.NewMessage -> handleNewMessage(event)
+            is Event.Conversation.NewConversation -> handleNewConversation(event)
             is Event.Conversation.MemberJoin -> handleMemberJoin(event)
             is Event.Conversation.MemberLeave -> handleMemberLeave(event)
             is Event.Conversation.MLSWelcome -> handleMLSWelcome(event)
@@ -81,7 +87,7 @@ class ConversationEventReceiver(
                                 messageRepository.hideMessage(messageUuid = message.content.messageId, message.content.conversationId)
                             else kaliumLogger.i(message = "Delete message sender is not verified: $message")
                         is MessageContent.Calling -> {
-                            kaliumLogger.d("ConversationEventReceiver - MessageContent.Calling")
+                            kaliumLogger.d("$TAG - MessageContent.Calling")
                             callManagerImpl.onCallingMessageReceived(
                                 message = message,
                                 content = message.content
@@ -104,23 +110,32 @@ class ConversationEventReceiver(
         return verified
     }
 
+    private suspend fun handleNewConversation(event: Event.Conversation.NewConversation) =
+        conversationRepository.insertConversationFromEvent(event)
+            .onFailure { kaliumLogger.e("$TAG - failure on new conversation event: $it") }
+
     //TODO: insert a message to show a user added to the conversation
     private suspend fun handleMemberJoin(event: Event.Conversation.MemberJoin) = conversationRepository
         .persistMembers(
             memberMapper.fromEventToDaoModel(event.members.users),
             idMapper.toDaoModel(event.conversationId)
-        )
+        ).onFailure { kaliumLogger.e("$TAG - failure on member join event: $it") }
 
     //TODO: insert a message to show a user deleted to the conversation
     private suspend fun handleMemberLeave(event: Event.Conversation.MemberLeave) =
         event.members.qualifiedUserIds.forEach { userId ->
             conversationRepository.deleteMember(
                 idMapper.toDaoModel(event.conversationId), idMapper.fromApiToDao(userId)
-            )
+            ).onFailure { kaliumLogger.e("$TAG - failure on member leave event: $it") }
         }
 
     private suspend fun handleMLSWelcome(event: Event.Conversation.MLSWelcome) {
         mlsConversationRepository.establishMLSGroupFromWelcome(event)
+            .onFailure { kaliumLogger.e("$TAG - failure on MLS welcome event: $it") }
+    }
+
+    private companion object {
+        const val TAG = "ConversationEventReceiver"
     }
 
 }

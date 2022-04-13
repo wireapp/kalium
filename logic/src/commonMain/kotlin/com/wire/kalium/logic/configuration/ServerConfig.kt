@@ -44,7 +44,6 @@ data class ServerConfig(
 
 interface ServerConfigMapper {
     fun toDTO(serverConfig: ServerConfig): ServerConfigDTO
-    fun fromDTO(serverConfigDTO: ServerConfigDTO): ServerConfig
     fun toEntity(serverConfig: ServerConfig): ServerConfigEntity
     fun fromEntity(serverConfigEntity: ServerConfigEntity): ServerConfig
 }
@@ -59,21 +58,6 @@ class ServerConfigMapperImpl : ServerConfigMapper {
                 Url(blackListUrl),
                 Url(teamsUrl),
                 Url(websiteUrl),
-                title
-            )
-        }
-
-    override fun fromDTO(serverConfigDTO: ServerConfigDTO): ServerConfig =
-        // TODO: assigning a random uuid here is temperately and will be changed
-        with(serverConfigDTO) {
-            ServerConfig(
-                id = uuid4().toString(),
-                apiBaseUrl.toString(),
-                accountsBaseUrl.toString(),
-                webSocketBaseUrl.toString(),
-                blackListUrl.toString(),
-                teamsUrl.toString(),
-                websiteUrl.toString(),
                 title
             )
         }

@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.register
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
+import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.auth.AuthSession
@@ -224,6 +225,7 @@ class RegisterAccountUseCaseTest {
             phone = null,
             accentId = 3,
             team = null,
+            connectionStatus = ConnectionState.ACCEPTED,
             previewPicture = null,
             completePicture = null
         )
