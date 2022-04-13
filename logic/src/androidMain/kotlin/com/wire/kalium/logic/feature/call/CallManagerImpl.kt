@@ -1,13 +1,16 @@
 package com.wire.kalium.logic.feature.call
 
 import com.sun.jna.Pointer
-import com.wire.kalium.calling.CallType
+import com.wire.kalium.calling.CallTypeCalling
 import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.callbacks.CallConfigRequestHandler
 import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.calling.types.Size_t
 import com.wire.kalium.calling.types.Uint32_t
+import com.wire.kalium.logic.data.call.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.CallType
+import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
@@ -20,6 +23,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.toUserId
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.util.toInt
 import com.wire.kalium.logic.util.toTimeInMillis
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -38,6 +42,7 @@ actual class CallManagerImpl(
     private val callRepository: CallRepository,
     private val userRepository: UserRepository,
     private val clientRepository: ClientRepository,
+    private val callMapper: CallMapper,
     val messageSender: MessageSender
 ) : CallManager, CallConfigRequestHandler {
 
@@ -105,12 +110,7 @@ actual class CallManagerImpl(
                     scope.launch {
                         val messageString = data?.getString(0, UTF8_ENCODING)
                         messageString?.let {
-                            sendCallingMessage(
-                                conversationId.toConversationId(),
-                                avsSelfUserId.toUserId(),
-                                ClientId(avsSelfClientId),
-                                it
-                            )
+                            sendCallingMessage(conversationId.toConversationId(), avsSelfUserId.toUserId(), ClientId(avsSelfClientId), it)
                         }
                     }
                     kaliumLogger.i("$TAG -> sendHandler success")
@@ -197,14 +197,28 @@ actual class CallManagerImpl(
             kaliumLogger.d("$TAG - onCallingMessageReceived")
         }
 
+    override suspend fun startCall(conversationId: ConversationId, callType: CallType, conversationType: ConversationType, isAudioCbr: Boolean) {
+        kaliumLogger.d("$TAG -> starting call..")
+        withCalling {
+            val avsCallType = callMapper.toCallTypeCalling(callType)
+            val avsConversationType = callMapper.toConversationTypeCalling(conversationType)
+            wcall_start(deferredHandle.await(), conversationId.asString(), avsCallType.avsValue, avsConversationType.avsValue, isAudioCbr.toInt())
+        }
+    }
+
     override suspend fun answerCall(conversationId: ConversationId) = withCalling {
-        kaliumLogger.d("$TAG -> answerCall")
+        kaliumLogger.d("$TAG -> answering call..")
         calling.wcall_answer(
             inst = deferredHandle.await(),
             conversationId = conversationId.asString(),
-            callType = CallType.CALL_TYPE_NORMAL.value,
+            callType = CallTypeCalling.AUDIO.avsValue,
             cbrEnabled = false
         )
+    }
+
+    override suspend fun endCall(conversationId: ConversationId) = withCalling {
+        kaliumLogger.d("$TAG -> ending Call..")
+        wcall_end(inst = deferredHandle.await(), conversationId = conversationId.asString())
     }
 
     override fun onConfigRequest(inst: Handle, arg: Pointer?): Int {

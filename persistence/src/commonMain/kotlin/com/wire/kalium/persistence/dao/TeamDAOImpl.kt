@@ -2,9 +2,9 @@ package com.wire.kalium.persistence.dao
 
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
-import com.wire.kalium.persistence.db.TeamsQueries
+import com.wire.kalium.persistence.TeamsQueries
 import kotlinx.coroutines.flow.map
-import com.wire.kalium.persistence.db.Team as SQLDelightTeam
+import com.wire.kalium.persistence.Team as SQLDelightTeam
 
 class TeamMapper {
     fun toModel(team: SQLDelightTeam): TeamEntity = with(team) {

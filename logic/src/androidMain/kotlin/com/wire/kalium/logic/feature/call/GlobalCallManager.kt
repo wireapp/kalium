@@ -7,6 +7,7 @@ import com.waz.media.manager.MediaManager
 import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.ENVIRONMENT_DEFAULT
 import com.wire.kalium.calling.callbacks.LogHandler
+import com.wire.kalium.logic.data.call.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -21,7 +22,7 @@ actual class GlobalCallManager(
 
     private lateinit var mediaManager: MediaManager
     private lateinit var flowManager: FlowManager
-    private val callManagerImplHolder = hashMapOf<QualifiedID, CallManagerImpl>()
+    private val callManagerHolder = hashMapOf<QualifiedID, CallManager>()
 
     private val calling by lazy {
         initiateMediaManager()
@@ -35,25 +36,27 @@ actual class GlobalCallManager(
             kaliumLogger.i("GlobalCallManager -> wcall_init")
         }
     }
-
+    
     /**
-     * Get a [CallManagerImpl] for a session, shouldn't be instantiated more than one CallManager for a single session.
+     * Get a [CallManager] for a session, shouldn't be instantiated more than one CallManager for a single session.
      */
     actual fun getCallManagerForClient(
         userId: QualifiedID,
         callRepository: CallRepository,
         userRepository: UserRepository,
         clientRepository: ClientRepository,
+        callMapper: CallMapper,
         messageSender: MessageSender
     ): CallManager {
-        return callManagerImplHolder[userId] ?: CallManagerImpl(
+        return callManagerHolder[userId] ?: CallManagerImpl(
             calling = calling,
             callRepository = callRepository,
             userRepository = userRepository,
             clientRepository = clientRepository,
+            callMapper = callMapper,
             messageSender = messageSender
         ).also {
-            callManagerImplHolder[userId] = it
+            callManagerHolder[userId] = it
         }
     }
 

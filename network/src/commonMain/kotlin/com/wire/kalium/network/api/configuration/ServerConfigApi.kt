@@ -3,6 +3,7 @@ package com.wire.kalium.network.api.configuration
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
+import com.wire.kalium.network.utils.setUrl
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
@@ -21,7 +22,9 @@ class ServerConfigApiImp(private val httpClient: HttpClient) : ServerConfigApi {
     // TODO: use wrapApiRequest once PR #226 is merged
     override suspend fun fetchServerConfig(serverConfigUrl: String): NetworkResponse<ServerConfigDTO> =
         wrapKaliumResponse<ServerConfigResponse> {
-            httpClient.get(Url(serverConfigUrl))
+            httpClient.get {
+                setUrl(Url(serverConfigUrl))
+            }
         }.mapSuccess {
             ServerConfigDTO(
                 apiBaseUrl = Url(it.endpoints.apiBaseUrl),

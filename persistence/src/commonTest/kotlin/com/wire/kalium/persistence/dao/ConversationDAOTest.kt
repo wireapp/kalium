@@ -47,18 +47,31 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenExistingConversation_ThenConversationCanBeUpdated() = runTest {
         conversationDAO.insertConversation(conversationEntity1)
-        val updatedConversation1Entity =
-            ConversationEntity(conversationEntity1.id, "Updated conversation1", ConversationEntity.Type.ONE_ON_ONE, teamId)
+        val updatedConversation1Entity = conversationEntity1.copy(name = "Updated conversation1")
         conversationDAO.updateConversation(updatedConversation1Entity)
         val result = conversationDAO.getConversationByQualifiedID(conversationEntity1.id).first()
         assertEquals(updatedConversation1Entity, result)
     }
 
     @Test
+    fun givenExistingConversation_ThenConversationCanBeRetrievedByGroupID() = runTest {
+        conversationDAO.insertConversation(conversationEntity2)
+        val result = conversationDAO.getConversationByGroupID((conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId).first()
+        assertEquals(conversationEntity2, result)
+    }
+
+    @Test
+    fun givenExistingConversation_ThenConversationGroupStateCanBeUpdated() = runTest {
+        conversationDAO.insertConversation(conversationEntity2)
+        conversationDAO.updateConversationGroupState(ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE, (conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId)
+        val result = conversationDAO.getConversationByQualifiedID(conversationEntity2.id).first()
+        assertEquals((result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState, ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE)
+    }
+
+    @Test
     fun givenExistingConversation_ThenConversationIsUpdatedOnInsert() = runTest {
         conversationDAO.insertConversation(conversationEntity1)
-        val updatedConversation1Entity =
-            ConversationEntity(conversationEntity1.id, "Updated conversation1", ConversationEntity.Type.ONE_ON_ONE, null)
+        val updatedConversation1Entity = conversationEntity1.copy(name = "Updated conversation1")
         conversationDAO.insertConversation(updatedConversation1Entity)
         val result = conversationDAO.getConversationByQualifiedID(conversationEntity1.id).first()
         assertEquals(updatedConversation1Entity, result)
@@ -111,12 +124,18 @@ class ConversationDAOTest : BaseDatabaseTest() {
         const val teamId = "teamId"
 
         val conversationEntity1 = ConversationEntity(
-            QualifiedIDEntity("1", "wire.com"), "conversation1",
-            ConversationEntity.Type.ONE_ON_ONE, teamId
+            QualifiedIDEntity("1", "wire.com"),
+            "conversation1",
+            ConversationEntity.Type.ONE_ON_ONE,
+            teamId,
+            ConversationEntity.ProtocolInfo.Proteus
         )
         val conversationEntity2 = ConversationEntity(
-            QualifiedIDEntity("2", "wire.com"), "conversation2",
-            ConversationEntity.Type.ONE_ON_ONE, null
+            QualifiedIDEntity("2", "wire.com"),
+            "conversation2",
+            ConversationEntity.Type.ONE_ON_ONE,
+            null,
+            ConversationEntity.ProtocolInfo.MLS("group2", ConversationEntity.GroupState.ESTABLISHED)
         )
 
         val member1 = Member(user1.id)

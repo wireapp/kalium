@@ -1,13 +1,13 @@
 package com.wire.kalium.persistence.dao
 
 import com.wire.kalium.persistence.BaseDatabaseTest
-import com.wire.kalium.persistence.db.Database
+import com.wire.kalium.persistence.db.UserDatabaseProvider
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
-import kotlin.test.assertNull
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 class MetadataDAOTest: BaseDatabaseTest() {
 
@@ -17,7 +17,7 @@ class MetadataDAOTest: BaseDatabaseTest() {
     val key1 = "key1"
     val key2 = "key2"
 
-    lateinit var db: Database
+    lateinit var db: UserDatabaseProvider
 
     @BeforeTest
     fun setUp() {

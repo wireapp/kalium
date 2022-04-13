@@ -3,19 +3,28 @@ package com.wire.kalium.persistence.dao
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
-import com.wire.kalium.persistence.db.ConverationsQueries
-import com.wire.kalium.persistence.db.MembersQueries
-import com.wire.kalium.persistence.db.UsersQueries
+import com.wire.kalium.persistence.ConverationsQueries
+import com.wire.kalium.persistence.MembersQueries
+import com.wire.kalium.persistence.UsersQueries
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import com.wire.kalium.persistence.db.Conversation as SQLDelightConversation
-import com.wire.kalium.persistence.db.Member as SQLDelightMember
+import com.wire.kalium.persistence.Conversation as SQLDelightConversation
+import com.wire.kalium.persistence.Member as SQLDelightMember
 
 class ConversationMapper {
     fun toModel(conversation: SQLDelightConversation): ConversationEntity {
-        return ConversationEntity(conversation.qualified_id, conversation.name, conversation.type, conversation.team_id)
+        return ConversationEntity(
+            conversation.qualified_id,
+            conversation.name,
+            conversation.type,
+            conversation.team_id,
+            protocolInfo = when (conversation.protocol) {
+                ConversationEntity.Protocol.MLS -> ConversationEntity.ProtocolInfo.MLS(conversation.mls_group_id ?: "", conversation.mls_group_state)
+                ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
+            })
     }
+
 }
 
 class MemberMapper {
@@ -36,25 +45,28 @@ class ConversationDAOImpl(
     override suspend fun getSelfConversationId() = getAllConversations().first().first { it.type == ConversationEntity.Type.SELF }.id
 
     override suspend fun insertConversation(conversationEntity: ConversationEntity) {
-        conversationQueries.insertConversation(
-            conversationEntity.id,
-            conversationEntity.name,
-            conversationEntity.type,
-            conversationEntity.teamId
-        )
+        nonSuspendingInsertConversation(conversationEntity)
     }
 
     override suspend fun insertConversations(conversationEntities: List<ConversationEntity>) {
         conversationQueries.transaction {
+
             for (conversationEntity: ConversationEntity in conversationEntities) {
-                conversationQueries.insertConversation(
-                    conversationEntity.id,
-                    conversationEntity.name,
-                    conversationEntity.type,
-                    conversationEntity.teamId
-                )
+                nonSuspendingInsertConversation(conversationEntity)
             }
         }
+    }
+
+    private fun nonSuspendingInsertConversation(conversationEntity: ConversationEntity) {
+        conversationQueries.insertConversation(
+            conversationEntity.id,
+            conversationEntity.name,
+            conversationEntity.type,
+            conversationEntity.teamId,
+            if (conversationEntity.protocolInfo is ConversationEntity.ProtocolInfo.MLS) conversationEntity.protocolInfo.groupId else null,
+            if (conversationEntity.protocolInfo is ConversationEntity.ProtocolInfo.MLS) conversationEntity.protocolInfo.groupState else ConversationEntity.GroupState.ESTABLISHED,
+            if (conversationEntity.protocolInfo is ConversationEntity.ProtocolInfo.MLS) ConversationEntity.Protocol.MLS else ConversationEntity.Protocol.PROTEUS
+        )
     }
 
     override suspend fun updateConversation(conversationEntity: ConversationEntity) {
@@ -66,6 +78,10 @@ class ConversationDAOImpl(
         )
     }
 
+    override suspend fun updateConversationGroupState(groupState: ConversationEntity.GroupState, groupId: String) {
+        conversationQueries.updateConversationGroupState(groupState, groupId)
+    }
+
     override suspend fun getAllConversations(): Flow<List<ConversationEntity>> {
         return conversationQueries.selectAllConversations()
             .asFlow()
@@ -75,6 +91,13 @@ class ConversationDAOImpl(
 
     override suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?> {
         return conversationQueries.selectByQualifiedId(qualifiedID)
+            .asFlow()
+            .mapToOneOrNull()
+            .map { it?.let { conversationMapper.toModel(it) } }
+    }
+
+    override suspend fun getConversationByGroupID(groupID: String): Flow<ConversationEntity?> {
+        return conversationQueries.selectByGroupId(groupID)
             .asFlow()
             .mapToOneOrNull()
             .map { it?.let { conversationMapper.toModel(it) } }

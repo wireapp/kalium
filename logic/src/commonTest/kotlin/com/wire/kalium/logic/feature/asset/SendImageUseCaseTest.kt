@@ -146,7 +146,7 @@ private class Arrangement {
             .whenInvokedWith(any())
             .thenReturn(Either.Right(Unit))
         given(messageSender)
-            .suspendFunction(messageSender::trySendingOutgoingMessage)
+            .suspendFunction(messageSender::trySendingOutgoingMessageById)
             .whenInvokedWith(any(), any())
             .thenReturn(Either.Right(Unit))
         return this

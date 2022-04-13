@@ -5,6 +5,7 @@ import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.asset.AssetDataSource
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.call.CallDataSource
+import com.wire.kalium.logic.data.call.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientDataSource
 import com.wire.kalium.logic.data.client.ClientRepository
@@ -16,6 +17,8 @@ import com.wire.kalium.logic.data.connection.ConnectionDataSource
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationDataSource
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MLSConversationDataSource
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.event.EventDataSource
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -43,6 +46,8 @@ import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
+import com.wire.kalium.logic.feature.message.MLSMessageCreator
+import com.wire.kalium.logic.feature.message.MLSMessageCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
 import com.wire.kalium.logic.feature.message.MessageEnvelopeCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageScope
@@ -58,7 +63,7 @@ import com.wire.kalium.logic.sync.ListenToEventsUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
-import com.wire.kalium.persistence.db.Database
+import com.wire.kalium.persistence.db.UserDatabaseProvider
 import com.wire.kalium.persistence.event.EventInfoStorage
 import com.wire.kalium.persistence.event.EventInfoStorageImpl
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
@@ -77,32 +82,42 @@ abstract class UserSessionScopeCommon(
     private val eventInfoStorage: EventInfoStorage
         get() = EventInfoStorageImpl(userPreferencesSettings)
 
-    private val database: Database = authenticatedDataSourceSet.database
+    private val userDatabaseProvider: UserDatabaseProvider = authenticatedDataSourceSet.userDatabaseProvider
 
     private val mlsClientProvider: MLSClientProvider
         get() = MLSClientProviderImpl(
-            authenticatedDataSourceSet.authenticatedRootDir,
+            "${authenticatedDataSourceSet.authenticatedRootDir}/mls",
             userId,
             clientRepository,
             authenticatedDataSourceSet.kaliumPreferencesSettings)
 
+    private val mlsConversationRepository: MLSConversationRepository
+    get() = MLSConversationDataSource(
+        keyPackageRepository,
+        mlsClientProvider,authenticatedDataSourceSet.authenticatedNetworkContainer.mlsMessageApi,
+        userDatabaseProvider.conversationDAO
+    )
+
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(
             userRepository,
-            database.conversationDAO,
+            mlsConversationRepository,
+            userDatabaseProvider.conversationDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi
         )
 
     private val messageRepository: MessageRepository
         get() = MessageDataSource(
-            authenticatedDataSourceSet.authenticatedNetworkContainer.messageApi, database.messageDAO
+            authenticatedDataSourceSet.authenticatedNetworkContainer.messageApi,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.mlsMessageApi,
+            userDatabaseProvider.messageDAO
         )
 
     private val userRepository: UserRepository
         get() = UserDataSource(
-            database.userDAO,
-            database.metadataDAO,
+            userDatabaseProvider.userDAO,
+            userDatabaseProvider.metadataDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.selfApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
             assetRepository
@@ -110,8 +125,8 @@ abstract class UserSessionScopeCommon(
 
     private val teamRepository: TeamRepository
         get() = TeamDataSource(
-            database.userDAO,
-            database.teamDAO,
+            userDatabaseProvider.userDAO,
+            userDatabaseProvider.teamDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.teamsApi
         )
 
@@ -123,7 +138,7 @@ abstract class UserSessionScopeCommon(
 
     private val publicUserRepository: SearchUserRepository
         get() = SearchUserRepositoryImpl(
-            database.userDAO,
+            userDatabaseProvider.userDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userSearchApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi
         )
@@ -144,7 +159,7 @@ abstract class UserSessionScopeCommon(
         get() = ClientRegistrationStorageImpl(userPreferencesSettings)
 
     private val clientRepository: ClientRepository
-        get() = ClientDataSource(clientRemoteRepository, clientRegistrationStorage, database.clientDAO)
+        get() = ClientDataSource(clientRemoteRepository, clientRegistrationStorage, userDatabaseProvider.clientDAO)
 
     private val messageSendFailureHandler: MessageSendFailureHandler
         get() = MessageSendFailureHandler(userRepository, clientRepository)
@@ -155,11 +170,15 @@ abstract class UserSessionScopeCommon(
     private val messageEnvelopeCreator: MessageEnvelopeCreator
         get() = MessageEnvelopeCreatorImpl(authenticatedDataSourceSet.proteusClient, protoContentMapper)
 
+    private val mlsMessageCreator: MLSMessageCreator
+        get() = MLSMessageCreatorImpl(mlsClientProvider, protoContentMapper)
+
+    // TODO code duplication, can't we get the MessageSender from the message scope?
     private val messageSender: MessageSender
-        get() = MessageSenderImpl(messageRepository, conversationRepository, syncManager, messageSendFailureHandler, sessionEstablisher, messageEnvelopeCreator)
+        get() = MessageSenderImpl(messageRepository, conversationRepository, syncManager, messageSendFailureHandler, sessionEstablisher, messageEnvelopeCreator, mlsMessageCreator)
 
     private val assetRepository: AssetRepository
-        get() = AssetDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.assetApi, database.assetDAO)
+        get() = AssetDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.assetApi, userDatabaseProvider.assetDAO)
 
     val syncManager: SyncManager get() = authenticatedDataSourceSet.syncManager
 
@@ -168,12 +187,16 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.authenticatedNetworkContainer.notificationApi, eventInfoStorage, clientRepository
         )
 
+    private val callMapper: CallMapper
+        get() = CallMapper()
+
     private val callManager by lazy {
         globalCallManager.getCallManagerForClient(
             userId = userId,
             callRepository = callRepository,
             userRepository = userRepository,
             clientRepository = clientRepository,
+            callMapper = callMapper,
             messageSender = messageSender
         )
     }
@@ -183,6 +206,7 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.proteusClient,
             messageRepository,
             conversationRepository,
+            mlsConversationRepository,
             userRepository,
             protoContentMapper,
             callManager
@@ -196,6 +220,7 @@ abstract class UserSessionScopeCommon(
 
     private val keyPackageRepository: KeyPackageRepository
         get() = KeyPackageDataSource(
+            clientRepository,
             authenticatedDataSourceSet.authenticatedNetworkContainer.keyPackageApi,
             mlsClientProvider
         )
@@ -211,6 +236,7 @@ abstract class UserSessionScopeCommon(
             conversationRepository,
             clientRepository,
             authenticatedDataSourceSet.proteusClient,
+            mlsClientProvider,
             preKeyRepository,
             userRepository,
             assetRepository,

@@ -3,10 +3,10 @@ package com.wire.kalium.api.tools.json.api.user.login
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.network.api.user.login.SSOLoginApi
 import com.wire.kalium.network.api.user.login.SSOLoginApiImpl
-import com.wire.kalium.network.api.user.login.SSOResponse
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.Url
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -18,45 +18,41 @@ class SSOLoginApiTest: ApiTest {
 
     @Test
     fun givenBEResponseSuccess_whenCallingInitiateSSOEndpointWithNoRedirect_thenRequestConfiguredCorrectly() = runTest{
-        val ssoCode = "wire-uuid"
-        val param = SSOLoginApi.InitiateParam.NoRedirect(ssoCode)
-        val expected = SSOResponseJson.valid
+        val uuid = "uuid"
+        val param = SSOLoginApi.InitiateParam.WithoutRedirect(uuid)
         val httpClient = mockAuthenticatedHttpClient(
-            expected.rawJson,
+            "",
             statusCode = HttpStatusCode.OK,
             assertion = {
                 assertHead()
                 assertNoQueryParams()
-                assertPathEqual("$PATH_SSO_INITIATE/$ssoCode")
+                assertPathEqual("$PATH_SSO_INITIATE/$uuid")
             }
         )
         val ssoApi: SSOLoginApi = SSOLoginApiImpl(httpClient)
         val actual = ssoApi.initiate(param, TEST_HOST)
 
-        assertIs<NetworkResponse.Success<SSOResponse>>(actual)
-        assertEquals(expected.serializableData, actual.value)
+        assertIs<NetworkResponse.Success<String>>(actual)
+        assertEquals("${TEST_HOST}sso/initiate-login/$uuid", actual.value)
     }
 
     @Test
     fun givenBEResponseSuccess_whenCallingInitiateSSOEndpointWithRedirect_thenRequestConfiguredCorrectly() = runTest {
-        val ssoCode = "wire-uuid"
-        val param = SSOLoginApi.InitiateParam.Redirect(code = ssoCode, success = "wire://success", error = "wire://error")
-        val expected = SSOResponseJson.valid
+        val uuid = "uuid"
+        val param = SSOLoginApi.InitiateParam.WithRedirect(uuid = uuid, success = "wire://success", error = "wire://error")
         val httpClient = mockAuthenticatedHttpClient(
-            expected.rawJson,
+            "",
             statusCode = HttpStatusCode.OK,
             assertion = {
                 assertHead()
-                assertQueryParameter("success_redirect", param.success)
-                assertQueryParameter("error_redirect", param.error)
-                assertPathEqual("$PATH_SSO_INITIATE/$ssoCode")
+                assertPathEqual("$PATH_SSO_INITIATE/$uuid%3Fsuccess_redirect=${param.success}&error_redirect=${param.error}")
             }
         )
         val ssoApi: SSOLoginApi = SSOLoginApiImpl(httpClient)
         val actual = ssoApi.initiate(param, TEST_HOST)
 
-        assertIs<NetworkResponse.Success<SSOResponse>>(actual)
-        assertEquals(expected.serializableData, actual.value)
+        assertIs<NetworkResponse.Success<String>>(actual)
+        assertEquals("${TEST_HOST}sso/initiate-login/$uuid%3Fsuccess_redirect=${param.success}&error_redirect=${param.error}", actual.value)
     }
 
     @Test
@@ -82,7 +78,7 @@ class SSOLoginApiTest: ApiTest {
         const val PATH_SSO_INITIATE = "/sso/initiate-login"
         const val PATH_SSO_FINALIZE = "/sso/finalize-login"
 
-        const val TEST_HOST = """test-https.wire.com"""
+        val TEST_HOST = Url("""https://test-https.wire.com""")
     }
 
 }

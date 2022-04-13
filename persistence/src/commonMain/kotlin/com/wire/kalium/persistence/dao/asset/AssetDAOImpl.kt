@@ -2,10 +2,10 @@ package com.wire.kalium.persistence.dao.asset
 
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
-import com.wire.kalium.persistence.db.AssetsQueries
+import com.wire.kalium.persistence.AssetsQueries
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import com.wire.kalium.persistence.db.Asset as SQLDelightAsset
+import com.wire.kalium.persistence.Asset as SQLDelightAsset
 
 class AssetMapper {
     fun toModel(asset: SQLDelightAsset): AssetEntity {

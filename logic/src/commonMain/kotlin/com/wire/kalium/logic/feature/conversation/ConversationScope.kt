@@ -26,4 +26,11 @@ class ConversationScope(
 
     val syncConversations: SyncConversationsUseCase
         get() = SyncConversationsUseCase(conversationRepository)
+
+    val createGroupConversation: CreateGroupConversationUseCase
+        get() = CreateGroupConversationUseCase(conversationRepository, syncManager)
+
+    val getOrCreateOneToOneConversationUseCase: GetOrCreateOneToOneConversationUseCase
+        get() = GetOrCreateOneToOneConversationUseCase(conversationRepository)
+
 }
