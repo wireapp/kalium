@@ -60,6 +60,7 @@ com.wire.kalium.logic.data.auth.login
 com.wire.kalium.logic.data.call
 com.wire.kalium.logic.data.client
 com.wire.kalium.logic.data.client.remote
+com.wire.kalium.logic.data.connection
 com.wire.kalium.logic.data.conversation
 com.wire.kalium.logic.data.event
 com.wire.kalium.logic.data.id
@@ -84,6 +85,7 @@ com.wire.kalium.logic.feature.auth.sso
 com.wire.kalium.logic.feature.call
 com.wire.kalium.logic.feature.call.usecase
 com.wire.kalium.logic.feature.client
+com.wire.kalium.logic.feature.connection
 com.wire.kalium.logic.feature.conversation
 com.wire.kalium.logic.feature.message
 com.wire.kalium.logic.feature.publicuser
@@ -115,6 +117,7 @@ com.wire.kalium.network.api.prekey
 com.wire.kalium.network.api.teams
 com.wire.kalium.network.api.user
 com.wire.kalium.network.api.user.client
+com.wire.kalium.network.api.user.connection
 com.wire.kalium.network.api.user.details
 com.wire.kalium.network.api.user.login
 com.wire.kalium.network.api.user.logout
