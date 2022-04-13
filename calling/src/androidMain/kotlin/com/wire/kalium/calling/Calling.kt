@@ -46,6 +46,8 @@ interface Calling : Library {
 
     fun wcall_answer(inst: Handle, conversationId: String, callType: Int, cbrEnabled: Boolean)
 
+    fun wcall_reject(inst: Handle, conversationId: String)
+
     fun wcall_config_update(inst: Handle, error: Int, jsonString: String)
 
     fun wcall_library_version(): String
