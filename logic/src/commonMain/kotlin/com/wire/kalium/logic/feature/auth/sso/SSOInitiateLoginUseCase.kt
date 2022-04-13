@@ -4,6 +4,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
+import com.wire.kalium.logic.data.sso.SSOUtil
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
 
@@ -17,7 +18,9 @@ sealed class SSOInitiateLoginResult {
     }
 }
 
-data class SSORedirects(val success: String, val error: String)
+data class SSORedirects(val success: String, val error: String) {
+    constructor(serverConfigId: String) : this(SSOUtil.generateSuccessRedirect(serverConfigId), SSOUtil.generateErrorRedirect())
+}
 
 interface SSOInitiateLoginUseCase {
     sealed class Param {
@@ -25,7 +28,11 @@ interface SSOInitiateLoginUseCase {
         abstract val serverConfig: ServerConfig
 
         data class WithoutRedirect(override val ssoCode: String, override val serverConfig: ServerConfig) : Param()
-        data class WithRedirect(override val ssoCode: String, val redirects: SSORedirects, override val serverConfig: ServerConfig) :
+        data class WithRedirect(
+            override val ssoCode: String,
+            override val serverConfig: ServerConfig,
+            val redirects: SSORedirects = SSORedirects(serverConfig.id)
+        ) :
             Param()
     }
 

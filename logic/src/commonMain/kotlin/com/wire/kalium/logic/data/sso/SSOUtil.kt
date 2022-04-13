@@ -1,10 +1,8 @@
 package com.wire.kalium.logic.data.sso
 
-import com.wire.kalium.logic.configuration.ServerConfig
-
 object SSOUtil {
-    internal fun generateSuccessRedirect(serverConfig: ServerConfig) =
-        "wire://$SUCCESS_HOST/?\$cookie&$QUERY_USER_ID=\$user\$$QUERY_SERVER_CONFIG=${serverConfig.title}"
+    internal fun generateSuccessRedirect(serverConfigId: String) =
+        "wire://$SUCCESS_HOST/?\$cookie&$QUERY_USER_ID=\$user\$$QUERY_SERVER_CONFIG=${serverConfigId}"
 
     internal fun generateErrorRedirect() = "wire://$ERROR_HOST/?\$label"
 
