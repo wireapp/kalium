@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
@@ -21,6 +22,7 @@ import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.persistence.dao.ConversationDAO
+import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import io.ktor.utils.io.errors.IOException
@@ -39,6 +41,7 @@ import com.wire.kalium.persistence.dao.Member as MemberEntity
 interface ConversationRepository {
     suspend fun getSelfConversationId(): ConversationId
     suspend fun fetchConversations(): Either<CoreFailure, Unit>
+    suspend fun insertConversationFromEvent(event: Event.Conversation.NewConversation): Either<CoreFailure, Unit>
     suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>>
     suspend fun observeConversationList(): Flow<List<Conversation>>
     suspend fun getConversationDetailsById(conversationID: ConversationId): Flow<ConversationDetails>
@@ -81,6 +84,11 @@ class ConversationDataSource(
         }
     }
 
+    override suspend fun insertConversationFromEvent(event: Event.Conversation.NewConversation): Either<CoreFailure, Unit> = suspending {
+        val selfUserTeamId = userRepository.getSelfUser().first().team
+        persistConversations(listOf(event.conversation), selfUserTeamId)
+    }
+
     private suspend fun fetchAllConversationsFromAPI(): Either<NetworkFailure, List<ConversationResponse>> {
         var hasMore = true
         val allConversations = mutableListOf<ConversationResponse>()
@@ -99,6 +107,7 @@ class ConversationDataSource(
             allConversations
         }
     }
+
     private suspend fun persistConversations(
         conversations: List<ConversationResponse>,
         selfUserTeamId: String?

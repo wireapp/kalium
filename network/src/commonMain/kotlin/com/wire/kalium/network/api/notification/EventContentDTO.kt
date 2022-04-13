@@ -3,6 +3,7 @@ package com.wire.kalium.network.api.notification
 import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.conversation.ConversationMembers
+import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.ConversationUsers
 import com.wire.kalium.network.api.message.MLSMessageApi
 import com.wire.kalium.network.api.notification.conversation.MessageEventData
@@ -22,6 +23,16 @@ sealed class EventContentDTO {
 
     @Serializable
     sealed class Conversation : EventContentDTO() {
+
+        @Serializable
+        @SerialName("conversation.create")
+        data class NewConversationDTO(
+            @SerialName("qualified_conversation")
+            val qualifiedConversation: ConversationId,
+            @SerialName("qualified_from") val qualifiedFrom: UserId,
+            val time: String,
+            @SerialName("data") val data: ConversationResponse,
+        ) : Conversation()
 
         @Serializable
         @SerialName("conversation.otr-message-add")

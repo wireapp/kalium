@@ -5,6 +5,7 @@ import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.QualifiedID
 import com.wire.kalium.network.api.notification.EventContentDTO
 import com.wire.kalium.network.api.notification.user.NewClientEventData
+import com.wire.kalium.api.tools.json.api.conversation.ConversationResponseJson
 
 object NotificationEventsResponseJson {
     private val newClientSerializer = { eventData: EventContentDTO.User.NewClientDTO ->
@@ -63,6 +64,34 @@ object NotificationEventsResponseJson {
         ), mlsWelcomeSerializer
     )
 
+    private val newConversationSerializer = { eventData: EventContentDTO.Conversation.NewConversationDTO ->
+        """
+        |{
+        |  "from" : "fdf23116-42a5-472c-8316-e10655f5d11e",
+        |  "qualified_conversation" : {
+        |    "id" : "${eventData.qualifiedConversation.value}",
+        |    "domain" : "${eventData.qualifiedConversation.domain}"
+        |  },
+        |  "qualified_from" : {
+        |     "id" : "${eventData.qualifiedFrom.value}",
+        |     "domain" : "${eventData.qualifiedFrom.domain}"
+        |  }, 
+        |  "data" : ${ConversationResponseJson.conversationResponseSerializer(eventData.data)},
+        |  "time" : "2022-04-12T13:57:02.414Z",
+        |  "type" : "conversation.create"
+        |}
+        """.trimMargin()
+    }
+
+    private val newConversation = ValidJsonProvider(
+        EventContentDTO.Conversation.NewConversationDTO(
+            ConversationId("e16babfa-308b-414e-b6e0-c59517f723db", "staging.zinfra.io"),
+            QualifiedID("76ebeb16-a849-4be4-84a7-157654b492cf","staging.zinfra.io"),
+            "2022-04-12T13:57:02.414Z",
+            ConversationResponseJson.validGroup.serializableData
+        ), newConversationSerializer
+    )
+    
     val notificationsWithUnknownEventAtFirstPosition = """
         {
           "time": "2022-02-15T12:54:30Z",
@@ -87,6 +116,12 @@ object NotificationEventsResponseJson {
                 ${mlsWelcome.rawJson}
               ],
               "id": "7e676173-b715-11ec-8001-22000a252765"
+            },
+            {
+              "payload": [
+                ${newConversation.rawJson}
+              ],
+              "id": "6dd9dfd9-ba68-11ec-8001-22000a09a242"
             },
             {
               "payload": [
