@@ -163,7 +163,7 @@ class ConversationDataSource(
                     }).filterNotNull().map { otherUser ->
                         ConversationDetails.OneOne(
                             conversation, otherUser,
-                            ConversationDetails.OneOne.ConnectionState.ACCEPTED, //TODO Get actual connection state
+                            otherUser.connectionStatus,
                             LegalHoldStatus.DISABLED //TODO get actual legal hold status
                         )
                     }

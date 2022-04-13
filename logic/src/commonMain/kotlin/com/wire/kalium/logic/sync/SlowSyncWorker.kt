@@ -14,6 +14,7 @@ class SlowSyncWorker(
 
         val result = userSessionScope.users.syncSelfUser()
             .flatMap { userSessionScope.conversations.syncConversations() }
+            .flatMap { userSessionScope.connection.syncConnections() }
             .flatMap { userSessionScope.team.syncSelfTeamUseCase() }
             .flatMap { userSessionScope.users.syncContacts() }
             .onSuccess { userSessionScope.syncManager.completeSlowSync() }
