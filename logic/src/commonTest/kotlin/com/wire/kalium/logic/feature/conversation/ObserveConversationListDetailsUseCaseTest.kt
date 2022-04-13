@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.LegalHoldStatus
+import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncManager
@@ -15,11 +16,8 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.flowOf
@@ -136,13 +134,13 @@ class ObserveConversationListDetailsUseCaseTest {
         val firstOneOnOneDetails = ConversationDetails.OneOne(
             oneOnOneConversation,
             TestUser.OTHER,
-            ConversationDetails.OneOne.ConnectionState.ACCEPTED,
+            ConnectionState.ACCEPTED,
             LegalHoldStatus.ENABLED
         )
         val secondOneOnOneDetails = ConversationDetails.OneOne(
             oneOnOneConversation,
             TestUser.OTHER.copy(name = "New User Name"),
-            ConversationDetails.OneOne.ConnectionState.INCOMING,
+            ConnectionState.PENDING,
             LegalHoldStatus.DISABLED
         )
         val oneOnOneConversationDetailsUpdates = listOf(
