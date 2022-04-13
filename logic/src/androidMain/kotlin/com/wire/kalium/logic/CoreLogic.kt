@@ -41,7 +41,7 @@ actual class CoreLogic(
         KaliumPreferencesSettings(EncryptedSettingsHolder(appContext, SettingOptions.AppSettings).encryptedSettings)
     }
 
-    override val globalDataBase: GlobalDatabaseProvider by lazy { GlobalDatabaseProvider(appContext, globalPreferences) }
+    override val globalDatabase: GlobalDatabaseProvider by lazy { GlobalDatabaseProvider(appContext, globalPreferences) }
 
     override fun getSessionScope(userId: UserId): UserSessionScope {
         val dataSourceSet = userScopeStorage[userId] ?: run {

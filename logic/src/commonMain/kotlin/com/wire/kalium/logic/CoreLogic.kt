@@ -25,12 +25,12 @@ abstract class CoreLogicCommon(
     protected abstract fun getSessionRepo(): SessionRepository
 
     protected abstract val globalPreferences: KaliumPreferences
-    protected abstract val globalDataBase: GlobalDatabaseProvider
+    protected abstract val globalDatabase: GlobalDatabaseProvider
     protected val userScopeStorage = hashMapOf<UserId, AuthenticatedDataSourceSet>()
     //  TODO:     - Delete UserSession and DataSourceSets when user logs-out
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
-    fun getAuthenticationScope(): AuthenticationScope = AuthenticationScope( clientLabel, sessionRepository, globalDataBase)
+    fun getAuthenticationScope(): AuthenticationScope = AuthenticationScope( clientLabel, sessionRepository, globalDatabase)
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     abstract fun getSessionScope(userId: UserId): UserSessionScope

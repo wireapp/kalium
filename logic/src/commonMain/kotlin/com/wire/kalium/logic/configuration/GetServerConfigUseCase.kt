@@ -9,7 +9,6 @@ class GetServerConfigUseCase internal constructor(
         configRepository.storeConfig(serverConfigDTO)
     }.fold({
         GetServerConfigResult.Failure.Generic(it)
-
     }, {
         GetServerConfigResult.Success(it)
     })
