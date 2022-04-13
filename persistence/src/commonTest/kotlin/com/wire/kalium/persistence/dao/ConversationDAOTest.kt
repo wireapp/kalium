@@ -102,6 +102,21 @@ class ConversationDAOTest : BaseDatabaseTest() {
         assertEquals(setOf(member1, member2), conversationDAO.getAllMembers(conversationEntity1.id).first().toSet())
     }
 
+    @Test
+    fun givenExistingConversation_ThenInsertedOrUpdatedMembersAreRetrieved() = runTest {
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertOrUpdateOneOnOneMemberWithConnectionStatus(
+            userId = member1.user,
+            status = UserEntity.ConnectionState.ACCEPTED,
+            conversationID = conversationEntity1.id
+        )
+
+        assertEquals(
+            setOf(member1),
+            conversationDAO.getAllMembers(conversationEntity1.id).first().toSet()
+        )
+    }
+
     private companion object {
         val user1 = newUserEntity(id = "1")
         val user2 = newUserEntity(id = "2")
