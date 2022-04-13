@@ -61,7 +61,5 @@ interface MessageDAO {
     suspend fun getAllMessages(limit: Int, offset: Int): Flow<List<MessageEntity>>
     suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?>
     suspend fun getMessageByConversation(conversationId: QualifiedIDEntity, limit: Int, offset: Int): Flow<List<MessageEntity>>
-    suspend fun getMessagesForNotification(): Flow<List<MessageEntity>>
-    suspend fun markAllMessagesAsNotified()
-    suspend fun markMessagesAsNotifiedByConversation(conversationId: QualifiedIDEntity)
+    suspend fun getMessageByConversationAndDate(conversationId: QualifiedIDEntity, date: String): Flow<List<MessageEntity>>
 }

@@ -64,7 +64,7 @@ class MessageScope(
     val deleteMessage: DeleteMessageUseCase
         get() = DeleteMessageUseCase(messageRepository, userRepository, clientRepository, syncManager, messageSender, conversationRepository)
 
-    val markMessagesAsNotified: MarkMessagesAsNotifiedUseCase get() = MarkMessagesAsNotifiedUseCase(messageRepository)
+    val markMessagesAsNotified: MarkMessagesAsNotifiedUseCase get() = MarkMessagesAsNotifiedUseCaseImpl(conversationRepository)
 
-    val getNotifications: GetNotificationsUseCase get() = GetNotificationsUseCase(messageRepository, userRepository, conversationRepository)
+    val getNotifications: GetNotificationsUseCase get() = GetNotificationsUseCaseImpl(messageRepository, userRepository, conversationRepository)
 }

@@ -7,7 +7,8 @@ data class ConversationEntity(
     val name: String?,
     val type: Type,
     val teamId: String?,
-    val protocolInfo: ProtocolInfo
+    val protocolInfo: ProtocolInfo,
+    val lastNotificationDate: String?
 ) {
 
     enum class Type { SELF, ONE_ON_ONE, GROUP }
@@ -32,6 +33,9 @@ interface ConversationDAO {
     suspend fun insertConversations(conversationEntities: List<ConversationEntity>)
     suspend fun updateConversation(conversationEntity: ConversationEntity)
     suspend fun updateConversationGroupState(groupState: ConversationEntity.GroupState, groupId: String)
+    suspend fun setConversationAsNonNotified(qualifiedID: QualifiedIDEntity)
+    suspend fun setConversationAsNotified(qualifiedID: QualifiedIDEntity, date: String)
+    suspend fun setAllConversationsAsNotified(date: String)
     suspend fun getAllConversations(): Flow<List<ConversationEntity>>
     suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>
     suspend fun getConversationByGroupID(groupID: String): Flow<ConversationEntity?>
@@ -40,4 +44,5 @@ interface ConversationDAO {
     suspend fun insertMembers(memberList: List<Member>, conversationID: QualifiedIDEntity)
     suspend fun deleteMemberByQualifiedID(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity)
     suspend fun getAllMembers(qualifiedID: QualifiedIDEntity): Flow<List<Member>>
+    suspend fun getConversationsForNotifications(): Flow<List<ConversationEntity>>
 }

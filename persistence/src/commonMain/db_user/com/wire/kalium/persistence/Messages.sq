@@ -31,7 +31,6 @@ CREATE TABLE Message (
       sender_client_id TEXT NOT NULL,
       status TEXT AS MessageEntity.Status NOT NULL,
       visibility TEXT AS MessageEntity.Visibility NOT NULL DEFAULT 'visible',
-      shouldNotify INTEGER AS Boolean DEFAULT 1,
       FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id),
       FOREIGN KEY (sender_user_id) REFERENCES User(qualified_id),
       PRIMARY KEY (id, conversation_id)
@@ -49,21 +48,6 @@ DELETE FROM Message WHERE  id = ?;
 updateMessageVisibility:
 UPDATE Message
 SET visibility = ?, text_body = ?
-WHERE id = ? AND conversation_id = ?;
-
-updateNotificationFlagByConversation:
-UPDATE Message
-SET shouldNotify = 0
-WHERE conversation_id = ? AND shouldNotify = 1;
-
-updateNotificationFlagForAll:
-UPDATE Message
-SET shouldNotify = 0
-WHERE shouldNotify = 1;
-
-updateNotificationFlag:
-UPDATE Message
-SET shouldNotify = 0
 WHERE id = ? AND conversation_id = ?;
 
 insertMessage:
@@ -110,5 +94,5 @@ SELECT * FROM Message WHERE id = ? AND conversation_id = ?;
 selectByConversationId:
 SELECT * FROM Message WHERE conversation_id = ? ORDER BY date DESC LIMIT ? OFFSET ?;
 
-selectByNotificationFlag:
-SELECT * FROM Message WHERE shouldNotify = 1 ORDER BY date DESC;
+selectByConversationIdAndDate:
+SELECT * FROM Message WHERE conversation_id = ? AND Datetime(date) > Datetime(?) ORDER BY date DESC;

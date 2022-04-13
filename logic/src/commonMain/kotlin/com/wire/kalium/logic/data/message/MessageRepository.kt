@@ -10,6 +10,7 @@ import com.wire.kalium.network.api.message.MessageApi
 import com.wire.kalium.network.api.message.MessagePriority
 import com.wire.kalium.network.exceptions.QualifiedSendMessageError
 import com.wire.kalium.network.utils.isSuccessful
+import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import kotlinx.coroutines.flow.Flow
@@ -26,9 +27,7 @@ interface MessageRepository {
     suspend fun hideMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun markMessageAsSent(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit>
     suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message>
-    suspend fun getMessagesForNotification(): Flow<List<Message>>
-    suspend fun markAllMessagesAsNotified(): Either<CoreFailure, Unit>
-    suspend fun markMessagesAsNotifiedByConversation(conversationId: ConversationId): Either<CoreFailure, Unit>
+    suspend fun getMessagesByConversationAndDate(conversationId: ConversationId, date: String): Flow<List<Message>>
 
     // TODO: change the return type to Either<CoreFailure, Unit>
     suspend fun sendEnvelope(conversationId: ConversationId, envelope: MessageEnvelope): Either<SendMessageFailure, Unit>
@@ -37,6 +36,7 @@ interface MessageRepository {
 class MessageDataSource(
     private val messageApi: MessageApi,
     private val messageDAO: MessageDAO,
+    private val conversationDAO: ConversationDAO,
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val sendMessageFailureMapper: SendMessageFailureMapper = MapperProvider.sendMessageFailureMapper()
@@ -50,6 +50,7 @@ class MessageDataSource(
 
     override suspend fun persistMessage(message: Message): Either<CoreFailure, Unit> {
         messageDAO.insertMessage(messageMapper.fromMessageToEntity(message))
+        conversationDAO.setConversationAsNonNotified(idMapper.toDaoModel(message.conversationId))
         //TODO: Handle failures
         return Either.Right(Unit)
     }
@@ -97,19 +98,10 @@ class MessageDataSource(
         )
     }
 
-    override suspend fun getMessagesForNotification(): Flow<List<Message>> {
-        return messageDAO.getMessagesForNotification()
-            .map { messageList -> messageList.map(messageMapper::fromEntityToMessage) }
-    }
-
-    override suspend fun markAllMessagesAsNotified(): Either<CoreFailure, Unit> {
-        //TODO handle failures
-        return Either.Right(messageDAO.markAllMessagesAsNotified())
-    }
-
-    override suspend fun markMessagesAsNotifiedByConversation(conversationId: ConversationId): Either<CoreFailure, Unit> {
-        //TODO handle failures
-        return Either.Right(messageDAO.markMessagesAsNotifiedByConversation(idMapper.toDaoModel(conversationId)))
+    override suspend fun getMessagesByConversationAndDate(conversationId: ConversationId, date: String): Flow<List<Message>> {
+        return messageDAO.getMessageByConversationAndDate(idMapper.toDaoModel(conversationId), date).map { messageList ->
+            messageList.map(messageMapper::fromEntityToMessage)
+        }
     }
 
     override suspend fun markMessageAsSent(conversationId: ConversationId, messageUuid: String) =

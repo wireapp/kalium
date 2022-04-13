@@ -1,14 +1,29 @@
 package com.wire.kalium.logic.feature.message
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.functional.Either
+import kotlinx.coroutines.flow.Flow
 
-class MarkMessagesAsNotifiedUseCase(private val messageRepository: MessageRepository) {
+interface MarkMessagesAsNotifiedUseCase {
+    suspend operator fun invoke(conversationId: ConversationId?, date: String): Result
+}
 
-    suspend operator fun invoke(conversationId: ConversationId? = null): Either<CoreFailure, Unit> {
-        return if (conversationId == null) messageRepository.markAllMessagesAsNotified()
-        else messageRepository.markMessagesAsNotifiedByConversation(conversationId)
+sealed class Result {
+    object Success : Result()
+    data class Failure(val storageFailure: StorageFailure) : Result()
+}
+
+class MarkMessagesAsNotifiedUseCaseImpl(private val conversationRepository: ConversationRepository) : MarkMessagesAsNotifiedUseCase {
+
+    override suspend operator fun invoke(conversationId: ConversationId?, date: String): Result {
+        return if (conversationId == null) {
+            conversationRepository.setAllConversationsAsNotified(date)
+        } else {
+            conversationRepository.setConversationAsNotified(conversationId, date)
+        }
+            .fold({ Result.Failure(it) }) { Result.Success }
     }
 }

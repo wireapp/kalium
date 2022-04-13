@@ -4,6 +4,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
@@ -16,7 +17,6 @@ import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.network.api.conversation.ConversationResponse
-import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import io.ktor.utils.io.errors.IOException
@@ -41,6 +41,10 @@ interface ConversationRepository {
     suspend fun persistMembers(members: List<MemberEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun deleteMember(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun createGroupConversation(name: String, members: List<Member>, options: ConverationOptions): Either<CoreFailure, Conversation>
+    suspend fun getConversationsForNotifications(): Flow<List<Conversation>>
+    suspend fun setConversationAsNonNotified(qualifiedID: QualifiedID): Either<StorageFailure, Unit>
+    suspend fun setConversationAsNotified(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
+    suspend fun setAllConversationsAsNotified(date: String): Either<StorageFailure, Unit>
 }
 
 class ConversationDataSource(
@@ -174,6 +178,20 @@ class ConversationDataSource(
             }
         }
     }
+
+    override suspend fun getConversationsForNotifications(): Flow<List<Conversation>> =
+        conversationDAO.getConversationsForNotifications()
+            .filterNotNull()
+            .map { it.map(conversationMapper::fromDaoModel) }
+
+    override suspend fun setConversationAsNonNotified(qualifiedID: QualifiedID): Either<StorageFailure, Unit> =
+        wrapStorageRequest { conversationDAO.setConversationAsNonNotified(idMapper.toDaoModel(qualifiedID)) }
+
+    override suspend fun setConversationAsNotified(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit> =
+        wrapStorageRequest { conversationDAO.setConversationAsNotified(idMapper.toDaoModel(qualifiedID), date) }
+
+    override suspend fun setAllConversationsAsNotified(date: String): Either<StorageFailure, Unit> =
+        wrapStorageRequest { conversationDAO.setAllConversationsAsNotified(date) }
 
     private suspend fun persistMembersFromConversationResponse(conversationResponse: ConversationResponse): Either<CoreFailure, Unit> {
         return wrapStorageRequest {

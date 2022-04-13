@@ -43,8 +43,7 @@ class MessageMapper {
             date = msg.date,
             senderUserId = msg.sender_user_id,
             senderClientId = msg.sender_client_id,
-            status = msg.status,
-            shouldNotify = msg.shouldNotify ?: true
+            status = msg.status
         )
     }
 }
@@ -149,52 +148,9 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             .mapToList()
             .map { entryList -> entryList.map(mapper::toModel) }
 
-    override suspend fun getMessagesForNotification(): Flow<List<MessageEntity>> =
-        queries.selectByNotificationFlag()
+    override suspend fun getMessageByConversationAndDate(conversationId: QualifiedIDEntity, date: String): Flow<List<MessageEntity>> =
+        queries.selectByConversationIdAndDate(conversationId, date)
             .asFlow()
             .mapToList()
             .map { entryList -> entryList.map(mapper::toModel) }
-
-    override suspend fun markAllMessagesAsNotified() {
-        markMessagesAsNotified { limit, offset ->
-            queries.selectAllMessages(limit, offset)
-        }
-    }
-
-    override suspend fun markMessagesAsNotifiedByConversation(conversationId: QualifiedIDEntity) {
-        markMessagesAsNotified { limit, offset ->
-            queries.selectByConversationId(conversationId, limit, offset)
-        }
-    }
-
-    private fun markMessagesAsNotified(selectMessages: (Long, Long) -> Query<SQLDelightMessage>) {
-        queries.transaction {
-            val limit: Long = 100
-            var iteration = 0
-            var doneFlag = false
-            do {
-                run {
-                    val nextPortion = selectMessages(limit, iteration * limit).executeAsList()
-
-                    if (nextPortion.isEmpty()) {
-                        doneFlag = true
-                        return@run
-                    }
-
-                    nextPortion
-                        .forEach { message ->
-                            if (message.shouldNotify == false) {
-                                //we assume that all the next messages are already "shouldNotify == false" too
-                                doneFlag = true
-                                return@run
-                            } else {
-                                queries.updateNotificationFlag(message.id, message.conversation_id)
-                            }
-                        }
-
-                    iteration++
-                }
-            } while (!doneFlag)
-        }
-    }
 }

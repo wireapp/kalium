@@ -32,7 +32,8 @@ internal class ConversationMapperImpl(private val idMapper: IdMapper) : Conversa
             apiModel.name,
             apiModel.getConversationType(selfUserTeamId),
             apiModel.teamId,
-            apiModel.getProtocolInfo(groupCreation)
+            apiModel.getProtocolInfo(groupCreation),
+            null
         )
 
     override fun fromApiModelToDaoModel(apiModel: ConvProtocol): PersistedProtocol = when (apiModel) {
@@ -41,7 +42,7 @@ internal class ConversationMapperImpl(private val idMapper: IdMapper) : Conversa
     }
 
     override fun fromDaoModel(daoModel: PersistedConversation): Conversation = Conversation(
-        idMapper.fromDaoModel(daoModel.id), daoModel.name, daoModel.type.fromDaoModel(), daoModel.teamId?.let { TeamId(it) }
+        idMapper.fromDaoModel(daoModel.id), daoModel.name, daoModel.type.fromDaoModel(), daoModel.teamId?.let { TeamId(it) }, daoModel.lastNotificationDate
     )
 
     override fun toApiModel(name: String, members: List<Member>, teamId: String?, options: ConverationOptions) =
