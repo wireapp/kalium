@@ -8,6 +8,12 @@ application{
     mainClass.set(mainFunctionClassName)
 }
 
+tasks.named("run", JavaExec::class){
+    isIgnoreExitValue = true
+    standardInput = System.`in`
+    standardOutput = System.out
+}
+
 tasks.jar {
     manifest.attributes["Main-Class"] = mainFunctionClassName
     val dependencies = configurations
