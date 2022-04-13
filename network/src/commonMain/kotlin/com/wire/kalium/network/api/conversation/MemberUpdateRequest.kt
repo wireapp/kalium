@@ -10,7 +10,7 @@ data class MemberUpdateRequest(
     @SerialName("otr_archived") val otrArchived: Boolean? = null,
     @SerialName("otr_archived_ref") val otrArchivedRef: String? = null,
     @SerialName("otr_muted_ref") val otrMutedRef: String? = null,
-    @Serializable(with = MutedStatusSerializer::class) val otrMutedStatus: MutedStatus? = null
+    @SerialName("otr_muted_status") @Serializable(with = MutedStatusSerializer::class) val otrMutedStatus: MutedStatus? = null
 ) {
 
     enum class MutedStatus {
