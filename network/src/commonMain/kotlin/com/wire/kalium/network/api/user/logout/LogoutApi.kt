@@ -1,5 +1,6 @@
 package com.wire.kalium.network.api.user.logout
 
+import com.wire.kalium.network.api.RefreshTokenProperties
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
@@ -18,7 +19,7 @@ class LogoutImpl(private val httpClient: HttpClient, private val sessionManager:
 
     override suspend fun logout(): NetworkResponse<Unit> = wrapKaliumResponse {
         httpClient.post("$PATH_ACCESS/$PATH_LOGOUT") {
-            header(HEADER_KEY_COOKIE, sessionManager.session().first.refreshToken)
+            header(HEADER_KEY_COOKIE, "${RefreshTokenProperties.COOKIE_NAME}=${sessionManager.session().first.refreshToken}")
         }
     }
 
