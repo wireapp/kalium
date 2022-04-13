@@ -16,7 +16,7 @@ actual class ProteusClientImpl actual constructor(rootDir: String) : ProteusClie
     }
 
     override fun nuke(): Boolean = File(path).let {
-        if (it.exists()) it.delete()
+        if (it.exists()) it.deleteRecursively()
         else true
     }
 
