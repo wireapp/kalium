@@ -4,12 +4,8 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
-import com.wire.kalium.logic.test_util.TestServerConfig
-import com.wire.kalium.logic.test_util.serverMiscommunicationFailure
-import com.wire.kalium.network.api.ErrorResponse
+import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.network.api.user.login.SSOSettingsResponse
-import com.wire.kalium.network.exceptions.KaliumException
-import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.given
@@ -37,8 +33,8 @@ class SSOSettingsUseCaseTest {
     fun givenApiReturnsGenericError_whenRequestingMetaData_thenReturnGenericFailure() =
         runTest {
             val expected = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
-            given(ssoLoginRepository).coroutine { settings(TestServerConfig.generic) }.then { Either.Left(expected) }
-            val result = ssoSettingsUseCase(TestServerConfig.generic)
+            given(ssoLoginRepository).coroutine { settings(TEST_SERVER_CONFIG) }.then { Either.Left(expected) }
+            val result = ssoSettingsUseCase(TEST_SERVER_CONFIG)
             assertIs<SSOSettingsResult.Failure.Generic>(result)
             assertEquals(expected, result.genericFailure)
         }
@@ -46,12 +42,13 @@ class SSOSettingsUseCaseTest {
     @Test
     fun givenApiReturnsSuccess_whenRequestingMetaData_thenReturnSuccess() =
         runTest {
-            given(ssoLoginRepository).coroutine { settings(TestServerConfig.generic) }.then { Either.Right(TEST_RESPONSE) }
-            val result = ssoSettingsUseCase(TestServerConfig.generic)
+            given(ssoLoginRepository).coroutine { settings(TEST_SERVER_CONFIG) }.then { Either.Right(TEST_RESPONSE) }
+            val result = ssoSettingsUseCase(TEST_SERVER_CONFIG)
             assertEquals(result, SSOSettingsResult.Success(TEST_RESPONSE))
         }
 
     private companion object {
         val TEST_RESPONSE = SSOSettingsResponse("default_code")
+        val TEST_SERVER_CONFIG = newServerConfig(1)
     }
 }

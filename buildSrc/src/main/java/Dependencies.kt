@@ -154,6 +154,7 @@ object Dependencies {
         const val jvmDriver = "app.cash.sqldelight:sqlite-driver:${Versions.sqlDelight}"
         const val jsDriver = "app.cash.sqldelight:sqljs-driver:${Versions.sqlDelight}"
         const val primitiveAdapters = "app.cash.sqldelight:primitive-adapters:${Versions.sqlDelight}"
+        const val dialect = "app.cash.sqldelight:sqlite-3-24-dialect:${Versions.sqlDelight}"
     }
 
     object Test {
