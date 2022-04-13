@@ -3,6 +3,16 @@ plugins {
     application
 }
 
+tasks.jar {
+    manifest.attributes["Main-Class"] = "com.wire.kalium.CLIApplication"
+    val dependencies = configurations
+        .runtimeClasspath
+        .get()
+        .map(::zipTree)
+    from(dependencies)
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
 dependencies {
     implementation(project(":network"))
     implementation(project(":cryptography"))
