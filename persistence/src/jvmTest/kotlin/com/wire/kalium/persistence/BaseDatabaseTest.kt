@@ -1,7 +1,7 @@
 package com.wire.kalium.persistence
 
-import java.nio.file.Files
 import com.wire.kalium.persistence.db.UserDatabaseProvider
+import java.nio.file.Files
 
 actual open class BaseDatabaseTest actual constructor() {
 

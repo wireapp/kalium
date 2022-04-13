@@ -221,6 +221,11 @@ actual class CallManagerImpl(
         wcall_end(inst = deferredHandle.await(), conversationId = conversationId.asString())
     }
 
+    override suspend fun rejectCall(conversationId: ConversationId) = withCalling {
+        kaliumLogger.d("$TAG -> rejecting call..")
+        wcall_reject(inst = deferredHandle.await(), conversationId = conversationId.asString())
+    }
+
     override fun onConfigRequest(inst: Handle, arg: Pointer?): Int {
         scope.launch {
             val config = callRepository.getCallConfigResponse(limit = null)

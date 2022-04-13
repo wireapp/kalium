@@ -77,6 +77,10 @@ class MainActivity : ComponentActivity() {
             )
         }
 
+        authenticationScope.addAuthenticatedAccount(
+            authSession = result.userSession
+        )
+
         return result.userSession
     }
 }

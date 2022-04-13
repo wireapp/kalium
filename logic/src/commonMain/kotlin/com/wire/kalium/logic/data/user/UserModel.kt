@@ -9,6 +9,32 @@ abstract class User {
     abstract val id: UserId
 }
 
+enum class ConnectionState {
+    /** Default - No connection state */
+    NOT_CONNECTED,
+
+    /** The other user has sent a connection request to this one */
+    PENDING,
+
+    /** This user has sent a connection request to another user */
+    SENT,
+
+    /** The user has been blocked */
+    BLOCKED,
+
+    /** The connection has been ignored */
+    IGNORED,
+
+    /** The connection has been cancelled */
+    CANCELLED,
+
+    /** The connection is missing legal hold consent */
+    MISSING_LEGALHOLD_CONSENT,
+
+    /** The connection is complete and the conversation is in its normal state */
+    ACCEPTED
+}
+
 data class SelfUser(
     override val id: UserId,
     val name: String?,
@@ -17,6 +43,7 @@ data class SelfUser(
     val phone: String?,
     val accentId: Int,
     val team: String?,
+    val connectionStatus: ConnectionState,
     val previewPicture: UserAssetId?,
     val completePicture: UserAssetId?
 ) : User()

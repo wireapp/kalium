@@ -10,22 +10,7 @@ import com.wire.kalium.network.api.conversation.ConversationSelfMemberResponse
 
 object ConversationResponseJson {
 
-    val validGroup = ValidJsonProvider(
-        ConversationResponse(
-            "fdf23116-42a5-472c-8316-e10655f5d11e",
-            ConversationMembersResponse(
-                ConversationSelfMemberResponse(QualifiedIDSamples.one),
-                listOf(ConversationOtherMembersResponse(null, QualifiedIDSamples.two))
-            ),
-            "group name",
-            QualifiedIDSamples.one,
-            "groupID",
-            ConversationResponse.Type.GROUP,
-            null,
-            "teamID",
-            ConvProtocol.PROTEUS
-        )
-    ) {
+    val conversationResponseSerializer = { it: ConversationResponse ->
         """
         |{
         |   "creator": "${it.creator}",
@@ -59,4 +44,21 @@ object ConversationResponseJson {
         |}
         """.trimMargin()
     }
+
+    val validGroup = ValidJsonProvider(
+        ConversationResponse(
+            "fdf23116-42a5-472c-8316-e10655f5d11e",
+            ConversationMembersResponse(
+                ConversationSelfMemberResponse(QualifiedIDSamples.one),
+                listOf(ConversationOtherMembersResponse(null, QualifiedIDSamples.two))
+            ),
+            "group name",
+            QualifiedIDSamples.one,
+            "groupID",
+            ConversationResponse.Type.GROUP,
+            null,
+            "teamID",
+            ConvProtocol.PROTEUS
+        ), conversationResponseSerializer
+    )
 }

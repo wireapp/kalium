@@ -17,26 +17,6 @@ class ServerConfigMapperTest {
     }
 
     @Test
-    fun givenABackendConfig_whenMappingFromBackendConfig_thenValuesAreMappedCorrectly() {
-        val serverConfigDTO: ServerConfigDTO = serverConfigDTO()
-        val acuteValue: ServerConfig =
-            with(serverConfigDTO) {
-                ServerConfig(
-                    apiBaseUrl.toString(),
-                    accountsBaseUrl.toString(),
-                    webSocketBaseUrl.toString(),
-                    blackListUrl.toString(),
-                    teamsUrl.toString(),
-                    websiteUrl.toString(),
-                    title
-                )
-            }
-
-        val expectedValue: ServerConfig = serverConfigMapper.fromDTO(serverConfigDTO)
-        assertEquals(expectedValue, acuteValue)
-    }
-
-    @Test
     fun givenAServerConfig_whenMappingToBackendConfig_thenValuesAreMappedCorrectly() {
         val serverConfig: ServerConfig = serverConfig()
         val acuteValue: ServerConfigDTO =
@@ -62,6 +42,7 @@ class ServerConfigMapperTest {
         val acuteValue: ServerConfig =
             with(serverConfigEntity) {
                 ServerConfig(
+                    id,
                     apiBaseUrl,
                     accountBaseUrl,
                     webSocketBaseUrl,
@@ -82,6 +63,7 @@ class ServerConfigMapperTest {
         val acuteValue: ServerConfigEntity =
             with(serverConfig) {
                 ServerConfigEntity(
+                    id,
                     apiBaseUrl,
                     accountsBaseUrl,
                     webSocketBaseUrl,
@@ -105,13 +87,13 @@ class ServerConfigMapperTest {
 
         fun serverConfig(): ServerConfig =
             ServerConfig(
-                "https://test.api.com", "https://test.account.com", "https://test.ws.com",
+                "config-id", "https://test.api.com", "https://test.account.com", "https://test.ws.com",
                 "https://test.blacklist", "https://test.teams.com", "https://test.wire.com", "Test Title"
             )
 
         fun serverConfigEntity(): ServerConfigEntity =
             ServerConfigEntity(
-                "https://test.api.com", "https://test.account.com", "https://test.ws.com",
+                "config-id", "https://test.api.com", "https://test.account.com", "https://test.ws.com",
                 "https://test.blacklist", "https://test.teams.com", "https://test.wire.com", "Test Title"
             )
     }

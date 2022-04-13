@@ -41,6 +41,7 @@ class UserMapperTest {
             phone = null,
             accentId = 1,
             team = "teamId",
+            connectionStatus = UserEntity.ConnectionState.ACCEPTED,
             previewAssetId = null,
             completeAssetId = null
         )

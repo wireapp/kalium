@@ -13,6 +13,7 @@ interface CallManager {
     suspend fun startCall(conversationId: ConversationId, callType: CallType, conversationType: ConversationType, isAudioCbr: Boolean = false) //TODO Audio CBR
     suspend fun answerCall(conversationId: ConversationId)
     suspend fun endCall(conversationId: ConversationId)
+    suspend fun rejectCall(conversationId: ConversationId)
     val allCalls: StateFlow<List<Call>>
 }
 

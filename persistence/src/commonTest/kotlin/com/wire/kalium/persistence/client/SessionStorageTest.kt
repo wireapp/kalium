@@ -7,6 +7,7 @@ import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
 import com.wire.kalium.persistence.model.PersistenceSession
 import com.wire.kalium.persistence.model.ServerConfigEntity
+import com.wire.kalium.persistence.utils.stubs.newServerConfig
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.random.Random
@@ -42,7 +43,7 @@ class SessionDAOTest {
                 "JWT",
                 Random.nextBytes(32).decodeToString(),
                 Random.nextBytes(32).decodeToString(),
-                randomNetworkConfig()
+                TEST_SERVER_CONFIG
             )
         val sessionsMap = mapOf(persistenceSession.userId to persistenceSession)
         sessionStorage.addSession(persistenceSession)
@@ -57,7 +58,7 @@ class SessionDAOTest {
             "JWT",
             Random.nextBytes(32).decodeToString(),
             Random.nextBytes(32).decodeToString(),
-            randomNetworkConfig()
+            TEST_SERVER_CONFIG
         )
         val sessionToDelete =
             PersistenceSession(
@@ -65,7 +66,7 @@ class SessionDAOTest {
                 "JWT",
                 Random.nextBytes(32).decodeToString(),
                 Random.nextBytes(32).decodeToString(),
-                randomNetworkConfig()
+                TEST_SERVER_CONFIG
             )
 
         val sessionsMapExpectedValue =
@@ -93,7 +94,7 @@ class SessionDAOTest {
                 "Bearer",
                 Random.nextBytes(32).decodeToString(),
                 Random.nextBytes(32).decodeToString(),
-                randomNetworkConfig()
+                TEST_SERVER_CONFIG
             )
 
         val session2 =
@@ -102,7 +103,7 @@ class SessionDAOTest {
                 "Bearer",
                 Random.nextBytes(32).decodeToString(),
                 Random.nextBytes(32).decodeToString(),
-                randomNetworkConfig()
+                TEST_SERVER_CONFIG
             )
 
         sessionStorage.addSession(session1)
@@ -114,9 +115,7 @@ class SessionDAOTest {
     }
 
     private companion object {
-        val randomString get() = Random.nextBytes(64).decodeToString()
-        fun randomNetworkConfig(): ServerConfigEntity =
-            ServerConfigEntity(randomString, randomString, randomString, randomString, randomString, randomString, "test_network_config")
+        val TEST_SERVER_CONFIG: ServerConfigEntity = newServerConfig(1)
     }
 
 }

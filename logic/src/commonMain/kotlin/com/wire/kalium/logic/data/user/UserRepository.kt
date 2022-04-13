@@ -19,6 +19,7 @@ import com.wire.kalium.network.api.user.self.SelfApi
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
+import com.wire.kalium.persistence.dao.UserEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -66,7 +67,7 @@ class UserDataSource(
 
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = suspending {
         wrapApiRequest { selfApi.getSelfInfo() }
-            .map { userMapper.fromApiModelToDaoModel(it) }
+            .map { userMapper.fromApiModelToDaoModel(it).copy(connectionStatus = UserEntity.ConnectionState.ACCEPTED) }
             .flatMap { userEntity ->
                 assetRepository.downloadUsersPictureAssets(listOf(userEntity.previewAssetId, userEntity.completeAssetId))
                 userDAO.insertUser(userEntity)
