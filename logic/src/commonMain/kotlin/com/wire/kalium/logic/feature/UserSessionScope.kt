@@ -5,6 +5,7 @@ import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.asset.AssetDataSource
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.call.CallDataSource
+import com.wire.kalium.logic.data.call.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientDataSource
 import com.wire.kalium.logic.data.client.ClientRepository
@@ -12,6 +13,8 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.MLSClientProviderImpl
 import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
+import com.wire.kalium.logic.data.connection.ConnectionDataSource
+import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationDataSource
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationDataSource
@@ -41,7 +44,10 @@ import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.feature.client.ClientScope
+import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
+import com.wire.kalium.logic.feature.message.MLSMessageCreator
+import com.wire.kalium.logic.feature.message.MLSMessageCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
 import com.wire.kalium.logic.feature.message.MessageEnvelopeCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageScope
@@ -104,6 +110,7 @@ abstract class UserSessionScopeCommon(
     private val messageRepository: MessageRepository
         get() = MessageDataSource(
             authenticatedDataSourceSet.authenticatedNetworkContainer.messageApi,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.mlsMessageApi,
             userDatabaseProvider.messageDAO,
             userDatabaseProvider.conversationDAO
         )
@@ -122,6 +129,12 @@ abstract class UserSessionScopeCommon(
             userDatabaseProvider.userDAO,
             userDatabaseProvider.teamDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.teamsApi
+        )
+
+    private val connectionRepository: ConnectionRepository
+        get() = ConnectionDataSource(
+            userDatabaseProvider.conversationDAO,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.connectionApi
         )
 
     private val publicUserRepository: SearchUserRepository
@@ -158,8 +171,12 @@ abstract class UserSessionScopeCommon(
     private val messageEnvelopeCreator: MessageEnvelopeCreator
         get() = MessageEnvelopeCreatorImpl(authenticatedDataSourceSet.proteusClient, protoContentMapper)
 
+    private val mlsMessageCreator: MLSMessageCreator
+        get() = MLSMessageCreatorImpl(mlsClientProvider, protoContentMapper)
+
+    // TODO code duplication, can't we get the MessageSender from the message scope?
     private val messageSender: MessageSender
-        get() = MessageSenderImpl(messageRepository, conversationRepository, syncManager, messageSendFailureHandler, sessionEstablisher, messageEnvelopeCreator)
+        get() = MessageSenderImpl(messageRepository, conversationRepository, syncManager, messageSendFailureHandler, sessionEstablisher, messageEnvelopeCreator, mlsMessageCreator)
 
     private val assetRepository: AssetRepository
         get() = AssetDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.assetApi, userDatabaseProvider.assetDAO)
@@ -171,12 +188,16 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.authenticatedNetworkContainer.notificationApi, eventInfoStorage, clientRepository
         )
 
+    private val callMapper: CallMapper
+        get() = CallMapper()
+
     private val callManager by lazy {
         globalCallManager.getCallManagerForClient(
             userId = userId,
             callRepository = callRepository,
             userRepository = userRepository,
             clientRepository = clientRepository,
+            callMapper = callMapper,
             messageSender = messageSender
         )
     }
@@ -186,6 +207,7 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.proteusClient,
             messageRepository,
             conversationRepository,
+            mlsConversationRepository,
             userRepository,
             protoContentMapper,
             callManager
@@ -215,6 +237,7 @@ abstract class UserSessionScopeCommon(
             conversationRepository,
             clientRepository,
             authenticatedDataSourceSet.proteusClient,
+            mlsClientProvider,
             preKeyRepository,
             userRepository,
             assetRepository,
@@ -226,4 +249,6 @@ abstract class UserSessionScopeCommon(
     val team: TeamScope get() = TeamScope(userRepository, teamRepository)
 
     val calls: CallsScope get() = CallsScope(callManager, syncManager)
+
+    val connection: ConnectionScope get() = ConnectionScope(connectionRepository)
 }

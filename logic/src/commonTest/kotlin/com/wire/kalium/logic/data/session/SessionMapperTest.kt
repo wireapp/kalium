@@ -6,6 +6,8 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.auth.AuthSession
+import com.wire.kalium.logic.util.stubs.newServerConfig
+import com.wire.kalium.logic.util.stubs.newServerConfigEntity
 import com.wire.kalium.network.api.QualifiedID
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.tools.ServerConfigDTO
@@ -58,7 +60,7 @@ class SessionMapperTest {
     fun givenAnAuthSession_whenMappingToPersistenceSession_thenValuesAreMappedCorrectly() {
         val authSession: AuthSession = randomAuthSession()
         val serverConfigEntity = with(authSession.serverConfig) {
-            ServerConfigEntity(apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title)
+            ServerConfigEntity(id, apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title)
         }
 
         given(idMapper).invocation { toDaoModel(authSession.userId) }
@@ -85,7 +87,7 @@ class SessionMapperTest {
     fun givenAPersistenceSession_whenMappingFromPersistenceSession_thenValuesAreMappedCorrectly() {
         val persistenceSession: PersistenceSession = randomPersistenceSession()
         val serverConfig = with(persistenceSession.serverConfigEntity) {
-            ServerConfig(apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title)
+            ServerConfig(id, apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title)
         }
 
         given(idMapper).invocation { fromDaoModel(persistenceSession.userId) }
@@ -124,14 +126,12 @@ class SessionMapperTest {
                 randomString
             )
 
-        fun randomAuthSession(): AuthSession = AuthSession(userId, randomString, randomString, randomString, randomServerConfig())
+        fun randomAuthSession(): AuthSession = AuthSession(userId, randomString, randomString, randomString, TEST_CONFIG)
         fun randomPersistenceSession(): PersistenceSession =
-            PersistenceSession(UserIDEntity(userId.value, userId.domain), randomString, randomString, randomString, randomNetworkConfig())
+            PersistenceSession(UserIDEntity(userId.value, userId.domain), randomString, randomString, randomString, TEST_ENTITY)
 
-        fun randomServerConfig(): ServerConfig =
-            ServerConfig(randomString, randomString, randomString, randomString, randomString, randomString, randomString)
+        val TEST_CONFIG: ServerConfig = newServerConfig(1)
 
-        fun randomNetworkConfig(): ServerConfigEntity =
-            ServerConfigEntity(randomString, randomString, randomString, randomString, randomString, randomString, randomString)
+        val TEST_ENTITY: ServerConfigEntity = newServerConfigEntity(1)
     }
 }

@@ -2,6 +2,7 @@ package com.wire.kalium.api.tools.json.api.notification
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.TEST_BACKEND_CONFIG
+import com.wire.kalium.api.tools.json.api.conversation.ConversationResponseJson
 import com.wire.kalium.network.api.notification.EventContentDTO
 import com.wire.kalium.network.api.notification.NotificationApiImpl
 import com.wire.kalium.network.utils.isSuccessful
@@ -32,7 +33,7 @@ class NotificationApiTest : ApiTest {
             }
         )
         val notificationsApi = NotificationApiImpl(httpClient, TEST_BACKEND_CONFIG)
-
+        
         notificationsApi.notificationsByBatch(limit, clientId, since)
     }
 

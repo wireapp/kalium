@@ -142,6 +142,17 @@ class ConversationDAOImpl(
 
     }
 
+    override suspend fun insertOrUpdateOneOnOneMemberWithConnectionStatus(
+        userId: UserIDEntity,
+        status: UserEntity.ConnectionState,
+        conversationID: QualifiedIDEntity
+    ) {
+        memberQueries.transaction {
+            userQueries.insertOrReplaceUserIdWithConnectionStatus(userId, status)
+            memberQueries.insertMember(userId, conversationID)
+        }
+    }
+
     override suspend fun deleteMemberByQualifiedID(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity) {
         memberQueries.deleteMember(conversationID, userID)
     }

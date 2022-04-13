@@ -3,11 +3,13 @@ package com.wire.kalium.logic.feature.register
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
+import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
+import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
 import io.mockative.classOf
@@ -111,15 +113,23 @@ class RegisterAccountUseCaseTest {
                 }
                 .then { Either.Right(expected) }
 
-        val actual = registerAccountUseCase(param, serverConfig)
+            val actual = registerAccountUseCase(param, serverConfig)
 
             assertIs<RegisterResult.Success>(actual)
             assertEquals(expected, actual.value)
 
-        verify(registerAccountRepository)
-            .coroutine { registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password, serverConfig) }
-            .wasInvoked(exactly = once)
-    }
+            verify(registerAccountRepository)
+                .coroutine {
+                    registerPersonalAccountWithEmail(
+                        param.email,
+                        param.emailActivationCode,
+                        param.name,
+                        param.password,
+                        serverConfig
+                    )
+                }
+                .wasInvoked(exactly = once)
+        }
 
     @Test
     fun givenRepositoryCallFailWithGenericError_whenRegisteringPersonalAccount_thenErrorIsPropagated() = runTest {
@@ -199,15 +209,7 @@ class RegisterAccountUseCaseTest {
         const val TEST_EMAIL = """user@domain.com"""
         const val TEST_CODE = "123456"
         const val TEST_PASSWORD = "password"
-        val TEST_SERVER_CONFIG: ServerConfig = ServerConfig(
-            apiBaseUrl = "apiBaseUrl.com",
-            accountsBaseUrl = "accountsUrl.com",
-            webSocketBaseUrl = "webSocketUrl.com",
-            blackListUrl = "blackListUrl.com",
-            teamsUrl = "teamsUrl.com",
-            websiteUrl = "websiteUrl.com",
-            title = "Test Title"
-        )
+        val TEST_SERVER_CONFIG: ServerConfig = newServerConfig(1)
         val TEST_PRIVATE_ACCOUNT_PARAM = RegisterParam.PrivateAccount(
             firstName = "first", lastName = "last", email = TEST_EMAIL, password = TEST_PASSWORD, emailActivationCode = TEST_CODE
         )
@@ -223,6 +225,7 @@ class RegisterAccountUseCaseTest {
             phone = null,
             accentId = 3,
             team = null,
+            connectionStatus = ConnectionState.ACCEPTED,
             previewPicture = null,
             completePicture = null
         )

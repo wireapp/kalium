@@ -6,6 +6,8 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.SendMessageFailure
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.network.api.message.MLSMessageApi
 import com.wire.kalium.network.api.message.MessageApi
 import com.wire.kalium.network.api.message.MessagePriority
 import com.wire.kalium.network.exceptions.QualifiedSendMessageError
@@ -31,10 +33,12 @@ interface MessageRepository {
 
     // TODO: change the return type to Either<CoreFailure, Unit>
     suspend fun sendEnvelope(conversationId: ConversationId, envelope: MessageEnvelope): Either<SendMessageFailure, Unit>
+    suspend fun sendMLSMessage(conversationId: ConversationId, message: MLSMessageApi.Message): Either<CoreFailure, Unit>
 }
 
 class MessageDataSource(
     private val messageApi: MessageApi,
+    private val mlsMessageApi: MLSMessageApi,
     private val messageDAO: MessageDAO,
     private val conversationDAO: ConversationDAO,
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(),
@@ -135,4 +139,9 @@ class MessageDataSource(
             Either.Right(Unit)
         }
     }
+
+    override suspend fun sendMLSMessage(conversationId: ConversationId, message: MLSMessageApi.Message): Either<CoreFailure, Unit> =
+        wrapApiRequest {
+            mlsMessageApi.sendMessage(message)
+        }
 }

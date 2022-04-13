@@ -4,6 +4,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
+import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
@@ -21,18 +22,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val otherUser: OtherUser,
         val connectionState: ConnectionState,
         val legalHoldStatus: LegalHoldStatus
-    ) : ConversationDetails(conversation) {
-        enum class ConnectionState {
-            // The other user has sent a connection request to this one
-            INCOMING,
-
-            // This user has sent a connection request to another user
-            OUTGOING,
-
-            // The connection is complete and the conversation is in its normal state
-            ACCEPTED
-        }
-    }
+    ) : ConversationDetails(conversation)
 
     data class Group(override val conversation: Conversation) : ConversationDetails(conversation)
 }

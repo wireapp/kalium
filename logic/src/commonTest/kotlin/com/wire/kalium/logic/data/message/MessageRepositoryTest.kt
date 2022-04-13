@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.network.api.message.MLSMessageApi
 import com.wire.kalium.network.api.message.MessageApi
 import com.wire.kalium.persistence.dao.message.MessageEntity.Status.SENT
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -34,6 +35,9 @@ class MessageRepositoryTest {
     val messageApi = mock(MessageApi::class)
 
     @Mock
+    val mlsMessageApi = mock(MLSMessageApi::class)
+
+    @Mock
     val messageDAO = configure(mock(MessageDAO::class)) { stubsUnitByDefault = true }
 
     @Mock
@@ -46,7 +50,7 @@ class MessageRepositoryTest {
 
     @BeforeTest
     fun setup() {
-        messageRepository = MessageDataSource(messageApi, messageDAO, messageMapper, idMapper, sendMessageFailureMapper)
+        messageRepository = MessageDataSource(messageApi, mlsMessageApi, messageDAO, messageMapper, idMapper, sendMessageFailureMapper)
     }
 
     @Test
