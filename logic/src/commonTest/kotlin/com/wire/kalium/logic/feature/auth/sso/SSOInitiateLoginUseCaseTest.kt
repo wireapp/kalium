@@ -2,8 +2,8 @@ package com.wire.kalium.logic.feature.auth.sso
 
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.test_util.TestServerConfig
 import com.wire.kalium.logic.test_util.serverMiscommunicationFailure
+import com.wire.kalium.logic.util.stubs.newServerConfig
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.classOf
@@ -36,7 +36,7 @@ class SSOInitiateLoginUseCaseTest {
     fun givenCodeIsInvalid_whenInitiating_thenReturnInvalidCode() =
         runTest {
             given(validateUUIDUseCase).invocation { invoke(TEST_CODE) }.then { ValidateSSOCodeResult.Invalid }
-            val result = ssoInitiateLoginUseCase(SSOInitiateLoginUseCase.Param.WithoutRedirect(TEST_CODE, TestServerConfig.generic))
+            val result = ssoInitiateLoginUseCase(SSOInitiateLoginUseCase.Param.WithoutRedirect(TEST_CODE, TEST_SERVER_CONFIG))
             assertEquals(result, SSOInitiateLoginResult.Failure.InvalidCode)
             verify(validateUUIDUseCase).invocation { invoke(TEST_CODE) }.wasInvoked(exactly = once)
         }
@@ -46,9 +46,9 @@ class SSOInitiateLoginUseCaseTest {
         runTest {
             given(validateUUIDUseCase).invocation { invoke(TEST_CODE) }
                 .then { ValidateSSOCodeResult.Valid(TEST_UUID) }
-            given(ssoLoginRepository).coroutine { initiate(TEST_UUID, TestServerConfig.generic) }
+            given(ssoLoginRepository).coroutine { initiate(TEST_UUID, TEST_SERVER_CONFIG) }
                 .then { Either.Left(serverMiscommunicationFailure(code = HttpStatusCode.NotFound.value)) }
-            val result = ssoInitiateLoginUseCase(SSOInitiateLoginUseCase.Param.WithoutRedirect(TEST_CODE, TestServerConfig.generic))
+            val result = ssoInitiateLoginUseCase(SSOInitiateLoginUseCase.Param.WithoutRedirect(TEST_CODE, TEST_SERVER_CONFIG))
             assertEquals(result, SSOInitiateLoginResult.Failure.InvalidCode)
         }
 
@@ -57,9 +57,9 @@ class SSOInitiateLoginUseCaseTest {
         runTest {
             given(validateUUIDUseCase).invocation { invoke(TEST_CODE) }
                 .then { ValidateSSOCodeResult.Valid(TEST_UUID) }
-            given(ssoLoginRepository).coroutine { initiate(TEST_UUID, TestServerConfig.generic) }
+            given(ssoLoginRepository).coroutine { initiate(TEST_UUID, TEST_SERVER_CONFIG) }
                 .then { Either.Left(serverMiscommunicationFailure(code = HttpStatusCode.BadRequest.value)) }
-            val result = ssoInitiateLoginUseCase(SSOInitiateLoginUseCase.Param.WithoutRedirect(TEST_CODE, TestServerConfig.generic))
+            val result = ssoInitiateLoginUseCase(SSOInitiateLoginUseCase.Param.WithoutRedirect(TEST_CODE, TEST_SERVER_CONFIG))
             assertEquals(result, SSOInitiateLoginResult.Failure.InvalidRedirect)
         }
 
@@ -69,8 +69,8 @@ class SSOInitiateLoginUseCaseTest {
             val expected = serverMiscommunicationFailure(code = HttpStatusCode.Forbidden.value)
             given(validateUUIDUseCase).invocation { invoke(TEST_CODE) }
                 .then { ValidateSSOCodeResult.Valid(TEST_UUID) }
-            given(ssoLoginRepository).coroutine { initiate(TEST_UUID, TestServerConfig.generic) }.then { Either.Left(expected) }
-            val result = ssoInitiateLoginUseCase(SSOInitiateLoginUseCase.Param.WithoutRedirect(TEST_CODE, TestServerConfig.generic))
+            given(ssoLoginRepository).coroutine { initiate(TEST_UUID, TEST_SERVER_CONFIG) }.then { Either.Left(expected) }
+            val result = ssoInitiateLoginUseCase(SSOInitiateLoginUseCase.Param.WithoutRedirect(TEST_CODE, TEST_SERVER_CONFIG))
             assertIs<SSOInitiateLoginResult.Failure.Generic>(result)
             assertEquals(expected, result.genericFailure)
         }
@@ -80,8 +80,8 @@ class SSOInitiateLoginUseCaseTest {
         runTest {
             given(validateUUIDUseCase).invocation { invoke(TEST_CODE) }
                 .then { ValidateSSOCodeResult.Valid(TEST_UUID) }
-            given(ssoLoginRepository).coroutine { initiate(TEST_UUID, TestServerConfig.generic) }.then { Either.Right(TEST_RESPONSE) }
-            val result = ssoInitiateLoginUseCase(SSOInitiateLoginUseCase.Param.WithoutRedirect(TEST_CODE, TestServerConfig.generic))
+            given(ssoLoginRepository).coroutine { initiate(TEST_UUID, TEST_SERVER_CONFIG) }.then { Either.Right(TEST_RESPONSE) }
+            val result = ssoInitiateLoginUseCase(SSOInitiateLoginUseCase.Param.WithoutRedirect(TEST_CODE, TEST_SERVER_CONFIG))
             assertEquals(result, SSOInitiateLoginResult.Success(TEST_RESPONSE))
         }
 
@@ -90,13 +90,13 @@ class SSOInitiateLoginUseCaseTest {
         runTest {
             given(validateUUIDUseCase).invocation { invoke(TEST_CODE) }
                 .then { ValidateSSOCodeResult.Valid(TEST_UUID) }
-            given(ssoLoginRepository).coroutine { initiate(TEST_UUID, TEST_SUCCESS, TEST_ERROR, TestServerConfig.generic) }
+            given(ssoLoginRepository).coroutine { initiate(TEST_UUID, TEST_SUCCESS, TEST_ERROR, TEST_SERVER_CONFIG) }
                 .then { Either.Right(TEST_RESPONSE) }
             val result = ssoInitiateLoginUseCase(
                 SSOInitiateLoginUseCase.Param.WithRedirect(
                     TEST_CODE,
                     SSORedirects(TEST_SUCCESS, TEST_ERROR),
-                    TestServerConfig.generic
+                    TEST_SERVER_CONFIG
                 )
             )
             assertEquals(result, SSOInitiateLoginResult.Success(TEST_RESPONSE))
@@ -108,5 +108,6 @@ class SSOInitiateLoginUseCaseTest {
         const val TEST_SUCCESS = "wire/success"
         const val TEST_ERROR = "wire/error"
         const val TEST_RESPONSE = "wire/response"
+        val TEST_SERVER_CONFIG = newServerConfig(1)
     }
 }
