@@ -101,7 +101,7 @@ class ProtoContentMapperImpl : ProtoContentMapper {
             is GenericMessage.Content.Asset -> {
                 if (protoContent.value.uploaded != null) MessageContent.Asset(
                     MapperProvider.assetMapper().fromProtoAssetMessageToAssetContent(protoContent.value)
-                ) else MessageContent.Unknown // Sometimes backend sens preliminar asset messages just with img metadata, so we discard it
+                ) else MessageContent.Unknown // Sometimes backend sends some preview asset messages just with img metadata and no keys or asset id, so we discard it
             }
             is GenericMessage.Content.Availability -> MessageContent.Unknown
             is GenericMessage.Content.ButtonAction -> MessageContent.Unknown
