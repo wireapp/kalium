@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.conversation
 
 import app.cash.turbine.test
+import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
@@ -50,9 +51,7 @@ class ConversationRepositoryTest {
     private val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
 
     @Mock
-    private val conversationDAO = configure(mock(ConversationDAO::class)) {
-        stubsUnitByDefault = true
-    }
+    private val conversationDAO = configure(mock(ConversationDAO::class)) { stubsUnitByDefault = true }
 
     @Mock
     private val conversationApi = mock(ConversationApi::class)
@@ -71,6 +70,25 @@ class ConversationRepositoryTest {
             conversationApi,
             clientApi
         )
+    }
+
+    @Test
+    fun givenNewConversationEvent_whenCallingInsertConversationFromEvent_thenConversationShouldBePersisted() = runTest {
+        val event = Event.Conversation.NewConversation("id", TestConversation.ID, "time", CONVERSATION_RESPONSE)
+
+        given(userRepository)
+            .suspendFunction(userRepository::getSelfUser)
+            .whenInvoked()
+            .thenReturn(flowOf(TestUser.SELF))
+
+        conversationRepository.insertConversationFromEvent(event)
+
+        verify(conversationDAO)
+            .suspendFunction(conversationDAO::insertConversations)
+            .with(matching { conversations ->
+                conversations.any { entity -> entity.id.value == CONVERSATION_RESPONSE.id.value }
+            })
+            .wasInvoked(exactly = once)
     }
 
     @Test
