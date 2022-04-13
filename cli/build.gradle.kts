@@ -2,9 +2,14 @@ plugins {
     kotlin("jvm")
     application
 }
+val mainFunctionClassName = "com.wire.kalium.cli.CLIApplicationKt"
+
+application{
+    mainClass.set(mainFunctionClassName)
+}
 
 tasks.jar {
-    manifest.attributes["Main-Class"] = "com.wire.kalium.cli.CLIApplicationKt"
+    manifest.attributes["Main-Class"] = mainFunctionClassName
     val dependencies = configurations
         .runtimeClasspath
         .get()
