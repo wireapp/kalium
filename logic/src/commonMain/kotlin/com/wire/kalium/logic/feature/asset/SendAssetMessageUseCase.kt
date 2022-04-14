@@ -8,7 +8,7 @@ import com.wire.kalium.cryptography.utils.encryptDataWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
-import com.wire.kalium.logic.data.asset.AssetType
+import com.wire.kalium.logic.data.asset.FileAsset
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -64,7 +64,7 @@ internal class SendAssetMessageUseCaseImpl(
         val sha256 = calcSHA256(encryptedData.data)
 
         // Upload the asset encrypted data
-        assetDataSource.uploadAndPersistPrivateAsset(AssetType.FileAsset(assetMimeType), encryptedData.data).flatMap { assetId ->
+        assetDataSource.uploadAndPersistPrivateAsset(FileAsset(assetMimeType), encryptedData.data).flatMap { assetId ->
             // Try to send the Asset Message
             prepareAndSendAssetMessage(conversationId, assetRawData.size, assetName, assetMimeType, sha256, otrKey, assetId).flatMap {
                 Either.Right(Unit)
