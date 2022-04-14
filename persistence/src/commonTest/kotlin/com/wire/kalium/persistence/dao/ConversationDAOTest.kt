@@ -111,6 +111,21 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenExistingConversation_ThenInsertedOrUpdatedMembersAreRetrieved() = runTest {
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertOrUpdateOneOnOneMemberWithConnectionStatus(
+            userId = member1.user,
+            status = UserEntity.ConnectionState.ACCEPTED,
+            conversationID = conversationEntity1.id
+        )
+
+        assertEquals(
+            setOf(member1),
+            conversationDAO.getAllMembers(conversationEntity1.id).first().toSet()
+        )
+    }
+
+    @Test
     fun givenAnExistingConversation_WhenUpdatingTheMutingStatus_ThenConversationShouldBeUpdated() = runTest {
         conversationDAO.insertConversation(conversationEntity2)
         conversationDAO.updateConversationMutedStatus(

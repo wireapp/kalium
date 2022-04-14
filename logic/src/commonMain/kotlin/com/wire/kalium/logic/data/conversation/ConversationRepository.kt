@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
@@ -21,6 +22,7 @@ import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.persistence.dao.ConversationDAO
+import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import io.ktor.utils.io.errors.IOException
@@ -39,11 +41,13 @@ import com.wire.kalium.persistence.dao.Member as MemberEntity
 interface ConversationRepository {
     suspend fun getSelfConversationId(): ConversationId
     suspend fun fetchConversations(): Either<CoreFailure, Unit>
+    suspend fun insertConversationFromEvent(event: Event.Conversation.NewConversation): Either<CoreFailure, Unit>
     suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>>
     suspend fun observeConversationList(): Flow<List<Conversation>>
     suspend fun getConversationDetailsById(conversationID: ConversationId): Flow<ConversationDetails>
     suspend fun getConversationDetails(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation>>
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
+    suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, ProtocolInfo>
     suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Member>>
     suspend fun persistMember(member: MemberEntity, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun persistMembers(members: List<MemberEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
@@ -89,6 +93,11 @@ class ConversationDataSource(
             kaliumLogger.d("Persisting fetched conversations into storage")
             persistConversations(conversations, selfUserTeamId)
         }
+    }
+
+    override suspend fun insertConversationFromEvent(event: Event.Conversation.NewConversation): Either<CoreFailure, Unit> = suspending {
+        val selfUserTeamId = userRepository.getSelfUser().first().team
+        persistConversations(listOf(event.conversation), selfUserTeamId)
     }
 
     private suspend fun fetchAllConversationsFromAPI(): Either<NetworkFailure, List<ConversationResponse>> {
@@ -165,7 +174,7 @@ class ConversationDataSource(
                     }).filterNotNull().map { otherUser ->
                         ConversationDetails.OneOne(
                             conversation, otherUser,
-                            ConversationDetails.OneOne.ConnectionState.ACCEPTED, //TODO Get actual connection state
+                            otherUser.connectionStatus,
                             LegalHoldStatus.DISABLED //TODO get actual legal hold status
                         )
                     }
@@ -180,6 +189,11 @@ class ConversationDataSource(
             conversationDAO.getConversationByQualifiedID(idMapper.toDaoModel(conversationId))
                 .filterNotNull()
                 .map(conversationMapper::fromDaoModel)
+        }
+
+    override suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, ProtocolInfo> =
+        wrapStorageRequest {
+            conversationDAO.getConversationByQualifiedID(idMapper.toDaoModel(conversationId)).first()?.protocolInfo
         }
 
     override suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Member>> =

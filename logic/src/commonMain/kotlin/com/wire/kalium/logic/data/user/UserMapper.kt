@@ -34,21 +34,24 @@ interface UserMapper {
         teamMember: TeamsApi.TeamMember,
         userDomain: String
     ): UserEntity
+    fun fromDaoConnectionStateToUser(connectionState: UserEntity.ConnectionState): ConnectionState
+    fun fromUserConnectionStateToDao(connectionState: ConnectionState): UserEntity.ConnectionState
 }
 
 internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
 
     override fun fromDtoToSelfUser(userDTO: UserDTO): SelfUser = with(userDTO) {
         SelfUser(
-            idMapper.fromApiModel(id),
-            name,
-            handle,
-            email,
-            phone,
-            accentId,
-            teamId,
-            assets.getPreviewAssetOrNull()?.key,
-            assets.getCompleteAssetOrNull()?.key
+            id = idMapper.fromApiModel(id),
+            name = name,
+            handle = handle,
+            email = email,
+            phone = phone,
+            accentId = accentId,
+            team = teamId,
+            connectionStatus = ConnectionState.NOT_CONNECTED,
+            previewPicture = assets.getPreviewAssetOrNull()?.key,
+            completePicture = assets.getCompleteAssetOrNull()?.key
         )
     }
 
@@ -74,6 +77,7 @@ internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
         userEntity.phone,
         userEntity.accentId,
         userEntity.team,
+        fromDaoConnectionStateToUser(connectionState = userEntity.connectionStatus),
         userEntity.previewAssetId,
         userEntity.completeAssetId
     )
@@ -102,6 +106,7 @@ internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
             phone = user.phone,
             accentId = updateRequest.accentId ?: user.accentId,
             team = user.team,
+            connectionStatus = fromUserConnectionStateToDao(connectionState = user.connectionStatus),
             previewAssetId = updateRequest.assets?.getPreviewAssetOrNull()?.key,
             completeAssetId = updateRequest.assets?.getCompleteAssetOrNull()?.key
         )
@@ -109,15 +114,15 @@ internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
 
     override fun fromApiModelToDaoModel(userDTO: UserDTO): UserEntity = with(userDTO) {
         return UserEntity(
-            idMapper.fromApiToDao(id),
-            name,
-            handle,
-            email,
-            phone,
-            accentId,
-            teamId,
-            assets.getPreviewAssetOrNull()?.key,
-            assets.getCompleteAssetOrNull()?.key
+            id = idMapper.fromApiToDao(id),
+            name = name,
+            handle = handle,
+            email = email,
+            phone = phone,
+            accentId = accentId,
+            team = teamId,
+            previewAssetId = assets.getPreviewAssetOrNull()?.key,
+            completeAssetId = assets.getCompleteAssetOrNull()?.key
         )
     }
 
@@ -142,7 +147,32 @@ internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
             phone = null,
             accentId = 1,
             team = teamId,
+            connectionStatus = UserEntity.ConnectionState.ACCEPTED,
             previewAssetId = null,
             completeAssetId = null
         )
+
+    override fun fromDaoConnectionStateToUser(connectionState: UserEntity.ConnectionState): ConnectionState =
+        when(connectionState) {
+            UserEntity.ConnectionState.NOT_CONNECTED -> ConnectionState.NOT_CONNECTED
+            UserEntity.ConnectionState.PENDING -> ConnectionState.PENDING
+            UserEntity.ConnectionState.SENT -> ConnectionState.SENT
+            UserEntity.ConnectionState.BLOCKED -> ConnectionState.BLOCKED
+            UserEntity.ConnectionState.IGNORED -> ConnectionState.IGNORED
+            UserEntity.ConnectionState.CANCELLED -> ConnectionState.CANCELLED
+            UserEntity.ConnectionState.MISSING_LEGALHOLD_CONSENT -> ConnectionState.MISSING_LEGALHOLD_CONSENT
+            UserEntity.ConnectionState.ACCEPTED -> ConnectionState.ACCEPTED
+        }
+
+    override fun fromUserConnectionStateToDao(connectionState: ConnectionState): UserEntity.ConnectionState =
+        when(connectionState) {
+            ConnectionState.NOT_CONNECTED -> UserEntity.ConnectionState.NOT_CONNECTED
+            ConnectionState.PENDING -> UserEntity.ConnectionState.PENDING
+            ConnectionState.SENT -> UserEntity.ConnectionState.SENT
+            ConnectionState.BLOCKED -> UserEntity.ConnectionState.BLOCKED
+            ConnectionState.IGNORED -> UserEntity.ConnectionState.IGNORED
+            ConnectionState.CANCELLED -> UserEntity.ConnectionState.CANCELLED
+            ConnectionState.MISSING_LEGALHOLD_CONSENT -> UserEntity.ConnectionState.MISSING_LEGALHOLD_CONSENT
+            ConnectionState.ACCEPTED -> UserEntity.ConnectionState.ACCEPTED
+        }
 }

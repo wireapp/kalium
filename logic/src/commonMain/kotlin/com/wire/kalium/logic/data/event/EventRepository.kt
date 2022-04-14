@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.event
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.di.MapperProvider
@@ -24,6 +25,7 @@ import kotlin.coroutines.coroutineContext
 
 interface EventRepository {
     suspend fun events(): Flow<Either<CoreFailure, Event>>
+    suspend fun updateLastProcessedEventId(eventId: String)
 }
 
 class EventDataSource(
@@ -58,27 +60,36 @@ class EventDataSource(
         clientId: ClientId
     ) = flow<Either<CoreFailure, Event>> {
         var hasMore = true
+        var lastFetchedNotificationId = eventInfoStorage.lastProcessedId
         while (coroutineContext.isActive && hasMore) {
-            val notificationsPageResult = getNextPendingEventsPage(clientId)
+            val notificationsPageResult = getNextPendingEventsPage(lastFetchedNotificationId, clientId)
 
             if (notificationsPageResult.isSuccessful()) {
                 hasMore = notificationsPageResult.value.hasMore
+                lastFetchedNotificationId = notificationsPageResult.value.notifications.lastOrNull()?.id
 
                 notificationsPageResult.value.notifications.flatMap(eventMapper::fromDTO).forEach { event ->
                     if (!coroutineContext.isActive) {
                         return@flow
                     }
                     emit(Either.Right(event))
-                    eventInfoStorage.lastProcessedId = event.id
                 }
             } else {
-                emit(Either.Left(CoreFailure.Unknown(notificationsPageResult.kException)))
+                hasMore = false
+                emit(Either.Left(NetworkFailure.ServerMiscommunication(notificationsPageResult.kException)))
             }
         }
     }
 
-    private suspend fun getNextPendingEventsPage(clientId: ClientId): NetworkResponse<NotificationPageResponse> =
-        eventInfoStorage.lastProcessedId?.let {
+    override suspend fun updateLastProcessedEventId(eventId: String) {
+        eventInfoStorage.lastProcessedId = eventId
+    }
+
+    private suspend fun getNextPendingEventsPage(
+        lastFetchedNotificationId: String?,
+        clientId: ClientId
+    ): NetworkResponse<NotificationPageResponse> =
+        lastFetchedNotificationId?.let {
             notificationApi.notificationsByBatch(NOTIFICATIONS_QUERY_SIZE, clientId.value, it)
         } ?: notificationApi.getAllNotifications(NOTIFICATIONS_QUERY_SIZE, clientId.value)
 

@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.message
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.ProtoContentMapper
@@ -20,6 +21,7 @@ class MessageScope(
     private val conversationRepository: ConversationRepository,
     private val clientRepository: ClientRepository,
     private val proteusClient: ProteusClient,
+    private val mlsClientProvider: MLSClientProvider,
     private val preKeyRepository: PreKeyRepository,
     private val userRepository: UserRepository,
     private val assetRepository: AssetRepository,
@@ -38,9 +40,18 @@ class MessageScope(
     private val messageEnvelopeCreator: MessageEnvelopeCreator
         get() = MessageEnvelopeCreatorImpl(proteusClient, protoContentMapper)
 
+    private val mlsMessageCreator: MLSMessageCreator
+        get() = MLSMessageCreatorImpl(mlsClientProvider, protoContentMapper)
+
     private val messageSender: MessageSender
         get() = MessageSenderImpl(
-            messageRepository, conversationRepository, syncManager, messageSendFailureHandler, sessionEstablisher, messageEnvelopeCreator
+            messageRepository,
+            conversationRepository,
+            syncManager,
+            messageSendFailureHandler,
+            sessionEstablisher,
+            messageEnvelopeCreator,
+            mlsMessageCreator
         )
 
     val sendTextMessage: SendTextMessageUseCase

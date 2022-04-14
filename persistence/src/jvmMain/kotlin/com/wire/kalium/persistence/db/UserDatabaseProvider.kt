@@ -71,7 +71,11 @@ actual class UserDatabaseProvider(private val storePath: File) {
                 content_typeAdapter = ContentTypeAdapter(),
                 visibilityAdapter = EnumColumnAdapter()
             ),
-            User.Adapter(qualified_idAdapter = QualifiedIDAdapter(), IntColumnAdapter)
+            User.Adapter(
+                qualified_idAdapter = QualifiedIDAdapter(),
+                accent_idAdapter = IntColumnAdapter,
+                connection_statusAdapter = EnumColumnAdapter()
+            )
         )
     }
 
@@ -101,6 +105,7 @@ actual class UserDatabaseProvider(private val storePath: File) {
     }
 
     private companion object {
+        // FIXME: user id/domain as the db name
         const val DATABASE_NAME = "main.db"
     }
 }

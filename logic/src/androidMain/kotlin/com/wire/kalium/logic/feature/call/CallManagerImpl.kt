@@ -93,14 +93,6 @@ actual class CallManagerImpl(
         }
     }
 
-    override suspend fun startCall(conversationId: ConversationId, callType: CallType, conversationType: ConversationType, isAudioCbr: Boolean) {
-        withCalling {
-            val avsCallType = callMapper.toCallTypeCalling(callType)
-            val avsConversationType = callMapper.toConversationTypeCalling(conversationType)
-            wcall_start(deferredHandle.await(), conversationId.asString(), avsCallType.avsValue, avsConversationType.avsValue, isAudioCbr.toInt())
-        }
-    }
-
     private fun startHandleAsync() = scope.async(start = CoroutineStart.LAZY) {
         val selfUserId = userId.await().asString()
         val selfClientId = clientId.await().value
@@ -205,14 +197,33 @@ actual class CallManagerImpl(
             kaliumLogger.d("$TAG - onCallingMessageReceived")
         }
 
+    override suspend fun startCall(conversationId: ConversationId, callType: CallType, conversationType: ConversationType, isAudioCbr: Boolean) {
+        kaliumLogger.d("$TAG -> starting call..")
+        withCalling {
+            val avsCallType = callMapper.toCallTypeCalling(callType)
+            val avsConversationType = callMapper.toConversationTypeCalling(conversationType)
+            wcall_start(deferredHandle.await(), conversationId.asString(), avsCallType.avsValue, avsConversationType.avsValue, isAudioCbr.toInt())
+        }
+    }
+
     override suspend fun answerCall(conversationId: ConversationId) = withCalling {
-        kaliumLogger.d("$TAG -> answerCall")
+        kaliumLogger.d("$TAG -> answering call..")
         calling.wcall_answer(
             inst = deferredHandle.await(),
             conversationId = conversationId.asString(),
             callType = CallTypeCalling.AUDIO.avsValue,
             cbrEnabled = false
         )
+    }
+
+    override suspend fun endCall(conversationId: ConversationId) = withCalling {
+        kaliumLogger.d("$TAG -> ending Call..")
+        wcall_end(inst = deferredHandle.await(), conversationId = conversationId.asString())
+    }
+
+    override suspend fun rejectCall(conversationId: ConversationId) = withCalling {
+        kaliumLogger.d("$TAG -> rejecting call..")
+        wcall_reject(inst = deferredHandle.await(), conversationId = conversationId.asString())
     }
 
     override fun onConfigRequest(inst: Handle, arg: Pointer?): Int {

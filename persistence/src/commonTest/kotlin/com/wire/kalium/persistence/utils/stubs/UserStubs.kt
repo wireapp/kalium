@@ -12,6 +12,7 @@ fun newUserEntity(id: String = "test") =
         phone = "phone$id",
         accentId = 1,
         team = "team",
+        UserEntity.ConnectionState.ACCEPTED,
         null, null
     )
 
@@ -24,6 +25,7 @@ fun newUserEntity(qualifiedID: QualifiedIDEntity, id: String = "test") =
         phone = "phone$id",
         accentId = 1,
         team = "team",
+        UserEntity.ConnectionState.ACCEPTED,
         null, null
     )
 
@@ -35,6 +37,7 @@ fun newUserEntity(
     phone: String = "testPhone",
     accentId: Int = 1,
     team: String = "testTeam",
+    connectionStatus: UserEntity.ConnectionState = UserEntity.ConnectionState.ACCEPTED,
     previewAssetId: String = "previewAssetId",
     completeAssetId: String = "completeAssetId",
 ): UserEntity {
@@ -46,6 +49,7 @@ fun newUserEntity(
         phone = phone,
         accentId = accentId,
         team = team,
+        connectionStatus = connectionStatus,
         previewAssetId = previewAssetId,
         completeAssetId = completeAssetId
     )

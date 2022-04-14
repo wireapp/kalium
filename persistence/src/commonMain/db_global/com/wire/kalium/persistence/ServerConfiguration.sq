@@ -1,0 +1,23 @@
+CREATE TABLE ServerConfiguration (
+    id TEXT PRIMARY KEY NOT NULL,
+    title TEXT NOT NULL,
+    apiBaseUrl TEXT NOT NULL UNIQUE,
+    accountBaseUrl TEXT NOT NULL,
+    webSocketBaseUrl TEXT NOT NULL UNIQUE,
+    blackListUrl TEXT NOT NULL,
+    teamsUrl TEXT NOT NULL,
+    websiteUrl TEXT NOT NULL
+);
+
+deleteById:
+DELETE FROM ServerConfiguration WHERE id = ?;
+
+insert:
+INSERT OR IGNORE INTO ServerConfiguration(id, apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title)
+VALUES( ?, ?, ?, ?, ?, ?, ?, ?);
+
+storedConfig:
+SELECT * FROM ServerConfiguration;
+
+getById:
+SELECT * FROM ServerConfiguration WHERE id = ?;

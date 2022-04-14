@@ -14,9 +14,15 @@ dependencies {
 
 sqldelight {
     database("UserDatabase") {
-        dialect = "app.cash.sqldelight:sqlite-3-24-dialect:${Versions.sqlDelight}"
+        dialect = Dependencies.SqlDelight.dialect
         packageName = "com.wire.kalium.persistence"
         sourceFolders = listOf("db_user")
+    }
+
+    database("GlobalDatabase") {
+        dialect = Dependencies.SqlDelight.dialect
+        packageName = "com.wire.kalium.persistence"
+        sourceFolders = listOf("db_global")
     }
 }
 

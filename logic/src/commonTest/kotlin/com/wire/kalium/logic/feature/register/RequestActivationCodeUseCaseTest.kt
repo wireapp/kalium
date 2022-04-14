@@ -5,6 +5,7 @@ import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
+import com.wire.kalium.logic.util.stubs.newServerConfig
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.given
@@ -69,16 +70,7 @@ class RequestActivationCodeUseCaseTest {
 
     private companion object {
         const val TEST_EMAIL = """user@domain.com"""
-        val TEST_SERVER_CONFIG: ServerConfig = ServerConfig(
-            apiBaseUrl = "apiBaseUrl.com",
-            accountsBaseUrl = "accountsUrl.com",
-            webSocketBaseUrl = "webSocketUrl.com",
-            blackListUrl = "blackListUrl.com",
-            teamsUrl = "teamsUrl.com",
-            websiteUrl = "websiteUrl.com",
-            title = "Test Title"
-        )
-
+        val TEST_SERVER_CONFIG: ServerConfig = newServerConfig(1)
     }
 
 }

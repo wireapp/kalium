@@ -1,4 +1,5 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import com.wire.kalium.persistence.dao.UserEntity.ConnectionState;
 import kotlin.Int;
 
 CREATE TABLE User (
@@ -9,6 +10,7 @@ CREATE TABLE User (
     phone TEXT,
     accent_id INTEGER AS Int NOT NULL DEFAULT 0,
     team TEXT,
+    connection_status TEXT AS ConnectionState NOT NULL DEFAULT 'NOT_CONNECTED',
     preview_asset_id TEXT,
     complete_asset_id TEXT
 );
@@ -20,8 +22,8 @@ deleteUser:
 DELETE FROM User WHERE qualified_id = ?;
 
 insertUser:
-INSERT OR REPLACE INTO User(qualified_id, name, handle, email, phone, accent_id, team, preview_asset_id, complete_asset_id)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 insertOrIgnoreUserId:
 INSERT OR IGNORE INTO User(qualified_id)
@@ -31,6 +33,10 @@ updateUser:
 UPDATE User
 SET name = ?, handle = ?, email = ?, accent_id = ?, preview_asset_id = ?, complete_asset_id = ?
 WHERE qualified_id = ?;
+
+insertOrReplaceUserIdWithConnectionStatus:
+INSERT OR REPLACE INTO User(qualified_id, connection_status)
+VALUES(?, ?);
 
 selectAllUsers:
 SELECT * FROM User;

@@ -32,6 +32,7 @@ class ListenToEventsUseCase(
                                 kaliumLogger.i(message = "Unhandled event id=${event.id}")
                             }
                         }
+                        eventRepository.updateLastProcessedEventId(event.id)
                     }
                 }.onFailure {
                     kaliumLogger.e(message = "Failure when receiving events: $it")

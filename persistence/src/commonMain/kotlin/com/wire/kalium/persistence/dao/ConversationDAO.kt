@@ -18,8 +18,6 @@ data class ConversationEntity(
 
     enum class Protocol { PROTEUS, MLS }
 
-    enum class MutedStatus { ALL_ALLOWED, ONLY_MENTIONS_ALLOWED, MENTIONS_MUTED, ALL_MUTED }
-
     sealed class ProtocolInfo {
         object Proteus : ProtocolInfo()
         data class MLS(val groupId: String, val groupState: GroupState) : ProtocolInfo()
@@ -44,6 +42,11 @@ interface ConversationDAO {
     suspend fun insertMembers(memberList: List<Member>, conversationID: QualifiedIDEntity)
     suspend fun deleteMemberByQualifiedID(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity)
     suspend fun getAllMembers(qualifiedID: QualifiedIDEntity): Flow<List<Member>>
+    suspend fun insertOrUpdateOneOnOneMemberWithConnectionStatus(
+        userId: UserIDEntity,
+        status: UserEntity.ConnectionState,
+        conversationID: QualifiedIDEntity
+    )
     suspend fun updateConversationMutedStatus(
         conversationId: QualifiedIDEntity,
         mutedStatus: ConversationEntity.MutedStatus,
