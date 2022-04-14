@@ -235,6 +235,9 @@ interface ApiTest {
     // path
     fun HttpRequestData.assertPathEqual(path: String) = assertEquals(path, this.url.encodedPath)
 
+    // path and query
+    fun HttpRequestData.assertPathAndQueryEqual(pathAndQuery: String) = assertEquals(pathAndQuery, this.url.encodedPathAndQuery)
+
     // body
     fun HttpRequestData.assertBodyContent(content: String) {
         assertIs<TextContent>(body)
