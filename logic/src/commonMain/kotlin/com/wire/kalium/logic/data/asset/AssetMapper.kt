@@ -62,7 +62,7 @@ class AssetMapperImpl : AssetMapper {
         with(assetContentEntity) {
             return AssetContent(
                 mimeType = assetMimeType,
-                sizeInBytes = assetSize,
+                sizeInBytes = assetSizeInBytes,
                 name = assetName,
                 metadata = getAssetContentMetadata(assetMimeType, assetContentEntity),
                 remoteData = AssetContent.RemoteData(
@@ -104,7 +104,7 @@ class AssetMapperImpl : AssetMapper {
     override fun fromProtoAssetMessageToAssetContent(protoAssetMessage: Asset): AssetContent {
         with(protoAssetMessage) {
             return AssetContent(
-                sizeInBytes = original?.size?.toInt() ?: 0,
+                sizeInBytes = original?.size ?: 0,
                 name = original?.name,
                 mimeType = original?.mimeType ?: "*/*",
                 metadata = when (val metadataType = original?.metaData) {

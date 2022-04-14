@@ -31,7 +31,7 @@ class MessageMapperImpl(private val idMapper: IdMapper) : MessageMapper {
                 with(message.content.value) {
                     AssetMessageContent(
                         assetMimeType = mimeType,
-                        assetSize = sizeInBytes,
+                        assetSizeInBytes = sizeInBytes,
                         assetName = name,
                         assetImageWidth = metadata?.let { if (it is Image) it.width else null },
                         assetImageHeight = metadata?.let { if (it is Image) it.height else null },
