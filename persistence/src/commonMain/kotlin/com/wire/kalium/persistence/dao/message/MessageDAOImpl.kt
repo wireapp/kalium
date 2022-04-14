@@ -76,7 +76,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             content_type = contentTypeOf(message.content),
             asset_mime_type = if (message.content is AssetMessageContent) message.content.assetMimeType else null,
             asset_size = if (message.content is AssetMessageContent) message.content.assetSize else null,
-            asset_name = if (message.content is AssetMessageContent) message.content.assetMimeType else null,
+            asset_name = if (message.content is AssetMessageContent) message.content.assetName else null,
             asset_image_width = if (message.content is AssetMessageContent) message.content.assetImageWidth else null,
             asset_image_height = if (message.content is AssetMessageContent) message.content.assetImageHeight else null,
             asset_otr_key = if (message.content is AssetMessageContent) message.content.assetOtrKey else null,
