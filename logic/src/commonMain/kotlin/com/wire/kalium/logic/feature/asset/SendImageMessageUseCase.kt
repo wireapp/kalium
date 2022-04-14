@@ -134,7 +134,7 @@ internal class SendImageMessageUseCaseImpl(
         imgHeight: Int
     ): AssetContent {
         return AssetContent(
-            size = dataSize,
+            sizeInBytes = dataSize,
             name = imageName,
             mimeType = ImageAsset.JPEG.name,
             metadata = AssetContent.AssetMetadata.Image(imgWidth, imgHeight),

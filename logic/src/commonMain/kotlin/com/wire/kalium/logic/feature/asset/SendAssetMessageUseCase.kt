@@ -128,7 +128,7 @@ internal class SendAssetMessageUseCaseImpl(
         mimeType: String,
     ): AssetContent {
         return AssetContent(
-            size = dataSize,
+            sizeInBytes = dataSize,
             name = assetName,
             mimeType = mimeType,
             remoteData = AssetContent.RemoteData(

@@ -39,7 +39,7 @@ class ProtoContentMapperImpl : ProtoContentMapper {
                         Asset(
                             original = Original(
                                 mimeType = mimeType,
-                                size = size.toLong(),
+                                size = sizeInBytes.toLong(),
                                 name = name,
                                 metaData = when (metadata) {
                                     is AssetContent.AssetMetadata.Image -> Original.MetaData.Image(
