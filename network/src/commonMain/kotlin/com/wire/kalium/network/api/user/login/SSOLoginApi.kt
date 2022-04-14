@@ -9,6 +9,7 @@ import io.ktor.client.request.accept
 import io.ktor.client.request.get
 import io.ktor.client.request.head
 import io.ktor.client.request.header
+import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.statement.request
 import io.ktor.http.ContentType
@@ -34,13 +35,12 @@ interface SSOLoginApi {
 
 class SSOLoginApiImpl(private val httpClient: HttpClient) : SSOLoginApi {
     override suspend fun initiate(param: SSOLoginApi.InitiateParam, apiBaseUrl: Url): NetworkResponse<String> {
-        val path = when (param) {
-            is SSOLoginApi.InitiateParam.WithoutRedirect -> "$PATH_SSO/$PATH_INITIATE/${param.uuid}"
-            // ktor will encode the query param as URL so a way around it to append the query to the path string
-            is SSOLoginApi.InitiateParam.WithRedirect -> "$PATH_SSO/$PATH_INITIATE/${param.uuid}?$QUERY_SUCCESS_REDIRECT=${param.success}&$QUERY_ERROR_REDIRECT=${param.error}"
-        }
         val response = httpClient.head {
-            setUrl(apiBaseUrl, path)
+            setUrl(apiBaseUrl, "$PATH_SSO/$PATH_INITIATE/${param.uuid}")
+            if(param is SSOLoginApi.InitiateParam.WithRedirect) {
+                parameter(QUERY_SUCCESS_REDIRECT, param.success)
+                parameter(QUERY_ERROR_REDIRECT, param.error)
+            }
             accept(ContentType.Text.Plain)
         }
         return if (response.status.isSuccess()) {

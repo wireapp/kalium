@@ -22,7 +22,7 @@ class CallsScope(
 
     val answerCall: AnswerCallUseCase get() = AnswerCallUseCaseImpl(callManager)
 
-    val endCal: EndCallUseCase get() = EndCallUseCase(callManager)
+    val endCall: EndCallUseCase get() = EndCallUseCase(callManager)
 
     val rejectCall: RejectCallUseCase get() = RejectCallUseCase(callManager)
 }
