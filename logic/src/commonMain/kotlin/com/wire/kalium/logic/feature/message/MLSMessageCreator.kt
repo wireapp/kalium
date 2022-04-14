@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.api.message.MLSMessageApi
 
 interface MLSMessageCreator {
@@ -25,6 +26,7 @@ class MLSMessageCreatorImpl(
 
     override suspend fun createOutgoingMLSMessage(groupId: String, message: Message): Either<CoreFailure, MLSMessageApi.Message> {
         return mlsClientProvider.getMLSClient().flatMap { client ->
+            kaliumLogger.i("Creating outgoing MLS message (groupID = $groupId)")
             val content = protoContentMapper.encodeToProtobuf(ProtoContent(message.id, message.content))
             val encryptedContent = client.encryptMessage(groupId, content.data)
             Either.Right(MLSMessageApi.Message(encryptedContent))

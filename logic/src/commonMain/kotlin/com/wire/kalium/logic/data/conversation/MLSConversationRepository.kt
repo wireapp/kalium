@@ -12,6 +12,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.message.MLSMessageApi
@@ -24,6 +25,7 @@ interface MLSConversationRepository {
 
     suspend fun establishMLSGroup(groupID: String): Either<CoreFailure, Unit>
     suspend fun establishMLSGroupFromWelcome(welcomeEvent: Event.Conversation.MLSWelcome): Either<CoreFailure, Unit>
+    suspend fun messageFromMLSMessage(messageEvent: Event.Conversation.NewMLSMessage): Either<CoreFailure, ByteArray?>
 
 }
 
@@ -36,17 +38,36 @@ class MLSConversationDataSource(
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper()
 ): MLSConversationRepository {
 
+    override suspend fun messageFromMLSMessage(messageEvent: Event.Conversation.NewMLSMessage): Either<CoreFailure, ByteArray?> = suspending {
+        mlsClientProvider.getMLSClient()
+            .flatMap { mlsClient ->
+                wrapStorageRequest {
+                    conversationDAO.getConversationByQualifiedID(idMapper.toDaoModel(messageEvent.conversationId)).first()
+                }.flatMap { conversation ->
+                    if (conversation.protocolInfo is ConversationEntity.ProtocolInfo.MLS) {
+                        Either.Right(mlsClient.decryptMessage((conversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId, messageEvent.content.decodeBase64Bytes()))
+                    } else {
+                        Either.Right(null)
+                    }
+                }
+            }
+    }
+
     override suspend fun establishMLSGroupFromWelcome(welcomeEvent: Event.Conversation.MLSWelcome): Either<CoreFailure, Unit> = suspending {
         mlsClientProvider.getMLSClient().flatMap { client ->
             val groupID = client.processWelcomeMessage(welcomeEvent.message.decodeBase64Bytes())
+
+            client.encryptMessage(groupID, "hello world".encodeToByteArray())
 
             wrapStorageRequest {
                 if (conversationDAO.getConversationByGroupID(groupID).first() == null) {
                     // Welcome arrived before the conversation create event, insert empty conversation.
                     conversationDAO.insertConversation(conversationMapper.toDaoModel(welcomeEvent, groupID))
+                    kaliumLogger.i("Inserted conversation from welcome message (groupID = $groupID)")
                 } else {
                     // Welcome arrived after the conversation create event, update existing conversation.
                     conversationDAO.updateConversationGroupState(ConversationEntity.GroupState.ESTABLISHED, groupID)
+                    kaliumLogger.i("Updated conversation from welcome message (groupID = $groupID)")
                 }
             }
         }
@@ -69,10 +90,13 @@ class MLSConversationDataSource(
                         )
                     }
 
-                // TODO: send handshake when API is available
                 client.createConversation(groupID, clientKeyPackageList)?.let { (handshake, welcome) ->
                     wrapApiRequest {
                         mlsMessageApi.sendWelcomeMessage(MLSMessageApi.WelcomeMessage(welcome))
+                    }.flatMap {
+                        wrapApiRequest {
+                            mlsMessageApi.sendMessage(MLSMessageApi.Message(handshake))
+                        }
                     }.flatMap {
                         wrapStorageRequest {
                             conversationDAO.updateConversationGroupState(ConversationEntity.GroupState.ESTABLISHED, groupID)

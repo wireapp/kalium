@@ -17,6 +17,7 @@ class EventMapper(private val idMapper: IdMapper) {
                 is EventContentDTO.Conversation.MemberJoinDTO -> memberJoin(id, eventContentDTO)
                 is EventContentDTO.Conversation.MemberLeaveDTO -> memberLeave(id, eventContentDTO)
                 is EventContentDTO.Conversation.MLSWelcomeDTO -> welcomeMessage(id, eventContentDTO)
+                is EventContentDTO.Conversation.NewMLSMessageDTO -> newMLSMessage(id, eventContentDTO)
                 is EventContentDTO.User.NewClientDTO, EventContentDTO.Unknown -> Event.Unknown(id)
             }
         } ?: listOf()
@@ -42,6 +43,17 @@ class EventMapper(private val idMapper: IdMapper) {
         eventContentDTO.time,
         eventContentDTO.data.text
     )
+    private fun newMLSMessage(
+        id: String,
+        eventContentDTO: EventContentDTO.Conversation.NewMLSMessageDTO
+    ) = Event.Conversation.NewMLSMessage(
+        id,
+        idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
+        idMapper.fromApiModel(eventContentDTO.qualifiedFrom),
+        eventContentDTO.time,
+        eventContentDTO.message
+    )
+
 
     private fun newConversation(
         id: String,

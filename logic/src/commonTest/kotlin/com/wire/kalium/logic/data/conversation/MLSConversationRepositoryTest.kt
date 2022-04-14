@@ -26,7 +26,6 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.thenDoNothing
 import io.mockative.verify
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -90,6 +89,11 @@ class MLSConversationRepositoryTest {
             .whenInvokedWith(anything())
             .then { NetworkResponse.Success(Unit, emptyMap(), 201) }
 
+        given(mlsMessageApi)
+            .suspendFunction(mlsMessageApi::sendMessage)
+            .whenInvokedWith(anything())
+            .then { NetworkResponse.Success(Unit, emptyMap(), 201) }
+
         given(conversationDAO)
             .suspendFunction(conversationDAO::updateConversationGroupState)
             .whenInvokedWith(anything(), anything())
@@ -105,6 +109,9 @@ class MLSConversationRepositoryTest {
             .wasInvoked(once)
 
         verify(mlsMessageApi).coroutine { sendWelcomeMessage(MLSMessageApi.WelcomeMessage(WELCOME)) }
+            .wasInvoked(once)
+
+        verify(mlsMessageApi).coroutine { sendMessage(MLSMessageApi.Message(HANDSHAKE)) }
             .wasInvoked(once)
     }
 
