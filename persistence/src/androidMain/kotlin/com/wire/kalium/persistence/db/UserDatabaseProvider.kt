@@ -63,7 +63,8 @@ actual class UserDatabaseProvider(private val context: Context, userId: UserIDEn
                 qualified_idAdapter = QualifiedIDAdapter(),
                 typeAdapter = EnumColumnAdapter(),
                 mls_group_stateAdapter = EnumColumnAdapter(),
-                protocolAdapter = EnumColumnAdapter()
+                protocolAdapter = EnumColumnAdapter(),
+                muted_statusAdapter = EnumColumnAdapter()
             ),
             Member.Adapter(userAdapter = QualifiedIDAdapter(), conversationAdapter = QualifiedIDAdapter()),
             Message.Adapter(
@@ -88,7 +89,7 @@ actual class UserDatabaseProvider(private val context: Context, userId: UserIDEn
         get() = UserDAOImpl(database.usersQueries)
 
     actual val conversationDAO: ConversationDAO
-        get() = ConversationDAOImpl(database.converationsQueries, database.usersQueries, database.membersQueries)
+        get() = ConversationDAOImpl(database.conversationsQueries, database.usersQueries, database.membersQueries)
 
     actual val metadataDAO: MetadataDAO
         get() = MetadataDAOImpl(database.metadataQueries)

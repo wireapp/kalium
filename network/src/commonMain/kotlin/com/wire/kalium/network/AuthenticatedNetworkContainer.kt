@@ -7,7 +7,7 @@ import com.wire.kalium.network.api.call.CallApiImpl
 import com.wire.kalium.network.api.contact.search.UserSearchApi
 import com.wire.kalium.network.api.contact.search.UserSearchApiImpl
 import com.wire.kalium.network.api.conversation.ConversationApi
-import com.wire.kalium.network.api.conversation.ConversationApiImp
+import com.wire.kalium.network.api.conversation.ConversationApiImpl
 import com.wire.kalium.network.api.keypackage.KeyPackageApi
 import com.wire.kalium.network.api.keypackage.KeyPackageApiImpl
 import com.wire.kalium.network.api.message.MLSMessageApi
@@ -53,7 +53,7 @@ class AuthenticatedNetworkContainer(
 
     val mlsMessageApi: MLSMessageApi get() = MLSMessageApiImpl(authenticatedHttpClient)
 
-    val conversationApi: ConversationApi get() = ConversationApiImp(authenticatedHttpClient)
+    val conversationApi: ConversationApi get() = ConversationApiImpl(authenticatedHttpClient)
 
     val keyPackageApi: KeyPackageApi get() = KeyPackageApiImpl(authenticatedHttpClient)
 

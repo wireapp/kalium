@@ -9,10 +9,10 @@ import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
-import io.ktor.client.statement.HttpResponse
 
-class ConversationApiImp(private val httpClient: HttpClient) : ConversationApi {
+class ConversationApiImpl(private val httpClient: HttpClient) : ConversationApi {
     override suspend fun conversationsByBatch(queryStart: String?, querySize: Int): NetworkResponse<ConversationPagingResponse> =
         wrapKaliumResponse {
             httpClient.get(PATH_CONVERSATIONS) {
@@ -37,7 +37,7 @@ class ConversationApiImp(private val httpClient: HttpClient) : ConversationApi {
     override suspend fun removeConversationMember(userId: UserId, conversationId: ConversationId): NetworkResponse<Unit> =
         wrapKaliumResponse {
             httpClient.delete(
-                 "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}" +
+                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}" +
                         PATH_MEMBERS +
                         "/${userId.domain}/${userId.value}"
             )
@@ -55,14 +55,14 @@ class ConversationApiImp(private val httpClient: HttpClient) : ConversationApi {
      */
     override suspend fun createNewConversation(createConversationRequest: CreateConversationRequest): NetworkResponse<ConversationResponse> =
         wrapKaliumResponse {
-            httpClient.post( PATH_CONVERSATIONS) {
+            httpClient.post(PATH_CONVERSATIONS) {
                 setBody(createConversationRequest)
             }
         }
 
     override suspend fun createOne2OneConversation(createConversationRequest: CreateConversationRequest): NetworkResponse<ConversationResponse> =
         wrapKaliumResponse {
-            httpClient.post( "$PATH_CONVERSATIONS$PATH_ONE_2_ONE") {
+            httpClient.post("$PATH_CONVERSATIONS$PATH_ONE_2_ONE") {
                 setBody(createConversationRequest)
             }
         }
@@ -86,8 +86,18 @@ class ConversationApiImp(private val httpClient: HttpClient) : ConversationApi {
         }
     }
 
+    override suspend fun updateConversationMemberState(
+        memberUpdateRequest: MemberUpdateRequest,
+        conversationId: ConversationId,
+    ): NetworkResponse<Unit> = wrapKaliumResponse {
+        httpClient.put("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}$PATH_SELF") {
+            setBody(memberUpdateRequest)
+        }
+    }
+
     private companion object {
         const val PATH_CONVERSATIONS = "/conversations"
+        const val PATH_SELF = "/self"
         const val PATH_MEMBERS = "/members"
         const val PATH_ONE_2_ONE = "/one2one"
         const val PATH_V2 = "/v2"

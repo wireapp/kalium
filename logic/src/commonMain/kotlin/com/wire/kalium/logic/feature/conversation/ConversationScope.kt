@@ -33,4 +33,6 @@ class ConversationScope(
     val getOrCreateOneToOneConversationUseCase: GetOrCreateOneToOneConversationUseCase
         get() = GetOrCreateOneToOneConversationUseCase(conversationRepository)
 
+    val updateConversationMutedStatus: UpdateConversationMutedStatusUseCase
+        get() = UpdateConversationMutedStatusUseCaseImpl(conversationRepository)
 }
