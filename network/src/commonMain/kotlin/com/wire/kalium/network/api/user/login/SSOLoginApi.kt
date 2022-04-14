@@ -9,6 +9,7 @@ import io.ktor.client.request.accept
 import io.ktor.client.request.get
 import io.ktor.client.request.head
 import io.ktor.client.request.header
+import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.statement.request
 import io.ktor.http.ContentType
