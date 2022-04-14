@@ -38,7 +38,7 @@ data class ServerConfig(
             websiteUrl = """https://wire.com""",
             title = "Staging"
         )
-        val DEFAULT = STAGING
+        val DEFAULT = PRODUCTION
     }
 }
 
