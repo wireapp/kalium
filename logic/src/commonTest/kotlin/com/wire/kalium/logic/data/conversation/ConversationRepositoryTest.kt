@@ -37,6 +37,7 @@ import io.mockative.verify
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Clock
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -409,6 +410,36 @@ class ConversationRepositoryTest {
             //then
             assertIs<Either.Right<ConversationDetails.OneOne>>(result)
         }
+
+    @Test
+    fun givenAWantToMuteAConversation_whenCallingUpdateMutedStatus_thenShouldDelegateCallToConversationApi() = runTest {
+        given(conversationApi)
+            .suspendFunction(conversationApi::updateConversationMemberState)
+            .whenInvokedWith(any(), any())
+            .thenReturn(NetworkResponse.Success(Unit, mapOf(), HttpStatusCode.OK.value))
+
+        given(conversationDAO)
+            .suspendFunction(conversationDAO::updateConversationMutedStatus)
+            .whenInvokedWith(any(), any(), any())
+            .thenReturn(Unit)
+
+        conversationRepository.updateMutedStatus(
+            TestConversation.ID,
+            MutedConversationStatus.AllMuted,
+            Clock.System.now().toEpochMilliseconds()
+        )
+
+        verify(conversationApi)
+            .suspendFunction(conversationApi::updateConversationMemberState)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
+
+        verify(conversationDAO)
+            .suspendFunction(conversationDAO::updateConversationMutedStatus)
+            .with(any(), any(), any())
+            .wasInvoked(exactly = once)
+    }
+
 
     companion object {
         const val GROUP_NAME = "Group Name"

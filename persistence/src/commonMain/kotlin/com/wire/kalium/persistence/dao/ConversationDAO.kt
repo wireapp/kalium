@@ -8,6 +8,8 @@ data class ConversationEntity(
     val type: Type,
     val teamId: String?,
     val protocolInfo: ProtocolInfo,
+    val mutedStatus: MutedStatus = MutedStatus.ALL_ALLOWED,
+    val mutedTime: Long = 0,
     val lastNotificationDate: String?
 ) {
 
@@ -17,9 +19,11 @@ data class ConversationEntity(
 
     enum class Protocol { PROTEUS, MLS }
 
+    enum class MutedStatus { ALL_ALLOWED, ONLY_MENTIONS_ALLOWED, MENTIONS_MUTED, ALL_MUTED }
+
     sealed class ProtocolInfo {
-        object Proteus: ProtocolInfo()
-        data class MLS(val groupId: String, val groupState: GroupState): ProtocolInfo()
+        object Proteus : ProtocolInfo()
+        data class MLS(val groupId: String, val groupState: GroupState) : ProtocolInfo()
     }
 }
 
@@ -48,6 +52,11 @@ interface ConversationDAO {
         userId: UserIDEntity,
         status: UserEntity.ConnectionState,
         conversationID: QualifiedIDEntity
+    )
+    suspend fun updateConversationMutedStatus(
+        conversationId: QualifiedIDEntity,
+        mutedStatus: ConversationEntity.MutedStatus,
+        mutedStatusTimestamp: Long
     )
     suspend fun getConversationsForNotifications(): Flow<List<ConversationEntity>>
 }

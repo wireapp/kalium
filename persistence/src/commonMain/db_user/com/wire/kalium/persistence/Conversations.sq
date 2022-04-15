@@ -10,6 +10,8 @@ CREATE TABLE Conversation (
     mls_group_id TEXT,
     mls_group_state TEXT AS ConversationEntity.GroupState NOT NULL,
     protocol TEXT AS ConversationEntity.Protocol NOT NULL,
+    muted_status TEXT AS ConversationEntity.MutedStatus DEFAULT "all_allowed" NOT NULL,
+    muted_time INTEGER DEFAULT 0 NOT NULL,
     has_unnotified_messages INTEGER AS Boolean DEFAULT 0,
     last_notified_message_date TEXT
 );
@@ -21,15 +23,17 @@ deleteConversation:
 DELETE FROM Conversation WHERE qualified_id = ?;
 
 insertConversation:
-INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, protocol)
-VALUES(?, ?, ?, ?, ?, ?, ?)
+INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, protocol, muted_status, muted_time)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
 name = excluded.name,
 type = excluded.type,
 team_id = excluded.team_id,
 mls_group_id = excluded.mls_group_id,
 mls_group_state = excluded.mls_group_state,
-protocol = excluded.protocol;
+protocol = excluded.protocol,
+muted_status = excluded.muted_status,
+muted_time = excluded.muted_time;
 
 updateConversation:
 UPDATE Conversation
@@ -62,3 +66,8 @@ SELECT * FROM Conversation WHERE mls_group_id = ?;
 
 selectConversationsWithUnnotifiedMessages:
 SELECT * FROM Conversation WHERE has_unnotified_messages != 0;
+
+updateConversationMutingStatus:
+UPDATE Conversation
+SET muted_status = ?, muted_time = ?
+WHERE qualified_id = ?;

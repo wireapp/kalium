@@ -54,7 +54,17 @@ interface ConversationRepository {
     suspend fun persistMembers(members: List<MemberEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun deleteMember(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun getOneToOneConversationDetailsByUserId(otherUserId: UserId): Either<CoreFailure, ConversationDetails.OneOne?>
-    suspend fun createGroupConversation(name: String? = null, members: List<Member>, options: ConverationOptions = ConverationOptions()): Either<CoreFailure, Conversation>
+    suspend fun createGroupConversation(
+        name: String? = null,
+        members: List<Member>,
+        options: ConverationOptions = ConverationOptions()
+    ): Either<CoreFailure, Conversation>
+
+    suspend fun updateMutedStatus(
+        conversationId: ConversationId,
+        mutedStatus: MutedConversationStatus,
+        mutedStatusTimestamp: Long
+    ): Either<CoreFailure, Unit>
     suspend fun getConversationsForNotifications(): Flow<List<Conversation>>
     suspend fun setConversationAsNonNotified(qualifiedID: QualifiedID): Either<StorageFailure, Unit>
     suspend fun setConversationAsNotified(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
@@ -69,7 +79,8 @@ class ConversationDataSource(
     private val clientApi: ClientApi,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
-    private val memberMapper: MemberMapper = MapperProvider.memberMapper()
+    private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
+    private val conversationStatusMapper: ConversationStatusMapper = MapperProvider.conversationStatusMapper()
 ) : ConversationRepository {
 
     override suspend fun fetchConversations(): Either<CoreFailure, Unit> = suspending {
@@ -303,6 +314,30 @@ class ConversationDataSource(
                 .flatMapMerge { getConversationDetailsById(it.id) }
                 .filterIsInstance<ConversationDetails.OneOne>()
                 .firstOrNull { otherUserId == it.otherUser.id }
+        }
+    }
+
+    /**
+     * Updates the conversation muting options status and the timestamp of the applied change, both remotely and local
+     */
+    override suspend fun updateMutedStatus(
+        conversationId: ConversationId,
+        mutedStatus: MutedConversationStatus,
+        mutedStatusTimestamp: Long
+    ): Either<CoreFailure, Unit> = suspending {
+        wrapApiRequest {
+            conversationApi.updateConversationMemberState(
+                memberUpdateRequest = conversationStatusMapper.toApiModel(mutedStatus, mutedStatusTimestamp),
+                conversationId = idMapper.toApiModel(conversationId)
+            )
+        }.flatMap {
+            wrapStorageRequest {
+                conversationDAO.updateConversationMutedStatus(
+                    conversationId = idMapper.toDaoModel(conversationId),
+                    mutedStatus = conversationStatusMapper.toDaoModel(mutedStatus),
+                    mutedStatusTimestamp = mutedStatusTimestamp
+                )
+            }
         }
     }
 

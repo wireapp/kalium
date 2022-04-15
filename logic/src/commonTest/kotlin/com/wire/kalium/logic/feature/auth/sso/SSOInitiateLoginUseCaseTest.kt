@@ -95,9 +95,9 @@ class SSOInitiateLoginUseCaseTest {
             val result = ssoInitiateLoginUseCase(
                 SSOInitiateLoginUseCase.Param.WithRedirect(
                     TEST_CODE,
-                    SSORedirects(TEST_SUCCESS, TEST_ERROR),
-                    TEST_SERVER_CONFIG
-                )
+                    TEST_SERVER_CONFIG,
+                    SSORedirects(TEST_SUCCESS, TEST_ERROR)
+                    )
             )
             assertEquals(result, SSOInitiateLoginResult.Success(TEST_RESPONSE))
         }
