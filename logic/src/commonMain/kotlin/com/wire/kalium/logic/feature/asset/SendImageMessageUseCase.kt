@@ -69,7 +69,7 @@ internal class SendImageMessageUseCaseImpl(
         // Upload the asset encrypted data
         assetDataSource.uploadAndPersistPrivateAsset(ImageAsset.JPEG, encryptedData.data).flatMap { assetId ->
             // Try to send the Image Message
-            prepareAndSendImageMessage(conversationId, imageRawData.size, imageName, sha256, otrKey, assetId, imgWidth, imgHeight).flatMap {
+            prepareAndSendImageMessage(conversationId, imageRawData.size.toLong(), imageName, sha256, otrKey, assetId, imgWidth, imgHeight).flatMap {
                 Either.Right(Unit)
             }
         }.coFold({
@@ -82,7 +82,7 @@ internal class SendImageMessageUseCaseImpl(
 
     private suspend fun prepareAndSendImageMessage(
         conversationId: ConversationId,
-        dataSize: Int,
+        dataSize: Long,
         imageName: String?,
         sha256: ByteArray,
         otrKey: AES256Key,
@@ -125,7 +125,7 @@ internal class SendImageMessageUseCaseImpl(
     }
 
     private fun provideAssetMessageContent(
-        dataSize: Int,
+        dataSize: Long,
         imageName: String?,
         sha256: ByteArray,
         otrKey: AES256Key,
