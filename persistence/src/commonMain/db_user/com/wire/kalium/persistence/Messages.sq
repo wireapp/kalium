@@ -94,5 +94,5 @@ SELECT * FROM Message WHERE id = ? AND conversation_id = ?;
 selectByConversationId:
 SELECT * FROM Message WHERE conversation_id = ? ORDER BY date DESC LIMIT ? OFFSET ?;
 
-selectByConversationIdAndDate:
+selectMessagesByConversationIdAfterDate:
 SELECT * FROM Message WHERE conversation_id = ? AND Datetime(date) > Datetime(?) ORDER BY date DESC;

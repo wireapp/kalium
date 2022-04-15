@@ -180,7 +180,7 @@ class MLSConversationRepositoryTest {
                 null,
                 ConversationEntity.Type.GROUP,
                 null,
-                ConversationEntity.ProtocolInfo.MLS(GROUP_ID, ConversationEntity.GroupState.ESTABLISHED))
+                ConversationEntity.ProtocolInfo.MLS(GROUP_ID, ConversationEntity.GroupState.ESTABLISHED), null)
             ))
             .wasInvoked(once)
     }

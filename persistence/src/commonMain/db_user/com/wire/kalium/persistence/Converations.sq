@@ -11,7 +11,7 @@ CREATE TABLE Conversation (
     mls_group_state TEXT AS ConversationEntity.GroupState NOT NULL,
     protocol TEXT AS ConversationEntity.Protocol NOT NULL,
     has_unnotified_messages INTEGER AS Boolean DEFAULT 0,
-    last_notification_date TEXT
+    last_notified_message_date TEXT
 );
 
 deleteAllConversations:
@@ -41,12 +41,12 @@ UPDATE Conversation
 SET mls_group_state = ?
 WHERE mls_group_id = ?;
 
-updateConversationNotificatiosStateAndDate:
+updateConversationNotificationsStateAndDate:
 UPDATE Conversation
-SET last_notification_date = ?, has_unnotified_messages = ?
+SET last_notified_message_date = ?, has_unnotified_messages = ?
 WHERE qualified_id = ?;
 
-updateConversationNotificatiosState:
+updateConversationNotificationsState:
 UPDATE Conversation
 SET has_unnotified_messages = ?
 WHERE qualified_id = ?;
@@ -60,5 +60,5 @@ SELECT * FROM Conversation WHERE qualified_id = ?;
 selectByGroupId:
 SELECT * FROM Conversation WHERE mls_group_id = ?;
 
-selectConversationsWithNotification:
+selectConversationsWithUnnotifiedMessages:
 SELECT * FROM Conversation WHERE has_unnotified_messages != 0;

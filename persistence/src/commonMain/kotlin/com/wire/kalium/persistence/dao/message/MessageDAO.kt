@@ -11,8 +11,7 @@ data class MessageEntity(
     val senderUserId: QualifiedIDEntity,
     val senderClientId: String,
     val status: Status,
-    val visibility: Visibility = Visibility.VISIBLE,
-    val shouldNotify: Boolean = true
+    val visibility: Visibility = Visibility.VISIBLE
 ) {
     sealed class MessageEntityContent {
         data class TextMessageContent(val messageBody: String) : MessageEntityContent()
@@ -60,6 +59,6 @@ interface MessageDAO {
     suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity)
     suspend fun getAllMessages(limit: Int, offset: Int): Flow<List<MessageEntity>>
     suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?>
-    suspend fun getMessageByConversation(conversationId: QualifiedIDEntity, limit: Int, offset: Int): Flow<List<MessageEntity>>
-    suspend fun getMessageByConversationAndDate(conversationId: QualifiedIDEntity, date: String): Flow<List<MessageEntity>>
+    suspend fun getMessagesByConversation(conversationId: QualifiedIDEntity, limit: Int, offset: Int): Flow<List<MessageEntity>>
+    suspend fun getMessagesByConversationAfterDate(conversationId: QualifiedIDEntity, date: String): Flow<List<MessageEntity>>
 }

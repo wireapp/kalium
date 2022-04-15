@@ -1,6 +1,5 @@
 package com.wire.kalium.persistence.dao.message
 
-import app.cash.sqldelight.Query
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
@@ -142,14 +141,14 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             .mapToOneOrNull()
             .map { msg -> msg?.let(mapper::toModel) }
 
-    override suspend fun getMessageByConversation(conversationId: QualifiedIDEntity, limit: Int, offset: Int): Flow<List<MessageEntity>> =
+    override suspend fun getMessagesByConversation(conversationId: QualifiedIDEntity, limit: Int, offset: Int): Flow<List<MessageEntity>> =
         queries.selectByConversationId(conversationId, limit.toLong(), offset.toLong())
             .asFlow()
             .mapToList()
             .map { entryList -> entryList.map(mapper::toModel) }
 
-    override suspend fun getMessageByConversationAndDate(conversationId: QualifiedIDEntity, date: String): Flow<List<MessageEntity>> =
-        queries.selectByConversationIdAndDate(conversationId, date)
+    override suspend fun getMessagesByConversationAfterDate(conversationId: QualifiedIDEntity, date: String): Flow<List<MessageEntity>> =
+        queries.selectMessagesByConversationIdAfterDate(conversationId, date)
             .asFlow()
             .mapToList()
             .map { entryList -> entryList.map(mapper::toModel) }

@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.message.MLSMessageApi
 import com.wire.kalium.network.api.message.MessageApi
+import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity.Status.SENT
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
@@ -41,6 +42,9 @@ class MessageRepositoryTest {
     val messageDAO = configure(mock(MessageDAO::class)) { stubsUnitByDefault = true }
 
     @Mock
+    val conversationDAO = configure(mock(ConversationDAO::class)) { stubsUnitByDefault = true }
+
+    @Mock
     val sendMessageFailureMapper = mock(SendMessageFailureMapper::class)
 
     @Mock
@@ -50,7 +54,7 @@ class MessageRepositoryTest {
 
     @BeforeTest
     fun setup() {
-        messageRepository = MessageDataSource(messageApi, mlsMessageApi, messageDAO, messageMapper, idMapper, sendMessageFailureMapper)
+        messageRepository = MessageDataSource(messageApi, mlsMessageApi, messageDAO, conversationDAO, messageMapper, idMapper, sendMessageFailureMapper)
     }
 
     @Test
@@ -62,7 +66,7 @@ class MessageRepositoryTest {
             .then { mappedId }
 
         given(messageDAO)
-            .suspendFunction(messageDAO::getMessageByConversation)
+            .suspendFunction(messageDAO::getMessagesByConversation)
             .whenInvokedWith(anything(), anything(), anything())
             .then { _, _, _-> flowOf(listOf()) }
 
@@ -74,7 +78,7 @@ class MessageRepositoryTest {
         messageRepository.getMessagesForConversation(TEST_CONVERSATION_ID, 0, 0).collect()
 
         verify(messageDAO)
-            .suspendFunction(messageDAO::getMessageByConversation)
+            .suspendFunction(messageDAO::getMessagesByConversation)
             .with(eq(mappedId), anything(), anything())
             .wasInvoked(exactly = once)
     }
@@ -89,7 +93,7 @@ class MessageRepositoryTest {
             .then { mappedMessage }
 
         given(messageDAO)
-            .suspendFunction(messageDAO::getMessageByConversation)
+            .suspendFunction(messageDAO::getMessagesByConversation)
             .whenInvokedWith(anything(), anything(), anything())
             .then { _, _, _ -> flowOf(listOf(entity)) }
 

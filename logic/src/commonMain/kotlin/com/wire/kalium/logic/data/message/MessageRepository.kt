@@ -22,7 +22,7 @@ import kotlinx.coroutines.flow.map
 
 interface MessageRepository {
     suspend fun getMessagesForConversation(conversationId: ConversationId, limit: Int, offset: Int): Flow<List<Message>>
-    suspend fun persistMessage(message: Message): Either<CoreFailure, Unit>
+    suspend fun persistMessage(message: Message, isMyMessage: Boolean = true): Either<CoreFailure, Unit>
     suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun deleteMessage(messageUuid: String): Either<CoreFailure, Unit>
     suspend fun softDeleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
@@ -47,14 +47,18 @@ class MessageDataSource(
 ) : MessageRepository {
 
     override suspend fun getMessagesForConversation(conversationId: ConversationId, limit: Int, offset: Int): Flow<List<Message>> {
-        return messageDAO.getMessageByConversation(idMapper.toDaoModel(conversationId), limit, offset).map { messageList ->
+        return messageDAO.getMessagesByConversation(idMapper.toDaoModel(conversationId), limit, offset).map { messageList ->
             messageList.map(messageMapper::fromEntityToMessage)
         }
     }
 
-    override suspend fun persistMessage(message: Message): Either<CoreFailure, Unit> {
+    override suspend fun persistMessage(message: Message, isMyMessage: Boolean): Either<CoreFailure, Unit> {
         messageDAO.insertMessage(messageMapper.fromMessageToEntity(message))
-        conversationDAO.setConversationAsNonNotified(idMapper.toDaoModel(message.conversationId))
+        if (isMyMessage) {
+            conversationDAO.setConversationAsNotified(idMapper.toDaoModel(message.conversationId), message.date)
+        } else {
+            conversationDAO.setConversationAsNonNotified(idMapper.toDaoModel(message.conversationId))
+        }
         //TODO: Handle failures
         return Either.Right(Unit)
     }
@@ -103,7 +107,7 @@ class MessageDataSource(
     }
 
     override suspend fun getMessagesByConversationAndDate(conversationId: ConversationId, date: String): Flow<List<Message>> {
-        return messageDAO.getMessageByConversationAndDate(idMapper.toDaoModel(conversationId), date).map { messageList ->
+        return messageDAO.getMessagesByConversationAfterDate(idMapper.toDaoModel(conversationId), date).map { messageList ->
             messageList.map(messageMapper::fromEntityToMessage)
         }
     }

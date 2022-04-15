@@ -438,7 +438,8 @@ class ConversationRepositoryTest {
             name = null,
             type = ConversationEntity.Type.ONE_ON_ONE,
             teamId = null,
-            protocolInfo = ConversationEntity.ProtocolInfo.Proteus
+            protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
+            null
         )
 
         val CONVERSATION_ENTITIES = listOf(
@@ -450,7 +451,8 @@ class ConversationRepositoryTest {
                 name = null,
                 type = ConversationEntity.Type.ONE_ON_ONE,
                 teamId = null,
-                protocolInfo = ConversationEntity.ProtocolInfo.Proteus
+                protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
+                null
             )
         )
 

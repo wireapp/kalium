@@ -12,8 +12,7 @@ data class Message(
     val date: String,
     val senderUserId: UserId,
     val senderClientId: ClientId,
-    val status: Status,
-    val shouldNotify: Boolean = true
+    val status: Status
 ) {
     enum class Status {
         PENDING, SENT, READ, FAILED

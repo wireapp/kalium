@@ -23,7 +23,7 @@ class ConversationMapper {
                 ConversationEntity.Protocol.MLS -> ConversationEntity.ProtocolInfo.MLS(conversation.mls_group_id ?: "", conversation.mls_group_state)
                 ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
             },
-            conversation.last_notification_date
+            conversation.last_notified_message_date
         )
     }
 
@@ -85,18 +85,18 @@ class ConversationDAOImpl(
     }
 
     override suspend fun setConversationAsNonNotified(qualifiedID: QualifiedIDEntity) {
-        conversationQueries.updateConversationNotificatiosState(true, qualifiedID)
+        conversationQueries.updateConversationNotificationsState(true, qualifiedID)
     }
 
     override suspend fun setConversationAsNotified(qualifiedID: QualifiedIDEntity, date: String) {
-        conversationQueries.updateConversationNotificatiosStateAndDate(date, false, qualifiedID)
+        conversationQueries.updateConversationNotificationsStateAndDate(date, false, qualifiedID)
     }
 
     override suspend fun setAllConversationsAsNotified(date: String) {
         conversationQueries.transaction {
-            conversationQueries.selectConversationsWithNotification()
+            conversationQueries.selectConversationsWithUnnotifiedMessages()
                 .executeAsList()
-                .forEach { conversationQueries.updateConversationNotificatiosStateAndDate(date, false, it.qualified_id) }
+                .forEach { conversationQueries.updateConversationNotificationsStateAndDate(date, false, it.qualified_id) }
         }
     }
 
@@ -165,7 +165,7 @@ class ConversationDAOImpl(
     }
 
     override suspend fun getConversationsForNotifications(): Flow<List<ConversationEntity>> {
-        return conversationQueries.selectConversationsWithNotification()
+        return conversationQueries.selectConversationsWithUnnotifiedMessages()
             .asFlow()
             .mapToList()
             .map { it.map(conversationMapper::toModel) }
