@@ -19,6 +19,7 @@ import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
+import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
@@ -88,6 +89,10 @@ class SendImageUseCaseTest {
                 .suspendFunction(arrangement.messageRepository::persistMessage)
                 .with(any())
                 .wasInvoked(exactly = once)
+            verify(arrangement.messageSender)
+                .suspendFunction(arrangement.messageSender::trySendingOutgoingMessageById)
+                .with(eq(conversationId), any())
+                .wasInvoked(exactly = once)
         }
 
     private class Arrangement {
@@ -105,7 +110,7 @@ class SendImageUseCaseTest {
         private val userRepository = mock(classOf<UserRepository>())
 
         @Mock
-        private val messageSender = mock(classOf<MessageSender>())
+        val messageSender = mock(classOf<MessageSender>())
 
         val someAssetId = UploadedAssetId("some-asset-id", "some-asset-token")
 

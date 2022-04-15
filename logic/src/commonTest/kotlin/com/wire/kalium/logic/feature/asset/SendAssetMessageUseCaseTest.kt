@@ -17,12 +17,14 @@ import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.utils.io.core.*
 import io.mockative.*
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class SendAssetMessageUseCaseTest {
 
     @Test
@@ -42,7 +44,7 @@ class SendAssetMessageUseCaseTest {
     }
 
     @Test
-    fun givenAValidSendImageMessageRequest_whenThereIsAnAssetUploadError_thenShouldCallReturnsAFailureResult() = runTest {
+    fun givenAValidSendAssetMessageRequest_whenThereIsAnAssetUploadError_thenShouldCallReturnsAFailureResult() = runTest {
         // Given
         val assetToSend = getMockedAsset()
         val conversationId = ConversationId("some-convo-id", "some-domain-id")
@@ -62,7 +64,7 @@ class SendAssetMessageUseCaseTest {
     }
 
     @Test
-    fun givenASuccessfulSendImageMessageRequest_whenCheckingTheMessageRepository_thenTheAssetIsPersisted() =
+    fun givenASuccessfulSendAssetMessageRequest_whenSendingTheAsset_thenTheAssetIsPersisted() =
         runTest {
             // Given
             val assetToSend = getMockedAsset()
@@ -72,12 +74,16 @@ class SendAssetMessageUseCaseTest {
                 .arrange()
 
             // When
-            val result = sendAssetUseCase.invoke(conversationId, assetToSend, "temp_asset.txt", "text/plain")
+            sendAssetUseCase.invoke(conversationId, assetToSend, "temp_asset.txt", "text/plain")
 
             // Then
             verify(arrangement.messageRepository)
                 .suspendFunction(arrangement.messageRepository::persistMessage)
                 .with(any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.messageSender)
+                .suspendFunction(arrangement.messageSender::trySendingOutgoingMessageById)
+                .with(eq(conversationId), any())
                 .wasInvoked(exactly = once)
         }
 
@@ -87,6 +93,9 @@ class SendAssetMessageUseCaseTest {
         val messageRepository = mock(classOf<MessageRepository>())
 
         @Mock
+        val messageSender = mock(classOf<MessageSender>())
+
+        @Mock
         private val clientRepository = mock(classOf<ClientRepository>())
 
         @Mock
@@ -94,9 +103,6 @@ class SendAssetMessageUseCaseTest {
 
         @Mock
         private val userRepository = mock(classOf<UserRepository>())
-
-        @Mock
-        private val messageSender = mock(classOf<MessageSender>())
 
         val someAssetId = UploadedAssetId("some-asset-id", "some-asset-token")
 
