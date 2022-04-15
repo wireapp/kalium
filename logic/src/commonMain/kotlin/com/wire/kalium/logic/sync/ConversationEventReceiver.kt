@@ -9,7 +9,6 @@ import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -19,17 +18,14 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.call.CallManager
-import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.logic.wrapCryptoRequest
-import com.wire.kalium.logic.wrapStorageRequest
-import io.ktor.util.decodeBase64Bytes
 import io.ktor.utils.io.core.toByteArray
-import kotlinx.coroutines.flow.first
 
 class ConversationEventReceiver(
     private val proteusClient: ProteusClient,
@@ -77,7 +73,21 @@ class ConversationEventReceiver(
                     )
                     kaliumLogger.i(message = "Message received: $message")
                     when (message.content) {
-                        is MessageContent.Text, is MessageContent.Asset -> messageRepository.persistMessage(message)
+                        is MessageContent.Text -> messageRepository.persistMessage(message)
+                        is MessageContent.Asset -> {
+                            val persistedMessage = messageRepository.getMessageById(message.conversationId, message.id)
+                            var newMessage: Message = message
+
+                            // The message was previously received with just metadata info, so let's update it with the raw data info
+                            if (persistedMessage.isRight() && persistedMessage.value.content is MessageContent.Asset) {
+                                newMessage = persistedMessage.value.copy(
+                                    content = persistedMessage.value.content.copy(
+                                        value = persistedMessage.value.content.value.copy(remoteData = message.content.value.remoteData)
+                                    )
+                                )
+                            }
+                            messageRepository.persistMessage(newMessage)
+                        }
                         is MessageContent.DeleteMessage ->
                             if (isSenderVerified(message.content.messageId, message.conversationId, message.senderUserId))
                                 messageRepository.softDeleteMessage(messageUuid = message.content.messageId, message.conversationId)
