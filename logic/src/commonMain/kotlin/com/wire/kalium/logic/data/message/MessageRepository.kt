@@ -24,6 +24,7 @@ interface MessageRepository {
     suspend fun persistMessage(message: Message): Either<CoreFailure, Unit>
     suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun deleteMessage(messageUuid: String): Either<CoreFailure, Unit>
+    suspend fun updateMessage(message:Message): Either<CoreFailure,Unit>
     suspend fun softDeleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun hideMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun markMessageAsSent(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit>
@@ -64,6 +65,12 @@ class MessageDataSource(
 
     override suspend fun deleteMessage(messageUuid: String): Either<CoreFailure, Unit> {
         messageDAO.deleteMessage(messageUuid)
+        //TODO: Handle failures
+        return Either.Right(Unit)
+    }
+
+    override suspend fun updateMessage(message: Message): Either<CoreFailure, Unit> {
+        messageDAO.updateMessage(messageMapper.fromMessageToEntity(message))
         //TODO: Handle failures
         return Either.Right(Unit)
     }

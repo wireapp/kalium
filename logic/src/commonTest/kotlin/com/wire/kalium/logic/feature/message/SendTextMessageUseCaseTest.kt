@@ -2,13 +2,9 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.PlainId
-import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
@@ -16,13 +12,11 @@ import com.wire.kalium.logic.sync.SyncManager
 import io.mockative.Mock
 import io.mockative.Times
 import io.mockative.anything
-import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -112,13 +106,27 @@ class SendTextMessageUseCaseTest {
         given(messageRepository)
             .suspendFunction(messageRepository::persistMessage)
             .whenInvokedWith(anything())
-            .thenReturn(Either.Left(CoreFailure.Unknown(IllegalArgumentException())))
+            .thenReturn(
+                Either.Left(CoreFailure.Unknown(IllegalArgumentException()))
+            )
+
+        given(messageRepository)
+            .suspendFunction(messageRepository::updateMessage)
+            .whenInvokedWith(anything())
+            .thenReturn(
+                Either.Left(CoreFailure.Unknown(IllegalArgumentException()))
+            )
         //when
         val result = sendTextMessageUseCase(ConversationId("test", "test"), "text")
 
         //then
         verify(messageRepository)
             .suspendFunction(messageRepository::persistMessage)
+            .with(anything())
+            .wasInvoked(Times(1))
+
+        verify(messageRepository)
+            .suspendFunction(messageRepository::updateMessage)
             .with(anything())
             .wasInvoked(Times(1))
 
@@ -152,6 +160,13 @@ class SendTextMessageUseCaseTest {
             .suspendFunction(messageRepository::persistMessage)
             .whenInvokedWith(anything())
             .thenReturn(Either.Right(Unit))
+
+        given(messageRepository)
+            .suspendFunction(messageRepository::updateMessage)
+            .whenInvokedWith(anything())
+            .thenReturn(
+                Either.Left(CoreFailure.Unknown(IllegalArgumentException()))
+            )
 
         given(messageSender)
             .suspendFunction(messageSender::trySendingOutgoingMessageById)
@@ -197,6 +212,11 @@ class SendTextMessageUseCaseTest {
             .whenInvokedWith(anything())
             .thenReturn(Either.Right(Unit))
 
+        given(messageRepository)
+            .suspendFunction(messageRepository::updateMessage)
+            .whenInvokedWith(anything())
+            .thenReturn(Either.Right(Unit))
+
         given(messageSender)
             .suspendFunction(messageSender::trySendingOutgoingMessageById)
             .whenInvokedWith(anything(), anything())
@@ -207,9 +227,13 @@ class SendTextMessageUseCaseTest {
         //then
         verify(messageRepository)
             .suspendFunction(messageRepository::persistMessage)
-            .with(eq(TEST_MESSAGE))
-            .wasInvoked(Times(3))
+            .with(anything())
+            .wasInvoked(Times(1))
 
+        verify(messageRepository)
+            .suspendFunction(messageRepository::updateMessage)
+            .with(anything())
+            .wasInvoked(Times(1))
 
         verify(messageSender)
             .suspendFunction(messageSender::trySendingOutgoingMessageById)
@@ -217,18 +241,6 @@ class SendTextMessageUseCaseTest {
             .wasInvoked(Times(1))
 
         assertIs<SendTextMessageResult.Success>(result)
-    }
-
-    companion object {
-        val TEST_MESSAGE = Message(
-            id = "test",
-            content = MessageContent.Text("test"),
-            conversationId = ConversationId("test", "test"),
-            date = Clock.System.now().toString(),
-            senderUserId = UserId("test", "test"),
-            senderClientId = ClientId("test"),
-            status = Message.Status.PENDING
-        )
     }
 
 }

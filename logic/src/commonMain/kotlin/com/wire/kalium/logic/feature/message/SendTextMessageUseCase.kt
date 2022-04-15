@@ -22,6 +22,7 @@ class SendTextMessageUseCase(
 
     suspend operator fun invoke(conversationId: ConversationId, text: String): SendTextMessageResult {
         syncManager.waitForSlowSyncToComplete()
+
         val selfUser = userRepository.getSelfUser().first()
         val generatedMessageUuid = uuid4().toString()
 
@@ -41,14 +42,14 @@ class SendTextMessageUseCase(
                     .flatMap {
                         messageSender.trySendingOutgoingMessageById(conversationId, generatedMessageUuid)
                     }.flatMap {
-                        messageRepository.persistMessage(message.copy(status = Message.Status.SENT))
+                        messageRepository.updateMessage(message.copy(status = Message.Status.SENT))
+                    }.onFailure {
+                        messageRepository.updateMessage(message.copy(status = Message.Status.FAILED))
                     }
-            }.onFailure { SendTextMessageResult.Failure("test") }
-                .onSuccess { SendTextMessageResult.Success }
-                .coFold(
-                    { SendTextMessageResult.Failure("test") },
-                    { SendTextMessageResult.Success }
-                )
+            }.coFold(
+                { SendTextMessageResult.Failure(generatedMessageUuid) },
+                { SendTextMessageResult.Success }
+            )
         }
     }
 }
