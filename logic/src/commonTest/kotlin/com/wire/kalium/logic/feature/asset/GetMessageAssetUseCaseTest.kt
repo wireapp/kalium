@@ -105,7 +105,7 @@ class GetMessageAssetUseCaseTest {
                 id = msgId,
                 content = MessageContent.Asset(
                     AssetContent(
-                        size = 1000,
+                        sizeInBytes = 1000,
                         name = "some_asset.jpg",
                         mimeType = "image/jpeg",
                         metadata = AssetContent.AssetMetadata.Image(width = 100, height = 100),

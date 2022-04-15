@@ -45,9 +45,10 @@ enum class RetentionType {
 }
 
 sealed class AssetType(open val name: String)
-
+data class FileAsset(val mimetype: String) : AssetType(mimetype)
 sealed class ImageAsset(override val name: String) : AssetType(name) {
     object JPEG : ImageAsset(name = "image/jpeg")
     object PNG : ImageAsset(name = "image/png")
 }
+
 // should put other types of mimetypes, ie: media, audio, etc.
