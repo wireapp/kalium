@@ -7,7 +7,7 @@ import com.wire.kalium.network.api.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.conversation.ConversationOtherMembersResponse
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.ConversationSelfMemberResponse
-import com.wire.kalium.network.api.conversation.MemberUpdateDTO
+import com.wire.kalium.network.api.conversation.MutedStatus
 
 object ConversationResponseJson {
 
@@ -55,7 +55,7 @@ object ConversationResponseJson {
                 ConversationSelfMemberResponse(
                     QualifiedIDSamples.one,
                     "2022-04-11T14:15:48.044Z",
-                    MemberUpdateDTO.MutedStatus.ALL_MUTED
+                    MutedStatus.ALL_MUTED
                 ),
                 listOf(ConversationOtherMembersResponse(null, QualifiedIDSamples.two))
             ),
