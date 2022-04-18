@@ -34,7 +34,7 @@ data class ConversationResponse(
 
     @SerialName("protocol")
     val protocol: ConvProtocol
-){
+) {
 
     val isOneOnOneConversation: Boolean
         get() = type in setOf(
@@ -65,6 +65,10 @@ data class ConversationMembersResponse(
 data class ConversationSelfMemberResponse(
 
     @SerialName("qualified_id") override val userId: UserId,
+    @SerialName("otr_muted_ref") val otrMutedReference: String? = null,
+    @SerialName("otr_muted_status")
+    @Serializable(with = MutedStatusSerializer::class)
+    val otrMutedStatus: MemberUpdateDTO.MutedStatus? = null
     /*
     // Role name, between 2 and 128 chars, 'wire_' prefix is reserved for roles designed
     // by Wire (i.e., no custom roles can have the same prefix)

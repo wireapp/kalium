@@ -7,11 +7,11 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
-@Serializer(MemberUpdateRequest.MutedStatus::class)
-class MutedStatusSerializer : KSerializer<MemberUpdateRequest.MutedStatus?> {
+@Serializer(MemberUpdateDTO.MutedStatus::class)
+class MutedStatusSerializer : KSerializer<MemberUpdateDTO.MutedStatus?> {
     override val descriptor = PrimitiveSerialDescriptor("otr_muted_status", PrimitiveKind.INT)
 
-    override fun serialize(encoder: Encoder, value: MemberUpdateRequest.MutedStatus?) {
+    override fun serialize(encoder: Encoder, value: MemberUpdateDTO.MutedStatus?) {
         if (value == null) {
             encoder.encodeNull()
         } else {
@@ -20,8 +20,8 @@ class MutedStatusSerializer : KSerializer<MemberUpdateRequest.MutedStatus?> {
 
     }
 
-    override fun deserialize(decoder: Decoder): MemberUpdateRequest.MutedStatus? {
+    override fun deserialize(decoder: Decoder): MemberUpdateDTO.MutedStatus? {
         val rawValue = decoder.decodeInt()
-        return MemberUpdateRequest.MutedStatus.fromOrdinal(rawValue)
+        return MemberUpdateDTO.MutedStatus.fromOrdinal(rawValue)
     }
 }

@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class MemberUpdateRequest(
+data class MemberUpdateDTO(
     @SerialName("hidden") val hidden: Boolean? = null,
     @SerialName("hidden_ref") val hiddenRef: String? = null,
     @SerialName("otr_archived") val otrArchived: Boolean? = null,
