@@ -9,6 +9,7 @@ import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -18,7 +19,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.call.CallManager
-import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.functional.suspending
@@ -51,7 +51,6 @@ class ConversationEventReceiver(
 
     private suspend fun handleNewMessage(event: Event.Conversation.NewMessage) {
         val decodedContentBytes = Base64.decodeFromBase64(event.content.toByteArray())
-
         val cryptoSessionId =
             CryptoSessionId(idMapper.toCryptoQualifiedIDId(event.senderUserId), CryptoClientId(event.senderClientId.value))
         suspending {
@@ -75,18 +74,17 @@ class ConversationEventReceiver(
                     when (message.content) {
                         is MessageContent.Text -> messageRepository.persistMessage(message)
                         is MessageContent.Asset -> {
-                            val persistedMessage = messageRepository.getMessageById(message.conversationId, message.id)
-                            var newMessage: Message = message
-
-                            // The message was previously received with just metadata info, so let's update it with the raw data info
-                            if (persistedMessage.isRight() && persistedMessage.value.content is MessageContent.Asset) {
-                                newMessage = persistedMessage.value.copy(
-                                    content = persistedMessage.value.content.copy(
-                                        value = persistedMessage.value.content.value.copy(remoteData = message.content.value.remoteData)
-                                    )
-                                )
-                            }
-                            messageRepository.persistMessage(newMessage)
+                            messageRepository.getMessageById(message.conversationId, message.id)
+                                .onFailure {
+                                    // No asset message was received previously, so just persist the preview asset message
+                                    messageRepository.persistMessage(message)
+                                }
+                                .onSuccess { persistedMessage ->
+                                    // The asset message received contains the asset decryption keys, so update the preview message persisted previously
+                                    updateMessage(persistedMessage, message.content.value.remoteData)?.let {
+                                        messageRepository.persistMessage(it)
+                                    }
+                                }
                         }
                         is MessageContent.DeleteMessage ->
                             if (isSenderVerified(message.content.messageId, message.conversationId, message.senderUserId))
@@ -108,6 +106,18 @@ class ConversationEventReceiver(
                 }
         }
     }
+
+    private fun updateMessage(persistedMessage: Message, newMessageRemoteData: AssetContent.RemoteData): Message? =
+        // The message was previously received with just metadata info, so let's update it with the raw data info
+        if (persistedMessage.content is MessageContent.Asset) {
+            persistedMessage.copy(
+                content = persistedMessage.content.copy(
+                    value = persistedMessage.content.value.copy(
+                        remoteData = newMessageRemoteData
+                    )
+                )
+            )
+        } else null
 
     private suspend fun isSenderVerified(messageId: String, conversationId: ConversationId, senderUserId: UserId): Boolean {
         var verified = false
