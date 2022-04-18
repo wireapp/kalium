@@ -53,8 +53,9 @@ object ConversationResponseJson {
             "fdf23116-42a5-472c-8316-e10655f5d11e",
             ConversationMembersResponse(
                 ConversationSelfMemberResponse(
-                    QualifiedIDSamples.one, "2022-04-11T14:15:48.044Z",
-                    MemberUpdateDTO.MutedStatus.ALL_ALLOWED
+                    QualifiedIDSamples.one,
+                    "2022-04-11T14:15:48.044Z",
+                    1
                 ),
                 listOf(ConversationOtherMembersResponse(null, QualifiedIDSamples.two))
             ),
