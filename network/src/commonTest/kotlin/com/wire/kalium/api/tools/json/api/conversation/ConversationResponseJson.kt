@@ -55,7 +55,7 @@ object ConversationResponseJson {
                 ConversationSelfMemberResponse(
                     QualifiedIDSamples.one,
                     "2022-04-11T14:15:48.044Z",
-                    1
+                    MemberUpdateDTO.MutedStatus.ALL_MUTED
                 ),
                 listOf(ConversationOtherMembersResponse(null, QualifiedIDSamples.two))
             ),

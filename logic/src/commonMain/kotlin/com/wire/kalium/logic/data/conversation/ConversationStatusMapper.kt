@@ -9,7 +9,6 @@ interface ConversationStatusMapper {
     fun toDaoModel(mutedStatus: MutedConversationStatus): ConversationEntity.MutedStatus
     fun fromDaoModel(mutedStatus: ConversationEntity.MutedStatus): MutedConversationStatus
     fun fromApiToDaoModel(mutedStatus: MemberUpdateDTO.MutedStatus?): ConversationEntity.MutedStatus
-    fun fromApiToDaoModel(mutedStatus: Int?): ConversationEntity.MutedStatus
 }
 
 class ConversationStatusMapperImpl : ConversationStatusMapper {
@@ -43,15 +42,6 @@ class ConversationStatusMapperImpl : ConversationStatusMapper {
             MemberUpdateDTO.MutedStatus.ALL_ALLOWED -> ConversationEntity.MutedStatus.ALL_ALLOWED
             MemberUpdateDTO.MutedStatus.ONLY_MENTIONS_ALLOWED -> ConversationEntity.MutedStatus.ONLY_MENTIONS_ALLOWED
             MemberUpdateDTO.MutedStatus.ALL_MUTED -> ConversationEntity.MutedStatus.ALL_MUTED
-            else -> ConversationEntity.MutedStatus.ALL_ALLOWED
-        }
-    }
-
-    override fun fromApiToDaoModel(mutedStatus: Int?): ConversationEntity.MutedStatus {
-        return when(mutedStatus) {
-            0 -> ConversationEntity.MutedStatus.ALL_ALLOWED
-            1 -> ConversationEntity.MutedStatus.ONLY_MENTIONS_ALLOWED
-            3 -> ConversationEntity.MutedStatus.ALL_MUTED
             else -> ConversationEntity.MutedStatus.ALL_ALLOWED
         }
     }
