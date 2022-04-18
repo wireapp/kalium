@@ -99,10 +99,8 @@ class MessageDataSource(
                     messageMapper.fromEntityToMessage(this)
                 }
         }.onSuccess {
-            kaliumLogger.d("** OnSuccess getMessageById")
             Either.Right(it)
         }.onFailure {
-            kaliumLogger.d("** OnFailure getMessageById")
             Either.Left(StorageFailure.DataNotFound)
         }
 
