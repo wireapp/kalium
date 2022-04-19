@@ -17,7 +17,6 @@ class MutedStatusSerializer : KSerializer<MutedStatus?> {
         } else {
             encoder.encodeInt(value.ordinal)
         }
-
     }
 
     override fun deserialize(decoder: Decoder): MutedStatus? {

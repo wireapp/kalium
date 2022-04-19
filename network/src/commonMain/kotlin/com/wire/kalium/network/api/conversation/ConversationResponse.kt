@@ -65,7 +65,7 @@ data class ConversationMembersResponse(
 data class ConversationSelfMemberResponse(
     @SerialName("qualified_id") override val userId: UserId,
     @SerialName("otr_muted_ref") val otrMutedRef: String? = null,
-    @SerialName("otr_muted_status") val otrMutedStatus: MutedStatus? = null
+    @SerialName("otr_muted_status") @Serializable(with = MutedStatusSerializer::class) val otrMutedStatus: MutedStatus? = null
     /*
     // Role name, between 2 and 128 chars, 'wire_' prefix is reserved for roles designed
     // by Wire (i.e., no custom roles can have the same prefix)
