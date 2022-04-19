@@ -67,7 +67,6 @@ actual class UserDatabaseProvider(private val storePath: File) {
                 statusAdapter = EnumColumnAdapter(),
                 asset_image_widthAdapter = IntColumnAdapter,
                 asset_image_heightAdapter = IntColumnAdapter,
-                asset_sizeAdapter = IntColumnAdapter,
                 content_typeAdapter = ContentTypeAdapter(),
                 visibilityAdapter = EnumColumnAdapter()
             ),

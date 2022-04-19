@@ -17,7 +17,7 @@ data class MessageEntity(
         data class TextMessageContent(val messageBody: String) : MessageEntityContent()
         data class AssetMessageContent(
             val assetMimeType: String,
-            val assetSize: Int,
+            val assetSizeInBytes: Long,
             val assetName: String? = null,
             val assetImageWidth: Int? = null,
             val assetImageHeight: Int? = null,
