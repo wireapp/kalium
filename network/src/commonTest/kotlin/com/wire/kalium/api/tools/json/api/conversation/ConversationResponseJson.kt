@@ -31,7 +31,7 @@ object ConversationResponseJson {
         |               "domain": "${it.members.self.userId.domain}",
         |               "id": "${it.members.self.userId.value}"
         |           },
-        |           "otr_muted_ref": "${it.members.self.otrMutedReference}",
+        |           "otr_muted_ref": "${it.members.self.otrMutedRef}",
         |           "otr_muted_status": ${it.members.self.otrMutedStatus}
         |       }
         |   },

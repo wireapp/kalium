@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.network.api.conversation.MemberUpdateDTO
+import com.wire.kalium.network.api.conversation.MutedStatus
 import com.wire.kalium.persistence.dao.ConversationEntity
 import kotlinx.datetime.Instant
 
@@ -8,13 +9,13 @@ interface ConversationStatusMapper {
     fun toApiModel(mutedStatus: MutedConversationStatus, mutedStatusTimestamp: Long): MemberUpdateDTO
     fun toDaoModel(mutedStatus: MutedConversationStatus): ConversationEntity.MutedStatus
     fun fromDaoModel(mutedStatus: ConversationEntity.MutedStatus): MutedConversationStatus
-    fun fromApiToDaoModel(mutedStatus: MemberUpdateDTO.MutedStatus?): ConversationEntity.MutedStatus
+    fun fromApiToDaoModel(mutedStatus: MutedStatus?): ConversationEntity.MutedStatus
 }
 
 class ConversationStatusMapperImpl : ConversationStatusMapper {
     override fun toApiModel(mutedStatus: MutedConversationStatus, mutedStatusTimestamp: Long): MemberUpdateDTO {
         return MemberUpdateDTO(
-            otrMutedStatus = MemberUpdateDTO.MutedStatus.fromOrdinal(mutedStatus.status),
+            otrMutedStatus = MutedStatus.fromOrdinal(mutedStatus.status),
             otrMutedRef = Instant.fromEpochMilliseconds(mutedStatusTimestamp).toString()
         )
     }
@@ -37,11 +38,11 @@ class ConversationStatusMapperImpl : ConversationStatusMapper {
         }
     }
 
-    override fun fromApiToDaoModel(mutedStatus: MemberUpdateDTO.MutedStatus?): ConversationEntity.MutedStatus {
+    override fun fromApiToDaoModel(mutedStatus: MutedStatus?): ConversationEntity.MutedStatus {
         return when (mutedStatus) {
-            MemberUpdateDTO.MutedStatus.ALL_ALLOWED -> ConversationEntity.MutedStatus.ALL_ALLOWED
-            MemberUpdateDTO.MutedStatus.ONLY_MENTIONS_ALLOWED -> ConversationEntity.MutedStatus.ONLY_MENTIONS_ALLOWED
-            MemberUpdateDTO.MutedStatus.ALL_MUTED -> ConversationEntity.MutedStatus.ALL_MUTED
+            MutedStatus.ALL_ALLOWED -> ConversationEntity.MutedStatus.ALL_ALLOWED
+            MutedStatus.ONLY_MENTIONS_ALLOWED -> ConversationEntity.MutedStatus.ONLY_MENTIONS_ALLOWED
+            MutedStatus.ALL_MUTED -> ConversationEntity.MutedStatus.ALL_MUTED
             else -> ConversationEntity.MutedStatus.ALL_ALLOWED
         }
     }

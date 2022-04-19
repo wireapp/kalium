@@ -9,7 +9,7 @@ import com.wire.kalium.network.api.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.conversation.ConversationOtherMembersResponse
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.ConversationSelfMemberResponse
-import com.wire.kalium.network.api.conversation.MemberUpdateDTO
+import com.wire.kalium.network.api.conversation.MutedStatus
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import io.mockative.Mock
@@ -153,7 +153,7 @@ class ConversationMapperTest {
         val SELF_USER_TEAM_ID = TeamId("teamID")
         val SELF_MEMBER_RESPONSE =
             ConversationSelfMemberResponse(
-                UserId("selfId", "selfDomain"), "111111", MemberUpdateDTO.MutedStatus.ALL_ALLOWED
+                UserId("selfId", "selfDomain"), "111111", MutedStatus.ALL_ALLOWED
             )
         val OTHER_MEMBERS = listOf(ConversationOtherMembersResponse(null, UserId("other1", "domain1")))
         val MEMBERS_RESPONSE = ConversationMembersResponse(SELF_MEMBER_RESPONSE, OTHER_MEMBERS)

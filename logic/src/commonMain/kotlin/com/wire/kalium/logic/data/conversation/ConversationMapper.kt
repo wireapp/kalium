@@ -44,7 +44,7 @@ internal class ConversationMapperImpl(
             apiModel.teamId,
             apiModel.getProtocolInfo(groupCreation),
             conversationStatusMapper.fromApiToDaoModel(apiModel.members.self.otrMutedStatus),
-            apiModel.members.self.otrMutedReference?.toLong() ?: 0
+            apiModel.members.self.otrMutedRef?.toLong() ?: 0
         )
 
     override fun fromApiModelToDaoModel(apiModel: ConvProtocol): PersistedProtocol = when (apiModel) {

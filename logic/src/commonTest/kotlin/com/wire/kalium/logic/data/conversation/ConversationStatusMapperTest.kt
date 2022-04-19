@@ -1,7 +1,7 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.network.api.conversation.MemberUpdateDTO
+import com.wire.kalium.network.api.conversation.MutedStatus
 import com.wire.kalium.persistence.dao.ConversationEntity
 import io.mockative.Mock
 import io.mockative.classOf
@@ -25,7 +25,7 @@ class ConversationStatusMapperTest {
     fun givenAConversationModel_whenMappingToApiModel_thenTheMappingStatusesShouldBeOk() {
         val result = conversationStatusMapper.toApiModel(MutedConversationStatus.OnlyMentionsAllowed, 1649708697237L)
 
-        assertEquals(MemberUpdateDTO.MutedStatus.ONLY_MENTIONS_ALLOWED, result.otrMutedStatus)
+        assertEquals(MutedStatus.ONLY_MENTIONS_ALLOWED, result.otrMutedStatus)
         assertEquals("2022-04-11T20:24:57.237Z", result.otrMutedRef)
     }
 
