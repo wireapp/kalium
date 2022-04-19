@@ -31,8 +31,8 @@ object ConversationResponseJson {
         |               "domain": "${it.members.self.userId.domain}",
         |               "id": "${it.members.self.userId.value}"
         |           },
-        |           "otr_muted_ref": "${it.members.self.otrMutedRef}",
-        |           "otr_muted_status": ${it.members.self.otrMutedStatus}
+        |           "otr_muted_ref": "2022-04-11T14:15:48.044Z",
+        |           "otr_muted_status": 0
         |       }
         |   },
         |   "message_timer": ${it.messageTimer},
@@ -53,9 +53,7 @@ object ConversationResponseJson {
             "fdf23116-42a5-472c-8316-e10655f5d11e",
             ConversationMembersResponse(
                 ConversationSelfMemberResponse(
-                    QualifiedIDSamples.one,
-                    "2022-04-11T14:15:48.044Z",
-                    MutedStatus.ALL_MUTED
+                    QualifiedIDSamples.one
                 ),
                 listOf(ConversationOtherMembersResponse(null, QualifiedIDSamples.two))
             ),
