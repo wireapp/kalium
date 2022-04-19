@@ -44,7 +44,7 @@ class ConversationMapperTest {
             .whenInvokedWith(any())
             .then { transformedConversationId }
 
-        val mappedResponse = conversationMapper.fromApiModelToDaoModel(response, groupCreation = false, SELF_USER_TEAM_ID)
+        val mappedResponse = conversationMapper.fromApiModelToDaoModel(response, mlsGroupState = null, SELF_USER_TEAM_ID)
 
         assertEquals(mappedResponse.name, response.name)
     }
@@ -60,7 +60,7 @@ class ConversationMapperTest {
             .whenInvokedWith(any())
             .then { transformedConversationId }
 
-        conversationMapper.fromApiModelToDaoModel(response, groupCreation = false, SELF_USER_TEAM_ID)
+        conversationMapper.fromApiModelToDaoModel(response, mlsGroupState = null, SELF_USER_TEAM_ID)
 
         verify(idMapper)
             .invocation { idMapper.fromApiToDao(originalConversationId) }
@@ -85,7 +85,7 @@ class ConversationMapperTest {
             .whenInvokedWith(any())
             .then { QualifiedIDEntity("transformed", "tDomain") }
 
-        val result = conversationMapper.fromApiModelToDaoModel(response, groupCreation = false, SELF_USER_TEAM_ID)
+        val result = conversationMapper.fromApiModelToDaoModel(response, mlsGroupState = null, SELF_USER_TEAM_ID)
 
         assertEquals(ConversationEntity.Type.ONE_ON_ONE, result.type)
     }
@@ -99,7 +99,7 @@ class ConversationMapperTest {
             .whenInvokedWith(any())
             .then { QualifiedIDEntity("transformed", "tDomain") }
 
-        val result = conversationMapper.fromApiModelToDaoModel(response, groupCreation = false, SELF_USER_TEAM_ID)
+        val result = conversationMapper.fromApiModelToDaoModel(response, mlsGroupState = null, SELF_USER_TEAM_ID)
 
         assertEquals(ConversationEntity.Type.GROUP, result.type)
     }

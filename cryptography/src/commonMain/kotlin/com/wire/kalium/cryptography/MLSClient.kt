@@ -23,6 +23,15 @@ interface MLSClient {
     fun generateKeyPackages(amount: Int): List<ByteArray>
 
     /**
+     * Query if a conversation exists
+     *
+     * @param groupId MLS group ID provided by BE
+     *
+     * @return true if conversation exists in store
+     */
+    fun hasConversation(groupId: MLSGroupId): Boolean
+
+    /**
      * Create a new MLS conversation
      *
      * @param groupId MLS group ID provided by BE

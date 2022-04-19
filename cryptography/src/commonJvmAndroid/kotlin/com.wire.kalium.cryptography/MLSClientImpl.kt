@@ -29,6 +29,11 @@ actual class MLSClientImpl actual constructor(
         return coreCrypto.clientKeypackages(amount.toUInt()).map { it.toUByteArray().asByteArray() }
     }
 
+    override fun hasConversation(groupId: MLSGroupId): Boolean {
+        // TODO waiting for core crypto implementation
+        return false
+    }
+
     override fun createConversation(conversationId: MLSGroupId,
                                     members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>
     ): Pair<HandshakeMessage, WelcomeMessage>? {

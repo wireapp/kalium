@@ -151,7 +151,7 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
-    fun givenNonExistingConversation_whenCallingEstablishMLSGroupFromWelcome_ThenGroupIsCreatedAndConversationIsInserted() = runTest {
+    fun givenNonExistingConversation_whenCallingEstablishMLSGroupFromWelcome_ThenGroupIsCreatedButConversationIsNotInserted() = runTest {
         given(mlsClientProvider)
             .suspendFunction(mlsClientProvider::getMLSClient)
             .whenInvokedWith(anything())
@@ -167,28 +167,11 @@ class MLSConversationRepositoryTest {
             .whenInvokedWith(anything())
             .then { flowOf(null) }
 
-        given(conversationDAO)
-            .suspendFunction(conversationDAO::insertConversation)
-            .whenInvokedWith(anything())
-            .thenDoNothing()
-
         mlsConversationRepository.establishMLSGroupFromWelcome(WELCOME_EVENT).shouldSucceed()
 
         verify(MLS_CLIENT)
             .function(MLS_CLIENT::processWelcomeMessage)
             .with(anyInstanceOf(ByteArray::class))
-            .wasInvoked(once)
-
-        verify(conversationDAO)
-            .suspendFunction(conversationDAO::insertConversation)
-            .with(eq(
-                ConversationEntity(
-                QualifiedIDEntity(TestConversation.ID.value, TestConversation.ID.domain),
-                null,
-                ConversationEntity.Type.GROUP,
-                null,
-                ConversationEntity.ProtocolInfo.MLS(GROUP_ID, ConversationEntity.GroupState.ESTABLISHED))
-            ))
             .wasInvoked(once)
     }
 
