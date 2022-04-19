@@ -39,7 +39,7 @@ class ProtoContentMapperImpl : ProtoContentMapper {
                         Asset(
                             original = Original(
                                 mimeType = mimeType,
-                                size = sizeInBytes.toLong(),
+                                size = sizeInBytes,
                                 name = name,
                                 metaData = when (metadata) {
                                     is AssetContent.AssetMetadata.Image -> Original.MetaData.Image(
@@ -99,9 +99,8 @@ class ProtoContentMapperImpl : ProtoContentMapper {
         val content = when (val protoContent = genericMessage.content) {
             is GenericMessage.Content.Text -> MessageContent.Text(protoContent.value.content)
             is GenericMessage.Content.Asset -> {
-                if (protoContent.value.uploaded != null) MessageContent.Asset(
-                    MapperProvider.assetMapper().fromProtoAssetMessageToAssetContent(protoContent.value)
-                ) else MessageContent.Unknown // Sometimes backend sends some preview asset messages just with img metadata and no keys or asset id, so we discard it
+                // Backend sends some preview asset messages just with img metadata and no keys or asset id, so we need to overwrite one with the other one
+                MessageContent.Asset(MapperProvider.assetMapper().fromProtoAssetMessageToAssetContent(protoContent.value))
             }
             is GenericMessage.Content.Availability -> MessageContent.Unknown
             is GenericMessage.Content.ButtonAction -> MessageContent.Unknown
