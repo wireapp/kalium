@@ -9,7 +9,7 @@ object SSOUtil {
     const val QUERY_USER_ID = "user"
     const val QUERY_COOKIES = "cookies"
     const val QUERY_SERVER_CONFIG = "location"
-    const val QUERY_ERROR = "error"
+    const val QUERY_ERROR = "errorCode"
     const val SSO_LOGIN_HOST = "sso-login"
     const val SUCCESS_PATH = "success"
     const val ERROR_PATH = "failure"
