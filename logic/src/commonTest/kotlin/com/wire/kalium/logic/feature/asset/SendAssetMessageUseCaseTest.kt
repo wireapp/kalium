@@ -15,15 +15,8 @@ import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.exceptions.KaliumException
-import io.ktor.utils.io.core.toByteArray
-import io.mockative.Mock
-import io.mockative.any
-import io.mockative.classOf
-import io.mockative.eq
-import io.mockative.given
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.verify
+import io.ktor.utils.io.core.*
+import io.mockative.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -32,57 +25,56 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class SendImageUseCaseTest {
+class SendAssetMessageUseCaseTest {
 
     @Test
-    fun givenAValidSendImageMessageRequest_whenSendingImageMessage_thenShouldReturnASuccessResult() = runTest {
+    fun givenAValidSendAssetMessageRequest_whenSendingAssetMessage_thenShouldReturnASuccessResult() = runTest {
         // Given
-        val imageToSend = getMockedImage()
+        val assetToSend = getMockedAsset()
         val conversationId = ConversationId("some-convo-id", "some-domain-id")
-        val (_, sendImageUseCase) = Arrangement()
+        val (_, sendAssetUseCase) = Arrangement()
             .withSuccessfulResponse()
             .arrange()
 
         // When
-        val result = sendImageUseCase.invoke(conversationId, imageToSend, "temp_image.jpg", 1, 1)
+        val result = sendAssetUseCase.invoke(conversationId, assetToSend, "temp_asset.txt", "text/plain")
 
         // Then
-        assertEquals(result, SendImageMessageResult.Success)
+        assertEquals(result, SendAssetMessageResult.Success)
     }
 
-
     @Test
-    fun givenAValidSendImageMessageRequest_whenThereIsAnAssetUploadError_thenShouldCallReturnsAFailureResult() = runTest {
+    fun givenAValidSendAssetMessageRequest_whenThereIsAnAssetUploadError_thenShouldCallReturnsAFailureResult() = runTest {
         // Given
-        val imageByteArray = getMockedImage()
+        val assetToSend = getMockedAsset()
         val conversationId = ConversationId("some-convo-id", "some-domain-id")
         val unauthorizedException = TestNetworkException.missingAuth
-        val (_, sendImageUseCase) = Arrangement()
+        val (_, sendAssetUseCase) = Arrangement()
             .withUploadAssetErrorResponse(unauthorizedException)
             .arrange()
 
         // When
-        val result = sendImageUseCase.invoke(conversationId, imageByteArray, "temp_image.jpg", 1, 1)
+        val result = sendAssetUseCase.invoke(conversationId, assetToSend, "temp_asset.txt", "text/plain")
 
         // Then
-        assertTrue(result is SendImageMessageResult.Failure)
+        assertTrue(result is SendAssetMessageResult.Failure)
         val exception = result.coreFailure
         assertTrue(exception is NetworkFailure.ServerMiscommunication)
         assertEquals(exception.rootCause, unauthorizedException)
     }
 
     @Test
-    fun givenASuccessfulSendImageMessageRequest_whenCheckingTheMessageRepository_thenTheAssetIsPersisted() =
+    fun givenASuccessfulSendAssetMessageRequest_whenSendingTheAsset_thenTheAssetIsPersisted() =
         runTest {
             // Given
-            val mockedImg = getMockedImage()
+            val assetToSend = getMockedAsset()
             val conversationId = ConversationId("some-convo-id", "some-domain-id")
-            val (arrangement, sendImageUseCase) = Arrangement()
+            val (arrangement, sendAssetUseCase) = Arrangement()
                 .withSuccessfulResponse()
                 .arrange()
 
             // When
-            sendImageUseCase.invoke(conversationId, mockedImg, "temp_image.jpg", 1, 1)
+            sendAssetUseCase.invoke(conversationId, assetToSend, "temp_asset.txt", "text/plain")
 
             // Then
             verify(arrangement.messageRepository)
@@ -101,6 +93,9 @@ class SendImageUseCaseTest {
         val messageRepository = mock(classOf<MessageRepository>())
 
         @Mock
+        val messageSender = mock(classOf<MessageSender>())
+
+        @Mock
         private val clientRepository = mock(classOf<ClientRepository>())
 
         @Mock
@@ -108,9 +103,6 @@ class SendImageUseCaseTest {
 
         @Mock
         private val userRepository = mock(classOf<UserRepository>())
-
-        @Mock
-        val messageSender = mock(classOf<MessageSender>())
 
         val someAssetId = UploadedAssetId("some-asset-id", "some-asset-token")
 
@@ -129,8 +121,8 @@ class SendImageUseCaseTest {
             "some_key"
         )
 
-        val sendImageUseCase =
-            SendImageMessageUseCaseImpl(messageRepository, clientRepository, assetDataSource, userRepository, messageSender)
+        val sendAssetUseCase =
+            SendAssetMessageUseCaseImpl(messageRepository, clientRepository, assetDataSource, userRepository, messageSender)
 
         fun withSuccessfulResponse(): Arrangement {
             given(assetDataSource)
@@ -164,9 +156,9 @@ class SendImageUseCaseTest {
             return this
         }
 
-        fun arrange() = this to sendImageUseCase
+        fun arrange() = this to sendAssetUseCase
     }
 
-    private fun getMockedImage(): ByteArray = "some_image".toByteArray()
+    private fun getMockedAsset(): ByteArray =
+        "some VERY long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long asset".toByteArray()
 }
-
