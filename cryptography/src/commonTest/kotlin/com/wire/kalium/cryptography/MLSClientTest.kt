@@ -113,7 +113,7 @@ class MLSClientTest: BaseMLSClientTest() {
     }
 
     companion object {
-        const val MLS_CONVERSATION_ID = "12e823ds99ab922"
+        const val MLS_CONVERSATION_ID = "JfflcPtUivbg+1U3Iyrzsh5D2ui/OGS5Rvf52ipH5KY="
         const val PLAIN_TEXT = "Hello World"
         val ALICE = SampleUser(
             CryptoQualifiedID("837655f7-b448-465a-b4b2-93f0919b38f0", "wire.com"),
