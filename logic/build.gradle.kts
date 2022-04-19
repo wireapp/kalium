@@ -57,6 +57,7 @@ kotlin {
                 implementation(Dependencies.UUID.benAsherUUID)
                 // the Dependency is duplicated between here and persistence build.gradle.kts
                 implementation(Dependencies.MultiplatformSettings.settings)
+                implementation(Dependencies.Firebase.abcNotifications)
             }
         }
         val commonTest by getting {
@@ -75,6 +76,9 @@ kotlin {
         val androidMain by getting {
             dependencies {
                 implementation(Dependencies.Android.work)
+                implementation(Dependencies.Firebase.firebaseBOM)
+                implementation(Dependencies.Firebase.firebaseCloudMessaging)
+                implementation(Dependencies.Firebase.abcNotifications)
             }
         }
         val androidTest by getting

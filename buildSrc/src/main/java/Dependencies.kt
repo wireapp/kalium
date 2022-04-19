@@ -1,3 +1,4 @@
+import Versions.firebaseBOM
 import org.gradle.kotlin.dsl.kotlin
 import org.gradle.kotlin.dsl.version
 import org.gradle.plugin.use.PluginDependenciesSpec
@@ -28,8 +29,10 @@ object Versions {
     const val multiplatformSettings = "0.8.1"
     const val androidSecurity = "1.0.0"
     const val sqlDelight = "2.0.0-alpha01"
+
     @Deprecated("A new implementation is available. Use the protobuf project instead.")
     const val wireJvmMessageProto = "1.36.0"
+
     @Deprecated("A new implementation is available. Use the protobuf project instead.")
     const val protobufLite = "3.19.4"
     const val pbandk = "0.13.0"
@@ -38,6 +41,8 @@ object Versions {
     const val jna = "5.6.0@aar"
     const val mlsClient = "0.0.1"
     const val desugarJdk = "1.1.5"
+    const val firebaseBOM = "29.3.1"
+    const val abcNotifications = "0.4.1"
 }
 
 object Plugins {
@@ -166,6 +171,7 @@ object Dependencies {
     object Protobuf {
         @Deprecated("A new implementation is available. Use the protobuf project instead.")
         const val wireJvmMessageProto = "com.wire:generic-message-proto:${Versions.wireJvmMessageProto}"
+
         @Deprecated("A new implementation is available. Use the protobuf project instead.")
         const val protobufLite = "com.google.protobuf:protobuf-javalite:${Versions.protobufLite}"
         const val pbandkRuntime = "pro.streem.pbandk:pbandk-runtime:${Versions.pbandk}"
@@ -176,7 +182,13 @@ object Dependencies {
     }
 
     object Calling {
-        const val avs =  "com.wire:avs:${Versions.avs}"
+        const val avs = "com.wire:avs:${Versions.avs}"
         const val jna = "net.java.dev.jna:jna:${Versions.jna}"
+    }
+
+    object Firebase {
+        const val firebaseBOM = "com.google.firebase:firebase-bom:${Versions.firebaseBOM}"
+        const val firebaseCloudMessaging = "com.google.firebase:firebase-messaging-ktx"
+        const val abcNotifications = "com.linecorp.abc:kmm-notifications:${Versions.abcNotifications}"
     }
 }
