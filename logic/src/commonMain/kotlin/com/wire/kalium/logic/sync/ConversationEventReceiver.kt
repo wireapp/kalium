@@ -9,12 +9,7 @@ import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.message.AssetContent
-import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.message.PlainMessageBlob
-import com.wire.kalium.logic.data.message.ProtoContentMapper
+import com.wire.kalium.logic.data.message.*
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
@@ -25,7 +20,7 @@ import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.logic.wrapCryptoRequest
-import io.ktor.utils.io.core.toByteArray
+import io.ktor.utils.io.core.*
 
 class ConversationEventReceiver(
     private val proteusClient: ProteusClient,
@@ -80,9 +75,12 @@ class ConversationEventReceiver(
                                     messageRepository.persistMessage(message)
                                 }
                                 .onSuccess { persistedMessage ->
-                                    // The asset message received contains the asset decryption keys, so update the preview message persisted previously
-                                    updateMessage(persistedMessage, message.content.value.remoteData)?.let {
-                                        messageRepository.persistMessage(it)
+                                    // Check the second asset message is from the same original sender
+                                    if (isSenderVerified(persistedMessage.id, persistedMessage.conversationId, message.senderUserId)) {
+                                        // The asset message received contains the asset decryption keys, so update the preview message persisted previously
+                                        updateAssetMessage(persistedMessage, message.content.value.remoteData)?.let {
+                                            messageRepository.persistMessage(it)
+                                        }
                                     }
                                 }
                         }
@@ -107,7 +105,7 @@ class ConversationEventReceiver(
         }
     }
 
-    private fun updateMessage(persistedMessage: Message, newMessageRemoteData: AssetContent.RemoteData): Message? =
+    private fun updateAssetMessage(persistedMessage: Message, newMessageRemoteData: AssetContent.RemoteData): Message? =
         // The message was previously received with just metadata info, so let's update it with the raw data info
         if (persistedMessage.content is MessageContent.Asset) {
             persistedMessage.copy(

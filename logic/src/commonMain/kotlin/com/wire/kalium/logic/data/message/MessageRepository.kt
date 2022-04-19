@@ -101,7 +101,7 @@ class MessageDataSource(
         }.onSuccess {
             Either.Right(it)
         }.onFailure {
-            Either.Left(StorageFailure.DataNotFound)
+            Either.Left(it)
         }
 
     override suspend fun markMessageAsSent(conversationId: ConversationId, messageUuid: String) =
