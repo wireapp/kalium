@@ -226,6 +226,12 @@ actual class CallManagerImpl(
         wcall_reject(inst = deferredHandle.await(), conversationId = conversationId.asString())
     }
 
+    override suspend fun muteCall(shouldMute: Boolean) = withCalling {
+        val logString =  if (shouldMute)  "muting" else "un-muting"
+        kaliumLogger.d("$TAG -> $logString call..")
+        wcall_set_mute(deferredHandle.await(), muted =  shouldMute.toInt())
+    }
+
     override fun onConfigRequest(inst: Handle, arg: Pointer?): Int {
         scope.launch {
             val config = callRepository.getCallConfigResponse(limit = null)
