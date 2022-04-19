@@ -13,6 +13,8 @@ import com.wire.kalium.network.api.model.ConversationAccessRole
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationEntity.GroupState
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import com.wire.kalium.persistence.dao.ConversationEntity as PersistedConversation
 import com.wire.kalium.persistence.dao.ConversationEntity.Protocol as PersistedProtocol
 
@@ -44,7 +46,7 @@ internal class ConversationMapperImpl(
             apiModel.teamId,
             apiModel.getProtocolInfo(groupCreation),
             conversationStatusMapper.fromApiToDaoModel(apiModel.members.self.otrMutedStatus),
-            apiModel.members.self.otrMutedRef?.toLong() ?: 0
+            apiModel.members.self.otrMutedRef?.let { Instant.parse(it) }?.toEpochMilliseconds() ?: 0
         )
 
     override fun fromApiModelToDaoModel(apiModel: ConvProtocol): PersistedProtocol = when (apiModel) {
