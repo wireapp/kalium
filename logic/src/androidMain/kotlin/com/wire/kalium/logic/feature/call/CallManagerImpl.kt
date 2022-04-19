@@ -227,7 +227,8 @@ actual class CallManagerImpl(
     }
 
     override suspend fun muteCall(shouldMute: Boolean) = withCalling {
-        kaliumLogger.d("$TAG -> muting call..")
+        val logString =  if (shouldMute)  "muting" else "un-muting"
+        kaliumLogger.d("$TAG -> $logString call..")
         wcall_set_mute(deferredHandle.await(), muted =  shouldMute.toInt())
     }
 
