@@ -74,6 +74,15 @@ sealed class EventContentDTO {
             @SerialName("data") val message: String,
             @SerialName("from") val from: String
         ) : Conversation()
+
+        @Serializable
+        @SerialName("conversation.mls-message-add")
+        data class NewMLSMessageDTO(
+            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
+            @SerialName("qualified_from") val qualifiedFrom: UserId,
+            val time: String,
+            @SerialName("data") val message: String,
+        ) : Conversation()
     }
 
     @Serializable
