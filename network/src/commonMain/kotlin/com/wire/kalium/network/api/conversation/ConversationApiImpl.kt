@@ -87,7 +87,7 @@ class ConversationApiImpl(private val httpClient: HttpClient) : ConversationApi 
     }
 
     override suspend fun updateConversationMemberState(
-        memberUpdateRequest: MemberUpdateRequest,
+        memberUpdateRequest: MemberUpdateDTO,
         conversationId: ConversationId,
     ): NetworkResponse<Unit> = wrapKaliumResponse {
         httpClient.put("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}$PATH_SELF") {
