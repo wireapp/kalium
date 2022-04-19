@@ -57,8 +57,6 @@ class MLSConversationDataSource(
         mlsClientProvider.getMLSClient().flatMap { client ->
             val groupID = client.processWelcomeMessage(welcomeEvent.message.decodeBase64Bytes())
 
-            client.encryptMessage(groupID, "hello world".encodeToByteArray())
-
             wrapStorageRequest {
                 if (conversationDAO.getConversationByGroupID(groupID).first() == null) {
                     // Welcome arrived before the conversation create event, insert empty conversation.
