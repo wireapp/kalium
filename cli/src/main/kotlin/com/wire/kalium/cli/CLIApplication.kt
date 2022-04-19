@@ -9,15 +9,19 @@ import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.CoreLogger
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.ServerConfig
+import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.data.conversation.ConverationOptions
 import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
+import com.wire.kalium.logic.feature.client.DeleteClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientResult
+import com.wire.kalium.logic.feature.client.SelfClientsResult
 import com.wire.kalium.logic.feature.conversation.GetConversationsUseCase
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
+import com.wire.kalium.logic.feature.session.GetAllSessionsResult
 import com.wire.kalium.logic.functional.Either
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -34,6 +38,36 @@ suspend fun restoreSession(): AuthSession? {
             else -> null
         }
     }
+}
+
+class DeleteClientCommand: CliktCommand(name = "delete-client") {
+
+    private val password: String by option(help = "Account password").prompt("password", promptSuffix = ": ", hideInput = true)
+
+    override fun run() = runBlocking {
+        val authSession = restoreSession() ?: throw PrintMessage("no active session")
+        val userSession = coreLogic.getSessionScope(authSession.userId)
+
+        val selfClientsResult = userSession.client.selfClients()
+
+        if (selfClientsResult !is SelfClientsResult.Success) {
+            throw PrintMessage("failed to retrieve self clients")
+        }
+
+        selfClientsResult.clients.forEachIndexed { index, client ->
+            echo("$index) ${client.model ?: "Unknown"}(${client.label ?: "-"}) ${client.registrationTime}")
+        }
+
+        val clientIndex = prompt("Enter client index", promptSuffix = ": ")?.let { it.toInt() } ?: throw PrintMessage("Index must be an integer")
+        val deleteClientResult =  userSession.client.deleteClient(DeleteClientParam(password, selfClientsResult.clients[clientIndex].clientId))
+
+        when (deleteClientResult) {
+            is DeleteClientResult.Failure.Generic -> throw PrintMessage("Delete client failed: ${deleteClientResult.genericFailure}")
+            DeleteClientResult.Failure.InvalidCredentials -> throw PrintMessage("Invalid credentials")
+            DeleteClientResult.Success -> echo("Client successfully deleted")
+        }
+    }
+
 }
 
 class CreateGroupCommand : CliktCommand(name = "create-group") {
@@ -90,10 +124,20 @@ class LoginCommand: CliktCommand(name = "login") {
                 throw PrintMessage("Login failed, check your credentials")
             }
 
-            val addAccountResult = addAuthenticatedAccount(loginResult.userSession, true)
-            if (addAccountResult !is AddAuthenticatedUserUseCase.Result.Success) {
-                throw PrintMessage("Failed to save session")
+            val allSessionsResult = this.session.allSessions()
+            if (allSessionsResult !is GetAllSessionsResult.Success) {
+                throw PrintMessage("Failed retrieve existing sessions")
             }
+
+            if (allSessionsResult.sessions.map { it.userId }.contains(loginResult.userSession.userId)) {
+                this.session.updateCurrentSession(loginResult.userSession.userId)
+            } else {
+                val addAccountResult = addAuthenticatedAccount(loginResult.userSession, true)
+                if (addAccountResult !is AddAuthenticatedUserUseCase.Result.Success) {
+                    throw PrintMessage("Failed to save session")
+                }
+            }
+
             loginResult.userSession
         }
 
@@ -152,7 +196,7 @@ class ListenGroupCommand: CliktCommand(name = "listen-group") {
 
 }
 
-class CLIApplication : CliktCommand() {
+class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
 
     override fun run() = runBlocking {
         CoreLogger.setLoggingLevel(KaliumLogLevel.DEBUG)
@@ -165,5 +209,5 @@ class CLIApplication : CliktCommand() {
 }
 
 fun main(args: Array<String>) = CLIApplication()
-    .subcommands(LoginCommand(), CreateGroupCommand(), ListenGroupCommand())
+    .subcommands(LoginCommand(), CreateGroupCommand(), ListenGroupCommand(), DeleteClientCommand())
     .main(args)
