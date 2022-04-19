@@ -3,13 +3,19 @@ package com.wire.kalium.logic.sync
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
 import com.wire.kalium.cryptography.ProteusClient
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.message.*
+import com.wire.kalium.logic.data.message.AssetContent
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.PlainMessageBlob
+import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
@@ -20,7 +26,7 @@ import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.logic.wrapCryptoRequest
-import io.ktor.utils.io.core.*
+import io.ktor.utils.io.core.toByteArray
 
 class ConversationEventReceiver(
     private val proteusClient: ProteusClient,
@@ -41,6 +47,7 @@ class ConversationEventReceiver(
             is Event.Conversation.MemberJoin -> handleMemberJoin(event)
             is Event.Conversation.MemberLeave -> handleMemberLeave(event)
             is Event.Conversation.MLSWelcome -> handleMLSWelcome(event)
+            is Event.Conversation.NewMLSMessage -> handleNewMLSMessage(event)
         }
     }
 
@@ -50,10 +57,9 @@ class ConversationEventReceiver(
             CryptoSessionId(idMapper.toCryptoQualifiedIDId(event.senderUserId), CryptoClientId(event.senderClientId.value))
         suspending {
             wrapCryptoRequest { proteusClient.decrypt(decodedContentBytes, cryptoSessionId) }.map { PlainMessageBlob(it) }
-
                 .onFailure {
-                    //TODO: Insert a failed message into the database to notify user that encryption is kaputt
-                    it.proteusException.printStackTrace()
+                    // TODO: Insert a failed message into the database to notify user that encryption is kaputt
+                    kaliumLogger.e("$TAG - failure on proteus message: ${it.proteusException.stackTraceToString()}")
                 }.onSuccess { plainMessageBlob ->
                     val protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)
                     val message = Message(
@@ -65,42 +71,8 @@ class ConversationEventReceiver(
                         senderClientId = event.senderClientId,
                         status = Message.Status.SENT
                     )
-                    kaliumLogger.i(message = "Message received: $message")
-                    when (message.content) {
-                        is MessageContent.Text -> messageRepository.persistMessage(message)
-                        is MessageContent.Asset -> {
-                            messageRepository.getMessageById(message.conversationId, message.id)
-                                .onFailure {
-                                    // No asset message was received previously, so just persist the preview asset message
-                                    messageRepository.persistMessage(message)
-                                }
-                                .onSuccess { persistedMessage ->
-                                    // Check the second asset message is from the same original sender
-                                    if (isSenderVerified(persistedMessage.id, persistedMessage.conversationId, message.senderUserId)) {
-                                        // The asset message received contains the asset decryption keys, so update the preview message persisted previously
-                                        updateAssetMessage(persistedMessage, message.content.value.remoteData)?.let {
-                                            messageRepository.persistMessage(it)
-                                        }
-                                    }
-                                }
-                        }
-                        is MessageContent.DeleteMessage ->
-                            if (isSenderVerified(message.content.messageId, message.conversationId, message.senderUserId))
-                                messageRepository.softDeleteMessage(messageUuid = message.content.messageId, message.conversationId)
-                            else kaliumLogger.i(message = "Delete message sender is not verified: $message")
-                        is MessageContent.DeleteForMe ->
-                            if (isSenderVerified(message.content.messageId, message.conversationId, message.senderUserId))
-                                messageRepository.hideMessage(messageUuid = message.content.messageId, message.content.conversationId)
-                            else kaliumLogger.i(message = "Delete message sender is not verified: $message")
-                        is MessageContent.Calling -> {
-                            kaliumLogger.d("$TAG - MessageContent.Calling")
-                            callManagerImpl.onCallingMessageReceived(
-                                message = message,
-                                content = message.content
-                            )
-                        }
-                        is MessageContent.Unknown -> kaliumLogger.i(message = "Unknown Message received: $message")
-                    }
+
+                    processMessage(message)
                 }
         }
     }
@@ -150,6 +122,69 @@ class ConversationEventReceiver(
     private suspend fun handleMLSWelcome(event: Event.Conversation.MLSWelcome) {
         mlsConversationRepository.establishMLSGroupFromWelcome(event)
             .onFailure { kaliumLogger.e("$TAG - failure on MLS welcome event: $it") }
+    }
+
+    private suspend fun handleNewMLSMessage(event: Event.Conversation.NewMLSMessage) = suspending {
+        mlsConversationRepository.messageFromMLSMessage(event)
+            .onFailure {
+                // TODO: Insert a failed message into the database to notify user that encryption is kaputt
+                kaliumLogger.e("$TAG - failure on MLS message: $it")
+            }
+            .onSuccess { message ->
+                val plainMessageBlob = message?.let { PlainMessageBlob(it) } ?: return@onSuccess
+                val protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)
+                val message = Message(
+                    id = protoContent.messageUid,
+                    content = protoContent.messageContent,
+                    conversationId = event.conversationId,
+                    date = event.time,
+                    senderUserId = event.senderUserId,
+                    senderClientId = ClientId(""), // TODO client ID not available for MLS messages
+                    status = Message.Status.SENT
+                )
+
+                processMessage(message)
+            }
+    }
+
+    private suspend fun processMessage(message: Message) = suspending {
+        kaliumLogger.i(message = "Message received: $message")
+
+        when (message.content) {
+            is MessageContent.Text -> messageRepository.persistMessage(message)
+            is MessageContent.Asset -> {
+                messageRepository.getMessageById(message.conversationId, message.id)
+                    .onFailure {
+                        // No asset message was received previously, so just persist the preview asset message
+                        messageRepository.persistMessage(message)
+                    }
+                    .onSuccess { persistedMessage ->
+                        // Check the second asset message is from the same original sender
+                        if (isSenderVerified(persistedMessage.id, persistedMessage.conversationId, message.senderUserId)) {
+                            // The asset message received contains the asset decryption keys, so update the preview message persisted previously
+                            updateAssetMessage(persistedMessage, message.content.value.remoteData)?.let {
+                                messageRepository.persistMessage(it)
+                            }
+                        }
+                    }
+            }
+            is MessageContent.DeleteMessage ->
+                if (isSenderVerified(message.content.messageId, message.conversationId, message.senderUserId))
+                    messageRepository.softDeleteMessage(messageUuid = message.content.messageId, message.conversationId)
+                else kaliumLogger.i(message = "Delete message sender is not verified: $message")
+            is MessageContent.DeleteForMe ->
+                if (isSenderVerified(message.content.messageId, message.conversationId, message.senderUserId))
+                    messageRepository.hideMessage(messageUuid = message.content.messageId, message.content.conversationId)
+                else kaliumLogger.i(message = "Delete message sender is not verified: $message")
+            is MessageContent.Calling -> {
+                kaliumLogger.d("$TAG - MessageContent.Calling")
+                callManagerImpl.onCallingMessageReceived(
+                    message = message,
+                    content = message.content
+                )
+            }
+            is MessageContent.Unknown -> kaliumLogger.i(message = "Unknown Message received: $message")
+        }
     }
 
     private companion object {
