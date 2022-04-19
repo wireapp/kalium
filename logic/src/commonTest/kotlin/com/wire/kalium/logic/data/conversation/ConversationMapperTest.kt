@@ -153,7 +153,7 @@ class ConversationMapperTest {
         val SELF_USER_TEAM_ID = TeamId("teamID")
         val SELF_MEMBER_RESPONSE =
             ConversationSelfMemberResponse(
-                UserId("selfId", "selfDomain"), "111111", MutedStatus.ALL_ALLOWED
+                UserId("selfId", "selfDomain"), "2022-04-11T20:24:57.237Z", MutedStatus.ALL_ALLOWED
             )
         val OTHER_MEMBERS = listOf(ConversationOtherMembersResponse(null, UserId("other1", "domain1")))
         val MEMBERS_RESPONSE = ConversationMembersResponse(SELF_MEMBER_RESPONSE, OTHER_MEMBERS)
