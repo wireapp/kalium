@@ -1,9 +1,6 @@
 package com.wire.kalium.logic.sync
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.ProteusFailure
-import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
@@ -26,18 +23,6 @@ class SlowSyncWorker(
             is Either.Left -> {
                 val failure = result.value
                 kaliumLogger.e("SLOW SYNC FAILED $failure")
-
-
-                when(failure) {
-                    CoreFailure.MissingClientRegistration -> kaliumLogger.e("SLOW SYNC FAILED MissingClientRegistration $failure")
-                    is CoreFailure.Unknown -> kaliumLogger.e("SLOW SYNC FAILED Unknown ${failure.rootCause}")
-                    is CoreFailure.FeatureFailure ->kaliumLogger.e("SLOW SYNC FAILED FeatureFailure $failure")
-                    NetworkFailure.NoNetworkConnection -> kaliumLogger.e("SLOW SYNC FAILED NoNetworkConnection $failure")
-                    is NetworkFailure.ServerMiscommunication -> kaliumLogger.e("SLOW SYNC FAILED ServerMiscommunication ${failure.rootCause}")
-                    is ProteusFailure ->kaliumLogger.e("SLOW SYNC FAILED ProteusFailure ${failure.rootCause}")
-                    StorageFailure.DataNotFound -> kaliumLogger.e("SLOW SYNC FAILED DataNotFound $failure")
-                    is StorageFailure.Generic -> kaliumLogger.e("SLOW SYNC FAILED Generic ${failure.rootCause}")
-                }
                 (failure as? CoreFailure.Unknown)?.let {
                     it.rootCause?.printStackTrace()
                 }
