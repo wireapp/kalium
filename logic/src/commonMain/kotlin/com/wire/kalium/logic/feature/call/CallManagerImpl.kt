@@ -14,6 +14,7 @@ interface CallManager {
     suspend fun answerCall(conversationId: ConversationId)
     suspend fun endCall(conversationId: ConversationId)
     suspend fun rejectCall(conversationId: ConversationId)
+    suspend fun muteCall(shouldMute: Boolean)
     val allCalls: StateFlow<List<Call>>
 }
 

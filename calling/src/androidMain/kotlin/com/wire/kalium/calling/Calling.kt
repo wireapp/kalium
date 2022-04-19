@@ -60,7 +60,7 @@ interface Calling : Library {
 
     fun wcall_close()
 
-    fun wcall_get_mute(inst: Int): Int
+    fun wcall_set_mute(inst: Handle, muted: Int)
 
     fun wcall_recv_msg(
         inst: Handle,
