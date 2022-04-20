@@ -7,8 +7,10 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.notification.NotificationApi
 import com.wire.kalium.network.api.notification.NotificationPageResponse
+import com.wire.kalium.network.api.notification.pushToken.PushTokenRequestBody
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import com.wire.kalium.persistence.event.EventInfoStorage
@@ -26,6 +28,7 @@ import kotlin.coroutines.coroutineContext
 interface EventRepository {
     suspend fun events(): Flow<Either<CoreFailure, Event>>
     suspend fun updateLastProcessedEventId(eventId: String)
+    suspend fun registerFCMToken(body: PushTokenRequestBody): Either<NetworkFailure, Unit>
 }
 
 class EventDataSource(
@@ -83,6 +86,12 @@ class EventDataSource(
 
     override suspend fun updateLastProcessedEventId(eventId: String) {
         eventInfoStorage.lastProcessedId = eventId
+    }
+
+    override suspend fun registerFCMToken(body: PushTokenRequestBody): Either<NetworkFailure, Unit> = suspending {
+        wrapApiRequest {
+            notificationApi.registerFCMToken(body)
+        }
     }
 
     private suspend fun getNextPendingEventsPage(

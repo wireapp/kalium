@@ -56,6 +56,7 @@ import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.message.MessageSenderImpl
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
+import com.wire.kalium.logic.feature.session.PushFCMTokenUseCase
 import com.wire.kalium.logic.feature.team.TeamScope
 import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.sync.ConversationEventReceiver
@@ -89,14 +90,15 @@ abstract class UserSessionScopeCommon(
             "${authenticatedDataSourceSet.authenticatedRootDir}/mls",
             userId,
             clientRepository,
-            authenticatedDataSourceSet.kaliumPreferencesSettings)
+            authenticatedDataSourceSet.kaliumPreferencesSettings
+        )
 
     private val mlsConversationRepository: MLSConversationRepository
-    get() = MLSConversationDataSource(
-        keyPackageRepository,
-        mlsClientProvider,authenticatedDataSourceSet.authenticatedNetworkContainer.mlsMessageApi,
-        userDatabaseProvider.conversationDAO
-    )
+        get() = MLSConversationDataSource(
+            keyPackageRepository,
+            mlsClientProvider, authenticatedDataSourceSet.authenticatedNetworkContainer.mlsMessageApi,
+            userDatabaseProvider.conversationDAO
+        )
 
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(
@@ -175,7 +177,15 @@ abstract class UserSessionScopeCommon(
 
     // TODO code duplication, can't we get the MessageSender from the message scope?
     private val messageSender: MessageSender
-        get() = MessageSenderImpl(messageRepository, conversationRepository, syncManager, messageSendFailureHandler, sessionEstablisher, messageEnvelopeCreator, mlsMessageCreator)
+        get() = MessageSenderImpl(
+            messageRepository,
+            conversationRepository,
+            syncManager,
+            messageSendFailureHandler,
+            sessionEstablisher,
+            messageEnvelopeCreator,
+            mlsMessageCreator
+        )
 
     private val assetRepository: AssetRepository
         get() = AssetDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.assetApi, userDatabaseProvider.assetDAO)
@@ -250,4 +260,6 @@ abstract class UserSessionScopeCommon(
     val calls: CallsScope get() = CallsScope(callManager, syncManager)
 
     val connection: ConnectionScope get() = ConnectionScope(connectionRepository)
+
+    val pushTokenUseCase: PushFCMTokenUseCase get() = PushFCMTokenUseCase(eventRepository, clientRepository)
 }

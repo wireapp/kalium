@@ -1,5 +1,6 @@
 package com.wire.kalium.network.api.notification
 
+import com.wire.kalium.network.api.notification.pushToken.PushTokenRequestBody
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.utils.NetworkResponse
@@ -9,13 +10,14 @@ import io.ktor.client.HttpClient
 import io.ktor.client.plugins.websocket.webSocketSession
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 import io.ktor.http.HttpMethod
 import io.ktor.websocket.Frame
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.mapNotNull
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.decodeFromString
 
 class NotificationApiImpl(private val httpClient: HttpClient, private val serverConfigDTO: ServerConfigDTO) : NotificationApi {
@@ -50,7 +52,6 @@ class NotificationApiImpl(private val httpClient: HttpClient, private val server
         }
     }
 
-    @ExperimentalSerializationApi
     override suspend fun listenToLiveEvents(clientId: String): Flow<EventResponse> = httpClient.webSocketSession(
         method = HttpMethod.Get
     ) {
@@ -75,6 +76,12 @@ class NotificationApiImpl(private val httpClient: HttpClient, private val server
             }
         }
 
+    override suspend fun registerFCMToken(body: PushTokenRequestBody): NetworkResponse<Unit> = wrapKaliumResponse {
+        httpClient.post(PUSH_TOKEN) {
+            setBody(body)
+        }
+    }
+
     private companion object {
         const val PATH_AWAIT = "await"
         const val PATH_NOTIFICATIONS = "notifications"
@@ -82,5 +89,6 @@ class NotificationApiImpl(private val httpClient: HttpClient, private val server
         const val SIZE_QUERY_KEY = "size"
         const val CLIENT_QUERY_KEY = "client"
         const val SINCE_QUERY_KEY = "since"
+        const val PUSH_TOKEN = "push/tokens"
     }
 }

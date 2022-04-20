@@ -15,6 +15,7 @@ class LogoutUseCase(
     suspend operator fun invoke() {
         // TODO: async for the network call
         // TODO: clear crypto files ?
+        //TODO deregister push notification token
         authenticatedDataSourceSet.proteusClient.close()
         logoutRepository.logout()
         authenticatedDataSourceSet.userDatabaseProvider.nuke()
