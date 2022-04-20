@@ -8,6 +8,8 @@ import com.wire.kalium.logic.data.asset.AssetMapperImpl
 import com.wire.kalium.logic.data.client.ClientMapper
 import com.wire.kalium.logic.data.conversation.ConversationMapper
 import com.wire.kalium.logic.data.conversation.ConversationMapperImpl
+import com.wire.kalium.logic.data.conversation.ConversationStatusMapper
+import com.wire.kalium.logic.data.conversation.ConversationStatusMapperImpl
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.MemberMapperImpl
 import com.wire.kalium.logic.data.event.EventMapper
@@ -38,7 +40,7 @@ internal object MapperProvider {
     fun teamMapper(): TeamMapper = TeamMapperImpl()
     fun messageMapper(): MessageMapper = MessageMapperImpl(idMapper())
     fun memberMapper(): MemberMapper = MemberMapperImpl(idMapper())
-    fun conversationMapper(): ConversationMapper = ConversationMapperImpl(idMapper())
+    fun conversationMapper(): ConversationMapper = ConversationMapperImpl(idMapper(), ConversationStatusMapperImpl())
     fun publicUserMapper(): PublicUserMapper = PublicUserMapperImpl(idMapper())
     fun sendMessageFailureMapper(): SendMessageFailureMapper = SendMessageFailureMapperImpl()
     fun assetMapper(): AssetMapper = AssetMapperImpl()
@@ -47,4 +49,5 @@ internal object MapperProvider {
     fun preKeyListMapper(): PreKeyListMapper = PreKeyListMapper(preyKeyMapper())
     fun locationMapper(): LocationMapper = LocationMapper()
     fun clientMapper(clientConfig: ClientConfig): ClientMapper = ClientMapper(preyKeyMapper(), locationMapper(), clientConfig)
+    fun conversationStatusMapper(): ConversationStatusMapper = ConversationStatusMapperImpl()
 }

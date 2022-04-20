@@ -27,7 +27,7 @@ actual class ProteusClientImpl actual constructor(private val rootDir: String) :
 
     private var box: EncryptionContext? = null
 
-    override fun nuke(): Boolean = TODO("Not yet implemented")
+    override fun clearLocalFiles(): Boolean = TODO("Not yet implemented")
 
     override suspend fun open() {
         NSFileManager.defaultManager.createDirectoryAtPath(rootDir, withIntermediateDirectories = true, null, null)

@@ -17,7 +17,7 @@ actual class ProteusClientImpl actual constructor(rootDir: String) : ProteusClie
 
     private lateinit var box: Cryptobox
 
-    override fun nuke(): Boolean {
+    override fun clearLocalFiles(): Boolean {
         TODO("Not yet implemented")
     }
 

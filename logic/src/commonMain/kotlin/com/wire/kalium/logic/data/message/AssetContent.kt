@@ -1,7 +1,7 @@
 package com.wire.kalium.logic.data.message
 
 data class AssetContent(
-    val size: Int,
+    val sizeInBytes: Long,
     val name: String? = null,
     val mimeType: String,
     val metadata: AssetMetadata? = null,

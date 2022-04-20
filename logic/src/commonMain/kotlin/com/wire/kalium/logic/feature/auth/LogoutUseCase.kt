@@ -16,7 +16,7 @@ class LogoutUseCase(
         // TODO: async for the network call
         // TODO: clear crypto files ?
         authenticatedDataSourceSet.proteusClient.close()
-        authenticatedDataSourceSet.proteusClient.nuke()
+        authenticatedDataSourceSet.proteusClient.clearLocalFiles()
         logoutRepository.logout()
         authenticatedDataSourceSet.userDatabaseProvider.nuke()
         authenticatedDataSourceSet.kaliumPreferencesSettings.nuke()

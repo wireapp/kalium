@@ -18,5 +18,13 @@ interface ConversationApi {
 
     suspend fun createOne2OneConversation(createConversationRequest: CreateConversationRequest): NetworkResponse<ConversationResponse>
 
-    suspend fun addParticipant(addParticipantRequest: AddParticipantRequest, conversationId: ConversationId): NetworkResponse<AddParticipantResponse>
+    suspend fun addParticipant(
+        addParticipantRequest: AddParticipantRequest,
+        conversationId: ConversationId
+    ): NetworkResponse<AddParticipantResponse>
+
+    suspend fun updateConversationMemberState(
+        memberUpdateRequest: MemberUpdateDTO,
+        conversationId: ConversationId
+    ): NetworkResponse<Unit>
 }

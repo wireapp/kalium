@@ -11,7 +11,7 @@ CREATE TABLE Message (
 
       -- Asset message fields
       asset_mime_type TEXT,
-      asset_size INTEGER AS Int,
+      asset_size INTEGER,
       asset_name TEXT,
       asset_image_width INTEGER AS Int,
       asset_image_height INTEGER AS Int,

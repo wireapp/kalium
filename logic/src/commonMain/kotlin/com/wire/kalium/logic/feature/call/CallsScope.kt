@@ -3,8 +3,10 @@ package com.wire.kalium.logic.feature.call
 import com.wire.kalium.logic.feature.call.usecase.EndCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetOngoingCallsUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetOngoingCallsUseCaseImpl
+import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.RejectCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.StartCallUseCase
+import com.wire.kalium.logic.feature.call.usecase.UnMuteCallUseCase
 import com.wire.kalium.logic.sync.SyncManager
 
 class CallsScope(
@@ -22,7 +24,11 @@ class CallsScope(
 
     val answerCall: AnswerCallUseCase get() = AnswerCallUseCaseImpl(callManager)
 
-    val endCal: EndCallUseCase get() = EndCallUseCase(callManager)
+    val endCall: EndCallUseCase get() = EndCallUseCase(callManager)
 
     val rejectCall: RejectCallUseCase get() = RejectCallUseCase(callManager)
+
+    val muteCall: MuteCallUseCase get() = MuteCallUseCase(callManager)
+
+    val unMuteCall: UnMuteCallUseCase get() = UnMuteCallUseCase(callManager)
 }
