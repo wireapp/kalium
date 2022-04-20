@@ -9,9 +9,11 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
+import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.Times
 import io.mockative.anything
+import io.mockative.configure
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.verify
@@ -21,6 +23,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertIs
 
+@OptIn(ConfigurationApi::class)
 class SendTextMessageUseCaseTest {
 
     @Mock
@@ -33,7 +36,7 @@ class SendTextMessageUseCaseTest {
     private val clientRepository = mock(ClientRepository::class)
 
     @Mock
-    private val syncManager = mock(SyncManager::class)
+    private val syncManager = configure(mock(SyncManager::class)) { stubsUnitByDefault = true }
 
     @Mock
     private val messageSender: MessageSender = mock(MessageSender::class)
@@ -52,13 +55,8 @@ class SendTextMessageUseCaseTest {
     }
 
     @Test
-    fun givenRecipients_whenCreatingAnEnvelope_thenProteusClientShouldBeUsedToEncryptForEachClient() = runTest {
+    fun givenGettingClientIdFails_WhenSendingTextMessage_FailureIsPropagatedImmediately() = runTest {
         //given
-        given(syncManager)
-            .suspendFunction(syncManager::waitForSlowSyncToComplete)
-            .whenInvoked()
-            .thenReturn(Unit)
-
         given(userRepository)
             .suspendFunction(userRepository::getSelfUser)
             .whenInvoked()
@@ -86,13 +84,8 @@ class SendTextMessageUseCaseTest {
     }
 
     @Test
-    fun givenRecipients_whenCreatingAnEnvelope_thenProteusClientShouldBeUsedToEncryptForEachClient123() = runTest {
+    fun givenPersistingMessageFails_WhenSendingTextMessage_FailureIsPropagatedImmediately() = runTest {
         //given
-        given(syncManager)
-            .suspendFunction(syncManager::waitForSlowSyncToComplete)
-            .whenInvoked()
-            .thenReturn(Unit)
-
         given(userRepository)
             .suspendFunction(userRepository::getSelfUser)
             .whenInvoked()
@@ -139,13 +132,8 @@ class SendTextMessageUseCaseTest {
     }
 
     @Test
-    fun givenRecipients_whenCreatingAnEnvelope_thenProteusClientShouldBeUsedToEncryptForEachClient1234() = runTest {
+    fun givenSendingOutgoingMessageFails_WhenSendingTextMessage_FailureIsPropagatedImmediately() = runTest {
         //given
-        given(syncManager)
-            .suspendFunction(syncManager::waitForSlowSyncToComplete)
-            .whenInvoked()
-            .thenReturn(Unit)
-
         given(userRepository)
             .suspendFunction(userRepository::getSelfUser)
             .whenInvoked()
@@ -190,13 +178,8 @@ class SendTextMessageUseCaseTest {
     }
 
     @Test
-    fun givenRecipients_whenCreatingAnEnvelope_thenProteusClientShouldBeUsedToEncryptForEachClient12345() = runTest {
+    fun givenSendingTextMessageSucceeds_whenSendingTextMessage_SuccessIsPropagatedCorrectly() = runTest {
         //given
-        given(syncManager)
-            .suspendFunction(syncManager::waitForSlowSyncToComplete)
-            .whenInvoked()
-            .thenReturn(Unit)
-
         given(userRepository)
             .suspendFunction(userRepository::getSelfUser)
             .whenInvoked()

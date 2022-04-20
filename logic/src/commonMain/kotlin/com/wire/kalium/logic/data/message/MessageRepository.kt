@@ -7,6 +7,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.SendMessageFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.message.MLSMessageApi
 import com.wire.kalium.network.api.message.MessageApi
 import com.wire.kalium.network.api.message.MessagePriority
@@ -24,7 +25,7 @@ interface MessageRepository {
     suspend fun persistMessage(message: Message): Either<CoreFailure, Unit>
     suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun deleteMessage(messageUuid: String): Either<CoreFailure, Unit>
-    suspend fun updateMessage(message:Message): Either<CoreFailure,Unit>
+    suspend fun updateMessage(message: Message): Either<CoreFailure, Unit>
     suspend fun softDeleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun hideMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun markMessageAsSent(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit>
@@ -70,9 +71,9 @@ class MessageDataSource(
     }
 
     override suspend fun updateMessage(message: Message): Either<CoreFailure, Unit> {
-        messageDAO.updateMessage(messageMapper.fromMessageToEntity(message))
-        //TODO: Handle failures
-        return Either.Right(Unit)
+        return wrapStorageRequest {
+            messageDAO.updateMessage(messageMapper.fromMessageToEntity(message))
+        }
     }
 
     override suspend fun softDeleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit> {
