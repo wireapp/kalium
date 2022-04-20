@@ -7,6 +7,7 @@ import com.wire.kalium.network.api.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.conversation.ConversationOtherMembersResponse
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.ConversationSelfMemberResponse
+import com.wire.kalium.network.api.conversation.MutedStatus
 
 object ConversationResponseJson {
 
@@ -29,7 +30,9 @@ object ConversationResponseJson {
         |           "qualified_id": {
         |               "domain": "${it.members.self.userId.domain}",
         |               "id": "${it.members.self.userId.value}"
-        |           }
+        |           },
+        |           "otr_muted_ref": "2022-04-11T14:15:48.044Z",
+        |           "otr_muted_status": 0
         |       }
         |   },
         |   "message_timer": ${it.messageTimer},
@@ -49,7 +52,9 @@ object ConversationResponseJson {
         ConversationResponse(
             "fdf23116-42a5-472c-8316-e10655f5d11e",
             ConversationMembersResponse(
-                ConversationSelfMemberResponse(QualifiedIDSamples.one),
+                ConversationSelfMemberResponse(
+                    QualifiedIDSamples.one
+                ),
                 listOf(ConversationOtherMembersResponse(null, QualifiedIDSamples.two))
             ),
             "group name",

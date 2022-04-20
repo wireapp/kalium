@@ -47,34 +47,39 @@ sealed class StorageFailure : CoreFailure() {
     class Generic(val rootCause: Throwable) : StorageFailure()
 }
 
-inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<T>): Either<NetworkFailure, T> {
+internal inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<T>): Either<NetworkFailure, T> {
     // TODO: check for internet connection and return NoNetworkConnection
     return try {
         when (val result = networkCall()) {
             is NetworkResponse.Success -> Either.Right(result.value)
-            is NetworkResponse.Error -> when (result.kException) {
-                else -> Either.Left(NetworkFailure.ServerMiscommunication(result.kException))
+            is NetworkResponse.Error -> {
+                kaliumLogger.e(result.kException.stackTraceToString())
+                Either.Left(NetworkFailure.ServerMiscommunication(result.kException))
             }
         }
     } catch (e: Exception) {
+        kaliumLogger.e(e.stackTraceToString())
         Either.Left(NetworkFailure.ServerMiscommunication(e))
     }
 }
 
-inline fun <T : Any> wrapCryptoRequest(cryptoRequest: () -> T): Either<ProteusFailure, T> {
+internal inline fun <T : Any> wrapCryptoRequest(cryptoRequest: () -> T): Either<ProteusFailure, T> {
     return try {
         Either.Right(cryptoRequest())
     } catch (e: ProteusException) {
+        kaliumLogger.e(e.stackTraceToString())
         Either.Left(ProteusFailure(e))
     } catch (e: Exception) {
+        kaliumLogger.e(e.stackTraceToString())
         Either.Left(ProteusFailure(e))
     }
 }
 
-inline fun <T : Any> wrapStorageRequest(storageRequest: () -> T?): Either<StorageFailure, T> {
+internal inline fun <T : Any> wrapStorageRequest(storageRequest: () -> T?): Either<StorageFailure, T> {
     return try {
         storageRequest()?.let { data -> Either.Right(data) } ?: Either.Left(StorageFailure.DataNotFound)
     } catch (e: Exception) {
+        kaliumLogger.e(e.stackTraceToString())
         Either.Left(StorageFailure.Generic(e))
     }
 }
