@@ -92,7 +92,10 @@ class RegisterClientUseCaseImpl(
                     password = password,
                     capabilities = capabilities,
                     preKeys = preKeys,
-                    lastKey = lastKey
+                    lastKey = lastKey,
+                    deviceType = null,
+                    label = null,
+                    model = null
                 )
             )
         }
