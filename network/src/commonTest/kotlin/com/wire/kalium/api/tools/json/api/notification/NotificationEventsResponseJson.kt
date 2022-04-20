@@ -1,11 +1,11 @@
 package com.wire.kalium.api.tools.json.api.notification
 
 import com.wire.kalium.api.tools.json.ValidJsonProvider
+import com.wire.kalium.api.tools.json.api.conversation.ConversationResponseJson
 import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.QualifiedID
 import com.wire.kalium.network.api.notification.EventContentDTO
 import com.wire.kalium.network.api.notification.user.NewClientEventData
-import com.wire.kalium.api.tools.json.api.conversation.ConversationResponseJson
 
 object NotificationEventsResponseJson {
     private val newClientSerializer = { eventData: EventContentDTO.User.NewClientDTO ->
