@@ -28,7 +28,7 @@ import kotlin.coroutines.coroutineContext
 interface EventRepository {
     suspend fun events(): Flow<Either<CoreFailure, Event>>
     suspend fun updateLastProcessedEventId(eventId: String)
-    suspend fun registerFCMToken(body: PushTokenRequestBody): Either<NetworkFailure, Unit>
+    suspend fun registerToken(body: PushTokenRequestBody): Either<NetworkFailure, Unit>
 }
 
 class EventDataSource(
@@ -88,9 +88,9 @@ class EventDataSource(
         eventInfoStorage.lastProcessedId = eventId
     }
 
-    override suspend fun registerFCMToken(body: PushTokenRequestBody): Either<NetworkFailure, Unit> = suspending {
+    override suspend fun registerToken(body: PushTokenRequestBody): Either<NetworkFailure, Unit> = suspending {
         wrapApiRequest {
-            notificationApi.registerFCMToken(body)
+            notificationApi.registerToken(body)
         }
     }
 

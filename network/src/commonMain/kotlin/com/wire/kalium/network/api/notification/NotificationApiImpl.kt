@@ -76,7 +76,7 @@ class NotificationApiImpl(private val httpClient: HttpClient, private val server
             }
         }
 
-    override suspend fun registerFCMToken(body: PushTokenRequestBody): NetworkResponse<Unit> = wrapKaliumResponse {
+    override suspend fun registerToken(body: PushTokenRequestBody): NetworkResponse<Unit> = wrapKaliumResponse {
         httpClient.post(PUSH_TOKEN) {
             setBody(body)
         }

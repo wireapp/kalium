@@ -16,5 +16,5 @@ interface NotificationApi {
 
     suspend fun listenToLiveEvents(clientId: String): Flow<EventResponse>
 
-    suspend fun registerFCMToken(body: PushTokenRequestBody): NetworkResponse<Unit>
+    suspend fun registerToken(body: PushTokenRequestBody): NetworkResponse<Unit>
 }
