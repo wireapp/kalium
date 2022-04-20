@@ -261,5 +261,5 @@ abstract class UserSessionScopeCommon(
 
     val connection: ConnectionScope get() = ConnectionScope(connectionRepository)
 
-    val pushTokenUseCase: RegisterTokenUseCase get() = RegisterTokenUseCase(eventRepository, clientRepository)
+    val pushTokenUseCase: RegisterTokenUseCase get() = RegisterTokenUseCase(eventRepository)
 }
