@@ -30,8 +30,7 @@ actual class MLSClientImpl actual constructor(
     }
 
     override fun hasConversation(groupId: MLSGroupId): Boolean {
-        // TODO waiting for core crypto implementation
-        return false
+        return coreCrypto.conversationExists(toUByteList(groupId.decodeBase64Bytes()))
     }
 
     override fun createConversation(conversationId: MLSGroupId,
