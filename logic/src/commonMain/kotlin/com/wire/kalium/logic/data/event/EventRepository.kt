@@ -8,7 +8,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.network.api.notification.NotificationApi
-import com.wire.kalium.network.api.notification.NotificationPageResponse
+import com.wire.kalium.network.api.notification.NotificationResponse
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import com.wire.kalium.persistence.event.EventInfoStorage
@@ -34,6 +34,8 @@ class EventDataSource(
     private val clientRepository: ClientRepository,
     private val eventMapper: EventMapper = MapperProvider.eventMapper()
 ) : EventRepository {
+
+    // TODO: handle Missing notification response (notify user that some messages are missing)
 
     override suspend fun events(): Flow<Either<CoreFailure, Event>> = suspending {
         clientRepository.currentClientId().coFold({
@@ -88,7 +90,7 @@ class EventDataSource(
     private suspend fun getNextPendingEventsPage(
         lastFetchedNotificationId: String?,
         clientId: ClientId
-    ): NetworkResponse<NotificationPageResponse> =
+    ): NetworkResponse<NotificationResponse> =
         lastFetchedNotificationId?.let {
             notificationApi.notificationsByBatch(NOTIFICATIONS_QUERY_SIZE, clientId.value, it)
         } ?: notificationApi.getAllNotifications(NOTIFICATIONS_QUERY_SIZE, clientId.value)
