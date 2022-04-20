@@ -61,7 +61,7 @@ class NotificationApiImpl(private val httpClient: HttpClient, private val server
         } catch (e: ResponseException) {
             if (e.response.status == HttpStatusCode.NotFound) {
                 NetworkResponse.Success(
-                    NotificationResponse.CompleteList(e.response.body<NotificationPageResponse>()),
+                    NotificationResponse.MissingSome(e.response.body<NotificationPageResponse>()),
                     e.response
                 )
             } else {
@@ -73,7 +73,6 @@ class NotificationApiImpl(private val httpClient: HttpClient, private val server
             )
         }
     }
-
 
     @ExperimentalSerializationApi
     override suspend fun listenToLiveEvents(clientId: String): Flow<EventResponse> = httpClient.webSocketSession(
@@ -88,7 +87,7 @@ class NotificationApiImpl(private val httpClient: HttpClient, private val server
             println("###### Received Frame: $frame ######")
             when (frame) {
                 is Frame.Binary -> {
-                    // assuming here the by\teArray is an ASCII character set
+                    // assuming here the byteArray is an ASCII character set
                     val jsonString = io.ktor.utils.io.core.String(frame.data)
                     val event = KtxSerializer.json.decodeFromString<EventResponse>(jsonString)
                     event

@@ -118,8 +118,6 @@ object NotificationEventsResponseJson {
             ConversationResponseJson.validGroup.serializableData
         ), newConversationSerializer
     )
-
-
     
     val notificationsWithUnknownEventAtFirstPosition = """
         {

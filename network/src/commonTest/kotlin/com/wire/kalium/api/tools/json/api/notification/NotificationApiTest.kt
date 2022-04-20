@@ -103,6 +103,7 @@ class NotificationApiTest : ApiTest {
         val result = notificationsApi.getAllNotifications(1, "")
 
         assertIs<NetworkResponse.Success<NotificationResponse>>(result)
+        assertIs<NotificationResponse.MissingSome>(result.value)
     }
 
     private companion object {
