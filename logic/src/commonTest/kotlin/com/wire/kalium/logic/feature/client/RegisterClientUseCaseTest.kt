@@ -169,7 +169,7 @@ class RegisterClientUseCaseTest {
         given(MLS_CLIENT)
             .function(MLS_CLIENT::getPublicKey)
             .whenInvoked()
-            .thenReturn( MLS_PUBLIC_KEY )
+            .thenReturn(MLS_PUBLIC_KEY)
 
         given(clientRepository)
             .suspendFunction(clientRepository::registerMLSClient)
@@ -200,7 +200,7 @@ class RegisterClientUseCaseTest {
         given(MLS_CLIENT)
             .function(MLS_CLIENT::getPublicKey)
             .whenInvoked()
-            .thenReturn( MLS_PUBLIC_KEY )
+            .thenReturn(MLS_PUBLIC_KEY)
 
         given(clientRepository)
             .suspendFunction(clientRepository::registerMLSClient)
@@ -210,7 +210,7 @@ class RegisterClientUseCaseTest {
         given(keyPackageRepository)
             .suspendFunction(keyPackageRepository::uploadNewKeyPackages)
             .whenInvokedWith(anything(), eq(100))
-            .thenReturn( Either.Left(TEST_FAILURE))
+            .thenReturn(Either.Left(TEST_FAILURE))
 
         registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
 
@@ -236,7 +236,7 @@ class RegisterClientUseCaseTest {
         given(MLS_CLIENT)
             .function(MLS_CLIENT::getPublicKey)
             .whenInvoked()
-            .thenReturn( MLS_PUBLIC_KEY )
+            .thenReturn(MLS_PUBLIC_KEY)
 
         given(clientRepository)
             .suspendFunction(clientRepository::registerMLSClient)
@@ -246,7 +246,7 @@ class RegisterClientUseCaseTest {
         given(keyPackageRepository)
             .suspendFunction(keyPackageRepository::uploadNewKeyPackages)
             .whenInvokedWith(anything(), eq(100))
-            .thenReturn( Either.Right(Unit))
+            .thenReturn(Either.Right(Unit))
 
         given(clientRepository)
             .suspendFunction(clientRepository::persistClientId)
@@ -276,7 +276,7 @@ class RegisterClientUseCaseTest {
         given(MLS_CLIENT)
             .function(MLS_CLIENT::getPublicKey)
             .whenInvoked()
-            .thenReturn( MLS_PUBLIC_KEY )
+            .thenReturn(MLS_PUBLIC_KEY)
 
         given(clientRepository)
             .suspendFunction(clientRepository::registerMLSClient)
@@ -286,7 +286,7 @@ class RegisterClientUseCaseTest {
         given(keyPackageRepository)
             .suspendFunction(keyPackageRepository::uploadNewKeyPackages)
             .whenInvokedWith(anything(), eq(100))
-            .thenReturn( Either.Right(Unit))
+            .thenReturn(Either.Right(Unit))
 
         val persistFailure = TEST_FAILURE
         given(clientRepository)
@@ -316,7 +316,7 @@ class RegisterClientUseCaseTest {
         given(MLS_CLIENT)
             .function(MLS_CLIENT::getPublicKey)
             .whenInvoked()
-            .thenReturn( MLS_PUBLIC_KEY )
+            .thenReturn(MLS_PUBLIC_KEY)
 
         given(clientRepository)
             .suspendFunction(clientRepository::registerMLSClient)
@@ -326,7 +326,7 @@ class RegisterClientUseCaseTest {
         given(keyPackageRepository)
             .suspendFunction(keyPackageRepository::uploadNewKeyPackages)
             .whenInvokedWith(anything(), eq(100))
-            .thenReturn( Either.Right(Unit))
+            .thenReturn(Either.Right(Unit))
 
         given(clientRepository)
             .suspendFunction(clientRepository::persistClientId)
@@ -382,7 +382,10 @@ class RegisterClientUseCaseTest {
             password = TEST_PASSWORD,
             preKeys = PRE_KEYS,
             lastKey = LAST_KEY,
-            capabilities = TEST_CAPABILITIES
+            capabilities = TEST_CAPABILITIES,
+            deviceType = null,
+            label = null,
+            model = null
         )
         val CLIENT = TestClient.CLIENT
 
