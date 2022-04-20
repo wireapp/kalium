@@ -13,6 +13,10 @@ actual class MLSClientImpl actual constructor(
         TODO("Not yet implemented")
     }
 
+    override fun hasConversation(groupId: MLSGroupId): Boolean {
+        TODO("Not yet implemented")
+    }
+
     override fun createConversation(
         groupId: MLSGroupId,
         members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>
