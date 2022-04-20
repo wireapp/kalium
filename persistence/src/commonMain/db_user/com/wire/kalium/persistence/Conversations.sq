@@ -32,9 +32,6 @@ INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_gr
  muted_status = excluded.muted_status,
  muted_time = excluded.muted_time;
 
-
-INSERT OR REPLACE INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, protocol, muted_status, muted_time) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);
-
 updateConversation:
 UPDATE Conversation
 SET name = ?, type = ?, team_id = ?
