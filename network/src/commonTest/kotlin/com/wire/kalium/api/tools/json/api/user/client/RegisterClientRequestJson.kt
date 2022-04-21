@@ -7,36 +7,41 @@ import com.wire.kalium.network.api.user.client.ClientCapabilityDTO
 import com.wire.kalium.network.api.user.client.ClientTypeDTO
 import com.wire.kalium.network.api.user.client.DeviceTypeDTO
 import com.wire.kalium.network.api.user.client.RegisterClientRequest
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.addJsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.putJsonArray
+import kotlinx.serialization.json.putJsonObject
 
 object RegisterClientRequestJson {
 
     private val jsonProvider = { serializable: RegisterClientRequest ->
-        """
-        |{
-        |  "class": ${serializable.deviceType.name},
-        |  "label": "${serializable.label}",
-        |  "lastkey": {
-        |       "key": "${serializable.lastKey.key}",
-        |       "id": ${serializable.lastKey.id}
-        |  },
-        |  "password": "${serializable.password}",
-        |  "prekeys": [
-        |       {
-        |           "id": ${serializable.preKeys[0].id},
-        |           "key": "${serializable.preKeys[0].key}"
-        |       },
-        |       {
-        |           "id": ${serializable.preKeys[1].id},
-        |           "key": "${serializable.preKeys[1].key}"
-        |       }
-        |  ],
-        |  "type": "${serializable.type.name}",
-        |  "capabilities": [
-        |       "${serializable.capabilities?.get(0)}"
-        |  ],
-        |  "model": "${serializable.model}"
-        |}
-        """.trimMargin()
+        buildJsonObject {
+            putJsonArray("prekeys") {
+                serializable.preKeys.forEach {
+                    addJsonObject {
+                        "id" to it.id
+                        "key" to it.key
+                    }
+                }
+            }
+            putJsonObject("lastkey") {
+                "id" to serializable.lastKey.id
+                "key" to serializable.lastKey.key
+            }
+            "type" to serializable.type
+            serializable.password?.let { "password" to it }
+            serializable.deviceType?.let { "class" to it }
+            serializable.label?.let { "label" to it }
+            serializable.model?.let { "model" to it }
+            serializable.capabilities?.let {
+                putJsonArray("capabilities") {
+                    it.forEach { clientCapabilityDTO ->
+                        add(clientCapabilityDTO.toString())
+                    }
+                }
+            }
+        }.toString()
     }
 
     val valid = ValidJsonProvider(

@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.LegalHoldStatus
 import com.wire.kalium.logic.data.conversation.Member
+import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.user.ConnectionState
@@ -80,7 +81,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
         val USER_ID = UserId(value = "userId", domain = "domainId")
         val MEMBER = listOf(Member(USER_ID))
         val CONVERSATION_ID = ConversationId(value = "userId", domain = "domainId")
-        val CONVERSATION = Conversation(id = CONVERSATION_ID, name = null, type = Conversation.Type.ONE_ON_ONE, teamId = null, lastNotificationDate = null)
+        val CONVERSATION = Conversation(id = CONVERSATION_ID, name = null, type = Conversation.Type.ONE_ON_ONE, teamId = null, MutedConversationStatus.AllAllowed, null)
         val OTHER_USER = OtherUser(
             id =
             USER_ID,
