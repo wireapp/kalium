@@ -13,6 +13,8 @@ import com.wire.kalium.network.api.model.ConversationAccessRole
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationEntity.GroupState
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import com.wire.kalium.persistence.dao.ConversationEntity as PersistedConversation
 import com.wire.kalium.persistence.dao.ConversationEntity.Protocol as PersistedProtocol
 
@@ -27,15 +29,24 @@ interface ConversationMapper {
     fun toApiModel(name: String?, members: List<Member>, teamId: String?, options: ConverationOptions): CreateConversationRequest
 }
 
-internal class ConversationMapperImpl(private val idMapper: IdMapper) : ConversationMapper {
+internal class ConversationMapperImpl(
+    private val idMapper: IdMapper,
+    private val conversationStatusMapper: ConversationStatusMapper
+) : ConversationMapper {
 
-    override fun fromApiModelToDaoModel(apiModel: ConversationResponse, groupCreation: Boolean, selfUserTeamId: TeamId?): PersistedConversation =
+    override fun fromApiModelToDaoModel(
+        apiModel: ConversationResponse,
+        groupCreation: Boolean,
+        selfUserTeamId: TeamId?
+    ): PersistedConversation =
         PersistedConversation(
             idMapper.fromApiToDao(apiModel.id),
             apiModel.name,
             apiModel.getConversationType(selfUserTeamId),
             apiModel.teamId,
-            apiModel.getProtocolInfo(groupCreation)
+            apiModel.getProtocolInfo(groupCreation),
+            conversationStatusMapper.fromApiToDaoModel(apiModel.members.self.otrMutedStatus),
+            apiModel.members.self.otrMutedRef?.let { Instant.parse(it) }?.toEpochMilliseconds() ?: 0
         )
 
     override fun fromApiModelToDaoModel(apiModel: ConvProtocol): PersistedProtocol = when (apiModel) {
@@ -44,7 +55,11 @@ internal class ConversationMapperImpl(private val idMapper: IdMapper) : Conversa
     }
 
     override fun fromDaoModel(daoModel: PersistedConversation): Conversation = Conversation(
-        idMapper.fromDaoModel(daoModel.id), daoModel.name, daoModel.type.fromDaoModel(), daoModel.teamId?.let { TeamId(it) }
+        idMapper.fromDaoModel(daoModel.id),
+        daoModel.name,
+        daoModel.type.fromDaoModel(),
+        daoModel.teamId?.let { TeamId(it) },
+        conversationStatusMapper.fromDaoModel(daoModel.mutedStatus)
     )
 
     override fun toDaoModel(welcomeEvent: Event.Conversation.MLSWelcome, groupId: String): ConversationEntity =
@@ -64,7 +79,7 @@ internal class ConversationMapperImpl(private val idMapper: IdMapper) : Conversa
             accessRole = options.accessRole.toList().map { toApiModel(it) },
             convTeamInfo = teamId?.let { ConvTeamInfo(false, it) },
             messageTimer = null,
-            receiptMode =  if (options.readReceiptsEnabled) ReceiptMode.ENABLED else ReceiptMode.DISABLED,
+            receiptMode = if (options.readReceiptsEnabled) ReceiptMode.ENABLED else ReceiptMode.DISABLED,
             conversationRole = ConversationDataSource.DEFAULT_MEMBER_ROLE,
             protocol = toApiModel(options.protocol)
         )
@@ -96,7 +111,10 @@ internal class ConversationMapperImpl(private val idMapper: IdMapper) : Conversa
 
     private fun ConversationResponse.getProtocolInfo(groupCreation: Boolean): ProtocolInfo {
         return when (protocol) {
-            ConvProtocol.MLS -> ProtocolInfo.MLS(groupId ?: "", if (groupCreation) GroupState.PENDING else GroupState.PENDING_WELCOME_MESSAGE)
+            ConvProtocol.MLS -> ProtocolInfo.MLS(
+                groupId ?: "",
+                if (groupCreation) GroupState.PENDING else GroupState.PENDING_WELCOME_MESSAGE
+            )
             ConvProtocol.PROTEUS -> ProtocolInfo.Proteus
         }
     }

@@ -267,7 +267,9 @@ class ClientRepositoryTest {
     }
 
     private companion object {
-        val REGISTER_CLIENT_PARAMS = RegisterClientParam("pass", listOf(), PreKeyCrypto(2, "2"), listOf())
+        val REGISTER_CLIENT_PARAMS = RegisterClientParam(
+            "pass", listOf(), PreKeyCrypto(2, "2"), null, null, listOf(), null
+        )
         val CLIENT_ID = TestClient.CLIENT_ID
         val CLIENT_RESULT = TestClient.CLIENT
         val TEST_FAILURE = NetworkFailure.ServerMiscommunication(

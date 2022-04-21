@@ -11,7 +11,7 @@ import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.notification.EventContentDTO
 import com.wire.kalium.network.api.notification.EventResponse
 import com.wire.kalium.network.api.notification.NotificationApi
-import com.wire.kalium.network.api.notification.NotificationPageResponse
+import com.wire.kalium.network.api.notification.NotificationResponse
 import com.wire.kalium.network.api.notification.conversation.MessageEventData
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.event.EventInfoStorage
@@ -60,7 +60,7 @@ class EventRepositoryTest {
             "eventId",
             listOf()
         )
-        val notificationsPageResponse = NotificationPageResponse("time", false, listOf(firstPage))
+        val notificationsPageResponse = NotificationResponse.CompleteList("time", false, listOf(firstPage))
 
         given(eventInfoStorage)
             .getter(eventInfoStorage::lastProcessedId)
@@ -104,7 +104,7 @@ class EventRepositoryTest {
                 )
             )
         )
-        val notificationsPageResponse = NotificationPageResponse("time", false, listOf(firstPage))
+        val notificationsPageResponse = NotificationResponse.CompleteList("time", false, listOf(firstPage))
 
         given(eventInfoStorage)
             .getter(eventInfoStorage::lastProcessedId)
@@ -145,7 +145,7 @@ class EventRepositoryTest {
         )
         val pendingEvent = EventResponse("pendingEventId", listOf(pendingEventPayload))
         val liveEvent = pendingEvent.copy(id = "liveEventId")
-        val notificationsPageResponse = NotificationPageResponse("time", false, listOf(pendingEvent))
+        val notificationsPageResponse = NotificationResponse.CompleteList("time", false, listOf(pendingEvent))
 
         given(eventInfoStorage)
             .getter(eventInfoStorage::lastProcessedId)
