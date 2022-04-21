@@ -15,10 +15,12 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class MLSMessageCreatorTest {
 
     @Mock
@@ -38,7 +40,7 @@ class MLSMessageCreatorTest {
     fun givenMessage_whenCreatingMLSMessage_thenMLSClientShouldBeUsedToEncryptProtobufContent() = runTest {
         val encryptedData = byteArrayOf()
         given(mlsClientProvider)
-            .suspendFunction(mlsClientProvider::getMLSClient)
+            .function(mlsClientProvider::getMLSClient)
             .whenInvokedWith(anything())
             .then { Either.Right(MLS_CLIENT)}
 
