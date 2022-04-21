@@ -2,7 +2,6 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
 import com.wire.kalium.persistence.dao.message.MessageEntity;
 import kotlin.Int;
-import kotlin.Boolean;
 
 CREATE TABLE Message (
       id TEXT NOT NULL,

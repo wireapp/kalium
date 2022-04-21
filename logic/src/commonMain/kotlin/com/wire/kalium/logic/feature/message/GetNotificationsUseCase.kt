@@ -12,6 +12,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.flatMapFromIterable
+import com.wire.kalium.persistence.dao.ConversationEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
@@ -70,7 +71,7 @@ class GetNotificationsUseCaseImpl(
                                 val author = getNotificationMessageAuthor(authors, it.senderUserId)
                                 messageMapper.fromMessageToLocalNotificationMessage(it, author)
                             }
-                            val isOneToOneConversation = conversationWithMessages.conversation.type == Conversation.Type.ONE_ON_ONE
+                            val isOneToOneConversation = conversationWithMessages.conversation.type == ConversationEntity.Type.ONE_ON_ONE
 
                             LocalNotificationConversation(
                                 id = conversationId,

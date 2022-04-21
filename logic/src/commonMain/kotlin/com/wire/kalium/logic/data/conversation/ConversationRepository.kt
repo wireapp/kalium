@@ -23,6 +23,7 @@ import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.persistence.dao.ConversationDAO
+import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import io.ktor.utils.io.errors.IOException
@@ -162,9 +163,9 @@ class ConversationDataSource(
 
     private suspend fun getDetailsFlowConversation(conversation: Conversation): Flow<ConversationDetails> =
         when (conversation.type) {
-            Conversation.Type.SELF -> flowOf(ConversationDetails.Self(conversation))
-            Conversation.Type.GROUP -> flowOf(ConversationDetails.Group(conversation))
-            Conversation.Type.ONE_ON_ONE -> {
+            ConversationEntity.Type.SELF -> flowOf(ConversationDetails.Self(conversation))
+            ConversationEntity.Type.GROUP -> flowOf(ConversationDetails.Group(conversation))
+            ConversationEntity.Type.ONE_ON_ONE -> {
                 suspending {
                     val selfUserId = userRepository.getSelfUser().map { it.id }.first()
                     getConversationMembers(conversation.id).map { members ->
