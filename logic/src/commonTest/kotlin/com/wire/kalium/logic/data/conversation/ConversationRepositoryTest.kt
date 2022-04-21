@@ -470,7 +470,8 @@ class ConversationRepositoryTest {
             type = ConversationEntity.Type.ONE_ON_ONE,
             teamId = null,
             protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
-            null
+            lastModifiedDate = null,
+            lastNotificationDate = null
         )
 
         val CONVERSATION_ENTITIES = listOf(
@@ -483,7 +484,8 @@ class ConversationRepositoryTest {
                 type = ConversationEntity.Type.ONE_ON_ONE,
                 teamId = null,
                 protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
-                null
+                lastModifiedDate = null,
+                lastNotificationDate = null
             )
         )
 

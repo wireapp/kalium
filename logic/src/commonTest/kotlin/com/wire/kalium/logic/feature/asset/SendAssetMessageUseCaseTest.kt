@@ -79,7 +79,7 @@ class SendAssetMessageUseCaseTest {
             // Then
             verify(arrangement.messageRepository)
                 .suspendFunction(arrangement.messageRepository::persistMessage)
-                .with(any())
+                .with(any(), any())
                 .wasInvoked(exactly = once)
             verify(arrangement.messageSender)
                 .suspendFunction(arrangement.messageSender::trySendingOutgoingMessageById)
@@ -139,7 +139,7 @@ class SendAssetMessageUseCaseTest {
                 .thenReturn(Either.Right(someClientId))
             given(messageRepository)
                 .suspendFunction(messageRepository::persistMessage)
-                .whenInvokedWith(any())
+                .whenInvokedWith(any(), any())
                 .thenReturn(Either.Right(Unit))
             given(messageSender)
                 .suspendFunction(messageSender::trySendingOutgoingMessageById)
