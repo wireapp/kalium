@@ -15,7 +15,10 @@ actual class ProteusClientImpl actual constructor(rootDir: String) : ProteusClie
         path = rootDir
     }
 
-    override fun clearLocalFiles(): Boolean = File(path).deleteRecursively()
+    override fun clearLocalFiles(): Boolean {
+        box.close()
+        return File(path).deleteRecursively()
+    }
 
     override suspend fun open() {
         val directory = File(path)
@@ -23,10 +26,6 @@ actual class ProteusClientImpl actual constructor(rootDir: String) : ProteusClie
             directory.mkdirs()
             CryptoBox.open(path)
         }
-    }
-
-    override fun close() {
-        box.close()
     }
 
     override fun getIdentity(): ByteArray {

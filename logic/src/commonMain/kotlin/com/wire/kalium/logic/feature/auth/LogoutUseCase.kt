@@ -38,10 +38,7 @@ class LogoutUseCase(
     }
 
     private fun clearCrypto() {
-        with(authenticatedDataSourceSet.proteusClient) {
-            close()
-            clearLocalFiles()
-        }
+        authenticatedDataSourceSet.proteusClient.clearLocalFiles()
 
         clientRepository.currentClientId().let { clientID ->
             if (clientID.isLeft()) {
