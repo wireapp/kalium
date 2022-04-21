@@ -50,7 +50,7 @@ class LogoutUseCase(
             }
             mlsClientProvider.getMLSClient(clientID.value).let { mlsClient ->
                 if (mlsClient.isLeft()) {
-                    kaliumLogger.e("sdsd")
+                    kaliumLogger.e("unable to access account MLS client ID")
                     return
                 } else {
                     with(mlsClient.value) {
