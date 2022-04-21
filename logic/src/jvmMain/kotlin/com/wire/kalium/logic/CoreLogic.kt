@@ -5,6 +5,8 @@ import com.wire.kalium.cryptography.ProteusClientImpl
 import com.wire.kalium.logic.data.session.SessionDataSource
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.AuthenticatedDataSourceSetProvider
+import com.wire.kalium.logic.di.AuthenticatedDataSourceSetProviderImpl
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.network.SessionManagerImpl
@@ -21,7 +23,11 @@ import com.wire.kalium.persistence.kmm_settings.SettingOptions
 import kotlinx.coroutines.runBlocking
 import java.io.File
 
-actual class CoreLogic(clientLabel: String, rootPath: String) : CoreLogicCommon(
+actual class CoreLogic(
+    clientLabel: String,
+    rootPath: String,
+    private val authenticatedDataSourceSetProvider: AuthenticatedDataSourceSetProvider = AuthenticatedDataSourceSetProviderImpl
+) : CoreLogicCommon(
     clientLabel = clientLabel, rootPath = rootPath
 ) {
     override fun getSessionRepo(): SessionRepository {
@@ -36,7 +42,7 @@ actual class CoreLogic(clientLabel: String, rootPath: String) : CoreLogicCommon(
     override val globalDatabase: GlobalDatabaseProvider by lazy { GlobalDatabaseProvider(File("$rootPath/global-storage")) }
 
     override fun getSessionScope(userId: UserId): UserSessionScope {
-        val dataSourceSet = userScopeStorage[userId] ?: run {
+        val dataSourceSet = authenticatedDataSourceSetProvider.get(userId) ?: run {
             val rootAccountPath = "$rootPath/${userId.domain}/${userId.value}"
             val rootProteusPath = "$rootAccountPath/proteus"
             val rootStoragePath = "$rootAccountPath/storage"
@@ -61,7 +67,7 @@ actual class CoreLogic(clientLabel: String, rootPath: String) : CoreLogicCommon(
                 userPreferencesSettings,
                 encryptedSettingsHolder
             ).also {
-                userScopeStorage[userId] = it
+                authenticatedDataSourceSetProvider.add(userId, it)
             }
         }
 
