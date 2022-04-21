@@ -1,28 +1,64 @@
 package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.AuthenticatedDataSourceSet
+import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.functional.isLeft
 import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.kaliumLogger
 
 class LogoutUseCase(
     private val logoutRepository: LogoutRepository,
     private val sessionRepository: SessionRepository,
     private val userId: QualifiedID,
-    private val authenticatedDataSourceSet: AuthenticatedDataSourceSet
+    private val authenticatedDataSourceSet: AuthenticatedDataSourceSet,
+    private val clientRepository: ClientRepository,
+    private val mlsClientProvider: MLSClientProvider
 ) {
     suspend operator fun invoke() {
-        // TODO: async for the network call
-        // TODO: clear crypto files ?
-        authenticatedDataSourceSet.proteusClient.close()
-        authenticatedDataSourceSet.proteusClient.clearLocalFiles()
         logoutRepository.logout()
-        authenticatedDataSourceSet.userDatabaseProvider.nuke()
-        authenticatedDataSourceSet.kaliumPreferencesSettings.nuke()
+        clearCrypto()
+        clearUserStorage()
+        clearUserSessionAndUpdateCurrent()
+    }
+
+    private fun clearUserSessionAndUpdateCurrent() {
         sessionRepository.deleteSession(userId)
         sessionRepository.allSessions().onSuccess {
             sessionRepository.updateCurrentSession(it.first().userId)
+        }
+    }
+
+    private fun clearUserStorage() {
+        authenticatedDataSourceSet.userDatabaseProvider.nuke()
+        authenticatedDataSourceSet.kaliumPreferencesSettings.nuke()
+    }
+
+    private fun clearCrypto() {
+        with(authenticatedDataSourceSet.proteusClient) {
+            close()
+            clearLocalFiles()
+        }
+
+        clientRepository.currentClientId().let { clientID ->
+            if (clientID.isLeft()) {
+                kaliumLogger.e("unable to access account Client ID")
+                return
+            }
+            mlsClientProvider.getMLSClient(clientID.value).let { mlsClient ->
+                if (mlsClient.isLeft()) {
+                    kaliumLogger.e("sdsd")
+                    return
+                } else {
+                    with(mlsClient.value) {
+                        close()
+                        clearLocalFiles()
+                    }
+                }
+            }
         }
     }
 }
