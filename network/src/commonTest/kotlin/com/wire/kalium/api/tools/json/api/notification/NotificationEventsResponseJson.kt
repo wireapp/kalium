@@ -6,6 +6,9 @@ import com.wire.kalium.network.api.QualifiedID
 import com.wire.kalium.network.api.notification.EventContentDTO
 import com.wire.kalium.network.api.notification.user.NewClientEventData
 import com.wire.kalium.api.tools.json.api.conversation.ConversationResponseJson
+import com.wire.kalium.network.api.notification.pushToken.PushTokenRequestBody
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 object NotificationEventsResponseJson {
     private val newClientSerializer = { eventData: EventContentDTO.User.NewClientDTO ->
@@ -58,7 +61,7 @@ object NotificationEventsResponseJson {
     private val mlsWelcome = ValidJsonProvider(
         EventContentDTO.Conversation.MLSWelcomeDTO(
             ConversationId("e16babfa-308b-414e-b6e0-c59517f723db", "staging.zinfra.io"),
-            QualifiedID("76ebeb16-a849-4be4-84a7-157654b492cf","staging.zinfra.io"),
+            QualifiedID("76ebeb16-a849-4be4-84a7-157654b492cf", "staging.zinfra.io"),
             "AQABAAAAibLvHZAyYCHDxb+y8axOIdEAILa77VeJo1Yd8AfJKE009zwUxXuu7mAamu",
             "71ff8872e468a970"
         ), mlsWelcomeSerializer
@@ -86,12 +89,12 @@ object NotificationEventsResponseJson {
     private val newConversation = ValidJsonProvider(
         EventContentDTO.Conversation.NewConversationDTO(
             ConversationId("e16babfa-308b-414e-b6e0-c59517f723db", "staging.zinfra.io"),
-            QualifiedID("76ebeb16-a849-4be4-84a7-157654b492cf","staging.zinfra.io"),
+            QualifiedID("76ebeb16-a849-4be4-84a7-157654b492cf", "staging.zinfra.io"),
             "2022-04-12T13:57:02.414Z",
             ConversationResponseJson.validGroup.serializableData
         ), newConversationSerializer
     )
-    
+
     val notificationsWithUnknownEventAtFirstPosition = """
         {
           "time": "2022-02-15T12:54:30Z",
@@ -151,4 +154,34 @@ object NotificationEventsResponseJson {
           ]
         }
     """.trimIndent()
+
+
+    val registerTokenResponse = """ 
+            {
+             "app":"8218398",
+             "client":"123456",
+             "token":"oaisjdoiasjd",
+             "transport":"GCM"
+                }
+            """.trimIndent()
+
+
+    private val jsonProvider = { serializable: PushTokenRequestBody ->
+        buildJsonObject {
+            put("app", serializable.senderId)
+            put("client", serializable.client)
+            put("token", serializable.token)
+            put("transport", serializable.transport)
+        }.toString()
+    }
+
+    val validPushTokenRequest =
+        ValidJsonProvider(
+            PushTokenRequestBody(
+                "8218398",
+                "123456",
+                "oaisjdoiasjd",
+                "GCM"
+            ), jsonProvider
+        )
 }

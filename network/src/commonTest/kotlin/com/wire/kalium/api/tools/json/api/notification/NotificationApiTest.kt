@@ -2,7 +2,6 @@ package com.wire.kalium.api.tools.json.api.notification
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.TEST_BACKEND_CONFIG
-import com.wire.kalium.api.tools.json.api.conversation.ConversationResponseJson
 import com.wire.kalium.network.api.notification.EventContentDTO
 import com.wire.kalium.network.api.notification.NotificationApiImpl
 import com.wire.kalium.network.utils.isSuccessful
@@ -33,7 +32,7 @@ class NotificationApiTest : ApiTest {
             }
         )
         val notificationsApi = NotificationApiImpl(httpClient, TEST_BACKEND_CONFIG)
-        
+
         notificationsApi.notificationsByBatch(limit, clientId, since)
     }
 
@@ -91,7 +90,23 @@ class NotificationApiTest : ApiTest {
         assertIs<EventContentDTO.Unknown>(firstEvent)
     }
 
+    @Test
+    fun givenAValidRequest_whenRegisteredValidToken_theTokenRegisteredSuccessfully() = runTest {
+        val httpClient = mockAuthenticatedHttpClient(
+            NotificationEventsResponseJson.registerTokenResponse, statusCode = HttpStatusCode.Created, assertion = {
+                assertPost()
+                assertBodyContent(VALID_PUSH_TOKEN_REQUEST.rawJson)
+            }
+        )
+
+        val notificationsApi = NotificationApiImpl(httpClient, TEST_BACKEND_CONFIG)
+
+        notificationsApi.registerToken(VALID_PUSH_TOKEN_REQUEST.serializableData)
+    }
+
+
     private companion object {
+        val VALID_PUSH_TOKEN_REQUEST = NotificationEventsResponseJson.validPushTokenRequest
         const val PATH_NOTIFICATIONS = "/notifications"
         const val SIZE_QUERY_KEY = "size"
         const val CLIENT_QUERY_KEY = "client"
