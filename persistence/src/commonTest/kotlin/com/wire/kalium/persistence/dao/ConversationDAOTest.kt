@@ -150,14 +150,18 @@ class ConversationDAOTest : BaseDatabaseTest() {
             "conversation1",
             ConversationEntity.Type.ONE_ON_ONE,
             teamId,
-            ConversationEntity.ProtocolInfo.Proteus
+            ConversationEntity.ProtocolInfo.Proteus,
+            lastNotificationDate = null,
+            lastModifiedDate = null
         )
         val conversationEntity2 = ConversationEntity(
             QualifiedIDEntity("2", "wire.com"),
             "conversation2",
             ConversationEntity.Type.ONE_ON_ONE,
             null,
-            ConversationEntity.ProtocolInfo.MLS("group2", ConversationEntity.GroupState.ESTABLISHED)
+            ConversationEntity.ProtocolInfo.MLS("group2", ConversationEntity.GroupState.ESTABLISHED),
+            lastNotificationDate = null,
+            lastModifiedDate = null
         )
 
         val member1 = Member(user1.id)
