@@ -53,10 +53,7 @@ class LogoutUseCase(
                     kaliumLogger.e("unable to access account MLS client ID")
                     return
                 } else {
-                    with(mlsClient.value) {
-                        close()
-                        clearLocalFiles()
-                    }
+                    mlsClient.value.clearLocalFiles()
                 }
             }
         }
