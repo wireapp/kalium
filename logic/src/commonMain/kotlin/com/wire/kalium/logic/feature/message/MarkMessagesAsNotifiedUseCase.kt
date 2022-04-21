@@ -11,11 +11,6 @@ interface MarkMessagesAsNotifiedUseCase {
     suspend operator fun invoke(conversationId: ConversationId?, date: String): Result
 }
 
-sealed class Result {
-    object Success : Result()
-    data class Failure(val storageFailure: StorageFailure) : Result()
-}
-
 class MarkMessagesAsNotifiedUseCaseImpl(private val conversationRepository: ConversationRepository) : MarkMessagesAsNotifiedUseCase {
 
     override suspend operator fun invoke(conversationId: ConversationId?, date: String): Result {
@@ -26,4 +21,9 @@ class MarkMessagesAsNotifiedUseCaseImpl(private val conversationRepository: Conv
         }
             .fold({ Result.Failure(it) }) { Result.Success }
     }
+}
+
+sealed class Result {
+    object Success : Result()
+    data class Failure(val storageFailure: StorageFailure) : Result()
 }

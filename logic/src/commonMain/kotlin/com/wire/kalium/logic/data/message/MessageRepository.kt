@@ -54,11 +54,12 @@ class MessageDataSource(
 
     override suspend fun persistMessage(message: Message, isMyMessage: Boolean): Either<CoreFailure, Unit> {
         messageDAO.insertMessage(messageMapper.fromMessageToEntity(message))
-        if (isMyMessage) {
-            conversationDAO.setConversationAsNotified(idMapper.toDaoModel(message.conversationId), message.date)
-        } else {
-            conversationDAO.setConversationAsNonNotified(idMapper.toDaoModel(message.conversationId))
-        }
+
+        val conversationQualifiedID = idMapper.toDaoModel(message.conversationId)
+        val date = message.date
+
+        if (isMyMessage) conversationDAO.updateConversationNotificationDate(conversationQualifiedID, date)
+        conversationDAO.updateConversationModifiedDate(conversationQualifiedID, date)
         //TODO: Handle failures
         return Either.Right(Unit)
     }

@@ -28,7 +28,7 @@ class ConversationMapper {
             },
             mutedStatus = conversation.muted_status,
             mutedTime = conversation.muted_time,
-            conversation.last_notified_message_date
+            lastNotificationDate = conversation.last_notified_message_date
         )
     }
 
@@ -91,19 +91,19 @@ class ConversationDAOImpl(
         conversationQueries.updateConversationGroupState(groupState, groupId)
     }
 
-    override suspend fun setConversationAsNonNotified(qualifiedID: QualifiedIDEntity) {
-        conversationQueries.updateConversationNotificationsState(true, qualifiedID)
+    override suspend fun updateConversationModifiedDate(qualifiedID: QualifiedIDEntity, date: String) {
+        conversationQueries.updateConversationModifiedDate(date, qualifiedID)
     }
 
-    override suspend fun setConversationAsNotified(qualifiedID: QualifiedIDEntity, date: String) {
-        conversationQueries.updateConversationNotificationsStateAndDate(date, false, qualifiedID)
+    override suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity, date: String) {
+        conversationQueries.updateConversationNotificationsDate(date, qualifiedID)
     }
 
-    override suspend fun setAllConversationsAsNotified(date: String) {
+    override suspend fun updateAllConversationsNotificationDate(date: String) {
         conversationQueries.transaction {
             conversationQueries.selectConversationsWithUnnotifiedMessages()
                 .executeAsList()
-                .forEach { conversationQueries.updateConversationNotificationsStateAndDate(date, false, it.qualified_id) }
+                .forEach { conversationQueries.updateConversationNotificationsDate(date, it.qualified_id) }
         }
     }
 

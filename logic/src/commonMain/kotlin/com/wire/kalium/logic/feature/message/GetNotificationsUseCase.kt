@@ -6,7 +6,6 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.notification.LocalNotificationConversation
-import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
 import com.wire.kalium.logic.data.publicuser.PublicUserMapper
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.user.UserId
@@ -32,9 +31,11 @@ class GetNotificationsUseCaseImpl(
     override suspend operator fun invoke(): Flow<List<LocalNotificationConversation>> {
         return conversationRepository.getConversationsForNotifications()
             .flatMapMerge { conversations ->
+                // Fetched the list of Conversations that have messages to notify user about
                 conversations.flatMapFromIterable { conversation ->
                     val selfUserId = userRepository.getSelfUserId()
 
+                    // Fetching the Messages for the Conversation that are newer than `lastNotificationDate`
                     messageRepository.getMessagesByConversationAndDate(conversation.id, conversation.lastNotificationDate ?: "")
                         .map { messages ->
                             val messagesWithoutMy = messages.filter { msg -> msg.senderUserId != selfUserId }
@@ -42,16 +43,26 @@ class GetNotificationsUseCaseImpl(
                         }
                 }
             }
+            // We don't want to display Notification if there is no "new" Messages in Conversation.
+            // Sometimes it could happen that Conversation has flag `has_unnotified_messages = true`,
+            // but no messages that are younger than `last_notified_message_date`
+            // (messages didn't come yet, or user watched it already, etc.)
             .map { it.filter { conversationWithMessages -> conversationWithMessages.messages.isNotEmpty() } }
             .flatMapMerge { conversationsWithMessages ->
+                // Each message has author and we need to fetch data of each of them.
+                // As far as few message could have the same author, we don't want to request it from DB few times.
+                // So we create Set of AuthorIDs to fetch them later
                 val authorIds = mutableSetOf<UserId>()
 
+                // Filling the authorIds Set
                 conversationsWithMessages.forEach { conversationAndMessages ->
                     conversationAndMessages.messages.forEach { authorIds.add(it.senderUserId) }
                 }
 
+                // Fetching all the authors by ID
                 authorIds.flatMapFromIterable { userId -> userRepository.getKnownUser(userId) }
                     .map { authors ->
+                        // Mapping all the fetched data into LocalNotificationConversation to pass it forward
                         conversationsWithMessages.map { conversationWithMessages ->
                             val conversationId = conversationWithMessages.conversation.id
                             val conversationName = conversationWithMessages.conversation.name ?: ""
@@ -63,7 +74,7 @@ class GetNotificationsUseCaseImpl(
 
                             LocalNotificationConversation(
                                 id = conversationId,
-                                name = conversationName,
+                                conversationName = conversationName,
                                 messages = messages,
                                 isOneToOneConversation = isOneToOneConversation
                             )

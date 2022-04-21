@@ -21,10 +21,10 @@ interface ConversationMapper {
     fun fromApiModelToDaoModel(apiModel: ConvProtocol): PersistedProtocol
     fun fromDaoModel(daoModel: PersistedConversation): Conversation
     fun toDaoModel(welcomeEvent: Event.Conversation.MLSWelcome, groupId: String): ConversationEntity
-    fun toApiModel(access: ConverationOptions.Access): ConversationAccess
-    fun toApiModel(accessRole: ConverationOptions.AccessRole): ConversationAccessRole
-    fun toApiModel(protocol: ConverationOptions.Protocol): ConvProtocol
-    fun toApiModel(name: String?, members: List<Member>, teamId: String?, options: ConverationOptions): CreateConversationRequest
+    fun toApiModel(access: ConversationOptions.Access): ConversationAccess
+    fun toApiModel(accessRole: ConversationOptions.AccessRole): ConversationAccessRole
+    fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol
+    fun toApiModel(name: String?, members: List<Member>, teamId: String?, options: ConversationOptions): CreateConversationRequest
 }
 
 internal class ConversationMapperImpl(private val idMapper: IdMapper) : ConversationMapper {
@@ -36,7 +36,7 @@ internal class ConversationMapperImpl(private val idMapper: IdMapper) : Conversa
             apiModel.getConversationType(selfUserTeamId),
             apiModel.teamId,
             apiModel.getProtocolInfo(groupCreation),
-            null
+            lastNotificationDate = null
         )
 
     override fun fromApiModelToDaoModel(apiModel: ConvProtocol): PersistedProtocol = when (apiModel) {
@@ -58,9 +58,9 @@ internal class ConversationMapperImpl(private val idMapper: IdMapper) : Conversa
             lastNotificationDate = null
         )
 
-    override fun toApiModel(name: String?, members: List<Member>, teamId: String?, options: ConverationOptions) =
+    override fun toApiModel(name: String?, members: List<Member>, teamId: String?, options: ConversationOptions) =
         CreateConversationRequest(
-            qualifiedUsers = if (options.protocol == ConverationOptions.Protocol.PROTEUS) members.map { idMapper.toApiModel(it.id) } else emptyList(),
+            qualifiedUsers = if (options.protocol == ConversationOptions.Protocol.PROTEUS) members.map { idMapper.toApiModel(it.id) } else emptyList(),
             name = name,
             access = options.access.toList().map { toApiModel(it) },
             accessRole = options.accessRole.toList().map { toApiModel(it) },
@@ -71,23 +71,23 @@ internal class ConversationMapperImpl(private val idMapper: IdMapper) : Conversa
             protocol = toApiModel(options.protocol)
         )
 
-    override fun toApiModel(access: ConverationOptions.Access): ConversationAccess = when (access) {
-        ConverationOptions.Access.PRIVATE -> ConversationAccess.PRIVATE
-        ConverationOptions.Access.CODE -> ConversationAccess.CODE
-        ConverationOptions.Access.INVITE -> ConversationAccess.INVITE
-        ConverationOptions.Access.LINK -> ConversationAccess.LINK
+    override fun toApiModel(access: ConversationOptions.Access): ConversationAccess = when (access) {
+        ConversationOptions.Access.PRIVATE -> ConversationAccess.PRIVATE
+        ConversationOptions.Access.CODE -> ConversationAccess.CODE
+        ConversationOptions.Access.INVITE -> ConversationAccess.INVITE
+        ConversationOptions.Access.LINK -> ConversationAccess.LINK
     }
 
-    override fun toApiModel(access: ConverationOptions.AccessRole): ConversationAccessRole = when (access) {
-        ConverationOptions.AccessRole.TEAM_MEMBER -> ConversationAccessRole.TEAM_MEMBER
-        ConverationOptions.AccessRole.NON_TEAM_MEMBER -> ConversationAccessRole.NON_TEAM_MEMBER
-        ConverationOptions.AccessRole.GUEST -> ConversationAccessRole.GUEST
-        ConverationOptions.AccessRole.SERVICE -> ConversationAccessRole.SERVICE
+    override fun toApiModel(access: ConversationOptions.AccessRole): ConversationAccessRole = when (access) {
+        ConversationOptions.AccessRole.TEAM_MEMBER -> ConversationAccessRole.TEAM_MEMBER
+        ConversationOptions.AccessRole.NON_TEAM_MEMBER -> ConversationAccessRole.NON_TEAM_MEMBER
+        ConversationOptions.AccessRole.GUEST -> ConversationAccessRole.GUEST
+        ConversationOptions.AccessRole.SERVICE -> ConversationAccessRole.SERVICE
     }
 
-    override fun toApiModel(protocol: ConverationOptions.Protocol): ConvProtocol = when (protocol) {
-        ConverationOptions.Protocol.PROTEUS -> ConvProtocol.PROTEUS
-        ConverationOptions.Protocol.MLS -> ConvProtocol.MLS
+    override fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol = when (protocol) {
+        ConversationOptions.Protocol.PROTEUS -> ConvProtocol.PROTEUS
+        ConversationOptions.Protocol.MLS -> ConvProtocol.MLS
     }
 
     private fun PersistedConversation.Type.fromDaoModel(): Conversation.Type = when (this) {
