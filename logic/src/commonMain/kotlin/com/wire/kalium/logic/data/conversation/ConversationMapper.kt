@@ -46,6 +46,7 @@ internal class ConversationMapperImpl(
             apiModel.getProtocolInfo(groupCreation),
             conversationStatusMapper.fromApiToDaoModel(apiModel.members.self.otrMutedStatus),
             apiModel.members.self.otrMutedRef?.let { Instant.parse(it) }?.toEpochMilliseconds() ?: 0,
+            null,
             null
         )
 
@@ -60,7 +61,8 @@ internal class ConversationMapperImpl(
         daoModel.type.fromDaoModel(),
         daoModel.teamId?.let { TeamId(it) },
         conversationStatusMapper.fromDaoModel(daoModel.mutedStatus),
-        daoModel.lastNotificationDate
+        daoModel.lastNotificationDate,
+        daoModel.lastModifiedDate
     )
 
     override fun toDaoModel(welcomeEvent: Event.Conversation.MLSWelcome, groupId: String): ConversationEntity =
@@ -70,7 +72,8 @@ internal class ConversationMapperImpl(
             type = ConversationEntity.Type.GROUP,
             teamId = null,
             protocolInfo = ProtocolInfo.MLS(groupId, GroupState.ESTABLISHED),
-            lastNotificationDate = null
+            lastNotificationDate = null,
+            lastModifiedDate = null
         )
 
     override fun toApiModel(name: String?, members: List<Member>, teamId: String?, options: ConversationOptions) =

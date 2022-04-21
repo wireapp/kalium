@@ -10,7 +10,8 @@ data class ConversationEntity(
     val protocolInfo: ProtocolInfo,
     val mutedStatus: MutedStatus = MutedStatus.ALL_ALLOWED,
     val mutedTime: Long = 0,
-    val lastNotificationDate: String?
+    val lastNotificationDate: String?,
+    val lastModifiedDate: String?
 ) {
 
     enum class Type { SELF, ONE_ON_ONE, GROUP }

@@ -11,7 +11,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.ConversationEntity
 
 data class Conversation(
-    val id: ConversationId, val name: String?, val type: ConversationEntity.Type, val teamId: TeamId?, val mutedStatus: MutedConversationStatus, val lastNotificationDate: String?
+    val id: ConversationId, val name: String?, val type: ConversationEntity.Type, val teamId: TeamId?, val mutedStatus: MutedConversationStatus, val lastNotificationDate: String?, val lastModifiedDate: String?
 )
 
 sealed class ConversationDetails(open val conversation: Conversation) {

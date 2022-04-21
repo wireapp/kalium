@@ -28,7 +28,8 @@ class ConversationMapper {
             },
             mutedStatus = conversation.muted_status,
             mutedTime = conversation.muted_time,
-            lastNotificationDate = conversation.last_notified_message_date
+            lastNotificationDate = conversation.last_notified_message_date,
+            lastModifiedDate = conversation.last_modified_date
         )
     }
 
