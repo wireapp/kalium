@@ -1,15 +1,19 @@
 package com.wire.kalium.network.api.notification
 
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.setWSSUrl
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.websocket.webSocketSession
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.http.HttpMethod
+import io.ktor.http.HttpStatusCode
 import io.ktor.websocket.Frame
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -31,22 +35,42 @@ class NotificationApiImpl(private val httpClient: HttpClient, private val server
         querySize: Int,
         queryClient: String,
         querySince: String
-    ): NetworkResponse<NotificationPageResponse> =
+    ): NetworkResponse<NotificationResponse> =
         notificationsCall(querySize = querySize, queryClient = queryClient, querySince = querySince)
 
     //FIXME: This function does not get all notifications, just the first page.
-    override suspend fun getAllNotifications(querySize: Int, queryClient: String): NetworkResponse<NotificationPageResponse> =
+    override suspend fun getAllNotifications(querySize: Int, queryClient: String): NetworkResponse<NotificationResponse> =
         notificationsCall(querySize = querySize, queryClient = queryClient, querySince = null)
 
     private suspend fun notificationsCall(
         querySize: Int,
         queryClient: String,
         querySince: String?
-    ): NetworkResponse<NotificationPageResponse> = wrapKaliumResponse {
-        httpClient.get(PATH_NOTIFICATIONS) {
-            parameter(SIZE_QUERY_KEY, querySize)
-            parameter(CLIENT_QUERY_KEY, queryClient)
-            querySince?.let { parameter(SINCE_QUERY_KEY, it) }
+    ): NetworkResponse<NotificationResponse> {
+        return try {
+            httpClient.get(PATH_NOTIFICATIONS) {
+                parameter(SIZE_QUERY_KEY, querySize)
+                parameter(CLIENT_QUERY_KEY, queryClient)
+                querySince?.let { parameter(SINCE_QUERY_KEY, it) }
+            }.let { response ->
+                NetworkResponse.Success(
+                    NotificationResponse.CompleteList(response.body<NotificationPageResponse>()),
+                    response
+                )
+            }
+        } catch (e: ResponseException) {
+            if (e.response.status == HttpStatusCode.NotFound) {
+                NetworkResponse.Success(
+                    NotificationResponse.MissingSome(e.response.body<NotificationPageResponse>()),
+                    e.response
+                )
+            } else {
+                wrapKaliumResponse { e.response }
+            }
+        } catch (e: Exception) {
+            NetworkResponse.Error(
+                kException = KaliumException.GenericError(e)
+            )
         }
     }
 

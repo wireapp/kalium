@@ -20,12 +20,10 @@ interface CallManager {
 
 expect class CallManagerImpl : CallManager
 
-val CallManager.ongoingCalls get() = allCalls.map {
+val CallManager.incomingCalls get() = allCalls.map {
     it.filter { call ->
         call.status in listOf(
-            CallStatus.INCOMING,
-            CallStatus.ANSWERED,
-            CallStatus.ESTABLISHED
+            CallStatus.INCOMING
         )
     }
 }
