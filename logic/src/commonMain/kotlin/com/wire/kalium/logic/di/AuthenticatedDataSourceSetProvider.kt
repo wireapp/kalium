@@ -10,8 +10,8 @@ interface AuthenticatedDataSourceSetProvider {
     fun delete(userId: UserId)
 }
 
-internal object AuthenticatedDataSourceSetProviderImpl: AuthenticatedDataSourceSetProvider {
-    private val userScopeStorage: HashMap<UserId, AuthenticatedDataSourceSet>  by lazy {
+internal object AuthenticatedDataSourceSetProviderImpl : AuthenticatedDataSourceSetProvider {
+    private val userScopeStorage: HashMap<UserId, AuthenticatedDataSourceSet> by lazy {
         hashMapOf()
     }
 

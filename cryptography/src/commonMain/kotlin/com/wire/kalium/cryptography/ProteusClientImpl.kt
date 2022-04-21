@@ -14,13 +14,11 @@ data class PreKeyCrypto(
 
 interface ProteusClient {
 
+    @Throws(ProteusException::class)
     fun clearLocalFiles(): Boolean
 
     @Throws(ProteusException::class, CancellationException::class)
     suspend fun open()
-
-    @Throws(ProteusException::class)
-    fun close()
 
     @Throws(ProteusException::class)
     fun getIdentity(): ByteArray

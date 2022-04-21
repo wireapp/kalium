@@ -47,10 +47,7 @@ class LogoutUseCase(
     }
 
     private fun clearCrypto() {
-        with(authenticatedDataSourceSet.proteusClient) {
-            close()
-            clearLocalFiles()
-        }
+        authenticatedDataSourceSet.proteusClient.clearLocalFiles()
 
         clientRepository.currentClientId().let { clientID ->
             if (clientID.isLeft()) {
@@ -59,13 +56,10 @@ class LogoutUseCase(
             }
             mlsClientProvider.getMLSClient(clientID.value).let { mlsClient ->
                 if (mlsClient.isLeft()) {
-                    kaliumLogger.e("sdsd")
+                    kaliumLogger.e("unable to access account MLS client ID")
                     return
                 } else {
-                    with(mlsClient.value) {
-                        close()
-                        clearLocalFiles()
-                    }
+                    mlsClient.value.clearLocalFiles()
                 }
             }
         }

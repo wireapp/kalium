@@ -9,10 +9,6 @@ actual class MLSClientImpl actual constructor(
         TODO("Not yet implemented")
     }
 
-    override fun close() {
-        TODO("Not yet implemented")
-    }
-
     override fun getPublicKey(): ByteArray {
         TODO("Not yet implemented")
     }

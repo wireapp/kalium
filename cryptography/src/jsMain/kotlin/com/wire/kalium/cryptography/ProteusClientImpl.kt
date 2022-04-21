@@ -29,8 +29,6 @@ actual class ProteusClientImpl actual constructor(rootDir: String) : ProteusClie
         box.create().await()
     }
 
-    override fun close() {}
-
     override fun getIdentity(): ByteArray {
         val encodedIdentity = box.getIdentity().serialise()
         return Int8Array(encodedIdentity).unsafeCast<ByteArray>()

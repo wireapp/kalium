@@ -9,14 +9,12 @@ typealias MLSKeyPackage = ByteArray
 interface MLSClient {
 
     /**
-     * Delete local MLS DB and files
+     * Release any locks the C code have on the MLS resources and
+     * delete local MLS DB and files
      *
      * @return true when delete is successful and false otherwise
      */
     fun clearLocalFiles(): Boolean
-
-
-    fun close()
 
     /**
      * Public key of the client's identity.

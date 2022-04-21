@@ -22,8 +22,10 @@ actual class MLSClientImpl actual constructor(
         coreCrypto = CoreCrypto(rootDir, databaseKey, clientId.toString())
     }
 
-    override fun clearLocalFiles(): Boolean = File(rootDir).deleteRecursively()
-    override fun close() = coreCrypto.close()
+    override fun clearLocalFiles(): Boolean {
+        coreCrypto.close()
+        return File(rootDir).deleteRecursively()
+    }
 
     override fun getPublicKey(): ByteArray {
         return coreCrypto.clientPublicKey().toUByteArray().asByteArray()
