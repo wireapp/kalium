@@ -13,6 +13,7 @@ import com.wire.kalium.network.api.notification.EventResponse
 import com.wire.kalium.network.api.notification.NotificationApi
 import com.wire.kalium.network.api.notification.NotificationPageResponse
 import com.wire.kalium.network.api.notification.conversation.MessageEventData
+import com.wire.kalium.network.api.notification.pushToken.PushTokenRequestBody
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.event.EventInfoStorage
 import io.mockative.Mock
@@ -90,6 +91,7 @@ class EventRepositoryTest {
             .with(any(), eq(clientId.value))
             .wasInvoked(exactly = once)
     }
+
     @Test
     fun givenSomeEventWasProcessedBefore_whenGettingEvents_thenGetByBatchStartingOnLastProcessedID() = runTest {
         val lastProcessedEventId = "someNotificationID"
@@ -177,5 +179,36 @@ class EventRepositoryTest {
             }
             awaitComplete()
         }
+    }
+
+    @Test
+    fun givenValidParams_whenPushToken_thenShouldSucceed() = runTest {
+        given(notificationApi)
+            .suspendFunction(notificationApi::registerToken)
+            .whenInvokedWith(any())
+            .thenReturn(
+                NetworkResponse.Success(
+                    Unit,
+                    mapOf(),
+                    201
+                )
+            )
+
+        val actual = eventRepository.registerToken(pushTokenRequestBody)
+
+        actual.shouldSucceed {
+            assertEquals(Unit, it)
+        }
+
+        verify(notificationApi).suspendFunction(notificationApi::registerToken)
+            .with(any())
+            .wasInvoked(exactly = once)
+    }
+
+    private companion object {
+        val pushTokenRequestBody = PushTokenRequestBody(
+            senderId = "7239",
+            client = "cliId", token = "7239", transport = "GCM"
+        )
     }
 }
