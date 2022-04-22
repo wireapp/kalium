@@ -80,6 +80,7 @@ com.wire.kalium.logic.data.session
 com.wire.kalium.logic.data.sso
 com.wire.kalium.logic.data.team
 com.wire.kalium.logic.data.user
+com.wire.kalium.logic.di
 com.wire.kalium.logic.failure
 com.wire.kalium.logic.feature
 com.wire.kalium.logic.feature.asset
