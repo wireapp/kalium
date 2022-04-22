@@ -1,7 +1,6 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.di.MapperProvider
@@ -9,14 +8,13 @@ import com.wire.kalium.logic.failure.SendMessageFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.message.MLSMessageApi
 import com.wire.kalium.network.api.message.MessageApi
 import com.wire.kalium.network.api.message.MessagePriority
 import com.wire.kalium.network.exceptions.QualifiedSendMessageError
-import com.wire.kalium.network.utils.isSuccessful
+import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import kotlinx.coroutines.flow.Flow
@@ -31,10 +29,12 @@ interface MessageRepository {
     suspend fun softDeleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun hideMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun markMessageAsSent(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit>
+    suspend fun updateMessageDate(conversationId: ConversationId, messageUuid: String, date: String): Either<CoreFailure, Unit>
+    suspend fun updatePendingMessagesAddMillisToDate(conversationId: ConversationId, millis: Long): Either<CoreFailure, Unit>
     suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message>
 
-    // TODO: change the return type to Either<CoreFailure, Unit>
-    suspend fun sendEnvelope(conversationId: ConversationId, envelope: MessageEnvelope): Either<SendMessageFailure, Unit>
+    // TODO: change the return type to Either<CoreFailure, String>
+    suspend fun sendEnvelope(conversationId: ConversationId, envelope: MessageEnvelope): Either<SendMessageFailure, String>
     suspend fun sendMLSMessage(conversationId: ConversationId, message: MLSMessageApi.Message): Either<CoreFailure, Unit>
 }
 
@@ -109,7 +109,17 @@ class MessageDataSource(
             messageDAO.updateMessageStatus(MessageEntity.Status.SENT, messageUuid, idMapper.toDaoModel(conversationId))
         )
 
-    override suspend fun sendEnvelope(conversationId: ConversationId, envelope: MessageEnvelope): Either<SendMessageFailure, Unit> {
+    override suspend fun updateMessageDate(conversationId: ConversationId, messageUuid: String, date: String) =
+        Either.Right(
+            messageDAO.updateMessageDate(date, messageUuid, idMapper.toDaoModel(conversationId))
+        )
+
+    override suspend fun updatePendingMessagesAddMillisToDate(conversationId: ConversationId, millis: Long) =
+        Either.Right(
+            messageDAO.updateMessagesAddMillisToDate(millis, idMapper.toDaoModel(conversationId), MessageEntity.Status.PENDING)
+        )
+
+    override suspend fun sendEnvelope(conversationId: ConversationId, envelope: MessageEnvelope): Either<SendMessageFailure, String> {
         val recipientMap = envelope.recipients.associate { recipientEntry ->
             idMapper.toApiModel(recipientEntry.userId) to recipientEntry.clientPayloads.associate { clientPayload ->
                 clientPayload.clientId.value to clientPayload.payload.data
@@ -123,16 +133,19 @@ class MessageDataSource(
             ),
             idMapper.toApiModel(conversationId),
         )
-        return if (!result.isSuccessful()) {
-            val exception = result.kException
-            if (exception is QualifiedSendMessageError.MissingDeviceError) {
-                Either.Left(sendMessageFailureMapper.fromDTO(exception))
-            } else {
-                //TODO handle different cases
-                Either.Left(SendMessageFailure.Unknown(result.kException))
+        return when(result) {
+            is NetworkResponse.Success -> {
+                Either.Right(result.value.time)
             }
-        } else {
-            Either.Right(Unit)
+            is NetworkResponse.Error -> {
+                val exception = result.kException
+                if (exception is QualifiedSendMessageError.MissingDeviceError) {
+                    Either.Left(sendMessageFailureMapper.fromDTO(exception))
+                } else {
+                    //TODO handle different cases
+                    Either.Left(SendMessageFailure.Unknown(result.kException))
+                }
+            }
         }
     }
 

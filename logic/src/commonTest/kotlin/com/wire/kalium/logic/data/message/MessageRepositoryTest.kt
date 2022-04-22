@@ -3,10 +3,14 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.message.MLSMessageApi
 import com.wire.kalium.network.api.message.MessageApi
+import com.wire.kalium.network.api.message.QualifiedSendMessageResponse
+import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.message.MessageEntity.Status.SENT
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
@@ -25,6 +29,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertSame
 
 class MessageRepositoryTest {
 
@@ -135,8 +140,34 @@ class MessageRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenAMessage_whenSendingReturnsSuccess_thenUpdateTheMessageDate() = runTest {
+        val messageEnvelope = MessageEnvelope(TEST_CLIENT_ID, listOf())
+
+        given(idMapper)
+            .function(idMapper::toApiModel)
+            .whenInvokedWith(anything())
+            .then { TEST_NETWORK_QUALIFIED_ID_ENTITY }
+
+        given(messageApi)
+            .suspendFunction(messageApi::qualifiedSendMessage)
+            .whenInvokedWith(anything(), anything())
+            .then { _, _ ->
+                NetworkResponse.Success(
+                    QualifiedSendMessageResponse.MessageSent(TEST_DATETIME, mapOf(), mapOf(), mapOf()),
+                    emptyMap(),
+                    201
+                )
+            }
+        messageRepository.sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope)
+            .shouldSucceed {
+                assertSame(it, TEST_DATETIME)
+            }
+    }
+
     private companion object {
         val TEST_QUALIFIED_ID_ENTITY = PersistenceQualifiedId("value", "domain")
+        val TEST_NETWORK_QUALIFIED_ID_ENTITY = NetworkQualifiedId("value", "domain")
         val TEST_MESSAGE_ENTITY =
             MessageEntity(
                 id = "uid",
@@ -151,8 +182,9 @@ class MessageRepositoryTest {
         val TEST_CLIENT_ID = ClientId("clientId")
         val TEST_USER_ID = UserId("userId", "domain")
         val TEST_CONTENT = MessageContent.Text("Ciao!")
+        val TEST_DATETIME = "2022-04-21T20:56:22.393Z"
         val TEST_MESSAGE = Message(
-            "uid", TEST_CONTENT, TEST_CONVERSATION_ID, "date", TEST_USER_ID, TEST_CLIENT_ID,
+            "uid", TEST_CONTENT, TEST_CONVERSATION_ID, TEST_DATETIME, TEST_USER_ID, TEST_CLIENT_ID,
             Message.Status.SENT
         )
     }
