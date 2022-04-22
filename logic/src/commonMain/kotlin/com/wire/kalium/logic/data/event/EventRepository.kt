@@ -90,10 +90,8 @@ class EventDataSource(
         eventInfoStorage.lastProcessedId = eventId
     }
 
-    override suspend fun registerToken(body: PushTokenRequestBody): Either<NetworkFailure, Unit> = suspending {
-        wrapApiRequest {
-            notificationApi.registerToken(body)
-        }
+    override suspend fun registerToken(body: PushTokenRequestBody): Either<NetworkFailure, Unit> = wrapApiRequest {
+        notificationApi.registerToken(body)
     }
 
     private suspend fun getNextPendingEventsPage(

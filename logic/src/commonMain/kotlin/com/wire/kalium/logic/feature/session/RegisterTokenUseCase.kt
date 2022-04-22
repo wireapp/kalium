@@ -1,13 +1,35 @@
 package com.wire.kalium.logic.feature.session
 
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.event.EventRepository
-import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.network.api.notification.pushToken.PushTokenRequestBody
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isInvalidCode
 
 class RegisterTokenUseCase(
     private val eventRepository: EventRepository
 ) {
-    suspend operator fun invoke(body: PushTokenRequestBody) = suspending {
-        eventRepository.registerToken(body = body)
+    suspend operator fun invoke(body: PushTokenRequestBody): RegisterTokenResult =
+        eventRepository.registerToken(body = body).fold({
+            if (
+                it is NetworkFailure.ServerMiscommunication &&
+                it.kaliumException is KaliumException.InvalidRequestError &&
+                it.kaliumException.isInvalidCode()
+            ) {
+                RegisterTokenResult.Failure.AppNotFound
+            } else {
+                RegisterTokenResult.Failure.Generic(it)
+            }
+        }, {
+            RegisterTokenResult.Success
+        })
+}
+
+
+sealed class RegisterTokenResult {
+    object Success : RegisterTokenResult()
+    sealed class Failure : RegisterTokenResult() {
+        object AppNotFound : Failure()
+        class Generic(val failure: NetworkFailure) : Failure()
     }
 }

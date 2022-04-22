@@ -1,12 +1,12 @@
 package com.wire.kalium.logic.feature.session
 
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.api.notification.pushToken.PushTokenRequestBody
 import io.mockative.Mock
-import io.mockative.anything
 import io.mockative.classOf
-import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
@@ -15,6 +15,8 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 @ExperimentalCoroutinesApi
 class PushTokenUseCaseTest {
@@ -29,23 +31,62 @@ class PushTokenUseCaseTest {
         pushTokenUseCase = RegisterTokenUseCase(eventRepository)
     }
 
+
     @Test
-    fun givenPushTokenParams_whenRegister_thenTheRepositoryShouldBeCalledWithCorrectParameters() = runTest {
-        val pushTokenRequestBody = PushTokenRequestBody(
+    fun givenRepositoryCallIsSuccessful_thenSuccessIsReturned() = runTest {
+        given(eventRepository)
+            .coroutine { registerToken(pushTokenRequestBody) }
+            .then { Either.Right(Unit) }
+
+        val actual = pushTokenUseCase(pushTokenRequestBody)
+
+        assertIs<RegisterTokenResult.Success>(actual)
+
+        verify(eventRepository)
+            .coroutine { registerToken(pushTokenRequestBody) }
+            .wasInvoked(exactly = once)
+    }
+
+
+    @Test
+    fun givenRepositoryCallFailWithAppNotFound_thenInvalidCodeIsReturned() = runTest {
+        val expected = NetworkFailure.ServerMiscommunication(TestNetworkException.invalidCode)
+
+        given(eventRepository)
+            .coroutine { registerToken(pushTokenRequestBody) }
+            .then { Either.Left(expected) }
+
+        val actual = pushTokenUseCase(pushTokenRequestBody)
+
+        assertIs<RegisterTokenResult.Failure.AppNotFound>(actual)
+
+        verify(eventRepository)
+            .coroutine { registerToken(pushTokenRequestBody) }
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenRepositoryCallFail_thenErrorIsReturned() = runTest {
+        val expected = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
+
+        given(eventRepository)
+            .coroutine { registerToken(pushTokenRequestBody) }
+            .then { Either.Left(expected) }
+
+        val actual = pushTokenUseCase(pushTokenRequestBody)
+
+        assertIs<RegisterTokenResult.Failure.Generic>(actual)
+        assertEquals(expected, actual.failure)
+
+        verify(eventRepository)
+            .coroutine { registerToken(pushTokenRequestBody) }
+            .wasInvoked(exactly = once)
+    }
+
+    companion object {
+        private val pushTokenRequestBody = PushTokenRequestBody(
             senderId = "7239",
             client = "cliId", token = "7239", transport = "GCM"
         )
-
-        given(eventRepository)
-            .suspendFunction(eventRepository::registerToken)
-            .whenInvokedWith(anything())
-            .then { Either.Right(Unit) }
-
-        pushTokenUseCase(pushTokenRequestBody)
-
-        verify(eventRepository)
-            .suspendFunction(eventRepository::registerToken)
-            .with(eq(pushTokenRequestBody))
-            .wasInvoked(once)
     }
 }

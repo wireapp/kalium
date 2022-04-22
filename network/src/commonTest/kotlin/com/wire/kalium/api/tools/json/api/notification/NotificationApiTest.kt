@@ -11,6 +11,7 @@ import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -100,10 +101,13 @@ class NotificationApiTest : ApiTest {
                 assertBodyContent(VALID_PUSH_TOKEN_REQUEST.rawJson)
             }
         )
-
         val notificationsApi = NotificationApiImpl(httpClient, TEST_BACKEND_CONFIG)
 
         notificationsApi.registerToken(VALID_PUSH_TOKEN_REQUEST.serializableData)
+
+        val actual = notificationsApi.registerToken(VALID_PUSH_TOKEN_REQUEST.serializableData)
+        assertIs<NetworkResponse.Success<Unit>>(actual)
+        assertTrue(actual.isSuccessful())
     }
 
     @Test
