@@ -26,11 +26,13 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.thenDoNothing
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class MLSConversationRepositoryTest {
 
     @Mock
@@ -75,7 +77,7 @@ class MLSConversationRepositoryTest {
             .then { Either.Right(listOf(KEY_PACKAGE)) }
 
         given(mlsClientProvider)
-            .suspendFunction(mlsClientProvider::getMLSClient)
+            .function(mlsClientProvider::getMLSClient)
             .whenInvokedWith(anything())
             .then { Either.Right(MLS_CLIENT) }
 
@@ -118,7 +120,7 @@ class MLSConversationRepositoryTest {
     @Test
     fun givenExistingConversation_whenCallingEstablishMLSGroupFromWelcome_ThenGroupIsCreatedAndGroupStateIsUpdated() = runTest {
         given(mlsClientProvider)
-            .suspendFunction(mlsClientProvider::getMLSClient)
+            .function(mlsClientProvider::getMLSClient)
             .whenInvokedWith(anything())
             .then { Either.Right(MLS_CLIENT) }
 
@@ -153,7 +155,7 @@ class MLSConversationRepositoryTest {
     @Test
     fun givenNonExistingConversation_whenCallingEstablishMLSGroupFromWelcome_ThenGroupIsCreatedAndConversationIsInserted() = runTest {
         given(mlsClientProvider)
-            .suspendFunction(mlsClientProvider::getMLSClient)
+            .function(mlsClientProvider::getMLSClient)
             .whenInvokedWith(anything())
             .then { Either.Right(MLS_CLIENT) }
 
