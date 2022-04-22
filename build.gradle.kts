@@ -6,6 +6,7 @@ buildscript {
     val sqlDelightVersion = "2.0.0-alpha01"
     val protobufCodegenVersion = "0.8.18"
     val carthageVersion = "0.0.1"
+    val detektVersion = "1.20.0"
 
     repositories {
         google()
@@ -22,6 +23,8 @@ buildscript {
         classpath("com.wire:carthage-gradle-plugin:$carthageVersion")
         classpath("org.jetbrains.dokka:dokka-gradle-plugin:$dokkaVersion")
         classpath("com.google.protobuf:protobuf-gradle-plugin:$protobufCodegenVersion")
+        classpath("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:$detektVersion")
+        classpath("io.gitlab.arturbosch.detekt:detekt-cli:$detektVersion")
     }
 }
 
@@ -68,4 +71,5 @@ tasks.create("dokkaClean") {
 tasks.dokkaHtml.dependsOn(tasks.dokkaHtmlMultiModule)
 tasks.dokkaHtmlMultiModule.dependsOn(tasks.getByName("dokkaClean"))
 
-apply(rootProject.file("gradle/dokka.gradle"))
+apply(from = "$rootDir/gradle/detekt.gradle")
+apply(from = "$rootDir/gradle/dokka.gradle")
