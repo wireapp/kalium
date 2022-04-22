@@ -26,7 +26,6 @@
     <ID>EmptyDefaultConstructor:KaliumException.kt$QualifiedSendMessageError$()</ID>
     <ID>EmptyDefaultConstructor:ServerConfigurationDAO.kt$ServerConfigMapper$()</ID>
     <ID>EmptyDefaultConstructor:ValidateSSOCodeUseCase.kt$ValidateSSOCodeUseCaseImpl$()</ID>
-    <ID>EmptyFunctionBlock:ProteusClientImpl.kt$ProteusClientImpl${}</ID>
     <ID>EmptyKtFile:SessionLocalRepository.kt$.SessionLocalRepository.kt</ID>
     <ID>FunctionNaming:CallManagerTest.kt$CallManagerTest$@Test fun givenCallManager_whenCallingMessageIsReceived_then_wcall_recv_msg_IsCalled()</ID>
     <ID>FunctionNaming:Calling.kt$Calling$fun wcall_answer(inst: Handle, conversationId: String, callType: Int, cbrEnabled: Boolean)</ID>
@@ -86,6 +85,7 @@
     <ID>LongParameterList:ConversationRepository.kt$ConversationDataSource$( private val userRepository: UserRepository, private val mlsConversationRepository: MLSConversationRepository, private val conversationDAO: ConversationDAO, private val conversationApi: ConversationApi, private val clientApi: ClientApi, private val idMapper: IdMapper = MapperProvider.idMapper(), private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(), private val memberMapper: MemberMapper = MapperProvider.memberMapper(), private val conversationStatusMapper: ConversationStatusMapper = MapperProvider.conversationStatusMapper() )</ID>
     <ID>LongParameterList:GlobalCallManager.kt$GlobalCallManager$( userId: QualifiedID, callRepository: CallRepository, userRepository: UserRepository, clientRepository: ClientRepository, callMapper: CallMapper, messageSender: MessageSender )</ID>
     <ID>LongParameterList:IncomingCallHandler.kt$IncomingCallHandler$( conversationId: String, messageTime: Uint32_t, userId: String, clientId: String, isVideoCall: Boolean, shouldRing: Boolean, conversationType: Int, arg: Pointer? )</ID>
+    <ID>LongParameterList:LogoutUseCase.kt$LogoutUseCase$( private val logoutRepository: LogoutRepository, private val sessionRepository: SessionRepository, private val userId: QualifiedID, private val authenticatedDataSourceSet: AuthenticatedDataSourceSet, private val clientRepository: ClientRepository, private val mlsClientProvider: MLSClientProvider, private val authenticatedDataSourceSetProvider: AuthenticatedDataSourceSetProvider = AuthenticatedDataSourceSetProviderImpl )</ID>
     <ID>LongParameterList:MessageScope.kt$MessageScope$( private val messageRepository: MessageRepository, private val conversationRepository: ConversationRepository, private val clientRepository: ClientRepository, private val proteusClient: ProteusClient, private val mlsClientProvider: MLSClientProvider, private val preKeyRepository: PreKeyRepository, private val userRepository: UserRepository, private val assetRepository: AssetRepository, private val syncManager: SyncManager )</ID>
     <ID>LongParameterList:MessageSender.kt$MessageSenderImpl$( private val messageRepository: MessageRepository, private val conversationRepository: ConversationRepository, private val syncManager: SyncManager, private val messageSendFailureHandler: MessageSendFailureHandler, private val sessionEstablisher: SessionEstablisher, private val messageEnvelopeCreator: MessageEnvelopeCreator, private val mlsMessageCreator: MLSMessageCreator )</ID>
     <ID>LongParameterList:NetworkQualityChangedHandler.kt$NetworkQualityChangedHandler$( conversationId: String, userId: String, clientId: String, quality: Int, roundTripTimeInMilliseconds: Int, upstreamPacketLossPercentage: Int, downstreamPacketLossPercentage: Int, arg: Pointer? )</ID>
@@ -253,6 +253,7 @@
     <ID>MaxLineLength:ProtoContentMapper.kt$ProtoContentMapperImpl$// Backend sends some preview asset messages just with img metadata and no keys or asset id, so we need to overwrite one with the other one</ID>
     <ID>MaxLineLength:RegisterAccountRepositoryTest.kt$RegisterAccountRepositoryTest$val authSession = with(SESSION) { AuthSession(UserId(userId.value, userId.domain), accessToken, refreshToken, tokenType, serverConfig) }</ID>
     <ID>MaxLineLength:SSOLoginApi.kt$SSOLoginApi$suspend fun metaData(apiBaseUrl: Url): NetworkResponse&lt;String></ID>
+    <ID>MaxLineLength:SSOLoginApi.kt$SSOLoginApiImpl$override suspend</ID>
     <ID>MaxLineLength:SaveSessionUseCase.kt$SaveSessionUseCase$@Deprecated("unsafe API", replaceWith = ReplaceWith("com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase", "com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase"))</ID>
     <ID>MaxLineLength:SendAssetMessageUseCase.kt$SendAssetMessageUseCaseImpl$prepareAndSendAssetMessage(conversationId, assetRawData.size.toLong(), assetName, assetMimeType, sha256, otrKey, assetId)</ID>
     <ID>MaxLineLength:SendAssetMessageUseCaseTest.kt$SendAssetMessageUseCaseTest$"some VERY long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long asset".toByteArray()</ID>
@@ -269,6 +270,7 @@
     <ID>MaxLineLength:UserDTO.kt$NewUserDTO$@SerialName("label") val label: String?</ID>
     <ID>MaxLineLength:UserSessionScope.kt$UserSessionScopeCommon$get() = MessageSenderImpl(messageRepository, conversationRepository, syncManager, messageSendFailureHandler, sessionEstablisher, messageEnvelopeCreator, mlsMessageCreator)</ID>
     <ID>MaxLineLength:UserSessionScope.kt$UserSessionScopeCommon$private val preKeyRemoteRepository: PreKeyRemoteRepository get() = PreKeyRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi)</ID>
+    <ID>MaxLineLength:UserSessionScope.kt$UserSessionScopeCommon$val logout: LogoutUseCase get() = LogoutUseCase(logoutRepository, sessionRepository, userId, authenticatedDataSourceSet, clientRepository, mlsClientProvider)</ID>
     <ID>MaxLineLength:ValidateUserHandleUseCaseTest.kt$ValidateUserHandleUseCaseTest$fun</ID>
     <ID>MaxLineLength:WorkScheduler.kt$private inline fun &lt;reified T> WorkerParameters.getSerializable(key: String): T?</ID>
     <ID>MaxLineLength:WrapApiRequestTest.kt$WrapApiRequestTest$val expected = NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "have you tried turning it off and on again?", "server_crash")))</ID>
