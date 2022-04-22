@@ -4,6 +4,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.user.login.SSOLoginApi
 import com.wire.kalium.network.api.user.login.SSOSettingsResponse
 import io.ktor.http.Url
@@ -20,6 +21,8 @@ interface SSOLoginRepository {
     suspend fun initiate(uuid: String, serverConfig: ServerConfig): Either<NetworkFailure, String>
 
     suspend fun finalize(cookie: String, serverConfig: ServerConfig): Either<NetworkFailure, String>
+
+    suspend fun provideLoginSession(cookie: String, serverConfig: ServerConfig): Either<NetworkFailure, SessionDTO>
 
     suspend fun metaData(serverConfig: ServerConfig): Either<NetworkFailure, String>
 
@@ -47,6 +50,12 @@ class SSOLoginRepositoryImpl(private val ssoLoginApi: SSOLoginApi) : SSOLoginRep
         wrapApiRequest {
             ssoLoginApi.finalize(cookie, Url(serverConfig.apiBaseUrl))
         }
+
+    override suspend fun provideLoginSession(cookie: String, serverConfig: ServerConfig): Either<NetworkFailure, SessionDTO> =
+        wrapApiRequest {
+            ssoLoginApi.provideLoginSession(cookie, Url(serverConfig.apiBaseUrl))
+        }
+
 
     override suspend fun metaData(serverConfig: ServerConfig): Either<NetworkFailure, String> =
         wrapApiRequest {
