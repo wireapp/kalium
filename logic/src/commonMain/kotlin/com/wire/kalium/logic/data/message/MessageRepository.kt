@@ -1,12 +1,17 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.SendMessageFailure
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.message.MLSMessageApi
 import com.wire.kalium.network.api.message.MessageApi
 import com.wire.kalium.network.api.message.MessagePriority
@@ -15,8 +20,7 @@ import com.wire.kalium.network.utils.isSuccessful
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 
 interface MessageRepository {
@@ -88,15 +92,17 @@ class MessageDataSource(
         return Either.Right(Unit)
     }
 
-    override suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message> {
-        //TODO handle failures
-        return Either.Right(
+    override suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message> =
+        wrapStorageRequest {
             messageDAO.getMessageById(messageUuid, idMapper.toDaoModel(conversationId))
-                .filterNotNull()
-                .map(messageMapper::fromEntityToMessage)
-                .first()
-        )
-    }
+                .firstOrNull()?.run {
+                    messageMapper.fromEntityToMessage(this)
+                }
+        }.onSuccess {
+            Either.Right(it)
+        }.onFailure {
+            Either.Left(it)
+        }
 
     override suspend fun markMessageAsSent(conversationId: ConversationId, messageUuid: String) =
         Either.Right(

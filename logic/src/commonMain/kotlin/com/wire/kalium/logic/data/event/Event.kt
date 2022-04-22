@@ -21,6 +21,13 @@ sealed class Event(open val id: String) {
             val content: String
         ) : Conversation(id, conversationId)
 
+        data class NewMLSMessage(
+            override val id: String, override val conversationId: ConversationId,
+            val senderUserId: UserId,
+            val time: String,
+            val content: String
+        ) : Conversation(id, conversationId)
+
         data class NewConversation(
             override val id: String,
             override val conversationId: ConversationId,

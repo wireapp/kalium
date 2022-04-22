@@ -29,7 +29,7 @@ sealed class RegisterClientResult {
 
 interface RegisterClientUseCase {
     suspend operator fun invoke(
-        password: String,
+        password: String?,
         capabilities: List<ClientCapability>?,
         preKeysToSend: Int = DEFAULT_PRE_KEYS_COUNT
     ): RegisterClientResult
@@ -48,7 +48,7 @@ class RegisterClientUseCaseImpl(
 ) : RegisterClientUseCase {
 
     override suspend operator fun invoke(
-        password: String,
+        password: String?,
         capabilities: List<ClientCapability>?,
         preKeysToSend: Int
     ): RegisterClientResult = suspending {
@@ -83,7 +83,7 @@ class RegisterClientUseCaseImpl(
 
     private suspend fun generateProteusPreKeys(
         preKeysToSend: Int,
-        password: String,
+        password: String?,
         capabilities: List<ClientCapability>?
     ) = preKeyRepository.generateNewPreKeys(FIRST_KEY_ID, preKeysToSend).flatMap { preKeys ->
         preKeyRepository.generateNewLastKey().flatMap { lastKey ->
@@ -92,7 +92,10 @@ class RegisterClientUseCaseImpl(
                     password = password,
                     capabilities = capabilities,
                     preKeys = preKeys,
-                    lastKey = lastKey
+                    lastKey = lastKey,
+                    deviceType = null,
+                    label = null,
+                    model = null
                 )
             )
         }

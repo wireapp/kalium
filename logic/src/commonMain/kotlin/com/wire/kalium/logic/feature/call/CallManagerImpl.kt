@@ -14,17 +14,16 @@ interface CallManager {
     suspend fun answerCall(conversationId: ConversationId)
     suspend fun endCall(conversationId: ConversationId)
     suspend fun rejectCall(conversationId: ConversationId)
+    suspend fun muteCall(shouldMute: Boolean)
     val allCalls: StateFlow<List<Call>>
 }
 
 expect class CallManagerImpl : CallManager
 
-val CallManager.ongoingCalls get() = allCalls.map {
+val CallManager.incomingCalls get() = allCalls.map {
     it.filter { call ->
         call.status in listOf(
-            CallStatus.INCOMING,
-            CallStatus.ANSWERED,
-            CallStatus.ESTABLISHED
+            CallStatus.INCOMING
         )
     }
 }

@@ -2,9 +2,7 @@ package com.wire.kalium.logic.data.asset
 
 import com.wire.kalium.cryptography.utils.calcMd5
 import com.wire.kalium.logic.data.message.AssetContent
-import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
-import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
-import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Video
+import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.*
 import com.wire.kalium.logic.data.message.AssetContent.RemoteData.EncryptionAlgorithm.AES_CBC
 import com.wire.kalium.logic.data.message.AssetContent.RemoteData.EncryptionAlgorithm.AES_GCM
 import com.wire.kalium.network.api.asset.AssetMetadataRequest
@@ -112,7 +110,7 @@ class AssetMapperImpl : AssetMapper {
                     null -> null
                     else -> null
                 },
-                remoteData = status.run {
+                remoteData = status?.run {
                     with((this as Asset.Status.Uploaded).value) {
                         AssetContent.RemoteData(
                             otrKey = otrKey.array,
@@ -127,7 +125,14 @@ class AssetMapperImpl : AssetMapper {
                             }
                         )
                     }
-                }
+                } ?: AssetContent.RemoteData(
+                    otrKey = ByteArray(0),
+                    sha256 = ByteArray(0),
+                    assetId = "",
+                    assetDomain = null,
+                    assetToken = null,
+                    encryptionAlgorithm = null
+                )
             )
         }
     }

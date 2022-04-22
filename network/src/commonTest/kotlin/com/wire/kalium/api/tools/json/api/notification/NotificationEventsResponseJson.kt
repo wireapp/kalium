@@ -1,11 +1,11 @@
 package com.wire.kalium.api.tools.json.api.notification
 
 import com.wire.kalium.api.tools.json.ValidJsonProvider
+import com.wire.kalium.api.tools.json.api.conversation.ConversationResponseJson
 import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.QualifiedID
 import com.wire.kalium.network.api.notification.EventContentDTO
 import com.wire.kalium.network.api.notification.user.NewClientEventData
-import com.wire.kalium.api.tools.json.api.conversation.ConversationResponseJson
 import com.wire.kalium.network.api.notification.pushToken.PushTokenRequestBody
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -67,6 +67,33 @@ object NotificationEventsResponseJson {
         ), mlsWelcomeSerializer
     )
 
+    private val newMlsMessageSerializer = { eventData: EventContentDTO.Conversation.NewMLSMessageDTO ->
+        """
+        |{
+        |  "data": "${eventData.message}",
+        |  "qualified_conversation": {
+        |    "domain": "${eventData.qualifiedConversation.domain}",
+        |    "id": "${eventData.qualifiedConversation.value}"
+        |  },
+        |  "qualified_from": {
+        |    "domain": "${eventData.qualifiedFrom.domain}",
+        |    "id": "${eventData.qualifiedFrom.value}"
+        |  },
+        |  "time": "${eventData.time}",
+        |  "type": "conversation.mls-message-add"
+        |}    
+        """.trimMargin()
+    }
+
+    private val newMlsMessage = ValidJsonProvider(
+        EventContentDTO.Conversation.NewMLSMessageDTO(
+            ConversationId("e16babfa-308b-414e-b6e0-c59517f723db", "staging.zinfra.io"),
+            QualifiedID("76ebeb16-a849-4be4-84a7-157654b492cf","staging.zinfra.io"),
+            "2022-04-12T13:57:02.414Z",
+            "AiDyKXJ/yTKaq4fIO2SXXkQIBVhU0uOiDHIfVP3Yb6HoWAAAAAAAAAABAQAAAAAo6sj3pAQr7tXmljXYG4+sRsnR2IKQVhhUIOSopJZ7N2wIVH3nh1Az0AAAAJBQsRZJea8cnIeR/DKmixvos3AHWHchXr5PvXModBjxTVx7wcbT4wCTBVXtZqcYJwySIoKxokYhUUE2+zMKGg96+CV7jdQvqYG/fxk/dSm4TdQypanbSuu7VsYXZSPKPV0E1wChqpLitX5luW7smQPNcmPwwbrK0MDIq3PVhYwI4Cfi1eO1Ii94zM5IfVApyR4="
+        ), newMlsMessageSerializer
+    )
+
     private val newConversationSerializer = { eventData: EventContentDTO.Conversation.NewConversationDTO ->
         """
         |{
@@ -125,6 +152,12 @@ object NotificationEventsResponseJson {
                 ${newConversation.rawJson}
               ],
               "id": "6dd9dfd9-ba68-11ec-8001-22000a09a242"
+            },
+            {
+              "payload": [
+                ${newMlsMessage.rawJson}
+              ],
+              "id": "855fc5f1-bc01-11ec-8001-22000ac2309b"
             },
             {
               "payload": [

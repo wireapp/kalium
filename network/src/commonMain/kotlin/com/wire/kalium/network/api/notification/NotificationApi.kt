@@ -7,12 +7,12 @@ import kotlinx.coroutines.flow.Flow
 interface NotificationApi {
     suspend fun lastNotification(queryClient: String): NetworkResponse<EventResponse>
 
-    suspend fun notificationsByBatch(querySize: Int, queryClient: String, querySince: String): NetworkResponse<NotificationPageResponse>
+    suspend fun notificationsByBatch(querySize: Int, queryClient: String, querySince: String): NetworkResponse<NotificationResponse>
 
     /**
      * request Notifications from the beginning of time
      */
-    suspend fun getAllNotifications(querySize: Int, queryClient: String): NetworkResponse<NotificationPageResponse>
+    suspend fun getAllNotifications(querySize: Int, queryClient: String): NetworkResponse<NotificationResponse>
 
     suspend fun listenToLiveEvents(clientId: String): Flow<EventResponse>
 

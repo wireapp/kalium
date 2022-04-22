@@ -4,6 +4,8 @@ import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.TEST_BACKEND_CONFIG
 import com.wire.kalium.network.api.notification.EventContentDTO
 import com.wire.kalium.network.api.notification.NotificationApiImpl
+import com.wire.kalium.network.api.notification.NotificationResponse
+import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -104,6 +106,19 @@ class NotificationApiTest : ApiTest {
         notificationsApi.registerToken(VALID_PUSH_TOKEN_REQUEST.serializableData)
     }
 
+    @Test
+    fun given404Response_whenGettingNotificationGettingAllNotifications_thenTheResponseIsParsedCorrectly() = runTest {
+        val httpClient = mockAuthenticatedHttpClient(
+            NotificationEventsResponseJson.notificationsWithUnknownEventAtFirstPosition,
+            statusCode = HttpStatusCode.NotFound
+        )
+        val notificationsApi = NotificationApiImpl(httpClient, TEST_BACKEND_CONFIG)
+
+        val result = notificationsApi.getAllNotifications(1, "")
+
+        assertIs<NetworkResponse.Success<NotificationResponse>>(result)
+        assertIs<NotificationResponse.MissingSome>(result.value)
+    }
 
     private companion object {
         val VALID_PUSH_TOKEN_REQUEST = NotificationEventsResponseJson.validPushTokenRequest
