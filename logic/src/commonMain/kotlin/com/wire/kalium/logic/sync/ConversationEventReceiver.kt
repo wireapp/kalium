@@ -152,19 +152,19 @@ class ConversationEventReceiver(
 
         val isMyMessage = userRepository.getSelfUserId() == message.senderUserId
         when (message.content) {
-            is MessageContent.Text -> messageRepository.persistMessage(message, isMyMessage)
+            is MessageContent.Text -> messageRepository.persistMessage(message)
             is MessageContent.Asset -> {
                 messageRepository.getMessageById(message.conversationId, message.id)
                     .onFailure {
                         // No asset message was received previously, so just persist the preview asset message
-                        messageRepository.persistMessage(message, isMyMessage)
+                        messageRepository.persistMessage(message)
                     }
                     .onSuccess { persistedMessage ->
                         // Check the second asset message is from the same original sender
                         if (isSenderVerified(persistedMessage.id, persistedMessage.conversationId, message.senderUserId)) {
                             // The asset message received contains the asset decryption keys, so update the preview message persisted previously
                             updateAssetMessage(persistedMessage, message.content.value.remoteData)?.let {
-                                messageRepository.persistMessage(it, isMyMessage)
+                                messageRepository.persistMessage(it)
                             }
                         }
                     }
@@ -186,6 +186,9 @@ class ConversationEventReceiver(
             }
             is MessageContent.Unknown -> kaliumLogger.i(message = "Unknown Message received: $message")
         }
+
+        if (isMyMessage) conversationRepository.updateConversationNotificationDate(message.conversationId, message.date)
+        conversationRepository.updateConversationModifiedDate(message.conversationId, message.date)
     }
 
     private companion object {

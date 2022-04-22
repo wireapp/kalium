@@ -66,8 +66,9 @@ interface ConversationRepository {
         mutedStatusTimestamp: Long
     ): Either<CoreFailure, Unit>
     suspend fun getConversationsForNotifications(): Flow<List<Conversation>>
-    suspend fun setConversationAsNotified(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
-    suspend fun setAllConversationsAsNotified(date: String): Either<StorageFailure, Unit>
+    suspend fun updateConversationNotificationDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
+    suspend fun updateAllConversationsNotificationDate(date: String): Either<StorageFailure, Unit>
+    suspend fun updateConversationModifiedDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
 }
 
 class ConversationDataSource(
@@ -261,11 +262,14 @@ class ConversationDataSource(
             .filterNotNull()
             .map { it.map(conversationMapper::fromDaoModel) }
 
-    override suspend fun setConversationAsNotified(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit> =
+    override suspend fun updateConversationNotificationDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit> =
         wrapStorageRequest { conversationDAO.updateConversationNotificationDate(idMapper.toDaoModel(qualifiedID), date) }
 
-    override suspend fun setAllConversationsAsNotified(date: String): Either<StorageFailure, Unit> =
+    override suspend fun updateAllConversationsNotificationDate(date: String): Either<StorageFailure, Unit> =
         wrapStorageRequest { conversationDAO.updateAllConversationsNotificationDate(date) }
+
+    override suspend fun updateConversationModifiedDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit> =
+        wrapStorageRequest { conversationDAO.updateConversationModifiedDate(idMapper.toDaoModel(qualifiedID), date) }
 
     private suspend fun persistMembersFromConversationResponse(conversationResponse: ConversationResponse): Either<CoreFailure, Unit> {
         return wrapStorageRequest {

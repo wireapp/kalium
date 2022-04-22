@@ -14,6 +14,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.flatMapFromIterable
 import com.wire.kalium.persistence.dao.ConversationEntity
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
 
@@ -37,7 +38,7 @@ class GetNotificationsUseCaseImpl(
                     val selfUserId = userRepository.getSelfUserId()
 
                     // Fetching the Messages for the Conversation that are newer than `lastNotificationDate`
-                    messageRepository.getMessagesByConversationAndDate(conversation.id, conversation.lastNotificationDate ?: "")
+                    messageRepository.getMessagesByConversationAfterDate(conversation.id, conversation.lastNotificationDate ?: "")
                         .map { messages ->
                             val messagesWithoutMy = messages.filter { msg -> msg.senderUserId != selfUserId }
                             ConversationWithMessages(messagesWithoutMy, conversation)
@@ -82,6 +83,7 @@ class GetNotificationsUseCaseImpl(
                         }
                     }
             }
+            .distinctUntilChanged()
     }
 
     private fun getNotificationMessageAuthor(authors: List<OtherUser?>, senderUserId: UserId) =

@@ -111,8 +111,7 @@ abstract class UserSessionScopeCommon(
         get() = MessageDataSource(
             authenticatedDataSourceSet.authenticatedNetworkContainer.messageApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.mlsMessageApi,
-            userDatabaseProvider.messageDAO,
-            userDatabaseProvider.conversationDAO
+            userDatabaseProvider.messageDAO
         )
 
     private val userRepository: UserRepository

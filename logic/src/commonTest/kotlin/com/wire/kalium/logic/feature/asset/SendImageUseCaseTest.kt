@@ -87,7 +87,7 @@ class SendImageUseCaseTest {
             // Then
             verify(arrangement.messageRepository)
                 .suspendFunction(arrangement.messageRepository::persistMessage)
-                .with(any(), any())
+                .with(any())
                 .wasInvoked(exactly = once)
             verify(arrangement.messageSender)
                 .suspendFunction(arrangement.messageSender::trySendingOutgoingMessageById)
@@ -147,7 +147,7 @@ class SendImageUseCaseTest {
                 .thenReturn(Either.Right(someClientId))
             given(messageRepository)
                 .suspendFunction(messageRepository::persistMessage)
-                .whenInvokedWith(any(), any())
+                .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
             given(messageSender)
                 .suspendFunction(messageSender::trySendingOutgoingMessageById)

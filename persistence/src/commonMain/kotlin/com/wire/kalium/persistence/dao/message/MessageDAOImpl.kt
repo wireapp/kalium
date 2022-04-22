@@ -129,7 +129,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
     override suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity) =
         queries.updateMessageStatus(status, id, conversationId)
 
-    override suspend fun getAllMessages(limit: Int, offset: Int): Flow<List<MessageEntity>> =
+    override suspend fun getMessagesFromAllConversations(limit: Int, offset: Int): Flow<List<MessageEntity>> =
         queries.selectAllMessages(limit.toLong(), offset.toLong())
             .asFlow()
             .mapToList()
