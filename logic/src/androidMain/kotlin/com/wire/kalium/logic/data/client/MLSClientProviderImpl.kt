@@ -8,7 +8,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import io.ktor.util.encodeBase64
 import java.io.File
@@ -21,7 +21,7 @@ actual class MLSClientProviderImpl actual constructor(
     private val kaliumPreferences: KaliumPreferences
 ) : MLSClientProvider {
 
-    override suspend fun getMLSClient(clientId: ClientId?): Either<CoreFailure, MLSClient> = suspending {
+    override fun getMLSClient(clientId: ClientId?): Either<CoreFailure, MLSClient> {
         val location = "$rootKeyStorePath/${userId.domain}/${userId.value}"
         val cryptoUserId = CryptoUserID(value = userId.value, domain = userId.domain)
 
@@ -35,7 +35,7 @@ actual class MLSClientProviderImpl actual constructor(
                 mlsClient(cryptoUserId, clientId, location)
             }
         }
-        mlsClient
+        return mlsClient
     }
 
     private fun mlsClient(userId: CryptoUserID, clientId: ClientId, location: String): MLSClient {

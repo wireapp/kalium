@@ -15,7 +15,6 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertIs
 
 @OptIn(ConfigurationApi::class, ExperimentalCoroutinesApi::class)
 class NeedsToRegisterClientUseCaseTest {
@@ -35,7 +34,7 @@ class NeedsToRegisterClientUseCaseTest {
     @Test
     fun givenClientIdIsRegistered_thenReturnFalse() = runTest {
         given(clientRepository)
-            .coroutine { clientRepository.currentClientId() }
+            .invocation { clientRepository.currentClientId() }
             .then { Either.Right(CLIENT_ID) }
 
         val actual = needsToRegisterClientUseCase.invoke()
@@ -45,7 +44,7 @@ class NeedsToRegisterClientUseCaseTest {
     @Test
     fun givenClientIdIsNotRegistered_thenReturnTrue() = runTest {
         given(clientRepository)
-            .coroutine { clientRepository.currentClientId() }
+            .invocation { clientRepository.currentClientId() }
             .then { Either.Left(CoreFailure.MissingClientRegistration) }
 
         val actual = needsToRegisterClientUseCase.invoke()

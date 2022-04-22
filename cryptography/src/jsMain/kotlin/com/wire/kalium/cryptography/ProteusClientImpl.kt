@@ -17,6 +17,10 @@ actual class ProteusClientImpl actual constructor(rootDir: String) : ProteusClie
 
     private lateinit var box: Cryptobox
 
+    override fun clearLocalFiles(): Boolean {
+        TODO("Not yet implemented")
+    }
+
     override suspend fun open() {
         val engine = MemoryEngine()
         engine.init("in-memory").await()
@@ -24,8 +28,6 @@ actual class ProteusClientImpl actual constructor(rootDir: String) : ProteusClie
         box = Cryptobox(engine)
         box.create().await()
     }
-
-    override fun close() {}
 
     override fun getIdentity(): ByteArray {
         val encodedIdentity = box.getIdentity().serialise()

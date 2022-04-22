@@ -142,7 +142,7 @@ class SendImageUseCaseTest {
                 .whenInvoked()
                 .thenReturn(flowOf(fakeSelfUser()))
             given(clientRepository)
-                .suspendFunction(clientRepository::currentClientId)
+                .function(clientRepository::currentClientId)
                 .whenInvoked()
                 .thenReturn(Either.Right(someClientId))
             given(messageRepository)
