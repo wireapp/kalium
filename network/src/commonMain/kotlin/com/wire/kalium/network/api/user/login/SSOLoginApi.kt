@@ -35,7 +35,7 @@ interface SSOLoginApi {
 
     suspend fun finalize(cookie: String, apiBaseUrl: Url): NetworkResponse<String>
 
-    suspend fun ssoEstablishSession(cookie: String, apiBaseUrl: Url): NetworkResponse<SessionDTO>
+    suspend fun provideLoginSession(cookie: String, apiBaseUrl: Url): NetworkResponse<SessionDTO>
 
     suspend fun metaData(apiBaseUrl: Url): NetworkResponse<String> // TODO: ask about the response model since it's xml in swagger with no model
 
@@ -66,7 +66,7 @@ class SSOLoginApiImpl(private val httpClient: HttpClient) : SSOLoginApi {
         }
     }
 
-    override suspend fun ssoEstablishSession(cookie: String, apiBaseUrl: Url): NetworkResponse<SessionDTO> = wrapKaliumResponse<AccessTokenDTO> {
+    override suspend fun provideLoginSession(cookie: String, apiBaseUrl: Url): NetworkResponse<SessionDTO> = wrapKaliumResponse<AccessTokenDTO> {
             httpClient.post {
                 setUrl(apiBaseUrl, PATH_ACCESS)
                 header(HttpHeaders.Cookie, cookie)

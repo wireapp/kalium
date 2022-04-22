@@ -10,33 +10,33 @@ import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
 
-sealed class SSOEstablishSessionResult {
-    data class Success(val userSession: AuthSession) : SSOEstablishSessionResult()
+sealed class SSOLoginSessionResult {
+    data class Success(val userSession: AuthSession) : SSOLoginSessionResult()
 
-    sealed class Failure : SSOEstablishSessionResult() {
-        object InvalidCookie : SSOEstablishSessionResult.Failure()
+    sealed class Failure : SSOLoginSessionResult() {
+        object InvalidCookie : SSOLoginSessionResult.Failure()
         class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }
 
-interface SSOEstablishSessionUseCase {
-    suspend operator fun invoke(cookie: String, serverConfig: ServerConfig): SSOEstablishSessionResult
+interface GetSSOLoginSessionUseCase {
+    suspend operator fun invoke(cookie: String, serverConfig: ServerConfig): SSOLoginSessionResult
 }
 
-internal class SSOEstablishSessionUseCaseImpl(
+internal class GetSSOLoginSessionUseCaseImpl(
     private val ssoLoginRepository: SSOLoginRepository,
     private val sessionMapper: SessionMapper
-) : SSOEstablishSessionUseCase {
+) : GetSSOLoginSessionUseCase {
 
-    override suspend fun invoke(cookie: String, serverConfig: ServerConfig): SSOEstablishSessionResult = suspending {
-        ssoLoginRepository.ssoEstablishSession(cookie, serverConfig).coFold({
+    override suspend fun invoke(cookie: String, serverConfig: ServerConfig): SSOLoginSessionResult = suspending {
+        ssoLoginRepository.provideLoginSession(cookie, serverConfig).coFold({
             if(it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
                 if(it.kaliumException.errorResponse.code == HttpStatusCode.BadRequest.value)
-                    return@coFold SSOEstablishSessionResult.Failure.InvalidCookie
+                    return@coFold SSOLoginSessionResult.Failure.InvalidCookie
             }
-            SSOEstablishSessionResult.Failure.Generic(it)
+            SSOLoginSessionResult.Failure.Generic(it)
         }, {
-            SSOEstablishSessionResult.Success(sessionMapper.fromSessionDTO(it,serverConfig))
+            SSOLoginSessionResult.Success(sessionMapper.fromSessionDTO(it,serverConfig))
         })
     }
 }

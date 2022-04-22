@@ -22,7 +22,7 @@ interface SSOLoginRepository {
 
     suspend fun finalize(cookie: String, serverConfig: ServerConfig): Either<NetworkFailure, String>
 
-    suspend fun ssoEstablishSession(cookie: String, serverConfig: ServerConfig): Either<NetworkFailure, SessionDTO>
+    suspend fun provideLoginSession(cookie: String, serverConfig: ServerConfig): Either<NetworkFailure, SessionDTO>
 
     suspend fun metaData(serverConfig: ServerConfig): Either<NetworkFailure, String>
 
@@ -51,9 +51,9 @@ class SSOLoginRepositoryImpl(private val ssoLoginApi: SSOLoginApi) : SSOLoginRep
             ssoLoginApi.finalize(cookie, Url(serverConfig.apiBaseUrl))
         }
 
-    override suspend fun ssoEstablishSession(cookie: String, serverConfig: ServerConfig): Either<NetworkFailure, SessionDTO> =
+    override suspend fun provideLoginSession(cookie: String, serverConfig: ServerConfig): Either<NetworkFailure, SessionDTO> =
         wrapApiRequest {
-            ssoLoginApi.ssoEstablishSession(cookie, Url(serverConfig.apiBaseUrl))
+            ssoLoginApi.provideLoginSession(cookie, Url(serverConfig.apiBaseUrl))
         }
 
 
