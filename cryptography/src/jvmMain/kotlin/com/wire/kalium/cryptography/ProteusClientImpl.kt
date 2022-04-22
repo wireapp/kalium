@@ -6,7 +6,7 @@ import com.wire.kalium.cryptography.exceptions.ProteusException
 import java.io.File
 import java.util.Base64
 
-actual class ProteusClientImpl actual constructor(rootDir: String): ProteusClient {
+actual class ProteusClientImpl actual constructor(rootDir: String) : ProteusClient {
 
     private val path: String
     private lateinit var box: CryptoBox
@@ -15,16 +15,17 @@ actual class ProteusClientImpl actual constructor(rootDir: String): ProteusClien
         path = rootDir
     }
 
+    override fun clearLocalFiles(): Boolean {
+        box.close()
+        return File(path).deleteRecursively()
+    }
+
     override suspend fun open() {
         val directory = File(path)
         box = wrapException {
             directory.mkdirs()
             CryptoBox.open(path)
         }
-    }
-
-    override fun close() {
-        box.close()
     }
 
     override fun getIdentity(): ByteArray {
