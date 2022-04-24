@@ -4,13 +4,14 @@ import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.client.Client
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertFails
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class UserClientDAOIntegrationTest : BaseDatabaseTest() {
 
     private lateinit var clientDAO: ClientDAO
@@ -31,7 +32,7 @@ class UserClientDAOIntegrationTest : BaseDatabaseTest() {
 
         userDAO.deleteUserByQualifiedID(user.id)
 
-        val result = clientDAO.getClientsOfUserByQualifiedID(user.id).first()
+        val result = clientDAO.getClientsOfUserByQualifiedID(user.id)
         assertTrue(result.isEmpty())
     }
 

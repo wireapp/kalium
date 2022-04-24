@@ -49,15 +49,15 @@ data class MessageEntity(
 }
 
 interface MessageDAO {
-    suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity)
-    suspend fun deleteMessage(id: String)
-    suspend fun updateMessageVisibility(visibility: MessageEntity.Visibility, id: String, conversationId: QualifiedIDEntity)
-    suspend fun deleteAllMessages()
-    suspend fun insertMessage(message: MessageEntity)
-    suspend fun insertMessages(messages: List<MessageEntity>)
-    suspend fun updateMessage(message: MessageEntity)
-    suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity)
-    suspend fun getAllMessages(): Flow<List<MessageEntity>>
-    suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?>
-    suspend fun getMessageByConversation(conversationId: QualifiedIDEntity, limit: Int): Flow<List<MessageEntity>>
+    fun deleteMessage(id: String, conversationsId: QualifiedIDEntity)
+    fun deleteMessage(id: String)
+    fun updateMessageVisibility(visibility: MessageEntity.Visibility, id: String, conversationId: QualifiedIDEntity)
+    fun deleteAllMessages()
+    fun insertMessage(message: MessageEntity)
+    fun insertMessages(messages: List<MessageEntity>)
+    fun updateMessage(message: MessageEntity)
+    fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity)
+    fun getAllMessagesFlow(): Flow<List<MessageEntity>>
+    fun getMessageById(id: String, conversationId: QualifiedIDEntity): MessageEntity?
+    fun getMessageByConversationFlow(conversationId: QualifiedIDEntity, limit: Int): Flow<List<MessageEntity>>
 }

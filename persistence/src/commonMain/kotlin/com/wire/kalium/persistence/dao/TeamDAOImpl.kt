@@ -1,9 +1,6 @@
 package com.wire.kalium.persistence.dao
 
-import com.squareup.sqldelight.runtime.coroutines.asFlow
-import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.TeamsQueries
-import kotlinx.coroutines.flow.map
 import com.wire.kalium.persistence.Team as SQLDelightTeam
 
 class TeamMapper {
@@ -19,12 +16,12 @@ class TeamDAOImpl(private val queries: TeamsQueries) : TeamDAO {
 
     val mapper = TeamMapper()
 
-    override suspend fun insertTeam(team: TeamEntity) = queries.insertTeam(
+    override fun insertTeam(team: TeamEntity) = queries.insertTeam(
         id = team.id,
         name = team.name
     )
 
-    override suspend fun insertTeams(teams: List<TeamEntity>) = queries.transaction {
+    override fun insertTeams(teams: List<TeamEntity>) = queries.transaction {
         for (team: TeamEntity in teams) {
             queries.insertTeam(
                 id = team.id,
@@ -33,8 +30,5 @@ class TeamDAOImpl(private val queries: TeamsQueries) : TeamDAO {
         }
     }
 
-    override suspend fun getTeamById(teamId: String) = queries.selectTeamById(id = teamId)
-        .asFlow()
-        .mapToOneOrNull()
-        .map { it?.let { mapper.toModel(team = it) } }
+    override fun getTeamById(teamId: String): TeamEntity? = queries.selectTeamById(teamId).executeAsOneOrNull()?.let { mapper.toModel(it) }
 }

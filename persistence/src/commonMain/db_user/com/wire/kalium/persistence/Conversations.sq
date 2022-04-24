@@ -1,6 +1,5 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.ConversationEntity;
-import kotlin.Int;
 
 CREATE TABLE Conversation (
     qualified_id TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY,
@@ -46,3 +45,6 @@ updateConversationMutingStatus:
 UPDATE Conversation
 SET muted_status = ?, muted_time = ?
 WHERE qualified_id = ?;
+
+selectConversationByType:
+SELECT * FROM Conversation WHERE type = ?;

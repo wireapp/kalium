@@ -29,7 +29,7 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
 
     val mapper = UserMapper()
 
-    override suspend fun insertUser(user: UserEntity) {
+    override fun insertUser(user: UserEntity) {
         queries.insertUser(
             user.id,
             user.name,
@@ -44,7 +44,7 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
         )
     }
 
-    override suspend fun insertUsers(users: List<UserEntity>) {
+    override fun insertUsers(users: List<UserEntity>) {
         queries.transaction {
             for (user: UserEntity in users) {
                 queries.insertUser(
@@ -63,34 +63,40 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
         }
     }
 
-    override suspend fun updateUser(user: UserEntity) {
+    override fun updateUser(user: UserEntity) =
         queries.updateUser(user.name, user.handle, user.email, user.accentId, user.previewAssetId, user.completeAssetId, user.id)
-    }
 
-    override suspend fun getAllUsers(): Flow<List<UserEntity>> = queries.selectAllUsers()
+
+    override fun getAllUsersFlow(): Flow<List<UserEntity>> = queries.selectAllUsers()
         .asFlow()
         .mapToList()
         .map { entryList -> entryList.map(mapper::toModel) }
 
-    override suspend fun getUserByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserEntity?> {
+    override fun getAllUsers(): List<UserEntity> =
+        queries.selectAllUsers().executeAsList().map(mapper::toModel)
+
+    override fun getUserByQualifiedIDFlow(qualifiedID: QualifiedIDEntity): Flow<UserEntity?> {
         return queries.selectByQualifiedId(qualifiedID)
             .asFlow()
             .mapToOneOrNull()
             .map { it?.let { mapper.toModel(it) } }
     }
 
-    override suspend fun getUserByNameOrHandleOrEmail(searchQuery: String): Flow<List<UserEntity>> {
+    override fun getUserByQualifiedID(qualifiedID: QualifiedIDEntity): UserEntity? =
+        queries.selectByQualifiedId(qualifiedID).executeAsOneOrNull()?.let { mapper.toModel(it) }
+
+    override fun getUserByNameOrHandleOrEmailFlow(searchQuery: String): Flow<List<UserEntity>> {
         return queries.selectByNameOrHandleOrEmail(searchQuery)
             .asFlow()
             .mapToList()
             .map { entryList -> entryList.map(mapper::toModel) }
     }
 
-    override suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity) {
+    override fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity) {
         queries.deleteUser(qualifiedID)
     }
 
-    override suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String) {
+    override fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String) {
         queries.updateUserhandle(handle, qualifiedID)
     }
 }

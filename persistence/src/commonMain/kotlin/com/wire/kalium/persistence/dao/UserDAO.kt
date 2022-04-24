@@ -53,12 +53,14 @@ data class UserEntity(
 internal typealias UserAssetIdEntity = String
 
 interface UserDAO {
-    suspend fun insertUser(user: UserEntity)
-    suspend fun insertUsers(users: List<UserEntity>)
-    suspend fun updateUser(user: UserEntity)
-    suspend fun getAllUsers(): Flow<List<UserEntity>>
-    suspend fun getUserByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserEntity?>
-    suspend fun getUserByNameOrHandleOrEmail(searchQuery: String): Flow<List<UserEntity>>
-    suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity)
-    suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String)
+    fun insertUser(user: UserEntity)
+    fun insertUsers(users: List<UserEntity>)
+    fun updateUser(user: UserEntity)
+    fun getAllUsersFlow(): Flow<List<UserEntity>>
+    fun getAllUsers(): List<UserEntity>
+    fun getUserByQualifiedIDFlow(qualifiedID: QualifiedIDEntity): Flow<UserEntity?>
+    fun getUserByQualifiedID(qualifiedID: QualifiedIDEntity): UserEntity?
+    fun getUserByNameOrHandleOrEmailFlow(searchQuery: String): Flow<List<UserEntity>>
+    fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity)
+    fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String)
 }

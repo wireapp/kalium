@@ -3,6 +3,7 @@ package com.wire.kalium.persistence.dao
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.db.UserDatabaseProvider
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestResult
 import kotlinx.coroutines.test.runTest
@@ -13,6 +14,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class UserDAOTest : BaseDatabaseTest() {
 
     private val user1 = newUserEntity(id = "1")
@@ -30,16 +32,16 @@ class UserDAOTest : BaseDatabaseTest() {
     @Test
     fun givenUser_ThenUserCanBeInserted() = runTest {
         db.userDAO.insertUser(user1)
-        val result = db.userDAO.getUserByQualifiedID(user1.id).first()
+        val result = db.userDAO.getUserByQualifiedIDFlow(user1.id).first()
         assertEquals(result, user1)
     }
 
     @Test
     fun givenListOfUsers_ThenMultipleUsersCanBeInsertedAtOnce() = runTest {
         db.userDAO.insertUsers(listOf(user1, user2, user3))
-        val result1 = db.userDAO.getUserByQualifiedID(user1.id).first()
-        val result2 = db.userDAO.getUserByQualifiedID(user2.id).first()
-        val result3 = db.userDAO.getUserByQualifiedID(user3.id).first()
+        val result1 = db.userDAO.getUserByQualifiedIDFlow(user1.id).first()
+        val result2 = db.userDAO.getUserByQualifiedIDFlow(user2.id).first()
+        val result3 = db.userDAO.getUserByQualifiedIDFlow(user3.id).first()
         assertEquals(result1, user1)
         assertEquals(result2, user2)
         assertEquals(result3, user3)
@@ -49,7 +51,7 @@ class UserDAOTest : BaseDatabaseTest() {
     fun givenExistingUser_ThenUserCanBeDeleted() = runTest {
         db.userDAO.insertUser(user1)
         db.userDAO.deleteUserByQualifiedID(user1.id)
-        val result = db.userDAO.getUserByQualifiedID(user1.id).first()
+        val result = db.userDAO.getUserByQualifiedIDFlow(user1.id).first()
         assertNull(result)
     }
 
@@ -61,7 +63,7 @@ class UserDAOTest : BaseDatabaseTest() {
             UserEntity.ConnectionState.ACCEPTED, UserAssetIdEntity(), UserAssetIdEntity()
         )
         db.userDAO.updateUser(updatedUser1)
-        val result = db.userDAO.getUserByQualifiedID(user1.id).first()
+        val result = db.userDAO.getUserByQualifiedIDFlow(user1.id).first()
         assertEquals(result, updatedUser1)
     }
 
@@ -73,7 +75,7 @@ class UserDAOTest : BaseDatabaseTest() {
             UserEntity.ConnectionState.ACCEPTED, UserAssetIdEntity(), UserAssetIdEntity()
         )
 
-        val result = db.userDAO.getUserByQualifiedID(user1.id)
+        val result = db.userDAO.getUserByQualifiedIDFlow(user1.id)
         assertEquals(user1, result.first())
 
         db.userDAO.updateUser(updatedUser1)
@@ -86,7 +88,7 @@ class UserDAOTest : BaseDatabaseTest() {
         val updatedUser1 = UserEntity(user1.id, "John Doe", "johndoe", "email1", "phone1", 1, "team",
             UserEntity.ConnectionState.ACCEPTED, null, null)
 
-        val result = db.userDAO.getUserByQualifiedID(user1.id)
+        val result = db.userDAO.getUserByQualifiedIDFlow(user1.id)
         assertEquals(user1, result.first())
 
         db.userDAO.updateUser(updatedUser1)
@@ -101,7 +103,7 @@ class UserDAOTest : BaseDatabaseTest() {
         val user3 = USER_ENTITY_3
         db.userDAO.insertUsers(listOf(user1, user2, user3))
         //when
-        val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(user2.email!!).first()
+        val searchResult = db.userDAO.getUserByNameOrHandleOrEmailFlow(user2.email!!).first()
         //then
         assertEquals(searchResult, listOf(user2))
     }
@@ -115,7 +117,7 @@ class UserDAOTest : BaseDatabaseTest() {
             val user3 = USER_ENTITY_3.copy(handle = "uniqueHandlForUser3")
             db.userDAO.insertUsers(listOf(user1, user2, user3))
             //when
-            val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(user3.handle!!).first()
+            val searchResult = db.userDAO.getUserByNameOrHandleOrEmailFlow(user3.handle!!).first()
             //then
             assertEquals(searchResult, listOf(user3))
         }
@@ -129,7 +131,7 @@ class UserDAOTest : BaseDatabaseTest() {
         val user3 = USER_ENTITY_3
         db.userDAO.insertUsers(listOf(user1, user2, user3))
         //when
-        val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(user1.name!!).first()
+        val searchResult = db.userDAO.getUserByNameOrHandleOrEmailFlow(user1.name!!).first()
         //then
         assertEquals(searchResult, listOf(user1))
     }
@@ -173,7 +175,7 @@ class UserDAOTest : BaseDatabaseTest() {
 
             db.userDAO.insertUsers(mockUsers)
             //when
-            val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(commonEmailPrefix).first()
+            val searchResult = db.userDAO.getUserByNameOrHandleOrEmailFlow(commonEmailPrefix).first()
             //then
             assertEquals(searchResult, commonEmailUsers)
         }
@@ -187,7 +189,7 @@ class UserDAOTest : BaseDatabaseTest() {
 
         val nonExistingEmailQuery = "doesnotexist@wire.com"
         //when
-        val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(nonExistingEmailQuery).first()
+        val searchResult = db.userDAO.getUserByNameOrHandleOrEmailFlow(nonExistingEmailQuery).first()
         //then
         assertTrue { searchResult.isEmpty() }
     }
@@ -200,7 +202,7 @@ class UserDAOTest : BaseDatabaseTest() {
         val mockUsers = listOf(USER_ENTITY_1, USER_ENTITY_2, USER_ENTITY_3)
         db.userDAO.insertUsers(mockUsers)
         //when
-        val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(commonEmailPrefix).first()
+        val searchResult = db.userDAO.getUserByNameOrHandleOrEmailFlow(commonEmailPrefix).first()
         //then
         searchResult.forEach { userEntity ->
             assertContains(userEntity.email!!, commonEmailPrefix)
@@ -216,7 +218,7 @@ class UserDAOTest : BaseDatabaseTest() {
         val mockUsers = listOf(USER_ENTITY_1, USER_ENTITY_2, USER_ENTITY_3)
         db.userDAO.insertUsers(mockUsers)
         //when
-        val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(commonHandlePrefix).first()
+        val searchResult = db.userDAO.getUserByNameOrHandleOrEmailFlow(commonHandlePrefix).first()
         //then
         searchResult.forEach { userEntity ->
             assertContains(userEntity.handle!!, commonHandlePrefix)
@@ -231,7 +233,7 @@ class UserDAOTest : BaseDatabaseTest() {
         val mockUsers = listOf(USER_ENTITY_1, USER_ENTITY_2, USER_ENTITY_3)
         db.userDAO.insertUsers(mockUsers)
         //when
-        val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(commonNamePrefix).first()
+        val searchResult = db.userDAO.getUserByNameOrHandleOrEmailFlow(commonNamePrefix).first()
         //then
         searchResult.forEach { userEntity ->
             assertContains(userEntity.name!!, commonNamePrefix)
@@ -251,7 +253,7 @@ class UserDAOTest : BaseDatabaseTest() {
             )
             db.userDAO.insertUsers(mockUsers)
             //when
-            val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(commonPrefix).first()
+            val searchResult = db.userDAO.getUserByNameOrHandleOrEmailFlow(commonPrefix).first()
             //then
             assertEquals(mockUsers, searchResult)
         }

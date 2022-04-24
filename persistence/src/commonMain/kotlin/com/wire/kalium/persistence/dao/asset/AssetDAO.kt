@@ -1,7 +1,5 @@
 package com.wire.kalium.persistence.dao.asset
 
-import kotlinx.coroutines.flow.Flow
-
 data class AssetEntity(
     val key: String,
     val domain: String,
@@ -36,8 +34,8 @@ data class AssetEntity(
 }
 
 interface AssetDAO {
-    suspend fun insertAsset(assetEntity: AssetEntity)
-    suspend fun insertAssets(assetsEntity: List<AssetEntity>)
-    suspend fun getAssetByKey(assetKey: String): Flow<AssetEntity?>
-    suspend fun updateAsset(assetEntity: AssetEntity)
+    fun insertAsset(assetEntity: AssetEntity)
+    fun insertAssets(assetsEntity: List<AssetEntity>)
+    fun getAssetByKey(assetKey: String): AssetEntity?
+    fun updateAsset(assetEntity: AssetEntity)
 }

@@ -31,25 +31,27 @@ data class Member(
 )
 
 interface ConversationDAO {
-    suspend fun getSelfConversationId(): QualifiedIDEntity
-    suspend fun insertConversation(conversationEntity: ConversationEntity)
-    suspend fun insertConversations(conversationEntities: List<ConversationEntity>)
-    suspend fun updateConversation(conversationEntity: ConversationEntity)
-    suspend fun updateConversationGroupState(groupState: ConversationEntity.GroupState, groupId: String)
-    suspend fun getAllConversations(): Flow<List<ConversationEntity>>
-    suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>
-    suspend fun getConversationByGroupID(groupID: String): Flow<ConversationEntity?>
-    suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity)
-    suspend fun insertMember(member: Member, conversationID: QualifiedIDEntity)
-    suspend fun insertMembers(memberList: List<Member>, conversationID: QualifiedIDEntity)
-    suspend fun deleteMemberByQualifiedID(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity)
-    suspend fun getAllMembers(qualifiedID: QualifiedIDEntity): Flow<List<Member>>
-    suspend fun insertOrUpdateOneOnOneMemberWithConnectionStatus(
+    fun getSelfConversationId(): QualifiedIDEntity?
+    fun insertConversation(conversationEntity: ConversationEntity)
+    fun insertConversations(conversationEntities: List<ConversationEntity>)
+    fun updateConversation(conversationEntity: ConversationEntity)
+    fun updateConversationGroupState(groupState: ConversationEntity.GroupState, groupId: String)
+    fun getAllConversationsFlow(): Flow<List<ConversationEntity>>
+    fun getConversationByQualifiedIDFlow(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>
+    fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity?
+    fun getConversationByGroupID(groupID: String): ConversationEntity?
+    fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity)
+    fun insertMember(member: Member, conversationID: QualifiedIDEntity)
+    fun insertMembers(memberList: List<Member>, conversationID: QualifiedIDEntity)
+    fun deleteMemberByQualifiedID(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity)
+    fun getAllMembersFlow(qualifiedID: QualifiedIDEntity): Flow<List<Member>>
+    fun getAllMembers(qualifiedID: QualifiedIDEntity): List<Member>
+    fun insertOrUpdateOneOnOneMemberWithConnectionStatus(
         userId: UserIDEntity,
         status: UserEntity.ConnectionState,
         conversationID: QualifiedIDEntity
     )
-    suspend fun updateConversationMutedStatus(
+    fun updateConversationMutedStatus(
         conversationId: QualifiedIDEntity,
         mutedStatus: ConversationEntity.MutedStatus,
         mutedStatusTimestamp: Long

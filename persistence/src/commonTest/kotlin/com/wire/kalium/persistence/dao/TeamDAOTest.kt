@@ -1,13 +1,14 @@
 package com.wire.kalium.persistence.dao
 
 import com.wire.kalium.persistence.BaseDatabaseTest
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class TeamDAOTest : BaseDatabaseTest() {
 
     private lateinit var teamDAO: TeamDAO
@@ -22,7 +23,7 @@ class TeamDAOTest : BaseDatabaseTest() {
     @Test
     fun givenNoTeamsAreInserted_whenFetchingByTeamId_thenTheResultIsNull() = runTest {
         val result = teamDAO.getTeamById(teamId = teamId)
-        assertNull(result.first())
+        assertNull(result)
     }
 
     @Test
@@ -31,7 +32,7 @@ class TeamDAOTest : BaseDatabaseTest() {
         teamDAO.insertTeam(insertedTeam)
 
         val result = teamDAO.getTeamById(teamId = teamId)
-        assertEquals(insertedTeam.id, result.first()?.id)
+        assertEquals(insertedTeam.id, result?.id)
     }
 
     @Test
@@ -43,8 +44,8 @@ class TeamDAOTest : BaseDatabaseTest() {
         val resultTeam1 = teamDAO.getTeamById(teamId = "teamId 1")
         val resultTeam2 = teamDAO.getTeamById(teamId = "teamId 2")
 
-        assertEquals(insertedTeam1.id, resultTeam1.first()?.id)
-        assertEquals(insertedTeam2.id, resultTeam2.first()?.id)
+        assertEquals(insertedTeam1.id, resultTeam1?.id)
+        assertEquals(insertedTeam2.id, resultTeam2?.id)
     }
 
     private companion object {

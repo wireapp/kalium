@@ -2,6 +2,7 @@ package com.wire.kalium.persistence.dao
 
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -9,6 +10,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ConversationDAOTest : BaseDatabaseTest() {
 
     private lateinit var conversationDAO: ConversationDAO
@@ -23,15 +25,15 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenConversation_ThenConversationCanBeInserted() = runTest {
         conversationDAO.insertConversation(conversationEntity1)
-        val result = conversationDAO.getConversationByQualifiedID(conversationEntity1.id).first()
+        val result = conversationDAO.getConversationByQualifiedIDFlow(conversationEntity1.id).first()
         assertEquals(conversationEntity1, result)
     }
 
     @Test
     fun givenListOfConversations_ThenMultipleConversationsCanBeInsertedAtOnce() = runTest {
         conversationDAO.insertConversations(listOf(conversationEntity1, conversationEntity2))
-        val result1 = conversationDAO.getConversationByQualifiedID(conversationEntity1.id).first()
-        val result2 = conversationDAO.getConversationByQualifiedID(conversationEntity2.id).first()
+        val result1 = conversationDAO.getConversationByQualifiedIDFlow(conversationEntity1.id).first()
+        val result2 = conversationDAO.getConversationByQualifiedIDFlow(conversationEntity2.id).first()
         assertEquals(conversationEntity1, result1)
         assertEquals(conversationEntity2, result2)
     }
@@ -40,7 +42,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     fun givenExistingConversation_ThenConversationCanBeDeleted() = runTest {
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.deleteConversationByQualifiedID(conversationEntity1.id)
-        val result = conversationDAO.getConversationByQualifiedID(conversationEntity1.id).first()
+        val result = conversationDAO.getConversationByQualifiedIDFlow(conversationEntity1.id).first()
         assertNull(result)
     }
 
@@ -49,7 +51,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity1)
         val updatedConversation1Entity = conversationEntity1.copy(name = "Updated conversation1")
         conversationDAO.updateConversation(updatedConversation1Entity)
-        val result = conversationDAO.getConversationByQualifiedID(conversationEntity1.id).first()
+        val result = conversationDAO.getConversationByQualifiedIDFlow(conversationEntity1.id).first()
         assertEquals(updatedConversation1Entity, result)
     }
 
@@ -58,7 +60,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity2)
         val result =
             conversationDAO.getConversationByGroupID((conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId)
-                .first()
         assertEquals(conversationEntity2, result)
     }
 
@@ -69,7 +70,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,
             (conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
         )
-        val result = conversationDAO.getConversationByQualifiedID(conversationEntity2.id).first()
+        val result = conversationDAO.getConversationByQualifiedIDFlow(conversationEntity2.id).first()
         assertEquals(
             (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState,
             ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE
@@ -81,7 +82,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity1)
         val updatedConversation1Entity = conversationEntity1.copy(name = "Updated conversation1")
         conversationDAO.insertConversation(updatedConversation1Entity)
-        val result = conversationDAO.getConversationByQualifiedID(conversationEntity1.id).first()
+        val result = conversationDAO.getConversationByQualifiedIDFlow(conversationEntity1.id).first()
         assertEquals(updatedConversation1Entity, result)
     }
 
@@ -90,7 +91,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.insertMember(member1, conversationEntity1.id)
 
-        assertEquals(listOf(member1), conversationDAO.getAllMembers(conversationEntity1.id).first())
+        assertEquals(listOf(member1), conversationDAO.getAllMembersFlow(conversationEntity1.id).first())
     }
 
     @Test
@@ -99,7 +100,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertMember(member1, conversationEntity1.id)
         conversationDAO.deleteMemberByQualifiedID(conversationEntity1.id, member1.user)
 
-        assertEquals(emptyList(), conversationDAO.getAllMembers(conversationEntity1.id).first())
+        assertEquals(emptyList(), conversationDAO.getAllMembersFlow(conversationEntity1.id).first())
     }
 
     @Test
@@ -107,7 +108,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.insertMembers(listOf(member1, member2), conversationEntity1.id)
 
-        assertEquals(setOf(member1, member2), conversationDAO.getAllMembers(conversationEntity1.id).first().toSet())
+        assertEquals(setOf(member1, member2), conversationDAO.getAllMembersFlow(conversationEntity1.id).first().toSet())
     }
 
     @Test
@@ -121,12 +122,12 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         assertEquals(
             setOf(member1),
-            conversationDAO.getAllMembers(conversationEntity1.id).first().toSet()
+            conversationDAO.getAllMembersFlow(conversationEntity1.id).first().toSet()
         )
     }
 
     @Test
-    fun givenAnExistingConversation_WhenUpdatingTheMutingStatus_ThenConversationShouldBeUpdated() = runTest {
+    fun givenAnExistingConversation_WhenUpdatingTheMutingStatus_ThenConversationShouldBeUpdated() {
         conversationDAO.insertConversation(conversationEntity2)
         conversationDAO.updateConversationMutedStatus(
             conversationId = conversationEntity2.id,
@@ -134,7 +135,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             mutedStatusTimestamp = 1649702788L
         )
 
-        val result = conversationDAO.getConversationByQualifiedID(conversationEntity2.id).first()
+        val result = conversationDAO.getConversationByQualifiedIDFlow(conversationEntity2.id).first()
 
         assertEquals(ConversationEntity.MutedStatus.ONLY_MENTIONS_ALLOWED, result?.mutedStatus)
     }

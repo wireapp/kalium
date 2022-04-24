@@ -4,8 +4,6 @@ import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -25,31 +23,31 @@ class ClientDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenNoClientsAreInserted_whenFetchingClientsByUserId_thenTheResultIsEmpty() = runTest {
-        val result = clientDAO.getClientsOfUserByQualifiedID(userId).first()
+    fun givenNoClientsAreInserted_whenFetchingClientsByUserId_thenTheResultIsEmpty() {
+        val result = clientDAO.getClientsOfUserByQualifiedID(userId)
         assertTrue(result.isEmpty())
     }
 
     @Test
-    fun givenClientIsInserted_whenFetchingClientsByUserId_thenTheRelevantClientIsReturned() = runTest {
+    fun givenClientIsInserted_whenFetchingClientsByUserId_thenTheRelevantClientIsReturned() {
         val insertedClient = Client(user.id, "id1")
         userDAO.insertUser(user)
         clientDAO.insertClient(insertedClient)
 
-        val result = clientDAO.getClientsOfUserByQualifiedID(userId).first()
+        val result = clientDAO.getClientsOfUserByQualifiedID(userId)
 
         assertEquals(1, result.size)
         assertEquals(insertedClient, result.first())
     }
 
     @Test
-    fun givenMultipleClientsAreInserted_whenFetchingClientsByUserId_thenTheRelevantClientIsReturned() = runTest {
+    fun givenMultipleClientsAreInserted_whenFetchingClientsByUserId_thenTheRelevantClientIsReturned() {
         val insertedClient = Client(user.id, "id1")
         val insertedClient2 = Client(user.id, "id2")
         userDAO.insertUser(user)
         clientDAO.insertClients(listOf(insertedClient, insertedClient2))
 
-        val result = clientDAO.getClientsOfUserByQualifiedID(userId).first()
+        val result = clientDAO.getClientsOfUserByQualifiedID(userId)
 
         assertEquals(2, result.size)
         assertEquals(insertedClient, result[0])
@@ -57,7 +55,7 @@ class ClientDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenClientsAreInsertedForMultipleUsers_whenFetchingClientsByUserId_thenOnlyTheRelevantClientsAreReturned() = runTest {
+    fun givenClientsAreInsertedForMultipleUsers_whenFetchingClientsByUserId_thenOnlyTheRelevantClientsAreReturned() {
         val insertedClient = Client(user.id, "id1")
         val insertedClient2 = Client(user.id, "id2")
         userDAO.insertUser(user)
@@ -69,26 +67,26 @@ class ClientDAOTest : BaseDatabaseTest() {
         userDAO.insertUser(unrelatedUser)
         clientDAO.insertClient(unrelatedInsertedClient)
 
-        val result = clientDAO.getClientsOfUserByQualifiedID(userId).first()
+        val result = clientDAO.getClientsOfUserByQualifiedID(userId)
 
         assertEquals(2, result.size)
         assertEquals(insertedClient, result.first())
     }
 
     @Test
-    fun givenClientIsInserted_whenDeletingItSpecifically_thenItShouldNotBeReturnedAnymoreOnNextFetch() = runTest {
+    fun givenClientIsInserted_whenDeletingItSpecifically_thenItShouldNotBeReturnedAnymoreOnNextFetch() {
         val insertedClient = Client(user.id, "id1")
         userDAO.insertUser(user)
         clientDAO.insertClient(insertedClient)
 
         clientDAO.deleteClient(insertedClient.userId, insertedClient.id)
 
-        val result = clientDAO.getClientsOfUserByQualifiedID(userId).first()
+        val result = clientDAO.getClientsOfUserByQualifiedID(userId)
         assertTrue(result.isEmpty())
     }
 
     @Test
-    fun givenClientsAreInserted_whenDeletingClientsOfUser_thenTheyShouldNotBeReturnedAnymoreOnNextFetch() = runTest {
+    fun givenClientsAreInserted_whenDeletingClientsOfUser_thenTheyShouldNotBeReturnedAnymoreOnNextFetch() {
         val insertedClient = Client(user.id, "id1")
         val insertedClient2 = Client(user.id, "id2")
         userDAO.insertUser(user)
@@ -96,7 +94,7 @@ class ClientDAOTest : BaseDatabaseTest() {
 
         clientDAO.deleteClientsOfUserByQualifiedID(insertedClient.userId)
 
-        val result = clientDAO.getClientsOfUserByQualifiedID(userId).first()
+        val result = clientDAO.getClientsOfUserByQualifiedID(userId)
         assertTrue(result.isEmpty())
     }
 
