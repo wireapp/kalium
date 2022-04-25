@@ -10,7 +10,13 @@ import kotlinx.coroutines.flow.map
 
 interface CallManager {
     suspend fun onCallingMessageReceived(message: Message, content: MessageContent.Calling)
-    suspend fun startCall(conversationId: ConversationId, callType: CallType, conversationType: ConversationType, isAudioCbr: Boolean = false) //TODO Audio CBR
+    suspend fun startCall(
+        conversationId: ConversationId,
+        callType: CallType,
+        conversationType: ConversationType,
+        isAudioCbr: Boolean = false
+    ) //TODO Audio CBR
+
     suspend fun answerCall(conversationId: ConversationId)
     suspend fun endCall(conversationId: ConversationId)
     suspend fun rejectCall(conversationId: ConversationId)
@@ -20,10 +26,16 @@ interface CallManager {
 
 expect class CallManagerImpl : CallManager
 
-val CallManager.incomingCalls get() = allCalls.map {
-    it.filter { call ->
-        call.status in listOf(
-            CallStatus.INCOMING
-        )
+val CallManager.incomingCalls
+    get() = allCalls.map {
+        it.filter { call ->
+            call.status in listOf(
+                CallStatus.INCOMING
+            )
+        }
     }
-}
+
+val CallManager.ongoingCall
+    get() = allCalls.map {
+        it.filter { call -> call.status == CallStatus.ESTABLISHED }
+    }
