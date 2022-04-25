@@ -29,7 +29,7 @@ interface MLSClient {
      *
      * @return true if conversation exists in store
      */
-    fun hasConversation(groupId: MLSGroupId): Boolean
+    fun conversationExists(groupId: MLSGroupId): Boolean
 
     /**
      * Create a new MLS conversation

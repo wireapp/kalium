@@ -29,7 +29,7 @@ actual class MLSClientImpl actual constructor(
         return coreCrypto.clientKeypackages(amount.toUInt()).map { it.toUByteArray().asByteArray() }
     }
 
-    override fun hasConversation(groupId: MLSGroupId): Boolean {
+    override fun conversationExists(groupId: MLSGroupId): Boolean {
         return coreCrypto.conversationExists(toUByteList(groupId.decodeBase64Bytes()))
     }
 

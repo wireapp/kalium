@@ -71,7 +71,7 @@ class MLSConversationDataSource(
     }
 
     override suspend fun hasEstablishedMLSGroup(groupID: String): Either<CoreFailure, Boolean>  {
-        return mlsClientProvider.getMLSClient().flatMap { Either.Right(it.hasConversation(groupID)) }
+        return mlsClientProvider.getMLSClient().flatMap { Either.Right(it.conversationExists(groupID)) }
     }
 
     override suspend fun establishMLSGroup(groupID: String): Either<CoreFailure, Unit> = suspending  {

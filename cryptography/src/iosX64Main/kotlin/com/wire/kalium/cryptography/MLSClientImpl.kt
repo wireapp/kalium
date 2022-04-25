@@ -13,7 +13,7 @@ actual class MLSClientImpl actual constructor(
         TODO("Not yet implemented")
     }
 
-    override fun hasConversation(groupId: MLSGroupId): Boolean {
+    override fun conversationExists(groupId: MLSGroupId): Boolean {
         TODO("Not yet implemented")
     }
 
