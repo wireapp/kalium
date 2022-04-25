@@ -9,8 +9,12 @@ import com.wire.kalium.network.exceptions.isInvalidCode
 class RegisterTokenUseCase(
     private val eventRepository: EventRepository
 ) {
-    suspend operator fun invoke(body: PushTokenRequestBody): RegisterTokenResult =
-        eventRepository.registerToken(body = body).fold({
+    suspend operator fun invoke(senderId: String, clientId: String, token: String, transport: String): RegisterTokenResult =
+        eventRepository.registerToken(
+            body = PushTokenRequestBody(
+                senderId = senderId, client =clientId, token =token, transport =transport
+            )
+        ).fold({
             if (
                 it is NetworkFailure.ServerMiscommunication &&
                 it.kaliumException is KaliumException.InvalidRequestError &&

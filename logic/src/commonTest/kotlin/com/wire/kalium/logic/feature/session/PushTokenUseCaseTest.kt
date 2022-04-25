@@ -38,7 +38,10 @@ class PushTokenUseCaseTest {
             .coroutine { registerToken(pushTokenRequestBody) }
             .then { Either.Right(Unit) }
 
-        val actual = pushTokenUseCase(pushTokenRequestBody)
+        val actual = pushTokenUseCase(
+            senderId = "7239",
+            clientId = "cliId", token = "7239", transport = "GCM"
+        )
 
         assertIs<RegisterTokenResult.Success>(actual)
 
@@ -56,7 +59,10 @@ class PushTokenUseCaseTest {
             .coroutine { registerToken(pushTokenRequestBody) }
             .then { Either.Left(expected) }
 
-        val actual = pushTokenUseCase(pushTokenRequestBody)
+        val actual = pushTokenUseCase(
+            senderId = "7239",
+            clientId = "cliId", token = "7239", transport = "GCM"
+        )
 
         assertIs<RegisterTokenResult.Failure.AppNotFound>(actual)
 
@@ -73,7 +79,10 @@ class PushTokenUseCaseTest {
             .coroutine { registerToken(pushTokenRequestBody) }
             .then { Either.Left(expected) }
 
-        val actual = pushTokenUseCase(pushTokenRequestBody)
+        val actual = pushTokenUseCase(
+            senderId = "7239",
+            clientId = "cliId", token = "7239", transport = "GCM"
+        )
 
         assertIs<RegisterTokenResult.Failure.Generic>(actual)
         assertEquals(expected, actual.failure)
