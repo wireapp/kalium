@@ -1,14 +1,14 @@
 package com.wire.kalium.logic.data.client
 
-import com.wire.kalium.cryptography.MLSClient
-import com.wire.kalium.cryptography.MLSClientImpl
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.CryptoUserID
+import com.wire.kalium.cryptography.MLSClient
+import com.wire.kalium.cryptography.MLSClientImpl
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import io.ktor.util.encodeBase64
 import java.io.File
@@ -21,20 +21,20 @@ actual class MLSClientProviderImpl actual constructor(
     private val kaliumPreferences: KaliumPreferences
 ): MLSClientProvider {
 
-    override suspend fun getMLSClient(clientId: ClientId?): Either<CoreFailure, MLSClient> = suspending {
+    override fun getMLSClient(clientId: ClientId?): Either<CoreFailure, MLSClient> {
         val cryptoUserId = CryptoUserID(userId.value, userId.domain)
 
         // Make sure all intermediate directories exists
         File(rootKeyStorePath).mkdirs()
 
-        val mlsClient = clientId?.let { clientId ->
-            Either.Right(mlsClient(cryptoUserId, clientId, rootKeyStorePath))
+        val mlsClient = clientId?.let {
+            Either.Right(mlsClient(cryptoUserId, it, rootKeyStorePath))
         } ?: run {
             clientRepository.currentClientId().map { clientId ->
                 mlsClient(cryptoUserId, clientId, rootKeyStorePath)
             }
         }
-        mlsClient
+        return mlsClient
     }
 
     private fun mlsClient(userId: CryptoUserID, clientId: ClientId, location: String): MLSClient {

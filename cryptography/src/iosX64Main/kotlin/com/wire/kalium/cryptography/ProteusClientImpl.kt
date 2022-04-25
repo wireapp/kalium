@@ -27,15 +27,17 @@ actual class ProteusClientImpl actual constructor(private val rootDir: String) :
 
     private var box: EncryptionContext? = null
 
-    override suspend fun open() {
-        NSFileManager.defaultManager.createDirectoryAtPath(rootDir, withIntermediateDirectories = true, null, null)
-        box = EncryptionContext(NSURL.fileURLWithPath(rootDir))
-    }
-
-    override fun close() {
+    override fun clearLocalFiles(): Boolean {
+        TODO("Not yet implemented")
         box = null
         // the underlaying cbox is currently closed on deinit so we need to force a GC collection.
         kotlin.native.internal.GC.collect()
+        // Delete the actual files
+    }
+
+    override suspend fun open() {
+        NSFileManager.defaultManager.createDirectoryAtPath(rootDir, withIntermediateDirectories = true, null, null)
+        box = EncryptionContext(NSURL.fileURLWithPath(rootDir))
     }
 
     override fun getIdentity(): ByteArray {
@@ -186,7 +188,7 @@ actual class ProteusClientImpl actual constructor(private val rootDir: String) :
         }
 
         private fun toException(error: NSError): ProteusException {
-            return ProteusException(message = error.description,  code = error.code.toInt())
+            return ProteusException(message = error.description, code = error.code.toInt())
         }
     }
 

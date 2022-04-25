@@ -25,6 +25,7 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -32,6 +33,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class EventRepositoryTest {
 
     @Mock
@@ -80,7 +82,7 @@ class EventRepositoryTest {
 
         val clientId = TestClient.CLIENT_ID
         given(clientRepository)
-            .suspendFunction(clientRepository::currentClientId)
+            .function(clientRepository::currentClientId)
             .whenInvoked()
             .thenReturn(Either.Right(clientId))
 
@@ -125,7 +127,7 @@ class EventRepositoryTest {
 
         val clientId = TestClient.CLIENT_ID
         given(clientRepository)
-            .suspendFunction(clientRepository::currentClientId)
+            .function(clientRepository::currentClientId)
             .whenInvoked()
             .thenReturn(Either.Right(clientId))
 
@@ -166,7 +168,7 @@ class EventRepositoryTest {
 
         val clientId = TestClient.CLIENT_ID
         given(clientRepository)
-            .suspendFunction(clientRepository::currentClientId)
+            .function(clientRepository::currentClientId)
             .whenInvoked()
             .thenReturn(Either.Right(clientId))
 
