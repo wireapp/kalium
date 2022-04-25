@@ -16,14 +16,14 @@ class CallsScope(
     private val syncManager: SyncManager
 ) {
 
-    val onGoingCall: GetOngoingCallUseCase
-        get() = GetOngoingCallUseCase(
+    val allCalls: GetAllCallsUseCase
+        get() = GetAllCallsUseCase(
             callManager = callManager,
             syncManager = syncManager
         )
 
-    val allCalls: GetAllCallsUseCase
-        get() = GetAllCallsUseCase(
+    val onGoingCall: GetOngoingCallUseCase
+        get() = GetOngoingCallUseCase(
             callManager = callManager,
             syncManager = syncManager
         )
