@@ -21,9 +21,17 @@ sealed class CoreFailure {
 sealed class NetworkFailure : CoreFailure() {
     /**
      * Failed to establish a connection with the necessary servers in order to pull/push data.
-     * Caused by weak - complete lack of - internet connection.
+     *
+     * Caused by weak – or complete lack of – internet connection:
+     * - Device not connected at all
+     * - Timeout due to slow connection
+     * - Server is offline
+     * - Unreachable due to ISP blocks
+     * - _many_ others, we just can't say specifically, and we handle them all the same way
+     *
+     * [cause] can help to understand better what was caused and triggered this failure
      */
-    object NoNetworkConnection : NetworkFailure()
+    class NoNetworkConnection(val cause: Throwable?) : NetworkFailure()
 
     /**
      * Server internal error, or we can't parse the response,
@@ -56,7 +64,7 @@ internal inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<
                 kaliumLogger.e(result.kException.stackTraceToString())
                 val exception = result.kException
                 if (exception is KaliumException.GenericError && exception.cause is IOException) {
-                    Either.Left(NetworkFailure.NoNetworkConnection)
+                    Either.Left(NetworkFailure.NoNetworkConnection(exception))
                 } else {
                     Either.Left(NetworkFailure.ServerMiscommunication(result.kException))
                 }
