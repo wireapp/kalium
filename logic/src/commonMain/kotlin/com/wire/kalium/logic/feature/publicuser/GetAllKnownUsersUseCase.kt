@@ -5,11 +5,11 @@ import com.wire.kalium.logic.data.user.UserRepository
 import kotlinx.coroutines.flow.Flow
 
 interface GetAllKnownUsersUseCase {
-    suspend operator fun invoke(): Flow<List<OtherUser>>
+    suspend operator fun invoke(): List<OtherUser>
 }
 
 class GetAllKnownUsersUseCaseImpl(private val userRepository: UserRepository) : GetAllKnownUsersUseCase {
 
-    override suspend fun invoke(): Flow<List<OtherUser>> = userRepository.getAllKnownUsers()
+    override suspend fun invoke(): List<OtherUser> = userRepository.getAllKnownUsers()
 
 }
