@@ -44,7 +44,7 @@ internal class ServerConfigDataSource(
 
     override fun deleteById(id: String) = wrapStorageRequest { dao.deleteById(id) }
 
-    override fun delete(serverConfig: ServerConfig) = deleteById(serverConfig.title)
+    override fun delete(serverConfig: ServerConfig) = deleteById(serverConfig.id)
 
     override fun storeConfig(serverConfigDTO: ServerConfigDTO): Either<StorageFailure, ServerConfig> = wrapStorageRequest {
         val newId = uuid4().toString()
