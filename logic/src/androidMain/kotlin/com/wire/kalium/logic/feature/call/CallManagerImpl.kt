@@ -22,7 +22,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.toUserId
 import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.util.toInt
 import com.wire.kalium.logic.util.toTimeInMillis
 import kotlinx.coroutines.CoroutineScope
@@ -57,13 +57,13 @@ actual class CallManagerImpl(
         clientRepository.currentClientId().fold({
             TODO("adjust correct variable calling")
         }, {
-            kaliumLogger.d("$TAG - clientId $it")
+            callingLogger.d("$TAG - clientId $it")
             it
         })
     }
     private val userId: Deferred<UserId> = scope.async(start = CoroutineStart.LAZY) {
         userRepository.getSelfUser().first().id.also {
-            kaliumLogger.d("$TAG - userId $it")
+            callingLogger.d("$TAG - userId $it")
         }
     }
 
@@ -100,11 +100,11 @@ actual class CallManagerImpl(
             userId = selfUserId,
             clientId = selfClientId,
             readyHandler = { version: Int, arg: Pointer? ->
-                kaliumLogger.i("$TAG -> readyHandler")
+                callingLogger.i("$TAG -> readyHandler")
             },
             sendHandler = { _, conversationId, avsSelfUserId, avsSelfClientId, _, _, data, _, _, _ ->
                 if (selfUserId != avsSelfUserId && selfClientId != avsSelfClientId) {
-                    kaliumLogger.i("$TAG -> sendHandler error")
+                    callingLogger.i("$TAG -> sendHandler error")
                     AvsCallBackError.INVALID_ARGUMENT.value
                 } else {
                     scope.launch {
@@ -113,38 +113,38 @@ actual class CallManagerImpl(
                             sendCallingMessage(conversationId.toConversationId(), avsSelfUserId.toUserId(), ClientId(avsSelfClientId), it)
                         }
                     }
-                    kaliumLogger.i("$TAG -> sendHandler success")
+                    callingLogger.i("$TAG -> sendHandler success")
                     AvsCallBackError.None.value
                 }
             },
             sftRequestHandler = { ctx: Pointer?, url: String, data: Pointer?, length: Size_t, arg: Pointer? ->
-                kaliumLogger.i("$TAG -> sftRequestHandler")
+                callingLogger.i("$TAG -> sftRequestHandler")
                 0
             },
             incomingCallHandler = { conversationId: String, messageTime: Uint32_t, userId: String, clientId: String, isVideoCall: Boolean,
                                     shouldRing: Boolean, conversationType: Int, arg: Pointer? ->
-                kaliumLogger.i("$TAG -> incomingCallHandler")
+                callingLogger.i("$TAG -> incomingCallHandler")
                 updateCallStatusById(
                     conversationId = conversationId,
                     status = CallStatus.INCOMING
                 )
             },
             missedCallHandler = { conversationId: String, messageTime: Uint32_t, userId: String, isVideoCall: Boolean, arg: Pointer? ->
-                kaliumLogger.i("$TAG -> missedCallHandler")
+                callingLogger.i("$TAG -> missedCallHandler")
                 updateCallStatusById(
                     conversationId = conversationId,
                     status = CallStatus.MISSED
                 )
             },
             answeredCallHandler = { conversationId: String, arg: Pointer? ->
-                kaliumLogger.i("$TAG -> answeredCallHandler")
+                callingLogger.i("$TAG -> answeredCallHandler")
                 updateCallStatusById(
                     conversationId = conversationId,
                     status = CallStatus.ANSWERED
                 )
             },
             establishedCallHandler = { conversationId: String, userId: String, clientId: String, arg: Pointer? ->
-                kaliumLogger.i("$TAG -> establishedCallHandler")
+                callingLogger.i("$TAG -> establishedCallHandler")
                 updateCallStatusById(
                     conversationId = conversationId,
                     status = CallStatus.ESTABLISHED
@@ -152,21 +152,21 @@ actual class CallManagerImpl(
             },
             closeCallHandler = { reason: Int, conversationId: String, messageTime: Uint32_t, userId: String, clientId: String,
                                  arg: Pointer? ->
-                kaliumLogger.i("$TAG -> closeCallHandler")
+                callingLogger.i("$TAG -> closeCallHandler")
                 updateCallStatusById(
                     conversationId = conversationId,
                     status = CallStatus.CLOSED
                 )
             },
             metricsHandler = { conversationId: String, metricsJson: String, arg: Pointer? ->
-                kaliumLogger.i("$TAG -> metricsHandler")
+                callingLogger.i("$TAG -> metricsHandler")
             },
             callConfigRequestHandler = this@CallManagerImpl,
             constantBitRateStateChangeHandler = { userId: String, clientId: String, isEnabled: Boolean, arg: Pointer? ->
-                kaliumLogger.i("$TAG -> constantBitRateStateChangeHandler")
+                callingLogger.i("$TAG -> constantBitRateStateChangeHandler")
             },
             videoReceiveStateHandler = { conversationId: String, userId: String, clientId: String, state: Int, arg: Pointer? ->
-                kaliumLogger.i("$TAG -> videoReceiveStateHandler")
+                callingLogger.i("$TAG -> videoReceiveStateHandler")
             },
             arg = null
         )
@@ -194,11 +194,11 @@ actual class CallManagerImpl(
                 userId = message.senderUserId.asString(),
                 clientId = message.senderClientId.value
             )
-            kaliumLogger.d("$TAG - onCallingMessageReceived")
+            callingLogger.d("$TAG - onCallingMessageReceived")
         }
 
     override suspend fun startCall(conversationId: ConversationId, callType: CallType, conversationType: ConversationType, isAudioCbr: Boolean) {
-        kaliumLogger.d("$TAG -> starting call..")
+        callingLogger.d("$TAG -> starting call..")
         withCalling {
             val avsCallType = callMapper.toCallTypeCalling(callType)
             val avsConversationType = callMapper.toConversationTypeCalling(conversationType)
@@ -207,7 +207,7 @@ actual class CallManagerImpl(
     }
 
     override suspend fun answerCall(conversationId: ConversationId) = withCalling {
-        kaliumLogger.d("$TAG -> answering call..")
+        callingLogger.d("$TAG -> answering call..")
         calling.wcall_answer(
             inst = deferredHandle.await(),
             conversationId = conversationId.asString(),
@@ -217,18 +217,18 @@ actual class CallManagerImpl(
     }
 
     override suspend fun endCall(conversationId: ConversationId) = withCalling {
-        kaliumLogger.d("$TAG -> ending Call..")
+        callingLogger.d("$TAG -> ending Call..")
         wcall_end(inst = deferredHandle.await(), conversationId = conversationId.asString())
     }
 
     override suspend fun rejectCall(conversationId: ConversationId) = withCalling {
-        kaliumLogger.d("$TAG -> rejecting call..")
+        callingLogger.d("$TAG -> rejecting call..")
         wcall_reject(inst = deferredHandle.await(), conversationId = conversationId.asString())
     }
 
     override suspend fun muteCall(shouldMute: Boolean) = withCalling {
         val logString =  if (shouldMute)  "muting" else "un-muting"
-        kaliumLogger.d("$TAG -> $logString call..")
+        callingLogger.d("$TAG -> $logString call..")
         wcall_set_mute(deferredHandle.await(), muted =  shouldMute.toInt())
     }
 
@@ -248,7 +248,7 @@ actual class CallManagerImpl(
                     jsonString = config
                 )
             }
-            kaliumLogger.i("$TAG - onConfigRequest")
+            callingLogger.i("$TAG - onConfigRequest")
         }
 
         return 0
