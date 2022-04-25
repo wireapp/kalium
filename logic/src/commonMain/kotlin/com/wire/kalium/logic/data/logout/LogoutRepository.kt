@@ -10,7 +10,7 @@ interface LogoutRepository {
     suspend fun logout(): Either<CoreFailure, Unit>
 }
 
-class LogoutDataSource(
+internal class LogoutDataSource(
     private val logoutApi: LogoutApi,
 ) : LogoutRepository {
     override suspend fun logout(): Either<NetworkFailure, Unit> =
