@@ -1,4 +1,3 @@
-import Versions.firebaseBOM
 import org.gradle.kotlin.dsl.kotlin
 import org.gradle.kotlin.dsl.version
 import org.gradle.plugin.use.PluginDependenciesSpec
@@ -41,8 +40,6 @@ object Versions {
     const val jna = "5.6.0@aar"
     const val mlsClient = "0.0.1"
     const val desugarJdk = "1.1.5"
-    const val firebaseBOM = "29.3.1"
-    const val abcNotifications = "0.4.1"
 }
 
 object Plugins {
@@ -184,11 +181,5 @@ object Dependencies {
     object Calling {
         const val avs = "com.wire:avs:${Versions.avs}"
         const val jna = "net.java.dev.jna:jna:${Versions.jna}"
-    }
-
-    object Firebase {
-        const val firebaseBOM = "com.google.firebase:firebase-bom:${Versions.firebaseBOM}"
-        const val firebaseCloudMessaging = "com.google.firebase:firebase-messaging-ktx"
-        const val abcNotifications = "com.linecorp.abc:kmm-notifications:${Versions.abcNotifications}"
     }
 }

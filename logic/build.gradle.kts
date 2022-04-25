@@ -75,9 +75,6 @@ kotlin {
         val androidMain by getting {
             dependencies {
                 implementation(Dependencies.Android.work)
-                implementation(Dependencies.Firebase.firebaseBOM)
-                implementation(Dependencies.Firebase.firebaseCloudMessaging)
-                implementation(Dependencies.Firebase.abcNotifications)
             }
         }
         val androidTest by getting

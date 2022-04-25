@@ -6,8 +6,6 @@ buildscript {
     val sqlDelightVersion = "2.0.0-alpha01"
     val protobufCodegenVersion = "0.8.18"
     val carthageVersion = "0.0.1"
-    val gmsVersion = "4.3.10"
-
 
     repositories {
         google()
@@ -24,7 +22,6 @@ buildscript {
         classpath("com.wire:carthage-gradle-plugin:$carthageVersion")
         classpath("org.jetbrains.dokka:dokka-gradle-plugin:$dokkaVersion")
         classpath("com.google.protobuf:protobuf-gradle-plugin:$protobufCodegenVersion")
-        classpath("com.google.gms:google-services:$gmsVersion")
     }
 }
 
