@@ -27,7 +27,9 @@ class ConversationMapper {
                 ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
             },
             mutedStatus = conversation.muted_status,
-            mutedTime = conversation.muted_time
+            mutedTime = conversation.muted_time,
+            lastNotificationDate = conversation.last_notified_message_date,
+            lastModifiedDate = conversation.last_modified_date
         )
     }
 
@@ -88,6 +90,22 @@ class ConversationDAOImpl(
 
     override suspend fun updateConversationGroupState(groupState: ConversationEntity.GroupState, groupId: String) {
         conversationQueries.updateConversationGroupState(groupState, groupId)
+    }
+
+    override suspend fun updateConversationModifiedDate(qualifiedID: QualifiedIDEntity, date: String) {
+        conversationQueries.updateConversationModifiedDate(date, qualifiedID)
+    }
+
+    override suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity, date: String) {
+        conversationQueries.updateConversationNotificationsDate(date, qualifiedID)
+    }
+
+    override suspend fun updateAllConversationsNotificationDate(date: String) {
+        conversationQueries.transaction {
+            conversationQueries.selectConversationsWithUnnotifiedMessages()
+                .executeAsList()
+                .forEach { conversationQueries.updateConversationNotificationsDate(date, it.qualified_id) }
+        }
     }
 
     override suspend fun getAllConversations(): Flow<List<ConversationEntity>> {
@@ -160,5 +178,12 @@ class ConversationDAOImpl(
         mutedStatusTimestamp: Long
     ) {
         conversationQueries.updateConversationMutingStatus(mutedStatus, mutedStatusTimestamp, conversationId)
+    }
+
+    override suspend fun getConversationsForNotifications(): Flow<List<ConversationEntity>> {
+        return conversationQueries.selectConversationsWithUnnotifiedMessages()
+            .asFlow()
+            .mapToList()
+            .map { it.map(conversationMapper::toModel) }
     }
 }

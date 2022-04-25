@@ -85,10 +85,13 @@ SET status = ?
 WHERE id = ? AND conversation_id = ?;
 
 selectAllMessages:
-SELECT * FROM Message;
+SELECT * FROM Message ORDER BY date DESC LIMIT ? OFFSET ?;
 
 selectById:
 SELECT * FROM Message WHERE id = ? AND conversation_id = ?;
 
 selectByConversationId:
-SELECT * FROM Message WHERE conversation_id = ? ORDER BY date DESC LIMIT ?;
+SELECT * FROM Message WHERE conversation_id = ? ORDER BY date DESC LIMIT ? OFFSET ?;
+
+selectMessagesByConversationIdAfterDate:
+SELECT * FROM Message WHERE conversation_id = ? AND Datetime(date) > Datetime(?) ORDER BY date DESC;

@@ -1,6 +1,6 @@
 package com.wire.kalium.logic.data.conversation
 
-data class ConverationOptions(
+data class ConversationOptions(
     val access: Set<Access> = emptySet(),
     val accessRole: Set<AccessRole> = emptySet(),
     val readReceiptsEnabled: Boolean = false,
