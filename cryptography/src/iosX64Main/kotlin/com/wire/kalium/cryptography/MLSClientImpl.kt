@@ -5,6 +5,10 @@ actual class MLSClientImpl actual constructor(
     databaseKey: String,
     clientId: CryptoQualifiedClientId
 ) : MLSClient {
+    override fun clearLocalFiles(): Boolean {
+        TODO("Not yet implemented")
+    }
+
     override fun getPublicKey(): ByteArray {
         TODO("Not yet implemented")
     }

@@ -1,7 +1,6 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.di.MapperProvider
@@ -9,7 +8,6 @@ import com.wire.kalium.logic.failure.SendMessageFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.message.MLSMessageApi
@@ -24,7 +22,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 
 interface MessageRepository {
-    suspend fun getMessagesForConversation(conversationId: ConversationId, limit: Int): Flow<List<Message>>
+    suspend fun getMessagesForConversation(conversationId: ConversationId, limit: Int, offset: Int): Flow<List<Message>>
     suspend fun persistMessage(message: Message): Either<CoreFailure, Unit>
     suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun deleteMessage(messageUuid: String): Either<CoreFailure, Unit>
@@ -32,6 +30,7 @@ interface MessageRepository {
     suspend fun hideMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun markMessageAsSent(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit>
     suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message>
+    suspend fun getMessagesByConversationAfterDate(conversationId: ConversationId, date: String): Flow<List<Message>>
 
     // TODO: change the return type to Either<CoreFailure, Unit>
     suspend fun sendEnvelope(conversationId: ConversationId, envelope: MessageEnvelope): Either<SendMessageFailure, Unit>
@@ -47,8 +46,8 @@ class MessageDataSource(
     private val sendMessageFailureMapper: SendMessageFailureMapper = MapperProvider.sendMessageFailureMapper()
 ) : MessageRepository {
 
-    override suspend fun getMessagesForConversation(conversationId: ConversationId, limit: Int): Flow<List<Message>> {
-        return messageDAO.getMessageByConversation(idMapper.toDaoModel(conversationId), limit).map { messageList ->
+    override suspend fun getMessagesForConversation(conversationId: ConversationId, limit: Int, offset: Int): Flow<List<Message>> {
+        return messageDAO.getMessagesByConversation(idMapper.toDaoModel(conversationId), limit, offset).map { messageList ->
             messageList.map(messageMapper::fromEntityToMessage)
         }
     }
@@ -103,6 +102,12 @@ class MessageDataSource(
         }.onFailure {
             Either.Left(it)
         }
+
+    override suspend fun getMessagesByConversationAfterDate(conversationId: ConversationId, date: String): Flow<List<Message>> {
+        return messageDAO.getMessagesByConversationAfterDate(idMapper.toDaoModel(conversationId), date).map { messageList ->
+            messageList.map(messageMapper::fromEntityToMessage)
+        }
+    }
 
     override suspend fun markMessageAsSent(conversationId: ConversationId, messageUuid: String) =
         Either.Right(

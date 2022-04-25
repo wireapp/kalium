@@ -294,7 +294,7 @@ class ConversationRepositoryTest {
         val result = conversationRepository.createGroupConversation(
             GROUP_NAME,
             listOf(Member((TestUser.USER_ID))),
-            ConverationOptions(protocol = ConverationOptions.Protocol.PROTEUS)
+            ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
         )
 
 
@@ -338,7 +338,7 @@ class ConversationRepositoryTest {
         val result = conversationRepository.createGroupConversation(
             GROUP_NAME,
             listOf(Member((TestUser.USER_ID))),
-            ConverationOptions(protocol = ConverationOptions.Protocol.PROTEUS)
+            ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
         )
 
 
@@ -390,7 +390,7 @@ class ConversationRepositoryTest {
         val result = conversationRepository.createGroupConversation(
             GROUP_NAME,
             listOf(Member((TestUser.USER_ID))),
-            ConverationOptions(protocol = ConverationOptions.Protocol.MLS)
+            ConversationOptions(protocol = ConversationOptions.Protocol.MLS)
         )
 
         result.shouldSucceed { }
@@ -503,7 +503,9 @@ class ConversationRepositoryTest {
             name = null,
             type = ConversationEntity.Type.ONE_ON_ONE,
             teamId = null,
-            protocolInfo = ConversationEntity.ProtocolInfo.Proteus
+            protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
+            lastModifiedDate = null,
+            lastNotificationDate = null
         )
 
         val CONVERSATION_ENTITIES = listOf(
@@ -515,7 +517,9 @@ class ConversationRepositoryTest {
                 name = null,
                 type = ConversationEntity.Type.ONE_ON_ONE,
                 teamId = null,
-                protocolInfo = ConversationEntity.ProtocolInfo.Proteus
+                protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
+                lastModifiedDate = null,
+                lastNotificationDate = null
             )
         )
 

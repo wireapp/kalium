@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.message.MLSMessageApi
 import com.wire.kalium.network.api.message.MessageApi
+import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity.Status.SENT
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
@@ -62,20 +63,20 @@ class MessageRepositoryTest {
             .then { mappedId }
 
         given(messageDAO)
-            .suspendFunction(messageDAO::getMessageByConversation)
-            .whenInvokedWith(anything(), anything())
-            .then { _, _ -> flowOf(listOf()) }
+            .suspendFunction(messageDAO::getMessagesByConversation)
+            .whenInvokedWith(anything(), anything(), anything())
+            .then { _, _, _-> flowOf(listOf()) }
 
         given(messageMapper)
             .function(messageMapper::fromEntityToMessage)
             .whenInvokedWith(anything())
             .then { TEST_MESSAGE }
 
-        messageRepository.getMessagesForConversation(TEST_CONVERSATION_ID, 0).collect()
+        messageRepository.getMessagesForConversation(TEST_CONVERSATION_ID, 0, 0).collect()
 
         verify(messageDAO)
-            .suspendFunction(messageDAO::getMessageByConversation)
-            .with(eq(mappedId), anything())
+            .suspendFunction(messageDAO::getMessagesByConversation)
+            .with(eq(mappedId), anything(), anything())
             .wasInvoked(exactly = once)
     }
 
@@ -89,16 +90,16 @@ class MessageRepositoryTest {
             .then { mappedMessage }
 
         given(messageDAO)
-            .suspendFunction(messageDAO::getMessageByConversation)
-            .whenInvokedWith(anything(), anything())
-            .then { _, _ -> flowOf(listOf(entity)) }
+            .suspendFunction(messageDAO::getMessagesByConversation)
+            .whenInvokedWith(anything(), anything(), anything())
+            .then { _, _, _ -> flowOf(listOf(entity)) }
 
         given(idMapper)
             .function(idMapper::toDaoModel)
             .whenInvokedWith(anything())
             .then { TEST_QUALIFIED_ID_ENTITY }
 
-        val messageList = messageRepository.getMessagesForConversation(TEST_CONVERSATION_ID, 0)
+        val messageList = messageRepository.getMessagesForConversation(TEST_CONVERSATION_ID, 0, 0)
             .first()
         assertEquals(listOf(mappedMessage), messageList)
 
