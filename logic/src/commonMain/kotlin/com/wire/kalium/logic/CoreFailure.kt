@@ -4,6 +4,7 @@ import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
+import io.ktor.utils.io.errors.IOException
 
 sealed class CoreFailure {
 
@@ -48,13 +49,17 @@ sealed class StorageFailure : CoreFailure() {
 }
 
 internal inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<T>): Either<NetworkFailure, T> {
-    // TODO: check for internet connection and return NoNetworkConnection
     return try {
         when (val result = networkCall()) {
             is NetworkResponse.Success -> Either.Right(result.value)
             is NetworkResponse.Error -> {
                 kaliumLogger.e(result.kException.stackTraceToString())
-                Either.Left(NetworkFailure.ServerMiscommunication(result.kException))
+                val exception = result.kException
+                if (exception is KaliumException.GenericError && exception.cause is IOException) {
+                    Either.Left(NetworkFailure.NoNetworkConnection)
+                } else {
+                    Either.Left(NetworkFailure.ServerMiscommunication(result.kException))
+                }
             }
         }
     } catch (e: Exception) {
