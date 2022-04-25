@@ -1,8 +1,8 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -11,6 +11,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.persistence.dao.ConversationEntity
+import com.wire.kalium.persistence.dao.message.MessageEntity
 
 interface MessageSender {
     /**
@@ -46,6 +47,8 @@ class MessageSenderImpl(
             syncManager.waitForSlowSyncToComplete()
             messageRepository.getMessageById(conversationId, messageUuid).flatMap { message ->
                 trySendingOutgoingMessage(conversationId, message)
+            }.onFailure {
+                messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, messageUuid)
             }
         }
 
@@ -62,7 +65,7 @@ class MessageSenderImpl(
                     }
                 }
             }.flatMap {
-                messageRepository.markMessageAsSent(conversationId, message.id)
+                messageRepository.updateMessageStatus(MessageEntity.Status.SENT, conversationId, message.id)
             }
         }
 
@@ -78,12 +81,13 @@ class MessageSenderImpl(
                 }
         }
 
-    private suspend fun attemptToSendWithMLS(conversationId: ConversationId, groupId: String, message: Message): Either<CoreFailure, Unit> = suspending {
-        mlsMessageCreator.createOutgoingMLSMessage(groupId, message).flatMap { mlsMessage ->
-            // TODO handle mls-stale-message
-            messageRepository.sendMLSMessage(conversationId, mlsMessage)
+    private suspend fun attemptToSendWithMLS(conversationId: ConversationId, groupId: String, message: Message): Either<CoreFailure, Unit> =
+        suspending {
+            mlsMessageCreator.createOutgoingMLSMessage(groupId, message).flatMap { mlsMessage ->
+                // TODO handle mls-stale-message
+                messageRepository.sendMLSMessage(conversationId, mlsMessage)
+            }
         }
-    }
 
     private suspend fun trySendingEnvelopeRetryingIfPossible(
         conversationId: ConversationId,

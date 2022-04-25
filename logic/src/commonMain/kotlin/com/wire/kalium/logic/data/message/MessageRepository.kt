@@ -7,7 +7,6 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.SendMessageFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.message.MLSMessageApi
 import com.wire.kalium.network.api.message.MessageApi
 import com.wire.kalium.network.api.message.MessagePriority
@@ -25,10 +24,14 @@ interface MessageRepository {
     suspend fun persistMessage(message: Message): Either<CoreFailure, Unit>
     suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun deleteMessage(messageUuid: String): Either<CoreFailure, Unit>
-    suspend fun updateMessage(message: Message): Either<CoreFailure, Unit>
     suspend fun softDeleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun hideMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
-    suspend fun markMessageAsSent(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit>
+    suspend fun updateMessageStatus(
+        messageStatus: MessageEntity.Status,
+        conversationId: ConversationId,
+        messageUuid: String
+    ): Either<CoreFailure, Unit>
+
     suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message>
 
     // TODO: change the return type to Either<CoreFailure, Unit>
@@ -57,7 +60,6 @@ class MessageDataSource(
         return Either.Right(Unit)
     }
 
-
     override suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit> {
         messageDAO.deleteMessage(messageUuid, idMapper.toDaoModel(conversationId))
         //TODO: Handle failures
@@ -68,12 +70,6 @@ class MessageDataSource(
         messageDAO.deleteMessage(messageUuid)
         //TODO: Handle failures
         return Either.Right(Unit)
-    }
-
-    override suspend fun updateMessage(message: Message): Either<CoreFailure, Unit> {
-        return wrapStorageRequest {
-            messageDAO.updateMessage(messageMapper.fromMessageToEntity(message))
-        }
     }
 
     override suspend fun softDeleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit> {
@@ -106,9 +102,9 @@ class MessageDataSource(
         )
     }
 
-    override suspend fun markMessageAsSent(conversationId: ConversationId, messageUuid: String) =
+    override suspend fun updateMessageStatus(messageStatus: MessageEntity.Status, conversationId: ConversationId, messageUuid: String) =
         Either.Right(
-            messageDAO.updateMessageStatus(MessageEntity.Status.SENT, messageUuid, idMapper.toDaoModel(conversationId))
+            messageDAO.updateMessageStatus(messageStatus, messageUuid, idMapper.toDaoModel(conversationId))
         )
 
     override suspend fun sendEnvelope(conversationId: ConversationId, envelope: MessageEnvelope): Either<SendMessageFailure, Unit> {
