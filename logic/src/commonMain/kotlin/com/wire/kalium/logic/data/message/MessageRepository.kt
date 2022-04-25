@@ -105,19 +105,19 @@ class MessageDataSource(
         }
 
     override suspend fun markMessageAsSent(conversationId: ConversationId, messageUuid: String) =
-        Either.Right(
+        wrapStorageRequest {
             messageDAO.updateMessageStatus(MessageEntity.Status.SENT, messageUuid, idMapper.toDaoModel(conversationId))
-        )
+        }
 
     override suspend fun updateMessageDate(conversationId: ConversationId, messageUuid: String, date: String) =
-        Either.Right(
+        wrapStorageRequest {
             messageDAO.updateMessageDate(date, messageUuid, idMapper.toDaoModel(conversationId))
-        )
+        }
 
     override suspend fun updatePendingMessagesAddMillisToDate(conversationId: ConversationId, millis: Long) =
-        Either.Right(
+        wrapStorageRequest {
             messageDAO.updateMessagesAddMillisToDate(millis, idMapper.toDaoModel(conversationId), MessageEntity.Status.PENDING)
-        )
+        }
 
     override suspend fun sendEnvelope(conversationId: ConversationId, envelope: MessageEnvelope): Either<SendMessageFailure, String> {
         val recipientMap = envelope.recipients.associate { recipientEntry ->
