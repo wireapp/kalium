@@ -8,6 +8,7 @@ import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.network.api.user.pushToken.PushTokenRequestBody
 import com.wire.kalium.network.api.user.login.LoginApi
 
 interface LoginRepository {
@@ -24,6 +25,9 @@ interface LoginRepository {
         shouldPersistClient: Boolean,
         serverConfig: ServerConfig
     ): Either<NetworkFailure, AuthSession>
+
+    suspend fun registerToken(body: PushTokenRequestBody): Either<NetworkFailure, Unit>
+
 }
 
 class LoginRepositoryImpl(
@@ -47,6 +51,10 @@ class LoginRepositoryImpl(
         serverConfig: ServerConfig
     ): Either<NetworkFailure, AuthSession> =
         login(LoginApi.LoginParam.LoginWithHandel(handle, password, clientLabel), shouldPersistClient, serverConfig)
+
+    override suspend fun registerToken(body: PushTokenRequestBody): Either<NetworkFailure, Unit> = wrapApiRequest {
+        loginApi.registerToken(body)
+    }
 
     private suspend fun login(
         loginParam: LoginApi.LoginParam,

@@ -1,6 +1,5 @@
 package com.wire.kalium.network.api.notification
 
-import com.wire.kalium.network.api.notification.pushToken.PushTokenRequestBody
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.tools.ServerConfigDTO
@@ -13,8 +12,6 @@ import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.websocket.webSocketSession
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.websocket.Frame
@@ -100,12 +97,6 @@ class NotificationApiImpl(private val httpClient: HttpClient, private val server
             }
         }
 
-    override suspend fun registerToken(body: PushTokenRequestBody): NetworkResponse<Unit> = wrapKaliumResponse {
-        httpClient.post(PUSH_TOKEN) {
-            setBody(body)
-        }
-    }
-
     private companion object {
         const val PATH_AWAIT = "await"
         const val PATH_NOTIFICATIONS = "notifications"
@@ -113,6 +104,5 @@ class NotificationApiImpl(private val httpClient: HttpClient, private val server
         const val SIZE_QUERY_KEY = "size"
         const val CLIENT_QUERY_KEY = "client"
         const val SINCE_QUERY_KEY = "since"
-        const val PUSH_TOKEN = "push/tokens"
     }
 }

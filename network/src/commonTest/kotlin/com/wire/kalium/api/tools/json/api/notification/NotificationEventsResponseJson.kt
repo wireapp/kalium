@@ -6,9 +6,6 @@ import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.QualifiedID
 import com.wire.kalium.network.api.notification.EventContentDTO
 import com.wire.kalium.network.api.notification.user.NewClientEventData
-import com.wire.kalium.network.api.notification.pushToken.PushTokenRequestBody
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 
 object NotificationEventsResponseJson {
     private val newClientSerializer = { eventData: EventContentDTO.User.NewClientDTO ->
@@ -187,34 +184,4 @@ object NotificationEventsResponseJson {
           ]
         }
     """.trimIndent()
-
-
-    val registerTokenResponse = """ 
-            {
-             "app":"8218398",
-             "client":"123456",
-             "token":"oaisjdoiasjd",
-             "transport":"GCM"
-                }
-            """.trimIndent()
-
-
-    private val jsonProvider = { serializable: PushTokenRequestBody ->
-        buildJsonObject {
-            put("app", serializable.senderId)
-            put("client", serializable.client)
-            put("token", serializable.token)
-            put("transport", serializable.transport)
-        }.toString()
-    }
-
-    val validPushTokenRequest =
-        ValidJsonProvider(
-            PushTokenRequestBody(
-                "8218398",
-                "123456",
-                "oaisjdoiasjd",
-                "GCM"
-            ), jsonProvider
-        )
 }

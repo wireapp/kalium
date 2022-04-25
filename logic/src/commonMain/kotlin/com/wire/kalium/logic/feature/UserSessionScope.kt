@@ -56,7 +56,6 @@ import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.message.MessageSenderImpl
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
-import com.wire.kalium.logic.feature.session.RegisterTokenUseCase
 import com.wire.kalium.logic.feature.team.TeamScope
 import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.sync.ConversationEventReceiver
@@ -261,5 +260,4 @@ abstract class UserSessionScopeCommon(
 
     val connection: ConnectionScope get() = ConnectionScope(connectionRepository)
 
-    val pushTokenUseCase: RegisterTokenUseCase get() = RegisterTokenUseCase(eventRepository)
 }

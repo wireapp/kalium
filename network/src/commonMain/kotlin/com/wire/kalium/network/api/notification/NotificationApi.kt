@@ -1,6 +1,5 @@
 package com.wire.kalium.network.api.notification
 
-import com.wire.kalium.network.api.notification.pushToken.PushTokenRequestBody
 import com.wire.kalium.network.utils.NetworkResponse
 import kotlinx.coroutines.flow.Flow
 
@@ -16,5 +15,4 @@ interface NotificationApi {
 
     suspend fun listenToLiveEvents(clientId: String): Flow<EventResponse>
 
-    suspend fun registerToken(body: PushTokenRequestBody): NetworkResponse<Unit>
 }

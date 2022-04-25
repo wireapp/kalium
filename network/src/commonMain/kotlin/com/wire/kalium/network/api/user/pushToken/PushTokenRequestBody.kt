@@ -1,4 +1,4 @@
-package com.wire.kalium.network.api.notification.pushToken
+package com.wire.kalium.network.api.user.pushToken
 
 
 import kotlinx.serialization.SerialName

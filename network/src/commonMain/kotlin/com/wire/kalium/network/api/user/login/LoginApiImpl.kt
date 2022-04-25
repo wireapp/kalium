@@ -5,6 +5,7 @@ import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.model.AccessTokenDTO
 import com.wire.kalium.network.api.model.UserDTO
 import com.wire.kalium.network.api.model.toSessionDto
+import com.wire.kalium.network.api.user.pushToken.PushTokenRequestBody
 import com.wire.kalium.network.utils.CustomErrors
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap
@@ -69,10 +70,16 @@ class LoginApiImpl(private val httpClient: HttpClient) : LoginApi {
             }
         }
 
+    override suspend fun registerToken(body: PushTokenRequestBody): NetworkResponse<Unit> = wrapKaliumResponse {
+        httpClient.post(PUSH_TOKEN) {
+            setBody(body)
+        }
+    }
 
     private companion object {
         const val PATH_SELF = "self"
         const val PATH_LOGIN = "login"
         const val QUERY_PERSIST = "persist"
+        const val PUSH_TOKEN = "push/tokens"
     }
 }
