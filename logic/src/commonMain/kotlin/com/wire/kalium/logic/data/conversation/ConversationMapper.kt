@@ -42,7 +42,7 @@ internal class ConversationMapperImpl(
             apiModel.name,
             apiModel.getConversationType(selfUserTeamId),
             apiModel.teamId,
-            apiModel.getProtocolInfo(mlsGroupState)
+            apiModel.getProtocolInfo(mlsGroupState),
             conversationStatusMapper.fromApiToDaoModel(apiModel.members.self.otrMutedStatus),
             apiModel.members.self.otrMutedRef?.let { Instant.parse(it) }?.toEpochMilliseconds() ?: 0,
             null,
