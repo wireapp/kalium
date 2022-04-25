@@ -22,7 +22,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 
 interface MessageRepository {
-    suspend fun getMessagesForConversation(conversationId: ConversationId, limit: Int): Flow<List<Message>>
+    suspend fun getMessagesForConversation(conversationId: ConversationId, limit: Int, offset: Int): Flow<List<Message>>
     suspend fun persistMessage(message: Message): Either<CoreFailure, Unit>
     suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun deleteMessage(messageUuid: String): Either<CoreFailure, Unit>
@@ -32,6 +32,7 @@ interface MessageRepository {
     suspend fun updateMessageDate(conversationId: ConversationId, messageUuid: String, date: String): Either<CoreFailure, Unit>
     suspend fun updatePendingMessagesAddMillisToDate(conversationId: ConversationId, millis: Long): Either<CoreFailure, Unit>
     suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message>
+    suspend fun getMessagesByConversationAfterDate(conversationId: ConversationId, date: String): Flow<List<Message>>
 
     // TODO: change the return type to Either<CoreFailure, String>
     suspend fun sendEnvelope(conversationId: ConversationId, envelope: MessageEnvelope): Either<SendMessageFailure, String>
@@ -47,8 +48,8 @@ class MessageDataSource(
     private val sendMessageFailureMapper: SendMessageFailureMapper = MapperProvider.sendMessageFailureMapper()
 ) : MessageRepository {
 
-    override suspend fun getMessagesForConversation(conversationId: ConversationId, limit: Int): Flow<List<Message>> {
-        return messageDAO.getMessageByConversation(idMapper.toDaoModel(conversationId), limit).map { messageList ->
+    override suspend fun getMessagesForConversation(conversationId: ConversationId, limit: Int, offset: Int): Flow<List<Message>> {
+        return messageDAO.getMessagesByConversation(idMapper.toDaoModel(conversationId), limit, offset).map { messageList ->
             messageList.map(messageMapper::fromEntityToMessage)
         }
     }
@@ -103,6 +104,12 @@ class MessageDataSource(
         }.onFailure {
             Either.Left(it)
         }
+
+    override suspend fun getMessagesByConversationAfterDate(conversationId: ConversationId, date: String): Flow<List<Message>> {
+        return messageDAO.getMessagesByConversationAfterDate(idMapper.toDaoModel(conversationId), date).map { messageList ->
+            messageList.map(messageMapper::fromEntityToMessage)
+        }
+    }
 
     override suspend fun markMessageAsSent(conversationId: ConversationId, messageUuid: String) =
         wrapStorageRequest {

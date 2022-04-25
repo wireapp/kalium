@@ -8,12 +8,11 @@ import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.persistence.dao.ConversationEntity
 
 data class Conversation(
-    val id: ConversationId, val name: String?, val type: Type, val teamId: TeamId?, val mutedStatus: MutedConversationStatus
-) {
-    enum class Type { SELF, ONE_ON_ONE, GROUP }
-}
+    val id: ConversationId, val name: String?, val type: ConversationEntity.Type, val teamId: TeamId?, val mutedStatus: MutedConversationStatus, val lastNotificationDate: String?, val lastModifiedDate: String?
+)
 
 sealed class ConversationDetails(open val conversation: Conversation) {
 

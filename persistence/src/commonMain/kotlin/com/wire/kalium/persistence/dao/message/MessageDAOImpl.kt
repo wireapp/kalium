@@ -125,7 +125,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
         is TextMessageContent -> TEXT
         is AssetMessageContent -> ASSET
     }
-    
+
     override suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity) =
         queries.updateMessageStatus(status, id, conversationId)
 
@@ -135,8 +135,8 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
     override suspend fun updateMessagesAddMillisToDate(millis: Long, conversationId: QualifiedIDEntity, status: MessageEntity.Status) =
         queries.updateMessagesAddMillisToDate(millis, conversationId, status)
 
-    override suspend fun getAllMessages(): Flow<List<MessageEntity>> =
-        queries.selectAllMessages()
+    override suspend fun getMessagesFromAllConversations(limit: Int, offset: Int): Flow<List<MessageEntity>> =
+        queries.selectAllMessages(limit.toLong(), offset.toLong())
             .asFlow()
             .mapToList()
             .map { entryList -> entryList.map(mapper::toModel) }
@@ -147,8 +147,14 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             .mapToOneOrNull()
             .map { msg -> msg?.let(mapper::toModel) }
 
-    override suspend fun getMessageByConversation(conversationId: QualifiedIDEntity, limit: Int): Flow<List<MessageEntity>> =
-        queries.selectByConversationId(conversationId, limit.toLong())
+    override suspend fun getMessagesByConversation(conversationId: QualifiedIDEntity, limit: Int, offset: Int): Flow<List<MessageEntity>> =
+        queries.selectByConversationId(conversationId, limit.toLong(), offset.toLong())
+            .asFlow()
+            .mapToList()
+            .map { entryList -> entryList.map(mapper::toModel) }
+
+    override suspend fun getMessagesByConversationAfterDate(conversationId: QualifiedIDEntity, date: String): Flow<List<MessageEntity>> =
+        queries.selectMessagesByConversationIdAfterDate(conversationId, date)
             .asFlow()
             .mapToList()
             .map { entryList -> entryList.map(mapper::toModel) }

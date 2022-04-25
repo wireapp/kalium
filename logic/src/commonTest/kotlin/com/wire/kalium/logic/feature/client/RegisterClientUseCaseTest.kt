@@ -25,6 +25,7 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -32,6 +33,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertSame
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class RegisterClientUseCaseTest {
 
     @Mock
@@ -148,7 +150,7 @@ class RegisterClientUseCaseTest {
         registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
 
         verify(clientRepository)
-            .suspendFunction(clientRepository::persistClientId)
+            .function(clientRepository::persistClientId)
             .with(anything())
             .wasNotInvoked()
     }
@@ -162,7 +164,7 @@ class RegisterClientUseCaseTest {
             .then { Either.Right(registeredClient) }
 
         given(mlsClientProvider)
-            .suspendFunction(mlsClientProvider::getMLSClient)
+            .function(mlsClientProvider::getMLSClient)
             .whenInvokedWith(eq(CLIENT.clientId))
             .then { Either.Right(MLS_CLIENT) }
 
@@ -179,7 +181,7 @@ class RegisterClientUseCaseTest {
         registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
 
         verify(clientRepository)
-            .suspendFunction(clientRepository::persistClientId)
+            .function(clientRepository::persistClientId)
             .with(anything())
             .wasNotInvoked()
     }
@@ -193,7 +195,7 @@ class RegisterClientUseCaseTest {
             .then { Either.Right(registeredClient) }
 
         given(mlsClientProvider)
-            .suspendFunction(mlsClientProvider::getMLSClient)
+            .function(mlsClientProvider::getMLSClient)
             .whenInvokedWith(eq(CLIENT.clientId))
             .then { Either.Right(MLS_CLIENT) }
 
@@ -215,7 +217,7 @@ class RegisterClientUseCaseTest {
         registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
 
         verify(clientRepository)
-            .suspendFunction(clientRepository::persistClientId)
+            .function(clientRepository::persistClientId)
             .with(anything())
             .wasNotInvoked()
     }
@@ -229,7 +231,7 @@ class RegisterClientUseCaseTest {
             .then { Either.Right(registeredClient) }
 
         given(mlsClientProvider)
-            .suspendFunction(mlsClientProvider::getMLSClient)
+            .function(mlsClientProvider::getMLSClient)
             .whenInvokedWith(eq(CLIENT.clientId))
             .then { Either.Right(MLS_CLIENT) }
 
@@ -249,14 +251,14 @@ class RegisterClientUseCaseTest {
             .thenReturn(Either.Right(Unit))
 
         given(clientRepository)
-            .suspendFunction(clientRepository::persistClientId)
+            .function(clientRepository::persistClientId)
             .whenInvokedWith(anything())
             .then { Either.Right(Unit) }
 
         registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
 
         verify(clientRepository)
-            .suspendFunction(clientRepository::persistClientId)
+            .function(clientRepository::persistClientId)
             .with(eq(registeredClient.clientId))
             .wasInvoked(once)
     }
@@ -269,7 +271,7 @@ class RegisterClientUseCaseTest {
             .then { Either.Right(CLIENT) }
 
         given(mlsClientProvider)
-            .suspendFunction(mlsClientProvider::getMLSClient)
+            .function(mlsClientProvider::getMLSClient)
             .whenInvokedWith(eq(CLIENT.clientId))
             .then { Either.Right(MLS_CLIENT) }
 
@@ -290,7 +292,7 @@ class RegisterClientUseCaseTest {
 
         val persistFailure = TEST_FAILURE
         given(clientRepository)
-            .suspendFunction(clientRepository::persistClientId)
+            .function(clientRepository::persistClientId)
             .whenInvokedWith(anything())
             .then { Either.Left(persistFailure) }
 
@@ -309,7 +311,7 @@ class RegisterClientUseCaseTest {
             .then { Either.Right(CLIENT) }
 
         given(mlsClientProvider)
-            .suspendFunction(mlsClientProvider::getMLSClient)
+            .function(mlsClientProvider::getMLSClient)
             .whenInvokedWith(eq(CLIENT.clientId))
             .then { Either.Right(MLS_CLIENT) }
 
@@ -329,7 +331,7 @@ class RegisterClientUseCaseTest {
             .thenReturn(Either.Right(Unit))
 
         given(clientRepository)
-            .suspendFunction(clientRepository::persistClientId)
+            .function(clientRepository::persistClientId)
             .whenInvokedWith(anything())
             .then { Either.Right(Unit) }
 
