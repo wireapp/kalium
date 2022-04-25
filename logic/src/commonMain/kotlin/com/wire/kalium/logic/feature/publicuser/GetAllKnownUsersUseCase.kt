@@ -12,5 +12,4 @@ class GetAllKnownUsersUseCaseImpl(private val userRepository: UserRepository) : 
 
     override suspend fun invoke(): List<OtherUser> = userRepository.getAllKnownUsers()
 
-
 }
