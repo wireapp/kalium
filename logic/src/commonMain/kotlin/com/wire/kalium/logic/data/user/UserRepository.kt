@@ -129,10 +129,10 @@ class UserDataSource(
     override suspend fun updateLocalSelfUserHandle(handle: String) =
         userDAO.updateUserHandle(_getSelfUserId(), handle)
 
-    override suspend fun getAllContacts() {
+    override suspend fun getAllContacts(): List<OtherUser> {
         val selfUserId = getSelfUserId()
 
-        userDAO.getAllUsersByConnectionStatus(connectionState = UserEntity.ConnectionState.ACCEPTED)
+       return userDAO.getAllUsersByConnectionStatus(connectionState = UserEntity.ConnectionState.ACCEPTED)
             .filter { it.id.value != selfUserId.value }
             .map { userEntity -> publicUserMapper.fromDaoModelToPublicUser(userEntity) }
     }
