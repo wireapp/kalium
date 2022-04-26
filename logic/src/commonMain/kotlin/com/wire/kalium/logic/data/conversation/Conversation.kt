@@ -11,8 +11,27 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.ConversationEntity
 
 data class Conversation(
-    val id: ConversationId, val name: String?, val type: ConversationEntity.Type, val teamId: TeamId?, val mutedStatus: MutedConversationStatus, val lastNotificationDate: String?, val lastModifiedDate: String?
-)
+    val id: ConversationId,
+    val name: String?,
+    val type: ConversationEntity.Type,
+    val teamId: TeamId?,
+    val mutedStatus: MutedConversationStatus,
+    val lastNotificationDate: String?,
+    val lastModifiedDate: String?
+) {
+
+    fun mapToOneToOne(otherUser: OtherUser, selfUser: SelfUser): ConversationDetails.OneOne {
+        return ConversationDetails.OneOne(
+            conversation = this,
+            otherUser = otherUser,
+            connectionState = otherUser.connectionStatus,
+            legalHoldStatus = LegalHoldStatus.DISABLED, //TODO get actual legal hold status
+            userType = otherUser.determineOneToOneUserType(selfUser)
+        )
+    }
+
+}
+
 
 sealed class ConversationDetails(open val conversation: Conversation) {
 
@@ -22,7 +41,8 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         override val conversation: Conversation,
         val otherUser: OtherUser,
         val connectionState: ConnectionState,
-        val legalHoldStatus: LegalHoldStatus
+        val legalHoldStatus: LegalHoldStatus,
+        val userType: UserType
     ) : ConversationDetails(conversation)
 
     data class Group(override val conversation: Conversation) : ConversationDetails(conversation)
@@ -40,3 +60,22 @@ sealed class MemberDetails {
 typealias ClientId = PlainId
 
 data class Recipient(val member: Member, val clients: List<ClientId>)
+
+enum class UserType {
+    Internal,
+
+    // TODO : for now External will not be implemented
+    //Team member with limited permissions
+    External,
+
+    // A user on the same backend but not on your team or,
+    // Any user on another backend using the Wire application,
+    Federated,
+
+    // Any user in wire.com using the Wire application or,
+    // A temporary user that joined using the guest web interface,
+    // from inside the backend network or,
+    // A temporary user that joined using the guest web interface,
+    // from outside the backend network
+    Guest;
+}
