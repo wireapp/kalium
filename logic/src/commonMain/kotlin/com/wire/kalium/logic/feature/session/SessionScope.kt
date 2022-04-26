@@ -9,4 +9,5 @@ class SessionScope(
     val saveSession get() = SaveSessionUseCase(sessionRepository)
     val currentSession get() = CurrentSessionUseCase(sessionRepository)
     val updateCurrentSession get() = UpdateCurrentSessionUseCase(sessionRepository)
+    val currentSessionFlow: CurrentSessionFlowUseCase get() = CurrentSessionFlowUseCaseImpl(sessionRepository)
 }

@@ -1,5 +1,6 @@
 package com.wire.kalium.persistence.client
 
+import app.cash.turbine.test
 import com.russhwolf.settings.MockSettings
 import com.russhwolf.settings.Settings
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -70,9 +71,9 @@ class SessionDAOTest {
             )
 
         val sessionsMapExpectedValue =
-                mapOf(
-                    session1.userId to session1,
-                    sessionToDelete.userId to sessionToDelete
+            mapOf(
+                session1.userId to session1,
+                sessionToDelete.userId to sessionToDelete
             )
         val afterDeleteExpectedValue = mapOf(session1.userId to session1)
 
@@ -112,6 +113,40 @@ class SessionDAOTest {
         sessionStorage.setCurrentSession(QualifiedIDEntity("user_id_1", "user_domain_1"))
 
         assertEquals(session1, sessionStorage.currentSession())
+    }
+
+    @Test
+    fun givenAUserId_WhenCallingUpdateCurrentSession_ThenCurrentSessionFlowWillEmitIt() = runTest {
+        assertNull(sessionStorage.currentSession())
+        val session1 =
+            PersistenceSession(
+                QualifiedIDEntity("user_id_1", "user_domain_1"),
+                "Bearer",
+                Random.nextBytes(32).decodeToString(),
+                Random.nextBytes(32).decodeToString(),
+                TEST_SERVER_CONFIG
+            )
+
+        val session2 =
+            PersistenceSession(
+                QualifiedIDEntity("user_id_2", "user_domain_2"),
+                "Bearer",
+                Random.nextBytes(32).decodeToString(),
+                Random.nextBytes(32).decodeToString(),
+                TEST_SERVER_CONFIG
+            )
+
+        sessionStorage.addSession(session1)
+        sessionStorage.addSession(session2)
+
+        sessionStorage.currentSessionFlow()
+            .test {
+                assertNull(awaitItem())
+
+                sessionStorage.setCurrentSession(QualifiedIDEntity("user_id_1", "user_domain_1"))
+
+                assertEquals(session1, awaitItem())
+            }
     }
 
     private companion object {

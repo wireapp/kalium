@@ -4,6 +4,9 @@ import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 
 sealed class CoreFailure {
 
@@ -81,5 +84,14 @@ internal inline fun <T : Any> wrapStorageRequest(storageRequest: () -> T?): Eith
     } catch (e: Exception) {
         kaliumLogger.e(e.stackTraceToString())
         Either.Left(StorageFailure.Generic(e))
+    }
+}
+
+internal inline fun <T : Any> wrapFlowStorageRequest(storageRequest: () -> Flow<T?>): Flow<Either<StorageFailure, T>> {
+    return try {
+        storageRequest().map { it?.let { data -> Either.Right(data) } ?: Either.Left(StorageFailure.DataNotFound) }
+    } catch (e: Exception) {
+        kaliumLogger.e(e.stackTraceToString())
+        flowOf(Either.Left(StorageFailure.Generic(e)))
     }
 }

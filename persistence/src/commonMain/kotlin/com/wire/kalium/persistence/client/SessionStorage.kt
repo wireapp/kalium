@@ -4,6 +4,10 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.model.PersistenceSession
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
 import kotlin.jvm.JvmInline
 
@@ -22,6 +26,11 @@ interface SessionStorage {
      * returns the current active user session
      */
     fun currentSession(): PersistenceSession?
+
+    /**
+     * returns the Flow of current active user session, emits everytime user session is changed
+     */
+    fun currentSessionFlow(): Flow<PersistenceSession?>
 
     /**
      * changes the current active user session
@@ -47,7 +56,9 @@ interface SessionStorage {
 class SessionStorageImpl(
     private val kaliumPreferences: KaliumPreferences
 ) : SessionStorage {
-    override fun addSession(persistenceSession: PersistenceSession) =
+    private val sessionWasChangedFlow = MutableSharedFlow<Unit>(1)
+
+    override fun addSession(persistenceSession: PersistenceSession) {
         allSessions()?.let { sessionMap ->
             val temp = sessionMap.toMutableMap()
             temp[persistenceSession.userId] = persistenceSession
@@ -57,7 +68,10 @@ class SessionStorageImpl(
             saveAllSessions(SessionsMap(sessions))
         }
 
-    override fun deleteSession(userId: UserIDEntity) =
+        sessionWasChangedFlow.tryEmit(Unit)
+    }
+
+    override fun deleteSession(userId: UserIDEntity) {
         allSessions()?.let { sessionMap ->
             // save the new map if the remove did not return null (session was deleted)
             val temp = sessionMap.toMutableMap()
@@ -75,6 +89,19 @@ class SessionStorageImpl(
             kaliumLogger.d("trying to delete user session but no sessions are stored userId: $userId")
         }
 
+        sessionWasChangedFlow.tryEmit(Unit)
+    }
+
+
+    override fun currentSessionFlow(): Flow<PersistenceSession?> =
+        sessionWasChangedFlow
+            .map {
+                println("cyka1 getting currentSession...")
+                kaliumPreferences.getSerializable(CURRENT_SESSION_KEY, UserIDEntity.serializer())?.let { userId ->
+                    allSessions()?.let { sessionMap -> sessionMap[userId] }
+                }
+            }
+            .distinctUntilChanged()
 
     override fun currentSession(): PersistenceSession? =
         kaliumPreferences.getSerializable(CURRENT_SESSION_KEY, UserIDEntity.serializer())?.let { userId ->
@@ -84,8 +111,10 @@ class SessionStorageImpl(
         }
 
 
-    override fun setCurrentSession(userId: UserIDEntity) =
+    override fun setCurrentSession(userId: UserIDEntity) {
         kaliumPreferences.putSerializable(CURRENT_SESSION_KEY, userId, UserIDEntity.serializer())
+        sessionWasChangedFlow.tryEmit(Unit)
+    }
 
     override fun allSessions(): Map<UserIDEntity, PersistenceSession>? =
         kaliumPreferences.getSerializable(SESSIONS_KEY, SessionsMap.serializer())?.s
@@ -100,9 +129,13 @@ class SessionStorageImpl(
 
     private fun saveAllSessions(sessions: SessionsMap) {
         kaliumPreferences.putSerializable(SESSIONS_KEY, sessions, SessionsMap.serializer())
+        sessionWasChangedFlow.tryEmit(Unit)
     }
 
-    private fun removeAllSession() = kaliumPreferences.remove(SESSIONS_KEY)
+    private fun removeAllSession() {
+        kaliumPreferences.remove(SESSIONS_KEY)
+        sessionWasChangedFlow.tryEmit(Unit)
+    }
 
 
     private companion object {
