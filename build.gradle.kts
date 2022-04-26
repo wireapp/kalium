@@ -6,7 +6,7 @@ buildscript {
     val sqlDelightVersion = "2.0.0-alpha01"
     val protobufCodegenVersion = "0.8.18"
     val carthageVersion = "0.0.1"
-    val detektVersion = "1.20.0"
+    val detektVersion = "1.19.0"
 
     repositories {
         google()
