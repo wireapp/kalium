@@ -538,6 +538,7 @@ style:
         active: false
     MaxLineLength:
         active: true
+        excludes: [ '**/*Json.kt' ]
         maxLineLength: 140
         excludePackageStatements: true
         excludeImportStatements: true
