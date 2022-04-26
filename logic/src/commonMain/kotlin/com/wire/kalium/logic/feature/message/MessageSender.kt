@@ -1,8 +1,9 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -38,7 +39,8 @@ class MessageSenderImpl(
     private val messageSendFailureHandler: MessageSendFailureHandler,
     private val sessionEstablisher: SessionEstablisher,
     private val messageEnvelopeCreator: MessageEnvelopeCreator,
-    private val mlsMessageCreator: MLSMessageCreator
+    private val mlsMessageCreator: MLSMessageCreator,
+    private val messageSendingScheduler: MessageSendingScheduler
 ) : MessageSender {
 
     override suspend fun trySendingOutgoingMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit> =
@@ -46,6 +48,10 @@ class MessageSenderImpl(
             syncManager.waitForSlowSyncToComplete()
             messageRepository.getMessageById(conversationId, messageUuid).flatMap { message ->
                 trySendingOutgoingMessage(conversationId, message)
+            }.onFailure {
+                if (it is NetworkFailure.ServerMiscommunication) {
+                    messageSendingScheduler.scheduleSendingOfPersistedMessage(conversationId, messageUuid)
+                }
             }
         }
 
@@ -73,19 +79,24 @@ class MessageSenderImpl(
                     sessionEstablisher.prepareRecipientsForNewOutgoingMessage(recipients).map { recipients }
                 }.flatMap { recipients ->
                     messageEnvelopeCreator.createOutgoingEnvelope(recipients, message).flatMap { envelope ->
-                        trySendingEnvelopeRetryingIfPossible(conversationId, envelope, message)
+                        trySendingProteusEnvelope(conversationId, envelope, message)
                     }
                 }
         }
 
-    private suspend fun attemptToSendWithMLS(conversationId: ConversationId, groupId: String, message: Message): Either<CoreFailure, Unit> = suspending {
-        mlsMessageCreator.createOutgoingMLSMessage(groupId, message).flatMap { mlsMessage ->
-            // TODO handle mls-stale-message
-            messageRepository.sendMLSMessage(conversationId, mlsMessage)
+    private suspend fun attemptToSendWithMLS(conversationId: ConversationId, groupId: String, message: Message): Either<CoreFailure, Unit> =
+        suspending {
+            mlsMessageCreator.createOutgoingMLSMessage(groupId, message).flatMap { mlsMessage ->
+                // TODO handle mls-stale-message
+                messageRepository.sendMLSMessage(conversationId, mlsMessage)
+            }
         }
-    }
 
-    private suspend fun trySendingEnvelopeRetryingIfPossible(
+    /**
+     * Attempts to send a Proteus envelope
+     * Will handle the failure and retry in case of [SendMessageFailure.ClientsHaveChanged]
+     */
+    private suspend fun trySendingProteusEnvelope(
         conversationId: ConversationId,
         envelope: MessageEnvelope,
         messageUuid: Message,
