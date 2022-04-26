@@ -1,20 +1,15 @@
 apply plugin: "io.gitlab.arturbosch.detekt"
 
 detekt {
-    buildUponDefaultConfig = true // preconfigure defaults
+    buildUponDefaultConfig = true
     // allRules = false // activate all available (even unstable) rules.
     config = files("$projectDir/detekt/detekt.yml")
-    // point to your custom config defining rules to run, overwriting default behavior
     input = files("$projectDir")
-    baseline = file("$projectDir/detekt/baseline.xml")
-    // a way of suppressing issues before introducing detekt
+    baseline = file("$projectDir/detekt/baseline.xml") // a way of suppressing issues before introducing detekt
 
     reports {
         html.enabled = true // observe findings in your browser with structure and code snippets
-        xml.enabled = true // checkstyle like format mainly for integrations like Jenkins
+        xml.enabled = true
         txt.enabled = true
-        // similar to the console output, contains issue signature to manually edit baseline files
     }
 }
-
-
