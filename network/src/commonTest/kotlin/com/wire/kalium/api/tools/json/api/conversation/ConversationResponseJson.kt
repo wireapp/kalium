@@ -43,7 +43,8 @@ object ConversationResponseJson {
         |       "id": "${it.id.value}"
         |   },
         |   "team": "${it.teamId}",
-        |   "type": ${it.type.ordinal}
+        |   "type": ${it.type.ordinal},
+        |   "last_event_time":"${it.lastEventTime}"
         |}
         """.trimMargin()
     }
