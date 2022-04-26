@@ -14,7 +14,6 @@ import com.wire.kalium.network.api.conversation.ConversationOtherMembersResponse
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.ConversationSelfMemberResponse
 import com.wire.kalium.network.api.conversation.MutedStatus
-import com.wire.kalium.persistence.Team
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import io.mockative.Mock
@@ -163,7 +162,7 @@ class ConversationMapperTest {
         //when
         val result = conversationMapper.toConversationDetailsOneToOne(TEST_CONVERSATION, otherUser, selfUser)
         //then
-        assertEquals(UserType.Internal, result.userType)
+        assertEquals(UserType.INTERNAL, result.userType)
     }
 
     @Test
@@ -176,7 +175,7 @@ class ConversationMapperTest {
         //when
         val result = conversationMapper.toConversationDetailsOneToOne(TEST_CONVERSATION, otherUser, selfUser)
         //then
-        assertEquals(UserType.Internal, result.userType)
+        assertEquals(UserType.INTERNAL, result.userType)
     }
 
     @Test
@@ -189,7 +188,7 @@ class ConversationMapperTest {
         //when
         val result = conversationMapper.toConversationDetailsOneToOne(TEST_CONVERSATION, otherUser, selfUser)
         //then
-        assertEquals(UserType.Federated, result.userType)
+        assertEquals(UserType.FEDERATED, result.userType)
     }
 
     @Test
@@ -200,7 +199,7 @@ class ConversationMapperTest {
         //when
         val result = conversationMapper.toConversationDetailsOneToOne(TEST_CONVERSATION, otherUser, selfUser)
         //then
-        assertEquals(UserType.Federated, result.userType)
+        assertEquals(UserType.FEDERATED, result.userType)
     }
 
     @Test
@@ -211,7 +210,7 @@ class ConversationMapperTest {
         //when
         val result = conversationMapper.toConversationDetailsOneToOne(TEST_CONVERSATION, otherUser, selfUser)
         //then
-        assertEquals(UserType.Guest, result.userType)
+        assertEquals(UserType.GUEST, result.userType)
     }
 
     private companion object {

@@ -6,7 +6,11 @@ import kotlinx.serialization.Serializable
 data class QualifiedID(
     val value: String,
     val domain: String
-)
+) {
+    companion object {
+        const val WIRE_PRODUCTION_DOMAIN = "wire.com"
+    }
+}
 
 const val VALUE_DOMAIN_SEPARATOR = "@"
 

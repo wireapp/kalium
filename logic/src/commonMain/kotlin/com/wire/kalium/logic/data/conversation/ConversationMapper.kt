@@ -110,15 +110,15 @@ internal class ConversationMapperImpl(
     private fun determineOneToOneUserType(otherUser: OtherUser, selfUser: SelfUser): UserType {
         if (otherUser.isUsingWireCloudBackEnd()) {
             if (areNotInTheSameTeam(otherUser, selfUser)) {
-                return UserType.Guest
+                return UserType.GUEST
             }
         } else {
             if (areNotInTheSameTeam(otherUser, selfUser)) {
-                return UserType.Federated
+                return UserType.FEDERATED
             }
         }
 
-        return UserType.Internal
+        return UserType.INTERNAL
     }
 
     // if either self user has no team or other user,

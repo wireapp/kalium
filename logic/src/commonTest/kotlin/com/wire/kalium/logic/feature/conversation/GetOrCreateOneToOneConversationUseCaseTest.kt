@@ -101,7 +101,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
             OTHER_USER,
             ConnectionState.ACCEPTED,
             LegalHoldStatus.ENABLED,
-            UserType.Internal
+            UserType.INTERNAL
         )
     }
 

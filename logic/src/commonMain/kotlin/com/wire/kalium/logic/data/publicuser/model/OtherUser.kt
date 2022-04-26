@@ -1,8 +1,7 @@
 package com.wire.kalium.logic.data.publicuser.model
 
-import com.wire.kalium.logic.data.conversation.UserType
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.ConnectionState
-import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserId
@@ -21,6 +20,6 @@ data class OtherUser(
 ) : User() {
 
     fun isUsingWireCloudBackEnd(): Boolean =
-        id.domain.contains("wire.com")
+        id.domain.contains(QualifiedID.WIRE_PRODUCTION_DOMAIN)
 
 }

@@ -52,17 +52,18 @@ typealias ClientId = PlainId
 data class Recipient(val member: Member, val clients: List<ClientId>)
 
 enum class UserType {
-    Internal,
+    INTERNAL,
 
     // TODO : for now External will not be implemented
-    //Team member with limited permissions
-    External,
+    /**Team member with limited permissions */
+    EXTERNAL,
 
     /**
      * A user on the same backend but not on your team or,
      * Any user on another backend using the Wire application,
      */
-    Federated,
+     */
+    FEDERATED,
 
     /**
      * Any user in wire.com using the Wire application or,
@@ -71,5 +72,6 @@ enum class UserType {
      * A temporary user that joined using the guest web interface,
      * from outside the backend network
      */
-    Guest;
+     */
+    GUEST;
 }

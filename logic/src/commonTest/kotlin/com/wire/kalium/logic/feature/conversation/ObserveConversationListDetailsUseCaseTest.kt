@@ -137,14 +137,14 @@ class ObserveConversationListDetailsUseCaseTest {
             TestUser.OTHER,
             ConnectionState.ACCEPTED,
             LegalHoldStatus.ENABLED,
-            UserType.Internal,
+            UserType.INTERNAL,
         )
         val secondOneOnOneDetails = ConversationDetails.OneOne(
             oneOnOneConversation,
             TestUser.OTHER.copy(name = "New User Name"),
             ConnectionState.PENDING,
             LegalHoldStatus.DISABLED,
-            UserType.Internal,
+            UserType.INTERNAL,
         )
         val oneOnOneConversationDetailsUpdates = listOf(
             firstOneOnOneDetails,
