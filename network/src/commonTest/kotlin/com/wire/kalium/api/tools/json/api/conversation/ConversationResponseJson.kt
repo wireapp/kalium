@@ -63,7 +63,8 @@ object ConversationResponseJson {
             ConversationResponse.Type.GROUP,
             null,
             "teamID",
-            ConvProtocol.PROTEUS
+            ConvProtocol.PROTEUS,
+            lastEventTime = "2022-03-30T15:36:00.000Z"
         ), conversationResponseSerializer
     )
 }

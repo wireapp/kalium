@@ -191,7 +191,7 @@ class MLSConversationRepositoryTest {
                         ConversationEntity.Type.GROUP,
                         null,
                         ConversationEntity.ProtocolInfo.MLS(GROUP_ID, ConversationEntity.GroupState.ESTABLISHED),
-                        lastModifiedDate = null,
+                        lastModifiedDate = "2022-03-30T15:36:00.000Z",
                         lastNotificationDate = null
                     )
                 )
