@@ -80,7 +80,7 @@ class ClientDataSource(
     override suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit> = clientRemoteRepository.registerToken(body)
 
     override fun persistNotificationToken(token: String, transport: String): Either<CoreFailure, Unit> =
-        wrapStorageRequest { tokenStorage.saveToken(NotificationTokenEntity(token, transport)) }
+        wrapStorageRequest { tokenStorage.saveToken(token, transport) }
 
     override fun getNotificationToken(): Either<CoreFailure, NotificationTokenEntity> {
         return tokenStorage.getToken()?.let { notificationTokenEntity ->
