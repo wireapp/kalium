@@ -58,8 +58,10 @@ enum class UserType {
     //Team member with limited permissions
     External,
 
-    // A user on the same backend but not on your team or,
-    // Any user on another backend using the Wire application,
+    /**
+     * A user on the same backend but not on your team or,
+     * Any user on another backend using the Wire application,
+     */
     Federated,
 
     /**
