@@ -204,10 +204,6 @@ actual class CallManagerImpl(
         conversationType: ConversationType,
         isAudioCbr: Boolean
     ) {
-        updateCallStatusById(
-            conversationId = conversationId.asString(),
-            status = CallStatus.STARTED
-        )
         kaliumLogger.d("$TAG -> starting call..")
         withCalling {
             val avsCallType = callMapper.toCallTypeCalling(callType)
