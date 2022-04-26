@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature
 
 import com.wire.kalium.logic.AuthenticatedDataSourceSet
 import com.wire.kalium.logic.configuration.ClientConfig
+import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
 import com.wire.kalium.logic.data.asset.AssetDataSource
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.call.CallDataSource
@@ -103,6 +104,8 @@ abstract class UserSessionScopeCommon(
             userDatabaseProvider.conversationDAO
         )
 
+    private val notificationTokenRepository get() = NotificationTokenDataSource(tokenStorage)
+
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(
             userRepository,
@@ -167,7 +170,7 @@ abstract class UserSessionScopeCommon(
         get() = ClientRegistrationStorageImpl(userPreferencesSettings)
 
     private val clientRepository: ClientRepository
-        get() = ClientDataSource(clientRemoteRepository, clientRegistrationStorage, tokenStorage, userDatabaseProvider.clientDAO)
+        get() = ClientDataSource(clientRemoteRepository, clientRegistrationStorage, userDatabaseProvider.clientDAO)
 
     private val messageSendFailureHandler: MessageSendFailureHandler
         get() = MessageSendFailureHandler(userRepository, clientRepository)
@@ -249,7 +252,8 @@ abstract class UserSessionScopeCommon(
             clientRepository,
             preKeyRepository,
             keyPackageRepository,
-            mlsClientProvider
+            mlsClientProvider,
+            notificationTokenRepository
         )
     val conversations: ConversationScope get() = ConversationScope(conversationRepository, userRepository, syncManager)
     val messages: MessageScope

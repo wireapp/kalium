@@ -7,8 +7,6 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
-import com.wire.kalium.persistence.client.TokenStorage
-import com.wire.kalium.persistence.client.TokenStorageImpl
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 
@@ -24,16 +22,15 @@ abstract class CoreLogicCommon(
     val sessionRepository: SessionRepository by lazy {
         getSessionRepo()
     }
+
     protected abstract fun getSessionRepo(): SessionRepository
 
     protected abstract val globalPreferences: KaliumPreferences
     protected abstract val globalDatabase: GlobalDatabaseProvider
 
-    val tokenStorage: TokenStorage
-        get() = TokenStorageImpl(globalPreferences)
-
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
-    fun getAuthenticationScope(): AuthenticationScope = AuthenticationScope( clientLabel, sessionRepository, globalDatabase)
+    fun getAuthenticationScope(): AuthenticationScope =
+        AuthenticationScope(clientLabel, sessionRepository, globalDatabase, globalPreferences)
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     abstract fun getSessionScope(userId: UserId): UserSessionScope

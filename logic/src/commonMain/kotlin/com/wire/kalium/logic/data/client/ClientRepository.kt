@@ -28,15 +28,11 @@ interface ClientRepository {
     suspend fun clientInfo(clientId: ClientId /* = com.wire.kalium.logic.data.id.PlainId */): Either<NetworkFailure, Client>
     suspend fun saveNewClients(userId: UserId, clients: List<ClientId>): Either<CoreFailure, Unit>
     suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit>
-
-    fun persistNotificationToken(token: String, transport: String): Either<CoreFailure, Unit>
-    fun getNotificationToken(): Either<CoreFailure, NotificationTokenEntity>
 }
 
 class ClientDataSource(
     private val clientRemoteRepository: ClientRemoteRepository,
     private val clientRegistrationStorage: ClientRegistrationStorage,
-    private val tokenStorage: TokenStorage,
     private val clientDAO: ClientDAO,
     private val userMapper: UserMapper = MapperProvider.userMapper()
 ) : ClientRepository {
@@ -79,12 +75,4 @@ class ClientDataSource(
 
     override suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit> = clientRemoteRepository.registerToken(body)
 
-    override fun persistNotificationToken(token: String, transport: String): Either<CoreFailure, Unit> =
-        wrapStorageRequest { tokenStorage.saveToken(token, transport) }
-
-    override fun getNotificationToken(): Either<CoreFailure, NotificationTokenEntity> {
-        return tokenStorage.getToken()?.let { notificationTokenEntity ->
-            Either.Right(notificationTokenEntity)
-        } ?: Either.Left(CoreFailure.MissingClientRegistration)
-    }
 }

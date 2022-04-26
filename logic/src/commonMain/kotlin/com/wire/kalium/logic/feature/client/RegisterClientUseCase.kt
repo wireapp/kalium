@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientCapability
 import com.wire.kalium.logic.data.client.ClientRepository
@@ -65,7 +66,8 @@ class RegisterClientUseCaseImpl(
     private val clientRepository: ClientRepository,
     private val preKeyRepository: PreKeyRepository,
     private val keyPackageRepository: KeyPackageRepository,
-    private val mlsClientProvider: MLSClientProvider
+    private val mlsClientProvider: MLSClientProvider,
+    private val notificationTokenRepository: NotificationTokenRepository
 ) : RegisterClientUseCase {
 
     override suspend operator fun invoke(registerClientParam: RegisterClientUseCase.RegisterClientParam): RegisterClientResult =
@@ -78,7 +80,7 @@ class RegisterClientUseCaseImpl(
                         createMLSClient(client)
                     }.flatMap { client ->
                         if (this is RegisterClientUseCase.RegisterClientParam.ClientWithToken) {
-                            clientRepository.getNotificationToken().flatMap { notificationToken ->
+                            notificationTokenRepository.getNotificationToken().flatMap { notificationToken ->
                                 clientRepository.registerToken(
                                     PushTokenBody(
                                         senderId = senderId,

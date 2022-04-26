@@ -62,7 +62,7 @@ class ClientRepositoryTest {
 
     @BeforeTest
     fun setup() {
-        clientRepository = ClientDataSource(clientRemoteRepository, clientRegistrationStorage,tokenStorage, clientDAO, userMapper)
+        clientRepository = ClientDataSource(clientRemoteRepository, clientRegistrationStorage, clientDAO, userMapper)
     }
 
     @Test
