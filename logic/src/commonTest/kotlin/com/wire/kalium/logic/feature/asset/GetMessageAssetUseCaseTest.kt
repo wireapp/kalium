@@ -71,7 +71,7 @@ class GetMessageAssetUseCaseTest {
         // Given
         val someConversationId = ConversationId("some-conversation-id", "some-domain.com")
         val someMessageId = "some-message-id"
-        val connectionFailure = NetworkFailure.NoNetworkConnection
+        val connectionFailure = NetworkFailure.NoNetworkConnection(null)
         val (_, getMessageAsset) = Arrangement()
             .withDownloadAssetErrorResponse(connectionFailure)
             .arrange()

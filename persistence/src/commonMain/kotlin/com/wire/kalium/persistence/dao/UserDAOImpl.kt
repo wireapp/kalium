@@ -93,4 +93,9 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
     override suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String) {
         queries.updateUserhandle(handle, qualifiedID)
     }
+
+    override suspend fun getAllUsersByConnectionStatus(connectionState: UserEntity.ConnectionState): List<UserEntity> =
+        queries.selectAllUsersWithConnectionStatus(connectionState)
+            .executeAsList()
+            .map(mapper::toModel)
 }
