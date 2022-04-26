@@ -187,7 +187,7 @@ class UserDAOTest : BaseDatabaseTest() {
 
         val nonExistingEmailQuery = "doesnotexist@wire.com"
         //when
-        val searchResult = db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(nonExistingEmailQuery).first()
+        val searchResult = db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(nonExistingEmailQuery,UserEntity.ConnectionState.ACCEPTED).first()
         //then
         assertTrue { searchResult.isEmpty() }
     }
@@ -255,6 +255,21 @@ class UserDAOTest : BaseDatabaseTest() {
             //then
             assertEquals(mockUsers, searchResult)
         }
+
+    @Test
+    fun givenAExistingUsers_whenQueried_ThenResultsUsersAreConnected() = runTest {
+        //given
+        val commonNamePrefix = "commonName"
+
+        val mockUsers = listOf(USER_ENTITY_1, USER_ENTITY_2, USER_ENTITY_3)
+        db.userDAO.insertUsers(mockUsers)
+        //when
+        val searchResult = db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(commonNamePrefix, UserEntity.ConnectionState.ACCEPTED).first()
+        //then
+        searchResult.forEach { userEntity ->
+            assertEquals(UserEntity.ConnectionState.ACCEPTED,userEntity.connectionStatus)
+        }
+    }
 
     private companion object {
         val USER_ENTITY_1  = newUserEntity(QualifiedIDEntity("1", "wire.com"))
