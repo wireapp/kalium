@@ -121,9 +121,10 @@ internal class ConversationMapperImpl(
         return UserType.Internal
     }
 
-    //if either self user has no team or other user, does not make sense to compare them
+    // if either self user has no team or other user,
+    // does not make sense to compare them and we return false as of they are not on the same team
     private fun areNotInTheSameTeam(otherUser: OtherUser, selfUser: SelfUser): Boolean =
-        (selfUser.team != null || otherUser.team != null) || (selfUser.team != otherUser.team)
+        !(selfUser.team != null && otherUser.team != null) || (selfUser.team != otherUser.team)
 
     override fun toApiModel(access: ConversationOptions.Access): ConversationAccess = when (access) {
         ConversationOptions.Access.PRIVATE -> ConversationAccess.PRIVATE

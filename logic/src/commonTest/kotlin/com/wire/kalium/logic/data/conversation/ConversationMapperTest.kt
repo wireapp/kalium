@@ -167,7 +167,7 @@ class ConversationMapperTest {
     }
 
     @Test
-    fun givenDomainAreDifferentButTeamsAreEqual_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsFederated() {
+    fun givenDomainAreDifferentButTeamsAreEqual_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsInternal() {
         //given
         val commonTeam = "commonTeam"
 
@@ -176,7 +176,7 @@ class ConversationMapperTest {
         //when
         val result = conversationMapper.toConversationDetailsOneToOne(TEST_CONVERSATION, otherUser, selfUser)
         //then
-        assertEquals(UserType.Federated, result.userType)
+        assertEquals(UserType.Internal, result.userType)
     }
 
     @Test
