@@ -15,6 +15,7 @@ import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
+import com.wire.kalium.network.api.user.pushToken.PushTokenBody
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import io.ktor.utils.io.errors.IOException
@@ -238,6 +239,12 @@ class RegisterClientUseCaseTest {
             .whenInvokedWith(anything())
             .then { Either.Right(registeredClient) }
 
+        given(clientRegistrationStorage).invocation { registeredFCMToken }
+            .then { "" }
+
+        given(clientRemoteRepository).coroutine { registerToken(pushTokenRequestBody) }
+            .then { Either.Right(Unit) }
+
         given(mlsClientProvider)
             .function(mlsClientProvider::getMLSClient)
             .whenInvokedWith(eq(CLIENT.clientId))
@@ -317,6 +324,12 @@ class RegisterClientUseCaseTest {
             .suspendFunction(clientRepository::registerClient)
             .whenInvokedWith(anything())
             .then { Either.Right(CLIENT) }
+
+        given(clientRegistrationStorage).invocation { registeredFCMToken }
+            .then { "" }
+
+        given(clientRemoteRepository).coroutine { registerToken(pushTokenRequestBody) }
+            .then { Either.Right(Unit) }
 
         given(mlsClientProvider)
             .function(mlsClientProvider::getMLSClient)
@@ -402,7 +415,10 @@ class RegisterClientUseCaseTest {
         @Mock
         val MLS_CLIENT = mock(classOf<MLSClient>())
         val MLS_PUBLIC_KEY = "public_key".encodeToByteArray()
-
+        val pushTokenRequestBody = PushTokenBody(
+            senderId = null,
+            client = "test", token = "", transport = null
+        )
         val TEST_FAILURE = NetworkFailure.ServerMiscommunication(KaliumException.GenericError(IOException("no internet")))
     }
 }

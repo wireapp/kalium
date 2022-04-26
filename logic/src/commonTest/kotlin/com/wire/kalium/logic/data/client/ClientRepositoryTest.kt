@@ -275,6 +275,10 @@ class ClientRepositoryTest {
 
     @Test
     fun givenValidParams_whenPushToken_thenShouldSucceed() = runTest {
+        given(clientRemoteRepository).coroutine {
+            registerToken(pushTokenRequestBody) }
+            .then { Either.Right(Unit)}
+
         given(clientApi)
             .suspendFunction(clientApi::registerToken)
             .whenInvokedWith(any())
@@ -292,7 +296,7 @@ class ClientRepositoryTest {
             assertEquals(Unit, it)
         }
 
-        verify(clientApi).suspendFunction(clientApi::registerToken)
+        verify(clientRemoteRepository).suspendFunction(clientRemoteRepository::registerToken)
             .with(any())
             .wasInvoked(exactly = once)
     }
