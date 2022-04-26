@@ -279,7 +279,7 @@ abstract class UserSessionScopeCommon(
             mlsClientProvider
         )
 
-    val team: TeamScope get() = TeamScope(userRepository, teamRepository)
+    val team: TeamScope get() = TeamScope(userRepository, teamRepository, syncManager)
 
     val calls: CallsScope get() = CallsScope(callManager, syncManager)
 

@@ -84,11 +84,24 @@ UPDATE Message
 SET status = ?
 WHERE id = ? AND conversation_id = ?;
 
+updateMessageDate:
+UPDATE Message
+SET date = ?
+WHERE id = ? AND conversation_id = ?;
+
+updateMessagesAddMillisToDate:
+UPDATE Message
+SET date = strftime('%Y-%m-%dT%H:%M:%fZ', date, '+' || ROUND(CAST(? AS REAL)/1000, 3) || ' seconds')
+WHERE conversation_id = ? AND status = ?;
+
 selectAllMessages:
-SELECT * FROM Message;
+SELECT * FROM Message ORDER BY Datetime(date) DESC LIMIT ? OFFSET ?;
 
 selectById:
 SELECT * FROM Message WHERE id = ? AND conversation_id = ?;
 
 selectByConversationId:
-SELECT * FROM Message WHERE conversation_id = ? ORDER BY date DESC LIMIT ?;
+SELECT * FROM Message WHERE conversation_id = ? ORDER BY Datetime(date) DESC LIMIT ? OFFSET ?;
+
+selectMessagesByConversationIdAfterDate:
+SELECT * FROM Message WHERE conversation_id = ? AND Datetime(date) > Datetime(?) ORDER BY Datetime(date) DESC;

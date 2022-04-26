@@ -13,7 +13,6 @@ import com.wire.kalium.network.api.model.ConversationAccessRole
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationEntity.GroupState
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import com.wire.kalium.persistence.dao.ConversationEntity as PersistedConversation
 import com.wire.kalium.persistence.dao.ConversationEntity.Protocol as PersistedProtocol
@@ -23,10 +22,10 @@ interface ConversationMapper {
     fun fromApiModelToDaoModel(apiModel: ConvProtocol): PersistedProtocol
     fun fromDaoModel(daoModel: PersistedConversation): Conversation
     fun toDaoModel(welcomeEvent: Event.Conversation.MLSWelcome, groupId: String): ConversationEntity
-    fun toApiModel(access: ConverationOptions.Access): ConversationAccess
-    fun toApiModel(accessRole: ConverationOptions.AccessRole): ConversationAccessRole
-    fun toApiModel(protocol: ConverationOptions.Protocol): ConvProtocol
-    fun toApiModel(name: String?, members: List<Member>, teamId: String?, options: ConverationOptions): CreateConversationRequest
+    fun toApiModel(access: ConversationOptions.Access): ConversationAccess
+    fun toApiModel(accessRole: ConversationOptions.AccessRole): ConversationAccessRole
+    fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol
+    fun toApiModel(name: String?, members: List<Member>, teamId: String?, options: ConversationOptions): CreateConversationRequest
 }
 
 internal class ConversationMapperImpl(
@@ -46,7 +45,9 @@ internal class ConversationMapperImpl(
             apiModel.teamId,
             apiModel.getProtocolInfo(groupCreation),
             conversationStatusMapper.fromApiToDaoModel(apiModel.members.self.otrMutedStatus),
-            apiModel.members.self.otrMutedRef?.let { Instant.parse(it) }?.toEpochMilliseconds() ?: 0
+            apiModel.members.self.otrMutedRef?.let { Instant.parse(it) }?.toEpochMilliseconds() ?: 0,
+            null,
+            lastModifiedDate = apiModel.lastEventTime
         )
 
     override fun fromApiModelToDaoModel(apiModel: ConvProtocol): PersistedProtocol = when (apiModel) {
@@ -59,7 +60,9 @@ internal class ConversationMapperImpl(
         daoModel.name,
         daoModel.type.fromDaoModel(),
         daoModel.teamId?.let { TeamId(it) },
-        conversationStatusMapper.fromDaoModel(daoModel.mutedStatus)
+        conversationStatusMapper.fromDaoModel(daoModel.mutedStatus),
+        daoModel.lastNotificationDate,
+        daoModel.lastModifiedDate
     )
 
     override fun toDaoModel(welcomeEvent: Event.Conversation.MLSWelcome, groupId: String): ConversationEntity =
@@ -68,12 +71,14 @@ internal class ConversationMapperImpl(
             name = null,
             type = ConversationEntity.Type.GROUP,
             teamId = null,
-            protocolInfo = ProtocolInfo.MLS(groupId, GroupState.ESTABLISHED)
+            protocolInfo = ProtocolInfo.MLS(groupId, GroupState.ESTABLISHED),
+            lastNotificationDate = null,
+            lastModifiedDate = welcomeEvent.date
         )
 
-    override fun toApiModel(name: String?, members: List<Member>, teamId: String?, options: ConverationOptions) =
+    override fun toApiModel(name: String?, members: List<Member>, teamId: String?, options: ConversationOptions) =
         CreateConversationRequest(
-            qualifiedUsers = if (options.protocol == ConverationOptions.Protocol.PROTEUS) members.map { idMapper.toApiModel(it.id) } else emptyList(),
+            qualifiedUsers = if (options.protocol == ConversationOptions.Protocol.PROTEUS) members.map { idMapper.toApiModel(it.id) } else emptyList(),
             name = name,
             access = options.access.toList().map { toApiModel(it) },
             accessRole = options.accessRole.toList().map { toApiModel(it) },
@@ -84,29 +89,29 @@ internal class ConversationMapperImpl(
             protocol = toApiModel(options.protocol)
         )
 
-    override fun toApiModel(access: ConverationOptions.Access): ConversationAccess = when (access) {
-        ConverationOptions.Access.PRIVATE -> ConversationAccess.PRIVATE
-        ConverationOptions.Access.CODE -> ConversationAccess.CODE
-        ConverationOptions.Access.INVITE -> ConversationAccess.INVITE
-        ConverationOptions.Access.LINK -> ConversationAccess.LINK
+    override fun toApiModel(access: ConversationOptions.Access): ConversationAccess = when (access) {
+        ConversationOptions.Access.PRIVATE -> ConversationAccess.PRIVATE
+        ConversationOptions.Access.CODE -> ConversationAccess.CODE
+        ConversationOptions.Access.INVITE -> ConversationAccess.INVITE
+        ConversationOptions.Access.LINK -> ConversationAccess.LINK
     }
 
-    override fun toApiModel(access: ConverationOptions.AccessRole): ConversationAccessRole = when (access) {
-        ConverationOptions.AccessRole.TEAM_MEMBER -> ConversationAccessRole.TEAM_MEMBER
-        ConverationOptions.AccessRole.NON_TEAM_MEMBER -> ConversationAccessRole.NON_TEAM_MEMBER
-        ConverationOptions.AccessRole.GUEST -> ConversationAccessRole.GUEST
-        ConverationOptions.AccessRole.SERVICE -> ConversationAccessRole.SERVICE
+    override fun toApiModel(access: ConversationOptions.AccessRole): ConversationAccessRole = when (access) {
+        ConversationOptions.AccessRole.TEAM_MEMBER -> ConversationAccessRole.TEAM_MEMBER
+        ConversationOptions.AccessRole.NON_TEAM_MEMBER -> ConversationAccessRole.NON_TEAM_MEMBER
+        ConversationOptions.AccessRole.GUEST -> ConversationAccessRole.GUEST
+        ConversationOptions.AccessRole.SERVICE -> ConversationAccessRole.SERVICE
     }
 
-    override fun toApiModel(protocol: ConverationOptions.Protocol): ConvProtocol = when (protocol) {
-        ConverationOptions.Protocol.PROTEUS -> ConvProtocol.PROTEUS
-        ConverationOptions.Protocol.MLS -> ConvProtocol.MLS
+    override fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol = when (protocol) {
+        ConversationOptions.Protocol.PROTEUS -> ConvProtocol.PROTEUS
+        ConversationOptions.Protocol.MLS -> ConvProtocol.MLS
     }
 
-    private fun PersistedConversation.Type.fromDaoModel(): Conversation.Type = when (this) {
-        PersistedConversation.Type.SELF -> Conversation.Type.SELF
-        PersistedConversation.Type.ONE_ON_ONE -> Conversation.Type.ONE_ON_ONE
-        PersistedConversation.Type.GROUP -> Conversation.Type.GROUP
+    private fun PersistedConversation.Type.fromDaoModel(): ConversationEntity.Type = when (this) {
+        PersistedConversation.Type.SELF -> ConversationEntity.Type.SELF
+        PersistedConversation.Type.ONE_ON_ONE -> ConversationEntity.Type.ONE_ON_ONE
+        PersistedConversation.Type.GROUP -> ConversationEntity.Type.GROUP
     }
 
     private fun ConversationResponse.getProtocolInfo(groupCreation: Boolean): ProtocolInfo {

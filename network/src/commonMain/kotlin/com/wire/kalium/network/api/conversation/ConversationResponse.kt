@@ -33,7 +33,10 @@ data class ConversationResponse(
     val teamId: TeamId?,
 
     @SerialName("protocol")
-    val protocol: ConvProtocol
+    val protocol: ConvProtocol,
+
+    @SerialName("last_event_time")
+    val lastEventTime: String
 ) {
 
     val isOneOnOneConversation: Boolean

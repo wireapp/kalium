@@ -10,10 +10,13 @@ import com.wire.kalium.network.api.TeamId
 import com.wire.kalium.network.api.teams.TeamsApi
 import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.UserDAO
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 interface TeamRepository {
     suspend fun fetchTeamById(teamId: TeamId): Either<CoreFailure, Unit>
     suspend fun fetchMembersByTeamId(teamId: TeamId, userDomain: String): Either<CoreFailure, Unit>
+    suspend fun getTeam(teamId: TeamId): Flow<Team?>
 }
 
 internal class TeamDataSource(
@@ -68,4 +71,12 @@ internal class TeamDataSource(
             Either.Right(Unit)
         }
     }
+
+    override suspend fun getTeam(teamId: TeamId): Flow<Team?> =
+        teamDAO.getTeamById(teamId)
+            .map {
+                it?.let {
+                    teamMapper.fromDaoModelToTeam(it)
+                }
+            }
 }

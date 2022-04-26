@@ -10,7 +10,7 @@ import com.wire.kalium.logic.CoreLogger
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.client.DeleteClientParam
-import com.wire.kalium.logic.data.conversation.ConverationOptions
+import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
@@ -59,7 +59,7 @@ class DeleteClientCommand: CliktCommand(name = "delete-client") {
             echo("$index) ${client.model ?: "Unknown"}(${client.label ?: "-"}) ${client.registrationTime}")
         }
 
-        val clientIndex = prompt("Enter client index", promptSuffix = ": ")?.let { it.toInt() } ?: throw PrintMessage("Index must be an integer")
+        val clientIndex = prompt("Enter client index", promptSuffix = ": ")?.toInt() ?: throw PrintMessage("Index must be an integer")
         val deleteClientResult =  userSession.client.deleteClient(DeleteClientParam(password, selfClientsResult.clients[clientIndex].clientId))
 
         when (deleteClientResult) {
@@ -79,22 +79,20 @@ class CreateGroupCommand : CliktCommand(name = "create-group") {
         val authSession = restoreSession() ?: throw PrintMessage("no active session")
         val userSession = coreLogic.getSessionScope(authSession.userId)
 
-        val users = userSession.users.getAllKnownUsers().let {
-            it.first()
-        }
+        val users = userSession.users.getAllKnownUsers().first()
 
         users.forEachIndexed { index, user ->
             echo("$index) ${user.id.value}  Name: ${user.name}")
         }
 
         val userIndicesRaw = prompt("Enter user indexes", promptSuffix = ": ")
-        val userIndices = userIndicesRaw?.let { it.split("\\s".toRegex()).map(String::toInt) } ?: emptyList()
+        val userIndices = userIndicesRaw?.split("\\s".toRegex())?.map(String::toInt) ?: emptyList()
         val members = userIndices.map { Member(users[it].id) }
 
         val result = userSession.conversations.createGroupConversation(
             name,
             members,
-            ConverationOptions(protocol = ConverationOptions.Protocol.MLS)
+            ConversationOptions(protocol = ConversationOptions.Protocol.MLS)
         )
         when (result) {
             is Either.Right -> echo("group created successfully")
@@ -170,7 +168,7 @@ class ListenGroupCommand: CliktCommand(name = "listen-group") {
             echo("$index) ${conversation.id.value}  Name: ${conversation.name}")
         }
 
-        val conversationIndex = prompt("Enter conversation index", promptSuffix = ": ")?.let { it.toInt() } ?: throw PrintMessage("Index must be an integer")
+        val conversationIndex = prompt("Enter conversation index", promptSuffix = ": ")?.toInt() ?: throw PrintMessage("Index must be an integer")
         val conversationID = conversations[conversationIndex].id
 
         GlobalScope.launch(Dispatchers.Default) {

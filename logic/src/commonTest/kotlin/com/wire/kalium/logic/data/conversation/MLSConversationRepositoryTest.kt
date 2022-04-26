@@ -79,7 +79,7 @@ class MLSConversationRepositoryTest {
         given(mlsClientProvider)
             .function(mlsClientProvider::getMLSClient)
             .whenInvokedWith(anything())
-            .then { Either.Right(MLS_CLIENT)}
+            .then { Either.Right(MLS_CLIENT) }
 
         given(MLS_CLIENT)
             .function(MLS_CLIENT::createConversation)
@@ -122,7 +122,7 @@ class MLSConversationRepositoryTest {
         given(mlsClientProvider)
             .function(mlsClientProvider::getMLSClient)
             .whenInvokedWith(anything())
-            .then { Either.Right(MLS_CLIENT)}
+            .then { Either.Right(MLS_CLIENT) }
 
         given(MLS_CLIENT)
             .function(MLS_CLIENT::processWelcomeMessage)
@@ -157,7 +157,7 @@ class MLSConversationRepositoryTest {
         given(mlsClientProvider)
             .function(mlsClientProvider::getMLSClient)
             .whenInvokedWith(anything())
-            .then { Either.Right(MLS_CLIENT)}
+            .then { Either.Right(MLS_CLIENT) }
 
         given(MLS_CLIENT)
             .function(MLS_CLIENT::processWelcomeMessage)
@@ -183,14 +183,19 @@ class MLSConversationRepositoryTest {
 
         verify(conversationDAO)
             .suspendFunction(conversationDAO::insertConversation)
-            .with(eq(
-                ConversationEntity(
-                QualifiedIDEntity(TestConversation.ID.value, TestConversation.ID.domain),
-                null,
-                ConversationEntity.Type.GROUP,
-                null,
-                ConversationEntity.ProtocolInfo.MLS(GROUP_ID, ConversationEntity.GroupState.ESTABLISHED))
-            ))
+            .with(
+                eq(
+                    ConversationEntity(
+                        QualifiedIDEntity(TestConversation.ID.value, TestConversation.ID.domain),
+                        null,
+                        ConversationEntity.Type.GROUP,
+                        null,
+                        ConversationEntity.ProtocolInfo.MLS(GROUP_ID, ConversationEntity.GroupState.ESTABLISHED),
+                        lastModifiedDate = WELCOME_EVENT.date,
+                        lastNotificationDate = null
+                    )
+                )
+            )
             .wasInvoked(once)
     }
 
@@ -202,7 +207,8 @@ class MLSConversationRepositoryTest {
             "wire.com",
             "keyPackage",
             "keyPackageRef",
-            "user1")
+            "user1"
+        )
         val MLS_CLIENT = mock(classOf<MLSClient>())
         val WELCOME = "welcome".encodeToByteArray()
         val HANDSHAKE = "handshake".encodeToByteArray()
@@ -210,7 +216,8 @@ class MLSConversationRepositoryTest {
             "eventId",
             TestConversation.ID,
             TestUser.USER_ID,
-            WELCOME.encodeBase64()
+            WELCOME.encodeBase64(),
+            date = "2022-03-30T15:36:00.000Z"
         )
     }
 }
