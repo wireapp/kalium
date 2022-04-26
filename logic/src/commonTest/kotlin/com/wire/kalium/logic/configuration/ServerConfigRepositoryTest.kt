@@ -101,11 +101,23 @@ class ServerConfigRepositoryTest {
     }
 
     @Test
-    fun givenStoredConfig_thenItCanBeDeleted() = runTest {
+    fun givenStoredConfig_thenItCanBeDeleted() {
         val serverConfig = SERVER_CONFIG
         given(serverConfigDAO).invocation { deleteById(serverConfig.id) }
 
         val actual = serverConfigRepository.deleteById(serverConfig.id)
+
+        actual.shouldSucceed()
+
+        verify(serverConfigDAO).function(serverConfigDAO::deleteById).with(any()).wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenStoredConfig_whenDeleting_thenItCanBeDeleted() {
+        val serverConfig = SERVER_CONFIG
+        given(serverConfigDAO).invocation { deleteById(serverConfig.id) }
+
+        val actual = serverConfigRepository.delete(serverConfig)
 
         actual.shouldSucceed()
 
