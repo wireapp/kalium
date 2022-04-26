@@ -198,23 +198,12 @@ actual class CallManagerImpl(
             kaliumLogger.d("$TAG - onCallingMessageReceived")
         }
 
-    override suspend fun startCall(
-        conversationId: ConversationId,
-        callType: CallType,
-        conversationType: ConversationType,
-        isAudioCbr: Boolean
-    ) {
+    override suspend fun startCall(conversationId: ConversationId, callType: CallType, conversationType: ConversationType, isAudioCbr: Boolean) {
         kaliumLogger.d("$TAG -> starting call..")
         withCalling {
             val avsCallType = callMapper.toCallTypeCalling(callType)
             val avsConversationType = callMapper.toConversationTypeCalling(conversationType)
-            wcall_start(
-                deferredHandle.await(),
-                conversationId.asString(),
-                avsCallType.avsValue,
-                avsConversationType.avsValue,
-                isAudioCbr.toInt()
-            )
+            wcall_start(deferredHandle.await(), conversationId.asString(), avsCallType.avsValue, avsConversationType.avsValue, isAudioCbr.toInt())
         }
     }
 
