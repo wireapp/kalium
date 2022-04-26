@@ -20,5 +20,3 @@ interface MessageSendingScheduler {
      */
     suspend fun scheduleSendingOfPersistedMessage(conversationID: ConversationId, messageUuid: String)
 }
-
-expect class MessageSendingSchedulerImpl(): MessageSendingScheduler
