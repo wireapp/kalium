@@ -5,7 +5,7 @@ import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.HttpClientEngine
-import io.ktor.client.plugins.ContentNegotiation
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
@@ -29,10 +29,11 @@ internal fun provideBaseHttpClient(
     options: HttpClientOptions,
     config: HttpClientConfig<*>.() -> Unit = {}
 ) = HttpClient(engine) {
-    defaultRequest {
 
-        // since error response are application/json
-        // this header is added by default to all requests
+    // starting from ktor 2.0.0 expectSuccess is false by default
+    expectSuccess = true
+
+    defaultRequest {
         header(HttpHeaders.ContentType, ContentType.Application.Json)
 
         when (options) {
