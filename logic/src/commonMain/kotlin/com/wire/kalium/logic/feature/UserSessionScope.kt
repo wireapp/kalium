@@ -245,7 +245,7 @@ abstract class UserSessionScopeCommon(
     val users: UserScope get() = UserScope(userRepository, publicUserRepository, syncManager, assetRepository)
     val logout: LogoutUseCase get() = LogoutUseCase(logoutRepository, sessionRepository, userId, authenticatedDataSourceSet, clientRepository, mlsClientProvider)
 
-    val team: TeamScope get() = TeamScope(userRepository, teamRepository)
+    val team: TeamScope get() = TeamScope(userRepository, teamRepository, syncManager)
 
     val calls: CallsScope get() = CallsScope(callManager, syncManager)
 
