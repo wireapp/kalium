@@ -32,6 +32,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
@@ -227,9 +228,9 @@ actual class CallManagerImpl(
     }
 
     override suspend fun muteCall(shouldMute: Boolean) = withCalling {
-        val logString =  if (shouldMute)  "muting" else "un-muting"
+        val logString = if (shouldMute) "muting" else "un-muting"
         callingLogger.d("$TAG -> $logString call..")
-        wcall_set_mute(deferredHandle.await(), muted =  shouldMute.toInt())
+        wcall_set_mute(deferredHandle.await(), muted = shouldMute.toInt())
     }
 
     override fun onConfigRequest(inst: Handle, arg: Pointer?): Int {
