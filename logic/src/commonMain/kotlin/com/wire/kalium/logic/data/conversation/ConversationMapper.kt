@@ -50,7 +50,7 @@ internal class ConversationMapperImpl(
             conversationStatusMapper.fromApiToDaoModel(apiModel.members.self.otrMutedStatus),
             apiModel.members.self.otrMutedRef?.let { Instant.parse(it) }?.toEpochMilliseconds() ?: 0,
             null,
-            null
+            lastModifiedDate = apiModel.lastEventTime
         )
 
     override fun fromApiModelToDaoModel(apiModel: ConvProtocol): PersistedProtocol = when (apiModel) {
@@ -76,7 +76,7 @@ internal class ConversationMapperImpl(
             teamId = null,
             protocolInfo = ProtocolInfo.MLS(groupId, GroupState.ESTABLISHED),
             lastNotificationDate = null,
-            lastModifiedDate = null
+            lastModifiedDate = welcomeEvent.date
         )
 
     override fun toApiModel(name: String?, members: List<Member>, teamId: String?, options: ConversationOptions) =

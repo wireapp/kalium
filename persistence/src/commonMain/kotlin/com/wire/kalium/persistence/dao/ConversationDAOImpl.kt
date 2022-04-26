@@ -75,7 +75,8 @@ class ConversationDAOImpl(
             if (conversationEntity.protocolInfo is ConversationEntity.ProtocolInfo.MLS) conversationEntity.protocolInfo.groupState else ConversationEntity.GroupState.ESTABLISHED,
             if (conversationEntity.protocolInfo is ConversationEntity.ProtocolInfo.MLS) ConversationEntity.Protocol.MLS else ConversationEntity.Protocol.PROTEUS,
             conversationEntity.mutedStatus,
-            conversationEntity.mutedTime
+            conversationEntity.mutedTime,
+            conversationEntity.lastModifiedDate
         )
     }
 
