@@ -4,7 +4,7 @@ import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import kotlinx.serialization.Serializable
 
 interface TokenStorage {
-    fun saveToken(notificationTokenEntity: NotificationTokenEntity)
+    fun saveToken(token: String, transport: String)
     fun getToken(): NotificationTokenEntity?
 }
 
@@ -14,8 +14,12 @@ data class NotificationTokenEntity(val token: String, val transport: String)
 
 class TokenStorageImpl(private val kaliumPreferences: KaliumPreferences) : TokenStorage {
 
-    override fun saveToken(notificationTokenEntity: NotificationTokenEntity) {
-        kaliumPreferences.putSerializable(NOTIFICATION_TOKEN, notificationTokenEntity, NotificationTokenEntity.serializer())
+    override fun saveToken(token: String, transport: String) {
+        kaliumPreferences.putSerializable(
+            NOTIFICATION_TOKEN,
+            NotificationTokenEntity(token, transport),
+            NotificationTokenEntity.serializer()
+        )
     }
 
     override fun getToken(): NotificationTokenEntity? =
