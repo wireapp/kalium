@@ -62,10 +62,12 @@ enum class UserType {
     // Any user on another backend using the Wire application,
     Federated,
 
-    // Any user in wire.com using the Wire application or,
-    // A temporary user that joined using the guest web interface,
-    // from inside the backend network or,
-    // A temporary user that joined using the guest web interface,
-    // from outside the backend network
+    /**
+     * Any user in wire.com using the Wire application or,
+     * A temporary user that joined using the guest web interface,
+     * from inside the backend network or,
+     * A temporary user that joined using the guest web interface,
+     * from outside the backend network
+     */
     Guest;
 }
