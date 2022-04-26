@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.publicuser
 
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
@@ -14,6 +15,7 @@ interface PublicUserMapper {
     fun fromUserDetailResponse(userDetailResponse: UserProfileDTO): OtherUser
     fun fromUserDetailResponses(userDetailResponse: List<UserProfileDTO>): List<OtherUser>
     fun fromDaoConnectionStateToUser(connectionState: UserEntity.ConnectionState): ConnectionState
+    fun fromPublicUserToLocalNotificationMessageAuthor(author: OtherUser?): LocalNotificationMessageAuthor
 }
 
 class PublicUserMapperImpl(private val idMapper: IdMapper) : PublicUserMapper {
@@ -56,4 +58,7 @@ class PublicUserMapperImpl(private val idMapper: IdMapper) : PublicUserMapper {
             UserEntity.ConnectionState.MISSING_LEGALHOLD_CONSENT -> ConnectionState.MISSING_LEGALHOLD_CONSENT
             UserEntity.ConnectionState.ACCEPTED -> ConnectionState.ACCEPTED
         }
+
+    override fun fromPublicUserToLocalNotificationMessageAuthor(author: OtherUser?) =
+        LocalNotificationMessageAuthor(author?.name ?: "", null)
 }

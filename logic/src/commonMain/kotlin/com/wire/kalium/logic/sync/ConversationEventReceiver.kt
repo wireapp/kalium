@@ -150,6 +150,7 @@ class ConversationEventReceiver(
     private suspend fun processMessage(message: Message) = suspending {
         kaliumLogger.i(message = "Message received: $message")
 
+        val isMyMessage = userRepository.getSelfUserId() == message.senderUserId
         when (message.content) {
             is MessageContent.Text -> messageRepository.persistMessage(message)
             is MessageContent.Asset -> {
@@ -185,6 +186,9 @@ class ConversationEventReceiver(
             }
             is MessageContent.Unknown -> kaliumLogger.i(message = "Unknown Message received: $message")
         }
+
+        if (isMyMessage) conversationRepository.updateConversationNotificationDate(message.conversationId, message.date)
+        conversationRepository.updateConversationModifiedDate(message.conversationId, message.date)
     }
 
     private companion object {
