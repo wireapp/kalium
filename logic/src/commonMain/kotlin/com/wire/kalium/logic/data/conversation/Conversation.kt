@@ -18,20 +18,7 @@ data class Conversation(
     val mutedStatus: MutedConversationStatus,
     val lastNotificationDate: String?,
     val lastModifiedDate: String?
-) {
-
-    fun mapToOneToOne(otherUser: OtherUser, selfUser: SelfUser): ConversationDetails.OneOne {
-        return ConversationDetails.OneOne(
-            conversation = this,
-            otherUser = otherUser,
-            connectionState = otherUser.connectionStatus,
-            legalHoldStatus = LegalHoldStatus.DISABLED, //TODO get actual legal hold status
-            userType = otherUser.determineOneToOneUserType(selfUser)
-        )
-    }
-
-}
-
+)
 
 sealed class ConversationDetails(open val conversation: Conversation) {
 

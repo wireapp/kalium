@@ -3,6 +3,8 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.publicuser.model.OtherUser
+import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.network.api.conversation.ConvProtocol
 import com.wire.kalium.network.api.conversation.ConvTeamInfo
 import com.wire.kalium.network.api.conversation.ConversationResponse
@@ -26,6 +28,7 @@ interface ConversationMapper {
     fun toApiModel(accessRole: ConversationOptions.AccessRole): ConversationAccessRole
     fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol
     fun toApiModel(name: String?, members: List<Member>, teamId: String?, options: ConversationOptions): CreateConversationRequest
+    fun toConversationDetailsOneToOne(conversation: Conversation, otherUser: OtherUser, selfUser: SelfUser): ConversationDetails.OneOne
 }
 
 internal class ConversationMapperImpl(
@@ -88,6 +91,39 @@ internal class ConversationMapperImpl(
             conversationRole = ConversationDataSource.DEFAULT_MEMBER_ROLE,
             protocol = toApiModel(options.protocol)
         )
+
+    override fun toConversationDetailsOneToOne(
+        conversation: Conversation,
+        otherUser: OtherUser,
+        selfUser: SelfUser
+    ): ConversationDetails.OneOne {
+        return ConversationDetails.OneOne(
+            conversation = conversation,
+            otherUser = otherUser,
+            connectionState = otherUser.connectionStatus,
+            //TODO get actual legal hold status
+            legalHoldStatus = LegalHoldStatus.DISABLED,
+            userType = determineOneToOneUserType(otherUser, selfUser)
+        )
+    }
+
+    private fun determineOneToOneUserType(otherUser: OtherUser, selfUser: SelfUser): UserType {
+        if (otherUser.isUsingWireCloudBackEnd()) {
+            if (areNotInTheSameTeam(otherUser, selfUser)) {
+                return UserType.Guest
+            }
+        } else {
+            if (areNotInTheSameTeam(otherUser, selfUser)) {
+                return UserType.Federated
+            }
+        }
+
+        return UserType.Internal
+    }
+
+    //if either self user has no team or other user, does not make sense to compare them
+    private fun areNotInTheSameTeam(otherUser: OtherUser, selfUser: SelfUser): Boolean =
+        (selfUser.team != null || otherUser.team != null) || (selfUser.team != otherUser.team)
 
     override fun toApiModel(access: ConversationOptions.Access): ConversationAccess = when (access) {
         ConversationOptions.Access.PRIVATE -> ConversationAccess.PRIVATE

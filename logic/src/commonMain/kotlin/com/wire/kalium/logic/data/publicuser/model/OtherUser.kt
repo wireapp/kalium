@@ -20,24 +20,7 @@ data class OtherUser(
     val completePicture: UserAssetId?
 ) : User() {
 
-    fun determineOneToOneUserType(selfUser: SelfUser): UserType {
-        if (isUsingWireCloudBackEnd()) {
-            if (areNotInTheSameTeam(selfUser)) {
-                return UserType.Guest
-            }
-        } else {
-            if (areNotInTheSameTeam(selfUser)) {
-                return UserType.Federated
-            }
-        }
-
-        return UserType.Internal
-    }
-
-    private fun isUsingWireCloudBackEnd(): Boolean =
+    fun isUsingWireCloudBackEnd(): Boolean =
         id.domain.contains("wire.com")
-
-    private fun areNotInTheSameTeam(selfUser: SelfUser): Boolean =
-        team == null || selfUser.team != team
 
 }

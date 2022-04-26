@@ -8,8 +8,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.data.publicuser.model.OtherUser
-import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
@@ -181,7 +179,7 @@ class ConversationDataSource(
                     }, { otherUserId ->
                         userRepository.getKnownUser(otherUserId)
                     }).filterNotNull().map { otherUser ->
-                        conversation.mapToOneToOne(otherUser, selfUser)
+                        conversationMapper.toConversationDetailsOneToOne(conversation, otherUser, selfUser)
                     }
                 }
             }

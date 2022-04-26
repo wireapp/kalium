@@ -1,7 +1,11 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.publicuser.model.OtherUser
+import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.conversation.ConvProtocol
@@ -10,6 +14,7 @@ import com.wire.kalium.network.api.conversation.ConversationOtherMembersResponse
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.ConversationSelfMemberResponse
 import com.wire.kalium.network.api.conversation.MutedStatus
+import com.wire.kalium.persistence.Team
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import io.mockative.Mock
@@ -148,6 +153,67 @@ class ConversationMapperTest {
         assertEquals(ConversationEntity.Type.GROUP, result.type)
     }
 
+    @Test
+    fun givenDomainAndTeamAreEqual_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsInternal() {
+        //given
+        val commonDomain = "commonDomain"
+        val commonTeam = "commonTeam"
+        val selfUser = generateTestSelfUser(commonDomain, commonTeam)
+        val otherUser = generateTestOtherUser(commonDomain, commonTeam)
+        //when
+        val result = conversationMapper.toConversationDetailsOneToOne(TEST_CONVERSATION, otherUser, selfUser)
+        //then
+        assertEquals(UserType.Internal, result.userType)
+    }
+
+    @Test
+    fun givenDomainAreDifferentButTeamsAreEqual_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsFederated() {
+        //given
+        val commonTeam = "commonTeam"
+
+        val selfUser = generateTestSelfUser("domainA", commonTeam)
+        val otherUser = generateTestOtherUser("domainB", commonTeam)
+        //when
+        val result = conversationMapper.toConversationDetailsOneToOne(TEST_CONVERSATION, otherUser, selfUser)
+        //then
+        assertEquals(UserType.Federated, result.userType)
+    }
+
+    @Test
+    fun givenCommonNotWireDomainAndDifferentTeam_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsFederated() {
+        //given
+        val commonDomain = "commonDomain"
+
+        val selfUser = generateTestSelfUser(commonDomain, "teamA")
+        val otherUser = generateTestOtherUser(commonDomain, "teamB")
+        //when
+        val result = conversationMapper.toConversationDetailsOneToOne(TEST_CONVERSATION, otherUser, selfUser)
+        //then
+        assertEquals(UserType.Federated, result.userType)
+    }
+
+    @Test
+    fun givenDifferentNotWireDomainAndDifferentTeam_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsFederated() {
+        //given
+        val selfUser = generateTestSelfUser("domainA", "teamA")
+        val otherUser = generateTestOtherUser("domainB", "teamB")
+        //when
+        val result = conversationMapper.toConversationDetailsOneToOne(TEST_CONVERSATION, otherUser, selfUser)
+        //then
+        assertEquals(UserType.Federated, result.userType)
+    }
+
+    @Test
+    fun givenUsingWireDomainAndDifferentTeam_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsGuest() {
+        //given
+        val selfUser = generateTestSelfUser("domainA", "teamA")
+        val otherUser = generateTestOtherUser("testDomain.wire.com", "teamB")
+        //when
+        val result = conversationMapper.toConversationDetailsOneToOne(TEST_CONVERSATION, otherUser, selfUser)
+        //then
+        assertEquals(UserType.Guest, result.userType)
+    }
+
     private companion object {
         val ORIGINAL_CONVERSATION_ID = ConversationId("original", "oDomain")
         val SELF_USER_TEAM_ID = TeamId("teamID")
@@ -168,5 +234,54 @@ class ConversationMapperTest {
             null,
             ConvProtocol.PROTEUS
         )
+
+        val TEST_CONVERSATION = Conversation(
+            id = QualifiedID(
+                value = "testValue",
+                domain = "testDomain",
+            ),
+            name = "testName",
+            type = ConversationEntity.Type.ONE_ON_ONE,
+            teamId = TeamId("test"),
+            mutedStatus = MutedConversationStatus.AllAllowed,
+            lastNotificationDate = "testNotificationDate",
+            lastModifiedDate = "testLastModifiedDate"
+        )
+
+        fun generateTestSelfUser(domain: String, team: String?): SelfUser {
+            return SelfUser(
+                id = QualifiedID(
+                    value = "testValue",
+                    domain = domain,
+                ),
+                name = "testName",
+                handle = "testHandle",
+                email = "testEmail",
+                phone = "testPhone",
+                accentId = 0,
+                team = team,
+                connectionStatus = ConnectionState.ACCEPTED,
+                previewPicture = "testPreviewPicture",
+                completePicture = "testCompletePicture"
+            )
+        }
+
+        fun generateTestOtherUser(domain: String, team: String?): OtherUser {
+            return OtherUser(
+                id = QualifiedID(
+                    value = "testValue",
+                    domain = domain,
+                ),
+                name = "testName",
+                handle = "testHandle",
+                email = "testEmail",
+                phone = "testPhone",
+                accentId = 0,
+                team = team,
+                connectionStatus = ConnectionState.ACCEPTED,
+                previewPicture = "testPreviewPicture",
+                completePicture = "testCompletePicture"
+            )
+        }
     }
 }
