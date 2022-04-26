@@ -56,7 +56,7 @@ interface SessionStorage {
 class SessionStorageImpl(
     private val kaliumPreferences: KaliumPreferences
 ) : SessionStorage {
-    private val sessionWasChangedFlow = MutableSharedFlow<Unit>(1)
+    private val sessionWasChangedFlow = MutableSharedFlow<Unit>(1).also { it.tryEmit(Unit) }
 
     override fun addSession(persistenceSession: PersistenceSession) {
         allSessions()?.let { sessionMap ->
@@ -95,12 +95,7 @@ class SessionStorageImpl(
 
     override fun currentSessionFlow(): Flow<PersistenceSession?> =
         sessionWasChangedFlow
-            .map {
-                println("cyka1 getting currentSession...")
-                kaliumPreferences.getSerializable(CURRENT_SESSION_KEY, UserIDEntity.serializer())?.let { userId ->
-                    allSessions()?.let { sessionMap -> sessionMap[userId] }
-                }
-            }
+            .map { currentSession() }
             .distinctUntilChanged()
 
     override fun currentSession(): PersistenceSession? =
