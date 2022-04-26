@@ -9,12 +9,14 @@ import com.wire.kalium.logic.data.client.ClientCapability
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.RegisterClientParam
+import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import io.ktor.utils.io.errors.IOException
 import io.mockative.Mock
 import io.mockative.any
@@ -40,6 +42,12 @@ class RegisterClientUseCaseTest {
     private val clientRepository = mock(classOf<ClientRepository>())
 
     @Mock
+    private val clientRemoteRepository = mock(classOf<ClientRemoteRepository>())
+
+    @Mock
+    private val clientRegistrationStorage = mock(classOf<ClientRegistrationStorage>())
+
+    @Mock
     private val preKeyRepository = mock(classOf<PreKeyRepository>())
 
     @Mock
@@ -52,7 +60,7 @@ class RegisterClientUseCaseTest {
 
     @BeforeTest
     fun setup() {
-        registerClient = RegisterClientUseCaseImpl(clientRepository, preKeyRepository, keyPackageRepository, mlsClientProvider)
+        registerClient = RegisterClientUseCaseImpl(clientRepository, preKeyRepository, keyPackageRepository, mlsClientProvider, clientRemoteRepository, clientRegistrationStorage)
 
         given(preKeyRepository)
             .suspendFunction(preKeyRepository::generateNewPreKeys)

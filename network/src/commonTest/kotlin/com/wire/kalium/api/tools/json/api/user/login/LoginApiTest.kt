@@ -107,23 +107,6 @@ class LoginApiTest : ApiTest {
 
     }
 
-    @Test
-    fun givenAValidRequest_whenRegisteredValidToken_theTokenRegisteredSuccessfully() = runTest {
-        val httpClient = mockAuthenticatedHttpClient(
-            RegisterTokenJson.registerTokenResponse, statusCode = HttpStatusCode.Created, assertion = {
-                assertPost()
-                assertBodyContent(VALID_PUSH_TOKEN_REQUEST.rawJson)
-            }
-        )
-        val loginApi = LoginApiImpl(httpClient)
-
-        loginApi.registerToken(VALID_PUSH_TOKEN_REQUEST.serializableData)
-
-        val actual = loginApi.registerToken(VALID_PUSH_TOKEN_REQUEST.serializableData)
-        assertIs<NetworkResponse.Success<Unit>>(actual)
-        assertTrue(actual.isSuccessful())
-    }
-
     private companion object {
         val refreshToken = "415a5306-a476-41bc-af36-94ab075fd881"
         val userID = QualifiedID("user_id", "user.domain.io")
@@ -160,7 +143,5 @@ class LoginApiTest : ApiTest {
         const val PATH_LOGIN = "/login"
         const val PATH_SELF = "/self"
         const val TEST_HOST = """https://test-https.wire.com"""
-        val VALID_PUSH_TOKEN_REQUEST = RegisterTokenJson.validPushTokenRequest
-
     }
 }

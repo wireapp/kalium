@@ -1,17 +1,17 @@
 package com.wire.kalium.logic.feature.session
 
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.data.auth.login.LoginRepository
-import com.wire.kalium.network.api.user.pushToken.PushTokenRequestBody
+import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
+import com.wire.kalium.network.api.user.pushToken.PushTokenBody
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isInvalidCode
 
 class RegisterTokenUseCase(
-    private val loginRepository: LoginRepository
+    private val clientRemoteRepository: ClientRemoteRepository
 ) {
     suspend operator fun invoke(senderId: String, clientId: String, token: String, transport: String): RegisterTokenResult =
-        loginRepository.registerToken(
-            body = PushTokenRequestBody(
+        clientRemoteRepository.registerToken(
+            body = PushTokenBody(
                 senderId = senderId, client = clientId, token = token, transport = transport
             )
         ).fold({

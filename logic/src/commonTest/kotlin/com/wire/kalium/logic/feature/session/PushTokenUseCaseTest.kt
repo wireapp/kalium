@@ -1,10 +1,10 @@
 package com.wire.kalium.logic.feature.session
 
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.data.auth.login.LoginRepository
+import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
-import com.wire.kalium.network.api.user.pushToken.PushTokenRequestBody
+import com.wire.kalium.network.api.user.pushToken.PushTokenBody
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.given
@@ -22,19 +22,19 @@ import kotlin.test.assertIs
 class PushTokenUseCaseTest {
 
     @Mock
-    val loginRepository = mock(classOf<LoginRepository>())
+    val clientRemoteRepository = mock(classOf<ClientRemoteRepository>())
 
     private lateinit var pushTokenUseCase: RegisterTokenUseCase
 
     @BeforeTest
     fun setup() {
-        pushTokenUseCase = RegisterTokenUseCase(loginRepository)
+        pushTokenUseCase = RegisterTokenUseCase(clientRemoteRepository)
     }
 
 
     @Test
     fun givenRepositoryCallIsSuccessful_thenSuccessIsReturned() = runTest {
-        given(loginRepository)
+        given(clientRemoteRepository)
             .coroutine { registerToken(pushTokenRequestBody) }
             .then { Either.Right(Unit) }
 
@@ -45,7 +45,7 @@ class PushTokenUseCaseTest {
 
         assertIs<RegisterTokenResult.Success>(actual)
 
-        verify(loginRepository)
+        verify(clientRemoteRepository)
             .coroutine { registerToken(pushTokenRequestBody) }
             .wasInvoked(exactly = once)
     }
@@ -55,7 +55,7 @@ class PushTokenUseCaseTest {
     fun givenRepositoryCallFailWithAppNotFound_thenInvalidCodeIsReturned() = runTest {
         val expected = NetworkFailure.ServerMiscommunication(TestNetworkException.invalidCode)
 
-        given(loginRepository)
+        given(clientRemoteRepository)
             .coroutine { registerToken(pushTokenRequestBody) }
             .then { Either.Left(expected) }
 
@@ -66,7 +66,7 @@ class PushTokenUseCaseTest {
 
         assertIs<RegisterTokenResult.Failure.AppNotFound>(actual)
 
-        verify(loginRepository)
+        verify(clientRemoteRepository)
             .coroutine { registerToken(pushTokenRequestBody) }
             .wasInvoked(exactly = once)
     }
@@ -75,7 +75,7 @@ class PushTokenUseCaseTest {
     fun givenRepositoryCallFail_thenErrorIsReturned() = runTest {
         val expected = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
 
-        given(loginRepository)
+        given(clientRemoteRepository)
             .coroutine { registerToken(pushTokenRequestBody) }
             .then { Either.Left(expected) }
 
@@ -87,13 +87,13 @@ class PushTokenUseCaseTest {
         assertIs<RegisterTokenResult.Failure.Generic>(actual)
         assertEquals(expected, actual.failure)
 
-        verify(loginRepository)
+        verify(clientRemoteRepository)
             .coroutine { registerToken(pushTokenRequestBody) }
             .wasInvoked(exactly = once)
     }
 
     companion object {
-        private val pushTokenRequestBody = PushTokenRequestBody(
+        private val pushTokenRequestBody = PushTokenBody(
             senderId = "7239",
             client = "cliId", token = "7239", transport = "GCM"
         )

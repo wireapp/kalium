@@ -237,7 +237,15 @@ abstract class UserSessionScopeCommon(
     private val logoutRepository: LogoutRepository = LogoutDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi)
     val listenToEvents: ListenToEventsUseCase
         get() = ListenToEventsUseCase(syncManager, eventRepository, conversationEventReceiver)
-    val client: ClientScope get() = ClientScope(clientRepository, preKeyRepository, keyPackageRepository, mlsClientProvider)
+    val client: ClientScope
+        get() = ClientScope(
+            clientRepository,
+            preKeyRepository,
+            keyPackageRepository,
+            mlsClientProvider,
+            clientRemoteRepository,
+            clientRegistrationStorage
+        )
     val conversations: ConversationScope get() = ConversationScope(conversationRepository, userRepository, syncManager)
     val messages: MessageScope
         get() = MessageScope(

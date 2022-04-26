@@ -1,7 +1,6 @@
 package com.wire.kalium.network.api.user.login
 
 import com.wire.kalium.network.api.SessionDTO
-import com.wire.kalium.network.api.user.pushToken.PushTokenRequestBody
 import com.wire.kalium.network.utils.NetworkResponse
 
 interface LoginApi {
@@ -19,8 +18,6 @@ interface LoginApi {
             override val label: String
         ) : LoginParam(password, label)
     }
-
-    suspend fun registerToken(body: PushTokenRequestBody): NetworkResponse<Unit>
 
     suspend fun login(
         param: LoginParam,

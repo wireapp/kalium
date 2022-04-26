@@ -1,7 +1,7 @@
-package com.wire.kalium.api.tools.json.api.user.login
+package com.wire.kalium.api.tools.json.api.user.client
 
 import com.wire.kalium.api.tools.json.ValidJsonProvider
-import com.wire.kalium.network.api.user.pushToken.PushTokenRequestBody
+import com.wire.kalium.network.api.user.pushToken.PushTokenBody
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
@@ -16,7 +16,7 @@ object RegisterTokenJson {
             """.trimIndent()
 
 
-    private val jsonProvider = { serializable: PushTokenRequestBody ->
+    private val jsonProvider = { serializable: PushTokenBody ->
         buildJsonObject {
             put("app", serializable.senderId)
             put("client", serializable.client)
@@ -27,7 +27,7 @@ object RegisterTokenJson {
 
     val validPushTokenRequest =
         ValidJsonProvider(
-            PushTokenRequestBody(
+            PushTokenBody(
                 "8218398",
                 "123456",
                 "oaisjdoiasjd",
