@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.session
 
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
@@ -22,7 +23,7 @@ import kotlin.test.assertIs
 class PushTokenUseCaseTest {
 
     @Mock
-    val clientRemoteRepository = mock(classOf<ClientRemoteRepository>())
+    val clientRemoteRepository = mock(classOf<ClientRepository>())
 
     private lateinit var pushTokenUseCase: RegisterTokenUseCase
 

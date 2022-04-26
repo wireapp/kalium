@@ -14,21 +14,17 @@ class ClientScope(
     private val clientRepository: ClientRepository,
     private val preKeyRepository: PreKeyRepository,
     private val keyPackageRepository: KeyPackageRepository,
-    private val mlsClientProvider: MLSClientProvider,
-    private val clientRemoteRepository: ClientRemoteRepository,
-    private val clientRegistrationStorage: ClientRegistrationStorage
+    private val mlsClientProvider: MLSClientProvider
 ) {
     val register: RegisterClientUseCase
         get() = RegisterClientUseCaseImpl(
             clientRepository,
             preKeyRepository,
             keyPackageRepository,
-            mlsClientProvider,
-            clientRemoteRepository,
-            clientRegistrationStorage
+            mlsClientProvider
         )
     val selfClients: SelfClientsUseCase get() = SelfClientsUseCaseImpl(clientRepository)
     val deleteClient: DeleteClientUseCase get() = DeleteClientUseCaseImpl(clientRepository)
     val needsToRegisterClient: NeedsToRegisterClientUseCase get() = NeedsToRegisterClientUseCaseImpl(clientRepository)
-    val pushTokenUseCase: RegisterTokenUseCase get() = RegisterTokenUseCase(clientRemoteRepository)
+    val pushTokenUseCase: RegisterTokenUseCase get() = RegisterTokenUseCase(clientRepository)
 }

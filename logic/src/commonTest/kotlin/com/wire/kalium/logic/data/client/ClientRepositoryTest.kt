@@ -16,6 +16,7 @@ import com.wire.kalium.network.api.user.pushToken.PushTokenBody
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
+import com.wire.kalium.persistence.client.TokenStorage
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import io.mockative.Mock
 import io.mockative.any
@@ -47,6 +48,11 @@ class ClientRepositoryTest {
     }
 
     @Mock
+    private val tokenStorage = configure(mock(classOf<TokenStorage>())) {
+        stubsUnitByDefault = true
+    }
+
+    @Mock
     private val clientDAO = mock(classOf<ClientDAO>())
 
     @Mock
@@ -56,7 +62,7 @@ class ClientRepositoryTest {
 
     @BeforeTest
     fun setup() {
-        clientRepository = ClientDataSource(clientRemoteRepository, clientRegistrationStorage, clientDAO, userMapper)
+        clientRepository = ClientDataSource(clientRemoteRepository, clientRegistrationStorage,tokenStorage, clientDAO, userMapper)
     }
 
     @Test

@@ -63,10 +63,13 @@ import com.wire.kalium.logic.sync.ListenToEventsUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
+import com.wire.kalium.persistence.client.TokenStorage
+import com.wire.kalium.persistence.client.TokenStorageImpl
 import com.wire.kalium.persistence.db.UserDatabaseProvider
 import com.wire.kalium.persistence.event.EventInfoStorage
 import com.wire.kalium.persistence.event.EventInfoStorageImpl
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
+import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 
 expect class UserSessionScope : UserSessionScopeCommon
 
@@ -74,7 +77,8 @@ abstract class UserSessionScopeCommon(
     private val userId: QualifiedID,
     private val authenticatedDataSourceSet: AuthenticatedDataSourceSet,
     private val sessionRepository: SessionRepository,
-    private val globalCallManager: GlobalCallManager
+    private val globalCallManager: GlobalCallManager,
+    private val globalPreferences: KaliumPreferences
 ) {
 
     private val encryptedSettingsHolder: EncryptedSettingsHolder = authenticatedDataSourceSet.encryptedSettingsHolder
@@ -151,6 +155,9 @@ abstract class UserSessionScopeCommon(
 
     protected abstract val clientConfig: ClientConfig
 
+    private val tokenStorage: TokenStorage
+        get() = TokenStorageImpl(globalPreferences)
+
     private val clientRemoteRepository: ClientRemoteRepository
         get() = ClientRemoteDataSource(
             authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi, clientConfig
@@ -160,7 +167,7 @@ abstract class UserSessionScopeCommon(
         get() = ClientRegistrationStorageImpl(userPreferencesSettings)
 
     private val clientRepository: ClientRepository
-        get() = ClientDataSource(clientRemoteRepository, clientRegistrationStorage, userDatabaseProvider.clientDAO)
+        get() = ClientDataSource(clientRemoteRepository, clientRegistrationStorage, tokenStorage, userDatabaseProvider.clientDAO)
 
     private val messageSendFailureHandler: MessageSendFailureHandler
         get() = MessageSendFailureHandler(userRepository, clientRepository)
@@ -242,9 +249,7 @@ abstract class UserSessionScopeCommon(
             clientRepository,
             preKeyRepository,
             keyPackageRepository,
-            mlsClientProvider,
-            clientRemoteRepository,
-            clientRegistrationStorage
+            mlsClientProvider
         )
     val conversations: ConversationScope get() = ConversationScope(conversationRepository, userRepository, syncManager)
     val messages: MessageScope
@@ -260,7 +265,15 @@ abstract class UserSessionScopeCommon(
             syncManager
         )
     val users: UserScope get() = UserScope(userRepository, publicUserRepository, syncManager, assetRepository)
-    val logout: LogoutUseCase get() = LogoutUseCase(logoutRepository, sessionRepository, userId, authenticatedDataSourceSet, clientRepository, mlsClientProvider)
+    val logout: LogoutUseCase
+        get() = LogoutUseCase(
+            logoutRepository,
+            sessionRepository,
+            userId,
+            authenticatedDataSourceSet,
+            clientRepository,
+            mlsClientProvider
+        )
 
     val team: TeamScope get() = TeamScope(userRepository, teamRepository)
 

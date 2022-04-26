@@ -9,15 +9,12 @@ import com.wire.kalium.logic.data.client.ClientCapability
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.RegisterClientParam
-import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
-import com.wire.kalium.network.api.user.pushToken.PushTokenBody
 import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import io.ktor.utils.io.errors.IOException
 import io.mockative.Mock
 import io.mockative.any
@@ -43,12 +40,6 @@ class RegisterClientUseCaseTest {
     private val clientRepository = mock(classOf<ClientRepository>())
 
     @Mock
-    private val clientRemoteRepository = mock(classOf<ClientRemoteRepository>())
-
-    @Mock
-    private val clientRegistrationStorage = mock(classOf<ClientRegistrationStorage>())
-
-    @Mock
     private val preKeyRepository = mock(classOf<PreKeyRepository>())
 
     @Mock
@@ -61,7 +52,7 @@ class RegisterClientUseCaseTest {
 
     @BeforeTest
     fun setup() {
-        registerClient = RegisterClientUseCaseImpl(clientRepository, preKeyRepository, keyPackageRepository, mlsClientProvider, clientRemoteRepository, clientRegistrationStorage)
+        registerClient = RegisterClientUseCaseImpl(clientRepository, preKeyRepository, keyPackageRepository, mlsClientProvider)
 
         given(preKeyRepository)
             .suspendFunction(preKeyRepository::generateNewPreKeys)
@@ -83,7 +74,7 @@ class RegisterClientUseCaseTest {
             .whenInvokedWith(anything())
             .then { Either.Left(TEST_FAILURE) }
 
-        registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
+        registerClient(RegisterClientUseCase.RegisterClientParam.ClientWithoutToken(TEST_PASSWORD,TEST_CAPABILITIES))
 
         verify(clientRepository)
             .suspendFunction(clientRepository::registerClient)
@@ -108,7 +99,7 @@ class RegisterClientUseCaseTest {
             .whenInvokedWith(anything())
             .then { Either.Left(wrongPasswordFailure) }
 
-        val result = registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
+        val result = registerClient(RegisterClientUseCase.RegisterClientParam.ClientWithoutToken(TEST_PASSWORD,TEST_CAPABILITIES))
 
         assertIs<RegisterClientResult.Failure.InvalidCredentials>(result)
 
@@ -130,7 +121,7 @@ class RegisterClientUseCaseTest {
             .whenInvokedWith(anything())
             .then { Either.Left(genericFailure) }
 
-        val result = registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
+        val result = registerClient(RegisterClientUseCase.RegisterClientParam.ClientWithoutToken(TEST_PASSWORD,TEST_CAPABILITIES))
 
         assertIs<RegisterClientResult.Failure.Generic>(result)
         assertSame(genericFailure, result.genericFailure)
@@ -144,7 +135,7 @@ class RegisterClientUseCaseTest {
             .whenInvokedWith(anything())
             .then { Either.Left(tooManyClientsFailure) }
 
-        val result = registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
+        val result = registerClient(RegisterClientUseCase.RegisterClientParam.ClientWithoutToken(TEST_PASSWORD,TEST_CAPABILITIES))
 
         assertIs<RegisterClientResult.Failure.TooManyClients>(result)
     }
@@ -156,7 +147,7 @@ class RegisterClientUseCaseTest {
             .whenInvokedWith(anything())
             .then { Either.Left(TEST_FAILURE) }
 
-        registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
+        registerClient(RegisterClientUseCase.RegisterClientParam.ClientWithoutToken(TEST_PASSWORD,TEST_CAPABILITIES))
 
         verify(clientRepository)
             .function(clientRepository::persistClientId)
@@ -187,7 +178,7 @@ class RegisterClientUseCaseTest {
             .whenInvokedWith(eq(CLIENT.clientId), eq(MLS_PUBLIC_KEY))
             .thenReturn(Either.Left(TEST_FAILURE))
 
-        registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
+        registerClient(RegisterClientUseCase.RegisterClientParam.ClientWithoutToken(TEST_PASSWORD,TEST_CAPABILITIES))
 
         verify(clientRepository)
             .function(clientRepository::persistClientId)
@@ -223,7 +214,7 @@ class RegisterClientUseCaseTest {
             .whenInvokedWith(anything(), eq(100))
             .thenReturn(Either.Left(TEST_FAILURE))
 
-        registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
+        registerClient(RegisterClientUseCase.RegisterClientParam.ClientWithoutToken(TEST_PASSWORD,TEST_CAPABILITIES))
 
         verify(clientRepository)
             .function(clientRepository::persistClientId)
@@ -238,12 +229,6 @@ class RegisterClientUseCaseTest {
             .suspendFunction(clientRepository::registerClient)
             .whenInvokedWith(anything())
             .then { Either.Right(registeredClient) }
-
-        given(clientRegistrationStorage).invocation { registeredFCMToken }
-            .then { "" }
-
-        given(clientRemoteRepository).coroutine { registerToken(pushTokenRequestBody) }
-            .then { Either.Right(Unit) }
 
         given(mlsClientProvider)
             .function(mlsClientProvider::getMLSClient)
@@ -270,7 +255,7 @@ class RegisterClientUseCaseTest {
             .whenInvokedWith(anything())
             .then { Either.Right(Unit) }
 
-        registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
+        registerClient(RegisterClientUseCase.RegisterClientParam.ClientWithoutToken(TEST_PASSWORD,TEST_CAPABILITIES))
 
         verify(clientRepository)
             .function(clientRepository::persistClientId)
@@ -311,7 +296,7 @@ class RegisterClientUseCaseTest {
             .whenInvokedWith(anything())
             .then { Either.Left(persistFailure) }
 
-        val result = registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
+        val result = registerClient(RegisterClientUseCase.RegisterClientParam.ClientWithoutToken(TEST_PASSWORD,TEST_CAPABILITIES))
 
         assertIs<RegisterClientResult.Failure.Generic>(result)
         assertEquals(persistFailure, result.genericFailure)
@@ -324,12 +309,6 @@ class RegisterClientUseCaseTest {
             .suspendFunction(clientRepository::registerClient)
             .whenInvokedWith(anything())
             .then { Either.Right(CLIENT) }
-
-        given(clientRegistrationStorage).invocation { registeredFCMToken }
-            .then { "" }
-
-        given(clientRemoteRepository).coroutine { registerToken(pushTokenRequestBody) }
-            .then { Either.Right(Unit) }
 
         given(mlsClientProvider)
             .function(mlsClientProvider::getMLSClient)
@@ -356,7 +335,7 @@ class RegisterClientUseCaseTest {
             .whenInvokedWith(anything())
             .then { Either.Right(Unit) }
 
-        val result = registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
+        val result = registerClient(RegisterClientUseCase.RegisterClientParam.ClientWithoutToken(TEST_PASSWORD,TEST_CAPABILITIES))
 
         assertIs<RegisterClientResult.Success>(result)
         assertEquals(registeredClient, result.client)
@@ -370,7 +349,7 @@ class RegisterClientUseCaseTest {
             .whenInvokedWith(any(), any())
             .then { _, _ -> Either.Left(failure) }
 
-        val result = registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
+        val result = registerClient(RegisterClientUseCase.RegisterClientParam.ClientWithoutToken(TEST_PASSWORD,TEST_CAPABILITIES))
 
         assertIs<RegisterClientResult.Failure.Generic>(result)
         assertEquals(failure, result.genericFailure)
@@ -386,7 +365,7 @@ class RegisterClientUseCaseTest {
             .whenInvoked()
             .then { Either.Left(failure) }
 
-        val result = registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
+        val result = registerClient(RegisterClientUseCase.RegisterClientParam.ClientWithoutToken(TEST_PASSWORD,TEST_CAPABILITIES))
 
         assertIs<RegisterClientResult.Failure.Generic>(result)
         assertEquals(failure, result.genericFailure)
@@ -415,10 +394,6 @@ class RegisterClientUseCaseTest {
         @Mock
         val MLS_CLIENT = mock(classOf<MLSClient>())
         val MLS_PUBLIC_KEY = "public_key".encodeToByteArray()
-        val pushTokenRequestBody = PushTokenBody(
-            senderId = null,
-            client = "test", token = "", transport = null
-        )
         val TEST_FAILURE = NetworkFailure.ServerMiscommunication(KaliumException.GenericError(IOException("no internet")))
     }
 }

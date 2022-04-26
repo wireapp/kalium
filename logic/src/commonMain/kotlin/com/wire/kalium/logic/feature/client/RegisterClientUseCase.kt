@@ -7,7 +7,6 @@ import com.wire.kalium.logic.data.client.ClientCapability
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.RegisterClientParam
-import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase.Companion.FIRST_KEY_ID
@@ -18,7 +17,6 @@ import com.wire.kalium.network.api.user.pushToken.PushTokenBody
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMissingAuth
 import com.wire.kalium.network.exceptions.isTooManyClients
-import com.wire.kalium.persistence.client.ClientRegistrationStorage
 
 sealed class RegisterClientResult {
     class Success(val client: Client) : RegisterClientResult()
@@ -32,12 +30,31 @@ sealed class RegisterClientResult {
 
 interface RegisterClientUseCase {
     suspend operator fun invoke(
-        password: String?,
-        capabilities: List<ClientCapability>?,
-        preKeysToSend: Int = DEFAULT_PRE_KEYS_COUNT,
-        senderId: String? = null,
-        transport: String? = null
+        registerClientParam: RegisterClientParam
     ): RegisterClientResult
+
+    sealed class RegisterClientParam {
+        abstract val password: String?
+
+        abstract val capabilities: List<ClientCapability>?
+
+        abstract val preKeysToSend: Int
+
+        data class ClientWithoutToken(
+            override val password: String?,
+            override val capabilities: List<ClientCapability>?,
+            override val preKeysToSend: Int = DEFAULT_PRE_KEYS_COUNT
+        ) : RegisterClientParam()
+
+        data class ClientWithToken(
+            override val password: String?,
+            override val capabilities: List<ClientCapability>?,
+            val transport: String,
+            val senderId: String,
+            override val preKeysToSend: Int = DEFAULT_PRE_KEYS_COUNT
+        ) : RegisterClientParam()
+
+    }
 
     companion object {
         const val FIRST_KEY_ID = 0
@@ -49,45 +66,46 @@ class RegisterClientUseCaseImpl(
     private val clientRepository: ClientRepository,
     private val preKeyRepository: PreKeyRepository,
     private val keyPackageRepository: KeyPackageRepository,
-    private val mlsClientProvider: MLSClientProvider,
-    private val clientRemoteRepository: ClientRemoteRepository,
-    private val clientRegistrationStorage: ClientRegistrationStorage
+    private val mlsClientProvider: MLSClientProvider
 ) : RegisterClientUseCase {
 
-    override suspend operator fun invoke(
-        password: String?,
-        capabilities: List<ClientCapability>?,
-        preKeysToSend: Int,
-        senderId: String?,
-        transport: String?
-    ): RegisterClientResult = suspending {
-        generateProteusPreKeys(preKeysToSend, password, capabilities).coFold({
-            RegisterClientResult.Failure.Generic(it)
-        }, { registerClientParam ->
-            clientRepository.registerClient(registerClientParam).flatMap { client ->
-                createMLSClient(client)
-            }.flatMap { cli->
-                clientRemoteRepository.registerToken(
-                    PushTokenBody(
-                        senderId = senderId,
-                        client = cli.clientId.value,
-                        token = clientRegistrationStorage.registeredFCMToken,
-                        transport = transport
-                    )
-                ).map { cli.copy() }
-            }.fold({ failure ->
-                if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError)
-                    when {
-                        failure.kaliumException.isTooManyClients() -> RegisterClientResult.Failure.TooManyClients
-                        failure.kaliumException.isMissingAuth() -> RegisterClientResult.Failure.InvalidCredentials
-                        else -> RegisterClientResult.Failure.Generic(failure)
-                    }
-                else RegisterClientResult.Failure.Generic(failure)
-            }, { client ->
-                RegisterClientResult.Success(client)
-            })
-        })
-    }
+    override suspend operator fun invoke(registerClientParam: RegisterClientUseCase.RegisterClientParam): RegisterClientResult =
+        suspending {
+            with(registerClientParam) {
+                generateProteusPreKeys(preKeysToSend, password, capabilities).coFold({
+                    RegisterClientResult.Failure.Generic(it)
+                }, { registerClientParam ->
+                    clientRepository.registerClient(registerClientParam).flatMap { client ->
+                        createMLSClient(client)
+                    }.flatMap { client ->
+                        if (this is RegisterClientUseCase.RegisterClientParam.ClientWithToken) {
+                            clientRepository.getFCMToken().flatMap { token ->
+                                clientRepository.registerToken(
+                                    PushTokenBody(
+                                        senderId = senderId,
+                                        client = client.clientId.value,
+                                        token = token,
+                                        transport = transport
+                                    )
+                                ).map { client }
+                            }
+                        } else {
+                            Either.Right(client)
+                        }
+                    }.fold({ failure ->
+                        if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError)
+                            when {
+                                failure.kaliumException.isTooManyClients() -> RegisterClientResult.Failure.TooManyClients
+                                failure.kaliumException.isMissingAuth() -> RegisterClientResult.Failure.InvalidCredentials
+                                else -> RegisterClientResult.Failure.Generic(failure)
+                            }
+                        else RegisterClientResult.Failure.Generic(failure)
+                    }, { client ->
+                        RegisterClientResult.Success(client)
+                    })
+                })
+            }
+        }
 
     private suspend fun createMLSClient(client: Client): Either<CoreFailure, Client> = suspending {
         // TODO when https://github.com/wireapp/core-crypto/issues/11 is implemented we
