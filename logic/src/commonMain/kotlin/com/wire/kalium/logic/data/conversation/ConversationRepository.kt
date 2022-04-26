@@ -166,7 +166,13 @@ class ConversationDataSource(
     private suspend fun getDetailsFlowConversation(conversation: Conversation): Flow<ConversationDetails> =
         when (conversation.type) {
             ConversationEntity.Type.SELF -> flowOf(ConversationDetails.Self(conversation))
-            ConversationEntity.Type.GROUP -> flowOf(ConversationDetails.Group(conversation))
+            ConversationEntity.Type.GROUP ->
+                flowOf(
+                    ConversationDetails.Group(
+                        conversation,
+                        LegalHoldStatus.DISABLED //TODO get actual legal hold status
+                    )
+                )
             ConversationEntity.Type.ONE_ON_ONE -> {
                 suspending {
                     val selfUser = userRepository.getSelfUser().first()

@@ -32,7 +32,10 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val userType: UserType
     ) : ConversationDetails(conversation)
 
-    data class Group(override val conversation: Conversation) : ConversationDetails(conversation)
+    data class Group(
+        override val conversation: Conversation,
+        val legalHoldStatus: LegalHoldStatus
+    ) : ConversationDetails(conversation)
 }
 
 class MembersInfo(val self: Member, val otherMembers: List<Member>)

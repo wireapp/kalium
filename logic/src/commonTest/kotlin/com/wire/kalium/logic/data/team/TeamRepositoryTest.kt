@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.team
 
+import app.cash.turbine.test
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.util.shouldFail
@@ -14,6 +15,7 @@ import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.TeamEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserEntity
+import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
@@ -24,11 +26,14 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.oneOf
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+@OptIn(ConfigurationApi::class, ExperimentalCoroutinesApi::class)
 class TeamRepositoryTest {
 
     @Mock
@@ -60,7 +65,7 @@ class TeamRepositoryTest {
     }
 
     @Test
-    fun givenSelfUserExists_whenGettingTeamInfo_thenTeamInfoShouldBeSuccessful() = runTest {
+    fun givenSelfUserExists_whenFetchingTeamInfo_thenTeamInfoShouldBeSuccessful() = runTest {
         val team = TeamGenerator.createTeam(
             id = "teamId",
             name = "teamName"
@@ -94,7 +99,7 @@ class TeamRepositoryTest {
     }
 
     @Test
-    fun givenTeamApiFails_whenGettingTeamInfo_thenTheFailureIsPropagated() = runTest {
+    fun givenTeamApiFails_whenFetchingTeamInfo_thenTheFailureIsPropagated() = runTest {
         given(teamsApi)
             .suspendFunction(teamsApi::getTeamInfo)
             .whenInvokedWith(any())
@@ -158,7 +163,7 @@ class TeamRepositoryTest {
     }
 
     @Test
-    fun givenTeamApiFails_whenGettingTeamMembers_thenTheFailureIsPropagated() = runTest {
+    fun givenTeamApiFails_whenFetchingTeamMembers_thenTheFailureIsPropagated() = runTest {
         given(teamsApi)
             .suspendFunction(teamsApi::getTeamMembers)
             .whenInvokedWith(any(), anything())
@@ -168,6 +173,39 @@ class TeamRepositoryTest {
 
         result.shouldFail {
             assertEquals(it::class, NetworkFailure.ServerMiscommunication::class)
+        }
+    }
+
+    @Test
+    fun givenSelfUserExists_whenGettingTeamById_thenTeamDataShouldBePassed() = runTest {
+        val teamEntity = TeamEntity(id = "teamId", name = "teamName")
+        val team = Team(id = "teamId", name = "teamName")
+
+        given(teamDAO)
+            .suspendFunction(teamDAO::getTeamById)
+            .whenInvokedWith(oneOf("teamId"))
+            .then { flowOf(teamEntity) }
+        given(teamMapper)
+            .function(teamMapper::fromDaoModelToTeam)
+            .whenInvokedWith(oneOf(teamEntity))
+            .then { team }
+
+        teamRepository.getTeam(teamId = "teamId").test {
+            assertEquals(team, awaitItem())
+            awaitComplete()
+        }
+    }
+
+    @Test
+    fun givenSelfUserDoesNotExist_whenGettingTeamById_thenNullShouldBePassed() = runTest {
+        given(teamDAO)
+            .suspendFunction(teamDAO::getTeamById)
+            .whenInvokedWith(oneOf("teamId"))
+            .then { flowOf(null) }
+
+        teamRepository.getTeam(teamId = "teamId").test {
+            assertEquals(null, awaitItem())
+            awaitComplete()
         }
     }
 }

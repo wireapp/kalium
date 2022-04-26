@@ -131,7 +131,7 @@ class ObserveConversationListDetailsUseCaseTest {
         val groupConversation = TestConversation.GROUP
         val conversations = listOf(groupConversation, oneOnOneConversation)
 
-        val groupConversationUpdates = listOf(ConversationDetails.Group(groupConversation))
+        val groupConversationUpdates = listOf(ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED))
         val firstOneOnOneDetails = ConversationDetails.OneOne(
             oneOnOneConversation,
             TestUser.OTHER,
@@ -182,7 +182,7 @@ class ObserveConversationListDetailsUseCaseTest {
     @Test
     fun givenAConversationIsAddedToTheList_whenObservingDetailsList_thenTheUpdateIsPropagatedThroughTheFlow() = runTest {
         val groupConversation = TestConversation.GROUP
-        val groupConversationDetails = ConversationDetails.Group(groupConversation)
+        val groupConversationDetails = ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED)
 
         val selfConversation = TestConversation.SELF
         val selfConversationDetails = ConversationDetails.Self(selfConversation)
