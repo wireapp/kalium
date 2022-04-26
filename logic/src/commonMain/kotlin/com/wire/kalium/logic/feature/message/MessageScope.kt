@@ -45,6 +45,9 @@ class MessageScope(
     private val mlsMessageCreator: MLSMessageCreator
         get() = MLSMessageCreatorImpl(mlsClientProvider, protoContentMapper)
 
+    private val messageSendingScheduler: MessageSendingScheduler
+        get() = MessageSendingSchedulerImpl()
+
     private val messageSender: MessageSender
         get() = MessageSenderImpl(
             messageRepository,
@@ -53,7 +56,8 @@ class MessageScope(
             messageSendFailureHandler,
             sessionEstablisher,
             messageEnvelopeCreator,
-            mlsMessageCreator
+            mlsMessageCreator,
+            messageSendingScheduler
         )
 
     val sendTextMessage: SendTextMessageUseCase
