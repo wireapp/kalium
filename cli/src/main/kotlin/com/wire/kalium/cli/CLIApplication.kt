@@ -10,7 +10,7 @@ import com.wire.kalium.logic.CoreLogger
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.client.DeleteClientParam
-import com.wire.kalium.logic.data.conversation.ConverationOptions
+import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
@@ -93,7 +93,7 @@ class CreateGroupCommand : CliktCommand(name = "create-group") {
         val result = userSession.conversations.createGroupConversation(
             name,
             members,
-            ConverationOptions(protocol = ConverationOptions.Protocol.MLS)
+            ConversationOptions(protocol = ConversationOptions.Protocol.MLS)
         )
         when (result) {
             is Either.Right -> echo("group created successfully")
