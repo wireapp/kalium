@@ -49,7 +49,6 @@ interface RegisterClientUseCase {
         data class ClientWithToken(
             override val password: String?,
             override val capabilities: List<ClientCapability>?,
-            val transport: String,
             val senderId: String,
             override val preKeysToSend: Int = DEFAULT_PRE_KEYS_COUNT
         ) : RegisterClientParam()
@@ -79,13 +78,13 @@ class RegisterClientUseCaseImpl(
                         createMLSClient(client)
                     }.flatMap { client ->
                         if (this is RegisterClientUseCase.RegisterClientParam.ClientWithToken) {
-                            clientRepository.getFCMToken().flatMap { token ->
+                            clientRepository.getNotificationToken().flatMap { notificationToken ->
                                 clientRepository.registerToken(
                                     PushTokenBody(
                                         senderId = senderId,
                                         client = client.clientId.value,
-                                        token = token,
-                                        transport = transport
+                                        token = notificationToken.token,
+                                        transport = notificationToken.transport
                                     )
                                 ).map { client }
                             }

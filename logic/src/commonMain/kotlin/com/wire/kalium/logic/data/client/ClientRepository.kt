@@ -12,6 +12,7 @@ import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.user.pushToken.PushTokenBody
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
+import com.wire.kalium.persistence.client.NotificationTokenEntity
 import com.wire.kalium.persistence.client.TokenStorage
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import io.ktor.util.encodeBase64
@@ -28,8 +29,8 @@ interface ClientRepository {
     suspend fun saveNewClients(userId: UserId, clients: List<ClientId>): Either<CoreFailure, Unit>
     suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit>
 
-    fun persistFCMToken(token: String): Either<CoreFailure, Unit>
-    fun getFCMToken(): Either<CoreFailure, String>
+    fun persistNotificationToken(token: String, transport: String): Either<CoreFailure, Unit>
+    fun getNotificationToken(): Either<CoreFailure, NotificationTokenEntity>
 }
 
 class ClientDataSource(
@@ -78,13 +79,12 @@ class ClientDataSource(
 
     override suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit> = clientRemoteRepository.registerToken(body)
 
-    override fun persistFCMToken(token: String): Either<CoreFailure, Unit> =
-        wrapStorageRequest { tokenStorage.registeredFCMToken = token }
+    override fun persistNotificationToken(token: String, transport: String): Either<CoreFailure, Unit> =
+        wrapStorageRequest { tokenStorage.saveToken(NotificationTokenEntity(token, transport)) }
 
-    override fun getFCMToken(): Either<CoreFailure, String> {
-        return tokenStorage.registeredFCMToken?.let { token ->
-            Either.Right(token)
+    override fun getNotificationToken(): Either<CoreFailure, NotificationTokenEntity> {
+        return tokenStorage.getToken()?.let { notificationTokenEntity ->
+            Either.Right(notificationTokenEntity)
         } ?: Either.Left(CoreFailure.MissingClientRegistration)
-
     }
 }
