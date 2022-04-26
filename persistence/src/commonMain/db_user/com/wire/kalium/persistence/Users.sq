@@ -41,6 +41,9 @@ VALUES(?, ?);
 selectAllUsers:
 SELECT * FROM User;
 
+selectAllUsersWithConnectionStatus:
+SELECT * FROM User WHERE connection_status = ?;
+
 selectByQualifiedId:
 SELECT * FROM User WHERE qualified_id = ?;
 
