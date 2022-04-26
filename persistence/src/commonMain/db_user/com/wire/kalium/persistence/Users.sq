@@ -47,11 +47,12 @@ SELECT * FROM User WHERE connection_status = ?;
 selectByQualifiedId:
 SELECT * FROM User WHERE qualified_id = ?;
 
-selectByNameOrHandleOrEmail:
+selectByNameOrHandleOrEmailAndConnectionState:
 SELECT * FROM User
 WHERE name LIKE ('%' || :searchQuery || '%')
 OR  handle LIKE  ('%' || :searchQuery || '%')
-OR  email LIKE  ('%' || :searchQuery || '%');
+OR  email LIKE  ('%' || :searchQuery || '%')
+AND connection_status = :connectionStatus;
 
 updateUserhandle:
 UPDATE User SET handle = ? WHERE qualified_id = ?;

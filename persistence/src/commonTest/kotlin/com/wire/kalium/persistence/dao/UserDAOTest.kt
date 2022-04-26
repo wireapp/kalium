@@ -101,7 +101,7 @@ class UserDAOTest : BaseDatabaseTest() {
         val user3 = USER_ENTITY_3
         db.userDAO.insertUsers(listOf(user1, user2, user3))
         //when
-        val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(user2.email!!).first()
+        val searchResult = db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(user2.email!!).first()
         //then
         assertEquals(searchResult, listOf(user2))
     }
@@ -115,7 +115,7 @@ class UserDAOTest : BaseDatabaseTest() {
             val user3 = USER_ENTITY_3.copy(handle = "uniqueHandlForUser3")
             db.userDAO.insertUsers(listOf(user1, user2, user3))
             //when
-            val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(user3.handle!!).first()
+            val searchResult = db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(user3.handle!!).first()
             //then
             assertEquals(searchResult, listOf(user3))
         }
@@ -129,7 +129,7 @@ class UserDAOTest : BaseDatabaseTest() {
         val user3 = USER_ENTITY_3
         db.userDAO.insertUsers(listOf(user1, user2, user3))
         //when
-        val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(user1.name!!).first()
+        val searchResult = db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(user1.name!!).first()
         //then
         assertEquals(searchResult, listOf(user1))
     }
@@ -173,7 +173,7 @@ class UserDAOTest : BaseDatabaseTest() {
 
             db.userDAO.insertUsers(mockUsers)
             //when
-            val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(commonEmailPrefix).first()
+            val searchResult = db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(commonEmailPrefix).first()
             //then
             assertEquals(searchResult, commonEmailUsers)
         }
@@ -187,7 +187,7 @@ class UserDAOTest : BaseDatabaseTest() {
 
         val nonExistingEmailQuery = "doesnotexist@wire.com"
         //when
-        val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(nonExistingEmailQuery).first()
+        val searchResult = db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(nonExistingEmailQuery).first()
         //then
         assertTrue { searchResult.isEmpty() }
     }
@@ -200,7 +200,7 @@ class UserDAOTest : BaseDatabaseTest() {
         val mockUsers = listOf(USER_ENTITY_1, USER_ENTITY_2, USER_ENTITY_3)
         db.userDAO.insertUsers(mockUsers)
         //when
-        val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(commonEmailPrefix).first()
+        val searchResult = db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(commonEmailPrefix).first()
         //then
         searchResult.forEach { userEntity ->
             assertContains(userEntity.email!!, commonEmailPrefix)
@@ -216,7 +216,7 @@ class UserDAOTest : BaseDatabaseTest() {
         val mockUsers = listOf(USER_ENTITY_1, USER_ENTITY_2, USER_ENTITY_3)
         db.userDAO.insertUsers(mockUsers)
         //when
-        val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(commonHandlePrefix).first()
+        val searchResult = db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(commonHandlePrefix).first()
         //then
         searchResult.forEach { userEntity ->
             assertContains(userEntity.handle!!, commonHandlePrefix)
@@ -231,7 +231,7 @@ class UserDAOTest : BaseDatabaseTest() {
         val mockUsers = listOf(USER_ENTITY_1, USER_ENTITY_2, USER_ENTITY_3)
         db.userDAO.insertUsers(mockUsers)
         //when
-        val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(commonNamePrefix).first()
+        val searchResult = db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(commonNamePrefix).first()
         //then
         searchResult.forEach { userEntity ->
             assertContains(userEntity.name!!, commonNamePrefix)
@@ -251,7 +251,7 @@ class UserDAOTest : BaseDatabaseTest() {
             )
             db.userDAO.insertUsers(mockUsers)
             //when
-            val searchResult = db.userDAO.getUserByNameOrHandleOrEmail(commonPrefix).first()
+            val searchResult = db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(commonPrefix).first()
             //then
             assertEquals(mockUsers, searchResult)
         }
