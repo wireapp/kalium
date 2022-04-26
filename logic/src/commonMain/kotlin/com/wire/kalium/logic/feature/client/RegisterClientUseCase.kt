@@ -80,16 +80,7 @@ class RegisterClientUseCaseImpl(
                         createMLSClient(client)
                     }.flatMap { client ->
                         if (this is RegisterClientUseCase.RegisterClientParam.ClientWithToken) {
-                            notificationTokenRepository.getNotificationToken().flatMap { notificationToken ->
-                                clientRepository.registerToken(
-                                    PushTokenBody(
-                                        senderId = senderId,
-                                        client = client.clientId.value,
-                                        token = notificationToken.token,
-                                        transport = notificationToken.transport
-                                    )
-                                ).map { client }
-                            }
+                            registerToken(client, senderId)
                         } else {
                             Either.Right(client)
                         }
@@ -107,6 +98,19 @@ class RegisterClientUseCaseImpl(
                 })
             }
         }
+
+    private suspend fun registerToken(client: Client, senderId: String): Either<CoreFailure, Client> = suspending {
+        notificationTokenRepository.getNotificationToken().flatMap { notificationToken ->
+            clientRepository.registerToken(
+                PushTokenBody(
+                    senderId = senderId,
+                    client = client.clientId.value,
+                    token = notificationToken.token,
+                    transport = notificationToken.transport
+                )
+            ).map { client }
+        }
+    }
 
     private suspend fun createMLSClient(client: Client): Either<CoreFailure, Client> = suspending {
         // TODO when https://github.com/wireapp/core-crypto/issues/11 is implemented we
