@@ -69,74 +69,72 @@ class MessageSenderTest {
     }
 
     @Test
-    fun givenAllStepsSucceed_WhenSendingOutgoingMessage_ThenReturnSuccess() { runTest {
-            //given
-            setupGivenSuccessResults(
-                getMessageById = true,
-                getConversationProtocol = true,
-                getConversationsRecipient = true,
-                prepareRecipientsForNewOutGoingMessage = true,
-                createOutgoingEnvelope = true,
-                sendEnvelope = true,
-                updateMessageStatus = true
-            )
-            //when
-            val result = messageSender.trySendingOutgoingMessageById(ConversationId("testId", "testDomain"), "testId")
-            //then
-            assertIs<Either.Right<Unit>>(result)
-        }
+    fun givenAllStepsSucceed_WhenSendingOutgoingMessage_ThenReturnSuccess() = runTest {
+        //given
+        setupGivenSuccessResults(
+            getMessageById = true,
+            getConversationProtocol = true,
+            getConversationsRecipient = true,
+            prepareRecipientsForNewOutGoingMessage = true,
+            createOutgoingEnvelope = true,
+            sendEnvelope = true,
+            updateMessageStatus = true
+        )
+        //when
+        val result = messageSender.trySendingOutgoingMessageById(ConversationId("testId", "testDomain"), "testId")
+        //then
+        assertIs<Either.Right<Unit>>(result)
     }
 
     @Test
-    fun givenGettingConversationProtocolFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() { runTest {
-            //given
-            setupGivenSuccessResults(
-                getMessageById = true,
-                getConversationProtocol = false,
-                getConversationsRecipient = true,
-                prepareRecipientsForNewOutGoingMessage = true,
-                createOutgoingEnvelope = true,
-                sendEnvelope = true,
-                updateMessageStatus = true
-            )
-            //when
-            val result = messageSender.trySendingOutgoingMessageById(ConversationId("testId", "testDomain"), "testId")
-            //then
-            verify(messageRepository)
-                .suspendFunction(messageRepository::updateMessageStatus)
-                .with(eq(MessageEntity.Status.FAILED), anything(), anything())
-                .wasInvoked(Times(1))
+    fun givenGettingConversationProtocolFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() = runTest {
+        //given
+        setupGivenSuccessResults(
+            getMessageById = true,
+            getConversationProtocol = false,
+            getConversationsRecipient = true,
+            prepareRecipientsForNewOutGoingMessage = true,
+            createOutgoingEnvelope = true,
+            sendEnvelope = true,
+            updateMessageStatus = true
+        )
+        //when
+        val result = messageSender.trySendingOutgoingMessageById(ConversationId("testId", "testDomain"), "testId")
+        //then
+        verify(messageRepository)
+            .suspendFunction(messageRepository::updateMessageStatus)
+            .with(eq(MessageEntity.Status.FAILED), anything(), anything())
+            .wasInvoked(Times(1))
 
-            assertIs<Either.Left<Unit>>(result)
-        }
+        assertIs<Either.Left<Unit>>(result)
     }
 
     @Test
-    fun givenGettingConversationRecipientsFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() { runTest {
-            //given
-            setupGivenSuccessResults(
-                getMessageById = true,
-                getConversationProtocol = true,
-                getConversationsRecipient = false,
-                prepareRecipientsForNewOutGoingMessage = true,
-                createOutgoingEnvelope = true,
-                sendEnvelope = true,
-                updateMessageStatus = true
-            )
-            //when
-            val result = messageSender.trySendingOutgoingMessageById(ConversationId("testId", "testDomain"), "testId")
-            //then
-            verify(messageRepository)
-                .suspendFunction(messageRepository::updateMessageStatus)
-                .with(eq(MessageEntity.Status.FAILED), anything(), anything())
-                .wasInvoked(Times(1))
+    fun givenGettingConversationRecipientsFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() = runTest {
+        //given
+        setupGivenSuccessResults(
+            getMessageById = true,
+            getConversationProtocol = true,
+            getConversationsRecipient = false,
+            prepareRecipientsForNewOutGoingMessage = true,
+            createOutgoingEnvelope = true,
+            sendEnvelope = true,
+            updateMessageStatus = true
+        )
+        //when
+        val result = messageSender.trySendingOutgoingMessageById(ConversationId("testId", "testDomain"), "testId")
+        //then
+        verify(messageRepository)
+            .suspendFunction(messageRepository::updateMessageStatus)
+            .with(eq(MessageEntity.Status.FAILED), anything(), anything())
+            .wasInvoked(Times(1))
 
-            assertIs<Either.Left<Unit>>(result)
-        }
+        assertIs<Either.Left<Unit>>(result)
     }
 
     @Test
-    fun givenPreparingRecipentsForNewOutgoingMessageFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() { runTest {
+    fun givenPreparingRecipentsForNewOutgoingMessageFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() =
+        runTest {
             //given
             setupGivenSuccessResults(
                 getMessageById = true,
@@ -157,10 +155,10 @@ class MessageSenderTest {
 
             assertIs<Either.Left<Unit>>(result)
         }
-    }
 
     @Test
-    fun givenCreatingOutgoingEnvelopeFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() { runTest {
+    fun givenCreatingOutgoingEnvelopeFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() =
+        runTest {
             //given
             setupGivenSuccessResults(
                 getMessageById = true,
@@ -181,10 +179,10 @@ class MessageSenderTest {
 
             assertIs<Either.Left<Unit>>(result)
         }
-    }
 
     @Test
-    fun givenSendingEnvelopeFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() { runTest {
+    fun givenSendingEnvelopeFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() =
+        runTest {
             //given
             setupGivenSuccessResults(
                 getMessageById = true,
@@ -205,10 +203,10 @@ class MessageSenderTest {
 
             assertIs<Either.Left<Unit>>(result)
         }
-    }
 
     @Test
-    fun givenUpdatingMessageStatusToSuccessFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() { runTest {
+    fun givenUpdatingMessageStatusToSuccessFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() =
+        runTest {
             //given
             setupGivenSuccessResults(
                 getMessageById = true,
@@ -229,7 +227,6 @@ class MessageSenderTest {
 
             assertIs<Either.Left<Unit>>(result)
         }
-    }
 
     private fun setupGivenSuccessResults(
         getMessageById: Boolean,
@@ -268,7 +265,7 @@ class MessageSenderTest {
         given(messageRepository)
             .suspendFunction(messageRepository::sendEnvelope)
             .whenInvokedWith(anything(), anything())
-            .thenReturn(if (sendEnvelope) Either.Right(Unit) else Either.Left(SendMessageFailure.Unknown(Throwable("some exception"))))
+            .thenReturn(if (sendEnvelope) Either.Right("test") else Either.Left(SendMessageFailure.Unknown(Throwable("some exception"))))
 
         given(messageRepository)
             .suspendFunction(messageRepository::updateMessageStatus)
