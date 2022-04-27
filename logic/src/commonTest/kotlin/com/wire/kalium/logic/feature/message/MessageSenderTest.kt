@@ -1,5 +1,7 @@
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.Member
@@ -8,15 +10,20 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.failure.SendMessageFailure
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.persistence.dao.ConversationEntity
+import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.mockative.Mock
+import io.mockative.Times
 import io.mockative.anything
 import io.mockative.configure
+import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
+import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -62,43 +69,18 @@ class MessageSenderTest {
     }
 
     @Test
-    fun testing() {
+    fun givenAllStepsSucceed_WhenSendingOutgoingMessage_ThenReturnSuccess() {
         runTest {
             //given
-            given(messageRepository)
-                .suspendFunction(messageRepository::getMessageById)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(TestMessage.TEXT_MESSAGE))
-
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::getConversationProtocolInfo)
-                .whenInvokedWith(anything())
-                .thenReturn(Either.Right(ConversationEntity.ProtocolInfo.Proteus))
-
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::getConversationRecipients)
-                .whenInvokedWith(anything())
-                .thenReturn(Either.Right(listOf(TEST_RECIPIENT_1)))
-
-            given(sessionEstablisher)
-                .suspendFunction(sessionEstablisher::prepareRecipientsForNewOutgoingMessage)
-                .whenInvokedWith(anything())
-                .thenReturn(Either.Right(Unit))
-
-            given(messageEnvelopeCreator)
-                .suspendFunction(messageEnvelopeCreator::createOutgoingEnvelope)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(TEST_MESSAGE_ENVELOPE))
-
-            given(messageRepository)
-                .suspendFunction(messageRepository::sendEnvelope)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(Unit))
-
-            given(messageRepository)
-                .suspendFunction(messageRepository::updateMessageStatus)
-                .whenInvokedWith(anything(), anything(), anything())
-                .thenReturn(Either.Right(Unit))
+            setupGivenSuccessResults(
+                getMessageById = true,
+                getConversationProtocol = true,
+                getConversationsRecipient = true,
+                prepareRecipientsForNewOutGoingMessage = true,
+                createOutgoingEnvelope = true,
+                sendEnvelope = true,
+                updateMessageStatus = true
+            )
             //when
             val result = messageSender.trySendingOutgoingMessageById(ConversationId("testId", "testDomain"), "testId")
             //then
@@ -107,93 +89,54 @@ class MessageSenderTest {
     }
 
     @Test
-    fun testing1() {
+    fun givenGettingConversationProtocolFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() {
         runTest {
             //given
-            given(messageRepository)
-                .suspendFunction(messageRepository::getMessageById)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(TestMessage.TEXT_MESSAGE))
-
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::getConversationProtocolInfo)
-                .whenInvokedWith(anything())
-                .thenReturn(Either.Right(ConversationEntity.ProtocolInfo.Proteus))
-
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::getConversationRecipients)
-                .whenInvokedWith(anything())
-                .thenReturn(Either.Right(listOf(TEST_RECIPIENT_1)))
-
-            given(sessionEstablisher)
-                .suspendFunction(sessionEstablisher::prepareRecipientsForNewOutgoingMessage)
-                .whenInvokedWith(anything())
-                .thenReturn(Either.Right(Unit))
-
-            given(messageEnvelopeCreator)
-                .suspendFunction(messageEnvelopeCreator::createOutgoingEnvelope)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(TEST_MESSAGE_ENVELOPE))
-
-            given(messageRepository)
-                .suspendFunction(messageRepository::sendEnvelope)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(Unit))
-
-            given(messageRepository)
-                .suspendFunction(messageRepository::updateMessageStatus)
-                .whenInvokedWith(anything(), anything(), anything())
-                .thenReturn(Either.Right(Unit))
+            setupGivenSuccessResults(
+                getMessageById = true,
+                getConversationProtocol = false,
+                getConversationsRecipient = true,
+                prepareRecipientsForNewOutGoingMessage = true,
+                createOutgoingEnvelope = true,
+                sendEnvelope = true,
+                updateMessageStatus = true
+            )
             //when
             val result = messageSender.trySendingOutgoingMessageById(ConversationId("testId", "testDomain"), "testId")
             //then
-            assertIs<Either.Right<Unit>>(result)
+            verify(messageRepository)
+                .suspendFunction(messageRepository::updateMessageStatus)
+                .with(eq(MessageEntity.Status.FAILED), anything(), anything())
+                .wasInvoked(Times(1))
+
+            assertIs<Either.Left<Unit>>(result)
         }
     }
 
-
     @Test
-    fun testing2() {
+    fun givenGettingConversationRecipientsFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() {
         runTest {
             //given
-            given(messageRepository)
-                .suspendFunction(messageRepository::getMessageById)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(TestMessage.TEXT_MESSAGE))
-
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::getConversationProtocolInfo)
-                .whenInvokedWith(anything())
-                .thenReturn(Either.Right(ConversationEntity.ProtocolInfo.Proteus))
-
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::getConversationRecipients)
-                .whenInvokedWith(anything())
-                .thenReturn(Either.Right(listOf(TEST_RECIPIENT_1)))
-
-            given(sessionEstablisher)
-                .suspendFunction(sessionEstablisher::prepareRecipientsForNewOutgoingMessage)
-                .whenInvokedWith(anything())
-                .thenReturn(Either.Right(Unit))
-
-            given(messageEnvelopeCreator)
-                .suspendFunction(messageEnvelopeCreator::createOutgoingEnvelope)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(TEST_MESSAGE_ENVELOPE))
-
-            given(messageRepository)
-                .suspendFunction(messageRepository::sendEnvelope)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(Unit))
-
-            given(messageRepository)
-                .suspendFunction(messageRepository::updateMessageStatus)
-                .whenInvokedWith(anything(), anything(), anything())
-                .thenReturn(Either.Right(Unit))
+            //given
+            setupGivenSuccessResults(
+                getMessageById = true,
+                getConversationProtocol = false,
+                getConversationsRecipient = true,
+                prepareRecipientsForNewOutGoingMessage = true,
+                createOutgoingEnvelope = true,
+                sendEnvelope = true,
+                updateMessageStatus = true
+            )
             //when
             val result = messageSender.trySendingOutgoingMessageById(ConversationId("testId", "testDomain"), "testId")
             //then
-            assertIs<Either.Right<Unit>>(result)
+            verify(messageRepository)
+                .suspendFunction(messageRepository::updateMessageStatus)
+                .with(eq(MessageEntity.Status.FAILED), anything(), anything())
+                .wasInvoked(Times(1))
+
+            assertIs<Either.Left<Unit>>(result)
+            //when
         }
     }
 
@@ -201,45 +144,175 @@ class MessageSenderTest {
     fun testing3() {
         runTest {
             //given
-            given(messageRepository)
-                .suspendFunction(messageRepository::getMessageById)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(TestMessage.TEXT_MESSAGE))
-
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::getConversationProtocolInfo)
-                .whenInvokedWith(anything())
-                .thenReturn(Either.Right(ConversationEntity.ProtocolInfo.Proteus))
-
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::getConversationRecipients)
-                .whenInvokedWith(anything())
-                .thenReturn(Either.Right(listOf(TEST_RECIPIENT_1)))
-
-            given(sessionEstablisher)
-                .suspendFunction(sessionEstablisher::prepareRecipientsForNewOutgoingMessage)
-                .whenInvokedWith(anything())
-                .thenReturn(Either.Right(Unit))
-
-            given(messageEnvelopeCreator)
-                .suspendFunction(messageEnvelopeCreator::createOutgoingEnvelope)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(TEST_MESSAGE_ENVELOPE))
-
-            given(messageRepository)
-                .suspendFunction(messageRepository::sendEnvelope)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(Unit))
-
-            given(messageRepository)
-                .suspendFunction(messageRepository::updateMessageStatus)
-                .whenInvokedWith(anything(), anything(), anything())
-                .thenReturn(Either.Right(Unit))
+            //given
+            setupGivenSuccessResults(
+                getMessageById = true,
+                getConversationProtocol = true,
+                getConversationsRecipient = false,
+                prepareRecipientsForNewOutGoingMessage = true,
+                createOutgoingEnvelope = true,
+                sendEnvelope = true,
+                updateMessageStatus = true
+            )
             //when
             val result = messageSender.trySendingOutgoingMessageById(ConversationId("testId", "testDomain"), "testId")
             //then
-            assertIs<Either.Right<Unit>>(result)
+            verify(messageRepository)
+                .suspendFunction(messageRepository::updateMessageStatus)
+                .with(eq(MessageEntity.Status.FAILED), anything(), anything())
+                .wasInvoked(Times(1))
+
+            assertIs<Either.Left<Unit>>(result)
         }
+    }
+
+    @Test
+    fun givenPreparingRecipentsForNewOutgoingMessageFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() {
+        runTest {
+            //given
+            //given
+            setupGivenSuccessResults(
+                getMessageById = true,
+                getConversationProtocol = true,
+                getConversationsRecipient = true,
+                prepareRecipientsForNewOutGoingMessage = false,
+                createOutgoingEnvelope = true,
+                sendEnvelope = true,
+                updateMessageStatus = true
+            )
+            //when
+            val result = messageSender.trySendingOutgoingMessageById(ConversationId("testId", "testDomain"), "testId")
+            //then
+            verify(messageRepository)
+                .suspendFunction(messageRepository::updateMessageStatus)
+                .with(eq(MessageEntity.Status.FAILED), anything(), anything())
+                .wasInvoked(Times(1))
+
+            assertIs<Either.Left<Unit>>(result)
+        }
+    }
+
+    @Test
+    fun givenCreatingOutgoingEnvelopeFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() {
+        runTest {
+            //given
+            //given
+            setupGivenSuccessResults(
+                getMessageById = true,
+                getConversationProtocol = true,
+                getConversationsRecipient = true,
+                prepareRecipientsForNewOutGoingMessage = true,
+                createOutgoingEnvelope = false,
+                sendEnvelope = true,
+                updateMessageStatus = true
+            )
+            //when
+            val result = messageSender.trySendingOutgoingMessageById(ConversationId("testId", "testDomain"), "testId")
+            //then
+            verify(messageRepository)
+                .suspendFunction(messageRepository::updateMessageStatus)
+                .with(eq(MessageEntity.Status.FAILED), anything(), anything())
+                .wasInvoked(Times(1))
+
+            assertIs<Either.Left<Unit>>(result)
+        }
+    }
+
+    @Test
+    fun givenSendingEnvelopeFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() {
+        runTest {
+            //given
+            //given
+            setupGivenSuccessResults(
+                getMessageById = true,
+                getConversationProtocol = true,
+                getConversationsRecipient = true,
+                prepareRecipientsForNewOutGoingMessage = true,
+                createOutgoingEnvelope = true,
+                sendEnvelope = false,
+                updateMessageStatus = true
+            )
+            //when
+            val result = messageSender.trySendingOutgoingMessageById(ConversationId("testId", "testDomain"), "testId")
+            //then
+            verify(messageRepository)
+                .suspendFunction(messageRepository::updateMessageStatus)
+                .with(eq(MessageEntity.Status.FAILED), anything(), anything())
+                .wasInvoked(Times(1))
+
+            assertIs<Either.Left<Unit>>(result)
+        }
+    }
+
+    @Test
+    fun givenUpdatingMessageStatusToSuccessFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() {
+        runTest {
+            //given
+            //given
+            setupGivenSuccessResults(
+                getMessageById = true,
+                getConversationProtocol = true,
+                getConversationsRecipient = true,
+                prepareRecipientsForNewOutGoingMessage = true,
+                createOutgoingEnvelope = true,
+                sendEnvelope = true,
+                updateMessageStatus = false
+            )
+            //when
+            val result = messageSender.trySendingOutgoingMessageById(ConversationId("testId", "testDomain"), "testId")
+            //then
+            verify(messageRepository)
+                .suspendFunction(messageRepository::updateMessageStatus)
+                .with(eq(MessageEntity.Status.FAILED), anything(), anything())
+                .wasInvoked(Times(1))
+
+            assertIs<Either.Left<Unit>>(result)
+        }
+    }
+
+    private fun setupGivenSuccessResults(
+        getMessageById: Boolean,
+        getConversationProtocol: Boolean,
+        getConversationsRecipient: Boolean,
+        prepareRecipientsForNewOutGoingMessage: Boolean,
+        createOutgoingEnvelope: Boolean,
+        sendEnvelope: Boolean,
+        updateMessageStatus: Boolean,
+    ) {
+        given(messageRepository)
+            .suspendFunction(messageRepository::getMessageById)
+            .whenInvokedWith(anything(), anything())
+            .thenReturn(if (getMessageById) Either.Right(TestMessage.TEXT_MESSAGE) else TEST_CORE_FAILURE)
+
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::getConversationProtocolInfo)
+            .whenInvokedWith(anything())
+            .thenReturn(if (getConversationProtocol) Either.Right(ConversationEntity.ProtocolInfo.Proteus) else Either.Left(StorageFailure.DataNotFound))
+
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::getConversationRecipients)
+            .whenInvokedWith(anything())
+            .thenReturn(if (getConversationsRecipient) Either.Right(listOf(TEST_RECIPIENT_1)) else TEST_CORE_FAILURE)
+
+        given(sessionEstablisher)
+            .suspendFunction(sessionEstablisher::prepareRecipientsForNewOutgoingMessage)
+            .whenInvokedWith(anything())
+            .thenReturn(if (prepareRecipientsForNewOutGoingMessage) Either.Right(Unit) else TEST_CORE_FAILURE)
+
+        given(messageEnvelopeCreator)
+            .suspendFunction(messageEnvelopeCreator::createOutgoingEnvelope)
+            .whenInvokedWith(anything(), anything())
+            .thenReturn(if (createOutgoingEnvelope) Either.Right(TEST_MESSAGE_ENVELOPE) else TEST_CORE_FAILURE)
+
+        given(messageRepository)
+            .suspendFunction(messageRepository::sendEnvelope)
+            .whenInvokedWith(anything(), anything())
+            .thenReturn(if (sendEnvelope) Either.Right(Unit) else Either.Left(SendMessageFailure.Unknown(Throwable("some exception"))))
+
+        given(messageRepository)
+            .suspendFunction(messageRepository::updateMessageStatus)
+            .whenInvokedWith(anything(), anything(), anything())
+            .thenReturn(if (updateMessageStatus) Either.Right(Unit) else TEST_CORE_FAILURE)
     }
 
     private companion object {
@@ -249,14 +322,11 @@ class MessageSenderTest {
             ), recipients = listOf(), null
         )
 
+        val TEST_CORE_FAILURE = Either.Left(CoreFailure.Unknown(Throwable("an error")))
         val TEST_CONTACT_CLIENT_1 = ClientId("clientId1")
         val TEST_CONTACT_CLIENT_2 = ClientId("clientId2")
         val TEST_MEMBER_1 = Member(UserId("value1", "domain1"))
         val TEST_RECIPIENT_1 = Recipient(TEST_MEMBER_1, listOf(TEST_CONTACT_CLIENT_1, TEST_CONTACT_CLIENT_2))
-        val TEST_CONTACT_CLIENT_3 = ClientId("clientId3")
-        val TEST_MEMBER_2 = Member(UserId("value2", "domain2"))
-        val TEST_RECIPIENT_2 = Recipient(TEST_MEMBER_2, listOf(TEST_CONTACT_CLIENT_3))
-        val TEST_RECIPIENTS = listOf(TEST_RECIPIENT_1, TEST_RECIPIENT_2)
     }
 
 }
