@@ -141,32 +141,6 @@ class MessageSenderTest {
     }
 
     @Test
-    fun testing3() {
-        runTest {
-            //given
-            //given
-            setupGivenSuccessResults(
-                getMessageById = true,
-                getConversationProtocol = true,
-                getConversationsRecipient = false,
-                prepareRecipientsForNewOutGoingMessage = true,
-                createOutgoingEnvelope = true,
-                sendEnvelope = true,
-                updateMessageStatus = true
-            )
-            //when
-            val result = messageSender.trySendingOutgoingMessageById(ConversationId("testId", "testDomain"), "testId")
-            //then
-            verify(messageRepository)
-                .suspendFunction(messageRepository::updateMessageStatus)
-                .with(eq(MessageEntity.Status.FAILED), anything(), anything())
-                .wasInvoked(Times(1))
-
-            assertIs<Either.Left<Unit>>(result)
-        }
-    }
-
-    @Test
     fun givenPreparingRecipentsForNewOutgoingMessageFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() {
         runTest {
             //given
