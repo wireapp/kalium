@@ -28,7 +28,12 @@ interface MessageRepository {
     suspend fun deleteMessage(messageUuid: String): Either<CoreFailure, Unit>
     suspend fun softDeleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun hideMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
-    suspend fun markMessageAsSent(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit>
+    suspend fun updateMessageStatus(
+        messageStatus: MessageEntity.Status,
+        conversationId: ConversationId,
+        messageUuid: String
+    ): Either<CoreFailure, Unit>
+
     suspend fun updateMessageDate(conversationId: ConversationId, messageUuid: String, date: String): Either<CoreFailure, Unit>
     suspend fun updatePendingMessagesAddMillisToDate(conversationId: ConversationId, millis: Long): Either<CoreFailure, Unit>
     suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message>
@@ -59,7 +64,6 @@ class MessageDataSource(
         //TODO: Handle failures
         return Either.Right(Unit)
     }
-
 
     override suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit> {
         messageDAO.deleteMessage(messageUuid, idMapper.toDaoModel(conversationId))
@@ -111,9 +115,9 @@ class MessageDataSource(
         }
     }
 
-    override suspend fun markMessageAsSent(conversationId: ConversationId, messageUuid: String) =
+    override suspend fun updateMessageStatus(messageStatus: MessageEntity.Status, conversationId: ConversationId, messageUuid: String) =
         wrapStorageRequest {
-            messageDAO.updateMessageStatus(MessageEntity.Status.SENT, messageUuid, idMapper.toDaoModel(conversationId))
+            messageDAO.updateMessageStatus(messageStatus, messageUuid, idMapper.toDaoModel(conversationId))
         }
 
     override suspend fun updateMessageDate(conversationId: ConversationId, messageUuid: String, date: String) =
@@ -140,7 +144,7 @@ class MessageDataSource(
             ),
             idMapper.toApiModel(conversationId),
         )
-        return when(result) {
+        return when (result) {
             is NetworkResponse.Success -> {
                 Either.Right(result.value.time)
             }

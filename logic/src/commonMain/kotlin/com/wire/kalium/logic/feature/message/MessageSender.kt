@@ -1,8 +1,8 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -10,10 +10,9 @@ import com.wire.kalium.logic.failure.SendMessageFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.persistence.dao.ConversationEntity
-import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.toInstant
-import kotlinx.datetime.until
+import com.wire.kalium.persistence.dao.message.MessageEntity
 
 interface MessageSender {
     /**
@@ -41,7 +40,8 @@ class MessageSenderImpl(
     private val messageSendFailureHandler: MessageSendFailureHandler,
     private val sessionEstablisher: SessionEstablisher,
     private val messageEnvelopeCreator: MessageEnvelopeCreator,
-    private val mlsMessageCreator: MLSMessageCreator
+    private val mlsMessageCreator: MLSMessageCreator,
+    private val timeParser: TimeParser,
 ) : MessageSender {
 
     override suspend fun trySendingOutgoingMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit> =
@@ -49,6 +49,8 @@ class MessageSenderImpl(
             syncManager.waitForSlowSyncToComplete()
             messageRepository.getMessageById(conversationId, messageUuid).flatMap { message ->
                 trySendingOutgoingMessage(conversationId, message)
+            }.onFailure {
+                messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, messageUuid)
             }
         }
 
@@ -57,10 +59,15 @@ class MessageSenderImpl(
             attemptToSend(conversationId, message)
                 .flatMap { messageRemoteTime ->
                     messageRepository.updateMessageDate(conversationId, message.id, messageRemoteTime)
-                    messageRepository.markMessageAsSent(conversationId, message.id)
-                    val millisDiff = message.date.toInstant().until(messageRemoteTime.toInstant(), DateTimeUnit.MILLISECOND)
-                    // this should make sure that pending messages are ordered correctly after one of them is sent
-                    messageRepository.updatePendingMessagesAddMillisToDate(conversationId, millisDiff)
+                        .flatMap {
+                            messageRepository.updateMessageStatus(MessageEntity.Status.SENT, conversationId, message.id)
+                        }.flatMap {
+                            // this should make sure that pending messages are ordered correctly after one of them is sent
+                            messageRepository.updatePendingMessagesAddMillisToDate(
+                                conversationId,
+                                timeParser.calculateMillisDifference(message.date, messageRemoteTime)
+                            )
+                        }
                 }
         }
 
@@ -95,14 +102,15 @@ class MessageSenderImpl(
         conversationId: ConversationId,
         groupId: String,
         message: Message
-    ): Either<CoreFailure, String> = suspending {
-        mlsMessageCreator.createOutgoingMLSMessage(groupId, message).flatMap { mlsMessage ->
-            // TODO handle mls-stale-message
-            messageRepository.sendMLSMessage(conversationId, mlsMessage).map {
-                message.date //TODO return actual server time from the response
+    ): Either<CoreFailure, String> =
+        suspending {
+            mlsMessageCreator.createOutgoingMLSMessage(groupId, message).flatMap { mlsMessage ->
+                // TODO handle mls-stale-message
+                messageRepository.sendMLSMessage(conversationId, mlsMessage).map {
+                    message.date //TODO return actual server time from the response
+                }
             }
         }
-    }
 
     private suspend fun trySendingEnvelopeRetryingIfPossible(
         conversationId: ConversationId,
