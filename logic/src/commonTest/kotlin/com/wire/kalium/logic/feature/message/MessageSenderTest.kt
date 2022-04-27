@@ -120,7 +120,8 @@ class MessageSenderTest {
             setupGivenSuccessResults(
                 getMessageById = true,
                 getConversationProtocol = false,
-                getConversationsRecipient = true,
+                getConversationProtocol = true,
+                getConversationsRecipient = false,
                 prepareRecipientsForNewOutGoingMessage = true,
                 createOutgoingEnvelope = true,
                 sendEnvelope = true,
