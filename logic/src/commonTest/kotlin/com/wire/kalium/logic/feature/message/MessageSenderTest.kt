@@ -132,7 +132,6 @@ class MessageSenderTest {
                 .wasInvoked(Times(1))
 
             assertIs<Either.Left<Unit>>(result)
-            //when
         }
     }
 
@@ -162,7 +161,6 @@ class MessageSenderTest {
 
     @Test
     fun givenCreatingOutgoingEnvelopeFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() { runTest {
-            //given
             //given
             setupGivenSuccessResults(
                 getMessageById = true,
