@@ -7,13 +7,13 @@ import com.waz.media.manager.MediaManager
 import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.ENVIRONMENT_DEFAULT
 import com.wire.kalium.calling.callbacks.LogHandler
+import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.kaliumLogger
 import com.waz.log.LogHandler as NativeLogHandler
 
 actual class GlobalCallManager(
@@ -33,10 +33,10 @@ actual class GlobalCallManager(
                 logHandler = LogHandlerImpl,
                 arg = null
             )
-            kaliumLogger.i("GlobalCallManager -> wcall_init")
+            callingLogger.i("GlobalCallManager -> wcall_init")
         }
     }
-    
+
     /**
      * Get a [CallManager] for a session, shouldn't be instantiated more than one CallManager for a single session.
      */
@@ -69,17 +69,17 @@ actual class GlobalCallManager(
             appContext
         ) { manager, path, method, ctype, content, ctx ->
             // TODO("Not yet implemented")
-            kaliumLogger.i("FlowManager -> RequestHandler -> $path : $method")
+            callingLogger.i("FlowManager -> RequestHandler -> $path : $method")
             0
         }.also {
             it.setEnableLogging(true)
             it.setLogHandler(object : NativeLogHandler {
                 override fun append(msg: String?) {
-                    kaliumLogger.i("FlowManager -> Logger -> Append -> $msg")
+                    callingLogger.i("FlowManager -> Logger -> Append -> $msg")
                 }
 
                 override fun upload() {
-                    kaliumLogger.i("FlowManager -> Logger -> upload")
+                    callingLogger.i("FlowManager -> Logger -> upload")
                 }
             })
         }
@@ -89,10 +89,10 @@ actual class GlobalCallManager(
 object LogHandlerImpl : LogHandler {
     override fun onLog(level: Int, message: String, arg: Pointer?) {
         when (level) {
-            0 -> kaliumLogger.d(message)
-            1 -> kaliumLogger.i(message)
-            2 -> kaliumLogger.w(message)
-            3 -> kaliumLogger.e(message)
+            0 -> callingLogger.d(message)
+            1 -> callingLogger.i(message)
+            2 -> callingLogger.w(message)
+            3 -> callingLogger.e(message)
         }
     }
 }

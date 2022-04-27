@@ -194,7 +194,8 @@ class MLSConversationRepositoryTest {
             "eventId",
             TestConversation.ID,
             TestUser.USER_ID,
-            WELCOME.encodeBase64()
+            WELCOME.encodeBase64(),
+            date = "2022-03-30T15:36:00.000Z"
         )
     }
 }

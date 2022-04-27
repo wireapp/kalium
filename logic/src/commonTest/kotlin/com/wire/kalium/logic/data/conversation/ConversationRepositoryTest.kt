@@ -490,7 +490,8 @@ class ConversationRepositoryTest {
             ConversationResponse.Type.GROUP,
             0,
             null,
-            ConvProtocol.PROTEUS
+            ConvProtocol.PROTEUS,
+            lastEventTime = "2022-03-30T15:36:00.000Z"
         )
 
         val OTHER_USER_ID = UserId("otherValue", "domain")
@@ -504,7 +505,7 @@ class ConversationRepositoryTest {
             type = ConversationEntity.Type.ONE_ON_ONE,
             teamId = null,
             protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
-            lastModifiedDate = null,
+            lastModifiedDate = "2022-03-30T15:36:00.000Z",
             lastNotificationDate = null
         )
 
@@ -518,7 +519,7 @@ class ConversationRepositoryTest {
                 type = ConversationEntity.Type.ONE_ON_ONE,
                 teamId = null,
                 protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
-                lastModifiedDate = null,
+                lastModifiedDate = "2022-03-30T15:36:00.000Z",
                 lastNotificationDate = null
             )
         )

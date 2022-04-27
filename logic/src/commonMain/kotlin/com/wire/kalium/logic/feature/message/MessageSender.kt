@@ -1,8 +1,8 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -10,7 +10,9 @@ import com.wire.kalium.logic.failure.SendMessageFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.persistence.dao.ConversationEntity
+import com.wire.kalium.persistence.dao.message.MessageEntity
 
 interface MessageSender {
     /**
@@ -38,7 +40,8 @@ class MessageSenderImpl(
     private val messageSendFailureHandler: MessageSendFailureHandler,
     private val sessionEstablisher: SessionEstablisher,
     private val messageEnvelopeCreator: MessageEnvelopeCreator,
-    private val mlsMessageCreator: MLSMessageCreator
+    private val mlsMessageCreator: MLSMessageCreator,
+    private val timeParser: TimeParser,
 ) : MessageSender {
 
     override suspend fun trySendingOutgoingMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit> =
@@ -46,10 +49,29 @@ class MessageSenderImpl(
             syncManager.waitForSlowSyncToComplete()
             messageRepository.getMessageById(conversationId, messageUuid).flatMap { message ->
                 trySendingOutgoingMessage(conversationId, message)
+            }.onFailure {
+                messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, messageUuid)
             }
         }
 
     override suspend fun trySendingOutgoingMessage(conversationId: ConversationId, message: Message): Either<CoreFailure, Unit> =
+        suspending {
+            attemptToSend(conversationId, message)
+                .flatMap { messageRemoteTime ->
+                    messageRepository.updateMessageDate(conversationId, message.id, messageRemoteTime)
+                        .flatMap {
+                            messageRepository.updateMessageStatus(MessageEntity.Status.SENT, conversationId, message.id)
+                        }.flatMap {
+                            // this should make sure that pending messages are ordered correctly after one of them is sent
+                            messageRepository.updatePendingMessagesAddMillisToDate(
+                                conversationId,
+                                timeParser.calculateMillisDifference(message.date, messageRemoteTime)
+                            )
+                        }
+                }
+        }
+
+    private suspend fun attemptToSend(conversationId: ConversationId, message: Message): Either<CoreFailure, String> =
         suspending {
             conversationRepository.getConversationProtocolInfo(conversationId).flatMap { protocolInfo ->
                 when (protocolInfo) {
@@ -61,12 +83,10 @@ class MessageSenderImpl(
                         attemptToSendWithProteus(conversationId, message)
                     }
                 }
-            }.flatMap {
-                messageRepository.markMessageAsSent(conversationId, message.id)
             }
         }
 
-    private suspend fun attemptToSendWithProteus(conversationId: ConversationId, message: Message): Either<CoreFailure, Unit> =
+    private suspend fun attemptToSendWithProteus(conversationId: ConversationId, message: Message): Either<CoreFailure, String> =
         suspending {
             conversationRepository.getConversationRecipients(conversationId)
                 .flatMap { recipients ->
@@ -78,28 +98,35 @@ class MessageSenderImpl(
                 }
         }
 
-    private suspend fun attemptToSendWithMLS(conversationId: ConversationId, groupId: String, message: Message): Either<CoreFailure, Unit> = suspending {
-        mlsMessageCreator.createOutgoingMLSMessage(groupId, message).flatMap { mlsMessage ->
-            // TODO handle mls-stale-message
-            messageRepository.sendMLSMessage(conversationId, mlsMessage)
+    private suspend fun attemptToSendWithMLS(
+        conversationId: ConversationId,
+        groupId: String,
+        message: Message
+    ): Either<CoreFailure, String> =
+        suspending {
+            mlsMessageCreator.createOutgoingMLSMessage(groupId, message).flatMap { mlsMessage ->
+                // TODO handle mls-stale-message
+                messageRepository.sendMLSMessage(conversationId, mlsMessage).map {
+                    message.date //TODO return actual server time from the response
+                }
+            }
         }
-    }
 
     private suspend fun trySendingEnvelopeRetryingIfPossible(
         conversationId: ConversationId,
         envelope: MessageEnvelope,
         messageUuid: Message,
-    ): Either<CoreFailure, Unit> = suspending {
+    ): Either<CoreFailure, String> = suspending {
         messageRepository.sendEnvelope(conversationId, envelope).coFold(
             {
                 when (it) {
                     is SendMessageFailure.Unknown -> Either.Left(it)
                     is SendMessageFailure.ClientsHaveChanged -> messageSendFailureHandler.handleClientsHaveChangedFailure(it).flatMap {
-                        trySendingOutgoingMessage(conversationId, messageUuid)
+                        attemptToSend(conversationId, messageUuid)
                     }
                 }
             }, {
-                Either.Right(Unit)
+                Either.Right(it)
             })
     }
 }
