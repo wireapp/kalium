@@ -54,7 +54,7 @@ class SSOLoginApiImpl(private val httpClient: HttpClient) : SSOLoginApi {
             wrapKaliumResponse<Any> {
                 httpClient.head(httpRequestBuilder)
             }.mapSuccess {
-                httpRequestBuilder.url.toString()
+                httpRequestBuilder.url.buildString()
             }
         }
 
