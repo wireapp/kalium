@@ -117,7 +117,6 @@ class MessageSenderTest {
     fun givenGettingConversationRecipientsFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() {
         runTest {
             //given
-            //given
             setupGivenSuccessResults(
                 getMessageById = true,
                 getConversationProtocol = false,
