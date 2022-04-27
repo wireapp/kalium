@@ -10,6 +10,7 @@ interface TimeParser {
      * Calculate the difference between two time stamps provided to it
      *  The date time passed to @param[time1] and @param[time2] needs to have I.SO-8601 format
      *  eq.YYYY-MM-DDTHH:mm:ss.SSSZ
+     *
      */
     fun calculateMillisDifference(time1: String, time2: String): Long
 }
