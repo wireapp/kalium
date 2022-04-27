@@ -144,7 +144,6 @@ class MessageSenderTest {
     fun givenPreparingRecipentsForNewOutgoingMessageFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() {
         runTest {
             //given
-            //given
             setupGivenSuccessResults(
                 getMessageById = true,
                 getConversationProtocol = true,
