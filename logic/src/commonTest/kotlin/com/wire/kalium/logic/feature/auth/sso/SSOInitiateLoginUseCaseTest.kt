@@ -33,11 +33,11 @@ class SSOInitiateLoginUseCaseTest {
     }
 
     @Test
-    fun givenCodeIsInvalid_whenInitiating_thenReturnInvalidCode() =
+    fun givenCodeFormatIsInvalid_whenInitiating_thenReturnInvalidCodeFormat() =
         runTest {
             given(validateUUIDUseCase).invocation { invoke(TEST_CODE) }.then { ValidateSSOCodeResult.Invalid }
             val result = ssoInitiateLoginUseCase(SSOInitiateLoginUseCase.Param.WithoutRedirect(TEST_CODE, TEST_SERVER_CONFIG))
-            assertEquals(result, SSOInitiateLoginResult.Failure.InvalidCode)
+            assertEquals(result, SSOInitiateLoginResult.Failure.InvalidCodeFormat)
             verify(validateUUIDUseCase).invocation { invoke(TEST_CODE) }.wasInvoked(exactly = once)
         }
 
