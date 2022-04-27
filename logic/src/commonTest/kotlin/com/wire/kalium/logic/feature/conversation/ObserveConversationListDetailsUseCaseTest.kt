@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.LegalHoldStatus
+import com.wire.kalium.logic.data.conversation.UserType
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
@@ -135,13 +136,15 @@ class ObserveConversationListDetailsUseCaseTest {
             oneOnOneConversation,
             TestUser.OTHER,
             ConnectionState.ACCEPTED,
-            LegalHoldStatus.ENABLED
+            LegalHoldStatus.ENABLED,
+            UserType.INTERNAL,
         )
         val secondOneOnOneDetails = ConversationDetails.OneOne(
             oneOnOneConversation,
             TestUser.OTHER.copy(name = "New User Name"),
             ConnectionState.PENDING,
-            LegalHoldStatus.DISABLED
+            LegalHoldStatus.DISABLED,
+            UserType.INTERNAL,
         )
         val oneOnOneConversationDetailsUpdates = listOf(
             firstOneOnOneDetails,
