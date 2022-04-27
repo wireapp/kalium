@@ -15,9 +15,9 @@ data class RegisterClientParam(
     val model: String?
 )
 
-data class DeleteClientParam(
-    val password: String,
-    val clientId: ClientId /* = com.wire.kalium.logic.data.id.PlainId */
+data class DeleteClientParam (
+    val password: String?,
+    val clientId: ClientId
 )
 
 data class Client(
