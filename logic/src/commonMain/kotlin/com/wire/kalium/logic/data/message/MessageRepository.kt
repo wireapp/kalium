@@ -33,7 +33,8 @@ interface MessageRepository {
         conversationId: ConversationId,
         messageUuid: String
     ): Either<CoreFailure, Unit>
-suspend fun updateMessageDate(conversationId: ConversationId, messageUuid: String, date: String): Either<CoreFailure, Unit>
+
+    suspend fun updateMessageDate(conversationId: ConversationId, messageUuid: String, date: String): Either<CoreFailure, Unit>
     suspend fun updatePendingMessagesAddMillisToDate(conversationId: ConversationId, millis: Long): Either<CoreFailure, Unit>
     suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message>
     suspend fun getMessagesByConversationAfterDate(conversationId: ConversationId, date: String): Flow<List<Message>>
@@ -143,7 +144,7 @@ class MessageDataSource(
             ),
             idMapper.toApiModel(conversationId),
         )
-        return when(result) {
+        return when (result) {
             is NetworkResponse.Success -> {
                 Either.Right(result.value.time)
             }
