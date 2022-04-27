@@ -69,8 +69,7 @@ class MessageSenderTest {
     }
 
     @Test
-    fun givenAllStepsSucceed_WhenSendingOutgoingMessage_ThenReturnSuccess() {
-        runTest {
+    fun givenAllStepsSucceed_WhenSendingOutgoingMessage_ThenReturnSuccess() { runTest {
             //given
             setupGivenSuccessResults(
                 getMessageById = true,
@@ -89,8 +88,7 @@ class MessageSenderTest {
     }
 
     @Test
-    fun givenGettingConversationProtocolFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() {
-        runTest {
+    fun givenGettingConversationProtocolFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() { runTest {
             //given
             setupGivenSuccessResults(
                 getMessageById = true,
@@ -114,12 +112,10 @@ class MessageSenderTest {
     }
 
     @Test
-    fun givenGettingConversationRecipientsFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() {
-        runTest {
+    fun givenGettingConversationRecipientsFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() { runTest {
             //given
             setupGivenSuccessResults(
                 getMessageById = true,
-                getConversationProtocol = false,
                 getConversationProtocol = true,
                 getConversationsRecipient = false,
                 prepareRecipientsForNewOutGoingMessage = true,
@@ -141,8 +137,7 @@ class MessageSenderTest {
     }
 
     @Test
-    fun givenPreparingRecipentsForNewOutgoingMessageFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() {
-        runTest {
+    fun givenPreparingRecipentsForNewOutgoingMessageFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() { runTest {
             //given
             setupGivenSuccessResults(
                 getMessageById = true,
@@ -166,8 +161,7 @@ class MessageSenderTest {
     }
 
     @Test
-    fun givenCreatingOutgoingEnvelopeFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() {
-        runTest {
+    fun givenCreatingOutgoingEnvelopeFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() { runTest {
             //given
             //given
             setupGivenSuccessResults(
@@ -192,8 +186,7 @@ class MessageSenderTest {
     }
 
     @Test
-    fun givenSendingEnvelopeFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() {
-        runTest {
+    fun givenSendingEnvelopeFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() { runTest {
             //given
             setupGivenSuccessResults(
                 getMessageById = true,
@@ -217,8 +210,7 @@ class MessageSenderTest {
     }
 
     @Test
-    fun givenUpdatingMessageStatusToSuccessFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() {
-        runTest {
+    fun givenUpdatingMessageStatusToSuccessFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() { runTest {
             //given
             setupGivenSuccessResults(
                 getMessageById = true,
