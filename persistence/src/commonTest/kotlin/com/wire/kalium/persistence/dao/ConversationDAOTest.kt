@@ -140,7 +140,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenAnExistingConversation_ThenConversationsForNotificationCanBeRetrieved() = runTest {
+    fun givenMultipleConversations_whenGettingConversationsForNotifications_thenOnlyUnnotifiedConversationsAreReturned() = runTest {
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.insertConversation(conversationEntity2)
         conversationDAO.updateConversationNotificationDate(QualifiedIDEntity("2", "wire.com"), "2022-03-30T15:36:10.000Z")
