@@ -195,7 +195,6 @@ class MessageSenderTest {
     fun givenSendingEnvelopeFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() {
         runTest {
             //given
-            //given
             setupGivenSuccessResults(
                 getMessageById = true,
                 getConversationProtocol = true,
