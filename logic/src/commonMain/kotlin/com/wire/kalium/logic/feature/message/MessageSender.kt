@@ -12,6 +12,9 @@ import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.until
 
 interface MessageSender {
     /**
@@ -54,6 +57,19 @@ class MessageSenderImpl(
 
     override suspend fun trySendingOutgoingMessage(conversationId: ConversationId, message: Message): Either<CoreFailure, Unit> =
         suspending {
+            attemptToSend(conversationId, message)
+                .flatMap { messageRemoteTime ->
+                    messageRepository.updateMessageDate(conversationId, message.id, messageRemoteTime)
+                    messageRepository.updateMessageStatus(MessageEntity.Status.SENT, conversationId, message.id)
+                    val millisDiff = message.date.toInstant().until(messageRemoteTime.toInstant(), DateTimeUnit.MILLISECOND)
+                    // this should make sure that pending messages are ordered correctly after one of them is sent
+                    messageRepository.updatePendingMessagesAddMillisToDate(conversationId, millisDiff)
+                }
+        }
+
+
+    private suspend fun attemptToSend(conversationId: ConversationId, message: Message): Either<CoreFailure, String> =
+        suspending {
             conversationRepository.getConversationProtocolInfo(conversationId).flatMap { protocolInfo ->
                 when (protocolInfo) {
                     is ConversationEntity.ProtocolInfo.MLS -> {
@@ -64,12 +80,10 @@ class MessageSenderImpl(
                         attemptToSendWithProteus(conversationId, message)
                     }
                 }
-            }.flatMap {
-                messageRepository.updateMessageStatus(MessageEntity.Status.SENT, conversationId, message.id)
             }
         }
 
-    private suspend fun attemptToSendWithProteus(conversationId: ConversationId, message: Message): Either<CoreFailure, Unit> =
+    private suspend fun attemptToSendWithProteus(conversationId: ConversationId, message: Message): Either<CoreFailure, String> =
         suspending {
             conversationRepository.getConversationRecipients(conversationId)
                 .flatMap { recipients ->
@@ -81,11 +95,17 @@ class MessageSenderImpl(
                 }
         }
 
-    private suspend fun attemptToSendWithMLS(conversationId: ConversationId, groupId: String, message: Message): Either<CoreFailure, Unit> =
+    private suspend fun attemptToSendWithMLS(
+        conversationId: ConversationId,
+        groupId: String,
+        message: Message
+    ): Either<CoreFailure, String> =
         suspending {
             mlsMessageCreator.createOutgoingMLSMessage(groupId, message).flatMap { mlsMessage ->
                 // TODO handle mls-stale-message
-                messageRepository.sendMLSMessage(conversationId, mlsMessage)
+                messageRepository.sendMLSMessage(conversationId, mlsMessage).map {
+                message.date //TODO return actual server time from the response
+            }
             }
         }
 
@@ -93,17 +113,17 @@ class MessageSenderImpl(
         conversationId: ConversationId,
         envelope: MessageEnvelope,
         messageUuid: Message,
-    ): Either<CoreFailure, Unit> = suspending {
+    ): Either<CoreFailure, String> = suspending {
         messageRepository.sendEnvelope(conversationId, envelope).coFold(
             {
                 when (it) {
                     is SendMessageFailure.Unknown -> Either.Left(it)
                     is SendMessageFailure.ClientsHaveChanged -> messageSendFailureHandler.handleClientsHaveChangedFailure(it).flatMap {
-                        trySendingOutgoingMessage(conversationId, messageUuid)
+                        attemptToSend(conversationId, messageUuid)
                     }
                 }
             }, {
-                Either.Right(Unit)
+                Either.Right(it)
             })
     }
 }

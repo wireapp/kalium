@@ -24,7 +24,7 @@ interface ConversationApi {
     ): NetworkResponse<AddParticipantResponse>
 
     suspend fun updateConversationMemberState(
-        memberUpdateRequest: MemberUpdateRequest,
+        memberUpdateRequest: MemberUpdateDTO,
         conversationId: ConversationId
     ): NetworkResponse<Unit>
 }

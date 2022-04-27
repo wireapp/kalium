@@ -12,6 +12,8 @@ import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCase
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCaseImpl
+import com.wire.kalium.logic.feature.asset.SendAssetMessageUseCase
+import com.wire.kalium.logic.feature.asset.SendAssetMessageUseCaseImpl
 import com.wire.kalium.logic.feature.asset.SendImageMessageUseCase
 import com.wire.kalium.logic.feature.asset.SendImageMessageUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
@@ -72,6 +74,15 @@ class MessageScope(
             messageSender
         )
 
+    val sendAssetMessage: SendAssetMessageUseCase
+        get() = SendAssetMessageUseCaseImpl(
+            messageRepository,
+            clientRepository,
+            assetRepository,
+            userRepository,
+            messageSender
+        )
+
     val getAssetMessage: GetMessageAssetUseCase
         get() = GetMessageAssetUseCaseImpl(
             assetRepository,
@@ -90,4 +101,7 @@ class MessageScope(
             conversationRepository
         )
 
+    val markMessagesAsNotified: MarkMessagesAsNotifiedUseCase get() = MarkMessagesAsNotifiedUseCaseImpl(conversationRepository)
+
+    val getNotifications: GetNotificationsUseCase get() = GetNotificationsUseCaseImpl(messageRepository, userRepository, conversationRepository)
 }

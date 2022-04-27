@@ -4,11 +4,14 @@ import com.wire.crypto.CiphersuiteName
 import com.wire.crypto.ConversationConfiguration
 import com.wire.crypto.CoreCrypto
 import com.wire.crypto.Invitee
+import io.ktor.util.decodeBase64Bytes
+import io.ktor.util.encodeBase64
+import java.io.File
 import java.time.Duration
 
 @OptIn(ExperimentalUnsignedTypes::class)
 actual class MLSClientImpl actual constructor(
-    rootDir: String,
+    private val rootDir: String,
     databaseKey: String,
     clientId: CryptoQualifiedClientId) : MLSClient {
 
@@ -17,6 +20,11 @@ actual class MLSClientImpl actual constructor(
 
     init {
         coreCrypto = CoreCrypto(rootDir, databaseKey, clientId.toString())
+    }
+
+    override fun clearLocalFiles(): Boolean {
+        coreCrypto.close()
+        return File(rootDir).deleteRecursively()
     }
 
     override fun getPublicKey(): ByteArray {
@@ -41,13 +49,11 @@ actual class MLSClientImpl actual constructor(
             keyRotationDuration
         )
 
-        val messages = coreCrypto.createConversation(toUByteList(conversationId), conf)
-
+        val messages = coreCrypto.createConversation(toUByteList(conversationId.decodeBase64Bytes()), conf)
         return messages?.let { Pair(toByteArray(it.message), toByteArray(it.welcome)) }
     }
 
     override fun processWelcomeMessage(message: WelcomeMessage): MLSGroupId {
-
         // TODO currently generating a dummy ConversationConfiguration, this should be removed when API is updated.
         val conf = ConversationConfiguration(
             emptyList(),
@@ -57,16 +63,16 @@ actual class MLSClientImpl actual constructor(
         )
 
         val conversationId = coreCrypto.processWelcomeMessage(toUByteList(message), conf)
-        return String(toByteArray(conversationId))
+        return toByteArray(conversationId).encodeBase64()
     }
 
     override fun encryptMessage(groupId: MLSGroupId, message: PlainMessage): ApplicationMessage {
-        val applicationMessage = coreCrypto.encryptMessage(toUByteList(groupId), toUByteList(message))
+        val applicationMessage = coreCrypto.encryptMessage(toUByteList(groupId.decodeBase64Bytes()), toUByteList(message))
         return toByteArray(applicationMessage)
     }
 
     override fun decryptMessage(groupId: MLSGroupId, message: ApplicationMessage): PlainMessage? {
-        return coreCrypto.decryptMessage(toUByteList(groupId), toUByteList(message))?.let { toByteArray(it) }
+        return coreCrypto.decryptMessage(toUByteList(groupId.decodeBase64Bytes()), toUByteList(message))?.let { toByteArray(it) }
     }
 
     override fun addMember(
@@ -76,8 +82,7 @@ actual class MLSClientImpl actual constructor(
             Invitee(toUByteList(it.first.toString()), toUByteList(it.second))
         }
 
-        val messages = coreCrypto.addClientsToConversation(toUByteList(conversationId), invitees)
-
+        val messages = coreCrypto.addClientsToConversation(toUByteList(conversationId.decodeBase64Bytes()), invitees)
         return messages?.let { Pair(toByteArray(it.message), toByteArray(it.welcome)) }
     }
 
@@ -90,7 +95,7 @@ actual class MLSClientImpl actual constructor(
             Invitee(toUByteList(it.toString()), toUByteList(generateKeyPackages(1).first()))
         }
 
-        val handshake = coreCrypto.removeClientsFromConversation(toUByteList(groupId), invitees)
+        val handshake = coreCrypto.removeClientsFromConversation(toUByteList(groupId.decodeBase64Bytes()), invitees)
         return handshake?.let { toByteArray(it) }
     }
 

@@ -46,3 +46,18 @@ tasks.test {
 ```
 
 The path is the same as the one you have passed to the VM options, adjusted for your machine.
+
+#### Running the CLI
+
+With the native libs in the classpath (-Djava.library.path=/usr/local/lib/:./native/libs):
+
+```
+./gradlew :cli:run --args="login"
+```
+
+or
+
+```
+./gradlew assemble
+java -jar cli/build/libs/cli.jar login
+```

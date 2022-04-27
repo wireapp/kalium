@@ -25,6 +25,7 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -32,6 +33,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertSame
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class RegisterClientUseCaseTest {
 
     @Mock
@@ -148,7 +150,7 @@ class RegisterClientUseCaseTest {
         registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
 
         verify(clientRepository)
-            .suspendFunction(clientRepository::persistClientId)
+            .function(clientRepository::persistClientId)
             .with(anything())
             .wasNotInvoked()
     }
@@ -162,14 +164,14 @@ class RegisterClientUseCaseTest {
             .then { Either.Right(registeredClient) }
 
         given(mlsClientProvider)
-            .suspendFunction(mlsClientProvider::getMLSClient)
+            .function(mlsClientProvider::getMLSClient)
             .whenInvokedWith(eq(CLIENT.clientId))
             .then { Either.Right(MLS_CLIENT) }
 
         given(MLS_CLIENT)
             .function(MLS_CLIENT::getPublicKey)
             .whenInvoked()
-            .thenReturn( MLS_PUBLIC_KEY )
+            .thenReturn(MLS_PUBLIC_KEY)
 
         given(clientRepository)
             .suspendFunction(clientRepository::registerMLSClient)
@@ -179,7 +181,7 @@ class RegisterClientUseCaseTest {
         registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
 
         verify(clientRepository)
-            .suspendFunction(clientRepository::persistClientId)
+            .function(clientRepository::persistClientId)
             .with(anything())
             .wasNotInvoked()
     }
@@ -193,14 +195,14 @@ class RegisterClientUseCaseTest {
             .then { Either.Right(registeredClient) }
 
         given(mlsClientProvider)
-            .suspendFunction(mlsClientProvider::getMLSClient)
+            .function(mlsClientProvider::getMLSClient)
             .whenInvokedWith(eq(CLIENT.clientId))
             .then { Either.Right(MLS_CLIENT) }
 
         given(MLS_CLIENT)
             .function(MLS_CLIENT::getPublicKey)
             .whenInvoked()
-            .thenReturn( MLS_PUBLIC_KEY )
+            .thenReturn(MLS_PUBLIC_KEY)
 
         given(clientRepository)
             .suspendFunction(clientRepository::registerMLSClient)
@@ -210,12 +212,12 @@ class RegisterClientUseCaseTest {
         given(keyPackageRepository)
             .suspendFunction(keyPackageRepository::uploadNewKeyPackages)
             .whenInvokedWith(anything(), eq(100))
-            .thenReturn( Either.Left(TEST_FAILURE))
+            .thenReturn(Either.Left(TEST_FAILURE))
 
         registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
 
         verify(clientRepository)
-            .suspendFunction(clientRepository::persistClientId)
+            .function(clientRepository::persistClientId)
             .with(anything())
             .wasNotInvoked()
     }
@@ -229,14 +231,14 @@ class RegisterClientUseCaseTest {
             .then { Either.Right(registeredClient) }
 
         given(mlsClientProvider)
-            .suspendFunction(mlsClientProvider::getMLSClient)
+            .function(mlsClientProvider::getMLSClient)
             .whenInvokedWith(eq(CLIENT.clientId))
             .then { Either.Right(MLS_CLIENT) }
 
         given(MLS_CLIENT)
             .function(MLS_CLIENT::getPublicKey)
             .whenInvoked()
-            .thenReturn( MLS_PUBLIC_KEY )
+            .thenReturn(MLS_PUBLIC_KEY)
 
         given(clientRepository)
             .suspendFunction(clientRepository::registerMLSClient)
@@ -246,17 +248,17 @@ class RegisterClientUseCaseTest {
         given(keyPackageRepository)
             .suspendFunction(keyPackageRepository::uploadNewKeyPackages)
             .whenInvokedWith(anything(), eq(100))
-            .thenReturn( Either.Right(Unit))
+            .thenReturn(Either.Right(Unit))
 
         given(clientRepository)
-            .suspendFunction(clientRepository::persistClientId)
+            .function(clientRepository::persistClientId)
             .whenInvokedWith(anything())
             .then { Either.Right(Unit) }
 
         registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
 
         verify(clientRepository)
-            .suspendFunction(clientRepository::persistClientId)
+            .function(clientRepository::persistClientId)
             .with(eq(registeredClient.clientId))
             .wasInvoked(once)
     }
@@ -269,14 +271,14 @@ class RegisterClientUseCaseTest {
             .then { Either.Right(CLIENT) }
 
         given(mlsClientProvider)
-            .suspendFunction(mlsClientProvider::getMLSClient)
+            .function(mlsClientProvider::getMLSClient)
             .whenInvokedWith(eq(CLIENT.clientId))
             .then { Either.Right(MLS_CLIENT) }
 
         given(MLS_CLIENT)
             .function(MLS_CLIENT::getPublicKey)
             .whenInvoked()
-            .thenReturn( MLS_PUBLIC_KEY )
+            .thenReturn(MLS_PUBLIC_KEY)
 
         given(clientRepository)
             .suspendFunction(clientRepository::registerMLSClient)
@@ -286,11 +288,11 @@ class RegisterClientUseCaseTest {
         given(keyPackageRepository)
             .suspendFunction(keyPackageRepository::uploadNewKeyPackages)
             .whenInvokedWith(anything(), eq(100))
-            .thenReturn( Either.Right(Unit))
+            .thenReturn(Either.Right(Unit))
 
         val persistFailure = TEST_FAILURE
         given(clientRepository)
-            .suspendFunction(clientRepository::persistClientId)
+            .function(clientRepository::persistClientId)
             .whenInvokedWith(anything())
             .then { Either.Left(persistFailure) }
 
@@ -309,14 +311,14 @@ class RegisterClientUseCaseTest {
             .then { Either.Right(CLIENT) }
 
         given(mlsClientProvider)
-            .suspendFunction(mlsClientProvider::getMLSClient)
+            .function(mlsClientProvider::getMLSClient)
             .whenInvokedWith(eq(CLIENT.clientId))
             .then { Either.Right(MLS_CLIENT) }
 
         given(MLS_CLIENT)
             .function(MLS_CLIENT::getPublicKey)
             .whenInvoked()
-            .thenReturn( MLS_PUBLIC_KEY )
+            .thenReturn(MLS_PUBLIC_KEY)
 
         given(clientRepository)
             .suspendFunction(clientRepository::registerMLSClient)
@@ -326,10 +328,10 @@ class RegisterClientUseCaseTest {
         given(keyPackageRepository)
             .suspendFunction(keyPackageRepository::uploadNewKeyPackages)
             .whenInvokedWith(anything(), eq(100))
-            .thenReturn( Either.Right(Unit))
+            .thenReturn(Either.Right(Unit))
 
         given(clientRepository)
-            .suspendFunction(clientRepository::persistClientId)
+            .function(clientRepository::persistClientId)
             .whenInvokedWith(anything())
             .then { Either.Right(Unit) }
 
@@ -382,7 +384,10 @@ class RegisterClientUseCaseTest {
             password = TEST_PASSWORD,
             preKeys = PRE_KEYS,
             lastKey = LAST_KEY,
-            capabilities = TEST_CAPABILITIES
+            capabilities = TEST_CAPABILITIES,
+            deviceType = null,
+            label = null,
+            model = null
         )
         val CLIENT = TestClient.CLIENT
 

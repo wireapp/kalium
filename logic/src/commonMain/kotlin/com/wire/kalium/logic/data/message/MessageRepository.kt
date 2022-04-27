@@ -6,21 +6,23 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.SendMessageFailure
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.message.MLSMessageApi
 import com.wire.kalium.network.api.message.MessageApi
 import com.wire.kalium.network.api.message.MessagePriority
 import com.wire.kalium.network.exceptions.QualifiedSendMessageError
-import com.wire.kalium.network.utils.isSuccessful
+import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 
 interface MessageRepository {
-    suspend fun getMessagesForConversation(conversationId: ConversationId, limit: Int): Flow<List<Message>>
+    suspend fun getMessagesForConversation(conversationId: ConversationId, limit: Int, offset: Int): Flow<List<Message>>
     suspend fun persistMessage(message: Message): Either<CoreFailure, Unit>
     suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun deleteMessage(messageUuid: String): Either<CoreFailure, Unit>
@@ -31,11 +33,13 @@ interface MessageRepository {
         conversationId: ConversationId,
         messageUuid: String
     ): Either<CoreFailure, Unit>
-
+suspend fun updateMessageDate(conversationId: ConversationId, messageUuid: String, date: String): Either<CoreFailure, Unit>
+    suspend fun updatePendingMessagesAddMillisToDate(conversationId: ConversationId, millis: Long): Either<CoreFailure, Unit>
     suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message>
+    suspend fun getMessagesByConversationAfterDate(conversationId: ConversationId, date: String): Flow<List<Message>>
 
-    // TODO: change the return type to Either<CoreFailure, Unit>
-    suspend fun sendEnvelope(conversationId: ConversationId, envelope: MessageEnvelope): Either<SendMessageFailure, Unit>
+    // TODO: change the return type to Either<CoreFailure, String>
+    suspend fun sendEnvelope(conversationId: ConversationId, envelope: MessageEnvelope): Either<SendMessageFailure, String>
     suspend fun sendMLSMessage(conversationId: ConversationId, message: MLSMessageApi.Message): Either<CoreFailure, Unit>
 }
 
@@ -48,8 +52,8 @@ class MessageDataSource(
     private val sendMessageFailureMapper: SendMessageFailureMapper = MapperProvider.sendMessageFailureMapper()
 ) : MessageRepository {
 
-    override suspend fun getMessagesForConversation(conversationId: ConversationId, limit: Int): Flow<List<Message>> {
-        return messageDAO.getMessageByConversation(idMapper.toDaoModel(conversationId), limit).map { messageList ->
+    override suspend fun getMessagesForConversation(conversationId: ConversationId, limit: Int, offset: Int): Flow<List<Message>> {
+        return messageDAO.getMessagesByConversation(idMapper.toDaoModel(conversationId), limit, offset).map { messageList ->
             messageList.map(messageMapper::fromEntityToMessage)
         }
     }
@@ -92,22 +96,40 @@ class MessageDataSource(
         return Either.Right(Unit)
     }
 
-    override suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message> {
-        //TODO handle failures
-        return Either.Right(
+    override suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message> =
+        wrapStorageRequest {
             messageDAO.getMessageById(messageUuid, idMapper.toDaoModel(conversationId))
-                .filterNotNull()
-                .map(messageMapper::fromEntityToMessage)
-                .first()
-        )
+                .firstOrNull()?.run {
+                    messageMapper.fromEntityToMessage(this)
+                }
+        }.onSuccess {
+            Either.Right(it)
+        }.onFailure {
+            Either.Left(it)
+        }
+
+    override suspend fun getMessagesByConversationAfterDate(conversationId: ConversationId, date: String): Flow<List<Message>> {
+        return messageDAO.getMessagesByConversationAfterDate(idMapper.toDaoModel(conversationId), date).map { messageList ->
+            messageList.map(messageMapper::fromEntityToMessage)
+        }
     }
 
     override suspend fun updateMessageStatus(messageStatus: MessageEntity.Status, conversationId: ConversationId, messageUuid: String) =
-        Either.Right(
+        wrapStorageRequest {
             messageDAO.updateMessageStatus(messageStatus, messageUuid, idMapper.toDaoModel(conversationId))
-        )
+        }
 
-    override suspend fun sendEnvelope(conversationId: ConversationId, envelope: MessageEnvelope): Either<SendMessageFailure, Unit> {
+    override suspend fun updateMessageDate(conversationId: ConversationId, messageUuid: String, date: String) =
+        wrapStorageRequest {
+            messageDAO.updateMessageDate(date, messageUuid, idMapper.toDaoModel(conversationId))
+        }
+
+    override suspend fun updatePendingMessagesAddMillisToDate(conversationId: ConversationId, millis: Long) =
+        wrapStorageRequest {
+            messageDAO.updateMessagesAddMillisToDate(millis, idMapper.toDaoModel(conversationId), MessageEntity.Status.PENDING)
+        }
+
+    override suspend fun sendEnvelope(conversationId: ConversationId, envelope: MessageEnvelope): Either<SendMessageFailure, String> {
         val recipientMap = envelope.recipients.associate { recipientEntry ->
             idMapper.toApiModel(recipientEntry.userId) to recipientEntry.clientPayloads.associate { clientPayload ->
                 clientPayload.clientId.value to clientPayload.payload.data
@@ -121,16 +143,19 @@ class MessageDataSource(
             ),
             idMapper.toApiModel(conversationId),
         )
-        return if (!result.isSuccessful()) {
-            val exception = result.kException
-            if (exception is QualifiedSendMessageError.MissingDeviceError) {
-                Either.Left(sendMessageFailureMapper.fromDTO(exception))
-            } else {
-                //TODO handle different cases
-                Either.Left(SendMessageFailure.Unknown(result.kException))
+        return when(result) {
+            is NetworkResponse.Success -> {
+                Either.Right(result.value.time)
             }
-        } else {
-            Either.Right(Unit)
+            is NetworkResponse.Error -> {
+                val exception = result.kException
+                if (exception is QualifiedSendMessageError.MissingDeviceError) {
+                    Either.Left(sendMessageFailureMapper.fromDTO(exception))
+                } else {
+                    //TODO handle different cases
+                    Either.Left(SendMessageFailure.Unknown(result.kException))
+                }
+            }
         }
     }
 

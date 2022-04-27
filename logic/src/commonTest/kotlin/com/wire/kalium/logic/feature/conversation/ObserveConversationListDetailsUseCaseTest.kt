@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.LegalHoldStatus
+import com.wire.kalium.logic.data.conversation.UserType
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
@@ -130,18 +131,20 @@ class ObserveConversationListDetailsUseCaseTest {
         val groupConversation = TestConversation.GROUP
         val conversations = listOf(groupConversation, oneOnOneConversation)
 
-        val groupConversationUpdates = listOf(ConversationDetails.Group(groupConversation))
+        val groupConversationUpdates = listOf(ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED))
         val firstOneOnOneDetails = ConversationDetails.OneOne(
             oneOnOneConversation,
             TestUser.OTHER,
             ConnectionState.ACCEPTED,
-            LegalHoldStatus.ENABLED
+            LegalHoldStatus.ENABLED,
+            UserType.INTERNAL,
         )
         val secondOneOnOneDetails = ConversationDetails.OneOne(
             oneOnOneConversation,
             TestUser.OTHER.copy(name = "New User Name"),
             ConnectionState.PENDING,
-            LegalHoldStatus.DISABLED
+            LegalHoldStatus.DISABLED,
+            UserType.INTERNAL,
         )
         val oneOnOneConversationDetailsUpdates = listOf(
             firstOneOnOneDetails,
@@ -179,7 +182,7 @@ class ObserveConversationListDetailsUseCaseTest {
     @Test
     fun givenAConversationIsAddedToTheList_whenObservingDetailsList_thenTheUpdateIsPropagatedThroughTheFlow() = runTest {
         val groupConversation = TestConversation.GROUP
-        val groupConversationDetails = ConversationDetails.Group(groupConversation)
+        val groupConversationDetails = ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED)
 
         val selfConversation = TestConversation.SELF
         val selfConversationDetails = ConversationDetails.Self(selfConversation)

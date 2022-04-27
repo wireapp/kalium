@@ -11,7 +11,7 @@ import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.notification.EventContentDTO
 import com.wire.kalium.network.api.notification.EventResponse
 import com.wire.kalium.network.api.notification.NotificationApi
-import com.wire.kalium.network.api.notification.NotificationPageResponse
+import com.wire.kalium.network.api.notification.NotificationResponse
 import com.wire.kalium.network.api.notification.conversation.MessageEventData
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.event.EventInfoStorage
@@ -24,6 +24,7 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -31,6 +32,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class EventRepositoryTest {
 
     @Mock
@@ -60,7 +62,7 @@ class EventRepositoryTest {
             "eventId",
             listOf()
         )
-        val notificationsPageResponse = NotificationPageResponse("time", false, listOf(firstPage))
+        val notificationsPageResponse = NotificationResponse.CompleteList("time", false, listOf(firstPage))
 
         given(eventInfoStorage)
             .getter(eventInfoStorage::lastProcessedId)
@@ -79,7 +81,7 @@ class EventRepositoryTest {
 
         val clientId = TestClient.CLIENT_ID
         given(clientRepository)
-            .suspendFunction(clientRepository::currentClientId)
+            .function(clientRepository::currentClientId)
             .whenInvoked()
             .thenReturn(Either.Right(clientId))
 
@@ -104,7 +106,7 @@ class EventRepositoryTest {
                 )
             )
         )
-        val notificationsPageResponse = NotificationPageResponse("time", false, listOf(firstPage))
+        val notificationsPageResponse = NotificationResponse.CompleteList("time", false, listOf(firstPage))
 
         given(eventInfoStorage)
             .getter(eventInfoStorage::lastProcessedId)
@@ -123,7 +125,7 @@ class EventRepositoryTest {
 
         val clientId = TestClient.CLIENT_ID
         given(clientRepository)
-            .suspendFunction(clientRepository::currentClientId)
+            .function(clientRepository::currentClientId)
             .whenInvoked()
             .thenReturn(Either.Right(clientId))
 
@@ -145,7 +147,7 @@ class EventRepositoryTest {
         )
         val pendingEvent = EventResponse("pendingEventId", listOf(pendingEventPayload))
         val liveEvent = pendingEvent.copy(id = "liveEventId")
-        val notificationsPageResponse = NotificationPageResponse("time", false, listOf(pendingEvent))
+        val notificationsPageResponse = NotificationResponse.CompleteList("time", false, listOf(pendingEvent))
 
         given(eventInfoStorage)
             .getter(eventInfoStorage::lastProcessedId)
@@ -164,7 +166,7 @@ class EventRepositoryTest {
 
         val clientId = TestClient.CLIENT_ID
         given(clientRepository)
-            .suspendFunction(clientRepository::currentClientId)
+            .function(clientRepository::currentClientId)
             .whenInvoked()
             .thenReturn(Either.Right(clientId))
 

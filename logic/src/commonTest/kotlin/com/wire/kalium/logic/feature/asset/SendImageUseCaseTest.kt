@@ -19,6 +19,7 @@ import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
+import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
@@ -43,13 +44,12 @@ class SendImageUseCaseTest {
             .arrange()
 
         // When
-        val result = sendImageUseCase.invoke(conversationId, imageToSend, 1, 1)
+        val result = sendImageUseCase.invoke(conversationId, imageToSend, "temp_image.jpg", 1, 1)
 
         // Then
         assertEquals(result, SendImageMessageResult.Success)
     }
 
-    private fun getMockedImage(): ByteArray = "some_image".toByteArray()
 
     @Test
     fun givenAValidSendImageMessageRequest_whenThereIsAnAssetUploadError_thenShouldCallReturnsAFailureResult() = runTest {
@@ -62,7 +62,7 @@ class SendImageUseCaseTest {
             .arrange()
 
         // When
-        val result = sendImageUseCase.invoke(conversationId, imageByteArray, 1, 1)
+        val result = sendImageUseCase.invoke(conversationId, imageByteArray, "temp_image.jpg", 1, 1)
 
         // Then
         assertTrue(result is SendImageMessageResult.Failure)
@@ -82,83 +82,91 @@ class SendImageUseCaseTest {
                 .arrange()
 
             // When
-            sendImageUseCase.invoke(conversationId, mockedImg, 1, 1)
+            sendImageUseCase.invoke(conversationId, mockedImg, "temp_image.jpg", 1, 1)
 
             // Then
             verify(arrangement.messageRepository)
                 .suspendFunction(arrangement.messageRepository::persistMessage)
                 .with(any())
                 .wasInvoked(exactly = once)
+            verify(arrangement.messageSender)
+                .suspendFunction(arrangement.messageSender::trySendingOutgoingMessageById)
+                .with(eq(conversationId), any())
+                .wasInvoked(exactly = once)
         }
-}
 
-private class Arrangement {
+    private class Arrangement {
 
-    @Mock
-    val messageRepository = mock(classOf<MessageRepository>())
+        @Mock
+        val messageRepository = mock(classOf<MessageRepository>())
 
-    @Mock
-    private val clientRepository = mock(classOf<ClientRepository>())
+        @Mock
+        private val clientRepository = mock(classOf<ClientRepository>())
 
-    @Mock
-    private val assetDataSource = mock(classOf<AssetRepository>())
+        @Mock
+        private val assetDataSource = mock(classOf<AssetRepository>())
 
-    @Mock
-    private val userRepository = mock(classOf<UserRepository>())
+        @Mock
+        private val userRepository = mock(classOf<UserRepository>())
 
-    @Mock
-    private val messageSender = mock(classOf<MessageSender>())
+        @Mock
+        val messageSender = mock(classOf<MessageSender>())
 
-    val someAssetId = UploadedAssetId("some-asset-id", "some-asset-token")
+        val someAssetId = UploadedAssetId("some-asset-id", "some-asset-token")
 
-    val someClientId = ClientId("some-client-id")
+        val someClientId = ClientId("some-client-id")
 
-    private fun fakeSelfUser() = SelfUser(
-        UserId("some_id", "some_domain"),
-        "some_name",
-        "some_handle",
-        "some_email",
-        null,
-        1,
-        null,
-        ConnectionState.ACCEPTED,
-        "some_key",
-        "some_key"
-    )
+        private fun fakeSelfUser() = SelfUser(
+            UserId("some_id", "some_domain"),
+            "some_name",
+            "some_handle",
+            "some_email",
+            null,
+            1,
+            null,
+            ConnectionState.ACCEPTED,
+            "some_key",
+            "some_key"
+        )
 
-    val sendImageUseCase = SendImageMessageUseCaseImpl(messageRepository, clientRepository, assetDataSource, userRepository, messageSender)
+        val sendImageUseCase =
+            SendImageMessageUseCaseImpl(messageRepository, clientRepository, assetDataSource, userRepository, messageSender)
 
-    fun withSuccessfulResponse(): Arrangement {
-        given(assetDataSource)
-            .suspendFunction(assetDataSource::uploadAndPersistPrivateAsset)
-            .whenInvokedWith(any(), any())
-            .thenReturn(Either.Right(someAssetId))
-        given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
-            .whenInvoked()
-            .thenReturn(flowOf(fakeSelfUser()))
-        given(clientRepository)
-            .suspendFunction(clientRepository::currentClientId)
-            .whenInvoked()
-            .thenReturn(Either.Right(someClientId))
-        given(messageRepository)
-            .suspendFunction(messageRepository::persistMessage)
-            .whenInvokedWith(any())
-            .thenReturn(Either.Right(Unit))
-        given(messageSender)
-            .suspendFunction(messageSender::trySendingOutgoingMessageById)
-            .whenInvokedWith(any(), any())
-            .thenReturn(Either.Right(Unit))
-        return this
+        fun withSuccessfulResponse(): Arrangement {
+            given(assetDataSource)
+                .suspendFunction(assetDataSource::uploadAndPersistPrivateAsset)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Either.Right(someAssetId))
+            given(userRepository)
+                .suspendFunction(userRepository::getSelfUser)
+                .whenInvoked()
+                .thenReturn(flowOf(fakeSelfUser()))
+            given(clientRepository)
+                .function(clientRepository::currentClientId)
+                .whenInvoked()
+                .thenReturn(Either.Right(someClientId))
+            given(messageRepository)
+                .suspendFunction(messageRepository::persistMessage)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
+            given(messageSender)
+                .suspendFunction(messageSender::trySendingOutgoingMessageById)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Either.Right(Unit))
+            return this
+        }
+
+        fun withUploadAssetErrorResponse(exception: KaliumException): Arrangement {
+            given(assetDataSource)
+                .suspendFunction(assetDataSource::uploadAndPersistPrivateAsset)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Either.Left(NetworkFailure.ServerMiscommunication(exception)))
+            return this
+        }
+
+        fun arrange() = this to sendImageUseCase
     }
 
-    fun withUploadAssetErrorResponse(exception: KaliumException): Arrangement {
-        given(assetDataSource)
-            .suspendFunction(assetDataSource::uploadAndPersistPrivateAsset)
-            .whenInvokedWith(any(), any())
-            .thenReturn(Either.Left(NetworkFailure.ServerMiscommunication(exception)))
-        return this
-    }
-
-    fun arrange() = this to sendImageUseCase
+    private fun getMockedImage(): ByteArray = "some_image".toByteArray()
 }
+

@@ -5,6 +5,8 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Video
+import com.wire.kalium.logic.data.notification.LocalNotificationMessage
+import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityContent.AssetMessageContent
@@ -13,6 +15,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityConten
 interface MessageMapper {
     fun fromMessageToEntity(message: Message): MessageEntity
     fun fromEntityToMessage(message: MessageEntity): Message
+    fun fromMessageToLocalNotificationMessage(message: Message, author: LocalNotificationMessageAuthor): LocalNotificationMessage
 }
 
 class MessageMapperImpl(private val idMapper: IdMapper) : MessageMapper {
@@ -31,7 +34,7 @@ class MessageMapperImpl(private val idMapper: IdMapper) : MessageMapper {
                 with(message.content.value) {
                     AssetMessageContent(
                         assetMimeType = mimeType,
-                        assetSize = size,
+                        assetSizeInBytes = sizeInBytes,
                         assetName = name,
                         assetImageWidth = metadata?.let { if (it is Image) it.width else null },
                         assetImageHeight = metadata?.let { if (it is Image) it.height else null },
@@ -93,5 +96,14 @@ class MessageMapperImpl(private val idMapper: IdMapper) : MessageMapper {
             ClientId(message.senderClientId),
             status
         )
+    }
+
+    override fun fromMessageToLocalNotificationMessage(message: Message, author: LocalNotificationMessageAuthor): LocalNotificationMessage {
+        val time = message.date
+
+        return when (message.content) {
+            is MessageContent.Text -> LocalNotificationMessage.Text(author, time, message.content.value)
+            else -> LocalNotificationMessage.Text(author, time, "Something not a text") //TODO
+        }
     }
 }

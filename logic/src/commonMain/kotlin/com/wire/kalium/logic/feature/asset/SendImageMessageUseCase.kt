@@ -1,7 +1,11 @@
 package com.wire.kalium.logic.feature.asset
 
 import com.benasher44.uuid.uuid4
-import com.wire.kalium.cryptography.utils.*
+import com.wire.kalium.cryptography.utils.AES256Key
+import com.wire.kalium.cryptography.utils.PlainData
+import com.wire.kalium.cryptography.utils.calcSHA256
+import com.wire.kalium.cryptography.utils.encryptDataWithAES256
+import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.ImageAsset
@@ -17,7 +21,6 @@ import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.kaliumLogger
-import io.ktor.utils.io.core.*
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 
@@ -26,12 +29,16 @@ fun interface SendImageMessageUseCase {
      * Function that enables sending an image as a private asset
      *
      * @param conversationId the id of the conversation where the asset wants to be sent
-     * @param assetData the raw data of the image to be uploaded to the backend and sent to the given conversation
+     * @param imageRawData the raw data of the image to be uploaded to the backend and sent to the given conversation
+     * @param imageName the name of the original image file
+     * @param imgWidth the image width in pixels
+     * @param imgHeight the image height in pixels
      * @return an [Either] tuple containing a [CoreFailure] in case anything goes wrong and [Unit] in case everything succeeds
      */
     suspend operator fun invoke(
         conversationId: ConversationId,
         imageRawData: ByteArray,
+        imageName: String?,
         imgWidth: Int,
         imgHeight: Int
     ): SendImageMessageResult
@@ -48,6 +55,7 @@ internal class SendImageMessageUseCaseImpl(
     override suspend fun invoke(
         conversationId: ConversationId,
         imageRawData: ByteArray,
+        imageName: String?,
         imgWidth: Int,
         imgHeight: Int
     ): SendImageMessageResult = suspending {
@@ -60,8 +68,8 @@ internal class SendImageMessageUseCaseImpl(
 
         // Upload the asset encrypted data
         assetDataSource.uploadAndPersistPrivateAsset(ImageAsset.JPEG, encryptedData.data).flatMap { assetId ->
-            // Try to send the AssetMessage
-            prepareAndSendImageMessage(conversationId, imageRawData.size, sha256, otrKey, assetId, imgWidth, imgHeight).flatMap {
+            // Try to send the Image Message
+            prepareAndSendImageMessage(conversationId, imageRawData.size.toLong(), imageName, sha256, otrKey, assetId, imgWidth, imgHeight).flatMap {
                 Either.Right(Unit)
             }
         }.coFold({
@@ -74,7 +82,8 @@ internal class SendImageMessageUseCaseImpl(
 
     private suspend fun prepareAndSendImageMessage(
         conversationId: ConversationId,
-        dataSize: Int,
+        dataSize: Long,
+        imageName: String?,
         sha256: ByteArray,
         otrKey: AES256Key,
         assetId: UploadedAssetId,
@@ -84,7 +93,7 @@ internal class SendImageMessageUseCaseImpl(
         // Get my current user
         val selfUser = userRepository.getSelfUser().first()
 
-        // Prepare the Image Message
+        // Create a unique image message ID
         val generatedMessageUuid = uuid4().toString()
 
         clientRepository.currentClientId().flatMap { currentClientId ->
@@ -93,6 +102,7 @@ internal class SendImageMessageUseCaseImpl(
                 content = MessageContent.Asset(
                     provideAssetMessageContent(
                         dataSize = dataSize,
+                        imageName = imageName,
                         sha256 = sha256,
                         otrKey = otrKey,
                         assetId = assetId,
@@ -110,12 +120,13 @@ internal class SendImageMessageUseCaseImpl(
         }.flatMap {
             messageSender.trySendingOutgoingMessageById(conversationId, generatedMessageUuid)
         }.onFailure {
-            kaliumLogger.e("There was an error when trying to send the asset on the conversation")
+            kaliumLogger.e("There was an error when trying to send the image message to the conversation")
         }
     }
 
     private fun provideAssetMessageContent(
-        dataSize: Int,
+        dataSize: Long,
+        imageName: String?,
         sha256: ByteArray,
         otrKey: AES256Key,
         assetId: UploadedAssetId,
@@ -123,8 +134,8 @@ internal class SendImageMessageUseCaseImpl(
         imgHeight: Int
     ): AssetContent {
         return AssetContent(
-            size = dataSize,
-            name = "",
+            sizeInBytes = dataSize,
+            name = imageName,
             mimeType = ImageAsset.JPEG.name,
             metadata = AssetContent.AssetMetadata.Image(imgWidth, imgHeight),
             remoteData = AssetContent.RemoteData(

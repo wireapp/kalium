@@ -1,6 +1,5 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.ConversationEntity;
-import kotlin.Int;
 
 CREATE TABLE Conversation (
     qualified_id TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY,
@@ -11,7 +10,9 @@ CREATE TABLE Conversation (
     mls_group_state TEXT AS ConversationEntity.GroupState NOT NULL,
     protocol TEXT AS ConversationEntity.Protocol NOT NULL,
     muted_status TEXT AS ConversationEntity.MutedStatus DEFAULT "all_allowed" NOT NULL,
-    muted_time INTEGER DEFAULT 0 NOT NULL
+    muted_time INTEGER DEFAULT 0 NOT NULL,
+    last_modified_date TEXT NOT NULL,
+    last_notified_message_date TEXT
 );
 
 deleteAllConversations:
@@ -21,7 +22,18 @@ deleteConversation:
 DELETE FROM Conversation WHERE qualified_id = ?;
 
 insertConversation:
-INSERT OR REPLACE INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, protocol, muted_status, muted_time) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, protocol, muted_status, muted_time, last_modified_date)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT(qualified_id) DO UPDATE SET
+name = excluded.name,
+type = excluded.type,
+team_id = excluded.team_id,
+mls_group_id = excluded.mls_group_id,
+mls_group_state = excluded.mls_group_state,
+protocol = excluded.protocol,
+muted_status = excluded.muted_status,
+muted_time = excluded.muted_time,
+last_modified_date = excluded.last_modified_date;
 
 updateConversation:
 UPDATE Conversation
@@ -33,14 +45,27 @@ UPDATE Conversation
 SET mls_group_state = ?
 WHERE mls_group_id = ?;
 
+updateConversationNotificationsDate:
+UPDATE Conversation
+SET last_notified_message_date = ?
+WHERE qualified_id = ?;
+
+updateConversationModifiedDate:
+UPDATE Conversation
+SET last_modified_date = ?
+WHERE qualified_id = ?;
+
 selectAllConversations:
-SELECT * FROM Conversation;
+SELECT * FROM Conversation ORDER BY last_modified_date;
 
 selectByQualifiedId:
 SELECT * FROM Conversation WHERE qualified_id = ?;
 
 selectByGroupId:
 SELECT * FROM Conversation WHERE mls_group_id = ?;
+
+selectConversationsWithUnnotifiedMessages:
+SELECT * FROM Conversation WHERE DateTime(last_modified_date) > DateTime(last_notified_message_date);
 
 updateConversationMutingStatus:
 UPDATE Conversation

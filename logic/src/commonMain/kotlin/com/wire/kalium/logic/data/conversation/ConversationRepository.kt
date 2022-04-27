@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
@@ -56,7 +57,7 @@ interface ConversationRepository {
     suspend fun createGroupConversation(
         name: String? = null,
         members: List<Member>,
-        options: ConverationOptions = ConverationOptions()
+        options: ConversationOptions = ConversationOptions()
     ): Either<CoreFailure, Conversation>
 
     suspend fun updateMutedStatus(
@@ -64,6 +65,11 @@ interface ConversationRepository {
         mutedStatus: MutedConversationStatus,
         mutedStatusTimestamp: Long
     ): Either<CoreFailure, Unit>
+
+    suspend fun getConversationsForNotifications(): Flow<List<Conversation>>
+    suspend fun updateConversationNotificationDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
+    suspend fun updateAllConversationsNotificationDate(date: String): Either<StorageFailure, Unit>
+    suspend fun updateConversationModifiedDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
 }
 
 class ConversationDataSource(
@@ -159,24 +165,27 @@ class ConversationDataSource(
 
     private suspend fun getDetailsFlowConversation(conversation: Conversation): Flow<ConversationDetails> =
         when (conversation.type) {
-            Conversation.Type.SELF -> flowOf(ConversationDetails.Self(conversation))
-            Conversation.Type.GROUP -> flowOf(ConversationDetails.Group(conversation))
-            Conversation.Type.ONE_ON_ONE -> {
+            ConversationEntity.Type.SELF -> flowOf(ConversationDetails.Self(conversation))
+            ConversationEntity.Type.GROUP ->
+                flowOf(
+                    ConversationDetails.Group(
+                        conversation,
+                        LegalHoldStatus.DISABLED //TODO get actual legal hold status
+                    )
+                )
+            ConversationEntity.Type.ONE_ON_ONE -> {
                 suspending {
-                    val selfUserId = userRepository.getSelfUser().map { it.id }.first()
+                    val selfUser = userRepository.getSelfUser().first()
+
                     getConversationMembers(conversation.id).map { members ->
-                        members.first { itemId -> itemId != selfUserId }
+                        members.first { itemId -> itemId != selfUser.id }
                     }.coFold({
                         // TODO: How to Handle failure when dealing with flows?
                         throw IOException("Failure to fetch other user of 1:1 Conversation")
                     }, { otherUserId ->
                         userRepository.getKnownUser(otherUserId)
                     }).filterNotNull().map { otherUser ->
-                        ConversationDetails.OneOne(
-                            conversation, otherUser,
-                            otherUser.connectionStatus,
-                            LegalHoldStatus.DISABLED //TODO get actual legal hold status
-                        )
+                        conversationMapper.toConversationDetailsOneToOne(conversation, otherUser, selfUser)
                     }
                 }
             }
@@ -220,7 +229,7 @@ class ConversationDataSource(
     override suspend fun createGroupConversation(
         name: String?,
         members: List<Member>,
-        options: ConverationOptions
+        options: ConversationOptions
     ): Either<CoreFailure, Conversation> = suspending {
         wrapStorageRequest {
             userRepository.getSelfUser().first()
@@ -251,6 +260,20 @@ class ConversationDataSource(
             }
         }
     }
+
+    override suspend fun getConversationsForNotifications(): Flow<List<Conversation>> =
+        conversationDAO.getConversationsForNotifications()
+            .filterNotNull()
+            .map { it.map(conversationMapper::fromDaoModel) }
+
+    override suspend fun updateConversationNotificationDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit> =
+        wrapStorageRequest { conversationDAO.updateConversationNotificationDate(idMapper.toDaoModel(qualifiedID), date) }
+
+    override suspend fun updateAllConversationsNotificationDate(date: String): Either<StorageFailure, Unit> =
+        wrapStorageRequest { conversationDAO.updateAllConversationsNotificationDate(date) }
+
+    override suspend fun updateConversationModifiedDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit> =
+        wrapStorageRequest { conversationDAO.updateConversationModifiedDate(idMapper.toDaoModel(qualifiedID), date) }
 
     private suspend fun persistMembersFromConversationResponse(conversationResponse: ConversationResponse): Either<CoreFailure, Unit> {
         return wrapStorageRequest {
@@ -287,7 +310,7 @@ class ConversationDataSource(
     }
 
     //TODO: this needs some kind of optimization, we could directly get the conversation by otherUserId and
-    // not to get all the conversation first and filter them to look for the id, this could be done on DAO level
+// not to get all the conversation first and filter them to look for the id, this could be done on DAO level
     override suspend fun getOneToOneConversationDetailsByUserId(otherUserId: UserId): Either<StorageFailure, ConversationDetails.OneOne?> {
         return wrapStorageRequest {
             observeConversationList()
@@ -326,5 +349,3 @@ class ConversationDataSource(
         const val DEFAULT_MEMBER_ROLE = "wire_member"
     }
 }
-
-

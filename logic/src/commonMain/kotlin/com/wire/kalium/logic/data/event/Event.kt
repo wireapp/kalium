@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.conversation.ConversationMembers
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.ConversationUsers
+import kotlinx.datetime.Clock
 
 sealed class Event(open val id: String) {
 
@@ -17,6 +18,13 @@ sealed class Event(open val id: String) {
             override val id: String, override val conversationId: ConversationId,
             val senderUserId: UserId,
             val senderClientId: ClientId,
+            val time: String,
+            val content: String
+        ) : Conversation(id, conversationId)
+
+        data class NewMLSMessage(
+            override val id: String, override val conversationId: ConversationId,
+            val senderUserId: UserId,
             val time: String,
             val content: String
         ) : Conversation(id, conversationId)
@@ -48,7 +56,8 @@ sealed class Event(open val id: String) {
             override val id: String,
             override val conversationId: ConversationId,
             val senderUserId: UserId,
-            val message: String
+            val message: String,
+            val date: String = Clock.System.now().toString()
         ) : Conversation(id, conversationId)
     }
 

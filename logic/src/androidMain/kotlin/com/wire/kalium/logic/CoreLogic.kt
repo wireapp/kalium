@@ -6,6 +6,8 @@ import com.wire.kalium.cryptography.ProteusClientImpl
 import com.wire.kalium.logic.data.session.SessionDataSource
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.AuthenticatedDataSourceSetProvider
+import com.wire.kalium.logic.di.AuthenticatedDataSourceSetProviderImpl
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.network.SessionManagerImpl
@@ -30,6 +32,7 @@ actual class CoreLogic(
     private val appContext: Context,
     clientLabel: String,
     rootPath: String,
+    private val authenticatedDataSourceSetProvider: AuthenticatedDataSourceSetProvider = AuthenticatedDataSourceSetProviderImpl
 ) : CoreLogicCommon(clientLabel, rootPath) {
 
     override fun getSessionRepo(): SessionRepository {
@@ -44,7 +47,7 @@ actual class CoreLogic(
     override val globalDatabase: GlobalDatabaseProvider by lazy { GlobalDatabaseProvider(appContext, globalPreferences) }
 
     override fun getSessionScope(userId: UserId): UserSessionScope {
-        val dataSourceSet = userScopeStorage[userId] ?: run {
+        val dataSourceSet = authenticatedDataSourceSetProvider.get(userId) ?: run {
             val rootAccountPath = "$rootPath/${userId.domain}/${userId.value}"
             val rootProteusPath = "$rootAccountPath/proteus"
             val networkContainer = AuthenticatedNetworkContainer(SessionManagerImpl(sessionRepository, userId))
@@ -69,7 +72,7 @@ actual class CoreLogic(
                 userPreferencesSettings,
                 encryptedSettingsHolder
             ).also {
-                userScopeStorage[userId] = it
+                authenticatedDataSourceSetProvider.add(userId, it)
             }
         }
         return UserSessionScope(
