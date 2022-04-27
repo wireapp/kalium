@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.failure.SendMessageFailure
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
+import com.wire.kalium.logic.feature.message.MessageSendFailureHandlerImpl
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldFail
@@ -38,7 +39,7 @@ class MessageSendFailureHandlerTest {
 
     @BeforeTest
     fun setup() {
-        messageSendFailureHandler = MessageSendFailureHandler(userRepository, clientRepository)
+        messageSendFailureHandler = MessageSendFailureHandlerImpl(userRepository, clientRepository)
         userOne = UserId("userId1", "anta.wire") to listOf(ClientId("clientId"), ClientId("secondClientId"))
         userTwo = UserId("userId2", "bella.wire") to listOf(ClientId("clientId2"), ClientId("secondClientId2"))
     }
