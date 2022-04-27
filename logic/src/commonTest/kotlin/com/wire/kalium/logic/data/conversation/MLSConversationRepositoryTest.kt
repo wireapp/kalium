@@ -191,7 +191,7 @@ class MLSConversationRepositoryTest {
                         ConversationEntity.Type.GROUP,
                         null,
                         ConversationEntity.ProtocolInfo.MLS(GROUP_ID, ConversationEntity.GroupState.ESTABLISHED),
-                        lastModifiedDate = null,
+                        lastModifiedDate = WELCOME_EVENT.date,
                         lastNotificationDate = null
                     )
                 )
@@ -216,7 +216,8 @@ class MLSConversationRepositoryTest {
             "eventId",
             TestConversation.ID,
             TestUser.USER_ID,
-            WELCOME.encodeBase64()
+            WELCOME.encodeBase64(),
+            date = "2022-03-30T15:36:00.000Z"
         )
     }
 }
