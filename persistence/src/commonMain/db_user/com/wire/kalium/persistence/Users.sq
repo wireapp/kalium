@@ -49,9 +49,9 @@ SELECT * FROM User WHERE qualified_id = ?;
 
 selectByNameOrHandleOrEmailAndConnectionState:
 SELECT * FROM User
-WHERE name LIKE ('%' || :searchQuery || '%')
+WHERE (name LIKE ('%' || :searchQuery || '%')
 OR  handle LIKE  ('%' || :searchQuery || '%')
-OR  email LIKE  ('%' || :searchQuery || '%')
+OR  email LIKE  ('%' || :searchQuery || '%'))
 AND connection_status = :connectionStatus;
 
 updateUserhandle:
