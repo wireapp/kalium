@@ -65,7 +65,7 @@ selectByGroupId:
 SELECT * FROM Conversation WHERE mls_group_id = ?;
 
 selectConversationsWithUnnotifiedMessages:
-SELECT * FROM Conversation WHERE DateTime(last_modified_date) > DateTime(last_notified_message_date);
+SELECT * FROM Conversation WHERE last_notified_message_date ISNULL OR DateTime(last_modified_date) > DateTime(last_notified_message_date);
 
 updateConversationMutingStatus:
 UPDATE Conversation
