@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.publicuser.model
 
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserAssetId
@@ -16,4 +17,9 @@ data class OtherUser(
     val connectionStatus: ConnectionState = ConnectionState.NOT_CONNECTED,
     val previewPicture: UserAssetId?,
     val completePicture: UserAssetId?
-) : User()
+) : User() {
+
+    fun isUsingWireCloudBackEnd(): Boolean =
+        id.domain.contains(QualifiedID.WIRE_PRODUCTION_DOMAIN)
+
+}
