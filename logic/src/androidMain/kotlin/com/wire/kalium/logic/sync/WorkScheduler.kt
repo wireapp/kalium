@@ -7,11 +7,13 @@ import android.content.Context
 import android.content.Context.NOTIFICATION_SERVICE
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
 import androidx.work.ForegroundInfo
 import androidx.work.ListenableWorker
+import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequest
 import androidx.work.OutOfQuotaPolicy
 import androidx.work.WorkManager
@@ -19,13 +21,17 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.R
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.asString
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
+import com.wire.kalium.logic.feature.message.MessageSendingScheduler
+import com.wire.kalium.logic.sync.WrapperWorkerFactory.Companion.scheduleMessageSending
+import com.wire.kalium.logic.sync.WrapperWorkerFactory.Companion.sync
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlin.reflect.KClass
-
 
 class WrapperWorker(private val innerWorker: UserSessionWorker, appContext: Context, params: WorkerParameters) :
     CoroutineWorker(appContext, params) {
@@ -83,8 +89,8 @@ class WrapperWorkerFactory(private val coreLogic: CoreLogic) : WorkerFactory() {
             return null // delegate to default factory
         }
 
-        val userId = workerParameters.getSerializable<UserId>(WrapperWorkerFactory.USER_ID_KEY)
-        val innerWorkerClassName = workerParameters.inputData.getString(WrapperWorkerFactory.WORKER_CLASS_KEY)
+        val userId = workerParameters.getSerializable<UserId>(USER_ID_KEY)
+        val innerWorkerClassName = workerParameters.inputData.getString(WORKER_CLASS_KEY)
 
         if (userId == null || innerWorkerClassName == null) {
             throw RuntimeException("No user id was specified")
@@ -94,21 +100,33 @@ class WrapperWorkerFactory(private val coreLogic: CoreLogic) : WorkerFactory() {
         return WrapperWorker(innerWorker as UserSessionWorker, appContext, workerParameters)
     }
 
-    companion object {
-        const val WORKER_CLASS_KEY = "worker_class"
-        const val USER_ID_KEY = "user-id-worker-param"
-    }
+    internal companion object {
+        private const val WORKER_CLASS_KEY = "worker_class"
+        private const val USER_ID_KEY = "user-id-worker-param"
+        private const val CONVERSATION_ID = "conv-id-worker-param"
+        private const val MESSAGE_UUID = "message-uuid-worker-param"
+        fun workDataBuilder(work: KClass<out UserSessionWorker>, userId: UserId) = Data.Builder()
+            .putString(WORKER_CLASS_KEY, work.java.canonicalName)
+            .putSerializable(USER_ID_KEY, userId)
 
+        fun Data.Builder.sync(): Data = build()
+
+        fun Data.Builder.scheduleMessageSending(conversationID: ConversationId, messageUuid: String): Data {
+            putString(CONVERSATION_ID, conversationID.asString())
+            putString(MESSAGE_UUID, messageUuid)
+            return build()
+        }
+    }
 }
 
-actual class WorkScheduler(private val context: Context, private val userId: UserId) {
+actual class WorkScheduler(private val context: Context, private val userId: UserId) : MessageSendingScheduler {
 
-    actual fun schedule(work: KClass<out UserSessionWorker>, name: String) {
-        val inputData = Data.Builder()
-            .putString(WrapperWorkerFactory.WORKER_CLASS_KEY, work.java.canonicalName)
-            .putSerializable(WrapperWorkerFactory.USER_ID_KEY, userId)
-            .build()
-        val request = OneTimeWorkRequest.Builder(WrapperWorker::class.java)
+    private val workerClass = WrapperWorker::class.java
+    actual fun enqueueImmediateWork(work: KClass<out UserSessionWorker>, name: String) {
+        val inputData = WrapperWorkerFactory
+            .workDataBuilder(work, userId)
+            .sync()
+        val request = OneTimeWorkRequest.Builder(workerClass)
             .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
             .setInputData(inputData).build()
 
@@ -118,7 +136,33 @@ actual class WorkScheduler(private val context: Context, private val userId: Use
             request
         ).enqueue()
     }
+
+    override suspend fun scheduleSendingOfPersistedMessage(conversationID: ConversationId, messageUuid: String) {
+        val inputData = WrapperWorkerFactory.workDataBuilder(ScheduledMessageWorker::class, userId)
+            .scheduleMessageSending(conversationID, messageUuid)
+
+        val connectedConstraint = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val request = OneTimeWorkRequest.Builder(workerClass)
+            .setConstraints(connectedConstraint)
+            .setInputData(inputData)
+            .build()
+
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            WORK_NAME_PREFIX_PER_USER + userId.value,
+            ExistingWorkPolicy.APPEND,
+            request
+        )
+    }
+
+    private companion object {
+        const val WORK_NAME_PREFIX_PER_USER = "scheduled-message-"
+    }
+
 }
 
 private inline fun <reified T> Data.Builder.putSerializable(key: String, value: T) = putString(key, Json.encodeToString(value))
-private inline fun <reified T> WorkerParameters.getSerializable(key: String): T? = inputData.getString(key)?.let { Json.decodeFromString(it) }
+private inline fun <reified T> WorkerParameters.getSerializable(key: String): T? =
+    inputData.getString(key)?.let { Json.decodeFromString(it) }

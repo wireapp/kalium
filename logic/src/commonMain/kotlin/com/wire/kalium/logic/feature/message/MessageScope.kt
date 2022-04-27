@@ -27,7 +27,8 @@ class MessageScope(
     private val preKeyRepository: PreKeyRepository,
     private val userRepository: UserRepository,
     private val assetRepository: AssetRepository,
-    private val syncManager: SyncManager
+    private val syncManager: SyncManager,
+    private val messageSendingScheduler: MessageSendingScheduler,
 ) {
 
     private val messageSendFailureHandler: MessageSendFailureHandler
@@ -45,10 +46,7 @@ class MessageScope(
     private val mlsMessageCreator: MLSMessageCreator
         get() = MLSMessageCreatorImpl(mlsClientProvider, protoContentMapper)
 
-    private val messageSendingScheduler: MessageSendingScheduler
-        get() = MessageSendingSchedulerImpl()
-
-    private val messageSender: MessageSender
+    internal val messageSender: MessageSender
         get() = MessageSenderImpl(
             messageRepository,
             conversationRepository,
