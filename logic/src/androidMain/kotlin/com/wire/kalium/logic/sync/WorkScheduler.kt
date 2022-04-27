@@ -23,9 +23,11 @@ import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.R
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.asString
+import com.wire.kalium.logic.data.id.toConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.WrapperWorkerFactory.Companion.scheduleMessageSending
 import com.wire.kalium.logic.sync.WrapperWorkerFactory.Companion.sync
 import kotlinx.serialization.decodeFromString
@@ -95,6 +97,40 @@ class WrapperWorkerFactory(private val coreLogic: CoreLogic) : WorkerFactory() {
         if (userId == null || innerWorkerClassName == null) {
             throw RuntimeException("No user id was specified")
         }
+
+        kaliumLogger.v("WrapperWorkerFactory, creating worker for class name: $innerWorkerClassName")
+        return when (innerWorkerClassName) {
+            ScheduledMessageWorker::class.java.canonicalName -> {
+                createScheduledMessageWorker(workerParameters, userId, appContext)
+            }
+            else -> {
+                kaliumLogger.d("No specialized constructor found for class $innerWorkerClassName. Default constructor will be used")
+                createDefaultWorker(innerWorkerClassName, userId, appContext, workerParameters)
+            }
+        }
+    }
+
+    private fun createScheduledMessageWorker(
+        workerParameters: WorkerParameters,
+        userId: UserId,
+        appContext: Context
+    ): WrapperWorker {
+        val conversationId = requireNotNull(workerParameters.inputData.getString(CONVERSATION_ID)) {
+            "$CONVERSATION_ID work param can't be null"
+        }.toConversationId()
+        val messageUuid = requireNotNull(workerParameters.inputData.getString(MESSAGE_UUID)) {
+            "$MESSAGE_UUID work param can't be null"
+        }
+        val worker = ScheduledMessageWorker(conversationId, messageUuid, coreLogic.getSessionScope(userId))
+        return WrapperWorker(worker, appContext, workerParameters)
+    }
+
+    private fun createDefaultWorker(
+        innerWorkerClassName: String,
+        userId: UserId,
+        appContext: Context,
+        workerParameters: WorkerParameters
+    ): WrapperWorker {
         val constructor = Class.forName(innerWorkerClassName).getDeclaredConstructor(UserSessionScope::class.java)
         val innerWorker = constructor.newInstance(coreLogic.getSessionScope(userId))
         return WrapperWorker(innerWorker as UserSessionWorker, appContext, workerParameters)

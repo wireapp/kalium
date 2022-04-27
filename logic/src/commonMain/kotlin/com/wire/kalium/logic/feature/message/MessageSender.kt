@@ -10,6 +10,7 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.failure.SendMessageFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.persistence.dao.ConversationEntity
 import kotlinx.datetime.DateTimeUnit
@@ -52,7 +53,9 @@ class MessageSenderImpl(
             messageRepository.getMessageById(conversationId, messageUuid).flatMap { message ->
                 trySendingOutgoingMessage(conversationId, message)
             }.onFailure {
-                if (it is NetworkFailure.ServerMiscommunication) {
+                kaliumLogger.i("Failed to send message. Failure = $it")
+                if (it is NetworkFailure.NoNetworkConnection) {
+                    kaliumLogger.i("Scheduling message for retrying in the future.")
                     messageSendingScheduler.scheduleSendingOfPersistedMessage(conversationId, messageUuid)
                 }
             }
