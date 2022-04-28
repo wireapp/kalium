@@ -30,7 +30,9 @@ data class Client(
     val cookie: String?,
     val capabilities: Capabilities?,
     val model: String?
-)
+) {
+    val name by lazy { model ?: label ?: "" }
+}
 
 data class Capabilities(
     val capabilities: List<ClientCapability>
