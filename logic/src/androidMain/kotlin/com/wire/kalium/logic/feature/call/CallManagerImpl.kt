@@ -103,13 +103,14 @@ actual class CallManagerImpl(
             readyHandler = { version: Int, arg: Pointer? ->
                 callingLogger.i("$TAG -> readyHandler")
             },
-            sendHandler = { _, conversationId, avsSelfUserId, avsSelfClientId, _, _, data, _, _, _ ->
+            sendHandler = { context, conversationId, avsSelfUserId, avsSelfClientId, _, _, data, _, _, _ ->
                 if (selfUserId != avsSelfUserId && selfClientId != avsSelfClientId) {
                     callingLogger.i("$TAG -> sendHandler error")
                     AvsCallBackError.INVALID_ARGUMENT.value
                 } else {
                     callingLogger.i("$TAG -> sendHandler success")
                     sendHandlerSuccess(
+                        context = context,
                         messageString = data?.getString(0, UTF8_ENCODING),
                         conversationId = conversationId.toConversationId(),
                         avsSelfUserId = avsSelfUserId.toUserId(),
@@ -199,6 +200,7 @@ actual class CallManagerImpl(
         }
 
     private fun sendHandlerSuccess(
+        context: Pointer?,
         messageString: String?,
         conversationId: ConversationId,
         avsSelfUserId: UserId,
@@ -213,7 +215,7 @@ actual class CallManagerImpl(
                                 inst = deferredHandle.await(),
                                 status = 200,
                                 reason = "",
-                                arg = null
+                                arg = context
                             )
                         }
                         is Either.Left -> {
@@ -221,7 +223,7 @@ actual class CallManagerImpl(
                                 inst = deferredHandle.await(),
                                 status = 400,
                                 reason = "Couldn't send Calling Message",
-                                arg = null
+                                arg = context
                             )
                         }
                     }
