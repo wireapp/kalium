@@ -66,6 +66,44 @@ class ClientApiTest : ApiTest {
             assertTrue(response.isSuccessful())
         }
 
+    @Test
+    fun givenAValidDeleteClientRequest_whenCallingDeleteClientEndpoint_theRequestShouldBeConfiguredCorrectly() =
+        runTest {
+            val password = "password"
+            val httpClient = mockAuthenticatedHttpClient(
+                "",
+                statusCode = HttpStatusCode.OK,
+                assertion = {
+                    assertDelete()
+                    assertJson()
+                    assertNoQueryParams()
+                    assertPathEqual("$PATH_CLIENTS/$VALID_CLIENT_ID")
+                }
+            )
+            val clientApi: ClientApi = ClientApiImpl(httpClient)
+            val response = clientApi.deleteClient(password, VALID_CLIENT_ID)
+            assertTrue(response.isSuccessful())
+        }
+
+    @Test
+    fun givenBERResponseWithMissingAuth_whenCallingDeleteClientEndpoint_theRequestShouldBeConfiguredCorrectly() =
+        runTest {
+            val password = "password"
+            val httpClient = mockAuthenticatedHttpClient(
+                "",
+                statusCode = HttpStatusCode.OK,
+                assertion = {
+                    assertDelete()
+                    assertJson()
+                    assertNoQueryParams()
+                    assertPathEqual("$PATH_CLIENTS/$VALID_CLIENT_ID")
+                }
+            )
+            val clientApi: ClientApi = ClientApiImpl(httpClient)
+            val response = clientApi.deleteClient(password, VALID_CLIENT_ID)
+            assertTrue(response.isSuccessful())
+        }
+
     private companion object {
         const val VALID_CLIENT_ID = "39s3ds2020sda"
         const val PATH_CLIENTS = "/clients"

@@ -66,7 +66,7 @@ class DeleteClientUseCaseTest {
 
     @Test
     fun givenRepositoryDeleteClientFailsDueToWrongPassword_whenDeleting_thenInvalidCredentialsErrorShouldBeReturned() = runTest {
-        val wrongPasswordFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.missingAuth)
+        val wrongPasswordFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.invalidCredentials)
         given(clientRepository)
             .suspendFunction(clientRepository::deleteClient)
             .whenInvokedWith(anything())
@@ -75,6 +75,19 @@ class DeleteClientUseCaseTest {
         val result = deleteClient(DELETE_CLIENT_PARAMETERS)
 
         assertIs<DeleteClientResult.Failure.InvalidCredentials>(result)
+    }
+
+    @Test
+    fun givenRepositoryDeleteClientFailsDueToMissingPassword_whenDeleting_thenPasswordAuthRequiredErrorShouldBeReturned() = runTest {
+        val missingPasswordFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.missingAuth)
+        given(clientRepository)
+            .suspendFunction(clientRepository::deleteClient)
+            .whenInvokedWith(anything())
+            .then { Either.Left(missingPasswordFailure) }
+
+        val result = deleteClient(DELETE_CLIENT_PARAMETERS)
+
+        assertIs<DeleteClientResult.Failure.PasswordAuthRequired>(result)
     }
 
     private companion object {
