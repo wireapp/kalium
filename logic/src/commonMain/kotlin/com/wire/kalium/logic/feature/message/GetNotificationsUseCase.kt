@@ -38,7 +38,14 @@ class GetNotificationsUseCaseImpl(
                     val selfUserId = userRepository.getSelfUserId()
 
                     // Fetching the Messages for the Conversation that are newer than `lastNotificationDate`
-                    messageRepository.getMessagesByConversationAfterDate(conversation.id, conversation.lastNotificationDate ?: "")
+                    val messagesListFlow = if (conversation.lastNotificationDate == null) {
+                        // that is a new conversation, lets just fetch last 100 messages for it
+                        messageRepository.getMessagesForConversation(conversation.id, 100, 0)
+                    } else {
+                        messageRepository.getMessagesByConversationAfterDate(conversation.id, conversation.lastNotificationDate)
+                    }
+
+                    messagesListFlow
                         .map { messages ->
                             val messagesWithoutMy = messages.filter { msg -> msg.senderUserId != selfUserId }
                             ConversationWithMessages(messagesWithoutMy, conversation)

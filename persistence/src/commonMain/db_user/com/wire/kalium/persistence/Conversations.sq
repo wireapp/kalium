@@ -29,7 +29,6 @@ name = excluded.name,
 type = excluded.type,
 team_id = excluded.team_id,
 mls_group_id = excluded.mls_group_id,
-mls_group_state = excluded.mls_group_state,
 protocol = excluded.protocol,
 muted_status = excluded.muted_status,
 muted_time = excluded.muted_time,
@@ -65,7 +64,7 @@ selectByGroupId:
 SELECT * FROM Conversation WHERE mls_group_id = ?;
 
 selectConversationsWithUnnotifiedMessages:
-SELECT * FROM Conversation WHERE DateTime(last_modified_date) > DateTime(last_notified_message_date);
+SELECT * FROM Conversation WHERE last_notified_message_date ISNULL OR DateTime(last_modified_date) > DateTime(last_notified_message_date);
 
 updateConversationMutingStatus:
 UPDATE Conversation
