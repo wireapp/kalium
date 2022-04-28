@@ -12,6 +12,7 @@ import com.wire.kalium.network.api.user.details.ListUserRequest
 import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.network.api.user.details.qualifiedIds
 import com.wire.kalium.persistence.dao.UserDAO
+import com.wire.kalium.persistence.dao.UserEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -32,7 +33,7 @@ class SearchUserRepositoryImpl(
 ) : SearchUserRepository {
 
     override suspend fun searchKnownUsers(searchQuery: String) =
-        userDAO.getUserByNameOrHandleOrEmail(searchQuery)
+        userDAO.getUserByNameOrHandleOrEmailAndConnectionState(searchQuery, UserEntity.ConnectionState.ACCEPTED)
             .map {
                 UserSearchResult(it.map { userEntity -> publicUserMapper.fromDaoModelToPublicUser(userEntity) })
             }

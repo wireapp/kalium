@@ -153,7 +153,7 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
-    fun givenNonExistingConversation_whenCallingEstablishMLSGroupFromWelcome_ThenGroupIsCreatedAndConversationIsInserted() = runTest {
+    fun givenNonExistingConversation_whenCallingEstablishMLSGroupFromWelcome_ThenGroupIsCreatedButConversationIsNotInserted() = runTest {
         given(mlsClientProvider)
             .function(mlsClientProvider::getMLSClient)
             .whenInvokedWith(anything())
@@ -169,33 +169,11 @@ class MLSConversationRepositoryTest {
             .whenInvokedWith(anything())
             .then { flowOf(null) }
 
-        given(conversationDAO)
-            .suspendFunction(conversationDAO::insertConversation)
-            .whenInvokedWith(anything())
-            .thenDoNothing()
-
         mlsConversationRepository.establishMLSGroupFromWelcome(WELCOME_EVENT).shouldSucceed()
 
         verify(MLS_CLIENT)
             .function(MLS_CLIENT::processWelcomeMessage)
             .with(anyInstanceOf(ByteArray::class))
-            .wasInvoked(once)
-
-        verify(conversationDAO)
-            .suspendFunction(conversationDAO::insertConversation)
-            .with(
-                eq(
-                    ConversationEntity(
-                        QualifiedIDEntity(TestConversation.ID.value, TestConversation.ID.domain),
-                        null,
-                        ConversationEntity.Type.GROUP,
-                        null,
-                        ConversationEntity.ProtocolInfo.MLS(GROUP_ID, ConversationEntity.GroupState.ESTABLISHED),
-                        lastModifiedDate = null,
-                        lastNotificationDate = null
-                    )
-                )
-            )
             .wasInvoked(once)
     }
 
@@ -216,7 +194,8 @@ class MLSConversationRepositoryTest {
             "eventId",
             TestConversation.ID,
             TestUser.USER_ID,
-            WELCOME.encodeBase64()
+            WELCOME.encodeBase64(),
+            date = "2022-03-30T15:36:00.000Z"
         )
     }
 }

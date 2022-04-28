@@ -35,6 +35,7 @@ import io.mockative.once
 import io.mockative.thenDoNothing
 import io.mockative.verify
 import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
@@ -90,6 +91,39 @@ class ConversationRepositoryTest {
                 conversations.any { entity -> entity.id.value == CONVERSATION_RESPONSE.id.value }
             })
             .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenNewConversationEventWithMlsConversation_whenCallingInsertConversation_thenMlsGroupExistenceShouldBeQueried() = runTest {
+        val groupId = "group1"
+        val event = Event.Conversation.NewConversation("id", TestConversation.ID, "time", CONVERSATION_RESPONSE.copy(groupId = groupId, protocol = ConvProtocol.MLS))
+        val protocolInfo = ConversationEntity.ProtocolInfo.MLS(groupId, ConversationEntity.GroupState.ESTABLISHED)
+
+        given(userRepository)
+            .suspendFunction(userRepository::getSelfUser)
+            .whenInvoked()
+            .thenReturn(flowOf(TestUser.SELF))
+
+        given(mlsConversationRepository)
+            .suspendFunction(mlsConversationRepository::hasEstablishedMLSGroup)
+            .whenInvokedWith(anything())
+            .thenReturn(Either.Right(true))
+
+        conversationRepository.insertConversationFromEvent(event)
+
+        verify(mlsConversationRepository)
+            .suspendFunction(mlsConversationRepository::hasEstablishedMLSGroup)
+            .with(eq(groupId))
+            .wasInvoked(once)
+
+        verify(conversationDAO)
+            .suspendFunction(conversationDAO::insertConversations)
+            .with(matching { conversations ->
+                conversations.any { entity ->
+                    entity.id.value == CONVERSATION_RESPONSE.id.value && entity.protocolInfo == protocolInfo
+                }
+            })
+            .wasInvoked(once)
     }
 
     @Test
@@ -452,11 +486,12 @@ class ConversationRepositoryTest {
             ),
             GROUP_NAME,
             TestConversation.NETWORK_ID,
-            "group1",
+            null,
             ConversationResponse.Type.GROUP,
             0,
             null,
-            ConvProtocol.PROTEUS
+            ConvProtocol.PROTEUS,
+            lastEventTime = "2022-03-30T15:36:00.000Z"
         )
 
         val OTHER_USER_ID = UserId("otherValue", "domain")
@@ -470,7 +505,7 @@ class ConversationRepositoryTest {
             type = ConversationEntity.Type.ONE_ON_ONE,
             teamId = null,
             protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
-            lastModifiedDate = null,
+            lastModifiedDate = "2022-03-30T15:36:00.000Z",
             lastNotificationDate = null
         )
 
@@ -484,7 +519,7 @@ class ConversationRepositoryTest {
                 type = ConversationEntity.Type.ONE_ON_ONE,
                 teamId = null,
                 protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
-                lastModifiedDate = null,
+                lastModifiedDate = "2022-03-30T15:36:00.000Z",
                 lastNotificationDate = null
             )
         )

@@ -21,7 +21,7 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
             "teamID",
             ConversationEntity.ProtocolInfo.Proteus,
             lastNotificationDate = null,
-            lastModifiedDate = null
+            lastModifiedDate = "2022-03-30T15:36:00.000Z"
         )
 
     private val member1 = Member(user1.id)

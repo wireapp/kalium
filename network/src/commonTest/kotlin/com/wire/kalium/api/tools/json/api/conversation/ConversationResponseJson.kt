@@ -43,7 +43,8 @@ object ConversationResponseJson {
         |       "id": "${it.id.value}"
         |   },
         |   "team": "${it.teamId}",
-        |   "type": ${it.type.ordinal}
+        |   "type": ${it.type.ordinal},
+        |   "last_event_time":"${it.lastEventTime}"
         |}
         """.trimMargin()
     }
@@ -63,7 +64,8 @@ object ConversationResponseJson {
             ConversationResponse.Type.GROUP,
             null,
             "teamID",
-            ConvProtocol.PROTEUS
+            ConvProtocol.PROTEUS,
+            lastEventTime = "2022-03-30T15:36:00.000Z"
         ), conversationResponseSerializer
     )
 }

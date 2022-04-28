@@ -17,5 +17,5 @@ object TestConversation {
     val NETWORK_ID = QualifiedID("valueConversation", "domainConversation")
 
     val ENTITY_ID = QualifiedIDEntity("valueConversation", "domainConversation")
-    val ENTITY = ConversationEntity(ENTITY_ID, "convo name", ConversationEntity.Type.SELF, "teamId", ConversationEntity.ProtocolInfo.Proteus, lastNotificationDate =  null, lastModifiedDate = null)
+    val ENTITY = ConversationEntity(ENTITY_ID, "convo name", ConversationEntity.Type.SELF, "teamId", ConversationEntity.ProtocolInfo.Proteus, lastNotificationDate =  null, lastModifiedDate = "2022-03-30T15:36:00.000Z")
 }
