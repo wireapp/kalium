@@ -1,7 +1,9 @@
 package com.wire.kalium.network.utils
 
+import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.kaliumLogger
+import io.ktor.client.call.NoTransformationFoundException
 import io.ktor.client.call.body
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.RedirectResponseException
@@ -143,8 +145,13 @@ internal suspend inline fun <reified BodyType : Any> wrapKaliumResponse(performR
                         NetworkResponse.Error(KaliumException.Unauthorized(e.response.status.value))
                     }
 
-                    // TODO: try catch the parsing of error body
-                    else -> NetworkResponse.Error(kException = KaliumException.InvalidRequestError(e.response.body()))
+                    else -> try {
+                            e.response.body() as ErrorResponse
+                        } catch (_: NoTransformationFoundException) {
+                            ErrorResponse(e.response.status.value, e.response.status.description, "")
+                        }.let { errorResponse ->
+                            NetworkResponse.Error(kException = KaliumException.InvalidRequestError(errorResponse))
+                        }
                 }
             }
             is ServerResponseException -> {
