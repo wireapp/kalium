@@ -200,6 +200,10 @@ actual class CallManagerImpl(
 
     override suspend fun startCall(conversationId: ConversationId, callType: CallType, conversationType: ConversationType, isAudioCbr: Boolean) {
         callingLogger.d("$TAG -> starting call..")
+        updateCallStatusById(
+            conversationId = conversationId.asString(),
+            status = CallStatus.STARTED
+        )
         withCalling {
             val avsCallType = callMapper.toCallTypeCalling(callType)
             val avsConversationType = callMapper.toConversationTypeCalling(conversationType)
