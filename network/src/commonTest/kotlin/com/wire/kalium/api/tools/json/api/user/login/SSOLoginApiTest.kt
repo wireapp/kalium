@@ -18,7 +18,7 @@ import kotlin.test.assertIs
 class SSOLoginApiTest: ApiTest {
 
     @Test
-    fun givenBEResponseSuccess_whenCallingInitiateSSOEndpointWithNoRedirect_thenRequestConfiguredCorrectly() = runTest{
+    fun givenBEResponseSuccess_whenCallingInitiateSSOEndpointWithNoRedirect_thenRequestConfiguredCorrectly() = runTest {
         val uuid = "uuid"
         val param = SSOLoginApi.InitiateParam.WithoutRedirect(uuid)
         val expectedPath = "$PATH_SSO_INITIATE/$uuid"
