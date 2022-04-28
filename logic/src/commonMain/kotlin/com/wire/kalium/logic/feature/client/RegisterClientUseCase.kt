@@ -99,6 +99,9 @@ class RegisterClientUseCaseImpl(
             }
         }
 
+    /**
+     * to save the generated token that is related to the notifications , in the android case it's firebase token
+     */
     private suspend fun registerToken(client: Client, senderId: String): Either<CoreFailure, Client> = suspending {
         notificationTokenRepository.getNotificationToken().flatMap { notificationToken ->
             clientRepository.registerToken(
