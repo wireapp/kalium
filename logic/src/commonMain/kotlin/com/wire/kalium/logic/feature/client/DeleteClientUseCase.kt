@@ -19,8 +19,8 @@ class DeleteClientUseCaseImpl(private val clientRepository: ClientRepository) : 
     }.fold({ failure ->
         if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError)
             when {
-                failure.kaliumException.isInvalidCredentials() -> return@fold DeleteClientResult.Failure.InvalidCredentials
-                failure.kaliumException.isMissingAuth() -> return@fold DeleteClientResult.Failure.PasswordAuthRequired
+                failure.kaliumException.isInvalidCredentials() -> DeleteClientResult.Failure.InvalidCredentials
+                failure.kaliumException.isMissingAuth() -> DeleteClientResult.Failure.PasswordAuthRequired
                 else -> DeleteClientResult.Failure.Generic(failure)
             }
         else {
