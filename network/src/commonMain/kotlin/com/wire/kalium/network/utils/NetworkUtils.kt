@@ -148,7 +148,7 @@ internal suspend inline fun <reified BodyType : Any> wrapKaliumResponse(performR
                     else -> try {
                             e.response.body() as ErrorResponse
                         } catch (_: NoTransformationFoundException) {
-                            ErrorResponse(e.response.status.value, e.response.status.description, "abc")
+                            ErrorResponse(e.response.status.value, e.response.status.description, "")
                         }.let { errorResponse ->
                             NetworkResponse.Error(kException = KaliumException.InvalidRequestError(errorResponse))
                         }
