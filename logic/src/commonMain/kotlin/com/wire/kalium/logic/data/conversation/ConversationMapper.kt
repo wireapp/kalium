@@ -3,6 +3,8 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.publicuser.model.OtherUser
+import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.network.api.conversation.ConvProtocol
 import com.wire.kalium.network.api.conversation.ConvTeamInfo
 import com.wire.kalium.network.api.conversation.ConversationResponse
@@ -18,14 +20,14 @@ import com.wire.kalium.persistence.dao.ConversationEntity as PersistedConversati
 import com.wire.kalium.persistence.dao.ConversationEntity.Protocol as PersistedProtocol
 
 interface ConversationMapper {
-    fun fromApiModelToDaoModel(apiModel: ConversationResponse, groupCreation: Boolean, selfUserTeamId: TeamId?): PersistedConversation
+    fun fromApiModelToDaoModel(apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?): PersistedConversation
     fun fromApiModelToDaoModel(apiModel: ConvProtocol): PersistedProtocol
     fun fromDaoModel(daoModel: PersistedConversation): Conversation
-    fun toDaoModel(welcomeEvent: Event.Conversation.MLSWelcome, groupId: String): ConversationEntity
     fun toApiModel(access: ConversationOptions.Access): ConversationAccess
     fun toApiModel(accessRole: ConversationOptions.AccessRole): ConversationAccessRole
     fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol
     fun toApiModel(name: String?, members: List<Member>, teamId: String?, options: ConversationOptions): CreateConversationRequest
+    fun toConversationDetailsOneToOne(conversation: Conversation, otherUser: OtherUser, selfUser: SelfUser): ConversationDetails.OneOne
 }
 
 internal class ConversationMapperImpl(
@@ -35,7 +37,7 @@ internal class ConversationMapperImpl(
 
     override fun fromApiModelToDaoModel(
         apiModel: ConversationResponse,
-        groupCreation: Boolean,
+        mlsGroupState: GroupState?,
         selfUserTeamId: TeamId?
     ): PersistedConversation =
         PersistedConversation(
@@ -43,7 +45,7 @@ internal class ConversationMapperImpl(
             apiModel.name,
             apiModel.getConversationType(selfUserTeamId),
             apiModel.teamId,
-            apiModel.getProtocolInfo(groupCreation),
+            apiModel.getProtocolInfo(mlsGroupState),
             conversationStatusMapper.fromApiToDaoModel(apiModel.members.self.otrMutedStatus),
             apiModel.members.self.otrMutedRef?.let { Instant.parse(it) }?.toEpochMilliseconds() ?: 0,
             null,
@@ -65,17 +67,6 @@ internal class ConversationMapperImpl(
         daoModel.lastModifiedDate
     )
 
-    override fun toDaoModel(welcomeEvent: Event.Conversation.MLSWelcome, groupId: String): ConversationEntity =
-        ConversationEntity(
-            idMapper.toDaoModel(welcomeEvent.conversationId),
-            name = null,
-            type = ConversationEntity.Type.GROUP,
-            teamId = null,
-            protocolInfo = ProtocolInfo.MLS(groupId, GroupState.ESTABLISHED),
-            lastNotificationDate = null,
-            lastModifiedDate = welcomeEvent.date
-        )
-
     override fun toApiModel(name: String?, members: List<Member>, teamId: String?, options: ConversationOptions) =
         CreateConversationRequest(
             qualifiedUsers = if (options.protocol == ConversationOptions.Protocol.PROTEUS) members.map { idMapper.toApiModel(it.id) } else emptyList(),
@@ -88,6 +79,40 @@ internal class ConversationMapperImpl(
             conversationRole = ConversationDataSource.DEFAULT_MEMBER_ROLE,
             protocol = toApiModel(options.protocol)
         )
+
+    override fun toConversationDetailsOneToOne(
+        conversation: Conversation,
+        otherUser: OtherUser,
+        selfUser: SelfUser
+    ): ConversationDetails.OneOne {
+        return ConversationDetails.OneOne(
+            conversation = conversation,
+            otherUser = otherUser,
+            connectionState = otherUser.connectionStatus,
+            //TODO get actual legal hold status
+            legalHoldStatus = LegalHoldStatus.DISABLED,
+            userType = determineOneToOneUserType(otherUser, selfUser)
+        )
+    }
+
+    private fun determineOneToOneUserType(otherUser: OtherUser, selfUser: SelfUser): UserType {
+        if (otherUser.isUsingWireCloudBackEnd()) {
+            if (areNotInTheSameTeam(otherUser, selfUser)) {
+                return UserType.GUEST
+            }
+        } else {
+            if (areNotInTheSameTeam(otherUser, selfUser)) {
+                return UserType.FEDERATED
+            }
+        }
+
+        return UserType.INTERNAL
+    }
+
+    // if either self user has no team or other user,
+    // does not make sense to compare them and we return false as of they are not on the same team
+    private fun areNotInTheSameTeam(otherUser: OtherUser, selfUser: SelfUser): Boolean =
+        !(selfUser.team != null && otherUser.team != null) || (selfUser.team != otherUser.team)
 
     override fun toApiModel(access: ConversationOptions.Access): ConversationAccess = when (access) {
         ConversationOptions.Access.PRIVATE -> ConversationAccess.PRIVATE
@@ -114,12 +139,9 @@ internal class ConversationMapperImpl(
         PersistedConversation.Type.GROUP -> ConversationEntity.Type.GROUP
     }
 
-    private fun ConversationResponse.getProtocolInfo(groupCreation: Boolean): ProtocolInfo {
+    private fun ConversationResponse.getProtocolInfo(mlsGroupState: GroupState?): ProtocolInfo {
         return when (protocol) {
-            ConvProtocol.MLS -> ProtocolInfo.MLS(
-                groupId ?: "",
-                if (groupCreation) GroupState.PENDING else GroupState.PENDING_WELCOME_MESSAGE
-            )
+            ConvProtocol.MLS -> ProtocolInfo.MLS(groupId ?: "", mlsGroupState ?: GroupState.PENDING)
             ConvProtocol.PROTEUS -> ProtocolInfo.Proteus
         }
     }

@@ -79,8 +79,11 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
             .map { it?.let { mapper.toModel(it) } }
     }
 
-    override suspend fun getUserByNameOrHandleOrEmail(searchQuery: String): Flow<List<UserEntity>> {
-        return queries.selectByNameOrHandleOrEmail(searchQuery)
+    override suspend fun getUserByNameOrHandleOrEmailAndConnectionState(
+        searchQuery: String,
+        connectionState: UserEntity.ConnectionState
+    ): Flow<List<UserEntity>> {
+        return queries.selectByNameOrHandleOrEmailAndConnectionState(searchQuery, UserEntity.ConnectionState.ACCEPTED)
             .asFlow()
             .mapToList()
             .map { entryList -> entryList.map(mapper::toModel) }

@@ -65,6 +65,7 @@ interface ConversationRepository {
         mutedStatus: MutedConversationStatus,
         mutedStatusTimestamp: Long
     ): Either<CoreFailure, Unit>
+
     suspend fun getConversationsForNotifications(): Flow<List<Conversation>>
     suspend fun updateConversationNotificationDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
     suspend fun updateAllConversationsNotificationDate(date: String): Either<StorageFailure, Unit>
@@ -131,7 +132,7 @@ class ConversationDataSource(
         val conversationEntities = conversations.map { conversationResponse ->
             conversationMapper.fromApiModelToDaoModel(
                 conversationResponse,
-                groupCreation = false,
+                mlsGroupState = conversationResponse.groupId?.let { mlsGroupState(it) },
                 selfUserTeamId?.let { TeamId(it) })
         }
         conversationDAO.insertConversations(conversationEntities)
@@ -141,6 +142,14 @@ class ConversationDataSource(
                 idMapper.fromApiToDao(conversationsResponse.id)
             )
         }
+    }
+
+    private suspend fun mlsGroupState(groupId: String): ConversationEntity.GroupState {
+        return mlsConversationRepository.hasEstablishedMLSGroup(groupId).fold({
+            throw IllegalStateException(it.toString()) // TODO find a more fitting exception?
+        }, { exists ->
+            if (exists) ConversationEntity.GroupState.ESTABLISHED else ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE
+        })
     }
 
     override suspend fun getSelfConversationId(): ConversationId = idMapper.fromDaoModel(conversationDAO.getSelfConversationId())
@@ -174,20 +183,17 @@ class ConversationDataSource(
                 )
             ConversationEntity.Type.ONE_ON_ONE -> {
                 suspending {
-                    val selfUserId = userRepository.getSelfUser().map { it.id }.first()
+                    val selfUser = userRepository.getSelfUser().first()
+
                     getConversationMembers(conversation.id).map { members ->
-                        members.first { itemId -> itemId != selfUserId }
+                        members.first { itemId -> itemId != selfUser.id }
                     }.coFold({
                         // TODO: How to Handle failure when dealing with flows?
                         throw IOException("Failure to fetch other user of 1:1 Conversation")
                     }, { otherUserId ->
                         userRepository.getKnownUser(otherUserId)
                     }).filterNotNull().map { otherUser ->
-                        ConversationDetails.OneOne(
-                            conversation, otherUser,
-                            otherUser.connectionStatus,
-                            LegalHoldStatus.DISABLED //TODO get actual legal hold status
-                        )
+                        conversationMapper.toConversationDetailsOneToOne(conversation, otherUser, selfUser)
                     }
                 }
             }
@@ -242,7 +248,7 @@ class ConversationDataSource(
                 )
             }.flatMap { conversationResponse ->
                 val teamId = selfUser.team?.let { TeamId(it) }
-                val conversationEntity = conversationMapper.fromApiModelToDaoModel(conversationResponse, groupCreation = true, teamId)
+                val conversationEntity = conversationMapper.fromApiModelToDaoModel(conversationResponse, mlsGroupState = ConversationEntity.GroupState.PENDING, teamId)
                 val conversation = conversationMapper.fromDaoModel(conversationEntity)
 
                 wrapStorageRequest {
@@ -312,7 +318,7 @@ class ConversationDataSource(
     }
 
     //TODO: this needs some kind of optimization, we could directly get the conversation by otherUserId and
-    // not to get all the conversation first and filter them to look for the id, this could be done on DAO level
+// not to get all the conversation first and filter them to look for the id, this could be done on DAO level
     override suspend fun getOneToOneConversationDetailsByUserId(otherUserId: UserId): Either<StorageFailure, ConversationDetails.OneOne?> {
         return wrapStorageRequest {
             observeConversationList()

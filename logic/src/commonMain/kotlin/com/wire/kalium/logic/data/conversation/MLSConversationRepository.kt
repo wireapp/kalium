@@ -11,6 +11,7 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
@@ -25,6 +26,7 @@ interface MLSConversationRepository {
 
     suspend fun establishMLSGroup(groupID: String): Either<CoreFailure, Unit>
     suspend fun establishMLSGroupFromWelcome(welcomeEvent: Event.Conversation.MLSWelcome): Either<CoreFailure, Unit>
+    suspend fun hasEstablishedMLSGroup(groupID: String): Either<CoreFailure, Boolean>
     suspend fun messageFromMLSMessage(messageEvent: Event.Conversation.NewMLSMessage): Either<CoreFailure, ByteArray?>
 
 }
@@ -34,8 +36,7 @@ class MLSConversationDataSource(
     private val mlsClientProvider: MLSClientProvider,
     private val mlsMessageApi: MLSMessageApi,
     private val conversationDAO: ConversationDAO,
-    private val idMapper: IdMapper = MapperProvider.idMapper(),
-    private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper()
+    private val idMapper: IdMapper = MapperProvider.idMapper()
 ): MLSConversationRepository {
 
     override suspend fun messageFromMLSMessage(messageEvent: Event.Conversation.NewMLSMessage): Either<CoreFailure, ByteArray?> = suspending {
@@ -57,18 +58,20 @@ class MLSConversationDataSource(
         mlsClientProvider.getMLSClient().flatMap { client ->
             val groupID = client.processWelcomeMessage(welcomeEvent.message.decodeBase64Bytes())
 
+            kaliumLogger.i("Created conversation from welcome message (groupID = $groupID)")
+
             wrapStorageRequest {
-                if (conversationDAO.getConversationByGroupID(groupID).first() == null) {
-                    // Welcome arrived before the conversation create event, insert empty conversation.
-                    conversationDAO.insertConversation(conversationMapper.toDaoModel(welcomeEvent, groupID))
-                    kaliumLogger.i("Inserted conversation from welcome message (groupID = $groupID)")
-                } else {
-                    // Welcome arrived after the conversation create event, update existing conversation.
+                if (conversationDAO.getConversationByGroupID(groupID).first() != null) {
+                    // Welcome arrived after the conversation create event, updating existing conversation.
                     conversationDAO.updateConversationGroupState(ConversationEntity.GroupState.ESTABLISHED, groupID)
                     kaliumLogger.i("Updated conversation from welcome message (groupID = $groupID)")
                 }
             }
         }
+    }
+
+    override suspend fun hasEstablishedMLSGroup(groupID: String): Either<CoreFailure, Boolean>  {
+        return mlsClientProvider.getMLSClient().flatMap { Either.Right(it.conversationExists(groupID)) }
     }
 
     override suspend fun establishMLSGroup(groupID: String): Either<CoreFailure, Unit> = suspending  {

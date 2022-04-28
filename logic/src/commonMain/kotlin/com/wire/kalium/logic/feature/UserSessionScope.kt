@@ -53,6 +53,7 @@ import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
 import com.wire.kalium.logic.feature.message.MessageEnvelopeCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageScope
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
+import com.wire.kalium.logic.feature.message.MessageSendFailureHandlerImpl
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.message.MessageSenderImpl
 import com.wire.kalium.logic.feature.message.SessionEstablisher
@@ -62,6 +63,8 @@ import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.sync.ConversationEventReceiver
 import com.wire.kalium.logic.sync.ListenToEventsUseCase
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.util.TimeParser
+import com.wire.kalium.logic.util.TimeParserImpl
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
 import com.wire.kalium.persistence.client.TokenStorage
@@ -173,7 +176,7 @@ abstract class UserSessionScopeCommon(
         get() = ClientDataSource(clientRemoteRepository, clientRegistrationStorage, userDatabaseProvider.clientDAO)
 
     private val messageSendFailureHandler: MessageSendFailureHandler
-        get() = MessageSendFailureHandler(userRepository, clientRepository)
+        get() = MessageSendFailureHandlerImpl(userRepository, clientRepository)
 
     private val sessionEstablisher: SessionEstablisher
         get() = SessionEstablisherImpl(authenticatedDataSourceSet.proteusClient, preKeyRepository)
@@ -193,13 +196,16 @@ abstract class UserSessionScopeCommon(
             messageSendFailureHandler,
             sessionEstablisher,
             messageEnvelopeCreator,
-            mlsMessageCreator
+            mlsMessageCreator,
+            timeParser
         )
 
     private val assetRepository: AssetRepository
         get() = AssetDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.assetApi, userDatabaseProvider.assetDAO)
 
     val syncManager: SyncManager get() = authenticatedDataSourceSet.syncManager
+
+    private val timeParser : TimeParser = TimeParserImpl()
 
     private val eventRepository: EventRepository
         get() = EventDataSource(
@@ -266,7 +272,8 @@ abstract class UserSessionScopeCommon(
             preKeyRepository,
             userRepository,
             assetRepository,
-            syncManager
+            syncManager,
+            timeParser
         )
     val users: UserScope get() = UserScope(userRepository, publicUserRepository, syncManager, assetRepository)
     val logout: LogoutUseCase
