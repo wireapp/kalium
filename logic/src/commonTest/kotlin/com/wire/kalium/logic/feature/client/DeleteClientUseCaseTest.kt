@@ -92,7 +92,7 @@ class DeleteClientUseCaseTest {
 
     private companion object {
         val CLIENT = TestClient.CLIENT
-        val DELETE_CLIENT_PARAMETERS = DeleteClientParam("pass", CLIENT.clientId)
+        val DELETE_CLIENT_PARAMETERS = DeleteClientParam("pass", CLIENT.id)
         val TEST_FAILURE = NetworkFailure.ServerMiscommunication(KaliumException.GenericError(IOException("no internet")))
 
     }

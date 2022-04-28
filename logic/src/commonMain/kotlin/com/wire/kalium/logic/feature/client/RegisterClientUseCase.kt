@@ -74,10 +74,10 @@ class RegisterClientUseCaseImpl(
     private suspend fun createMLSClient(client: Client): Either<CoreFailure, Client> = suspending {
         // TODO when https://github.com/wireapp/core-crypto/issues/11 is implemented we
         // can remove registerMLSClient() and supply the MLS public key in registerClient().
-        mlsClientProvider.getMLSClient(client.clientId)
-            .flatMap { clientRepository.registerMLSClient(client.clientId, it.getPublicKey()) }
-            .flatMap { keyPackageRepository.uploadNewKeyPackages(client.clientId) }
-            .flatMap { clientRepository.persistClientId(client.clientId) }
+        mlsClientProvider.getMLSClient(client.id)
+            .flatMap { clientRepository.registerMLSClient(client.id, it.getPublicKey()) }
+            .flatMap { keyPackageRepository.uploadNewKeyPackages(client.id) }
+            .flatMap { clientRepository.persistClientId(client.id) }
             .map { client }
     }
 

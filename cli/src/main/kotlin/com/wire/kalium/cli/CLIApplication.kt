@@ -59,7 +59,7 @@ class DeleteClientCommand: CliktCommand(name = "delete-client") {
         }
 
         val clientIndex = prompt("Enter client index", promptSuffix = ": ")?.toInt() ?: throw PrintMessage("Index must be an integer")
-        val deleteClientResult =  userSession.client.deleteClient(DeleteClientParam(password, selfClientsResult.clients[clientIndex].clientId))
+        val deleteClientResult =  userSession.client.deleteClient(DeleteClientParam(password, selfClientsResult.clients[clientIndex].id))
 
         when (deleteClientResult) {
             is DeleteClientResult.Failure.Generic -> throw PrintMessage("Delete client failed: ${deleteClientResult.genericFailure}")

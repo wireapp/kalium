@@ -165,7 +165,7 @@ class RegisterClientUseCaseTest {
 
         given(mlsClientProvider)
             .function(mlsClientProvider::getMLSClient)
-            .whenInvokedWith(eq(CLIENT.clientId))
+            .whenInvokedWith(eq(CLIENT.id))
             .then { Either.Right(MLS_CLIENT) }
 
         given(MLS_CLIENT)
@@ -175,7 +175,7 @@ class RegisterClientUseCaseTest {
 
         given(clientRepository)
             .suspendFunction(clientRepository::registerMLSClient)
-            .whenInvokedWith(eq(CLIENT.clientId), eq(MLS_PUBLIC_KEY))
+            .whenInvokedWith(eq(CLIENT.id), eq(MLS_PUBLIC_KEY))
             .thenReturn(Either.Left(TEST_FAILURE))
 
         registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
@@ -196,7 +196,7 @@ class RegisterClientUseCaseTest {
 
         given(mlsClientProvider)
             .function(mlsClientProvider::getMLSClient)
-            .whenInvokedWith(eq(CLIENT.clientId))
+            .whenInvokedWith(eq(CLIENT.id))
             .then { Either.Right(MLS_CLIENT) }
 
         given(MLS_CLIENT)
@@ -206,7 +206,7 @@ class RegisterClientUseCaseTest {
 
         given(clientRepository)
             .suspendFunction(clientRepository::registerMLSClient)
-            .whenInvokedWith(eq(CLIENT.clientId), eq(MLS_PUBLIC_KEY))
+            .whenInvokedWith(eq(CLIENT.id), eq(MLS_PUBLIC_KEY))
             .thenReturn(Either.Right(Unit))
 
         given(keyPackageRepository)
@@ -232,7 +232,7 @@ class RegisterClientUseCaseTest {
 
         given(mlsClientProvider)
             .function(mlsClientProvider::getMLSClient)
-            .whenInvokedWith(eq(CLIENT.clientId))
+            .whenInvokedWith(eq(CLIENT.id))
             .then { Either.Right(MLS_CLIENT) }
 
         given(MLS_CLIENT)
@@ -242,7 +242,7 @@ class RegisterClientUseCaseTest {
 
         given(clientRepository)
             .suspendFunction(clientRepository::registerMLSClient)
-            .whenInvokedWith(eq(CLIENT.clientId), eq(MLS_PUBLIC_KEY))
+            .whenInvokedWith(eq(CLIENT.id), eq(MLS_PUBLIC_KEY))
             .thenReturn(Either.Right(Unit))
 
         given(keyPackageRepository)
@@ -259,7 +259,7 @@ class RegisterClientUseCaseTest {
 
         verify(clientRepository)
             .function(clientRepository::persistClientId)
-            .with(eq(registeredClient.clientId))
+            .with(eq(registeredClient.id))
             .wasInvoked(once)
     }
 
@@ -272,7 +272,7 @@ class RegisterClientUseCaseTest {
 
         given(mlsClientProvider)
             .function(mlsClientProvider::getMLSClient)
-            .whenInvokedWith(eq(CLIENT.clientId))
+            .whenInvokedWith(eq(CLIENT.id))
             .then { Either.Right(MLS_CLIENT) }
 
         given(MLS_CLIENT)
@@ -282,7 +282,7 @@ class RegisterClientUseCaseTest {
 
         given(clientRepository)
             .suspendFunction(clientRepository::registerMLSClient)
-            .whenInvokedWith(eq(CLIENT.clientId), eq(MLS_PUBLIC_KEY))
+            .whenInvokedWith(eq(CLIENT.id), eq(MLS_PUBLIC_KEY))
             .thenReturn(Either.Right(Unit))
 
         given(keyPackageRepository)
@@ -312,7 +312,7 @@ class RegisterClientUseCaseTest {
 
         given(mlsClientProvider)
             .function(mlsClientProvider::getMLSClient)
-            .whenInvokedWith(eq(CLIENT.clientId))
+            .whenInvokedWith(eq(CLIENT.id))
             .then { Either.Right(MLS_CLIENT) }
 
         given(MLS_CLIENT)
@@ -322,7 +322,7 @@ class RegisterClientUseCaseTest {
 
         given(clientRepository)
             .suspendFunction(clientRepository::registerMLSClient)
-            .whenInvokedWith(eq(CLIENT.clientId), eq(MLS_PUBLIC_KEY))
+            .whenInvokedWith(eq(CLIENT.id), eq(MLS_PUBLIC_KEY))
             .thenReturn(Either.Right(Unit))
 
         given(keyPackageRepository)
