@@ -335,8 +335,6 @@ actual class CallManagerImpl(
             }
         }
 
-
-
         callingLogger.i("$TAG -> sftRequestHandler")
         return AvsCallBackError.NONE.value
     }
