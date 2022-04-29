@@ -5,6 +5,7 @@ import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.ASSET
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.TEXT
 import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityContent.AssetMessageContent
@@ -158,4 +159,10 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             .asFlow()
             .mapToList()
             .map { entryList -> entryList.map(mapper::toModel) }
+
+    override suspend fun getAllPendingMessagesFromUser(userId: UserIDEntity): List<MessageEntity> {
+        return queries.selectMessagesFromUserByStatus(userId, MessageEntity.Status.PENDING)
+            .executeAsList()
+            .map(mapper::toModel)
+    }
 }
