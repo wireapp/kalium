@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.toUserId
 import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.toInt
 import com.wire.kalium.logic.util.toTimeInMillis
 import kotlinx.coroutines.CoroutineScope
@@ -104,18 +104,19 @@ actual class CallManagerImpl(
             readyHandler = { version: Int, arg: Pointer? ->
                 callingLogger.i("$TAG -> readyHandler")
             },
-            sendHandler = { _, conversationId, avsSelfUserId, avsSelfClientId, _, _, data, _, _, _ ->
+            sendHandler = { context, conversationId, avsSelfUserId, avsSelfClientId, _, _, data, _, _, _ ->
                 if (selfUserId != avsSelfUserId && selfClientId != avsSelfClientId) {
                     callingLogger.i("$TAG -> sendHandler error")
                     AvsCallBackError.INVALID_ARGUMENT.value
                 } else {
-                    scope.launch {
-                        val messageString = data?.getString(0, UTF8_ENCODING)
-                        messageString?.let {
-                            sendCallingMessage(conversationId.toConversationId(), avsSelfUserId.toUserId(), ClientId(avsSelfClientId), it)
-                        }
-                    }
                     callingLogger.i("$TAG -> sendHandler success")
+                    sendHandlerSuccess(
+                        context = context,
+                        messageString = data?.getString(0, UTF8_ENCODING),
+                        conversationId = conversationId.toConversationId(),
+                        avsSelfUserId = avsSelfUserId.toUserId(),
+                        avsSelfClientId = ClientId(avsSelfClientId)
+                    )
                     AvsCallBackError.NONE.value
                 }
             },
@@ -195,6 +196,39 @@ actual class CallManagerImpl(
             )
             callingLogger.d("$TAG - onCallingMessageReceived")
         }
+
+    private fun sendHandlerSuccess(
+        context: Pointer?,
+        messageString: String?,
+        conversationId: ConversationId,
+        avsSelfUserId: UserId,
+        avsSelfClientId: ClientId
+    ) {
+        scope.launch {
+            messageString?.let { message ->
+                withCalling {
+                    when (sendCallingMessage(conversationId, avsSelfUserId, avsSelfClientId, message)) {
+                        is Either.Right -> {
+                            wcall_resp(
+                                inst = deferredHandle.await(),
+                                status = 200,
+                                reason = "",
+                                arg = context
+                            )
+                        }
+                        is Either.Left -> {
+                            wcall_resp(
+                                inst = deferredHandle.await(),
+                                status = 400, // TODO: Handle the errorCode from CoreFailure
+                                reason = "Couldn't send Calling Message",
+                                arg = context
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     override suspend fun startCall(
         conversationId: ConversationId,

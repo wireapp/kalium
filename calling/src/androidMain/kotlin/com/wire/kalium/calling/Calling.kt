@@ -81,6 +81,13 @@ interface Calling : Library {
         clientId: String
     ): Int
 
+    fun wcall_resp(
+        inst: Handle,
+        status: Int,
+        reason: String,
+        arg: Pointer?
+    ): Int
+
     companion object {
         val INSTANCE by lazy { Native.load("avs", Calling::class.java)!! }
     }

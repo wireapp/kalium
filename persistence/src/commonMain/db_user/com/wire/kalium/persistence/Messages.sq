@@ -105,3 +105,6 @@ SELECT * FROM Message WHERE conversation_id = ? ORDER BY Datetime(date) DESC LIM
 
 selectMessagesByConversationIdAfterDate:
 SELECT * FROM Message WHERE conversation_id = ? AND Datetime(date) > Datetime(?) ORDER BY Datetime(date) DESC;
+
+selectMessagesFromUserByStatus:
+SELECT * FROM Message WHERE sender_user_id = ? AND status = ?;
