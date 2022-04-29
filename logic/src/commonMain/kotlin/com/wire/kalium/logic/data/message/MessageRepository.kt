@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.SendMessageFailure
 import com.wire.kalium.logic.functional.Either
@@ -42,6 +43,8 @@ interface MessageRepository {
     // TODO: change the return type to Either<CoreFailure, String>
     suspend fun sendEnvelope(conversationId: ConversationId, envelope: MessageEnvelope): Either<SendMessageFailure, String>
     suspend fun sendMLSMessage(conversationId: ConversationId, message: MLSMessageApi.Message): Either<CoreFailure, Unit>
+
+    suspend fun getAllPendingMessagesFromUser(senderUserId: UserId): Either<CoreFailure, List<Message>>
 }
 
 class MessageDataSource(
@@ -164,4 +167,9 @@ class MessageDataSource(
         wrapApiRequest {
             mlsMessageApi.sendMessage(message)
         }
+
+    override suspend fun getAllPendingMessagesFromUser(senderUserId: UserId): Either<CoreFailure, List<Message>> = wrapStorageRequest {
+        messageDAO.getAllPendingMessagesFromUser(idMapper.toDaoModel(senderUserId))
+            .map(messageMapper::fromEntityToMessage)
+    }
 }
