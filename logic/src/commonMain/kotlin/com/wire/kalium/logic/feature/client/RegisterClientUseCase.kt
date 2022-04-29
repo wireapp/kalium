@@ -14,6 +14,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isInvalidCredentials
 import com.wire.kalium.network.exceptions.isMissingAuth
 import com.wire.kalium.network.exceptions.isTooManyClients
 
@@ -23,6 +24,7 @@ sealed class RegisterClientResult {
     sealed class Failure : RegisterClientResult() {
         object InvalidCredentials : Failure()
         object TooManyClients : Failure()
+        object PasswordAuthRequired : Failure()
         class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }
@@ -61,7 +63,8 @@ class RegisterClientUseCaseImpl(
                 if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError)
                     when {
                         failure.kaliumException.isTooManyClients() -> RegisterClientResult.Failure.TooManyClients
-                        failure.kaliumException.isMissingAuth() -> RegisterClientResult.Failure.InvalidCredentials
+                        failure.kaliumException.isMissingAuth() -> RegisterClientResult.Failure.PasswordAuthRequired
+                        failure.kaliumException.isInvalidCredentials() -> RegisterClientResult.Failure.InvalidCredentials
                         else -> RegisterClientResult.Failure.Generic(failure)
                     }
                 else RegisterClientResult.Failure.Generic(failure)
