@@ -92,8 +92,30 @@ class RegisterClientUseCaseTest {
     }
 
     @Test
-    fun givenRepositoryRegistrationFailsDueToWrongPassword_whenRegistering_thenInvalidCredentialsErrorShouldBeReturned() = runTest {
+    fun givenRepositoryRegistrationFailsDueMissingPassword_whenRegistering_thenPasswordAuthRequiredErrorShouldBeReturned() = runTest {
         val wrongPasswordFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.missingAuth)
+        given(clientRepository)
+            .suspendFunction(clientRepository::registerClient)
+            .whenInvokedWith(anything())
+            .then { Either.Left(wrongPasswordFailure) }
+
+        val result = registerClient(TEST_PASSWORD, TEST_CAPABILITIES)
+
+        assertIs<RegisterClientResult.Failure.PasswordAuthRequired>(result)
+
+        verify(preKeyRepository)
+            .suspendFunction(preKeyRepository::generateNewPreKeys)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
+
+        verify(preKeyRepository)
+            .function(preKeyRepository::generateNewLastKey)
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenRepositoryRegistrationFailsDueInvalidPassword_whenRegistering_thenInvalidCredentialsErrorShouldBeReturned() = runTest {
+        val wrongPasswordFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.invalidCredentials)
         given(clientRepository)
             .suspendFunction(clientRepository::registerClient)
             .whenInvokedWith(anything())
