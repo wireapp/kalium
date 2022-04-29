@@ -312,7 +312,7 @@ actual class CallManagerImpl(
                 length = responseData.size,
                 ctx = context
             )
-            kaliumLogger.i("SFT Response sent.")
+            callingLogger.i("SFT Response sent.")
         }
     }
 
@@ -324,10 +324,10 @@ actual class CallManagerImpl(
                     url = url,
                     data = dataString
                 ).fold({
-                    kaliumLogger.i("Could not connect to SFT server.")
+                    callingLogger.i("Could not connect to SFT server.")
                     null
                 }, {
-                    kaliumLogger.i("Connected to SFT server.")
+                    callingLogger.i("Connected to SFT server.")
                     it
                 })
 
