@@ -4,6 +4,7 @@ import com.sun.jna.Pointer
 import com.wire.kalium.calling.CallTypeCalling
 import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.callbacks.CallConfigRequestHandler
+import com.wire.kalium.calling.callbacks.SFTRequestHandler
 import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.calling.types.Size_t
 import com.wire.kalium.calling.types.Uint32_t
@@ -45,7 +46,7 @@ actual class CallManagerImpl(
     private val clientRepository: ClientRepository,
     private val callMapper: CallMapper,
     val messageSender: MessageSender
-) : CallManager, CallConfigRequestHandler {
+) : CallManager, CallConfigRequestHandler, SFTRequestHandler {
 
     private val job = SupervisorJob() // TODO clear job method
     private val scope = CoroutineScope(job + Dispatchers.IO)
@@ -116,13 +117,10 @@ actual class CallManagerImpl(
                         avsSelfUserId = avsSelfUserId.toUserId(),
                         avsSelfClientId = ClientId(avsSelfClientId)
                     )
-                    AvsCallBackError.None.value
+                    AvsCallBackError.NONE.value
                 }
             },
-            sftRequestHandler = { ctx: Pointer?, url: String, data: Pointer?, length: Size_t, arg: Pointer? ->
-                callingLogger.i("$TAG -> sftRequestHandler")
-                0
-            },
+            sftRequestHandler = this@CallManagerImpl,
             incomingCallHandler = { conversationId: String, messageTime: Uint32_t, userId: String, clientId: String, isVideoCall: Boolean,
                                     shouldRing: Boolean, conversationType: Int, arg: Pointer? ->
                 callingLogger.i("$TAG -> incomingCallHandler")
@@ -301,7 +299,44 @@ actual class CallManagerImpl(
             callingLogger.i("$TAG - onConfigRequest")
         }
 
-        return 0
+        return AvsCallBackError.NONE.value
+    }
+
+    private suspend fun onSFTResponse(data: ByteArray?, context: Pointer?) {
+        withCalling {
+            val responseData = data ?: byteArrayOf()
+            wcall_sft_resp(
+                inst = deferredHandle.await(),
+                error = data?.let { AvsSFTError.NONE.value } ?: AvsSFTError.NO_RESPONSE_DATA.value,
+                data = responseData,
+                length = responseData.size,
+                ctx = context
+            )
+            callingLogger.i("SFT Response sent.")
+        }
+    }
+
+    override fun onSFTRequest(ctx: Pointer?, url: String, data: Pointer?, length: Size_t, arg: Pointer?): Int {
+        scope.launch {
+            val dataString = data?.getString(0, UTF8_ENCODING)
+            dataString?.let {
+                val responseData = callRepository.connectToSFT(
+                    url = url,
+                    data = dataString
+                ).fold({
+                    callingLogger.i("Could not connect to SFT server.")
+                    null
+                }, {
+                    callingLogger.i("Connected to SFT server.")
+                    it
+                })
+
+                onSFTResponse(data = responseData, context = ctx)
+            }
+        }
+
+        callingLogger.i("$TAG -> sftRequestHandler")
+        return AvsCallBackError.NONE.value
     }
 
     companion object {
