@@ -38,6 +38,6 @@ data class ClientsOfUsersResponse(
 @Serializable
 data class SimpleClientResponse(
     @SerialName("id") val id: String,
-    @SerialName("class") val deviceClass: String
+    @SerialName("class") val deviceClass: String? = "unknown"
 )
 
