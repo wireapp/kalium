@@ -23,10 +23,9 @@ actual class WorkScheduler(private val coreLogic: CoreLogic, private val userId:
         }
     }
 
-    override suspend fun scheduleSendingOfPersistedMessage(conversationID: ConversationId, messageUuid: String) {
+    override suspend fun scheduleSendingOfPendingMessages() {
         kaliumLogger.w(
-            "Scheduling of messages is not supported on JVM. " +
-                    "Message of Conversation=$conversationID and UUID=$messageUuid won't be scheduled for sending."
+            "Scheduling of messages is not supported on JVM. Pending messages won't be scheduled for sending."
         )
     }
 }

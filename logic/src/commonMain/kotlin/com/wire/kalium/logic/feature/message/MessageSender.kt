@@ -56,7 +56,7 @@ class MessageSenderImpl(
                 kaliumLogger.i("Failed to send message. Failure = $it")
                 if (it is NetworkFailure.NoNetworkConnection) {
                     kaliumLogger.i("Scheduling message for retrying in the future.")
-                    messageSendingScheduler.scheduleSendingOfPersistedMessage(conversationId, messageUuid)
+                    messageSendingScheduler.scheduleSendingOfPendingMessages()
                 } else {
                     messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, messageUuid)
                 }

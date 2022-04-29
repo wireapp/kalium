@@ -1,14 +1,15 @@
 package com.wire.kalium.logic.feature.message
 
-import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.sync.PendingMessagesSenderWorker
 
 /**
- * Responsible for [scheduleSendingOfPersistedMessage].
+ * Responsible for [scheduleSendingOfPendingMessages].
  */
 interface MessageSendingScheduler {
 
     /**
-     *  Given [conversationID] and [messageUuid] of a persisted message, schedule the sending/retry.
+     *  Schedules an execution of [PendingMessagesSenderWorker], which attempts to send
+     *  all pending messages of this user.
      *
      *  **When** it's gonna to be executed may vary depending on the platform and/or implementation.
      *
@@ -18,5 +19,5 @@ interface MessageSendingScheduler {
      *  If the implementation is unable to schedule (due to platform limitations for example),
      *  it's OK to just don't do anything, ideally logging a warning about the lack of implementation.
      */
-    suspend fun scheduleSendingOfPersistedMessage(conversationID: ConversationId, messageUuid: String)
+    suspend fun scheduleSendingOfPendingMessages()
 }
