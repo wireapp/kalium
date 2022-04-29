@@ -221,7 +221,7 @@ actual class CallManagerImpl(
                         is Either.Left -> {
                             wcall_resp(
                                 inst = deferredHandle.await(),
-                                status = 400,
+                                status = 400, // TODO: Handle the errorCode from CoreFailure
                                 reason = "Couldn't send Calling Message",
                                 arg = context
                             )
