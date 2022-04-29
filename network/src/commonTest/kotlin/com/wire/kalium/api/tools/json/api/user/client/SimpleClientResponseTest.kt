@@ -9,7 +9,6 @@ import kotlin.test.assertEquals
 
 class SimpleClientResponseTest {
 
-
     @Test
     fun givenAJsonWithMissingClass_whenDeserializingIt_thenHandleItByPuttingUnknownClass() = runTest {
         val jsonString = SimpleClientResponseJson.validMissingClass.rawJson
