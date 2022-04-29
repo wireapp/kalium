@@ -2,6 +2,7 @@ package com.wire.kalium.api.tools.json.api.user.client
 
 import com.wire.kalium.api.tools.json.ValidJsonProvider
 import com.wire.kalium.network.api.user.client.ClientResponse
+import com.wire.kalium.network.api.user.client.DeviceTypeDTO
 import com.wire.kalium.network.api.user.client.SimpleClientResponse
 
 object SimpleClientResponseJson {
@@ -9,6 +10,14 @@ object SimpleClientResponseJson {
         """
         |{
         |   "id": "${serializable.id}"
+        |}
+        """.trimMargin()
+    }
+    private val gibberishClassJsonProvider = { serializable: SimpleClientResponse ->
+        """
+        |{
+        |   "id": "${serializable.id}",
+        |   "class": "198237juf9"
         |}
         """.trimMargin()
     }
@@ -24,7 +33,7 @@ object SimpleClientResponseJson {
     val valid = ValidJsonProvider(
         SimpleClientResponse(
             id = "3b3a54c770f5e1a4",
-            deviceClass = "desktop"
+            deviceClass = DeviceTypeDTO.Phone
         ),
         jsonProvider
     )
@@ -34,6 +43,13 @@ object SimpleClientResponseJson {
             id = "3b3a54c770f5e1a4"
         ),
         missingClassJsonProvider
+    )
+
+    val validGibberishClass = ValidJsonProvider(
+        SimpleClientResponse(
+            id = "3b3a54c770f5e1a4"
+        ),
+        gibberishClassJsonProvider
     )
 
     fun createValid(clientResponse: SimpleClientResponse) = ValidJsonProvider(clientResponse, jsonProvider)

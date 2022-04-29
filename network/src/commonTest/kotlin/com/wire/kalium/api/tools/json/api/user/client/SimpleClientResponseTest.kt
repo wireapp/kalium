@@ -1,5 +1,6 @@
 package com.wire.kalium.api.tools.json.api.user.client
 
+import com.wire.kalium.network.api.user.client.DeviceTypeDTO
 import com.wire.kalium.network.api.user.client.SimpleClientResponse
 import com.wire.kalium.network.tools.KtxSerializer
 import kotlinx.coroutines.test.runTest
@@ -15,7 +16,16 @@ class SimpleClientResponseTest {
 
         val result = KtxSerializer.json.decodeFromString<SimpleClientResponse>(jsonString)
 
-        assertEquals("unknown", result.deviceClass)
+        assertEquals(DeviceTypeDTO.Unknown, result.deviceClass)
         assertEquals(SimpleClientResponseJson.validMissingClass.serializableData, result)
+    }
+    @Test
+    fun givenAJsonWithGibberishClass_whenDeserializingIt_thenHandleItByPuttingUnknownClass() = runTest {
+        val jsonString = SimpleClientResponseJson.validGibberishClass.rawJson
+
+        val result = KtxSerializer.json.decodeFromString<SimpleClientResponse>(jsonString)
+
+        assertEquals(DeviceTypeDTO.Unknown, result.deviceClass)
+        assertEquals(SimpleClientResponseJson.validGibberishClass.serializableData, result)
     }
 }
