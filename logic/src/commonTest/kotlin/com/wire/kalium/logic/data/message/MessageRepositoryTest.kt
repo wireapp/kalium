@@ -9,12 +9,11 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.message.MLSMessageApi
 import com.wire.kalium.network.api.message.MessageApi
-import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.network.api.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.persistence.dao.message.MessageEntity.Status.SENT
-import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
+import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.message.MessageEntity.Status.SENT
 import io.mockative.Mock
 import io.mockative.anything
 import io.mockative.configure
@@ -70,7 +69,7 @@ class MessageRepositoryTest {
         given(messageDAO)
             .suspendFunction(messageDAO::getMessagesByConversation)
             .whenInvokedWith(anything(), anything(), anything())
-            .then { _, _, _-> flowOf(listOf()) }
+            .then { _, _, _ -> flowOf(listOf()) }
 
         given(messageMapper)
             .function(messageMapper::fromEntityToMessage)
