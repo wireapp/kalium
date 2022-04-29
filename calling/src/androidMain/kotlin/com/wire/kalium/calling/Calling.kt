@@ -62,6 +62,14 @@ interface Calling : Library {
 
     fun wcall_set_mute(inst: Handle, muted: Int)
 
+    fun wcall_sft_resp(
+        inst: Handle,
+        error: Int,
+        data: ByteArray,
+        length: Int,
+        ctx: Pointer?
+    )
+
     fun wcall_recv_msg(
         inst: Handle,
         msg: ByteArray,
@@ -71,6 +79,13 @@ interface Calling : Library {
         convId: String,
         userId: String,
         clientId: String
+    ): Int
+
+    fun wcall_resp(
+        inst: Handle,
+        status: Int,
+        reason: String,
+        arg: Pointer?
     ): Int
 
     companion object {

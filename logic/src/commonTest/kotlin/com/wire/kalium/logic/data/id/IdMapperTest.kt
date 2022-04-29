@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.id
 
+import com.wire.kalium.network.api.user.client.DeviceTypeDTO
 import com.wire.kalium.network.api.user.client.SimpleClientResponse
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -30,7 +31,7 @@ class IdMapperTest {
 
     @Test
     fun givenASimpleClientResponse_whenMappingFromSimpleClientResponse_thenTheIDShouldBeMappedCorrectly() {
-        val simpleClientResponse = SimpleClientResponse("an ID", "it doesn't matter")
+        val simpleClientResponse = SimpleClientResponse("an ID", DeviceTypeDTO.Desktop)
 
         val clientID = idMapper.fromSimpleClientResponse(simpleClientResponse)
 
