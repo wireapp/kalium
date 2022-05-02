@@ -48,7 +48,8 @@ enum class DeviceType {
     Phone,
     Tablet,
     Desktop,
-    LegalHold;
+    LegalHold,
+    Unknown;
 }
 
 enum class ClientCapability {

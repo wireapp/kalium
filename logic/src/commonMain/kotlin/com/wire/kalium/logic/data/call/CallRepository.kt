@@ -8,6 +8,7 @@ import com.wire.kalium.network.api.call.CallApi
 
 interface CallRepository {
     suspend fun getCallConfigResponse(limit: Int?): Either<CoreFailure, String>
+    suspend fun connectToSFT(url: String, data: String): Either<CoreFailure, ByteArray>
 }
 
 internal class CallDataSource(
@@ -17,6 +18,12 @@ internal class CallDataSource(
     override suspend fun getCallConfigResponse(limit: Int?): Either<CoreFailure, String> = suspending {
         wrapApiRequest {
             callApi.getCallConfig(limit = limit)
+        }
+    }
+
+    override suspend fun connectToSFT(url: String, data: String): Either<CoreFailure, ByteArray> = suspending {
+        wrapApiRequest {
+            callApi.connectToSFT(url = url, data = data)
         }
     }
 }

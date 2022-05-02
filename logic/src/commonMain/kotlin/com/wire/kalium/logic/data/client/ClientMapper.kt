@@ -65,6 +65,7 @@ class ClientMapper(
         DeviceType.Tablet -> DeviceTypeDTO.Tablet
         DeviceType.Desktop -> DeviceTypeDTO.Desktop
         DeviceType.LegalHold -> DeviceTypeDTO.LegalHold
+        DeviceType.Unknown -> DeviceTypeDTO.Unknown
     }
 
     private fun fromDeviceTypeDTO(deviceTypeDTO: DeviceTypeDTO): DeviceType = when (deviceTypeDTO) {
@@ -72,5 +73,6 @@ class ClientMapper(
         DeviceTypeDTO.Tablet -> DeviceType.Tablet
         DeviceTypeDTO.Desktop -> DeviceType.Desktop
         DeviceTypeDTO.LegalHold -> DeviceType.LegalHold
+        DeviceTypeDTO.Unknown -> DeviceType.Unknown
     }
 }

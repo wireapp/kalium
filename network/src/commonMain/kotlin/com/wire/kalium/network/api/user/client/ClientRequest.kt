@@ -39,6 +39,10 @@ enum class ClientTypeDTO {
     }
 }
 
+/**
+ * The type of device where the client is running.
+ * In case the backend returns null, nothing, or any other unknown value, [Unknown] is used.
+ */
 @Serializable
 enum class DeviceTypeDTO {
     @SerialName("phone")
@@ -51,7 +55,10 @@ enum class DeviceTypeDTO {
     Desktop,
 
     @SerialName("legalhold")
-    LegalHold;
+    LegalHold,
+
+    @SerialName("unknown")
+    Unknown;
 
     override fun toString(): String {
         return this.name.lowercase()

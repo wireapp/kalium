@@ -150,6 +150,19 @@ class ConversationDAOTest : BaseDatabaseTest() {
         assertEquals(listOf(conversationEntity1), result)
     }
 
+    @Test
+    fun givenMultipleConversations_whenGettingConversations_thenOrderIsCorrect() = runTest {
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertConversation(conversationEntity2)
+
+        val result = conversationDAO.getConversationsForNotifications().first()
+
+        assertEquals(conversationEntity1, result.first())
+        assertEquals(conversationEntity2, result[1])
+
+    }
+
+
     private companion object {
         val user1 = newUserEntity(id = "1")
         val user2 = newUserEntity(id = "2")
@@ -172,7 +185,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             null,
             ConversationEntity.ProtocolInfo.MLS("group2", ConversationEntity.GroupState.ESTABLISHED),
             lastNotificationDate = null,
-            lastModifiedDate = "2022-03-30T15:36:00.000Z"
+            lastModifiedDate = "2021-03-30T15:36:00.000Z"
         )
 
         val member1 = Member(user1.id)
