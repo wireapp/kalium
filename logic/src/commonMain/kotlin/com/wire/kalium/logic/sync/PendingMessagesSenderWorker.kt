@@ -4,8 +4,8 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.kaliumLogger
 
 /**
  * This worker attempts to send all pending messages created by this user.
@@ -28,12 +28,18 @@ internal class PendingMessagesSenderWorker(
      * The failure or retry logic is handled by [MessageSender] for each message.
      */
     override suspend fun doWork(): Result = suspending {
-        messageRepository.getAllPendingMessagesFromUser(userId).flatMap { pendingMessages ->
-            pendingMessages.forEach { message ->
-                messageSender.trySendingOutgoingMessageById(message.conversationId, message.id)
+        messageRepository.getAllPendingMessagesFromUser(userId)
+            .onSuccess { pendingMessages ->
+                pendingMessages.forEach { message ->
+                    kaliumLogger.i("Attempting scheduled sending of message $message")
+                    messageSender.trySendingOutgoingMessageById(message.conversationId, message.id)
+                }
+            }.onFailure {
+                kaliumLogger.w("Failed to fetch and attempt retry of pending messages: $it")
+                // This execution doesn't care about failures
             }
-            Either.Right(Unit)
-        }.coFold({ Result.Success }, { Result.Success })
+
+        Result.Success
     }
 
 }
