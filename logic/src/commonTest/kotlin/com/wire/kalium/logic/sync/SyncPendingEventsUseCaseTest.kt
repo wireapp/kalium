@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.sync
 
-import app.cash.turbine.test
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.framework.TestConversation
@@ -20,7 +19,6 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
-import kotlin.test.assertEquals
 
 @ConfigurationApi
 @ExperimentalCoroutinesApi
@@ -58,34 +56,12 @@ class SyncPendingEventsUseCaseTest {
             .whenInvoked()
             .thenReturn(events.asFlow())
 
-        syncPendingEvents().collect {}
+        syncPendingEvents()
 
         verify(eventRepository)
             .suspendFunction(eventRepository::updateLastProcessedEventId)
             .with(eq(event.id))
             .wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenAnEventIsReceived_whenSyncedPendingEvents_thenFlowEmitsUnit() = runTest {
-        val event = Event.Conversation.MemberJoin(
-            "firstEventId",
-            TestConversation.ID,
-            TestUser.USER_ID,
-            ConversationMembers(listOf(), listOf()),
-            "someFrom"
-        )
-        val events = listOf(Either.Right(event))
-
-        given(eventRepository)
-            .suspendFunction(eventRepository::pendingEvents)
-            .whenInvoked()
-            .thenReturn(events.asFlow())
-
-        syncPendingEvents().test {
-            assertEquals(awaitItem(), Unit)
-            awaitComplete()
-        }
     }
 
 }

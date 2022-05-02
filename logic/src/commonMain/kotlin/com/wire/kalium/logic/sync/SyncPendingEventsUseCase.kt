@@ -16,28 +16,25 @@ class SyncPendingEventsUseCase(
 ) {
 
     /**
-     * @return Flow<Unit> that emits only once - when syncing Pending Events was done
+     * Syncing only Pending Events, to find out what did we miss
      */
-    suspend operator fun invoke(): Flow<Unit> {
+    suspend operator fun invoke() {
         syncManager.waitForSlowSyncToComplete()
 
-        return flow {
-            eventRepository.pendingEvents()
-                .onCompletion { emit(Unit) }
-                .collect { either ->
-                    suspending {
-                        either.map { event ->
-                            kaliumLogger.i(message = "Event received: $event")
-                            when (event) {
-                                is Event.Conversation -> conversationEventReceiver.onEvent(event)
-                                else -> kaliumLogger.i(message = "Unhandled event id=${event.id}")
-                            }
-                            eventRepository.updateLastProcessedEventId(event.id)
+        eventRepository.pendingEvents()
+            .collect { either ->
+                suspending {
+                    either.map { event ->
+                        kaliumLogger.i(message = "Event received: $event")
+                        when (event) {
+                            is Event.Conversation -> conversationEventReceiver.onEvent(event)
+                            else -> kaliumLogger.i(message = "Unhandled event id=${event.id}")
                         }
-                    }.onFailure {
-                        kaliumLogger.e(message = "Failure when receiving events: $it")
+                        eventRepository.updateLastProcessedEventId(event.id)
                     }
+                }.onFailure {
+                    kaliumLogger.e(message = "Failure when receiving events: $it")
                 }
-        }
+            }
     }
 }
