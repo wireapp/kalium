@@ -34,11 +34,22 @@ interface RegisterClientUseCase {
         registerClientParam: RegisterClientParam
     ): RegisterClientResult
 
+    /**
+     * The required data needed to register a client
+     * password
+     * capabilities :Hints provided by the client for the backend so it can behave in a backwards-compatible way.
+     * ex : legalHoldConsent
+     * preKeysToSend : the initial public keys to start a conversation with another client
+     *
+     * Sender ID : used only when we have a generated token that is related to the notifications
+     * in the case of android it represent the firebase project number
+     *
+     * @see [RegisterClientParam.ClientWithoutToken]
+     * @see [RegisterClientParam.ClientWithToken]
+     */
     sealed class RegisterClientParam {
         abstract val password: String?
-
         abstract val capabilities: List<ClientCapability>?
-
         abstract val preKeysToSend: Int
 
         data class ClientWithoutToken(
