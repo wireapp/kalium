@@ -62,6 +62,7 @@ import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.sync.ConversationEventReceiver
 import com.wire.kalium.logic.sync.ListenToEventsUseCase
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncPendingEventsUseCase
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.TimeParserImpl
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
@@ -233,6 +234,8 @@ abstract class UserSessionScopeCommon(
     private val logoutRepository: LogoutRepository = LogoutDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi)
     val listenToEvents: ListenToEventsUseCase
         get() = ListenToEventsUseCase(syncManager, eventRepository, conversationEventReceiver)
+    val syncPendingEvents: SyncPendingEventsUseCase
+        get() = SyncPendingEventsUseCase(syncManager, eventRepository, conversationEventReceiver)
     val client: ClientScope get() = ClientScope(clientRepository, preKeyRepository, keyPackageRepository, mlsClientProvider)
     val conversations: ConversationScope get() = ConversationScope(conversationRepository, userRepository, syncManager)
     val messages: MessageScope
