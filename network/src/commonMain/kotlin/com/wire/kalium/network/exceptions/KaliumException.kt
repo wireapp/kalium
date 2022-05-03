@@ -48,12 +48,9 @@ sealed class SendMessageError : KaliumException.FeatureError() {
     class MissingDeviceError(val errorBody: SendMessageResponse.MissingDevicesResponse) : SendMessageError()
 }
 
-sealed class QualifiedSendMessageError() : KaliumException.FeatureError() {
-    class MissingDeviceError(
-        val errorBody: QualifiedSendMessageResponse.MissingDevicesResponse
-    ) : QualifiedSendMessageError()
-}
-
+data class ProteusClientsChangedError(
+    val errorBody: QualifiedSendMessageResponse.MissingDevicesResponse
+) : KaliumException.FeatureError()
 
 fun KaliumException.InvalidRequestError.isInvalidCredentials(): Boolean {
     return errorResponse.label == INVALID_CREDENTIALS
