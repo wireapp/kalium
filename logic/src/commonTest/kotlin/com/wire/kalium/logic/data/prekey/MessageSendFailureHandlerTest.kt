@@ -5,7 +5,7 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.failure.SendMessageFailure
+import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandlerImpl
 import com.wire.kalium.logic.functional.Either
@@ -47,7 +47,7 @@ class MessageSendFailureHandlerTest {
 
     @Test
     fun givenMissingClients_whenHandlingClientsHaveChangedFailure_thenUsersThatControlTheseClientsShouldBeFetched() = runTest {
-        val failureData = SendMessageFailure.ClientsHaveChanged(missingClientsOfUsers = mapOf(userOne, userTwo), mapOf(), mapOf())
+        val failureData = ProteusSendMessageFailure(missingClientsOfUsers = mapOf(userOne, userTwo), mapOf(), mapOf())
 
         given(userRepository)
             .suspendFunction(userRepository::fetchUsersByIds)
@@ -70,7 +70,7 @@ class MessageSendFailureHandlerTest {
 
     @Test
     fun givenMissingContactsAndClients_whenHandlingClientsHaveChangedFailureThenClientsShouldBeAddedToContacts() = runTest {
-        val failureData = SendMessageFailure.ClientsHaveChanged(missingClientsOfUsers = mapOf(userOne, userTwo), mapOf(), mapOf())
+        val failureData = ProteusSendMessageFailure(missingClientsOfUsers = mapOf(userOne, userTwo), mapOf(), mapOf())
 
         given(userRepository)
             .suspendFunction(userRepository::fetchUsersByIds)
@@ -103,7 +103,7 @@ class MessageSendFailureHandlerTest {
             .suspendFunction(userRepository::fetchUsersByIds)
             .whenInvokedWith(any())
             .thenReturn(Either.Left(failure))
-        val failureData = SendMessageFailure.ClientsHaveChanged(mapOf(), mapOf(), mapOf())
+        val failureData = ProteusSendMessageFailure(mapOf(), mapOf(), mapOf())
 
         val result = messageSendFailureHandler.handleClientsHaveChangedFailure(failureData)
         result.shouldFail()
@@ -121,7 +121,7 @@ class MessageSendFailureHandlerTest {
             .suspendFunction(clientRepository::saveNewClients)
             .whenInvokedWith(any(), any())
             .thenReturn(Either.Left(failure))
-        val failureData = SendMessageFailure.ClientsHaveChanged(mapOf(userOne), mapOf(), mapOf())
+        val failureData = ProteusSendMessageFailure(mapOf(userOne), mapOf(), mapOf())
 
         val result = messageSendFailureHandler.handleClientsHaveChangedFailure(failureData)
         result.shouldFail()

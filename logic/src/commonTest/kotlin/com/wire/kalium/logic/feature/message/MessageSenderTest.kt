@@ -10,7 +10,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.failure.SendMessageFailure
+import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
@@ -163,7 +163,7 @@ class MessageSenderTest {
         runTest {
             //given
             setupGivenSuccessResults(
-                sendEnvelope = false
+                sendEnvelope = Either.Left(CoreFailure.Unknown(Throwable("some exception")))
             )
             //when
             val result = messageSender.trySendingOutgoingMessageById(ConversationId("testId", "testDomain"), "testId")
@@ -238,7 +238,7 @@ class MessageSenderTest {
         createOutgoingEnvelope: Boolean = true,
         updateMessageDate: Boolean = true,
         updatePendingMessagesAddMillisToDate: Boolean = true,
-        sendEnvelope: Boolean = true,
+        sendEnvelope: Either<CoreFailure, String> = Either.Right("date"),
         updateMessageStatus: Boolean = true,
     ) {
         given(messageRepository)
@@ -269,7 +269,7 @@ class MessageSenderTest {
         given(messageRepository)
             .suspendFunction(messageRepository::sendEnvelope)
             .whenInvokedWith(anything(), anything())
-            .thenReturn(if (sendEnvelope) Either.Right("date") else Either.Left(SendMessageFailure.Unknown(Throwable("some exception"))))
+            .thenReturn(sendEnvelope)
 
         given(messageRepository)
             .suspendFunction(messageRepository::updateMessageDate)
