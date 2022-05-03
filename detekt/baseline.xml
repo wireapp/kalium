@@ -23,7 +23,6 @@
     <ID>ConstructorParameterNaming:MessageApiImp.kt$MessageApiImp.RequestBody$@SerialName("data") val `data`: String?</ID>
     <ID>EmptyDefaultConstructor:KaliumException.kt$KaliumException$()</ID>
     <ID>EmptyDefaultConstructor:KaliumException.kt$KaliumException.FeatureError$()</ID>
-    <ID>EmptyDefaultConstructor:KaliumException.kt$QualifiedSendMessageError$()</ID>
     <ID>EmptyDefaultConstructor:ServerConfigurationDAO.kt$ServerConfigMapper$()</ID>
     <ID>EmptyDefaultConstructor:ValidateSSOCodeUseCase.kt$ValidateSSOCodeUseCaseImpl$()</ID>
     <ID>EmptyKtFile:SessionLocalRepository.kt$.SessionLocalRepository.kt</ID>
@@ -88,9 +87,9 @@
     <ID>LongParameterList:GlobalCallManager.kt$GlobalCallManager$( userId: QualifiedID, callRepository: CallRepository, userRepository: UserRepository, clientRepository: ClientRepository, callMapper: CallMapper, messageSender: MessageSender )</ID>
     <ID>LongParameterList:IncomingCallHandler.kt$IncomingCallHandler$( conversationId: String, messageTime: Uint32_t, userId: String, clientId: String, isVideoCall: Boolean, shouldRing: Boolean, conversationType: Int, arg: Pointer? )</ID>
     <ID>LongParameterList:LogoutUseCase.kt$LogoutUseCase$( private val logoutRepository: LogoutRepository, private val sessionRepository: SessionRepository, private val userId: QualifiedID, private val authenticatedDataSourceSet: AuthenticatedDataSourceSet, private val clientRepository: ClientRepository, private val mlsClientProvider: MLSClientProvider, private val authenticatedDataSourceSetProvider: AuthenticatedDataSourceSetProvider = AuthenticatedDataSourceSetProviderImpl )</ID>
-    <ID>LongParameterList:MessageScope.kt$MessageScope$( private val messageRepository: MessageRepository, private val conversationRepository: ConversationRepository, private val clientRepository: ClientRepository, private val proteusClient: ProteusClient, private val mlsClientProvider: MLSClientProvider, private val preKeyRepository: PreKeyRepository, private val userRepository: UserRepository, private val assetRepository: AssetRepository, private val syncManager: SyncManager, private val timeParser: TimeParser, )</ID>
-    <ID>LongParameterList:MessageSender.kt$MessageSenderImpl$( private val messageRepository: MessageRepository, private val conversationRepository: ConversationRepository, private val syncManager: SyncManager, private val messageSendFailureHandler: MessageSendFailureHandler, private val sessionEstablisher: SessionEstablisher, private val messageEnvelopeCreator: MessageEnvelopeCreator, private val mlsMessageCreator: MLSMessageCreator, private val timeParser: TimeParser, )</ID>
-    <ID>LongParameterList:MessageSenderTest.kt$MessageSenderTest$( getMessageById: Boolean = true, getConversationProtocol: Boolean = true, getConversationsRecipient: Boolean = true, prepareRecipientsForNewOutGoingMessage: Boolean = true, createOutgoingEnvelope: Boolean = true, updateMessageDate: Boolean = true, updatePendingMessagesAddMillisToDate: Boolean = true, sendEnvelope: Boolean = true, updateMessageStatus: Boolean = true, )</ID>
+    <ID>LongParameterList:MessageScope.kt$MessageScope$( internal val messageRepository: MessageRepository, private val conversationRepository: ConversationRepository, private val clientRepository: ClientRepository, private val proteusClient: ProteusClient, private val mlsClientProvider: MLSClientProvider, private val preKeyRepository: PreKeyRepository, private val userRepository: UserRepository, private val assetRepository: AssetRepository, private val syncManager: SyncManager, private val messageSendingScheduler: MessageSendingScheduler, private val timeParser: TimeParser, )</ID>
+    <ID>LongParameterList:MessageSender.kt$MessageSenderImpl$( private val messageRepository: MessageRepository, private val conversationRepository: ConversationRepository, private val syncManager: SyncManager, private val messageSendFailureHandler: MessageSendFailureHandler, private val sessionEstablisher: SessionEstablisher, private val messageEnvelopeCreator: MessageEnvelopeCreator, private val mlsMessageCreator: MLSMessageCreator, private val messageSendingScheduler: MessageSendingScheduler, private val timeParser: TimeParser )</ID>
+    <ID>LongParameterList:MessageSenderTest.kt$MessageSenderTest$( getMessageById: Boolean = true, getConversationProtocol: Boolean = true, getConversationsRecipient: Boolean = true, prepareRecipientsForNewOutGoingMessage: Boolean = true, createOutgoingEnvelope: Boolean = true, updateMessageDate: Boolean = true, updatePendingMessagesAddMillisToDate: Boolean = true, sendEnvelope: Either&lt;CoreFailure, String> = Either.Right("date"), updateMessageStatus: Boolean = true, )</ID>
     <ID>LongParameterList:MessageStubs.kt$( id: String = "testMessage", content: MessageEntity.MessageEntityContent = MessageEntity.MessageEntityContent.TextMessageContent("Test Text"), conversationId: QualifiedIDEntity = QualifiedIDEntity("convId", "convDomain"), senderUserId: QualifiedIDEntity = QualifiedIDEntity("senderId", "senderDomain"), senderClientId: String = "senderClientId", status: MessageEntity.Status = MessageEntity.Status.PENDING )</ID>
     <ID>LongParameterList:NetworkQualityChangedHandler.kt$NetworkQualityChangedHandler$( conversationId: String, userId: String, clientId: String, quality: Int, roundTripTimeInMilliseconds: Int, upstreamPacketLossPercentage: Int, downstreamPacketLossPercentage: Int, arg: Pointer? )</ID>
     <ID>LongParameterList:RegisterAccountRepository.kt$RegisterAccountRepository$( email: String, code: String, name: String, password: String, teamName: String, teamIcon: String, serverConfig: ServerConfig )</ID>
@@ -273,11 +272,8 @@
     <ID>MaxLineLength:TestCredentials.kt$accessToken = "eyJhbGciOiJIUzI1AnwarInR5cCI6IkpXVCJ9.eyJsb2dnZWRJbkFzIjoiYWRtaW4iLCJpYXQiOjE0MjI3Nzk2Mz69.gzSraSYS8EXBxLN_oWnFSRgCzcmJmMjLiuyu5CSpyHI"</ID>
     <ID>MaxLineLength:TestCredentials.kt$refreshToken = "a123bGciOiJIUzI1NiIsInR5cCI6IkpX2fr9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6Ik420G4gRG9lIiwiYWRtaW4iOnRydWV9.TJVA95OrM7E2cBab30RMHrHDcEfxjoYZgeFONFh7HgQ"</ID>
     <ID>MaxLineLength:UserDTO.kt$NewUserDTO$@SerialName("label") val label: String?</ID>
-    <ID>MaxLineLength:UserSessionScope.kt$UserSessionScopeCommon$get() = MessageSenderImpl(messageRepository, conversationRepository, syncManager, messageSendFailureHandler, sessionEstablisher, messageEnvelopeCreator, mlsMessageCreator,timeParser)</ID>
     <ID>MaxLineLength:UserSessionScope.kt$UserSessionScopeCommon$private val preKeyRemoteRepository: PreKeyRemoteRepository get() = PreKeyRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi)</ID>
-    <ID>MaxLineLength:UserSessionScope.kt$UserSessionScopeCommon$val logout: LogoutUseCase get() = LogoutUseCase(logoutRepository, sessionRepository, userId, authenticatedDataSourceSet, clientRepository, mlsClientProvider)</ID>
     <ID>MaxLineLength:ValidateUserHandleUseCaseTest.kt$ValidateUserHandleUseCaseTest$fun</ID>
-    <ID>MaxLineLength:WorkScheduler.kt$private inline fun &lt;reified T> WorkerParameters.getSerializable(key: String): T?</ID>
     <ID>MaxLineLength:WrapApiRequestTest.kt$WrapApiRequestTest$val expected = NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "have you tried turning it off and on again?", "server_crash")))</ID>
     <ID>MaxLineLength:messages.kt$1 -> items = (items ?: pbandk.ListWithSize.Builder()).apply { this += _fieldValue as Sequence&lt;com.wire.kalium.protobuf.messages.Composite.Item> }</ID>
     <ID>MaxLineLength:messages.kt$22 -> content = GenericMessage.Content.ButtonActionConfirmation(_fieldValue as com.wire.kalium.protobuf.messages.ButtonActionConfirmation)</ID>
@@ -495,12 +491,9 @@
     <ID>MayBeConst:LoginApiTest.kt$LoginApiTest.Companion$val refreshToken = "415a5306-a476-41bc-af36-94ab075fd881"</ID>
     <ID>MayBeConst:MLSConversationRepositoryTest.kt$MLSConversationRepositoryTest.Companion$val GROUP_ID = "groupId"</ID>
     <ID>MayBeConst:MessageRepositoryTest.kt$MessageRepositoryTest.Companion$val TEST_DATETIME = "2022-04-21T20:56:22.393Z"</ID>
+    <ID>MayBeConst:MessageSenderTest.kt$MessageSenderTest.Companion$val TEST_MESSAGE_UUID = "messageUuid"</ID>
     <ID>MayBeConst:SearchUserRepositoryTest.kt$SearchUserRepositoryTest.Companion$val TEST_DOMAIN = "testDomain"</ID>
     <ID>MayBeConst:SearchUserRepositoryTest.kt$SearchUserRepositoryTest.Companion$val TEST_QUERY = "testQuery"</ID>
-    <ID>MemberNameEqualsClassName:Platform.kt$Platform$actual val platform = "JVM"</ID>
-    <ID>MemberNameEqualsClassName:Platform.kt$Platform$actual val platform: String = "Android"</ID>
-    <ID>MemberNameEqualsClassName:Platform.kt$Platform$actual val platform: String get() = "iOS"</ID>
-    <ID>MemberNameEqualsClassName:Platform.kt$Platform$val platform: String</ID>
     <ID>ModifierOrder:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$external open</ID>
     <ID>ModifierOrder:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$CryptoboxCRUDStore$external open</ID>
     <ID>ModifierOrder:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$CryptoboxCRUDStore$override open</ID>
