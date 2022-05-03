@@ -21,15 +21,10 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.R
-import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.asString
-import com.wire.kalium.logic.data.id.toConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.sync.WrapperWorkerFactory.Companion.scheduleMessageSending
-import com.wire.kalium.logic.sync.WrapperWorkerFactory.Companion.sync
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -100,8 +95,8 @@ class WrapperWorkerFactory(private val coreLogic: CoreLogic) : WorkerFactory() {
 
         kaliumLogger.v("WrapperWorkerFactory, creating worker for class name: $innerWorkerClassName")
         return when (innerWorkerClassName) {
-            ScheduledMessageWorker::class.java.canonicalName -> {
-                createScheduledMessageWorker(workerParameters, userId, appContext)
+            PendingMessagesSenderWorker::class.java.canonicalName -> {
+                createPendingMessageSenderWorker(workerParameters, userId, appContext)
             }
             else -> {
                 kaliumLogger.d("No specialized constructor found for class $innerWorkerClassName. Default constructor will be used")
@@ -110,18 +105,18 @@ class WrapperWorkerFactory(private val coreLogic: CoreLogic) : WorkerFactory() {
         }
     }
 
-    private fun createScheduledMessageWorker(
+    private fun createPendingMessageSenderWorker(
         workerParameters: WorkerParameters,
         userId: UserId,
         appContext: Context
     ): WrapperWorker {
-        val conversationId = requireNotNull(workerParameters.inputData.getString(CONVERSATION_ID)) {
-            "$CONVERSATION_ID work param can't be null"
-        }.toConversationId()
-        val messageUuid = requireNotNull(workerParameters.inputData.getString(MESSAGE_UUID)) {
-            "$MESSAGE_UUID work param can't be null"
-        }
-        val worker = ScheduledMessageWorker(conversationId, messageUuid, coreLogic.getSessionScope(userId))
+        val userScope = coreLogic.getSessionScope(userId)
+        val worker = PendingMessagesSenderWorker(
+            userScope.messages.messageRepository,
+            userScope.messages.messageSender,
+            userId,
+            userScope
+        )
         return WrapperWorker(worker, appContext, workerParameters)
     }
 
@@ -139,19 +134,11 @@ class WrapperWorkerFactory(private val coreLogic: CoreLogic) : WorkerFactory() {
     internal companion object {
         private const val WORKER_CLASS_KEY = "worker_class"
         private const val USER_ID_KEY = "user-id-worker-param"
-        private const val CONVERSATION_ID = "conv-id-worker-param"
-        private const val MESSAGE_UUID = "message-uuid-worker-param"
-        fun workDataBuilder(work: KClass<out UserSessionWorker>, userId: UserId) = Data.Builder()
+
+        fun workData(work: KClass<out UserSessionWorker>, userId: UserId) = Data.Builder()
             .putString(WORKER_CLASS_KEY, work.java.canonicalName)
             .putSerializable(USER_ID_KEY, userId)
-
-        fun Data.Builder.sync(): Data = build()
-
-        fun Data.Builder.scheduleMessageSending(conversationID: ConversationId, messageUuid: String): Data {
-            putString(CONVERSATION_ID, conversationID.asString())
-            putString(MESSAGE_UUID, messageUuid)
-            return build()
-        }
+            .build()
     }
 }
 
@@ -160,8 +147,8 @@ actual class WorkScheduler(private val context: Context, private val userId: Use
     private val workerClass = WrapperWorker::class.java
     actual fun enqueueImmediateWork(work: KClass<out UserSessionWorker>, name: String) {
         val inputData = WrapperWorkerFactory
-            .workDataBuilder(work, userId)
-            .sync()
+            .workData(work, userId)
+
         val request = OneTimeWorkRequest.Builder(workerClass)
             .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
             .setInputData(inputData).build()
@@ -173,9 +160,8 @@ actual class WorkScheduler(private val context: Context, private val userId: Use
         ).enqueue()
     }
 
-    override suspend fun scheduleSendingOfPersistedMessage(conversationID: ConversationId, messageUuid: String) {
-        val inputData = WrapperWorkerFactory.workDataBuilder(ScheduledMessageWorker::class, userId)
-            .scheduleMessageSending(conversationID, messageUuid)
+    override suspend fun scheduleSendingOfPendingMessages() {
+        val inputData = WrapperWorkerFactory.workData(PendingMessagesSenderWorker::class, userId)
 
         val connectedConstraint = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
