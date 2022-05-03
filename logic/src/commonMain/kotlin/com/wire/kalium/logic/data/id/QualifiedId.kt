@@ -34,5 +34,5 @@ fun String.toConversationId(): ConversationId {
 fun String.parseIntoQualifiedID(): QualifiedID {
     val components = split("@")
     if (components.size < 2) throw IllegalStateException("The string trying to parse is not a valid one")
-    return QualifiedID(components.last(), components.first())
+    return QualifiedID(value = components.first(), domain = components.last())
 }
