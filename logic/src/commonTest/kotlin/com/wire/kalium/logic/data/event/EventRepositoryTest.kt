@@ -180,4 +180,39 @@ class EventRepositoryTest {
             awaitComplete()
         }
     }
+
+    @Test
+    fun givenPendingEvents_whenGettingPendingEvents_thenReturnPendingFirstFollowedByComplete() = runTest {
+        val pendingEventPayload = EventContentDTO.Conversation.NewMessageDTO(
+            TestConversation.NETWORK_ID,
+            UserId("value", "domain"),
+            "eventTime",
+            MessageEventData("text", "senderId", "recipient")
+        )
+        val pendingEvent = EventResponse("pendingEventId", listOf(pendingEventPayload))
+        val notificationsPageResponse = NotificationResponse.CompleteList("time", false, listOf(pendingEvent))
+
+        given(eventInfoStorage)
+            .getter(eventInfoStorage::lastProcessedId)
+            .whenInvoked()
+            .thenReturn("someNotificationId")
+
+        given(notificationApi)
+            .suspendFunction(notificationApi::notificationsByBatch)
+            .whenInvokedWith(any(), any(), any())
+            .thenReturn(NetworkResponse.Success(notificationsPageResponse, mapOf(), 200))
+
+        val clientId = TestClient.CLIENT_ID
+        given(clientRepository)
+            .function(clientRepository::currentClientId)
+            .whenInvoked()
+            .thenReturn(Either.Right(clientId))
+
+        eventRepository.pendingEvents().test {
+            awaitItem().shouldSucceed {
+                assertEquals(pendingEvent.id, it.id)
+            }
+            awaitComplete()
+        }
+    }
 }

@@ -55,6 +55,7 @@ import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandlerImpl
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.message.MessageSenderImpl
+import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.team.TeamScope
@@ -62,6 +63,7 @@ import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.sync.ConversationEventReceiver
 import com.wire.kalium.logic.sync.ListenToEventsUseCase
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncPendingEventsUseCase
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.TimeParserImpl
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
@@ -92,14 +94,15 @@ abstract class UserSessionScopeCommon(
             "${authenticatedDataSourceSet.authenticatedRootDir}/mls",
             userId,
             clientRepository,
-            authenticatedDataSourceSet.kaliumPreferencesSettings)
+            authenticatedDataSourceSet.kaliumPreferencesSettings
+        )
 
     private val mlsConversationRepository: MLSConversationRepository
-    get() = MLSConversationDataSource(
-        keyPackageRepository,
-        mlsClientProvider,authenticatedDataSourceSet.authenticatedNetworkContainer.mlsMessageApi,
-        userDatabaseProvider.conversationDAO
-    )
+        get() = MLSConversationDataSource(
+            keyPackageRepository,
+            mlsClientProvider, authenticatedDataSourceSet.authenticatedNetworkContainer.mlsMessageApi,
+            userDatabaseProvider.conversationDAO
+        )
 
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(
@@ -176,9 +179,22 @@ abstract class UserSessionScopeCommon(
     private val mlsMessageCreator: MLSMessageCreator
         get() = MLSMessageCreatorImpl(mlsClientProvider, protoContentMapper)
 
+    private val messageSendingScheduler: MessageSendingScheduler
+        get() = authenticatedDataSourceSet.workScheduler
+
     // TODO code duplication, can't we get the MessageSender from the message scope?
     private val messageSender: MessageSender
-        get() = MessageSenderImpl(messageRepository, conversationRepository, syncManager, messageSendFailureHandler, sessionEstablisher, messageEnvelopeCreator, mlsMessageCreator,timeParser)
+        get() = MessageSenderImpl(
+            messageRepository,
+            conversationRepository,
+            syncManager,
+            messageSendFailureHandler,
+            sessionEstablisher,
+            messageEnvelopeCreator,
+            mlsMessageCreator,
+            messageSendingScheduler,
+            timeParser
+        )
 
     private val assetRepository: AssetRepository
         get() = AssetDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.assetApi, userDatabaseProvider.assetDAO)
@@ -233,6 +249,8 @@ abstract class UserSessionScopeCommon(
     private val logoutRepository: LogoutRepository = LogoutDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi)
     val listenToEvents: ListenToEventsUseCase
         get() = ListenToEventsUseCase(syncManager, eventRepository, conversationEventReceiver)
+    val syncPendingEvents: SyncPendingEventsUseCase
+        get() = SyncPendingEventsUseCase(syncManager, eventRepository, conversationEventReceiver)
     val client: ClientScope get() = ClientScope(clientRepository, preKeyRepository, keyPackageRepository, mlsClientProvider)
     val conversations: ConversationScope get() = ConversationScope(conversationRepository, userRepository, syncManager)
     val messages: MessageScope
@@ -246,10 +264,19 @@ abstract class UserSessionScopeCommon(
             userRepository,
             assetRepository,
             syncManager,
+            messageSendingScheduler,
             timeParser
         )
     val users: UserScope get() = UserScope(userRepository, publicUserRepository, syncManager, assetRepository)
-    val logout: LogoutUseCase get() = LogoutUseCase(logoutRepository, sessionRepository, userId, authenticatedDataSourceSet, clientRepository, mlsClientProvider)
+    val logout: LogoutUseCase
+        get() = LogoutUseCase(
+            logoutRepository,
+            sessionRepository,
+            userId,
+            authenticatedDataSourceSet,
+            clientRepository,
+            mlsClientProvider
+        )
 
     val team: TeamScope get() = TeamScope(userRepository, teamRepository, syncManager)
 
