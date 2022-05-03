@@ -1,31 +1,23 @@
 package com.wire.kalium.logic.data.message
 
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.failure.SendMessageFailure
+import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.network.api.message.QualifiedUserIdToClientMap
-import com.wire.kalium.network.exceptions.QualifiedSendMessageError
+import com.wire.kalium.network.exceptions.ProteusClientsChangedError
 
 interface SendMessageFailureMapper {
-    fun fromDTO(error: QualifiedSendMessageError): SendMessageFailure
+    fun fromDTO(error: ProteusClientsChangedError): ProteusSendMessageFailure
 }
 
 class SendMessageFailureMapperImpl : SendMessageFailureMapper {
-    override fun fromDTO(error: QualifiedSendMessageError): SendMessageFailure {
-        return if (error !is QualifiedSendMessageError.MissingDeviceError) {
-            //TODO handle it better for no network or other cases, etc.
-            SendMessageFailure.Unknown(error.cause)
-        } else {
-            with(error.errorBody) {
-                SendMessageFailure.ClientsHaveChanged(
-                    missing.fromNestedMapToSimpleMap(),
-                    redundant.fromNestedMapToSimpleMap(),
-                    deleted.fromNestedMapToSimpleMap()
-                )
-            }
-        }
+    override fun fromDTO(error: ProteusClientsChangedError): ProteusSendMessageFailure = with(error.errorBody) {
+        ProteusSendMessageFailure(
+            missing.fromNestedMapToSimpleMap(),
+            redundant.fromNestedMapToSimpleMap(),
+            deleted.fromNestedMapToSimpleMap()
+        )
     }
 
     private fun QualifiedUserIdToClientMap.fromNestedMapToSimpleMap(): Map<QualifiedID, List<ClientId>> {

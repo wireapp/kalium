@@ -12,7 +12,7 @@ data class ClientResponse(
     @SerialName("model") val model: String?,
     @SerialName("id") val clientId: String,
     @SerialName("type") val type: ClientTypeDTO,
-    @SerialName("class") val deviceType: DeviceTypeDTO?,
+    @SerialName("class") val deviceType: DeviceTypeDTO = DeviceTypeDTO.Unknown,
     @SerialName("capabilities") val capabilities: Capabilities?,
     @SerialName("label") val label: String?
 )
@@ -38,6 +38,6 @@ data class ClientsOfUsersResponse(
 @Serializable
 data class SimpleClientResponse(
     @SerialName("id") val id: String,
-    @SerialName("class") val deviceClass: String
+    @SerialName("class") val deviceClass: DeviceTypeDTO = DeviceTypeDTO.Unknown
 )
 
