@@ -79,7 +79,6 @@ $dokka.location:com.wire.kalium.calling/ConversationTypeCalling.OneOnOne///Point
 $dokka.location:com.wire.kalium.calling/ConversationTypeCalling///PointingToDeclaration/calling/calling/com.wire.kalium.calling/-conversation-type-calling/index.html
 $dokka.location:com.wire.kalium.calling/ConversationTypeCalling/avsValue/#/PointingToDeclaration/calling/calling/com.wire.kalium.calling/-conversation-type-calling/avs-value.html
 $dokka.location:com.wire.kalium.cli////PointingToDeclaration/cli/cli/com.wire.kalium.cli/index.html
-$dokka.location:com.wire.kalium.cli//main/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/main.html
 $dokka.location:com.wire.kalium.cli//main/#kotlin.Array[kotlin.String]/PointingToDeclaration/cli/cli/com.wire.kalium.cli/main.html
 $dokka.location:com.wire.kalium.cli//restoreSession/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/restore-session.html
 $dokka.location:com.wire.kalium.cli/CLIApplication.Companion///PointingToDeclaration/cli/cli/com.wire.kalium.cli/-c-l-i-application/-companion/index.html
@@ -529,31 +528,6 @@ $dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/newPreKeys/#kotli
 $dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/open/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[jvm]open.html
 $dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/toArrayBuffer/kotlin.ByteArray#/PointingToDeclaration/cryptography/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/to-array-buffer.html
 $dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/toUint8Array/kotlin.ByteArray#/PointingToDeclaration/cryptography/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/to-uint8-array.html
-$dokka.location:com.wire.kalium.logger////PointingToDeclaration/logger/logger/com.wire.kalium.logger/index.html
-$dokka.location:com.wire.kalium.logger/KaliumLogLevel.DEBUG///PointingToDeclaration/logger/logger/com.wire.kalium.logger/-kalium-log-level/-d-e-b-u-g/index.html
-$dokka.location:com.wire.kalium.logger/KaliumLogLevel.DISABLED///PointingToDeclaration/logger/logger/com.wire.kalium.logger/-kalium-log-level/-d-i-s-a-b-l-e-d/index.html
-$dokka.location:com.wire.kalium.logger/KaliumLogLevel.ERROR///PointingToDeclaration/logger/logger/com.wire.kalium.logger/-kalium-log-level/-e-r-r-o-r/index.html
-$dokka.location:com.wire.kalium.logger/KaliumLogLevel.INFO///PointingToDeclaration/logger/logger/com.wire.kalium.logger/-kalium-log-level/-i-n-f-o/index.html
-$dokka.location:com.wire.kalium.logger/KaliumLogLevel.VERBOSE///PointingToDeclaration/logger/logger/com.wire.kalium.logger/-kalium-log-level/-v-e-r-b-o-s-e/index.html
-$dokka.location:com.wire.kalium.logger/KaliumLogLevel.WARN///PointingToDeclaration/logger/logger/com.wire.kalium.logger/-kalium-log-level/-w-a-r-n/index.html
-$dokka.location:com.wire.kalium.logger/KaliumLogLevel///PointingToDeclaration/logger/logger/com.wire.kalium.logger/-kalium-log-level/index.html
-$dokka.location:com.wire.kalium.logger/KaliumLogger.Companion///PointingToDeclaration/logger/logger/com.wire.kalium.logger/-kalium-logger/-companion/index.html
-$dokka.location:com.wire.kalium.logger/KaliumLogger.Companion/disabled/#/PointingToDeclaration/logger/logger/com.wire.kalium.logger/-kalium-logger/-companion/disabled.html
-$dokka.location:com.wire.kalium.logger/KaliumLogger.Config.Companion///PointingToDeclaration/logger/logger/com.wire.kalium.logger/-kalium-logger/-config/-companion/index.html
-$dokka.location:com.wire.kalium.logger/KaliumLogger.Config.Companion/DISABLED/#/PointingToDeclaration/logger/logger/com.wire.kalium.logger/-kalium-logger/-config/-companion/-d-i-s-a-b-l-e-d.html
-$dokka.location:com.wire.kalium.logger/KaliumLogger.Config///PointingToDeclaration/logger/logger/com.wire.kalium.logger/-kalium-logger/-config/index.html
-$dokka.location:com.wire.kalium.logger/KaliumLogger.Config/Config/#com.wire.kalium.logger.KaliumLogLevel#kotlin.String/PointingToDeclaration/logger/logger/com.wire.kalium.logger/-kalium-logger/-config/-config.html
-$dokka.location:com.wire.kalium.logger/KaliumLogger.Config/severity/#/PointingToDeclaration/logger/logger/com.wire.kalium.logger/-kalium-logger/-config/severity.html
-$dokka.location:com.wire.kalium.logger/KaliumLogger.Config/severityLevel/#/PointingToDeclaration/logger/logger/com.wire.kalium.logger/-kalium-logger/-config/severity-level.html
-$dokka.location:com.wire.kalium.logger/KaliumLogger.Config/tag/#/PointingToDeclaration/logger/logger/com.wire.kalium.logger/-kalium-logger/-config/tag.html
-$dokka.location:com.wire.kalium.logger/KaliumLogger///PointingToDeclaration/logger/logger/com.wire.kalium.logger/-kalium-logger/index.html
-$dokka.location:com.wire.kalium.logger/KaliumLogger/KaliumLogger/#com.wire.kalium.logger.KaliumLogger.Config/PointingToDeclaration/logger/logger/com.wire.kalium.logger/-kalium-logger/-kalium-logger.html
-$dokka.location:com.wire.kalium.logger/KaliumLogger/d/#kotlin.String#kotlin.Throwable?/PointingToDeclaration/logger/logger/com.wire.kalium.logger/-kalium-logger/d.html
-$dokka.location:com.wire.kalium.logger/KaliumLogger/e/#kotlin.String#kotlin.Throwable?/PointingToDeclaration/logger/logger/com.wire.kalium.logger/-kalium-logger/e.html
-$dokka.location:com.wire.kalium.logger/KaliumLogger/i/#kotlin.String#kotlin.Throwable?/PointingToDeclaration/logger/logger/com.wire.kalium.logger/-kalium-logger/i.html
-$dokka.location:com.wire.kalium.logger/KaliumLogger/severity/#/PointingToDeclaration/logger/logger/com.wire.kalium.logger/-kalium-logger/severity.html
-$dokka.location:com.wire.kalium.logger/KaliumLogger/v/#kotlin.String#kotlin.Throwable?/PointingToDeclaration/logger/logger/com.wire.kalium.logger/-kalium-logger/v.html
-$dokka.location:com.wire.kalium.logger/KaliumLogger/w/#kotlin.String#kotlin.Throwable?/PointingToDeclaration/logger/logger/com.wire.kalium.logger/-kalium-logger/w.html
 $dokka.location:com.wire.kalium.logic.data.client/MLSClientProviderImpl/getMLSClient/#com.wire.kalium.logic.data.id.PlainId?/PointingToDeclaration/logic/com.wire.kalium.logic.data.client/-m-l-s-client-provider-impl/[jvm]get-m-l-s-client.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/allCalls/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/-call-manager-impl/[jvm]all-calls.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/answerCall/#com.wire.kalium.logic.data.id.QualifiedID/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/-call-manager-impl/[jvm]answer-call.html
@@ -640,7 +614,6 @@ com.wire.kalium.logic.network
 com.wire.kalium.logic.sync
 com.wire.kalium.logic.util
 module:network
-com.wire.kalium
 com.wire.kalium.network
 com.wire.kalium.network.api
 com.wire.kalium.network.api.asset
