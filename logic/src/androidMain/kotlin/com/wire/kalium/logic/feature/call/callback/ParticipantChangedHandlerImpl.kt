@@ -50,6 +50,6 @@ class ParticipantChangedHandlerImpl(
             conversationId,
             participants,
             AvsClientList(clients = clients)
-        ) // TODO: workout the deep implementations
+        )
     }
 }
