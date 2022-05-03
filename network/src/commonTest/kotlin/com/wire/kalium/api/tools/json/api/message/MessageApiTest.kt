@@ -47,7 +47,7 @@ class MessageApiTest : ApiTest {
         }
 
     @Test
-    fun givenAValidReportAll_whenSendingAMessage_theRequestShouldBeConfiguredCorrectly() =
+    fun givlenAValidReportAl_whenSendingAMessage_theRequestShouldBeConfiguredCorrectly() =
         runTest {
             val httpClient = mockAuthenticatedHttpClient(
                 SUCCESS_RESPONSE.rawJson,

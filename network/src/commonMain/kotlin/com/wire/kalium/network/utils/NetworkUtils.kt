@@ -10,7 +10,6 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLProtocol
 import io.ktor.http.Url
 import io.ktor.http.isSuccess
-import kotlinx.serialization.SerializationException
 
 internal fun HttpRequestBuilder.setWSSUrl(baseUrl: Url, vararg path: String) {
     url {
@@ -117,14 +116,10 @@ internal fun <T : Any> NetworkResponse<T>.onFailure(fn: (NetworkResponse.Error) 
 internal fun <T : Any> NetworkResponse<T>.onSuccess(fn: (NetworkResponse.Success<T>) -> Unit): NetworkResponse<T> =
     this.apply { if (this is NetworkResponse.Success) fn(this) }
 
-internal inline fun <reified BodyType : Any> wrapKaliumException(
-    performRequest: () -> NetworkResponse<BodyType>
-): NetworkResponse<BodyType> = try {
+private inline fun <reified ResponseType: Any> handleNetworkException(
+    performRequest: () -> NetworkResponse<ResponseType>
+): NetworkResponse<ResponseType> = try {
     performRequest()
-} catch (e: SerializationException) {
-    NetworkResponse.Error(
-        kException = KaliumException.GenericError(cause = e)
-    )
 } catch (e: Exception) {
     NetworkResponse.Error(
         kException = KaliumException.GenericError(e)
@@ -132,13 +127,17 @@ internal inline fun <reified BodyType : Any> wrapKaliumException(
 }
 
 internal suspend inline fun <reified BodyType : Any> wrapKaliumResponse(
+    catchError: (HttpResponse) -> NetworkResponse<BodyType>? = { null },
     performRequest: () -> HttpResponse
-): NetworkResponse<BodyType> = wrapKaliumException {
+): NetworkResponse<BodyType> = handleNetworkException {
     val result = performRequest()
-    handleResult(result)
+    handleResult(result, catchError)
 }
 
-private suspend inline fun <reified BodyType : Any> handleResult(result: HttpResponse): NetworkResponse<BodyType> {
+private suspend inline fun <reified BodyType: Any> handleResult(
+    result: HttpResponse,
+    catchError: (HttpResponse) -> NetworkResponse<BodyType>? = { null }
+): NetworkResponse<BodyType> {
     val status = result.status
     return if (status.isSuccess()) {
         NetworkResponse.Success(
@@ -146,7 +145,7 @@ private suspend inline fun <reified BodyType : Any> handleResult(result: HttpRes
             httpResponse = result
         )
     } else {
-        when (status.value) {
+        catchError(result) ?: when (status.value) {
             HttpStatusCode.Unauthorized.value -> {
                 kaliumLogger.e("Unauthorized request, $result")
                 NetworkResponse.Error(KaliumException.Unauthorized(status.value))

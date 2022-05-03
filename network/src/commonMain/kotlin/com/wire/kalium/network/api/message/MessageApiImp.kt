@@ -1,12 +1,10 @@
 package com.wire.kalium.network.api.message
 
 import com.wire.kalium.network.api.ConversationId
-import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.QualifiedSendMessageError
 import com.wire.kalium.network.exceptions.SendMessageError
 import com.wire.kalium.network.serialization.XProtoBuf
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.wrapKaliumException
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -15,7 +13,6 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
-import io.ktor.http.isSuccess
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -55,21 +52,15 @@ class MessageApiImp(
             queryParameterValue: Any?,
             body: RequestBody
         ): NetworkResponse<SendMessageResponse> {
-            return wrapKaliumException {
-                val response = httpClient.post("$PATH_CONVERSATIONS/$conversationId$PATH_OTR_MESSAGE") {
+            return wrapKaliumResponse<SendMessageResponse.MessageSent>({
+                if (it.status.value != 412) null
+                else NetworkResponse.Error(kException = SendMessageError.MissingDeviceError(errorBody = it.body()))
+            }) {
+                httpClient.post("$PATH_CONVERSATIONS/$conversationId$PATH_OTR_MESSAGE") {
                     if (queryParameter != null) {
                         parameter(queryParameter, queryParameterValue)
                     }
                     setBody(body)
-                }
-                when {
-                    response.status.isSuccess() -> {
-                        NetworkResponse.Success(httpResponse = response, value = response.body<SendMessageResponse.MessageSent>())
-                    }
-                    response.status.value == 412 -> {
-                        NetworkResponse.Error(kException = SendMessageError.MissingDeviceError(errorBody = response.body()))
-                    }
-                    else -> wrapKaliumResponse { response }
                 }
             }
         }
@@ -101,25 +92,17 @@ class MessageApiImp(
         parameters: MessageApi.Parameters.QualifiedDefaultParameters,
         conversationId: ConversationId
     ): NetworkResponse<QualifiedSendMessageResponse> {
-        return wrapKaliumException {
-            val response = httpClient.post("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}$PATH_PROTEUS_MESSAGE") {
+        return wrapKaliumResponse<QualifiedSendMessageResponse.MessageSent>({
+            if(it.status.value != 412) null
+            else NetworkResponse.Error(
+                kException = QualifiedSendMessageError.MissingDeviceError(
+                    errorBody = it.body()
+                )
+            )
+        }) {
+            httpClient.post("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}$PATH_PROTEUS_MESSAGE") {
                 setBody(envelopeProtoMapper.encodeToProtobuf(parameters))
                 contentType(ContentType.Application.XProtoBuf)
-            }
-            when {
-                response.status.isSuccess() -> {
-                    NetworkResponse.Success(httpResponse = response, value = response.body<QualifiedSendMessageResponse.MessageSent>())
-                }
-                response.status.value == 412 -> {
-                    NetworkResponse.Error(
-                        kException = QualifiedSendMessageError.MissingDeviceError(
-                            errorBody = response.body()
-                        )
-                    )
-                }
-                else -> {
-                    wrapKaliumResponse { response }
-                }
             }
         }
     }

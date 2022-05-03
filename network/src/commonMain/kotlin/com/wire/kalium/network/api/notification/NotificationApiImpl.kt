@@ -4,7 +4,6 @@ import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.setWSSUrl
-import com.wire.kalium.network.utils.wrapKaliumException
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -12,8 +11,6 @@ import io.ktor.client.plugins.websocket.webSocketSession
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.http.HttpMethod
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.isSuccess
 import io.ktor.websocket.Frame
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -47,22 +44,17 @@ class NotificationApiImpl(private val httpClient: HttpClient, private val server
         queryClient: String,
         querySince: String?
     ): NetworkResponse<NotificationResponse> {
-        return wrapKaliumException {
-            val response = httpClient.get(PATH_NOTIFICATIONS) {
+        return wrapKaliumResponse({
+            if (it.status.value != 404) null
+            else {
+                val body = it.body<NotificationResponse>().copy(isMissingNotifications = true)
+                NetworkResponse.Success(body, it)
+            }
+        }) {
+            httpClient.get(PATH_NOTIFICATIONS) {
                 parameter(SIZE_QUERY_KEY, querySize)
                 parameter(CLIENT_QUERY_KEY, queryClient)
                 querySince?.let { parameter(SINCE_QUERY_KEY, it) }
-            }
-            when {
-                response.status.isSuccess() -> NetworkResponse.Success(
-                    NotificationResponse.CompleteList(response.body<NotificationPageResponse>()),
-                    response
-                )
-                response.status == HttpStatusCode.NotFound -> NetworkResponse.Success(
-                    NotificationResponse.MissingSome(response.body<NotificationPageResponse>()),
-                    response
-                )
-                else -> wrapKaliumResponse { response }
             }
         }
     }
