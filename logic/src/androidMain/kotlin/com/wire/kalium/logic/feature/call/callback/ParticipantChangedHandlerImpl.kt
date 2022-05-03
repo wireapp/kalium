@@ -6,7 +6,6 @@ import com.wire.kalium.logic.data.call.AvsClient
 import com.wire.kalium.logic.data.call.AvsClientList
 import com.wire.kalium.logic.data.call.Participant
 import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.data.id.asString
 import com.wire.kalium.logic.util.getDomain
 import com.wire.kalium.logic.util.removeDomain
 import org.json.JSONObject
@@ -41,7 +40,7 @@ class ParticipantChangedHandlerImpl(
             )
             clients.add(
                 AvsClient(
-                    userId = qualifiedID.asString(),
+                    userId = qualifiedID.toString(),
                     clientId = clientId
                 )
             )

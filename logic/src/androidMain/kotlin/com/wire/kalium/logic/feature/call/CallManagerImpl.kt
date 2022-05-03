@@ -4,7 +4,6 @@ import com.sun.jna.Pointer
 import com.wire.kalium.calling.CallTypeCalling
 import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.callbacks.CallConfigRequestHandler
-import com.wire.kalium.calling.callbacks.ParticipantChangedHandler
 import com.wire.kalium.calling.callbacks.SFTRequestHandler
 import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.calling.types.Size_t
@@ -19,8 +18,6 @@ import com.wire.kalium.logic.data.call.Participant
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.data.id.asString
 import com.wire.kalium.logic.data.id.toConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -30,8 +27,6 @@ import com.wire.kalium.logic.data.user.toUserId
 import com.wire.kalium.logic.feature.call.callback.ParticipantChangedHandlerImpl
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.util.getDomain
-import com.wire.kalium.logic.util.removeDomain
 import com.wire.kalium.logic.util.toInt
 import com.wire.kalium.logic.util.toTimeInMillis
 import kotlinx.coroutines.CoroutineScope
@@ -45,10 +40,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonBuilder
-import org.json.JSONArray
-import org.json.JSONObject
 import kotlin.math.max
 
 actual class CallManagerImpl(
@@ -107,7 +98,7 @@ actual class CallManagerImpl(
             }
 
             _callProfile.value = _callProfile.value.copy(
-                calls = calls.associateBy { it.conversationId.asString() }
+                calls = calls.associateBy { it.conversationId.toString() }
             )
 
             calls
@@ -408,7 +399,7 @@ actual class CallManagerImpl(
         callProfile[conversationId]?.let {
             callingLogger.i("onParticipantsChanged() - conversationId: $conversationId")
             participants.forEachIndexed { index, participant ->
-                callingLogger.i("onParticipantsChanged() - Participant[$index/${participants.size}]: ${participant.id.asString()}")
+                callingLogger.i("onParticipantsChanged() - Participant[$index/${participants.size}]: ${participant.id}")
             }
 
             _callProfile.value = callProfile.copy(
