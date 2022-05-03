@@ -5,9 +5,8 @@ CREATE TABLE Member (
     conversation TEXT AS QualifiedIDEntity NOT NULL,
     FOREIGN KEY (user) REFERENCES User(qualified_id),
     FOREIGN KEY (conversation) REFERENCES Conversation(qualified_id),
-    CONSTRAINT member_conv UNIQUE (user, conversation) ON CONFLICT IGNORE
+    CONSTRAINT member_conv PRIMARY KEY (user, conversation) ON CONFLICT IGNORE
 );
-CREATE INDEX member_table_conv_index ON Member(conversation);
 
 insertMember:
 INSERT OR IGNORE INTO Member(user, conversation)
