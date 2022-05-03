@@ -55,6 +55,9 @@ class MessageSenderTest {
     private val syncManager = configure(mock(SyncManager::class)) { stubsUnitByDefault = true }
 
     @Mock
+    private val messageSendingScheduler = configure(mock(MessageSendingScheduler::class)) { stubsUnitByDefault = true }
+
+    @Mock
     private val timeParser = mock(TimeParser::class)
 
     private lateinit var messageSender: MessageSender
@@ -69,7 +72,8 @@ class MessageSenderTest {
             sessionEstablisher = sessionEstablisher,
             messageEnvelopeCreator = messageEnvelopeCreator,
             mlsMessageCreator = mlsMessageCreator,
-            timeParser = timeParser
+            timeParser = timeParser,
+            messageSendingScheduler = messageSendingScheduler
         )
 
         given(timeParser)
