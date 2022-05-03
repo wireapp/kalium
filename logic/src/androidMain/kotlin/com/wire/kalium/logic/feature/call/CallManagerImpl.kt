@@ -393,6 +393,10 @@ actual class CallManagerImpl(
                 )
             }
         }
+
+        // TODO: Network Quality handler
+        // TODO: Clients Request handler
+        // TODO: Active Speakers handler
     }
 
     private fun onParticipantsChanged(
