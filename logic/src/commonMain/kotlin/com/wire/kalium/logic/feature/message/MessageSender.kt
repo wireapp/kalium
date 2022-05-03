@@ -6,7 +6,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.failure.SendMessageFailure
+import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.sync.SyncManager
@@ -120,10 +120,10 @@ class MessageSenderImpl(
         messageRepository.sendEnvelope(conversationId, envelope).coFold(
             {
                 when (it) {
-                    is SendMessageFailure.Unknown -> Either.Left(it)
-                    is SendMessageFailure.ClientsHaveChanged -> messageSendFailureHandler.handleClientsHaveChangedFailure(it).flatMap {
+                    is ProteusSendMessageFailure -> messageSendFailureHandler.handleClientsHaveChangedFailure(it).flatMap {
                         attemptToSend(conversationId, messageUuid)
                     }
+                    else -> Either.Left(it)
                 }
             }, {
                 Either.Right(it)
