@@ -19,11 +19,8 @@ Provides multiplatform (de)serialization of [OTR messages and envelopes](https:/
 # Module logger
 Common Logging implementation used by other modules.
 
-# Sample Apps:
-Basic apps showcasing how to use Kalium
+# Module app
+Sample Android app showcasing Kalium usage
 
-## Module app
-📱 Android
-
-## Module cli
-🖥️ JVM terminal app
+# Module cli
+Sample JVM command-line-interface app showcasing Kalium usage
