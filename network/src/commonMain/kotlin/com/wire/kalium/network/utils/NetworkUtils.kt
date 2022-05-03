@@ -1,19 +1,15 @@
 package com.wire.kalium.network.utils
 
-import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.kaliumLogger
 import io.ktor.client.call.NoTransformationFoundException
 import io.ktor.client.call.body
-import io.ktor.client.plugins.ClientRequestException
-import io.ktor.client.plugins.RedirectResponseException
-import io.ktor.client.plugins.ResponseException
-import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLProtocol
 import io.ktor.http.Url
+import io.ktor.http.isSuccess
 import kotlinx.serialization.SerializationException
 
 internal fun HttpRequestBuilder.setWSSUrl(baseUrl: Url, vararg path: String) {
@@ -121,54 +117,51 @@ internal fun <T : Any> NetworkResponse<T>.onFailure(fn: (NetworkResponse.Error) 
 internal fun <T : Any> NetworkResponse<T>.onSuccess(fn: (NetworkResponse.Success<T>) -> Unit): NetworkResponse<T> =
     this.apply { if (this is NetworkResponse.Success) fn(this) }
 
-internal suspend inline fun <reified BodyType : Any> wrapKaliumResponse(performRequest: () -> HttpResponse): NetworkResponse<BodyType> =
-    try {
-        val result = performRequest()
+internal inline fun <reified BodyType : Any> wrapKaliumException(
+    performRequest: () -> NetworkResponse<BodyType>
+): NetworkResponse<BodyType> = try {
+    performRequest()
+} catch (e: SerializationException) {
+    NetworkResponse.Error(
+        kException = KaliumException.GenericError(cause = e)
+    )
+} catch (e: Exception) {
+    NetworkResponse.Error(
+        kException = KaliumException.GenericError(e)
+    )
+}
+
+internal suspend inline fun <reified BodyType : Any> wrapKaliumResponse(
+    performRequest: () -> HttpResponse
+): NetworkResponse<BodyType> = wrapKaliumException {
+    val result = performRequest()
+    handleResult(result)
+}
+
+private suspend inline fun <reified BodyType : Any> handleResult(result: HttpResponse): NetworkResponse<BodyType> {
+    val status = result.status
+    return if (status.isSuccess()) {
         NetworkResponse.Success(
             value = result.body(),
             httpResponse = result
         )
-    } catch (e: ResponseException) { // ktor exception
-        when (e) {
-            is RedirectResponseException -> {
-                // 300 .. 399
-                NetworkResponse.Error(kException = KaliumException.RedirectError(e.response.body()))
+    } else {
+        when (status.value) {
+            HttpStatusCode.Unauthorized.value -> {
+                kaliumLogger.e("Unauthorized request, $result")
+                NetworkResponse.Error(KaliumException.Unauthorized(status.value))
             }
-            is ClientRequestException -> {
-                // 400 .. 499
-                when (e.response.status) {
-
-                    // for 401 error the BE return response with content-type: text/html which kalium ktor client
-                    // has no idea how to parse -> app crash
-                    HttpStatusCode.Unauthorized -> {
-                        kaliumLogger.e("Unauthorized request", e)
-                        NetworkResponse.Error(KaliumException.Unauthorized(e.response.status.value))
-                    }
-
-                    else -> try {
-                            e.response.body() as ErrorResponse
-                        } catch (_: NoTransformationFoundException) {
-                            ErrorResponse(e.response.status.value, e.response.status.description, "")
-                        }.let { errorResponse ->
-                            NetworkResponse.Error(kException = KaliumException.InvalidRequestError(errorResponse))
-                        }
-                }
+            in (300..399) -> NetworkResponse.Error(kException = KaliumException.RedirectError(result.body()))
+            in (400..499) -> try {
+                NetworkResponse.Error(KaliumException.InvalidRequestError(result.body()))
+            } catch (e: NoTransformationFoundException) {
+                NetworkResponse.Error(KaliumException.GenericError(e))
             }
-            is ServerResponseException -> {
-                // 500 .. 599
-                // TODO: do 500 errors have body
-                NetworkResponse.Error(kException = KaliumException.ServerError(e.response.body()))
-            }
+            in (500..599) -> NetworkResponse.Error(kException = KaliumException.ServerError(result.body()))
             else -> {
-                NetworkResponse.Error(kException = KaliumException.GenericError(e))
+                kaliumLogger.e("Server responded with unsupported status code: [$status]")
+                NetworkResponse.Error(kException = KaliumException.ServerError(result.body()))
             }
         }
-    } catch (e: SerializationException) {
-        NetworkResponse.Error(
-            kException = KaliumException.GenericError(cause = e)
-        )
-    } catch (e: Exception) {
-        NetworkResponse.Error(
-            kException = KaliumException.GenericError(e)
-        )
     }
+}
