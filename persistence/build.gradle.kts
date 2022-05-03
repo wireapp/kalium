@@ -9,7 +9,7 @@ group = "com.wire.kalium"
 version = "0.0.1-SNAPSHOT"
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-native-utils:1.6.0")
+    implementation("org.jetbrains.kotlin:kotlin-native-utils:1.6.20")
 }
 
 sqldelight {

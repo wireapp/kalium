@@ -7,7 +7,7 @@ object Versions {
     const val activityCompose = "1.3.1"
     const val appCompat = "1.1.0"
     const val cliKt = "3.3.0"
-    const val coroutines = "1.6.0-native-mt"
+    const val coroutines = "1.6.1-native-mt"
     const val compose = "1.2.0-alpha08"
     const val composeCompiler = "1.2.0-alpha08"
     const val cryptobox4j = "1.1.1"
