@@ -12,6 +12,7 @@ sealed class SSOInitiateLoginResult {
     data class Success(val requestUrl: String) : SSOInitiateLoginResult()
 
     sealed class Failure : SSOInitiateLoginResult() {
+        object InvalidCodeFormat : Failure()
         object InvalidCode : Failure()
         object InvalidRedirect : Failure()
         class Generic(val genericFailure: CoreFailure) : Failure()
@@ -48,7 +49,7 @@ internal class SSOInitiateLoginUseCaseImpl(
         val validUuid = validateSSOCodeUseCase(ssoCode).let {
             when (it) {
                 is ValidateSSOCodeResult.Valid -> it.uuid
-                ValidateSSOCodeResult.Invalid -> return@with SSOInitiateLoginResult.Failure.InvalidCode
+                ValidateSSOCodeResult.Invalid -> return@with SSOInitiateLoginResult.Failure.InvalidCodeFormat
             }
         }
         when (this) {

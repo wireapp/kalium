@@ -51,7 +51,7 @@ class KeyPackageRepositoryTest {
     @Test
     fun givenExistingClient_whenUploadingKeyPackages_thenKeyPackagesShouldBeGeneratedAndPassedToApi() = runTest {
         given(mlsClientProvider)
-            .suspendFunction(mlsClientProvider::getMLSClient)
+            .function(mlsClientProvider::getMLSClient)
             .whenInvokedWith(eq(SELF_CLIENT_ID))
             .then { Either.Right(MLS_CLIENT) }
 
@@ -94,7 +94,7 @@ class KeyPackageRepositoryTest {
             .thenReturn( NetworkResponse.Success(CLAIMED_KEY_PACKAGES, mapOf(), 200) )
 
         given(clientRepository)
-            .suspendFunction(clientRepository::currentClientId)
+            .function(clientRepository::currentClientId)
             .whenInvoked()
             .then { Either.Right(SELF_CLIENT_ID) }
 

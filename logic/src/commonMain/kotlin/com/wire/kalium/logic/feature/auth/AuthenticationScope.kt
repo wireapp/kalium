@@ -2,13 +2,19 @@ package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.configuration.GetServerConfigUseCase
 import com.wire.kalium.logic.configuration.ServerConfigDataSource
+import com.wire.kalium.logic.configuration.ServerConfigMapper
+import com.wire.kalium.logic.configuration.ServerConfigMapperImpl
 import com.wire.kalium.logic.configuration.ServerConfigRepository
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.auth.login.LoginRepositoryImpl
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepositoryImpl
+import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.register.RegisterAccountDataSource
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
+import com.wire.kalium.logic.data.session.SessionMapper
+import com.wire.kalium.logic.data.session.SessionMapperImpl
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.auth.sso.SSOLoginScope
 import com.wire.kalium.logic.feature.register.RegisterScope
@@ -24,6 +30,10 @@ class AuthenticationScope(
     protected val loginNetworkContainer: LoginNetworkContainer by lazy {
         LoginNetworkContainer()
     }
+    private val serverConfigMapper: ServerConfigMapper get() = ServerConfigMapperImpl()
+    private val idMapper: IdMapper get() = IdMapperImpl()
+    private val sessionMapper: SessionMapper get() = SessionMapperImpl(serverConfigMapper, idMapper)
+
 
     private val serverConfigRepository: ServerConfigRepository get() = ServerConfigDataSource(loginNetworkContainer.serverConfigApi, globalDatabase.serverConfigurationDAO)
 
@@ -45,5 +55,5 @@ class AuthenticationScope(
     val getServerConfig: GetServerConfigUseCase get() = GetServerConfigUseCase(serverConfigRepository)
     val session: SessionScope get() = SessionScope(sessionRepository)
     val register: RegisterScope get() = RegisterScope(registerAccountRepository)
-    val ssoLoginScope: SSOLoginScope get() = SSOLoginScope(ssoLoginRepository)
+    val ssoLoginScope: SSOLoginScope get() = SSOLoginScope(ssoLoginRepository, sessionMapper)
 }

@@ -6,11 +6,12 @@ import com.wire.crypto.CoreCrypto
 import com.wire.crypto.Invitee
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
+import java.io.File
 import java.time.Duration
 
 @OptIn(ExperimentalUnsignedTypes::class)
 actual class MLSClientImpl actual constructor(
-    rootDir: String,
+    private val rootDir: String,
     databaseKey: String,
     clientId: CryptoQualifiedClientId) : MLSClient {
 
@@ -21,12 +22,21 @@ actual class MLSClientImpl actual constructor(
         coreCrypto = CoreCrypto(rootDir, databaseKey, clientId.toString())
     }
 
+    override fun clearLocalFiles(): Boolean {
+        coreCrypto.close()
+        return File(rootDir).deleteRecursively()
+    }
+
     override fun getPublicKey(): ByteArray {
         return coreCrypto.clientPublicKey().toUByteArray().asByteArray()
     }
 
     override fun generateKeyPackages(amount: Int): List<ByteArray> {
         return coreCrypto.clientKeypackages(amount.toUInt()).map { it.toUByteArray().asByteArray() }
+    }
+
+    override fun conversationExists(groupId: MLSGroupId): Boolean {
+        return coreCrypto.conversationExists(toUByteList(groupId.decodeBase64Bytes()))
     }
 
     override fun createConversation(conversationId: MLSGroupId,

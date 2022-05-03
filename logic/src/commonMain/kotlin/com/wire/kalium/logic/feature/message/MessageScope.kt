@@ -17,6 +17,7 @@ import com.wire.kalium.logic.feature.asset.SendAssetMessageUseCaseImpl
 import com.wire.kalium.logic.feature.asset.SendImageMessageUseCase
 import com.wire.kalium.logic.feature.asset.SendImageMessageUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.util.TimeParser
 
 class MessageScope(
     private val messageRepository: MessageRepository,
@@ -27,11 +28,12 @@ class MessageScope(
     private val preKeyRepository: PreKeyRepository,
     private val userRepository: UserRepository,
     private val assetRepository: AssetRepository,
-    private val syncManager: SyncManager
+    private val syncManager: SyncManager,
+    private val timeParser: TimeParser,
 ) {
 
     private val messageSendFailureHandler: MessageSendFailureHandler
-        get() = MessageSendFailureHandler(userRepository, clientRepository)
+        get() = MessageSendFailureHandlerImpl(userRepository, clientRepository)
 
     private val sessionEstablisher: SessionEstablisher
         get() = SessionEstablisherImpl(proteusClient, preKeyRepository)
@@ -53,7 +55,8 @@ class MessageScope(
             messageSendFailureHandler,
             sessionEstablisher,
             messageEnvelopeCreator,
-            mlsMessageCreator
+            mlsMessageCreator,
+            timeParser
         )
 
     val sendTextMessage: SendTextMessageUseCase
@@ -101,4 +104,7 @@ class MessageScope(
             conversationRepository
         )
 
+    val markMessagesAsNotified: MarkMessagesAsNotifiedUseCase get() = MarkMessagesAsNotifiedUseCaseImpl(conversationRepository)
+
+    val getNotifications: GetNotificationsUseCase get() = GetNotificationsUseCaseImpl(messageRepository, userRepository, conversationRepository)
 }

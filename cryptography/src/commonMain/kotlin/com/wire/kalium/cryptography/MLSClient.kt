@@ -9,6 +9,14 @@ typealias MLSKeyPackage = ByteArray
 interface MLSClient {
 
     /**
+     * Release any locks the C code have on the MLS resources and
+     * delete local MLS DB and files
+     *
+     * @return true when delete is successful and false otherwise
+     */
+    fun clearLocalFiles(): Boolean
+
+    /**
      * Public key of the client's identity.
      *
      * @return public key of the client
@@ -21,6 +29,15 @@ interface MLSClient {
      * @return list of generated key packages. NOTE: can be more than the requested amount.
      */
     fun generateKeyPackages(amount: Int): List<ByteArray>
+
+    /**
+     * Query if a conversation exists
+     *
+     * @param groupId MLS group ID provided by BE
+     *
+     * @return true if conversation exists in store
+     */
+    fun conversationExists(groupId: MLSGroupId): Boolean
 
     /**
      * Create a new MLS conversation

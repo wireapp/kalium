@@ -24,6 +24,7 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -31,6 +32,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class EventRepositoryTest {
 
     @Mock
@@ -79,7 +81,7 @@ class EventRepositoryTest {
 
         val clientId = TestClient.CLIENT_ID
         given(clientRepository)
-            .suspendFunction(clientRepository::currentClientId)
+            .function(clientRepository::currentClientId)
             .whenInvoked()
             .thenReturn(Either.Right(clientId))
 
@@ -123,7 +125,7 @@ class EventRepositoryTest {
 
         val clientId = TestClient.CLIENT_ID
         given(clientRepository)
-            .suspendFunction(clientRepository::currentClientId)
+            .function(clientRepository::currentClientId)
             .whenInvoked()
             .thenReturn(Either.Right(clientId))
 
@@ -164,7 +166,7 @@ class EventRepositoryTest {
 
         val clientId = TestClient.CLIENT_ID
         given(clientRepository)
-            .suspendFunction(clientRepository::currentClientId)
+            .function(clientRepository::currentClientId)
             .whenInvoked()
             .thenReturn(Either.Right(clientId))
 
@@ -174,6 +176,41 @@ class EventRepositoryTest {
             }
             awaitItem().shouldSucceed {
                 assertEquals(liveEvent.id, it.id)
+            }
+            awaitComplete()
+        }
+    }
+
+    @Test
+    fun givenPendingEvents_whenGettingPendingEvents_thenReturnPendingFirstFollowedByComplete() = runTest {
+        val pendingEventPayload = EventContentDTO.Conversation.NewMessageDTO(
+            TestConversation.NETWORK_ID,
+            UserId("value", "domain"),
+            "eventTime",
+            MessageEventData("text", "senderId", "recipient")
+        )
+        val pendingEvent = EventResponse("pendingEventId", listOf(pendingEventPayload))
+        val notificationsPageResponse = NotificationResponse.CompleteList("time", false, listOf(pendingEvent))
+
+        given(eventInfoStorage)
+            .getter(eventInfoStorage::lastProcessedId)
+            .whenInvoked()
+            .thenReturn("someNotificationId")
+
+        given(notificationApi)
+            .suspendFunction(notificationApi::notificationsByBatch)
+            .whenInvokedWith(any(), any(), any())
+            .thenReturn(NetworkResponse.Success(notificationsPageResponse, mapOf(), 200))
+
+        val clientId = TestClient.CLIENT_ID
+        given(clientRepository)
+            .function(clientRepository::currentClientId)
+            .whenInvoked()
+            .thenReturn(Either.Right(clientId))
+
+        eventRepository.pendingEvents().test {
+            awaitItem().shouldSucceed {
+                assertEquals(pendingEvent.id, it.id)
             }
             awaitComplete()
         }

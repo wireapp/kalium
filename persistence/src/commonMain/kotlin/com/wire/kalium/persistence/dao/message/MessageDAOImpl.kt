@@ -5,6 +5,7 @@ import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.ASSET
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.TEXT
 import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityContent.AssetMessageContent
@@ -125,12 +126,18 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
         is TextMessageContent -> TEXT
         is AssetMessageContent -> ASSET
     }
-    
+
     override suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity) =
         queries.updateMessageStatus(status, id, conversationId)
 
-    override suspend fun getAllMessages(): Flow<List<MessageEntity>> =
-        queries.selectAllMessages()
+    override suspend fun updateMessageDate(date: String, id: String, conversationId: QualifiedIDEntity) =
+        queries.updateMessageDate(date, id, conversationId)
+
+    override suspend fun updateMessagesAddMillisToDate(millis: Long, conversationId: QualifiedIDEntity, status: MessageEntity.Status) =
+        queries.updateMessagesAddMillisToDate(millis, conversationId, status)
+
+    override suspend fun getMessagesFromAllConversations(limit: Int, offset: Int): Flow<List<MessageEntity>> =
+        queries.selectAllMessages(limit.toLong(), offset.toLong())
             .asFlow()
             .mapToList()
             .map { entryList -> entryList.map(mapper::toModel) }
@@ -141,9 +148,21 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             .mapToOneOrNull()
             .map { msg -> msg?.let(mapper::toModel) }
 
-    override suspend fun getMessageByConversation(conversationId: QualifiedIDEntity, limit: Int): Flow<List<MessageEntity>> =
-        queries.selectByConversationId(conversationId, limit.toLong())
+    override suspend fun getMessagesByConversation(conversationId: QualifiedIDEntity, limit: Int, offset: Int): Flow<List<MessageEntity>> =
+        queries.selectByConversationId(conversationId, limit.toLong(), offset.toLong())
             .asFlow()
             .mapToList()
             .map { entryList -> entryList.map(mapper::toModel) }
+
+    override suspend fun getMessagesByConversationAfterDate(conversationId: QualifiedIDEntity, date: String): Flow<List<MessageEntity>> =
+        queries.selectMessagesByConversationIdAfterDate(conversationId, date)
+            .asFlow()
+            .mapToList()
+            .map { entryList -> entryList.map(mapper::toModel) }
+
+    override suspend fun getAllPendingMessagesFromUser(userId: UserIDEntity): List<MessageEntity> {
+        return queries.selectMessagesFromUserByStatus(userId, MessageEntity.Status.PENDING)
+            .executeAsList()
+            .map(mapper::toModel)
+    }
 }

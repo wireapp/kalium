@@ -139,6 +139,30 @@ class ConversationDAOTest : BaseDatabaseTest() {
         assertEquals(ConversationEntity.MutedStatus.ONLY_MENTIONS_ALLOWED, result?.mutedStatus)
     }
 
+    @Test
+    fun givenMultipleConversations_whenGettingConversationsForNotifications_thenOnlyUnnotifiedConversationsAreReturned() = runTest {
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertConversation(conversationEntity2)
+        conversationDAO.updateConversationNotificationDate(QualifiedIDEntity("2", "wire.com"), "2022-03-30T15:36:10.000Z")
+
+        val result = conversationDAO.getConversationsForNotifications().first()
+
+        assertEquals(listOf(conversationEntity1), result)
+    }
+
+    @Test
+    fun givenMultipleConversations_whenGettingConversations_thenOrderIsCorrect() = runTest {
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertConversation(conversationEntity2)
+
+        val result = conversationDAO.getConversationsForNotifications().first()
+
+        assertEquals(conversationEntity1, result.first())
+        assertEquals(conversationEntity2, result[1])
+
+    }
+
+
     private companion object {
         val user1 = newUserEntity(id = "1")
         val user2 = newUserEntity(id = "2")
@@ -150,14 +174,18 @@ class ConversationDAOTest : BaseDatabaseTest() {
             "conversation1",
             ConversationEntity.Type.ONE_ON_ONE,
             teamId,
-            ConversationEntity.ProtocolInfo.Proteus
+            ConversationEntity.ProtocolInfo.Proteus,
+            lastNotificationDate = null,
+            lastModifiedDate = "2022-03-30T15:36:00.000Z"
         )
         val conversationEntity2 = ConversationEntity(
             QualifiedIDEntity("2", "wire.com"),
             "conversation2",
             ConversationEntity.Type.ONE_ON_ONE,
             null,
-            ConversationEntity.ProtocolInfo.MLS("group2", ConversationEntity.GroupState.ESTABLISHED)
+            ConversationEntity.ProtocolInfo.MLS("group2", ConversationEntity.GroupState.ESTABLISHED),
+            lastNotificationDate = null,
+            lastModifiedDate = "2021-03-30T15:36:00.000Z"
         )
 
         val member1 = Member(user1.id)

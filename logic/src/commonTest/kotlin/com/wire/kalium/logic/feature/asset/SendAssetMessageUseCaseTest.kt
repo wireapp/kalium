@@ -15,8 +15,15 @@ import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.exceptions.KaliumException
-import io.ktor.utils.io.core.*
-import io.mockative.*
+import io.ktor.utils.io.core.toByteArray
+import io.mockative.Mock
+import io.mockative.any
+import io.mockative.classOf
+import io.mockative.eq
+import io.mockative.given
+import io.mockative.mock
+import io.mockative.once
+import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -134,7 +141,7 @@ class SendAssetMessageUseCaseTest {
                 .whenInvoked()
                 .thenReturn(flowOf(fakeSelfUser()))
             given(clientRepository)
-                .suspendFunction(clientRepository::currentClientId)
+                .function(clientRepository::currentClientId)
                 .whenInvoked()
                 .thenReturn(Either.Right(someClientId))
             given(messageRepository)

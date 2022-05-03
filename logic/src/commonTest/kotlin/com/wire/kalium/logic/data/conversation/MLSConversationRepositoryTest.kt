@@ -26,11 +26,13 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.thenDoNothing
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class MLSConversationRepositoryTest {
 
     @Mock
@@ -75,9 +77,9 @@ class MLSConversationRepositoryTest {
             .then { Either.Right(listOf(KEY_PACKAGE)) }
 
         given(mlsClientProvider)
-            .suspendFunction(mlsClientProvider::getMLSClient)
+            .function(mlsClientProvider::getMLSClient)
             .whenInvokedWith(anything())
-            .then { Either.Right(MLS_CLIENT)}
+            .then { Either.Right(MLS_CLIENT) }
 
         given(MLS_CLIENT)
             .function(MLS_CLIENT::createConversation)
@@ -118,9 +120,9 @@ class MLSConversationRepositoryTest {
     @Test
     fun givenExistingConversation_whenCallingEstablishMLSGroupFromWelcome_ThenGroupIsCreatedAndGroupStateIsUpdated() = runTest {
         given(mlsClientProvider)
-            .suspendFunction(mlsClientProvider::getMLSClient)
+            .function(mlsClientProvider::getMLSClient)
             .whenInvokedWith(anything())
-            .then { Either.Right(MLS_CLIENT)}
+            .then { Either.Right(MLS_CLIENT) }
 
         given(MLS_CLIENT)
             .function(MLS_CLIENT::processWelcomeMessage)
@@ -151,11 +153,11 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
-    fun givenNonExistingConversation_whenCallingEstablishMLSGroupFromWelcome_ThenGroupIsCreatedAndConversationIsInserted() = runTest {
+    fun givenNonExistingConversation_whenCallingEstablishMLSGroupFromWelcome_ThenGroupIsCreatedButConversationIsNotInserted() = runTest {
         given(mlsClientProvider)
-            .suspendFunction(mlsClientProvider::getMLSClient)
+            .function(mlsClientProvider::getMLSClient)
             .whenInvokedWith(anything())
-            .then { Either.Right(MLS_CLIENT)}
+            .then { Either.Right(MLS_CLIENT) }
 
         given(MLS_CLIENT)
             .function(MLS_CLIENT::processWelcomeMessage)
@@ -167,28 +169,11 @@ class MLSConversationRepositoryTest {
             .whenInvokedWith(anything())
             .then { flowOf(null) }
 
-        given(conversationDAO)
-            .suspendFunction(conversationDAO::insertConversation)
-            .whenInvokedWith(anything())
-            .thenDoNothing()
-
         mlsConversationRepository.establishMLSGroupFromWelcome(WELCOME_EVENT).shouldSucceed()
 
         verify(MLS_CLIENT)
             .function(MLS_CLIENT::processWelcomeMessage)
             .with(anyInstanceOf(ByteArray::class))
-            .wasInvoked(once)
-
-        verify(conversationDAO)
-            .suspendFunction(conversationDAO::insertConversation)
-            .with(eq(
-                ConversationEntity(
-                QualifiedIDEntity(TestConversation.ID.value, TestConversation.ID.domain),
-                null,
-                ConversationEntity.Type.GROUP,
-                null,
-                ConversationEntity.ProtocolInfo.MLS(GROUP_ID, ConversationEntity.GroupState.ESTABLISHED))
-            ))
             .wasInvoked(once)
     }
 
@@ -200,7 +185,8 @@ class MLSConversationRepositoryTest {
             "wire.com",
             "keyPackage",
             "keyPackageRef",
-            "user1")
+            "user1"
+        )
         val MLS_CLIENT = mock(classOf<MLSClient>())
         val WELCOME = "welcome".encodeToByteArray()
         val HANDSHAKE = "handshake".encodeToByteArray()
@@ -208,7 +194,8 @@ class MLSConversationRepositoryTest {
             "eventId",
             TestConversation.ID,
             TestUser.USER_ID,
-            WELCOME.encodeBase64()
+            WELCOME.encodeBase64(),
+            date = "2022-03-30T15:36:00.000Z"
         )
     }
 }

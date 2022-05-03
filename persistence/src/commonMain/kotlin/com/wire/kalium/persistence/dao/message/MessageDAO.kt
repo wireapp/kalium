@@ -1,6 +1,7 @@
 package com.wire.kalium.persistence.dao.message
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserIDEntity
 import kotlinx.coroutines.flow.Flow
 
 data class MessageEntity(
@@ -57,7 +58,12 @@ interface MessageDAO {
     suspend fun insertMessages(messages: List<MessageEntity>)
     suspend fun updateMessage(message: MessageEntity)
     suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity)
-    suspend fun getAllMessages(): Flow<List<MessageEntity>>
+    suspend fun updateMessageDate(date: String, id: String, conversationId: QualifiedIDEntity)
+    suspend fun updateMessagesAddMillisToDate(millis: Long, conversationId: QualifiedIDEntity, status: MessageEntity.Status)
+    suspend fun getMessagesFromAllConversations(limit: Int, offset: Int): Flow<List<MessageEntity>>
     suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?>
-    suspend fun getMessageByConversation(conversationId: QualifiedIDEntity, limit: Int): Flow<List<MessageEntity>>
+    suspend fun getMessagesByConversation(conversationId: QualifiedIDEntity, limit: Int, offset: Int): Flow<List<MessageEntity>>
+    suspend fun getMessagesByConversationAfterDate(conversationId: QualifiedIDEntity, date: String): Flow<List<MessageEntity>>
+
+    suspend fun getAllPendingMessagesFromUser(userId: UserIDEntity): List<MessageEntity>
 }
