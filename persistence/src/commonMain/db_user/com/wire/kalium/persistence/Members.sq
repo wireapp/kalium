@@ -7,6 +7,7 @@ CREATE TABLE Member (
     FOREIGN KEY (conversation) REFERENCES Conversation(qualified_id),
     CONSTRAINT member_conv UNIQUE (user, conversation) ON CONFLICT IGNORE
 );
+CREATE INDEX member_table_conv_index ON Member(conversation);
 
 insertMember:
 INSERT OR IGNORE INTO Member(user, conversation)
