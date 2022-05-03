@@ -40,7 +40,7 @@ class SyncManagerImpl(private val workScheduler: WorkScheduler) : SyncManager {
         }
 
         if (syncState == SyncState.SLOW_SYNC) {
-            workScheduler.schedule(SlowSyncWorker::class, SlowSyncWorker.name)
+            workScheduler.enqueueImmediateWork(SlowSyncWorker::class, SlowSyncWorker.name)
         }
     }
 
