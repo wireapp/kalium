@@ -25,6 +25,7 @@ import kotlin.coroutines.coroutineContext
 
 interface EventRepository {
     suspend fun events(): Flow<Either<CoreFailure, Event>>
+    suspend fun pendingEvents(): Flow<Either<CoreFailure, Event>>
     suspend fun updateLastProcessedEventId(eventId: String)
 }
 
@@ -45,6 +46,13 @@ class EventDataSource(
             val liveEventsFlow = liveEventsFlow(clientId)
             flowOf(pendingEventsFlow, liveEventsFlow).flattenConcat()
         })
+    }
+
+    override suspend fun pendingEvents(): Flow<Either<CoreFailure, Event>> = suspending {
+        clientRepository.currentClientId().coFold(
+            { flowOf(Either.Left(it)) },
+            { clientId -> pendingEventsFlow(clientId) }
+        )
     }
 
     private suspend fun liveEventsFlow(clientId: ClientId): Flow<Either<CoreFailure, Event>> =
