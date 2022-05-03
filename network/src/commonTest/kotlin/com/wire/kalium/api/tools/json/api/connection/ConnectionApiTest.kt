@@ -48,20 +48,25 @@ class ConnectionApiTest : ApiTest {
 
     @Test
     fun givenACreationRequest_whenRequestingAConnectionWithAnUser_thenShouldReturnsACorrectConnectionResponse() = runTest {
+        // given
+        val userId = UserId("user_id", "domain_id")
         val httpClient = mockAuthenticatedHttpClient(
             CREATE_CONNECTION_RESPONSE.rawJson,
             statusCode = HttpStatusCode.OK,
             assertion = {
                 assertJson()
                 assertPost()
-                assertPathEqual("$PATH_CONNECTIONS_ENDPOINT/domain_id/user_id")
+                assertPathEqual("$PATH_CONNECTIONS_ENDPOINT/${userId.domain}/${userId.value}")
             }
         )
-
         val connectionApi = ConnectionApiImpl(httpClient)
-        val response = connectionApi.createConnection(UserId("user_id", "domain_id"))
 
+        // when
+        val response = connectionApi.createConnection(userId)
+
+        // then
         assertTrue(response.isSuccessful())
+
     }
 
     private companion object {
