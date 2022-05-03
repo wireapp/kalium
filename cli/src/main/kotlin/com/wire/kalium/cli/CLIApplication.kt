@@ -79,7 +79,7 @@ class CreateGroupCommand : CliktCommand(name = "create-group") {
         val authSession = restoreSession() ?: throw PrintMessage("no active session")
         val userSession = coreLogic.getSessionScope(authSession.userId)
 
-        val users = userSession.users.getAllKnownUsers().first()
+        val users = userSession.users.getAllKnownUsers()
 
         users.forEachIndexed { index, user ->
             echo("$index) ${user.id.value}  Name: ${user.name}")
