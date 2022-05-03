@@ -20,7 +20,11 @@ android {
         targetCompatibility = JavaVersion.VERSION_1_8
     }
 }
-
+configurations.all {
+    resolutionStrategy {
+        force(Dependencies.Coroutines.core)
+    }
+}
 kotlin {
     jvm {
         compilations.all {
@@ -40,11 +44,7 @@ kotlin {
                 api(project(":logger"))
 
                 // coroutines
-                implementation(Dependencies.Coroutines.core) {
-                    version {
-                        strictly(Versions.coroutines)
-                    }
-                }
+                implementation(Dependencies.Coroutines.core)
 
                 // ktor
                 api(Dependencies.Ktor.core)

@@ -42,7 +42,11 @@ android {
         targetCompatibility = JavaVersion.VERSION_1_8
     }
 }
-
+configurations.all {
+    resolutionStrategy {
+        force(Dependencies.Coroutines.core)
+    }
+}
 kotlin {
     jvm {
         compilations.all {
@@ -76,12 +80,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 // coroutines
-                implementation(Dependencies.Coroutines.core) {
-                    version {
-                        // strictly using the native-mt version on coroutines
-                        strictly(Versions.coroutines)
-                    }
-                }
+                implementation(Dependencies.Coroutines.core)
                 implementation(Dependencies.SqlDelight.runtime)
                 implementation(Dependencies.SqlDelight.coroutinesExtension)
                 implementation(Dependencies.SqlDelight.primitiveAdapters)
