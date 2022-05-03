@@ -1,6 +1,7 @@
 package com.wire.kalium.network.api.message
 
 import com.wire.kalium.network.api.ConversationId
+import com.wire.kalium.network.exceptions.ProteusClientsChangedError
 import com.wire.kalium.network.exceptions.QualifiedSendMessageError
 import com.wire.kalium.network.exceptions.SendMessageError
 import com.wire.kalium.network.serialization.XProtoBuf
@@ -95,7 +96,7 @@ class MessageApiImp(
         return wrapKaliumResponse<QualifiedSendMessageResponse.MessageSent>({
             if(it.status.value != 412) null
             else NetworkResponse.Error(
-                kException = QualifiedSendMessageError.MissingDeviceError(
+                kException = ProteusClientsChangedError(
                     errorBody = it.body()
                 )
             )
