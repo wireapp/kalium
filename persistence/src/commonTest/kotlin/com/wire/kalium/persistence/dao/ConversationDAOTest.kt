@@ -2,6 +2,7 @@ package com.wire.kalium.persistence.dao
 
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -9,6 +10,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ConversationDAOTest : BaseDatabaseTest() {
 
     private lateinit var conversationDAO: ConversationDAO
@@ -160,6 +162,47 @@ class ConversationDAOTest : BaseDatabaseTest() {
         assertEquals(conversationEntity1, result.first())
         assertEquals(conversationEntity2, result[1])
 
+    }
+
+    @Test
+    fun givenConversation_whenInsertingMembers_thenMembersShouldNotBeDuplicated() = runTest {
+        val expected = listOf(member1, member2)
+
+        conversationDAO.insertConversation(conversationEntity1)
+
+        conversationDAO.insertMember(member1, conversationEntity1.id)
+        conversationDAO.insertMember(member2, conversationEntity1.id)
+        conversationDAO.getAllMembers(conversationEntity1.id).first().also {actual ->
+            assertEquals(expected, actual)
+        }
+        conversationDAO.insertMember(member1, conversationEntity1.id)
+        conversationDAO.insertMember(member2, conversationEntity1.id)
+        conversationDAO.getAllMembers(conversationEntity1.id).first().also {actual ->
+            assertEquals(expected, actual)
+        }
+    }
+
+    @Test
+    fun givenMultipleConversation_whenInsertingMembers_thenMembersAreInserted() = runTest {
+        val expected = listOf(member1, member2)
+
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertConversation(conversationEntity2)
+
+
+        conversationDAO.insertMember(member1, conversationEntity1.id)
+        conversationDAO.insertMember(member2, conversationEntity1.id)
+        conversationDAO.getAllMembers(conversationEntity1.id).first().also {actual ->
+            assertEquals(expected, actual)
+        }
+        conversationDAO.insertMember(member1, conversationEntity2.id)
+        conversationDAO.insertMember(member2, conversationEntity2.id)
+        conversationDAO.getAllMembers(conversationEntity2.id).first().also {actual ->
+            assertEquals(expected, actual)
+        }
+        conversationDAO.getAllMembers(conversationEntity1.id).first().also {actual ->
+            assertEquals(expected, actual)
+        }
     }
 
 
