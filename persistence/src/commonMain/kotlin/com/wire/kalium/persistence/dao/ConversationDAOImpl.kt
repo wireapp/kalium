@@ -32,7 +32,6 @@ class ConversationMapper {
             lastModifiedDate = conversation.last_modified_date
         )
     }
-
 }
 
 class MemberMapper {
