@@ -34,7 +34,7 @@ class NotificationApiTest : ApiTest {
             }
         )
         val notificationsApi = NotificationApiImpl(httpClient, TEST_BACKEND_CONFIG)
-        
+
         notificationsApi.notificationsByBatch(limit, clientId, since)
     }
 
