@@ -88,7 +88,7 @@ class ConnectionRepositoryTest {
             .then { _, _, _ -> return@then }
 
         // when
-        val result = connectionRepository.sendUserConnection(com.wire.kalium.logic.data.user.UserId("user_id", "domain_id"))
+        val result = connectionRepository.sendUserConnection(com.wire.kalium.logic.data.user.UserId(userId.value, userId.domain))
 
         // then
         result.shouldSucceed()
