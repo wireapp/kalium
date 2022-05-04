@@ -58,7 +58,7 @@ object NotificationEventsResponseJson {
     private val mlsWelcome = ValidJsonProvider(
         EventContentDTO.Conversation.MLSWelcomeDTO(
             ConversationId("e16babfa-308b-414e-b6e0-c59517f723db", "staging.zinfra.io"),
-            QualifiedID("76ebeb16-a849-4be4-84a7-157654b492cf","staging.zinfra.io"),
+            QualifiedID("76ebeb16-a849-4be4-84a7-157654b492cf", "staging.zinfra.io"),
             "AQABAAAAibLvHZAyYCHDxb+y8axOIdEAILa77VeJo1Yd8AfJKE009zwUxXuu7mAamu",
             "71ff8872e468a970"
         ), mlsWelcomeSerializer
@@ -113,12 +113,12 @@ object NotificationEventsResponseJson {
     private val newConversation = ValidJsonProvider(
         EventContentDTO.Conversation.NewConversationDTO(
             ConversationId("e16babfa-308b-414e-b6e0-c59517f723db", "staging.zinfra.io"),
-            QualifiedID("76ebeb16-a849-4be4-84a7-157654b492cf","staging.zinfra.io"),
+            QualifiedID("76ebeb16-a849-4be4-84a7-157654b492cf", "staging.zinfra.io"),
             "2022-04-12T13:57:02.414Z",
             ConversationResponseJson.validGroup.serializableData
         ), newConversationSerializer
     )
-    
+
     val notificationsWithUnknownEventAtFirstPosition = """
         {
           "time": "2022-02-15T12:54:30Z",
