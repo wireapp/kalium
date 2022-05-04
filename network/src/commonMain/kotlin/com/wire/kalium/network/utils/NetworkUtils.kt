@@ -3,6 +3,7 @@ package com.wire.kalium.network.utils
 import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.kaliumLogger
+import io.ktor.client.call.NoTransformationFoundException
 import io.ktor.client.call.body
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.statement.HttpResponse
@@ -121,11 +122,11 @@ internal fun <T : Any> NetworkResponse<T>.onSuccess(fn: (NetworkResponse.Success
  * exceptions thrown due to inability to reach the server.
  * This does **not** handle the response itself (i.e. HTTP status, body, etc.),
  * but may be used to catch exceptions thrown during those steps.
- * 
+ *
  * @return [NetworkResponse.Success] if everything went smooth
  * @return [NetworkResponse.Error] with a [KaliumException.GenericError] in case of an error
  */
-private inline fun <reified ResponseType: Any> handlingNetworkException(
+private inline fun <reified ResponseType : Any> handlingNetworkException(
     performRequest: () -> NetworkResponse<ResponseType>
 ): NetworkResponse<ResponseType> = try {
     performRequest()
@@ -146,7 +147,8 @@ private inline fun <reified ResponseType: Any> handlingNetworkException(
  * a [NetworkResponse.Error] containing a [KaliumException.GenericError]
  *
  * @param unsuccessfulResponseOverride Allows to intercept any unsuccessful response
- * and map it to a [NetworkResponse] as needed. Useful when handling custom ErrorBody
+ * and map it to a [NetworkResponse] as needed. This block can return null in order don't override.
+ * Useful when handling custom ErrorBody, for example.
  * @param performRequest the block that will result into the [HttpResponse]
  * @see KaliumException
  * @see ErrorResponse
@@ -160,18 +162,34 @@ internal suspend inline fun <reified BodyType : Any> wrapKaliumResponse(
     return if (status.isSuccess()) {
         NetworkResponse.Success(result.body(), result)
     } else {
-        unsuccessfulResponseOverride(result) ?: when (status.value) {
-            HttpStatusCode.Unauthorized.value -> {
-                kaliumLogger.e("Unauthorized request, $result")
-                NetworkResponse.Error(KaliumException.Unauthorized(status.value))
-            }
-            in (300..399) -> NetworkResponse.Error(KaliumException.RedirectError(result.body()))
-            in (400..499) -> NetworkResponse.Error(KaliumException.InvalidRequestError(result.body()))
-            in (500..599) -> NetworkResponse.Error(KaliumException.ServerError(result.body()))
-            else -> {
-                kaliumLogger.e("Server responded with unsupported status code: [$status]")
-                NetworkResponse.Error(KaliumException.ServerError(result.body()))
-            }
+        unsuccessfulResponseOverride(result) ?: handleUnsuccessfulResponse(result)
+    }
+}
+
+private suspend fun handleUnsuccessfulResponse(
+    result: HttpResponse
+): NetworkResponse.Error {
+    val status = result.status
+
+    val errorResponse = try {
+        result.body()
+    } catch (_: NoTransformationFoundException) {
+        // When the backend returns something that is not a JSON for whatever reason.
+        ErrorResponse(status.value, status.description, "")
+    }
+
+    val kException = when (status.value) {
+        HttpStatusCode.Unauthorized.value -> {
+            kaliumLogger.e("Unauthorized request, $result")
+            KaliumException.Unauthorized(status.value)
+        }
+        in (300..399) -> KaliumException.RedirectError(errorResponse)
+        in (400..499) -> KaliumException.InvalidRequestError(errorResponse)
+        in (500..599) -> KaliumException.ServerError(errorResponse)
+        else -> {
+            kaliumLogger.e("Server responded with unsupported status code: [$status]")
+            KaliumException.ServerError(errorResponse)
         }
     }
+    return NetworkResponse.Error(kException)
 }
