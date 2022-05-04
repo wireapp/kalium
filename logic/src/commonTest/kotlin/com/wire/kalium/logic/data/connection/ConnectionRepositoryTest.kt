@@ -136,7 +136,7 @@ class ConnectionRepositoryTest {
     @Test
     fun givenAConnectionRequest_WhenSendingAConnectionAndPersistingReturnsAnError_thenTheConnectionShouldNotBePersisted() = runTest {
         // given
-        val userId = UserId("user_id", "domain_id")
+        val userId = NetworkUserId("user_id", "domain_id")
         given(connectionApi)
             .suspendFunction(connectionApi::createConnection)
             .whenInvokedWith(eq(userId))
