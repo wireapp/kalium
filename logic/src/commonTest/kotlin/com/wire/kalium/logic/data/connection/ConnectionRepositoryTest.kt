@@ -1,12 +1,14 @@
 package com.wire.kalium.logic.data.connection
 
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.ConversationId
-import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.user.connection.Connection
 import com.wire.kalium.network.api.user.connection.ConnectionApi
 import com.wire.kalium.network.api.user.connection.ConnectionResponse
 import com.wire.kalium.network.api.user.connection.ConnectionState
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -23,6 +25,7 @@ import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import com.wire.kalium.network.api.UserId as NetworkUserId
 
 class ConnectionRepositoryTest {
 
@@ -77,7 +80,7 @@ class ConnectionRepositoryTest {
     @Test
     fun givenAConnectionRequest_WhenSendingAConnection_thenTheConnectionShouldBeSentAndPersistedLocally() = runTest {
         // given
-        val userId = UserId("user_id", "domain_id")
+        val userId = NetworkUserId("user_id", "domain_id")
         given(connectionApi)
             .suspendFunction(connectionApi::createConnection)
             .whenInvokedWith(eq(userId))
@@ -88,10 +91,65 @@ class ConnectionRepositoryTest {
             .then { _, _, _ -> return@then }
 
         // when
-        val result = connectionRepository.sendUserConnection(com.wire.kalium.logic.data.user.UserId(userId.value, userId.domain))
+        val result = connectionRepository.sendUserConnection(UserId(userId.value, userId.domain))
 
         // then
         result.shouldSucceed()
+        verify(connectionApi)
+            .suspendFunction(connectionApi::createConnection)
+            .with(eq(userId))
+            .wasInvoked(once)
+        verify(conversationDAO)
+            .suspendFunction(conversationDAO::insertOrUpdateOneOnOneMemberWithConnectionStatus)
+            .with(any(), any(), any())
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenAConnectionRequest_WhenSendingAConnectionAndReturnsAnError_thenTheConnectionShouldNotBePersisted() = runTest {
+        // given
+        val userId = NetworkUserId("user_id", "domain_id")
+        given(connectionApi)
+            .suspendFunction(connectionApi::createConnection)
+            .whenInvokedWith(eq(userId))
+            .then { NetworkResponse.Error(KaliumException.GenericError(RuntimeException("An error the server threw!"))) }
+        given(conversationDAO)
+            .suspendFunction(conversationDAO::insertOrUpdateOneOnOneMemberWithConnectionStatus)
+            .whenInvokedWith(eq(UserIDEntity(userId.value, userId.domain)), any(), any())
+            .then { _, _, _ -> return@then }
+
+        // when
+        val result = connectionRepository.sendUserConnection(com.wire.kalium.logic.data.user.UserId(userId.value, userId.domain))
+
+        // then
+        result.shouldFail()
+        verify(connectionApi)
+            .suspendFunction(connectionApi::createConnection)
+            .with(eq(userId))
+            .wasInvoked(once)
+        verify(conversationDAO)
+            .suspendFunction(conversationDAO::insertOrUpdateOneOnOneMemberWithConnectionStatus)
+            .with(any(), any(), any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenAConnectionRequest_WhenSendingAConnectionAndPersistingReturnsAnError_thenTheConnectionShouldNotBePersisted() = runTest {
+        // given
+        val userId = UserId("user_id", "domain_id")
+        given(connectionApi)
+            .suspendFunction(connectionApi::createConnection)
+            .whenInvokedWith(eq(userId))
+            .then { NetworkResponse.Success(connection1, mapOf(), 200) }
+        given(conversationDAO)
+            .suspendFunction(conversationDAO::insertOrUpdateOneOnOneMemberWithConnectionStatus)
+            .whenInvokedWith(eq(UserIDEntity(userId.value, userId.domain)), any(), any())
+            .thenThrow(RuntimeException("An error occurred persisting the data"))
+
+        // when
+        val result = connectionRepository.sendUserConnection(com.wire.kalium.logic.data.user.UserId(userId.value, userId.domain))
+
+        // then
         verify(connectionApi)
             .suspendFunction(connectionApi::createConnection)
             .with(eq(userId))
@@ -108,7 +166,7 @@ class ConnectionRepositoryTest {
             from = "fromId",
             lastUpdate = "lastUpdate",
             qualifiedConversationId = ConversationId("conversationId1", "domain"),
-            qualifiedToId = UserId("connectionId1", "domain"),
+            qualifiedToId = NetworkUserId("connectionId1", "domain"),
             status = ConnectionState.ACCEPTED,
             toId = "connectionId1"
         )
@@ -117,7 +175,7 @@ class ConnectionRepositoryTest {
             from = "fromId",
             lastUpdate = "lastUpdate",
             qualifiedConversationId = ConversationId("conversationId2", "domain"),
-            qualifiedToId = UserId("connectionId2", "domain"),
+            qualifiedToId = NetworkUserId("connectionId2", "domain"),
             status = ConnectionState.ACCEPTED,
             toId = "connectionId2"
         )
