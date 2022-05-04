@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.mapNotNull
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.decodeFromString
 
 class NotificationApiImpl(private val httpClient: HttpClient, private val serverConfigDTO: ServerConfigDTO) : NotificationApi {
@@ -74,7 +73,6 @@ class NotificationApiImpl(private val httpClient: HttpClient, private val server
         }
     }
 
-    @ExperimentalSerializationApi
     override suspend fun listenToLiveEvents(clientId: String): Flow<EventResponse> = httpClient.webSocketSession(
         method = HttpMethod.Get
     ) {

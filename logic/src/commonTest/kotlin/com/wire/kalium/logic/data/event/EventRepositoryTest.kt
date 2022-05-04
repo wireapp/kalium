@@ -92,6 +92,7 @@ class EventRepositoryTest {
             .with(any(), eq(clientId.value))
             .wasInvoked(exactly = once)
     }
+
     @Test
     fun givenSomeEventWasProcessedBefore_whenGettingEvents_thenGetByBatchStartingOnLastProcessedID() = runTest {
         val lastProcessedEventId = "someNotificationID"
