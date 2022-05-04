@@ -34,7 +34,11 @@ android {
         }
     }
 }
-
+configurations.all {
+    resolutionStrategy {
+        force(Dependencies.Coroutines.core)
+    }
+}
 kotlin {
     jvm {
         compilations.all {
