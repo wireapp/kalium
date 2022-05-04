@@ -47,30 +47,18 @@ class NotificationApiImpl(private val httpClient: HttpClient, private val server
         queryClient: String,
         querySince: String?
     ): NetworkResponse<NotificationResponse> {
-        return try {
+        return wrapKaliumResponse({
+            if (it.status.value != 404) null
+            else {
+                val body = it.body<NotificationResponse>().copy(isMissingNotifications = true)
+                NetworkResponse.Success(body, it)
+            }
+        }) {
             httpClient.get(PATH_NOTIFICATIONS) {
                 parameter(SIZE_QUERY_KEY, querySize)
                 parameter(CLIENT_QUERY_KEY, queryClient)
                 querySince?.let { parameter(SINCE_QUERY_KEY, it) }
-            }.let { response ->
-                NetworkResponse.Success(
-                    NotificationResponse.CompleteList(response.body<NotificationPageResponse>()),
-                    response
-                )
             }
-        } catch (e: ResponseException) {
-            if (e.response.status == HttpStatusCode.NotFound) {
-                NetworkResponse.Success(
-                    NotificationResponse.MissingSome(e.response.body<NotificationPageResponse>()),
-                    e.response
-                )
-            } else {
-                wrapKaliumResponse { e.response }
-            }
-        } catch (e: Exception) {
-            NetworkResponse.Error(
-                kException = KaliumException.GenericError(e)
-            )
         }
     }
 

@@ -36,7 +36,7 @@ import com.wire.kalium.network.serialization.xprotobuf
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.session.installAuth
 import io.ktor.client.engine.HttpClientEngine
-import io.ktor.client.plugins.ContentNegotiation
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 
 class AuthenticatedNetworkContainer(
     private val sessionManager: SessionManager,
