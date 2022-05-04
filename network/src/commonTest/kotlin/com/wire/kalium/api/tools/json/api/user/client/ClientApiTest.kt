@@ -5,6 +5,7 @@ import com.wire.kalium.api.tools.json.model.ErrorResponseJson
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.network.api.user.client.ClientApiImpl
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -12,6 +13,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
@@ -66,6 +68,22 @@ class ClientApiTest : ApiTest {
             assertTrue(response.isSuccessful())
         }
 
+    @Test
+    fun givenAValidRequest_whenRegisteredValidToken_theTokenRegisteredSuccessfully() = runTest {
+        val httpClient = mockAuthenticatedHttpClient(
+            RegisterTokenJson.registerTokenResponse, statusCode = HttpStatusCode.Created, assertion = {
+                assertPost()
+                assertBodyContent(VALID_PUSH_TOKEN_REQUEST.rawJson)
+            }
+        )
+        val clientApi = ClientApiImpl(httpClient)
+        clientApi.registerToken(VALID_PUSH_TOKEN_REQUEST.serializableData)
+
+        val actual = clientApi.registerToken(VALID_PUSH_TOKEN_REQUEST.serializableData)
+        assertIs<NetworkResponse.Success<Unit>>(actual)
+        assertTrue(actual.isSuccessful())
+    }
+
     private companion object {
         const val VALID_CLIENT_ID = "39s3ds2020sda"
         const val PATH_CLIENTS = "/clients"
@@ -73,5 +91,6 @@ class ClientApiTest : ApiTest {
         val VALID_REGISTER_CLIENT_RESPONSE = ClientResponseJson.valid
         val UPDATE_CLIENT_REQUEST = UpdateClientRequestJson.valid
         val ERROR_RESPONSE = ErrorResponseJson.valid.serializableData
+        val VALID_PUSH_TOKEN_REQUEST = RegisterTokenJson.validPushTokenRequest
     }
 }
