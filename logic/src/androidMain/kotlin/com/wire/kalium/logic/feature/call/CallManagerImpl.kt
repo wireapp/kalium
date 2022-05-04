@@ -356,6 +356,7 @@ actual class CallManagerImpl(
      */
     private fun onCallingReady() {
         val participantChangedHandler = ParticipantChangedHandlerImpl(
+            participantMapper = callMapper.participantMapper,
             onParticipantsChanged = { conversationId, participants, clients ->
                 onParticipantsChanged(
                     conversationId = conversationId,
