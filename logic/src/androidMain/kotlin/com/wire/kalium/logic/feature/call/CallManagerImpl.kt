@@ -3,28 +3,32 @@ package com.wire.kalium.logic.feature.call
 import com.sun.jna.Pointer
 import com.wire.kalium.calling.CallTypeCalling
 import com.wire.kalium.calling.Calling
-import com.wire.kalium.calling.callbacks.CallConfigRequestHandler
-import com.wire.kalium.calling.callbacks.SFTRequestHandler
 import com.wire.kalium.calling.types.Handle
-import com.wire.kalium.calling.types.Size_t
 import com.wire.kalium.calling.types.Uint32_t
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.call.ConversationType
+import com.wire.kalium.logic.data.call.SendCallingMessage
+import com.wire.kalium.logic.data.call.UpdateCallStatusById
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.asString
-import com.wire.kalium.logic.data.id.toConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.user.toUserId
+import com.wire.kalium.logic.feature.call.scenario.OnAnsweredCall
+import com.wire.kalium.logic.feature.call.scenario.OnCloseCall
+import com.wire.kalium.logic.feature.call.scenario.OnConfigRequest
+import com.wire.kalium.logic.feature.call.scenario.OnEstablishedCall
+import com.wire.kalium.logic.feature.call.scenario.OnIncomingCall
+import com.wire.kalium.logic.feature.call.scenario.OnMissedCall
+import com.wire.kalium.logic.feature.call.scenario.OnSFTRequest
+import com.wire.kalium.logic.feature.call.scenario.OnSendOTR
 import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.toInt
 import com.wire.kalium.logic.util.toTimeInMillis
 import kotlinx.coroutines.CoroutineScope
@@ -33,11 +37,8 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 
 actual class CallManagerImpl(
     private val calling: Calling,
@@ -45,15 +46,15 @@ actual class CallManagerImpl(
     private val userRepository: UserRepository,
     private val clientRepository: ClientRepository,
     private val callMapper: CallMapper,
-    val messageSender: MessageSender
-) : CallManager, CallConfigRequestHandler, SFTRequestHandler {
+    val updateCallStatusById: UpdateCallStatusById,
+    val messageSender: MessageSender,
+) : CallManager {
 
     private val job = SupervisorJob() // TODO clear job method
     private val scope = CoroutineScope(job + Dispatchers.IO)
     private val deferredHandle: Deferred<Handle>
 
-    private val _calls = MutableStateFlow(listOf<Call>())
-    override val allCalls = _calls.asStateFlow()
+    override val allCalls = calls.asStateFlow()
 
     private val clientId: Deferred<ClientId> = scope.async(start = CoroutineStart.LAZY) {
         clientRepository.currentClientId().fold({
@@ -73,28 +74,6 @@ actual class CallManagerImpl(
         deferredHandle = startHandleAsync()
     }
 
-    private fun updateCallStatusById(conversationId: String, status: CallStatus) {
-        _calls.update {
-            mutableListOf<Call>().apply {
-                addAll(it)
-
-                val callIndex = it.indexOfFirst { call -> call.conversationId.asString() == conversationId }
-                if (callIndex == -1) {
-                    add(
-                        Call(
-                            conversationId = conversationId.toConversationId(),
-                            status = status
-                        )
-                    )
-                } else {
-                    this[callIndex] = this[callIndex].copy(
-                        status = status
-                    )
-                }
-            }
-        }
-    }
-
     private fun startHandleAsync() = scope.async(start = CoroutineStart.LAZY) {
         val selfUserId = userId.await().asString()
         val selfClientId = clientId.await().value
@@ -104,64 +83,18 @@ actual class CallManagerImpl(
             readyHandler = { version: Int, arg: Pointer? ->
                 callingLogger.i("$TAG -> readyHandler")
             },
-            sendHandler = { context, conversationId, avsSelfUserId, avsSelfClientId, _, _, data, _, _, _ ->
-                if (selfUserId != avsSelfUserId && selfClientId != avsSelfClientId) {
-                    callingLogger.i("$TAG -> sendHandler error")
-                    AvsCallBackError.INVALID_ARGUMENT.value
-                } else {
-                    callingLogger.i("$TAG -> sendHandler success")
-                    sendHandlerSuccess(
-                        context = context,
-                        messageString = data?.getString(0, UTF8_ENCODING),
-                        conversationId = conversationId.toConversationId(),
-                        avsSelfUserId = avsSelfUserId.toUserId(),
-                        avsSelfClientId = ClientId(avsSelfClientId)
-                    )
-                    AvsCallBackError.NONE.value
-                }
-            },
-            sftRequestHandler = this@CallManagerImpl,
-            incomingCallHandler = { conversationId: String, messageTime: Uint32_t, userId: String, clientId: String, isVideoCall: Boolean,
-                                    shouldRing: Boolean, conversationType: Int, arg: Pointer? ->
-                callingLogger.i("$TAG -> incomingCallHandler")
-                updateCallStatusById(
-                    conversationId = conversationId,
-                    status = CallStatus.INCOMING
-                )
-            },
-            missedCallHandler = { conversationId: String, messageTime: Uint32_t, userId: String, isVideoCall: Boolean, arg: Pointer? ->
-                callingLogger.i("$TAG -> missedCallHandler")
-                updateCallStatusById(
-                    conversationId = conversationId,
-                    status = CallStatus.MISSED
-                )
-            },
-            answeredCallHandler = { conversationId: String, arg: Pointer? ->
-                callingLogger.i("$TAG -> answeredCallHandler")
-                updateCallStatusById(
-                    conversationId = conversationId,
-                    status = CallStatus.ANSWERED
-                )
-            },
-            establishedCallHandler = { conversationId: String, userId: String, clientId: String, arg: Pointer? ->
-                callingLogger.i("$TAG -> establishedCallHandler")
-                updateCallStatusById(
-                    conversationId = conversationId,
-                    status = CallStatus.ESTABLISHED
-                )
-            },
-            closeCallHandler = { reason: Int, conversationId: String, messageTime: Uint32_t, userId: String, clientId: String,
-                                 arg: Pointer? ->
-                callingLogger.i("$TAG -> closeCallHandler")
-                updateCallStatusById(
-                    conversationId = conversationId,
-                    status = CallStatus.CLOSED
-                )
-            },
+            //TODO inject all of these CallbackHandlers in class constructor
+            sendHandler = OnSendOTR(deferredHandle, calling, selfUserId, selfClientId, SendCallingMessage(messageSender)),
+            sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository),
+            incomingCallHandler = OnIncomingCall(updateCallStatusById),
+            missedCallHandler = OnMissedCall(updateCallStatusById),
+            answeredCallHandler = OnAnsweredCall(updateCallStatusById),
+            establishedCallHandler = OnEstablishedCall(updateCallStatusById),
+            closeCallHandler = OnCloseCall(updateCallStatusById),
             metricsHandler = { conversationId: String, metricsJson: String, arg: Pointer? ->
                 callingLogger.i("$TAG -> metricsHandler")
             },
-            callConfigRequestHandler = this@CallManagerImpl,
+            callConfigRequestHandler = OnConfigRequest(calling, callRepository),
             constantBitRateStateChangeHandler = { userId: String, clientId: String, isEnabled: Boolean, arg: Pointer? ->
                 callingLogger.i("$TAG -> constantBitRateStateChangeHandler")
             },
@@ -197,39 +130,6 @@ actual class CallManagerImpl(
             callingLogger.d("$TAG - onCallingMessageReceived")
         }
 
-    private fun sendHandlerSuccess(
-        context: Pointer?,
-        messageString: String?,
-        conversationId: ConversationId,
-        avsSelfUserId: UserId,
-        avsSelfClientId: ClientId
-    ) {
-        scope.launch {
-            messageString?.let { message ->
-                withCalling {
-                    when (sendCallingMessage(conversationId, avsSelfUserId, avsSelfClientId, message)) {
-                        is Either.Right -> {
-                            wcall_resp(
-                                inst = deferredHandle.await(),
-                                status = 200,
-                                reason = "",
-                                arg = context
-                            )
-                        }
-                        is Either.Left -> {
-                            wcall_resp(
-                                inst = deferredHandle.await(),
-                                status = 400, // TODO: Handle the errorCode from CoreFailure
-                                reason = "Couldn't send Calling Message",
-                                arg = context
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     override suspend fun startCall(
         conversationId: ConversationId,
         callType: CallType,
@@ -237,7 +137,7 @@ actual class CallManagerImpl(
         isAudioCbr: Boolean
     ) {
         callingLogger.d("$TAG -> starting call..")
-        updateCallStatusById(
+        updateCallStatusById.updateCallStatus(
             conversationId = conversationId.asString(),
             status = CallStatus.STARTED
         )
@@ -280,67 +180,8 @@ actual class CallManagerImpl(
         wcall_set_mute(deferredHandle.await(), muted = shouldMute.toInt())
     }
 
-    override fun onConfigRequest(inst: Handle, arg: Pointer?): Int {
-        scope.launch {
-            val config = callRepository.getCallConfigResponse(limit = null)
-                .fold({
-                    TODO("")
-                }, {
-                    it
-                })
-
-            withCalling {
-                wcall_config_update(
-                    inst = inst,
-                    error = 0, // TODO: http error from internal json
-                    jsonString = config
-                )
-            }
-            callingLogger.i("$TAG - onConfigRequest")
-        }
-
-        return AvsCallBackError.NONE.value
-    }
-
-    private suspend fun onSFTResponse(data: ByteArray?, context: Pointer?) {
-        withCalling {
-            val responseData = data ?: byteArrayOf()
-            wcall_sft_resp(
-                inst = deferredHandle.await(),
-                error = data?.let { AvsSFTError.NONE.value } ?: AvsSFTError.NO_RESPONSE_DATA.value,
-                data = responseData,
-                length = responseData.size,
-                ctx = context
-            )
-            callingLogger.i("SFT Response sent.")
-        }
-    }
-
-    override fun onSFTRequest(ctx: Pointer?, url: String, data: Pointer?, length: Size_t, arg: Pointer?): Int {
-        scope.launch {
-            val dataString = data?.getString(0, UTF8_ENCODING)
-            dataString?.let {
-                val responseData = callRepository.connectToSFT(
-                    url = url,
-                    data = dataString
-                ).fold({
-                    callingLogger.i("Could not connect to SFT server.")
-                    null
-                }, {
-                    callingLogger.i("Connected to SFT server.")
-                    it
-                })
-
-                onSFTResponse(data = responseData, context = ctx)
-            }
-        }
-
-        callingLogger.i("$TAG -> sftRequestHandler")
-        return AvsCallBackError.NONE.value
-    }
-
     companion object {
-        private const val TAG = "CallManager"
-        private const val UTF8_ENCODING = "UTF-8"
+        const val TAG = "CallManager"
+        const val UTF8_ENCODING = "UTF-8"
     }
 }

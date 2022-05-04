@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.call.CallDataSource
 import com.wire.kalium.logic.data.call.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.UpdateCallStatusById
 import com.wire.kalium.logic.data.client.ClientDataSource
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
@@ -196,6 +197,9 @@ abstract class UserSessionScopeCommon(
     private val callMapper: CallMapper
         get() = CallMapper()
 
+    private val updateCallStatusById: UpdateCallStatusById
+        get() = UpdateCallStatusById()
+
     private val callManager by lazy {
         globalCallManager.getCallManagerForClient(
             userId = userId,
@@ -203,7 +207,8 @@ abstract class UserSessionScopeCommon(
             userRepository = userRepository,
             clientRepository = clientRepository,
             callMapper = callMapper,
-            messageSender = messageSender
+            messageSender = messageSender,
+            updateCallStatusById = updateCallStatusById
         )
     }
     protected abstract val protoContentMapper: ProtoContentMapper

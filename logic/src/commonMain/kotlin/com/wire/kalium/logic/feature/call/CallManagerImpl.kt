@@ -5,9 +5,12 @@ import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 
+val calls = MutableStateFlow(listOf<Call>())
+    
 interface CallManager {
     suspend fun onCallingMessageReceived(message: Message, content: MessageContent.Calling)
     suspend fun startCall(

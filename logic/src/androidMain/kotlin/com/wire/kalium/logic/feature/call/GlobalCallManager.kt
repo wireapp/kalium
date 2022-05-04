@@ -10,6 +10,7 @@ import com.wire.kalium.calling.callbacks.LogHandler
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.UpdateCallStatusById
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserRepository
@@ -46,7 +47,8 @@ actual class GlobalCallManager(
         userRepository: UserRepository,
         clientRepository: ClientRepository,
         callMapper: CallMapper,
-        messageSender: MessageSender
+        messageSender: MessageSender,
+        updateCallStatusById: UpdateCallStatusById
     ): CallManager {
         return callManagerHolder[userId] ?: CallManagerImpl(
             calling = calling,
@@ -54,7 +56,8 @@ actual class GlobalCallManager(
             userRepository = userRepository,
             clientRepository = clientRepository,
             callMapper = callMapper,
-            messageSender = messageSender
+            messageSender = messageSender,
+            updateCallStatusById = updateCallStatusById
         ).also {
             callManagerHolder[userId] = it
         }
