@@ -56,6 +56,7 @@ import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandlerImpl
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.message.MessageSenderImpl
+import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.team.TeamScope
@@ -188,6 +189,9 @@ abstract class UserSessionScopeCommon(
     private val mlsMessageCreator: MLSMessageCreator
         get() = MLSMessageCreatorImpl(mlsClientProvider, protoContentMapper)
 
+    private val messageSendingScheduler: MessageSendingScheduler
+        get() = authenticatedDataSourceSet.workScheduler
+
     // TODO code duplication, can't we get the MessageSender from the message scope?
     private val messageSender: MessageSender
         get() = MessageSenderImpl(
@@ -198,6 +202,7 @@ abstract class UserSessionScopeCommon(
             sessionEstablisher,
             messageEnvelopeCreator,
             mlsMessageCreator,
+            messageSendingScheduler,
             timeParser
         )
 
@@ -269,6 +274,7 @@ abstract class UserSessionScopeCommon(
             userRepository,
             assetRepository,
             syncManager,
+            messageSendingScheduler,
             timeParser
         )
     val users: UserScope get() = UserScope(userRepository, publicUserRepository, syncManager, assetRepository)
