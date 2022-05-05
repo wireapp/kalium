@@ -290,7 +290,7 @@ abstract class UserSessionScopeCommon(
 
     val team: TeamScope get() = TeamScope(userRepository, teamRepository, syncManager)
 
-    val calls: CallsScope get() = CallsScope(callManager, syncManager)
+    val calls: CallsScope get() = CallsScope(callManager, syncManager, conversationRepository)
 
     val connection: ConnectionScope get() = ConnectionScope(connectionRepository)
 

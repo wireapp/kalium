@@ -189,6 +189,7 @@ class ConversationDataSource(
                         members.first { itemId -> itemId != selfUser.id }
                     }.coFold({
                         // TODO: How to Handle failure when dealing with flows?
+                        println("cyka storageFailure: $it")
                         throw IOException("Failure to fetch other user of 1:1 Conversation")
                     }, { otherUserId ->
                         userRepository.getKnownUser(otherUserId)
