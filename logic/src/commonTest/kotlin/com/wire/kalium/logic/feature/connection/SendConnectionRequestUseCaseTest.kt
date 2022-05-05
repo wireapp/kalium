@@ -71,7 +71,7 @@ class SendConnectionRequestUseCaseTest {
             .wasInvoked(once)
     }
 
-    companion object {
+    private companion object {
         val userId = UserId("some_user", "some_domain")
     }
 }
