@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature
 
 import com.wire.kalium.logic.AuthenticatedDataSourceSet
 import com.wire.kalium.logic.configuration.ClientConfig
+import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
 import com.wire.kalium.logic.data.asset.AssetDataSource
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.call.CallDataSource
@@ -68,10 +69,13 @@ import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.TimeParserImpl
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
+import com.wire.kalium.persistence.client.TokenStorage
+import com.wire.kalium.persistence.client.TokenStorageImpl
 import com.wire.kalium.persistence.db.UserDatabaseProvider
 import com.wire.kalium.persistence.event.EventInfoStorage
 import com.wire.kalium.persistence.event.EventInfoStorageImpl
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
+import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 
 expect class UserSessionScope : UserSessionScopeCommon
 
@@ -79,7 +83,8 @@ abstract class UserSessionScopeCommon(
     private val userId: QualifiedID,
     private val authenticatedDataSourceSet: AuthenticatedDataSourceSet,
     private val sessionRepository: SessionRepository,
-    private val globalCallManager: GlobalCallManager
+    private val globalCallManager: GlobalCallManager,
+    private val globalPreferences: KaliumPreferences
 ) {
 
     private val encryptedSettingsHolder: EncryptedSettingsHolder = authenticatedDataSourceSet.encryptedSettingsHolder
@@ -103,6 +108,8 @@ abstract class UserSessionScopeCommon(
             mlsClientProvider, authenticatedDataSourceSet.authenticatedNetworkContainer.mlsMessageApi,
             userDatabaseProvider.conversationDAO
         )
+
+    private val notificationTokenRepository get() = NotificationTokenDataSource(tokenStorage)
 
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(
@@ -155,6 +162,9 @@ abstract class UserSessionScopeCommon(
         )
 
     protected abstract val clientConfig: ClientConfig
+
+    private val tokenStorage: TokenStorage
+        get() = TokenStorageImpl(globalPreferences)
 
     private val clientRemoteRepository: ClientRemoteRepository
         get() = ClientRemoteDataSource(
@@ -251,7 +261,7 @@ abstract class UserSessionScopeCommon(
         get() = ListenToEventsUseCase(syncManager, eventRepository, conversationEventReceiver)
     val syncPendingEvents: SyncPendingEventsUseCase
         get() = SyncPendingEventsUseCase(syncManager, eventRepository, conversationEventReceiver)
-    val client: ClientScope get() = ClientScope(clientRepository, preKeyRepository, keyPackageRepository, mlsClientProvider)
+    val client: ClientScope get() = ClientScope(clientRepository, preKeyRepository, keyPackageRepository, mlsClientProvider,notificationTokenRepository)
     val conversations: ConversationScope get() = ConversationScope(conversationRepository, userRepository, syncManager)
     val messages: MessageScope
         get() = MessageScope(
@@ -283,4 +293,5 @@ abstract class UserSessionScopeCommon(
     val calls: CallsScope get() = CallsScope(callManager, syncManager)
 
     val connection: ConnectionScope get() = ConnectionScope(connectionRepository)
+
 }
