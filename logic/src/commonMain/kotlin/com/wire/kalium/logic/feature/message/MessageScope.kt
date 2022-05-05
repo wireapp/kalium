@@ -20,7 +20,7 @@ import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.util.TimeParser
 
 class MessageScope(
-    private val messageRepository: MessageRepository,
+    internal val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
     private val clientRepository: ClientRepository,
     private val proteusClient: ProteusClient,
@@ -29,6 +29,7 @@ class MessageScope(
     private val userRepository: UserRepository,
     private val assetRepository: AssetRepository,
     private val syncManager: SyncManager,
+    private val messageSendingScheduler: MessageSendingScheduler,
     private val timeParser: TimeParser,
 ) {
 
@@ -47,7 +48,7 @@ class MessageScope(
     private val mlsMessageCreator: MLSMessageCreator
         get() = MLSMessageCreatorImpl(mlsClientProvider, protoContentMapper)
 
-    private val messageSender: MessageSender
+    internal val messageSender: MessageSender
         get() = MessageSenderImpl(
             messageRepository,
             conversationRepository,
@@ -56,6 +57,7 @@ class MessageScope(
             sessionEstablisher,
             messageEnvelopeCreator,
             mlsMessageCreator,
+            messageSendingScheduler,
             timeParser
         )
 

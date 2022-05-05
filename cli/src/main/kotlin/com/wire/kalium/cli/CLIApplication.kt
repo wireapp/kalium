@@ -28,6 +28,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import com.wire.kalium.logic.feature.client.RegisterClientUseCase.RegisterClientParam
 
 private val coreLogic = CoreLogic("Kalium CLI", "${CLIApplication.HOME_DIRECTORY}/.kalium/accounts")
 
@@ -78,7 +79,7 @@ class CreateGroupCommand : CliktCommand(name = "create-group") {
         val authSession = restoreSession() ?: throw PrintMessage("no active session")
         val userSession = coreLogic.getSessionScope(authSession.userId)
 
-        val users = userSession.users.getAllKnownUsers().first()
+        val users = userSession.users.getAllKnownUsers()
 
         users.forEachIndexed { index, user ->
             echo("$index) ${user.id.value}  Name: ${user.name}")
@@ -141,7 +142,7 @@ class LoginCommand: CliktCommand(name = "login") {
 
         coreLogic.sessionScope(authSession.userId) {
             if (client.needsToRegisterClient()) {
-                when (client.register(password, emptyList())) {
+                when (client.register(RegisterClientParam.ClientWithoutToken(password, emptyList()))) {
                     is RegisterClientResult.Failure -> throw PrintMessage("Client registration failed")
                     is RegisterClientResult.Success -> echo("Login successful")
                 }

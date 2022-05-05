@@ -22,6 +22,7 @@ class LogoutUseCase(
     private val authenticatedDataSourceSetProvider: AuthenticatedDataSourceSetProvider = AuthenticatedDataSourceSetProviderImpl
 ) {
     suspend operator fun invoke() {
+        //TODO deregister push notification token
         logoutRepository.logout()
         clearCrypto()
         clearUserStorage()

@@ -69,7 +69,6 @@ class LoginApiImpl(private val httpClient: HttpClient) : LoginApi {
             }
         }
 
-
     private companion object {
         const val PATH_SELF = "self"
         const val PATH_LOGIN = "login"
