@@ -19,7 +19,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.call.scenario.ParticipantChangedHandlerImpl
+import com.wire.kalium.logic.feature.call.scenario.OnParticipantListChanged
 import com.wire.kalium.logic.feature.call.scenario.OnAnsweredCall
 import com.wire.kalium.logic.feature.call.scenario.OnCloseCall
 import com.wire.kalium.logic.feature.call.scenario.OnConfigRequest
@@ -184,7 +184,7 @@ actual class CallManagerImpl(
      * Will start the handlers for: ParticipantsChanged, NetworkQuality, ClientsRequest and ActiveSpeaker
      */
     private fun onCallingReady() {
-        val participantChangedHandler = ParticipantChangedHandlerImpl(
+        val participantChangedHandler = OnParticipantListChanged(
             participantMapper = callMapper.participantMapper,
             onParticipantsChanged = { conversationId, participants, clients ->
                 onParticipantsChanged(

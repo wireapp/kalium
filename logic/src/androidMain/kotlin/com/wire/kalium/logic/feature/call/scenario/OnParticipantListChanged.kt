@@ -10,7 +10,7 @@ import com.wire.kalium.logic.data.call.Participant
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
-class ParticipantChangedHandlerImpl(
+class OnParticipantListChanged(
     private val participantMapper: CallMapper.ParticipantMapper,
     private val onParticipantsChanged: (conversationId: String, participants: List<Participant>, clients: CallClientList) -> Unit
 ) : ParticipantChangedHandler {
