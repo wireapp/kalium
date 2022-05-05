@@ -19,6 +19,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.call.callback.ParticipantChangedHandlerImpl
 import com.wire.kalium.logic.feature.call.scenario.OnAnsweredCall
 import com.wire.kalium.logic.feature.call.scenario.OnCloseCall
 import com.wire.kalium.logic.feature.call.scenario.OnConfigRequest
@@ -38,13 +39,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.math.max
-import com.wire.kalium.logic.data.user.toUserId
-import com.wire.kalium.logic.feature.call.callback.ParticipantChangedHandlerImpl
-import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.functional.Either
 
 actual class CallManagerImpl(
     private val calling: Calling,
@@ -78,34 +74,6 @@ actual class CallManagerImpl(
 
     init {
         deferredHandle = startHandleAsync()
-    }
-
-    private fun updateCallStatusById(conversationId: String, status: CallStatus) {
-        _calls.update {
-            val calls = mutableListOf<Call>().apply {
-                addAll(it)
-
-                val callIndex = it.indexOfFirst { call -> call.conversationId.toString() == conversationId }
-                if (callIndex == -1) {
-                    add(
-                        Call(
-                            conversationId = conversationId.toConversationId(),
-                            status = status
-                        )
-                    )
-                } else {
-                    this[callIndex] = this[callIndex].copy(
-                        status = status
-                    )
-                }
-            }
-
-            _callProfile.value = _callProfile.value.copy(
-                calls = calls.associateBy { it.conversationId.toString() }
-            )
-
-            calls
-        }
     }
 
     private fun startHandleAsync() = scope.async(start = CoroutineStart.LAZY) {

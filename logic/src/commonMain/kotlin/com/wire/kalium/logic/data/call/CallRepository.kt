@@ -44,6 +44,7 @@ internal class CallDataSource(
 ) : CallRepository {
 
     //TODO to be saved somewhere ?
+    private val _callProfile = MutableStateFlow(CallProfile(calls = emptyMap()))
     private val calls = MutableStateFlow(listOf<Call>())
     private val allCalls = calls.asStateFlow()
 
@@ -87,7 +88,7 @@ internal class CallDataSource(
 
     override fun updateCallStatusById(conversationId: String, status: CallStatus) {
         calls.update {
-            mutableListOf<Call>().apply {
+            val calls = mutableListOf<Call>().apply {
                 addAll(it)
 
                 val callIndex = it.indexOfFirst { call -> call.conversationId.toString() == conversationId }
@@ -104,6 +105,12 @@ internal class CallDataSource(
                     )
                 }
             }
+
+            _callProfile.value = _callProfile.value.copy(
+                calls = calls.associateBy { it.conversationId.toString() }
+            )
+
+            calls
         }
     }
 }
