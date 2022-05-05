@@ -23,11 +23,7 @@ tasks.jar {
     from(dependencies)
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
-configurations.all {
-    resolutionStrategy {
-        force(Dependencies.Coroutines.core)
-    }
-}
+
 dependencies {
     implementation(project(":network"))
     implementation(project(":cryptography"))

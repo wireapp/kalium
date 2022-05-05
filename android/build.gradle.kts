@@ -44,11 +44,7 @@ android {
 
 //    sourceSets { map { it.java.srcDir("src/${it.name}/kotlin") } }
 }
-configurations.all {
-    resolutionStrategy {
-        force(Dependencies.Coroutines.core)
-    }
-}
+
 dependencies {
     implementation(project(":network"))
     implementation(project(":cryptography"))

@@ -36,7 +36,7 @@ import com.wire.kalium.network.serialization.xprotobuf
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.session.installAuth
 import io.ktor.client.engine.HttpClientEngine
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.ContentNegotiation
 
 class AuthenticatedNetworkContainer(
     private val sessionManager: SessionManager,
@@ -79,6 +79,7 @@ class AuthenticatedNetworkContainer(
         provideBaseHttpClient(engine, HttpClientOptions.DefaultHost(backendConfig)) {
             installAuth(sessionManager)
             install(ContentNegotiation) {
+                expectSuccess = false
                 mls()
                 xprotobuf()
             }

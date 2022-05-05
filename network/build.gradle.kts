@@ -20,11 +20,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_1_8
     }
 }
-configurations.all {
-    resolutionStrategy {
-        force(Dependencies.Coroutines.core)
-    }
-}
+
 kotlin {
     jvm {
         compilations.all {
