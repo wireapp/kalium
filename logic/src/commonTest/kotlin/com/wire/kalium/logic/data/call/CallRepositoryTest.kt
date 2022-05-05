@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.call
 
+import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.call.CallApi
 import com.wire.kalium.network.utils.NetworkResponse
@@ -18,12 +19,16 @@ class CallRepositoryTest {
     @Mock
     private val callApi = mock(classOf<CallApi>())
 
+    @Mock
+    private val messageSender = mock(classOf<MessageSender>())
+
     private lateinit var callRepository: CallRepository
 
     @BeforeTest
     fun setUp() {
         callRepository = CallDataSource(
-            callApi = callApi
+            callApi = callApi,
+            messageSender
         )
     }
 
