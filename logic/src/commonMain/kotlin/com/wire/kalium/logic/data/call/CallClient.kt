@@ -4,14 +4,14 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 @Serializable
-data class AvsClient(
+data class CallClient(
     val userId: String,
     val clientId: String
 )
 
 @Serializable
-data class AvsClientList(
-    val clients: List<AvsClient>
+data class CallClientList(
+    val clients: List<CallClient>
 ) {
     fun toJsonString(): String = Json { isLenient = true }.encodeToString(serializer(), this)
 }

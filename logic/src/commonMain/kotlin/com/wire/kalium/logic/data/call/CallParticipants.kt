@@ -3,13 +3,13 @@ package com.wire.kalium.logic.data.call
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class AvsParticipants(
+data class CallParticipants(
     val convid: String,
-    val members: List<AvsMember>
+    val members: List<CallMember>
 )
 
 @Serializable
-data class AvsMember(
+data class CallMember(
     val userid: String,
     val clientid: String,
     val aestab: Int,
