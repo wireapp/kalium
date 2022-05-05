@@ -15,7 +15,7 @@ import com.wire.kalium.logic.data.call.UpdateCallStatusById
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.asString
+import com.wire.kalium.logic.data.id.toConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
@@ -75,7 +75,7 @@ actual class CallManagerImpl(
     }
 
     private fun startHandleAsync() = scope.async(start = CoroutineStart.LAZY) {
-        val selfUserId = userId.await().asString()
+        val selfUserId = userId.await().toString()
         val selfClientId = clientId.await().value
         calling.wcall_create(
             userId = selfUserId,
@@ -123,8 +123,8 @@ actual class CallManagerImpl(
                 len = msg.size,
                 curr_time = Uint32_t(value = currTime / 1000),
                 msg_time = Uint32_t(value = msgTime / 1000),
-                convId = message.conversationId.asString(),
-                userId = message.senderUserId.asString(),
+                convId = message.conversationId.toString(),
+                userId = message.senderUserId.toString(),
                 clientId = message.senderClientId.value
             )
             callingLogger.d("$TAG - onCallingMessageReceived")
@@ -138,7 +138,7 @@ actual class CallManagerImpl(
     ) {
         callingLogger.d("$TAG -> starting call..")
         updateCallStatusById.updateCallStatus(
-            conversationId = conversationId.asString(),
+            conversationId = conversationId.toString(),
             status = CallStatus.STARTED
         )
         withCalling {
@@ -146,7 +146,7 @@ actual class CallManagerImpl(
             val avsConversationType = callMapper.toConversationTypeCalling(conversationType)
             wcall_start(
                 deferredHandle.await(),
-                conversationId.asString(),
+                conversationId.toString(),
                 avsCallType.avsValue,
                 avsConversationType.avsValue,
                 isAudioCbr.toInt()
@@ -158,7 +158,7 @@ actual class CallManagerImpl(
         callingLogger.d("$TAG -> answering call..")
         calling.wcall_answer(
             inst = deferredHandle.await(),
-            conversationId = conversationId.asString(),
+            conversationId = conversationId.toString(),
             callType = CallTypeCalling.AUDIO.avsValue,
             cbrEnabled = false
         )
@@ -166,12 +166,12 @@ actual class CallManagerImpl(
 
     override suspend fun endCall(conversationId: ConversationId) = withCalling {
         callingLogger.d("$TAG -> ending Call..")
-        wcall_end(inst = deferredHandle.await(), conversationId = conversationId.asString())
+        wcall_end(inst = deferredHandle.await(), conversationId = conversationId.toString())
     }
 
     override suspend fun rejectCall(conversationId: ConversationId) = withCalling {
         callingLogger.d("$TAG -> rejecting call..")
-        wcall_reject(inst = deferredHandle.await(), conversationId = conversationId.asString())
+        wcall_reject(inst = deferredHandle.await(), conversationId = conversationId.toString())
     }
 
     override suspend fun muteCall(shouldMute: Boolean) = withCalling {

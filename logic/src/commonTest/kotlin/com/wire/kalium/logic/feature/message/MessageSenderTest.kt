@@ -1,16 +1,16 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.conversation.Recipient
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.failure.SendMessageFailure
+import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
@@ -18,16 +18,17 @@ import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.mockative.Mock
-import io.mockative.Times
 import io.mockative.anything
 import io.mockative.configure
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
+import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 
@@ -55,6 +56,9 @@ class MessageSenderTest {
     private val syncManager = configure(mock(SyncManager::class)) { stubsUnitByDefault = true }
 
     @Mock
+    private val messageSendingScheduler = configure(mock(MessageSendingScheduler::class)) { stubsUnitByDefault = true }
+
+    @Mock
     private val timeParser = mock(TimeParser::class)
 
     private lateinit var messageSender: MessageSender
@@ -69,7 +73,8 @@ class MessageSenderTest {
             sessionEstablisher = sessionEstablisher,
             messageEnvelopeCreator = messageEnvelopeCreator,
             mlsMessageCreator = mlsMessageCreator,
-            timeParser = timeParser
+            timeParser = timeParser,
+            messageSendingScheduler = messageSendingScheduler
         )
 
         given(timeParser)
@@ -83,7 +88,7 @@ class MessageSenderTest {
         //given
         setupGivenSuccessResults()
         //when
-        val result = messageSender.trySendingOutgoingMessageById(ConversationId("testId", "testDomain"), "testId")
+        val result = messageSender.trySendingOutgoingMessageById(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
         //then
         assertIs<Either.Right<Unit>>(result)
     }
@@ -95,12 +100,12 @@ class MessageSenderTest {
             getConversationProtocol = false
         )
         //when
-        val result = messageSender.trySendingOutgoingMessageById(ConversationId("testId", "testDomain"), "testId")
+        val result = messageSender.trySendingOutgoingMessageById(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
         //then
         verify(messageRepository)
             .suspendFunction(messageRepository::updateMessageStatus)
             .with(eq(MessageEntity.Status.FAILED), anything(), anything())
-            .wasInvoked(Times(1))
+            .wasInvoked(exactly = once)
 
         assertIs<Either.Left<Unit>>(result)
     }
@@ -112,12 +117,12 @@ class MessageSenderTest {
             getConversationsRecipient = false
         )
         //when
-        val result = messageSender.trySendingOutgoingMessageById(ConversationId("testId", "testDomain"), "testId")
+        val result = messageSender.trySendingOutgoingMessageById(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
         //then
         verify(messageRepository)
             .suspendFunction(messageRepository::updateMessageStatus)
             .with(eq(MessageEntity.Status.FAILED), anything(), anything())
-            .wasInvoked(Times(1))
+            .wasInvoked(exactly = once)
 
         assertIs<Either.Left<Unit>>(result)
     }
@@ -130,12 +135,12 @@ class MessageSenderTest {
                 prepareRecipientsForNewOutGoingMessage = false
             )
             //when
-            val result = messageSender.trySendingOutgoingMessageById(ConversationId("testId", "testDomain"), "testId")
+            val result = messageSender.trySendingOutgoingMessageById(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
             //then
             verify(messageRepository)
                 .suspendFunction(messageRepository::updateMessageStatus)
                 .with(eq(MessageEntity.Status.FAILED), anything(), anything())
-                .wasInvoked(Times(1))
+                .wasInvoked(exactly = once)
 
             assertIs<Either.Left<Unit>>(result)
         }
@@ -148,12 +153,12 @@ class MessageSenderTest {
                 createOutgoingEnvelope = false
             )
             //when
-            val result = messageSender.trySendingOutgoingMessageById(ConversationId("testId", "testDomain"), "testId")
+            val result = messageSender.trySendingOutgoingMessageById(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
             //then
             verify(messageRepository)
                 .suspendFunction(messageRepository::updateMessageStatus)
                 .with(eq(MessageEntity.Status.FAILED), anything(), anything())
-                .wasInvoked(Times(1))
+                .wasInvoked(exactly = once)
 
             assertIs<Either.Left<Unit>>(result)
         }
@@ -163,15 +168,15 @@ class MessageSenderTest {
         runTest {
             //given
             setupGivenSuccessResults(
-                sendEnvelope = false
+                sendEnvelope = Either.Left(CoreFailure.Unknown(Throwable("some exception")))
             )
             //when
-            val result = messageSender.trySendingOutgoingMessageById(ConversationId("testId", "testDomain"), "testId")
+            val result = messageSender.trySendingOutgoingMessageById(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
             //then
             verify(messageRepository)
                 .suspendFunction(messageRepository::updateMessageStatus)
                 .with(eq(MessageEntity.Status.FAILED), anything(), anything())
-                .wasInvoked(Times(1))
+                .wasInvoked(exactly = once)
 
             assertIs<Either.Left<Unit>>(result)
         }
@@ -184,12 +189,12 @@ class MessageSenderTest {
                 updateMessageStatus = false
             )
             //when
-            val result = messageSender.trySendingOutgoingMessageById(ConversationId("testId", "testDomain"), "testId")
+            val result = messageSender.trySendingOutgoingMessageById(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
             //then
             verify(messageRepository)
                 .suspendFunction(messageRepository::updateMessageStatus)
                 .with(eq(MessageEntity.Status.FAILED), anything(), anything())
-                .wasInvoked(Times(1))
+                .wasInvoked(exactly = once)
 
             assertIs<Either.Left<Unit>>(result)
         }
@@ -202,12 +207,12 @@ class MessageSenderTest {
                 updateMessageDate = false
             )
             //when
-            val result = messageSender.trySendingOutgoingMessageById(ConversationId("testId", "testDomain"), "testId")
+            val result = messageSender.trySendingOutgoingMessageById(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
             //then
             verify(messageRepository)
                 .suspendFunction(messageRepository::updateMessageStatus)
                 .with(eq(MessageEntity.Status.FAILED), anything(), anything())
-                .wasInvoked(Times(1))
+                .wasInvoked(exactly = once)
 
             assertIs<Either.Left<Unit>>(result)
         }
@@ -220,15 +225,40 @@ class MessageSenderTest {
                 updateMessageDate = false
             )
             //when
-            val result = messageSender.trySendingOutgoingMessageById(ConversationId("testId", "testDomain"), "testId")
+            val result = messageSender.trySendingOutgoingMessageById(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
             //then
             verify(messageRepository)
                 .suspendFunction(messageRepository::updateMessageStatus)
                 .with(eq(MessageEntity.Status.FAILED), anything(), anything())
-                .wasInvoked(Times(1))
+                .wasInvoked(exactly = once)
 
             assertIs<Either.Left<Unit>>(result)
         }
+
+    @Test
+    fun givenSendingOfEnvelopeFailsDueToLackOfConnection_whenSendingOutgoingMessage_thenItShouldScheduleRetry() = runTest {
+        setupGivenSuccessResults(
+            sendEnvelope = Either.Left(NetworkFailure.NoNetworkConnection(null))
+        )
+
+        messageSender.trySendingOutgoingMessageById(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
+
+        verify(messageSendingScheduler)
+            .suspendFunction(messageSendingScheduler::scheduleSendingOfPendingMessages)
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenSendingOfEnvelopeFailsDueToLackOfConnection_whenSendingOutgoingMessage_thenFailureShouldBePropagated() = runTest {
+        val failure = Either.Left(NetworkFailure.NoNetworkConnection(null))
+        setupGivenSuccessResults(
+            sendEnvelope = failure
+        )
+
+        val result = messageSender.trySendingOutgoingMessageById(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
+
+        assertEquals(failure, result)
+    }
 
     private fun setupGivenSuccessResults(
         getMessageById: Boolean = true,
@@ -238,7 +268,7 @@ class MessageSenderTest {
         createOutgoingEnvelope: Boolean = true,
         updateMessageDate: Boolean = true,
         updatePendingMessagesAddMillisToDate: Boolean = true,
-        sendEnvelope: Boolean = true,
+        sendEnvelope: Either<CoreFailure, String> = Either.Right("date"),
         updateMessageStatus: Boolean = true,
     ) {
         given(messageRepository)
@@ -269,7 +299,7 @@ class MessageSenderTest {
         given(messageRepository)
             .suspendFunction(messageRepository::sendEnvelope)
             .whenInvokedWith(anything(), anything())
-            .thenReturn(if (sendEnvelope) Either.Right("date") else Either.Left(SendMessageFailure.Unknown(Throwable("some exception"))))
+            .thenReturn(sendEnvelope)
 
         given(messageRepository)
             .suspendFunction(messageRepository::updateMessageDate)
@@ -288,6 +318,8 @@ class MessageSenderTest {
     }
 
     private companion object {
+        val TEST_CONVERSATION_ID = TestConversation.ID
+        val TEST_MESSAGE_UUID = "messageUuid"
         val TEST_MESSAGE_ENVELOPE = MessageEnvelope(
             senderClientId = ClientId(
                 value = "testValue",

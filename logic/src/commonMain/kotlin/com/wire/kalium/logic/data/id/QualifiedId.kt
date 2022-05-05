@@ -10,13 +10,13 @@ data class QualifiedID(
     companion object {
         const val WIRE_PRODUCTION_DOMAIN = "wire.com"
     }
+
+    override fun toString(): String = if (domain.isEmpty()) value else "$value$VALUE_DOMAIN_SEPARATOR$domain"
 }
 
 const val VALUE_DOMAIN_SEPARATOR = "@"
 
 typealias ConversationId = QualifiedID
-
-fun QualifiedID.asString() = if (domain.isEmpty()) value else "$value$VALUE_DOMAIN_SEPARATOR$domain"
 
 fun String.toConversationId(): ConversationId {
     val (value, domain) = if (contains(VALUE_DOMAIN_SEPARATOR)) {
@@ -31,3 +31,8 @@ fun String.toConversationId(): ConversationId {
     )
 }
 
+fun String.parseIntoQualifiedID(): QualifiedID {
+    val components = split("@")
+    if (components.size < 2) throw IllegalStateException("The string trying to parse is not a valid one")
+    return QualifiedID(value = components.first(), domain = components.last())
+}

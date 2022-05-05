@@ -176,7 +176,7 @@ object Dependencies {
     }
 
     object Calling {
-        const val avs =  "com.wire:avs:${Versions.avs}"
+        const val avs = "com.wire:avs:${Versions.avs}"
         const val jna = "net.java.dev.jna:jna:${Versions.jna}"
     }
 }
