@@ -79,7 +79,6 @@ class AuthenticatedNetworkContainer(
         provideBaseHttpClient(engine, HttpClientOptions.DefaultHost(backendConfig)) {
             installAuth(sessionManager)
             install(ContentNegotiation) {
-                expectSuccess = false
                 mls()
                 xprotobuf()
             }

@@ -57,8 +57,8 @@ internal fun provideBaseHttpClient(
 
     install(WebSockets)
     install(ContentNegotiation) {
-        expectSuccess = false
         json(KtxSerializer.json)
     }
+    expectSuccess = false
     config()
 }
