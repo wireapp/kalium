@@ -27,10 +27,15 @@ class SendConnectionRequestUseCaseTest {
         sendConnectionRequestUseCase = SendConnectionRequestUseCaseImpl(connectionRepository)
     }
 
+    private val qualifiedID: UserId
+        get() {
+            val userId = UserId("some_user", "some_domain")
+            return userId
+        }
+
     @Test
     fun givenAConnectionRequest_whenInvokingASendAConnectionRequest_thenShouldReturnsASuccessResult() = runTest {
         // given
-        val userId = UserId("some_user", "some_domain")
         given(connectionRepository)
             .suspendFunction(connectionRepository::sendUserConnection)
             .whenInvokedWith(eq(userId))
@@ -50,7 +55,6 @@ class SendConnectionRequestUseCaseTest {
     @Test
     fun givenAConnectionRequest_whenInvokingASendAConnectionRequestFails_thenShouldReturnsASuccessFailure() = runTest {
         // given
-        val userId = UserId("some_user", "some_domain")
         given(connectionRepository)
             .suspendFunction(connectionRepository::sendUserConnection)
             .whenInvokedWith(eq(userId))
@@ -65,5 +69,9 @@ class SendConnectionRequestUseCaseTest {
             .suspendFunction(connectionRepository::sendUserConnection)
             .with(eq(userId))
             .wasInvoked(once)
+    }
+
+    companion object {
+        val userId = UserId("some_user", "some_domain")
     }
 }
