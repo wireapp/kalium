@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.data.call
 
-import com.wire.kalium.logic.data.id.asString
 import com.wire.kalium.logic.data.id.toConversationId
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
@@ -14,7 +13,7 @@ class UpdateCallStatusById {
             mutableListOf<Call>().apply {
                 addAll(it)
 
-                val callIndex = it.indexOfFirst { call -> call.conversationId.asString() == conversationId }
+                val callIndex = it.indexOfFirst { call -> call.conversationId.toString() == conversationId }
                 if (callIndex == -1) {
                     add(
                         Call(
