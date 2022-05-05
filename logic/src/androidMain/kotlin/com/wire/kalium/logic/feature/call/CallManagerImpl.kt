@@ -10,9 +10,11 @@ import com.wire.kalium.calling.types.Size_t
 import com.wire.kalium.calling.types.Uint32_t
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallMapper
+import com.wire.kalium.logic.data.call.CallProfile
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.call.ConversationType
+import com.wire.kalium.logic.data.call.Participant
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
@@ -22,6 +24,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.toUserId
+import com.wire.kalium.logic.feature.call.callback.ParticipantChangedHandlerImpl
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.toInt
@@ -37,6 +40,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.math.max
 
 actual class CallManagerImpl(
     private val calling: Calling,
@@ -50,6 +54,7 @@ actual class CallManagerImpl(
     private val job = SupervisorJob() // TODO clear job method
     private val scope = CoroutineScope(job + Dispatchers.IO)
     private val deferredHandle: Deferred<Handle>
+    private val _callProfile = MutableStateFlow(CallProfile(calls = emptyMap()))
 
     private val _calls = MutableStateFlow(listOf<Call>())
     override val allCalls = _calls.asStateFlow()
@@ -74,7 +79,7 @@ actual class CallManagerImpl(
 
     private fun updateCallStatusById(conversationId: String, status: CallStatus) {
         _calls.update {
-            mutableListOf<Call>().apply {
+            val calls = mutableListOf<Call>().apply {
                 addAll(it)
 
                 val callIndex = it.indexOfFirst { call -> call.conversationId.toString() == conversationId }
@@ -91,6 +96,12 @@ actual class CallManagerImpl(
                     )
                 }
             }
+
+            _callProfile.value = _callProfile.value.copy(
+                calls = calls.associateBy { it.conversationId.toString() }
+            )
+
+            calls
         }
     }
 
@@ -102,6 +113,7 @@ actual class CallManagerImpl(
             clientId = selfClientId,
             readyHandler = { version: Int, arg: Pointer? ->
                 callingLogger.i("$TAG -> readyHandler")
+                onCallingReady()
             },
             sendHandler = { context, conversationId, avsSelfUserId, avsSelfClientId, _, _, data, _, _, _ ->
                 if (selfUserId != avsSelfUserId && selfClientId != avsSelfClientId) {
@@ -338,8 +350,73 @@ actual class CallManagerImpl(
         return AvsCallBackError.NONE.value
     }
 
+    /**
+     * onCallingReady
+     * Will start the handlers for: ParticipantsChanged, NetworkQuality, ClientsRequest and ActiveSpeaker
+     */
+    private fun onCallingReady() {
+        val participantChangedHandler = ParticipantChangedHandlerImpl(
+            participantMapper = callMapper.participantMapper,
+            onParticipantsChanged = { conversationId, participants, clients ->
+                onParticipantsChanged(
+                    conversationId = conversationId,
+                    participants = participants
+                )
+
+                scope.launch {
+                    withCalling {
+                        wcall_request_video_streams(
+                            inst = deferredHandle.await(),
+                            convId = conversationId,
+                            mode = DEFAULT_REQUEST_VIDEO_STREAMS_MODE,
+                            json = clients.toJsonString()
+                        )
+                    }
+                }
+            }
+        )
+
+        scope.launch {
+            withCalling {
+                wcall_set_participant_changed_handler(
+                    inst = deferredHandle.await(),
+                    wcall_participant_changed_h = participantChangedHandler,
+                    arg = null
+                )
+            }
+        }
+
+        // TODO: Network Quality handler
+        // TODO: Clients Request handler
+        // TODO: Active Speakers handler
+    }
+
+    private fun onParticipantsChanged(
+        conversationId: String,
+        participants: List<Participant>
+    ) {
+        val callProfile = _callProfile.value
+
+        callProfile[conversationId]?.let {
+            callingLogger.i("onParticipantsChanged() - conversationId: $conversationId")
+            participants.forEachIndexed { index, participant ->
+                callingLogger.i("onParticipantsChanged() - Participant[$index/${participants.size}]: ${participant.id}")
+            }
+
+            _callProfile.value = callProfile.copy(
+                calls = callProfile.calls.apply {
+                    this.toMutableMap()[conversationId] = it.copy(
+                        participants = participants,
+                        maxParticipants = max(it.maxParticipants, participants.size + 1)
+                    )
+                }
+            )
+        }
+    }
+
     companion object {
         private const val TAG = "CallManager"
         private const val UTF8_ENCODING = "UTF-8"
+        private const val DEFAULT_REQUEST_VIDEO_STREAMS_MODE = 0
     }
 }
