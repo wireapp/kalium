@@ -8,7 +8,6 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.call.CallDataSource
 import com.wire.kalium.logic.data.call.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
-import com.wire.kalium.logic.data.call.UpdateCallStatusById
 import com.wire.kalium.logic.data.client.ClientDataSource
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
@@ -159,7 +158,8 @@ abstract class UserSessionScopeCommon(
 
     private val callRepository: CallRepository
         get() = CallDataSource(
-            callApi = authenticatedDataSourceSet.authenticatedNetworkContainer.callApi
+            callApi = authenticatedDataSourceSet.authenticatedNetworkContainer.callApi,
+            messageSender = messageSender
         )
 
     protected abstract val clientConfig: ClientConfig
@@ -222,18 +222,13 @@ abstract class UserSessionScopeCommon(
     private val callMapper: CallMapper
         get() = CallMapper()
 
-    private val updateCallStatusById: UpdateCallStatusById
-        get() = UpdateCallStatusById()
-
     private val callManager by lazy {
         globalCallManager.getCallManagerForClient(
             userId = userId,
             callRepository = callRepository,
             userRepository = userRepository,
             clientRepository = clientRepository,
-            callMapper = callMapper,
-            messageSender = messageSender,
-            updateCallStatusById = updateCallStatusById
+            callMapper = callMapper
         )
     }
     protected abstract val protoContentMapper: ProtoContentMapper
@@ -295,7 +290,7 @@ abstract class UserSessionScopeCommon(
 
     val team: TeamScope get() = TeamScope(userRepository, teamRepository, syncManager)
 
-    val calls: CallsScope get() = CallsScope(callManager, syncManager)
+    val calls: CallsScope get() = CallsScope(callManager, callRepository, syncManager)
 
     val connection: ConnectionScope get() = ConnectionScope(connectionRepository)
 

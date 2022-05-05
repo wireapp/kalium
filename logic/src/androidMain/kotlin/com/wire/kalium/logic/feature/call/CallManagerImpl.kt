@@ -10,12 +10,9 @@ import com.wire.kalium.logic.data.call.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.call.ConversationType
-import com.wire.kalium.logic.data.call.SendCallingMessage
-import com.wire.kalium.logic.data.call.UpdateCallStatusById
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.toConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
@@ -28,7 +25,6 @@ import com.wire.kalium.logic.feature.call.scenario.OnIncomingCall
 import com.wire.kalium.logic.feature.call.scenario.OnMissedCall
 import com.wire.kalium.logic.feature.call.scenario.OnSFTRequest
 import com.wire.kalium.logic.feature.call.scenario.OnSendOTR
-import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.util.toInt
 import com.wire.kalium.logic.util.toTimeInMillis
 import kotlinx.coroutines.CoroutineScope
@@ -37,6 +33,7 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 
@@ -45,15 +42,14 @@ actual class CallManagerImpl(
     private val callRepository: CallRepository,
     private val userRepository: UserRepository,
     private val clientRepository: ClientRepository,
-    private val callMapper: CallMapper,
-    val updateCallStatusById: UpdateCallStatusById,
-    val messageSender: MessageSender,
+    private val callMapper: CallMapper
 ) : CallManager {
 
     private val job = SupervisorJob() // TODO clear job method
     private val scope = CoroutineScope(job + Dispatchers.IO)
     private val deferredHandle: Deferred<Handle>
 
+    private val calls = MutableStateFlow(listOf<Call>())
     override val allCalls = calls.asStateFlow()
 
     private val clientId: Deferred<ClientId> = scope.async(start = CoroutineStart.LAZY) {
@@ -84,13 +80,13 @@ actual class CallManagerImpl(
                 callingLogger.i("$TAG -> readyHandler")
             },
             //TODO inject all of these CallbackHandlers in class constructor
-            sendHandler = OnSendOTR(deferredHandle, calling, selfUserId, selfClientId, SendCallingMessage(messageSender)),
+            sendHandler = OnSendOTR(deferredHandle, calling, selfUserId, selfClientId, callRepository),
             sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository),
-            incomingCallHandler = OnIncomingCall(updateCallStatusById),
-            missedCallHandler = OnMissedCall(updateCallStatusById),
-            answeredCallHandler = OnAnsweredCall(updateCallStatusById),
-            establishedCallHandler = OnEstablishedCall(updateCallStatusById),
-            closeCallHandler = OnCloseCall(updateCallStatusById),
+            incomingCallHandler = OnIncomingCall(callRepository),
+            missedCallHandler = OnMissedCall(callRepository),
+            answeredCallHandler = OnAnsweredCall(callRepository),
+            establishedCallHandler = OnEstablishedCall(callRepository),
+            closeCallHandler = OnCloseCall(callRepository),
             metricsHandler = { conversationId: String, metricsJson: String, arg: Pointer? ->
                 callingLogger.i("$TAG -> metricsHandler")
             },
@@ -137,7 +133,7 @@ actual class CallManagerImpl(
         isAudioCbr: Boolean
     ) {
         callingLogger.d("$TAG -> starting call..")
-        updateCallStatusById.updateCallStatus(
+        callRepository.updateCallStatusById(
             conversationId = conversationId.toString(),
             status = CallStatus.STARTED
         )

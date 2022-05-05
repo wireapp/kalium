@@ -6,7 +6,7 @@ import com.wire.kalium.calling.callbacks.SendHandler
 import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.calling.types.Size_t
 import com.wire.kalium.logic.callingLogger
-import com.wire.kalium.logic.data.call.SendCallingMessage
+import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.toConversationId
 import com.wire.kalium.logic.data.user.toUserId
@@ -20,7 +20,7 @@ class OnSendOTR(
     private val calling: Calling,
     private val selfUserId: String,
     private val selfClientId: String,
-    private val sendCallingMessage: SendCallingMessage
+    private val callRepository: CallRepository
 ) : SendHandler {
     override fun onSend(
         context: Pointer?,
@@ -39,7 +39,7 @@ class OnSendOTR(
             AvsCallBackError.INVALID_ARGUMENT.value
         } else {
             callingLogger.i("${CallManagerImpl.TAG} -> sendHandler success")
-            OnHttpRequest(handle, calling, sendCallingMessage).sendHandlerSuccess(
+            OnHttpRequest(handle, calling, callRepository).sendHandlerSuccess(
                 context = context,
                 messageString = data?.getString(0, CallManagerImpl.UTF8_ENCODING),
                 conversationId = conversationId.toConversationId(),
