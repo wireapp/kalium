@@ -24,7 +24,7 @@ class CallMapper {
 
     inner class ParticipantMapper {
 
-        fun fromAVSMemberToParticipant(member: CallMember): Participant = with(member) {
+        fun fromCallMemberToParticipant(member: CallMember): Participant = with(member) {
             Participant(
                 id = QualifiedID(
                     value = userid.removeDomain(),
@@ -35,7 +35,7 @@ class CallMapper {
             )
         }
 
-        fun fromAVSMemberToAvsClient(member: CallMember): CallClient = with(member) {
+        fun fromCallMemberToCallClient(member: CallMember): CallClient = with(member) {
             CallClient(
                 userId = QualifiedID(
                     value = userid.removeDomain(),

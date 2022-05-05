@@ -21,8 +21,8 @@ class ParticipantChangedHandlerImpl(
 
         val participantsChange = Json.decodeFromString<CallParticipants>(data)
         for (member in participantsChange.members) {
-            participants.add(participantMapper.fromAVSMemberToParticipant(member = member))
-            clients.add(participantMapper.fromAVSMemberToAvsClient(member = member))
+            participants.add(participantMapper.fromCallMemberToParticipant(member = member))
+            clients.add(participantMapper.fromCallMemberToCallClient(member = member))
         }
 
         onParticipantsChanged(
