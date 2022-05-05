@@ -27,12 +27,6 @@ class SendConnectionRequestUseCaseTest {
         sendConnectionRequestUseCase = SendConnectionRequestUseCaseImpl(connectionRepository)
     }
 
-    private val qualifiedID: UserId
-        get() {
-            val userId = UserId("some_user", "some_domain")
-            return userId
-        }
-
     @Test
     fun givenAConnectionRequest_whenInvokingASendAConnectionRequest_thenShouldReturnsASuccessResult() = runTest {
         // given
