@@ -1,9 +1,21 @@
 package com.wire.kalium.logic.data.notification
 
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.feature.call.CallStatus
 
 /**
- * Kalium local data classes that contains all the necessary data for displaying Notifications,
+ * Kalium local data classes that contains all the necessary data for displaying Call Notification, or display call itself
+ * and suppose to be mapped (in platform side) into platform-specific objects to show the notification, or call
+ */
+data class LocalNotificationCall(
+    val conversationId: ConversationId,
+    val status: CallStatus,
+    val notificationTitle: String,
+    val notificationBody: String?
+)
+
+/**
+ * Kalium local data classes that contains all the necessary data for displaying Message Notifications,
  * and suppose to be mapped (in platform side) into platform-specific objects to show the notification
  */
 data class LocalNotificationConversation(
