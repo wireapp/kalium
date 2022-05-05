@@ -56,25 +56,19 @@ sealed class StorageFailure : CoreFailure() {
     class Generic(val rootCause: Throwable) : StorageFailure()
 }
 
-internal inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<T>): Either<NetworkFailure, T> {
-    return try {
-        when (val result = networkCall()) {
-            is NetworkResponse.Success -> Either.Right(result.value)
-            is NetworkResponse.Error -> {
-                kaliumLogger.e(result.kException.stackTraceToString())
-                val exception = result.kException
-                if (exception is KaliumException.GenericError && exception.cause is IOException) {
-                    Either.Left(NetworkFailure.NoNetworkConnection(exception))
-                } else {
-                    Either.Left(NetworkFailure.ServerMiscommunication(result.kException))
-                }
+internal inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<T>): Either<NetworkFailure, T> =
+    when (val result = networkCall()) {
+        is NetworkResponse.Success -> Either.Right(result.value)
+        is NetworkResponse.Error -> {
+            kaliumLogger.e(result.kException.stackTraceToString())
+            val exception = result.kException
+            if (exception is KaliumException.GenericError && exception.cause is IOException) {
+                Either.Left(NetworkFailure.NoNetworkConnection(exception))
+            } else {
+                Either.Left(NetworkFailure.ServerMiscommunication(result.kException))
             }
         }
-    } catch (e: Exception) {
-        kaliumLogger.e(e.stackTraceToString())
-        Either.Left(NetworkFailure.ServerMiscommunication(e))
     }
-}
 
 internal inline fun <T : Any> wrapCryptoRequest(cryptoRequest: () -> T): Either<ProteusFailure, T> {
     return try {
