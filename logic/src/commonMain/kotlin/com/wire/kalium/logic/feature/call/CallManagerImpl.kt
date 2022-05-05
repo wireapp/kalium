@@ -5,7 +5,6 @@ import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import kotlinx.coroutines.flow.StateFlow
 
 interface CallManager {
     suspend fun onCallingMessageReceived(message: Message, content: MessageContent.Calling)
@@ -20,7 +19,6 @@ interface CallManager {
     suspend fun endCall(conversationId: ConversationId)
     suspend fun rejectCall(conversationId: ConversationId)
     suspend fun muteCall(shouldMute: Boolean)
-    val allCalls: StateFlow<List<Call>>
 }
 
 expect class CallManagerImpl : CallManager
