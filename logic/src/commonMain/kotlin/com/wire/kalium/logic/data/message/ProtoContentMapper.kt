@@ -73,15 +73,7 @@ class ProtoContentMapperImpl : ProtoContentMapper {
                 GenericMessage.Content.Deleted(MessageDelete(messageId = messageContent.messageId))
             }
             is MessageContent.DeleteForMe -> {
-                val qualifiedConversationId =
-                    QualifiedConversationId(id = messageContent.conversationId.value, domain = messageContent.conversationId.domain)
-                GenericMessage.Content.Hidden(
-                    MessageHide(
-                        conversationId = messageContent.conversationId.value,
-                        messageId = messageContent.messageId,
-                        qualifiedConversationId = qualifiedConversationId
-                    )
-                )
+                GenericMessage.Content.Hidden(MessageHide(messageId = messageContent.messageId))
             }
             else -> {
                 throw IllegalArgumentException("Unexpected message content type: $messageContent")
@@ -111,7 +103,7 @@ class ProtoContentMapperImpl : ProtoContentMapper {
             is GenericMessage.Content.Composite -> MessageContent.Unknown
             is GenericMessage.Content.Confirmation -> MessageContent.Unknown
             is GenericMessage.Content.DataTransfer -> MessageContent.Unknown
-            is GenericMessage.Content.Deleted -> MessageContent.DeleteMessage(genericMessage.messageId)
+            is GenericMessage.Content.Deleted -> MessageContent.DeleteMessage(protoContent.value.messageId)
             is GenericMessage.Content.Edited -> MessageContent.Unknown
             is GenericMessage.Content.Ephemeral -> MessageContent.Unknown
             is GenericMessage.Content.External -> MessageContent.Unknown
@@ -119,13 +111,7 @@ class ProtoContentMapperImpl : ProtoContentMapper {
             is GenericMessage.Content.Hidden -> {
                 val hiddenMessage = genericMessage.hidden
                 if (hiddenMessage != null) {
-                    MessageContent.DeleteForMe(
-                        hiddenMessage.messageId,
-                        ConversationId(
-                            hiddenMessage.qualifiedConversationId!!.id,
-                            hiddenMessage.qualifiedConversationId!!.domain
-                        )
-                    )
+                    MessageContent.DeleteForMe(hiddenMessage.messageId)
                 } else {
                     kaliumLogger.w("Hidden message is null. Message UUID = $genericMessage.")
                     MessageContent.Unknown

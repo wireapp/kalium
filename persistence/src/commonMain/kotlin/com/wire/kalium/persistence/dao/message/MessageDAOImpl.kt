@@ -43,7 +43,8 @@ class MessageMapper {
             date = msg.date,
             senderUserId = msg.sender_user_id,
             senderClientId = msg.sender_client_id,
-            status = msg.status
+            status = msg.status,
+            visibility = msg.visibility
         )
     }
 }
@@ -55,8 +56,8 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
 
     override suspend fun deleteMessage(id: String) = queries.deleteMessageById(id)
 
-    override suspend fun updateMessageVisibility(visibility: MessageEntity.Visibility, id: String, conversationId: QualifiedIDEntity) =
-        queries.updateMessageVisibility(visibility, "", id, conversationId)
+    override suspend fun markMessageAsDeleted(id: String) =
+        queries.markMessageAsDeleted(id)
 
     override suspend fun deleteAllMessages() = queries.deleteAllMessages()
 
