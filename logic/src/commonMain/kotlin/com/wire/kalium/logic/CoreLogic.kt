@@ -22,13 +22,15 @@ abstract class CoreLogicCommon(
     val sessionRepository: SessionRepository by lazy {
         getSessionRepo()
     }
+
     protected abstract fun getSessionRepo(): SessionRepository
 
     protected abstract val globalPreferences: KaliumPreferences
     protected abstract val globalDatabase: GlobalDatabaseProvider
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
-    fun getAuthenticationScope(): AuthenticationScope = AuthenticationScope( clientLabel, sessionRepository, globalDatabase)
+    fun getAuthenticationScope(): AuthenticationScope =
+        AuthenticationScope(clientLabel, sessionRepository, globalDatabase, globalPreferences)
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     abstract fun getSessionScope(userId: UserId): UserSessionScope

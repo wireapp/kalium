@@ -14,7 +14,7 @@ object Versions {
     const val cryptoboxAndroid = "1.1.3"
     const val javaxCrypto = "1.1.0-alpha03"
     const val kover = "0.4.4"
-    const val ktor2 = "2.0.0-beta-1"
+    const val ktor = "2.0.0-beta-1"
     const val okHttp = "4.9.3"
     const val mockative = "1.1.4"
     const val androidWork = "2.7.1"
@@ -94,7 +94,7 @@ object Dependencies {
         const val composeMaterial = "androidx.compose.material:material:${Versions.compose}"
         const val composeTooling = "androidx.compose.ui:ui-tooling:${Versions.compose}"
         const val coroutines = "org.jetbrains.kotlinx:kotlinx-coroutines-android:${Versions.coroutines}"
-        const val ktor = "io.ktor:ktor-client-android:${Versions.ktor2}"
+        const val ktor = "io.ktor:ktor-client-android:${Versions.ktor}"
         const val securityCrypto = "androidx.security:security-crypto:${Versions.androidSecurity}"
         const val desugarJdkLibs = "com.android.tools:desugar_jdk_libs:${Versions.desugarJdk}"
     }
@@ -133,17 +133,17 @@ object Dependencies {
     }
 
     object Ktor {
-        const val core = "io.ktor:ktor-client-core:${Versions.ktor2}"
-        const val json = "io.ktor:ktor-client-json:${Versions.ktor2}"
-        const val serialization = "io.ktor:ktor-serialization-kotlinx-json:${Versions.ktor2}"
-        const val logging = "io.ktor:ktor-client-logging:${Versions.ktor2}"
-        const val authClient = "io.ktor:ktor-client-auth:${Versions.ktor2}"
-        const val contentNegotiation = "io.ktor:ktor-client-content-negotiation:${Versions.ktor2}"
-        const val webSocket = "io.ktor:ktor-client-websockets:${Versions.ktor2}"
-        const val utils = "io.ktor:ktor-utils:${Versions.ktor2}"
-        const val mock = "io.ktor:ktor-client-mock:${Versions.ktor2}"
-        const val okHttp = "io.ktor:ktor-client-okhttp:${Versions.ktor2}"
-        const val iosHttp = "io.ktor:ktor-client-ios:${Versions.ktor2}"
+        const val core = "io.ktor:ktor-client-core:${Versions.ktor}"
+        const val json = "io.ktor:ktor-client-json:${Versions.ktor}"
+        const val serialization = "io.ktor:ktor-serialization-kotlinx-json:${Versions.ktor}"
+        const val logging = "io.ktor:ktor-client-logging:${Versions.ktor}"
+        const val authClient = "io.ktor:ktor-client-auth:${Versions.ktor}"
+        const val contentNegotiation = "io.ktor:ktor-client-content-negotiation:${Versions.ktor}"
+        const val webSocket = "io.ktor:ktor-client-websockets:${Versions.ktor}"
+        const val utils = "io.ktor:ktor-utils:${Versions.ktor}"
+        const val mock = "io.ktor:ktor-client-mock:${Versions.ktor}"
+        const val okHttp = "io.ktor:ktor-client-okhttp:${Versions.ktor}"
+        const val iosHttp = "io.ktor:ktor-client-ios:${Versions.ktor}"
     }
 
     object SqlDelight {
@@ -176,7 +176,7 @@ object Dependencies {
     }
 
     object Calling {
-        const val avs =  "com.wire:avs:${Versions.avs}"
+        const val avs = "com.wire:avs:${Versions.avs}"
         const val jna = "net.java.dev.jna:jna:${Versions.jna}"
     }
 }

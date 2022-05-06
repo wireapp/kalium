@@ -10,7 +10,10 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.network.api.user.pushToken.PushTokenBody
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
+import com.wire.kalium.persistence.client.NotificationTokenEntity
+import com.wire.kalium.persistence.client.TokenStorage
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import io.ktor.util.encodeBase64
 import com.wire.kalium.persistence.dao.client.Client as ClientEntity
@@ -24,6 +27,7 @@ interface ClientRepository {
     suspend fun selfListOfClients(): Either<NetworkFailure, List<Client>>
     suspend fun clientInfo(clientId: ClientId /* = com.wire.kalium.logic.data.id.PlainId */): Either<NetworkFailure, Client>
     suspend fun saveNewClients(userId: UserId, clients: List<ClientId>): Either<CoreFailure, Unit>
+    suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit>
 }
 
 class ClientDataSource(
@@ -61,11 +65,14 @@ class ClientDataSource(
     override suspend fun registerMLSClient(clientId: ClientId, publicKey: ByteArray): Either<CoreFailure, Unit> = suspending {
         clientRemoteRepository.registerMLSClient(clientId, publicKey.encodeBase64())
     }
-  
+
     override suspend fun saveNewClients(userId: UserId, clients: List<ClientId>): Either<CoreFailure, Unit> =
         userMapper.toUserIdPersistence(userId).let { userEntity ->
             clients.map { ClientEntity(userEntity, it.value) }.let { clientEntityList ->
                 wrapStorageRequest { clientDAO.insertClients(clientEntityList) }
             }
         }
+
+    override suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit> = clientRemoteRepository.registerToken(body)
+
 }

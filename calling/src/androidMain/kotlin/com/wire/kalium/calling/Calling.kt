@@ -12,6 +12,7 @@ import com.wire.kalium.calling.callbacks.IncomingCallHandler
 import com.wire.kalium.calling.callbacks.LogHandler
 import com.wire.kalium.calling.callbacks.MetricsHandler
 import com.wire.kalium.calling.callbacks.MissedCallHandler
+import com.wire.kalium.calling.callbacks.ParticipantChangedHandler
 import com.wire.kalium.calling.callbacks.ReadyHandler
 import com.wire.kalium.calling.callbacks.SFTRequestHandler
 import com.wire.kalium.calling.callbacks.SendHandler
@@ -87,6 +88,19 @@ interface Calling : Library {
         reason: String,
         arg: Pointer?
     ): Int
+
+    fun wcall_request_video_streams(
+        inst: Handle,
+        convId: String,
+        mode: Int,
+        json: String
+    )
+
+    fun wcall_set_participant_changed_handler(
+        inst: Handle,
+        wcall_participant_changed_h: ParticipantChangedHandler,
+        arg: Pointer?
+    )
 
     companion object {
         val INSTANCE by lazy { Native.load("avs", Calling::class.java)!! }
