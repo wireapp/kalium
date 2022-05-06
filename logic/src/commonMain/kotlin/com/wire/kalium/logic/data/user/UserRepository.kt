@@ -89,7 +89,7 @@ class UserDataSource(
                 userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(ids.map(idMapper::toApiModel)))
             }.flatMap {
                 // TODO: handle storage error
-                userDAO.insertUsers(it.map(userMapper::fromApiModelToDaoModel))
+                userDAO.updateUsers(it.map(userMapper::fromApiModelToDaoModel))
                 Either.Right(Unit)
             }
         }

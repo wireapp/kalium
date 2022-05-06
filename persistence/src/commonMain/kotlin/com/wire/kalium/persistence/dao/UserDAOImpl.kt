@@ -67,6 +67,14 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
         queries.updateUser(user.name, user.handle, user.email, user.accentId, user.previewAssetId, user.completeAssetId, user.id)
     }
 
+    override suspend fun updateUsers(users: List<UserEntity>) {
+        queries.transaction {
+            users.forEach { user ->
+                queries.updateUser(user.name, user.handle, user.email, user.accentId, user.previewAssetId, user.completeAssetId, user.id)
+            }
+        }
+    }
+
     override suspend fun getAllUsers(): Flow<List<UserEntity>> = queries.selectAllUsers()
         .asFlow()
         .mapToList()
