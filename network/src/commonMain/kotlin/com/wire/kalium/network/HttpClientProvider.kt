@@ -54,10 +54,11 @@ internal fun provideBaseHttpClient(
             level = LogLevel.ALL
         }
     }
-    // TODO: WebSockets are not supported on iOS. We need to come up with a library-agnostic/platform-specific approach
+
     install(WebSockets)
     install(ContentNegotiation) {
         json(KtxSerializer.json)
     }
+    expectSuccess = false
     config()
 }
