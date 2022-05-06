@@ -27,7 +27,7 @@ interface MessageRepository {
     suspend fun persistMessage(message: Message): Either<CoreFailure, Unit>
     suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun deleteMessage(messageUuid: String): Either<CoreFailure, Unit>
-    suspend fun markMessageAsDeleted(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
+    suspend fun markMessageAsDeleted(messageUuid: String, conversationId: ConversationId): Either<StorageFailure, Unit>
     suspend fun updateMessageStatus(
         messageStatus: MessageEntity.Status,
         conversationId: ConversationId,
