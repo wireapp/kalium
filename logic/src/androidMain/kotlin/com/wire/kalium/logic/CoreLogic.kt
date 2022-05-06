@@ -54,8 +54,8 @@ actual class CoreLogic(
             val proteusClient: ProteusClient = ProteusClientImpl(rootProteusPath)
             runBlocking { proteusClient.open() }
 
-            val workScheduler = WorkScheduler(appContext, userId)
-            val syncManager = SyncManagerImpl(workScheduler)
+            val userSessionWorkScheduler = WorkScheduler.UserSession(appContext, userId)
+            val syncManager = SyncManagerImpl(userSessionWorkScheduler)
 
             val userIDEntity = idMapper.toDaoModel(userId)
             val encryptedSettingsHolder =
@@ -66,7 +66,7 @@ actual class CoreLogic(
                 rootAccountPath,
                 networkContainer,
                 proteusClient,
-                workScheduler,
+                userSessionWorkScheduler,
                 syncManager,
                 userDatabaseProvider,
                 userPreferencesSettings,
@@ -86,6 +86,10 @@ actual class CoreLogic(
     }
 
     override val globalCallManager: GlobalCallManager = GlobalCallManager(
+        appContext = appContext
+    )
+
+    override val globalWorkScheduler: WorkScheduler.Global = WorkScheduler.Global(
         appContext = appContext
     )
 }

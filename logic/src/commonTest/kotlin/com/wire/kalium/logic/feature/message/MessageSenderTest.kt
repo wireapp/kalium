@@ -244,7 +244,7 @@ class MessageSenderTest {
         messageSender.trySendingOutgoingMessageById(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
 
         verify(messageSendingScheduler)
-            .suspendFunction(messageSendingScheduler::scheduleSendingOfPendingMessages)
+            .function(messageSendingScheduler::scheduleSendingOfPendingMessages)
             .wasInvoked(exactly = once)
     }
 

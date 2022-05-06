@@ -2,7 +2,6 @@ package com.wire.kalium.logic.sync
 
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.kaliumLogger
@@ -14,9 +13,8 @@ import com.wire.kalium.logic.kaliumLogger
 internal class PendingMessagesSenderWorker(
     private val messageRepository: MessageRepository,
     private val messageSender: MessageSender,
-    private val userId: UserId,
-    userSessionScope: UserSessionScope
-) : UserSessionWorker(userSessionScope) {
+    private val userId: UserId
+) : DefaultWorker() {
 
     /**
      * Attempt to send all pending messages for the user.

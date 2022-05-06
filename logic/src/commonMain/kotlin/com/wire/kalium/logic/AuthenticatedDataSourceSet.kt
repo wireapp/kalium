@@ -12,7 +12,7 @@ class AuthenticatedDataSourceSet(
     val authenticatedRootDir: String,
     val authenticatedNetworkContainer: AuthenticatedNetworkContainer,
     val proteusClient: ProteusClient,
-    val workScheduler: WorkScheduler,
+    val userSessionWorkScheduler: WorkScheduler.UserSession,
     val syncManager: SyncManager,
     val userDatabaseProvider: UserDatabaseProvider,
     val kaliumPreferencesSettings: KaliumPreferencesSettings,

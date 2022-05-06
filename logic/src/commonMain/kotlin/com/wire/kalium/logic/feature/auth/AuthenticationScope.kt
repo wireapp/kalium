@@ -1,5 +1,7 @@
 package com.wire.kalium.logic.feature.auth
 
+import com.wire.kalium.logic.configuration.ApiVersionRepository
+import com.wire.kalium.logic.configuration.ApiVersionRepositoryImpl
 import com.wire.kalium.logic.configuration.GetServerConfigUseCase
 import com.wire.kalium.logic.configuration.ServerConfigDataSource
 import com.wire.kalium.logic.configuration.ServerConfigMapper
@@ -71,4 +73,6 @@ class AuthenticationScope(
     val register: RegisterScope get() = RegisterScope(registerAccountRepository)
     val ssoLoginScope: SSOLoginScope get() = SSOLoginScope(ssoLoginRepository, sessionMapper)
     val saveNotificationToken: SaveNotificationTokenUseCase get() = SaveNotificationTokenUseCase(notificationTokenRepository)
+
+    internal val apiVersionRepository: ApiVersionRepository get() = ApiVersionRepositoryImpl()
 }
