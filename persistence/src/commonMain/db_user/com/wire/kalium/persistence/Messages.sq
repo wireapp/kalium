@@ -21,6 +21,7 @@ CREATE TABLE Message (
       asset_token TEXT,
       asset_domain TEXT,
       asset_encryption_algorithm TEXT,
+      asset_download_status TEXT AS MessageEntity.DownloadStatus NOT NULL,
 
       -- Base message fields
       content_type TEXT AS ContentType NOT NULL,
@@ -50,8 +51,8 @@ SET visibility = ?, text_body = ?
 WHERE id = ?;
 
 insertMessage:
-INSERT INTO Message(id, text_body, asset_mime_type, asset_size, asset_name, asset_image_width, asset_image_height, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, content_type, conversation_id, date, sender_user_id, sender_client_id, visibility, status)
-VALUES(?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO Message(id, text_body, asset_mime_type, asset_size, asset_name, asset_image_width, asset_image_height, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, asset_download_status, content_type, conversation_id, date, sender_user_id, sender_client_id, visibility, status)
+VALUES(?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(id, conversation_id) DO UPDATE SET
 id = excluded.id,
 text_body = excluded.text_body,
@@ -66,6 +67,7 @@ asset_id = excluded.asset_id,
 asset_token = excluded.asset_token,
 asset_domain = excluded.asset_domain,
 asset_encryption_algorithm = excluded.asset_encryption_algorithm,
+asset_download_status = excluded.asset_download_status,
 content_type = excluded.content_type,
 text_body = excluded.text_body,
 date = excluded.date,
@@ -76,12 +78,17 @@ status = excluded.status;
 
 updateMessages:
 UPDATE Message
-SET text_body = ?, asset_mime_type = ?, asset_size = ?, asset_name = ?, asset_image_width = ?, asset_image_height = ?, asset_otr_key = ?, asset_sha256 = ?, asset_id = ?, asset_token = ?, asset_domain = ?, asset_encryption_algorithm = ?, content_type = ?, date = ?, sender_user_id = ?, sender_client_id = ?, visibility = ?, status = ?
+SET text_body = ?, asset_mime_type = ?, asset_size = ?, asset_name = ?, asset_image_width = ?, asset_image_height = ?, asset_otr_key = ?, asset_sha256 = ?, asset_id = ?, asset_token = ?, asset_domain = ?, asset_encryption_algorithm = ?, asset_download_status = ?, content_type = ?, date = ?, sender_user_id = ?, sender_client_id = ?, visibility = ?, status = ?
 WHERE id = ? AND conversation_id = ?;
 
 updateMessageStatus:
 UPDATE Message
 SET status = ?
+WHERE id = ? AND conversation_id = ?;
+
+updateAssetDownloadStatus:
+UPDATE Message
+SET asset_download_status = ?
 WHERE id = ? AND conversation_id = ?;
 
 updateMessageDate:

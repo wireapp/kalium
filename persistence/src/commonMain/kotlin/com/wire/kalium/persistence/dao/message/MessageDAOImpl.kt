@@ -122,6 +122,10 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             status = message.status
         )
 
+    override suspend fun updateAssetDownloadStatus(downloadStatus: MessageEntity.DownloadStatus, id: String) {
+        queries.updateAssetDownloadStatus(downloadStatus, id)
+    }
+    
     private fun contentTypeOf(content: MessageEntity.MessageEntityContent): MessageEntity.ContentType = when (content) {
         is TextMessageContent -> TEXT
         is AssetMessageContent -> ASSET
