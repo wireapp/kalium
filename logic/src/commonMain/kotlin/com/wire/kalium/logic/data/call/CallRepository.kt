@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.call
 
+import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
@@ -21,7 +22,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.datetime.Clock
-import java.util.UUID
 
 interface CallRepository {
     suspend fun getCallConfigResponse(limit: Int?): Either<CoreFailure, String>
@@ -82,7 +82,7 @@ internal class CallDataSource(
     ): Either<CoreFailure, Unit> {
         val messageContent = MessageContent.Calling(data)
         val date = Clock.System.now().toString()
-        val message = Message(UUID.randomUUID().toString(), messageContent, conversationId, date, userId, clientId, Message.Status.SENT)
+        val message = Message(uuid4().toString(), messageContent, conversationId, date, userId, clientId, Message.Status.SENT)
         return messageSender.trySendingOutgoingMessage(conversationId, message)
     }
 
