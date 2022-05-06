@@ -47,7 +47,7 @@ class MessageMapperImpl(private val idMapper: IdMapper) : MessageMapper {
                         assetSha256Key = remoteData.sha256,
                         assetId = remoteData.assetId,
                         assetToken = remoteData.assetToken,
-                        assetEncryptionAlgorithm = remoteData.encryptionAlgorithm?.name
+                        assetEncryptionAlgorithm = remoteData.encryptionAlgorithm?.name,
                     )
                 }
             }

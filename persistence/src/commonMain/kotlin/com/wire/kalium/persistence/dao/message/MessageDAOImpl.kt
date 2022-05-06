@@ -8,6 +8,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.ASSET
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.TEXT
+import com.wire.kalium.persistence.dao.message.MessageEntity.DownloadStatus.NOT_DOWNLOADED
 import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityContent.AssetMessageContent
 import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityContent.TextMessageContent
 import kotlinx.coroutines.flow.Flow
@@ -33,6 +34,7 @@ class MessageMapper {
                         assetToken = msg.asset_token ?: "",
                         assetDomain = msg.asset_domain ?: "",
                         assetEncryptionAlgorithm = msg.asset_encryption_algorithm ?: "",
+                        assetDownloadStatus = NOT_DOWNLOADED
                     )
                 }
             },
@@ -86,6 +88,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             asset_token = if (message.content is AssetMessageContent) message.content.assetToken else null,
             asset_domain = if (message.content is AssetMessageContent) message.content.assetDomain else null,
             asset_encryption_algorithm = if (message.content is AssetMessageContent) message.content.assetEncryptionAlgorithm else null,
+            asset_download_status = if (message.content is AssetMessageContent) message.content.assetDownloadStatus else NOT_DOWNLOADED,
             conversation_id = message.conversationId,
             date = message.date,
             sender_user_id = message.senderUserId,
@@ -114,6 +117,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             asset_token = if (message.content is AssetMessageContent) message.content.assetToken else null,
             asset_domain = if (message.content is AssetMessageContent) message.content.assetDomain else null,
             asset_encryption_algorithm = if (message.content is AssetMessageContent) message.content.assetEncryptionAlgorithm else null,
+            asset_download_status = if (message.content is AssetMessageContent) message.content.assetDownloadStatus else NOT_DOWNLOADED,
             conversation_id = message.conversationId,
             date = message.date,
             sender_user_id = message.senderUserId,
@@ -122,10 +126,14 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             status = message.status
         )
 
-    override suspend fun updateAssetDownloadStatus(downloadStatus: MessageEntity.DownloadStatus, id: String) {
-        queries.updateAssetDownloadStatus(downloadStatus, id)
+    override suspend fun updateAssetDownloadStatus(
+        downloadStatus: MessageEntity.DownloadStatus,
+        id: String,
+        conversationId: QualifiedIDEntity
+    ) {
+        queries.updateAssetDownloadStatus(downloadStatus, id, conversationId)
     }
-    
+
     private fun contentTypeOf(content: MessageEntity.MessageEntityContent): MessageEntity.ContentType = when (content) {
         is TextMessageContent -> TEXT
         is AssetMessageContent -> ASSET

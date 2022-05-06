@@ -17,4 +17,8 @@ data class Message(
     enum class Status {
         PENDING, SENT, READ, FAILED
     }
+
+    enum class DownloadStatus {
+        NOT_DOWNLOADED, IN_PROGRESS, DOWNLOADED, FAILED
+    }
 }

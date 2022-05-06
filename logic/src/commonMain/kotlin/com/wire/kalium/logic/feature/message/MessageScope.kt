@@ -107,6 +107,7 @@ class MessageScope(
         )
 
     val markMessagesAsNotified: MarkMessagesAsNotifiedUseCase get() = MarkMessagesAsNotifiedUseCaseImpl(conversationRepository)
+    val updateAssetMessageDownloadStatus: MarkMessagesAsNotifiedUseCase get() = MarkMessagesAsNotifiedUseCaseImpl(conversationRepository)
 
     val getNotifications: GetNotificationsUseCase get() = GetNotificationsUseCaseImpl(messageRepository, userRepository, conversationRepository)
 }
