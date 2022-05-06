@@ -71,6 +71,21 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
         queries.transaction {
             users.forEach { user ->
                 queries.updateUser(user.name, user.handle, user.email, user.accentId, user.previewAssetId, user.completeAssetId, user.id)
+                val recordDidNotExist = queries.selectChanges().executeAsOne() == 0L
+                if (recordDidNotExist) {
+                    queries.insertUser(
+                        user.id,
+                        user.name,
+                        user.handle,
+                        user.email,
+                        user.phone,
+                        user.accentId,
+                        user.team,
+                        user.connectionStatus,
+                        user.previewAssetId,
+                        user.completeAssetId
+                    )
+                }
             }
         }
     }
