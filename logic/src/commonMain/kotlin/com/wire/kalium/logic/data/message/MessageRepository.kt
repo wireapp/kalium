@@ -85,10 +85,8 @@ class MessageDataSource(
         return Either.Right(Unit)
     }
 
-    override suspend fun markMessageAsDeleted(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit> {
+    override suspend fun markMessageAsDeleted(messageUuid: String, conversationId: ConversationId): Either<StorageFailure, Unit> = wrapStorageRequest {
         messageDAO.markMessageAsDeleted(id = messageUuid)
-        //TODO: Handle failures
-        return Either.Right(Unit)
     }
 
     override suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message> =
