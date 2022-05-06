@@ -52,7 +52,7 @@ data class MessageEntity(
 interface MessageDAO {
     suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity)
     suspend fun deleteMessage(id: String)
-    suspend fun updateMessageVisibility(visibility: MessageEntity.Visibility, id: String, conversationId: QualifiedIDEntity)
+    suspend fun updateMessageVisibility(visibility: MessageEntity.Visibility, id: String)
     suspend fun deleteAllMessages()
     suspend fun insertMessage(message: MessageEntity)
     suspend fun insertMessages(messages: List<MessageEntity>)
