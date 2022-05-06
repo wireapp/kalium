@@ -11,6 +11,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.user.details.ListUserRequest
 import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.network.api.user.details.qualifiedIds
@@ -88,9 +89,9 @@ class UserDataSource(
             wrapApiRequest {
                 userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(ids.map(idMapper::toApiModel)))
             }.flatMap {
-                // TODO: handle storage error
-                userDAO.updateUsers(it.map(userMapper::fromApiModelToDaoModel))
-                Either.Right(Unit)
+                wrapStorageRequest {
+                    userDAO.updateUsers(it.map(userMapper::fromApiModelToDaoModel))
+                }
             }
         }
     }
