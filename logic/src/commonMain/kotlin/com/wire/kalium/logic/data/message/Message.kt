@@ -3,7 +3,6 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.persistence.dao.message.MessageEntity
 
 data class Message(
     val id: String,
@@ -12,9 +11,14 @@ data class Message(
     val date: String,
     val senderUserId: UserId,
     val senderClientId: ClientId,
-    val status: Status
+    val status: Status,
+    val visibility: Visibility = Visibility.VISIBLE
 ) {
     enum class Status {
         PENDING, SENT, READ, FAILED
+    }
+
+    enum class Visibility {
+        VISIBLE, DELETED, HIDDEN
     }
 }
