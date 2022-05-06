@@ -27,8 +27,7 @@ interface MessageRepository {
     suspend fun persistMessage(message: Message): Either<CoreFailure, Unit>
     suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun deleteMessage(messageUuid: String): Either<CoreFailure, Unit>
-    suspend fun softDeleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
-    suspend fun hideMessage(messageUuid: String): Either<CoreFailure, Unit>
+    suspend fun markMessageAsDeleted(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun updateMessageStatus(
         messageStatus: MessageEntity.Status,
         conversationId: ConversationId,
@@ -86,20 +85,8 @@ class MessageDataSource(
         return Either.Right(Unit)
     }
 
-    override suspend fun softDeleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit> {
-        messageDAO.updateMessageVisibility(
-            visibility = MessageEntity.Visibility.DELETED,
-            id = messageUuid
-        )
-        //TODO: Handle failures
-        return Either.Right(Unit)
-    }
-
-    override suspend fun hideMessage(messageUuid: String): Either<CoreFailure, Unit> {
-        messageDAO.updateMessageVisibility(
-            visibility = MessageEntity.Visibility.HIDDEN,
-            id = messageUuid
-        )
+    override suspend fun markMessageAsDeleted(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit> {
+        messageDAO.markMessageAsDeleted(id = messageUuid)
         //TODO: Handle failures
         return Either.Right(Unit)
     }
