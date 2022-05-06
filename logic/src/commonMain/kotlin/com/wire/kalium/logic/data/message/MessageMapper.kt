@@ -28,8 +28,6 @@ class MessageMapperImpl(private val idMapper: IdMapper) : MessageMapper {
         }
         val messageContent = when (message.content) {
             is MessageContent.Text -> TextMessageContent(messageBody = message.content.value)
-            is MessageContent.DeleteMessage -> TextMessageContent(messageBody = message.content.messageId)
-            is MessageContent.DeleteForMe -> TextMessageContent(messageBody = message.content.messageId)
             is MessageContent.Asset -> {
                 with(message.content.value) {
                     AssetMessageContent(
@@ -87,6 +85,11 @@ class MessageMapperImpl(private val idMapper: IdMapper) : MessageMapper {
             MessageEntity.Status.READ -> Message.Status.READ
             MessageEntity.Status.FAILED -> Message.Status.FAILED
         }
+        val visibility = when (message.visibility) {
+            MessageEntity.Visibility.VISIBLE -> Message.Visibility.VISIBLE
+            MessageEntity.Visibility.HIDDEN -> Message.Visibility.HIDDEN
+            MessageEntity.Visibility.DELETED -> Message.Visibility.DELETED
+        }
         return Message(
             message.id,
             content,
@@ -94,7 +97,8 @@ class MessageMapperImpl(private val idMapper: IdMapper) : MessageMapper {
             message.date,
             idMapper.fromDaoModel(message.senderUserId),
             ClientId(message.senderClientId),
-            status
+            status,
+            visibility
         )
     }
 
