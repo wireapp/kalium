@@ -14,6 +14,7 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.network.api.user.client.MLSPublicKeyTypeDTO
 import com.wire.kalium.network.api.user.client.UpdateClientRequest
+import com.wire.kalium.network.api.user.pushToken.PushTokenBody
 
 interface ClientRemoteRepository {
     suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client>
@@ -21,6 +22,7 @@ interface ClientRemoteRepository {
     suspend fun deleteClient(param: DeleteClientParam): Either<NetworkFailure, Unit>
     suspend fun fetchClientInfo(clientId: ClientId): Either<NetworkFailure, Client>
     suspend fun fetchSelfUserClients(): Either<NetworkFailure, List<Client>>
+    suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit>
 }
 
 class ClientRemoteDataSource(
@@ -49,4 +51,8 @@ class ClientRemoteDataSource(
             .map { clientResponseList ->
                 clientResponseList.map { clientMapper.fromClientResponse(it) }
             }
+
+    override suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit> = wrapApiRequest {
+        clientApi.registerToken(body)
+    }
 }

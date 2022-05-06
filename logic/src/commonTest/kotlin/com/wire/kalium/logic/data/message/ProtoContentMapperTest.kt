@@ -49,12 +49,7 @@ class ProtoContentMapperTest {
 
     @Test
     fun givenHideMessageContent_whenMappingToProtoDataAndBack_thenTheContentsShouldMatchTheOriginal() {
-        val messageContent = MessageContent.DeleteForMe(
-            TEST_MESSAGE_UUID, conversationId = ConversationId(
-                TEST_MESSAGE_UUID,
-                TEST_MESSAGE_UUID
-            )
-        )
+        val messageContent = MessageContent.DeleteForMe(TEST_MESSAGE_UUID)
         val protoContent = ProtoContent(TEST_MESSAGE_UUID, messageContent)
 
         val encoded = protoContentMapper.encodeToProtobuf(protoContent)

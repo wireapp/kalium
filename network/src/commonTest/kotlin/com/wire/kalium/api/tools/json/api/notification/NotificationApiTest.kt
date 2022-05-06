@@ -11,6 +11,7 @@ import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -34,7 +35,7 @@ class NotificationApiTest : ApiTest {
             }
         )
         val notificationsApi = NotificationApiImpl(httpClient, TEST_BACKEND_CONFIG)
-        
+
         notificationsApi.notificationsByBatch(limit, clientId, since)
     }
 
@@ -93,7 +94,7 @@ class NotificationApiTest : ApiTest {
     }
 
     @Test
-    fun given404Response_whenGettingNotificationGettingAllNotifications_thenTheResponseIsParsedCorrectly() = runTest {
+    fun given404Response_whenGettingAllNotifications_thenTheResponseIsParsedCorrectly() = runTest {
         val httpClient = mockAuthenticatedHttpClient(
             NotificationEventsResponseJson.notificationsWithUnknownEventAtFirstPosition,
             statusCode = HttpStatusCode.NotFound
@@ -103,7 +104,21 @@ class NotificationApiTest : ApiTest {
         val result = notificationsApi.getAllNotifications(1, "")
 
         assertIs<NetworkResponse.Success<NotificationResponse>>(result)
-        assertIs<NotificationResponse.MissingSome>(result.value)
+        assertTrue { result.value.isMissingNotifications }
+    }
+
+    @Test
+    fun givenSuccessResponse_whenGettingAllNotifications_thenTheResponseIsParsedCorrectly() = runTest {
+        val httpClient = mockAuthenticatedHttpClient(
+            NotificationEventsResponseJson.notificationsWithUnknownEventAtFirstPosition,
+            statusCode = HttpStatusCode.OK
+        )
+        val notificationsApi = NotificationApiImpl(httpClient, TEST_BACKEND_CONFIG)
+
+        val result = notificationsApi.getAllNotifications(1, "")
+
+        assertIs<NetworkResponse.Success<NotificationResponse>>(result)
+        assertFalse { result.value.isMissingNotifications }
     }
 
     private companion object {

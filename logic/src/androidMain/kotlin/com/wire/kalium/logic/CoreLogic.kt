@@ -80,7 +80,8 @@ actual class CoreLogic(
             userId,
             dataSourceSet,
             sessionRepository,
-            globalCallManager
+            globalCallManager,
+            globalPreferences
         )
     }
 

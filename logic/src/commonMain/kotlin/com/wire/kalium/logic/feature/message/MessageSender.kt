@@ -1,14 +1,16 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.failure.SendMessageFailure
+import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.persistence.dao.ConversationEntity
@@ -41,7 +43,8 @@ class MessageSenderImpl(
     private val sessionEstablisher: SessionEstablisher,
     private val messageEnvelopeCreator: MessageEnvelopeCreator,
     private val mlsMessageCreator: MLSMessageCreator,
-    private val timeParser: TimeParser,
+    private val messageSendingScheduler: MessageSendingScheduler,
+    private val timeParser: TimeParser
 ) : MessageSender {
 
     override suspend fun trySendingOutgoingMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit> =
@@ -50,7 +53,13 @@ class MessageSenderImpl(
             messageRepository.getMessageById(conversationId, messageUuid).flatMap { message ->
                 trySendingOutgoingMessage(conversationId, message)
             }.onFailure {
-                messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, messageUuid)
+                kaliumLogger.i("Failed to send message. Failure = $it")
+                if (it is NetworkFailure.NoNetworkConnection) {
+                    kaliumLogger.i("Scheduling message for retrying in the future.")
+                    messageSendingScheduler.scheduleSendingOfPendingMessages()
+                } else {
+                    messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, messageUuid)
+                }
             }
         }
 
@@ -93,7 +102,7 @@ class MessageSenderImpl(
                     sessionEstablisher.prepareRecipientsForNewOutgoingMessage(recipients).map { recipients }
                 }.flatMap { recipients ->
                     messageEnvelopeCreator.createOutgoingEnvelope(recipients, message).flatMap { envelope ->
-                        trySendingEnvelopeRetryingIfPossible(conversationId, envelope, message)
+                        trySendingProteusEnvelope(conversationId, envelope, message)
                     }
                 }
         }
@@ -112,7 +121,11 @@ class MessageSenderImpl(
             }
         }
 
-    private suspend fun trySendingEnvelopeRetryingIfPossible(
+    /**
+     * Attempts to send a Proteus envelope
+     * Will handle the failure and retry in case of [SendMessageFailure.ClientsHaveChanged]
+     */
+    private suspend fun trySendingProteusEnvelope(
         conversationId: ConversationId,
         envelope: MessageEnvelope,
         messageUuid: Message,
@@ -120,10 +133,10 @@ class MessageSenderImpl(
         messageRepository.sendEnvelope(conversationId, envelope).coFold(
             {
                 when (it) {
-                    is SendMessageFailure.Unknown -> Either.Left(it)
-                    is SendMessageFailure.ClientsHaveChanged -> messageSendFailureHandler.handleClientsHaveChangedFailure(it).flatMap {
+                    is ProteusSendMessageFailure -> messageSendFailureHandler.handleClientsHaveChangedFailure(it).flatMap {
                         attemptToSend(conversationId, messageUuid)
                     }
+                    else -> Either.Left(it)
                 }
             }, {
                 Either.Right(it)

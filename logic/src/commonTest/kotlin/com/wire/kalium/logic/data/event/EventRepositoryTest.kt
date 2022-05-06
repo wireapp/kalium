@@ -62,7 +62,7 @@ class EventRepositoryTest {
             "eventId",
             listOf()
         )
-        val notificationsPageResponse = NotificationResponse.CompleteList("time", false, listOf(firstPage))
+        val notificationsPageResponse = NotificationResponse("time", false, listOf(firstPage))
 
         given(eventInfoStorage)
             .getter(eventInfoStorage::lastProcessedId)
@@ -92,6 +92,7 @@ class EventRepositoryTest {
             .with(any(), eq(clientId.value))
             .wasInvoked(exactly = once)
     }
+
     @Test
     fun givenSomeEventWasProcessedBefore_whenGettingEvents_thenGetByBatchStartingOnLastProcessedID() = runTest {
         val lastProcessedEventId = "someNotificationID"
@@ -106,7 +107,7 @@ class EventRepositoryTest {
                 )
             )
         )
-        val notificationsPageResponse = NotificationResponse.CompleteList("time", false, listOf(firstPage))
+        val notificationsPageResponse = NotificationResponse("time", false, listOf(firstPage))
 
         given(eventInfoStorage)
             .getter(eventInfoStorage::lastProcessedId)
@@ -147,7 +148,7 @@ class EventRepositoryTest {
         )
         val pendingEvent = EventResponse("pendingEventId", listOf(pendingEventPayload))
         val liveEvent = pendingEvent.copy(id = "liveEventId")
-        val notificationsPageResponse = NotificationResponse.CompleteList("time", false, listOf(pendingEvent))
+        val notificationsPageResponse = NotificationResponse("time", false, listOf(pendingEvent))
 
         given(eventInfoStorage)
             .getter(eventInfoStorage::lastProcessedId)
@@ -176,6 +177,41 @@ class EventRepositoryTest {
             }
             awaitItem().shouldSucceed {
                 assertEquals(liveEvent.id, it.id)
+            }
+            awaitComplete()
+        }
+    }
+
+    @Test
+    fun givenPendingEvents_whenGettingPendingEvents_thenReturnPendingFirstFollowedByComplete() = runTest {
+        val pendingEventPayload = EventContentDTO.Conversation.NewMessageDTO(
+            TestConversation.NETWORK_ID,
+            UserId("value", "domain"),
+            "eventTime",
+            MessageEventData("text", "senderId", "recipient")
+        )
+        val pendingEvent = EventResponse("pendingEventId", listOf(pendingEventPayload))
+        val notificationsPageResponse = NotificationResponse("time", false, listOf(pendingEvent))
+
+        given(eventInfoStorage)
+            .getter(eventInfoStorage::lastProcessedId)
+            .whenInvoked()
+            .thenReturn("someNotificationId")
+
+        given(notificationApi)
+            .suspendFunction(notificationApi::notificationsByBatch)
+            .whenInvokedWith(any(), any(), any())
+            .thenReturn(NetworkResponse.Success(notificationsPageResponse, mapOf(), 200))
+
+        val clientId = TestClient.CLIENT_ID
+        given(clientRepository)
+            .function(clientRepository::currentClientId)
+            .whenInvoked()
+            .thenReturn(Either.Right(clientId))
+
+        eventRepository.pendingEvents().test {
+            awaitItem().shouldSucceed {
+                assertEquals(pendingEvent.id, it.id)
             }
             awaitComplete()
         }

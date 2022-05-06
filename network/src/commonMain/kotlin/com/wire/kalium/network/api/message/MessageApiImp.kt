@@ -1,16 +1,13 @@
 package com.wire.kalium.network.api.message
 
 import com.wire.kalium.network.api.ConversationId
-import com.wire.kalium.network.api.ErrorResponse
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.QualifiedSendMessageError
+import com.wire.kalium.network.exceptions.ProteusClientsChangedError
 import com.wire.kalium.network.exceptions.SendMessageError
 import com.wire.kalium.network.serialization.XProtoBuf
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
-import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -54,31 +51,15 @@ class MessageApiImp(
             queryParameter: String?,
             queryParameterValue: Any?,
             body: RequestBody
-        ): NetworkResponse<SendMessageResponse> {
-            return try {
-                val response = httpClient.post("$PATH_CONVERSATIONS/$conversationId$PATH_OTR_MESSAGE") {
-                    if (queryParameter != null) {
-                        parameter(queryParameter, queryParameterValue)
-                    }
-                    setBody(body)
+        ): NetworkResponse<SendMessageResponse> = wrapKaliumResponse<SendMessageResponse.MessageSent>({
+            if (it.status.value != 412) null
+            else NetworkResponse.Error(kException = SendMessageError.MissingDeviceError(errorBody = it.body()))
+        }) {
+            httpClient.post("$PATH_CONVERSATIONS/$conversationId$PATH_OTR_MESSAGE") {
+                if (queryParameter != null) {
+                    parameter(queryParameter, queryParameterValue)
                 }
-                return NetworkResponse.Success(httpResponse = response, value = response.body<SendMessageResponse.MessageSent>())
-            } catch (e: ResponseException) {
-                when (e.response.status.value) {
-                    // It's a 412 Error
-                    412 -> NetworkResponse.Error(
-                        kException = SendMessageError.MissingDeviceError(
-                            errorBody = e.response.body()
-                        )
-                    )
-                    else -> wrapKaliumResponse { e.response }
-                }
-            }
-            // TODO: is this even necessary since we catch 'Em all in wrapKaliumResponse
-            catch (e: Exception) {
-                NetworkResponse.Error(
-                    kException = KaliumException.GenericError(e)
-                )
+                setBody(body)
             }
         }
 
@@ -108,25 +89,17 @@ class MessageApiImp(
     override suspend fun qualifiedSendMessage(
         parameters: MessageApi.Parameters.QualifiedDefaultParameters,
         conversationId: ConversationId
-    ): NetworkResponse<QualifiedSendMessageResponse> {
-        return try {
-            val response = httpClient.post("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}$PATH_PROTEUS_MESSAGE") {
-                setBody(envelopeProtoMapper.encodeToProtobuf(parameters))
-                contentType(ContentType.Application.XProtoBuf)
-            }
-            NetworkResponse.Success(httpResponse = response, value = response.body<QualifiedSendMessageResponse.MessageSent>())
-        } catch (e: ResponseException) {
-            when (e.response.status.value) {
-                // It's a 412 Error
-                412 -> NetworkResponse.Error(
-                    kException = QualifiedSendMessageError.MissingDeviceError(
-                        errorBody = e.response.body()
-                    )
-                )
-                else -> wrapKaliumResponse { e.response }
-            }
-        } catch (e: Exception) {
-            NetworkResponse.Error(kException = KaliumException.GenericError(e))
+    ): NetworkResponse<QualifiedSendMessageResponse> = wrapKaliumResponse<QualifiedSendMessageResponse.MessageSent>({
+        if (it.status.value != 412) null
+        else NetworkResponse.Error(
+            kException = ProteusClientsChangedError(
+                errorBody = it.body()
+            )
+        )
+    }) {
+        httpClient.post("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}$PATH_PROTEUS_MESSAGE") {
+            setBody(envelopeProtoMapper.encodeToProtobuf(parameters))
+            contentType(ContentType.Application.XProtoBuf)
         }
     }
 

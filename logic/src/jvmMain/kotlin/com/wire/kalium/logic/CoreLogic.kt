@@ -72,7 +72,7 @@ actual class CoreLogic(
         }
 
         return UserSessionScope(
-            userId, dataSourceSet, sessionRepository, globalCallManager
+            userId, dataSourceSet, sessionRepository, globalCallManager, globalPreferences
         )
     }
 
