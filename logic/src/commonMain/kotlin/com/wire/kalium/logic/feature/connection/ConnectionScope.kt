@@ -11,5 +11,5 @@ class ConnectionScope(
             connectionRepository = connectionRepository
         )
 
-    val sendConnectionRequestUseCase: SendConnectionRequestUseCase get() = SendConnectionRequestUseCaseImpl(connectionRepository)
+    val sendConnectionRequest: SendConnectionRequestUseCase get() = SendConnectionRequestUseCaseImpl(connectionRepository)
 }
