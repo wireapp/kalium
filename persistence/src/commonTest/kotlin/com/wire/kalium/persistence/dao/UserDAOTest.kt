@@ -332,6 +332,24 @@ class UserDAOTest : BaseDatabaseTest() {
         assertEquals(expectedResult, searchResult)
     }
 
+    @Test
+    fun givenAExistingUsers_whenUpdatingTheirValues_ThenResultsIsEqualToThatUserButWithFieldsModified() = runTest {
+        //given
+        val newNameA = "new user naming a"
+        val newNameB = "new user naming b"
+        db.userDAO.insertUsers(listOf(user1, user3))
+        //when
+        val updatedUser1 = user1.copy(name = newNameA)
+        val updatedUser3 = user3.copy(name = newNameB)
+        db.userDAO.updateUsers(listOf(updatedUser1, updatedUser3))
+        //then
+        val updated1 = db.userDAO.getUserByQualifiedID(updatedUser1.id)
+        val updated3 = db.userDAO.getUserByQualifiedID(updatedUser3.id)
+        assertEquals(newNameA, updated1.first()?.name)
+        assertEquals(newNameB, updated3.first()?.name)
+    }
+
+
     private companion object {
         val USER_ENTITY_1 = newUserEntity(QualifiedIDEntity("1", "wire.com"))
         val USER_ENTITY_2 = newUserEntity(QualifiedIDEntity("2", "wire.com"))
