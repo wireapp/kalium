@@ -102,8 +102,7 @@ class MessageScope(
             userRepository,
             clientRepository,
             syncManager,
-            messageSender,
-            conversationRepository
+            messageSender
         )
 
     val markMessagesAsNotified: MarkMessagesAsNotifiedUseCase get() = MarkMessagesAsNotifiedUseCaseImpl(conversationRepository)
