@@ -88,7 +88,7 @@ class MessageSenderTest {
         //given
         setupGivenSuccessResults()
         //when
-        val result = messageSender.trySendingOutgoingMessageById(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
+        val result = messageSender.sendPendingMessage(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
         //then
         assertIs<Either.Right<Unit>>(result)
     }
@@ -100,7 +100,7 @@ class MessageSenderTest {
             getConversationProtocol = false
         )
         //when
-        val result = messageSender.trySendingOutgoingMessageById(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
+        val result = messageSender.sendPendingMessage(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
         //then
         verify(messageRepository)
             .suspendFunction(messageRepository::updateMessageStatus)
@@ -117,7 +117,7 @@ class MessageSenderTest {
             getConversationsRecipient = false
         )
         //when
-        val result = messageSender.trySendingOutgoingMessageById(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
+        val result = messageSender.sendPendingMessage(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
         //then
         verify(messageRepository)
             .suspendFunction(messageRepository::updateMessageStatus)
@@ -135,7 +135,7 @@ class MessageSenderTest {
                 prepareRecipientsForNewOutGoingMessage = false
             )
             //when
-            val result = messageSender.trySendingOutgoingMessageById(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
+            val result = messageSender.sendPendingMessage(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
             //then
             verify(messageRepository)
                 .suspendFunction(messageRepository::updateMessageStatus)
@@ -153,7 +153,7 @@ class MessageSenderTest {
                 createOutgoingEnvelope = false
             )
             //when
-            val result = messageSender.trySendingOutgoingMessageById(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
+            val result = messageSender.sendPendingMessage(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
             //then
             verify(messageRepository)
                 .suspendFunction(messageRepository::updateMessageStatus)
@@ -171,7 +171,7 @@ class MessageSenderTest {
                 sendEnvelope = Either.Left(CoreFailure.Unknown(Throwable("some exception")))
             )
             //when
-            val result = messageSender.trySendingOutgoingMessageById(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
+            val result = messageSender.sendPendingMessage(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
             //then
             verify(messageRepository)
                 .suspendFunction(messageRepository::updateMessageStatus)
@@ -189,7 +189,7 @@ class MessageSenderTest {
                 updateMessageStatus = false
             )
             //when
-            val result = messageSender.trySendingOutgoingMessageById(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
+            val result = messageSender.sendPendingMessage(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
             //then
             verify(messageRepository)
                 .suspendFunction(messageRepository::updateMessageStatus)
@@ -207,7 +207,7 @@ class MessageSenderTest {
                 updateMessageDate = false
             )
             //when
-            val result = messageSender.trySendingOutgoingMessageById(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
+            val result = messageSender.sendPendingMessage(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
             //then
             verify(messageRepository)
                 .suspendFunction(messageRepository::updateMessageStatus)
@@ -225,7 +225,7 @@ class MessageSenderTest {
                 updateMessageDate = false
             )
             //when
-            val result = messageSender.trySendingOutgoingMessageById(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
+            val result = messageSender.sendPendingMessage(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
             //then
             verify(messageRepository)
                 .suspendFunction(messageRepository::updateMessageStatus)
@@ -241,7 +241,7 @@ class MessageSenderTest {
             sendEnvelope = Either.Left(NetworkFailure.NoNetworkConnection(null))
         )
 
-        messageSender.trySendingOutgoingMessageById(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
+        messageSender.sendPendingMessage(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
 
         verify(messageSendingScheduler)
             .suspendFunction(messageSendingScheduler::scheduleSendingOfPendingMessages)
@@ -255,7 +255,7 @@ class MessageSenderTest {
             sendEnvelope = failure
         )
 
-        val result = messageSender.trySendingOutgoingMessageById(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
+        val result = messageSender.sendPendingMessage(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
 
         assertEquals(failure, result)
     }
