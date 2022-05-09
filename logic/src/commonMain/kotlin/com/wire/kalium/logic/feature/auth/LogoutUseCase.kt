@@ -7,19 +7,20 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.functional.isLeft
-import com.wire.kalium.logic.di.AuthenticatedDataSourceSetProvider
-import com.wire.kalium.logic.di.AuthenticatedDataSourceSetProviderImpl
+import com.wire.kalium.logic.di.UserSessionScopeProvider
+import com.wire.kalium.logic.di.UserSessionScopeProviderImpl
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 
-class LogoutUseCase(
+@Suppress("")
+class LogoutUseCase @Suppress("LongParameterList") constructor(
     private val logoutRepository: LogoutRepository,
     private val sessionRepository: SessionRepository,
     private val userId: QualifiedID,
     private val authenticatedDataSourceSet: AuthenticatedDataSourceSet,
     private val clientRepository: ClientRepository,
     private val mlsClientProvider: MLSClientProvider,
-    private val authenticatedDataSourceSetProvider: AuthenticatedDataSourceSetProvider = AuthenticatedDataSourceSetProviderImpl
+    private val userSessionScopeProvider: UserSessionScopeProvider = UserSessionScopeProviderImpl
 ) {
     suspend operator fun invoke() {
         //TODO deregister push notification token
@@ -31,7 +32,7 @@ class LogoutUseCase(
     }
 
     private fun clearInMemoryUserSession() {
-        authenticatedDataSourceSetProvider.delete(userId)
+        userSessionScopeProvider.delete(userId)
     }
 
     private fun clearUserSessionAndUpdateCurrent() {
