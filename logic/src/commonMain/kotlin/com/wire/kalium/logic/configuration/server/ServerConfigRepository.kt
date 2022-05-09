@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.configuration.server
 
 import com.benasher44.uuid.uuid4
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.di.MapperProvider
@@ -25,8 +26,13 @@ internal interface ServerConfigRepository {
     fun deleteById(id: String): Either<StorageFailure, Unit>
     fun delete(serverConfig: ServerConfig): Either<StorageFailure, Unit>
     fun storeConfig(
-        serverConfigDTO: ServerConfigDTO, domain: String?, apiVersion: Int, federation: Boolean
+        serverConfigDTO: ServerConfigDTO,
+        domain: String?,
+        apiVersion: Int,
+        federation: Boolean
     ): Either<StorageFailure, ServerConfig>
+
+    suspend fun storeConfig(serverConfigDTO: ServerConfigDTO): Either<CoreFailure, ServerConfig>
 
     fun configById(id: String): Either<StorageFailure, ServerConfig>
     suspend fun fetchRemoteApiVersion(serverConfigDTO: ServerConfigDTO): Either<NetworkFailure, VersionInfoDTO>
@@ -36,6 +42,7 @@ internal class ServerConfigDataSource(
     private val api: ServerConfigApi,
     private val dao: ServerConfigurationDAO,
     private val versionApi: VersionApi,
+    private val serverConfigUtil: ServerConfigUtil,
     private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
 ) : ServerConfigRepository {
 
@@ -76,6 +83,16 @@ internal class ServerConfigDataSource(
     }.flatMap { storedConfigId ->
         wrapStorageRequest { dao.configById(storedConfigId) }
     }.map { serverConfigMapper.fromEntity(it) }
+
+    override suspend fun storeConfig(serverConfigDTO: ServerConfigDTO): Either<CoreFailure, ServerConfig> =
+        fetchRemoteApiVersion(serverConfigDTO)
+            .flatMap { versionInfoDTO ->
+                serverConfigUtil.calculateApiVersion(versionInfoDTO.supported)
+                    .map { Pair(versionInfoDTO, it) }
+            }
+            .flatMap { (versionInfoDTO, commonApiVersion) ->
+                storeConfig(serverConfigDTO, versionInfoDTO.domain, commonApiVersion, versionInfoDTO.federation)
+            }
 
     override fun configById(id: String): Either<StorageFailure, ServerConfig> = wrapStorageRequest {
         dao.configById(id)
