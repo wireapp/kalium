@@ -28,22 +28,25 @@ class DeleteMessageUseCase(
     suspend operator fun invoke(conversationId: ConversationId, messageId: String, deleteForEveryone: Boolean): Either<CoreFailure, Unit> {
         syncManager.waitForSlowSyncToComplete()
         val selfUser = userRepository.getSelfUser().first()
-
+        val selfConversationId = conversationRepository.getSelfConversationId()
         return suspending {
             val generatedMessageUuid = uuid4().toString()
             clientRepository.currentClientId().flatMap { currentClientId ->
                 val message = Message(
                     id = generatedMessageUuid,
-                    content = if (deleteForEveryone) MessageContent.DeleteMessage(messageId) else MessageContent.DeleteForMe(messageId),
-                    conversationId = if (deleteForEveryone) conversationId else conversationRepository.getSelfConversationId(),
+                    content = if (deleteForEveryone) MessageContent.DeleteMessage(messageId) else MessageContent.DeleteForMe(
+                        messageId,
+                        conversationId = conversationId.value
+                    ),
+                    conversationId = if (deleteForEveryone) conversationId else selfUser.id,
                     date = Clock.System.now().toString(),
                     senderUserId = selfUser.id,
                     senderClientId = currentClientId,
                     status = Message.Status.PENDING
                 )
-                messageSender.trySendingOutgoingMessage(conversationId, message)
+                messageSender.trySendingOutgoingMessage(message.conversationId, message)
             }.flatMap {
-                messageRepository.deleteMessage(messageId, conversationId)
+                messageRepository.markMessageAsDeleted(messageId, conversationId)
             }.onFailure {
                 kaliumLogger.w("delete message failure: $it")
                 if (it is CoreFailure.Unknown) {

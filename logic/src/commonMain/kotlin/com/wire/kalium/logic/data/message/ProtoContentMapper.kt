@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.data.message
 
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.protobuf.decodeFromByteArray
@@ -12,7 +11,6 @@ import com.wire.kalium.protobuf.messages.EncryptionAlgorithm
 import com.wire.kalium.protobuf.messages.GenericMessage
 import com.wire.kalium.protobuf.messages.MessageDelete
 import com.wire.kalium.protobuf.messages.MessageHide
-import com.wire.kalium.protobuf.messages.QualifiedConversationId
 import com.wire.kalium.protobuf.messages.Text
 import pbandk.ByteArr
 
@@ -73,7 +71,12 @@ class ProtoContentMapperImpl : ProtoContentMapper {
                 GenericMessage.Content.Deleted(MessageDelete(messageId = messageContent.messageId))
             }
             is MessageContent.DeleteForMe -> {
-                GenericMessage.Content.Hidden(MessageHide(messageId = messageContent.messageId))
+                GenericMessage.Content.Hidden(
+                    MessageHide(
+                        messageId = messageContent.messageId,
+                        conversationId = messageContent.conversationId
+                    )
+                )
             }
             else -> {
                 throw IllegalArgumentException("Unexpected message content type: $messageContent")
@@ -111,7 +114,7 @@ class ProtoContentMapperImpl : ProtoContentMapper {
             is GenericMessage.Content.Hidden -> {
                 val hiddenMessage = genericMessage.hidden
                 if (hiddenMessage != null) {
-                    MessageContent.DeleteForMe(hiddenMessage.messageId)
+                    MessageContent.DeleteForMe(hiddenMessage.messageId, hiddenMessage.conversationId)
                 } else {
                     kaliumLogger.w("Hidden message is null. Message UUID = $genericMessage.")
                     MessageContent.Unknown
