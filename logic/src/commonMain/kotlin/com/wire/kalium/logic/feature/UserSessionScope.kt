@@ -156,11 +156,12 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi
         )
 
-    private val callRepository: CallRepository
-        get() = CallDataSource(
+    private val callRepository: CallRepository by lazy {
+        CallDataSource(
             callApi = authenticatedDataSourceSet.authenticatedNetworkContainer.callApi,
             messageSender = messageSender
         )
+    }
 
     protected abstract val clientConfig: ClientConfig
 
@@ -212,7 +213,7 @@ abstract class UserSessionScopeCommon(
 
     val syncManager: SyncManager get() = authenticatedDataSourceSet.syncManager
 
-    private val timeParser : TimeParser = TimeParserImpl()
+    private val timeParser: TimeParser = TimeParserImpl()
 
     private val eventRepository: EventRepository
         get() = EventDataSource(
@@ -261,7 +262,14 @@ abstract class UserSessionScopeCommon(
         get() = ListenToEventsUseCase(syncManager, eventRepository, conversationEventReceiver)
     val syncPendingEvents: SyncPendingEventsUseCase
         get() = SyncPendingEventsUseCase(syncManager, eventRepository, conversationEventReceiver)
-    val client: ClientScope get() = ClientScope(clientRepository, preKeyRepository, keyPackageRepository, mlsClientProvider,notificationTokenRepository)
+    val client: ClientScope
+        get() = ClientScope(
+            clientRepository,
+            preKeyRepository,
+            keyPackageRepository,
+            mlsClientProvider,
+            notificationTokenRepository
+        )
     val conversations: ConversationScope get() = ConversationScope(conversationRepository, userRepository, syncManager)
     val messages: MessageScope
         get() = MessageScope(

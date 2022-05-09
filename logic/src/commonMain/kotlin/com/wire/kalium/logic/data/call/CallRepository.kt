@@ -84,7 +84,7 @@ internal class CallDataSource(
         val messageContent = MessageContent.Calling(data)
         val date = Clock.System.now().toString()
         val message = Message(uuid4().toString(), messageContent, conversationId, date, userId, clientId, Message.Status.SENT)
-        return messageSender.trySendingOutgoingMessage(conversationId, message)
+        return messageSender.sendMessage(message)
     }
 
     override fun createCall(call: Call) {
