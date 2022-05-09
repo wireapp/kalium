@@ -130,7 +130,7 @@ actual class CallManagerImpl(
         callRepository.createCall(
             call = Call(
                 conversationId = conversationId,
-                status = CallStatus.INCOMING,
+                status = CallStatus.STARTED,
                 callerId = userId.await().toString()
             )
         )
