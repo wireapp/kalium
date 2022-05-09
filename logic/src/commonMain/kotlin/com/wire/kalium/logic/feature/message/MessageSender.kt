@@ -125,7 +125,7 @@ class MessageSenderImpl(
                 sessionEstablisher.prepareRecipientsForNewOutgoingMessage(recipients).map { recipients }
             }.flatMap { recipients ->
                 messageEnvelopeCreator.createOutgoingEnvelope(recipients, message).flatMap { envelope ->
-                    trySendingProteusEnvelope(conversationId, envelope, message)
+                    trySendingProteusEnvelope(envelope, message)
                 }
             }
     }
