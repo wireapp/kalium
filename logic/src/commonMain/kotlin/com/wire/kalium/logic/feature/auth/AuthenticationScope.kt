@@ -48,7 +48,7 @@ class AuthenticationScope(
         get() = ServerConfigDataSource(
             loginNetworkContainer.serverConfigApi,
             globalDatabase.serverConfigurationDAO,
-            TODO()
+            loginNetworkContainer.remoteVersion
         )
 
     private val loginRepository: LoginRepository get() = LoginRepositoryImpl(loginNetworkContainer.loginApi, clientLabel)
