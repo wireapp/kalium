@@ -21,8 +21,7 @@ class DeleteMessageUseCase(
     private val userRepository: UserRepository,
     private val clientRepository: ClientRepository,
     private val syncManager: SyncManager,
-    private val messageSender: MessageSender,
-    private val conversationRepository: ConversationRepository
+    private val messageSender: MessageSender
 ) {
 
     suspend operator fun invoke(conversationId: ConversationId, messageId: String, deleteForEveryone: Boolean): Either<CoreFailure, Unit> {
@@ -43,7 +42,7 @@ class DeleteMessageUseCase(
                     senderClientId = currentClientId,
                     status = Message.Status.PENDING
                 )
-                messageSender.trySendingOutgoingMessage(message)
+                messageSender.sendMessage(message)
             }.flatMap {
                 messageRepository.deleteMessage(messageId, conversationId)
             }.onFailure {
