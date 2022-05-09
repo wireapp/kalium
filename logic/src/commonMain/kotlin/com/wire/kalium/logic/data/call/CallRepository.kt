@@ -2,9 +2,9 @@ package com.wire.kalium.logic.data.call
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.toConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
@@ -20,8 +20,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.update
 import kotlinx.datetime.Clock
+import kotlin.math.max
 
 interface CallRepository {
     suspend fun getCallConfigResponse(limit: Int?): Either<CoreFailure, String>
@@ -29,7 +29,9 @@ interface CallRepository {
     fun getAllCalls(): StateFlow<List<Call>>
     fun getIncomingCalls(): Flow<List<Call>>
     fun getOngoingCall(): Flow<List<Call>>
+    fun createCall(call: Call)
     fun updateCallStatusById(conversationId: String, status: CallStatus)
+    fun updateCallParticipants(conversationId: String, participants: List<Participant>)
     suspend fun sendCallingMessage(
         conversationId: ConversationId,
         userId: UserId,
@@ -45,8 +47,7 @@ internal class CallDataSource(
 
     //TODO to be saved somewhere ?
     private val _callProfile = MutableStateFlow(CallProfile(calls = emptyMap()))
-    private val calls = MutableStateFlow(listOf<Call>())
-    private val allCalls = calls.asStateFlow()
+    private val allCalls = _callProfile.asStateFlow()
 
     override suspend fun getCallConfigResponse(limit: Int?): Either<CoreFailure, String> = suspending {
         wrapApiRequest {
@@ -60,10 +61,10 @@ internal class CallDataSource(
         }
     }
 
-    override fun getAllCalls(): StateFlow<List<Call>> = allCalls
+    override fun getAllCalls(): StateFlow<List<Call>> = MutableStateFlow(allCalls.value.calls.values.toList())
 
     override fun getIncomingCalls(): Flow<List<Call>> = allCalls.map {
-        it.filter { call ->
+        it.calls.values.filter { call ->
             call.status in listOf(
                 CallStatus.INCOMING
             )
@@ -71,7 +72,7 @@ internal class CallDataSource(
     }
 
     override fun getOngoingCall(): Flow<List<Call>> = allCalls.map {
-        it.filter { call -> call.status == CallStatus.ESTABLISHED }
+        it.calls.values.filter { call -> call.status == CallStatus.ESTABLISHED }
     }
 
     override suspend fun sendCallingMessage(
@@ -86,31 +87,49 @@ internal class CallDataSource(
         return messageSender.trySendingOutgoingMessage(conversationId, message)
     }
 
-    override fun updateCallStatusById(conversationId: String, status: CallStatus) {
-        calls.update {
-            val calls = mutableListOf<Call>().apply {
-                addAll(it)
+    override fun createCall(call: Call) {
+        val callProfile = _callProfile.value
+        val updatedCalls = callProfile.calls.toMutableMap().apply {
+            this[call.conversationId.toString()] = call
+        }
 
-                val callIndex = it.indexOfFirst { call -> call.conversationId.toString() == conversationId }
-                if (callIndex == -1) {
-                    add(
-                        Call(
-                            conversationId = conversationId.toConversationId(),
-                            status = status
-                        )
-                    )
-                } else {
-                    this[callIndex] = this[callIndex].copy(
-                        status = status
-                    )
-                }
+        _callProfile.value = callProfile.copy(
+            calls = updatedCalls
+        )
+    }
+
+    override fun updateCallStatusById(conversationId: String, status: CallStatus) {
+        val callProfile = _callProfile.value
+        callProfile.calls[conversationId]?.let { call ->
+            val updatedCalls = callProfile.calls.toMutableMap().apply {
+                this[conversationId] = call.copy(
+                    status = status
+                )
             }
 
-            _callProfile.value = _callProfile.value.copy(
-                calls = calls.associateBy { it.conversationId.toString() }
+            _callProfile.value = callProfile.copy(
+                calls = updatedCalls
             )
+        }
+    }
 
-            calls
+    override fun updateCallParticipants(conversationId: String, participants: List<Participant>) {
+        val callProfile = _callProfile.value
+
+        callProfile[conversationId]?.let {
+            callingLogger.i("onParticipantsChanged() - conversationId: $conversationId")
+            participants.forEachIndexed { index, participant ->
+                callingLogger.i("onParticipantsChanged() - Participant[$index/${participants.size}]: ${participant.id}")
+            }
+
+            _callProfile.value = callProfile.copy(
+                calls = callProfile.calls.apply {
+                    this.toMutableMap()[conversationId] = it.copy(
+                        participants = participants,
+                        maxParticipants = max(it.maxParticipants, participants.size + 1)
+                    )
+                }
+            )
         }
     }
 }
