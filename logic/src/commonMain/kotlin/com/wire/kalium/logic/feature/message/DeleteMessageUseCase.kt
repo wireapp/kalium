@@ -43,7 +43,7 @@ class DeleteMessageUseCase(
                     senderClientId = currentClientId,
                     status = Message.Status.PENDING
                 )
-                messageSender.trySendingOutgoingMessage(message)
+                messageSender.sendMessage(message)
             }.flatMap {
                 messageRepository.deleteMessage(messageId, conversationId)
             }.onFailure {
