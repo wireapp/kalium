@@ -27,7 +27,7 @@ interface ServerConfigurationDAO {
         title: String,
         federation: Boolean,
         domain: String?,
-        commonApiVersion: Int
+        commonApiVersion: Int?
     )
 
     fun allConfigFlow(): Flow<List<ServerConfigEntity>>
@@ -51,7 +51,7 @@ class ServerConfigurationDAOImpl(private val queries: ServerConfigurationQueries
         title: String,
         federation: Boolean,
         domain: String?,
-        commonApiVersion: Int
+        commonApiVersion: Int?
     ) = queries.insert(id, apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title, federation, domain, commonApiVersion)
 
     override fun allConfigFlow(): Flow<List<ServerConfigEntity>> =

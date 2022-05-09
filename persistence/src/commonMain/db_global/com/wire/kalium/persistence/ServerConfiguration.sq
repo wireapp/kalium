@@ -11,7 +11,7 @@ CREATE TABLE ServerConfiguration (
     teamsUrl TEXT NOT NULL,
     websiteUrl TEXT NOT NULL,
     domain TEXT UNIQUE,
-    commonApiVersion INTEGER AS Int NOT NULL,
+    commonApiVersion INTEGER AS Int,
     federation INTEGER AS Boolean NOT NULL
 );
 
