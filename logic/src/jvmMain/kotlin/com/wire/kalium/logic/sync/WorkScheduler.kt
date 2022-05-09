@@ -33,7 +33,7 @@ actual sealed class WorkScheduler {
 
         override fun scheduleImmediateApiVersionCheck() {
             GlobalScope.launch {
-                ApiVersionCheckWorker(coreLogic.apiVersionCheckManager, coreLogic.getAuthenticationScope().apiVersionRepository).doWork()
+                ApiVersionCheckWorker(coreLogic.apiVersionCheckManager).doWork()
             }
         }
     }
