@@ -5,6 +5,8 @@ import com.wire.kalium.calling.callbacks.IncomingCallHandler
 import com.wire.kalium.calling.types.Uint32_t
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.id.toConversationId
+import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallManagerImpl
 import com.wire.kalium.logic.feature.call.CallStatus
 
@@ -23,6 +25,12 @@ class OnIncomingCall(
         arg: Pointer?
     ) {
         callingLogger.i("${CallManagerImpl.TAG} -> incomingCallHandler")
-        callRepository.updateCallStatusById(conversationId, CallStatus.INCOMING)
+        callRepository.createCall(
+            call = Call(
+                conversationId = conversationId.toConversationId(),
+                status = CallStatus.INCOMING,
+                callerId = userId
+            )
+        )
     }
 }
