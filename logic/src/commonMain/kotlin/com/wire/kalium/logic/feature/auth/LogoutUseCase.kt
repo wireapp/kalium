@@ -12,7 +12,8 @@ import com.wire.kalium.logic.di.UserSessionScopeProviderImpl
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 
-class LogoutUseCase(
+@Suppress("")
+class LogoutUseCase @Suppress("LongParameterList") constructor(
     private val logoutRepository: LogoutRepository,
     private val sessionRepository: SessionRepository,
     private val userId: QualifiedID,
