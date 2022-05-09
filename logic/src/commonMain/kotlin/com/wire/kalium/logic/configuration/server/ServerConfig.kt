@@ -4,7 +4,14 @@ import com.benasher44.uuid.uuid4
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import io.ktor.http.Url
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Serializer
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 
 @Serializable
 data class ServerConfig(
@@ -17,7 +24,7 @@ data class ServerConfig(
     val websiteUrl: String,
     val title: String,
     val federation: Boolean,
-    val commonApiVersion: Int?,
+    @Serializable(with = CommonApiVersionTypeSerializer::class) val commonApiVersion: CommonApiVersionType,
     val domain: String?
 ) {
     companion object {
@@ -31,7 +38,7 @@ data class ServerConfig(
             websiteUrl = """https://wire.com""",
             title = "Production",
             federation = false,
-            commonApiVersion = 1, // TODO: fetch the real value
+            commonApiVersion = CommonApiVersionType.Valid(1), // TODO: fetch the real value
             domain = "wire.com"
         )
         val STAGING = ServerConfig(
@@ -44,7 +51,7 @@ data class ServerConfig(
             websiteUrl = """https://wire.com""",
             title = "Staging",
             federation = false,
-            commonApiVersion = 1, // TODO: fetch the real value
+            commonApiVersion = CommonApiVersionType.Valid(1), // TODO: fetch the real value
             domain = "wire.com" // TODO: check domain
         )
         val DEFAULT = PRODUCTION
@@ -83,7 +90,7 @@ class ServerConfigMapperImpl : ServerConfigMapper {
                 websiteUrl,
                 title,
                 federation,
-                commonApiVersion,
+                commonApiVersion.version,
                 domain
             )
         }
@@ -100,9 +107,28 @@ class ServerConfigMapperImpl : ServerConfigMapper {
                 websiteUrl,
                 title,
                 federation,
-                commonApiVersion,
+                commonApiVersion.toCommonApiVersionType(),
                 domain
             )
         }
+}
 
+sealed class CommonApiVersionType(open val version: Int) {
+    object New : CommonApiVersionType(-1)
+    object Unknown : CommonApiVersionType(-2)
+    data class Valid(override val version: Int) : CommonApiVersionType(version)
+}
+
+fun Int?.toCommonApiVersionType() = when {
+    this != null && this >= 0 -> CommonApiVersionType.Valid(this)
+    this == -1 -> CommonApiVersionType.New
+    else -> CommonApiVersionType.Unknown
+}
+
+@OptIn(ExperimentalSerializationApi::class)
+@Serializer(CommonApiVersionType::class)
+class CommonApiVersionTypeSerializer : KSerializer<CommonApiVersionType> {
+    override val descriptor = PrimitiveSerialDescriptor("common_api_version", PrimitiveKind.INT)
+    override fun serialize(encoder: Encoder, value: CommonApiVersionType) { encoder.encodeInt(value.version) }
+    override fun deserialize(decoder: Decoder): CommonApiVersionType = decoder.decodeInt().toCommonApiVersionType()
 }

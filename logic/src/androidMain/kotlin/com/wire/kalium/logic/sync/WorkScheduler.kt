@@ -111,7 +111,7 @@ class WrapperWorkerFactory(private val coreLogic: CoreLogic) : WorkerFactory() {
                 require(userId != null) { "No user id specified" }
                 createSlowSyncWorker(workerParameters, userId, appContext)
             }
-            ApiVersionCheckWorker::class.java.canonicalName -> {
+            UpdateApiVersionsWorker::class.java.canonicalName -> {
                 createApiVersionCheckWorker(workerParameters, appContext)
             }
             else -> {
@@ -122,7 +122,7 @@ class WrapperWorkerFactory(private val coreLogic: CoreLogic) : WorkerFactory() {
     }
 
     private fun createApiVersionCheckWorker(workerParameters: WorkerParameters, appContext: Context): WrapperWorker {
-        val worker = ApiVersionCheckWorker(coreLogic.apiVersionCheckManager)
+        val worker = UpdateApiVersionsWorker(coreLogic.apiVersionCheckManager, coreLogic.getAuthenticationScope().updateApiVersions)
         return WrapperWorker(worker, appContext, workerParameters)
     }
 
@@ -186,10 +186,10 @@ actual sealed class WorkScheduler(private val appContext: Context) {
 
     actual class Global(
         private val appContext: Context
-    ) : WorkScheduler(appContext), ApiVersionCheckScheduler {
+    ) : WorkScheduler(appContext), UpdateApiVersionsScheduler {
 
-        override fun schedulePeriodicApiVersionCheck() {
-            val inputData = WrapperWorkerFactory.workData(ApiVersionCheckWorker::class)
+        override fun schedulePeriodicApiVersionUpdate() {
+            val inputData = WrapperWorkerFactory.workData(UpdateApiVersionsWorker::class)
 
             val connectedConstraint = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
@@ -216,14 +216,14 @@ actual sealed class WorkScheduler(private val appContext: Context) {
                 .build()
 
             WorkManager.getInstance(appContext).enqueueUniquePeriodicWork(
-                "${ApiVersionCheckWorker.name}-periodic",
+                "${UpdateApiVersionsWorker.name}-periodic",
                 ExistingPeriodicWorkPolicy.KEEP,
                 requestPeriodicWork
             )
         }
 
-        override fun scheduleImmediateApiVersionCheck() {
-            val inputData = WrapperWorkerFactory.workData(ApiVersionCheckWorker::class)
+        override fun scheduleImmediateApiVersionUpdate() {
+            val inputData = WrapperWorkerFactory.workData(UpdateApiVersionsWorker::class)
 
             val connectedConstraint = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
@@ -236,7 +236,7 @@ actual sealed class WorkScheduler(private val appContext: Context) {
                 .build()
 
             WorkManager.getInstance(appContext).enqueueUniqueWork(
-                "${ApiVersionCheckWorker.name}-immediate",
+                "${UpdateApiVersionsWorker.name}-immediate",
                 ExistingWorkPolicy.KEEP,
                 requestOneTimeWork
             )

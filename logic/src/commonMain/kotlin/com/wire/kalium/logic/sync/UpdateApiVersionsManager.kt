@@ -7,16 +7,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.update
 
-enum class ApiVersionCheckResult {
-    CLIENT_TOO_OLD,
-    CLIENT_TOO_NEW,
-    COMPATIBLE
-}
-
 sealed class ApiVersionCheckState {
     object Waiting: ApiVersionCheckState()
     object Running: ApiVersionCheckState()
-    data class Completed(val result: ApiVersionCheckResult): ApiVersionCheckState()
+    object Completed: ApiVersionCheckState()
     data class Failed(val failure: CoreFailure): ApiVersionCheckState()
 }
 
@@ -45,12 +39,12 @@ class ApiVersionCheckManagerImpl(private val workScheduler: WorkScheduler.Global
             }
         }
         if (currentState is ApiVersionCheckState.Waiting) {
-            workScheduler.scheduleImmediateApiVersionCheck()
+            workScheduler.scheduleImmediateApiVersionUpdate()
         }
     }
 
     override fun schedulePeriodicCheck() {
-        workScheduler.schedulePeriodicApiVersionCheck()
+        workScheduler.schedulePeriodicApiVersionUpdate()
     }
 
     override suspend fun waitUntilCompleted(): ApiVersionCheckState = state.first { it is ApiVersionCheckState.Completed }

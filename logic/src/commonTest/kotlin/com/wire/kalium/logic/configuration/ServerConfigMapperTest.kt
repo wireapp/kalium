@@ -1,8 +1,10 @@
 package com.wire.kalium.logic.configuration
 
+import com.wire.kalium.logic.configuration.server.CommonApiVersionType
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.configuration.server.ServerConfigMapperImpl
+import com.wire.kalium.logic.configuration.server.toCommonApiVersionType
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.logic.util.stubs.newServerConfigDTO
 import com.wire.kalium.logic.util.stubs.newServerConfigEntity
@@ -12,6 +14,7 @@ import io.ktor.http.Url
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 class ServerConfigMapperTest {
 
@@ -57,7 +60,7 @@ class ServerConfigMapperTest {
                     websiteUrl,
                     title,
                     federation,
-                    commonApiVersion,
+                    commonApiVersion.toCommonApiVersionType(),
                     domain
                 )
             }
@@ -81,13 +84,31 @@ class ServerConfigMapperTest {
                     websiteUrl,
                     title,
                     federation,
-                    commonApiVersion,
+                    commonApiVersion.version,
                     domain
                 )
             }
 
         val expectedValue: ServerConfigEntity = serverConfigMapper.toEntity(serverConfig)
         assertEquals(expectedValue, acuteValue)
+    }
+
+    @Test
+    fun givenACommonApiVersion_whenMapping_thenValuesAreMappedCorrectly() {
+        val expectedUnknown = -2
+        val actualUnknown = expectedUnknown.toCommonApiVersionType()
+        assertIs<CommonApiVersionType.Unknown>(actualUnknown)
+        assertEquals(expectedUnknown, actualUnknown.version)
+
+        val expectedNew = -1
+        val actualNew = expectedNew.toCommonApiVersionType()
+        assertIs<CommonApiVersionType.New>(actualNew)
+        assertEquals(expectedNew, actualNew.version)
+
+        val expectedValid = 1
+        val actualValid = expectedValid.toCommonApiVersionType()
+        assertIs<CommonApiVersionType.Valid>(actualValid)
+        assertEquals(expectedValid, actualValid.version)
     }
 
     private companion object {

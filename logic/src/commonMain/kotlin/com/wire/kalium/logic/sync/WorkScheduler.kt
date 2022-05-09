@@ -15,7 +15,7 @@ expect sealed class WorkScheduler {
      */
     fun enqueueImmediateWork(work: KClass<out DefaultWorker>, name: String)
 
-    class Global : WorkScheduler, ApiVersionCheckScheduler
+    class Global : WorkScheduler, UpdateApiVersionsScheduler
     class UserSession: WorkScheduler, MessageSendingScheduler, SlowSyncScheduler {
         val userId: UserId
     }

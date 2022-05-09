@@ -23,17 +23,17 @@ actual sealed class WorkScheduler {
 
     actual class Global(
         private val coreLogic: CoreLogic
-    ) : WorkScheduler(), ApiVersionCheckScheduler {
+    ) : WorkScheduler(), UpdateApiVersionsScheduler {
 
-        override fun schedulePeriodicApiVersionCheck() {
+        override fun schedulePeriodicApiVersionUpdate() {
             kaliumLogger.w(
                 "Scheduling a periodic execution of checking the API version is not supported on JVM."
             )
         }
 
-        override fun scheduleImmediateApiVersionCheck() {
+        override fun scheduleImmediateApiVersionUpdate() {
             GlobalScope.launch {
-                ApiVersionCheckWorker(coreLogic.apiVersionCheckManager).doWork()
+                UpdateApiVersionsWorker(coreLogic.apiVersionCheckManager, coreLogic.getAuthenticationScope().updateApiVersions).doWork()
             }
         }
     }

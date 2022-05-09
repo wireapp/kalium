@@ -21,6 +21,8 @@ import com.wire.kalium.logic.feature.auth.sso.SSOLoginScope
 import com.wire.kalium.logic.feature.notification_token.SaveNotificationTokenUseCase
 import com.wire.kalium.logic.feature.register.RegisterScope
 import com.wire.kalium.logic.feature.server_config.GetServerConfigUseCase
+import com.wire.kalium.logic.feature.server_config.UpdateApiVersionsUseCase
+import com.wire.kalium.logic.feature.server_config.UpdateApiVersionsUseCaseImpl
 import com.wire.kalium.logic.feature.session.GetSessionsUseCase
 import com.wire.kalium.logic.feature.session.SessionScope
 import com.wire.kalium.network.LoginNetworkContainer
@@ -68,6 +70,7 @@ class AuthenticationScope(
     val login: LoginUseCase get() = LoginUseCaseImpl(loginRepository, validateEmailUseCase, validateUserHandleUseCase)
     val getSessions: GetSessionsUseCase get() = GetSessionsUseCase(sessionRepository)
     val getServerConfig: GetServerConfigUseCase get() = GetServerConfigUseCase(serverConfigRepository)
+    val updateApiVersions: UpdateApiVersionsUseCase get() = UpdateApiVersionsUseCaseImpl(serverConfigRepository, serverConfigMapper)
     val session: SessionScope get() = SessionScope(sessionRepository)
     val register: RegisterScope get() = RegisterScope(registerAccountRepository)
     val ssoLoginScope: SSOLoginScope get() = SSOLoginScope(ssoLoginRepository, sessionMapper)
