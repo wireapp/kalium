@@ -25,12 +25,8 @@ class ProtoContentMapperImpl : ProtoContentMapper {
         val (messageUid, messageContent) = protoContent
 
         val content = when (messageContent) {
-            is MessageContent.Text -> {
-                GenericMessage.Content.Text(Text(content = messageContent.value))
-            }
-            is MessageContent.Calling -> {
-                GenericMessage.Content.Calling(Calling(content = messageContent.value))
-            }
+            is MessageContent.Text -> GenericMessage.Content.Text(Text(content = messageContent.value))
+            is MessageContent.Calling -> GenericMessage.Content.Calling(Calling(content = messageContent.value))
             is MessageContent.Asset -> {
                 with(messageContent.value) {
                     GenericMessage.Content.Asset(
@@ -67,20 +63,14 @@ class ProtoContentMapperImpl : ProtoContentMapper {
                     )
                 }
             }
-            is MessageContent.DeleteMessage -> {
-                GenericMessage.Content.Deleted(MessageDelete(messageId = messageContent.messageId))
-            }
-            is MessageContent.DeleteForMe -> {
-                GenericMessage.Content.Hidden(
-                    MessageHide(
-                        messageId = messageContent.messageId,
-                        conversationId = messageContent.conversationId
-                    )
+            is MessageContent.DeleteMessage -> GenericMessage.Content.Deleted(MessageDelete(messageId = messageContent.messageId))
+            is MessageContent.DeleteForMe -> GenericMessage.Content.Hidden(
+                MessageHide(
+                    messageId = messageContent.messageId,
+                    conversationId = messageContent.conversationId
                 )
-            }
-            else -> {
-                throw IllegalArgumentException("Unexpected message content type: $messageContent")
-            }
+            )
+            else -> throw IllegalArgumentException("Unexpected message content type: $messageContent")
         }
 
         val message = GenericMessage(messageUid, content)
