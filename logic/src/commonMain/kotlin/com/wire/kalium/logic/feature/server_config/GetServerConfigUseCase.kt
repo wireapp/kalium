@@ -26,7 +26,7 @@ class GetServerConfigUseCase internal constructor(
             }
         }
 
-        val commonApiVersion = serverConfigUtil.calculateApiVersion(versionInfoDTO).let {
+        val commonApiVersion = serverConfigUtil.calculateApiVersion(versionInfoDTO.supported).let {
             when (it) {
                 is Either.Right -> it.value
                 is Either.Left -> return handleError(it.value)

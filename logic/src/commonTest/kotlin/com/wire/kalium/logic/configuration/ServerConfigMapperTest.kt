@@ -3,6 +3,9 @@ package com.wire.kalium.logic.configuration
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.configuration.server.ServerConfigMapperImpl
+import com.wire.kalium.logic.util.stubs.newServerConfig
+import com.wire.kalium.logic.util.stubs.newServerConfigDTO
+import com.wire.kalium.logic.util.stubs.newServerConfigEntity
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import io.ktor.http.Url
@@ -21,7 +24,7 @@ class ServerConfigMapperTest {
 
     @Test
     fun givenAServerConfig_whenMappingToBackendConfig_thenValuesAreMappedCorrectly() {
-        val serverConfig: ServerConfig = serverConfig()
+        val serverConfig: ServerConfig = SERVER_CONFIG_TEST
         val acuteValue: ServerConfigDTO =
             with(serverConfig) {
                 ServerConfigDTO(
@@ -41,7 +44,7 @@ class ServerConfigMapperTest {
 
     @Test
     fun givenANetworkConfigEntity_whenMappingFromNetworkConfig_thenValuesAreMappedCorrectly() {
-        val serverConfigEntity: ServerConfigEntity = serverConfigEntity()
+        val serverConfigEntity: ServerConfigEntity = ENTITY_TEST
         val acuteValue: ServerConfig =
             with(serverConfigEntity) {
                 ServerConfig(
@@ -52,7 +55,10 @@ class ServerConfigMapperTest {
                     blackListUrl,
                     teamsUrl,
                     websiteUrl,
-                    title
+                    title,
+                    federation,
+                    commonApiVersion,
+                    domain
                 )
             }
 
@@ -62,7 +68,7 @@ class ServerConfigMapperTest {
 
     @Test
     fun givenAServerConfig_whenMappingToNetworkConfig_thenValuesAreMappedCorrectly() {
-        val serverConfig: ServerConfig = serverConfig()
+        val serverConfig: ServerConfig = SERVER_CONFIG_TEST
         val acuteValue: ServerConfigEntity =
             with(serverConfig) {
                 ServerConfigEntity(
@@ -73,7 +79,10 @@ class ServerConfigMapperTest {
                     blackListUrl,
                     teamsUrl,
                     websiteUrl,
-                    title
+                    title,
+                    federation,
+                    commonApiVersion,
+                    domain
                 )
             }
 
@@ -82,22 +91,8 @@ class ServerConfigMapperTest {
     }
 
     private companion object {
-        fun serverConfigDTO(): ServerConfigDTO =
-            ServerConfigDTO(
-                Url("https://test.api.com"), Url("https://test.account.com"), Url("https://test.ws.com"),
-                Url("https://test.blacklist"), Url("https://test.teams.com"), Url("https://test.wire.com"), "Test Title"
-            )
-
-        fun serverConfig(): ServerConfig =
-            ServerConfig(
-                "config-id", "https://test.api.com", "https://test.account.com", "https://test.ws.com",
-                "https://test.blacklist", "https://test.teams.com", "https://test.wire.com", "Test Title"
-            )
-
-        fun serverConfigEntity(): ServerConfigEntity =
-            ServerConfigEntity(
-                "config-id", "https://test.api.com", "https://test.account.com", "https://test.ws.com",
-                "https://test.blacklist", "https://test.teams.com", "https://test.wire.com", "Test Title"
-            )
+        val DTO_TEST: ServerConfigDTO = newServerConfigDTO(1)
+        val SERVER_CONFIG_TEST: ServerConfig = newServerConfig(1)
+        val ENTITY_TEST: ServerConfigEntity = newServerConfigEntity(1)
     }
 }
