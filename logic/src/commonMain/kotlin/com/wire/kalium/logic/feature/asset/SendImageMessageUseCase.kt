@@ -118,7 +118,7 @@ internal class SendImageMessageUseCaseImpl(
             )
             messageRepository.persistMessage(message)
         }.flatMap {
-            messageSender.trySendingOutgoingMessageById(conversationId, generatedMessageUuid)
+            messageSender.sendPendingMessage(conversationId, generatedMessageUuid)
         }.onFailure {
             kaliumLogger.e("There was an error when trying to send the image message to the conversation")
         }
