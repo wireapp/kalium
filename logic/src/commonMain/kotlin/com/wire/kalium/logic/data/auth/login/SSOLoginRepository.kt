@@ -1,7 +1,7 @@
 package com.wire.kalium.logic.data.auth.login
 
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.configuration.ServerConfig
+import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.SessionDTO

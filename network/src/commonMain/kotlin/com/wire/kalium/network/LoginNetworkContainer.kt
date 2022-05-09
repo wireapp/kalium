@@ -1,5 +1,7 @@
 package com.wire.kalium.network
 
+import com.wire.kalium.network.api.api_version.VersionApi
+import com.wire.kalium.network.api.api_version.VersionApiImpl
 import com.wire.kalium.network.api.configuration.ServerConfigApi
 import com.wire.kalium.network.api.configuration.ServerConfigApiImp
 import com.wire.kalium.network.api.user.login.LoginApi
@@ -18,6 +20,7 @@ class LoginNetworkContainer(
     val serverConfigApi: ServerConfigApi get() = ServerConfigApiImp(anonymousHttpClient)
     val registerApi: RegisterApi get() = RegisterApiImpl(anonymousHttpClient)
     val sso: SSOLoginApi get() = SSOLoginApiImpl(anonymousHttpClient)
+    val remoteVersion : VersionApi get() = VersionApiImpl(anonymousHttpClient)
 
     internal val anonymousHttpClient by lazy {
         provideBaseHttpClient(engine, HttpClientOptions.NoDefaultHost)

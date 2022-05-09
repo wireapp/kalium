@@ -1,6 +1,6 @@
 package com.wire.kalium.logic.util.stubs
 
-import com.wire.kalium.logic.configuration.ServerConfig
+import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import io.ktor.http.Url
@@ -14,6 +14,9 @@ internal fun newServerConfig(id: Int) = ServerConfig(
     teamsUrl = "https://server$id-teamsUrl.de",
     websiteUrl = "https://server$id-websiteUrl.de",
     title = "server$id-title",
+    commonApiVersion = id,
+    domain = "domain$id.com",
+    federation = false
 )
 
 internal fun newServerConfigEntity(id: Int) = ServerConfigEntity(
@@ -25,6 +28,9 @@ internal fun newServerConfigEntity(id: Int) = ServerConfigEntity(
     teamsUrl = "https://server$id-teamsUrl.de",
     websiteUrl = "https://server$id-websiteUrl.de",
     title = "server$id-title",
+    commonApiVersion = id,
+    domain = "domain$id.com",
+    federation = false
 )
 
 internal fun newServerConfigDTO(id: Int) = ServerConfigDTO(
@@ -34,7 +40,7 @@ internal fun newServerConfigDTO(id: Int) = ServerConfigDTO(
     blackListUrl = Url("https://server$id-blackListUrl.de"),
     teamsUrl = Url("https://server$id-teamsUrl.de"),
     websiteUrl = Url("https://server$id-websiteUrl.de"),
-    title = "server$id-title",
+    title = "server$id-title"
 )
 
 

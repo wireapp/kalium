@@ -6,9 +6,9 @@ import com.github.ajalt.clikt.parameters.options.required
 import com.wire.kalium.cli.CLIUtils.getResource
 import com.wire.kalium.cryptography.utils.calcMd5
 import com.wire.kalium.logger.KaliumLogLevel
-import com.wire.kalium.logic.configuration.ServerConfig
-import com.wire.kalium.logic.configuration.ServerConfigMapper
-import com.wire.kalium.logic.configuration.ServerConfigMapperImpl
+import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.configuration.server.ServerConfigMapper
+import com.wire.kalium.logic.configuration.server.ServerConfigMapperImpl
 import com.wire.kalium.network.AuthenticatedNetworkContainer
 import com.wire.kalium.network.LoginNetworkContainer
 import com.wire.kalium.network.NetworkLogger

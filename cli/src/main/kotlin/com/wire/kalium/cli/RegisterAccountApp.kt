@@ -4,7 +4,7 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.logic.configuration.ServerConfig
+import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.feature.register.RegisterParam
 import com.wire.kalium.logic.feature.register.RegisterResult
 import com.wire.kalium.logic.feature.register.RequestActivationCodeResult

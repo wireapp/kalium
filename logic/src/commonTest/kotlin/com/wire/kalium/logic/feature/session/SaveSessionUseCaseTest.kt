@@ -1,10 +1,11 @@
 package com.wire.kalium.logic.feature.session
 
-import com.wire.kalium.logic.configuration.ServerConfig
+import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.stubs.newServerConfig
 import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.classOf
@@ -40,16 +41,7 @@ class SaveSessionUseCaseTest {
     }
 
     private companion object {
-        val TEST_SERVER_CONFIG: ServerConfig = ServerConfig(
-            id = "config-1",
-            apiBaseUrl = "apiBaseUrl.com",
-            accountsBaseUrl = "accountsUrl.com",
-            webSocketBaseUrl = "webSocketUrl.com",
-            blackListUrl = "blackListUrl.com",
-            teamsUrl = "teamsUrl.com",
-            websiteUrl = "websiteUrl.com",
-            title = "Test Title"
-        )
+        val TEST_SERVER_CONFIG: ServerConfig = newServerConfig(1)
         val TEST_AUTH_SESSION =
             AuthSession(
                 userId = UserId("user_id", "domain.de"),
