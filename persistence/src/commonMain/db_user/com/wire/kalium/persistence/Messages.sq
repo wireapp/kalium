@@ -44,9 +44,9 @@ DELETE FROM Message WHERE  id = ? AND conversation_id = ?;
 deleteMessageById:
 DELETE FROM Message WHERE  id = ?;
 
-updateMessageVisibility:
+markMessageAsDeleted:
 UPDATE Message
-SET visibility = ?, text_body = ?
+SET visibility = 'DELETED', text_body = NULL
 WHERE id = ?;
 
 insertMessage:
