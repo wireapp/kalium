@@ -175,7 +175,7 @@ class ConversationEventReceiver(
                 else kaliumLogger.i(message = "Delete message sender is not verified: $message")
             is MessageContent.DeleteForMe -> {
                 if (message.conversationId == conversationRepository.getSelfConversationId())
-                    messageRepository.markMessageAsDeleted(
+                    messageRepository.deleteMessage(
                         messageUuid = message.content.messageId,
                         /*The conversationId comes with the hidden message[message.content] only carries the conversaionId VALUE,
                         *  we need to get the DOMAIN from the self conversationId[here is the message.conversationId]*/

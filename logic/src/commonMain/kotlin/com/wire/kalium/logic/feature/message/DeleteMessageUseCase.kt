@@ -28,7 +28,6 @@ class DeleteMessageUseCase(
     suspend operator fun invoke(conversationId: ConversationId, messageId: String, deleteForEveryone: Boolean): Either<CoreFailure, Unit> {
         syncManager.waitForSlowSyncToComplete()
         val selfUser = userRepository.getSelfUser().first()
-        val selfConversationId = conversationRepository.getSelfConversationId()
         return suspending {
             val generatedMessageUuid = uuid4().toString()
             clientRepository.currentClientId().flatMap { currentClientId ->
@@ -46,7 +45,7 @@ class DeleteMessageUseCase(
                 )
                 messageSender.trySendingOutgoingMessage(message)
             }.flatMap {
-                messageRepository.markMessageAsDeleted(messageId, conversationId)
+                messageRepository.deleteMessage(messageId, conversationId)
             }.onFailure {
                 kaliumLogger.w("delete message failure: $it")
                 if (it is CoreFailure.Unknown) {
