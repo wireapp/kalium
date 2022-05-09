@@ -105,7 +105,7 @@ class MessageSenderImpl(
 
     private suspend fun attemptToSend(message: Message): Either<CoreFailure, String> = suspending {
         val conversationId = message.conversationId
-        conversationRepository.getConversationProtocolInfo(message.conversationId).flatMap { protocolInfo ->
+        conversationRepository.getConversationProtocolInfo(conversationId).flatMap { protocolInfo ->
             when (protocolInfo) {
                 is ConversationEntity.ProtocolInfo.MLS -> {
                     attemptToSendWithMLS(protocolInfo.groupId, message)
@@ -120,12 +120,12 @@ class MessageSenderImpl(
 
     private suspend fun attemptToSendWithProteus(message: Message): Either<CoreFailure, String> = suspending {
         val conversationId = message.conversationId
-        conversationRepository.getConversationRecipients(message.conversationId)
+        conversationRepository.getConversationRecipients(conversationId)
             .flatMap { recipients ->
                 sessionEstablisher.prepareRecipientsForNewOutgoingMessage(recipients).map { recipients }
             }.flatMap { recipients ->
                 messageEnvelopeCreator.createOutgoingEnvelope(recipients, message).flatMap { envelope ->
-                    trySendingProteusEnvelope(envelope, message)
+                    trySendingProteusEnvelope(conversationId, envelope, message)
                 }
             }
     }
