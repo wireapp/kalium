@@ -130,8 +130,8 @@ class ConversationEventReceiver(
                 // TODO: Insert a failed message into the database to notify user that encryption is kaputt
                 kaliumLogger.e("$TAG - failure on MLS message: $it")
             }
-            .onSuccess { message ->
-                val plainMessageBlob = message?.let { PlainMessageBlob(it) } ?: return@onSuccess
+            .onSuccess { mlsMessage ->
+                val plainMessageBlob = mlsMessage?.let { PlainMessageBlob(it) } ?: return@onSuccess
                 val protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)
                 val message = Message(
                     id = protoContent.messageUid,
@@ -142,7 +142,6 @@ class ConversationEventReceiver(
                     senderClientId = ClientId(""), // TODO client ID not available for MLS messages
                     status = Message.Status.SENT
                 )
-
                 processMessage(message)
             }
     }
