@@ -9,15 +9,17 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.Url
 
 interface VersionApi {
-    suspend fun fetchApiVersion(baseApiUrl: Url): NetworkResponse<VersionInfoDTO>
+    suspend fun fetchServerConfig(baseApiUrl: Url): NetworkResponse<VersionInfoDTO>
 }
 
 class VersionApiImpl(
     private val httpClient: HttpClient
 ) : VersionApi {
-    override suspend fun fetchApiVersion(baseApiUrl: Url): NetworkResponse<VersionInfoDTO> = wrapKaliumResponse({
+    override suspend fun fetchServerConfig(baseApiUrl: Url): NetworkResponse<VersionInfoDTO> = wrapKaliumResponse({
         if (it.status.value != HttpStatusCode.NotFound.value) null
-        else NetworkResponse.Success(VersionInfoDTO(), it)
+        else {
+            NetworkResponse.Success(VersionInfoDTO(), it)
+        }
     }, {
         httpClient.get {
             setUrl(baseApiUrl, API_VERSION_PATH)
