@@ -10,6 +10,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -347,6 +348,21 @@ class UserDAOTest : BaseDatabaseTest() {
         val updated3 = db.userDAO.getUserByQualifiedID(updatedUser3.id)
         assertEquals(newNameA, updated1.first()?.name)
         assertEquals(newNameB, updated3.first()?.name)
+    }
+
+    @Test
+    fun givenAExistingUsers_whenUpdatingTheirValuesAndRecordNotExists_ThenResultsOneUpdatedAnotherInserted() = runTest {
+        //given
+        val newNameA = "new user naming a"
+        db.userDAO.insertUser(user1)
+        //when
+        val updatedUser1 = user1.copy(name = newNameA)
+        db.userDAO.updateUsers(listOf(updatedUser1, user2))
+        //then
+        val updated1 = db.userDAO.getUserByQualifiedID(updatedUser1.id)
+        val inserted2 = db.userDAO.getUserByQualifiedID(user2.id)
+        assertEquals(newNameA, updated1.first()?.name)
+        assertNotNull(inserted2)
     }
 
 
