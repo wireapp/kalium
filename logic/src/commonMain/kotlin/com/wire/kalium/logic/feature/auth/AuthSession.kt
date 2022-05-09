@@ -1,6 +1,6 @@
 package com.wire.kalium.logic.feature.auth
 
-import com.wire.kalium.logic.configuration.ServerConfig
+import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.id.QualifiedID
 import kotlinx.serialization.Serializable
 

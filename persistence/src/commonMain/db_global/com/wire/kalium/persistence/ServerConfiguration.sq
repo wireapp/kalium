@@ -1,3 +1,6 @@
+import kotlin.Boolean;
+import kotlin.Int;
+
 CREATE TABLE ServerConfiguration (
     id TEXT PRIMARY KEY NOT NULL,
     title TEXT NOT NULL,
@@ -6,15 +9,32 @@ CREATE TABLE ServerConfiguration (
     webSocketBaseUrl TEXT NOT NULL UNIQUE,
     blackListUrl TEXT NOT NULL,
     teamsUrl TEXT NOT NULL,
-    websiteUrl TEXT NOT NULL
+    websiteUrl TEXT NOT NULL,
+    domain TEXT UNIQUE,
+    commonApiVersion INTEGER AS Int NOT NULL,
+    federation INTEGER AS Boolean NOT NULL
 );
 
 deleteById:
 DELETE FROM ServerConfiguration WHERE id = ?;
 
 insert:
-INSERT OR IGNORE INTO ServerConfiguration(id, apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title)
-VALUES( ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR IGNORE INTO ServerConfiguration(id, apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title, federation, domain, commonApiVersion)
+VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+/** the idea here is when a BE stored api version is null it means it's not supported */
+markAsInvalid:
+UPDATE ServerConfiguration SET commonApiVersion = NULL WHERE id = ?;
+
+updateApiVersion:
+UPDATE ServerConfiguration SET commonApiVersion = ? WHERE id = ?;
+
+/** this function will be used when a config get updated from v0 where domain can be null */
+updateApiVersionAndDomain:
+UPDATE ServerConfiguration SET commonApiVersion = ?, domain = ? WHERE id = ?;
+
+setFederationToTrue:
+UPDATE ServerConfiguration SET federation = 1 WHERE id = ?;
 
 storedConfig:
 SELECT * FROM ServerConfiguration;

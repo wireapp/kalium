@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.map
 
 internal class ServerConfigMapper() {
     fun toModel(serverConfiguration: ServerConfiguration) = with(serverConfiguration) {
-        ServerConfigEntity(id, apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title)
+        ServerConfigEntity(id, apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title, federation, commonApiVersion, domain)
     }
 }
 
@@ -24,7 +24,10 @@ interface ServerConfigurationDAO {
         blackListUrl: String,
         teamsUrl: String,
         websiteUrl: String,
-        title: String
+        title: String,
+        fediration: Boolean,
+        domain: String?,
+        commonApiVersion: Int
     )
 
     fun allConfigFlow(): Flow<List<ServerConfigEntity>>
@@ -45,8 +48,11 @@ class ServerConfigurationDAOImpl(private val queries: ServerConfigurationQueries
         blackListUrl: String,
         teamsUrl: String,
         websiteUrl: String,
-        title: String
-    ) = queries.insert(id, apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title)
+        title: String,
+        fediration: Boolean,
+        domain: String?,
+        commonApiVersion: Int
+    ) = queries.insert(id, apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title, fediration, domain, commonApiVersion)
 
     override fun allConfigFlow(): Flow<List<ServerConfigEntity>> =
         queries.storedConfig().asFlow().mapToList().map { it.map(mapper::toModel) }
