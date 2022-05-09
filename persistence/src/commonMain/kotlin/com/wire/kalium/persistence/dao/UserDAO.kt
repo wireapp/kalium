@@ -56,6 +56,7 @@ interface UserDAO {
     suspend fun insertUser(user: UserEntity)
     suspend fun insertUsers(users: List<UserEntity>)
     suspend fun updateUser(user: UserEntity)
+    suspend fun updateUsers(users: List<UserEntity>)
     suspend fun getAllUsers(): Flow<List<UserEntity>>
     suspend fun getAllUsersByConnectionStatus(connectionState: UserEntity.ConnectionState): List<UserEntity>
     suspend fun getUserByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserEntity?>
