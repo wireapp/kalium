@@ -2,9 +2,6 @@ package com.wire.kalium.logic.functional
 
 import com.wire.kalium.logic.functional.Either.Left
 import com.wire.kalium.logic.functional.Either.Right
-import kotlin.contracts.ExperimentalContracts
-import kotlin.contracts.InvocationKind
-import kotlin.contracts.contract
 
 /**
  * Helper class that extends [Either] to be compatible with suspend functions. The extension methods created in this class
@@ -33,7 +30,6 @@ import kotlin.contracts.contract
  *
  * @see Either
  */
-@OptIn(ExperimentalContracts::class)
 class SuspendableEitherScope {
 
     /**
@@ -45,16 +41,11 @@ class SuspendableEitherScope {
             is Right -> fnR(value)
         }
 
-    inline fun <L, R, T> Either<L, R>.flatMap(fn: (R) -> Either<L, T>): Either<L, T> {
-        contract {
-            callsInPlace(fn, InvocationKind.EXACTLY_ONCE)
-        }
-        return when (this) {
+    suspend fun <L, R, T> Either<L, R>.flatMap(fn: suspend (R) -> Either<L, T>): Either<L, T> =
+        when (this) {
             is Left -> Left(value)
             is Right -> fn(value)
         }
-    }
-
 
     suspend fun <L, R> Either<L, R>.onFailure(fn: suspend (failure: L) -> Unit): Either<L, R> =
         this.apply { if (this is Left) fn(value) }
