@@ -25,7 +25,7 @@ interface ServerConfigurationDAO {
         teamsUrl: String,
         websiteUrl: String,
         title: String,
-        fediration: Boolean,
+        federation: Boolean,
         domain: String?,
         commonApiVersion: Int
     )
@@ -49,10 +49,10 @@ class ServerConfigurationDAOImpl(private val queries: ServerConfigurationQueries
         teamsUrl: String,
         websiteUrl: String,
         title: String,
-        fediration: Boolean,
+        federation: Boolean,
         domain: String?,
         commonApiVersion: Int
-    ) = queries.insert(id, apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title, fediration, domain, commonApiVersion)
+    ) = queries.insert(id, apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title, federation, domain, commonApiVersion)
 
     override fun allConfigFlow(): Flow<List<ServerConfigEntity>> =
         queries.storedConfig().asFlow().mapToList().map { it.map(mapper::toModel) }

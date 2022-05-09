@@ -67,7 +67,7 @@ internal class ServerConfigDataSource(
                 teamsUrl = teamsUrl.toString(),
                 websiteUrl = websiteUrl.toString(),
                 title = title,
-                fediration = federation,
+                federation = federation,
                 domain = domain,
                 commonApiVersion = apiVersion
             )
@@ -82,6 +82,6 @@ internal class ServerConfigDataSource(
     }.map { serverConfigMapper.fromEntity(it) }
 
     override suspend fun fetchRemoteApiVersion(serverConfigDTO: ServerConfigDTO): Either<NetworkFailure, VersionInfoDTO> = wrapApiRequest {
-        versionApi.fetchApiVersion(serverConfigDTO.apiBaseUrl)
+        versionApi.fetchServerConfig(serverConfigDTO.apiBaseUrl)
     }
 }

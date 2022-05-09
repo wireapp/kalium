@@ -140,7 +140,7 @@ class ServerConfigRepositoryTest {
         val serverConfigDto = SERVER_CONFIG_DTO
         val expected = VersionInfoDTO("wire.com", true, listOf(0, 1, 2))
         given(versionApi)
-            .coroutine { fetchApiVersion(serverConfigDto.apiBaseUrl) }
+            .coroutine { fetchServerConfig(serverConfigDto.apiBaseUrl) }
             .then { NetworkResponse.Success(expected, mapOf(), 200) }
 
         serverConfigRepository.fetchRemoteApiVersion(serverConfigDto).shouldSucceed { actual ->
@@ -153,7 +153,7 @@ class ServerConfigRepositoryTest {
         val serverConfigDto = SERVER_CONFIG_DTO
         val expected = NetworkResponse.Error(TestNetworkException.generic)
         given(versionApi)
-            .coroutine { fetchApiVersion(serverConfigDto.apiBaseUrl) }
+            .coroutine { fetchServerConfig(serverConfigDto.apiBaseUrl) }
             .then { NetworkResponse.Error(expected.kException) }
 
         serverConfigRepository.fetchRemoteApiVersion(serverConfigDto).shouldFail {actual ->
