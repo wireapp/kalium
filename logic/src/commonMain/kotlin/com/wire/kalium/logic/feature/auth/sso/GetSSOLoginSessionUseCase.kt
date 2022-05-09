@@ -2,7 +2,7 @@ package com.wire.kalium.logic.feature.auth.sso
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.configuration.ServerConfig
+import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.feature.auth.AuthSession

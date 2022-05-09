@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.configuration
+package com.wire.kalium.logic.configuration.server
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.NetworkFailure
@@ -9,6 +9,8 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.network.api.api_version.VersionApi
+import com.wire.kalium.network.api.api_version.VersionInfoDTO
 import com.wire.kalium.network.api.configuration.ServerConfigApi
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAO
@@ -22,13 +24,18 @@ internal interface ServerConfigRepository {
     fun configFlow(): Either<StorageFailure, Flow<List<ServerConfig>>>
     fun deleteById(id: String): Either<StorageFailure, Unit>
     fun delete(serverConfig: ServerConfig): Either<StorageFailure, Unit>
-    fun storeConfig(serverConfigDTO: ServerConfigDTO): Either<StorageFailure, ServerConfig>
+    fun storeConfig(
+        serverConfigDTO: ServerConfigDTO, domain: String?, apiVersion: Int, federation: Boolean
+    ): Either<StorageFailure, ServerConfig>
+
     fun configById(id: String): Either<StorageFailure, ServerConfig>
+    suspend fun fetchRemoteApiVersion(serverConfigDTO: ServerConfigDTO): Either<NetworkFailure, VersionInfoDTO>
 }
 
 internal class ServerConfigDataSource(
     private val api: ServerConfigApi,
     private val dao: ServerConfigurationDAO,
+    private val versionApi: VersionApi,
     private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
 ) : ServerConfigRepository {
 
@@ -46,7 +53,9 @@ internal class ServerConfigDataSource(
 
     override fun delete(serverConfig: ServerConfig) = deleteById(serverConfig.id)
 
-    override fun storeConfig(serverConfigDTO: ServerConfigDTO): Either<StorageFailure, ServerConfig> = wrapStorageRequest {
+    override fun storeConfig(
+        serverConfigDTO: ServerConfigDTO, domain: String?, apiVersion: Int, federation: Boolean
+    ): Either<StorageFailure, ServerConfig> = wrapStorageRequest {
         val newId = uuid4().toString()
         with(serverConfigDTO) {
             dao.insert(
@@ -57,7 +66,10 @@ internal class ServerConfigDataSource(
                 blackListUrl = blackListUrl.toString(),
                 teamsUrl = teamsUrl.toString(),
                 websiteUrl = websiteUrl.toString(),
-                title = title
+                title = title,
+                federation = federation,
+                domain = domain,
+                commonApiVersion = apiVersion
             )
             newId
         }
@@ -68,4 +80,8 @@ internal class ServerConfigDataSource(
     override fun configById(id: String): Either<StorageFailure, ServerConfig> = wrapStorageRequest {
         dao.configById(id)
     }.map { serverConfigMapper.fromEntity(it) }
+
+    override suspend fun fetchRemoteApiVersion(serverConfigDTO: ServerConfigDTO): Either<NetworkFailure, VersionInfoDTO> = wrapApiRequest {
+        versionApi.fetchServerConfig(serverConfigDTO.apiBaseUrl)
+    }
 }

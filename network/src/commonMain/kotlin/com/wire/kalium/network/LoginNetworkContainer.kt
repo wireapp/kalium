@@ -20,7 +20,7 @@ class LoginNetworkContainer(
     val serverConfigApi: ServerConfigApi get() = ServerConfigApiImp(anonymousHttpClient)
     val registerApi: RegisterApi get() = RegisterApiImpl(anonymousHttpClient)
     val sso: SSOLoginApi get() = SSOLoginApiImpl(anonymousHttpClient)
-    val versionApi: VersionApi get() = VersionApiImpl(anonymousHttpClient)
+    val remoteVersion : VersionApi get() = VersionApiImpl(anonymousHttpClient)
 
     internal val anonymousHttpClient by lazy {
         provideBaseHttpClient(engine, HttpClientOptions.NoDefaultHost)

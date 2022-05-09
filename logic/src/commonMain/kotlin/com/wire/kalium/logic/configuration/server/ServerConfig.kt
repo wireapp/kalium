@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.configuration
+package com.wire.kalium.logic.configuration.server
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.network.tools.ServerConfigDTO
@@ -15,7 +15,10 @@ data class ServerConfig(
     val blackListUrl: String,
     val teamsUrl: String,
     val websiteUrl: String,
-    val title: String
+    val title: String,
+    val federation: Boolean,
+    val commonApiVersion: Int?,
+    val domain: String?
 ) {
     companion object {
         val PRODUCTION = ServerConfig(
@@ -26,7 +29,10 @@ data class ServerConfig(
             teamsUrl = """https://teams.wire.com""",
             blackListUrl = """https://clientblacklist.wire.com/prod""",
             websiteUrl = """https://wire.com""",
-            title = "Production"
+            title = "Production",
+            federation = false,
+            commonApiVersion = 1, // TODO: fetch the real value
+            domain = "wire.com"
         )
         val STAGING = ServerConfig(
             id = uuid4().toString(),
@@ -36,7 +42,10 @@ data class ServerConfig(
             teamsUrl = """https://wire-teams-staging.zinfra.io""",
             blackListUrl = """https://clientblacklist.wire.com/staging""",
             websiteUrl = """https://wire.com""",
-            title = "Staging"
+            title = "Staging",
+            federation = false,
+            commonApiVersion = 1, // TODO: fetch the real value
+            domain = "wire.com" // TODO: check domain
         )
         val DEFAULT = PRODUCTION
     }
@@ -64,7 +73,19 @@ class ServerConfigMapperImpl : ServerConfigMapper {
 
     override fun toEntity(serverConfig: ServerConfig): ServerConfigEntity =
         with(serverConfig) {
-            ServerConfigEntity(id, apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, serverConfig.title)
+            ServerConfigEntity(
+                id,
+                apiBaseUrl,
+                accountsBaseUrl,
+                webSocketBaseUrl,
+                blackListUrl,
+                teamsUrl,
+                websiteUrl,
+                title,
+                federation,
+                commonApiVersion,
+                domain
+            )
         }
 
     override fun fromEntity(serverConfigEntity: ServerConfigEntity): ServerConfig =
@@ -77,7 +98,10 @@ class ServerConfigMapperImpl : ServerConfigMapper {
                 blackListUrl,
                 teamsUrl,
                 websiteUrl,
-                serverConfigEntity.title
+                title,
+                federation,
+                commonApiVersion,
+                domain
             )
         }
 

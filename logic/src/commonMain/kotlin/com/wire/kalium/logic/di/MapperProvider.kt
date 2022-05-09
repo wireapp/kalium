@@ -1,8 +1,8 @@
 package com.wire.kalium.logic.di
 
 import com.wire.kalium.logic.configuration.ClientConfig
-import com.wire.kalium.logic.configuration.ServerConfigMapper
-import com.wire.kalium.logic.configuration.ServerConfigMapperImpl
+import com.wire.kalium.logic.configuration.server.ServerConfigMapper
+import com.wire.kalium.logic.configuration.server.ServerConfigMapperImpl
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.asset.AssetMapperImpl
 import com.wire.kalium.logic.data.client.ClientMapper

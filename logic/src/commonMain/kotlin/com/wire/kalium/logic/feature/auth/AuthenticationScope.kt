@@ -1,12 +1,11 @@
 package com.wire.kalium.logic.feature.auth
 
-import com.wire.kalium.logic.configuration.GetServerConfigUseCase
-import com.wire.kalium.logic.configuration.ServerConfigDataSource
-import com.wire.kalium.logic.configuration.ServerConfigMapper
-import com.wire.kalium.logic.configuration.ServerConfigMapperImpl
-import com.wire.kalium.logic.configuration.ServerConfigRepository
 import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
+import com.wire.kalium.logic.configuration.server.ServerConfigDataSource
+import com.wire.kalium.logic.configuration.server.ServerConfigMapper
+import com.wire.kalium.logic.configuration.server.ServerConfigMapperImpl
+import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.auth.login.LoginRepositoryImpl
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
@@ -21,6 +20,7 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.auth.sso.SSOLoginScope
 import com.wire.kalium.logic.feature.notification_token.SaveNotificationTokenUseCase
 import com.wire.kalium.logic.feature.register.RegisterScope
+import com.wire.kalium.logic.feature.server_config.GetServerConfigUseCase
 import com.wire.kalium.logic.feature.session.GetSessionsUseCase
 import com.wire.kalium.logic.feature.session.SessionScope
 import com.wire.kalium.network.LoginNetworkContainer
@@ -47,7 +47,8 @@ class AuthenticationScope(
     private val serverConfigRepository: ServerConfigRepository
         get() = ServerConfigDataSource(
             loginNetworkContainer.serverConfigApi,
-            globalDatabase.serverConfigurationDAO
+            globalDatabase.serverConfigurationDAO,
+            loginNetworkContainer.remoteVersion
         )
 
     private val loginRepository: LoginRepository get() = LoginRepositoryImpl(loginNetworkContainer.loginApi, clientLabel)
