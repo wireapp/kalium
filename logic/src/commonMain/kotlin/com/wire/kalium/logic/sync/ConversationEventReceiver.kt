@@ -171,11 +171,12 @@ class ConversationEventReceiver(
             }
             is MessageContent.DeleteMessage ->
                 if (isSenderVerified(message.content.messageId, message.conversationId, message.senderUserId))
-                    messageRepository.softDeleteMessage(messageUuid = message.content.messageId, message.conversationId)
+                    messageRepository.markMessageAsDeleted(messageUuid = message.content.messageId, conversationId = message.conversationId)
                 else kaliumLogger.i(message = "Delete message sender is not verified: $message")
             is MessageContent.DeleteForMe ->
-                if (isSenderVerified(message.content.messageId, message.conversationId, message.senderUserId))
-                    messageRepository.hideMessage(messageUuid = message.content.messageId, message.content.conversationId)
+                if (message.conversationId == conversationRepository.getSelfConversationId())
+                //todo: consider to check with conversation id
+                    messageRepository.deleteMessage(messageUuid = message.content.messageId)
                 else kaliumLogger.i(message = "Delete message sender is not verified: $message")
             is MessageContent.Calling -> {
                 kaliumLogger.d("$TAG - MessageContent.Calling")

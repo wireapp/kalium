@@ -44,10 +44,10 @@ DELETE FROM Message WHERE  id = ? AND conversation_id = ?;
 deleteMessageById:
 DELETE FROM Message WHERE  id = ?;
 
-updateMessageVisibility:
+markMessageAsDeleted:
 UPDATE Message
-SET visibility = ?, text_body = ?
-WHERE id = ? AND conversation_id = ?;
+SET visibility = 'DELETED', text_body = NULL
+WHERE id = ?;
 
 insertMessage:
 INSERT INTO Message(id, text_body, asset_mime_type, asset_size, asset_name, asset_image_width, asset_image_height, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, content_type, conversation_id, date, sender_user_id, sender_client_id, visibility, status)

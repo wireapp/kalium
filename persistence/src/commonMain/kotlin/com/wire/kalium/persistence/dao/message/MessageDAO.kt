@@ -52,7 +52,7 @@ data class MessageEntity(
 interface MessageDAO {
     suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity)
     suspend fun deleteMessage(id: String)
-    suspend fun updateMessageVisibility(visibility: MessageEntity.Visibility, id: String, conversationId: QualifiedIDEntity)
+    suspend fun markMessageAsDeleted(id: String /*todo: add conversation id since the message id is not unique*/)
     suspend fun deleteAllMessages()
     suspend fun insertMessage(message: MessageEntity)
     suspend fun insertMessages(messages: List<MessageEntity>)
@@ -64,6 +64,5 @@ interface MessageDAO {
     suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?>
     suspend fun getMessagesByConversation(conversationId: QualifiedIDEntity, limit: Int, offset: Int): Flow<List<MessageEntity>>
     suspend fun getMessagesByConversationAfterDate(conversationId: QualifiedIDEntity, date: String): Flow<List<MessageEntity>>
-
     suspend fun getAllPendingMessagesFromUser(userId: UserIDEntity): List<MessageEntity>
 }
