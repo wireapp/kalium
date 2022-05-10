@@ -88,6 +88,7 @@ internal class SendAssetMessageUseCaseImpl(
         })
     }
 
+    @Suppress("LongParameterList")
     private suspend fun prepareAndSendAssetMessage(
         conversationId: ConversationId,
         dataSize: Long,
@@ -129,6 +130,7 @@ internal class SendAssetMessageUseCaseImpl(
     }
 }
 
+@Suppress("LongParameterList")
 private fun provideAssetMessageContent(
     dataSize: Long,
     assetName: String?,

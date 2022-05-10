@@ -83,6 +83,7 @@ internal class SendImageMessageUseCaseImpl(
         })
     }
 
+    @Suppress("LongParameterList")
     private suspend fun prepareAndSendImageMessage(
         conversationId: ConversationId,
         dataSize: Long,
