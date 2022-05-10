@@ -15,7 +15,9 @@ import com.wire.kalium.logic.data.prekey.QualifiedUserPreKeyInfo
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.foldToEitherWhileRight
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapCryptoRequest
 
 interface SessionEstablisher {
@@ -37,22 +39,19 @@ class SessionEstablisherImpl(
     override suspend fun prepareRecipientsForNewOutgoingMessage(
         recipients: List<Recipient>
     ): Either<CoreFailure, Unit> =
-        suspending {
-            getAllMissingClients(recipients).flatMap {
-                establishMissingSessions(it)
-            }
+        getAllMissingClients(recipients).flatMap {
+            establishMissingSessions(it)
         }
 
     private suspend fun establishMissingSessions(
         missingContactClients: Map<UserId, List<ClientId>>
-    ): Either<CoreFailure, Unit> = suspending {
+    ): Either<CoreFailure, Unit> =
         if (missingContactClients.isEmpty()) {
-            return@suspending Either.Right(Unit)
+            Either.Right(Unit)
+        } else {
+            preKeyRepository.preKeysOfClientsByQualifiedUsers(missingContactClients)
+                .flatMap { preKeyInfoList -> establishSessions(preKeyInfoList) }
         }
-
-        preKeyRepository.preKeysOfClientsByQualifiedUsers(missingContactClients)
-            .flatMap { preKeyInfoList -> establishSessions(preKeyInfoList) }
-    }
 
     private suspend fun establishSessions(preKeyInfoList: List<QualifiedUserPreKeyInfo>): Either<ProteusFailure, Unit> =
         wrapCryptoRequest {
@@ -77,7 +76,7 @@ class SessionEstablisherImpl(
 
     private suspend fun getAllMissingClients(
         detailedContacts: List<Recipient>
-    ): Either<ProteusFailure, Map<UserId, List<ClientId>>> = suspending {
+    ): Either<ProteusFailure, Map<UserId, List<ClientId>>> =
         detailedContacts.foldToEitherWhileRight(mutableMapOf<UserId, List<ClientId>>()) { recipient, userAccumulator ->
             getMissingClientsForRecipients(recipient).map { missingClients ->
                 if (missingClients.isNotEmpty()) {
@@ -86,19 +85,16 @@ class SessionEstablisherImpl(
                 userAccumulator
             }
         }
-    }
 
     private suspend fun getMissingClientsForRecipients(
         recipient: Recipient
     ): Either<ProteusFailure, List<ClientId>> =
-        suspending {
-            recipient.clients.foldToEitherWhileRight(mutableListOf<ClientId>()) { client, clientIdAccumulator ->
-                doesSessionExist(recipient.member.id, client).map { sessionExists ->
-                    if (!sessionExists) {
-                        clientIdAccumulator += client
-                    }
-                    clientIdAccumulator
+        recipient.clients.foldToEitherWhileRight(mutableListOf<ClientId>()) { client, clientIdAccumulator ->
+            doesSessionExist(recipient.member.id, client).map { sessionExists ->
+                if (!sessionExists) {
+                    clientIdAccumulator += client
                 }
+                clientIdAccumulator
             }
         }
 
