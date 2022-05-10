@@ -127,6 +127,7 @@ internal class SendImageMessageUseCaseImpl(
         }
     }
 
+    @Suppress("LongParameterList")
     private fun provideAssetMessageContent(
         dataSize: Long,
         imageName: String?,
