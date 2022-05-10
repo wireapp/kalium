@@ -48,6 +48,7 @@ class MessageMapperImpl(private val idMapper: IdMapper) : MessageMapper {
                         assetId = remoteData.assetId,
                         assetToken = remoteData.assetToken,
                         assetEncryptionAlgorithm = remoteData.encryptionAlgorithm?.name,
+                        assetDownloadStatus = MapperProvider.assetMapper().fromDownloadStatusToDaoModel(downloadStatus)
                     )
                 }
             }

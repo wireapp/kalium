@@ -26,6 +26,7 @@ interface AssetMapper {
     fun fromAssetEntityToAssetContent(assetContentEntity: AssetMessageContent): AssetContent
     fun fromProtoAssetMessageToAssetContent(protoAssetMessage: Asset): AssetContent
     fun fromDownloadStatusToDaoModel(downloadStatus: Message.DownloadStatus): MessageEntity.DownloadStatus
+    fun fromDownloadStatusEntityToLogicModel(downloadStatus: MessageEntity.DownloadStatus?): Message.DownloadStatus
 }
 
 class AssetMapperImpl : AssetMapper {
@@ -79,7 +80,8 @@ class AssetMapperImpl : AssetMapper {
                         assetEncryptionAlgorithm?.contains("GCM") == true -> AES_GCM
                         else -> AES_CBC
                     }
-                )
+                ),
+                downloadStatus = fromDownloadStatusEntityToLogicModel(assetDownloadStatus)
             )
         }
     }
@@ -137,7 +139,8 @@ class AssetMapperImpl : AssetMapper {
                     assetDomain = null,
                     assetToken = null,
                     encryptionAlgorithm = null
-                )
+                ),
+                downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
             )
         }
     }
@@ -148,6 +151,16 @@ class AssetMapperImpl : AssetMapper {
             Message.DownloadStatus.IN_PROGRESS -> MessageEntity.DownloadStatus.IN_PROGRESS
             Message.DownloadStatus.DOWNLOADED -> MessageEntity.DownloadStatus.DOWNLOADED
             Message.DownloadStatus.FAILED -> MessageEntity.DownloadStatus.FAILED
+        }
+    }
+
+    override fun fromDownloadStatusEntityToLogicModel(downloadStatus: MessageEntity.DownloadStatus?): Message.DownloadStatus {
+        return when (downloadStatus) {
+            MessageEntity.DownloadStatus.NOT_DOWNLOADED -> Message.DownloadStatus.NOT_DOWNLOADED
+            MessageEntity.DownloadStatus.IN_PROGRESS -> Message.DownloadStatus.IN_PROGRESS
+            MessageEntity.DownloadStatus.DOWNLOADED -> Message.DownloadStatus.DOWNLOADED
+            MessageEntity.DownloadStatus.FAILED -> Message.DownloadStatus.FAILED
+            null -> Message.DownloadStatus.NOT_DOWNLOADED
         }
     }
 }

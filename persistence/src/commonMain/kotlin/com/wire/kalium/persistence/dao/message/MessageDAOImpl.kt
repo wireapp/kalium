@@ -34,7 +34,7 @@ class MessageMapper {
                         assetToken = msg.asset_token ?: "",
                         assetDomain = msg.asset_domain ?: "",
                         assetEncryptionAlgorithm = msg.asset_encryption_algorithm ?: "",
-                        assetDownloadStatus = NOT_DOWNLOADED
+                        assetDownloadStatus = msg.asset_download_status
                     )
                 }
             },
@@ -88,7 +88,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             asset_token = if (message.content is AssetMessageContent) message.content.assetToken else null,
             asset_domain = if (message.content is AssetMessageContent) message.content.assetDomain else null,
             asset_encryption_algorithm = if (message.content is AssetMessageContent) message.content.assetEncryptionAlgorithm else null,
-            asset_download_status = if (message.content is AssetMessageContent) message.content.assetDownloadStatus else NOT_DOWNLOADED,
+            asset_download_status = if (message.content is AssetMessageContent) message.content.assetDownloadStatus else null,
             conversation_id = message.conversationId,
             date = message.date,
             sender_user_id = message.senderUserId,
@@ -117,7 +117,6 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             asset_token = if (message.content is AssetMessageContent) message.content.assetToken else null,
             asset_domain = if (message.content is AssetMessageContent) message.content.assetDomain else null,
             asset_encryption_algorithm = if (message.content is AssetMessageContent) message.content.assetEncryptionAlgorithm else null,
-            asset_download_status = if (message.content is AssetMessageContent) message.content.assetDownloadStatus else NOT_DOWNLOADED,
             conversation_id = message.conversationId,
             date = message.date,
             sender_user_id = message.senderUserId,

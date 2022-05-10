@@ -33,7 +33,7 @@ data class MessageEntity(
             val assetToken: String? = null,
             val assetDomain: String? = null,
             val assetEncryptionAlgorithm: String?,
-            val assetDownloadStatus: DownloadStatus,
+            val assetDownloadStatus: DownloadStatus? = null,
         ) : MessageEntityContent()
     }
 

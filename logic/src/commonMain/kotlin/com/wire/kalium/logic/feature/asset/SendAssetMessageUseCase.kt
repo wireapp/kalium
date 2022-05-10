@@ -66,7 +66,15 @@ internal class SendAssetMessageUseCaseImpl(
         // Upload the asset encrypted data
         assetDataSource.uploadAndPersistPrivateAsset(FileAsset(assetMimeType), encryptedData.data).flatMap { assetId ->
             // Try to send the Asset Message
-            prepareAndSendAssetMessage(conversationId, assetRawData.size.toLong(), assetName, assetMimeType, sha256, otrKey, assetId).flatMap {
+            prepareAndSendAssetMessage(
+                conversationId,
+                assetRawData.size.toLong(),
+                assetName,
+                assetMimeType,
+                sha256,
+                otrKey,
+                assetId
+            ).flatMap {
                 Either.Right(Unit)
             }
         }.coFold({
@@ -138,7 +146,9 @@ internal class SendAssetMessageUseCaseImpl(
                 encryptionAlgorithm = AssetContent.RemoteData.EncryptionAlgorithm.AES_CBC,
                 assetDomain = null,  // TODO: fill in the assetDomain, it's returned by the BE when uploading an asset.
                 assetToken = assetId.assetToken
-            )
+            ),
+            // Asset is already in our local storage and therefore accessible
+            downloadStatus = Message.DownloadStatus.DOWNLOADED
         )
     }
 }
