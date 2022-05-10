@@ -26,7 +26,7 @@ import com.wire.kalium.network.api.user.client.ClientApiImpl
 import com.wire.kalium.network.api.user.connection.ConnectionApi
 import com.wire.kalium.network.api.user.connection.ConnectionApiImpl
 import com.wire.kalium.network.api.user.details.UserDetailsApi
-import com.wire.kalium.network.api.user.details.UserDetailsApiImp
+import com.wire.kalium.network.api.user.details.UserDetailsApiImpl
 import com.wire.kalium.network.api.user.logout.LogoutApi
 import com.wire.kalium.network.api.user.logout.LogoutImpl
 import com.wire.kalium.network.api.user.self.SelfApi
@@ -67,7 +67,7 @@ class AuthenticatedNetworkContainer(
 
     val selfApi: SelfApi get() = SelfApiImpl(authenticatedHttpClient)
 
-    val userDetailsApi: UserDetailsApi get() = UserDetailsApiImp(authenticatedHttpClient)
+    val userDetailsApi: UserDetailsApi get() = UserDetailsApiImpl(authenticatedHttpClient)
 
     val userSearchApi: UserSearchApi get() = UserSearchApiImpl(authenticatedHttpClient)
 

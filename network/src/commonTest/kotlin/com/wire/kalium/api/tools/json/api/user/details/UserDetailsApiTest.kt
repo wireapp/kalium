@@ -3,22 +3,18 @@ package com.wire.kalium.api.tools.json.api.user.details
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.tools.json.model.QualifiedHandleSample
 import com.wire.kalium.api.tools.json.model.QualifiedIDSamples
-import com.wire.kalium.network.api.QualifiedHandle
-import com.wire.kalium.network.api.QualifiedID
 import com.wire.kalium.network.api.user.details.ListUserRequest
-import com.wire.kalium.network.api.user.details.QualifiedHandleListRequest
-import com.wire.kalium.network.api.user.details.QualifiedUserIdListRequest
 import com.wire.kalium.network.api.user.details.UserDetailsApi
-import com.wire.kalium.network.api.user.details.UserDetailsApiImp
+import com.wire.kalium.network.api.user.details.UserDetailsApiImpl
 import com.wire.kalium.network.api.user.details.qualifiedHandles
 import com.wire.kalium.network.api.user.details.qualifiedIds
 import com.wire.kalium.network.tools.KtxSerializer
+import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.encodeToString
 import kotlin.test.Test
-import kotlin.test.assertEquals
 
 @ExperimentalCoroutinesApi
 class UserDetailsApiTest : ApiTest {
@@ -38,7 +34,7 @@ class UserDetailsApiTest : ApiTest {
                 assertBodyContent(expectedRequestBody)
             }
         )
-        val userDetailsApi: UserDetailsApi = UserDetailsApiImp(httpClient)
+        val userDetailsApi: UserDetailsApi = UserDetailsApiImpl(httpClient)
 
         userDetailsApi.getMultipleUsers(params)
     }
@@ -54,7 +50,7 @@ class UserDetailsApiTest : ApiTest {
                 assertBodyContent(expectedRequestBody)
             }
         )
-        val userDetailsApi: UserDetailsApi = UserDetailsApiImp(httpClient)
+        val userDetailsApi: UserDetailsApi = UserDetailsApiImpl(httpClient)
 
         userDetailsApi.getMultipleUsers(params)
     }
@@ -71,13 +67,31 @@ class UserDetailsApiTest : ApiTest {
                 assertPathEqual(PATH_LIST_USERS)
             }
         )
-        val userDetailsApi: UserDetailsApi = UserDetailsApiImp(httpClient)
+        val userDetailsApi: UserDetailsApi = UserDetailsApiImpl(httpClient)
 
         userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(listOf()))
     }
 
+    @Test
+    fun givenAUserId_whenInvokingUserInfo_thenShouldConfigureTheRequestOkAndReturnAResultWithData() = runTest {
+        val httpClient = mockAuthenticatedHttpClient(
+            ListUsersRequestJson.validIdsJsonProvider.rawJson,
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertGet()
+                assertJson()
+                assertPathEqual("$PATH_USERS/${QualifiedIDSamples.one.domain}/${QualifiedIDSamples.one.value}")
+            }
+        )
+        val userDetailsApi: UserDetailsApi = UserDetailsApiImpl(httpClient)
+
+        val result = userDetailsApi.getUserInfo(QualifiedIDSamples.one)
+        result.isSuccessful()
+    }
 
     private companion object {
         const val PATH_LIST_USERS = "/list-users"
+        const val PATH_USERS = "/users"
     }
 }
+
