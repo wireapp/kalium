@@ -9,7 +9,7 @@ inline infix fun <L, R> Either<L, R>.shouldSucceed(crossinline successAssertion:
 
 fun <L> Either<L, Unit>.shouldSucceed() = shouldSucceed { }
 
-inline infix fun <L, R> Either<L, R>.shouldFail(crossinline failAssertion: (L) -> Unit) =
+inline infix fun <L, R> Either<L, R>.shouldFail(crossinline failAssertion: (L) -> Unit): Unit =
     this.fold({ failAssertion(it) }) { fail("Expected a Left value but got Right") }
 
-fun <L> Either<L, Unit>.shouldFail() = shouldFail { }
+fun <L> Either<L, Unit>.shouldFail(): Unit = shouldFail { Unit }
