@@ -89,7 +89,7 @@ class SendAssetMessageUseCaseTest {
                 .with(any())
                 .wasInvoked(exactly = once)
             verify(arrangement.messageSender)
-                .suspendFunction(arrangement.messageSender::trySendingOutgoingMessageById)
+                .suspendFunction(arrangement.messageSender::sendPendingMessage)
                 .with(eq(conversationId), any())
                 .wasInvoked(exactly = once)
         }
@@ -149,7 +149,7 @@ class SendAssetMessageUseCaseTest {
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
             given(messageSender)
-                .suspendFunction(messageSender::trySendingOutgoingMessageById)
+                .suspendFunction(messageSender::sendPendingMessage)
                 .whenInvokedWith(any(), any())
                 .thenReturn(Either.Right(Unit))
             return this
