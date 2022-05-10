@@ -185,17 +185,22 @@ class ConversationDataSource(
                 suspending {
                     val selfUser = userRepository.getSelfUser().first()
 
-                    getConversationMembers(conversation.id).map { members ->
-                        members.first { itemId -> itemId != selfUser.id }
-                    }.coFold({
-                        // TODO: How to Handle failure when dealing with flows?
-                        println("cyka storageFailure: $it")
-                        throw IOException("Failure to fetch other user of 1:1 Conversation")
-                    }, { otherUserId ->
-                        userRepository.getKnownUser(otherUserId)
-                    }).filterNotNull().map { otherUser ->
-                        conversationMapper.toConversationDetailsOneToOne(conversation, otherUser, selfUser)
-                    }
+                    getConversationMembers(conversation.id)
+                        .map { members ->
+                            members.first { itemId -> itemId != selfUser.id }
+                        }
+                        .coFold({
+                            // TODO: How to Handle failure when dealing with flows?
+                            // throw IOException("Failure to fetch other user of 1:1 Conversation")
+                            // that Error causes crashes, lets ignoring it for now
+                            flowOf(null)
+                        }, { otherUserId ->
+                            userRepository.getKnownUser(otherUserId)
+                        })
+                        .filterNotNull()
+                        .map { otherUser ->
+                            conversationMapper.toConversationDetailsOneToOne(conversation, otherUser, selfUser)
+                        }
                 }
             }
         }
