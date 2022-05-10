@@ -11,6 +11,7 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -28,10 +29,14 @@ class GetUserInfoUseCaseTest {
         getUserInfoUseCase = GetUserInfoUseCaseImpl(userRepository)
     }
 
-
     @Test
     fun givenAUserId_whenInvokingGetUserInfoDetails_thenShouldReturnsASuccessResult() = runTest {
         // given
+        given(userRepository)
+            .suspendFunction(userRepository::getKnownUser)
+            .whenInvokedWith(eq(userId))
+            .thenReturn(flowOf(null))
+
         given(userRepository)
             .suspendFunction(userRepository::fetchUserInfo)
             .whenInvokedWith(eq(userId))
@@ -43,6 +48,11 @@ class GetUserInfoUseCaseTest {
         // then
         assertEquals(OTHER, (result as GetUserInfoResult.Success).otherUser)
         verify(userRepository)
+            .suspendFunction(userRepository::getKnownUser)
+            .with(eq(userId))
+            .wasInvoked(once)
+
+        verify(userRepository)
             .suspendFunction(userRepository::fetchUserInfo)
             .with(eq(userId))
             .wasInvoked(once)
@@ -50,8 +60,38 @@ class GetUserInfoUseCaseTest {
 
 
     @Test
+    fun givenAUserId_whenInvokingGetUserInfoDetailsAndExistsLocally_thenShouldReturnsImmediatelySuccessResult() = runTest {
+        // given
+        given(userRepository)
+            .suspendFunction(userRepository::getKnownUser)
+            .whenInvokedWith(eq(userId))
+            .thenReturn(flowOf(OTHER))
+
+        // when
+        val result = getUserInfoUseCase(userId)
+
+        // then
+        assertEquals(OTHER, (result as GetUserInfoResult.Success).otherUser)
+        verify(userRepository)
+            .suspendFunction(userRepository::getKnownUser)
+            .with(eq(userId))
+            .wasInvoked(once)
+
+        verify(userRepository)
+            .suspendFunction(userRepository::fetchUserInfo)
+            .with(eq(userId))
+            .wasNotInvoked()
+    }
+
+
+    @Test
     fun givenAUserId_whenInvokingGetUserInfoDetailsWithErrors_thenShouldReturnsAFailure() = runTest {
         // given
+        given(userRepository)
+            .suspendFunction(userRepository::getKnownUser)
+            .whenInvokedWith(eq(userId))
+            .thenReturn(flowOf(null))
+
         given(userRepository)
             .suspendFunction(userRepository::fetchUserInfo)
             .whenInvokedWith(eq(userId))
@@ -62,6 +102,11 @@ class GetUserInfoUseCaseTest {
 
         // then
         assertEquals(GetUserInfoResult.Failure, result)
+        verify(userRepository)
+            .suspendFunction(userRepository::getKnownUser)
+            .with(eq(userId))
+            .wasInvoked(once)
+
         verify(userRepository)
             .suspendFunction(userRepository::fetchUserInfo)
             .with(eq(userId))

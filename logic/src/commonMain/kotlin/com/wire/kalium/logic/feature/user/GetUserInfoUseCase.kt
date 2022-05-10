@@ -4,9 +4,10 @@ import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.suspending
+import kotlinx.coroutines.flow.firstOrNull
 
 /**
- * Use case that allows getting the user details of a user
+ * Use case that allows getting the user details of a user, either locally or externally
  */
 fun interface GetUserInfoUseCase {
     /**
@@ -21,6 +22,8 @@ fun interface GetUserInfoUseCase {
 internal class GetUserInfoUseCaseImpl(private val userRepository: UserRepository) : GetUserInfoUseCase {
 
     override suspend fun invoke(userId: UserId): GetUserInfoResult = suspending {
+        val otherUser = userRepository.getKnownUser(userId).firstOrNull()
+        if (otherUser != null) return@suspending GetUserInfoResult.Success(otherUser)
         userRepository.fetchUserInfo(userId)
             .fold({
                 GetUserInfoResult.Failure
