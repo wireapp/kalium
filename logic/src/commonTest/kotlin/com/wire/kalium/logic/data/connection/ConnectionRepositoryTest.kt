@@ -11,6 +11,7 @@ import com.wire.kalium.network.api.user.connection.ConnectionState
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
+import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import io.mockative.Mock
 import io.mockative.any
@@ -101,7 +102,7 @@ class ConnectionRepositoryTest {
             .wasInvoked(once)
         verify(conversationDAO)
             .suspendFunction(conversationDAO::insertOrUpdateOneOnOneMemberWithConnectionStatus)
-            .with(any(), any(), any())
+            .with(any(), eq(UserEntity.ConnectionState.SENT), any())
             .wasInvoked(once)
     }
 
@@ -119,7 +120,7 @@ class ConnectionRepositoryTest {
             .then { _, _, _ -> return@then }
 
         // when
-        val result = connectionRepository.sendUserConnection(com.wire.kalium.logic.data.user.UserId(userId.value, userId.domain))
+        val result = connectionRepository.sendUserConnection(UserId(userId.value, userId.domain))
 
         // then
         result.shouldFail()
@@ -147,7 +148,7 @@ class ConnectionRepositoryTest {
             .thenThrow(RuntimeException("An error occurred persisting the data"))
 
         // when
-        val result = connectionRepository.sendUserConnection(com.wire.kalium.logic.data.user.UserId(userId.value, userId.domain))
+        val result = connectionRepository.sendUserConnection(UserId(userId.value, userId.domain))
 
         // then
         verify(connectionApi)

@@ -33,7 +33,7 @@ internal class ConnectionDataSource(
         var lastPagingState: String? = null
         var latestResult: Either<NetworkFailure, Unit> = Either.Right(Unit)
 
-        while(hasMore && latestResult.isRight()) {
+        while (hasMore && latestResult.isRight()) {
             latestResult = wrapApiRequest {
                 kaliumLogger.v("Fetching connections page starting with pagingState $lastPagingState")
                 connectionApi.fetchSelfUserConnections(pagingState = lastPagingState)
@@ -43,7 +43,7 @@ internal class ConnectionDataSource(
                 hasMore = it.hasMore
             }.onFailure {
                 Either.Left(it)
-            }.map {  }
+            }.map { }
         }
 
         latestResult
@@ -53,7 +53,8 @@ internal class ConnectionDataSource(
         wrapApiRequest {
             connectionApi.createConnection(idMapper.toApiModel(userId))
         }.map { connection ->
-            updateUserConnectionStatus(listOf(connection))
+            val connectionSent = connection.copy(status = ConnectionState.SENT)
+            updateUserConnectionStatus(listOf(connectionSent))
         }
     }
 
