@@ -193,7 +193,6 @@ actual class CallManagerImpl(
                     wcall_participant_changed_h = onParticipantListChanged,
                     arg = null
                 )
-                callingLogger.i("onCallingReady() - End")
             }
         }
 

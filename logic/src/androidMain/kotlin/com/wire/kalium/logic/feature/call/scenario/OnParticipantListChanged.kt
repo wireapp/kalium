@@ -43,7 +43,7 @@ class OnParticipantListChanged(
             json = CallClientList(clients = clients).toJsonString()
         )
 
-        callingLogger.i("onParticipantsChanged() - End")
+        callingLogger.i("onParticipantsChanged() - Total Participants: ${participants.size} for $conversationId")
     }
 
     private companion object {
