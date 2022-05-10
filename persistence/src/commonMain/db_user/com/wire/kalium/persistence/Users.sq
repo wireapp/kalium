@@ -56,3 +56,6 @@ AND connection_status = :connectionStatus;
 
 updateUserhandle:
 UPDATE User SET handle = ? WHERE qualified_id = ?;
+
+selectChanges:
+SELECT changes();
