@@ -60,7 +60,7 @@ class DeleteMessageUseCaseTest {
     }
 
     @Test
-    fun givenDeleteMessageUseCase_WhenDeleteForEveryOneRequested_SendMessageIsCorrect() = runTest {
+    fun givenAMessage_WhenDeleteForEveryIsTrue_TheGeneratedMessageShouldBeCorrect() = runTest {
         //given
         val deleteForEveryone = true
         given(messageSender)
@@ -101,7 +101,7 @@ class DeleteMessageUseCaseTest {
     }
 
     @Test
-    fun givenDeleteMessageUseCase_WhenDeleteForMeRequested_SendMessageIsCorrect() = runTest {
+    fun givenAMessage_WhenDeleteForEveryIsFalse_TheGeneratedMessageShouldBeCorrect() = runTest {
         //given
         val deleteForEveryone = false
         given(messageSender)
