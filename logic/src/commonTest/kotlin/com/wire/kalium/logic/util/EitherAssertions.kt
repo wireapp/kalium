@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.util
 
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.fold
 import kotlin.test.fail
 
 inline infix fun <L, R> Either<L, R>.shouldSucceed(crossinline successAssertion: (R) -> Unit) =
