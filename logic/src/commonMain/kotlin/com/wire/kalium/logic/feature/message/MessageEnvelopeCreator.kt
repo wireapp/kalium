@@ -15,7 +15,8 @@ import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.RecipientEntry
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.functional.foldToEitherWhileRight
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapCryptoRequest
 
 interface MessageEnvelopeCreator {
@@ -36,11 +37,11 @@ class MessageEnvelopeCreatorImpl(
     override suspend fun createOutgoingEnvelope(
         recipients: List<Recipient>,
         message: Message
-    ): Either<CoreFailure, MessageEnvelope> = suspending {
+    ): Either<CoreFailure, MessageEnvelope> {
         val senderClientId = message.senderClientId
         val content = protoContentMapper.encodeToProtobuf(ProtoContent(message.id, message.content))
 
-        recipients.foldToEitherWhileRight(mutableListOf<RecipientEntry>()) { recipient, recipientAccumulator ->
+        return recipients.foldToEitherWhileRight(mutableListOf<RecipientEntry>()) { recipient, recipientAccumulator ->
             recipient.clients.foldToEitherWhileRight(mutableListOf<ClientPayload>()) { client, clientAccumulator ->
                 val session = CryptoSessionId(idMapper.toCryptoQualifiedIDId(recipient.member.id), CryptoClientId(client.value))
 

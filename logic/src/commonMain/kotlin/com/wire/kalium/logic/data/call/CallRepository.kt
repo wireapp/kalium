@@ -1,12 +1,10 @@
 package com.wire.kalium.logic.data.call
 
-import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.call.CallApi
 import kotlinx.coroutines.flow.Flow
@@ -35,16 +33,12 @@ internal class CallDataSource(
     private val _callProfile = MutableStateFlow(CallProfile(calls = emptyMap()))
     private val allCalls = _callProfile.asStateFlow()
 
-    override suspend fun getCallConfigResponse(limit: Int?): Either<CoreFailure, String> = suspending {
-        wrapApiRequest {
-            callApi.getCallConfig(limit = limit)
-        }
+    override suspend fun getCallConfigResponse(limit: Int?): Either<CoreFailure, String> = wrapApiRequest {
+        callApi.getCallConfig(limit = limit)
     }
 
-    override suspend fun connectToSFT(url: String, data: String): Either<CoreFailure, ByteArray> = suspending {
-        wrapApiRequest {
-            callApi.connectToSFT(url = url, data = data)
-        }
+    override suspend fun connectToSFT(url: String, data: String): Either<CoreFailure, ByteArray> = wrapApiRequest {
+        callApi.connectToSFT(url = url, data = data)
     }
 
     override fun getAllCalls(): StateFlow<List<Call>> = MutableStateFlow(allCalls.value.calls.values.toList())
