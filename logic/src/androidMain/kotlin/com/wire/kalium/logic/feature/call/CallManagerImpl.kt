@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.user.toUserId
 import com.wire.kalium.logic.feature.call.callback.ParticipantChangedHandlerImpl
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.util.toInt
 import com.wire.kalium.logic.util.toTimeInMillis
 import kotlinx.coroutines.CoroutineScope

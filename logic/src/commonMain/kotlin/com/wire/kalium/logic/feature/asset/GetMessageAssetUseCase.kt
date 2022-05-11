@@ -8,7 +8,7 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 
 interface GetMessageAssetUseCase {
@@ -32,8 +32,8 @@ internal class GetMessageAssetUseCaseImpl(
     override suspend fun invoke(
         conversationId: ConversationId,
         messageId: String
-    ): MessageAssetResult = suspending {
-        messageRepository.getMessageById(conversationId = conversationId, messageUuid = messageId).coFold({
+    ): MessageAssetResult =
+        messageRepository.getMessageById(conversationId = conversationId, messageUuid = messageId).fold({
             kaliumLogger.e("There was an error retrieving the asset message $messageId")
             MessageAssetResult.Failure(it)
         }, { message ->
@@ -44,11 +44,11 @@ internal class GetMessageAssetUseCaseImpl(
                     }
                 }
                 // This should never happen
-                else -> return@coFold MessageAssetResult.Failure(
+                else -> return@fold MessageAssetResult.Failure(
                     CoreFailure.Unknown(IllegalStateException("The message associated to this id, was not an asset message"))
                 )
             }
-            assetDataSource.downloadPrivateAsset(assetKey = assetKey, assetToken = assetToken).coFold({
+            assetDataSource.downloadPrivateAsset(assetKey = assetKey, assetToken = assetToken).fold({
                 kaliumLogger.e("There was an error downloading asset with id => $assetKey")
                 MessageAssetResult.Failure(it)
             }, { encodedAsset ->
@@ -56,7 +56,6 @@ internal class GetMessageAssetUseCaseImpl(
                 MessageAssetResult.Success(rawAsset)
             })
         })
-    }
 }
 
 sealed class MessageAssetResult {

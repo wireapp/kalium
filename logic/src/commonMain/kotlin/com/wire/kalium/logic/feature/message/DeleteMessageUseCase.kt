@@ -9,7 +9,8 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
 import kotlinx.coroutines.flow.first
@@ -26,9 +27,9 @@ class DeleteMessageUseCase(
     suspend operator fun invoke(conversationId: ConversationId, messageId: String, deleteForEveryone: Boolean): Either<CoreFailure, Unit> {
         syncManager.waitForSlowSyncToComplete()
         val selfUser = userRepository.getSelfUser().first()
-        return suspending {
-            val generatedMessageUuid = uuid4().toString()
-            clientRepository.currentClientId().flatMap { currentClientId ->
+
+        val generatedMessageUuid = uuid4().toString()
+        return clientRepository.currentClientId().flatMap { currentClientId ->
                 val message = Message(
                     id = generatedMessageUuid,
                     content = if (deleteForEveryone) MessageContent.DeleteMessage(messageId) else MessageContent.DeleteForMe(
@@ -36,19 +37,18 @@ class DeleteMessageUseCase(
                         conversationId = conversationId.value
                     ),
                     conversationId = if (deleteForEveryone) conversationId else selfUser.id,
-                    date = Clock.System.now().toString(),
-                    senderUserId = selfUser.id,
-                    senderClientId = currentClientId,
-                    status = Message.Status.PENDING
-                )
-                messageSender.sendMessage(message)
-            }.flatMap {
-                messageRepository.deleteMessage(messageId, conversationId)
-            }.onFailure {
-                kaliumLogger.w("delete message failure: $it")
-                if (it is CoreFailure.Unknown) {
-                    it.rootCause?.printStackTrace()
-                }
+                date = Clock.System.now().toString(),
+                senderUserId = selfUser.id,
+                senderClientId = currentClientId,
+                status = Message.Status.PENDING
+            )
+            messageSender.sendMessage(message)
+        }.flatMap {
+            messageRepository.deleteMessage(messageId, conversationId)
+        }.onFailure {
+            kaliumLogger.w("delete message failure: $it")
+            if (it is CoreFailure.Unknown) {
+                it.rootCause?.printStackTrace()
             }
         }
     }
