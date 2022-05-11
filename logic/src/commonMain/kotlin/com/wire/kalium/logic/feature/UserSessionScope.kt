@@ -158,8 +158,7 @@ abstract class UserSessionScopeCommon(
 
     private val callRepository: CallRepository by lazy {
         CallDataSource(
-            callApi = authenticatedDataSourceSet.authenticatedNetworkContainer.callApi,
-            messageSender = messageSender
+            callApi = authenticatedDataSourceSet.authenticatedNetworkContainer.callApi
         )
     }
 
@@ -229,7 +228,8 @@ abstract class UserSessionScopeCommon(
             callRepository = callRepository,
             userRepository = userRepository,
             clientRepository = clientRepository,
-            callMapper = callMapper
+            callMapper = callMapper,
+            messageSender = messageSender
         )
     }
     protected abstract val protoContentMapper: ProtoContentMapper

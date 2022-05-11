@@ -26,6 +26,7 @@ import com.wire.kalium.logic.feature.call.scenario.OnMissedCall
 import com.wire.kalium.logic.feature.call.scenario.OnParticipantListChanged
 import com.wire.kalium.logic.feature.call.scenario.OnSFTRequest
 import com.wire.kalium.logic.feature.call.scenario.OnSendOTR
+import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.util.toInt
 import com.wire.kalium.logic.util.toTimeInMillis
 import kotlinx.coroutines.CoroutineScope
@@ -42,7 +43,8 @@ actual class CallManagerImpl(
     private val callRepository: CallRepository,
     private val userRepository: UserRepository,
     private val clientRepository: ClientRepository,
-    private val callMapper: CallMapper
+    private val callMapper: CallMapper,
+    private val messageSender: MessageSender
 ) : CallManager {
 
     private val job = SupervisorJob() // TODO clear job method
@@ -74,7 +76,7 @@ actual class CallManagerImpl(
                 onCallingReady()
             },
             //TODO inject all of these CallbackHandlers in class constructor
-            sendHandler = OnSendOTR(deferredHandle, calling, selfUserId, selfClientId, callRepository, this),
+            sendHandler = OnSendOTR(deferredHandle, calling, selfUserId, selfClientId, messageSender, this),
             sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, this),
             incomingCallHandler = OnIncomingCall(callRepository),
             missedCallHandler = OnMissedCall(callRepository),
