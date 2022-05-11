@@ -141,7 +141,6 @@ $dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/newLastPreKey/#/P
 $dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/newPreKeys/#kotlin.Int#kotlin.Int/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[jvm]new-pre-keys.html
 $dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/open/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[jvm]open.html
 $dokka.location:com.wire.kalium.logic.data.client/MLSClientProviderImpl/getMLSClient/#com.wire.kalium.logic.data.id.PlainId?/PointingToDeclaration/logic/com.wire.kalium.logic.data.client/-m-l-s-client-provider-impl/[jvm]get-m-l-s-client.html
-$dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/allCalls/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/-call-manager-impl/[jvm]all-calls.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/answerCall/#com.wire.kalium.logic.data.id.QualifiedID/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/-call-manager-impl/[jvm]answer-call.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/endCall/#com.wire.kalium.logic.data.id.QualifiedID/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/-call-manager-impl/[jvm]end-call.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/muteCall/#kotlin.Boolean/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/-call-manager-impl/[jvm]mute-call.html
@@ -213,7 +212,7 @@ com.wire.kalium.logic.feature.asset
 com.wire.kalium.logic.feature.auth
 com.wire.kalium.logic.feature.auth.sso
 com.wire.kalium.logic.feature.call
-com.wire.kalium.logic.feature.call.callback
+com.wire.kalium.logic.feature.call.scenario
 com.wire.kalium.logic.feature.call.usecase
 com.wire.kalium.logic.feature.client
 com.wire.kalium.logic.feature.connection
