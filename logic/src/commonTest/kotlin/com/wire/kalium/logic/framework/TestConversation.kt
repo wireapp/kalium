@@ -16,7 +16,15 @@ object TestConversation {
     val SELF = Conversation(ID.copy(value = "SELF ID"), "SELF Name", ConversationEntity.Type.SELF, TestTeam.TEAM_ID, MutedConversationStatus.AllAllowed, null, null)
     val GROUP = Conversation(ID.copy(value = "GROUP ID"), "GROUP Name", ConversationEntity.Type.GROUP, TestTeam.TEAM_ID, MutedConversationStatus.AllAllowed, null, null)
 
-    fun one_on_one(convId: ConversationId) = Conversation(convId, "ONE_ON_ONE Name", ConversationEntity.Type.ONE_ON_ONE, TestTeam.TEAM_ID, MutedConversationStatus.AllAllowed, null, null)
+    fun one_on_one(convId: ConversationId) = Conversation(
+        convId,
+        "ONE_ON_ONE Name",
+        ConversationEntity.Type.ONE_ON_ONE,
+        TestTeam.TEAM_ID,
+        MutedConversationStatus.AllAllowed,
+        null,
+        null
+    )
 
     val NETWORK_ID = QualifiedID("valueConversation", "domainConversation")
 
