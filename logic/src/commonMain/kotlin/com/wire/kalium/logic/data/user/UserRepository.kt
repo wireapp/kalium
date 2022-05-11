@@ -136,13 +136,10 @@ class UserDataSource(
         userDAO.getUserByQualifiedID(qualifiedID = idMapper.toDaoModel(userId))
             .map { userEntity -> userEntity?.let { publicUserMapper.fromDaoModelToPublicUser(userEntity) } }
 
-    override suspend fun fetchUserInfo(userId: UserId): Either<CoreFailure, OtherUser> {
-        return wrapApiRequest {
-            userDetailsApi.getUserInfo(idMapper.toApiModel(userId))
-        }.map { userProfile ->
+    override suspend fun fetchUserInfo(userId: UserId): Either<CoreFailure, OtherUser> =
+        wrapApiRequest { userDetailsApi.getUserInfo(idMapper.toApiModel(userId)) }.map { userProfile ->
             publicUserMapper.fromUserDetailResponse(userProfile)
         }
-    }
 
     companion object {
         const val SELF_USER_ID_KEY = "selfUserID"
