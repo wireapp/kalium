@@ -5,8 +5,8 @@ import com.wire.kalium.cryptography.ProteusClientImpl
 import com.wire.kalium.logic.data.session.SessionDataSource
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.di.AuthenticatedDataSourceSetProvider
-import com.wire.kalium.logic.di.AuthenticatedDataSourceSetProviderImpl
+import com.wire.kalium.logic.di.UserSessionScopeProvider
+import com.wire.kalium.logic.di.UserSessionScopeProviderImpl
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.network.SessionManagerImpl
@@ -26,7 +26,7 @@ import java.io.File
 actual class CoreLogic(
     clientLabel: String,
     rootPath: String,
-    private val authenticatedDataSourceSetProvider: AuthenticatedDataSourceSetProvider = AuthenticatedDataSourceSetProviderImpl
+    private val userSessionScopeProvider: UserSessionScopeProvider = UserSessionScopeProviderImpl
 ) : CoreLogicCommon(
     clientLabel = clientLabel, rootPath = rootPath
 ) {
@@ -42,7 +42,7 @@ actual class CoreLogic(
     override val globalDatabase: GlobalDatabaseProvider by lazy { GlobalDatabaseProvider(File("$rootPath/global-storage")) }
 
     override fun getSessionScope(userId: UserId): UserSessionScope {
-        val dataSourceSet = authenticatedDataSourceSetProvider.get(userId) ?: run {
+        return userSessionScopeProvider.get(userId) ?: run {
             val rootAccountPath = "$rootPath/${userId.domain}/${userId.value}"
             val rootProteusPath = "$rootAccountPath/proteus"
             val rootStoragePath = "$rootAccountPath/storage"
@@ -57,7 +57,7 @@ actual class CoreLogic(
             val userPreferencesSettings = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
             val userDatabase = UserDatabaseProvider(File(rootStoragePath))
 
-            AuthenticatedDataSourceSet(
+            val userDataSource = AuthenticatedDataSourceSet(
                 rootAccountPath,
                 networkContainer,
                 proteusClient,
@@ -66,14 +66,17 @@ actual class CoreLogic(
                 userDatabase,
                 userPreferencesSettings,
                 encryptedSettingsHolder
+            )
+            UserSessionScope(
+                userId,
+                userDataSource,
+                sessionRepository,
+                globalCallManager,
+                globalPreferences
             ).also {
-                authenticatedDataSourceSetProvider.add(userId, it)
+                userSessionScopeProvider.add(userId, it)
             }
         }
-
-        return UserSessionScope(
-            userId, dataSourceSet, sessionRepository, globalCallManager
-        )
     }
 
     override val globalCallManager: GlobalCallManager = GlobalCallManager()

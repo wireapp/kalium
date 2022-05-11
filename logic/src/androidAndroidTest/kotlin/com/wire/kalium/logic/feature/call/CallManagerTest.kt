@@ -7,7 +7,6 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.asString
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
@@ -77,7 +76,7 @@ class CallManagerTest {
                 any(),
                 any(),
                 eq(expectedConversationId),
-                eq(USER_ID.asString()),
+                eq(USER_ID.toString()),
                 eq(CLIENT_ID.value)
             )
             .wasInvoked(exactly = once)

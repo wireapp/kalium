@@ -2,6 +2,7 @@ package com.wire.kalium.network.api.user.client
 
 import com.wire.kalium.network.api.QualifiedID
 import com.wire.kalium.network.api.UserId
+import com.wire.kalium.network.api.user.pushToken.PushTokenBody
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.wrapKaliumResponse
@@ -25,6 +26,8 @@ interface ClientApi {
     suspend fun fetchClientInfo(clientID: String): NetworkResponse<ClientResponse>
 
     suspend fun updateClient(updateClientRequest: UpdateClientRequest, clientID: String): NetworkResponse<Unit>
+
+    suspend fun registerToken(body: PushTokenBody): NetworkResponse<Unit>
 }
 
 
@@ -69,9 +72,17 @@ class ClientApiImpl(private val httpClient: HttpClient) : ClientApi {
             setBody(updateClientRequest)
         } }
 
+    override suspend fun registerToken(body: PushTokenBody): NetworkResponse<Unit> = wrapKaliumResponse {
+        httpClient.post(PUSH_TOKEN) {
+            setBody(body)
+        }
+    }
+
     private companion object {
         const val PATH_USERS = "users"
         const val PATH_CLIENTS = "clients"
         const val PATH_LIST_CLIENTS = "$PATH_USERS/list-clients/v2"
+        const val PUSH_TOKEN = "push/tokens"
+
     }
 }

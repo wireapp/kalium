@@ -62,7 +62,7 @@ class EventRepositoryTest {
             "eventId",
             listOf()
         )
-        val notificationsPageResponse = NotificationResponse.CompleteList("time", false, listOf(firstPage))
+        val notificationsPageResponse = NotificationResponse("time", false, listOf(firstPage))
 
         given(eventInfoStorage)
             .getter(eventInfoStorage::lastProcessedId)
@@ -92,6 +92,7 @@ class EventRepositoryTest {
             .with(any(), eq(clientId.value))
             .wasInvoked(exactly = once)
     }
+
     @Test
     fun givenSomeEventWasProcessedBefore_whenGettingEvents_thenGetByBatchStartingOnLastProcessedID() = runTest {
         val lastProcessedEventId = "someNotificationID"
@@ -106,7 +107,7 @@ class EventRepositoryTest {
                 )
             )
         )
-        val notificationsPageResponse = NotificationResponse.CompleteList("time", false, listOf(firstPage))
+        val notificationsPageResponse = NotificationResponse("time", false, listOf(firstPage))
 
         given(eventInfoStorage)
             .getter(eventInfoStorage::lastProcessedId)
@@ -147,7 +148,7 @@ class EventRepositoryTest {
         )
         val pendingEvent = EventResponse("pendingEventId", listOf(pendingEventPayload))
         val liveEvent = pendingEvent.copy(id = "liveEventId")
-        val notificationsPageResponse = NotificationResponse.CompleteList("time", false, listOf(pendingEvent))
+        val notificationsPageResponse = NotificationResponse("time", false, listOf(pendingEvent))
 
         given(eventInfoStorage)
             .getter(eventInfoStorage::lastProcessedId)
@@ -190,7 +191,7 @@ class EventRepositoryTest {
             MessageEventData("text", "senderId", "recipient")
         )
         val pendingEvent = EventResponse("pendingEventId", listOf(pendingEventPayload))
-        val notificationsPageResponse = NotificationResponse.CompleteList("time", false, listOf(pendingEvent))
+        val notificationsPageResponse = NotificationResponse("time", false, listOf(pendingEvent))
 
         given(eventInfoStorage)
             .getter(eventInfoStorage::lastProcessedId)

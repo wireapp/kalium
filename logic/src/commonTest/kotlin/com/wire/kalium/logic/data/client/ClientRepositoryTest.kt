@@ -11,8 +11,12 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.ErrorResponse
+import com.wire.kalium.network.api.user.client.ClientApi
+import com.wire.kalium.network.api.user.pushToken.PushTokenBody
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
+import com.wire.kalium.persistence.client.TokenStorage
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import io.mockative.Mock
 import io.mockative.any
@@ -33,10 +37,18 @@ import kotlin.test.assertSame
 class ClientRepositoryTest {
 
     @Mock
+    val clientApi = mock(classOf<ClientApi>())
+
+    @Mock
     private val clientRemoteRepository = mock(classOf<ClientRemoteRepository>())
 
     @Mock
     private val clientRegistrationStorage = configure(mock(classOf<ClientRegistrationStorage>())) {
+        stubsUnitByDefault = true
+    }
+
+    @Mock
+    private val tokenStorage = configure(mock(classOf<TokenStorage>())) {
         stubsUnitByDefault = true
     }
 
@@ -266,6 +278,36 @@ class ClientRepositoryTest {
         verify(clientRemoteRepository).coroutine { clientRepository.selfListOfClients() }.wasInvoked(exactly = once)
     }
 
+
+    @Test
+    fun givenValidParams_whenPushToken_thenShouldSucceed() = runTest {
+        given(clientRemoteRepository).coroutine {
+            registerToken(pushTokenRequestBody) }
+            .then { Either.Right(Unit)}
+
+        given(clientApi)
+            .suspendFunction(clientApi::registerToken)
+            .whenInvokedWith(any())
+            .thenReturn(
+                NetworkResponse.Success(
+                    Unit,
+                    mapOf(),
+                    201
+                )
+            )
+
+        val actual = clientRemoteRepository.registerToken(pushTokenRequestBody)
+
+        actual.shouldSucceed {
+            assertEquals(Unit, it)
+        }
+
+        verify(clientRemoteRepository).suspendFunction(clientRemoteRepository::registerToken)
+            .with(any())
+            .wasInvoked(exactly = once)
+    }
+
+
     private companion object {
         val REGISTER_CLIENT_PARAMS = RegisterClientParam(
             "pass", listOf(), PreKeyCrypto(2, "2"), null, null, listOf(), null
@@ -279,6 +321,11 @@ class ClientRepositoryTest {
                 )
             )
         )
+        val pushTokenRequestBody = PushTokenBody(
+            senderId = "7239",
+            client = "cliId", token = "7239", transport = "GCM"
+        )
+
     }
 }
 
