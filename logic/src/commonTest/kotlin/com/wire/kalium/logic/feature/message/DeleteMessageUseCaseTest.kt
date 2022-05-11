@@ -3,6 +3,8 @@ package com.wire.kalium.logic.feature.message
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -40,6 +42,8 @@ class DeleteMessageUseCaseTest {
     @Mock
     private val clientRepository: ClientRepository = mock(ClientRepository::class)
 
+    val idMapper: IdMapper = IdMapperImpl()
+
     @Mock
     private val syncManager = configure(mock(SyncManager::class)) { stubsUnitByDefault = true }
 
@@ -55,7 +59,8 @@ class DeleteMessageUseCaseTest {
             userRepository,
             clientRepository,
             syncManager,
-            messageSender
+            messageSender,
+            idMapper
         )
     }
 
@@ -95,9 +100,6 @@ class DeleteMessageUseCaseTest {
             .suspendFunction(messageRepository::deleteMessage)
             .with(eq(TEST_MESSAGE_UUID), eq(TEST_CONVERSATION_ID))
             .wasInvoked(exactly = once)
-
-        assertIs<Unit>(result)
-
     }
 
     @Test
@@ -123,6 +125,11 @@ class DeleteMessageUseCaseTest {
 
         //when
         val result = deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, deleteForEveryone).shouldSucceed()
+        val deletedForMeContent = MessageContent.DeleteForMe(
+            TEST_MESSAGE_UUID, TEST_CONVERSATION_ID.value, idMapper.toProtoModel(
+                TEST_CONVERSATION_ID
+            )
+        )
 
         //then
         verify(messageSender)
@@ -136,7 +143,6 @@ class DeleteMessageUseCaseTest {
             .suspendFunction(messageRepository::deleteMessage)
             .with(eq(TEST_MESSAGE_UUID), eq(TEST_CONVERSATION_ID))
             .wasInvoked(exactly = once)
-        assertIs<Unit>(result)
 
     }
 
@@ -148,7 +154,6 @@ class DeleteMessageUseCaseTest {
         val TEST_CORE_FAILURE = Either.Left(CoreFailure.Unknown(Throwable("an error")))
         val SELF_CLIENT_ID: ClientId = PlainId("client_self")
         val deletedMessageContent = MessageContent.DeleteMessage(TEST_MESSAGE_UUID)
-        val deletedForMeContent = MessageContent.DeleteForMe(TEST_MESSAGE_UUID, TEST_CONVERSATION_ID.value)
 
     }
 

@@ -18,6 +18,7 @@ interface IdMapper {
     fun fromApiToDao(qualifiedID: NetworkQualifiedId): PersistenceQualifiedId
     fun toCryptoQualifiedIDId(qualifiedID: QualifiedID): CryptoQualifiedID
     fun fromProtoModel(qualifiedConversationID: QualifiedConversationId): ConversationId
+    fun toProtoModel(conversationId: ConversationId): QualifiedConversationId
 }
 
 internal class IdMapperImpl : IdMapper {
@@ -46,4 +47,6 @@ internal class IdMapperImpl : IdMapper {
     override fun fromProtoModel(qualifiedConversationID: QualifiedConversationId): ConversationId =
         ConversationId(qualifiedConversationID.id, qualifiedConversationID.domain)
 
+    override fun toProtoModel(conversationId: ConversationId): QualifiedConversationId =
+        QualifiedConversationId(conversationId.value, conversationId.domain)
 }

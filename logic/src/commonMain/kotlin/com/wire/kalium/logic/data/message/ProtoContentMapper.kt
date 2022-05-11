@@ -67,7 +67,8 @@ class ProtoContentMapperImpl : ProtoContentMapper {
             is MessageContent.DeleteForMe -> GenericMessage.Content.Hidden(
                 MessageHide(
                     messageId = messageContent.messageId,
-                    conversationId = messageContent.conversationId
+                    conversationId = messageContent.conversationId,
+                    qualifiedConversationId = messageContent.qualifiedConversationId
                 )
             )
             else -> throw IllegalArgumentException("Unexpected message content type: $messageContent")

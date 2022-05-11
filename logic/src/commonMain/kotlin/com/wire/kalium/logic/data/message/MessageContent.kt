@@ -10,7 +10,7 @@ sealed class MessageContent {
     data class DeleteForMe(
         val messageId: String,
         val conversationId: String,
-        val qualifiedConversationId: QualifiedConversationId? = null
+        val qualifiedConversationId: QualifiedConversationId?
     ) : MessageContent()
 
     object Unknown : MessageContent()

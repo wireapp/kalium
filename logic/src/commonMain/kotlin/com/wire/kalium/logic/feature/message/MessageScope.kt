@@ -5,6 +5,8 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
@@ -47,6 +49,9 @@ class MessageScope(
 
     private val mlsMessageCreator: MLSMessageCreator
         get() = MLSMessageCreatorImpl(mlsClientProvider, protoContentMapper)
+
+    private val idMapper: IdMapper
+        get() = IdMapperImpl()
 
     internal val messageSender: MessageSender
         get() = MessageSenderImpl(
@@ -102,10 +107,16 @@ class MessageScope(
             userRepository,
             clientRepository,
             syncManager,
-            messageSender
+            messageSender,
+            idMapper
         )
 
     val markMessagesAsNotified: MarkMessagesAsNotifiedUseCase get() = MarkMessagesAsNotifiedUseCaseImpl(conversationRepository)
 
-    val getNotifications: GetNotificationsUseCase get() = GetNotificationsUseCaseImpl(messageRepository, userRepository, conversationRepository)
+    val getNotifications: GetNotificationsUseCase
+        get() = GetNotificationsUseCaseImpl(
+            messageRepository,
+            userRepository,
+            conversationRepository
+        )
 }
