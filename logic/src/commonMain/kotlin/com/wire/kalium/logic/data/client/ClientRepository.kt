@@ -12,8 +12,6 @@ import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.user.pushToken.PushTokenBody
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
-import com.wire.kalium.persistence.client.NotificationTokenEntity
-import com.wire.kalium.persistence.client.TokenStorage
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import io.ktor.util.encodeBase64
 import com.wire.kalium.persistence.dao.client.Client as ClientEntity
