@@ -1,5 +1,6 @@
 package com.wire.kalium.logger
 
+import co.touchlab.kermit.LogWriter
 import co.touchlab.kermit.Severity
 import co.touchlab.kermit.StaticConfig
 import co.touchlab.kermit.Logger as KermitLogger
@@ -41,17 +42,31 @@ enum class KaliumLogLevel {
     DISABLED
 }
 
-class KaliumLogger(config: Config) {
+/**
+ * the logWriter is to create a custom writer other than the existing log writers from kermit to intercept the logs
+ * in the android case we use it to write the logs on file
+ *
+ */
+class KaliumLogger(config: Config, logWriter: LogWriter? = null) {
 
     private val kermitLogger: KermitLogger
 
     init {
-        kermitLogger = KermitLogger(
-            config = StaticConfig(
-                minSeverity = config.severityLevel
-            ),
-            tag = config.tag
-        )
+        kermitLogger = if (logWriter == null) {
+            KermitLogger(
+                config = StaticConfig(
+                    minSeverity = config.severityLevel
+                ),
+                tag = config.tag
+            )
+        } else {
+            KermitLogger(
+                config = StaticConfig(
+                    minSeverity = config.severityLevel, listOf(logWriter)
+                ),
+                tag = config.tag
+            )
+        }
     }
 
     val severity = config.severity
