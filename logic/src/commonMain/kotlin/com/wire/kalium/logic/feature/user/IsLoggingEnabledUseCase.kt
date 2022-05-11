@@ -2,13 +2,19 @@ package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 
-class IsLoggingEnabledUseCase(
-    private val userConfigRepository: UserConfigRepository
-) {
+interface IsLoggingEnabledUseCase {
+    operator fun invoke(): Boolean
+}
 
-    operator fun invoke(): Boolean =
+
+class IsLoggingEnabledUseCaseImpl(
+    private val userConfigRepository: UserConfigRepository
+) : IsLoggingEnabledUseCase {
+
+    override operator fun invoke(): Boolean =
         userConfigRepository.isLoggingEnabled().fold({
             when (it) {
                 StorageFailure.DataNotFound -> {
