@@ -4,6 +4,7 @@ import com.wire.kalium.network.api.user.client.DeviceTypeDTO
 import com.wire.kalium.network.api.user.client.SimpleClientResponse
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import com.wire.kalium.protobuf.messages.QualifiedConversationId
 
 class IdMapperTest {
 
@@ -37,5 +38,26 @@ class IdMapperTest {
 
         assertEquals(simpleClientResponse.id, clientID.value)
     }
+
+    @Test
+    fun givenProtoQualifiedConversationId_whenMappingFromProtoModel_thenTheIDShouldBeMappedCorrectly() {
+        val qualifiedConversationId = QualifiedConversationId("Test", "Test")
+
+        val conversationId = idMapper.fromProtoModel(qualifiedConversationId)
+
+        assertEquals(qualifiedConversationId.id, conversationId.value)
+        assertEquals(qualifiedConversationId.domain, conversationId.domain)
+    }
+
+    @Test
+    fun givenConversationId_whenMappingToProtoModel_thenTheIDShouldBeMappedCorrectly() {
+        val conversationId = ConversationId("Test", "Test")
+
+        val qualifiedConversationId = idMapper.toProtoModel(conversationId)
+
+        assertEquals(qualifiedConversationId.id, conversationId.value)
+        assertEquals(qualifiedConversationId.domain, conversationId.domain)
+    }
+
 
 }

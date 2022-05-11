@@ -127,8 +127,8 @@ class ConversationEventReceiver(
             .onFailure {
                 // TODO: Insert a failed message into the database to notify user that encryption is kaputt
                 kaliumLogger.e("$TAG - failure on MLS message: $it")
-            }.onSuccess { message ->
-                val plainMessageBlob = message?.let { PlainMessageBlob(it) } ?: return@onSuccess
+            }.onSuccess { mlsMessage ->
+                val plainMessageBlob = mlsMessage?.let { PlainMessageBlob(it) } ?: return@onSuccess
                 val protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)
                 val message = Message(
                     id = protoContent.messageUid,
@@ -168,11 +168,23 @@ class ConversationEventReceiver(
                 if (isSenderVerified(message.content.messageId, message.conversationId, message.senderUserId))
                     messageRepository.markMessageAsDeleted(messageUuid = message.content.messageId, conversationId = message.conversationId)
                 else kaliumLogger.i(message = "Delete message sender is not verified: $message")
-            is MessageContent.DeleteForMe ->
+            is MessageContent.DeleteForMe -> {
+                /*The conversationId comes with the hidden message[message.content] only carries the conversaionId VALUE,
+                *  we need to get the DOMAIN from the self conversationId[here is the message.conversationId]*/
+                val conversationId =
+                    if (message.content.qualifiedConversationId != null)
+                        idMapper.fromProtoModel(message.content.qualifiedConversationId)
+                    else ConversationId(
+                        message.content.conversationId,
+                        message.conversationId.domain
+                    )
                 if (message.conversationId == conversationRepository.getSelfConversationId())
-                //todo: consider to check with conversation id
-                    messageRepository.deleteMessage(messageUuid = message.content.messageId)
+                    messageRepository.deleteMessage(
+                        messageUuid = message.content.messageId,
+                        conversationId = conversationId
+                    )
                 else kaliumLogger.i(message = "Delete message sender is not verified: $message")
+            }
             is MessageContent.Calling -> {
                 kaliumLogger.d("$TAG - MessageContent.Calling")
                 callManagerImpl.onCallingMessageReceived(
