@@ -1,13 +1,13 @@
 package com.wire.kalium.logic.feature.call.usecase
 
 import app.cash.turbine.test
+import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.LegalHoldStatus
 import com.wire.kalium.logic.data.conversation.UserType
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.feature.call.Call
-import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
@@ -32,7 +32,7 @@ class GetIncomingCallsUseCaseTest {
     val conversationRepository: ConversationRepository = mock(classOf<ConversationRepository>())
 
     @Mock
-    val callManager: CallManager = mock(classOf<CallManager>())
+    val callRepository: CallRepository = mock(classOf<CallRepository>())
 
     @Mock
     val syncManager: SyncManager = mock(classOf<SyncManager>())
@@ -41,13 +41,13 @@ class GetIncomingCallsUseCaseTest {
 
     @BeforeTest
     fun setUp() {
-        getIncomingCallsUseCase = GetIncomingCallsUseCaseImpl(callManager, syncManager, conversationRepository)
+        getIncomingCallsUseCase = GetIncomingCallsUseCaseImpl(conversationRepository, callRepository, syncManager, )
     }
 
     @Test
     fun givenEmptyCallList_thenEmptyNotificationList() = runTest {
         given(syncManager).suspendFunction(syncManager::waitForSlowSyncToComplete).whenInvoked().thenReturn(Unit)
-        given(callManager).invocation { allCalls }.then { MutableStateFlow(listOf<Call>()) }
+        given(callRepository).invocation { getIncomingCalls() }.then { MutableStateFlow(listOf<Call>()) }
 
         getIncomingCallsUseCase().test {
             assertTrue(awaitItem().isEmpty())
@@ -70,11 +70,11 @@ class GetIncomingCallsUseCaseTest {
                     )
                 )
             }
-        given(callManager).invocation { allCalls }.then {
+        given(callRepository).invocation { getIncomingCalls() }.then {
             MutableStateFlow(
                 listOf<Call>(
-                    Call(TestConversation.id(0), CallStatus.INCOMING),
-                    Call(TestConversation.id(1), CallStatus.INCOMING)
+                    Call(TestConversation.id(0), CallStatus.INCOMING, "client1"),
+                    Call(TestConversation.id(1), CallStatus.INCOMING, "client2")
                 )
             )
         }
