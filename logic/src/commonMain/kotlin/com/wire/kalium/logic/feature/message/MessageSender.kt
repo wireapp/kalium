@@ -122,7 +122,7 @@ class MessageSenderImpl(
             sessionEstablisher.prepareRecipientsForNewOutgoingMessage(recipients).map { recipients }
         }.flatMap { recipients ->
             messageEnvelopeCreator.createOutgoingEnvelope(recipients, message).flatMap { envelope ->
-                trySendingProteusEnvelope(conversationId, envelope, message)
+                trySendingProteusEnvelope(envelope, message)
             }
         }
     }
@@ -142,10 +142,9 @@ class MessageSenderImpl(
      * Will handle the failure and retry in case of [ProteusSendMessageFailure].
      */
     private suspend fun trySendingProteusEnvelope(
-        conversationId: ConversationId,
         envelope: MessageEnvelope,
         message: Message,
-    ): Either<CoreFailure, String> = messageRepository.sendEnvelope(conversationId, envelope).fold({
+    ): Either<CoreFailure, String> = messageRepository.sendEnvelope(message.conversationId, envelope).fold({
         when (it) {
             is ProteusSendMessageFailure -> messageSendFailureHandler.handleClientsHaveChangedFailure(it).flatMap {
                 attemptToSend(message)
