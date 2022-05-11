@@ -4,7 +4,8 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.contact.search.UserSearchApi
 import com.wire.kalium.network.api.contact.search.UserSearchRequest
@@ -42,23 +43,20 @@ class SearchUserRepositoryImpl(
         searchQuery: String,
         domain: String,
         maxResultSize: Int?
-    ): Either<CoreFailure, UserSearchResult> {
-        return suspending {
-            wrapApiRequest {
-                userSearchApi.search(
-                    UserSearchRequest(
-                        searchQuery = searchQuery,
-                        domain = domain,
-                        maxResultSize = maxResultSize
-                    )
-                )
-            }.flatMap { contactResultValue ->
-                wrapApiRequest {
-                    userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(contactResultValue.documents.map { it.qualifiedID }))
-                }.map { userDetailsResponses ->
-                    UserSearchResult(publicUserMapper.fromUserDetailResponses(userDetailsResponses))
-                }
-            }
+    ): Either<CoreFailure, UserSearchResult> = wrapApiRequest {
+        userSearchApi.search(
+            UserSearchRequest(
+                searchQuery = searchQuery,
+                domain = domain,
+                maxResultSize = maxResultSize
+            )
+        )
+    }.flatMap { contactResultValue ->
+        wrapApiRequest {
+            userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(contactResultValue.documents.map { it.qualifiedID }))
+        }.map { userDetailsResponses ->
+            UserSearchResult(publicUserMapper.fromUserDetailResponses(userDetailsResponses))
         }
     }
+
 }
