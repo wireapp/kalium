@@ -5,7 +5,7 @@ import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.feature.auth.AuthSession
-import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isBlackListedEmail
 import com.wire.kalium.network.exceptions.isDomainBlockedForRegistration
@@ -48,31 +48,28 @@ class RegisterAccountUseCase(
     suspend operator fun invoke(
         param: RegisterParam,
         serverConfig: ServerConfig
-    ): RegisterResult = suspending {
-        when (param) {
-            is RegisterParam.PrivateAccount -> {
-                with(param) {
-                    registerAccountRepository.registerPersonalAccountWithEmail(email, emailActivationCode, name, password, serverConfig)
-                }
+    ): RegisterResult = when (param) {
+        is RegisterParam.PrivateAccount -> {
+            with(param) {
+                registerAccountRepository.registerPersonalAccountWithEmail(email, emailActivationCode, name, password, serverConfig)
             }
-            is RegisterParam.Team -> {
-                with(param) {
-                    registerAccountRepository.registerTeamWithEmail(
-                        email, emailActivationCode, name, password, teamName, teamIcon, serverConfig
-                    )
-                }
+        }
+        is RegisterParam.Team -> {
+            with(param) {
+                registerAccountRepository.registerTeamWithEmail(
+                    email, emailActivationCode, name, password, teamName, teamIcon, serverConfig
+                )
             }
-        }.coFold(
-            {
-                if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
-                    handleSpecialErrors(it.kaliumException)
-                } else {
-                    RegisterResult.Failure.Generic(it)
-                }
-            }, {
-                RegisterResult.Success(it)
-            })
-    }
+        }
+    }.fold({
+        if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
+            handleSpecialErrors(it.kaliumException)
+        } else {
+            RegisterResult.Failure.Generic(it)
+        }
+    }, {
+        RegisterResult.Success(it)
+    })
 
     private fun handleSpecialErrors(error: KaliumException.InvalidRequestError) =
         with(error) {

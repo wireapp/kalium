@@ -5,7 +5,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleResult
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
-import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isHandleExists
@@ -23,14 +23,16 @@ sealed class SetUserHandleResult {
 
 class SetUserHandleUseCase(
     private val userRepository: UserRepository,
-    private val validateUserHandleUseCase: ValidateUserHandleUseCase,
+    private val validateUserHandle: ValidateUserHandleUseCase,
     private val syncManager: SyncManager
 ) {
-    suspend operator fun invoke(_handle: String): SetUserHandleResult = suspending {
-        if (syncManager.isSlowSyncOngoing()) syncManager.waitForSlowSyncToComplete()
-        validateUserHandleUseCase(_handle).let { handleState ->
+    suspend operator fun invoke(_handle: String): SetUserHandleResult {
+        if (syncManager.isSlowSyncOngoing()) {
+            syncManager.waitForSlowSyncToComplete()
+        }
+        return validateUserHandle(_handle).let { handleState ->
             when (handleState) {
-                is ValidateUserHandleResult.Valid -> userRepository.updateSelfHandle(handleState.handle).coFold(
+                is ValidateUserHandleResult.Valid -> userRepository.updateSelfHandle(handleState.handle).fold(
                     {
                         if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError)
                             handleSpecificError(it.kaliumException)
@@ -42,9 +44,7 @@ class SetUserHandleUseCase(
                 )
                 else -> SetUserHandleResult.Failure.InvalidHandle
             }
-
         }
-
     }
 
     private fun handleSpecificError(error: KaliumException.InvalidRequestError): SetUserHandleResult.Failure = with(error) {

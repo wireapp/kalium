@@ -3,7 +3,7 @@ package com.wire.kalium.logic.feature.connection
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 
 /**
@@ -23,9 +23,9 @@ internal class SendConnectionRequestUseCaseImpl(
     private val connectionRepository: ConnectionRepository
 ) : SendConnectionRequestUseCase {
 
-    override suspend fun invoke(userId: UserId): SendConnectionRequestResult = suspending {
-        connectionRepository.sendUserConnection(userId)
-            .coFold({ coreFailure ->
+    override suspend fun invoke(userId: UserId): SendConnectionRequestResult {
+        return connectionRepository.sendUserConnection(userId)
+            .fold({ coreFailure ->
                 kaliumLogger.e("An error occurred when sending a connection request to $userId")
                 SendConnectionRequestResult.Failure(coreFailure)
             }, {
