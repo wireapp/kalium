@@ -63,14 +63,14 @@ class ConnectionRepositoryTest {
             }
 
         given(conversationDAO)
-            .suspendFunction(conversationDAO::insertOrUpdateOneOnOneMemberWithConnectionStatus)
+            .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
             .whenInvokedWith(any(), any(), any())
 
         val result = connectionRepository.fetchSelfUserConnections()
 
         // Verifies that conversationDAO was called the same amount there is connections
         verify(conversationDAO)
-            .suspendFunction(conversationDAO::insertOrUpdateOneOnOneMemberWithConnectionStatus)
+            .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
             .with(any(), any(), any())
             .wasInvoked(exactly = twice)
 
@@ -87,7 +87,7 @@ class ConnectionRepositoryTest {
             .whenInvokedWith(eq(userId))
             .then { NetworkResponse.Success(connection1, mapOf(), 200) }
         given(conversationDAO)
-            .suspendFunction(conversationDAO::insertOrUpdateOneOnOneMemberWithConnectionStatus)
+            .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
             .whenInvokedWith(eq(UserIDEntity(userId.value, userId.domain)), any(), any())
             .then { _, _, _ -> return@then }
 
@@ -101,7 +101,7 @@ class ConnectionRepositoryTest {
             .with(eq(userId))
             .wasInvoked(once)
         verify(conversationDAO)
-            .suspendFunction(conversationDAO::insertOrUpdateOneOnOneMemberWithConnectionStatus)
+            .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
             .with(any(), eq(UserEntity.ConnectionState.SENT), any())
             .wasInvoked(once)
     }
@@ -115,7 +115,7 @@ class ConnectionRepositoryTest {
             .whenInvokedWith(eq(userId))
             .then { NetworkResponse.Error(KaliumException.GenericError(RuntimeException("An error the server threw!"))) }
         given(conversationDAO)
-            .suspendFunction(conversationDAO::insertOrUpdateOneOnOneMemberWithConnectionStatus)
+            .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
             .whenInvokedWith(eq(UserIDEntity(userId.value, userId.domain)), any(), any())
             .then { _, _, _ -> return@then }
 
@@ -129,7 +129,7 @@ class ConnectionRepositoryTest {
             .with(eq(userId))
             .wasInvoked(once)
         verify(conversationDAO)
-            .suspendFunction(conversationDAO::insertOrUpdateOneOnOneMemberWithConnectionStatus)
+            .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
             .with(any(), any(), any())
             .wasNotInvoked()
     }
@@ -143,7 +143,7 @@ class ConnectionRepositoryTest {
             .whenInvokedWith(eq(userId))
             .then { NetworkResponse.Success(connection1, mapOf(), 200) }
         given(conversationDAO)
-            .suspendFunction(conversationDAO::insertOrUpdateOneOnOneMemberWithConnectionStatus)
+            .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
             .whenInvokedWith(eq(UserIDEntity(userId.value, userId.domain)), any(), any())
             .thenThrow(RuntimeException("An error occurred persisting the data"))
 
@@ -156,7 +156,7 @@ class ConnectionRepositoryTest {
             .with(eq(userId))
             .wasInvoked(once)
         verify(conversationDAO)
-            .suspendFunction(conversationDAO::insertOrUpdateOneOnOneMemberWithConnectionStatus)
+            .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
             .with(any(), any(), any())
             .wasInvoked(once)
     }

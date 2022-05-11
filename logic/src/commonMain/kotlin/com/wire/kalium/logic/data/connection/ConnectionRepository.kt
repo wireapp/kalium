@@ -73,7 +73,7 @@ internal class ConnectionDataSource(
     ) {
         wrapStorageRequest {
             connections.forEach { connection ->
-                conversationDAO.insertOrUpdateOneOnOneMemberWithConnectionStatus(
+                conversationDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
                     userId = idMapper.fromApiToDao(connection.qualifiedToId),
                     status = connectionStateToDao(state = connection.status),
                     conversationID = idMapper.fromApiToDao(connection.qualifiedConversationId)
