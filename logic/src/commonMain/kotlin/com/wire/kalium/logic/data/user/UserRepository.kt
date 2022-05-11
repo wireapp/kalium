@@ -136,8 +136,8 @@ class UserDataSource(
         userDAO.getUserByQualifiedID(qualifiedID = idMapper.toDaoModel(userId))
             .map { userEntity -> userEntity?.let { publicUserMapper.fromDaoModelToPublicUser(userEntity) } }
 
-    override suspend fun fetchUserInfo(userId: UserId): Either<CoreFailure, OtherUser> = suspending {
-        wrapApiRequest {
+    override suspend fun fetchUserInfo(userId: UserId): Either<CoreFailure, OtherUser> {
+        return wrapApiRequest {
             userDetailsApi.getUserInfo(idMapper.toApiModel(userId))
         }.map { userProfile ->
             publicUserMapper.fromUserDetailResponse(userProfile)

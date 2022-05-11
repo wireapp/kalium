@@ -3,7 +3,7 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.functional.fold
 import kotlinx.coroutines.flow.firstOrNull
 
 /**
@@ -21,10 +21,10 @@ fun interface GetUserInfoUseCase {
 
 internal class GetUserInfoUseCaseImpl(private val userRepository: UserRepository) : GetUserInfoUseCase {
 
-    override suspend fun invoke(userId: UserId): GetUserInfoResult = suspending {
+    override suspend fun invoke(userId: UserId): GetUserInfoResult {
         val otherUser = userRepository.getKnownUser(userId).firstOrNull()
-        if (otherUser != null) return@suspending GetUserInfoResult.Success(otherUser)
-        userRepository.fetchUserInfo(userId)
+        if (otherUser != null) return GetUserInfoResult.Success(otherUser)
+        return userRepository.fetchUserInfo(userId)
             .fold({
                 GetUserInfoResult.Failure
             }, {
