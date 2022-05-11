@@ -19,7 +19,10 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
@@ -55,7 +58,7 @@ internal class SendAssetMessageUseCaseImpl(
         assetRawData: ByteArray,
         assetName: String?,
         assetMimeType: String
-    ): SendAssetMessageResult = suspending {
+    ): SendAssetMessageResult {
         // Encrypt the asset data with the provided otr key
         val otrKey = generateRandomAES256Key()
         val encryptedData = encryptDataWithAES256(PlainData(assetRawData), otrKey)
@@ -64,12 +67,20 @@ internal class SendAssetMessageUseCaseImpl(
         val sha256 = calcSHA256(encryptedData.data)
 
         // Upload the asset encrypted data
-        assetDataSource.uploadAndPersistPrivateAsset(FileAsset(assetMimeType), encryptedData.data).flatMap { assetId ->
+        return assetDataSource.uploadAndPersistPrivateAsset(FileAsset(assetMimeType), encryptedData.data).flatMap { assetId ->
             // Try to send the Asset Message
-            prepareAndSendAssetMessage(conversationId, assetRawData.size.toLong(), assetName, assetMimeType, sha256, otrKey, assetId).flatMap {
+            prepareAndSendAssetMessage(
+                conversationId,
+                assetRawData.size.toLong(),
+                assetName,
+                assetMimeType,
+                sha256,
+                otrKey,
+                assetId
+            ).flatMap {
                 Either.Right(Unit)
             }
-        }.coFold({
+        }.fold({
             kaliumLogger.e("Something went wrong when sending the Asset Message")
             SendAssetMessageResult.Failure(it)
         }, {
@@ -77,6 +88,7 @@ internal class SendAssetMessageUseCaseImpl(
         })
     }
 
+    @Suppress("LongParameterList")
     private suspend fun prepareAndSendAssetMessage(
         conversationId: ConversationId,
         dataSize: Long,
@@ -85,63 +97,60 @@ internal class SendAssetMessageUseCaseImpl(
         sha256: ByteArray,
         otrKey: AES256Key,
         assetId: UploadedAssetId
-    ) = suspending {
+    ): Either<CoreFailure, Unit> = clientRepository.currentClientId().flatMap { currentClientId ->
         // Get my current user
         val selfUser = userRepository.getSelfUser().first()
 
         // Create a unique message ID
         val generatedMessageUuid = uuid4().toString()
 
-        clientRepository.currentClientId().flatMap { currentClientId ->
-            val message = Message(
-                id = generatedMessageUuid,
-                content = MessageContent.Asset(
-                    provideAssetMessageContent(
-                        dataSize = dataSize,
-                        assetName = assetName,
-                        mimeType = assetMimeType,
-                        sha256 = sha256,
-                        otrKey = otrKey,
-                        assetId = assetId,
-                    )
-                ),
-                conversationId = conversationId,
-                date = Clock.System.now().toString(),
-                senderUserId = selfUser.id,
-                senderClientId = currentClientId,
-                status = Message.Status.PENDING
-            )
-            messageRepository.persistMessage(message)
-        }.flatMap {
-            messageSender.sendPendingMessage(conversationId, generatedMessageUuid)
-        }.onFailure {
-            kaliumLogger.e("There was an error when trying to send the asset on the conversation")
-        }
-    }
-
-    private fun provideAssetMessageContent(
-        dataSize: Long,
-        assetName: String?,
-        sha256: ByteArray,
-        otrKey: AES256Key,
-        assetId: UploadedAssetId,
-        mimeType: String,
-    ): AssetContent {
-        return AssetContent(
-            sizeInBytes = dataSize,
-            name = assetName,
-            mimeType = mimeType,
-            remoteData = AssetContent.RemoteData(
-                otrKey = otrKey.data,
-                sha256 = sha256,
-                assetId = assetId.key,
-                encryptionAlgorithm = AssetContent.RemoteData.EncryptionAlgorithm.AES_CBC,
-                assetDomain = null,  // TODO: fill in the assetDomain, it's returned by the BE when uploading an asset.
-                assetToken = assetId.assetToken
-            )
+        val message = Message(
+            id = generatedMessageUuid,
+            content = MessageContent.Asset(
+                provideAssetMessageContent(
+                    dataSize = dataSize,
+                    assetName = assetName,
+                    mimeType = assetMimeType,
+                    sha256 = sha256,
+                    otrKey = otrKey,
+                    assetId = assetId,
+                )
+            ),
+            conversationId = conversationId,
+            date = Clock.System.now().toString(),
+            senderUserId = selfUser.id,
+            senderClientId = currentClientId,
+            status = Message.Status.PENDING
         )
+        messageRepository.persistMessage(message).map { message }
+    }.flatMap { message ->
+        messageSender.sendPendingMessage(conversationId, message.id)
+    }.onFailure {
+        kaliumLogger.e("There was an error when trying to send the asset on the conversation")
     }
 }
+
+@Suppress("LongParameterList")
+private fun provideAssetMessageContent(
+    dataSize: Long,
+    assetName: String?,
+    sha256: ByteArray,
+    otrKey: AES256Key,
+    assetId: UploadedAssetId,
+    mimeType: String,
+): AssetContent = AssetContent(
+    sizeInBytes = dataSize,
+    name = assetName,
+    mimeType = mimeType,
+    remoteData = AssetContent.RemoteData(
+        otrKey = otrKey.data,
+        sha256 = sha256,
+        assetId = assetId.key,
+        encryptionAlgorithm = AssetContent.RemoteData.EncryptionAlgorithm.AES_CBC,
+        assetDomain = null,  // TODO: fill in the assetDomain, it's returned by the BE when uploading an asset.
+        assetToken = assetId.assetToken
+    )
+)
 
 sealed class SendAssetMessageResult {
     object Success : SendAssetMessageResult()

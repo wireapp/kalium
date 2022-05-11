@@ -6,7 +6,7 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.api.notification.NotificationApi
 import com.wire.kalium.network.api.notification.NotificationResponse
 import com.wire.kalium.network.utils.NetworkResponse
@@ -38,22 +38,20 @@ class EventDataSource(
 
     // TODO: handle Missing notification response (notify user that some messages are missing)
 
-    override suspend fun events(): Flow<Either<CoreFailure, Event>> = suspending {
-        clientRepository.currentClientId().coFold({
+    override suspend fun events(): Flow<Either<CoreFailure, Event>> =
+        clientRepository.currentClientId().fold({
             flowOf(Either.Left(CoreFailure.MissingClientRegistration))
         }, { clientId ->
             val pendingEventsFlow = pendingEventsFlow(clientId)
             val liveEventsFlow = liveEventsFlow(clientId)
             flowOf(pendingEventsFlow, liveEventsFlow).flattenConcat()
         })
-    }
 
-    override suspend fun pendingEvents(): Flow<Either<CoreFailure, Event>> = suspending {
-        clientRepository.currentClientId().coFold(
+    override suspend fun pendingEvents(): Flow<Either<CoreFailure, Event>> =
+        clientRepository.currentClientId().fold(
             { flowOf(Either.Left(it)) },
             { clientId -> pendingEventsFlow(clientId) }
         )
-    }
 
     private suspend fun liveEventsFlow(clientId: ClientId): Flow<Either<CoreFailure, Event>> =
         notificationApi.listenToLiveEvents(clientId.value)

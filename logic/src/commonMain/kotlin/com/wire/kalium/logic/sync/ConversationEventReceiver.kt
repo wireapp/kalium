@@ -20,9 +20,9 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.call.CallManager
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.logic.wrapCryptoRequest
@@ -55,26 +55,24 @@ class ConversationEventReceiver(
         val decodedContentBytes = Base64.decodeFromBase64(event.content.toByteArray())
         val cryptoSessionId =
             CryptoSessionId(idMapper.toCryptoQualifiedIDId(event.senderUserId), CryptoClientId(event.senderClientId.value))
-        suspending {
-            wrapCryptoRequest { proteusClient.decrypt(decodedContentBytes, cryptoSessionId) }.map { PlainMessageBlob(it) }
-                .onFailure {
-                    // TODO: Insert a failed message into the database to notify user that encryption is kaputt
-                    kaliumLogger.e("$TAG - failure on proteus message: ${it.proteusException.stackTraceToString()}")
-                }.onSuccess { plainMessageBlob ->
-                    val protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)
-                    val message = Message(
-                        id = protoContent.messageUid,
-                        content = protoContent.messageContent,
-                        conversationId = event.conversationId,
-                        date = event.time,
-                        senderUserId = event.senderUserId,
-                        senderClientId = event.senderClientId,
-                        status = Message.Status.SENT
-                    )
+        wrapCryptoRequest { proteusClient.decrypt(decodedContentBytes, cryptoSessionId) }.map { PlainMessageBlob(it) }
+            .onFailure {
+                // TODO: Insert a failed message into the database to notify user that encryption is kaputt
+                kaliumLogger.e("$TAG - failure on proteus message: ${it.proteusException.stackTraceToString()}")
+            }.onSuccess { plainMessageBlob ->
+                val protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)
+                val message = Message(
+                    id = protoContent.messageUid,
+                    content = protoContent.messageContent,
+                    conversationId = event.conversationId,
+                    date = event.time,
+                    senderUserId = event.senderUserId,
+                    senderClientId = event.senderClientId,
+                    status = Message.Status.SENT
+                )
 
-                    processMessage(message)
-                }
-        }
+                processMessage(message)
+            }
     }
 
     private fun updateAssetMessage(persistedMessage: Message, newMessageRemoteData: AssetContent.RemoteData): Message? =
@@ -124,13 +122,12 @@ class ConversationEventReceiver(
             .onFailure { kaliumLogger.e("$TAG - failure on MLS welcome event: $it") }
     }
 
-    private suspend fun handleNewMLSMessage(event: Event.Conversation.NewMLSMessage) = suspending {
+    private suspend fun handleNewMLSMessage(event: Event.Conversation.NewMLSMessage) =
         mlsConversationRepository.messageFromMLSMessage(event)
             .onFailure {
                 // TODO: Insert a failed message into the database to notify user that encryption is kaputt
                 kaliumLogger.e("$TAG - failure on MLS message: $it")
-            }
-            .onSuccess { message ->
+            }.onSuccess { message ->
                 val plainMessageBlob = message?.let { PlainMessageBlob(it) } ?: return@onSuccess
                 val protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)
                 val message = Message(
@@ -142,12 +139,10 @@ class ConversationEventReceiver(
                     senderClientId = ClientId(""), // TODO client ID not available for MLS messages
                     status = Message.Status.SENT
                 )
-
                 processMessage(message)
             }
-    }
 
-    private suspend fun processMessage(message: Message) = suspending {
+    private suspend fun processMessage(message: Message) {
         kaliumLogger.i(message = "Message received: $message")
 
         val isMyMessage = userRepository.getSelfUserId() == message.senderUserId

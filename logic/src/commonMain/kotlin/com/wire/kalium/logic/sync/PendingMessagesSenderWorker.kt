@@ -3,7 +3,8 @@ package com.wire.kalium.logic.sync
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 
 /**
@@ -25,7 +26,7 @@ internal class PendingMessagesSenderWorker(
      *
      * The failure or retry logic is handled by [MessageSender] for each message.
      */
-    override suspend fun doWork(): Result = suspending {
+    override suspend fun doWork(): Result {
         messageRepository.getAllPendingMessagesFromUser(userId)
             .onSuccess { pendingMessages ->
                 pendingMessages.forEach { message ->
@@ -37,7 +38,7 @@ internal class PendingMessagesSenderWorker(
                 // This execution doesn't care about failures
             }
 
-        Result.Success
+        return Result.Success
     }
 
 }
