@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.notification_token
 
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
+import com.wire.kalium.logic.functional.fold
 
 
 class SaveNotificationTokenUseCase(

@@ -9,7 +9,8 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
 import kotlinx.coroutines.flow.first
@@ -27,29 +28,28 @@ class SendTextMessageUseCase(
         syncManager.waitForSlowSyncToComplete()
         val selfUser = userRepository.getSelfUser().first()
 
-        return suspending {
-            val generatedMessageUuid = uuid4().toString()
+        val generatedMessageUuid = uuid4().toString()
 
-            clientRepository.currentClientId().flatMap { currentClientId ->
-                val message = Message(
-                    id = generatedMessageUuid,
-                    content = MessageContent.Text(text),
-                    conversationId = conversationId,
-                    date = Clock.System.now().toString(),
-                    senderUserId = selfUser.id,
-                    senderClientId = currentClientId,
-                    status = Message.Status.PENDING
-                )
-                messageRepository.persistMessage(message)
-            }.flatMap {
-                messageSender.sendPendingMessage(conversationId, generatedMessageUuid)
-            }.onFailure {
-                kaliumLogger.e("There was an error trying to send the message $it")
-                if (it is CoreFailure.Unknown) {
-                    //TODO Did I write multiplatform logging today?
-                    it.rootCause?.printStackTrace()
-                }
+        return clientRepository.currentClientId().flatMap { currentClientId ->
+            val message = Message(
+                id = generatedMessageUuid,
+                content = MessageContent.Text(text),
+                conversationId = conversationId,
+                date = Clock.System.now().toString(),
+                senderUserId = selfUser.id,
+                senderClientId = currentClientId,
+                status = Message.Status.PENDING
+            )
+            messageRepository.persistMessage(message)
+        }.flatMap {
+            messageSender.sendPendingMessage(conversationId, generatedMessageUuid)
+        }.onFailure {
+            kaliumLogger.e("There was an error trying to send the message $it")
+            if (it is CoreFailure.Unknown) {
+                //TODO Did I write multiplatform logging today?
+                it.rootCause?.printStackTrace()
             }
         }
     }
+
 }

@@ -4,7 +4,9 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.asset.AssetApi
@@ -70,7 +72,7 @@ internal class AssetDataSource(
         return uploadAndPersistAsset(uploadAssetData)
     }
 
-    private suspend fun uploadAndPersistAsset(uploadAssetData: UploadAssetData): Either<CoreFailure, UploadedAssetId> = suspending {
+    private suspend fun uploadAndPersistAsset(uploadAssetData: UploadAssetData): Either<CoreFailure, UploadedAssetId> =
         assetMapper.toMetadataApiModel(uploadAssetData).let { metaData ->
             wrapApiRequest {
                 // we should also consider for avatar images, the compression for preview vs complete picture
@@ -81,18 +83,15 @@ internal class AssetDataSource(
                 wrapStorageRequest { assetDao.insertAsset(assetEntity) }
             }.map { assetMapper.fromApiUploadResponseToDomainModel(assetResponse) }
         }
-    }
 
-    override suspend fun downloadPublicAsset(assetKey: String): Either<CoreFailure, ByteArray> = suspending {
+    override suspend fun downloadPublicAsset(assetKey: String): Either<CoreFailure, ByteArray> =
         downloadAsset(assetKey = assetKey, assetToken = null)
-    }
 
-    override suspend fun downloadPrivateAsset(assetKey: String, assetToken: String?): Either<CoreFailure, ByteArray> = suspending {
+    override suspend fun downloadPrivateAsset(assetKey: String, assetToken: String?): Either<CoreFailure, ByteArray> =
         downloadAsset(assetKey = assetKey, assetToken = assetToken)
-    }
 
-    private suspend fun downloadAsset(assetKey: String, assetToken: String?): Either<CoreFailure, ByteArray> = suspending {
-        wrapStorageRequest { assetDao.getAssetByKey(assetKey).firstOrNull() }.coFold({
+    private suspend fun downloadAsset(assetKey: String, assetToken: String?): Either<CoreFailure, ByteArray> =
+        wrapStorageRequest { assetDao.getAssetByKey(assetKey).firstOrNull() }.fold({
             wrapApiRequest {
                 // Backend sends asset messages with empty asset tokens
                 assetApi.downloadAsset(assetKey, assetToken?.ifEmpty { null })
@@ -101,12 +100,11 @@ internal class AssetDataSource(
                     .map { assetData }
             }
         }, { Either.Right(it.rawData) })
-    }
 
-    override suspend fun downloadUsersPictureAssets(assetIdList: List<UserAssetId?>): Either<CoreFailure, Unit> = suspending {
+    override suspend fun downloadUsersPictureAssets(assetIdList: List<UserAssetId?>): Either<CoreFailure, Unit> {
         assetIdList.filterNotNull().forEach {
             downloadPublicAsset(it)
         }
-        return@suspending Either.Right(Unit)
+        return Either.Right(Unit)
     }
 }
