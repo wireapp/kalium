@@ -38,6 +38,7 @@ object Versions {
     const val jna = "5.6.0@aar"
     const val mlsClient = "0.2.1"
     const val desugarJdk = "1.1.5"
+    const val kermit = "1.0.0"
 }
 
 object Plugins {
@@ -178,5 +179,9 @@ object Dependencies {
     object Calling {
         const val avs = "com.wire:avs:${Versions.avs}"
         const val jna = "net.java.dev.jna:jna:${Versions.jna}"
+    }
+
+    object Logging {
+        const val kermit = "co.touchlab:kermit:${Versions.kermit}"
     }
 }
