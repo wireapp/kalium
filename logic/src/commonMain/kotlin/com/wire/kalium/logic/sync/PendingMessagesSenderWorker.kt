@@ -2,9 +2,9 @@ package com.wire.kalium.logic.sync
 
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 
 /**
@@ -14,9 +14,8 @@ import com.wire.kalium.logic.kaliumLogger
 internal class PendingMessagesSenderWorker(
     private val messageRepository: MessageRepository,
     private val messageSender: MessageSender,
-    private val userId: UserId,
-    userSessionScope: UserSessionScope
-) : UserSessionWorker(userSessionScope) {
+    private val userId: UserId
+) : DefaultWorker() {
 
     /**
      * Attempt to send all pending messages for the user.
@@ -27,19 +26,19 @@ internal class PendingMessagesSenderWorker(
      *
      * The failure or retry logic is handled by [MessageSender] for each message.
      */
-    override suspend fun doWork(): Result = suspending {
+    override suspend fun doWork(): Result {
         messageRepository.getAllPendingMessagesFromUser(userId)
             .onSuccess { pendingMessages ->
                 pendingMessages.forEach { message ->
                     kaliumLogger.i("Attempting scheduled sending of message $message")
-                    messageSender.trySendingOutgoingMessageById(message.conversationId, message.id)
+                    messageSender.sendPendingMessage(message.conversationId, message.id)
                 }
             }.onFailure {
                 kaliumLogger.w("Failed to fetch and attempt retry of pending messages: $it")
                 // This execution doesn't care about failures
             }
 
-        Result.Success
+        return Result.Success
     }
 
 }

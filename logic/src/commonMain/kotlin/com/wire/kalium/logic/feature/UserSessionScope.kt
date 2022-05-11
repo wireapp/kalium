@@ -190,7 +190,7 @@ abstract class UserSessionScopeCommon(
         get() = MLSMessageCreatorImpl(mlsClientProvider, protoContentMapper)
 
     private val messageSendingScheduler: MessageSendingScheduler
-        get() = authenticatedDataSourceSet.workScheduler
+        get() = authenticatedDataSourceSet.userSessionWorkScheduler
 
     // TODO code duplication, can't we get the MessageSender from the message scope?
     private val messageSender: MessageSender

@@ -7,6 +7,7 @@ import com.wire.kalium.logic.configuration.server.ServerConfigUtil
 import com.wire.kalium.logic.configuration.server.ServerConfigUtilImpl
 import com.wire.kalium.logic.failure.ServerConfigFailure
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.fold
 
 class GetServerConfigUseCase internal constructor(
     private val configRepository: ServerConfigRepository,

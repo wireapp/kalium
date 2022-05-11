@@ -2,8 +2,8 @@ package com.wire.kalium.logic.sync
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.flow.updateAndGet
 
 enum class SyncState {
     WAITING,
@@ -18,7 +18,7 @@ interface SyncManager {
     suspend fun isSlowSyncCompleted(): Boolean
 }
 
-class SyncManagerImpl(private val workScheduler: WorkScheduler) : SyncManager {
+class SyncManagerImpl(private val userSessionWorkScheduler: WorkScheduler.UserSession) : SyncManager {
 
     private val internalSyncState = MutableStateFlow(SyncState.WAITING)
 
@@ -32,15 +32,15 @@ class SyncManagerImpl(private val workScheduler: WorkScheduler) : SyncManager {
     }
 
     private fun startSlowSyncIfNotAlreadyCompletedOrRunning() {
-        val syncState = internalSyncState.updateAndGet {
+        val syncState = internalSyncState.getAndUpdate {
             when (it) {
                 SyncState.WAITING -> SyncState.SLOW_SYNC
                 else -> it
             }
         }
 
-        if (syncState == SyncState.SLOW_SYNC) {
-            workScheduler.enqueueImmediateWork(SlowSyncWorker::class, SlowSyncWorker.name)
+        if (syncState == SyncState.WAITING) {
+            userSessionWorkScheduler.scheduleSlowSync()
         }
     }
 

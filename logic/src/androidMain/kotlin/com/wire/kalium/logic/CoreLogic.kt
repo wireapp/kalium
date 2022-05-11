@@ -6,8 +6,8 @@ import com.wire.kalium.cryptography.ProteusClientImpl
 import com.wire.kalium.logic.data.session.SessionDataSource
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.di.AuthenticatedDataSourceSetProvider
-import com.wire.kalium.logic.di.AuthenticatedDataSourceSetProviderImpl
+import com.wire.kalium.logic.di.UserSessionScopeProvider
+import com.wire.kalium.logic.di.UserSessionScopeProviderImpl
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.network.SessionManagerImpl
@@ -32,7 +32,7 @@ actual class CoreLogic(
     private val appContext: Context,
     clientLabel: String,
     rootPath: String,
-    private val authenticatedDataSourceSetProvider: AuthenticatedDataSourceSetProvider = AuthenticatedDataSourceSetProviderImpl
+    private val userSessionScopeProvider: UserSessionScopeProvider = UserSessionScopeProviderImpl
 ) : CoreLogicCommon(clientLabel, rootPath) {
 
     override fun getSessionRepo(): SessionRepository {
@@ -47,45 +47,49 @@ actual class CoreLogic(
     override val globalDatabase: GlobalDatabaseProvider by lazy { GlobalDatabaseProvider(appContext, globalPreferences) }
 
     override fun getSessionScope(userId: UserId): UserSessionScope {
-        val dataSourceSet = authenticatedDataSourceSetProvider.get(userId) ?: run {
+        return userSessionScopeProvider.get(userId) ?: run {
             val rootAccountPath = "$rootPath/${userId.domain}/${userId.value}"
             val rootProteusPath = "$rootAccountPath/proteus"
             val networkContainer = AuthenticatedNetworkContainer(SessionManagerImpl(sessionRepository, userId))
             val proteusClient: ProteusClient = ProteusClientImpl(rootProteusPath)
             runBlocking { proteusClient.open() }
 
-            val workScheduler = WorkScheduler(appContext, userId)
-            val syncManager = SyncManagerImpl(workScheduler)
+            val userSessionWorkScheduler = WorkScheduler.UserSession(appContext, userId)
+            val syncManager = SyncManagerImpl(userSessionWorkScheduler)
 
             val userIDEntity = idMapper.toDaoModel(userId)
             val encryptedSettingsHolder =
                 EncryptedSettingsHolder(appContext, SettingOptions.UserSettings(userIDEntity))
             val userPreferencesSettings = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
             val userDatabaseProvider = UserDatabaseProvider(appContext, userIDEntity, userPreferencesSettings)
-            AuthenticatedDataSourceSet(
+            val userDataSource = AuthenticatedDataSourceSet(
                 rootAccountPath,
                 networkContainer,
                 proteusClient,
-                workScheduler,
+                userSessionWorkScheduler,
                 syncManager,
                 userDatabaseProvider,
                 userPreferencesSettings,
                 encryptedSettingsHolder
+            )
+            UserSessionScope(
+                appContext,
+                userId,
+                userDataSource,
+                sessionRepository,
+                globalCallManager,
+                globalPreferences
             ).also {
-                authenticatedDataSourceSetProvider.add(userId, it)
+                userSessionScopeProvider.add(userId, it)
             }
         }
-        return UserSessionScope(
-            appContext,
-            userId,
-            dataSourceSet,
-            sessionRepository,
-            globalCallManager,
-            globalPreferences
-        )
     }
 
     override val globalCallManager: GlobalCallManager = GlobalCallManager(
+        appContext = appContext
+    )
+
+    override val globalWorkScheduler: WorkScheduler.Global = WorkScheduler.Global(
         appContext = appContext
     )
 }

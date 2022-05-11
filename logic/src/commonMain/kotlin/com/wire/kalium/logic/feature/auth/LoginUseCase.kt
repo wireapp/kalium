@@ -4,7 +4,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.LoginRepository
-import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isInvalidCredentials
 
@@ -37,19 +37,19 @@ internal class LoginUseCaseImpl(
         password: String,
         shouldPersistClient: Boolean,
         serverConfig: ServerConfig
-    ): AuthenticationResult = suspending {
+    ): AuthenticationResult {
         // remove White Spaces around userIdentifier
         val cleanUserIdentifier = userIdentifier.trim()
 
-        when {
+        return when {
             validateEmailUseCase(cleanUserIdentifier) -> {
                 loginRepository.loginWithEmail(cleanUserIdentifier, password, shouldPersistClient, serverConfig)
             }
             validateUserHandleUseCase(cleanUserIdentifier).isValid -> {
                 loginRepository.loginWithHandle(cleanUserIdentifier, password, shouldPersistClient, serverConfig)
             }
-            else -> return@suspending AuthenticationResult.Failure.InvalidUserIdentifier
-        }.coFold({
+            else -> return AuthenticationResult.Failure.InvalidUserIdentifier
+        }.fold({
             when (it) {
                 is NetworkFailure.ServerMiscommunication -> handleServerMiscommunication(it)
                 is NetworkFailure.NoNetworkConnection -> AuthenticationResult.Failure.Generic(it)

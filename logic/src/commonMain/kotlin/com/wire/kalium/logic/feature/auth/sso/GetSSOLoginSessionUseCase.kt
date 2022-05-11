@@ -6,7 +6,7 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.feature.auth.AuthSession
-import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
 
@@ -28,15 +28,15 @@ internal class GetSSOLoginSessionUseCaseImpl(
     private val sessionMapper: SessionMapper
 ) : GetSSOLoginSessionUseCase {
 
-    override suspend fun invoke(cookie: String, serverConfig: ServerConfig): SSOLoginSessionResult = suspending {
-        ssoLoginRepository.provideLoginSession(cookie, serverConfig).coFold({
-            if(it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
-                if(it.kaliumException.errorResponse.code == HttpStatusCode.BadRequest.value)
-                    return@coFold SSOLoginSessionResult.Failure.InvalidCookie
+    override suspend fun invoke(cookie: String, serverConfig: ServerConfig): SSOLoginSessionResult =
+        ssoLoginRepository.provideLoginSession(cookie, serverConfig).fold({
+            if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
+                if (it.kaliumException.errorResponse.code == HttpStatusCode.BadRequest.value)
+                    return@fold SSOLoginSessionResult.Failure.InvalidCookie
             }
             SSOLoginSessionResult.Failure.Generic(it)
         }, {
-            SSOLoginSessionResult.Success(sessionMapper.fromSessionDTO(it,serverConfig))
+            SSOLoginSessionResult.Success(sessionMapper.fromSessionDTO(it, serverConfig))
         })
-    }
+
 }

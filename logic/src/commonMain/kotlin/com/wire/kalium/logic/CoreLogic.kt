@@ -7,6 +7,9 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
+import com.wire.kalium.logic.sync.ApiVersionCheckManager
+import com.wire.kalium.logic.sync.ApiVersionCheckManagerImpl
+import com.wire.kalium.logic.sync.WorkScheduler
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 
@@ -42,4 +45,8 @@ abstract class CoreLogicCommon(
             : T = getSessionScope(userId).action()
 
     protected abstract val globalCallManager: GlobalCallManager
+
+    protected abstract val globalWorkScheduler: WorkScheduler.Global
+
+    val apiVersionCheckManager: ApiVersionCheckManager get() = ApiVersionCheckManagerImpl(globalWorkScheduler)
 }
