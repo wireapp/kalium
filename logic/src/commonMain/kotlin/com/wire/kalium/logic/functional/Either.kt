@@ -98,21 +98,13 @@ fun <L, R> Either<L, R>.isLeft(): Boolean {
 }
 
 /**
- * Composes 2 functions
- * See <a href="https://proandroiddev.com/kotlins-nothing-type-946de7d464fb">Credits to Alex Hart.</a>
- */
-inline fun <A, B, C> ((A) -> B).c(crossinline f: (B) -> C): (A) -> C = {
-    f(this(it))
-}
-
-/**
  * Right-biased flatMap() FP convention which means that Right is assumed to be the default case
  * to operate on. If it is Left, operations like map, flatMap, ... return the Left value unchanged.
  */
 inline fun <T, L, R> Either<L, R>.flatMap(fn: (R) -> Either<L, T>): Either<L, T> =
     when (this) {
-        is Either.Left -> Either.Left(value)
-        is Either.Right -> fn(value)
+        is Left -> Left(value)
+        is Right -> fn(value)
     }
 
 /**
@@ -121,7 +113,7 @@ inline fun <T, L, R> Either<L, R>.flatMap(fn: (R) -> Either<L, T>): Either<L, T>
  * object, so you chain calls.
  */
 inline fun <L, R> Either<L, R>.onFailure(fn: (failure: L) -> Unit): Either<L, R> =
-    this.apply { if (this is Either.Left) fn(value) }
+    this.apply { if (this is Left) fn(value) }
 
 /**
  * Right-biased onSuccess() FP convention dictates that when this class is Right, it'll perform
@@ -129,13 +121,17 @@ inline fun <L, R> Either<L, R>.onFailure(fn: (failure: L) -> Unit): Either<L, R>
  * object, so you chain calls.
  */
 inline fun <L, R> Either<L, R>.onSuccess(fn: (success: R) -> Unit): Either<L, R> =
-    this.apply { if (this is Either.Right) fn(value) }
+    this.apply { if (this is Right) fn(value) }
 
 /**
  * Right-biased map() FP convention which means that Right is assumed to be the default case
  * to operate on. If it is Left, operations like map, flatMap, ... return the Left value unchanged.
  */
-inline fun <T, L, R> Either<L, R>.map(fn: (R) -> (T)): Either<L, T> = this.flatMap(fn.c(::right))
+inline fun <T, L, R> Either<L, R>.map(fn: (R) -> (T)): Either<L, T> =
+    when (this) {
+        is Left -> Left(value)
+        is Right -> Right(fn(value))
+    }
 
 /**
  * Left-biased map() FP convention which means that Right is assumed to be the default case
@@ -153,8 +149,8 @@ inline fun <T, L, R> Either<L, R>.mapLeft(fn: (L) -> (T)): Either<T, R> =
  */
 fun <L, R> Either<L, R>.getOrElse(value: R): R =
     when (this) {
-        is Either.Left -> value
-        is Either.Right -> this.value
+        is Left -> value
+        is Right -> this.value
     }
 
 /**
@@ -163,7 +159,7 @@ fun <L, R> Either<L, R>.getOrElse(value: R): R =
  * @return the final accumulated value if there are NO Left results, or the first Left result otherwise.
  */
 inline fun <T, L, R> Iterable<T>.foldToEitherWhileRight(initialValue: R, fn: (item: T, accumulated: R) -> Either<L, R>): Either<L, R> {
-    return this.fold<T, Either<L, R>>(Either.Right(initialValue)) { acc, item ->
+    return this.fold<T, Either<L, R>>(Right(initialValue)) { acc, item ->
         acc.flatMap { accumulatedValue -> fn(item, accumulatedValue) }
     }
 }
