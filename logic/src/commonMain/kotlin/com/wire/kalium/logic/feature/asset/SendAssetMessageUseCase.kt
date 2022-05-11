@@ -113,7 +113,7 @@ internal class SendAssetMessageUseCaseImpl(
             )
             messageRepository.persistMessage(message)
         }.flatMap {
-            messageSender.trySendingOutgoingMessageById(conversationId, generatedMessageUuid)
+            messageSender.sendPendingMessage(conversationId, generatedMessageUuid)
         }.onFailure {
             kaliumLogger.e("There was an error when trying to send the asset on the conversation")
         }
