@@ -9,19 +9,18 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.feature.call.AvsCallBackError
 import com.wire.kalium.logic.feature.call.CallManagerImpl
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 //TODO create unit test
 class OnConfigRequest(
     private val calling: Calling,
-    private val callRepository: CallRepository
+    private val callRepository: CallRepository,
+    private val callingScope: CoroutineScope
 ) : CallConfigRequestHandler {
     override fun onConfigRequest(inst: Handle, arg: Pointer?): Int {
         callingLogger.i("${CallManagerImpl.TAG} - onConfigRequest")
 
-        //TODO use the same coroutine job of call manager
-        CoroutineScope(Dispatchers.IO).launch {
+        callingScope.launch {
             val config = callRepository.getCallConfigResponse(limit = null)
                 .fold({
                     TODO("")

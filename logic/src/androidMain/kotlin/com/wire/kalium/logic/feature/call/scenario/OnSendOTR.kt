@@ -12,6 +12,7 @@ import com.wire.kalium.logic.data.id.toConversationId
 import com.wire.kalium.logic.data.user.toUserId
 import com.wire.kalium.logic.feature.call.AvsCallBackError
 import com.wire.kalium.logic.feature.call.CallManagerImpl
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 
 //TODO create unit test
@@ -20,7 +21,8 @@ class OnSendOTR(
     private val calling: Calling,
     private val selfUserId: String,
     private val selfClientId: String,
-    private val callRepository: CallRepository
+    private val callRepository: CallRepository,
+    private val callingScope: CoroutineScope
 ) : SendHandler {
     override fun onSend(
         context: Pointer?,
@@ -39,7 +41,7 @@ class OnSendOTR(
             AvsCallBackError.INVALID_ARGUMENT.value
         } else {
             callingLogger.i("${CallManagerImpl.TAG} -> sendHandler success")
-            OnHttpRequest(handle, calling, callRepository).sendHandlerSuccess(
+            OnHttpRequest(handle, calling, callRepository, callingScope).sendHandlerSuccess(
                 context = context,
                 messageString = data?.getString(0, CallManagerImpl.UTF8_ENCODING),
                 conversationId = conversationId.toConversationId(),

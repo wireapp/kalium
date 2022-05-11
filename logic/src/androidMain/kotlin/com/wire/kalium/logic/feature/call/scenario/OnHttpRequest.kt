@@ -10,14 +10,14 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 //TODO create unit test
 class OnHttpRequest(
     private val handle: Deferred<Handle>,
     private val calling: Calling,
-    private val callRepository: CallRepository
+    private val callRepository: CallRepository,
+    private val callingScope: CoroutineScope
 ) {
     fun sendHandlerSuccess(
         context: Pointer?,
@@ -26,8 +26,7 @@ class OnHttpRequest(
         avsSelfUserId: UserId,
         avsSelfClientId: ClientId
     ) {
-        //TODO use the same coroutine job of call manager
-        CoroutineScope(Dispatchers.IO).launch {
+        callingScope.launch {
             messageString?.let { message ->
                 when (callRepository.sendCallingMessage(conversationId, avsSelfUserId, avsSelfClientId, message)) {
                     is Either.Right -> {
