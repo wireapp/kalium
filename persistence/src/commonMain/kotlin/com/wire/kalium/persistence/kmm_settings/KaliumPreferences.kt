@@ -18,6 +18,10 @@ interface KaliumPreferences {
     fun <T> getSerializable(key: String, kSerializer: KSerializer<T>): T?
 
     fun nuke()
+
+    fun putBoolean(key: String, value: Boolean)
+    fun getBoolean(key: String, defaultValue: Boolean = false): Boolean
+
 }
 
 class KaliumPreferencesSettings(
@@ -25,6 +29,12 @@ class KaliumPreferencesSettings(
 ) : KaliumPreferences {
 
     override fun nuke() = encryptedSettings.clear()
+    override fun putBoolean(key: String, value: Boolean) {
+        encryptedSettings.putBoolean(key, value)
+    }
+
+    override fun getBoolean(key: String, defaultValue: Boolean): Boolean =
+        encryptedSettings.getBoolean(key, defaultValue)
 
     override fun remove(key: String) = encryptedSettings.remove(key)
 
