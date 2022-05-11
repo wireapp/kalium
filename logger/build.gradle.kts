@@ -43,7 +43,7 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                api("co.touchlab:kermit:1.1.1")
+                api(Dependencies.Logging.kermit)
             }
         }
     }
