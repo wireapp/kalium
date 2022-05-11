@@ -7,7 +7,7 @@ import com.wire.kalium.logger.KaliumLogger
 internal var kaliumLogger = KaliumLogger.disabled()
 
 object CryptographyLogger {
-    fun setLoggingLevel(level: KaliumLogLevel, logWriter: LogWriter?) {
+    fun setLoggingLevel(level: KaliumLogLevel, logWriter: LogWriter? = null) {
         kaliumLogger = KaliumLogger(
             config = KaliumLogger.Config(
                 severity = level,
