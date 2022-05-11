@@ -8,6 +8,7 @@ import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.feature.call.AvsCallBackError
 import com.wire.kalium.logic.feature.call.CallManagerImpl
+import com.wire.kalium.logic.functional.fold
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
