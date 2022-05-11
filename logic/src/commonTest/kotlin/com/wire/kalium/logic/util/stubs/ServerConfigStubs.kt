@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.util.stubs
 
+import com.wire.kalium.logic.configuration.server.CommonApiVersionType
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.persistence.model.ServerConfigEntity
@@ -14,7 +15,7 @@ internal fun newServerConfig(id: Int) = ServerConfig(
     teamsUrl = "https://server$id-teamsUrl.de",
     websiteUrl = "https://server$id-websiteUrl.de",
     title = "server$id-title",
-    commonApiVersion = id,
+    commonApiVersion = CommonApiVersionType.Valid(id),
     domain = "domain$id.com",
     federation = false
 )

@@ -2,6 +2,7 @@ package com.wire.kalium.logic.data.session
 
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
+import com.wire.kalium.logic.configuration.server.toCommonApiVersionType
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.user.UserId
@@ -70,7 +71,7 @@ class SessionMapperTest {
                 websiteUrl,
                 title,
                 federation,
-                commonApiVersion,
+                commonApiVersion.version,
                 domain
             )
         }
@@ -108,7 +109,7 @@ class SessionMapperTest {
                 websiteUrl,
                 title,
                 federation,
-                commonApiVersion,
+                commonApiVersion.toCommonApiVersionType(),
                 domain
             )
         }
