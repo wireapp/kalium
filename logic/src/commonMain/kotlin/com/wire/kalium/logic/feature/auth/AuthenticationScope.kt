@@ -26,6 +26,7 @@ import com.wire.kalium.logic.feature.register.RegisterScope
 import com.wire.kalium.logic.feature.session.GetSessionsUseCase
 import com.wire.kalium.logic.feature.session.SessionScope
 import com.wire.kalium.logic.feature.user.EnableLoggingUseCase
+import com.wire.kalium.logic.feature.user.IsLoggingEnabledUseCase
 import com.wire.kalium.network.LoginNetworkContainer
 import com.wire.kalium.persistence.client.TokenStorage
 import com.wire.kalium.persistence.client.TokenStorageImpl
@@ -79,4 +80,5 @@ class AuthenticationScope(
     val ssoLoginScope: SSOLoginScope get() = SSOLoginScope(ssoLoginRepository, sessionMapper)
     val saveNotificationToken: SaveNotificationTokenUseCase get() = SaveNotificationTokenUseCase(notificationTokenRepository)
     val enableLogging: EnableLoggingUseCase get() = EnableLoggingUseCase(userConfigRepository)
+    val isLoggingEnabled: IsLoggingEnabledUseCase get() = IsLoggingEnabledUseCase(userConfigRepository)
 }
