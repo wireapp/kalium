@@ -55,7 +55,8 @@ internal class ConnectionDataSource(
         return wrapApiRequest {
             connectionApi.createConnection(idMapper.toApiModel(userId))
         }.map { connection ->
-            updateUserConnectionStatus(listOf(connection))
+            val connectionSent = connection.copy(status = ConnectionState.SENT)
+            updateUserConnectionStatus(listOf(connectionSent))
         }
     }
 
@@ -74,7 +75,7 @@ internal class ConnectionDataSource(
     ) {
         wrapStorageRequest {
             connections.forEach { connection ->
-                conversationDAO.insertOrUpdateOneOnOneMemberWithConnectionStatus(
+                conversationDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
                     userId = idMapper.fromApiToDao(connection.qualifiedToId),
                     status = connectionStateToDao(state = connection.status),
                     conversationID = idMapper.fromApiToDao(connection.qualifiedConversationId)

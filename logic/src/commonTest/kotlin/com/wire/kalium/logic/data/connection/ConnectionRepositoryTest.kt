@@ -11,6 +11,7 @@ import com.wire.kalium.network.api.user.connection.ConnectionState
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
+import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import io.mockative.Mock
 import io.mockative.any
@@ -62,14 +63,14 @@ class ConnectionRepositoryTest {
             }
 
         given(conversationDAO)
-            .suspendFunction(conversationDAO::insertOrUpdateOneOnOneMemberWithConnectionStatus)
+            .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
             .whenInvokedWith(any(), any(), any())
 
         val result = connectionRepository.fetchSelfUserConnections()
 
         // Verifies that conversationDAO was called the same amount there is connections
         verify(conversationDAO)
-            .suspendFunction(conversationDAO::insertOrUpdateOneOnOneMemberWithConnectionStatus)
+            .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
             .with(any(), any(), any())
             .wasInvoked(exactly = twice)
 
@@ -86,7 +87,7 @@ class ConnectionRepositoryTest {
             .whenInvokedWith(eq(userId))
             .then { NetworkResponse.Success(connection1, mapOf(), 200) }
         given(conversationDAO)
-            .suspendFunction(conversationDAO::insertOrUpdateOneOnOneMemberWithConnectionStatus)
+            .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
             .whenInvokedWith(eq(UserIDEntity(userId.value, userId.domain)), any(), any())
             .then { _, _, _ -> return@then }
 
@@ -100,8 +101,8 @@ class ConnectionRepositoryTest {
             .with(eq(userId))
             .wasInvoked(once)
         verify(conversationDAO)
-            .suspendFunction(conversationDAO::insertOrUpdateOneOnOneMemberWithConnectionStatus)
-            .with(any(), any(), any())
+            .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
+            .with(any(), eq(UserEntity.ConnectionState.SENT), any())
             .wasInvoked(once)
     }
 
@@ -114,12 +115,12 @@ class ConnectionRepositoryTest {
             .whenInvokedWith(eq(userId))
             .then { NetworkResponse.Error(KaliumException.GenericError(RuntimeException("An error the server threw!"))) }
         given(conversationDAO)
-            .suspendFunction(conversationDAO::insertOrUpdateOneOnOneMemberWithConnectionStatus)
+            .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
             .whenInvokedWith(eq(UserIDEntity(userId.value, userId.domain)), any(), any())
             .then { _, _, _ -> return@then }
 
         // when
-        val result = connectionRepository.sendUserConnection(com.wire.kalium.logic.data.user.UserId(userId.value, userId.domain))
+        val result = connectionRepository.sendUserConnection(UserId(userId.value, userId.domain))
 
         // then
         result.shouldFail()
@@ -128,7 +129,7 @@ class ConnectionRepositoryTest {
             .with(eq(userId))
             .wasInvoked(once)
         verify(conversationDAO)
-            .suspendFunction(conversationDAO::insertOrUpdateOneOnOneMemberWithConnectionStatus)
+            .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
             .with(any(), any(), any())
             .wasNotInvoked()
     }
@@ -142,12 +143,12 @@ class ConnectionRepositoryTest {
             .whenInvokedWith(eq(userId))
             .then { NetworkResponse.Success(connection1, mapOf(), 200) }
         given(conversationDAO)
-            .suspendFunction(conversationDAO::insertOrUpdateOneOnOneMemberWithConnectionStatus)
+            .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
             .whenInvokedWith(eq(UserIDEntity(userId.value, userId.domain)), any(), any())
             .thenThrow(RuntimeException("An error occurred persisting the data"))
 
         // when
-        val result = connectionRepository.sendUserConnection(com.wire.kalium.logic.data.user.UserId(userId.value, userId.domain))
+        val result = connectionRepository.sendUserConnection(UserId(userId.value, userId.domain))
 
         // then
         verify(connectionApi)
@@ -155,7 +156,7 @@ class ConnectionRepositoryTest {
             .with(eq(userId))
             .wasInvoked(once)
         verify(conversationDAO)
-            .suspendFunction(conversationDAO::insertOrUpdateOneOnOneMemberWithConnectionStatus)
+            .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
             .with(any(), any(), any())
             .wasInvoked(once)
     }
