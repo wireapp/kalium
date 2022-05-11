@@ -44,14 +44,14 @@ class PendingMessagesSenderWorkerTest {
             .whenInvokedWith(eq(TestUser.USER_ID))
             .thenReturn(Either.Right(listOf(message)))
         given(messageSender)
-            .suspendFunction(messageSender::trySendingOutgoingMessageById)
+            .suspendFunction(messageSender::sendPendingMessage)
             .whenInvokedWith(eq(message.conversationId), eq(message.id))
             .thenReturn(Either.Right(Unit))
 
         pendingMessagesSenderWorker.doWork()
 
         verify(messageSender)
-            .suspendFunction(messageSender::trySendingOutgoingMessageById)
+            .suspendFunction(messageSender::sendPendingMessage)
             .with(eq(message.conversationId), eq(message.id))
             .wasInvoked(exactly = once)
     }
@@ -67,7 +67,7 @@ class PendingMessagesSenderWorkerTest {
         pendingMessagesSenderWorker.doWork()
 
         verify(messageSender)
-            .suspendFunction(messageSender::trySendingOutgoingMessageById)
+            .suspendFunction(messageSender::sendPendingMessage)
             .with(any(), any())
             .wasNotInvoked()
     }

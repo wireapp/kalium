@@ -30,7 +30,7 @@ internal class PendingMessagesSenderWorker(
             .onSuccess { pendingMessages ->
                 pendingMessages.forEach { message ->
                     kaliumLogger.i("Attempting scheduled sending of message $message")
-                    messageSender.trySendingOutgoingMessageById(message.conversationId, message.id)
+                    messageSender.sendPendingMessage(message.conversationId, message.id)
                 }
             }.onFailure {
                 kaliumLogger.w("Failed to fetch and attempt retry of pending messages: $it")
