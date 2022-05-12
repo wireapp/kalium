@@ -1,9 +1,12 @@
 package com.wire.kalium.logic.feature.publicuser
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.network.exceptions.KaliumException
+import io.ktor.http.HttpStatusCode
 
 
 interface SearchUserDirectoryUseCase {
@@ -11,7 +14,7 @@ interface SearchUserDirectoryUseCase {
         searchQuery: String,
         domain: String,
         maxResultSize: Int? = null
-    ): Either<CoreFailure, UserSearchResult>
+    ): Result
 }
 
 internal class SearchUserDirectoryUseCaseImpl(
@@ -22,11 +25,30 @@ internal class SearchUserDirectoryUseCaseImpl(
         searchQuery: String,
         domain: String,
         maxResultSize: Int?
-    ): Either<CoreFailure, UserSearchResult> =
-        searchUserRepository.searchUserDirectory(
-            searchQuery = searchQuery,
-            domain = domain,
-            maxResultSize = maxResultSize
-        )
+    ): Result = searchUserRepository.searchUserDirectory(
+        searchQuery = searchQuery,
+        domain = domain,
+        maxResultSize = maxResultSize
+    ).fold({
+        if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
+            if (it.kaliumException.errorResponse.code == HttpStatusCode.BadRequest.value)
+                return Result.Failure.InvalidRequest
+            if (it.kaliumException.errorResponse.code == HttpStatusCode.NotFound.value)
+                return Result.Failure.InvalidQuery(it.kaliumException.message)
+        }
+        Result.Failure.Generic(it)
+    }, {
+        Result.Success(it)
+    })
+}
+
+sealed class Result {
+    data class Success(val userSearchResult: UserSearchResult) : Result()
+    sealed class Failure : Result() {
+        data class InvalidQuery(val message: String?) : Failure()
+        object InvalidRequest : Failure()
+        class Generic(val genericFailure: CoreFailure) : Failure()
+
+    }
 }
 

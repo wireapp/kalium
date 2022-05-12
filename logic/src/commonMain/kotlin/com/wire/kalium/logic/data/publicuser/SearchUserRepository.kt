@@ -1,6 +1,6 @@
 package com.wire.kalium.logic.data.publicuser
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
@@ -23,7 +23,7 @@ interface SearchUserRepository {
         searchQuery: String,
         domain: String,
         maxResultSize: Int? = null
-    ): Either<CoreFailure, UserSearchResult>
+    ): Either<NetworkFailure, UserSearchResult>
 }
 
 class SearchUserRepositoryImpl(
@@ -43,7 +43,7 @@ class SearchUserRepositoryImpl(
         searchQuery: String,
         domain: String,
         maxResultSize: Int?
-    ): Either<CoreFailure, UserSearchResult> = wrapApiRequest {
+    ): Either<NetworkFailure, UserSearchResult> = wrapApiRequest {
         userSearchApi.search(
             UserSearchRequest(
                 searchQuery = searchQuery,
