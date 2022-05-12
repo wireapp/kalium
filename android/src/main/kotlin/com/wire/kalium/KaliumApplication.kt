@@ -8,7 +8,7 @@ import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.sync.WrapperWorkerFactory
 import java.io.File
 
-class KaliumApplication: Application(), Configuration.Provider {
+class KaliumApplication : Application(), Configuration.Provider {
 
     lateinit var coreLogic: CoreLogic
 
@@ -22,7 +22,7 @@ class KaliumApplication: Application(), Configuration.Provider {
             rootPath = rootDir.absolutePath
         )
         CoreLogger.setLoggingLevel(
-            level = KaliumLogLevel.DEBUG
+            level = KaliumLogLevel.DEBUG, logWriter = null
         )
     }
 
