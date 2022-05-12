@@ -30,26 +30,22 @@ interface ConversationMapper {
 }
 
 internal class ConversationMapperImpl(
-    private val idMapper: IdMapper,
-    private val conversationStatusMapper: ConversationStatusMapper
+    private val idMapper: IdMapper, private val conversationStatusMapper: ConversationStatusMapper
 ) : ConversationMapper {
 
     override fun fromApiModelToDaoModel(
-        apiModel: ConversationResponse,
-        mlsGroupState: GroupState?,
-        selfUserTeamId: TeamId?
-    ): PersistedConversation =
-        PersistedConversation(
-            idMapper.fromApiToDao(apiModel.id),
-            apiModel.name,
-            apiModel.getConversationType(selfUserTeamId),
-            apiModel.teamId,
-            apiModel.getProtocolInfo(mlsGroupState),
-            conversationStatusMapper.fromApiToDaoModel(apiModel.members.self.otrMutedStatus),
-            apiModel.members.self.otrMutedRef?.let { Instant.parse(it) }?.toEpochMilliseconds() ?: 0,
-            null,
-            lastModifiedDate = apiModel.lastEventTime
-        )
+        apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?
+    ): PersistedConversation = PersistedConversation(
+        idMapper.fromApiToDao(apiModel.id),
+        apiModel.name,
+        apiModel.getConversationType(selfUserTeamId),
+        apiModel.teamId,
+        apiModel.getProtocolInfo(mlsGroupState),
+        conversationStatusMapper.fromApiToDaoModel(apiModel.members.self.otrMutedStatus),
+        apiModel.members.self.otrMutedRef?.let { Instant.parse(it) }?.toEpochMilliseconds() ?: 0,
+        null,
+        lastModifiedDate = apiModel.lastEventTime
+    )
 
     override fun fromApiModelToDaoModel(apiModel: ConvProtocol): PersistedProtocol = when (apiModel) {
         ConvProtocol.PROTEUS -> PersistedProtocol.PROTEUS
@@ -67,8 +63,9 @@ internal class ConversationMapperImpl(
     )
 
     override fun toApiModel(name: String?, members: List<Member>, teamId: String?, options: ConversationOptions) =
-        CreateConversationRequest(
-            qualifiedUsers = if (options.protocol == ConversationOptions.Protocol.PROTEUS) members.map { idMapper.toApiModel(it.id) } else emptyList(),
+        CreateConversationRequest(qualifiedUsers = if (options.protocol == ConversationOptions.Protocol.PROTEUS) members.map {
+            idMapper.toApiModel(it.id)
+        } else emptyList(),
             name = name,
             access = options.access.toList().map { toApiModel(it) },
             accessRole = options.accessRole.toList().map { toApiModel(it) },
@@ -80,17 +77,12 @@ internal class ConversationMapperImpl(
         )
 
     override fun toConversationDetailsOneToOne(
-        conversation: Conversation,
-        otherUser: OtherUser,
-        selfUser: SelfUser
+        conversation: Conversation, otherUser: OtherUser, selfUser: SelfUser
     ): ConversationDetails.OneOne {
         return ConversationDetails.OneOne(
-            conversation = conversation,
-            otherUser = otherUser,
-            connectionState = otherUser.connectionStatus,
+            conversation = conversation, otherUser = otherUser, connectionState = otherUser.connectionStatus,
             //TODO get actual legal hold status
-            legalHoldStatus = LegalHoldStatus.DISABLED,
-            userType = determineOneToOneUserType(otherUser, selfUser)
+            legalHoldStatus = LegalHoldStatus.DISABLED, userType = determineOneToOneUserType(otherUser, selfUser)
         )
     }
 
@@ -130,12 +122,6 @@ internal class ConversationMapperImpl(
     override fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol = when (protocol) {
         ConversationOptions.Protocol.PROTEUS -> ConvProtocol.PROTEUS
         ConversationOptions.Protocol.MLS -> ConvProtocol.MLS
-    }
-
-    private fun PersistedConversation.Type.fromDaoModel(): ConversationEntity.Type = when (this) {
-        PersistedConversation.Type.SELF -> ConversationEntity.Type.SELF
-        PersistedConversation.Type.ONE_ON_ONE -> ConversationEntity.Type.ONE_ON_ONE
-        PersistedConversation.Type.GROUP -> ConversationEntity.Type.GROUP
     }
 
     private fun ConversationResponse.getProtocolInfo(mlsGroupState: GroupState?): ProtocolInfo {
