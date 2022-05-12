@@ -38,7 +38,7 @@ object Versions {
     const val jna = "5.6.0@aar"
     const val mlsClient = "0.2.1"
     const val desugarJdk = "1.1.5"
-    const val kermit = "1.0.0"
+    const val kermit = "1.1.1"
 }
 
 object Plugins {
