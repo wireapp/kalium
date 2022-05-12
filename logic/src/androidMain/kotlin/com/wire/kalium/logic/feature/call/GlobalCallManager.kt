@@ -2,7 +2,6 @@ package com.wire.kalium.logic.feature.call
 
 import android.content.Context
 import com.sun.jna.Pointer
-import com.waz.call.FlowManager
 import com.waz.media.manager.MediaManager
 import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.ENVIRONMENT_DEFAULT
@@ -13,19 +12,16 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserRepository
-import com.waz.log.LogHandler as NativeLogHandler
 
 actual class GlobalCallManager(
     private val appContext: Context
 ) {
 
     private lateinit var mediaManager: MediaManager
-    private lateinit var flowManager: FlowManager
     private val callManagerHolder = hashMapOf<QualifiedID, CallManager>()
 
     private val calling by lazy {
         initiateMediaManager()
-        initiateFlowManager()
         Calling.INSTANCE.apply {
             wcall_init(env = ENVIRONMENT_DEFAULT)
             wcall_set_log_handler(
@@ -57,29 +53,10 @@ actual class GlobalCallManager(
         }
     }
 
+    actual fun getFlowManager(): FlowManagerService = FlowManagerServiceImpl(appContext)
+
     private fun initiateMediaManager() {
         mediaManager = MediaManager.getInstance(appContext)
-    }
-
-    private fun initiateFlowManager() {
-        flowManager = FlowManager(
-            appContext
-        ) { manager, path, method, ctype, content, ctx ->
-            // TODO("Not yet implemented")
-            callingLogger.i("FlowManager -> RequestHandler -> $path : $method")
-            0
-        }.also {
-            it.setEnableLogging(true)
-            it.setLogHandler(object : NativeLogHandler {
-                override fun append(msg: String?) {
-                    callingLogger.i("FlowManager -> Logger -> Append -> $msg")
-                }
-
-                override fun upload() {
-                    callingLogger.i("FlowManager -> Logger -> upload")
-                }
-            })
-        }
     }
 }
 

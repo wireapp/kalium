@@ -15,4 +15,6 @@ expect class GlobalCallManager {
         clientRepository: ClientRepository,
         callMapper: CallMapper
     ): CallManager
+
+    fun getFlowManager() : FlowManagerService
 }

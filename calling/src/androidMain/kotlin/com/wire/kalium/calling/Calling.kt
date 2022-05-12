@@ -91,7 +91,7 @@ interface Calling : Library {
 
     fun wcall_request_video_streams(
         inst: Handle,
-        convId: String,
+        conversationId: String,
         mode: Int,
         json: String
     )
@@ -101,6 +101,8 @@ interface Calling : Library {
         wcall_participant_changed_h: ParticipantChangedHandler,
         arg: Pointer?
     )
+
+    fun wcall_set_video_send_state(inst: Handle, conversationId: String, state: Int)
 
     companion object {
         val INSTANCE by lazy { Native.load("avs", Calling::class.java)!! }

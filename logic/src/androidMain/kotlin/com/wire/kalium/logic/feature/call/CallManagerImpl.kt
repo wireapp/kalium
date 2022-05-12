@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.call
 import com.sun.jna.Pointer
 import com.wire.kalium.calling.CallTypeCalling
 import com.wire.kalium.calling.Calling
+import com.wire.kalium.calling.VideoStateCalling
 import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.calling.types.Uint32_t
 import com.wire.kalium.logic.callingLogger
@@ -10,6 +11,7 @@ import com.wire.kalium.logic.data.call.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.call.ConversationType
+import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
@@ -172,6 +174,14 @@ actual class CallManagerImpl(
         val logString = if (shouldMute) "muting" else "un-muting"
         callingLogger.d("$TAG -> $logString call..")
         wcall_set_mute(deferredHandle.await(), muted = shouldMute.toInt())
+    }
+
+    override suspend fun updateVideoState(conversationId: ConversationId, videoState: VideoState) = withCalling {
+        callingLogger.d("$TAG -> changing video state to ${videoState.name}..")
+        val videoStateCalling = callMapper.toVideoStateCalling(videoState)
+
+        wcall_set_video_send_state(deferredHandle.await(), conversationId.toString(), videoStateCalling.avsValue)
+        callingLogger.d("$TAG -> wcall_set_video_send_state called..")
     }
 
     /**

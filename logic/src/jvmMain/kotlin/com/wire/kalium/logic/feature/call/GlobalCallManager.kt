@@ -15,4 +15,6 @@ actual class GlobalCallManager {
         clientRepository: ClientRepository,
         callMapper: CallMapper
     ): CallManager = CallManagerImpl()
+
+    actual fun getFlowManager() : FlowManagerService  = FlowManagerServiceImpl()
 }
