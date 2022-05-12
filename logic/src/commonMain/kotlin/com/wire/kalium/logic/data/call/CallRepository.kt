@@ -2,16 +2,26 @@ package com.wire.kalium.logic.data.call
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.callingLogger
+import com.wire.kalium.logic.data.conversation.ConversationDetails
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.team.TeamRepository
+import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.toUserId
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.call.CallApi
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.math.max
 
 interface CallRepository {
@@ -20,13 +30,17 @@ interface CallRepository {
     fun getAllCalls(): StateFlow<List<Call>>
     fun getIncomingCalls(): Flow<List<Call>>
     fun getOngoingCall(): Flow<List<Call>>
-    fun createCall(call: Call)
+    fun createCall(callBuilder: Call.Builder)
     fun updateCallStatusById(conversationId: String, status: CallStatus)
     fun updateCallParticipants(conversationId: String, participants: List<Participant>)
 }
 
 internal class CallDataSource(
-    private val callApi: CallApi
+    private val callApi: CallApi,
+    private val conversationRepository: ConversationRepository,
+    private val userRepository: UserRepository,
+    private val teamRepository: TeamRepository,
+    private val scope: CoroutineScope
 ) : CallRepository {
 
     //TODO to be saved somewhere ?
@@ -55,15 +69,37 @@ internal class CallDataSource(
         it.calls.values.filter { call -> call.status == CallStatus.ESTABLISHED }
     }
 
-    override fun createCall(call: Call) {
-        val callProfile = _callProfile.value
-        val updatedCalls = callProfile.calls.toMutableMap().apply {
-            this[call.conversationId.toString()] = call
-        }
+    override fun createCall(callBuilder: Call.Builder) {
+        scope.launch {
+            val conversation: ConversationDetails = withContext(scope.coroutineContext) {
+                conversationRepository.getConversationDetailsById(callBuilder.conversationId!!).first()
+            }
 
-        _callProfile.value = callProfile.copy(
-            calls = updatedCalls
-        )
+            val caller = withContext(scope.coroutineContext) {
+                userRepository.getKnownUser(callBuilder.callerId!!.toUserId()).first()
+            }
+
+            val team = caller?.team?.let { teamId ->
+                withContext(scope.coroutineContext) {
+                    teamRepository.getTeam(teamId).first()
+                }
+            }
+
+            val call = callBuilder
+                .conversationDetails(conversation)
+                .caller(caller)
+                .team(team)
+                .build()
+
+            val callProfile = _callProfile.value
+            val updatedCalls = callProfile.calls.toMutableMap().apply {
+                this[call.conversationId.toString()] = call
+            }
+
+            _callProfile.value = callProfile.copy(
+                calls = updatedCalls
+            )
+        }
     }
 
     override fun updateCallStatusById(conversationId: String, status: CallStatus) {

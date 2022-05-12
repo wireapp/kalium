@@ -26,7 +26,7 @@ class OnIncomingCall(
     ) {
         callingLogger.i("${CallManagerImpl.TAG} -> incomingCallHandler")
         callRepository.createCall(
-            call = Call(
+            callBuilder = Call.Builder(
                 conversationId = conversationId.toConversationId(),
                 status = CallStatus.INCOMING,
                 callerId = userId

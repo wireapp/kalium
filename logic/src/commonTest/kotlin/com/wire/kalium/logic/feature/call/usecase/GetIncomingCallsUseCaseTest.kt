@@ -3,7 +3,6 @@ package com.wire.kalium.logic.feature.call.usecase
 import app.cash.turbine.test
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.ConversationDetails
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.LegalHoldStatus
 import com.wire.kalium.logic.data.conversation.UserType
 import com.wire.kalium.logic.data.user.ConnectionState
@@ -13,13 +12,11 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncManager
 import io.mockative.Mock
-import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -28,8 +25,6 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class GetIncomingCallsUseCaseTest {
-    @Mock
-    val conversationRepository: ConversationRepository = mock(classOf<ConversationRepository>())
 
     @Mock
     val callRepository: CallRepository = mock(classOf<CallRepository>())
@@ -41,7 +36,7 @@ class GetIncomingCallsUseCaseTest {
 
     @BeforeTest
     fun setUp() {
-        getIncomingCallsUseCase = GetIncomingCallsUseCaseImpl(conversationRepository, callRepository, syncManager, )
+        getIncomingCallsUseCase = GetIncomingCallsUseCaseImpl(callRepository, syncManager)
     }
 
     @Test
@@ -57,24 +52,18 @@ class GetIncomingCallsUseCaseTest {
     @Test
     fun givenCallListNotEmpty_thenNonEmptyNotificationList() = runTest {
         given(syncManager).suspendFunction(syncManager::waitForSlowSyncToComplete).whenInvoked().thenReturn(Unit)
-        given(conversationRepository).suspendFunction(conversationRepository::getConversationDetailsById)
-            .whenInvokedWith(anything())
-            .then { id ->
-                flowOf(
-                    ConversationDetails.OneOne(
-                        TestConversation.one_on_one(id),
-                        TestUser.OTHER,
-                        ConnectionState.ACCEPTED,
-                        LegalHoldStatus.ENABLED,
-                        UserType.INTERNAL,
-                    )
-                )
-            }
+        val oneOnOneDetails = ConversationDetails.OneOne(
+            TestConversation.ONE_ON_ONE,
+            TestUser.OTHER,
+            ConnectionState.ACCEPTED,
+            LegalHoldStatus.ENABLED,
+            UserType.INTERNAL,
+        )
         given(callRepository).invocation { getIncomingCalls() }.then {
             MutableStateFlow(
                 listOf<Call>(
-                    Call(TestConversation.id(0), CallStatus.INCOMING, "client1"),
-                    Call(TestConversation.id(1), CallStatus.INCOMING, "client2")
+                    Call(TestConversation.id(0), CallStatus.INCOMING, "client1", oneOnOneDetails, null, null),
+                    Call(TestConversation.id(1), CallStatus.INCOMING, "client2", oneOnOneDetails, null, null)
                 )
             )
         }

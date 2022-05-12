@@ -1,5 +1,8 @@
 package com.wire.kalium.logic.data.call
 
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.team.TeamRepository
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.call.CallApi
 import com.wire.kalium.network.utils.NetworkResponse
@@ -8,6 +11,7 @@ import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.oneOf
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -17,13 +21,25 @@ class CallRepositoryTest {
 
     @Mock
     private val callApi = mock(classOf<CallApi>())
+    @Mock
+    private val conversationRepository = mock(classOf<ConversationRepository>())
+    @Mock
+    private val userRepository = mock(classOf<UserRepository>())
+    @Mock
+    private val teamRepository = mock(classOf<TeamRepository>())
+    @Mock
+    private val scope = mock(classOf<CoroutineScope>())
 
     private lateinit var callRepository: CallRepository
 
     @BeforeTest
     fun setUp() {
         callRepository = CallDataSource(
-            callApi = callApi
+            callApi = callApi,
+            conversationRepository = conversationRepository,
+            userRepository = userRepository,
+            teamRepository = teamRepository,
+            scope = scope
         )
     }
 

@@ -131,7 +131,7 @@ actual class CallManagerImpl(
     ) {
         callingLogger.d("$TAG -> starting call..")
         callRepository.createCall(
-            call = Call(
+            callBuilder = Call.Builder(
                 conversationId = conversationId,
                 status = CallStatus.STARTED,
                 callerId = userId.await().toString()

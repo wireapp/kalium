@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.feature.call
 
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.feature.call.usecase.EndCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetAllCallsUseCase
@@ -17,7 +16,6 @@ class CallsScope(
     private val callManager: CallManager,
     private val callRepository: CallRepository,
     private val syncManager: SyncManager,
-    private val conversationRepository: ConversationRepository
 ) {
 
     val allCalls: GetAllCallsUseCase
@@ -36,7 +34,6 @@ class CallsScope(
         get() = GetIncomingCallsUseCaseImpl(
             callRepository = callRepository,
             syncManager = syncManager,
-            conversationRepository = conversationRepository
         )
 
     val startCall: StartCallUseCase get() = StartCallUseCase(callManager)
