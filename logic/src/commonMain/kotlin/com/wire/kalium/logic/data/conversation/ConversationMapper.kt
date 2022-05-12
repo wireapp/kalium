@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.data.conversation
 
-import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
@@ -60,7 +59,7 @@ internal class ConversationMapperImpl(
     override fun fromDaoModel(daoModel: PersistedConversation): Conversation = Conversation(
         idMapper.fromDaoModel(daoModel.id),
         daoModel.name,
-        daoModel.type.fromDaoModel(),
+        daoModel.type.fromDaoModelToType(),
         daoModel.teamId?.let { TeamId(it) },
         conversationStatusMapper.fromDaoModel(daoModel.mutedStatus),
         daoModel.lastNotificationDate,
@@ -166,5 +165,11 @@ internal class ConversationMapperImpl(
             ConversationResponse.Type.WAIT_FOR_CONNECTION,
             -> PersistedConversation.Type.ONE_ON_ONE
         }
+    }
+
+    private fun ConversationEntity.Type.fromDaoModelToType(): Conversation.Type = when (this) {
+        ConversationEntity.Type.SELF -> Conversation.Type.SELF
+        ConversationEntity.Type.ONE_ON_ONE -> Conversation.Type.ONE_ON_ONE
+        ConversationEntity.Type.GROUP -> Conversation.Type.GROUP
     }
 }
