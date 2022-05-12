@@ -87,7 +87,6 @@ class KaliumLogger(config: Config, logWriter: LogWriter? = null) {
     @Suppress("unused")
     fun i(message: String, throwable: Throwable? = null) =
         throwable?.let {
-            kermitLogger.i(message, throwable)
         } ?: kermitLogger.i(message)
 
     @Suppress("unused")
