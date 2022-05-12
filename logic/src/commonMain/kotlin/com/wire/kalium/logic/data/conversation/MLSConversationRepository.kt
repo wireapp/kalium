@@ -12,7 +12,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
@@ -37,24 +36,27 @@ class MLSConversationDataSource(
     private val mlsMessageApi: MLSMessageApi,
     private val conversationDAO: ConversationDAO,
     private val idMapper: IdMapper = MapperProvider.idMapper()
-): MLSConversationRepository {
+) : MLSConversationRepository {
 
-    override suspend fun messageFromMLSMessage(messageEvent: Event.Conversation.NewMLSMessage): Either<CoreFailure, ByteArray?> = suspending {
-        mlsClientProvider.getMLSClient()
-            .flatMap { mlsClient ->
-                wrapStorageRequest {
-                    conversationDAO.getConversationByQualifiedID(idMapper.toDaoModel(messageEvent.conversationId)).first()
-                }.flatMap { conversation ->
-                    if (conversation.protocolInfo is ConversationEntity.ProtocolInfo.MLS) {
-                        Either.Right(mlsClient.decryptMessage((conversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId, messageEvent.content.decodeBase64Bytes()))
-                    } else {
-                        Either.Right(null)
-                    }
+    override suspend fun messageFromMLSMessage(messageEvent: Event.Conversation.NewMLSMessage): Either<CoreFailure, ByteArray?> =
+        mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+            wrapStorageRequest {
+                conversationDAO.getConversationByQualifiedID(idMapper.toDaoModel(messageEvent.conversationId)).first()
+            }.flatMap { conversation ->
+                if (conversation.protocolInfo is ConversationEntity.ProtocolInfo.MLS) {
+                    Either.Right(
+                        mlsClient.decryptMessage(
+                            (conversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
+                            messageEvent.content.decodeBase64Bytes()
+                        )
+                    )
+                } else {
+                    Either.Right(null)
                 }
             }
-    }
+        }
 
-    override suspend fun establishMLSGroupFromWelcome(welcomeEvent: Event.Conversation.MLSWelcome): Either<CoreFailure, Unit> = suspending {
+    override suspend fun establishMLSGroupFromWelcome(welcomeEvent: Event.Conversation.MLSWelcome): Either<CoreFailure, Unit> =
         mlsClientProvider.getMLSClient().flatMap { client ->
             val groupID = client.processWelcomeMessage(welcomeEvent.message.decodeBase64Bytes())
 
@@ -68,19 +70,17 @@ class MLSConversationDataSource(
                 }
             }
         }
-    }
 
-    override suspend fun hasEstablishedMLSGroup(groupID: String): Either<CoreFailure, Boolean>  {
+    override suspend fun hasEstablishedMLSGroup(groupID: String): Either<CoreFailure, Boolean> {
         return mlsClientProvider.getMLSClient().flatMap { Either.Right(it.conversationExists(groupID)) }
     }
 
-    override suspend fun establishMLSGroup(groupID: String): Either<CoreFailure, Unit> = suspending  {
+    override suspend fun establishMLSGroup(groupID: String): Either<CoreFailure, Unit> =
         getConversationMembers(groupID).flatMap { members ->
             establishMLSGroup(groupID, members)
         }
-    }
 
-    private suspend fun establishMLSGroup(groupID: String, members: List<UserId>): Either<CoreFailure, Unit> = suspending {
+    private suspend fun establishMLSGroup(groupID: String, members: List<UserId>): Either<CoreFailure, Unit> =
         keyPackageRepository.claimKeyPackages(members).flatMap { keyPackages ->
             mlsClientProvider.getMLSClient().flatMap { client ->
                 val clientKeyPackageList = keyPackages
@@ -110,10 +110,10 @@ class MLSConversationDataSource(
                 }
             }
         }
-    }
 
     private suspend fun getConversationMembers(groupID: String): Either<StorageFailure, List<UserId>> = wrapStorageRequest {
-        val conversationID = conversationDAO.getConversationByGroupID(groupID).first()?.id ?: return Either.Left(StorageFailure.DataNotFound)
+        val conversationID =
+            conversationDAO.getConversationByGroupID(groupID).first()?.id ?: return Either.Left(StorageFailure.DataNotFound)
         conversationDAO.getAllMembers(conversationID).first().map { idMapper.fromDaoModel(it.user) }
     }
 

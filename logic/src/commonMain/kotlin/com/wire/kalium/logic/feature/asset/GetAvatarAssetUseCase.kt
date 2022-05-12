@@ -3,7 +3,7 @@ package com.wire.kalium.logic.feature.asset
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.user.UserAssetId
-import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.functional.fold
 
 interface GetAvatarAssetUseCase {
     /**
@@ -17,13 +17,13 @@ interface GetAvatarAssetUseCase {
 }
 
 internal class GetAvatarAssetUseCaseImpl(private val assetDataSource: AssetRepository) : GetAvatarAssetUseCase {
-    override suspend fun invoke(assetKey: UserAssetId): PublicAssetResult = suspending {
+    override suspend fun invoke(assetKey: UserAssetId): PublicAssetResult =
         assetDataSource.downloadPublicAsset(assetKey).fold({
             PublicAssetResult.Failure(it)
         }) {
             PublicAssetResult.Success(it)
         }
-    }
+
 }
 
 sealed class PublicAssetResult {

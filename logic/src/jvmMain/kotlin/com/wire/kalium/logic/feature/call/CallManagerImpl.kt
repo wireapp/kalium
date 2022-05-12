@@ -11,9 +11,6 @@ import kotlinx.coroutines.flow.asStateFlow
 
 actual class CallManagerImpl : CallManager {
 
-    private val _calls = MutableStateFlow(listOf<Call>())
-    override val allCalls = _calls.asStateFlow()
-
     init {
         kaliumLogger.w("CallManager initialized for JVM but not supported yet.")
     }
