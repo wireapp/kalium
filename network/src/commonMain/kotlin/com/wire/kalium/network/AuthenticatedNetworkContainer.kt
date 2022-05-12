@@ -35,8 +35,10 @@ import com.wire.kalium.network.serialization.mls
 import com.wire.kalium.network.serialization.xprotobuf
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.session.installAuth
+import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.ContentNegotiation
+import io.ktor.client.plugins.websocket.WebSockets
 
 class AuthenticatedNetworkContainer(
     private val sessionManager: SessionManager,
@@ -61,7 +63,7 @@ class AuthenticatedNetworkContainer(
 
     val assetApi: AssetApi get() = AssetApiImpl(authenticatedHttpClient)
 
-    val notificationApi: NotificationApi get() = NotificationApiImpl(authenticatedHttpClient, backendConfig)
+    val notificationApi: NotificationApi get() = NotificationApiImpl(authenticatedHttpClient, webSocketClientProvider, backendConfig)
 
     val teamsApi: TeamsApi get() = TeamsApiImp(authenticatedHttpClient)
 
@@ -75,13 +77,28 @@ class AuthenticatedNetworkContainer(
 
     val connectionApi: ConnectionApi get() = ConnectionApiImpl(authenticatedHttpClient)
 
-    internal val authenticatedHttpClient by lazy {
-        provideBaseHttpClient(engine, HttpClientOptions.DefaultHost(backendConfig)) {
-            installAuth(sessionManager)
-            install(ContentNegotiation) {
-                mls()
-                xprotobuf()
+    /**
+     * A [HttpClient] that contains all needed authentication headers and handles refresh of tokens.
+     * @see [provideBaseHttpClient]
+     */
+    internal val authenticatedHttpClient by lazy { httpClient() }
+
+    /**
+     * A [WebSocketClientProvider] that provides a disposable [HttpClient] just for WebSockets.
+     * Like [authenticatedHttpClient], it contains all needed authentication headers and handles refresh of tokens.
+     */
+    private val webSocketClientProvider: () -> HttpClient
+        get() = {
+            httpClient().config {
+                install(WebSockets)
             }
+        }
+
+    private fun httpClient() = provideBaseHttpClient(engine, HttpClientOptions.DefaultHost(backendConfig)) {
+        installAuth(sessionManager)
+        install(ContentNegotiation) {
+            mls()
+            xprotobuf()
         }
     }
 }

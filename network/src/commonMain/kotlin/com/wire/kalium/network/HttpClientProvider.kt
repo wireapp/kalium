@@ -24,6 +24,10 @@ sealed class HttpClientOptions {
     data class DefaultHost(val serverConfigDTO: ServerConfigDTO) : HttpClientOptions()
 }
 
+/**
+ * Provides a base [HttpClient] that has all the
+ * Au
+ */
 internal fun provideBaseHttpClient(
     engine: HttpClientEngine,
     options: HttpClientOptions,
@@ -55,7 +59,6 @@ internal fun provideBaseHttpClient(
         }
     }
 
-    install(WebSockets)
     install(ContentNegotiation) {
         json(KtxSerializer.json)
     }
