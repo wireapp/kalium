@@ -19,16 +19,12 @@ class CallRepositoryTest {
     @Mock
     private val callApi = mock(classOf<CallApi>())
 
-    @Mock
-    private val messageSender = mock(classOf<MessageSender>())
-
     private lateinit var callRepository: CallRepository
 
     @BeforeTest
     fun setUp() {
         callRepository = CallDataSource(
             callApi = callApi,
-            messageSender
         )
     }
 
