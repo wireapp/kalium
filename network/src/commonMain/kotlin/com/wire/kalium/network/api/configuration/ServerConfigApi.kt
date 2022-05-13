@@ -19,7 +19,6 @@ class ServerConfigApiImp(private val httpClient: HttpClient) : ServerConfigApi {
      * Fetch remote configuration
      * @param serverConfigUrl the remote config url
      */
-    // TODO: use wrapApiRequest once PR #226 is merged
     override suspend fun fetchServerConfig(serverConfigUrl: String): NetworkResponse<ServerConfigDTO> =
         wrapKaliumResponse<ServerConfigResponse> {
             httpClient.get {

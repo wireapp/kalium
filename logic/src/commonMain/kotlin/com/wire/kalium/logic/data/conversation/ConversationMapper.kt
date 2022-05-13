@@ -80,7 +80,7 @@ internal class ConversationMapperImpl(
     ): ConversationDetails.OneOne {
         return ConversationDetails.OneOne(
             conversation = conversation, otherUser = otherUser, connectionState = otherUser.connectionStatus,
-            //TODO get actual legal hold status
+            //TODO(user-metadata) get actual legal hold status
             legalHoldStatus = LegalHoldStatus.DISABLED, userType = determineOneToOneUserType(otherUser, selfUser)
         )
     }

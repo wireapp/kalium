@@ -38,7 +38,7 @@ class NotificationApiImpl(
     ): NetworkResponse<NotificationResponse> =
         notificationsCall(querySize = querySize, queryClient = queryClient, querySince = querySince)
 
-    //FIXME: This function does not get all notifications, just the first page.
+    //TODO(refactor): rename this function. It gets the first page of notifications, not all of them.
     override suspend fun getAllNotifications(querySize: Int, queryClient: String): NetworkResponse<NotificationResponse> =
         notificationsCall(querySize = querySize, queryClient = queryClient, querySince = null)
 

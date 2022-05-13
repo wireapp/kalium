@@ -4,7 +4,7 @@ import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.until
 
-//TODO: we need to think if this TimeParser should return an either, should we catch the exception ?
+//TODO(qol): we need to think if this TimeParser should return an either, should we catch the exception ?
 interface TimeParser {
     /**
      * Calculate the difference between two time stamps provided to it

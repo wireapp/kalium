@@ -48,7 +48,7 @@ actual class CallManagerImpl(
     private val messageSender: MessageSender
 ) : CallManager {
 
-    private val job = SupervisorJob() // TODO clear job method
+    private val job = SupervisorJob() // TODO(calling): clear job method
     private val scope = CoroutineScope(job + Dispatchers.IO)
     private val deferredHandle: Deferred<Handle> = startHandleAsync()
 
@@ -76,7 +76,7 @@ actual class CallManagerImpl(
                 callingLogger.i("$TAG -> readyHandler")
                 onCallingReady()
             },
-            //TODO inject all of these CallbackHandlers in class constructor
+            //TODO(refactor): inject all of these CallbackHandlers in class constructor
             sendHandler = OnSendOTR(deferredHandle, calling, selfUserId, selfClientId, messageSender, this),
             sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, this),
             incomingCallHandler = OnIncomingCall(callRepository),
@@ -199,9 +199,9 @@ actual class CallManagerImpl(
             }
         }
 
-        // TODO: Network Quality handler
-        // TODO: Clients Request handler
-        // TODO: Active Speakers handler
+        // TODO(calling): Network Quality handler
+        // TODO(calling): Clients Request handler
+        // TODO(calling): Active Speakers handler
     }
 
     companion object {
