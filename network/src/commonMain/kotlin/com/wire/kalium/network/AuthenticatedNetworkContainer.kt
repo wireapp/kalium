@@ -40,7 +40,7 @@ import io.ktor.client.plugins.ContentNegotiation
 
 class AuthenticatedNetworkContainer(
     private val sessionManager: SessionManager,
-    private val engine: HttpClientEngine = defaultHttpEngine(),
+    private val engine: HttpClientEngine = defaultHttpEngine()
 ) {
 
     private val backendConfig = sessionManager.session().second

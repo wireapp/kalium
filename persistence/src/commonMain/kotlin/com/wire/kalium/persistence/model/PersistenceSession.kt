@@ -14,7 +14,7 @@ data class ServerConfigEntity(
     val websiteUrl: String,
     val title: String,
     val federation: Boolean,
-    val commonApiVersion: Int?,
+    val commonApiVersion: Int,
     val domain: String?
 )
 

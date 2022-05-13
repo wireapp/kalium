@@ -10,7 +10,19 @@ import kotlinx.coroutines.flow.map
 
 internal class ServerConfigMapper() {
     fun toModel(serverConfiguration: ServerConfiguration) = with(serverConfiguration) {
-        ServerConfigEntity(id, apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title, federation, commonApiVersion, domain)
+        ServerConfigEntity(
+            id,
+            apiBaseUrl,
+            accountBaseUrl,
+            webSocketBaseUrl,
+            blackListUrl,
+            teamsUrl,
+            websiteUrl,
+            title,
+            federation,
+            commonApiVersion,
+            domain
+        )
     }
 }
 
@@ -27,12 +39,15 @@ interface ServerConfigurationDAO {
         title: String,
         federation: Boolean,
         domain: String?,
-        commonApiVersion: Int?
+        commonApiVersion: Int
     )
 
     fun allConfigFlow(): Flow<List<ServerConfigEntity>>
     fun allConfig(): List<ServerConfigEntity>
     fun configById(id: String): ServerConfigEntity?
+    fun updateApiVersion(id: String, commonApiVersion: Int)
+    fun updateApiVersionAndDomain(id: String, domain: String, commonApiVersion: Int)
+    fun setFederationToTrue(id: String)
 }
 
 class ServerConfigurationDAOImpl(private val queries: ServerConfigurationQueries) : ServerConfigurationDAO {
@@ -51,8 +66,20 @@ class ServerConfigurationDAOImpl(private val queries: ServerConfigurationQueries
         title: String,
         federation: Boolean,
         domain: String?,
-        commonApiVersion: Int?
-    ) = queries.insert(id, apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title, federation, domain, commonApiVersion)
+        commonApiVersion: Int
+    ) = queries.insert(
+        id,
+        apiBaseUrl,
+        accountBaseUrl,
+        webSocketBaseUrl,
+        blackListUrl,
+        teamsUrl,
+        websiteUrl,
+        title,
+        federation,
+        domain,
+        commonApiVersion
+    )
 
     override fun allConfigFlow(): Flow<List<ServerConfigEntity>> =
         queries.storedConfig().asFlow().mapToList().map { it.map(mapper::toModel) }
@@ -60,5 +87,12 @@ class ServerConfigurationDAOImpl(private val queries: ServerConfigurationQueries
     override fun allConfig(): List<ServerConfigEntity> = queries.storedConfig().executeAsList().map(mapper::toModel)
 
     override fun configById(id: String): ServerConfigEntity? = queries.getById(id).executeAsOneOrNull()?.let { mapper.toModel(it) }
+
+    override fun updateApiVersion(id: String, commonApiVersion: Int) = queries.updateApiVersion(commonApiVersion, id)
+
+    override fun updateApiVersionAndDomain(id: String, domain: String, commonApiVersion: Int) =
+        queries.updateApiVersionAndDomain(commonApiVersion, domain, id)
+
+    override fun setFederationToTrue(id: String) = queries.setFederationToTrue(id)
 
 }

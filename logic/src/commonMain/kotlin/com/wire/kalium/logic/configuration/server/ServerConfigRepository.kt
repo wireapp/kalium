@@ -15,6 +15,7 @@ import com.wire.kalium.network.api.api_version.VersionInfoDTO
 import com.wire.kalium.network.api.configuration.ServerConfigApi
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAO
+import io.ktor.http.Url
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -32,10 +33,10 @@ internal interface ServerConfigRepository {
         federation: Boolean
     ): Either<StorageFailure, ServerConfig>
 
-    suspend fun storeConfig(serverConfigDTO: ServerConfigDTO): Either<CoreFailure, ServerConfig>
-
+    suspend fun fetchApiVersionAndStore(serverConfigDTO: ServerConfigDTO): Either<CoreFailure, ServerConfig>
     fun configById(id: String): Either<StorageFailure, ServerConfig>
     suspend fun fetchRemoteApiVersion(serverConfigDTO: ServerConfigDTO): Either<NetworkFailure, VersionInfoDTO>
+    suspend fun updateConfigApiVersion(id: String): Either<CoreFailure, Unit>
 }
 
 internal class ServerConfigDataSource(
@@ -84,15 +85,15 @@ internal class ServerConfigDataSource(
         wrapStorageRequest { dao.configById(storedConfigId) }
     }.map { serverConfigMapper.fromEntity(it) }
 
-    override suspend fun storeConfig(serverConfigDTO: ServerConfigDTO): Either<CoreFailure, ServerConfig> =
+    override suspend fun fetchApiVersionAndStore(serverConfigDTO: ServerConfigDTO): Either<CoreFailure, ServerConfig> =
         fetchRemoteApiVersion(serverConfigDTO)
             .flatMap { versionInfoDTO ->
                 serverConfigUtil.calculateApiVersion(versionInfoDTO.supported)
-                    .map { Pair(versionInfoDTO, it) }
+                    .flatMap { commonApiVersion ->
+                        storeConfig(serverConfigDTO, versionInfoDTO.domain, commonApiVersion, versionInfoDTO.federation)
+                    }
             }
-            .flatMap { (versionInfoDTO, commonApiVersion) ->
-                storeConfig(serverConfigDTO, versionInfoDTO.domain, commonApiVersion, versionInfoDTO.federation)
-            }
+
 
     override fun configById(id: String): Either<StorageFailure, ServerConfig> = wrapStorageRequest {
         dao.configById(id)
@@ -101,4 +102,9 @@ internal class ServerConfigDataSource(
     override suspend fun fetchRemoteApiVersion(serverConfigDTO: ServerConfigDTO): Either<NetworkFailure, VersionInfoDTO> = wrapApiRequest {
         versionApi.fetchServerConfig(serverConfigDTO.apiBaseUrl)
     }
+
+    override suspend fun updateConfigApiVersion(id: String): Either<CoreFailure, Unit> = configById(id)
+        .flatMap { wrapApiRequest { versionApi.fetchServerConfig(Url(it.apiBaseUrl)) } }
+        .flatMap { serverConfigUtil.calculateApiVersion(it.supported) }
+        .flatMap { wrapStorageRequest { dao.updateApiVersion(id, it) } }
 }

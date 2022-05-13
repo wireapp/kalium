@@ -1,10 +1,12 @@
 package com.wire.kalium.logic.feature.server_config
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.configuration.server.ServerConfigUtil
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.http.Url
 import kotlinx.coroutines.flow.Flow
@@ -16,37 +18,29 @@ class ObserveServerConfigUseCase internal constructor(
     sealed class Result {
         data class Success(val value: Flow<List<ServerConfig>>) : Result()
         sealed class Failure : Result() {
-            object UnknownServerVersion : Failure()
-            object TooNewVersion : Failure()
             class Generic(val genericFailure: CoreFailure) : Failure()
         }
     }
 
 
     suspend operator fun invoke(): Result {
-        val isAnyStored = serverConfigRepository.configList().let {
-            when (it) {
-                is Either.Left -> return handleError(it.value)
-                is Either.Right -> it.value.isEmpty()
-            }
-        }
+        val isAnyStored = serverConfigRepository.configList().fold({
+            if (it is StorageFailure.DataNotFound) {
+                true
+            } else (return handleError(it))
+        }, {
+            it.isNullOrEmpty()
+        })
 
-        if (isAnyStored) {
+        if (!isAnyStored) {
             // TODO: store all of the configs from the build json file
             PRODUCTION.also { config ->
-
                 // TODO: what do do if one of the insert failed
-                serverConfigRepository.storeConfig(config).fold({
-                    return TODO()
-                }, {
-                    TODO()
-                })
-
+                serverConfigRepository.fetchApiVersionAndStore(config).onFailure {
+                    return handleError(it)
+                }
             }
         }
-
-
-
         return serverConfigRepository.configFlow().fold({
             Result.Failure.Generic(it)
         }, {

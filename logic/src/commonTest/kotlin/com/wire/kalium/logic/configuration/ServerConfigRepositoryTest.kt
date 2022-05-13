@@ -4,6 +4,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigDataSource
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.configuration.server.ServerConfigUtil
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldFail
@@ -50,11 +51,14 @@ class ServerConfigRepositoryTest {
     @Mock
     private val versionApi = mock(classOf<VersionApi>())
 
+    @Mock
+    private val serverConfigUtil = mock(classOf<ServerConfigUtil>())
+
     private lateinit var serverConfigRepository: ServerConfigRepository
 
     @BeforeTest
     fun setup() {
-        serverConfigRepository = ServerConfigDataSource(serverConfigApi, serverConfigDAO, versionApi)
+        serverConfigRepository = ServerConfigDataSource(serverConfigApi, serverConfigDAO, versionApi, serverConfigUtil)
     }
 
     @Test
@@ -156,12 +160,28 @@ class ServerConfigRepositoryTest {
             .coroutine { fetchServerConfig(serverConfigDto.apiBaseUrl) }
             .then { NetworkResponse.Error(expected.kException) }
 
-        serverConfigRepository.fetchRemoteApiVersion(serverConfigDto).shouldFail {actual ->
+        serverConfigRepository.fetchRemoteApiVersion(serverConfigDto).shouldFail { actual ->
             assertIs<NetworkFailure.ServerMiscommunication>(actual)
             assertEquals(expected.kException, actual.kaliumException)
         }
     }
 
+    @Test
+    fun givenValidCompatibleApiVersion_whenStoringConfigLocally_thenConfigIsStored() = runTest {
+        val testConfigDTO = newServerConfigDTO(1)
+        val expected = newServerConfig(1)
+        val versionInfoDTO = VersionInfoDTO(expected.domain, expected.federation, listOf(1, 2))
+        given(serverConfigRepository)
+            .coroutine { fetchRemoteApiVersion(testConfigDTO) }
+            .then { Either.Right(versionInfoDTO) }
+        given(serverConfigUtil)
+            .invocation { calculateApiVersion(versionInfoDTO.supported) }
+            .then { Either.Right(expected.commonApiVersion.version) }
+
+        serverConfigRepository.fetchApiVersionAndStore(testConfigDTO).shouldSucceed {
+            assertEquals(expected, it)
+        }
+    }
 
     private companion object {
 
