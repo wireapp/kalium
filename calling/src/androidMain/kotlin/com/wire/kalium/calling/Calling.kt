@@ -89,6 +89,7 @@ interface Calling : Library {
         arg: Pointer?
     ): Int
 
+    @Suppress("FunctionNaming")
     fun wcall_request_video_streams(
         inst: Handle,
         conversationId: String,
@@ -102,6 +103,7 @@ interface Calling : Library {
         arg: Pointer?
     )
 
+    @Suppress("FunctionNaming")
     fun wcall_set_video_send_state(inst: Handle, conversationId: String, state: Int)
 
     companion object {
