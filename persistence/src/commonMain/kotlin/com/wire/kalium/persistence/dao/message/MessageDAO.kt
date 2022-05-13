@@ -51,8 +51,7 @@ data class MessageEntity(
 
 interface MessageDAO {
     suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity)
-    suspend fun deleteMessage(id: String)
-    suspend fun markMessageAsDeleted(id: String /*todo: add conversation id since the message id is not unique*/)
+    suspend fun markMessageAsDeleted(id: String, conversationsId: QualifiedIDEntity)
     suspend fun deleteAllMessages()
     suspend fun insertMessage(message: MessageEntity)
     suspend fun insertMessages(messages: List<MessageEntity>)

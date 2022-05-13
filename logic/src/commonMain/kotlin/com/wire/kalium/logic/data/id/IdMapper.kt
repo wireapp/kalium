@@ -2,8 +2,8 @@ package com.wire.kalium.logic.data.id
 
 import com.wire.kalium.cryptography.CryptoQualifiedID
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.user.client.SimpleClientResponse
+import com.wire.kalium.protobuf.messages.QualifiedConversationId
 
 internal typealias NetworkQualifiedId = com.wire.kalium.network.api.QualifiedID
 internal typealias PersistenceQualifiedId = com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -17,6 +17,8 @@ interface IdMapper {
     fun toCryptoModel(qualifiedID: QualifiedID): CryptoQualifiedID
     fun fromApiToDao(qualifiedID: NetworkQualifiedId): PersistenceQualifiedId
     fun toCryptoQualifiedIDId(qualifiedID: QualifiedID): CryptoQualifiedID
+    fun fromProtoModel(qualifiedConversationID: QualifiedConversationId): ConversationId
+    fun toProtoModel(conversationId: ConversationId): QualifiedConversationId
 }
 
 internal class IdMapperImpl : IdMapper {
@@ -25,16 +27,26 @@ internal class IdMapperImpl : IdMapper {
 
     override fun fromSimpleClientResponse(clientResponse: SimpleClientResponse) = ClientId(clientResponse.id)
 
-    override fun fromDaoModel(persistenceId: PersistenceQualifiedId) = QualifiedID(value = persistenceId.value, domain = persistenceId.domain)
+    override fun fromDaoModel(persistenceId: PersistenceQualifiedId) =
+        QualifiedID(value = persistenceId.value, domain = persistenceId.domain)
 
     override fun toApiModel(qualifiedID: QualifiedID) = NetworkQualifiedId(value = qualifiedID.value, domain = qualifiedID.domain)
 
-    override fun toDaoModel(qualifiedID: QualifiedID): PersistenceQualifiedId = PersistenceQualifiedId(value = qualifiedID.value, domain = qualifiedID.domain)
+    override fun toDaoModel(qualifiedID: QualifiedID): PersistenceQualifiedId =
+        PersistenceQualifiedId(value = qualifiedID.value, domain = qualifiedID.domain)
 
-    override fun toCryptoModel(qualifiedID: QualifiedID): CryptoQualifiedID = CryptoQualifiedID(value = qualifiedID.value, domain = qualifiedID.domain)
+    override fun toCryptoModel(qualifiedID: QualifiedID): CryptoQualifiedID =
+        CryptoQualifiedID(value = qualifiedID.value, domain = qualifiedID.domain)
 
-    override fun fromApiToDao(qualifiedID: NetworkQualifiedId) = PersistenceQualifiedId(value = qualifiedID.value, domain = qualifiedID.domain)
+    override fun fromApiToDao(qualifiedID: NetworkQualifiedId) =
+        PersistenceQualifiedId(value = qualifiedID.value, domain = qualifiedID.domain)
 
-    override fun toCryptoQualifiedIDId(qualifiedID: QualifiedID): CryptoQualifiedID = CryptoQualifiedID(value = qualifiedID.value, domain = qualifiedID.domain)
-    
+    override fun toCryptoQualifiedIDId(qualifiedID: QualifiedID): CryptoQualifiedID =
+        CryptoQualifiedID(value = qualifiedID.value, domain = qualifiedID.domain)
+
+    override fun fromProtoModel(qualifiedConversationID: QualifiedConversationId): ConversationId =
+        ConversationId(qualifiedConversationID.id, qualifiedConversationID.domain)
+
+    override fun toProtoModel(conversationId: ConversationId): QualifiedConversationId =
+        QualifiedConversationId(conversationId.value, conversationId.domain)
 }
