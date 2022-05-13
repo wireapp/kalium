@@ -76,8 +76,6 @@ import com.wire.kalium.persistence.event.EventInfoStorage
 import com.wire.kalium.persistence.event.EventInfoStorageImpl
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 
 expect class UserSessionScope : UserSessionScopeCommon
 
@@ -158,15 +156,12 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi
         )
 
-    private val coroutineScope = CoroutineScope(Dispatchers.Default)
-
     private val callRepository: CallRepository by lazy {
         CallDataSource(
             callApi = authenticatedDataSourceSet.authenticatedNetworkContainer.callApi,
             conversationRepository = conversationRepository,
             userRepository = userRepository,
-            teamRepository = teamRepository,
-            scope = coroutineScope
+            teamRepository = teamRepository
         )
     }
 

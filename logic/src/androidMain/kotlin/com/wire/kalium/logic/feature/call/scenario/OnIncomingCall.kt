@@ -9,10 +9,13 @@ import com.wire.kalium.logic.data.id.toConversationId
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallManagerImpl
 import com.wire.kalium.logic.feature.call.CallStatus
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 //TODO create unit test
 class OnIncomingCall(
-    private val callRepository: CallRepository
+    private val callRepository: CallRepository,
+    private val scope: CoroutineScope
 ) : IncomingCallHandler {
     override fun onIncomingCall(
         conversationId: String,
@@ -25,12 +28,12 @@ class OnIncomingCall(
         arg: Pointer?
     ) {
         callingLogger.i("${CallManagerImpl.TAG} -> incomingCallHandler")
-        callRepository.createCall(
-            callBuilder = Call.Builder(
+        scope.launch {
+            callRepository.createCall(
                 conversationId = conversationId.toConversationId(),
                 status = CallStatus.INCOMING,
                 callerId = userId
             )
-        )
+        }
     }
 }

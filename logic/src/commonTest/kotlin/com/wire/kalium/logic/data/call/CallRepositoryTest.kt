@@ -27,8 +27,6 @@ class CallRepositoryTest {
     private val userRepository = mock(classOf<UserRepository>())
     @Mock
     private val teamRepository = mock(classOf<TeamRepository>())
-    @Mock
-    private val scope = mock(classOf<CoroutineScope>())
 
     private lateinit var callRepository: CallRepository
 
@@ -38,8 +36,7 @@ class CallRepositoryTest {
             callApi = callApi,
             conversationRepository = conversationRepository,
             userRepository = userRepository,
-            teamRepository = teamRepository,
-            scope = scope
+            teamRepository = teamRepository
         )
     }
 

@@ -77,9 +77,9 @@ actual class CallManagerImpl(
                 onCallingReady()
             },
             //TODO inject all of these CallbackHandlers in class constructor
-            sendHandler = OnSendOTR(deferredHandle, calling, selfUserId, selfClientId, messageSender, this),
-            sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, this),
-            incomingCallHandler = OnIncomingCall(callRepository),
+            sendHandler = OnSendOTR(deferredHandle, calling, selfUserId, selfClientId, messageSender, scope),
+            sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, scope),
+            incomingCallHandler = OnIncomingCall(callRepository, scope),
             missedCallHandler = OnMissedCall(callRepository),
             answeredCallHandler = OnAnsweredCall(callRepository),
             establishedCallHandler = OnEstablishedCall(callRepository),
@@ -87,7 +87,7 @@ actual class CallManagerImpl(
             metricsHandler = { conversationId: String, metricsJson: String, arg: Pointer? ->
                 callingLogger.i("$TAG -> metricsHandler")
             },
-            callConfigRequestHandler = OnConfigRequest(calling, callRepository, this),
+            callConfigRequestHandler = OnConfigRequest(calling, callRepository, scope),
             constantBitRateStateChangeHandler = { userId: String, clientId: String, isEnabled: Boolean, arg: Pointer? ->
                 callingLogger.i("$TAG -> constantBitRateStateChangeHandler")
             },
@@ -131,11 +131,9 @@ actual class CallManagerImpl(
     ) {
         callingLogger.d("$TAG -> starting call..")
         callRepository.createCall(
-            callBuilder = Call.Builder(
-                conversationId = conversationId,
-                status = CallStatus.STARTED,
-                callerId = userId.await().toString()
-            )
+            conversationId = conversationId,
+            status = CallStatus.STARTED,
+            callerId = userId.await().toString()
         )
 
         withCalling {
