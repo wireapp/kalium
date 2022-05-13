@@ -13,7 +13,7 @@ data class ServerConfigEntity(
     val teamsUrl: String,
     val websiteUrl: String,
     val title: String,
-    val androidSenderId:String
+    val androidSenderId:String?
 )
 
 @Serializable

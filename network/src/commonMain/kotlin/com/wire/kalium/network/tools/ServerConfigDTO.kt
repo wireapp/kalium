@@ -10,5 +10,4 @@ data class ServerConfigDTO(
     val teamsUrl: Url,
     val websiteUrl: Url,
     val title: String,
-    val androidSenderId: String
 )

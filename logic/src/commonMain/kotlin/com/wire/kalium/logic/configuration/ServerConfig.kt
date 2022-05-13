@@ -16,7 +16,7 @@ data class ServerConfig(
     val teamsUrl: String,
     val websiteUrl: String,
     val title: String,
-    val androidSenderId: String
+    val androidSenderId: String?
 ) {
     companion object {
         val PRODUCTION = ServerConfig(

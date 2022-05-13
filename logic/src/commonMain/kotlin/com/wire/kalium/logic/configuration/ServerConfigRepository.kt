@@ -22,7 +22,7 @@ internal interface ServerConfigRepository {
     fun configFlow(): Either<StorageFailure, Flow<List<ServerConfig>>>
     fun deleteById(id: String): Either<StorageFailure, Unit>
     fun delete(serverConfig: ServerConfig): Either<StorageFailure, Unit>
-    fun storeConfig(serverConfigDTO: ServerConfigDTO): Either<StorageFailure, ServerConfig>
+    fun storeConfig(serverConfigDTO: ServerConfigDTO,senderId: String?): Either<StorageFailure, ServerConfig>
     fun configById(id: String): Either<StorageFailure, ServerConfig>
 }
 
@@ -46,7 +46,7 @@ internal class ServerConfigDataSource(
 
     override fun delete(serverConfig: ServerConfig) = deleteById(serverConfig.id)
 
-    override fun storeConfig(serverConfigDTO: ServerConfigDTO): Either<StorageFailure, ServerConfig> = wrapStorageRequest {
+    override fun storeConfig(serverConfigDTO: ServerConfigDTO, senderId: String?): Either<StorageFailure, ServerConfig> = wrapStorageRequest {
         val newId = uuid4().toString()
         with(serverConfigDTO) {
             dao.insert(
@@ -57,7 +57,8 @@ internal class ServerConfigDataSource(
                 blackListUrl = blackListUrl.toString(),
                 teamsUrl = teamsUrl.toString(),
                 websiteUrl = websiteUrl.toString(),
-                title = title
+                title = title,
+                senderId
             )
             newId
         }
