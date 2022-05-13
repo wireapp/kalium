@@ -13,17 +13,18 @@ import com.wire.kalium.logic.feature.call.CallManagerImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import com.wire.kalium.logic.functional.fold
 import kotlinx.coroutines.launch
 
 //TODO create unit test
 class OnSFTRequest(
     private val handle: Deferred<Handle>,
     private val calling: Calling,
-    private val callRepository: CallRepository
+    private val callRepository: CallRepository,
+    private val callingScope: CoroutineScope
 ) : SFTRequestHandler {
     override fun onSFTRequest(ctx: Pointer?, url: String, data: Pointer?, length: Size_t, arg: Pointer?): Int {
-        //TODO use the same coroutine job of call manager
-        CoroutineScope(Dispatchers.IO).launch {
+        callingScope.launch {
             val dataString = data?.getString(0, CallManagerImpl.UTF8_ENCODING)
             dataString?.let {
                 val responseData = callRepository.connectToSFT(

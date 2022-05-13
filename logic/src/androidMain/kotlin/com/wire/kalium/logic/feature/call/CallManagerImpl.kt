@@ -3,8 +3,9 @@ package com.wire.kalium.logic.feature.call
 import com.sun.jna.Pointer
 import com.wire.kalium.calling.CallTypeCalling
 import com.wire.kalium.calling.Calling
-import com.wire.kalium.calling.VideoStateCalling
 import com.wire.kalium.calling.types.Handle
+import com.wire.kalium.calling.VideoStateCalling
+import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.calling.types.Uint32_t
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallMapper
@@ -28,6 +29,8 @@ import com.wire.kalium.logic.feature.call.scenario.OnMissedCall
 import com.wire.kalium.logic.feature.call.scenario.OnParticipantListChanged
 import com.wire.kalium.logic.feature.call.scenario.OnSFTRequest
 import com.wire.kalium.logic.feature.call.scenario.OnSendOTR
+import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.util.toInt
 import com.wire.kalium.logic.util.toTimeInMillis
 import kotlinx.coroutines.CoroutineScope
@@ -44,7 +47,8 @@ actual class CallManagerImpl(
     private val callRepository: CallRepository,
     private val userRepository: UserRepository,
     private val clientRepository: ClientRepository,
-    private val callMapper: CallMapper
+    private val callMapper: CallMapper,
+    private val messageSender: MessageSender
 ) : CallManager {
 
     private val job = SupervisorJob() // TODO clear job method
@@ -76,8 +80,8 @@ actual class CallManagerImpl(
                 onCallingReady()
             },
             //TODO inject all of these CallbackHandlers in class constructor
-            sendHandler = OnSendOTR(deferredHandle, calling, selfUserId, selfClientId, callRepository),
-            sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository),
+            sendHandler = OnSendOTR(deferredHandle, calling, selfUserId, selfClientId, messageSender, scope),
+            sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, scope),
             incomingCallHandler = OnIncomingCall(callRepository),
             missedCallHandler = OnMissedCall(callRepository),
             answeredCallHandler = OnAnsweredCall(callRepository),
@@ -86,7 +90,7 @@ actual class CallManagerImpl(
             metricsHandler = { conversationId: String, metricsJson: String, arg: Pointer? ->
                 callingLogger.i("$TAG -> metricsHandler")
             },
-            callConfigRequestHandler = OnConfigRequest(calling, callRepository),
+            callConfigRequestHandler = OnConfigRequest(calling, callRepository, scope),
             constantBitRateStateChangeHandler = { userId: String, clientId: String, isEnabled: Boolean, arg: Pointer? ->
                 callingLogger.i("$TAG -> constantBitRateStateChangeHandler")
             },
