@@ -62,7 +62,7 @@ interface RegisterClientUseCase {
         data class ClientWithToken(
             override val password: String?,
             override val capabilities: List<ClientCapability>?,
-            val senderId: String,
+            val senderId: String?,
             override val preKeysToSend: Int = DEFAULT_PRE_KEYS_COUNT
         ) : RegisterClientParam()
 
@@ -113,7 +113,7 @@ class RegisterClientUseCaseImpl(
     /**
      * to save the generated token that is related to the notifications , in the android case it's firebase token
      */
-    private suspend fun registerToken(client: Client, senderId: String): Either<CoreFailure, Client> =
+    private suspend fun registerToken(client: Client, senderId: String?): Either<CoreFailure, Client> =
         notificationTokenRepository.getNotificationToken().flatMap { notificationToken ->
             clientRepository.registerToken(
                 PushTokenBody(

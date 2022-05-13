@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class PushTokenBody(
     @SerialName("app")
-    val senderId: String,
+    val senderId: String?,
     @SerialName("client")
     val client: String,
     @SerialName("token")
