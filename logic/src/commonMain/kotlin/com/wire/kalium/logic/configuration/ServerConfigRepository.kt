@@ -22,7 +22,7 @@ internal interface ServerConfigRepository {
     fun configFlow(): Either<StorageFailure, Flow<List<ServerConfig>>>
     fun deleteById(id: String): Either<StorageFailure, Unit>
     fun delete(serverConfig: ServerConfig): Either<StorageFailure, Unit>
-    fun storeConfig(serverConfigDTO: ServerConfigDTO,senderId: String?): Either<StorageFailure, ServerConfig>
+    fun storeConfig(serverConfigDTO: ServerConfigDTO, senderId: String?): Either<StorageFailure, ServerConfig>
     fun configById(id: String): Either<StorageFailure, ServerConfig>
 }
 
@@ -46,25 +46,26 @@ internal class ServerConfigDataSource(
 
     override fun delete(serverConfig: ServerConfig) = deleteById(serverConfig.id)
 
-    override fun storeConfig(serverConfigDTO: ServerConfigDTO, senderId: String?): Either<StorageFailure, ServerConfig> = wrapStorageRequest {
-        val newId = uuid4().toString()
-        with(serverConfigDTO) {
-            dao.insert(
-                id = newId,
-                apiBaseUrl = apiBaseUrl.toString(),
-                accountBaseUrl = accountsBaseUrl.toString(),
-                webSocketBaseUrl = webSocketBaseUrl.toString(),
-                blackListUrl = blackListUrl.toString(),
-                teamsUrl = teamsUrl.toString(),
-                websiteUrl = websiteUrl.toString(),
-                title = title,
-                senderId
-            )
-            newId
-        }
-    }.flatMap { storedConfigId ->
-        wrapStorageRequest { dao.configById(storedConfigId) }
-    }.map { serverConfigMapper.fromEntity(it) }
+    override fun storeConfig(serverConfigDTO: ServerConfigDTO, senderId: String?): Either<StorageFailure, ServerConfig> =
+        wrapStorageRequest {
+            val newId = uuid4().toString()
+            with(serverConfigDTO) {
+                dao.insert(
+                    id = newId,
+                    apiBaseUrl = apiBaseUrl.toString(),
+                    accountBaseUrl = accountsBaseUrl.toString(),
+                    webSocketBaseUrl = webSocketBaseUrl.toString(),
+                    blackListUrl = blackListUrl.toString(),
+                    teamsUrl = teamsUrl.toString(),
+                    websiteUrl = websiteUrl.toString(),
+                    title = title,
+                    senderId
+                )
+                newId
+            }
+        }.flatMap { storedConfigId ->
+            wrapStorageRequest { dao.configById(storedConfigId) }
+        }.map { serverConfigMapper.fromEntity(it) }
 
     override fun configById(id: String): Either<StorageFailure, ServerConfig> = wrapStorageRequest {
         dao.configById(id)

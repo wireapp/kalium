@@ -13,7 +13,7 @@ internal class ServerConfigMapper() {
         ServerConfigEntity(id, apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title, androidSenderId)
     }
 }
-
+@Suppress("LongParameterList")
 interface ServerConfigurationDAO {
     fun deleteById(id: String)
     fun insert(
