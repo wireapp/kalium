@@ -48,8 +48,8 @@ class SaveSessionUseCaseTest {
             blackListUrl = "blackListUrl.com",
             teamsUrl = "teamsUrl.com",
             websiteUrl = "websiteUrl.com",
-            title = "Test Title"
-        )
+            title = "Test Title",
+            androidSenderId = "123456")
         val TEST_AUTH_SESSION =
             AuthSession(
                 userId = UserId("user_id", "domain.de"),

@@ -49,7 +49,8 @@ class ServerConfigMapperTest {
                     blackListUrl,
                     teamsUrl,
                     websiteUrl,
-                    title
+                    title,
+                    androidSenderId
                 )
             }
 
@@ -70,7 +71,8 @@ class ServerConfigMapperTest {
                     blackListUrl,
                     teamsUrl,
                     websiteUrl,
-                    title
+                    title,
+                    androidSenderId
                 )
             }
 
@@ -89,12 +91,12 @@ class ServerConfigMapperTest {
             ServerConfig(
                 "config-id", "https://test.api.com", "https://test.account.com", "https://test.ws.com",
                 "https://test.blacklist", "https://test.teams.com", "https://test.wire.com", "Test Title"
-            )
+            ,"12345566")
 
         fun serverConfigEntity(): ServerConfigEntity =
             ServerConfigEntity(
                 "config-id", "https://test.api.com", "https://test.account.com", "https://test.ws.com",
                 "https://test.blacklist", "https://test.teams.com", "https://test.wire.com", "Test Title"
-            )
+                ,"12345566")
     }
 }

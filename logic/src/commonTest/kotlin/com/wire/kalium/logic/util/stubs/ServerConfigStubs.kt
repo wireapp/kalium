@@ -14,6 +14,7 @@ internal fun newServerConfig(id: Int) = ServerConfig(
     teamsUrl = "https://server$id-teamsUrl.de",
     websiteUrl = "https://server$id-websiteUrl.de",
     title = "server$id-title",
+    androidSenderId = "1234236"
 )
 
 internal fun newServerConfigEntity(id: Int) = ServerConfigEntity(
@@ -25,6 +26,7 @@ internal fun newServerConfigEntity(id: Int) = ServerConfigEntity(
     teamsUrl = "https://server$id-teamsUrl.de",
     websiteUrl = "https://server$id-websiteUrl.de",
     title = "server$id-title",
+    androidSenderId = "1234236"
 )
 
 internal fun newServerConfigDTO(id: Int) = ServerConfigDTO(
