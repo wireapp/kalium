@@ -28,7 +28,7 @@ class UpdateVideoStateUseCaseTest {
     }
 
     @Test
-    fun givenAValidConversationIdAndVideoState_whenUseCaseCalled_thenInvokeUseCase() = runTest {
+    fun givenAValidConversationIdAndVideoState_whenUseCaseCalled_thenInvokeOnceUseCase() = runTest {
         val conversationId = ConversationId("default", "domain")
         val videoState = VideoState.STARTED
 
