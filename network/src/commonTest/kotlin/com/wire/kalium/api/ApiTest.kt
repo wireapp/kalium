@@ -88,6 +88,14 @@ interface ApiTest {
         ).authenticatedHttpClient
     }
 
+    fun mockWebsocketClient(): HttpClient {
+        val mockEngine = MockEngine.create {  }
+        return AuthenticatedNetworkContainer(
+            engine = mockEngine,
+            sessionManager = TEST_SESSION_NAMAGER
+        ).authenticatedHttpClient
+    }
+
     /**
      * creates an unauthenticated mock Ktor Http client
      * @param responseBody the response body as Json string

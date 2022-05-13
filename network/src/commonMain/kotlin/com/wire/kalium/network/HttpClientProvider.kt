@@ -24,6 +24,17 @@ sealed class HttpClientOptions {
     data class DefaultHost(val serverConfigDTO: ServerConfigDTO) : HttpClientOptions()
 }
 
+/**
+ * Provides a base [HttpClient] that has all the
+ * needed configurations to talk with a Wire backend, like
+ * Serialization, and Content Negotiation.
+ *
+ * Also enables logs depending on [NetworkLogger] settings.
+ *
+ * @param engine, the HTTP engine that will perform the requests
+ * @param options, some configuration presets
+ * @param config, a block that allows further customisation of the [HttpClient]
+ */
 internal fun provideBaseHttpClient(
     engine: HttpClientEngine,
     options: HttpClientOptions,
@@ -55,7 +66,6 @@ internal fun provideBaseHttpClient(
         }
     }
 
-    install(WebSockets)
     install(ContentNegotiation) {
         json(KtxSerializer.json)
     }
