@@ -12,6 +12,7 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.message.MessageSender
 
 actual class GlobalCallManager(
     private val appContext: Context
@@ -40,14 +41,16 @@ actual class GlobalCallManager(
         callRepository: CallRepository,
         userRepository: UserRepository,
         clientRepository: ClientRepository,
-        callMapper: CallMapper
+        callMapper: CallMapper,
+        messageSender: MessageSender
     ): CallManager {
         return callManagerHolder[userId] ?: CallManagerImpl(
             calling = calling,
             callRepository = callRepository,
             userRepository = userRepository,
             clientRepository = clientRepository,
-            callMapper = callMapper
+            callMapper = callMapper,
+            messageSender = messageSender
         ).also {
             callManagerHolder[userId] = it
         }
