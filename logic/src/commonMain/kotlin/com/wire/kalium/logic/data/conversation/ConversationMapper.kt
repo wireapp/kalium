@@ -13,15 +13,14 @@ import com.wire.kalium.network.api.model.ConversationAccess
 import com.wire.kalium.network.api.model.ConversationAccessRole
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationEntity.GroupState
+import com.wire.kalium.persistence.dao.ConversationEntity.Protocol
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
 import kotlinx.datetime.Instant
-import com.wire.kalium.persistence.dao.ConversationEntity as PersistedConversation
-import com.wire.kalium.persistence.dao.ConversationEntity.Protocol as PersistedProtocol
 
 interface ConversationMapper {
-    fun fromApiModelToDaoModel(apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?): PersistedConversation
-    fun fromApiModelToDaoModel(apiModel: ConvProtocol): PersistedProtocol
-    fun fromDaoModel(daoModel: PersistedConversation): Conversation
+    fun fromApiModelToDaoModel(apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?): ConversationEntity
+    fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol
+    fun fromDaoModel(daoModel: ConversationEntity): Conversation
     fun toApiModel(access: ConversationOptions.Access): ConversationAccess
     fun toApiModel(accessRole: ConversationOptions.AccessRole): ConversationAccessRole
     fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol
@@ -35,7 +34,7 @@ internal class ConversationMapperImpl(
 
     override fun fromApiModelToDaoModel(
         apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?
-    ): PersistedConversation = PersistedConversation(
+    ): ConversationEntity = ConversationEntity(
         idMapper.fromApiToDao(apiModel.id),
         apiModel.name,
         apiModel.getConversationType(selfUserTeamId),
@@ -47,12 +46,12 @@ internal class ConversationMapperImpl(
         lastModifiedDate = apiModel.lastEventTime
     )
 
-    override fun fromApiModelToDaoModel(apiModel: ConvProtocol): PersistedProtocol = when (apiModel) {
-        ConvProtocol.PROTEUS -> PersistedProtocol.PROTEUS
-        ConvProtocol.MLS -> PersistedProtocol.MLS
+    override fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol = when (apiModel) {
+        ConvProtocol.PROTEUS -> Protocol.PROTEUS
+        ConvProtocol.MLS -> Protocol.MLS
     }
 
-    override fun fromDaoModel(daoModel: PersistedConversation): Conversation = Conversation(
+    override fun fromDaoModel(daoModel: ConversationEntity): Conversation = Conversation(
         idMapper.fromDaoModel(daoModel.id),
         daoModel.name,
         daoModel.type.fromDaoModelToType(),
@@ -131,9 +130,9 @@ internal class ConversationMapperImpl(
         }
     }
 
-    private fun ConversationResponse.getConversationType(selfUserTeamId: TeamId?): PersistedConversation.Type {
+    private fun ConversationResponse.getConversationType(selfUserTeamId: TeamId?): ConversationEntity.Type {
         return when (type) {
-            ConversationResponse.Type.SELF -> PersistedConversation.Type.SELF
+            ConversationResponse.Type.SELF -> ConversationEntity.Type.SELF
             ConversationResponse.Type.GROUP -> {
                 // Fake team 1:1 conversations
                 val onlyOneOtherMember = members.otherMembers.size == 1
@@ -141,15 +140,15 @@ internal class ConversationMapperImpl(
                 val belongsToSelfTeam = selfUserTeamId != null && selfUserTeamId.value == teamId
                 val isTeamOneOne = onlyOneOtherMember && noCustomName && belongsToSelfTeam
                 if (isTeamOneOne) {
-                    PersistedConversation.Type.ONE_ON_ONE
+                    ConversationEntity.Type.ONE_ON_ONE
                 } else {
-                    PersistedConversation.Type.GROUP
+                    ConversationEntity.Type.GROUP
                 }
             }
             ConversationResponse.Type.ONE_TO_ONE,
             ConversationResponse.Type.INCOMING_CONNECTION,
             ConversationResponse.Type.WAIT_FOR_CONNECTION,
-            -> PersistedConversation.Type.ONE_ON_ONE
+            -> ConversationEntity.Type.ONE_ON_ONE
         }
     }
 
