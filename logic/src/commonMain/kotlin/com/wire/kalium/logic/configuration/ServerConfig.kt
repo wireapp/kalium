@@ -15,7 +15,8 @@ data class ServerConfig(
     val blackListUrl: String,
     val teamsUrl: String,
     val websiteUrl: String,
-    val title: String
+    val title: String,
+    val androidSenderId: String
 ) {
     companion object {
         val PRODUCTION = ServerConfig(
@@ -26,7 +27,8 @@ data class ServerConfig(
             teamsUrl = """https://teams.wire.com""",
             blackListUrl = """https://clientblacklist.wire.com/prod""",
             websiteUrl = """https://wire.com""",
-            title = "Production"
+            title = "Production",
+            androidSenderId = "782078216207"
         )
         val STAGING = ServerConfig(
             id = uuid4().toString(),
@@ -36,7 +38,8 @@ data class ServerConfig(
             teamsUrl = """https://wire-teams-staging.zinfra.io""",
             blackListUrl = """https://clientblacklist.wire.com/staging""",
             websiteUrl = """https://wire.com""",
-            title = "Staging"
+            title = "Staging",
+            androidSenderId = "723990470614"
         )
         val DEFAULT = PRODUCTION
     }
@@ -64,7 +67,17 @@ class ServerConfigMapperImpl : ServerConfigMapper {
 
     override fun toEntity(serverConfig: ServerConfig): ServerConfigEntity =
         with(serverConfig) {
-            ServerConfigEntity(id, apiBaseUrl, accountsBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, serverConfig.title)
+            ServerConfigEntity(
+                id,
+                apiBaseUrl,
+                accountsBaseUrl,
+                webSocketBaseUrl,
+                blackListUrl,
+                teamsUrl,
+                websiteUrl,
+                title,
+                androidSenderId
+            )
         }
 
     override fun fromEntity(serverConfigEntity: ServerConfigEntity): ServerConfig =
@@ -77,8 +90,9 @@ class ServerConfigMapperImpl : ServerConfigMapper {
                 blackListUrl,
                 teamsUrl,
                 websiteUrl,
-                serverConfigEntity.title
-            )
+                title,
+                androidSenderId
+                )
         }
 
 }

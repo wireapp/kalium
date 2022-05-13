@@ -12,7 +12,8 @@ data class ServerConfigEntity(
     val blackListUrl: String,
     val teamsUrl: String,
     val websiteUrl: String,
-    val title: String
+    val title: String,
+    val androidSenderId:String
 )
 
 @Serializable

@@ -6,15 +6,16 @@ CREATE TABLE ServerConfiguration (
     webSocketBaseUrl TEXT NOT NULL UNIQUE,
     blackListUrl TEXT NOT NULL,
     teamsUrl TEXT NOT NULL,
-    websiteUrl TEXT NOT NULL
+    websiteUrl TEXT NOT NULL,
+    androidSenderId TEXT
 );
 
 deleteById:
 DELETE FROM ServerConfiguration WHERE id = ?;
 
 insert:
-INSERT OR IGNORE INTO ServerConfiguration(id, apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title)
-VALUES( ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR IGNORE INTO ServerConfiguration(id, apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title, androidSenderId)
+VALUES( ?, ?, ?, ?, ?, ?, ?, ?,?);
 
 storedConfig:
 SELECT * FROM ServerConfiguration;
