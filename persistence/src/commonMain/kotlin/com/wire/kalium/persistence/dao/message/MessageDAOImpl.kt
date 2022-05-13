@@ -69,6 +69,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             messages.forEach { insertInDB(it) }
         }
 
+    @Suppress("ComplexMethod")
     private fun insertInDB(message: MessageEntity) {
         queries.insertMessage(
             id = message.id,
