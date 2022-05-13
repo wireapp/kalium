@@ -1,16 +1,18 @@
 package com.wire.kalium.network.api.teams
 
+import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.NonQualifiedConversationId
 import com.wire.kalium.network.api.TeamId
 import com.wire.kalium.network.api.model.TeamDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
-import io.ktor.client.HttpClient
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 
-class TeamsApiImp(private val httpClient: HttpClient) : TeamsApi {
+class TeamsApiImpl internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : TeamsApi {
+
+    private val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun deleteConversation(conversationId: NonQualifiedConversationId, teamId: TeamId): NetworkResponse<Unit> =
         wrapKaliumResponse {

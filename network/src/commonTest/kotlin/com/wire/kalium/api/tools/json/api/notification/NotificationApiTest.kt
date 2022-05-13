@@ -2,7 +2,7 @@ package com.wire.kalium.api.tools.json.api.notification
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.TEST_BACKEND_CONFIG
-import com.wire.kalium.network.WebSocketClientProvider
+import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.api.notification.EventContentDTO
 import com.wire.kalium.network.api.notification.NotificationApiImpl
 import com.wire.kalium.network.api.notification.NotificationResponse
@@ -23,14 +23,14 @@ class NotificationApiTest : ApiTest {
      * Doesn't do anything.
      * TODO: Actually mock WS with data
      */
-    private fun fakeWebsocketClientProvider(): WebSocketClientProvider = WebSocketClientProvider { mockWebsocketClient() }
+    private fun fakeWebsocketClient(): AuthenticatedWebSocketClient = mockWebsocketClient()
 
     @Test
     fun givenAValidRequest_whenGettingNotificationsByBatch_thenTheRequestShouldBeConfiguredCorrectly() = runTest {
         val clientId = "cId"
         val since = "sinceId"
         val limit = 400
-        val httpClient = mockAuthenticatedHttpClient(
+        val networkClient = mockAuthenticatedNetworkClient(
             NotificationEventsResponseJson.notificationsWithUnknownEventAtFirstPosition,
             statusCode = HttpStatusCode.OK,
             assertion = {
@@ -41,7 +41,7 @@ class NotificationApiTest : ApiTest {
                 assertQueryParameter(SINCE_QUERY_KEY, since)
             }
         )
-        val notificationsApi = NotificationApiImpl(httpClient, fakeWebsocketClientProvider(), TEST_BACKEND_CONFIG)
+        val notificationsApi = NotificationApiImpl(networkClient, fakeWebsocketClient(), TEST_BACKEND_CONFIG)
 
         notificationsApi.notificationsByBatch(limit, clientId, since)
     }
@@ -50,7 +50,7 @@ class NotificationApiTest : ApiTest {
     fun givenAValidRequest_whenGettingAllNotifications_thenTheRequestShouldBeConfiguredCorrectly() = runTest {
         val clientId = "cId"
         val limit = 400
-        val httpClient = mockAuthenticatedHttpClient(
+        val networkClient = mockAuthenticatedNetworkClient(
             NotificationEventsResponseJson.notificationsWithUnknownEventAtFirstPosition,
             statusCode = HttpStatusCode.OK,
             assertion = {
@@ -61,18 +61,18 @@ class NotificationApiTest : ApiTest {
                 assertQueryDoesNotExist(SINCE_QUERY_KEY)
             }
         )
-        val notificationsApi = NotificationApiImpl(httpClient, fakeWebsocketClientProvider(), TEST_BACKEND_CONFIG)
+        val notificationsApi = NotificationApiImpl(networkClient, fakeWebsocketClient(), TEST_BACKEND_CONFIG)
 
         notificationsApi.getAllNotifications(limit, clientId)
     }
 
     @Test
     fun givenAValidResponseWithAnEventOfUnknownType_whenGettingNotificationsByBatch_thenTheResponseShouldBeParsedCorrectly() = runTest {
-        val httpClient = mockAuthenticatedHttpClient(
+        val networkClient = mockAuthenticatedNetworkClient(
             NotificationEventsResponseJson.notificationsWithUnknownEventAtFirstPosition,
             statusCode = HttpStatusCode.OK
         )
-        val notificationsApi = NotificationApiImpl(httpClient, fakeWebsocketClientProvider(), TEST_BACKEND_CONFIG)
+        val notificationsApi = NotificationApiImpl(networkClient, fakeWebsocketClient(), TEST_BACKEND_CONFIG)
 
         val result = notificationsApi.notificationsByBatch(1, "", "")
 
@@ -85,11 +85,11 @@ class NotificationApiTest : ApiTest {
 
     @Test
     fun givenAValidResponseWithUnknownEventType_whenGettingAllNotifications_thenTheResponseShouldBeParsedCorrectly() = runTest {
-        val httpClient = mockAuthenticatedHttpClient(
+        val networkClient = mockAuthenticatedNetworkClient(
             NotificationEventsResponseJson.notificationsWithUnknownEventAtFirstPosition,
             statusCode = HttpStatusCode.OK
         )
-        val notificationsApi = NotificationApiImpl(httpClient, fakeWebsocketClientProvider(), TEST_BACKEND_CONFIG)
+        val notificationsApi = NotificationApiImpl(networkClient, fakeWebsocketClient(), TEST_BACKEND_CONFIG)
 
         val result = notificationsApi.getAllNotifications(1, "")
 
@@ -102,11 +102,11 @@ class NotificationApiTest : ApiTest {
 
     @Test
     fun given404Response_whenGettingAllNotifications_thenTheResponseIsParsedCorrectly() = runTest {
-        val httpClient = mockAuthenticatedHttpClient(
+        val networkClient = mockAuthenticatedNetworkClient(
             NotificationEventsResponseJson.notificationsWithUnknownEventAtFirstPosition,
             statusCode = HttpStatusCode.NotFound
         )
-        val notificationsApi = NotificationApiImpl(httpClient, fakeWebsocketClientProvider(), TEST_BACKEND_CONFIG)
+        val notificationsApi = NotificationApiImpl(networkClient, fakeWebsocketClient(), TEST_BACKEND_CONFIG)
 
         val result = notificationsApi.getAllNotifications(1, "")
 
@@ -116,11 +116,11 @@ class NotificationApiTest : ApiTest {
 
     @Test
     fun givenSuccessResponse_whenGettingAllNotifications_thenTheResponseIsParsedCorrectly() = runTest {
-        val httpClient = mockAuthenticatedHttpClient(
+        val networkClient = mockAuthenticatedNetworkClient(
             NotificationEventsResponseJson.notificationsWithUnknownEventAtFirstPosition,
             statusCode = HttpStatusCode.OK
         )
-        val notificationsApi = NotificationApiImpl(httpClient, fakeWebsocketClientProvider(), TEST_BACKEND_CONFIG)
+        val notificationsApi = NotificationApiImpl(networkClient, fakeWebsocketClient(), TEST_BACKEND_CONFIG)
 
         val result = notificationsApi.getAllNotifications(1, "")
 
