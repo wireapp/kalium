@@ -144,7 +144,7 @@ class ServerConfigRepositoryTest {
         val serverConfigDto = SERVER_CONFIG_DTO
         val expected = VersionInfoDTO("wire.com", true, listOf(0, 1, 2))
         given(versionApi)
-            .coroutine { fetchServerConfig(serverConfigDto.apiBaseUrl) }
+            .coroutine { fetchApiVersion(serverConfigDto.apiBaseUrl) }
             .then { NetworkResponse.Success(expected, mapOf(), 200) }
 
         serverConfigRepository.fetchRemoteApiVersion(serverConfigDto).shouldSucceed { actual ->
@@ -157,7 +157,7 @@ class ServerConfigRepositoryTest {
         val serverConfigDto = SERVER_CONFIG_DTO
         val expected = NetworkResponse.Error(TestNetworkException.generic)
         given(versionApi)
-            .coroutine { fetchServerConfig(serverConfigDto.apiBaseUrl) }
+            .coroutine { fetchApiVersion(serverConfigDto.apiBaseUrl) }
             .then { NetworkResponse.Error(expected.kException) }
 
         serverConfigRepository.fetchRemoteApiVersion(serverConfigDto).shouldFail { actual ->
@@ -171,16 +171,37 @@ class ServerConfigRepositoryTest {
         val testConfigDTO = newServerConfigDTO(1)
         val expected = newServerConfig(1)
         val versionInfoDTO = VersionInfoDTO(expected.domain, expected.federation, listOf(1, 2))
-        given(serverConfigRepository)
-            .coroutine { fetchRemoteApiVersion(testConfigDTO) }
-            .then { Either.Right(versionInfoDTO) }
+        given(versionApi)
+            .suspendFunction(versionApi::fetchApiVersion)
+            .whenInvokedWith(any())
+            .then { NetworkResponse.Success(versionInfoDTO, mapOf(), 200) }
+
         given(serverConfigUtil)
             .invocation { calculateApiVersion(versionInfoDTO.supported) }
             .then { Either.Right(expected.commonApiVersion.version) }
 
+        given(serverConfigDAO)
+            .function(serverConfigDAO::configById)
+            .whenInvokedWith(any())
+            .then { newServerConfigEntity(1) }
+
         serverConfigRepository.fetchApiVersionAndStore(testConfigDTO).shouldSucceed {
             assertEquals(expected, it)
         }
+
+        verify(versionApi)
+            .suspendFunction(versionApi::fetchApiVersion)
+            .with(any())
+            .wasInvoked(exactly = once)
+        verify(serverConfigUtil)
+            .function(serverConfigUtil::calculateApiVersion)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
+
+        verify(serverConfigDAO)
+            .function(serverConfigDAO::configById)
+            .with(any())
+            .wasInvoked(exactly = once)
     }
 
     private companion object {

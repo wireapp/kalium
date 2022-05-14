@@ -100,11 +100,11 @@ internal class ServerConfigDataSource(
     }.map { serverConfigMapper.fromEntity(it) }
 
     override suspend fun fetchRemoteApiVersion(serverConfigDTO: ServerConfigDTO): Either<NetworkFailure, VersionInfoDTO> = wrapApiRequest {
-        versionApi.fetchServerConfig(serverConfigDTO.apiBaseUrl)
+        versionApi.fetchApiVersion(serverConfigDTO.apiBaseUrl)
     }
 
     override suspend fun updateConfigApiVersion(id: String): Either<CoreFailure, Unit> = configById(id)
-        .flatMap { wrapApiRequest { versionApi.fetchServerConfig(Url(it.apiBaseUrl)) } }
+        .flatMap { wrapApiRequest { versionApi.fetchApiVersion(Url(it.apiBaseUrl)) } }
         .flatMap { serverConfigUtil.calculateApiVersion(it.supported) }
         .flatMap { wrapStorageRequest { dao.updateApiVersion(id, it) } }
 }

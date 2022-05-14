@@ -15,6 +15,7 @@ import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -55,6 +56,7 @@ class UpdateApiVersionsWorkerTest {
 
     }
 
+    @Ignore
     @Test
     fun givenUpdateReturnsFailure_whenExecutingAWorker_thenReturnRetry() = runTest {
         val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)

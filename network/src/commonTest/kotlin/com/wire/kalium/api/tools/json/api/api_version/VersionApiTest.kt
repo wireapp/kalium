@@ -32,7 +32,7 @@ class VersionApiTest : ApiTest {
         )
 
         val versionApi: VersionApi = VersionApiImpl(httpClient)
-        versionApi.fetchServerConfig(Url("https://wire.de")).also { actual ->
+        versionApi.fetchApiVersion(Url("https://wire.de")).also { actual ->
             assertIs<NetworkResponse.Success<VersionInfoDTO>>(actual)
             assertEquals(expected, actual.value)
         }
@@ -47,7 +47,7 @@ class VersionApiTest : ApiTest {
         )
 
         val versionApi: VersionApi = VersionApiImpl(httpClient)
-        versionApi.fetchServerConfig(Url("https://wire.de")).also { actual ->
+        versionApi.fetchApiVersion(Url("https://wire.de")).also { actual ->
             assertIs<NetworkResponse.Success<VersionInfoDTO>>(actual)
             assertEquals(expected, actual.value)
         }
