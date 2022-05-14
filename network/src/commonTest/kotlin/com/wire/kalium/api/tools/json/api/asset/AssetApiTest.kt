@@ -24,7 +24,7 @@ class AssetApiTest : ApiTest {
         val assetMetadata = AssetMetadataRequest("image/jpeg", true, AssetRetentionType.ETERNAL, "md5-hash")
         val encryptedData = ByteArray(16)
         Random.nextBytes(encryptedData)
-        val httpClient = mockAuthenticatedHttpClient(
+        val networkClient = mockAuthenticatedNetworkClient(
             VALID_ASSET_UPLOAD_RESPONSE.rawJson,
             statusCode = HttpStatusCode.Created,
             assertion = {
@@ -36,7 +36,7 @@ class AssetApiTest : ApiTest {
         )
 
         // When
-        val assetApi: AssetApi = AssetApiImpl(httpClient)
+        val assetApi: AssetApi = AssetApiImpl(networkClient)
         val response = assetApi.uploadAsset(assetMetadata, encryptedData)
 
         // Then
@@ -50,7 +50,7 @@ class AssetApiTest : ApiTest {
         val assetMetadata = AssetMetadataRequest("image/jpeg", true, AssetRetentionType.ETERNAL, "md5-hash")
         val encryptedData = ByteArray(16)
         Random.nextBytes(encryptedData)
-        val httpClient = mockAuthenticatedHttpClient(
+        val networkClient = mockAuthenticatedNetworkClient(
             VALID_ASSET_UPLOAD_RESPONSE.rawJson,
             statusCode = HttpStatusCode.Created,
             assertion = {
@@ -62,7 +62,7 @@ class AssetApiTest : ApiTest {
         )
 
         // When
-        val assetApi: AssetApi = AssetApiImpl(httpClient)
+        val assetApi: AssetApi = AssetApiImpl(networkClient)
         val response = assetApi.uploadAsset(assetMetadata, encryptedData)
 
         // Then
@@ -76,7 +76,7 @@ class AssetApiTest : ApiTest {
         val assetMetadata = AssetMetadataRequest("image/jpeg", true, AssetRetentionType.ETERNAL, "md5-hash")
         val encryptedData = ByteArray(16)
         Random.nextBytes(encryptedData)
-        val httpClient = mockAuthenticatedHttpClient(
+        val networkClient = mockAuthenticatedNetworkClient(
             INVALID_ASSET_UPLOAD_RESPONSE.rawJson,
             statusCode = HttpStatusCode.BadRequest,
             assertion = {
@@ -88,7 +88,7 @@ class AssetApiTest : ApiTest {
         )
 
         // When
-        val assetApi: AssetApi = AssetApiImpl(httpClient)
+        val assetApi: AssetApi = AssetApiImpl(networkClient)
         val response = assetApi.uploadAsset(assetMetadata, encryptedData)
 
         // Then
@@ -104,7 +104,7 @@ class AssetApiTest : ApiTest {
         val assetKey = "3-1-e7788668-1b22-488a-b63c-acede42f771f"
         val assetToken = "assetToken"
         val apiPath = "$PATH_PUBLIC_ASSETS/$assetKey"
-        val httpClient = mockAuthenticatedHttpClient(
+        val networkClient = mockAuthenticatedNetworkClient(
             responseBody = downloadedAsset,
             statusCode = HttpStatusCode.OK,
             assertion = {
@@ -117,7 +117,7 @@ class AssetApiTest : ApiTest {
         )
 
         // When
-        val assetApi: AssetApi = AssetApiImpl(httpClient)
+        val assetApi: AssetApi = AssetApiImpl(networkClient)
         val response = assetApi.downloadAsset(assetKey, assetToken)
 
         // Then
@@ -131,7 +131,7 @@ class AssetApiTest : ApiTest {
         val assetKey = "3-1-e7788668-1b22-488a-b63c-acede42f771f"
         val assetToken = "assetToken"
         val apiPath = "$PATH_PUBLIC_ASSETS/$assetKey"
-        val httpClient = mockAuthenticatedHttpClient(
+        val networkClient = mockAuthenticatedNetworkClient(
             responseBody = AssetDownloadResponseJson.invalid.rawJson,
             statusCode = HttpStatusCode.BadRequest,
             assertion = {
@@ -143,7 +143,7 @@ class AssetApiTest : ApiTest {
         )
 
         // When
-        val assetApi: AssetApi = AssetApiImpl(httpClient)
+        val assetApi: AssetApi = AssetApiImpl(networkClient)
         val response = assetApi.downloadAsset(assetKey, assetToken)
 
         // Then

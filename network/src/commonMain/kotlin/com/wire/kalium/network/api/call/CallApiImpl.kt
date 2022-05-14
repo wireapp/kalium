@@ -1,5 +1,6 @@
 package com.wire.kalium.network.api.call
 
+import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
@@ -11,7 +12,9 @@ import io.ktor.client.request.setBody
 import io.ktor.http.HttpHeaders
 import io.ktor.http.ContentType
 
-class CallApiImpl(private val httpClient: HttpClient) : CallApi {
+class CallApiImpl internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : CallApi {
+
+    private val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun getCallConfig(limit: Int?): NetworkResponse<String> =
         wrapKaliumResponse {

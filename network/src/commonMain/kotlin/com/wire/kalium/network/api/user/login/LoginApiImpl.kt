@@ -1,5 +1,6 @@
 package com.wire.kalium.network.api.user.login
 
+import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.api.RefreshTokenProperties
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.model.AccessTokenDTO
@@ -11,7 +12,6 @@ import com.wire.kalium.network.utils.flatMap
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.setUrl
 import com.wire.kalium.network.utils.wrapKaliumResponse
-import io.ktor.client.HttpClient
 import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
@@ -21,7 +21,11 @@ import io.ktor.http.Url
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-class LoginApiImpl(private val httpClient: HttpClient) : LoginApi {
+class LoginApiImpl internal constructor(
+    private val unauthenticatedNetworkClient: UnauthenticatedNetworkClient
+) : LoginApi {
+
+    private val httpClient get() = unauthenticatedNetworkClient.httpClient
 
     @Serializable
     internal data class LoginRequest(
