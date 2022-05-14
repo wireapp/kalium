@@ -1,4 +1,4 @@
-package com.wire.kalium.network.api.api_version
+package com.wire.kalium.network.api.versioning
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

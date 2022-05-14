@@ -1,7 +1,5 @@
 package com.wire.kalium.network
 
-import com.wire.kalium.network.api.api_version.VersionApi
-import com.wire.kalium.network.api.api_version.VersionApiImpl
 import com.wire.kalium.network.api.configuration.ServerConfigApi
 import com.wire.kalium.network.api.configuration.ServerConfigApiImp
 import com.wire.kalium.network.api.user.login.LoginApi
@@ -10,6 +8,8 @@ import com.wire.kalium.network.api.user.login.SSOLoginApi
 import com.wire.kalium.network.api.user.login.SSOLoginApiImpl
 import com.wire.kalium.network.api.user.register.RegisterApi
 import com.wire.kalium.network.api.user.register.RegisterApiImpl
+import com.wire.kalium.network.api.versioning.VersionApi
+import com.wire.kalium.network.api.versioning.VersionApiImpl
 import io.ktor.client.engine.HttpClientEngine
 
 class LoginNetworkContainer(

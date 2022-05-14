@@ -20,11 +20,11 @@ import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.session.SessionMapperImpl
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.auth.sso.SSOLoginScope
-import com.wire.kalium.logic.feature.notification_token.SaveNotificationTokenUseCase
+import com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseCase
 import com.wire.kalium.logic.feature.register.RegisterScope
-import com.wire.kalium.logic.feature.server_config.GetServerConfigUseCase
-import com.wire.kalium.logic.feature.server_config.UpdateApiVersionsUseCase
-import com.wire.kalium.logic.feature.server_config.UpdateApiVersionsUseCaseImpl
+import com.wire.kalium.logic.feature.server.GetServerConfigUseCase
+import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCase
+import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCaseImpl
 import com.wire.kalium.logic.feature.session.GetSessionsUseCase
 import com.wire.kalium.logic.feature.session.SessionScope
 import com.wire.kalium.network.LoginNetworkContainer

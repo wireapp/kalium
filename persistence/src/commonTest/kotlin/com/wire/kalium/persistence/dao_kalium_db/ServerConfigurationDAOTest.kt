@@ -92,7 +92,6 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
     }
 
 
-
     @Test
     fun givenExistingConfig_thenItCanBeDeleted() {
         insertConfig(config1)
@@ -146,11 +145,20 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
     }
 
 
-
     private fun insertConfig(serverConfigEntity: ServerConfigEntity) {
         with(serverConfigEntity) {
             db.serverConfigurationDAO.insert(
-                id, apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title, federation, domain, commonApiVersion
+                id,
+                apiBaseUrl,
+                accountBaseUrl,
+                webSocketBaseUrl,
+                blackListUrl,
+                teamsUrl,
+                websiteUrl,
+                title,
+                federation,
+                domain,
+                commonApiVersion
             )
         }
     }

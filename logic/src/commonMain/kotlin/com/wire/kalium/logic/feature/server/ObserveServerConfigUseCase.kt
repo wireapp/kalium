@@ -1,12 +1,13 @@
-package com.wire.kalium.logic.feature.server_config
+package com.wire.kalium.logic.feature.server
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.configuration.server.ServerConfigUtil
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.http.Url
 import kotlinx.coroutines.flow.Flow
@@ -24,23 +25,20 @@ class ObserveServerConfigUseCase internal constructor(
 
 
     suspend operator fun invoke(): Result {
-        val isAnyStored = serverConfigRepository.configList().fold({
-            if (it is StorageFailure.DataNotFound) {
-                true
-            } else (return handleError(it))
-        }, {
-            it.isNullOrEmpty()
-        })
-
-        if (!isAnyStored) {
-            // TODO: store all of the configs from the build json file
-            PRODUCTION.also { config ->
-                // TODO: what do do if one of the insert failed
-                serverConfigRepository.fetchApiVersionAndStore(config).onFailure {
-                    return handleError(it)
+        serverConfigRepository.configList().map { configList ->
+            configList.isNullOrEmpty()
+        }.onSuccess { isEmpty ->
+            if (isEmpty) {
+                // TODO: store all of the configs from the build json file
+                PRODUCTION.also { config ->
+                    // TODO: what do do if one of the insert failed
+                    serverConfigRepository.fetchApiVersionAndStore(config).onFailure {
+                        return handleError(it)
+                    }
                 }
             }
         }
+
         return serverConfigRepository.configFlow().fold({
             Result.Failure.Generic(it)
         }, {

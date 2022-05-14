@@ -28,6 +28,7 @@ internal class ServerConfigMapper() {
 
 interface ServerConfigurationDAO {
     fun deleteById(id: String)
+    @Suppress("LongParameterList")
     fun insert(
         id: String,
         apiBaseUrl: String,
@@ -55,6 +56,7 @@ class ServerConfigurationDAOImpl(private val queries: ServerConfigurationQueries
 
     override fun deleteById(id: String) = queries.deleteById(id)
 
+    @Suppress("LongParameterList")
     override fun insert(
         id: String,
         apiBaseUrl: String,

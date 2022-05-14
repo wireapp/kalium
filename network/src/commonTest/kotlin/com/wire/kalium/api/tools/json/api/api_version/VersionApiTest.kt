@@ -1,9 +1,9 @@
 package com.wire.kalium.api.tools.json.api.api_version
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.network.api.api_version.VersionApi
-import com.wire.kalium.network.api.api_version.VersionApiImpl
-import com.wire.kalium.network.api.api_version.VersionInfoDTO
+import com.wire.kalium.network.api.versioning.VersionApi
+import com.wire.kalium.network.api.versioning.VersionApiImpl
+import com.wire.kalium.network.api.versioning.VersionInfoDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.Url

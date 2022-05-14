@@ -12,9 +12,9 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.logic.util.stubs.newServerConfigDTO
 import com.wire.kalium.logic.util.stubs.newServerConfigEntity
-import com.wire.kalium.network.api.api_version.VersionApi
-import com.wire.kalium.network.api.api_version.VersionInfoDTO
 import com.wire.kalium.network.api.configuration.ServerConfigApi
+import com.wire.kalium.network.api.versioning.VersionApi
+import com.wire.kalium.network.api.versioning.VersionInfoDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAO
 import io.mockative.ConfigurationApi

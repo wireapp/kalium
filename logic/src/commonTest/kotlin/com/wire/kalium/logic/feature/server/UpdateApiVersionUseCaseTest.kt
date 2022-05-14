@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.feature.server_config
+package com.wire.kalium.logic.feature.server
 
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.functional.Either

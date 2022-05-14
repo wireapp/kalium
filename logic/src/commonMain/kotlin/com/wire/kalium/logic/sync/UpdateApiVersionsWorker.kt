@@ -1,6 +1,6 @@
 package com.wire.kalium.logic.sync
 
-import com.wire.kalium.logic.feature.server_config.UpdateApiVersionsUseCase
+import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCase
 
 
 class UpdateApiVersionsWorker(

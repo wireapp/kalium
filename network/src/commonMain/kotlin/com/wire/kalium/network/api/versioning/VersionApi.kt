@@ -1,4 +1,4 @@
-package com.wire.kalium.network.api.api_version
+package com.wire.kalium.network.api.versioning
 
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.setUrl

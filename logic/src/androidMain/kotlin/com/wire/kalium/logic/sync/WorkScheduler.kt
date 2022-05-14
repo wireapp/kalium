@@ -37,7 +37,6 @@ import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import java.lang.IllegalArgumentException
 import java.util.concurrent.TimeUnit
 import kotlin.reflect.KClass
 
@@ -195,8 +194,8 @@ actual sealed class WorkScheduler(private val appContext: Context) {
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()
 
-            val scheduledHourOfDayToExecute = 4 // schedule at 4AM
-            val repeatIntervalInHours = 24 // execute every 24 hours
+            val scheduledHourOfDayToExecute = TIME_OF_EXECUTION // schedule at 4AM
+            val repeatIntervalInHours = REPEAT_INTERVAL // execute every 24 hours
             val localTimeZone = TimeZone.currentSystemDefault()
             val timeNow: Instant = Clock.System.now() // current time
             val timeScheduledToExecute = timeNow.toLocalDateTime(localTimeZone) // time at which the today's execution should take place
@@ -240,6 +239,11 @@ actual sealed class WorkScheduler(private val appContext: Context) {
                 ExistingWorkPolicy.KEEP,
                 requestOneTimeWork
             )
+        }
+
+        private companion object {
+            const val TIME_OF_EXECUTION = 4
+            const val REPEAT_INTERVAL: Long = 24
         }
     }
 
