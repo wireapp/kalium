@@ -8,6 +8,7 @@ import com.wire.kalium.network.api.teams.TeamsApi
 import com.wire.kalium.network.api.user.LegalHoldStatusResponse
 import com.wire.kalium.network.api.TeamId as TeamIdDTO
 
+@Suppress("LongParameterList")
 object TestTeam {
     val TEAM_ID = TeamId("Some-Team")
 
