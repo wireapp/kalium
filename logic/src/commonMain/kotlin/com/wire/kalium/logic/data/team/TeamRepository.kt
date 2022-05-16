@@ -52,7 +52,7 @@ internal class TeamDataSource(
             teamMemberList.members.map { teamMember ->
                 userMapper.fromTeamMemberToDaoModel(
                     teamId = teamId,
-                    teamMember = teamMember,
+                    teamMemberDTO = teamMember,
                     userDomain = userDomain
                 )
             }
