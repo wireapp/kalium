@@ -96,6 +96,7 @@ actual class CallManagerImpl(
             },
             arg = null
         )
+        callingLogger.d("$TAG - wcall_create() called")
     }
 
     private suspend fun <T> withCalling(action: suspend Calling.(handle: Handle) -> T): T {
@@ -105,6 +106,7 @@ actual class CallManagerImpl(
 
     override suspend fun onCallingMessageReceived(message: Message, content: MessageContent.Calling) =
         withCalling {
+            callingLogger.i("$TAG - onCallingMessageReceived called")
             val msg = content.value.toByteArray()
 
             val currTime = System.currentTimeMillis()
@@ -120,7 +122,7 @@ actual class CallManagerImpl(
                 userId = message.senderUserId.toString(),
                 clientId = message.senderClientId.value
             )
-            callingLogger.d("$TAG - onCallingMessageReceived")
+            callingLogger.i("$TAG - wcall_recv_msg() called")
         }
 
     override suspend fun startCall(
@@ -148,6 +150,7 @@ actual class CallManagerImpl(
                 avsConversationType.avsValue,
                 isAudioCbr.toInt()
             )
+            callingLogger.d("$TAG - wcall_start() called -> Call started")
         }
     }
 
@@ -159,22 +162,26 @@ actual class CallManagerImpl(
             callType = CallTypeCalling.AUDIO.avsValue,
             cbrEnabled = false
         )
+        callingLogger.d("$TAG - wcall_answer() called -> Incoming call answered")
     }
 
     override suspend fun endCall(conversationId: ConversationId) = withCalling {
         callingLogger.d("$TAG -> ending Call..")
         wcall_end(inst = deferredHandle.await(), conversationId = conversationId.toString())
+        callingLogger.d("$TAG - wcall_end() called -> call ended")
     }
 
     override suspend fun rejectCall(conversationId: ConversationId) = withCalling {
         callingLogger.d("$TAG -> rejecting call..")
         wcall_reject(inst = deferredHandle.await(), conversationId = conversationId.toString())
+        callingLogger.d("$TAG - wcall_reject() called -> call rejected")
     }
 
     override suspend fun muteCall(shouldMute: Boolean) = withCalling {
         val logString = if (shouldMute) "muting" else "un-muting"
         callingLogger.d("$TAG -> $logString call..")
         wcall_set_mute(deferredHandle.await(), muted = shouldMute.toInt())
+        callingLogger.d("$TAG - wcall_set_mute() called")
     }
 
     /**
@@ -196,6 +203,7 @@ actual class CallManagerImpl(
                     wcall_participant_changed_h = onParticipantListChanged,
                     arg = null
                 )
+                callingLogger.d("$TAG - wcall_set_participant_changed_handler() called")
             }
         }
 

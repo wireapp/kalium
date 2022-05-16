@@ -24,7 +24,7 @@ class OnIncomingCall(
         conversationType: Int,
         arg: Pointer?
     ) {
-        callingLogger.i("${CallManagerImpl.TAG} -> incomingCallHandler")
+        callingLogger.i("OnIncomingCall -> incomingCallHandler called")
         callRepository.createCall(
             call = Call(
                 conversationId = conversationId.toConversationId(),
@@ -32,5 +32,6 @@ class OnIncomingCall(
                 callerId = userId
             )
         )
+        callingLogger.i("OnIncomingCall -> incoming call added to data flow")
     }
 }
