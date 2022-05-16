@@ -8,7 +8,8 @@ import com.wire.kalium.logic.functional.fold
 
 interface UpdateAssetMessageDownloadStatusUseCase {
     /**
-     * Function that allows update an asset message download status. This field indicates whether the asset has been downloaded locally already or not.
+     * Function that allows update an asset message download status. This field indicates whether the asset has been downloaded locally
+     * already or not.
      *
      * @param downloadStatus the new download status to update the asset message
      * @param conversationId the conversation identifier
