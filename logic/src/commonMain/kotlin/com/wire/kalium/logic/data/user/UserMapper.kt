@@ -31,7 +31,7 @@ interface UserMapper {
     fun toUserIdPersistence(userId: UserId): UserIdEntity
     fun fromTeamMemberToDaoModel(
         teamId: TeamId,
-        teamMember: TeamsApi.TeamMember,
+        teamMemberDTO: TeamsApi.TeamMemberDTO,
         userDomain: String
     ): UserEntity
     fun fromDaoConnectionStateToUser(connectionState: UserEntity.ConnectionState): ConnectionState
@@ -133,12 +133,12 @@ internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
      */
     override fun fromTeamMemberToDaoModel(
         teamId: TeamId,
-        teamMember: TeamsApi.TeamMember,
+        teamMemberDTO: TeamsApi.TeamMemberDTO,
         userDomain: String
     ): UserEntity =
         UserEntity(
             id = QualifiedIDEntity(
-                value = teamMember.nonQualifiedUserId,
+                value = teamMemberDTO.nonQualifiedUserId,
                 domain = userDomain
             ),
             name = null,
