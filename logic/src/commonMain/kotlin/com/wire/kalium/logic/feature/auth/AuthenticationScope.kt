@@ -29,7 +29,7 @@ import com.wire.kalium.logic.feature.user.EnableLoggingUseCase
 import com.wire.kalium.logic.feature.user.EnableLoggingUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsLoggingEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsLoggingEnabledUseCaseImpl
-import com.wire.kalium.network.LoginNetworkContainer
+import com.wire.kalium.network.UnauthenticatedNetworkContainer
 import com.wire.kalium.persistence.client.TokenStorage
 import com.wire.kalium.persistence.client.TokenStorageImpl
 import com.wire.kalium.persistence.client.UserConfigStorage
@@ -42,8 +42,8 @@ class AuthenticationScope(
     private val globalPreferences: KaliumPreferences
 ) {
 
-    protected val loginNetworkContainer: LoginNetworkContainer by lazy {
-        LoginNetworkContainer()
+    private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
+        UnauthenticatedNetworkContainer()
     }
     private val serverConfigMapper: ServerConfigMapper get() = ServerConfigMapperImpl()
     private val idMapper: IdMapper get() = IdMapperImpl()
@@ -55,19 +55,19 @@ class AuthenticationScope(
 
     private val serverConfigRepository: ServerConfigRepository
         get() = ServerConfigDataSource(
-            loginNetworkContainer.serverConfigApi,
+            unauthenticatedNetworkContainer.serverConfigApi,
             globalDatabase.serverConfigurationDAO
         )
 
-    private val loginRepository: LoginRepository get() = LoginRepositoryImpl(loginNetworkContainer.loginApi, clientLabel)
+    private val loginRepository: LoginRepository get() = LoginRepositoryImpl(unauthenticatedNetworkContainer.loginApi, clientLabel)
     private val notificationTokenRepository: NotificationTokenRepository get() = NotificationTokenDataSource(tokenStorage)
     private val userConfigRepository: UserConfigRepository get() = UserConfigDataSource(userConfigStorage)
 
     private val registerAccountRepository: RegisterAccountRepository
         get() = RegisterAccountDataSource(
-            loginNetworkContainer.registerApi
+            unauthenticatedNetworkContainer.registerApi
         )
-    private val ssoLoginRepository: SSOLoginRepository get() = SSOLoginRepositoryImpl(loginNetworkContainer.sso)
+    private val ssoLoginRepository: SSOLoginRepository get() = SSOLoginRepositoryImpl(unauthenticatedNetworkContainer.sso)
 
     val validateEmailUseCase: ValidateEmailUseCase get() = ValidateEmailUseCaseImpl()
     val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()

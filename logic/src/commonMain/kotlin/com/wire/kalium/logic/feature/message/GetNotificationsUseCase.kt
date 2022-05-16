@@ -79,7 +79,7 @@ class GetNotificationsUseCaseImpl(
                                 val author = getNotificationMessageAuthor(authors, it.senderUserId)
                                 messageMapper.fromMessageToLocalNotificationMessage(it, author)
                             }
-                            val isOneToOneConversation = conversationWithMessages.conversation.type == ConversationEntity.Type.ONE_ON_ONE
+                            val isOneToOneConversation = conversationWithMessages.conversation.type == Conversation.Type.ONE_ON_ONE
 
                             LocalNotificationConversation(
                                 id = conversationId,

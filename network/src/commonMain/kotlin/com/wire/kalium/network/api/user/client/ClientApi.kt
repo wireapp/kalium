@@ -1,12 +1,12 @@
 package com.wire.kalium.network.api.user.client
 
+import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.QualifiedID
 import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.user.pushToken.PushTokenBody
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.wrapKaliumResponse
-import io.ktor.client.HttpClient
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.post
@@ -31,7 +31,10 @@ interface ClientApi {
 }
 
 
-class ClientApiImpl(private val httpClient: HttpClient) : ClientApi {
+class ClientApiImpl internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : ClientApi {
+
+    private val httpClient get() = authenticatedNetworkClient.httpClient
+
     override suspend fun registerClient(registerClientRequest: RegisterClientRequest): NetworkResponse<ClientResponse> =
         wrapKaliumResponse {
             httpClient.post(PATH_CLIENTS) {
@@ -68,9 +71,11 @@ class ClientApiImpl(private val httpClient: HttpClient) : ClientApi {
         wrapKaliumResponse { httpClient.get("$PATH_CLIENTS/$clientID") }
 
     override suspend fun updateClient(updateClientRequest: UpdateClientRequest, clientID: String): NetworkResponse<Unit> =
-        wrapKaliumResponse { httpClient.put("$PATH_CLIENTS/$clientID") {
-            setBody(updateClientRequest)
-        } }
+        wrapKaliumResponse {
+            httpClient.put("$PATH_CLIENTS/$clientID") {
+                setBody(updateClientRequest)
+            }
+        }
 
     override suspend fun registerToken(body: PushTokenBody): NetworkResponse<Unit> = wrapKaliumResponse {
         httpClient.post(PUSH_TOKEN) {
