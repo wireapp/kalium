@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
@@ -65,6 +66,7 @@ class MessageDataSource(
     private val messageDAO: MessageDAO,
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper(),
+    private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
     private val sendMessageFailureMapper: SendMessageFailureMapper = MapperProvider.sendMessageFailureMapper()
 ) : MessageRepository {
 
@@ -120,7 +122,7 @@ class MessageDataSource(
     ): Either<CoreFailure, Unit> =
         wrapStorageRequest {
             messageDAO.updateAssetDownloadStatus(
-                MapperProvider.assetMapper().fromDownloadStatusToDaoModel(downloadStatus),
+                assetMapper.fromDownloadStatusToDaoModel(downloadStatus),
                 messageUuid,
                 idMapper.toDaoModel(conversationId)
             )
