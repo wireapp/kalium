@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.feature.user
 
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
@@ -49,8 +48,8 @@ class SearchUserDirectoryUseCaseTest {
         //when
         val actual = searchUserDirectoryUseCase(TEST_QUERY, TEST_DOMAIN)
         //then
-        assertIs<Either.Right<UserSearchResult>>(actual)
-        assertEquals(expected, actual)
+        assertIs<Result.Success>(actual)
+        assertEquals(expected.value, actual.userSearchResult)
     }
 
     @Test
