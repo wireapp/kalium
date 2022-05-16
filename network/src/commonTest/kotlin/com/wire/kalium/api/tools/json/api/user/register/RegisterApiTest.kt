@@ -13,7 +13,7 @@ class RegisterApiTest : ApiTest {
 
     @Test
     fun givenAValidEmail_whenRegisteringAccountWithEMail_theRequestShouldBeConfiguredCorrectly() = runTest {
-        val httpClient = mockUnauthenticatedHttpClient(
+        val networkClient = mockUnauthenticatedNetworkClient(
             VALID_REGISTER_RESPONSE.rawJson,
             statusCode = HttpStatusCode.OK,
             assertion = {
@@ -27,7 +27,7 @@ class RegisterApiTest : ApiTest {
             }
         )
         TODO()
-        //val registerApi: RegisterApi = RegisterApiImpl(httpClient)
+        //val registerApi: RegisterApi = RegisterApiImpl(networkClient)
         //val result = registerApi.register(VALID_PERSONAL_ACCOUNT_REQUEST.serializableData, TEST_HOST)
 
         //assertIs<NetworkResponse.Success<UserDTO>>(result)
@@ -36,7 +36,7 @@ class RegisterApiTest : ApiTest {
 
     @Test
     fun givenRegistrationFail_whenRegisteringAccountWithEMMail_thenErrorIsPropagated() = runTest {
-        val httpClient = mockUnauthenticatedHttpClient(
+        val networkClient = mockUnauthenticatedNetworkClient(
             ERROR_RESPONSE.rawJson,
             statusCode = HttpStatusCode.BadRequest,
             assertion = {
@@ -50,7 +50,7 @@ class RegisterApiTest : ApiTest {
             }
         )
         TODO()
-        //val registerApi: RegisterApi = RegisterApiImpl(httpClient)
+        //val registerApi: RegisterApi = RegisterApiImpl(networkClient)
         //val result = registerApi.register(VALID_PERSONAL_ACCOUNT_REQUEST.serializableData, TEST_HOST)
 
         //assertIs<NetworkResponse.Error>(result)
@@ -58,7 +58,7 @@ class RegisterApiTest : ApiTest {
 
     @Test
     fun givenAValidEmail_whenSendingActivationEmail_theRequestShouldBeConfiguredCorrectly() = runTest {
-        val httpClient = mockUnauthenticatedHttpClient(
+        val networkClient = mockUnauthenticatedNetworkClient(
             "",
             statusCode = HttpStatusCode.OK,
             assertion = {
@@ -72,7 +72,7 @@ class RegisterApiTest : ApiTest {
             }
         )
         TODO()
-        //val registerApi: RegisterApi = RegisterApiImpl(httpClient)
+        //val registerApi: RegisterApi = RegisterApiImpl(networkClient)
         //val result = registerApi.requestActivationCode(VALID_SEND_ACTIVATE_EMAIL.serializableData, TEST_HOST)
 
         //assertIs<NetworkResponse.Success<UserDTO>>(result)
@@ -82,7 +82,7 @@ class RegisterApiTest : ApiTest {
 
     @Test
     fun givenSendActivationCodeFail_thenErrorIsPropagated() = runTest {
-        val httpClient = mockUnauthenticatedHttpClient(
+        val networkClient = mockUnauthenticatedNetworkClient(
             ERROR_RESPONSE.rawJson,
             statusCode = HttpStatusCode.BadRequest,
             assertion = {
@@ -96,7 +96,7 @@ class RegisterApiTest : ApiTest {
             }
         )
         TODO()
-        //val registerApi: RegisterApi = RegisterApiImpl(httpClient)
+        //val registerApi: RegisterApi = RegisterApiImpl(networkClient)
         //val result = registerApi.requestActivationCode(VALID_SEND_ACTIVATE_EMAIL.serializableData, TEST_HOST)
 
         //assertIs<NetworkResponse.Error>(result)
@@ -104,7 +104,7 @@ class RegisterApiTest : ApiTest {
 
     @Test
     fun givenAValidEmail_whenActivationEmailWIthCode_theRequestShouldBeConfiguredCorrectly() = runTest {
-        val httpClient = mockUnauthenticatedHttpClient(
+        val networkClient = mockUnauthenticatedNetworkClient(
             "",
             statusCode = HttpStatusCode.OK,
             assertion = {
@@ -118,7 +118,7 @@ class RegisterApiTest : ApiTest {
             }
         )
         TODO()
-        //val registerApi: RegisterApi = RegisterApiImpl(httpClient)
+        //val registerApi: RegisterApi = RegisterApiImpl(networkClient)
         //val result = registerApi.activate(VALID_ACTIVATE_EMAIL.serializableData, TEST_HOST)
 
         //assertIs<NetworkResponse.Success<UserDTO>>(result)
@@ -128,7 +128,7 @@ class RegisterApiTest : ApiTest {
 
     @Test
     fun givenActivationCodeFail_thenErrorIsPropagated() = runTest {
-        val httpClient = mockUnauthenticatedHttpClient(
+        val networkClient = mockUnauthenticatedNetworkClient(
             ERROR_RESPONSE.rawJson,
             statusCode = HttpStatusCode.BadRequest,
             assertion = {
@@ -142,7 +142,7 @@ class RegisterApiTest : ApiTest {
             }
         )
         TODO()
-        //val registerApi: RegisterApi = RegisterApiImpl(httpClient)
+        //val registerApi: RegisterApi = RegisterApiImpl(networkClient)
         //val result = registerApi.activate(VALID_ACTIVATE_EMAIL.serializableData, TEST_HOST)
 
         //assertIs<NetworkResponse.Error>(result)

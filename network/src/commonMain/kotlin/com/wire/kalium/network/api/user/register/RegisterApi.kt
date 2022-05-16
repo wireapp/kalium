@@ -1,5 +1,6 @@
 package com.wire.kalium.network.api.user.register
 
+import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.api.RefreshTokenProperties
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.model.AccessTokenDTO
@@ -11,7 +12,6 @@ import com.wire.kalium.network.utils.flatMap
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.setUrl
 import com.wire.kalium.network.utils.wrapKaliumResponse
-import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -120,9 +120,11 @@ interface RegisterApi {
 }
 
 
-class RegisterApiImpl(
-    private val httpClient: HttpClient
+class RegisterApiImpl internal constructor(
+    private val unauthenticatedNetworkClient: UnauthenticatedNetworkClient
 ) : RegisterApi {
+
+    private val httpClient get() = unauthenticatedNetworkClient.httpClient
 
     private suspend fun getToken(refreshToken: String, apiBaseUrl: String): NetworkResponse<AccessTokenDTO> = wrapKaliumResponse {
         httpClient.post {
