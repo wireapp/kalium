@@ -1,15 +1,20 @@
 package com.wire.kalium.network.api.asset
 
+import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
-import io.ktor.client.*
-import io.ktor.client.request.*
+import io.ktor.client.request.get
+import io.ktor.client.request.header
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.utils.io.charsets.Charsets.UTF_8
 import io.ktor.utils.io.core.toByteArray
 
-class AssetApiImpl(private val httpClient: HttpClient) : AssetApi {
+class AssetApiImpl internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : AssetApi {
+
+    private val httpClient get() = authenticatedNetworkClient.httpClient
 
     /**
      * Downloads an asset
@@ -26,12 +31,13 @@ class AssetApiImpl(private val httpClient: HttpClient) : AssetApi {
      * @param metadata the metadata associated to the asset that wants to be uploaded
      * @param encryptedData the encrypted data on a ByteArray shape
      */
-    override suspend fun uploadAsset(metadata: AssetMetadataRequest, encryptedData: ByteArray): NetworkResponse<AssetResponse> = wrapKaliumResponse {
-        httpClient.post(PATH_PUBLIC_ASSETS) {
-            contentType(ContentType.MultiPart.Mixed)
-            setBody(provideAssetRequestBody(metadata, encryptedData))
+    override suspend fun uploadAsset(metadata: AssetMetadataRequest, encryptedData: ByteArray): NetworkResponse<AssetResponse> =
+        wrapKaliumResponse {
+            httpClient.post(PATH_PUBLIC_ASSETS) {
+                contentType(ContentType.MultiPart.Mixed)
+                setBody(provideAssetRequestBody(metadata, encryptedData))
+            }
         }
-    }
 
     private fun provideAssetRequestBody(metadata: AssetMetadataRequest, encryptedData: ByteArray): ByteArray {
         val body = StringBuilder()

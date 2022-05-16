@@ -15,14 +15,14 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class SSOLoginApiTest: ApiTest {
+class SSOLoginApiTest : ApiTest {
 
     @Test
     fun givenBEResponseSuccess_whenCallingInitiateSSOEndpointWithNoRedirect_thenRequestConfiguredCorrectly() = runTest {
         val uuid = "uuid"
         val param = SSOLoginApi.InitiateParam.WithoutRedirect(uuid)
         val expectedPath = "$PATH_SSO_INITIATE/$uuid"
-        val httpClient = mockAuthenticatedHttpClient(
+        val networkClient = mockUnauthenticatedNetworkClient(
             "",
             statusCode = HttpStatusCode.OK,
             assertion = {
@@ -31,7 +31,7 @@ class SSOLoginApiTest: ApiTest {
                 assertPathEqual(expectedPath)
             }
         )
-        val ssoApi: SSOLoginApi = SSOLoginApiImpl(httpClient)
+        val ssoApi: SSOLoginApi = SSOLoginApiImpl(networkClient)
         val actual = ssoApi.initiate(param, TEST_HOST)
 
         assertIs<NetworkResponse.Success<String>>(actual)
@@ -43,7 +43,7 @@ class SSOLoginApiTest: ApiTest {
         val uuid = "uuid"
         val param = SSOLoginApi.InitiateParam.WithRedirect(uuid = uuid, success = "wire://success", error = "wire://error")
         val expectedPathAndQuery = "$PATH_SSO_INITIATE/$uuid?success_redirect=wire%3A%2F%2Fsuccess&error_redirect=wire%3A%2F%2Ferror"
-        val httpClient = mockAuthenticatedHttpClient(
+        val networkClient = mockUnauthenticatedNetworkClient(
             "",
             statusCode = HttpStatusCode.OK,
             assertion = {
@@ -51,7 +51,7 @@ class SSOLoginApiTest: ApiTest {
                 assertPathAndQueryEqual(expectedPathAndQuery)
             }
         )
-        val ssoApi: SSOLoginApi = SSOLoginApiImpl(httpClient)
+        val ssoApi: SSOLoginApi = SSOLoginApiImpl(networkClient)
         val actual = ssoApi.initiate(param, TEST_HOST)
 
         assertIs<NetworkResponse.Success<String>>(actual)
@@ -61,7 +61,7 @@ class SSOLoginApiTest: ApiTest {
     @Test
     fun givenBEResponseSuccess_whenCallingFinalizeSSOEndpointWithRedirect_thenRequestConfiguredCorrectly() = runTest {
         val cookie = "cookie"
-        val httpClient = mockAuthenticatedHttpClient(
+        val networkClient = mockUnauthenticatedNetworkClient(
             "",
             statusCode = HttpStatusCode.OK,
             assertion = {
@@ -70,7 +70,7 @@ class SSOLoginApiTest: ApiTest {
                 assertPathEqual(PATH_SSO_FINALIZE)
             }
         )
-        val ssoApi: SSOLoginApi = SSOLoginApiImpl(httpClient)
+        val ssoApi: SSOLoginApi = SSOLoginApiImpl(networkClient)
         val actual = ssoApi.finalize(cookie, TEST_HOST)
 
         assertIs<NetworkResponse.Success<String>>(actual)

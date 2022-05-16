@@ -11,8 +11,7 @@ interface GetKnownUserUseCase {
 
 class GetKnownUserUseCaseImpl(private val userRepository: UserRepository) : GetKnownUserUseCase {
 
-    //TODO: once we return Either here we could map the fact that the user is nullable to custom error
-    // indicating it for example . NoUserFound
+    //TODO(qol): Better handle nullable OtherUser?
     override suspend fun invoke(userId: UserId): Flow<OtherUser?> = userRepository.getKnownUser(userId)
 
 }

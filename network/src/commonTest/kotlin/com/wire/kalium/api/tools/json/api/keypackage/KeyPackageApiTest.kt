@@ -15,7 +15,7 @@ class KeyPackageApiTest: ApiTest {
 
     @Test
     fun givenAValidClientId_whenCallingGetAvailableKeyPackageCountEndpoint_theRequestShouldBeConfiguredCorrectly() = runTest {
-        val httpClient = mockAuthenticatedHttpClient(
+        val networkClient = mockAuthenticatedNetworkClient(
             KEY_PACKAGE_COUNT.toString(),
             statusCode = HttpStatusCode.OK,
             assertion = {
@@ -23,7 +23,7 @@ class KeyPackageApiTest: ApiTest {
                 assertPathEqual(KEY_PACKAGE_COUNT_PATH)
             }
         )
-        val keyPackageApi: KeyPackageApi = KeyPackageApiImpl(httpClient)
+        val keyPackageApi: KeyPackageApi = KeyPackageApiImpl(networkClient)
 
         val response = keyPackageApi.getAvailableKeyPackageCount(VALID_CLIENT_ID)
         assertTrue(response.isSuccessful())
@@ -32,7 +32,7 @@ class KeyPackageApiTest: ApiTest {
 
     @Test
     fun givenAValidClientId_whenCallingUploadKeyPackagesEndpoint_theRequestShouldBeConfiguredCorrectly() = runTest {
-        val httpClient = mockAuthenticatedHttpClient(
+        val networkClient = mockAuthenticatedNetworkClient(
             "",
             statusCode = HttpStatusCode.Created,
             assertion = {
@@ -41,7 +41,7 @@ class KeyPackageApiTest: ApiTest {
                 assertPathEqual(KEY_PACKAGE_UPLOAD_PATH)
             }
         )
-        val keyPackageApi: KeyPackageApi = KeyPackageApiImpl(httpClient)
+        val keyPackageApi: KeyPackageApi = KeyPackageApiImpl(networkClient)
 
         val response = keyPackageApi.uploadKeyPackages(VALID_CLIENT_ID, listOf(VALID_KEY_PACKAGE))
         assertTrue(response.isSuccessful())
@@ -49,7 +49,7 @@ class KeyPackageApiTest: ApiTest {
 
     @Test
     fun givenAValidClientId_whenCallingClaimKeyPackagesEndpoint_theRequestShouldBeConfiguredCorrectly() = runTest {
-        val httpClient = mockAuthenticatedHttpClient(
+        val networkClient = mockAuthenticatedNetworkClient(
             KeyPackageJson.valid.rawJson,
             statusCode = HttpStatusCode.OK,
             assertion = {
@@ -57,7 +57,7 @@ class KeyPackageApiTest: ApiTest {
                 assertPathEqual(KEY_PACKAGE_CLAIM_PATH)
             }
         )
-        val keyPackageApi: KeyPackageApi = KeyPackageApiImpl(httpClient)
+        val keyPackageApi: KeyPackageApi = KeyPackageApiImpl(networkClient)
 
         val response = keyPackageApi.claimKeyPackages(VALID_USER_ID)
         assertTrue(response.isSuccessful())

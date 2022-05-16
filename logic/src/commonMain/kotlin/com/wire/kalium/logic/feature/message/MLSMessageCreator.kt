@@ -28,7 +28,7 @@ class MLSMessageCreatorImpl(
         return mlsClientProvider.getMLSClient().flatMap { client ->
             kaliumLogger.i("Creating outgoing MLS message (groupID = $groupId)")
             val content = protoContentMapper.encodeToProtobuf(ProtoContent(message.id, message.content))
-            val encryptedContent = client.encryptMessage(groupId, content.data) // TODO handle MLS errors
+            val encryptedContent = client.encryptMessage(groupId, content.data) // TODO(mls): handle MLS errors
             Either.Right(MLSMessageApi.Message(encryptedContent))
         }
     }

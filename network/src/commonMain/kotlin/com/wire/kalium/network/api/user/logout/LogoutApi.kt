@@ -1,10 +1,10 @@
 package com.wire.kalium.network.api.user.logout
 
+import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.RefreshTokenProperties
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
-import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -16,7 +16,12 @@ interface LogoutApi {
     suspend fun removeCookiesByLabels(removeCookiesByLabelsRequest: RemoveCookiesByLabels): NetworkResponse<Unit>
 }
 
-class LogoutImpl(private val httpClient: HttpClient, private val sessionManager: SessionManager) : LogoutApi {
+class LogoutImpl internal constructor(
+    private val authenticatedNetworkClient: AuthenticatedNetworkClient,
+    private val sessionManager: SessionManager
+) : LogoutApi {
+
+    private val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun logout(): NetworkResponse<Unit> = wrapKaliumResponse {
         httpClient.post("$PATH_ACCESS/$PATH_LOGOUT") {

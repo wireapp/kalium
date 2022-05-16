@@ -21,7 +21,7 @@ class LogoutApiTest : ApiTest {
     fun givenAValidRegisterLogoutRequest_whenCallingTheRegisterLogoutEndpoint_theRequestShouldBeConfiguredCorrectly() =
         runTest {
             val sessionManager = TEST_SESSION_NAMAGER
-            val httpClient = mockAuthenticatedHttpClient(
+            val networkClient = mockAuthenticatedNetworkClient(
                 "",
                 statusCode = HttpStatusCode.Created,
                 assertion = {
@@ -31,7 +31,7 @@ class LogoutApiTest : ApiTest {
                     assertHeaderEqual(HttpHeaders.Cookie, "zuid=${sessionManager.session().first.refreshToken}")
                 }
             )
-            val logout: LogoutApi = LogoutImpl(httpClient, sessionManager)
+            val logout: LogoutApi = LogoutImpl(networkClient, sessionManager)
             logout.logout()
         }
 
@@ -39,11 +39,11 @@ class LogoutApiTest : ApiTest {
     fun givenTheServerReturnsAnError_whenCallingTheLogoutEndpoint_theCorrectExceptionIsThrown() = runTest {
         val sessionManager = TEST_SESSION_NAMAGER
 
-        val httpClient = mockAuthenticatedHttpClient(
+        val networkClient = mockAuthenticatedNetworkClient(
             ERROR_RESPONSE.rawJson,
             statusCode = HttpStatusCode.BadRequest
         )
-        val logout: LogoutApi = LogoutImpl(httpClient, sessionManager)
+        val logout: LogoutApi = LogoutImpl(networkClient, sessionManager)
         val errorResponse = logout.logout()
         assertFalse(errorResponse.isSuccessful())
         assertTrue(errorResponse.kException is KaliumException.InvalidRequestError)
