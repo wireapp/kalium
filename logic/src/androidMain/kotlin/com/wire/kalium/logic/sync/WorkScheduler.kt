@@ -61,7 +61,8 @@ class WrapperWorker(private val innerWorker: UserSessionWorker, appContext: Cont
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun createNotificationChannel(): NotificationChannel {
-        //TODO(ui-polishing): Internationalis(z)ation. Should come as a side-effect of enabling customization of notifications by consumer apps
+        //TODO(ui-polishing): Internationalis(z)ation. Should come as a
+        //                    side-effect of enabling customization of notifications by consumer apps
         val name = "Wire Sync"
         val descriptionText = "Updating conversations and contact information"
         val importance = NotificationManager.IMPORTANCE_NONE
