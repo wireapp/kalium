@@ -15,7 +15,7 @@ internal class PendingMessagesSenderWorker(
     private val messageRepository: MessageRepository,
     private val messageSender: MessageSender,
     private val userId: UserId
-) : DefaultWorker() {
+) : DefaultWorker {
 
     /**
      * Attempt to send all pending messages for the user.

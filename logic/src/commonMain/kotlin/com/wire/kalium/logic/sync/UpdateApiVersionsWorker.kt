@@ -6,7 +6,7 @@ import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCase
 class UpdateApiVersionsWorker(
     private val apiVersionCheckManager: ApiVersionCheckManager,
     private val updateApiVersionsUseCase: UpdateApiVersionsUseCase
-) : DefaultWorker() {
+) : DefaultWorker {
 
     override suspend fun doWork(): Result {
         apiVersionCheckManager.changeState(ApiVersionCheckState.Running)

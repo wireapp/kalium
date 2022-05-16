@@ -7,7 +7,6 @@ sealed class Result {
     object Retry : Result()
 }
 
-abstract class DefaultWorker {
-
-    abstract suspend fun doWork(): Result
+interface DefaultWorker {
+    suspend fun doWork(): Result
 }
