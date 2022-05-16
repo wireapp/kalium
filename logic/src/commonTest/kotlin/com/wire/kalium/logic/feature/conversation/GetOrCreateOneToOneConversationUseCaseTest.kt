@@ -83,7 +83,15 @@ class GetOrCreateOneToOneConversationUseCaseTest {
         val USER_ID = UserId(value = "userId", domain = "domainId")
         val MEMBER = listOf(Member(USER_ID))
         val CONVERSATION_ID = ConversationId(value = "userId", domain = "domainId")
-        val CONVERSATION = Conversation(id = CONVERSATION_ID, name = null, type = ConversationEntity.Type.ONE_ON_ONE, teamId = null, MutedConversationStatus.AllAllowed, null, null)
+        val CONVERSATION = Conversation(
+            id = CONVERSATION_ID,
+            name = null,
+            type = Conversation.Type.ONE_ON_ONE,
+            teamId = null,
+            MutedConversationStatus.AllAllowed,
+            null,
+            null
+        )
         val OTHER_USER = OtherUser(
             id =
             USER_ID,

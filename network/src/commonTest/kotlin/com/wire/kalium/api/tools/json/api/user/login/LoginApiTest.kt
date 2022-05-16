@@ -10,7 +10,6 @@ import com.wire.kalium.network.api.model.UserDTO
 import com.wire.kalium.network.api.user.login.LoginApi
 import com.wire.kalium.network.api.user.login.LoginApiImpl
 import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -18,7 +17,6 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
@@ -50,7 +48,7 @@ class LoginApiTest : ApiTest {
                 assertHostEqual(TEST_HOST)
             }
         )
-        val httpClient = mockUnauthenticatedHttpClient(
+        val networkClient = mockUnauthenticatedNetworkClient(
             listOf(expectedLoginRequest, expectedSelfResponse)
         )
         val expected = with(VALID_ACCESS_TOKEN_RESPONSE.serializableData) {
@@ -61,7 +59,7 @@ class LoginApiTest : ApiTest {
                 refreshToken = refreshToken
             )
         }
-        val loginApi: LoginApi = LoginApiImpl(httpClient)
+        val loginApi: LoginApi = LoginApiImpl(networkClient)
 
         val response = loginApi.login(LOGIN_WITH_EMAIL_REQUEST.serializableData, false, TEST_HOST)
         assertTrue(response.isSuccessful(), message = response.toString())
@@ -70,11 +68,11 @@ class LoginApiTest : ApiTest {
 
     @Test
     fun givenTheServerReturnsAnError_whenCallingTheLoginEndpoint_thenExceptionIsPropagated() = runTest {
-        val httpClient = mockUnauthenticatedHttpClient(
+        val networkClient = mockUnauthenticatedNetworkClient(
             ErrorResponseJson.valid.rawJson,
             statusCode = HttpStatusCode.BadRequest
         )
-        val loginApi: LoginApi = LoginApiImpl(httpClient)
+        val loginApi: LoginApi = LoginApiImpl(networkClient)
 
         val errorResponse = loginApi.login(LOGIN_WITH_EMAIL_REQUEST.serializableData, false, TEST_HOST)
         assertFalse(errorResponse.isSuccessful())
@@ -95,10 +93,10 @@ class LoginApiTest : ApiTest {
             responseBody = ErrorResponseJson.valid.rawJson,
             statusCode = HttpStatusCode.BadRequest
         )
-        val httpClient = mockUnauthenticatedHttpClient(
+        val networkClient = mockUnauthenticatedNetworkClient(
             listOf(expectedLoginRequest, expectedSelfResponse)
         )
-        val loginApi: LoginApi = LoginApiImpl(httpClient)
+        val loginApi: LoginApi = LoginApiImpl(networkClient)
 
         val errorResponse = loginApi.login(LOGIN_WITH_EMAIL_REQUEST.serializableData, false, TEST_HOST)
         assertFalse(errorResponse.isSuccessful())

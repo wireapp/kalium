@@ -25,7 +25,7 @@ class EnvelopeProtoMapperImpl: EnvelopeProtoMapper {
         return Otr.QualifiedNewOtrMessage.newBuilder()
             .addAllRecipients(qualifiedEntries)
             .setSender(otrClientIdMapper.toOtrClientId(envelopeParameters.sender))
-            //TODO Handle different report types, remote push, etc.
+            //TODO(messaging): Handle different report types, remote push, etc.
             .setReportAll(Otr.ClientMismatchStrategy.ReportAll.newBuilder().build())
             .build()
             .toByteArray()

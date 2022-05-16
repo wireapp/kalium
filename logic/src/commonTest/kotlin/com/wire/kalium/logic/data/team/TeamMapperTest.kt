@@ -1,6 +1,6 @@
 package com.wire.kalium.logic.data.team
 
-import com.wire.kalium.network.utils.generator.TeamGenerator
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.persistence.dao.TeamEntity
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -18,7 +18,7 @@ class TeamMapperTest {
 
     @Test
     fun givenTeamApiModel_whenMappingFromApiResponse_thenDaoModelIsReturned() = runTest {
-        val apiModel = TeamGenerator.createTeam(
+        val apiModel = TestTeam.dto(
             id = "teamId",
             name = "teamName"
         )

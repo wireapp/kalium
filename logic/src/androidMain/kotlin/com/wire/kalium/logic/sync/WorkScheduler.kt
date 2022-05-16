@@ -58,21 +58,22 @@ class WrapperWorker(private val innerWorker: DefaultWorker, appContext: Context,
         }
     }
 
-    //TODO: Add support for customization of foreground info when doing work on Android
+    //TODO(ui-polishing): Add support for customization of foreground info when doing work on Android
     override suspend fun getForegroundInfo(): ForegroundInfo {
         val notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Notification.Builder(applicationContext, createNotificationChannel().id)
         } else {
             Notification.Builder(applicationContext)
         }.setContentTitle(NOTIFICATION_TITLE)
-            .setSmallIcon(R.mipmap.ic_launcher) //TODO: Customize icons too
+            .setSmallIcon(R.mipmap.ic_launcher) //TODO(ui-polishing): Customize icons too
             .build()
         return ForegroundInfo(NOTIFICATION_ID, notification)
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun createNotificationChannel(): NotificationChannel {
-        //TODO: Internationalis(z)ation. Should come as a side-effect of enabling customization of notifications by consumer apps
+        //TODO(ui-polishing): Internationalis(z)ation. Should come as a
+        //                    side-effect of enabling customization of notifications by consumer apps
         val name = "Wire Sync"
         val descriptionText = "Updating conversations and contact information"
         val importance = NotificationManager.IMPORTANCE_NONE
