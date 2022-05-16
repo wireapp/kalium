@@ -110,7 +110,8 @@ class MessageMapperImpl(private val idMapper: IdMapper, private val assetMapper:
 
         return when (message.content) {
             is MessageContent.Text -> LocalNotificationMessage.Text(author, time, message.content.value)
-            else -> LocalNotificationMessage.Text(author, time, "Something not a text") //TODO
+            // TODO(notifications): Handle other message types
+            else -> LocalNotificationMessage.Text(author, time, "Something not a text")
         }
     }
 }

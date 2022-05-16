@@ -109,7 +109,8 @@ actual class UserDatabaseProvider(private val context: Context, userId: UserIDEn
     actual fun nuke(): Boolean = DBUtil.deleteDB(driver, context, dbName)
 
     companion object {
-        // FIXME: the same key is used to enc/dec all user DBs
+        // FIXME(IMPORTANT): The same key is used to enc/dec all user DBs
+        //                   Pain in the ass to migrate after release
         private const val DATABASE_SECRET_KEY = "user-db-secret"
     }
 }
