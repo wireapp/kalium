@@ -1,5 +1,7 @@
 package com.wire.kalium.logic.feature.auth
 
+import com.wire.kalium.logic.configuration.UserConfigDataSource
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.configuration.server.ServerConfigDataSource
@@ -27,9 +29,11 @@ import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCase
 import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCaseImpl
 import com.wire.kalium.logic.feature.session.GetSessionsUseCase
 import com.wire.kalium.logic.feature.session.SessionScope
-import com.wire.kalium.network.LoginNetworkContainer
+import com.wire.kalium.network.UnauthenticatedNetworkContainer
 import com.wire.kalium.persistence.client.TokenStorage
 import com.wire.kalium.persistence.client.TokenStorageImpl
+import com.wire.kalium.persistence.client.UserConfigStorage
+import com.wire.kalium.persistence.client.UserConfigStorageImpl
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 
@@ -38,34 +42,36 @@ class AuthenticationScope(
     private val globalPreferences: KaliumPreferences
 ) {
 
-    protected val loginNetworkContainer: LoginNetworkContainer by lazy {
-        LoginNetworkContainer()
+    private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
+        UnauthenticatedNetworkContainer()
     }
     private val serverConfigMapper: ServerConfigMapper get() = ServerConfigMapperImpl()
     private val idMapper: IdMapper get() = IdMapperImpl()
     private val sessionMapper: SessionMapper get() = SessionMapperImpl(serverConfigMapper, idMapper)
 
     private val tokenStorage: TokenStorage get() = TokenStorageImpl(globalPreferences)
+    private val userConfigStorage: UserConfigStorage get() = UserConfigStorageImpl(globalPreferences)
 
     private val serverConfigUtil: ServerConfigUtil get() = ServerConfigUtilImpl
 
 
     private val serverConfigRepository: ServerConfigRepository
         get() = ServerConfigDataSource(
-            loginNetworkContainer.serverConfigApi,
+            unauthenticatedNetworkContainer.serverConfigApi,
             globalDatabase.serverConfigurationDAO,
-            loginNetworkContainer.remoteVersion,
+            unauthenticatedNetworkContainer.remoteVersion,
             serverConfigUtil
         )
 
-    private val loginRepository: LoginRepository get() = LoginRepositoryImpl(loginNetworkContainer.loginApi, clientLabel)
+    private val loginRepository: LoginRepository get() = LoginRepositoryImpl(unauthenticatedNetworkContainer.loginApi, clientLabel)
     private val notificationTokenRepository: NotificationTokenRepository get() = NotificationTokenDataSource(tokenStorage)
+    private val userConfigRepository: UserConfigRepository get() = UserConfigDataSource(userConfigStorage)
 
     private val registerAccountRepository: RegisterAccountRepository
         get() = RegisterAccountDataSource(
-            loginNetworkContainer.registerApi
+            unauthenticatedNetworkContainer.registerApi
         )
-    private val ssoLoginRepository: SSOLoginRepository get() = SSOLoginRepositoryImpl(loginNetworkContainer.sso)
+    private val ssoLoginRepository: SSOLoginRepository get() = SSOLoginRepositoryImpl(unauthenticatedNetworkContainer.sso)
 
     val validateEmailUseCase: ValidateEmailUseCase get() = ValidateEmailUseCaseImpl()
     val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
@@ -80,5 +86,4 @@ class AuthenticationScope(
     val register: RegisterScope get() = RegisterScope(registerAccountRepository)
     val ssoLoginScope: SSOLoginScope get() = SSOLoginScope(ssoLoginRepository, sessionMapper)
     val saveNotificationToken: SaveNotificationTokenUseCase get() = SaveNotificationTokenUseCase(notificationTokenRepository)
-
 }

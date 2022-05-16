@@ -14,7 +14,7 @@ class ConversationApiTest : ApiTest {
 
     @Test
     fun givenACreateNewConversationRequest_whenCallingCreateNewConversation_thenTheRequestShouldBeConfiguredCorrectly() = runTest {
-        val httpClient = mockAuthenticatedHttpClient(
+        val networkClient = mockAuthenticatedNetworkClient(
             CREATE_CONVERSATION_RESPONSE,
             statusCode = HttpStatusCode.Created,
             assertion = {
@@ -24,7 +24,7 @@ class ConversationApiTest : ApiTest {
                 assertBodyContent(CREATE_CONVERSATION_REQUEST.rawJson)
             }
         )
-        val conversationApi: ConversationApi = ConversationApiImpl(httpClient)
+        val conversationApi: ConversationApi = ConversationApiImpl(networkClient)
         val result = conversationApi.createNewConversation(CREATE_CONVERSATION_REQUEST.serializableData)
 
         assertTrue(result.isSuccessful())
@@ -34,7 +34,7 @@ class ConversationApiTest : ApiTest {
     fun givenARequestToUpdateMuteStatus_whenCallingUpdateConversationState_thenTheRequestShouldBeOK() = runTest {
         val conversationId = "conv-id"
         val domain = "domain"
-        val httpClient = mockAuthenticatedHttpClient(
+        val networkClient = mockAuthenticatedNetworkClient(
             responseBody = "",
             statusCode = HttpStatusCode.OK,
             assertion = {
@@ -45,7 +45,7 @@ class ConversationApiTest : ApiTest {
             }
         )
 
-        val conversationApi = ConversationApiImpl(httpClient)
+        val conversationApi = ConversationApiImpl(networkClient)
         val result = conversationApi.updateConversationMemberState(
             MEMBER_UPDATE_REQUEST.serializableData, ConversationId(conversationId, domain)
         )

@@ -9,13 +9,13 @@ class SaveNotificationTokenUseCase(
     private val notificationTokenRepository: NotificationTokenRepository
 ) {
 
-    operator fun invoke(token: String, type: String) {
+    operator fun invoke(token: String, type: String): Result =
         notificationTokenRepository.persistNotificationToken(token, type).fold({
             Result.Failure.Generic(it)
         }, {
             Result.Success
         })
-    }
+
 
     sealed class Result {
         object Success : Result()

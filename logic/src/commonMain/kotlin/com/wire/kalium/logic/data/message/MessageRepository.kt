@@ -28,7 +28,6 @@ interface MessageRepository {
     suspend fun getMessagesForConversation(conversationId: ConversationId, limit: Int, offset: Int): Flow<List<Message>>
     suspend fun persistMessage(message: Message): Either<CoreFailure, Unit>
     suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
-    suspend fun deleteMessage(messageUuid: String): Either<CoreFailure, Unit>
     suspend fun markMessageAsDeleted(messageUuid: String, conversationId: ConversationId): Either<StorageFailure, Unit>
     suspend fun updateMessageStatus(
         messageStatus: MessageEntity.Status,
@@ -69,27 +68,19 @@ class MessageDataSource(
         }
     }
 
-    override suspend fun persistMessage(message: Message): Either<CoreFailure, Unit> {
+    override suspend fun persistMessage(message: Message): Either<CoreFailure, Unit> = wrapStorageRequest {
         messageDAO.insertMessage(messageMapper.fromMessageToEntity(message))
-        //TODO: Handle failures
-        return Either.Right(Unit)
     }
 
-    override suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit> {
-        messageDAO.deleteMessage(messageUuid, idMapper.toDaoModel(conversationId))
-        //TODO: Handle failures
-        return Either.Right(Unit)
-    }
+    override suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit> =
+        wrapStorageRequest {
+            messageDAO.deleteMessage(messageUuid, idMapper.toDaoModel(conversationId))
+        }
 
-    override suspend fun deleteMessage(messageUuid: String): Either<CoreFailure, Unit> {
-        messageDAO.deleteMessage(messageUuid)
-        //TODO: Handle failures
-        return Either.Right(Unit)
-    }
-
-    override suspend fun markMessageAsDeleted(messageUuid: String, conversationId: ConversationId): Either<StorageFailure, Unit> = wrapStorageRequest {
-        messageDAO.markMessageAsDeleted(id = messageUuid)
-    }
+    override suspend fun markMessageAsDeleted(messageUuid: String, conversationId: ConversationId): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            messageDAO.markMessageAsDeleted(id = messageUuid, conversationsId = idMapper.toDaoModel(conversationId))
+        }
 
     override suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message> =
         wrapStorageRequest {
@@ -132,7 +123,7 @@ class MessageDataSource(
         }
         return wrapApiRequest {
             messageApi.qualifiedSendMessage(
-                //TODO Handle other MessageOptions, native push, transient and priorities
+                //TODO(messaging): Handle other MessageOptions, native push, transient and priorities
                 MessageApi.Parameters.QualifiedDefaultParameters(
                     envelope.senderClientId.value,
                     recipientMap, true, MessagePriority.HIGH, false, null, MessageApi.QualifiedMessageOption.ReportAll

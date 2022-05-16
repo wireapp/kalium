@@ -5,8 +5,6 @@ import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
 
 interface CallManager {
     suspend fun onCallingMessageReceived(message: Message, content: MessageContent.Calling)
@@ -15,27 +13,12 @@ interface CallManager {
         callType: CallType,
         conversationType: ConversationType,
         isAudioCbr: Boolean = false
-    ) //TODO Audio CBR
+    ) //TODO(calling): Audio CBR
 
     suspend fun answerCall(conversationId: ConversationId)
     suspend fun endCall(conversationId: ConversationId)
     suspend fun rejectCall(conversationId: ConversationId)
     suspend fun muteCall(shouldMute: Boolean)
-    val allCalls: StateFlow<List<Call>>
 }
 
 expect class CallManagerImpl : CallManager
-
-val CallManager.incomingCalls
-    get() = allCalls.map {
-        it.filter { call ->
-            call.status in listOf(
-                CallStatus.INCOMING
-            )
-        }
-    }
-
-val CallManager.ongoingCall
-    get() = allCalls.map {
-        it.filter { call -> call.status == CallStatus.ESTABLISHED }
-    }

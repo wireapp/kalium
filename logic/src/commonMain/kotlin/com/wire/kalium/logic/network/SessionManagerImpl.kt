@@ -20,14 +20,14 @@ class SessionManagerImpl(
     private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
 ) : SessionManager {
     override fun session(): Pair<SessionDTO, ServerConfigDTO> = sessionRepository.userSession(userId).fold({
-        TODO("no session is stored to the user")
+        TODO("IMPORTANT! Not yet implemented")
     }, { session ->
         Pair(sessionMapper.toSessionDTO(session), serverConfigMapper.toDTO(session.serverConfig))
     })
 
     override fun updateSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO =
         sessionRepository.userSession(userId).fold({
-            TODO("no session is stored to the user")
+            TODO("IMPORTANT! Not yet implemented")
         }, { authSession ->
             AuthSession(
                 authSession.userId,
@@ -42,6 +42,6 @@ class SessionManagerImpl(
         })
 
     override fun onSessionExpired() {
-        TODO("Not yet implemented")
+        TODO("IMPORTANT! Not yet implemented")
     }
 }

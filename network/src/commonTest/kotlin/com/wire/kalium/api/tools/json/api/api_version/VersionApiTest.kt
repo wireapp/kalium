@@ -20,7 +20,7 @@ class VersionApiTest : ApiTest {
     fun givenSuccessResponse_whenFetchingSupportedRemoteVersion_thenRequestIsConfigureCorrectly() = runTest {
 
         val expected = VersionInfoDTOJson.valid.serializableData
-        val httpClient = mockUnauthenticatedHttpClient(
+        val httpClient = mockUnauthenticatedNetworkClient(
             responseBody = VersionInfoDTOJson.valid.rawJson,
             statusCode = HttpStatusCode.OK,
             assertion = {
@@ -41,7 +41,7 @@ class VersionApiTest : ApiTest {
     @Test
     fun given404Response_whenFetchingSupportedRemoteVersion_thenResultIsApiVersion0AndFederationFalse() = runTest {
         val expected = VersionInfoDTOJson.valid404Result
-        val httpClient = mockUnauthenticatedHttpClient(
+        val httpClient = mockUnauthenticatedNetworkClient(
             responseBody = "can be what ever",
             statusCode = HttpStatusCode.NotFound
         )

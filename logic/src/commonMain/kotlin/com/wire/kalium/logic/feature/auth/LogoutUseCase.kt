@@ -23,7 +23,7 @@ class LogoutUseCase @Suppress("LongParameterList") constructor(
     private val userSessionScopeProvider: UserSessionScopeProvider = UserSessionScopeProviderImpl
 ) {
     suspend operator fun invoke() {
-        //TODO deregister push notification token
+        //TODO(important): deregister push notification token
         logoutRepository.logout()
         clearCrypto()
         clearUserStorage()

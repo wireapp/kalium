@@ -110,7 +110,7 @@ class MessageSenderImpl(
                     attemptToSendWithMLS(protocolInfo.groupId, message)
                 }
                 is ConversationEntity.ProtocolInfo.Proteus -> {
-                    // TODO: make this thread safe (per user)
+                    // TODO(messaging): make this thread safe (per user)
                     attemptToSendWithProteus(message)
                 }
             }
@@ -122,7 +122,7 @@ class MessageSenderImpl(
             sessionEstablisher.prepareRecipientsForNewOutgoingMessage(recipients).map { recipients }
         }.flatMap { recipients ->
             messageEnvelopeCreator.createOutgoingEnvelope(recipients, message).flatMap { envelope ->
-                trySendingProteusEnvelope(conversationId, envelope, message)
+                trySendingProteusEnvelope(envelope, message)
             }
         }
     }
@@ -131,9 +131,9 @@ class MessageSenderImpl(
         groupId: String,
         message: Message
     ): Either<CoreFailure, String> = mlsMessageCreator.createOutgoingMLSMessage(groupId, message).flatMap { mlsMessage ->
-        // TODO handle mls-stale-message
+        // TODO(mls): handle mls-stale-message
         messageRepository.sendMLSMessage(message.conversationId, mlsMessage).map {
-            message.date //TODO return actual server time from the response
+            message.date //TODO(mls): return actual server time from the response
         }
     }
 
@@ -142,10 +142,9 @@ class MessageSenderImpl(
      * Will handle the failure and retry in case of [ProteusSendMessageFailure].
      */
     private suspend fun trySendingProteusEnvelope(
-        conversationId: ConversationId,
         envelope: MessageEnvelope,
         message: Message,
-    ): Either<CoreFailure, String> = messageRepository.sendEnvelope(conversationId, envelope).fold({
+    ): Either<CoreFailure, String> = messageRepository.sendEnvelope(message.conversationId, envelope).fold({
         when (it) {
             is ProteusSendMessageFailure -> messageSendFailureHandler.handleClientsHaveChangedFailure(it).flatMap {
                 attemptToSend(message)
