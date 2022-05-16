@@ -20,12 +20,12 @@ object ServerConfigUtilImpl : ServerConfigUtil {
         }
 
     private fun handleNoCommonVersion(serverVersion: List<Int>, appVersion: Set<Int>): Either.Left<ServerConfigFailure> {
-        return try {
-            val maxBEVersion = serverVersion.maxOrNull()!!
-            val maxAppVersion = appVersion.maxOrNull()!!
-            if (maxBEVersion > maxAppVersion) Either.Left(ServerConfigFailure.NewServerVersion)
-            else Either.Left(ServerConfigFailure.UnknownServerVersion)
-        } catch (e: NullPointerException) {
+        return serverVersion.maxOrNull()?.let { maxBEVersion ->
+            appVersion.maxOrNull()?.let { maxAppVersion ->
+                if (maxBEVersion > maxAppVersion) Either.Left(ServerConfigFailure.NewServerVersion)
+                else Either.Left(ServerConfigFailure.UnknownServerVersion)
+            }
+        } ?: run {
             kaliumLogger.w("empty app/server config list")
             Either.Left(ServerConfigFailure.UnknownServerVersion)
         }
