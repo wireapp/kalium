@@ -7,6 +7,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.TeamId
 import com.wire.kalium.network.api.teams.TeamsApi
 import com.wire.kalium.persistence.dao.TeamDAO
@@ -59,9 +60,9 @@ internal class TeamDataSource(
             listOf()
         }
     }.flatMap { teamMembers ->
-        // TODO: catch storage exceptions: https://github.com/wireapp/kalium/pull/275
-        userDAO.insertUsers(teamMembers)
-        Either.Right(Unit)
+        wrapStorageRequest {
+            userDAO.insertUsers(teamMembers)
+        }
     }
 
     override suspend fun getTeam(teamId: TeamId): Flow<Team?> =

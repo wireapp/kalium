@@ -55,7 +55,7 @@ data class Recipient(val member: Member, val clients: List<ClientId>)
 enum class UserType {
     INTERNAL,
 
-    // TODO : for now External will not be implemented
+    // TODO(user-metadata): for now External will not be implemented
     /**Team member with limited permissions */
     EXTERNAL,
 

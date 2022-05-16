@@ -24,7 +24,7 @@ interface UserMapper {
      * Maps the user data to be updated. if the parameters [newName] [newAccent] [newAssetId] are nulls,
      * it indicates that not updation should be made.
      *
-     *  TODO: handle deletion of assets references, emptyAssetList
+     *  TODO(assets): handle deletion of assets references, emptyAssetList
      */
     fun fromModelToUpdateApiModel(user: SelfUser, newName: String?, newAccent: Int?, newAssetId: String?): UserUpdateRequest
     fun fromUpdateRequestToDaoModel(user: SelfUser, updateRequest: UserUpdateRequest): UserEntity

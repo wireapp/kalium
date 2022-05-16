@@ -60,7 +60,7 @@ class LoginApiImpl internal constructor(
             }.mapSuccess { Pair(accessTokenDTOResponse.value, it) }
         }.flatMap { tokensPairResponse ->
             // this is a hack to get the user QualifiedUserId on login
-            // TODO: remove this one when login endpoint return a QualifiedUserId
+            // TODO(optimization): remove this one when login endpoint return a QualifiedUserId
             wrapKaliumResponse<UserDTO> {
                 httpClient.get {
                     setUrl(Url(apiBaseUrl), PATH_SELF)

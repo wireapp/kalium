@@ -17,7 +17,7 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 
-//TODO create unit test
+//TODO(testing): create unit test
 class OnHttpRequest(
     private val handle: Deferred<Handle>,
     private val calling: Calling,
@@ -45,7 +45,7 @@ class OnHttpRequest(
                     is Either.Left -> {
                         calling.wcall_resp(
                             inst = handle.await(),
-                            status = 400, // TODO: Handle the errorCode from CoreFailure
+                            status = 400, // TODO(calling): Handle the errorCode from CoreFailure
                             reason = "Couldn't send Calling Message",
                             arg = context
                         )
