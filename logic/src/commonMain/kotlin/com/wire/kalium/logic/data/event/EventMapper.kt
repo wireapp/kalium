@@ -8,7 +8,7 @@ import com.wire.kalium.network.api.notification.EventResponse
 class EventMapper(private val idMapper: IdMapper) {
 
     fun fromDTO(eventResponse: EventResponse): List<Event> {
-        // FIXME: Multiple payloads in the same event have the same ID, is this an issue when marking lastProcessedEventId?
+        // TODO(edge-case): Multiple payloads in the same event have the same ID, is this an issue when marking lastProcessedEventId?
         val id = eventResponse.id
         return eventResponse.payload?.map { eventContentDTO ->
             when (eventContentDTO) {

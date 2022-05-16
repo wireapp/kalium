@@ -125,7 +125,7 @@ class RegisterClientUseCaseImpl(
             ).map { client }
         }
 
-    // TODO when https://github.com/wireapp/core-crypto/issues/11 is implemented we
+    // TODO(mls): when https://github.com/wireapp/core-crypto/issues/11 is implemented we
     // can remove registerMLSClient() and supply the MLS public key in registerClient().
     private suspend fun createMLSClient(client: Client): Either<CoreFailure, Client> =
         mlsClientProvider.getMLSClient(client.clientId)
