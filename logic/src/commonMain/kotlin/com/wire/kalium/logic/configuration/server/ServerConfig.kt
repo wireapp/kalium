@@ -114,14 +114,20 @@ class ServerConfigMapperImpl : ServerConfigMapper {
 }
 
 sealed class CommonApiVersionType(open val version: Int) {
-    object New : CommonApiVersionType(-1)
-    object Unknown : CommonApiVersionType(-2)
+    object New : CommonApiVersionType(NEW_API_VERSION_NUMBER)
+    object Unknown : CommonApiVersionType(UNKNOWN_API_VERSION_NUMBER)
     data class Valid(override val version: Int) : CommonApiVersionType(version)
+
+    companion object {
+        const val NEW_API_VERSION_NUMBER = -1
+        const val UNKNOWN_API_VERSION_NUMBER = -2
+        const val MINIMUM_VALID_API_VERSION = 0
+    }
 }
 
 fun Int?.toCommonApiVersionType() = when {
-    this != null && this >= 0 -> CommonApiVersionType.Valid(this)
-    this == -1 -> CommonApiVersionType.New
+    this != null && this >= CommonApiVersionType.MINIMUM_VALID_API_VERSION -> CommonApiVersionType.Valid(this)
+    this == CommonApiVersionType.NEW_API_VERSION_NUMBER -> CommonApiVersionType.New
     else -> CommonApiVersionType.Unknown
 }
 
