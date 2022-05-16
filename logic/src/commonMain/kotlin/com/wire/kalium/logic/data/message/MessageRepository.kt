@@ -60,6 +60,7 @@ interface MessageRepository {
     suspend fun getAllPendingMessagesFromUser(senderUserId: UserId): Either<CoreFailure, List<Message>>
 }
 
+@Suppress("LongParameterList")
 class MessageDataSource(
     private val messageApi: MessageApi,
     private val mlsMessageApi: MLSMessageApi,
