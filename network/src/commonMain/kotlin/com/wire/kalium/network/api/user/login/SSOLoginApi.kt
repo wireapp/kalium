@@ -36,7 +36,8 @@ interface SSOLoginApi {
 
     suspend fun provideLoginSession(cookie: String, apiBaseUrl: Url): NetworkResponse<SessionDTO>
 
-    suspend fun metaData(apiBaseUrl: Url): NetworkResponse<String> // TODO: ask about the response model since it's xml in swagger with no model
+    // TODO(web): ask about the response model since it's xml in swagger with no model
+    suspend fun metaData(apiBaseUrl: Url): NetworkResponse<String>
 
     suspend fun settings(apiBaseUrl: Url): NetworkResponse<SSOSettingsResponse>
 }
@@ -83,7 +84,7 @@ class SSOLoginApiImpl internal constructor(
                 }.mapSuccess { Pair(accessTokenDTOResponse.value, it) }
             }.flatMap { tokensPairResponse ->
                 // this is a hack to get the user QualifiedUserId on login
-                // TODO: remove this one when login endpoint return a QualifiedUserId
+                // TODO(optimization): remove this one when login endpoint return a QualifiedUserId
                 wrapKaliumResponse<UserDTO> {
                     httpClient.get {
                         setUrl(apiBaseUrl, PATH_SELF)

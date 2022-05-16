@@ -193,7 +193,7 @@ abstract class UserSessionScopeCommon(
     private val messageSendingScheduler: MessageSendingScheduler
         get() = authenticatedDataSourceSet.workScheduler
 
-    // TODO code duplication, can't we get the MessageSender from the message scope?
+    // TODO(optimization) code duplication, can't we get the MessageSender from the message scope?
     private val messageSender: MessageSender
         get() = MessageSenderImpl(
             messageRepository,

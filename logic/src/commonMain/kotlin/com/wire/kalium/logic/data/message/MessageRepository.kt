@@ -68,10 +68,8 @@ class MessageDataSource(
         }
     }
 
-    override suspend fun persistMessage(message: Message): Either<CoreFailure, Unit> {
+    override suspend fun persistMessage(message: Message): Either<CoreFailure, Unit> = wrapStorageRequest {
         messageDAO.insertMessage(messageMapper.fromMessageToEntity(message))
-        //TODO: Handle failures
-        return Either.Right(Unit)
     }
 
     override suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit> =
@@ -125,7 +123,7 @@ class MessageDataSource(
         }
         return wrapApiRequest {
             messageApi.qualifiedSendMessage(
-                //TODO Handle other MessageOptions, native push, transient and priorities
+                //TODO(messaging): Handle other MessageOptions, native push, transient and priorities
                 MessageApi.Parameters.QualifiedDefaultParameters(
                     envelope.senderClientId.value,
                     recipientMap, true, MessagePriority.HIGH, false, null, MessageApi.QualifiedMessageOption.ReportAll

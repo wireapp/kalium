@@ -31,6 +31,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -175,19 +176,26 @@ class ConversationDataSource(
                 flowOf(
                     ConversationDetails.Group(
                         conversation,
-                        LegalHoldStatus.DISABLED //TODO get actual legal hold status
+                        LegalHoldStatus.DISABLED //TODO(user-metadata): get actual legal hold status
                     )
                 )
+            // TODO(connection-requests): Handle requests instead of filtering them out
             Conversation.Type.ONE_ON_ONE -> {
                 val selfUser = userRepository.getSelfUser().first()
 
-                getConversationMembers(conversation.id).map { members ->
-                    members.first { itemId -> itemId != selfUser.id }
-                }.fold({
+                getConversationMembers(conversation.id)
+                    .map { members ->
+                        members.firstOrNull { itemId -> itemId != selfUser.id }
+                    }
+                    .fold({
                     // TODO: How to Handle failure when dealing with flows?
                     throw IOException("Failure to fetch other user of 1:1 Conversation")
-                }, { otherUserId ->
-                    userRepository.getKnownUser(otherUserId)
+                }, { otherUserIdOrNull ->
+                        otherUserIdOrNull?.let {
+                            userRepository.getKnownUser(it)
+                        }?: run {
+                            emptyFlow()
+                        }
                 }).filterNotNull().map { otherUser ->
                     conversationMapper.toConversationDetailsOneToOne(conversation, otherUser, selfUser)
                 }
@@ -313,8 +321,8 @@ class ConversationDataSource(
                 wrapApiRequest { clientApi.listClientsOfUsers(it) }.map { memberMapper.fromMapOfClientsResponseToRecipients(it) }
             }
 
-    //TODO: this needs some kind of optimization, we could directly get the conversation by otherUserId and
-// not to get all the conversation first and filter them to look for the id, this could be done on DAO level
+    //TODO(optimization): this needs some kind of optimization, we could directly get the conversation by otherUserId and
+    //                    not to get all the conversation first and filter them to look for the id, this could be done on DAO level
     override suspend fun getOneToOneConversationDetailsByUserId(otherUserId: UserId): Either<StorageFailure, ConversationDetails.OneOne?> {
         return wrapStorageRequest {
             observeConversationList()

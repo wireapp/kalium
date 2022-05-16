@@ -13,13 +13,13 @@ class ListenToEventsUseCase(
 ) {
 
     /**
-     * TODO: Make this thing a singleton. So we can't create multiple websockets/event processing instances
+     * TODO(refactor): Make this thing a singleton. So we can't create multiple websockets/event processing instances
      */
     suspend operator fun invoke() {
         syncManager.waitForSlowSyncToComplete()
 
         eventRepository.events()
-            //TODO: Handle retry/reconnection
+            //TODO(refactor): Handle retry/reconnection
             .collect { either ->
                 either.map { event ->
                     kaliumLogger.i(message = "Event received: $event")
