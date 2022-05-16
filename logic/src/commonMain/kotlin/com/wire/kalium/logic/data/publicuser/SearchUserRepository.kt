@@ -18,7 +18,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 interface SearchUserRepository {
-    suspend fun searchKnownUsers(searchQuery: String): Flow<UserSearchResult>
+    suspend fun searchKnownUsersByNameOrHandleOrEmail(searchQuery: String): UserSearchResult
+    suspend fun searchKnownUsersByHandle(handle: String): UserSearchResult
     suspend fun searchUserDirectory(
         searchQuery: String,
         domain: String,
@@ -33,11 +34,21 @@ class SearchUserRepositoryImpl(
     private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper()
 ) : SearchUserRepository {
 
-    override suspend fun searchKnownUsers(searchQuery: String) =
-        userDAO.getUserByNameOrHandleOrEmailAndConnectionState(searchQuery, UserEntity.ConnectionState.ACCEPTED)
-            .map {
-                UserSearchResult(it.map { userEntity -> publicUserMapper.fromDaoModelToPublicUser(userEntity) })
-            }
+    override suspend fun searchKnownUsersByNameOrHandleOrEmail(searchQuery: String) =
+        UserSearchResult(
+            result = userDAO.getUserByNameOrHandleOrEmailAndConnectionState(
+                searchQuery = searchQuery,
+                connectionState = UserEntity.ConnectionState.ACCEPTED
+            ).map(publicUserMapper::fromDaoModelToPublicUser)
+        )
+
+    override suspend fun searchKnownUsersByHandle(handle: String) =
+        UserSearchResult(
+            result = userDAO.getUserByHandleAndConnectionState(
+                handle = handle,
+                connectionState = UserEntity.ConnectionState.ACCEPTED
+            ).map(publicUserMapper::fromDaoModelToPublicUser)
+        )
 
     override suspend fun searchUserDirectory(
         searchQuery: String,

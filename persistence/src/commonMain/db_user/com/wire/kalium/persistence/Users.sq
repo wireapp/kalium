@@ -54,5 +54,10 @@ OR  handle LIKE  ('%' || :searchQuery || '%')
 OR  email LIKE  ('%' || :searchQuery || '%'))
 AND connection_status = :connectionStatus;
 
+selectByHandleAndConnectionState:
+SELECT * FROM User
+WHERE handle LIKE ('%' || :searchQuery || '%')
+AND connection_status = :connectionStatus;
+
 updateUserhandle:
 UPDATE User SET handle = ? WHERE qualified_id = ?;
