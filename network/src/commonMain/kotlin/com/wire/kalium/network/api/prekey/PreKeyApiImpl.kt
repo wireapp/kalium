@@ -1,5 +1,6 @@
 package com.wire.kalium.network.api.prekey
 
+import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
@@ -7,7 +8,9 @@ import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 
-class PreKeyApiImpl(private val httpClient: HttpClient) : PreKeyApi {
+class PreKeyApiImpl internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : PreKeyApi {
+
+    private val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun getUsersPreKey(users: DomainToUserIdToClientsMap): NetworkResponse<DomainToUserIdToClientsToPreKeyMap> =
         wrapKaliumResponse {

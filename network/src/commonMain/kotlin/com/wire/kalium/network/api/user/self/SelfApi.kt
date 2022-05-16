@@ -1,5 +1,6 @@
 package com.wire.kalium.network.api.user.self
 
+import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.model.UserDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
@@ -20,7 +21,9 @@ interface SelfApi {
     suspend fun changeHandle(request: ChangeHandleRequest): NetworkResponse<Unit>
 }
 
-class SelfApiImpl(private val httpClient: HttpClient) : SelfApi {
+class SelfApiImpl internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : SelfApi {
+
+    private val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun getSelfInfo(): NetworkResponse<UserDTO> = wrapKaliumResponse {
         httpClient.get(PATH_SELF)

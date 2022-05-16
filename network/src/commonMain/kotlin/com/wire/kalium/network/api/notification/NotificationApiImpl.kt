@@ -1,12 +1,12 @@
 package com.wire.kalium.network.api.notification
 
-import com.wire.kalium.network.WebSocketClientProvider
+import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.setWSSUrl
 import com.wire.kalium.network.utils.wrapKaliumResponse
-import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.websocket.webSocketSession
 import io.ktor.client.request.get
@@ -18,11 +18,14 @@ import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.serialization.decodeFromString
 
-class NotificationApiImpl(
-    private val httpClient: HttpClient,
-    private val webSocketClientProvider: WebSocketClientProvider,
+class NotificationApiImpl internal constructor(
+    private val authenticatedNetworkClient: AuthenticatedNetworkClient,
+    private val authenticatedWebSocketClient: AuthenticatedWebSocketClient,
     private val serverConfigDTO: ServerConfigDTO
 ) : NotificationApi {
+
+    private val httpClient get() = authenticatedNetworkClient.httpClient
+
     override suspend fun lastNotification(
         queryClient: String
     ): NetworkResponse<EventResponse> = wrapKaliumResponse {
@@ -38,7 +41,7 @@ class NotificationApiImpl(
     ): NetworkResponse<NotificationResponse> =
         notificationsCall(querySize = querySize, queryClient = queryClient, querySince = querySince)
 
-    //FIXME: This function does not get all notifications, just the first page.
+    //TODO(refactor): rename this function. It gets the first page of notifications, not all of them.
     override suspend fun getAllNotifications(querySize: Int, queryClient: String): NetworkResponse<NotificationResponse> =
         notificationsCall(querySize = querySize, queryClient = queryClient, querySince = null)
 
@@ -62,8 +65,8 @@ class NotificationApiImpl(
         }
     }
 
-    override suspend fun listenToLiveEvents(clientId: String): Flow<EventResponse> = webSocketClientProvider
-        .provideWebSocketClient()
+    override suspend fun listenToLiveEvents(clientId: String): Flow<EventResponse> = authenticatedWebSocketClient
+        .createDisposableHttpClient()
         .webSocketSession(
             method = HttpMethod.Get
         ) {
