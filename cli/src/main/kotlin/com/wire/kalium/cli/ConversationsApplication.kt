@@ -10,7 +10,7 @@ import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.configuration.ServerConfigMapper
 import com.wire.kalium.logic.configuration.ServerConfigMapperImpl
 import com.wire.kalium.network.AuthenticatedNetworkContainer
-import com.wire.kalium.network.LoginNetworkContainer
+import com.wire.kalium.network.UnauthenticatedNetworkContainer
 import com.wire.kalium.network.NetworkLogger
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.asset.AssetMetadataRequest
@@ -52,7 +52,7 @@ class ConversationsApplication : CliktCommand() {
 
         val serverConfigMapper: ServerConfigMapper = ServerConfigMapperImpl()
         val serverConfigDTO: ServerConfigDTO = serverConfigMapper.toDTO(ServerConfig.DEFAULT)
-        val loginContainer = LoginNetworkContainer()
+        val loginContainer = UnauthenticatedNetworkContainer()
 
         val loginResult = loginContainer.loginApi.login(
             LoginApi.LoginParam.LoginWithEmail(email = email, password = password, label = "ktor"), false, serverConfigDTO.apiBaseUrl.toString()

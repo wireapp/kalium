@@ -1,12 +1,14 @@
 package com.wire.kalium.network.api.user.details
 
+import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
-import io.ktor.client.HttpClient
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 
-class UserDetailsApiImp(private val httpClient: HttpClient) : UserDetailsApi {
+class UserDetailsApiImpl internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : UserDetailsApi {
+
+    private val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun getMultipleUsers(users: ListUserRequest): NetworkResponse<List<UserProfileDTO>> {
         return wrapKaliumResponse {

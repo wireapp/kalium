@@ -15,7 +15,7 @@ import com.wire.kalium.logic.feature.message.MessageSender
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 
-//TODO create unit test
+//TODO(testing): create unit test
 class OnSendOTR(
     private val handle: Deferred<Handle>,
     private val calling: Calling,

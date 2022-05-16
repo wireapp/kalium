@@ -1,7 +1,7 @@
 package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.network.utils.generator.TeamGenerator
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import io.mockative.Mock
@@ -26,7 +26,7 @@ class UserMapperTest {
 
     @Test
     fun givenTeamMemberApiModel_whenMappingFromApiResponse_thenDaoModelIsReturned() = runTest {
-        val apiModel = TeamGenerator.createTeamMember(
+        val apiModel = TestTeam.memberDTO(
             nonQualifiedUserId = "teamMember1"
         )
 
@@ -48,7 +48,7 @@ class UserMapperTest {
 
         val result = userMapper.fromTeamMemberToDaoModel(
             teamId = "teamId",
-            teamMember = apiModel,
+            teamMemberDTO = apiModel,
             userDomain = "userDomain"
         )
 

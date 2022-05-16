@@ -21,7 +21,7 @@ object DBUtil {
     }
 
     private fun generateSecretKey(): String {
-        // TODO review with security
+        // TODO(IMPORTANT): review with security
 
         val random = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             SecureRandom.getInstanceStrong()
