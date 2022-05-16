@@ -2,7 +2,7 @@ package com.wire.kalium.api.tools.json.api.teams
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.network.api.teams.TeamsApi
-import com.wire.kalium.network.api.teams.TeamsApiImp
+import com.wire.kalium.network.api.teams.TeamsApiImpl
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -15,7 +15,7 @@ class TeamsApiTest: ApiTest {
     fun givenAValidListOfTeamsIds_whenCallingGetTeamsLimitedTo_theRequestShouldBeConfiguredCorrectly() =
         runTest {
             val commaSeparatedListOfIds = LIST_OF_TEAM_IDS.joinToString(",")
-            val httpClient = mockAuthenticatedHttpClient(
+            val networkClient = mockAuthenticatedNetworkClient(
                 GET_LIMIT_TO_CLIENT_RESPONSE.rawJson,
                 statusCode = HttpStatusCode.OK,
                 assertion = {
@@ -26,14 +26,14 @@ class TeamsApiTest: ApiTest {
                     assertPathEqual("/$PATH_TEAMS")
                 }
             )
-            val teamsApi: TeamsApi = TeamsApiImp(httpClient)
+            val teamsApi: TeamsApi = TeamsApiImpl(networkClient)
             teamsApi.getTeams(size = 10, option = TeamsApi.GetTeamsOption.LimitTo(LIST_OF_TEAM_IDS))
         }
 
     @Test
     fun givenAValidGetTeamsRequest_whenCallingGetTeamsStartFrom_theRequestShouldBeConfiguredCorrectly() =
         runTest {
-            val httpClient = mockAuthenticatedHttpClient(
+            val networkClient = mockAuthenticatedNetworkClient(
                 GET_START_FROM_CLIENT_RESPONSE.rawJson,
                 statusCode = HttpStatusCode.OK,
                 assertion = {
@@ -44,14 +44,14 @@ class TeamsApiTest: ApiTest {
                     assertPathEqual("/$PATH_TEAMS")
                 }
             )
-            val teamsApi: TeamsApi = TeamsApiImp(httpClient)
+            val teamsApi: TeamsApi = TeamsApiImpl(networkClient)
             teamsApi.getTeams(size = 10, option = TeamsApi.GetTeamsOption.StartFrom(DUMMY_TEAM_ID))
         }
 
     @Test
     fun givenAValidGetTeamsFirstPageRequest_whenGettingTeamsMembers_theRequestShouldBeConfiguredCorrectly() =
         runTest {
-            val httpClient = mockAuthenticatedHttpClient(
+            val networkClient = mockAuthenticatedNetworkClient(
                 GET_TEAM_MEMBER_CLIENT_RESPONSE.rawJson,
                 statusCode = HttpStatusCode.OK,
                 assertion = {
@@ -61,7 +61,7 @@ class TeamsApiTest: ApiTest {
                     assertPathEqual("/$PATH_TEAMS/$DUMMY_TEAM_ID/$PATH_MEMBERS")
                 }
             )
-            val teamsApi: TeamsApi = TeamsApiImp(httpClient)
+            val teamsApi: TeamsApi = TeamsApiImpl(networkClient)
             teamsApi.getTeamMembers(DUMMY_TEAM_ID, limitTo = 10)
         }
 
@@ -69,7 +69,7 @@ class TeamsApiTest: ApiTest {
     fun givenADeleteConversationForTeamRequest_whenDeletingATeamConversationWithSuccess_theRequestShouldBeConfiguredCorrectly() =
         runTest {
             val conversationId = "96a6e8e4-6420-49db-aa83-2711edf7580d"
-            val httpClient = mockAuthenticatedHttpClient(
+            val networkClient = mockAuthenticatedNetworkClient(
                 "",
                 statusCode = HttpStatusCode.OK,
                 assertion = {
@@ -77,7 +77,7 @@ class TeamsApiTest: ApiTest {
                     assertPathEqual("/$PATH_TEAMS/$DUMMY_TEAM_ID/$PATH_CONVERSATIONS/$conversationId")
                 }
             )
-            val teamsApi: TeamsApi = TeamsApiImp(httpClient)
+            val teamsApi: TeamsApi = TeamsApiImpl(networkClient)
             teamsApi.deleteConversation(conversationId, teamId = DUMMY_TEAM_ID)
         }
 

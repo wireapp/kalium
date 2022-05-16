@@ -13,7 +13,7 @@ class UserSearchApiTest : ApiTest {
     @Test
     fun givenRequestWithSearchQueryAndDomain_whenCallingSearchContact_ThenRequestShouldReturnExpectedAssertion() =
         runTest {
-            val httpClient = mockAuthenticatedHttpClient(
+            val networkClient = mockAuthenticatedNetworkClient(
                 responseBody = "",
                 statusCode = HttpStatusCode.OK,
                 assertion = {
@@ -26,7 +26,7 @@ class UserSearchApiTest : ApiTest {
                 }
             )
 
-            val userSearchApi: UserSearchApi = UserSearchApiImpl(httpClient)
+            val userSearchApi: UserSearchApi = UserSearchApiImpl(networkClient)
             userSearchApi.search(
                 UserSearchRequest(
                     searchQuery = DUMMY_SEARCH_QUERY,
@@ -38,7 +38,7 @@ class UserSearchApiTest : ApiTest {
     @Test
     fun givenRequestWithSearchQueryAndDomainAndResultSize_whenCallingSearchContact_ThenRequestShouldReturnExpectedAssertion() =
         runTest {
-            val httpClient = mockAuthenticatedHttpClient(
+            val networkClient = mockAuthenticatedNetworkClient(
                 responseBody = "",
                 statusCode = HttpStatusCode.OK,
                 assertion = {
@@ -52,7 +52,7 @@ class UserSearchApiTest : ApiTest {
                 }
             )
 
-            val userSearchApi: UserSearchApi = UserSearchApiImpl(httpClient)
+            val userSearchApi: UserSearchApi = UserSearchApiImpl(networkClient)
             userSearchApi.search(
                 UserSearchRequest(
                     searchQuery = DUMMY_SEARCH_QUERY,
