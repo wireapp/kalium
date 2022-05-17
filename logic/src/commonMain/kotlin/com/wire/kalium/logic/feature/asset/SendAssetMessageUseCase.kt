@@ -149,7 +149,9 @@ private fun provideAssetMessageContent(
         encryptionAlgorithm = AssetContent.RemoteData.EncryptionAlgorithm.AES_CBC,
         assetDomain = null,  // TODO(assets): fill in the assetDomain, it's returned by the BE when uploading an asset.
         assetToken = assetId.assetToken
-    )
+    ),
+    // Asset is already in our local storage and therefore accessible
+    downloadStatus = Message.DownloadStatus.DOWNLOADED
 )
 
 sealed class SendAssetMessageResult {
