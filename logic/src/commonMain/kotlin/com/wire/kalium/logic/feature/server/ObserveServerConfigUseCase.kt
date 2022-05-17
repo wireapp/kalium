@@ -57,7 +57,7 @@ class ObserveServerConfigUseCase internal constructor(
             EndPoints(
                 apiBaseUrl = """https://prod-nginz-https.wire.com""",
                 accountsBaseUrl = """https://account.wire.com""",
-                webSocketBaseUrl ="""https://prod-nginz-ssl.wire.com""",
+                webSocketBaseUrl = """https://prod-nginz-ssl.wire.com""",
                 teamsUrl = """https://teams.wire.com""",
                 blackListUrl = """https://clientblacklist.wire.com/prod""",
                 websiteUrl = """https://wire.com""",
