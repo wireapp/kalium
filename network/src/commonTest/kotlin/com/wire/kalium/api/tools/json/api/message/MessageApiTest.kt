@@ -4,7 +4,7 @@ import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.tools.IgnoreIOS
 import com.wire.kalium.api.tools.json.ValidJsonProvider
 import com.wire.kalium.network.api.message.MessageApi
-import com.wire.kalium.network.api.message.MessageApiImp
+import com.wire.kalium.network.api.message.MessageApiImpl
 import com.wire.kalium.network.api.message.SendMessageResponse
 import com.wire.kalium.network.api.message.provideEnvelopeProtoMapper
 import com.wire.kalium.network.exceptions.SendMessageError
@@ -24,7 +24,7 @@ class MessageApiTest : ApiTest {
     @Test
     fun givenAValidIgnoreAlloption_whenSendingAMessage_theRequestShouldBeConfiguredCorrectly() =
         runTest {
-            val httpClient = mockAuthenticatedHttpClient(
+            val networkClient = mockAuthenticatedNetworkClient(
                 SUCCESS_RESPONSE.rawJson,
                 statusCode = HttpStatusCode.Created,
                 assertion =
@@ -36,7 +36,7 @@ class MessageApiTest : ApiTest {
                     assertPathEqual(SEND_MESSAGE_PATH)
                 }
             )
-            val messageApi: MessageApi = MessageApiImp(httpClient, provideEnvelopeProtoMapper())
+            val messageApi: MessageApi = MessageApiImpl(networkClient, provideEnvelopeProtoMapper())
             val response = messageApi.sendMessage(
                 DEFAULT_PARAMETERS_RESPONSE.serializableData,
                 TEST_CONVERSATION_ID,
@@ -49,7 +49,7 @@ class MessageApiTest : ApiTest {
     @Test
     fun givlenAValidReportAl_whenSendingAMessage_theRequestShouldBeConfiguredCorrectly() =
         runTest {
-            val httpClient = mockAuthenticatedHttpClient(
+            val networkClient = mockAuthenticatedNetworkClient(
                 SUCCESS_RESPONSE.rawJson,
                 statusCode = HttpStatusCode.Created,
                 assertion =
@@ -61,7 +61,7 @@ class MessageApiTest : ApiTest {
                     assertPathEqual(SEND_MESSAGE_PATH)
                 }
             )
-            val messageApi: MessageApi = MessageApiImp(httpClient, provideEnvelopeProtoMapper())
+            val messageApi: MessageApi = MessageApiImpl(networkClient, provideEnvelopeProtoMapper())
             val response = messageApi.sendMessage(
                 DEFAULT_PARAMETERS_RESPONSE.serializableData,
                 TEST_CONVERSATION_ID,
@@ -74,7 +74,7 @@ class MessageApiTest : ApiTest {
     @Test
     fun givenAValidIgnoreSome_whenSendingAMessage_theRequestShouldBeConfiguredCorrectly() =
         runTest {
-            val httpClient = mockAuthenticatedHttpClient(
+            val networkClient = mockAuthenticatedNetworkClient(
                 SUCCESS_RESPONSE.rawJson,
                 statusCode = HttpStatusCode.Created,
                 assertion =
@@ -86,7 +86,7 @@ class MessageApiTest : ApiTest {
                     assertPathEqual(SEND_MESSAGE_PATH)
                 }
             )
-            val messageApi: MessageApi = MessageApiImp(httpClient, provideEnvelopeProtoMapper())
+            val messageApi: MessageApi = MessageApiImpl(networkClient, provideEnvelopeProtoMapper())
             val response = messageApi.sendMessage(
                 DEFAULT_PARAMETERS_RESPONSE.serializableData,
                 TEST_CONVERSATION_ID,
@@ -99,7 +99,7 @@ class MessageApiTest : ApiTest {
     @Test
     fun givenAValidReportSome_whenSendingAMessage_theRequestShouldBeConfiguredCorrectly() =
         runTest {
-            val httpClient = mockAuthenticatedHttpClient(
+            val networkClient = mockAuthenticatedNetworkClient(
                 SUCCESS_RESPONSE.rawJson,
                 statusCode = HttpStatusCode.Created,
                 assertion =
@@ -111,7 +111,7 @@ class MessageApiTest : ApiTest {
                     assertPathEqual(SEND_MESSAGE_PATH)
                 }
             )
-            val messageApi: MessageApi = MessageApiImp(httpClient, provideEnvelopeProtoMapper())
+            val messageApi: MessageApi = MessageApiImpl(networkClient, provideEnvelopeProtoMapper())
             val response = messageApi.sendMessage(
                 DEFAULT_PARAMETERS_RESPONSE.serializableData,
                 TEST_CONVERSATION_ID,
@@ -133,12 +133,12 @@ class MessageApiTest : ApiTest {
 
     private fun errorCaseTest(errorResponse: ValidJsonProvider<SendMessageResponse.MissingDevicesResponse>) =
         runTest {
-            val httpClient = mockAuthenticatedHttpClient(
+            val networkClient = mockAuthenticatedNetworkClient(
                 errorResponse.rawJson,
                 statusCode = HttpStatusCode.PreconditionFailed
             )
 
-            val messageApi: MessageApi = MessageApiImp(httpClient, provideEnvelopeProtoMapper())
+            val messageApi: MessageApi = MessageApiImpl(networkClient, provideEnvelopeProtoMapper())
             val response = messageApi.sendMessage(
                 DEFAULT_PARAMETERS_RESPONSE.serializableData,
                 TEST_CONVERSATION_ID,

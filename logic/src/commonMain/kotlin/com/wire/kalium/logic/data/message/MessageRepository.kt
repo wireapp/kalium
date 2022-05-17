@@ -2,12 +2,15 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.wrapApiRequest
@@ -26,11 +29,15 @@ interface MessageRepository {
     suspend fun getMessagesForConversation(conversationId: ConversationId, limit: Int, offset: Int): Flow<List<Message>>
     suspend fun persistMessage(message: Message): Either<CoreFailure, Unit>
     suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
-    suspend fun deleteMessage(messageUuid: String): Either<CoreFailure, Unit>
-    suspend fun softDeleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
-    suspend fun hideMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
+    suspend fun markMessageAsDeleted(messageUuid: String, conversationId: ConversationId): Either<StorageFailure, Unit>
     suspend fun updateMessageStatus(
         messageStatus: MessageEntity.Status,
+        conversationId: ConversationId,
+        messageUuid: String
+    ): Either<CoreFailure, Unit>
+
+    suspend fun updateAssetMessageDownloadStatus(
+        downloadStatus: Message.DownloadStatus,
         conversationId: ConversationId,
         messageUuid: String
     ): Either<CoreFailure, Unit>
@@ -53,12 +60,14 @@ interface MessageRepository {
     suspend fun getAllPendingMessagesFromUser(senderUserId: UserId): Either<CoreFailure, List<Message>>
 }
 
+@Suppress("LongParameterList")
 class MessageDataSource(
     private val messageApi: MessageApi,
     private val mlsMessageApi: MLSMessageApi,
     private val messageDAO: MessageDAO,
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper(),
+    private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
     private val sendMessageFailureMapper: SendMessageFailureMapper = MapperProvider.sendMessageFailureMapper()
 ) : MessageRepository {
 
@@ -68,43 +77,19 @@ class MessageDataSource(
         }
     }
 
-    override suspend fun persistMessage(message: Message): Either<CoreFailure, Unit> {
+    override suspend fun persistMessage(message: Message): Either<CoreFailure, Unit> = wrapStorageRequest {
         messageDAO.insertMessage(messageMapper.fromMessageToEntity(message))
-        //TODO: Handle failures
-        return Either.Right(Unit)
     }
 
-    override suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit> {
-        messageDAO.deleteMessage(messageUuid, idMapper.toDaoModel(conversationId))
-        //TODO: Handle failures
-        return Either.Right(Unit)
-    }
+    override suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit> =
+        wrapStorageRequest {
+            messageDAO.deleteMessage(messageUuid, idMapper.toDaoModel(conversationId))
+        }
 
-    override suspend fun deleteMessage(messageUuid: String): Either<CoreFailure, Unit> {
-        messageDAO.deleteMessage(messageUuid)
-        //TODO: Handle failures
-        return Either.Right(Unit)
-    }
-
-    override suspend fun softDeleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit> {
-        messageDAO.updateMessageVisibility(
-            visibility = MessageEntity.Visibility.DELETED,
-            conversationId = idMapper.toDaoModel(conversationId),
-            id = messageUuid
-        )
-        //TODO: Handle failures
-        return Either.Right(Unit)
-    }
-
-    override suspend fun hideMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit> {
-        messageDAO.updateMessageVisibility(
-            visibility = MessageEntity.Visibility.HIDDEN,
-            conversationId = idMapper.toDaoModel(conversationId),
-            id = messageUuid
-        )
-        //TODO: Handle failures
-        return Either.Right(Unit)
-    }
+    override suspend fun markMessageAsDeleted(messageUuid: String, conversationId: ConversationId): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            messageDAO.markMessageAsDeleted(id = messageUuid, conversationsId = idMapper.toDaoModel(conversationId))
+        }
 
     override suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message> =
         wrapStorageRequest {
@@ -129,6 +114,19 @@ class MessageDataSource(
             messageDAO.updateMessageStatus(messageStatus, messageUuid, idMapper.toDaoModel(conversationId))
         }
 
+    override suspend fun updateAssetMessageDownloadStatus(
+        downloadStatus: Message.DownloadStatus,
+        conversationId: ConversationId,
+        messageUuid: String
+    ): Either<CoreFailure, Unit> =
+        wrapStorageRequest {
+            messageDAO.updateAssetDownloadStatus(
+                assetMapper.fromDownloadStatusToDaoModel(downloadStatus),
+                messageUuid,
+                idMapper.toDaoModel(conversationId)
+            )
+        }
+
     override suspend fun updateMessageDate(conversationId: ConversationId, messageUuid: String, date: String) =
         wrapStorageRequest {
             messageDAO.updateMessageDate(date, messageUuid, idMapper.toDaoModel(conversationId))
@@ -147,7 +145,7 @@ class MessageDataSource(
         }
         return wrapApiRequest {
             messageApi.qualifiedSendMessage(
-                //TODO Handle other MessageOptions, native push, transient and priorities
+                //TODO(messaging): Handle other MessageOptions, native push, transient and priorities
                 MessageApi.Parameters.QualifiedDefaultParameters(
                     envelope.senderClientId.value,
                     recipientMap, true, MessagePriority.HIGH, false, null, MessageApi.QualifiedMessageOption.ReportAll

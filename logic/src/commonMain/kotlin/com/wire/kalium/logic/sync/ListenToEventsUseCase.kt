@@ -2,8 +2,8 @@ package com.wire.kalium.logic.sync
 
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventRepository
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.kaliumLogger
 
 class ListenToEventsUseCase(
@@ -13,27 +13,25 @@ class ListenToEventsUseCase(
 ) {
 
     /**
-     * TODO: Make this thing a singleton. So we can't create multiple websockets/event processing instances
+     * TODO(refactor): Make this thing a singleton. So we can't create multiple websockets/event processing instances
      */
     suspend operator fun invoke() {
         syncManager.waitForSlowSyncToComplete()
 
         eventRepository.events()
-            //TODO: Handle retry/reconnection
+            //TODO(refactor): Handle retry/reconnection
             .collect { either ->
-                suspending {
-                    either.map { event ->
-                        kaliumLogger.i(message = "Event received: $event")
-                        when (event) {
-                            is Event.Conversation -> {
-                                conversationEventReceiver.onEvent(event)
-                            }
-                            else -> {
-                                kaliumLogger.i(message = "Unhandled event id=${event.id}")
-                            }
+                either.map { event ->
+                    kaliumLogger.i(message = "Event received: $event")
+                    when (event) {
+                        is Event.Conversation -> {
+                            conversationEventReceiver.onEvent(event)
                         }
-                        eventRepository.updateLastProcessedEventId(event.id)
+                        else -> {
+                            kaliumLogger.i(message = "Unhandled event id=${event.id}")
+                        }
                     }
+                    eventRepository.updateLastProcessedEventId(event.id)
                 }.onFailure {
                     kaliumLogger.e(message = "Failure when receiving events: $it")
                 }

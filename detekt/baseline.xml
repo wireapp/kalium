@@ -1,0 +1,820 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ClassNaming:Cryptobox.module_@wireapp_cryptobox.kt$T$0</ID>
+    <ID>ClassNaming:Size_t.kt$Size_t : IntegerType</ID>
+    <ID>ClassNaming:Uint32_t.kt$Uint32_t : IntegerType</ID>
+    <ID>ClassNaming:messages.kt$ClientAction$RESET_SESSION : ClientAction</ID>
+    <ID>ClassNaming:messages.kt$EncryptionAlgorithm$AES_CBC : EncryptionAlgorithm</ID>
+    <ID>ClassNaming:messages.kt$EncryptionAlgorithm$AES_GCM : EncryptionAlgorithm</ID>
+    <ID>ClassNaming:otr.kt$Priority$HIGH_PRIORITY : Priority</ID>
+    <ID>ClassNaming:otr.kt$Priority$LOW_PRIORITY : Priority</ID>
+    <ID>ComplexMethod:MessageDAOImpl.kt$MessageMapper$fun toModel(msg: SQLDelightMessage): MessageEntity</ID>
+    <ID>ComplexMethod:MessageMapper.kt$MessageMapperImpl$override fun fromMessageToEntity(message: Message): MessageEntity</ID>
+    <ID>ComplexMethod:ProtoContentMapper.kt$ProtoContentMapperImpl$override fun decodeFromProtobuf(encodedContent: PlainMessageBlob): ProtoContent</ID>
+    <ID>ComplexMethod:messages.kt$@Suppress("UNCHECKED_CAST") private fun GenericMessage.Companion.decodeWithImpl(u: pbandk.MessageDecoder): GenericMessage</ID>
+    <ID>ComplexMethod:messages.kt$private fun Ephemeral.protoMergeImpl(plus: pbandk.Message?): Ephemeral</ID>
+    <ID>ComplexMethod:messages.kt$private fun GenericMessage.protoMergeImpl(plus: pbandk.Message?): GenericMessage</ID>
+    <ID>ComplexMethod:messages.kt$private fun LinkPreview.protoMergeImpl(plus: pbandk.Message?): LinkPreview</ID>
+    <ID>ComplexMethod:otr.kt$private fun QualifiedNewOtrMessage.protoMergeImpl(plus: pbandk.Message?): QualifiedNewOtrMessage</ID>
+    <ID>ConstructorParameterNaming:MessageApi.kt$MessageApi.Parameters.DefaultParameters$val `data`: String? = null</ID>
+    <ID>ConstructorParameterNaming:MessageApi.kt$MessageApi.Parameters.QualifiedDefaultParameters$val `data`: String? = null</ID>
+    <ID>ConstructorParameterNaming:MessageApiImp.kt$MessageApiImp.RequestBody$@SerialName("data") val `data`: String?</ID>
+    <ID>EmptyDefaultConstructor:KaliumException.kt$KaliumException$()</ID>
+    <ID>EmptyDefaultConstructor:KaliumException.kt$KaliumException.FeatureError$()</ID>
+    <ID>EmptyDefaultConstructor:ServerConfigurationDAO.kt$ServerConfigMapper$()</ID>
+    <ID>EmptyDefaultConstructor:ValidateSSOCodeUseCase.kt$ValidateSSOCodeUseCaseImpl$()</ID>
+    <ID>EmptyKtFile:SessionLocalRepository.kt$.SessionLocalRepository.kt</ID>
+    <ID>FunctionNaming:CallManagerTest.kt$CallManagerTest$@Test fun givenCallManager_whenCallingMessageIsReceived_then_wcall_recv_msg_IsCalled()</ID>
+    <ID>FunctionNaming:Calling.kt$Calling$fun wcall_answer(inst: Handle, conversationId: String, callType: Int, cbrEnabled: Boolean)</ID>
+    <ID>FunctionNaming:Calling.kt$Calling$fun wcall_close()</ID>
+    <ID>FunctionNaming:Calling.kt$Calling$fun wcall_config_update(inst: Handle, error: Int, jsonString: String)</ID>
+    <ID>FunctionNaming:Calling.kt$Calling$fun wcall_create( userId: String, clientId: String, readyHandler: ReadyHandler, sendHandler: SendHandler, sftRequestHandler: SFTRequestHandler, incomingCallHandler: IncomingCallHandler, missedCallHandler: MissedCallHandler, answeredCallHandler: AnsweredCallHandler, establishedCallHandler: EstablishedCallHandler, closeCallHandler: CloseCallHandler, metricsHandler: MetricsHandler, callConfigRequestHandler: CallConfigRequestHandler, constantBitRateStateChangeHandler: ConstantBitRateStateChangeHandler, videoReceiveStateHandler: VideoReceiveStateHandler, arg: Pointer? ): Handle</ID>
+    <ID>FunctionNaming:Calling.kt$Calling$fun wcall_end(inst: Handle, conversationId: String)</ID>
+    <ID>FunctionNaming:Calling.kt$Calling$fun wcall_init(env: Int): Int</ID>
+    <ID>FunctionNaming:Calling.kt$Calling$fun wcall_library_version(): String</ID>
+    <ID>FunctionNaming:Calling.kt$Calling$fun wcall_recv_msg( inst: Handle, msg: ByteArray, len: Int, curr_time: Uint32_t, msg_time: Uint32_t, convId: String, userId: String, clientId: String ): Int</ID>
+    <ID>FunctionNaming:Calling.kt$Calling$fun wcall_reject(inst: Handle, conversationId: String)</ID>
+    <ID>FunctionNaming:Calling.kt$Calling$fun wcall_request_video_streams( inst: Handle, convId: String, mode: Int, json: String )</ID>
+    <ID>FunctionNaming:Calling.kt$Calling$fun wcall_resp( inst: Handle, status: Int, reason: String, arg: Pointer? ): Int</ID>
+    <ID>FunctionNaming:Calling.kt$Calling$fun wcall_set_log_handler(logHandler: LogHandler, arg: Pointer?)</ID>
+    <ID>FunctionNaming:Calling.kt$Calling$fun wcall_set_mute(inst: Handle, muted: Int)</ID>
+    <ID>FunctionNaming:Calling.kt$Calling$fun wcall_set_participant_changed_handler( inst: Handle, wcall_participant_changed_h: ParticipantChangedHandler, arg: Pointer? )</ID>
+    <ID>FunctionNaming:Calling.kt$Calling$fun wcall_sft_resp( inst: Handle, error: Int, data: ByteArray, length: Int, ctx: Pointer? )</ID>
+    <ID>FunctionNaming:Calling.kt$Calling$fun wcall_start(inst: Handle, conversationId: String, callType: Int, convType: Int, audioCbr: Int): Int</ID>
+    <ID>FunctionNaming:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$open fun get_prekey_bundle(preKeyId: Number = definedExternally): Promise&lt;PreKeyBundle></ID>
+    <ID>FunctionNaming:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$open fun get_serialized_last_resort_prekey(): Promise&lt;`T$0`></ID>
+    <ID>FunctionNaming:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$open fun get_serialized_standard_prekeys(): Promise&lt;Array&lt;`T$0`>></ID>
+    <ID>FunctionNaming:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$open fun new_prekeys(start: Number, size: Number): Promise&lt;Array&lt;PreKey>></ID>
+    <ID>FunctionNaming:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$open fun serialize_prekey(prekey: PreKey): `T$0`</ID>
+    <ID>FunctionNaming:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$open fun session_delete(sessionId: String): Promise&lt;String></ID>
+    <ID>FunctionNaming:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$open fun session_from_prekey(sessionId: String, preKeyBundle: ArrayBuffer): Promise&lt;CryptoboxSession></ID>
+    <ID>FunctionNaming:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$open fun session_load(sessionId: String): Promise&lt;CryptoboxSession></ID>
+    <ID>FunctionNaming:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$CryptoboxCRUDStore$open fun delete_all(): Promise&lt;Boolean></ID>
+    <ID>FunctionNaming:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$CryptoboxCRUDStore$open fun load_identity(): Promise&lt;IdentityKeyPair?></ID>
+    <ID>FunctionNaming:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$CryptoboxCRUDStore$open fun load_prekeys(): Promise&lt;Array&lt;PreKey>></ID>
+    <ID>FunctionNaming:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$CryptoboxCRUDStore$open fun save_identity(identity: IdentityKeyPair): Promise&lt;IdentityKeyPair></ID>
+    <ID>FunctionNaming:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$CryptoboxCRUDStore$open fun save_prekey(preKey: PreKey): Promise&lt;PreKey></ID>
+    <ID>FunctionNaming:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$CryptoboxCRUDStore$open fun save_prekeys(preKeys: Array&lt;PreKey>): Promise&lt;Array&lt;PreKey>></ID>
+    <ID>FunctionNaming:CryptoboxSession.module_@wireapp_cryptobox.kt$CryptoboxSession$open fun fingerprint_local(): String</ID>
+    <ID>FunctionNaming:CryptoboxSession.module_@wireapp_cryptobox.kt$CryptoboxSession$open fun fingerprint_remote(): String</ID>
+    <ID>FunctionNaming:Encoder.module_@wireapp_cbor.kt$Encoder$open fun array_begin(): Encoder</ID>
+    <ID>FunctionNaming:Encoder.module_@wireapp_cbor.kt$Encoder$open fun array_end(): Encoder</ID>
+    <ID>FunctionNaming:Encoder.module_@wireapp_cbor.kt$Encoder$open fun get_buffer(): ArrayBuffer</ID>
+    <ID>FunctionNaming:Encoder.module_@wireapp_cbor.kt$Encoder$open fun object_begin(): Encoder</ID>
+    <ID>FunctionNaming:Encoder.module_@wireapp_cbor.kt$Encoder$open fun object_end(): Encoder</ID>
+    <ID>FunctionNaming:KeyPair.module_@wireapp_proteus.kt$KeyPair.Companion$fun construct_private_key(ed25519_key_pair: KeyPair): SecretKey</ID>
+    <ID>FunctionNaming:KeyPair.module_@wireapp_proteus.kt$KeyPair.Companion$fun construct_public_key(ed25519_key_pair: KeyPair): PublicKey</ID>
+    <ID>FunctionNaming:PreKey.module_@wireapp_proteus.kt$PreKey.Companion$fun generate_prekeys(start: Number, size: Number): Array&lt;PreKey></ID>
+    <ID>FunctionNaming:PreKey.module_@wireapp_proteus.kt$PreKey.Companion$fun last_resort(): PreKey</ID>
+    <ID>FunctionNaming:PreKeyBundle.module_@wireapp_proteus.kt$PreKeyBundle$open fun serialised_json(): SerialisedJSON</ID>
+    <ID>FunctionNaming:PreKeyStore.module_@wireapp_proteus.kt$PreKeyStore$open fun delete_prekey(prekeyId: Number): Promise&lt;Number></ID>
+    <ID>FunctionNaming:PreKeyStore.module_@wireapp_proteus.kt$PreKeyStore$open fun load_prekey(prekeyId: Number): Promise&lt;PreKey?></ID>
+    <ID>FunctionNaming:SecretKey.module_@wireapp_proteus.kt$SecretKey.Companion$fun shared_secret(publicKey: PublicKey, secretKey: SecretKey): Uint8Array</ID>
+    <ID>FunctionNaming:UserRepository.kt$UserDataSource$private suspend fun _getSelfUserId(): QualifiedIDEntity</ID>
+    <ID>FunctionParameterNaming:Calling.kt$Calling$curr_time: Uint32_t</ID>
+    <ID>FunctionParameterNaming:Calling.kt$Calling$msg_time: Uint32_t</ID>
+    <ID>FunctionParameterNaming:Calling.kt$Calling$wcall_participant_changed_h: ParticipantChangedHandler</ID>
+    <ID>FunctionParameterNaming:CryptoboxSession.module_@wireapp_cryptobox.kt$CryptoboxSession$pk_store: CryptoboxCRUDStore</ID>
+    <ID>FunctionParameterNaming:KeyPair.module_@wireapp_proteus.kt$KeyPair.Companion$ed25519_key_pair: KeyPair</ID>
+    <ID>FunctionParameterNaming:SetUserHandleUseCase.kt$SetUserHandleUseCase$_handle: String</ID>
+    <ID>LongMethod:CallManagerImpl.kt$CallManagerImpl$private fun startHandleAsync()</ID>
+    <ID>LongParameterList:AuthenticatedDataSourceSet.kt$AuthenticatedDataSourceSet$( val authenticatedRootDir: String, val authenticatedNetworkContainer: AuthenticatedNetworkContainer, val proteusClient: ProteusClient, val workScheduler: WorkScheduler, val syncManager: SyncManager, val userDatabaseProvider: UserDatabaseProvider, val kaliumPreferencesSettings: KaliumPreferencesSettings, val encryptedSettingsHolder: EncryptedSettingsHolder )</ID>
+    <ID>LongParameterList:Calling.kt$Calling$( inst: Handle, msg: ByteArray, len: Int, curr_time: Uint32_t, msg_time: Uint32_t, convId: String, userId: String, clientId: String )</ID>
+    <ID>LongParameterList:Calling.kt$Calling$( userId: String, clientId: String, readyHandler: ReadyHandler, sendHandler: SendHandler, sftRequestHandler: SFTRequestHandler, incomingCallHandler: IncomingCallHandler, missedCallHandler: MissedCallHandler, answeredCallHandler: AnsweredCallHandler, establishedCallHandler: EstablishedCallHandler, closeCallHandler: CloseCallHandler, metricsHandler: MetricsHandler, callConfigRequestHandler: CallConfigRequestHandler, constantBitRateStateChangeHandler: ConstantBitRateStateChangeHandler, videoReceiveStateHandler: VideoReceiveStateHandler, arg: Pointer? )</ID>
+    <ID>LongParameterList:CloseCallHandler.kt$CloseCallHandler$( reason: Int, conversationId: String, messageTime: Uint32_t, userId: String, clientId: String, arg: Pointer? )</ID>
+    <ID>LongParameterList:ConversationEventReceiver.kt$ConversationEventReceiver$( private val proteusClient: ProteusClient, private val messageRepository: MessageRepository, private val conversationRepository: ConversationRepository, private val mlsConversationRepository: MLSConversationRepository, private val userRepository: UserRepository, private val protoContentMapper: ProtoContentMapper, private val callManagerImpl: CallManager, private val memberMapper: MemberMapper = MapperProvider.memberMapper(), private val idMapper: IdMapper = MapperProvider.idMapper() )</ID>
+    <ID>LongParameterList:ConversationRepository.kt$ConversationDataSource$( private val userRepository: UserRepository, private val mlsConversationRepository: MLSConversationRepository, private val conversationDAO: ConversationDAO, private val conversationApi: ConversationApi, private val clientApi: ClientApi, private val idMapper: IdMapper = MapperProvider.idMapper(), private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(), private val memberMapper: MemberMapper = MapperProvider.memberMapper(), private val conversationStatusMapper: ConversationStatusMapper = MapperProvider.conversationStatusMapper() )</ID>
+    <ID>LongParameterList:GlobalCallManager.kt$GlobalCallManager$( userId: QualifiedID, callRepository: CallRepository, userRepository: UserRepository, clientRepository: ClientRepository, callMapper: CallMapper, messageSender: MessageSender )</ID>
+    <ID>LongParameterList:IncomingCallHandler.kt$IncomingCallHandler$( conversationId: String, messageTime: Uint32_t, userId: String, clientId: String, isVideoCall: Boolean, shouldRing: Boolean, conversationType: Int, arg: Pointer? )</ID>
+    <ID>LongParameterList:LogoutUseCase.kt$LogoutUseCase$( private val logoutRepository: LogoutRepository, private val sessionRepository: SessionRepository, private val userId: QualifiedID, private val authenticatedDataSourceSet: AuthenticatedDataSourceSet, private val clientRepository: ClientRepository, private val mlsClientProvider: MLSClientProvider, private val authenticatedDataSourceSetProvider: AuthenticatedDataSourceSetProvider = AuthenticatedDataSourceSetProviderImpl )</ID>
+    <ID>LongParameterList:MessageScope.kt$MessageScope$( internal val messageRepository: MessageRepository, private val conversationRepository: ConversationRepository, private val clientRepository: ClientRepository, private val proteusClient: ProteusClient, private val mlsClientProvider: MLSClientProvider, private val preKeyRepository: PreKeyRepository, private val userRepository: UserRepository, private val assetRepository: AssetRepository, private val syncManager: SyncManager, private val messageSendingScheduler: MessageSendingScheduler, private val timeParser: TimeParser, )</ID>
+    <ID>LongParameterList:MessageSender.kt$MessageSenderImpl$( private val messageRepository: MessageRepository, private val conversationRepository: ConversationRepository, private val syncManager: SyncManager, private val messageSendFailureHandler: MessageSendFailureHandler, private val sessionEstablisher: SessionEstablisher, private val messageEnvelopeCreator: MessageEnvelopeCreator, private val mlsMessageCreator: MLSMessageCreator, private val messageSendingScheduler: MessageSendingScheduler, private val timeParser: TimeParser )</ID>
+    <ID>LongParameterList:MessageSenderTest.kt$MessageSenderTest$( getMessageById: Boolean = true, getConversationProtocol: Boolean = true, getConversationsRecipient: Boolean = true, prepareRecipientsForNewOutGoingMessage: Boolean = true, createOutgoingEnvelope: Boolean = true, updateMessageDate: Boolean = true, updatePendingMessagesAddMillisToDate: Boolean = true, sendEnvelope: Either&lt;CoreFailure, String> = Either.Right("date"), updateMessageStatus: Boolean = true, )</ID>
+    <ID>LongParameterList:MessageStubs.kt$( id: String = "testMessage", content: MessageEntity.MessageEntityContent = MessageEntity.MessageEntityContent.TextMessageContent("Test Text"), conversationId: QualifiedIDEntity = QualifiedIDEntity("convId", "convDomain"), senderUserId: QualifiedIDEntity = QualifiedIDEntity("senderId", "senderDomain"), senderClientId: String = "senderClientId", status: MessageEntity.Status = MessageEntity.Status.PENDING )</ID>
+    <ID>LongParameterList:NetworkQualityChangedHandler.kt$NetworkQualityChangedHandler$( conversationId: String, userId: String, clientId: String, quality: Int, roundTripTimeInMilliseconds: Int, upstreamPacketLossPercentage: Int, downstreamPacketLossPercentage: Int, arg: Pointer? )</ID>
+    <ID>LongParameterList:RegisterAccountRepository.kt$RegisterAccountRepository$( email: String, code: String, name: String, password: String, teamName: String, teamIcon: String, serverConfig: ServerConfig )</ID>
+    <ID>LongParameterList:RegisterAccountUseCase.kt$RegisterParam.Team$( firstName: String, lastName: String, email: String, password: String, val emailActivationCode: String, val teamName: String, val teamIcon: String )</ID>
+    <ID>LongParameterList:SendAssetMessageUseCase.kt$SendAssetMessageUseCaseImpl$( conversationId: ConversationId, dataSize: Long, assetName: String?, assetMimeType: String, sha256: ByteArray, otrKey: AES256Key, assetId: UploadedAssetId )</ID>
+    <ID>LongParameterList:SendAssetMessageUseCase.kt$SendAssetMessageUseCaseImpl$( dataSize: Long, assetName: String?, sha256: ByteArray, otrKey: AES256Key, assetId: UploadedAssetId, mimeType: String, )</ID>
+    <ID>LongParameterList:SendHandler.kt$SendHandler$( context: Pointer?, conversationId: String, userIdSelf: String, clientIdSelf: String, userIdDestination: String?, clientIdDestination: String?, data: Pointer?, length: Size_t, isTransient: Boolean, arg: Pointer? )</ID>
+    <ID>LongParameterList:SendImageMessageUseCase.kt$SendImageMessageUseCaseImpl$( conversationId: ConversationId, dataSize: Long, imageName: String?, sha256: ByteArray, otrKey: AES256Key, assetId: UploadedAssetId, imgWidth: Int, imgHeight: Int )</ID>
+    <ID>LongParameterList:SendImageMessageUseCase.kt$SendImageMessageUseCaseImpl$( dataSize: Long, imageName: String?, sha256: ByteArray, otrKey: AES256Key, assetId: UploadedAssetId, imgWidth: Int, imgHeight: Int )</ID>
+    <ID>LongParameterList:ServerConfigurationDAO.kt$ServerConfigurationDAO$( id: String, apiBaseUrl: String, accountBaseUrl: String, webSocketBaseUrl: String, blackListUrl: String, teamsUrl: String, websiteUrl: String, title: String )</ID>
+    <ID>LongParameterList:UserRepository.kt$UserDataSource$( private val userDAO: UserDAO, private val metadataDAO: MetadataDAO, private val selfApi: SelfApi, private val userDetailsApi: UserDetailsApi, private val assetRepository: AssetRepository, private val idMapper: IdMapper = MapperProvider.idMapper(), private val userMapper: UserMapper = MapperProvider.userMapper(), private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper() )</ID>
+    <ID>LongParameterList:UserStubs.kt$( id: String = "test", name: String = "testName", handle: String = "testHandle", email: String = "testEmail@wire.com", phone: String = "testPhone", accentId: Int = 1, team: String = "testTeam", connectionStatus: UserEntity.ConnectionState = UserEntity.ConnectionState.ACCEPTED, previewAssetId: String = "previewAssetId", completeAssetId: String = "completeAssetId", )</ID>
+    <ID>MagicNumber:AESUtils.kt$AESDecrypt$16</ID>
+    <ID>MagicNumber:AESUtils.kt$AESEncrypt$256</ID>
+    <ID>MagicNumber:CLIUtils.kt$CLIUtils$1024</ID>
+    <ID>MagicNumber:CLIUtils.kt$CLIUtils$16</ID>
+    <ID>MagicNumber:CLIUtils.kt$CLIUtils$4</ID>
+    <ID>MagicNumber:CallManagerImpl.kt$CallManagerImpl$1000</ID>
+    <ID>MagicNumber:ConversationApiImpl.kt$ConversationApiImpl$200</ID>
+    <ID>MagicNumber:ConversationApiImpl.kt$ConversationApiImpl$204</ID>
+    <ID>MagicNumber:ConversationRepository.kt$ConversationDataSource$100</ID>
+    <ID>MagicNumber:ConversationResponse.kt$ConversationResponse.Type.INCOMING_CONNECTION$4</ID>
+    <ID>MagicNumber:ConversationResponse.kt$ConversationResponse.Type.WAIT_FOR_CONNECTION$3</ID>
+    <ID>MagicNumber:ConversationStatus.kt$MutedConversationStatus.AllMuted$3</ID>
+    <ID>MagicNumber:ConversationsApplication.kt$ConversationsApplication$100</ID>
+    <ID>MagicNumber:CustomErrors.kt$CustomErrors$500</ID>
+    <ID>MagicNumber:GetNotificationsUseCase.kt$GetNotificationsUseCaseImpl$100</ID>
+    <ID>MagicNumber:GlobalCallManager.kt$LogHandlerImpl$3</ID>
+    <ID>MagicNumber:HttpEngine.kt$401</ID>
+    <ID>MagicNumber:MLSClientImpl.kt$MLSClientImpl$30</ID>
+    <ID>MagicNumber:MessageApiImp.kt$MessageApiImp$412</ID>
+    <ID>MagicNumber:MessageDAOImpl.kt$MessageMapper$16</ID>
+    <ID>MagicNumber:NetworkUtils.kt$300</ID>
+    <ID>MagicNumber:NetworkUtils.kt$399</ID>
+    <ID>MagicNumber:NetworkUtils.kt$400</ID>
+    <ID>MagicNumber:NetworkUtils.kt$499</ID>
+    <ID>MagicNumber:NetworkUtils.kt$500</ID>
+    <ID>MagicNumber:NetworkUtils.kt$599</ID>
+    <ID>MagicNumber:NotificationApiImpl.kt$NotificationApiImpl$404</ID>
+    <ID>MagicNumber:ProteusClientImpl.kt$ProteusClientImpl$65535</ID>
+    <ID>MagicNumber:ProteusException.kt$ProteusException.Companion$13</ID>
+    <ID>MagicNumber:ProteusException.kt$ProteusException.Companion$14</ID>
+    <ID>MagicNumber:ProteusException.kt$ProteusException.Companion$15</ID>
+    <ID>MagicNumber:ProteusException.kt$ProteusException.Companion$3</ID>
+    <ID>MagicNumber:ProteusException.kt$ProteusException.Companion$4</ID>
+    <ID>MagicNumber:ProteusException.kt$ProteusException.Companion$5</ID>
+    <ID>MagicNumber:ProteusException.kt$ProteusException.Companion$6</ID>
+    <ID>MagicNumber:ProteusException.kt$ProteusException.Companion$7</ID>
+    <ID>MagicNumber:ProteusException.kt$ProteusException.Companion$8</ID>
+    <ID>MagicNumber:ProteusException.kt$ProteusException.Companion$9</ID>
+    <ID>MagicNumber:messages.kt$10</ID>
+    <ID>MagicNumber:messages.kt$11</ID>
+    <ID>MagicNumber:messages.kt$12</ID>
+    <ID>MagicNumber:messages.kt$13</ID>
+    <ID>MagicNumber:messages.kt$14</ID>
+    <ID>MagicNumber:messages.kt$15</ID>
+    <ID>MagicNumber:messages.kt$16</ID>
+    <ID>MagicNumber:messages.kt$17</ID>
+    <ID>MagicNumber:messages.kt$18</ID>
+    <ID>MagicNumber:messages.kt$19</ID>
+    <ID>MagicNumber:messages.kt$20</ID>
+    <ID>MagicNumber:messages.kt$21</ID>
+    <ID>MagicNumber:messages.kt$22</ID>
+    <ID>MagicNumber:messages.kt$23</ID>
+    <ID>MagicNumber:messages.kt$3</ID>
+    <ID>MagicNumber:messages.kt$4</ID>
+    <ID>MagicNumber:messages.kt$5</ID>
+    <ID>MagicNumber:messages.kt$6</ID>
+    <ID>MagicNumber:messages.kt$7</ID>
+    <ID>MagicNumber:messages.kt$8</ID>
+    <ID>MagicNumber:messages.kt$9</ID>
+    <ID>MagicNumber:messages.kt$Article.Companion$4</ID>
+    <ID>MagicNumber:messages.kt$Asset.Companion$6</ID>
+    <ID>MagicNumber:messages.kt$Asset.ImageMetaData.Companion$3</ID>
+    <ID>MagicNumber:messages.kt$Asset.Original.Companion$8</ID>
+    <ID>MagicNumber:messages.kt$Asset.Preview.Companion$4</ID>
+    <ID>MagicNumber:messages.kt$Asset.RemoteData.Companion$6</ID>
+    <ID>MagicNumber:messages.kt$Asset.VideoMetaData.Companion$3</ID>
+    <ID>MagicNumber:messages.kt$Availability.Type.BUSY$3</ID>
+    <ID>MagicNumber:messages.kt$Cleared.Companion$3</ID>
+    <ID>MagicNumber:messages.kt$Composite.Companion$3</ID>
+    <ID>MagicNumber:messages.kt$Confirmation.Companion$3</ID>
+    <ID>MagicNumber:messages.kt$Ephemeral.Companion$6</ID>
+    <ID>MagicNumber:messages.kt$External.Companion$3</ID>
+    <ID>MagicNumber:messages.kt$GenericMessage.Companion$22</ID>
+    <ID>MagicNumber:messages.kt$ImageAsset.Companion$11</ID>
+    <ID>MagicNumber:messages.kt$Knock.Companion$3</ID>
+    <ID>MagicNumber:messages.kt$LastRead.Companion$3</ID>
+    <ID>MagicNumber:messages.kt$LinkPreview.Companion$8</ID>
+    <ID>MagicNumber:messages.kt$Location.Companion$6</ID>
+    <ID>MagicNumber:messages.kt$Mention.Companion$4</ID>
+    <ID>MagicNumber:messages.kt$MessageEdit.Companion$3</ID>
+    <ID>MagicNumber:messages.kt$MessageHide.Companion$3</ID>
+    <ID>MagicNumber:messages.kt$Reaction.Companion$3</ID>
+    <ID>MagicNumber:messages.kt$Text.Companion$6</ID>
+    <ID>MagicNumber:otr.kt$10</ID>
+    <ID>MagicNumber:otr.kt$3</ID>
+    <ID>MagicNumber:otr.kt$4</ID>
+    <ID>MagicNumber:otr.kt$5</ID>
+    <ID>MagicNumber:otr.kt$6</ID>
+    <ID>MagicNumber:otr.kt$7</ID>
+    <ID>MagicNumber:otr.kt$8</ID>
+    <ID>MagicNumber:otr.kt$9</ID>
+    <ID>MagicNumber:otr.kt$NewOtrMessage.Companion$7</ID>
+    <ID>MagicNumber:otr.kt$OtrAssetMeta.Companion$4</ID>
+    <ID>MagicNumber:otr.kt$QualifiedNewOtrMessage.Companion$10</ID>
+    <ID>MatchingDeclarationName:ClientEventsData.kt$NewClientEventData</ID>
+    <ID>MatchingDeclarationName:ConversationStatus.kt$MutedConversationStatus</ID>
+    <ID>MatchingDeclarationName:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$CryptoboxCRUDStore : PreKeyStore</ID>
+    <ID>MatchingDeclarationName:CryptoboxSession.module_@wireapp_cryptobox.kt$CryptoboxSession</ID>
+    <ID>MatchingDeclarationName:Encoder.module_@wireapp_cbor.kt$Encoder</ID>
+    <ID>MatchingDeclarationName:GetOngoingCallsUseCase.kt$GetOngoingCallUseCase</ID>
+    <ID>MatchingDeclarationName:Handles.kt$QualifiedHandle</ID>
+    <ID>MatchingDeclarationName:HttpClientProvider.kt$HttpClientOptions</ID>
+    <ID>MatchingDeclarationName:IDSample.kt$QualifiedIDSamples</ID>
+    <ID>MatchingDeclarationName:IdentityKey.module_@wireapp_proteus.kt$IdentityKey</ID>
+    <ID>MatchingDeclarationName:IdentityKeyPair.module_@wireapp_proteus.kt$IdentityKeyPair</ID>
+    <ID>MatchingDeclarationName:KeyPair.module_@wireapp_proteus.kt$KeyPair</ID>
+    <ID>MatchingDeclarationName:MLSClientProvider.kt$MLSClientProviderImpl : MLSClientProvider</ID>
+    <ID>MatchingDeclarationName:MemoryEngine.module_@wireapp_store-engine.kt$MemoryEngine : CRUDEngine</ID>
+    <ID>MatchingDeclarationName:PreKey.module_@wireapp_proteus.kt$PreKey</ID>
+    <ID>MatchingDeclarationName:PreKeyStore.module_@wireapp_proteus.kt$PreKeyStore</ID>
+    <ID>MatchingDeclarationName:PublicKey.module_@wireapp_proteus.kt$PublicKey</ID>
+    <ID>MatchingDeclarationName:QualifiedId.kt$QualifiedID</ID>
+    <ID>MatchingDeclarationName:RefreshToken.kt$RefreshTokenProperties</ID>
+    <ID>MatchingDeclarationName:RemotePrekeyListMapperTest.kt$PreKeyListMapperTest</ID>
+    <ID>MatchingDeclarationName:SecretKey.module_@wireapp_proteus.kt$SecretKey</ID>
+    <ID>MatchingDeclarationName:ServerConfigResult.kt$GetServerConfigResult</ID>
+    <ID>MatchingDeclarationName:SessionResult.kt$GetAllSessionsResult</ID>
+    <ID>MatchingDeclarationName:SessionStorageTest.kt$SessionDAOTest</ID>
+    <ID>MaxLineLength:ApiTest.kt$ApiTest$assertTrue(contentType.match(this.body.contentType ?: ContentType.Any), "contentType: ${this.body.contentType} doesn't match expected contentType: $contentType")</ID>
+    <ID>MaxLineLength:AssetApiImpl.kt$AssetApiImpl$override suspend</ID>
+    <ID>MaxLineLength:AssetRepositoryTest.kt$AssetRepositoryTest$val actual = assetRepository.uploadAndPersistPrivateAsset(encryptedAssetData = "the_image".encodeToByteArray(), mimeType = ImageAsset.JPEG)</ID>
+    <ID>MaxLineLength:CLIApplication.kt$DeleteClientCommand$val deleteClientResult = userSession.client.deleteClient(DeleteClientParam(password, selfClientsResult.clients[clientIndex].clientId))</ID>
+    <ID>MaxLineLength:CLIApplication.kt$ListenGroupCommand$val conversationIndex = prompt("Enter conversation index", promptSuffix = ": ")?.toInt() ?: throw PrintMessage("Index must be an integer")</ID>
+    <ID>MaxLineLength:CallManagerImpl.kt$CallManagerImpl$override suspend</ID>
+    <ID>MaxLineLength:ClientDAOImpl.kt$ClientDAOImpl$override suspend fun deleteClientsOfUserByQualifiedID(qualifiedID: QualifiedIDEntity): Unit</ID>
+    <ID>MaxLineLength:ClientMapper.kt$ClientMapper$capabilities</ID>
+    <ID>MaxLineLength:ConversationApiImpl.kt$ConversationApiImpl$override suspend</ID>
+    <ID>MaxLineLength:ConversationDAOImpl.kt$ConversationDAOImpl$if (conversationEntity.protocolInfo is ConversationEntity.ProtocolInfo.MLS) ConversationEntity.Protocol.MLS else ConversationEntity.Protocol.PROTEUS</ID>
+    <ID>MaxLineLength:ConversationDAOImpl.kt$ConversationDAOImpl$if (conversationEntity.protocolInfo is ConversationEntity.ProtocolInfo.MLS) conversationEntity.protocolInfo.groupState else ConversationEntity.GroupState.ESTABLISHED</ID>
+    <ID>MaxLineLength:ConversationEvent.kt$ConversationMember$@SerialName("conversation_role") val conversationRole: String?</ID>
+    <ID>MaxLineLength:ConversationEvent.kt$ConversationMembers$@SerialName("user_ids") val userIds: List&lt;String></ID>
+    <ID>MaxLineLength:ConversationEvent.kt$ConversationUsers$@SerialName("user_ids") val userIds: List&lt;String></ID>
+    <ID>MaxLineLength:ConversationEventReceiver.kt$ConversationEventReceiver$// The asset message received contains the asset decryption keys, so update the preview message persisted previously</ID>
+    <ID>MaxLineLength:ConversationMapper.kt$ConversationMapperImpl$qualifiedUsers = if (options.protocol == ConversationOptions.Protocol.PROTEUS) members.map { idMapper.toApiModel(it.id) } else emptyList()</ID>
+    <ID>MaxLineLength:ConversationRepository.kt$ConversationDataSource$is ProtocolInfo.MLS</ID>
+    <ID>MaxLineLength:ConversationRepository.kt$ConversationDataSource$val conversationEntity = conversationMapper.fromApiModelToDaoModel(conversationResponse, mlsGroupState = ConversationEntity.GroupState.PENDING, teamId)</ID>
+    <ID>MaxLineLength:ConversationRepositoryTest.kt$ConversationRepositoryTest$val event = Event.Conversation.NewConversation("id", TestConversation.ID, "time", CONVERSATION_RESPONSE.copy(groupId = groupId, protocol = ConvProtocol.MLS))</ID>
+    <ID>MaxLineLength:ConversationsApplication.kt$ConversationsApplication$LoginApi.LoginParam.LoginWithEmail(email = email, password = password, label = "ktor")</ID>
+    <ID>MaxLineLength:GetOrCreateOneToOneConversationUseCaseTest.kt$GetOrCreateOneToOneConversationUseCaseTest.Companion$val CONVERSATION = Conversation(id = CONVERSATION_ID, name = null, type = ConversationEntity.Type.ONE_ON_ONE, teamId = null, MutedConversationStatus.AllAllowed, null, null)</ID>
+    <ID>MaxLineLength:IdMapper.kt$IdMapperImpl$override fun fromApiToDao(qualifiedID: NetworkQualifiedId)</ID>
+    <ID>MaxLineLength:IdMapper.kt$IdMapperImpl$override fun fromDaoModel(persistenceId: PersistenceQualifiedId)</ID>
+    <ID>MaxLineLength:IdMapper.kt$IdMapperImpl$override fun toCryptoModel(qualifiedID: QualifiedID): CryptoQualifiedID</ID>
+    <ID>MaxLineLength:IdMapper.kt$IdMapperImpl$override fun toCryptoQualifiedIDId(qualifiedID: QualifiedID): CryptoQualifiedID</ID>
+    <ID>MaxLineLength:IdMapper.kt$IdMapperImpl$override fun toDaoModel(qualifiedID: QualifiedID): PersistenceQualifiedId</ID>
+    <ID>MaxLineLength:IdentityKeyPair.module_@wireapp_proteus.kt$IdentityKeyPair$external open</ID>
+    <ID>MaxLineLength:LocalNotification.kt$LocalNotificationMessage.Comment$data</ID>
+    <ID>MaxLineLength:MLSConversationRepository.kt$MLSConversationDataSource$Either.Right(mlsClient.decryptMessage((conversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId, messageEvent.content.decodeBase64Bytes()))</ID>
+    <ID>MaxLineLength:MLSConversationRepository.kt$MLSConversationDataSource$override suspend</ID>
+    <ID>MaxLineLength:MLSConversationRepository.kt$MLSConversationDataSource$val conversationID = conversationDAO.getConversationByGroupID(groupID).first()?.id ?: return Either.Left(StorageFailure.DataNotFound)</ID>
+    <ID>MaxLineLength:MemoryEngine.module_@wireapp_store-engine.kt$MemoryEngine$override fun &lt;PrimaryKey, ChangesType> updateOrCreate(tableName: String, primaryKey: PrimaryKey, changes: ChangesType): Promise&lt;PrimaryKey></ID>
+    <ID>MaxLineLength:MessageEnvelopeCreatorTest.kt$MessageEnvelopeCreatorTest$.</ID>
+    <ID>MaxLineLength:MessageRepository.kt$MessageDataSource$override suspend</ID>
+    <ID>MaxLineLength:MessageScope.kt$MessageScope$val getNotifications: GetNotificationsUseCase get() = GetNotificationsUseCaseImpl(messageRepository, userRepository, conversationRepository)</ID>
+    <ID>MaxLineLength:MessageSenderTest.kt$MessageSenderTest$.</ID>
+    <ID>MaxLineLength:PreKeyBundle.module_@wireapp_proteus.kt$PreKeyBundle$constructor(publicIdentityKey: IdentityKey, preKeyId: Number, publicKey: PublicKey, signature: Uint8Array? = definedExternally, version: Number = definedExternally)</ID>
+    <ID>MaxLineLength:PreKeyListMapper.kt$PreKeyListMapper$fun</ID>
+    <ID>MaxLineLength:ProtoContentMapper.kt$ProtoContentMapperImpl$// Backend sends some preview asset messages just with img metadata and no keys or asset id, so we need to overwrite one with the other one</ID>
+    <ID>MaxLineLength:RegisterAccountRepositoryTest.kt$RegisterAccountRepositoryTest$val authSession = with(SESSION) { AuthSession(UserId(userId.value, userId.domain), accessToken, refreshToken, tokenType, serverConfig) }</ID>
+    <ID>MaxLineLength:RegisterClientUseCase.kt$RegisterClientUseCaseImpl$if</ID>
+    <ID>MaxLineLength:SSOLoginApi.kt$SSOLoginApi$suspend fun metaData(apiBaseUrl: Url): NetworkResponse&lt;String></ID>
+    <ID>MaxLineLength:SSOLoginApi.kt$SSOLoginApiImpl$override suspend</ID>
+    <ID>MaxLineLength:SaveSessionUseCase.kt$SaveSessionUseCase$@Deprecated("unsafe API", replaceWith = ReplaceWith("com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase", "com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase"))</ID>
+    <ID>MaxLineLength:SendAssetMessageUseCase.kt$SendAssetMessageUseCaseImpl$prepareAndSendAssetMessage(conversationId, assetRawData.size.toLong(), assetName, assetMimeType, sha256, otrKey, assetId)</ID>
+    <ID>MaxLineLength:SendAssetMessageUseCaseTest.kt$SendAssetMessageUseCaseTest$"some VERY long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long asset".toByteArray()</ID>
+    <ID>MaxLineLength:SendCallingMessage.kt$suspend</ID>
+    <ID>MaxLineLength:SendImageMessageUseCase.kt$SendImageMessageUseCaseImpl$prepareAndSendImageMessage(conversationId, imageRawData.size.toLong(), imageName, sha256, otrKey, assetId, imgWidth, imgHeight)</ID>
+    <ID>MaxLineLength:SessionEstablisher.kt$SessionEstablisherImpl$private</ID>
+    <ID>MaxLineLength:SessionEstablisherTest.kt$SessionEstablisherTest$val cryptoSessionId = CryptoSessionId(CryptoUserID(TEST_USER_ID_1.value, TEST_USER_ID_1.domain), CryptoClientId(clientPreKeyInfo.clientId))</ID>
+    <ID>MaxLineLength:SessionRepository.kt$SessionRepository$// TODO: exposing all session is unnecessary since we only need the IDs of the users getAllSessions(): Either&lt;SessionFailure, List&lt;UserIDs>></ID>
+    <ID>MaxLineLength:TestConversation.kt$TestConversation$val ENTITY = ConversationEntity(ENTITY_ID, "convo name", ConversationEntity.Type.SELF, "teamId", ConversationEntity.ProtocolInfo.Proteus, lastNotificationDate = null, lastModifiedDate = "2022-03-30T15:36:00.000Z")</ID>
+    <ID>MaxLineLength:TestConversation.kt$TestConversation$val GROUP = Conversation(ID.copy(value = "GROUP ID"), "GROUP Name", ConversationEntity.Type.GROUP, TestTeam.TEAM_ID, MutedConversationStatus.AllAllowed, null, null)</ID>
+    <ID>MaxLineLength:TestConversation.kt$TestConversation$val ONE_ON_ONE = Conversation(ID.copy(value = "1O1 ID"), "ONE_ON_ONE Name", ConversationEntity.Type.ONE_ON_ONE, TestTeam.TEAM_ID, MutedConversationStatus.AllAllowed, null, null)</ID>
+    <ID>MaxLineLength:TestConversation.kt$TestConversation$val SELF = Conversation(ID.copy(value = "SELF ID"), "SELF Name", ConversationEntity.Type.SELF, TestTeam.TEAM_ID, MutedConversationStatus.AllAllowed, null, null)</ID>
+    <ID>MaxLineLength:TestCredentials.kt$accessToken = "eyJhbGciOiJIUzI1AnwarInR5cCI6IkpXVCJ9.eyJsb2dnZWRJbkFzIjoiYWRtaW4iLCJpYXQiOjE0MjI3Nzk2Mz69.gzSraSYS8EXBxLN_oWnFSRgCzcmJmMjLiuyu5CSpyHI"</ID>
+    <ID>MaxLineLength:TestCredentials.kt$refreshToken = "a123bGciOiJIUzI1NiIsInR5cCI6IkpX2fr9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6Ik420G4gRG9lIiwiYWRtaW4iOnRydWV9.TJVA95OrM7E2cBab30RMHrHDcEfxjoYZgeFONFh7HgQ"</ID>
+    <ID>MaxLineLength:UserDTO.kt$NewUserDTO$@SerialName("label") val label: String?</ID>
+    <ID>MaxLineLength:UserSessionScope.kt$UserSessionScopeCommon$private val preKeyRemoteRepository: PreKeyRemoteRepository get() = PreKeyRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi)</ID>
+    <ID>MaxLineLength:UserSessionScope.kt$UserSessionScopeCommon$val client: ClientScope get() = ClientScope(clientRepository, preKeyRepository, keyPackageRepository, mlsClientProvider,notificationTokenRepository)</ID>
+    <ID>MaxLineLength:ValidateUserHandleUseCaseTest.kt$ValidateUserHandleUseCaseTest$fun</ID>
+    <ID>MaxLineLength:WrapApiRequestTest.kt$WrapApiRequestTest$val expected = NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "have you tried turning it off and on again?", "server_crash")))</ID>
+    <ID>MaxLineLength:messages.kt$1 -> items = (items ?: pbandk.ListWithSize.Builder()).apply { this += _fieldValue as Sequence&lt;com.wire.kalium.protobuf.messages.Composite.Item> }</ID>
+    <ID>MaxLineLength:messages.kt$22 -> content = GenericMessage.Content.ButtonActionConfirmation(_fieldValue as com.wire.kalium.protobuf.messages.ButtonActionConfirmation)</ID>
+    <ID>MaxLineLength:messages.kt$3 -> linkPreview = (linkPreview ?: pbandk.ListWithSize.Builder()).apply { this += _fieldValue as Sequence&lt;com.wire.kalium.protobuf.messages.LinkPreview> }</ID>
+    <ID>MaxLineLength:messages.kt$4 -> mentions = (mentions ?: pbandk.ListWithSize.Builder()).apply { this += _fieldValue as Sequence&lt;com.wire.kalium.protobuf.messages.Mention> }</ID>
+    <ID>MaxLineLength:messages.kt$Article.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Article</ID>
+    <ID>MaxLineLength:messages.kt$Asset.AudioMetaData$override val descriptor: pbandk.MessageDescriptor&lt;com.wire.kalium.protobuf.messages.Asset.AudioMetaData> get() = Companion.descriptor</ID>
+    <ID>MaxLineLength:messages.kt$Asset.AudioMetaData.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Asset.AudioMetaData</ID>
+    <ID>MaxLineLength:messages.kt$Asset.AudioMetaData.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.Asset.AudioMetaData by lazy { com.wire.kalium.protobuf.messages.Asset.AudioMetaData() }</ID>
+    <ID>MaxLineLength:messages.kt$Asset.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Asset</ID>
+    <ID>MaxLineLength:messages.kt$Asset.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.messages.Asset.NotUploaded.Companion, hasPresence = true)</ID>
+    <ID>MaxLineLength:messages.kt$Asset.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.messages.LegalHoldStatus.Companion, hasPresence = true)</ID>
+    <ID>MaxLineLength:messages.kt$Asset.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Asset.Original.Companion)</ID>
+    <ID>MaxLineLength:messages.kt$Asset.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Asset.Preview.Companion)</ID>
+    <ID>MaxLineLength:messages.kt$Asset.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Asset.RemoteData.Companion)</ID>
+    <ID>MaxLineLength:messages.kt$Asset.ImageMetaData$override val descriptor: pbandk.MessageDescriptor&lt;com.wire.kalium.protobuf.messages.Asset.ImageMetaData> get() = Companion.descriptor</ID>
+    <ID>MaxLineLength:messages.kt$Asset.ImageMetaData.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Asset.ImageMetaData</ID>
+    <ID>MaxLineLength:messages.kt$Asset.ImageMetaData.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.Asset.ImageMetaData by lazy { com.wire.kalium.protobuf.messages.Asset.ImageMetaData() }</ID>
+    <ID>MaxLineLength:messages.kt$Asset.NotUploaded.Companion$override fun fromName(name: String): Asset.NotUploaded</ID>
+    <ID>MaxLineLength:messages.kt$Asset.Original.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Asset.Original</ID>
+    <ID>MaxLineLength:messages.kt$Asset.Original.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.Asset.Original by lazy { com.wire.kalium.protobuf.messages.Asset.Original() }</ID>
+    <ID>MaxLineLength:messages.kt$Asset.Original.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Asset.AudioMetaData.Companion)</ID>
+    <ID>MaxLineLength:messages.kt$Asset.Original.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Asset.ImageMetaData.Companion)</ID>
+    <ID>MaxLineLength:messages.kt$Asset.Original.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Asset.VideoMetaData.Companion)</ID>
+    <ID>MaxLineLength:messages.kt$Asset.Original.MetaData$Audio : MetaData</ID>
+    <ID>MaxLineLength:messages.kt$Asset.Original.MetaData$Image : MetaData</ID>
+    <ID>MaxLineLength:messages.kt$Asset.Original.MetaData$Video : MetaData</ID>
+    <ID>MaxLineLength:messages.kt$Asset.Preview.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Asset.Preview</ID>
+    <ID>MaxLineLength:messages.kt$Asset.Preview.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.Asset.Preview by lazy { com.wire.kalium.protobuf.messages.Asset.Preview() }</ID>
+    <ID>MaxLineLength:messages.kt$Asset.Preview.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Asset.ImageMetaData.Companion)</ID>
+    <ID>MaxLineLength:messages.kt$Asset.Preview.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Asset.RemoteData.Companion)</ID>
+    <ID>MaxLineLength:messages.kt$Asset.Preview.MetaData$Image : MetaData</ID>
+    <ID>MaxLineLength:messages.kt$Asset.RemoteData.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Asset.RemoteData</ID>
+    <ID>MaxLineLength:messages.kt$Asset.RemoteData.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.Asset.RemoteData by lazy { com.wire.kalium.protobuf.messages.Asset.RemoteData() }</ID>
+    <ID>MaxLineLength:messages.kt$Asset.RemoteData.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.messages.EncryptionAlgorithm.Companion, hasPresence = true)</ID>
+    <ID>MaxLineLength:messages.kt$Asset.Status$NotUploaded : Status</ID>
+    <ID>MaxLineLength:messages.kt$Asset.Status$Uploaded : Status</ID>
+    <ID>MaxLineLength:messages.kt$Asset.VideoMetaData$override val descriptor: pbandk.MessageDescriptor&lt;com.wire.kalium.protobuf.messages.Asset.VideoMetaData> get() = Companion.descriptor</ID>
+    <ID>MaxLineLength:messages.kt$Asset.VideoMetaData.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Asset.VideoMetaData</ID>
+    <ID>MaxLineLength:messages.kt$Asset.VideoMetaData.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.Asset.VideoMetaData by lazy { com.wire.kalium.protobuf.messages.Asset.VideoMetaData() }</ID>
+    <ID>MaxLineLength:messages.kt$Availability.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Availability</ID>
+    <ID>MaxLineLength:messages.kt$Availability.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.Availability by lazy { com.wire.kalium.protobuf.messages.Availability() }</ID>
+    <ID>MaxLineLength:messages.kt$Availability.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.messages.Availability.Type.Companion)</ID>
+    <ID>MaxLineLength:messages.kt$Availability.Type.Companion$override fun fromName(name: String): Availability.Type</ID>
+    <ID>MaxLineLength:messages.kt$Button.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Button</ID>
+    <ID>MaxLineLength:messages.kt$ButtonAction.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.ButtonAction</ID>
+    <ID>MaxLineLength:messages.kt$ButtonAction.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.ButtonAction by lazy { com.wire.kalium.protobuf.messages.ButtonAction() }</ID>
+    <ID>MaxLineLength:messages.kt$ButtonActionConfirmation$override val descriptor: pbandk.MessageDescriptor&lt;com.wire.kalium.protobuf.messages.ButtonActionConfirmation> get() = Companion.descriptor</ID>
+    <ID>MaxLineLength:messages.kt$ButtonActionConfirmation.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.ButtonActionConfirmation</ID>
+    <ID>MaxLineLength:messages.kt$ButtonActionConfirmation.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.ButtonActionConfirmation by lazy { com.wire.kalium.protobuf.messages.ButtonActionConfirmation() }</ID>
+    <ID>MaxLineLength:messages.kt$Calling.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Calling</ID>
+    <ID>MaxLineLength:messages.kt$Cleared.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Cleared</ID>
+    <ID>MaxLineLength:messages.kt$Cleared.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.QualifiedConversationId.Companion)</ID>
+    <ID>MaxLineLength:messages.kt$ClientAction.Companion$override fun fromName(name: String): ClientAction</ID>
+    <ID>MaxLineLength:messages.kt$Composite.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Composite</ID>
+    <ID>MaxLineLength:messages.kt$Composite.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.messages.LegalHoldStatus.Companion, hasPresence = true)</ID>
+    <ID>MaxLineLength:messages.kt$Composite.Companion$type = pbandk.FieldDescriptor.Type.Repeated&lt;com.wire.kalium.protobuf.messages.Composite.Item>(valueType = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Composite.Item.Companion))</ID>
+    <ID>MaxLineLength:messages.kt$Composite.Item.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Composite.Item</ID>
+    <ID>MaxLineLength:messages.kt$Composite.Item.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.Composite.Item by lazy { com.wire.kalium.protobuf.messages.Composite.Item() }</ID>
+    <ID>MaxLineLength:messages.kt$Composite.Item.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Button.Companion)</ID>
+    <ID>MaxLineLength:messages.kt$Composite.Item.Content$Button : Content</ID>
+    <ID>MaxLineLength:messages.kt$Confirmation.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Confirmation</ID>
+    <ID>MaxLineLength:messages.kt$Confirmation.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.Confirmation by lazy { com.wire.kalium.protobuf.messages.Confirmation() }</ID>
+    <ID>MaxLineLength:messages.kt$Confirmation.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.messages.Confirmation.Type.Companion)</ID>
+    <ID>MaxLineLength:messages.kt$Confirmation.Type.Companion$override fun fromName(name: String): Confirmation.Type</ID>
+    <ID>MaxLineLength:messages.kt$DataTransfer.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.DataTransfer</ID>
+    <ID>MaxLineLength:messages.kt$DataTransfer.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.DataTransfer by lazy { com.wire.kalium.protobuf.messages.DataTransfer() }</ID>
+    <ID>MaxLineLength:messages.kt$DataTransfer.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.TrackingIdentifier.Companion)</ID>
+    <ID>MaxLineLength:messages.kt$EncryptionAlgorithm.Companion$override fun fromName(name: String): EncryptionAlgorithm</ID>
+    <ID>MaxLineLength:messages.kt$Ephemeral.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Ephemeral</ID>
+    <ID>MaxLineLength:messages.kt$Ephemeral.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.ImageAsset.Companion)</ID>
+    <ID>MaxLineLength:messages.kt$Ephemeral.Content$Image : Content</ID>
+    <ID>MaxLineLength:messages.kt$Ephemeral.Content$Location : Content</ID>
+    <ID>MaxLineLength:messages.kt$External.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.External</ID>
+    <ID>MaxLineLength:messages.kt$External.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.messages.EncryptionAlgorithm.Companion, hasPresence = true)</ID>
+    <ID>MaxLineLength:messages.kt$GenericMessage.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.GenericMessage</ID>
+    <ID>MaxLineLength:messages.kt$GenericMessage.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.GenericMessage by lazy { com.wire.kalium.protobuf.messages.GenericMessage() }</ID>
+    <ID>MaxLineLength:messages.kt$GenericMessage.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.messages.ClientAction.Companion, hasPresence = true)</ID>
+    <ID>MaxLineLength:messages.kt$GenericMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Availability.Companion)</ID>
+    <ID>MaxLineLength:messages.kt$GenericMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.ButtonAction.Companion)</ID>
+    <ID>MaxLineLength:messages.kt$GenericMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.ButtonActionConfirmation.Companion)</ID>
+    <ID>MaxLineLength:messages.kt$GenericMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Composite.Companion)</ID>
+    <ID>MaxLineLength:messages.kt$GenericMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Confirmation.Companion)</ID>
+    <ID>MaxLineLength:messages.kt$GenericMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.DataTransfer.Companion)</ID>
+    <ID>MaxLineLength:messages.kt$GenericMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Ephemeral.Companion)</ID>
+    <ID>MaxLineLength:messages.kt$GenericMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.ImageAsset.Companion)</ID>
+    <ID>MaxLineLength:messages.kt$GenericMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.MessageDelete.Companion)</ID>
+    <ID>MaxLineLength:messages.kt$GenericMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.MessageEdit.Companion)</ID>
+    <ID>MaxLineLength:messages.kt$GenericMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.MessageHide.Companion)</ID>
+    <ID>MaxLineLength:messages.kt$GenericMessage.Content$Availability : Content</ID>
+    <ID>MaxLineLength:messages.kt$GenericMessage.Content$ButtonAction : Content</ID>
+    <ID>MaxLineLength:messages.kt$GenericMessage.Content$ButtonActionConfirmation : Content</ID>
+    <ID>MaxLineLength:messages.kt$GenericMessage.Content$Calling : Content</ID>
+    <ID>MaxLineLength:messages.kt$GenericMessage.Content$Cleared : Content</ID>
+    <ID>MaxLineLength:messages.kt$GenericMessage.Content$ClientAction : Content</ID>
+    <ID>MaxLineLength:messages.kt$GenericMessage.Content$Composite : Content</ID>
+    <ID>MaxLineLength:messages.kt$GenericMessage.Content$Confirmation : Content</ID>
+    <ID>MaxLineLength:messages.kt$GenericMessage.Content$DataTransfer : Content</ID>
+    <ID>MaxLineLength:messages.kt$GenericMessage.Content$Deleted : Content</ID>
+    <ID>MaxLineLength:messages.kt$GenericMessage.Content$Edited : Content</ID>
+    <ID>MaxLineLength:messages.kt$GenericMessage.Content$Ephemeral : Content</ID>
+    <ID>MaxLineLength:messages.kt$GenericMessage.Content$External : Content</ID>
+    <ID>MaxLineLength:messages.kt$GenericMessage.Content$Hidden : Content</ID>
+    <ID>MaxLineLength:messages.kt$GenericMessage.Content$Image : Content</ID>
+    <ID>MaxLineLength:messages.kt$GenericMessage.Content$LastRead : Content</ID>
+    <ID>MaxLineLength:messages.kt$GenericMessage.Content$Location : Content</ID>
+    <ID>MaxLineLength:messages.kt$GenericMessage.Content$Reaction : Content</ID>
+    <ID>MaxLineLength:messages.kt$ImageAsset.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.ImageAsset</ID>
+    <ID>MaxLineLength:messages.kt$Knock.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Knock</ID>
+    <ID>MaxLineLength:messages.kt$Knock.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.messages.LegalHoldStatus.Companion, hasPresence = true)</ID>
+    <ID>MaxLineLength:messages.kt$LastRead.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.LastRead</ID>
+    <ID>MaxLineLength:messages.kt$LastRead.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.QualifiedConversationId.Companion)</ID>
+    <ID>MaxLineLength:messages.kt$LegalHoldStatus.Companion$override fun fromName(name: String): LegalHoldStatus</ID>
+    <ID>MaxLineLength:messages.kt$LinkPreview.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.LinkPreview</ID>
+    <ID>MaxLineLength:messages.kt$LinkPreview.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.LinkPreview by lazy { com.wire.kalium.protobuf.messages.LinkPreview() }</ID>
+    <ID>MaxLineLength:messages.kt$LinkPreview.Preview$Article : Preview</ID>
+    <ID>MaxLineLength:messages.kt$Location.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Location</ID>
+    <ID>MaxLineLength:messages.kt$Location.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.messages.LegalHoldStatus.Companion, hasPresence = true)</ID>
+    <ID>MaxLineLength:messages.kt$Mention.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Mention</ID>
+    <ID>MaxLineLength:messages.kt$Mention.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.QualifiedUserId.Companion)</ID>
+    <ID>MaxLineLength:messages.kt$MessageDelete.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.MessageDelete</ID>
+    <ID>MaxLineLength:messages.kt$MessageDelete.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.MessageDelete by lazy { com.wire.kalium.protobuf.messages.MessageDelete() }</ID>
+    <ID>MaxLineLength:messages.kt$MessageEdit.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.MessageEdit</ID>
+    <ID>MaxLineLength:messages.kt$MessageEdit.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.MessageEdit by lazy { com.wire.kalium.protobuf.messages.MessageEdit() }</ID>
+    <ID>MaxLineLength:messages.kt$MessageEdit.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Composite.Companion)</ID>
+    <ID>MaxLineLength:messages.kt$MessageEdit.Content$Composite : Content</ID>
+    <ID>MaxLineLength:messages.kt$MessageHide.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.MessageHide</ID>
+    <ID>MaxLineLength:messages.kt$MessageHide.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.MessageHide by lazy { com.wire.kalium.protobuf.messages.MessageHide() }</ID>
+    <ID>MaxLineLength:messages.kt$MessageHide.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.QualifiedConversationId.Companion)</ID>
+    <ID>MaxLineLength:messages.kt$QualifiedConversationId$override val descriptor: pbandk.MessageDescriptor&lt;com.wire.kalium.protobuf.messages.QualifiedConversationId> get() = Companion.descriptor</ID>
+    <ID>MaxLineLength:messages.kt$QualifiedConversationId.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.QualifiedConversationId</ID>
+    <ID>MaxLineLength:messages.kt$QualifiedConversationId.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.QualifiedConversationId by lazy { com.wire.kalium.protobuf.messages.QualifiedConversationId() }</ID>
+    <ID>MaxLineLength:messages.kt$QualifiedUserId.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.QualifiedUserId</ID>
+    <ID>MaxLineLength:messages.kt$QualifiedUserId.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.QualifiedUserId by lazy { com.wire.kalium.protobuf.messages.QualifiedUserId() }</ID>
+    <ID>MaxLineLength:messages.kt$Quote.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Quote</ID>
+    <ID>MaxLineLength:messages.kt$Reaction.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Reaction</ID>
+    <ID>MaxLineLength:messages.kt$Reaction.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.messages.LegalHoldStatus.Companion, hasPresence = true)</ID>
+    <ID>MaxLineLength:messages.kt$Text.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Text</ID>
+    <ID>MaxLineLength:messages.kt$Text.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.messages.LegalHoldStatus.Companion, hasPresence = true)</ID>
+    <ID>MaxLineLength:messages.kt$Text.Companion$type = pbandk.FieldDescriptor.Type.Repeated&lt;com.wire.kalium.protobuf.messages.LinkPreview>(valueType = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.LinkPreview.Companion))</ID>
+    <ID>MaxLineLength:messages.kt$Text.Companion$type = pbandk.FieldDescriptor.Type.Repeated&lt;com.wire.kalium.protobuf.messages.Mention>(valueType = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Mention.Companion))</ID>
+    <ID>MaxLineLength:messages.kt$TrackingIdentifier.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.TrackingIdentifier</ID>
+    <ID>MaxLineLength:messages.kt$TrackingIdentifier.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.TrackingIdentifier by lazy { com.wire.kalium.protobuf.messages.TrackingIdentifier() }</ID>
+    <ID>MaxLineLength:messages.kt$Tweet.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Tweet</ID>
+    <ID>MaxLineLength:messages.kt$private</ID>
+    <ID>MaxLineLength:messages.kt$public</ID>
+    <ID>MaxLineLength:otr.kt$1 -> userIds = (userIds ?: pbandk.ListWithSize.Builder()).apply { this += _fieldValue as Sequence&lt;com.wire.kalium.protobuf.otr.QualifiedUserId> }</ID>
+    <ID>MaxLineLength:otr.kt$10 -> clientMismatchStrategy = QualifiedNewOtrMessage.ClientMismatchStrategy.IgnoreOnly(_fieldValue as com.wire.kalium.protobuf.otr.ClientMismatchStrategy.IgnoreOnly)</ID>
+    <ID>MaxLineLength:otr.kt$2 -> clients = (clients ?: pbandk.ListWithSize.Builder()).apply { this += _fieldValue as Sequence&lt;com.wire.kalium.protobuf.otr.ClientEntry> }</ID>
+    <ID>MaxLineLength:otr.kt$2 -> entries = (entries ?: pbandk.ListWithSize.Builder()).apply { this += _fieldValue as Sequence&lt;com.wire.kalium.protobuf.otr.UserEntry> }</ID>
+    <ID>MaxLineLength:otr.kt$2 -> recipients = (recipients ?: pbandk.ListWithSize.Builder()).apply { this += _fieldValue as Sequence&lt;com.wire.kalium.protobuf.otr.QualifiedUserEntry> }</ID>
+    <ID>MaxLineLength:otr.kt$2 -> recipients = (recipients ?: pbandk.ListWithSize.Builder()).apply { this += _fieldValue as Sequence&lt;com.wire.kalium.protobuf.otr.UserEntry> }</ID>
+    <ID>MaxLineLength:otr.kt$7 -> clientMismatchStrategy = QualifiedNewOtrMessage.ClientMismatchStrategy.ReportAll(_fieldValue as com.wire.kalium.protobuf.otr.ClientMismatchStrategy.ReportAll)</ID>
+    <ID>MaxLineLength:otr.kt$7 -> reportMissing = (reportMissing ?: pbandk.ListWithSize.Builder()).apply { this += _fieldValue as Sequence&lt;com.wire.kalium.protobuf.otr.UserId> }</ID>
+    <ID>MaxLineLength:otr.kt$8 -> clientMismatchStrategy = QualifiedNewOtrMessage.ClientMismatchStrategy.IgnoreAll(_fieldValue as com.wire.kalium.protobuf.otr.ClientMismatchStrategy.IgnoreAll)</ID>
+    <ID>MaxLineLength:otr.kt$9 -> clientMismatchStrategy = QualifiedNewOtrMessage.ClientMismatchStrategy.ReportOnly(_fieldValue as com.wire.kalium.protobuf.otr.ClientMismatchStrategy.ReportOnly)</ID>
+    <ID>MaxLineLength:otr.kt$ClientEntry.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.otr.ClientEntry</ID>
+    <ID>MaxLineLength:otr.kt$ClientId.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.otr.ClientId</ID>
+    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.otr.ClientMismatchStrategy</ID>
+    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.Companion$public val defaultInstance: com.wire.kalium.protobuf.otr.ClientMismatchStrategy by lazy { com.wire.kalium.protobuf.otr.ClientMismatchStrategy() }</ID>
+    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.IgnoreAll$override operator fun plus(other: pbandk.Message?): com.wire.kalium.protobuf.otr.ClientMismatchStrategy.IgnoreAll</ID>
+    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.IgnoreAll$override val descriptor: pbandk.MessageDescriptor&lt;com.wire.kalium.protobuf.otr.ClientMismatchStrategy.IgnoreAll> get() = Companion.descriptor</ID>
+    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.IgnoreAll.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.otr.ClientMismatchStrategy.IgnoreAll</ID>
+    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.IgnoreAll.Companion$public val defaultInstance: com.wire.kalium.protobuf.otr.ClientMismatchStrategy.IgnoreAll by lazy { com.wire.kalium.protobuf.otr.ClientMismatchStrategy.IgnoreAll() }</ID>
+    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.IgnoreOnly$override operator fun plus(other: pbandk.Message?): com.wire.kalium.protobuf.otr.ClientMismatchStrategy.IgnoreOnly</ID>
+    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.IgnoreOnly$override val descriptor: pbandk.MessageDescriptor&lt;com.wire.kalium.protobuf.otr.ClientMismatchStrategy.IgnoreOnly> get() = Companion.descriptor</ID>
+    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.IgnoreOnly.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.otr.ClientMismatchStrategy.IgnoreOnly</ID>
+    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.IgnoreOnly.Companion$public val defaultInstance: com.wire.kalium.protobuf.otr.ClientMismatchStrategy.IgnoreOnly by lazy { com.wire.kalium.protobuf.otr.ClientMismatchStrategy.IgnoreOnly() }</ID>
+    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.IgnoreOnly.Companion$type = pbandk.FieldDescriptor.Type.Repeated&lt;com.wire.kalium.protobuf.otr.QualifiedUserId>(valueType = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.otr.QualifiedUserId.Companion))</ID>
+    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.ReportAll$override operator fun plus(other: pbandk.Message?): com.wire.kalium.protobuf.otr.ClientMismatchStrategy.ReportAll</ID>
+    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.ReportAll$override val descriptor: pbandk.MessageDescriptor&lt;com.wire.kalium.protobuf.otr.ClientMismatchStrategy.ReportAll> get() = Companion.descriptor</ID>
+    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.ReportAll.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.otr.ClientMismatchStrategy.ReportAll</ID>
+    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.ReportAll.Companion$public val defaultInstance: com.wire.kalium.protobuf.otr.ClientMismatchStrategy.ReportAll by lazy { com.wire.kalium.protobuf.otr.ClientMismatchStrategy.ReportAll() }</ID>
+    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.ReportOnly$override operator fun plus(other: pbandk.Message?): com.wire.kalium.protobuf.otr.ClientMismatchStrategy.ReportOnly</ID>
+    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.ReportOnly$override val descriptor: pbandk.MessageDescriptor&lt;com.wire.kalium.protobuf.otr.ClientMismatchStrategy.ReportOnly> get() = Companion.descriptor</ID>
+    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.ReportOnly.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.otr.ClientMismatchStrategy.ReportOnly</ID>
+    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.ReportOnly.Companion$public val defaultInstance: com.wire.kalium.protobuf.otr.ClientMismatchStrategy.ReportOnly by lazy { com.wire.kalium.protobuf.otr.ClientMismatchStrategy.ReportOnly() }</ID>
+    <ID>MaxLineLength:otr.kt$ClientMismatchStrategy.ReportOnly.Companion$type = pbandk.FieldDescriptor.Type.Repeated&lt;com.wire.kalium.protobuf.otr.QualifiedUserId>(valueType = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.otr.QualifiedUserId.Companion))</ID>
+    <ID>MaxLineLength:otr.kt$NewOtrMessage.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.otr.NewOtrMessage</ID>
+    <ID>MaxLineLength:otr.kt$NewOtrMessage.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.otr.Priority.Companion, hasPresence = true)</ID>
+    <ID>MaxLineLength:otr.kt$NewOtrMessage.Companion$type = pbandk.FieldDescriptor.Type.Repeated&lt;com.wire.kalium.protobuf.otr.UserEntry>(valueType = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.otr.UserEntry.Companion))</ID>
+    <ID>MaxLineLength:otr.kt$NewOtrMessage.Companion$type = pbandk.FieldDescriptor.Type.Repeated&lt;com.wire.kalium.protobuf.otr.UserId>(valueType = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.otr.UserId.Companion))</ID>
+    <ID>MaxLineLength:otr.kt$OtrAssetMeta.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.otr.OtrAssetMeta</ID>
+    <ID>MaxLineLength:otr.kt$OtrAssetMeta.Companion$type = pbandk.FieldDescriptor.Type.Repeated&lt;com.wire.kalium.protobuf.otr.UserEntry>(valueType = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.otr.UserEntry.Companion))</ID>
+    <ID>MaxLineLength:otr.kt$Priority.Companion$override fun fromName(name: String): Priority</ID>
+    <ID>MaxLineLength:otr.kt$QualifiedNewOtrMessage.ClientMismatchStrategy$IgnoreAll : ClientMismatchStrategy</ID>
+    <ID>MaxLineLength:otr.kt$QualifiedNewOtrMessage.ClientMismatchStrategy$IgnoreOnly : ClientMismatchStrategy</ID>
+    <ID>MaxLineLength:otr.kt$QualifiedNewOtrMessage.ClientMismatchStrategy$ReportAll : ClientMismatchStrategy</ID>
+    <ID>MaxLineLength:otr.kt$QualifiedNewOtrMessage.ClientMismatchStrategy$ReportOnly : ClientMismatchStrategy</ID>
+    <ID>MaxLineLength:otr.kt$QualifiedNewOtrMessage.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.otr.QualifiedNewOtrMessage</ID>
+    <ID>MaxLineLength:otr.kt$QualifiedNewOtrMessage.Companion$public val defaultInstance: com.wire.kalium.protobuf.otr.QualifiedNewOtrMessage by lazy { com.wire.kalium.protobuf.otr.QualifiedNewOtrMessage() }</ID>
+    <ID>MaxLineLength:otr.kt$QualifiedNewOtrMessage.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.otr.Priority.Companion, hasPresence = true)</ID>
+    <ID>MaxLineLength:otr.kt$QualifiedNewOtrMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.otr.ClientMismatchStrategy.IgnoreAll.Companion)</ID>
+    <ID>MaxLineLength:otr.kt$QualifiedNewOtrMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.otr.ClientMismatchStrategy.IgnoreOnly.Companion)</ID>
+    <ID>MaxLineLength:otr.kt$QualifiedNewOtrMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.otr.ClientMismatchStrategy.ReportAll.Companion)</ID>
+    <ID>MaxLineLength:otr.kt$QualifiedNewOtrMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.otr.ClientMismatchStrategy.ReportOnly.Companion)</ID>
+    <ID>MaxLineLength:otr.kt$QualifiedNewOtrMessage.Companion$type = pbandk.FieldDescriptor.Type.Repeated&lt;com.wire.kalium.protobuf.otr.QualifiedUserEntry>(valueType = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.otr.QualifiedUserEntry.Companion))</ID>
+    <ID>MaxLineLength:otr.kt$QualifiedUserEntry.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.otr.QualifiedUserEntry</ID>
+    <ID>MaxLineLength:otr.kt$QualifiedUserEntry.Companion$public val defaultInstance: com.wire.kalium.protobuf.otr.QualifiedUserEntry by lazy { com.wire.kalium.protobuf.otr.QualifiedUserEntry() }</ID>
+    <ID>MaxLineLength:otr.kt$QualifiedUserEntry.Companion$type = pbandk.FieldDescriptor.Type.Repeated&lt;com.wire.kalium.protobuf.otr.UserEntry>(valueType = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.otr.UserEntry.Companion))</ID>
+    <ID>MaxLineLength:otr.kt$QualifiedUserId.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.otr.QualifiedUserId</ID>
+    <ID>MaxLineLength:otr.kt$UserEntry.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.otr.UserEntry</ID>
+    <ID>MaxLineLength:otr.kt$UserEntry.Companion$type = pbandk.FieldDescriptor.Type.Repeated&lt;com.wire.kalium.protobuf.otr.ClientEntry>(valueType = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.otr.ClientEntry.Companion))</ID>
+    <ID>MaxLineLength:otr.kt$UserId.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.otr.UserId</ID>
+    <ID>MaxLineLength:otr.kt$clientMismatchStrategy is QualifiedNewOtrMessage.ClientMismatchStrategy.IgnoreAll &amp;&amp; plus.clientMismatchStrategy is QualifiedNewOtrMessage.ClientMismatchStrategy.IgnoreAll</ID>
+    <ID>MaxLineLength:otr.kt$clientMismatchStrategy is QualifiedNewOtrMessage.ClientMismatchStrategy.IgnoreOnly &amp;&amp; plus.clientMismatchStrategy is QualifiedNewOtrMessage.ClientMismatchStrategy.IgnoreOnly</ID>
+    <ID>MaxLineLength:otr.kt$clientMismatchStrategy is QualifiedNewOtrMessage.ClientMismatchStrategy.ReportAll &amp;&amp; plus.clientMismatchStrategy is QualifiedNewOtrMessage.ClientMismatchStrategy.ReportAll</ID>
+    <ID>MaxLineLength:otr.kt$clientMismatchStrategy is QualifiedNewOtrMessage.ClientMismatchStrategy.ReportOnly &amp;&amp; plus.clientMismatchStrategy is QualifiedNewOtrMessage.ClientMismatchStrategy.ReportOnly</ID>
+    <ID>MaxLineLength:otr.kt$private</ID>
+    <ID>MaxLineLength:otr.kt$public</ID>
+    <ID>MayBeConst:KeyPackageApiImpl.kt$KeyPackageApiImpl.Companion$val PATH_CLAIM = "claim"</ID>
+    <ID>MayBeConst:KeyPackageApiImpl.kt$KeyPackageApiImpl.Companion$val PATH_COUNT = "count"</ID>
+    <ID>MayBeConst:KeyPackageApiImpl.kt$KeyPackageApiImpl.Companion$val PATH_KEY_PACKAGES = "mls/key-packages"</ID>
+    <ID>MayBeConst:KeyPackageApiImpl.kt$KeyPackageApiImpl.Companion$val PATH_SELF = "self"</ID>
+    <ID>MayBeConst:LoginApiTest.kt$LoginApiTest.Companion$val refreshToken = "415a5306-a476-41bc-af36-94ab075fd881"</ID>
+    <ID>MayBeConst:MLSConversationRepositoryTest.kt$MLSConversationRepositoryTest.Companion$val GROUP_ID = "groupId"</ID>
+    <ID>MayBeConst:MessageRepositoryTest.kt$MessageRepositoryTest.Companion$val TEST_DATETIME = "2022-04-21T20:56:22.393Z"</ID>
+    <ID>MayBeConst:MessageSenderTest.kt$MessageSenderTest.Companion$val TEST_MESSAGE_UUID = "messageUuid"</ID>
+    <ID>MayBeConst:SearchUserRepositoryTest.kt$SearchUserRepositoryTest.Companion$val TEST_DOMAIN = "testDomain"</ID>
+    <ID>MayBeConst:SearchUserRepositoryTest.kt$SearchUserRepositoryTest.Companion$val TEST_QUERY = "testQuery"</ID>
+    <ID>ModifierOrder:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$external open</ID>
+    <ID>ModifierOrder:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$CryptoboxCRUDStore$external open</ID>
+    <ID>ModifierOrder:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$CryptoboxCRUDStore$override open</ID>
+    <ID>ModifierOrder:CryptoboxSession.module_@wireapp_cryptobox.kt$CryptoboxSession$external open</ID>
+    <ID>ModifierOrder:Decoder.module_@wireapp_cbor.kt$Decoder$external open</ID>
+    <ID>ModifierOrder:Encoder.module_@wireapp_cbor.kt$Encoder$external open</ID>
+    <ID>ModifierOrder:IdentityKey.module_@wireapp_proteus.kt$IdentityKey$external open</ID>
+    <ID>ModifierOrder:IdentityKeyPair.module_@wireapp_proteus.kt$IdentityKeyPair$external open</ID>
+    <ID>ModifierOrder:KeyPair.module_@wireapp_proteus.kt$KeyPair$external open</ID>
+    <ID>ModifierOrder:MemoryEngine.module_@wireapp_store-engine.kt$MemoryEngine$external open</ID>
+    <ID>ModifierOrder:PreKey.module_@wireapp_proteus.kt$PreKey$external open</ID>
+    <ID>ModifierOrder:PreKeyBundle.module_@wireapp_proteus.kt$PreKeyBundle$external open</ID>
+    <ID>ModifierOrder:PreKeyStore.module_@wireapp_proteus.kt$PreKeyStore$external open</ID>
+    <ID>ModifierOrder:PublicKey.module_@wireapp_proteus.kt$PublicKey$external open</ID>
+    <ID>ModifierOrder:SecretKey.module_@wireapp_proteus.kt$SecretKey$external open</ID>
+    <ID>NestedBlockDepth:ValidateSSOCodeUseCase.kt$ValidateSSOCodeUseCaseImpl$override fun invoke(ssoCode: String): ValidateSSOCodeResult</ID>
+    <ID>ObjectPropertyNaming:Decoder.module_@wireapp_cbor.kt$Decoder.Companion$var _check_overflow: Any</ID>
+    <ID>PackageNaming:EncryptedSettingsHolder.kt$package com.wire.kalium.persistence.kmm_settings</ID>
+    <ID>PackageNaming:KaliumPreferences.kt$package com.wire.kalium.persistence.kmm_settings</ID>
+    <ID>PackageNaming:SaveNotificationTokenUseCase.kt$package com.wire.kalium.logic.feature.notification_token</ID>
+    <ID>PackageNaming:ServerConfigurationDAO.kt$package com.wire.kalium.persistence.dao_kalium_db</ID>
+    <ID>ProtectedMemberInFinalClass:AuthenticationScope.kt$AuthenticationScope$protected val loginNetworkContainer: LoginNetworkContainer by lazy { LoginNetworkContainer() }</ID>
+    <ID>ReturnCount:ConversationMapper.kt$ConversationMapperImpl$private fun determineOneToOneUserType(otherUser: OtherUser, selfUser: SelfUser): UserType</ID>
+    <ID>ReturnCount:MessageApiImp.kt$MessageApiImp$override suspend fun sendMessage( parameters: MessageApi.Parameters.DefaultParameters, conversationId: String, option: MessageApi.MessageOption ): NetworkResponse&lt;SendMessageResponse></ID>
+    <ID>ReturnCount:NetworkUtils.kt$internal fun String.splitSetCookieHeader(): List&lt;String></ID>
+    <ID>ReturnCount:WorkScheduler.kt$WrapperWorker$override suspend fun doWork(): Result</ID>
+    <ID>TooGenericExceptionCaught:CoreFailure.kt$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:NetworkUtils.kt$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ProteusClientImpl.kt$ProteusClientImpl$e: Exception</ID>
+    <ID>TooGenericExceptionThrown:MainActivity.kt$MainActivity$throw RuntimeException( "There was an error on the login :(" + "Check the credentials and the internet connection and try again" )</ID>
+    <ID>TooGenericExceptionThrown:WorkScheduler.kt$WrapperWorkerFactory$throw RuntimeException("No user id was specified")</ID>
+    <ID>TooManyFunctions:CallManagerImpl.kt$CallManagerImpl : CallManagerCallConfigRequestHandlerSFTRequestHandler</ID>
+    <ID>TooManyFunctions:Calling.kt$Calling : Library</ID>
+    <ID>TooManyFunctions:ConversationDAO.kt$ConversationDAO</ID>
+    <ID>TooManyFunctions:ConversationDAOImpl.kt$ConversationDAOImpl : ConversationDAO</ID>
+    <ID>TooManyFunctions:ConversationRepository.kt$ConversationDataSource : ConversationRepository</ID>
+    <ID>TooManyFunctions:ConversationRepository.kt$ConversationRepository</ID>
+    <ID>TooManyFunctions:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox</ID>
+    <ID>TooManyFunctions:Decoder.module_@wireapp_cbor.kt$Decoder</ID>
+    <ID>TooManyFunctions:Encoder.module_@wireapp_cbor.kt$Encoder</ID>
+    <ID>TooManyFunctions:MapperProvider.kt$MapperProvider$MapperProvider</ID>
+    <ID>TooManyFunctions:MessageDAO.kt$MessageDAO</ID>
+    <ID>TooManyFunctions:MessageDAOImpl.kt$MessageDAOImpl : MessageDAO</ID>
+    <ID>TooManyFunctions:messages.kt$com.wire.kalium.protobuf.messages.messages.kt</ID>
+    <ID>TooManyFunctions:otr.kt$com.wire.kalium.protobuf.otr.otr.kt</ID>
+    <ID>TopLevelPropertyNaming:Uint32_t.kt$private const val integerSize = 4</ID>
+    <ID>UnnecessaryAbstractClass:GlobalDBBaseTest.kt$GlobalDBBaseTest</ID>
+    <ID>UnnecessaryAbstractClass:UserModel.kt$User</ID>
+    <ID>VariableNaming:CallMapper.kt$CallMapper.ParticipantMapper$private val DOMAIN_SEPARATOR = "@"</ID>
+    <ID>VariableNaming:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$open var create_last_resort_prekey: Any</ID>
+    <ID>VariableNaming:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$open var create_new_identity: Any</ID>
+    <ID>VariableNaming:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$open var get_prekey: Any</ID>
+    <ID>VariableNaming:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$open var get_session_queue: Any</ID>
+    <ID>VariableNaming:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$open var load_session_from_cache: Any</ID>
+    <ID>VariableNaming:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$open var publish_event: Any</ID>
+    <ID>VariableNaming:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$open var publish_prekeys: Any</ID>
+    <ID>VariableNaming:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$open var publish_session_id: Any</ID>
+    <ID>VariableNaming:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$open var refill_prekeys: Any</ID>
+    <ID>VariableNaming:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$open var remove_session_from_cache: Any</ID>
+    <ID>VariableNaming:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$open var save_identity: Any</ID>
+    <ID>VariableNaming:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$open var save_session_in_cache: Any</ID>
+    <ID>VariableNaming:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$open var session_from_message: Any</ID>
+    <ID>VariableNaming:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$open var session_save: Any</ID>
+    <ID>VariableNaming:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$open var session_update: Any</ID>
+    <ID>VariableNaming:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$CryptoboxCRUDStore$open var from_store: Any</ID>
+    <ID>VariableNaming:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$CryptoboxCRUDStore$open var to_store: Any</ID>
+    <ID>VariableNaming:Decoder.module_@wireapp_cbor.kt$Decoder$open var _advance: Any</ID>
+    <ID>VariableNaming:Decoder.module_@wireapp_cbor.kt$Decoder$open var _bytes: Any</ID>
+    <ID>VariableNaming:Decoder.module_@wireapp_cbor.kt$Decoder$open var _f32: Any</ID>
+    <ID>VariableNaming:Decoder.module_@wireapp_cbor.kt$Decoder$open var _f64: Any</ID>
+    <ID>VariableNaming:Decoder.module_@wireapp_cbor.kt$Decoder$open var _read: Any</ID>
+    <ID>VariableNaming:Decoder.module_@wireapp_cbor.kt$Decoder$open var _read_length: Any</ID>
+    <ID>VariableNaming:Decoder.module_@wireapp_cbor.kt$Decoder$open var _read_signed: Any</ID>
+    <ID>VariableNaming:Decoder.module_@wireapp_cbor.kt$Decoder$open var _read_type_info: Any</ID>
+    <ID>VariableNaming:Decoder.module_@wireapp_cbor.kt$Decoder$open var _read_unsigned: Any</ID>
+    <ID>VariableNaming:Decoder.module_@wireapp_cbor.kt$Decoder$open var _skip_until_break: Any</ID>
+    <ID>VariableNaming:Decoder.module_@wireapp_cbor.kt$Decoder$open var _skip_value: Any</ID>
+    <ID>VariableNaming:Decoder.module_@wireapp_cbor.kt$Decoder$open var _type_info_with_assert: Any</ID>
+    <ID>VariableNaming:Decoder.module_@wireapp_cbor.kt$Decoder$open var _u16: Any</ID>
+    <ID>VariableNaming:Decoder.module_@wireapp_cbor.kt$Decoder$open var _u32: Any</ID>
+    <ID>VariableNaming:Decoder.module_@wireapp_cbor.kt$Decoder$open var _u64: Any</ID>
+    <ID>VariableNaming:Decoder.module_@wireapp_cbor.kt$Decoder$open var _u8: Any</ID>
+    <ID>VariableNaming:Decoder.module_@wireapp_cbor.kt$DecoderConfig$var max_array_length: Number</ID>
+    <ID>VariableNaming:Decoder.module_@wireapp_cbor.kt$DecoderConfig$var max_bytes_length: Number</ID>
+    <ID>VariableNaming:Decoder.module_@wireapp_cbor.kt$DecoderConfig$var max_nesting: Number</ID>
+    <ID>VariableNaming:Decoder.module_@wireapp_cbor.kt$DecoderConfig$var max_object_size: Number</ID>
+    <ID>VariableNaming:Decoder.module_@wireapp_cbor.kt$DecoderConfig$var max_text_length: Number</ID>
+    <ID>VariableNaming:Encoder.module_@wireapp_cbor.kt$Encoder$open var _advance: Any</ID>
+    <ID>VariableNaming:Encoder.module_@wireapp_cbor.kt$Encoder$open var _bytes: Any</ID>
+    <ID>VariableNaming:Encoder.module_@wireapp_cbor.kt$Encoder$open var _ensure: Any</ID>
+    <ID>VariableNaming:Encoder.module_@wireapp_cbor.kt$Encoder$open var _f32: Any</ID>
+    <ID>VariableNaming:Encoder.module_@wireapp_cbor.kt$Encoder$open var _f64: Any</ID>
+    <ID>VariableNaming:Encoder.module_@wireapp_cbor.kt$Encoder$open var _grow_buffer: Any</ID>
+    <ID>VariableNaming:Encoder.module_@wireapp_cbor.kt$Encoder$open var _new_buffer_length: Any</ID>
+    <ID>VariableNaming:Encoder.module_@wireapp_cbor.kt$Encoder$open var _u16: Any</ID>
+    <ID>VariableNaming:Encoder.module_@wireapp_cbor.kt$Encoder$open var _u32: Any</ID>
+    <ID>VariableNaming:Encoder.module_@wireapp_cbor.kt$Encoder$open var _u64: Any</ID>
+    <ID>VariableNaming:Encoder.module_@wireapp_cbor.kt$Encoder$open var _u8: Any</ID>
+    <ID>VariableNaming:Encoder.module_@wireapp_cbor.kt$Encoder$open var _write: Any</ID>
+    <ID>VariableNaming:Encoder.module_@wireapp_cbor.kt$Encoder$open var _write_type_and_len: Any</ID>
+    <ID>VariableNaming:IdentityKey.module_@wireapp_proteus.kt$IdentityKey$open var public_key: PublicKey</ID>
+    <ID>VariableNaming:IdentityKeyPair.module_@wireapp_proteus.kt$IdentityKeyPair$open var public_key: IdentityKey</ID>
+    <ID>VariableNaming:IdentityKeyPair.module_@wireapp_proteus.kt$IdentityKeyPair$open var secret_key: SecretKey</ID>
+    <ID>VariableNaming:KeyPair.module_@wireapp_proteus.kt$KeyPair$open var public_key: PublicKey</ID>
+    <ID>VariableNaming:KeyPair.module_@wireapp_proteus.kt$KeyPair$open var secret_key: SecretKey</ID>
+    <ID>VariableNaming:PreKey.module_@wireapp_proteus.kt$PreKey$open var key_id: Number</ID>
+    <ID>VariableNaming:PreKey.module_@wireapp_proteus.kt$PreKey$open var key_pair: KeyPair</ID>
+    <ID>VariableNaming:PreKeyBundle.module_@wireapp_proteus.kt$PreKeyBundle$open var identity_key: IdentityKey</ID>
+    <ID>VariableNaming:PreKeyBundle.module_@wireapp_proteus.kt$PreKeyBundle$open var prekey_id: Number</ID>
+    <ID>VariableNaming:PreKeyBundle.module_@wireapp_proteus.kt$PreKeyBundle$open var public_key: PublicKey</ID>
+    <ID>VariableNaming:PublicKey.module_@wireapp_proteus.kt$PublicKey$open var pub_curve: Uint8Array</ID>
+    <ID>VariableNaming:PublicKey.module_@wireapp_proteus.kt$PublicKey$open var pub_edward: Uint8Array</ID>
+    <ID>VariableNaming:SecretKey.module_@wireapp_proteus.kt$SecretKey$open var sec_curve: Uint8Array</ID>
+    <ID>VariableNaming:SecretKey.module_@wireapp_proteus.kt$SecretKey$open var sec_edward: Uint8Array</ID>
+    <ID>WildcardImport:AssetApiImpl.kt$import io.ktor.client.*</ID>
+    <ID>WildcardImport:AssetApiImpl.kt$import io.ktor.client.request.*</ID>
+    <ID>WildcardImport:AssetMapper.kt$import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.*</ID>
+    <ID>WildcardImport:CRUDEngine.module_@wireapp_store-engine.kt$import kotlin.js.*</ID>
+    <ID>WildcardImport:CRUDEngine.module_@wireapp_store-engine.kt$import org.khronos.webgl.*</ID>
+    <ID>WildcardImport:CRUDEngine.module_@wireapp_store-engine.kt$import org.w3c.dom.*</ID>
+    <ID>WildcardImport:CRUDEngine.module_@wireapp_store-engine.kt$import org.w3c.dom.events.*</ID>
+    <ID>WildcardImport:CRUDEngine.module_@wireapp_store-engine.kt$import org.w3c.dom.parsing.*</ID>
+    <ID>WildcardImport:CRUDEngine.module_@wireapp_store-engine.kt$import org.w3c.dom.svg.*</ID>
+    <ID>WildcardImport:CRUDEngine.module_@wireapp_store-engine.kt$import org.w3c.dom.url.*</ID>
+    <ID>WildcardImport:CRUDEngine.module_@wireapp_store-engine.kt$import org.w3c.fetch.*</ID>
+    <ID>WildcardImport:CRUDEngine.module_@wireapp_store-engine.kt$import org.w3c.files.*</ID>
+    <ID>WildcardImport:CRUDEngine.module_@wireapp_store-engine.kt$import org.w3c.notifications.*</ID>
+    <ID>WildcardImport:CRUDEngine.module_@wireapp_store-engine.kt$import org.w3c.performance.*</ID>
+    <ID>WildcardImport:CRUDEngine.module_@wireapp_store-engine.kt$import org.w3c.workers.*</ID>
+    <ID>WildcardImport:CRUDEngine.module_@wireapp_store-engine.kt$import org.w3c.xhr.*</ID>
+    <ID>WildcardImport:Cryptobox.module_@wireapp_cryptobox.kt$import kotlin.js.*</ID>
+    <ID>WildcardImport:Cryptobox.module_@wireapp_cryptobox.kt$import org.khronos.webgl.*</ID>
+    <ID>WildcardImport:Cryptobox.module_@wireapp_cryptobox.kt$import org.w3c.dom.*</ID>
+    <ID>WildcardImport:Cryptobox.module_@wireapp_cryptobox.kt$import org.w3c.dom.events.*</ID>
+    <ID>WildcardImport:Cryptobox.module_@wireapp_cryptobox.kt$import org.w3c.dom.parsing.*</ID>
+    <ID>WildcardImport:Cryptobox.module_@wireapp_cryptobox.kt$import org.w3c.dom.svg.*</ID>
+    <ID>WildcardImport:Cryptobox.module_@wireapp_cryptobox.kt$import org.w3c.dom.url.*</ID>
+    <ID>WildcardImport:Cryptobox.module_@wireapp_cryptobox.kt$import org.w3c.fetch.*</ID>
+    <ID>WildcardImport:Cryptobox.module_@wireapp_cryptobox.kt$import org.w3c.files.*</ID>
+    <ID>WildcardImport:Cryptobox.module_@wireapp_cryptobox.kt$import org.w3c.notifications.*</ID>
+    <ID>WildcardImport:Cryptobox.module_@wireapp_cryptobox.kt$import org.w3c.performance.*</ID>
+    <ID>WildcardImport:Cryptobox.module_@wireapp_cryptobox.kt$import org.w3c.workers.*</ID>
+    <ID>WildcardImport:Cryptobox.module_@wireapp_cryptobox.kt$import org.w3c.xhr.*</ID>
+    <ID>WildcardImport:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$import kotlin.js.*</ID>
+    <ID>WildcardImport:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$import org.khronos.webgl.*</ID>
+    <ID>WildcardImport:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$import org.w3c.dom.*</ID>
+    <ID>WildcardImport:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$import org.w3c.dom.events.*</ID>
+    <ID>WildcardImport:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$import org.w3c.dom.parsing.*</ID>
+    <ID>WildcardImport:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$import org.w3c.dom.svg.*</ID>
+    <ID>WildcardImport:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$import org.w3c.dom.url.*</ID>
+    <ID>WildcardImport:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$import org.w3c.fetch.*</ID>
+    <ID>WildcardImport:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$import org.w3c.files.*</ID>
+    <ID>WildcardImport:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$import org.w3c.notifications.*</ID>
+    <ID>WildcardImport:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$import org.w3c.performance.*</ID>
+    <ID>WildcardImport:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$import org.w3c.workers.*</ID>
+    <ID>WildcardImport:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$import org.w3c.xhr.*</ID>
+    <ID>WildcardImport:CryptoboxSession.module_@wireapp_cryptobox.kt$import kotlin.js.*</ID>
+    <ID>WildcardImport:CryptoboxSession.module_@wireapp_cryptobox.kt$import org.khronos.webgl.*</ID>
+    <ID>WildcardImport:CryptoboxSession.module_@wireapp_cryptobox.kt$import org.w3c.dom.*</ID>
+    <ID>WildcardImport:CryptoboxSession.module_@wireapp_cryptobox.kt$import org.w3c.dom.events.*</ID>
+    <ID>WildcardImport:CryptoboxSession.module_@wireapp_cryptobox.kt$import org.w3c.dom.parsing.*</ID>
+    <ID>WildcardImport:CryptoboxSession.module_@wireapp_cryptobox.kt$import org.w3c.dom.svg.*</ID>
+    <ID>WildcardImport:CryptoboxSession.module_@wireapp_cryptobox.kt$import org.w3c.dom.url.*</ID>
+    <ID>WildcardImport:CryptoboxSession.module_@wireapp_cryptobox.kt$import org.w3c.fetch.*</ID>
+    <ID>WildcardImport:CryptoboxSession.module_@wireapp_cryptobox.kt$import org.w3c.files.*</ID>
+    <ID>WildcardImport:CryptoboxSession.module_@wireapp_cryptobox.kt$import org.w3c.notifications.*</ID>
+    <ID>WildcardImport:CryptoboxSession.module_@wireapp_cryptobox.kt$import org.w3c.performance.*</ID>
+    <ID>WildcardImport:CryptoboxSession.module_@wireapp_cryptobox.kt$import org.w3c.workers.*</ID>
+    <ID>WildcardImport:CryptoboxSession.module_@wireapp_cryptobox.kt$import org.w3c.xhr.*</ID>
+    <ID>WildcardImport:Decoder.module_@wireapp_cbor.kt$import kotlin.js.*</ID>
+    <ID>WildcardImport:Decoder.module_@wireapp_cbor.kt$import org.khronos.webgl.*</ID>
+    <ID>WildcardImport:Decoder.module_@wireapp_cbor.kt$import org.w3c.dom.*</ID>
+    <ID>WildcardImport:Decoder.module_@wireapp_cbor.kt$import org.w3c.dom.events.*</ID>
+    <ID>WildcardImport:Decoder.module_@wireapp_cbor.kt$import org.w3c.dom.parsing.*</ID>
+    <ID>WildcardImport:Decoder.module_@wireapp_cbor.kt$import org.w3c.dom.svg.*</ID>
+    <ID>WildcardImport:Decoder.module_@wireapp_cbor.kt$import org.w3c.dom.url.*</ID>
+    <ID>WildcardImport:Decoder.module_@wireapp_cbor.kt$import org.w3c.fetch.*</ID>
+    <ID>WildcardImport:Decoder.module_@wireapp_cbor.kt$import org.w3c.files.*</ID>
+    <ID>WildcardImport:Decoder.module_@wireapp_cbor.kt$import org.w3c.notifications.*</ID>
+    <ID>WildcardImport:Decoder.module_@wireapp_cbor.kt$import org.w3c.performance.*</ID>
+    <ID>WildcardImport:Decoder.module_@wireapp_cbor.kt$import org.w3c.workers.*</ID>
+    <ID>WildcardImport:Decoder.module_@wireapp_cbor.kt$import org.w3c.xhr.*</ID>
+    <ID>WildcardImport:Encoder.module_@wireapp_cbor.kt$import kotlin.js.*</ID>
+    <ID>WildcardImport:Encoder.module_@wireapp_cbor.kt$import org.khronos.webgl.*</ID>
+    <ID>WildcardImport:Encoder.module_@wireapp_cbor.kt$import org.w3c.dom.*</ID>
+    <ID>WildcardImport:Encoder.module_@wireapp_cbor.kt$import org.w3c.dom.events.*</ID>
+    <ID>WildcardImport:Encoder.module_@wireapp_cbor.kt$import org.w3c.dom.parsing.*</ID>
+    <ID>WildcardImport:Encoder.module_@wireapp_cbor.kt$import org.w3c.dom.svg.*</ID>
+    <ID>WildcardImport:Encoder.module_@wireapp_cbor.kt$import org.w3c.dom.url.*</ID>
+    <ID>WildcardImport:Encoder.module_@wireapp_cbor.kt$import org.w3c.fetch.*</ID>
+    <ID>WildcardImport:Encoder.module_@wireapp_cbor.kt$import org.w3c.files.*</ID>
+    <ID>WildcardImport:Encoder.module_@wireapp_cbor.kt$import org.w3c.notifications.*</ID>
+    <ID>WildcardImport:Encoder.module_@wireapp_cbor.kt$import org.w3c.performance.*</ID>
+    <ID>WildcardImport:Encoder.module_@wireapp_cbor.kt$import org.w3c.workers.*</ID>
+    <ID>WildcardImport:Encoder.module_@wireapp_cbor.kt$import org.w3c.xhr.*</ID>
+    <ID>WildcardImport:IdentityKey.module_@wireapp_proteus.kt$import kotlin.js.*</ID>
+    <ID>WildcardImport:IdentityKey.module_@wireapp_proteus.kt$import org.khronos.webgl.*</ID>
+    <ID>WildcardImport:IdentityKey.module_@wireapp_proteus.kt$import org.w3c.dom.*</ID>
+    <ID>WildcardImport:IdentityKey.module_@wireapp_proteus.kt$import org.w3c.dom.events.*</ID>
+    <ID>WildcardImport:IdentityKey.module_@wireapp_proteus.kt$import org.w3c.dom.parsing.*</ID>
+    <ID>WildcardImport:IdentityKey.module_@wireapp_proteus.kt$import org.w3c.dom.svg.*</ID>
+    <ID>WildcardImport:IdentityKey.module_@wireapp_proteus.kt$import org.w3c.dom.url.*</ID>
+    <ID>WildcardImport:IdentityKey.module_@wireapp_proteus.kt$import org.w3c.fetch.*</ID>
+    <ID>WildcardImport:IdentityKey.module_@wireapp_proteus.kt$import org.w3c.files.*</ID>
+    <ID>WildcardImport:IdentityKey.module_@wireapp_proteus.kt$import org.w3c.notifications.*</ID>
+    <ID>WildcardImport:IdentityKey.module_@wireapp_proteus.kt$import org.w3c.performance.*</ID>
+    <ID>WildcardImport:IdentityKey.module_@wireapp_proteus.kt$import org.w3c.workers.*</ID>
+    <ID>WildcardImport:IdentityKey.module_@wireapp_proteus.kt$import org.w3c.xhr.*</ID>
+    <ID>WildcardImport:IdentityKeyPair.module_@wireapp_proteus.kt$import kotlin.js.*</ID>
+    <ID>WildcardImport:IdentityKeyPair.module_@wireapp_proteus.kt$import org.khronos.webgl.*</ID>
+    <ID>WildcardImport:IdentityKeyPair.module_@wireapp_proteus.kt$import org.w3c.dom.*</ID>
+    <ID>WildcardImport:IdentityKeyPair.module_@wireapp_proteus.kt$import org.w3c.dom.events.*</ID>
+    <ID>WildcardImport:IdentityKeyPair.module_@wireapp_proteus.kt$import org.w3c.dom.parsing.*</ID>
+    <ID>WildcardImport:IdentityKeyPair.module_@wireapp_proteus.kt$import org.w3c.dom.svg.*</ID>
+    <ID>WildcardImport:IdentityKeyPair.module_@wireapp_proteus.kt$import org.w3c.dom.url.*</ID>
+    <ID>WildcardImport:IdentityKeyPair.module_@wireapp_proteus.kt$import org.w3c.fetch.*</ID>
+    <ID>WildcardImport:IdentityKeyPair.module_@wireapp_proteus.kt$import org.w3c.files.*</ID>
+    <ID>WildcardImport:IdentityKeyPair.module_@wireapp_proteus.kt$import org.w3c.notifications.*</ID>
+    <ID>WildcardImport:IdentityKeyPair.module_@wireapp_proteus.kt$import org.w3c.performance.*</ID>
+    <ID>WildcardImport:IdentityKeyPair.module_@wireapp_proteus.kt$import org.w3c.workers.*</ID>
+    <ID>WildcardImport:IdentityKeyPair.module_@wireapp_proteus.kt$import org.w3c.xhr.*</ID>
+    <ID>WildcardImport:KeyPair.module_@wireapp_proteus.kt$import kotlin.js.*</ID>
+    <ID>WildcardImport:KeyPair.module_@wireapp_proteus.kt$import org.khronos.webgl.*</ID>
+    <ID>WildcardImport:KeyPair.module_@wireapp_proteus.kt$import org.w3c.dom.*</ID>
+    <ID>WildcardImport:KeyPair.module_@wireapp_proteus.kt$import org.w3c.dom.events.*</ID>
+    <ID>WildcardImport:KeyPair.module_@wireapp_proteus.kt$import org.w3c.dom.parsing.*</ID>
+    <ID>WildcardImport:KeyPair.module_@wireapp_proteus.kt$import org.w3c.dom.svg.*</ID>
+    <ID>WildcardImport:KeyPair.module_@wireapp_proteus.kt$import org.w3c.dom.url.*</ID>
+    <ID>WildcardImport:KeyPair.module_@wireapp_proteus.kt$import org.w3c.fetch.*</ID>
+    <ID>WildcardImport:KeyPair.module_@wireapp_proteus.kt$import org.w3c.files.*</ID>
+    <ID>WildcardImport:KeyPair.module_@wireapp_proteus.kt$import org.w3c.notifications.*</ID>
+    <ID>WildcardImport:KeyPair.module_@wireapp_proteus.kt$import org.w3c.performance.*</ID>
+    <ID>WildcardImport:KeyPair.module_@wireapp_proteus.kt$import org.w3c.workers.*</ID>
+    <ID>WildcardImport:KeyPair.module_@wireapp_proteus.kt$import org.w3c.xhr.*</ID>
+    <ID>WildcardImport:MemoryEngine.module_@wireapp_store-engine.kt$import kotlin.js.*</ID>
+    <ID>WildcardImport:MemoryEngine.module_@wireapp_store-engine.kt$import org.khronos.webgl.*</ID>
+    <ID>WildcardImport:MemoryEngine.module_@wireapp_store-engine.kt$import org.w3c.dom.*</ID>
+    <ID>WildcardImport:MemoryEngine.module_@wireapp_store-engine.kt$import org.w3c.dom.events.*</ID>
+    <ID>WildcardImport:MemoryEngine.module_@wireapp_store-engine.kt$import org.w3c.dom.parsing.*</ID>
+    <ID>WildcardImport:MemoryEngine.module_@wireapp_store-engine.kt$import org.w3c.dom.svg.*</ID>
+    <ID>WildcardImport:MemoryEngine.module_@wireapp_store-engine.kt$import org.w3c.dom.url.*</ID>
+    <ID>WildcardImport:MemoryEngine.module_@wireapp_store-engine.kt$import org.w3c.fetch.*</ID>
+    <ID>WildcardImport:MemoryEngine.module_@wireapp_store-engine.kt$import org.w3c.files.*</ID>
+    <ID>WildcardImport:MemoryEngine.module_@wireapp_store-engine.kt$import org.w3c.notifications.*</ID>
+    <ID>WildcardImport:MemoryEngine.module_@wireapp_store-engine.kt$import org.w3c.performance.*</ID>
+    <ID>WildcardImport:MemoryEngine.module_@wireapp_store-engine.kt$import org.w3c.workers.*</ID>
+    <ID>WildcardImport:MemoryEngine.module_@wireapp_store-engine.kt$import org.w3c.xhr.*</ID>
+    <ID>WildcardImport:PreKey.module_@wireapp_proteus.kt$import kotlin.js.*</ID>
+    <ID>WildcardImport:PreKey.module_@wireapp_proteus.kt$import org.khronos.webgl.*</ID>
+    <ID>WildcardImport:PreKey.module_@wireapp_proteus.kt$import org.w3c.dom.*</ID>
+    <ID>WildcardImport:PreKey.module_@wireapp_proteus.kt$import org.w3c.dom.events.*</ID>
+    <ID>WildcardImport:PreKey.module_@wireapp_proteus.kt$import org.w3c.dom.parsing.*</ID>
+    <ID>WildcardImport:PreKey.module_@wireapp_proteus.kt$import org.w3c.dom.svg.*</ID>
+    <ID>WildcardImport:PreKey.module_@wireapp_proteus.kt$import org.w3c.dom.url.*</ID>
+    <ID>WildcardImport:PreKey.module_@wireapp_proteus.kt$import org.w3c.fetch.*</ID>
+    <ID>WildcardImport:PreKey.module_@wireapp_proteus.kt$import org.w3c.files.*</ID>
+    <ID>WildcardImport:PreKey.module_@wireapp_proteus.kt$import org.w3c.notifications.*</ID>
+    <ID>WildcardImport:PreKey.module_@wireapp_proteus.kt$import org.w3c.performance.*</ID>
+    <ID>WildcardImport:PreKey.module_@wireapp_proteus.kt$import org.w3c.workers.*</ID>
+    <ID>WildcardImport:PreKey.module_@wireapp_proteus.kt$import org.w3c.xhr.*</ID>
+    <ID>WildcardImport:PreKeyBundle.module_@wireapp_proteus.kt$import kotlin.js.*</ID>
+    <ID>WildcardImport:PreKeyBundle.module_@wireapp_proteus.kt$import org.khronos.webgl.*</ID>
+    <ID>WildcardImport:PreKeyBundle.module_@wireapp_proteus.kt$import org.w3c.dom.*</ID>
+    <ID>WildcardImport:PreKeyBundle.module_@wireapp_proteus.kt$import org.w3c.dom.events.*</ID>
+    <ID>WildcardImport:PreKeyBundle.module_@wireapp_proteus.kt$import org.w3c.dom.parsing.*</ID>
+    <ID>WildcardImport:PreKeyBundle.module_@wireapp_proteus.kt$import org.w3c.dom.svg.*</ID>
+    <ID>WildcardImport:PreKeyBundle.module_@wireapp_proteus.kt$import org.w3c.dom.url.*</ID>
+    <ID>WildcardImport:PreKeyBundle.module_@wireapp_proteus.kt$import org.w3c.fetch.*</ID>
+    <ID>WildcardImport:PreKeyBundle.module_@wireapp_proteus.kt$import org.w3c.files.*</ID>
+    <ID>WildcardImport:PreKeyBundle.module_@wireapp_proteus.kt$import org.w3c.notifications.*</ID>
+    <ID>WildcardImport:PreKeyBundle.module_@wireapp_proteus.kt$import org.w3c.performance.*</ID>
+    <ID>WildcardImport:PreKeyBundle.module_@wireapp_proteus.kt$import org.w3c.workers.*</ID>
+    <ID>WildcardImport:PreKeyBundle.module_@wireapp_proteus.kt$import org.w3c.xhr.*</ID>
+    <ID>WildcardImport:PreKeyStore.module_@wireapp_proteus.kt$import kotlin.js.*</ID>
+    <ID>WildcardImport:PreKeyStore.module_@wireapp_proteus.kt$import org.khronos.webgl.*</ID>
+    <ID>WildcardImport:PreKeyStore.module_@wireapp_proteus.kt$import org.w3c.dom.*</ID>
+    <ID>WildcardImport:PreKeyStore.module_@wireapp_proteus.kt$import org.w3c.dom.events.*</ID>
+    <ID>WildcardImport:PreKeyStore.module_@wireapp_proteus.kt$import org.w3c.dom.parsing.*</ID>
+    <ID>WildcardImport:PreKeyStore.module_@wireapp_proteus.kt$import org.w3c.dom.svg.*</ID>
+    <ID>WildcardImport:PreKeyStore.module_@wireapp_proteus.kt$import org.w3c.dom.url.*</ID>
+    <ID>WildcardImport:PreKeyStore.module_@wireapp_proteus.kt$import org.w3c.fetch.*</ID>
+    <ID>WildcardImport:PreKeyStore.module_@wireapp_proteus.kt$import org.w3c.files.*</ID>
+    <ID>WildcardImport:PreKeyStore.module_@wireapp_proteus.kt$import org.w3c.notifications.*</ID>
+    <ID>WildcardImport:PreKeyStore.module_@wireapp_proteus.kt$import org.w3c.performance.*</ID>
+    <ID>WildcardImport:PreKeyStore.module_@wireapp_proteus.kt$import org.w3c.workers.*</ID>
+    <ID>WildcardImport:PreKeyStore.module_@wireapp_proteus.kt$import org.w3c.xhr.*</ID>
+    <ID>WildcardImport:PublicKey.module_@wireapp_proteus.kt$import kotlin.js.*</ID>
+    <ID>WildcardImport:PublicKey.module_@wireapp_proteus.kt$import org.khronos.webgl.*</ID>
+    <ID>WildcardImport:PublicKey.module_@wireapp_proteus.kt$import org.w3c.dom.*</ID>
+    <ID>WildcardImport:PublicKey.module_@wireapp_proteus.kt$import org.w3c.dom.events.*</ID>
+    <ID>WildcardImport:PublicKey.module_@wireapp_proteus.kt$import org.w3c.dom.parsing.*</ID>
+    <ID>WildcardImport:PublicKey.module_@wireapp_proteus.kt$import org.w3c.dom.svg.*</ID>
+    <ID>WildcardImport:PublicKey.module_@wireapp_proteus.kt$import org.w3c.dom.url.*</ID>
+    <ID>WildcardImport:PublicKey.module_@wireapp_proteus.kt$import org.w3c.fetch.*</ID>
+    <ID>WildcardImport:PublicKey.module_@wireapp_proteus.kt$import org.w3c.files.*</ID>
+    <ID>WildcardImport:PublicKey.module_@wireapp_proteus.kt$import org.w3c.notifications.*</ID>
+    <ID>WildcardImport:PublicKey.module_@wireapp_proteus.kt$import org.w3c.performance.*</ID>
+    <ID>WildcardImport:PublicKey.module_@wireapp_proteus.kt$import org.w3c.workers.*</ID>
+    <ID>WildcardImport:PublicKey.module_@wireapp_proteus.kt$import org.w3c.xhr.*</ID>
+    <ID>WildcardImport:SecretKey.module_@wireapp_proteus.kt$import kotlin.js.*</ID>
+    <ID>WildcardImport:SecretKey.module_@wireapp_proteus.kt$import org.khronos.webgl.*</ID>
+    <ID>WildcardImport:SecretKey.module_@wireapp_proteus.kt$import org.w3c.dom.*</ID>
+    <ID>WildcardImport:SecretKey.module_@wireapp_proteus.kt$import org.w3c.dom.events.*</ID>
+    <ID>WildcardImport:SecretKey.module_@wireapp_proteus.kt$import org.w3c.dom.parsing.*</ID>
+    <ID>WildcardImport:SecretKey.module_@wireapp_proteus.kt$import org.w3c.dom.svg.*</ID>
+    <ID>WildcardImport:SecretKey.module_@wireapp_proteus.kt$import org.w3c.dom.url.*</ID>
+    <ID>WildcardImport:SecretKey.module_@wireapp_proteus.kt$import org.w3c.fetch.*</ID>
+    <ID>WildcardImport:SecretKey.module_@wireapp_proteus.kt$import org.w3c.files.*</ID>
+    <ID>WildcardImport:SecretKey.module_@wireapp_proteus.kt$import org.w3c.notifications.*</ID>
+    <ID>WildcardImport:SecretKey.module_@wireapp_proteus.kt$import org.w3c.performance.*</ID>
+    <ID>WildcardImport:SecretKey.module_@wireapp_proteus.kt$import org.w3c.workers.*</ID>
+    <ID>WildcardImport:SecretKey.module_@wireapp_proteus.kt$import org.w3c.xhr.*</ID>
+    <ID>WildcardImport:defaultHttpEngine.kt$import io.ktor.client.engine.*</ID>
+  </CurrentIssues>
+</SmellBaseline>

@@ -5,7 +5,8 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.ImageAsset
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.fold
 
 interface UploadUserAvatarUseCase {
     /**
@@ -23,17 +24,14 @@ internal class UploadUserAvatarUseCaseImpl(
     private val assetDataSource: AssetRepository
 ) : UploadUserAvatarUseCase {
 
-    override suspend operator fun invoke(imageData: ByteArray): UploadAvatarResult = suspending {
-        val mimeType = ImageAsset.JPEG
-        assetDataSource.uploadAndPersistPublicAsset(mimeType, imageData)
-            .flatMap { asset ->
-                userDataSource.updateSelfUser(newAssetId = asset.key)
-            }.fold({
-                UploadAvatarResult.Failure(it)
-            }) { updatedUser ->
-                UploadAvatarResult.Success(updatedUser.completePicture!!)
-            } // todo: remove old assets, non blocking this response, as will imply deleting locally and remotely
-    }
+    override suspend operator fun invoke(imageData: ByteArray): UploadAvatarResult =
+        assetDataSource.uploadAndPersistPublicAsset(ImageAsset.JPEG, imageData).flatMap { asset ->
+            userDataSource.updateSelfUser(newAssetId = asset.key)
+        }.fold({
+            UploadAvatarResult.Failure(it)
+        }) { updatedUser ->
+            UploadAvatarResult.Success(updatedUser.completePicture!!)
+        } // TODO(assets): remove old assets, non blocking this response, as will imply deleting locally and remotely
 }
 
 sealed class UploadAvatarResult {

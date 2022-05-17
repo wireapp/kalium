@@ -8,6 +8,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.ASSET
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.TEXT
+import com.wire.kalium.persistence.dao.message.MessageEntity.DownloadStatus.NOT_DOWNLOADED
 import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityContent.AssetMessageContent
 import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityContent.TextMessageContent
 import kotlinx.coroutines.flow.Flow
@@ -33,6 +34,7 @@ class MessageMapper {
                         assetToken = msg.asset_token ?: "",
                         assetDomain = msg.asset_domain ?: "",
                         assetEncryptionAlgorithm = msg.asset_encryption_algorithm ?: "",
+                        assetDownloadStatus = msg.asset_download_status
                     )
                 }
             },
@@ -43,7 +45,8 @@ class MessageMapper {
             date = msg.date,
             senderUserId = msg.sender_user_id,
             senderClientId = msg.sender_client_id,
-            status = msg.status
+            status = msg.status,
+            visibility = msg.visibility
         )
     }
 }
@@ -53,10 +56,9 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
 
     override suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity) = queries.deleteMessage(id, conversationsId)
 
-    override suspend fun deleteMessage(id: String) = queries.deleteMessageById(id)
 
-    override suspend fun updateMessageVisibility(visibility: MessageEntity.Visibility, id: String, conversationId: QualifiedIDEntity) =
-        queries.updateMessageVisibility(visibility, "", id, conversationId)
+    override suspend fun markMessageAsDeleted(id: String, conversationsId: QualifiedIDEntity) =
+        queries.markMessageAsDeleted(id, conversationsId)
 
     override suspend fun deleteAllMessages() = queries.deleteAllMessages()
 
@@ -67,6 +69,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             messages.forEach { insertInDB(it) }
         }
 
+    @Suppress("ComplexMethod")
     private fun insertInDB(message: MessageEntity) {
         queries.insertMessage(
             id = message.id,
@@ -86,6 +89,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             asset_token = if (message.content is AssetMessageContent) message.content.assetToken else null,
             asset_domain = if (message.content is AssetMessageContent) message.content.assetDomain else null,
             asset_encryption_algorithm = if (message.content is AssetMessageContent) message.content.assetEncryptionAlgorithm else null,
+            asset_download_status = if (message.content is AssetMessageContent) message.content.assetDownloadStatus else null,
             conversation_id = message.conversationId,
             date = message.date,
             sender_user_id = message.senderUserId,
@@ -121,6 +125,14 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             visibility = message.visibility,
             status = message.status
         )
+
+    override suspend fun updateAssetDownloadStatus(
+        downloadStatus: MessageEntity.DownloadStatus,
+        id: String,
+        conversationId: QualifiedIDEntity
+    ) {
+        queries.updateAssetDownloadStatus(downloadStatus, id, conversationId)
+    }
 
     private fun contentTypeOf(content: MessageEntity.MessageEntityContent): MessageEntity.ContentType = when (content) {
         is TextMessageContent -> TEXT

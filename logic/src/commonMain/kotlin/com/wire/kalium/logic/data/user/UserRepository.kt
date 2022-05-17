@@ -9,8 +9,10 @@ import com.wire.kalium.logic.data.publicuser.PublicUserMapper
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.user.details.ListUserRequest
 import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.network.api.user.details.qualifiedIds
@@ -30,7 +32,7 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-// FIXME: missing unit test
+// TODO(testing): missing unit test
 interface UserRepository {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
     suspend fun fetchKnownUsers(): Either<CoreFailure, Unit>
@@ -42,6 +44,7 @@ interface UserRepository {
     suspend fun updateLocalSelfUserHandle(handle: String)
     suspend fun getAllContacts(): List<OtherUser>
     suspend fun getKnownUser(userId: UserId): Flow<OtherUser?>
+    suspend fun fetchUserInfo(userId: UserId): Either<CoreFailure, OtherUser>
 }
 
 class UserDataSource(
@@ -65,16 +68,15 @@ class UserDataSource(
             ?: run { throw IllegalStateException() }
     }
 
-    override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = suspending {
-        wrapApiRequest { selfApi.getSelfInfo() }
-            .map { userMapper.fromApiModelToDaoModel(it).copy(connectionStatus = UserEntity.ConnectionState.ACCEPTED) }
-            .flatMap { userEntity ->
-                assetRepository.downloadUsersPictureAssets(listOf(userEntity.previewAssetId, userEntity.completeAssetId))
-                userDAO.insertUser(userEntity)
-                metadataDAO.insertValue(Json.encodeToString(userEntity.id), SELF_USER_ID_KEY)
-                Either.Right(Unit)
-            }
-    }
+    override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
+        .map { userMapper.fromApiModelToDaoModel(it).copy(connectionStatus = UserEntity.ConnectionState.ACCEPTED) }
+        .flatMap { userEntity ->
+            assetRepository.downloadUsersPictureAssets(listOf(userEntity.previewAssetId, userEntity.completeAssetId))
+            userDAO.insertUser(userEntity)
+            metadataDAO.insertValue(Json.encodeToString(userEntity.id), SELF_USER_ID_KEY)
+            Either.Right(Unit)
+        }
+
 
     override suspend fun fetchKnownUsers(): Either<CoreFailure, Unit> {
         val ids = userDAO.getAllUsers().first().map { userEntry ->
@@ -83,17 +85,14 @@ class UserDataSource(
         return fetchUsersByIds(ids.toSet())
     }
 
-    override suspend fun fetchUsersByIds(ids: Set<UserId>): Either<CoreFailure, Unit> {
-        return suspending {
-            wrapApiRequest {
-                userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(ids.map(idMapper::toApiModel)))
-            }.flatMap {
-                // TODO: handle storage error
+    override suspend fun fetchUsersByIds(ids: Set<UserId>): Either<CoreFailure, Unit> =
+        wrapApiRequest {
+            userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(ids.map(idMapper::toApiModel)))
+        }.flatMap {
+            wrapStorageRequest {
                 userDAO.insertUsers(it.map(userMapper::fromApiModelToDaoModel))
-                Either.Right(Unit)
             }
         }
-    }
 
     override suspend fun getSelfUser(): Flow<SelfUser> {
         // TODO: handle storage error
@@ -105,25 +104,21 @@ class UserDataSource(
         }
     }
 
-    // FIXME: user info can be updated with null, null and null
+    // FIXME(refactor): user info can be updated with null, null and null
     override suspend fun updateSelfUser(newName: String?, newAccent: Int?, newAssetId: String?): Either<CoreFailure, SelfUser> {
         val user = getSelfUser().firstOrNull() ?: return Either.Left(CoreFailure.Unknown(NullPointerException()))
         val updateRequest = userMapper.fromModelToUpdateApiModel(user, newName, newAccent, newAssetId)
-        return suspending {
-            wrapApiRequest { selfApi.updateSelf(updateRequest) }
-                .map { userMapper.fromUpdateRequestToDaoModel(user, updateRequest) }
-                .flatMap {
-                    // TODO: handle storage error
-                    userDAO.updateUser(it)
-                    Either.Right(userMapper.fromDaoModelToSelfUser(it))
-                }
-        }
+        return wrapApiRequest { selfApi.updateSelf(updateRequest) }
+            .map { userMapper.fromUpdateRequestToDaoModel(user, updateRequest) }
+            .flatMap { userEntity ->
+                wrapStorageRequest {
+                    userDAO.updateUser(userEntity)
+                }.map { userMapper.fromDaoModelToSelfUser(userEntity) }
+            }
     }
 
-    override suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit> = suspending {
-        wrapApiRequest {
-            selfApi.changeHandle(ChangeHandleRequest(handle))
-        }
+    override suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit> = wrapApiRequest {
+        selfApi.changeHandle(ChangeHandleRequest(handle))
     }
 
     override suspend fun updateLocalSelfUserHandle(handle: String) =
@@ -140,6 +135,11 @@ class UserDataSource(
     override suspend fun getKnownUser(userId: UserId) =
         userDAO.getUserByQualifiedID(qualifiedID = idMapper.toDaoModel(userId))
             .map { userEntity -> userEntity?.let { publicUserMapper.fromDaoModelToPublicUser(userEntity) } }
+
+    override suspend fun fetchUserInfo(userId: UserId): Either<CoreFailure, OtherUser> =
+        wrapApiRequest { userDetailsApi.getUserInfo(idMapper.toApiModel(userId)) }.map { userProfile ->
+            publicUserMapper.fromUserDetailResponse(userProfile)
+        }
 
     companion object {
         const val SELF_USER_ID_KEY = "selfUserID"

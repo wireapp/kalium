@@ -65,6 +65,7 @@ actual class UserDatabaseProvider(private val storePath: File) {
                 conversation_idAdapter = QualifiedIDAdapter(),
                 sender_user_idAdapter = QualifiedIDAdapter(),
                 statusAdapter = EnumColumnAdapter(),
+                asset_download_statusAdapter = EnumColumnAdapter(),
                 asset_image_widthAdapter = IntColumnAdapter,
                 asset_image_heightAdapter = IntColumnAdapter,
                 content_typeAdapter = ContentTypeAdapter(),

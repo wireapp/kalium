@@ -1,12 +1,8 @@
 package com.wire.kalium.api.tools.json.api.message
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.api.tools.IgnoreIOS
 import com.wire.kalium.network.api.message.MLSMessageApi
 import com.wire.kalium.network.api.message.MLSMessageApiImpl
-import com.wire.kalium.network.api.message.MessageApi
-import com.wire.kalium.network.api.message.MessageApiImp
-import com.wire.kalium.network.api.message.provideEnvelopeProtoMapper
 import com.wire.kalium.network.serialization.Mls
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.ContentType
@@ -14,7 +10,6 @@ import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
@@ -23,7 +18,7 @@ class MLSMessageApiTest: ApiTest {
     @Test
     fun givenMessage_whenSendingMessage_theRequestShouldBeConfiguredCorrectly() =
         runTest {
-            val httpClient = mockAuthenticatedHttpClient(
+            val networkClient = mockAuthenticatedNetworkClient(
                 "",
                 statusCode = HttpStatusCode.Created,
                 assertion =
@@ -33,7 +28,7 @@ class MLSMessageApiTest: ApiTest {
                     assertPathEqual(PATH_MESSAGE)
                 }
             )
-            val mlsMessageApi: MLSMessageApi = MLSMessageApiImpl(httpClient)
+            val mlsMessageApi: MLSMessageApi = MLSMessageApiImpl(networkClient)
             val response = mlsMessageApi.sendMessage(MESSAGE)
             assertTrue(response.isSuccessful())
         }
@@ -41,7 +36,7 @@ class MLSMessageApiTest: ApiTest {
     @Test
     fun givenWelcomeMessage_whenSendingWelcomeMessage_theRequestShouldBeConfiguredCorrectly() =
         runTest {
-            val httpClient = mockAuthenticatedHttpClient(
+            val networkClient = mockAuthenticatedNetworkClient(
                 "",
                 statusCode = HttpStatusCode.Created,
                 assertion =
@@ -51,7 +46,7 @@ class MLSMessageApiTest: ApiTest {
                     assertPathEqual(PATH_WELCOME_MESSAGE)
                 }
             )
-            val mlsMessageApi: MLSMessageApi = MLSMessageApiImpl(httpClient)
+            val mlsMessageApi: MLSMessageApi = MLSMessageApiImpl(networkClient)
             val response = mlsMessageApi.sendWelcomeMessage(WELCOME_MESSAGE)
             assertTrue(response.isSuccessful())
         }

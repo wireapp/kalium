@@ -13,7 +13,8 @@ import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase.Companion.FIRST_KEY_ID
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.network.api.user.pushToken.PushTokenBody
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMissingAuth
@@ -82,38 +83,37 @@ class RegisterClientUseCaseImpl(
 ) : RegisterClientUseCase {
 
     override suspend operator fun invoke(registerClientParam: RegisterClientUseCase.RegisterClientParam): RegisterClientResult =
-        suspending {
-            with(registerClientParam) {
-                generateProteusPreKeys(preKeysToSend, password, capabilities).coFold({
-                    RegisterClientResult.Failure.Generic(it)
-                }, { registerClientParam ->
-                    clientRepository.registerClient(registerClientParam).flatMap { client ->
-                        createMLSClient(client)
-                    }.flatMap { client ->
-                        if (this is RegisterClientUseCase.RegisterClientParam.ClientWithToken) {
-                            registerToken(client, senderId)
-                        } else {
-                            Either.Right(client)
+        with(registerClientParam) {
+            generateProteusPreKeys(preKeysToSend, password, capabilities).fold({
+                RegisterClientResult.Failure.Generic(it)
+            }, { registerClientParam ->
+                clientRepository.registerClient(registerClientParam).flatMap { client ->
+                    createMLSClient(client)
+                }.flatMap { client ->
+                    if (this is RegisterClientUseCase.RegisterClientParam.ClientWithToken) {
+                        registerToken(client, senderId)
+                    } else {
+                        Either.Right(client)
+                    }
+                }.fold({ failure ->
+                    if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError)
+                        when {
+                            failure.kaliumException.isTooManyClients() -> RegisterClientResult.Failure.TooManyClients
+                            failure.kaliumException.isMissingAuth() -> RegisterClientResult.Failure.InvalidCredentials
+                            else -> RegisterClientResult.Failure.Generic(failure)
                         }
-                    }.fold({ failure ->
-                        if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError)
-                            when {
-                                failure.kaliumException.isTooManyClients() -> RegisterClientResult.Failure.TooManyClients
-                                failure.kaliumException.isMissingAuth() -> RegisterClientResult.Failure.InvalidCredentials
-                                else -> RegisterClientResult.Failure.Generic(failure)
-                            }
-                        else RegisterClientResult.Failure.Generic(failure)
-                    }, { client ->
-                        RegisterClientResult.Success(client)
-                    })
+                    else RegisterClientResult.Failure.Generic(failure)
+                }, { client ->
+                    RegisterClientResult.Success(client)
                 })
-            }
+            })
         }
+
 
     /**
      * to save the generated token that is related to the notifications , in the android case it's firebase token
      */
-    private suspend fun registerToken(client: Client, senderId: String): Either<CoreFailure, Client> = suspending {
+    private suspend fun registerToken(client: Client, senderId: String): Either<CoreFailure, Client> =
         notificationTokenRepository.getNotificationToken().flatMap { notificationToken ->
             clientRepository.registerToken(
                 PushTokenBody(
@@ -124,17 +124,15 @@ class RegisterClientUseCaseImpl(
                 )
             ).map { client }
         }
-    }
 
-    private suspend fun createMLSClient(client: Client): Either<CoreFailure, Client> = suspending {
-        // TODO when https://github.com/wireapp/core-crypto/issues/11 is implemented we
-        // can remove registerMLSClient() and supply the MLS public key in registerClient().
+    // TODO(mls): when https://github.com/wireapp/core-crypto/issues/11 is implemented we
+    // can remove registerMLSClient() and supply the MLS public key in registerClient().
+    private suspend fun createMLSClient(client: Client): Either<CoreFailure, Client> =
         mlsClientProvider.getMLSClient(client.clientId)
             .flatMap { clientRepository.registerMLSClient(client.clientId, it.getPublicKey()) }
             .flatMap { keyPackageRepository.uploadNewKeyPackages(client.clientId) }
             .flatMap { clientRepository.persistClientId(client.clientId) }
             .map { client }
-    }
 
     private suspend fun generateProteusPreKeys(
         preKeysToSend: Int,

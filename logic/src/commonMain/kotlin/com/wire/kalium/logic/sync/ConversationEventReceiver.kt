@@ -20,9 +20,9 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.call.CallManager
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.functional.suspending
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.logic.wrapCryptoRequest
@@ -55,26 +55,24 @@ class ConversationEventReceiver(
         val decodedContentBytes = Base64.decodeFromBase64(event.content.toByteArray())
         val cryptoSessionId =
             CryptoSessionId(idMapper.toCryptoQualifiedIDId(event.senderUserId), CryptoClientId(event.senderClientId.value))
-        suspending {
-            wrapCryptoRequest { proteusClient.decrypt(decodedContentBytes, cryptoSessionId) }.map { PlainMessageBlob(it) }
-                .onFailure {
-                    // TODO: Insert a failed message into the database to notify user that encryption is kaputt
-                    kaliumLogger.e("$TAG - failure on proteus message: ${it.proteusException.stackTraceToString()}")
-                }.onSuccess { plainMessageBlob ->
-                    val protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)
-                    val message = Message(
-                        id = protoContent.messageUid,
-                        content = protoContent.messageContent,
-                        conversationId = event.conversationId,
-                        date = event.time,
-                        senderUserId = event.senderUserId,
-                        senderClientId = event.senderClientId,
-                        status = Message.Status.SENT
-                    )
+        wrapCryptoRequest { proteusClient.decrypt(decodedContentBytes, cryptoSessionId) }.map { PlainMessageBlob(it) }
+            .onFailure {
+                // TODO(important): Insert a failed message into the database to notify user that encryption is kaputt
+                kaliumLogger.e("$TAG - failure on proteus message: ${it.proteusException.stackTraceToString()}")
+            }.onSuccess { plainMessageBlob ->
+                val protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)
+                val message = Message(
+                    id = protoContent.messageUid,
+                    content = protoContent.messageContent,
+                    conversationId = event.conversationId,
+                    date = event.time,
+                    senderUserId = event.senderUserId,
+                    senderClientId = event.senderClientId,
+                    status = Message.Status.SENT
+                )
 
-                    processMessage(message)
-                }
-        }
+                processMessage(message)
+            }
     }
 
     private fun updateAssetMessage(persistedMessage: Message, newMessageRemoteData: AssetContent.RemoteData): Message? =
@@ -104,14 +102,14 @@ class ConversationEventReceiver(
         conversationRepository.insertConversationFromEvent(event)
             .onFailure { kaliumLogger.e("$TAG - failure on new conversation event: $it") }
 
-    //TODO: insert a message to show a user added to the conversation
+    //TODO(system-messages): insert a message to show a user added to the conversation
     private suspend fun handleMemberJoin(event: Event.Conversation.MemberJoin) = conversationRepository
         .persistMembers(
             memberMapper.fromEventToDaoModel(event.members.users),
             idMapper.toDaoModel(event.conversationId)
         ).onFailure { kaliumLogger.e("$TAG - failure on member join event: $it") }
 
-    //TODO: insert a message to show a user deleted to the conversation
+    //TODO(system-messages): insert a message to show a user deleted to the conversation
     private suspend fun handleMemberLeave(event: Event.Conversation.MemberLeave) =
         event.members.qualifiedUserIds.forEach { userId ->
             conversationRepository.deleteMember(
@@ -124,14 +122,13 @@ class ConversationEventReceiver(
             .onFailure { kaliumLogger.e("$TAG - failure on MLS welcome event: $it") }
     }
 
-    private suspend fun handleNewMLSMessage(event: Event.Conversation.NewMLSMessage) = suspending {
+    private suspend fun handleNewMLSMessage(event: Event.Conversation.NewMLSMessage) =
         mlsConversationRepository.messageFromMLSMessage(event)
             .onFailure {
-                // TODO: Insert a failed message into the database to notify user that encryption is kaputt
+                // TODO(mls): Insert a failed message into the database to notify user that encryption is kaputt
                 kaliumLogger.e("$TAG - failure on MLS message: $it")
-            }
-            .onSuccess { message ->
-                val plainMessageBlob = message?.let { PlainMessageBlob(it) } ?: return@onSuccess
+            }.onSuccess { mlsMessage ->
+                val plainMessageBlob = mlsMessage?.let { PlainMessageBlob(it) } ?: return@onSuccess
                 val protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)
                 val message = Message(
                     id = protoContent.messageUid,
@@ -139,15 +136,13 @@ class ConversationEventReceiver(
                     conversationId = event.conversationId,
                     date = event.time,
                     senderUserId = event.senderUserId,
-                    senderClientId = ClientId(""), // TODO client ID not available for MLS messages
+                    senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
                     status = Message.Status.SENT
                 )
-
                 processMessage(message)
             }
-    }
 
-    private suspend fun processMessage(message: Message) = suspending {
+    private suspend fun processMessage(message: Message) {
         kaliumLogger.i(message = "Message received: $message")
 
         val isMyMessage = userRepository.getSelfUserId() == message.senderUserId
@@ -171,12 +166,25 @@ class ConversationEventReceiver(
             }
             is MessageContent.DeleteMessage ->
                 if (isSenderVerified(message.content.messageId, message.conversationId, message.senderUserId))
-                    messageRepository.softDeleteMessage(messageUuid = message.content.messageId, message.conversationId)
+                    messageRepository.markMessageAsDeleted(messageUuid = message.content.messageId, conversationId = message.conversationId)
                 else kaliumLogger.i(message = "Delete message sender is not verified: $message")
-            is MessageContent.DeleteForMe ->
-                if (isSenderVerified(message.content.messageId, message.conversationId, message.senderUserId))
-                    messageRepository.hideMessage(messageUuid = message.content.messageId, message.content.conversationId)
+            is MessageContent.DeleteForMe -> {
+                /*The conversationId comes with the hidden message[message.content] only carries the conversaionId VALUE,
+                *  we need to get the DOMAIN from the self conversationId[here is the message.conversationId]*/
+                val conversationId =
+                    if (message.content.qualifiedConversationId != null)
+                        idMapper.fromProtoModel(message.content.qualifiedConversationId)
+                    else ConversationId(
+                        message.content.conversationId,
+                        message.conversationId.domain
+                    )
+                if (message.conversationId == conversationRepository.getSelfConversationId())
+                    messageRepository.deleteMessage(
+                        messageUuid = message.content.messageId,
+                        conversationId = conversationId
+                    )
                 else kaliumLogger.i(message = "Delete message sender is not verified: $message")
+            }
             is MessageContent.Calling -> {
                 kaliumLogger.d("$TAG - MessageContent.Calling")
                 callManagerImpl.onCallingMessageReceived(

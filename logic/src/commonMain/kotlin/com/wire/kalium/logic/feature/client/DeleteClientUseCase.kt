@@ -4,7 +4,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.DeleteClientParam
-import com.wire.kalium.logic.functional.suspending
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 
 interface DeleteClientUseCase {
@@ -12,16 +12,15 @@ interface DeleteClientUseCase {
 }
 
 class DeleteClientUseCaseImpl(private val clientRepository: ClientRepository) : DeleteClientUseCase {
-    override suspend operator fun invoke(param: DeleteClientParam): DeleteClientResult = (suspending {
-        clientRepository.deleteClient(param)
-    }.fold({ failure ->
-        if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError)
-            DeleteClientResult.Failure.InvalidCredentials
-        else
-            DeleteClientResult.Failure.Generic(failure)
-    }, {
-        DeleteClientResult.Success
-    }))
+    override suspend operator fun invoke(param: DeleteClientParam): DeleteClientResult =
+        clientRepository.deleteClient(param).fold({ failure ->
+            if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError)
+                DeleteClientResult.Failure.InvalidCredentials
+            else
+                DeleteClientResult.Failure.Generic(failure)
+        }, {
+            DeleteClientResult.Success
+        })
 }
 
 sealed class DeleteClientResult {

@@ -21,6 +21,7 @@ CREATE TABLE Message (
       asset_token TEXT,
       asset_domain TEXT,
       asset_encryption_algorithm TEXT,
+      asset_download_status TEXT AS MessageEntity.DownloadStatus,
 
       -- Base message fields
       content_type TEXT AS ContentType NOT NULL,
@@ -44,14 +45,14 @@ DELETE FROM Message WHERE  id = ? AND conversation_id = ?;
 deleteMessageById:
 DELETE FROM Message WHERE  id = ?;
 
-updateMessageVisibility:
+markMessageAsDeleted:
 UPDATE Message
-SET visibility = ?, text_body = ?
-WHERE id = ? AND conversation_id = ?;
+SET visibility = 'DELETED', text_body = NULL
+WHERE id = ? AND conversation_id =? ;
 
 insertMessage:
-INSERT INTO Message(id, text_body, asset_mime_type, asset_size, asset_name, asset_image_width, asset_image_height, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, content_type, conversation_id, date, sender_user_id, sender_client_id, visibility, status)
-VALUES(?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO Message(id, text_body, asset_mime_type, asset_size, asset_name, asset_image_width, asset_image_height, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, asset_download_status, content_type, conversation_id, date, sender_user_id, sender_client_id, visibility, status)
+VALUES(?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(id, conversation_id) DO UPDATE SET
 id = excluded.id,
 text_body = excluded.text_body,
@@ -82,6 +83,11 @@ WHERE id = ? AND conversation_id = ?;
 updateMessageStatus:
 UPDATE Message
 SET status = ?
+WHERE id = ? AND conversation_id = ?;
+
+updateAssetDownloadStatus:
+UPDATE Message
+SET asset_download_status = ?
 WHERE id = ? AND conversation_id = ?;
 
 updateMessageDate:

@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
@@ -18,7 +19,8 @@ interface MessageMapper {
     fun fromMessageToLocalNotificationMessage(message: Message, author: LocalNotificationMessageAuthor): LocalNotificationMessage
 }
 
-class MessageMapperImpl(private val idMapper: IdMapper) : MessageMapper {
+class MessageMapperImpl(private val idMapper: IdMapper, private val assetMapper: AssetMapper = MapperProvider.assetMapper()) :
+    MessageMapper {
     override fun fromMessageToEntity(message: Message): MessageEntity {
         val status = when (message.status) {
             Message.Status.PENDING -> MessageEntity.Status.PENDING
@@ -28,8 +30,6 @@ class MessageMapperImpl(private val idMapper: IdMapper) : MessageMapper {
         }
         val messageContent = when (message.content) {
             is MessageContent.Text -> TextMessageContent(messageBody = message.content.value)
-            is MessageContent.DeleteMessage -> TextMessageContent(messageBody = message.content.messageId)
-            is MessageContent.DeleteForMe -> TextMessageContent(messageBody = message.content.messageId)
             is MessageContent.Asset -> {
                 with(message.content.value) {
                     AssetMessageContent(
@@ -47,7 +47,8 @@ class MessageMapperImpl(private val idMapper: IdMapper) : MessageMapper {
                         assetSha256Key = remoteData.sha256,
                         assetId = remoteData.assetId,
                         assetToken = remoteData.assetToken,
-                        assetEncryptionAlgorithm = remoteData.encryptionAlgorithm?.name
+                        assetEncryptionAlgorithm = remoteData.encryptionAlgorithm?.name,
+                        assetDownloadStatus = assetMapper.fromDownloadStatusToDaoModel(downloadStatus)
                     )
                 }
             }
@@ -87,6 +88,11 @@ class MessageMapperImpl(private val idMapper: IdMapper) : MessageMapper {
             MessageEntity.Status.READ -> Message.Status.READ
             MessageEntity.Status.FAILED -> Message.Status.FAILED
         }
+        val visibility = when (message.visibility) {
+            MessageEntity.Visibility.VISIBLE -> Message.Visibility.VISIBLE
+            MessageEntity.Visibility.HIDDEN -> Message.Visibility.HIDDEN
+            MessageEntity.Visibility.DELETED -> Message.Visibility.DELETED
+        }
         return Message(
             message.id,
             content,
@@ -94,7 +100,8 @@ class MessageMapperImpl(private val idMapper: IdMapper) : MessageMapper {
             message.date,
             idMapper.fromDaoModel(message.senderUserId),
             ClientId(message.senderClientId),
-            status
+            status,
+            visibility
         )
     }
 
@@ -103,7 +110,8 @@ class MessageMapperImpl(private val idMapper: IdMapper) : MessageMapper {
 
         return when (message.content) {
             is MessageContent.Text -> LocalNotificationMessage.Text(author, time, message.content.value)
-            else -> LocalNotificationMessage.Text(author, time, "Something not a text") //TODO
+            // TODO(notifications): Handle other message types
+            else -> LocalNotificationMessage.Text(author, time, "Something not a text")
         }
     }
 }

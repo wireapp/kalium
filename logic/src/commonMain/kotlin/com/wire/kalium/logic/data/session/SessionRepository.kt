@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.client.SessionStorage
@@ -13,7 +14,8 @@ import com.wire.kalium.persistence.client.SessionStorage
 interface SessionRepository {
     fun storeSession(autSession: AuthSession): Either<StorageFailure, Unit>
 
-    // TODO: exposing all session is unnecessary since we only need the IDs of the users getAllSessions(): Either<SessionFailure, List<UserIDs>>
+    // TODO(optimization): exposing all session is unnecessary since we only need the IDs
+    //                     of the users getAllSessions(): Either<SessionFailure, List<UserIDs>>
     fun allSessions(): Either<StorageFailure, List<AuthSession>>
     fun userSession(userId: UserId): Either<StorageFailure, AuthSession>
     fun doesSessionExist(userId: UserId): Either<StorageFailure, Boolean>
