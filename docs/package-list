@@ -80,40 +80,6 @@ $dokka.location:com.wire.kalium.calling/ConversationTypeCalling.Group///Pointing
 $dokka.location:com.wire.kalium.calling/ConversationTypeCalling.OneOnOne///PointingToDeclaration/calling/calling/com.wire.kalium.calling/-conversation-type-calling/-one-on-one/index.html
 $dokka.location:com.wire.kalium.calling/ConversationTypeCalling///PointingToDeclaration/calling/calling/com.wire.kalium.calling/-conversation-type-calling/index.html
 $dokka.location:com.wire.kalium.calling/ConversationTypeCalling/avsValue/#/PointingToDeclaration/calling/calling/com.wire.kalium.calling/-conversation-type-calling/avs-value.html
-$dokka.location:com.wire.kalium.cli////PointingToDeclaration/cli/cli/com.wire.kalium.cli/index.html
-$dokka.location:com.wire.kalium.cli//main/#kotlin.Array[kotlin.String]/PointingToDeclaration/cli/cli/com.wire.kalium.cli/main.html
-$dokka.location:com.wire.kalium.cli//restoreSession/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/restore-session.html
-$dokka.location:com.wire.kalium.cli/CLIApplication.Companion///PointingToDeclaration/cli/cli/com.wire.kalium.cli/-c-l-i-application/-companion/index.html
-$dokka.location:com.wire.kalium.cli/CLIApplication.Companion/HOME_DIRECTORY/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-c-l-i-application/-companion/-h-o-m-e_-d-i-r-e-c-t-o-r-y.html
-$dokka.location:com.wire.kalium.cli/CLIApplication///PointingToDeclaration/cli/cli/com.wire.kalium.cli/-c-l-i-application/index.html
-$dokka.location:com.wire.kalium.cli/CLIApplication/CLIApplication/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-c-l-i-application/-c-l-i-application.html
-$dokka.location:com.wire.kalium.cli/CLIApplication/run/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-c-l-i-application/run.html
-$dokka.location:com.wire.kalium.cli/CLIUtils///PointingToDeclaration/cli/cli/com.wire.kalium.cli/-c-l-i-utils/index.html
-$dokka.location:com.wire.kalium.cli/CLIUtils/getResource/#kotlin.String/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-c-l-i-utils/get-resource.html
-$dokka.location:com.wire.kalium.cli/CLIUtils/toByteArray/#java.io.InputStream?/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-c-l-i-utils/to-byte-array.html
-$dokka.location:com.wire.kalium.cli/ConversationsApplication///PointingToDeclaration/cli/cli/com.wire.kalium.cli/-conversations-application/index.html
-$dokka.location:com.wire.kalium.cli/ConversationsApplication/ConversationsApplication/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-conversations-application/-conversations-application.html
-$dokka.location:com.wire.kalium.cli/ConversationsApplication/run/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-conversations-application/run.html
-$dokka.location:com.wire.kalium.cli/CreateGroupCommand///PointingToDeclaration/cli/cli/com.wire.kalium.cli/-create-group-command/index.html
-$dokka.location:com.wire.kalium.cli/CreateGroupCommand/CreateGroupCommand/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-create-group-command/-create-group-command.html
-$dokka.location:com.wire.kalium.cli/CreateGroupCommand/run/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-create-group-command/run.html
-$dokka.location:com.wire.kalium.cli/DeleteClientCommand///PointingToDeclaration/cli/cli/com.wire.kalium.cli/-delete-client-command/index.html
-$dokka.location:com.wire.kalium.cli/DeleteClientCommand/DeleteClientCommand/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-delete-client-command/-delete-client-command.html
-$dokka.location:com.wire.kalium.cli/DeleteClientCommand/run/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-delete-client-command/run.html
-$dokka.location:com.wire.kalium.cli/InMemorySessionManager///PointingToDeclaration/cli/cli/com.wire.kalium.cli/-in-memory-session-manager/index.html
-$dokka.location:com.wire.kalium.cli/InMemorySessionManager/InMemorySessionManager/#com.wire.kalium.network.tools.ServerConfigDTO#com.wire.kalium.network.api.SessionDTO/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-in-memory-session-manager/-in-memory-session-manager.html
-$dokka.location:com.wire.kalium.cli/InMemorySessionManager/onSessionExpired/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-in-memory-session-manager/on-session-expired.html
-$dokka.location:com.wire.kalium.cli/InMemorySessionManager/session/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-in-memory-session-manager/session.html
-$dokka.location:com.wire.kalium.cli/InMemorySessionManager/updateSession/#com.wire.kalium.network.api.model.AccessTokenDTO#com.wire.kalium.network.api.model.RefreshTokenDTO?/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-in-memory-session-manager/update-session.html
-$dokka.location:com.wire.kalium.cli/ListenGroupCommand///PointingToDeclaration/cli/cli/com.wire.kalium.cli/-listen-group-command/index.html
-$dokka.location:com.wire.kalium.cli/ListenGroupCommand/ListenGroupCommand/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-listen-group-command/-listen-group-command.html
-$dokka.location:com.wire.kalium.cli/ListenGroupCommand/run/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-listen-group-command/run.html
-$dokka.location:com.wire.kalium.cli/LoginCommand///PointingToDeclaration/cli/cli/com.wire.kalium.cli/-login-command/index.html
-$dokka.location:com.wire.kalium.cli/LoginCommand/LoginCommand/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-login-command/-login-command.html
-$dokka.location:com.wire.kalium.cli/LoginCommand/run/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-login-command/run.html
-$dokka.location:com.wire.kalium.cli/RegisterAccountApp///PointingToDeclaration/cli/cli/com.wire.kalium.cli/-register-account-app/index.html
-$dokka.location:com.wire.kalium.cli/RegisterAccountApp/RegisterAccountApp/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-register-account-app/-register-account-app.html
-$dokka.location:com.wire.kalium.cli/RegisterAccountApp/run/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-register-account-app/run.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl.Companion///PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]-companion/index.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl.Companion/toByteArray/#kotlin.collections.List[kotlin.UByte]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]-companion/to-byte-array.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl.Companion/toUByteList/#kotlin.ByteArray/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]-companion/to-u-byte-list.html
@@ -203,6 +169,7 @@ com.wire.kalium.logic.data.publicuser.model
 com.wire.kalium.logic.data.register
 com.wire.kalium.logic.data.session
 com.wire.kalium.logic.data.sso
+com.wire.kalium.logic.data.sync
 com.wire.kalium.logic.data.team
 com.wire.kalium.logic.data.user
 com.wire.kalium.logic.di
