@@ -18,6 +18,10 @@ data class Message(
         PENDING, SENT, READ, FAILED
     }
 
+    enum class DownloadStatus {
+        NOT_DOWNLOADED, IN_PROGRESS, DOWNLOADED, FAILED
+    }
+
     enum class Visibility {
         VISIBLE, DELETED, HIDDEN
     }

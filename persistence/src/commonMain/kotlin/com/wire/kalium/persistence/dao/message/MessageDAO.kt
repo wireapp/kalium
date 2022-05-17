@@ -33,11 +33,16 @@ data class MessageEntity(
             val assetToken: String? = null,
             val assetDomain: String? = null,
             val assetEncryptionAlgorithm: String?,
+            val assetDownloadStatus: DownloadStatus? = null,
         ) : MessageEntityContent()
     }
 
     enum class Status {
         PENDING, SENT, READ, FAILED
+    }
+
+    enum class DownloadStatus {
+        NOT_DOWNLOADED, IN_PROGRESS, DOWNLOADED, FAILED
     }
 
     enum class ContentType {
@@ -51,6 +56,7 @@ data class MessageEntity(
 
 interface MessageDAO {
     suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity)
+    suspend fun updateAssetDownloadStatus(downloadStatus: MessageEntity.DownloadStatus, id: String, conversationId: QualifiedIDEntity)
     suspend fun markMessageAsDeleted(id: String, conversationsId: QualifiedIDEntity)
     suspend fun deleteAllMessages()
     suspend fun insertMessage(message: MessageEntity)
