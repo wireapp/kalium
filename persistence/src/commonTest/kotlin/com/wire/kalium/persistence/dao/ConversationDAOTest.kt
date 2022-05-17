@@ -14,12 +14,14 @@ import kotlin.test.assertNull
 class ConversationDAOTest : BaseDatabaseTest() {
 
     private lateinit var conversationDAO: ConversationDAO
+    private lateinit var userDAO: UserDAO
 
     @BeforeTest
     fun setUp() {
         deleteDatabase()
         val db = createDatabase()
         conversationDAO = db.conversationDAO
+        userDAO = db.userDAO
     }
 
     @Test
@@ -115,7 +117,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenExistingConversation_ThenInsertedOrUpdatedMembersAreRetrieved() = runTest {
         conversationDAO.insertConversation(conversationEntity1)
-        conversationDAO.insertOrUpdateOneOnOneMemberWithConnectionStatus(
+        conversationDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
             userId = member1.user,
             status = UserEntity.ConnectionState.ACCEPTED,
             conversationID = conversationEntity1.id
@@ -125,6 +127,22 @@ class ConversationDAOTest : BaseDatabaseTest() {
             setOf(member1),
             conversationDAO.getAllMembers(conversationEntity1.id).first().toSet()
         )
+    }
+
+    @Test
+    fun givenExistingConversation_ThenUserTableShouldBeUpdatedOnlyAndNotReplaced() = runTest {
+        conversationDAO.insertConversation(conversationEntity1)
+        userDAO.insertUser(user1.copy(connectionStatus = UserEntity.ConnectionState.NOT_CONNECTED))
+
+        conversationDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
+            userId = member1.user,
+            status = UserEntity.ConnectionState.SENT,
+            conversationID = conversationEntity1.id
+        )
+
+        assertEquals(setOf(member1), conversationDAO.getAllMembers(conversationEntity1.id).first().toSet())
+        assertEquals(UserEntity.ConnectionState.SENT, userDAO.getUserByQualifiedID(user1.id).first()?.connectionStatus)
+        assertEquals(user1.name, userDAO.getUserByQualifiedID(user1.id).first()?.name)
     }
 
     @Test
@@ -172,12 +190,12 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         conversationDAO.insertMember(member1, conversationEntity1.id)
         conversationDAO.insertMember(member2, conversationEntity1.id)
-        conversationDAO.getAllMembers(conversationEntity1.id).first().also {actual ->
+        conversationDAO.getAllMembers(conversationEntity1.id).first().also { actual ->
             assertEquals(expected, actual)
         }
         conversationDAO.insertMember(member1, conversationEntity1.id)
         conversationDAO.insertMember(member2, conversationEntity1.id)
-        conversationDAO.getAllMembers(conversationEntity1.id).first().also {actual ->
+        conversationDAO.getAllMembers(conversationEntity1.id).first().also { actual ->
             assertEquals(expected, actual)
         }
     }
@@ -192,15 +210,15 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         conversationDAO.insertMember(member1, conversationEntity1.id)
         conversationDAO.insertMember(member2, conversationEntity1.id)
-        conversationDAO.getAllMembers(conversationEntity1.id).first().also {actual ->
+        conversationDAO.getAllMembers(conversationEntity1.id).first().also { actual ->
             assertEquals(expected, actual)
         }
         conversationDAO.insertMember(member1, conversationEntity2.id)
         conversationDAO.insertMember(member2, conversationEntity2.id)
-        conversationDAO.getAllMembers(conversationEntity2.id).first().also {actual ->
+        conversationDAO.getAllMembers(conversationEntity2.id).first().also { actual ->
             assertEquals(expected, actual)
         }
-        conversationDAO.getAllMembers(conversationEntity1.id).first().also {actual ->
+        conversationDAO.getAllMembers(conversationEntity1.id).first().also { actual ->
             assertEquals(expected, actual)
         }
     }

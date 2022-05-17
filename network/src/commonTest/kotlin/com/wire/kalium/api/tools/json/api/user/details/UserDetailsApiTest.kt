@@ -9,6 +9,7 @@ import com.wire.kalium.network.api.user.details.UserDetailsApiImpl
 import com.wire.kalium.network.api.user.details.qualifiedHandles
 import com.wire.kalium.network.api.user.details.qualifiedIds
 import com.wire.kalium.network.tools.KtxSerializer
+import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -71,8 +72,26 @@ class UserDetailsApiTest : ApiTest {
         userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(listOf()))
     }
 
+    @Test
+    fun givenAUserId_whenInvokingUserInfo_thenShouldConfigureTheRequestOkAndReturnAResultWithData() = runTest {
+        val httpClient = mockAuthenticatedNetworkClient(
+            ListUsersRequestJson.validIdsJsonProvider.rawJson,
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertGet()
+                assertJson()
+                assertPathEqual("$PATH_USERS/${QualifiedIDSamples.one.domain}/${QualifiedIDSamples.one.value}")
+            }
+        )
+        val userDetailsApi: UserDetailsApi = UserDetailsApiImpl(httpClient)
+
+        val result = userDetailsApi.getUserInfo(QualifiedIDSamples.one)
+        result.isSuccessful()
+    }
 
     private companion object {
         const val PATH_LIST_USERS = "/list-users"
+        const val PATH_USERS = "/users"
     }
 }
+
