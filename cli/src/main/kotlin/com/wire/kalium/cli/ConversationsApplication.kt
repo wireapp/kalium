@@ -3,19 +3,15 @@ package com.wire.kalium.cli
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
-import com.wire.kalium.cli.CLIUtils.getResource
-import com.wire.kalium.cryptography.utils.calcMd5
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.configuration.server.ServerConfigMapperImpl
 import com.wire.kalium.network.AuthenticatedNetworkContainer
-import com.wire.kalium.network.UnauthenticatedNetworkContainer
 import com.wire.kalium.network.NetworkLogger
+import com.wire.kalium.network.UnauthenticatedNetworkContainer
 import com.wire.kalium.network.api.SessionDTO
-import com.wire.kalium.network.api.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.model.AccessTokenDTO
-import com.wire.kalium.network.api.model.AssetRetentionType
 import com.wire.kalium.network.api.model.RefreshTokenDTO
 import com.wire.kalium.network.api.user.login.LoginApi
 import com.wire.kalium.network.session.SessionManager
@@ -51,7 +47,7 @@ class ConversationsApplication : CliktCommand() {
         NetworkLogger.setLoggingLevel(level = KaliumLogLevel.DEBUG)
 
         val serverConfigMapper: ServerConfigMapper = ServerConfigMapperImpl()
-        val serverConfigDTO: ServerConfigDTO = serverConfigMapper.toDTO(ServerConfig.DEFAULT)
+        val serverConfigDTO: ServerConfigDTO = serverConfigMapper.toDTO(ServerConfig.STAGING)
         val loginContainer = UnauthenticatedNetworkContainer()
 
         val loginResult = loginContainer.loginApi.login(
@@ -73,10 +69,10 @@ class ConversationsApplication : CliktCommand() {
                     println("ID:${it.id}, Name: ${it.name}")
                 }
             }
-            uploadTestAsset(networkModule)
+            //uploadTestAsset(networkModule)
         }
     }
-
+/*
     private suspend fun uploadTestAsset(networkModule: AuthenticatedNetworkContainer) {
         val imageBytes: ByteArray = getResource("moon1.jpg")
         val uploadResult = networkModule.assetApi.uploadAsset(
@@ -85,6 +81,8 @@ class ConversationsApplication : CliktCommand() {
         )
         println("The upload result is -> $uploadResult")
     }
+
+ */
 }
 
 fun main(args: Array<String>) = ConversationsApplication().main(args)
