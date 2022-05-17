@@ -104,7 +104,7 @@ class SearchKnownUserUseCaseTest {
                     )
                 )
             )
-        //given
+        //when
         searchKnownUsersUseCase(searchQuery)
         //then
         verify(searchUserRepository)
