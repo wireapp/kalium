@@ -10,6 +10,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -331,6 +332,39 @@ class UserDAOTest : BaseDatabaseTest() {
         //then
         assertEquals(expectedResult, searchResult)
     }
+
+    @Test
+    fun givenAExistingUsers_whenUpdatingTheirValues_ThenResultsIsEqualToThatUserButWithFieldsModified() = runTest {
+        //given
+        val newNameA = "new user naming a"
+        val newNameB = "new user naming b"
+        db.userDAO.insertUsers(listOf(user1, user3))
+        //when
+        val updatedUser1 = user1.copy(name = newNameA)
+        val updatedUser3 = user3.copy(name = newNameB)
+        db.userDAO.updateUsers(listOf(updatedUser1, updatedUser3))
+        //then
+        val updated1 = db.userDAO.getUserByQualifiedID(updatedUser1.id)
+        val updated3 = db.userDAO.getUserByQualifiedID(updatedUser3.id)
+        assertEquals(newNameA, updated1.first()?.name)
+        assertEquals(newNameB, updated3.first()?.name)
+    }
+
+    @Test
+    fun givenAExistingUsers_whenUpdatingTheirValuesAndRecordNotExists_ThenResultsOneUpdatedAnotherInserted() = runTest {
+        //given
+        val newNameA = "new user naming a"
+        db.userDAO.insertUser(user1)
+        //when
+        val updatedUser1 = user1.copy(name = newNameA)
+        db.userDAO.updateUsers(listOf(updatedUser1, user2))
+        //then
+        val updated1 = db.userDAO.getUserByQualifiedID(updatedUser1.id)
+        val inserted2 = db.userDAO.getUserByQualifiedID(user2.id)
+        assertEquals(newNameA, updated1.first()?.name)
+        assertNotNull(inserted2)
+    }
+
 
     private companion object {
         val USER_ENTITY_1 = newUserEntity(QualifiedIDEntity("1", "wire.com"))
