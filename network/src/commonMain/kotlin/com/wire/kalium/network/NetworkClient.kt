@@ -148,5 +148,5 @@ internal fun provideBaseHttpClient(
     config()
 }
 
-private fun shouldAddApiVersion(apiVersion: Int): Boolean = apiVersion >= MINIMUM_API_VERSION_TO_ADD
+internal fun shouldAddApiVersion(apiVersion: Int): Boolean = apiVersion >= MINIMUM_API_VERSION_TO_ADD
 private const val MINIMUM_API_VERSION_TO_ADD = 1
