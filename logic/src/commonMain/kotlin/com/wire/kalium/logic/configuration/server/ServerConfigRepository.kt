@@ -20,9 +20,26 @@ import kotlinx.coroutines.flow.map
 
 
 internal interface ServerConfigRepository {
+    /**
+     * download an on premise server configuration from a json file
+     * @param serverConfigUrl url for the server configuration url
+     * @return Either ServerConfigResponse or NetworkFailure
+     */
     suspend fun fetchRemoteConfig(serverConfigUrl: String): Either<NetworkFailure, ServerConfigResponse>
+
+    /**
+     * @return list of all locally stored server configurations
+     */
     fun configList(): Either<StorageFailure, List<ServerConfig>>
+
+    /**
+     * @return observable list of all locally stored server configurations
+     */
     fun configFlow(): Either<StorageFailure, Flow<List<ServerConfig>>>
+
+    /**
+     * delete a locally stored server configuration
+     */
     fun deleteById(id: String): Either<StorageFailure, Unit>
     fun delete(serverConfig: ServerConfig): Either<StorageFailure, Unit>
     fun storeConfig(
@@ -32,8 +49,24 @@ internal interface ServerConfigRepository {
         federation: Boolean
     ): Either<StorageFailure, ServerConfig>
 
+    /**
+     * calculate the app/server common api version for a new non stored config and store it locally if the version is valid
+     * can return a ServerConfigFailure in case of an invalid version
+     * @param serverConfigResponse
+     * @return ServerConfigFailure in case of an invalid version
+     * @return NetworkFailure in case of remote communication error
+     * @return StorageFailure in case of DB errors when storing configuration
+     */
     suspend fun fetchApiVersionAndStore(serverConfigResponse: ServerConfigResponse): Either<CoreFailure, ServerConfig>
+
+    /**
+     * retrieve a config from the local DB by ID
+     */
     fun configById(id: String): Either<StorageFailure, ServerConfig>
+
+    /**
+     * update the api version of a locally stored config
+     */
     suspend fun updateConfigApiVersion(id: String): Either<CoreFailure, Unit>
 }
 
