@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.connection
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.isRight
@@ -20,6 +21,7 @@ import com.wire.kalium.persistence.dao.UserEntity
 
 interface ConnectionRepository {
     suspend fun fetchSelfUserConnections(): Either<CoreFailure, Unit>
+    suspend fun sendUserConnection(userId: UserId): Either<CoreFailure, Unit>
 }
 
 internal class ConnectionDataSource(
@@ -49,6 +51,15 @@ internal class ConnectionDataSource(
         return latestResult
     }
 
+    override suspend fun sendUserConnection(userId: UserId): Either<CoreFailure, Unit> {
+        return wrapApiRequest {
+            connectionApi.createConnection(idMapper.toApiModel(userId))
+        }.map { connection ->
+            val connectionSent = connection.copy(status = ConnectionState.SENT)
+            updateUserConnectionStatus(listOf(connectionSent))
+        }
+    }
+
     private fun connectionStateToDao(state: ConnectionState): UserEntity.ConnectionState = when (state) {
         ConnectionState.PENDING -> UserEntity.ConnectionState.PENDING
         ConnectionState.SENT -> UserEntity.ConnectionState.SENT
@@ -64,7 +75,7 @@ internal class ConnectionDataSource(
     ) {
         wrapStorageRequest {
             connections.forEach { connection ->
-                conversationDAO.insertOrUpdateOneOnOneMemberWithConnectionStatus(
+                conversationDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
                     userId = idMapper.fromApiToDao(connection.qualifiedToId),
                     status = connectionStateToDao(state = connection.status),
                     conversationID = idMapper.fromApiToDao(connection.qualifiedConversationId)

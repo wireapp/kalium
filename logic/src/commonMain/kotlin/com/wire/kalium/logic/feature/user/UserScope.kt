@@ -34,4 +34,5 @@ class UserScope(
     val setUserHandle: SetUserHandleUseCase get() = SetUserHandleUseCase(userRepository, validateUserHandleUseCase, syncManager)
     val getAllKnownUsers: GetAllContactsUseCase get() = GetAllContactsUseCaseImpl(userRepository)
     val getKnownUser: GetKnownUserUseCase get() = GetKnownUserUseCaseImpl(userRepository)
+    val getUserInfo: GetUserInfoUseCase get() = GetUserInfoUseCaseImpl(userRepository)
 }
