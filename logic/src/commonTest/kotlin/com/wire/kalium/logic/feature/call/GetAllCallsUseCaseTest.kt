@@ -36,7 +36,7 @@ class GetAllCallsUseCaseTest {
     @Test
     fun givenAFlowOfCalls_whenUseCaseInvoked_thenReturnThatFlow() = runTest {
         given(syncManager).coroutine { waitForSlowSyncToComplete() }
-            .then { println("DONE") }
+            .thenReturn(Unit)
         given(callRepository).invocation { callsFlow() }
             .then { MutableStateFlow(calls) }
 
