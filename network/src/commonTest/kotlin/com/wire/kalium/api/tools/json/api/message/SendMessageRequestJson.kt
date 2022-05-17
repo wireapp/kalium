@@ -2,7 +2,6 @@ package com.wire.kalium.api.tools.json.api.message
 
 import com.wire.kalium.api.tools.json.ValidJsonProvider
 import com.wire.kalium.network.api.message.MessageApi
-import com.wire.kalium.network.api.message.MessageApiImp
 import com.wire.kalium.network.api.message.MessagePriority
 import com.wire.kalium.network.api.message.UserToClientToEncMsgMap
 

@@ -14,7 +14,8 @@ import com.wire.kalium.persistence.client.SessionStorage
 interface SessionRepository {
     fun storeSession(autSession: AuthSession): Either<StorageFailure, Unit>
 
-    // TODO: exposing all session is unnecessary since we only need the IDs of the users getAllSessions(): Either<SessionFailure, List<UserIDs>>
+    // TODO(optimization): exposing all session is unnecessary since we only need the IDs
+    //                     of the users getAllSessions(): Either<SessionFailure, List<UserIDs>>
     fun allSessions(): Either<StorageFailure, List<AuthSession>>
     fun userSession(userId: UserId): Either<StorageFailure, AuthSession>
     fun doesSessionExist(userId: UserId): Either<StorageFailure, Boolean>

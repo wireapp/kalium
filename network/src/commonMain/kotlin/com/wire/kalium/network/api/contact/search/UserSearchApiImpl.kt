@@ -1,12 +1,15 @@
 package com.wire.kalium.network.api.contact.search
 
+import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 
-class UserSearchApiImpl(private val httpClient: HttpClient) : UserSearchApi  {
+class UserSearchApiImpl internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : UserSearchApi  {
+
+    private val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun search(userSearchRequest: UserSearchRequest): NetworkResponse<UserSearchResponse> =
         wrapKaliumResponse {

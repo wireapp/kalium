@@ -15,6 +15,6 @@ actual class EncryptedSettingsHolder(
     options: SettingOptions
 ) {
     private val preferences: Preferences = Preferences.userNodeForPackage(PackagePathProvider::class.java).node(options.fileName)
-    // TODO: JvmPreferencesSettings is not encrypted
+    // TODO(jvm): JvmPreferencesSettings is not encrypted
     actual val encryptedSettings: Settings = JvmPreferencesSettings(preferences)
 }

@@ -19,7 +19,7 @@ class SelfApiTest : ApiTest {
     @Test
     fun givenAValidRegisterLogoutRequest_whenCallingTheRegisterLogoutEndpoint_theRequestShouldBeConfiguredCorrectly() =
         runTest {
-            val httpClient = mockAuthenticatedHttpClient(
+            val networkClient = mockAuthenticatedNetworkClient(
                 VALID_SELF_RESPONSE.rawJson,
                 statusCode = HttpStatusCode.Created,
                 assertion = {
@@ -28,7 +28,7 @@ class SelfApiTest : ApiTest {
                     assertPathEqual(PATH_SELF)
                 }
             )
-            val selfApi = SelfApiImpl(httpClient)
+            val selfApi = SelfApiImpl(networkClient)
             val response = selfApi.getSelfInfo()
             assertTrue(response.isSuccessful())
             assertEquals(response.value, VALID_SELF_RESPONSE.serializableData)
@@ -36,11 +36,11 @@ class SelfApiTest : ApiTest {
 
     @Test
     fun givenTheServerReturnsAnError_whenCallingTheGetSelfEndpoint_thenExceptionIsPropagated() = runTest {
-        val httpClient = mockAuthenticatedHttpClient(
+        val networkClient = mockAuthenticatedNetworkClient(
             ErrorResponseJson.valid.rawJson,
             statusCode = HttpStatusCode.BadRequest
         )
-        val selfApi = SelfApiImpl(httpClient)
+        val selfApi = SelfApiImpl(networkClient)
         val response = selfApi.getSelfInfo()
         assertFalse(response.isSuccessful())
         assertTrue(response.kException is KaliumException.InvalidRequestError)

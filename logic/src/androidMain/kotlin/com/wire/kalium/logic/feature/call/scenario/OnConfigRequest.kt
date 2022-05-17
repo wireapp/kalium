@@ -12,7 +12,7 @@ import com.wire.kalium.logic.functional.fold
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
-//TODO create unit test
+//TODO(testing): create unit test
 class OnConfigRequest(
     private val calling: Calling,
     private val callRepository: CallRepository,
@@ -24,14 +24,14 @@ class OnConfigRequest(
         callingScope.launch {
             val config = callRepository.getCallConfigResponse(limit = null)
                 .fold({
-                    TODO("")
+                    TODO("Not yet implemented.")
                 }, {
                     it
                 })
 
             calling.wcall_config_update(
                 inst = inst,
-                error = 0, // TODO: http error from internal json
+                error = 0, // TODO(calling): http error from internal json
                 jsonString = config
             )
 

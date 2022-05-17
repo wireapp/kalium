@@ -3,13 +3,13 @@ package com.wire.kalium.logic.data.team
 import app.cash.turbine.test
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.user.UserMapper
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.api.teams.TeamsApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.generator.TeamGenerator
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.TeamEntity
@@ -66,7 +66,7 @@ class TeamRepositoryTest {
 
     @Test
     fun givenSelfUserExists_whenFetchingTeamInfo_thenTeamInfoShouldBeSuccessful() = runTest {
-        val team = TeamGenerator.createTeam(
+        val team = TestTeam.dto(
             id = "teamId",
             name = "teamName"
         )
@@ -114,7 +114,7 @@ class TeamRepositoryTest {
 
     @Test
     fun givenTeamIdAndUserDomain_whenFetchingTeamMembers_thenTeamMembersShouldBeSuccessful() = runTest {
-        val teamMember = TeamGenerator.createTeamMember(
+        val teamMember = TestTeam.memberDTO(
             nonQualifiedUserId = "teamMember1"
         )
 
