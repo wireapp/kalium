@@ -33,8 +33,8 @@ class SearchKnownUserUseCaseTest {
     }
 
     @Test
-    fun whenSearchingWithQueryInHandleFormat_ThenSearchOnlyByHandle() = runTest {
-        //when
+    fun givenAnInputStartingWithAtSymbol_whenSearchingUsers_thenSearchOnlyByHandle() = runTest {
+        //given
         val handleSearchQuery = "@someHandle"
 
         given(searchUserRepository)
