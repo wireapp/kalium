@@ -11,6 +11,6 @@ class GetOngoingCallUseCase(
 ) {
     suspend operator fun invoke(): Flow<List<Call>> {
         syncManager.waitForSlowSyncToComplete()
-        return callRepository.getOngoingCall()
+        return callRepository.ongoingCallsFlow()
     }
 }

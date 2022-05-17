@@ -139,7 +139,7 @@ internal class SendImageMessageUseCaseImpl(
         imgHeight: Int
     ): AssetContent {
         return AssetContent(
-            sizeInBytes = dataSize,
+            sizeInBytes = dataSize, 
             name = imageName,
             mimeType = ImageAsset.JPEG.name,
             metadata = AssetContent.AssetMetadata.Image(imgWidth, imgHeight),
@@ -150,7 +150,9 @@ internal class SendImageMessageUseCaseImpl(
                 encryptionAlgorithm = AssetContent.RemoteData.EncryptionAlgorithm.AES_CBC,
                 assetDomain = null,  // TODO(assets): fill in the assetDomain, it's returned by the BE when uploading an asset.
                 assetToken = assetId.assetToken
-            )
+            ),
+            // Asset is already in our local storage and therefore accessible
+            downloadStatus = Message.DownloadStatus.DOWNLOADED
         )
     }
 }

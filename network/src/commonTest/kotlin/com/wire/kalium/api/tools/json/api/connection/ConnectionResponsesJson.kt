@@ -1,6 +1,7 @@
 package com.wire.kalium.api.tools.json.api.connection
 
 import com.wire.kalium.api.tools.json.AnyResponseProvider
+import com.wire.kalium.api.tools.json.ValidJsonProvider
 
 object ConnectionResponsesJson {
 
@@ -62,5 +63,27 @@ object ConnectionResponsesJson {
         }
 
         val validGetConnections = AnyResponseProvider(data = "", jsonProvider)
+    }
+
+    object CreateConnectionResponse {
+        val jsonProvider = ValidJsonProvider(String) {
+            """
+             {
+                  "conversation": "addb6fbf-2bc3-4b59-b428-6fa4c594fb05",
+                  "from": "36ef84a9-837a-4f75-af81-5a2e70e06836",
+                  "last_update": "2022-04-04T16:11:28.388Z",
+                  "qualified_conversation": {
+                    "domain": "staging.zinfra.io",
+                    "id": "addb6fbf-2bc3-4b59-b428-6fa4c594fb05"
+                  },
+                  "qualified_to": {
+                    "domain": "staging.zinfra.io",
+                    "id": "76ebeb16-a849-4be4-84a7-157654b492cf"
+                  },
+                  "status": "accepted",
+                  "to": "76ebeb16-a849-4be4-84a7-157654b492cf"
+             }
+            """.trimIndent()
+        }
     }
 }
