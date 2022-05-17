@@ -9,5 +9,6 @@ data class ServerConfigDTO(
     val blackListUrl: Url,
     val teamsUrl: Url,
     val websiteUrl: Url,
-    val title: String
+    val title: String,
+    val apiVersion: Int
 )

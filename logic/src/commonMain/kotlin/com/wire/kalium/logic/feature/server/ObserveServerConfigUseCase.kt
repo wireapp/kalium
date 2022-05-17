@@ -8,8 +8,8 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.network.tools.ServerConfigDTO
-import io.ktor.http.Url
+import com.wire.kalium.network.api.configuration.EndPoints
+import com.wire.kalium.network.api.configuration.ServerConfigResponse
 import kotlinx.coroutines.flow.Flow
 
 class ObserveServerConfigUseCase internal constructor(
@@ -53,22 +53,26 @@ class ObserveServerConfigUseCase internal constructor(
 
     private companion object {
         // TODO: get the config from build json
-        val PRODUCTION = ServerConfigDTO(
-            apiBaseUrl = Url("""https://prod-nginz-https.wire.com"""),
-            accountsBaseUrl = Url("""https://account.wire.com"""),
-            webSocketBaseUrl = Url("""https://prod-nginz-ssl.wire.com"""),
-            teamsUrl = Url("""https://teams.wire.com"""),
-            blackListUrl = Url("""https://clientblacklist.wire.com/prod"""),
-            websiteUrl = Url("""https://wire.com"""),
+        val PRODUCTION = ServerConfigResponse(
+            EndPoints(
+                apiBaseUrl = """https://prod-nginz-https.wire.com""",
+                accountsBaseUrl = """https://account.wire.com""",
+                webSocketBaseUrl = """https://prod-nginz-ssl.wire.com""",
+                teamsUrl = """https://teams.wire.com""",
+                blackListUrl = """https://clientblacklist.wire.com/prod""",
+                websiteUrl = """https://wire.com""",
+            ),
             title = "Production"
         )
-        val STAGING = ServerConfigDTO(
-            apiBaseUrl = Url("""https://staging-nginz-https.zinfra.io"""),
-            accountsBaseUrl = Url("""https://wire-account-staging.zinfra.io"""),
-            webSocketBaseUrl = Url("""https://staging-nginz-ssl.zinfra.io"""),
-            teamsUrl = Url("""https://wire-teams-staging.zinfra.io"""),
-            blackListUrl = Url("""https://clientblacklist.wire.com/staging"""),
-            websiteUrl = Url("""https://wire.com"""),
+        val STAGING = ServerConfigResponse(
+            EndPoints(
+                apiBaseUrl = """https://staging-nginz-https.zinfra.io""",
+                accountsBaseUrl = """https://wire-account-staging.zinfra.io""",
+                webSocketBaseUrl = """https://staging-nginz-ssl.zinfra.io""",
+                teamsUrl = """https://wire-teams-staging.zinfra.io""",
+                blackListUrl = """https://clientblacklist.wire.com/staging""",
+                websiteUrl = """https://wire.com"""
+            ),
             title = "Staging",
         )
         val DEFAULT = PRODUCTION
