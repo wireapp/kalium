@@ -9,7 +9,7 @@ interface SyncRepository {
     fun updateSyncState(updateBlock: (currentState: SyncState) -> SyncState): SyncState
 }
 
-class InMemorySyncRepository : SyncRepository {
+internal class InMemorySyncRepository : SyncRepository {
     private val _syncState = MutableStateFlow(SyncState.WAITING)
 
     override val syncState: StateFlow<SyncState> get() = _syncState
