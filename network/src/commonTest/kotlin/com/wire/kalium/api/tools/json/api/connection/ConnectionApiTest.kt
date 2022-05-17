@@ -14,7 +14,7 @@ class ConnectionApiTest : ApiTest {
 
     @Test
     fun givenAGetConnectionsRequest_whenRequestingAllConnectionsWithSuccess_thenRequestShouldBeConfiguredCorrectly() = runTest {
-        val httpClient = mockAuthenticatedHttpClient(
+        val networkClient = mockAuthenticatedNetworkClient(
             GET_CONNECTIONS_RESPONSE.rawJson,
             statusCode = HttpStatusCode.OK,
             assertion = {
@@ -25,13 +25,13 @@ class ConnectionApiTest : ApiTest {
             }
         )
 
-        val connectionApi: ConnectionApi = ConnectionApiImpl(httpClient)
+        val connectionApi: ConnectionApi = ConnectionApiImpl(networkClient)
         connectionApi.fetchSelfUserConnections(pagingState = null)
     }
 
     @Test
     fun givenAGetConnectionsRequestWithPaging_whenRequestingAllConnectionsWithSuccess_thenRequestShouldBeConfiguredCorrectly() = runTest {
-        val httpClient = mockAuthenticatedHttpClient(
+        val networkClient = mockAuthenticatedNetworkClient(
             GET_CONNECTIONS_RESPONSE.rawJson,
             statusCode = HttpStatusCode.OK,
             assertion = {
@@ -42,7 +42,7 @@ class ConnectionApiTest : ApiTest {
             }
         )
 
-        val connectionApi: ConnectionApi = ConnectionApiImpl(httpClient)
+        val connectionApi: ConnectionApi = ConnectionApiImpl(networkClient)
         connectionApi.fetchSelfUserConnections(pagingState = null)
     }
 
@@ -50,7 +50,7 @@ class ConnectionApiTest : ApiTest {
     fun givenACreationRequest_whenRequestingAConnectionWithAnUser_thenShouldReturnsACorrectConnectionResponse() = runTest {
         // given
         val userId = UserId("user_id", "domain_id")
-        val httpClient = mockAuthenticatedHttpClient(
+        val httpClient = mockAuthenticatedNetworkClient(
             CREATE_CONNECTION_RESPONSE.rawJson,
             statusCode = HttpStatusCode.OK,
             assertion = {

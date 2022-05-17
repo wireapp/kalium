@@ -36,7 +36,7 @@ class EventDataSource(
     private val eventMapper: EventMapper = MapperProvider.eventMapper()
 ) : EventRepository {
 
-    // TODO: handle Missing notification response (notify user that some messages are missing)
+    // TODO(edge-case): handle Missing notification response (notify user that some messages are missing)
 
     override suspend fun events(): Flow<Either<CoreFailure, Event>> =
         clientRepository.currentClientId().fold({

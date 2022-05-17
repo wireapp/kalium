@@ -13,7 +13,6 @@ import com.wire.kalium.logic.data.notification.LocalNotificationMessage
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.persistence.dao.ConversationEntity
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
@@ -228,7 +227,7 @@ class GetNotificationsUseCaseTest {
         private fun entityConversation(number: Int = 0, isOneOnOne: Boolean = true) = Conversation(
             conversationId(number),
             "conversation_${number}",
-            if (isOneOnOne) ConversationEntity.Type.ONE_ON_ONE else ConversationEntity.Type.GROUP,
+            if (isOneOnOne) Conversation.Type.ONE_ON_ONE else Conversation.Type.GROUP,
             null,
             MutedConversationStatus.AllAllowed,
             "2000-01-23T01:23:35.678+09:00",

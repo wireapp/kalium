@@ -1,27 +1,31 @@
 package com.wire.kalium.network.api.notification
 
-import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.setWSSUrl
 import com.wire.kalium.network.utils.wrapKaliumResponse
-import io.ktor.client.HttpClient
 import io.ktor.client.call.body
-import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.websocket.webSocketSession
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.http.HttpMethod
-import io.ktor.http.HttpStatusCode
 import io.ktor.websocket.Frame
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.serialization.decodeFromString
 
-class NotificationApiImpl(private val httpClient: HttpClient, private val serverConfigDTO: ServerConfigDTO) : NotificationApi {
+class NotificationApiImpl internal constructor(
+    private val authenticatedNetworkClient: AuthenticatedNetworkClient,
+    private val authenticatedWebSocketClient: AuthenticatedWebSocketClient,
+    private val serverConfigDTO: ServerConfigDTO
+) : NotificationApi {
+
+    private val httpClient get() = authenticatedNetworkClient.httpClient
+
     override suspend fun lastNotification(
         queryClient: String
     ): NetworkResponse<EventResponse> = wrapKaliumResponse {
@@ -37,7 +41,7 @@ class NotificationApiImpl(private val httpClient: HttpClient, private val server
     ): NetworkResponse<NotificationResponse> =
         notificationsCall(querySize = querySize, queryClient = queryClient, querySince = querySince)
 
-    //FIXME: This function does not get all notifications, just the first page.
+    //TODO(refactor): rename this function. It gets the first page of notifications, not all of them.
     override suspend fun getAllNotifications(querySize: Int, queryClient: String): NetworkResponse<NotificationResponse> =
         notificationsCall(querySize = querySize, queryClient = queryClient, querySince = null)
 
@@ -61,14 +65,15 @@ class NotificationApiImpl(private val httpClient: HttpClient, private val server
         }
     }
 
-    override suspend fun listenToLiveEvents(clientId: String): Flow<EventResponse> = httpClient.webSocketSession(
-        method = HttpMethod.Get
-    ) {
-        setWSSUrl(serverConfigDTO.webSocketBaseUrl, PATH_AWAIT)
-        parameter(CLIENT_QUERY_KEY, clientId)
-    }.incoming
+    override suspend fun listenToLiveEvents(clientId: String): Flow<EventResponse> = authenticatedWebSocketClient
+        .createDisposableHttpClient()
+        .webSocketSession(
+            method = HttpMethod.Get
+        ) {
+            setWSSUrl(serverConfigDTO.webSocketBaseUrl, PATH_AWAIT)
+            parameter(CLIENT_QUERY_KEY, clientId)
+        }.incoming
         .consumeAsFlow()
-        .catch { it.printStackTrace() }
         .mapNotNull { frame ->
             println("###### Received Frame: $frame ######")
             when (frame) {
