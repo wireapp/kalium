@@ -40,9 +40,7 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
     override suspend fun removeConversationMember(userId: UserId, conversationId: ConversationId): NetworkResponse<Unit> =
         wrapKaliumResponse {
             httpClient.delete(
-                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}" +
-                        PATH_MEMBERS +
-                        "/${userId.domain}/${userId.value}"
+                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS/${userId.domain}/${userId.value}"
             )
         }
 
@@ -78,7 +76,7 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
         conversationId: ConversationId
     ): NetworkResponse<AddParticipantResponse> {
         val response =
-            httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}$PATH_MEMBERS$PATH_V2") {
+            httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_MEMBERS/$PATH_V2") {
                 setBody(addParticipantRequest)
             }
 
@@ -93,7 +91,7 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
         memberUpdateRequest: MemberUpdateDTO,
         conversationId: ConversationId,
     ): NetworkResponse<Unit> = wrapKaliumResponse {
-        httpClient.put("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}$PATH_SELF") {
+        httpClient.put("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_SELF") {
             setBody(memberUpdateRequest)
         }
     }
