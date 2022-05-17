@@ -76,8 +76,8 @@ class SearchKnownUserUseCaseTest {
     }
 
     @Test
-    fun whenSearchingQueryHasNotHandleFormat_ThenSearchByNameOrHandleOrEmail() = runTest {
-        //when
+    fun givenNormalInput_whenSearchingUsers_thenSearchByNameOrHandleOrEmail() = runTest {
+        //given
         val searchQuery = "someSearchQuery"
 
         given(searchUserRepository)
