@@ -1,9 +1,9 @@
 package com.wire.kalium.api.tools.json.api.api_version
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.network.api.api_version.VersionApi
-import com.wire.kalium.network.api.api_version.VersionApiImpl
-import com.wire.kalium.network.api.api_version.VersionInfoDTO
+import com.wire.kalium.network.api.versioning.VersionApi
+import com.wire.kalium.network.api.versioning.VersionApiImpl
+import com.wire.kalium.network.api.versioning.VersionInfoDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.Url
@@ -20,7 +20,7 @@ class VersionApiTest : ApiTest {
     fun givenSuccessResponse_whenFetchingSupportedRemoteVersion_thenRequestIsConfigureCorrectly() = runTest {
 
         val expected = VersionInfoDTOJson.valid.serializableData
-        val httpClient = mockUnauthenticatedHttpClient(
+        val httpClient = mockUnauthenticatedNetworkClient(
             responseBody = VersionInfoDTOJson.valid.rawJson,
             statusCode = HttpStatusCode.OK,
             assertion = {
@@ -32,7 +32,7 @@ class VersionApiTest : ApiTest {
         )
 
         val versionApi: VersionApi = VersionApiImpl(httpClient)
-        versionApi.fetchServerConfig(Url("https://wire.de")).also { actual ->
+        versionApi.fetchApiVersion(Url("https://wire.de")).also { actual ->
             assertIs<NetworkResponse.Success<VersionInfoDTO>>(actual)
             assertEquals(expected, actual.value)
         }
@@ -41,13 +41,13 @@ class VersionApiTest : ApiTest {
     @Test
     fun given404Response_whenFetchingSupportedRemoteVersion_thenResultIsApiVersion0AndFederationFalse() = runTest {
         val expected = VersionInfoDTOJson.valid404Result
-        val httpClient = mockUnauthenticatedHttpClient(
+        val httpClient = mockUnauthenticatedNetworkClient(
             responseBody = "can be what ever",
             statusCode = HttpStatusCode.NotFound
         )
 
         val versionApi: VersionApi = VersionApiImpl(httpClient)
-        versionApi.fetchServerConfig(Url("https://wire.de")).also { actual ->
+        versionApi.fetchApiVersion(Url("https://wire.de")).also { actual ->
             assertIs<NetworkResponse.Success<VersionInfoDTO>>(actual)
             assertEquals(expected, actual.value)
         }

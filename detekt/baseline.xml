@@ -522,7 +522,7 @@
     <ID>ObjectPropertyNaming:Decoder.module_@wireapp_cbor.kt$Decoder.Companion$var _check_overflow: Any</ID>
     <ID>PackageNaming:EncryptedSettingsHolder.kt$package com.wire.kalium.persistence.kmm_settings</ID>
     <ID>PackageNaming:KaliumPreferences.kt$package com.wire.kalium.persistence.kmm_settings</ID>
-    <ID>PackageNaming:SaveNotificationTokenUseCase.kt$package com.wire.kalium.logic.feature.notification_token</ID>
+    <ID>PackageNaming:SaveNotificationTokenUseCase.kt$package com.wire.kalium.logic.feature.notificationToken</ID>
     <ID>PackageNaming:ServerConfigurationDAO.kt$package com.wire.kalium.persistence.dao_kalium_db</ID>
     <ID>ProtectedMemberInFinalClass:AuthenticationScope.kt$AuthenticationScope$protected val loginNetworkContainer: LoginNetworkContainer by lazy { LoginNetworkContainer() }</ID>
     <ID>ReturnCount:ConversationMapper.kt$ConversationMapperImpl$private fun determineOneToOneUserType(otherUser: OtherUser, selfUser: SelfUser): UserType</ID>

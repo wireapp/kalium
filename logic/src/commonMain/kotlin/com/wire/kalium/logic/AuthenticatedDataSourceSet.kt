@@ -8,6 +8,7 @@ import com.wire.kalium.persistence.db.UserDatabaseProvider
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
 
+@Suppress("LongParameterList")
 class AuthenticatedDataSourceSet(
     val authenticatedRootDir: String,
     val authenticatedNetworkContainer: AuthenticatedNetworkContainer,

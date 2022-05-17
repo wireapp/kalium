@@ -36,7 +36,7 @@ import io.ktor.client.engine.HttpClientEngine
 
 class AuthenticatedNetworkContainer(
     private val sessionManager: SessionManager,
-    private val engine: HttpClientEngine = defaultHttpEngine(),
+    private val engine: HttpClientEngine = defaultHttpEngine()
 ) {
 
     private val backendConfig = sessionManager.session().second

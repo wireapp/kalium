@@ -1,7 +1,7 @@
 package com.wire.kalium.api.tools.json.api.api_version
 
 import com.wire.kalium.api.tools.json.ValidJsonProvider
-import com.wire.kalium.network.api.api_version.VersionInfoDTO
+import com.wire.kalium.network.api.versioning.VersionInfoDTO
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put

@@ -3,7 +3,7 @@ import kotlin.Int;
 
 CREATE TABLE ServerConfiguration (
     id TEXT PRIMARY KEY NOT NULL,
-    title TEXT NOT NULL,
+    title TEXT NOT NULL UNIQUE,
     apiBaseUrl TEXT NOT NULL UNIQUE,
     accountBaseUrl TEXT NOT NULL,
     webSocketBaseUrl TEXT NOT NULL UNIQUE,
@@ -11,7 +11,7 @@ CREATE TABLE ServerConfiguration (
     teamsUrl TEXT NOT NULL,
     websiteUrl TEXT NOT NULL,
     domain TEXT UNIQUE,
-    commonApiVersion INTEGER AS Int,
+    commonApiVersion INTEGER AS Int NOT NULL,
     federation INTEGER AS Boolean NOT NULL
 );
 
@@ -21,10 +21,6 @@ DELETE FROM ServerConfiguration WHERE id = ?;
 insert:
 INSERT OR IGNORE INTO ServerConfiguration(id, apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title, federation, domain, commonApiVersion)
 VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-
-/** the idea here is when a BE stored api version is null it means it's not supported */
-markAsInvalid:
-UPDATE ServerConfiguration SET commonApiVersion = NULL WHERE id = ?;
 
 updateApiVersion:
 UPDATE ServerConfiguration SET commonApiVersion = ? WHERE id = ?;

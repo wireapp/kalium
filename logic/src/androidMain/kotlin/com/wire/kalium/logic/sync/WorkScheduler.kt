@@ -37,26 +37,24 @@ import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import java.lang.IllegalArgumentException
 import java.util.concurrent.TimeUnit
 import kotlin.reflect.KClass
 
 class WrapperWorker(private val innerWorker: DefaultWorker, appContext: Context, params: WorkerParameters) :
     CoroutineWorker(appContext, params) {
 
-    override suspend fun doWork(): Result {
-        return when (innerWorker.doWork()) {
-            is com.wire.kalium.logic.sync.Result.Success -> {
-                return Result.success()
-            }
-            is com.wire.kalium.logic.sync.Result.Failure -> {
-                return Result.failure()
-            }
-            is com.wire.kalium.logic.sync.Result.Retry -> {
-                return Result.retry()
-            }
+    override suspend fun doWork(): Result = when (innerWorker.doWork()) {
+        is com.wire.kalium.logic.sync.Result.Success -> {
+            Result.success()
+        }
+        is com.wire.kalium.logic.sync.Result.Failure -> {
+            Result.failure()
+        }
+        is com.wire.kalium.logic.sync.Result.Retry -> {
+            Result.retry()
         }
     }
+
 
     //TODO(ui-polishing): Add support for customization of foreground info when doing work on Android
     override suspend fun getForegroundInfo(): ForegroundInfo {
@@ -196,15 +194,16 @@ actual sealed class WorkScheduler(private val appContext: Context) {
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()
 
-            val scheduledHourOfDayToExecute = 4 // schedule at 4AM
-            val repeatIntervalInHours = 24 // execute every 24 hours
+            val scheduledHourOfDayToExecute = TIME_OF_EXECUTION // schedule at 4AM
+            val repeatIntervalInHours = REPEAT_INTERVAL // execute every 24 hours
             val localTimeZone = TimeZone.currentSystemDefault()
             val timeNow: Instant = Clock.System.now() // current time
             val timeScheduledToExecute = timeNow.toLocalDateTime(localTimeZone) // time at which the today's execution should take place
-                .let { localDateTimeNow -> LocalDateTime(
-                    localDateTimeNow.year, localDateTimeNow.monthNumber, localDateTimeNow.dayOfMonth,
-                    scheduledHourOfDayToExecute, 0, 0, 0
-                ).toInstant(localTimeZone)
+                .let { localDateTimeNow ->
+                    LocalDateTime(
+                        localDateTimeNow.year, localDateTimeNow.monthNumber, localDateTimeNow.dayOfMonth,
+                        scheduledHourOfDayToExecute, 0, 0, 0
+                    ).toInstant(localTimeZone)
                 }
             val initialDelayMillis = // delay calculated as a difference between now and next scheduled execution
                 if (timeScheduledToExecute > timeNow) (timeScheduledToExecute - timeNow).inWholeMilliseconds
@@ -241,6 +240,11 @@ actual sealed class WorkScheduler(private val appContext: Context) {
                 ExistingWorkPolicy.KEEP,
                 requestOneTimeWork
             )
+        }
+
+        private companion object {
+            const val TIME_OF_EXECUTION = 4
+            const val REPEAT_INTERVAL: Long = 24
         }
     }
 

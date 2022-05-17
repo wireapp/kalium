@@ -56,7 +56,7 @@ class ServerConfigUtilTest {
     fun givenAnEmptyServerVersionList_whenCalculateApiVersion_thenTheUnknownServerIsReturned() {
         val expected = ServerConfigFailure.UnknownServerVersion
         val appVersion = setOf(0)
-        val serverVersion = listOf<Int>()
+        val serverVersion = emptyList<Int>()
 
         serverConfigUtil.calculateApiVersion(serverVersion, appVersion).shouldFail { actual ->
             assertEquals(expected, actual)
@@ -66,7 +66,7 @@ class ServerConfigUtilTest {
     @Test
     fun givenAnEmptyAppVersionList_whenCalculateApiVersion_thenTheUnknownServerIsReturned() {
         val expected = ServerConfigFailure.UnknownServerVersion
-        val appVersion = setOf<Int>()
+        val appVersion = emptySet<Int>()
         val serverVersion = listOf(1, 2, 3)
 
         serverConfigUtil.calculateApiVersion(serverVersion, appVersion).shouldFail { actual ->
