@@ -66,7 +66,6 @@ class SearchUserDirectoryUseCaseTest {
 
         //then
         assertIs<Result.Failure.InvalidQuery>(actual)
-        assertEquals(expected.value.kaliumException.message, actual.message)
     }
 
     private companion object {
@@ -74,7 +73,8 @@ class SearchUserDirectoryUseCaseTest {
         const val TEST_DOMAIN = "testDomain"
 
         val TEST_CORE_FAILURE = Either.Left(
-            NetworkFailure.ServerMiscommunication(KaliumException.InvalidRequestError(ErrorResponse(404,"",""))))
+            NetworkFailure.ServerMiscommunication(KaliumException.InvalidRequestError(ErrorResponse(404, "a", "")))
+        )
 
         val VALID_SEARCH_PUBLIC_RESULT = UserSearchResult(
             result = buildList {

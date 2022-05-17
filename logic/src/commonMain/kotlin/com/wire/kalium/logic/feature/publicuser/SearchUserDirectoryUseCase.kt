@@ -34,7 +34,7 @@ internal class SearchUserDirectoryUseCaseImpl(
             if (it.kaliumException.errorResponse.code == HttpStatusCode.BadRequest.value)
                 return Result.Failure.InvalidRequest
             if (it.kaliumException.errorResponse.code == HttpStatusCode.NotFound.value)
-                return Result.Failure.InvalidQuery(it.kaliumException.errorResponse.message)
+                return Result.Failure.InvalidQuery
         }
         Result.Failure.Generic(it)
     }, {
@@ -45,7 +45,7 @@ internal class SearchUserDirectoryUseCaseImpl(
 sealed class Result {
     data class Success(val userSearchResult: UserSearchResult) : Result()
     sealed class Failure : Result() {
-        data class InvalidQuery(val message: String?) : Failure()
+        object InvalidQuery : Failure()
         object InvalidRequest : Failure()
         class Generic(val genericFailure: CoreFailure) : Failure()
 
