@@ -74,7 +74,8 @@ class ServerConfigMapperImpl : ServerConfigMapper {
                 Url(blackListUrl),
                 Url(teamsUrl),
                 Url(websiteUrl),
-                title
+                title,
+                commonApiVersion.version
             )
         }
 

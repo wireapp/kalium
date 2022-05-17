@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-internal data class ServerConfigResponse(
+data class ServerConfigResponse(
     @SerialName("endpoints") val endpoints: EndPoints,
     @SerialName("title") val title: String
 )

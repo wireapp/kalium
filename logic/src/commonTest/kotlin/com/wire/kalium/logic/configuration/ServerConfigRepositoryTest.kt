@@ -1,17 +1,15 @@
 package com.wire.kalium.logic.configuration
 
-import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigDataSource
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.configuration.server.ServerConfigUtil
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.test_util.TestNetworkException
-import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.logic.util.stubs.newServerConfigDTO
 import com.wire.kalium.logic.util.stubs.newServerConfigEntity
+import com.wire.kalium.logic.util.stubs.newServerConfigResponse
 import com.wire.kalium.network.api.configuration.ServerConfigApi
 import com.wire.kalium.network.api.versioning.VersionApi
 import com.wire.kalium.network.api.versioning.VersionInfoDTO
@@ -64,7 +62,7 @@ class ServerConfigRepositoryTest {
     @Test
     fun givenUrl_whenFetchingServerConfigSuccess_thenTheSuccessIsReturned() = runTest {
         val serverConfigUrl = SERVER_CONFIG_URL
-        val expected = NetworkResponse.Success(SERVER_CONFIG_DTO, mapOf(), 200)
+        val expected = NetworkResponse.Success(SERVER_CONFIG_RESPONSE, mapOf(), 200)
         given(serverConfigApi)
             .coroutine { serverConfigApi.fetchServerConfig(serverConfigUrl) }
             .then { expected }
@@ -140,35 +138,8 @@ class ServerConfigRepositoryTest {
     }
 
     @Test
-    fun givenSuccess_whenFetchingServerVersionInfo_thenSuccessIsPropagated() = runTest {
-        val serverConfigDto = SERVER_CONFIG_DTO
-        val expected = VersionInfoDTO("wire.com", true, listOf(0, 1, 2))
-        given(versionApi)
-            .coroutine { fetchApiVersion(serverConfigDto.apiBaseUrl) }
-            .then { NetworkResponse.Success(expected, mapOf(), 200) }
-
-        serverConfigRepository.fetchRemoteApiVersion(serverConfigDto).shouldSucceed { actual ->
-            assertEquals(expected, actual)
-        }
-    }
-
-    @Test
-    fun givenError_whenFetchingServerVersionInfo_thenFailureIsPropagated() = runTest {
-        val serverConfigDto = SERVER_CONFIG_DTO
-        val expected = NetworkResponse.Error(TestNetworkException.generic)
-        given(versionApi)
-            .coroutine { fetchApiVersion(serverConfigDto.apiBaseUrl) }
-            .then { NetworkResponse.Error(expected.kException) }
-
-        serverConfigRepository.fetchRemoteApiVersion(serverConfigDto).shouldFail { actual ->
-            assertIs<NetworkFailure.ServerMiscommunication>(actual)
-            assertEquals(expected.kException, actual.kaliumException)
-        }
-    }
-
-    @Test
     fun givenValidCompatibleApiVersion_whenStoringConfigLocally_thenConfigIsStored() = runTest {
-        val testConfigDTO = newServerConfigDTO(1)
+        val testConfigResponse = newServerConfigResponse(1)
         val expected = newServerConfig(1)
         val versionInfoDTO = VersionInfoDTO(expected.domain, expected.federation, listOf(1, 2))
         given(versionApi)
@@ -185,7 +156,7 @@ class ServerConfigRepositoryTest {
             .whenInvokedWith(any())
             .then { newServerConfigEntity(1) }
 
-        serverConfigRepository.fetchApiVersionAndStore(testConfigDTO).shouldSucceed {
+        serverConfigRepository.fetchApiVersionAndStore(testConfigResponse).shouldSucceed {
             assertEquals(expected, it)
         }
 
@@ -207,6 +178,7 @@ class ServerConfigRepositoryTest {
     private companion object {
 
         const val SERVER_CONFIG_URL = "https://test.test/test.json"
+        val SERVER_CONFIG_RESPONSE = newServerConfigResponse(1)
         val SERVER_CONFIG = newServerConfig(1)
         val SERVER_CONFIG_DTO = newServerConfigDTO(1)
     }

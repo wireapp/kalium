@@ -37,7 +37,8 @@ class ServerConfigMapperTest {
                     Url(blackListUrl),
                     Url(teamsUrl),
                     Url(websiteUrl),
-                    title
+                    title,
+                    commonApiVersion.version
                 )
             }
 
