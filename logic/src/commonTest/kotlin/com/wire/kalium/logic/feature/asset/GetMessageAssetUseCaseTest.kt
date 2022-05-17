@@ -116,7 +116,8 @@ class GetMessageAssetUseCaseTest {
                             assetToken = someAssetToken,
                             assetDomain = "some-asset-domain.com",
                             encryptionAlgorithm = AssetContent.RemoteData.EncryptionAlgorithm.AES_GCM
-                        )
+                        ),
+                        downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
                     )
                 ),
                 conversationId = convId,

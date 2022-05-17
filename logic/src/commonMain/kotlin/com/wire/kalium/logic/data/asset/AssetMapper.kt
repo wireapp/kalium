@@ -2,13 +2,17 @@ package com.wire.kalium.logic.data.asset
 
 import com.wire.kalium.cryptography.utils.calcMd5
 import com.wire.kalium.logic.data.message.AssetContent
-import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.*
+import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
+import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
+import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Video
 import com.wire.kalium.logic.data.message.AssetContent.RemoteData.EncryptionAlgorithm.AES_CBC
 import com.wire.kalium.logic.data.message.AssetContent.RemoteData.EncryptionAlgorithm.AES_GCM
+import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.network.api.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.asset.AssetResponse
 import com.wire.kalium.network.api.model.AssetRetentionType
 import com.wire.kalium.persistence.dao.asset.AssetEntity
+import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityContent.AssetMessageContent
 import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.protobuf.messages.EncryptionAlgorithm
@@ -21,6 +25,8 @@ interface AssetMapper {
     fun fromUserAssetToDaoModel(assetKey: String, data: ByteArray): AssetEntity
     fun fromAssetEntityToAssetContent(assetContentEntity: AssetMessageContent): AssetContent
     fun fromProtoAssetMessageToAssetContent(protoAssetMessage: Asset): AssetContent
+    fun fromDownloadStatusToDaoModel(downloadStatus: Message.DownloadStatus): MessageEntity.DownloadStatus
+    fun fromDownloadStatusEntityToLogicModel(downloadStatus: MessageEntity.DownloadStatus?): Message.DownloadStatus
 }
 
 class AssetMapperImpl : AssetMapper {
@@ -74,7 +80,8 @@ class AssetMapperImpl : AssetMapper {
                         assetEncryptionAlgorithm?.contains("GCM") == true -> AES_GCM
                         else -> AES_CBC
                     }
-                )
+                ),
+                downloadStatus = fromDownloadStatusEntityToLogicModel(assetDownloadStatus)
             )
         }
     }
@@ -132,8 +139,28 @@ class AssetMapperImpl : AssetMapper {
                     assetDomain = null,
                     assetToken = null,
                     encryptionAlgorithm = null
-                )
+                ),
+                downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
             )
+        }
+    }
+
+    override fun fromDownloadStatusToDaoModel(downloadStatus: Message.DownloadStatus): MessageEntity.DownloadStatus {
+        return when (downloadStatus) {
+            Message.DownloadStatus.NOT_DOWNLOADED -> MessageEntity.DownloadStatus.NOT_DOWNLOADED
+            Message.DownloadStatus.IN_PROGRESS -> MessageEntity.DownloadStatus.IN_PROGRESS
+            Message.DownloadStatus.DOWNLOADED -> MessageEntity.DownloadStatus.DOWNLOADED
+            Message.DownloadStatus.FAILED -> MessageEntity.DownloadStatus.FAILED
+        }
+    }
+
+    override fun fromDownloadStatusEntityToLogicModel(downloadStatus: MessageEntity.DownloadStatus?): Message.DownloadStatus {
+        return when (downloadStatus) {
+            MessageEntity.DownloadStatus.NOT_DOWNLOADED -> Message.DownloadStatus.NOT_DOWNLOADED
+            MessageEntity.DownloadStatus.IN_PROGRESS -> Message.DownloadStatus.IN_PROGRESS
+            MessageEntity.DownloadStatus.DOWNLOADED -> Message.DownloadStatus.DOWNLOADED
+            MessageEntity.DownloadStatus.FAILED -> Message.DownloadStatus.FAILED
+            null -> Message.DownloadStatus.NOT_DOWNLOADED
         }
     }
 }
