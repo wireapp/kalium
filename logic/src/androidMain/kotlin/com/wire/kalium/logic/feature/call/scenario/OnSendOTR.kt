@@ -37,10 +37,10 @@ class OnSendOTR(
         arg: Pointer?
     ): Int {
         return if (selfUserId != userIdSelf && selfClientId != clientIdSelf) {
-            callingLogger.i("${CallManagerImpl.TAG} -> sendHandler error")
+            callingLogger.i("OnSendOTR -> sendHandler error called")
             AvsCallBackError.INVALID_ARGUMENT.value
         } else {
-            callingLogger.i("${CallManagerImpl.TAG} -> sendHandler success")
+            callingLogger.i("OnSendOTR -> sendHandler success called")
             OnHttpRequest(handle, calling, messageSender, callingScope).sendHandlerSuccess(
                 context = context,
                 messageString = data?.getString(0, CallManagerImpl.UTF8_ENCODING),
