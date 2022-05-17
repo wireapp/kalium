@@ -12,11 +12,11 @@ class OnCloseCall(
     private val callRepository: CallRepository
 ) : CloseCallHandler {
     override fun onClosedCall(reason: Int, conversationId: String, messageTime: Uint32_t, userId: String, clientId: String, arg: Pointer?) {
-        callingLogger.i("OnCloseCall -> closeCallHandler called")
+        callingLogger.i("OnCloseCall -> call for conversation $conversationId from user $userId closed at $messageTime")
         callRepository.updateCallStatusById(
             conversationId,
             CallStatus.CLOSED
         )
-        callingLogger.i("OnCloseCall -> incoming call status updated to CLOSED..")
+        callingLogger.i("OnCloseCall -> incoming call status for conversation $conversationId updated to CLOSED..")
     }
 }

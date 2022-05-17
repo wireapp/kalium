@@ -11,11 +11,11 @@ class OnAnsweredCall(
     private val callRepository: CallRepository
 ) : AnsweredCallHandler {
     override fun onAnsweredCall(conversationId: String, arg: Pointer?) {
-        callingLogger.i("OnAnsweredCall -> answeredCallHandler called")
+        callingLogger.i("OnAnsweredCall -> call for conversation $conversationId answered")
         callRepository.updateCallStatusById(
             conversationId = conversationId,
             status = CallStatus.ANSWERED
         )
-        callingLogger.i("OnAnsweredCall -> incoming call status updated to ANSWERED..")
+        callingLogger.i("OnAnsweredCall -> incoming call status for conversation $conversationId updated to ANSWERED..")
     }
 }

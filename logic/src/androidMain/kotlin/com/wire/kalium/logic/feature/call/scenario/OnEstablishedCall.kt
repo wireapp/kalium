@@ -12,11 +12,11 @@ class OnEstablishedCall(
 ) : EstablishedCallHandler {
 
     override fun onEstablishedCall(conversationId: String, userId: String, clientId: String, arg: Pointer?) {
-        callingLogger.i("OnEstablishedCall -> establishedCallHandler called")
+        callingLogger.i("OnEstablishedCall -> call for conversation $conversationId, userId: $userId established")
         callRepository.updateCallStatusById(
             conversationId,
             CallStatus.ESTABLISHED
         )
-        callingLogger.i("OnEstablishedCall -> incoming call status updated to ESTABLISHED..")
+        callingLogger.i("OnEstablishedCall -> incoming call status for conversation $conversationId updated to ESTABLISHED..")
     }
 }

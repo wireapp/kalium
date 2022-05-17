@@ -12,7 +12,7 @@ class OnMissedCall(
     private val callRepository: CallRepository
 ) : MissedCallHandler {
     override fun onMissedCall(conversationId: String, messageTime: Uint32_t, userId: String, isVideoCall: Boolean, arg: Pointer?) {
-        callingLogger.i("OnMissedCall -> missedCallHandler called")
+        callingLogger.i("OnMissedCall -> Missed call for conversation: $conversationId at $messageTime from user $userId..")
         callRepository.updateCallStatusById(
             conversationId = conversationId,
             status = CallStatus.MISSED

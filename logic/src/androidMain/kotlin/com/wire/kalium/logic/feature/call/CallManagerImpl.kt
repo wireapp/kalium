@@ -132,7 +132,7 @@ actual class CallManagerImpl(
         conversationType: ConversationType,
         isAudioCbr: Boolean
     ) {
-        callingLogger.d("$TAG -> starting call..")
+        callingLogger.d("$TAG -> starting call for conversation = $conversationId..")
         callRepository.createCall(
             call = Call(
                 conversationId = conversationId,
@@ -151,31 +151,31 @@ actual class CallManagerImpl(
                 avsConversationType.avsValue,
                 isAudioCbr.toInt()
             )
-            callingLogger.d("$TAG - wcall_start() called -> Call started")
+            callingLogger.d("$TAG - wcall_start() called -> Call for conversation = $conversationId started")
         }
     }
 
     override suspend fun answerCall(conversationId: ConversationId) = withCalling {
-        callingLogger.d("$TAG -> answering call..")
+        callingLogger.d("$TAG -> answering call for conversation = $conversationId..")
         wcall_answer(
             inst = deferredHandle.await(),
             conversationId = conversationId.toString(),
             callType = CallTypeCalling.AUDIO.avsValue,
             cbrEnabled = false
         )
-        callingLogger.d("$TAG - wcall_answer() called -> Incoming call answered")
+        callingLogger.d("$TAG - wcall_answer() called -> Incoming call for conversation = $conversationId answered")
     }
 
     override suspend fun endCall(conversationId: ConversationId) = withCalling {
-        callingLogger.d("$TAG -> ending Call..")
+        callingLogger.d("$TAG -> ending Call for conversation = $conversationId..")
         wcall_end(inst = deferredHandle.await(), conversationId = conversationId.toString())
-        callingLogger.d("$TAG - wcall_end() called -> call ended")
+        callingLogger.d("$TAG - wcall_end() called -> call for conversation = $conversationId ended")
     }
 
     override suspend fun rejectCall(conversationId: ConversationId) = withCalling {
-        callingLogger.d("$TAG -> rejecting call..")
+        callingLogger.d("$TAG -> rejecting call for conversation = $conversationId..")
         wcall_reject(inst = deferredHandle.await(), conversationId = conversationId.toString())
-        callingLogger.d("$TAG - wcall_reject() called -> call rejected")
+        callingLogger.d("$TAG - wcall_reject() called -> call for conversation = $conversationId rejected")
     }
 
     override suspend fun muteCall(shouldMute: Boolean) = withCalling {
