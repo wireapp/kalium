@@ -1,0 +1,12 @@
+CREATE TABLE CurrentAuthenticationServer (
+    id INTEGER PRIMARY KEY NOT NULL,
+    serverConfigId TEXT NOT NULL,
+    FOREIGN KEY (serverConfigId) REFERENCES ServerConfiguration(id)
+);
+
+
+update:
+INSERT OR REPLACE INTO CurrentAuthenticationServer(id, serverConfigId) VALUES(1, ?);
+
+select:
+SELECT serverConfigId FROM CurrentAuthenticationServer WHERE id = 1;

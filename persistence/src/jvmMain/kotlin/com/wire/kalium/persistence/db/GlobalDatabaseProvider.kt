@@ -5,6 +5,8 @@ import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.wire.kalium.persistence.GlobalDatabase
 import com.wire.kalium.persistence.ServerConfiguration
+import com.wire.kalium.persistence.dao_kalium_db.CurrentAuthenticationServerDAO
+import com.wire.kalium.persistence.dao_kalium_db.CurrentAuthenticationServerDAOImpl
 import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAO
 import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAOImpl
 import com.wire.kalium.persistence.util.FileNameUtil
@@ -43,6 +45,8 @@ actual class GlobalDatabaseProvider(private val storePath: File) {
     actual val serverConfigurationDAO: ServerConfigurationDAO
         get() = ServerConfigurationDAOImpl(database.serverConfigurationQueries)
 
+    actual val currentAuthenticationServerDAO: CurrentAuthenticationServerDAO
+        get() = CurrentAuthenticationServerDAOImpl(database.currentAuthenticationServerQueries)
     actual fun nuke(): Boolean {
         return storePath.resolve(dbName).delete()
     }
