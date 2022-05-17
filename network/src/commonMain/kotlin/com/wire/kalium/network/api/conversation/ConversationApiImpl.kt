@@ -40,9 +40,7 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
     override suspend fun removeConversationMember(userId: UserId, conversationId: ConversationId): NetworkResponse<Unit> =
         wrapKaliumResponse {
             httpClient.delete(
-                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}" +
-                        PATH_MEMBERS +
-                        "/${userId.domain}/${userId.value}"
+                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS/${userId.domain}/${userId.value}"
             )
         }
 
@@ -65,7 +63,7 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
 
     override suspend fun createOne2OneConversation(createConversationRequest: CreateConversationRequest): NetworkResponse<ConversationResponse> =
         wrapKaliumResponse {
-            httpClient.post("$PATH_CONVERSATIONS$PATH_ONE_2_ONE") {
+            httpClient.post("$PATH_CONVERSATIONS/$PATH_ONE_2_ONE") {
                 setBody(createConversationRequest)
             }
         }
@@ -78,7 +76,7 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
         conversationId: ConversationId
     ): NetworkResponse<AddParticipantResponse> {
         val response =
-            httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}$PATH_MEMBERS$PATH_V2") {
+            httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_MEMBERS/$PATH_V2") {
                 setBody(addParticipantRequest)
             }
 
@@ -93,17 +91,17 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
         memberUpdateRequest: MemberUpdateDTO,
         conversationId: ConversationId,
     ): NetworkResponse<Unit> = wrapKaliumResponse {
-        httpClient.put("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}$PATH_SELF") {
+        httpClient.put("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_SELF") {
             setBody(memberUpdateRequest)
         }
     }
 
     private companion object {
-        const val PATH_CONVERSATIONS = "/conversations"
-        const val PATH_SELF = "/self"
-        const val PATH_MEMBERS = "/members"
-        const val PATH_ONE_2_ONE = "/one2one"
-        const val PATH_V2 = "/v2"
+        const val PATH_CONVERSATIONS = "conversations"
+        const val PATH_SELF = "self"
+        const val PATH_MEMBERS = "members"
+        const val PATH_ONE_2_ONE = "one2one"
+        const val PATH_V2 = "v2"
 
         const val QUERY_KEY_START = "start"
         const val QUERY_KEY_SIZE = "size"

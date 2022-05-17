@@ -52,7 +52,7 @@ data class ServerConfig(
             title = "Staging",
             federation = false,
             commonApiVersion = CommonApiVersionType.Valid(1), // TODO: fetch the real value
-            domain = "wire.com" // TODO: check domain
+            domain = "staging.zinfra.io"
         )
         val DEFAULT = PRODUCTION
     }

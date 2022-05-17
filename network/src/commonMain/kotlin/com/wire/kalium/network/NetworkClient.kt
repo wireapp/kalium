@@ -10,6 +10,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.ContentNegotiation
+import io.ktor.client.plugins.DefaultRequest
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
@@ -20,6 +21,7 @@ import io.ktor.client.request.header
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.URLProtocol
+import io.ktor.http.encodedPath
 import io.ktor.serialization.kotlinx.json.json
 
 
@@ -66,8 +68,7 @@ internal class UnboundNetworkClient(engine: HttpClientEngine) {
  * necessary Authentication headers, and refresh tokens as they expire.
  */
 internal class AuthenticatedWebSocketClient(
-    private val engine: HttpClientEngine,
-    private val sessionManager: SessionManager
+    private val engine: HttpClientEngine, private val sessionManager: SessionManager
 ) {
 
     /**
@@ -104,10 +105,9 @@ internal sealed class HttpClientOptions {
  * @param config, a block that allows further customisation of the [HttpClient]
  */
 internal fun provideBaseHttpClient(
-    engine: HttpClientEngine,
-    options: HttpClientOptions,
-    config: HttpClientConfig<*>.() -> Unit = {}
+    engine: HttpClientEngine, options: HttpClientOptions, config: HttpClientConfig<*>.() -> Unit = {}
 ) = HttpClient(engine) {
+    install(DefaultRequest)
     defaultRequest {
 
         // since error response are application/json
@@ -119,13 +119,19 @@ internal fun provideBaseHttpClient(
             }
 
             is HttpClientOptions.DefaultHost -> {
-                host = options.serverConfigDTO.apiBaseUrl.host
-                // the UrlProtocol is intentionally here and not default for both options
-                // since any url configuration here will get overwritten by the request configuration
-                url.protocol = URLProtocol.HTTPS
+                with(options.serverConfigDTO) {
+                    // enforce https as url protocol
+                    url.protocol = URLProtocol.HTTPS
+                    // add the default host
+                    url.host = apiBaseUrl.host
+
+                    // for api version 0 no api version should be added to the request
+                    url.encodedPath =
+                        if (shouldAddApiVersion(apiVersion)) apiBaseUrl.encodedPath + "v${apiVersion}/"
+                        else apiBaseUrl.encodedPath
+                }
             }
         }
-
     }
 
     if (NetworkLogger.isRequestLoggingEnabled) {
@@ -141,3 +147,6 @@ internal fun provideBaseHttpClient(
     expectSuccess = false
     config()
 }
+
+internal fun shouldAddApiVersion(apiVersion: Int): Boolean = apiVersion >= MINIMUM_API_VERSION_TO_ADD
+private const val MINIMUM_API_VERSION_TO_ADD = 1

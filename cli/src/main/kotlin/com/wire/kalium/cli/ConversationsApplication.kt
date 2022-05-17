@@ -10,8 +10,8 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.configuration.server.ServerConfigMapperImpl
 import com.wire.kalium.network.AuthenticatedNetworkContainer
-import com.wire.kalium.network.UnauthenticatedNetworkContainer
 import com.wire.kalium.network.NetworkLogger
+import com.wire.kalium.network.UnauthenticatedNetworkContainer
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.model.AccessTokenDTO
