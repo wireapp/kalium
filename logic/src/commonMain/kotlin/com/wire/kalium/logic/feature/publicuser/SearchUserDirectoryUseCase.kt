@@ -34,7 +34,7 @@ internal class SearchUserDirectoryUseCaseImpl(
             if (it.kaliumException.errorResponse.code == HttpStatusCode.BadRequest.value)
                 return Result.Failure.InvalidRequest
             if (it.kaliumException.errorResponse.code == HttpStatusCode.NotFound.value)
-                return Result.Failure.InvalidQuery(it.kaliumException.message)
+                return Result.Failure.InvalidQuery(it.kaliumException.errorResponse.message)
         }
         Result.Failure.Generic(it)
     }, {
