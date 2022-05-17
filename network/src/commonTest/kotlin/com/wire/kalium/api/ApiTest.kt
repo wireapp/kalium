@@ -24,6 +24,7 @@ import io.ktor.http.content.TextContent
 import io.ktor.http.headersOf
 import io.ktor.utils.io.ByteReadChannel
 import kotlinx.serialization.json.buildJsonObject
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
@@ -248,7 +249,8 @@ internal interface ApiTest {
         )
 
     // path
-    fun HttpRequestData.assertPathEqual(path: String) = assertEquals(path, this.url.encodedPath)
+    // assertContains is used here instead of equals because the path can contain other data like api version
+    fun HttpRequestData.assertPathEqual(path: String) = assertContains(this.url.encodedPath, path)
 
     // path and query
     fun HttpRequestData.assertPathAndQueryEqual(pathAndQuery: String) = assertEquals(pathAndQuery, this.url.encodedPathAndQuery)
