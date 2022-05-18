@@ -31,7 +31,7 @@ class EnforceSerializerFields(config: Config = Config.empty) : Rule(config) {
                     if (!hasMatchingRequirement) {
                         report(
                             kClass,
-                            "The class '${kClass.name}' needs to implement Serializable annotations on every attribute'" +
+                            "The class '${kClass.name}' needs to implement Serializable annotations on every attribute' " +
                                     "@SerialName | @Serializable | @Transient'."
                         )
                     }
