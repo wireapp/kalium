@@ -45,7 +45,6 @@ class EnforceSerializerFields(config: Config = Config.empty) : Rule(config) {
     }
 
     companion object {
-        private val ACCEPTED_ANNOTATIONS = listOf("SerialName", "Serializable", "Transient")
         private const val SERIALIZABLE_CLASS_ANNOTATION = "@Serializable"
     }
 }
