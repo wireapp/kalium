@@ -1,6 +1,6 @@
 package com.wire.kalium.logic.data.publicuser
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
@@ -18,12 +18,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 interface SearchUserRepository {
-    suspend fun searchKnownUsers(searchQuery: String): Flow<UserSearchResult>
+    suspend fun searchKnownUsersByNameOrHandleOrEmail(searchQuery: String): UserSearchResult
+    suspend fun searchKnownUsersByHandle(handle: String): UserSearchResult
     suspend fun searchUserDirectory(
         searchQuery: String,
         domain: String,
         maxResultSize: Int? = null
-    ): Either<CoreFailure, UserSearchResult>
+    ): Either<NetworkFailure, UserSearchResult>
 }
 
 class SearchUserRepositoryImpl(
@@ -33,17 +34,27 @@ class SearchUserRepositoryImpl(
     private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper()
 ) : SearchUserRepository {
 
-    override suspend fun searchKnownUsers(searchQuery: String) =
-        userDAO.getUserByNameOrHandleOrEmailAndConnectionState(searchQuery, UserEntity.ConnectionState.ACCEPTED)
-            .map {
-                UserSearchResult(it.map { userEntity -> publicUserMapper.fromDaoModelToPublicUser(userEntity) })
-            }
+    override suspend fun searchKnownUsersByNameOrHandleOrEmail(searchQuery: String) =
+        UserSearchResult(
+            result = userDAO.getUserByNameOrHandleOrEmailAndConnectionState(
+                searchQuery = searchQuery,
+                connectionState = UserEntity.ConnectionState.ACCEPTED
+            ).map(publicUserMapper::fromDaoModelToPublicUser)
+        )
+
+    override suspend fun searchKnownUsersByHandle(handle: String) =
+        UserSearchResult(
+            result = userDAO.getUserByHandleAndConnectionState(
+                handle = handle,
+                connectionState = UserEntity.ConnectionState.ACCEPTED
+            ).map(publicUserMapper::fromDaoModelToPublicUser)
+        )
 
     override suspend fun searchUserDirectory(
         searchQuery: String,
         domain: String,
         maxResultSize: Int?
-    ): Either<CoreFailure, UserSearchResult> = wrapApiRequest {
+    ): Either<NetworkFailure, UserSearchResult> = wrapApiRequest {
         userSearchApi.search(
             UserSearchRequest(
                 searchQuery = searchQuery,

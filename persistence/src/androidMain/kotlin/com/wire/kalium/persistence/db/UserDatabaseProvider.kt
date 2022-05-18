@@ -73,6 +73,7 @@ actual class UserDatabaseProvider(private val context: Context, userId: UserIDEn
                 statusAdapter = EnumColumnAdapter(),
                 asset_image_widthAdapter = IntColumnAdapter,
                 asset_image_heightAdapter = IntColumnAdapter,
+                asset_download_statusAdapter = EnumColumnAdapter(),
                 content_typeAdapter = ContentTypeAdapter(),
                 visibilityAdapter = EnumColumnAdapter()
             ),
@@ -108,7 +109,8 @@ actual class UserDatabaseProvider(private val context: Context, userId: UserIDEn
     actual fun nuke(): Boolean = DBUtil.deleteDB(driver, context, dbName)
 
     companion object {
-        // FIXME: the same key is used to enc/dec all user DBs
+        // FIXME(IMPORTANT): The same key is used to enc/dec all user DBs
+        //                   Pain in the ass to migrate after release
         private const val DATABASE_SECRET_KEY = "user-db-secret"
     }
 }

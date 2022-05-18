@@ -50,7 +50,7 @@ class ClientDataSource(
         return clientRemoteRepository.deleteClient(param)
     }
 
-    // TODO: after fetch save list of self client in the db
+    // TODO(self-device-list): after fetch save list of self client in the db
     override suspend fun selfListOfClients(): Either<NetworkFailure, List<Client>> {
         return clientRemoteRepository.fetchSelfUserClients()
     }

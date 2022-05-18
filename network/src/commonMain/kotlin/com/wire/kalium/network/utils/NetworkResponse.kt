@@ -10,7 +10,7 @@ import kotlin.contracts.contract
 sealed class NetworkResponse<out T : Any> {
     data class Success<out T : Any>(
         val value: T,
-        // TODO: to be deleted since data in the headers have to be extracted in network and not exposed
+        // TODO(refactor): to be deleted since data in the headers have to be extracted in network and not exposed
         val headers: Map<String, String?>, val httpCode: Int
     ) : NetworkResponse<T>() {
         internal constructor(value: T, httpResponse: HttpResponse) : this(
@@ -35,7 +35,7 @@ sealed class NetworkResponse<out T : Any> {
 }
 
 @OptIn(ExperimentalContracts::class)
-// TODO: make internal
+// TODO(refactor): make internal
 fun <T : Any> NetworkResponse<T>.isSuccessful(): Boolean {
     contract {
         returns(true) implies (this@isSuccessful is NetworkResponse.Success)

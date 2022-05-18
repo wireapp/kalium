@@ -15,7 +15,7 @@ import com.wire.kalium.logic.feature.message.MessageSender
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 
-//TODO create unit test
+//TODO(testing): create unit test
 class OnSendOTR(
     private val handle: Deferred<Handle>,
     private val calling: Calling,
@@ -37,10 +37,10 @@ class OnSendOTR(
         arg: Pointer?
     ): Int {
         return if (selfUserId != userIdSelf && selfClientId != clientIdSelf) {
-            callingLogger.i("${CallManagerImpl.TAG} -> sendHandler error")
+            callingLogger.i("OnSendOTR -> sendHandler error called")
             AvsCallBackError.INVALID_ARGUMENT.value
         } else {
-            callingLogger.i("${CallManagerImpl.TAG} -> sendHandler success")
+            callingLogger.i("OnSendOTR -> sendHandler success called")
             OnHttpRequest(handle, calling, messageSender, callingScope).sendHandlerSuccess(
                 context = context,
                 messageString = data?.getString(0, CallManagerImpl.UTF8_ENCODING),

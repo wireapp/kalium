@@ -12,6 +12,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.user.details.ListUserRequest
 import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.network.api.user.details.qualifiedIds
@@ -31,7 +32,7 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-// FIXME: missing unit test
+// TODO(testing): missing unit test
 interface UserRepository {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
     suspend fun fetchKnownUsers(): Either<CoreFailure, Unit>
@@ -43,6 +44,7 @@ interface UserRepository {
     suspend fun updateLocalSelfUserHandle(handle: String)
     suspend fun getAllContacts(): List<OtherUser>
     suspend fun getKnownUser(userId: UserId): Flow<OtherUser?>
+    suspend fun fetchUserInfo(userId: UserId): Either<CoreFailure, OtherUser>
 }
 
 class UserDataSource(
@@ -87,9 +89,9 @@ class UserDataSource(
         wrapApiRequest {
             userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(ids.map(idMapper::toApiModel)))
         }.flatMap {
-            // TODO: handle storage error
-            userDAO.insertUsers(it.map(userMapper::fromApiModelToDaoModel))
-            Either.Right(Unit)
+            wrapStorageRequest {
+                userDAO.insertUsers(it.map(userMapper::fromApiModelToDaoModel))
+            }
         }
 
     override suspend fun getSelfUser(): Flow<SelfUser> {
@@ -102,16 +104,16 @@ class UserDataSource(
         }
     }
 
-    // FIXME: user info can be updated with null, null and null
+    // FIXME(refactor): user info can be updated with null, null and null
     override suspend fun updateSelfUser(newName: String?, newAccent: Int?, newAssetId: String?): Either<CoreFailure, SelfUser> {
         val user = getSelfUser().firstOrNull() ?: return Either.Left(CoreFailure.Unknown(NullPointerException()))
         val updateRequest = userMapper.fromModelToUpdateApiModel(user, newName, newAccent, newAssetId)
         return wrapApiRequest { selfApi.updateSelf(updateRequest) }
             .map { userMapper.fromUpdateRequestToDaoModel(user, updateRequest) }
-            .flatMap {
-                // TODO: handle storage error
-                userDAO.updateUser(it)
-                Either.Right(userMapper.fromDaoModelToSelfUser(it))
+            .flatMap { userEntity ->
+                wrapStorageRequest {
+                    userDAO.updateUser(userEntity)
+                }.map { userMapper.fromDaoModelToSelfUser(userEntity) }
             }
     }
 
@@ -133,6 +135,11 @@ class UserDataSource(
     override suspend fun getKnownUser(userId: UserId) =
         userDAO.getUserByQualifiedID(qualifiedID = idMapper.toDaoModel(userId))
             .map { userEntity -> userEntity?.let { publicUserMapper.fromDaoModelToPublicUser(userEntity) } }
+
+    override suspend fun fetchUserInfo(userId: UserId): Either<CoreFailure, OtherUser> =
+        wrapApiRequest { userDetailsApi.getUserInfo(idMapper.toApiModel(userId)) }.map { userProfile ->
+            publicUserMapper.fromUserDetailResponse(userProfile)
+        }
 
     companion object {
         const val SELF_USER_ID_KEY = "selfUserID"
