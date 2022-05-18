@@ -13,3 +13,8 @@ detekt {
         txt.enabled = true
     }
 }
+
+dependencies {
+    detekt "io.gitlab.arturbosch.detekt:detekt-cli:1.19.0"
+    detekt project(path: ":detekt-rules")
+}

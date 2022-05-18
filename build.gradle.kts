@@ -1,4 +1,5 @@
 import com.android.build.gradle.internal.tasks.factory.dependsOn
+import io.gitlab.arturbosch.detekt.Detekt
 
 buildscript {
     val kotlinVersion = "1.6.10"
@@ -67,6 +68,10 @@ tasks.create("dokkaClean") {
     group = "documentation"
     project.delete(file("build/dokka"))
 }
+
+//tasks.withType<Detekt> {
+//    dependsOn (":detekt-rules:build")
+//}
 
 tasks.dokkaHtml.dependsOn(tasks.dokkaHtmlMultiModule)
 tasks.dokkaHtmlMultiModule.dependsOn(tasks.getByName("dokkaClean"))
