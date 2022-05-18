@@ -63,7 +63,12 @@ interface UserDAO {
     suspend fun getUserByNameOrHandleOrEmailAndConnectionState(
         searchQuery: String,
         connectionState: UserEntity.ConnectionState
-    ): Flow<List<UserEntity>>
+    ): List<UserEntity>
+
+    suspend fun getUserByHandleAndConnectionState(
+        handle: String,
+        connectionState: UserEntity.ConnectionState
+    ) : List<UserEntity>
 
     suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity)
     suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String)
