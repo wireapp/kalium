@@ -21,13 +21,19 @@ class ObserveConversationMembersUseCase(
     suspend operator fun invoke(conversationId: ConversationId): Flow<List<MemberDetails>> {
         syncManager.waitForSlowSyncToComplete()
         val selfDetailsFlow = userRepository.getSelfUser()
-        val selfUserID = selfDetailsFlow.first().id
+        val selfUser = selfDetailsFlow.first()
+
         return conversationRepository.observeConversationMembers(conversationId).map { members ->
             members.map {
-                if (it.id == selfUserID) {
+                if (it.id == selfUser.id) {
                     selfDetailsFlow.map(MemberDetails::Self)
                 } else {
-                    userRepository.getKnownUser(it.id).filterNotNull().map(MemberDetails::Other)
+                    userRepository.getKnownUser(it.id).filterNotNull().map { otherUser ->
+                        MemberDetails.Other(
+                            otherUser = otherUser,
+                            userType = otherUser.determineUserType(selfUser)
+                        )
+                    }
                 }
             }
         }.flatMapLatest { detailsFlows ->

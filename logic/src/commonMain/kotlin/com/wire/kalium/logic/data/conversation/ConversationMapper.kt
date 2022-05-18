@@ -35,14 +35,14 @@ internal class ConversationMapperImpl(
     override fun fromApiModelToDaoModel(
         apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?
     ): ConversationEntity = ConversationEntity(
-        idMapper.fromApiToDao(apiModel.id),
-        apiModel.name,
-        apiModel.getConversationType(selfUserTeamId),
-        apiModel.teamId,
-        apiModel.getProtocolInfo(mlsGroupState),
-        conversationStatusMapper.fromApiToDaoModel(apiModel.members.self.otrMutedStatus),
-        apiModel.members.self.otrMutedRef?.let { Instant.parse(it) }?.toEpochMilliseconds() ?: 0,
-        null,
+        id = idMapper.fromApiToDao(apiModel.id),
+        name = apiModel.name,
+        type = apiModel.getConversationType(selfUserTeamId),
+        teamId = apiModel.teamId,
+        protocolInfo = apiModel.getProtocolInfo(mlsGroupState),
+        mutedStatus = conversationStatusMapper.fromApiToDaoModel(apiModel.members.self.otrMutedStatus),
+        mutedTime = apiModel.members.self.otrMutedRef?.let { Instant.parse(it) }?.toEpochMilliseconds() ?: 0,
+        lastNotificationDate = null,
         lastModifiedDate = apiModel.lastEventTime
     )
 
@@ -52,13 +52,13 @@ internal class ConversationMapperImpl(
     }
 
     override fun fromDaoModel(daoModel: ConversationEntity): Conversation = Conversation(
-        idMapper.fromDaoModel(daoModel.id),
-        daoModel.name,
-        daoModel.type.fromDaoModelToType(),
-        daoModel.teamId?.let { TeamId(it) },
-        conversationStatusMapper.fromDaoModel(daoModel.mutedStatus),
-        daoModel.lastNotificationDate,
-        daoModel.lastModifiedDate
+        id = idMapper.fromDaoModel(daoModel.id),
+        name = daoModel.name,
+        type = daoModel.type.fromDaoModelToType(),
+        teamId = daoModel.teamId?.let { TeamId(it) },
+        mutedStatus = conversationStatusMapper.fromDaoModel(daoModel.mutedStatus),
+        lastNotificationDate = daoModel.lastNotificationDate,
+        lastModifiedDate = daoModel.lastModifiedDate
     )
 
     override fun toApiModel(name: String?, members: List<Member>, teamId: String?, options: ConversationOptions) =
@@ -66,8 +66,8 @@ internal class ConversationMapperImpl(
             idMapper.toApiModel(it.id)
         } else emptyList(),
             name = name,
-            access = options.access?.toList()?.map { toApiModel(it) },
-            accessRole = options.accessRole?.toList()?.map { toApiModel(it) },
+            access = options.access.toList().map { toApiModel(it) },
+            accessRole = options.accessRole.toList().map { toApiModel(it) },
             convTeamInfo = teamId?.let { ConvTeamInfo(false, it) },
             messageTimer = null,
             receiptMode = if (options.readReceiptsEnabled) ReceiptMode.ENABLED else ReceiptMode.DISABLED,
@@ -79,30 +79,14 @@ internal class ConversationMapperImpl(
         conversation: Conversation, otherUser: OtherUser, selfUser: SelfUser
     ): ConversationDetails.OneOne {
         return ConversationDetails.OneOne(
-            conversation = conversation, otherUser = otherUser, connectionState = otherUser.connectionStatus,
+            conversation = conversation,
+            otherUser = otherUser,
+            connectionState = otherUser.connectionStatus,
             //TODO(user-metadata) get actual legal hold status
-            legalHoldStatus = LegalHoldStatus.DISABLED, userType = determineOneToOneUserType(otherUser, selfUser)
+            legalHoldStatus = LegalHoldStatus.DISABLED,
+            userType = otherUser.determineUserType(selfUser)
         )
     }
-
-    private fun determineOneToOneUserType(otherUser: OtherUser, selfUser: SelfUser): UserType {
-        if (otherUser.isUsingWireCloudBackEnd()) {
-            if (areNotInTheSameTeam(otherUser, selfUser)) {
-                return UserType.GUEST
-            }
-        } else {
-            if (areNotInTheSameTeam(otherUser, selfUser)) {
-                return UserType.FEDERATED
-            }
-        }
-
-        return UserType.INTERNAL
-    }
-
-    // if either self user has no team or other user,
-    // does not make sense to compare them and we return false as of they are not on the same team
-    private fun areNotInTheSameTeam(otherUser: OtherUser, selfUser: SelfUser): Boolean =
-        !(selfUser.team != null && otherUser.team != null) || (selfUser.team != otherUser.team)
 
     override fun toApiModel(access: ConversationOptions.Access): ConversationAccess = when (access) {
         ConversationOptions.Access.PRIVATE -> ConversationAccess.PRIVATE
