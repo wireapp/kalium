@@ -14,10 +14,10 @@ import org.jetbrains.kotlin.psi.psiUtil.getValueParameters
 class EnforceSerializableFields(config: Config = Config.empty) : Rule(config) {
 
     override val issue: Issue = Issue(
-        javaClass.simpleName,
-        Severity.Style,
-        "Use Serializable annotations on every field of the Class that use @Serializable.",
-        Debt(mins = DEBT_IN_MINUTES_PER_MISSING_ANNOTATION)
+        id = javaClass.simpleName,
+        severity = Severity.Style,
+        description = "Use Serializable annotations on every field of the Class that use @Serializable.",
+        debt = Debt(mins = DEBT_IN_MINUTES_PER_MISSING_ANNOTATION)
     )
 
     override fun visitClassOrObject(kClass: KtClassOrObject) {
