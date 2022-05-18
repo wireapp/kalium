@@ -46,6 +46,7 @@ class EnforceSerializableFields(config: Config = Config.empty) : Rule(config) {
     }
 
     companion object {
+        private const val DEBT_IN_MINUTES_PER_MISSING_ANNOTATION = 3
         private const val SERIALIZABLE_CLASS_ANNOTATION = "@Serializable"
     }
 }
