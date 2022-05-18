@@ -1,14 +1,18 @@
 package com.wire.kalium.logic.feature.user
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.feature.publicuser.Result
 import com.wire.kalium.logic.feature.publicuser.SearchUserDirectoryUseCase
 import com.wire.kalium.logic.feature.publicuser.SearchUserDirectoryUseCaseImpl
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.network.api.ErrorResponse
+import com.wire.kalium.network.exceptions.KaliumException
+import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.anything
 import io.mockative.classOf
@@ -44,8 +48,8 @@ class SearchUserDirectoryUseCaseTest {
         //when
         val actual = searchUserDirectoryUseCase(TEST_QUERY, TEST_DOMAIN)
         //then
-        assertIs<Either.Right<UserSearchResult>>(actual)
-        assertEquals(expected, actual)
+        assertIs<Result.Success>(actual)
+        assertEquals(expected.value, actual.userSearchResult)
     }
 
     @Test
@@ -61,15 +65,16 @@ class SearchUserDirectoryUseCaseTest {
         val actual = searchUserDirectoryUseCase(TEST_QUERY, TEST_DOMAIN)
 
         //then
-        assertIs<Either.Left<CoreFailure>>(actual)
-        assertEquals(expected, actual)
+        assertIs<Result.Failure.InvalidQuery>(actual)
     }
 
     private companion object {
         const val TEST_QUERY = "testQuery"
         const val TEST_DOMAIN = "testDomain"
 
-        val TEST_CORE_FAILURE = Either.Left(CoreFailure.Unknown(IllegalStateException()))
+        val TEST_CORE_FAILURE = Either.Left(
+            NetworkFailure.ServerMiscommunication(KaliumException.InvalidRequestError(ErrorResponse(404, "a", "")))
+        )
 
         val VALID_SEARCH_PUBLIC_RESULT = UserSearchResult(
             result = buildList {
