@@ -636,3 +636,4 @@ style:
 WireRuleSet:
     EnforceSerializerFields:
         active: true
+        excludes: [ '**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' ]
