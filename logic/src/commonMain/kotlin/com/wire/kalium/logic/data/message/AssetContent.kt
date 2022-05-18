@@ -5,7 +5,8 @@ data class AssetContent(
     val name: String? = null,
     val mimeType: String,
     val metadata: AssetMetadata? = null,
-    val remoteData: RemoteData
+    val remoteData: RemoteData,
+    val downloadStatus: Message.DownloadStatus
 ) {
     sealed class AssetMetadata {
         data class Image(val width: Int, val height: Int) : AssetMetadata()

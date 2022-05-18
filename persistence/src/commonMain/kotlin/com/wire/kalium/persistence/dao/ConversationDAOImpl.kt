@@ -150,13 +150,17 @@ class ConversationDAOImpl(
 
     }
 
-    override suspend fun insertOrUpdateOneOnOneMemberWithConnectionStatus(
+    override suspend fun updateOrInsertOneOnOneMemberWithConnectionStatus(
         userId: UserIDEntity,
         status: UserEntity.ConnectionState,
         conversationID: QualifiedIDEntity
     ) {
         memberQueries.transaction {
-            userQueries.insertOrReplaceUserIdWithConnectionStatus(userId, status)
+            userQueries.updateUserConnectionStatus(status, userId)
+            val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
+            if (recordDidNotExist) {
+                userQueries.insertOrIgnoreUserIdWithConnectionStatus(userId, status)
+            }
             memberQueries.insertMember(userId, conversationID)
         }
     }

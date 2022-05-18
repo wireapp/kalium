@@ -42,6 +42,7 @@ class OnParticipantListChanged(
             mode = DEFAULT_REQUEST_VIDEO_STREAMS_MODE,
             json = CallClientList(clients = clients).toJsonString()
         )
+        callingLogger.i("onParticipantsChanged() - wcall_request_video_streams() called")
 
         callingLogger.i("onParticipantsChanged() - Total Participants: ${participants.size} for $conversationId")
     }

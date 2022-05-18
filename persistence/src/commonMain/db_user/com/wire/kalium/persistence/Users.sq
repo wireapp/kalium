@@ -34,9 +34,12 @@ UPDATE User
 SET name = ?, handle = ?, email = ?, accent_id = ?, preview_asset_id = ?, complete_asset_id = ?
 WHERE qualified_id = ?;
 
-insertOrReplaceUserIdWithConnectionStatus:
-INSERT OR REPLACE INTO User(qualified_id, connection_status)
+insertOrIgnoreUserIdWithConnectionStatus:
+INSERT OR IGNORE INTO User(qualified_id, connection_status)
 VALUES(?, ?);
+
+updateUserConnectionStatus:
+UPDATE User SET connection_status = ? WHERE qualified_id = ?;
 
 selectAllUsers:
 SELECT * FROM User;
@@ -61,3 +64,6 @@ AND connection_status = :connectionStatus;
 
 updateUserhandle:
 UPDATE User SET handle = ? WHERE qualified_id = ?;
+
+selectChanges:
+SELECT changes();
