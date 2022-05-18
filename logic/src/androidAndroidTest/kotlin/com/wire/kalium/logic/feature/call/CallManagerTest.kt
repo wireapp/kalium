@@ -40,6 +40,9 @@ class CallManagerTest {
     @Mock
     private val callMapper = mock(classOf<CallMapper>())
 
+    @Mock
+    val messageSender = mock(classOf<MessageSender>())
+
     private lateinit var callManagerImpl: CallManagerImpl
 
     @BeforeTest
@@ -49,7 +52,8 @@ class CallManagerTest {
             callRepository = callRepository,
             userRepository = userRepository,
             clientRepository = clientRepository,
-            callMapper = callMapper
+            callMapper = callMapper,
+            messageSender = messageSender
         )
     }
 
