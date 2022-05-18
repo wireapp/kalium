@@ -106,7 +106,16 @@ class AssetMapperImpl : AssetMapper {
             }
         }
 
+    @Suppress("ComplexMethod")
     override fun fromProtoAssetMessageToAssetContent(protoAssetMessage: Asset): AssetContent {
+        val defaultRemoteData = AssetContent.RemoteData(
+            otrKey = ByteArray(0),
+            sha256 = ByteArray(0),
+            assetId = "",
+            assetDomain = null,
+            assetToken = null,
+            encryptionAlgorithm = null
+        )
         with(protoAssetMessage) {
             return AssetContent(
                 sizeInBytes = original?.size ?: 0,
@@ -118,28 +127,26 @@ class AssetMapperImpl : AssetMapper {
                     else -> null
                 },
                 remoteData = status?.run {
-                    with((this as Asset.Status.Uploaded).value) {
-                        AssetContent.RemoteData(
-                            otrKey = otrKey.array,
-                            sha256 = sha256.array,
-                            assetId = assetId ?: "",
-                            assetDomain = assetDomain,
-                            assetToken = assetToken,
-                            encryptionAlgorithm = when (encryption) {
-                                EncryptionAlgorithm.AES_CBC -> AES_CBC
-                                EncryptionAlgorithm.AES_GCM -> AES_GCM
-                                else -> null
+                    when (this) {
+                        is Asset.Status.Uploaded -> {
+                            with(value) {
+                                AssetContent.RemoteData(
+                                    otrKey = otrKey.array,
+                                    sha256 = sha256.array,
+                                    assetId = assetId ?: "",
+                                    assetDomain = assetDomain,
+                                    assetToken = assetToken,
+                                    encryptionAlgorithm = when (encryption) {
+                                        EncryptionAlgorithm.AES_CBC -> AES_CBC
+                                        EncryptionAlgorithm.AES_GCM -> AES_GCM
+                                        else -> null
+                                    }
+                                )
                             }
-                        )
+                        }
+                        is Asset.Status.NotUploaded -> defaultRemoteData
                     }
-                } ?: AssetContent.RemoteData(
-                    otrKey = ByteArray(0),
-                    sha256 = ByteArray(0),
-                    assetId = "",
-                    assetDomain = null,
-                    assetToken = null,
-                    encryptionAlgorithm = null
-                ),
+                } ?: defaultRemoteData,
                 downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
             )
         }
