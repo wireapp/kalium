@@ -106,6 +106,7 @@ class AssetMapperImpl : AssetMapper {
             }
         }
 
+    @Suppress("ComplexMethod")
     override fun fromProtoAssetMessageToAssetContent(protoAssetMessage: Asset): AssetContent {
         val defaultRemoteData = AssetContent.RemoteData(
             otrKey = ByteArray(0),
