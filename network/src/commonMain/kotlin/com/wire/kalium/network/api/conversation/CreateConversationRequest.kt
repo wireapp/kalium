@@ -40,6 +40,7 @@ data class CreateConversationRequest(
     val protocol: ConvProtocol?
 )
 
+@Suppress("EnforceSerializableFields")
 @Serializable(with = ReceiptMode.ReceiptModeAsIntSerializer::class)
 enum class ReceiptMode(val value: Int) {
     DISABLED(0),
