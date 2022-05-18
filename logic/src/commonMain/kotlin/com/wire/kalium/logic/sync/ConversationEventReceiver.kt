@@ -28,6 +28,8 @@ import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.logic.wrapCryptoRequest
 import io.ktor.utils.io.core.toByteArray
 
+// Suppressed as it's an old issue
+@Suppress("LongParameterList")
 class ConversationEventReceiver(
     private val proteusClient: ProteusClient,
     private val messageRepository: MessageRepository,
