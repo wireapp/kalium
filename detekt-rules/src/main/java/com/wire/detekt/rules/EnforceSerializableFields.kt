@@ -17,7 +17,7 @@ class EnforceSerializableFields(config: Config = Config.empty) : Rule(config) {
         javaClass.simpleName,
         Severity.Style,
         "Use Serializable annotations on every field of the Class that use @Serializable.",
-        Debt.FIVE_MINS
+        Debt(mins = DEBT_IN_MINUTES_PER_MISSING_ANNOTATION)
     )
 
     override fun visitClassOrObject(kClass: KtClassOrObject) {
