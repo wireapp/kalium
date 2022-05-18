@@ -634,6 +634,6 @@ style:
         excludeImports: [ 'java.util.*', 'kotlinx.android.synthetic.*' ]
 
 WireRuleSet:
-    EnforceSerializerFields:
+    EnforceSerializableFields:
         active: true
         excludes: [ '**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' ]

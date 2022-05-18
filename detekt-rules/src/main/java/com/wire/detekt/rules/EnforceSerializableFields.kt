@@ -11,7 +11,7 @@ import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.psiUtil.getValueParameters
 
 @Suppress("NestedBlockDepth")
-class EnforceSerializerFields(config: Config = Config.empty) : Rule(config) {
+class EnforceSerializableFields(config: Config = Config.empty) : Rule(config) {
 
     override val issue: Issue = Issue(
         javaClass.simpleName,
@@ -31,7 +31,7 @@ class EnforceSerializerFields(config: Config = Config.empty) : Rule(config) {
                     if (!hasMatchingRequirement) {
                         report(
                             kClass,
-                            "The class '${kClass.name}' needs to implement Serializable annotations on every attribute' " +
+                            "The class '${kClass.name}' needs to implement Serializable annotations on every attribute '" +
                                     "@SerialName | @Serializable | @Transient'."
                         )
                     }
