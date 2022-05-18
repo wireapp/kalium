@@ -24,7 +24,7 @@ import kotlin.math.max
 interface CallRepository {
     suspend fun getCallConfigResponse(limit: Int?): Either<CoreFailure, String>
     suspend fun connectToSFT(url: String, data: String): Either<CoreFailure, ByteArray>
-    fun getAllCalls(): StateFlow<List<Call>>
+    fun getAllCalls(): Flow<List<Call>>
     fun getIncomingCalls(): Flow<List<Call>>
     fun getOngoingCall(): Flow<List<Call>>
     suspend fun createCall(conversationId: ConversationId, status: CallStatus, callerId: String)
@@ -51,7 +51,7 @@ internal class CallDataSource(
         callApi.connectToSFT(url = url, data = data)
     }
 
-    override fun getAllCalls(): StateFlow<List<Call>> = MutableStateFlow(allCalls.value.calls.values.toList())
+    override fun getAllCalls(): Flow<List<Call>> = allCalls.map{ it.calls.values.toList() }
 
     override fun getIncomingCalls(): Flow<List<Call>> = allCalls.map {
         it.calls.values.filter { call ->
