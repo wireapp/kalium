@@ -26,10 +26,10 @@ object CreateConversationRequestJson {
         """
         |{
         |   "access": [
-        |       "${it.access[0]}"
+        |       "${it.access?.get(0)}"
         |   ],
         |   "access_role_v2": [
-        |       "${it.accessRole[0]}}"
+        |       "${it.accessRole?.get(0)}}"
         |   ],
         |   "conversation_role": "${it.conversationRole}",
         |   "message_timer": ${it.messageTimer},
@@ -37,11 +37,11 @@ object CreateConversationRequestJson {
         |   "protocol": "${it.protocol}",
         |   "qualified_users": [
         |       {
-        |           "domain": "${it.qualifiedUsers[0].domain}",
-        |           "id": "${it.qualifiedUsers[0].value}"
+        |           "domain": "${it.qualifiedUsers?.get(0)?.domain}",
+        |           "id": "${it.qualifiedUsers?.get(0)?.value}"
         |       }
         |   ],
-        |   "receipt_mode": ${it.receiptMode.value},
+        |   "receipt_mode": ${it.receiptMode?.value},
         |   "team": {
         |       "managed": "false",
         |       "teamid": "${it.convTeamInfo?.teamId}"

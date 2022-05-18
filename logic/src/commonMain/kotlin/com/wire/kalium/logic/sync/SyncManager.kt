@@ -1,15 +1,8 @@
 package com.wire.kalium.logic.sync
 
-import kotlinx.coroutines.flow.MutableStateFlow
+import com.wire.kalium.logic.data.sync.SyncRepository
+import com.wire.kalium.logic.data.sync.SyncState
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.flow.updateAndGet
-
-enum class SyncState {
-    WAITING,
-    SLOW_SYNC,
-    COMPLETED,
-}
 
 interface SyncManager {
     fun completeSlowSync()
@@ -18,21 +11,22 @@ interface SyncManager {
     suspend fun isSlowSyncCompleted(): Boolean
 }
 
-class SyncManagerImpl(private val workScheduler: WorkScheduler) : SyncManager {
-
-    private val internalSyncState = MutableStateFlow(SyncState.WAITING)
+class SyncManagerImpl(
+    private val workScheduler: WorkScheduler,
+    private val syncRepository: SyncRepository
+) : SyncManager {
 
     override fun completeSlowSync() {
-        internalSyncState.update { SyncState.COMPLETED }
+        syncRepository.updateSyncState { SyncState.COMPLETED }
     }
 
     override suspend fun waitForSlowSyncToComplete() {
         startSlowSyncIfNotAlreadyCompletedOrRunning()
-        internalSyncState.first { it == SyncState.COMPLETED }
+        syncRepository.syncState.first { it == SyncState.COMPLETED }
     }
 
     private fun startSlowSyncIfNotAlreadyCompletedOrRunning() {
-        val syncState = internalSyncState.updateAndGet {
+        val syncState = syncRepository.updateSyncState {
             when (it) {
                 SyncState.WAITING -> SyncState.SLOW_SYNC
                 else -> it
@@ -44,6 +38,6 @@ class SyncManagerImpl(private val workScheduler: WorkScheduler) : SyncManager {
         }
     }
 
-    override suspend fun isSlowSyncOngoing(): Boolean = internalSyncState.first() == SyncState.SLOW_SYNC
-    override suspend fun isSlowSyncCompleted(): Boolean = internalSyncState.first() == SyncState.COMPLETED
+    override suspend fun isSlowSyncOngoing(): Boolean = syncRepository.syncState.first() == SyncState.SLOW_SYNC
+    override suspend fun isSlowSyncCompleted(): Boolean = syncRepository.syncState.first() == SyncState.COMPLETED
 }
