@@ -30,12 +30,6 @@ actual sealed class WorkScheduler {
                 "Scheduling a periodic execution of checking the API version is not supported on JVM."
             )
         }
-
-        override fun scheduleImmediateApiVersionUpdate() {
-            GlobalScope.launch {
-                UpdateApiVersionsWorker(coreLogic.apiVersionCheckManager, coreLogic.getAuthenticationScope().updateApiVersions).doWork()
-            }
-        }
     }
 
     actual class UserSession(
