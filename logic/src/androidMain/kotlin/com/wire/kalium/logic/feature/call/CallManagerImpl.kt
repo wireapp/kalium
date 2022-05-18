@@ -69,7 +69,7 @@ actual class CallManagerImpl(
     private fun startHandleAsync() = scope.async(start = CoroutineStart.LAZY) {
         val selfUserId = userId.await().toString()
         val selfClientId = clientId.await().value
-        calling.wcall_create(
+        val handle = calling.wcall_create(
             userId = selfUserId,
             clientId = selfClientId,
             readyHandler = { version: Int, arg: Pointer? ->
@@ -96,6 +96,8 @@ actual class CallManagerImpl(
             },
             arg = null
         )
+        callingLogger.d("$TAG - wcall_create() called")
+        handle
     }
 
     private suspend fun <T> withCalling(action: suspend Calling.(handle: Handle) -> T): T {
@@ -105,6 +107,7 @@ actual class CallManagerImpl(
 
     override suspend fun onCallingMessageReceived(message: Message, content: MessageContent.Calling) =
         withCalling {
+            callingLogger.i("$TAG - onCallingMessageReceived called")
             val msg = content.value.toByteArray()
 
             val currTime = System.currentTimeMillis()
@@ -120,7 +123,7 @@ actual class CallManagerImpl(
                 userId = message.senderUserId.toString(),
                 clientId = message.senderClientId.value
             )
-            callingLogger.d("$TAG - onCallingMessageReceived")
+            callingLogger.i("$TAG - wcall_recv_msg() called")
         }
 
     override suspend fun startCall(
@@ -129,7 +132,7 @@ actual class CallManagerImpl(
         conversationType: ConversationType,
         isAudioCbr: Boolean
     ) {
-        callingLogger.d("$TAG -> starting call..")
+        callingLogger.d("$TAG -> starting call for conversation = $conversationId..")
         callRepository.createCall(
             call = Call(
                 conversationId = conversationId,
@@ -148,33 +151,38 @@ actual class CallManagerImpl(
                 avsConversationType.avsValue,
                 isAudioCbr.toInt()
             )
+            callingLogger.d("$TAG - wcall_start() called -> Call for conversation = $conversationId started")
         }
     }
 
     override suspend fun answerCall(conversationId: ConversationId) = withCalling {
-        callingLogger.d("$TAG -> answering call..")
+        callingLogger.d("$TAG -> answering call for conversation = $conversationId..")
         wcall_answer(
             inst = deferredHandle.await(),
             conversationId = conversationId.toString(),
             callType = CallTypeCalling.AUDIO.avsValue,
             cbrEnabled = false
         )
+        callingLogger.d("$TAG - wcall_answer() called -> Incoming call for conversation = $conversationId answered")
     }
 
     override suspend fun endCall(conversationId: ConversationId) = withCalling {
-        callingLogger.d("$TAG -> ending Call..")
+        callingLogger.d("$TAG -> ending Call for conversation = $conversationId..")
         wcall_end(inst = deferredHandle.await(), conversationId = conversationId.toString())
+        callingLogger.d("$TAG - wcall_end() called -> call for conversation = $conversationId ended")
     }
 
     override suspend fun rejectCall(conversationId: ConversationId) = withCalling {
-        callingLogger.d("$TAG -> rejecting call..")
+        callingLogger.d("$TAG -> rejecting call for conversation = $conversationId..")
         wcall_reject(inst = deferredHandle.await(), conversationId = conversationId.toString())
+        callingLogger.d("$TAG - wcall_reject() called -> call for conversation = $conversationId rejected")
     }
 
     override suspend fun muteCall(shouldMute: Boolean) = withCalling {
         val logString = if (shouldMute) "muting" else "un-muting"
         callingLogger.d("$TAG -> $logString call..")
         wcall_set_mute(deferredHandle.await(), muted = shouldMute.toInt())
+        callingLogger.d("$TAG - wcall_set_mute() called")
     }
 
     /**
@@ -196,6 +204,7 @@ actual class CallManagerImpl(
                     wcall_participant_changed_h = onParticipantListChanged,
                     arg = null
                 )
+                callingLogger.d("$TAG - wcall_set_participant_changed_handler() called")
             }
         }
 
