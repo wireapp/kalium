@@ -12,6 +12,6 @@ class GetAllCallsUseCase(
 ) {
     suspend operator fun invoke(): Flow<List<Call>> {
         syncManager.waitForSlowSyncToComplete()
-        return callRepository.getAllCalls()
+        return callRepository.callsFlow()
     }
 }

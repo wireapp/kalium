@@ -27,13 +27,14 @@ class OnIncomingCall(
         conversationType: Int,
         arg: Pointer?
     ) {
-        callingLogger.i("${CallManagerImpl.TAG} -> incomingCallHandler")
+        callingLogger.i("OnIncomingCall -> incoming call from $userId in conversation $conversationId at $messageTime")
         scope.launch {
             callRepository.createCall(
                 conversationId = conversationId.toConversationId(),
                 status = CallStatus.INCOMING,
                 callerId = userId
             )
+        callingLogger.i("OnIncomingCall -> incoming call for conversation $conversationId added to data flow")
         }
     }
 }

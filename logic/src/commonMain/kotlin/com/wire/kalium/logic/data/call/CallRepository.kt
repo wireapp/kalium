@@ -24,9 +24,10 @@ import kotlin.math.max
 interface CallRepository {
     suspend fun getCallConfigResponse(limit: Int?): Either<CoreFailure, String>
     suspend fun connectToSFT(url: String, data: String): Either<CoreFailure, ByteArray>
-    fun getAllCalls(): Flow<List<Call>>
-    fun getIncomingCalls(): Flow<List<Call>>
-    fun getOngoingCall(): Flow<List<Call>>
+    fun updateCallProfileFlow(callProfile: CallProfile)
+    fun callsFlow(): Flow<List<Call>>
+    fun incomingCallsFlow(): Flow<List<Call>>
+    fun ongoingCallsFlow(): Flow<List<Call>>
     suspend fun createCall(conversationId: ConversationId, status: CallStatus, callerId: String)
     fun updateCallStatusById(conversationId: String, status: CallStatus)
     fun updateCallParticipants(conversationId: String, participants: List<Participant>)
@@ -51,18 +52,24 @@ internal class CallDataSource(
         callApi.connectToSFT(url = url, data = data)
     }
 
-    override fun getAllCalls(): Flow<List<Call>> = allCalls.map{ it.calls.values.toList() }
+    override fun updateCallProfileFlow(callProfile: CallProfile) {
+        _callProfile.value = callProfile
+    }
+    override fun callsFlow(): Flow<List<Call>> = allCalls.map{ it.calls.values.toList() }
 
-    override fun getIncomingCalls(): Flow<List<Call>> = allCalls.map {
+    override fun incomingCallsFlow(): Flow<List<Call>> = allCalls.map {
         it.calls.values.filter { call ->
-            call.status in listOf(
-                CallStatus.INCOMING
-            )
+            call.status == CallStatus.INCOMING
         }
     }
 
-    override fun getOngoingCall(): Flow<List<Call>> = allCalls.map {
-        it.calls.values.filter { call -> call.status == CallStatus.ESTABLISHED }
+        override fun ongoingCallsFlow(): Flow<List<Call>> = allCalls.map {
+        it.calls.values.filter { call ->
+            call.status in listOf(
+                CallStatus.ESTABLISHED,
+                CallStatus.ANSWERED
+            )
+        }
     }
 
     override suspend fun createCall(conversationId: ConversationId, status: CallStatus, callerId: String) {

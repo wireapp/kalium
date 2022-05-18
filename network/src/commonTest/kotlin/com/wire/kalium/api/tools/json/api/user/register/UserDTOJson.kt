@@ -47,7 +47,7 @@ object UserDTOJson {
             serializable.managedByDTO?.let { put("managed_by", it.toString()) }
             serializable.ssoID?.let { userSsoID ->
                 putJsonObject("sso_id") {
-                    put("subject", userSsoID.subject)
+                    userSsoID.subject?.let { put("subject", it) }
                     userSsoID.scimExternalId?.let { put("scim_external_id", it) }
                     userSsoID.tenant?.let { put("tenant", it) }
                 }

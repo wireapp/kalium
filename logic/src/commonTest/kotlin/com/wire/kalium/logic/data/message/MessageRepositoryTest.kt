@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
@@ -37,6 +38,9 @@ class MessageRepositoryTest {
     val idMapper = mock(IdMapper::class)
 
     @Mock
+    val assetMapper = mock(AssetMapper::class)
+
+    @Mock
     val messageApi = mock(MessageApi::class)
 
     @Mock
@@ -55,7 +59,8 @@ class MessageRepositoryTest {
 
     @BeforeTest
     fun setup() {
-        messageRepository = MessageDataSource(messageApi, mlsMessageApi, messageDAO, messageMapper, idMapper, sendMessageFailureMapper)
+        messageRepository =
+            MessageDataSource(messageApi, mlsMessageApi, messageDAO, messageMapper, idMapper, assetMapper, sendMessageFailureMapper)
     }
 
     @Test
