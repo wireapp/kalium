@@ -18,7 +18,7 @@ class GetConversationsUseCase(
     }
 
     suspend operator fun invoke(): Result {
-        syncManager.waitForSlowSyncToComplete()
+        syncManager.waitForSyncToComplete()
         return conversationRepository.getConversationList().fold({
             Result.Failure(it)
         }, {

@@ -10,7 +10,7 @@ class GetOngoingCallUseCase(
     private val syncManager: SyncManager
 ) {
     suspend operator fun invoke(): Flow<List<Call>> {
-        syncManager.waitForSlowSyncToComplete()
+        syncManager.waitForSyncToComplete()
         return callRepository.ongoingCallsFlow()
     }
 }

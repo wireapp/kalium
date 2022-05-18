@@ -44,6 +44,7 @@ kotlin {
                 implementation(project(":protobuf"))
                 api(project(":logger"))
                 implementation(project(":calling"))
+                implementation(project(":util"))
 
                 // coroutines
                 implementation(Dependencies.Coroutines.core) {

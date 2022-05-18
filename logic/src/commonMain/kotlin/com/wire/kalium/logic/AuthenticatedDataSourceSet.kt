@@ -13,7 +13,6 @@ class AuthenticatedDataSourceSet(
     val authenticatedNetworkContainer: AuthenticatedNetworkContainer,
     val proteusClient: ProteusClient,
     val workScheduler: WorkScheduler,
-    val syncManager: SyncManager,
     val userDatabaseProvider: UserDatabaseProvider,
     val kaliumPreferencesSettings: KaliumPreferencesSettings,
     val encryptedSettingsHolder: EncryptedSettingsHolder

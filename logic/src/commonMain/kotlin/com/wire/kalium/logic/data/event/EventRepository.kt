@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.network.api.notification.NotificationApi
 import com.wire.kalium.network.api.notification.NotificationResponse
 import com.wire.kalium.network.utils.NetworkResponse
@@ -26,6 +27,7 @@ import kotlin.coroutines.coroutineContext
 interface EventRepository {
     suspend fun events(): Flow<Either<CoreFailure, Event>>
     suspend fun pendingEvents(): Flow<Either<CoreFailure, Event>>
+    suspend fun liveEvents(): Either<CoreFailure, Flow<Event>>
     suspend fun updateLastProcessedEventId(eventId: String)
 }
 
@@ -38,14 +40,26 @@ class EventDataSource(
 
     // TODO(edge-case): handle Missing notification response (notify user that some messages are missing)
 
-    override suspend fun events(): Flow<Either<CoreFailure, Event>> =
-        clientRepository.currentClientId().fold({
-            flowOf(Either.Left(CoreFailure.MissingClientRegistration))
-        }, { clientId ->
-            val pendingEventsFlow = pendingEventsFlow(clientId)
-            val liveEventsFlow = liveEventsFlow(clientId)
-            flowOf(pendingEventsFlow, liveEventsFlow).flattenConcat()
-        })
+    /**
+     * Gets a flow of all the events, concatenating [pendingEvents] and [liveEvents] in order.
+     *
+     * **Deprecated**: Consumers should handle live and pending events independently,
+     * taking care of race conditions (receiving a live event while still processing pending events).
+     * This logic becomes too complicated and entangled with the Sync business logic for a simple Repository.
+     * @see liveEvents
+     * @see pendingEvents
+     */
+    @Deprecated("Consumers should handle live and pending events independently.")
+    override suspend fun events(): Flow<Either<CoreFailure, Event>> = TODO("")
+//        clientRepository.currentClientId().fold({
+//            flowOf(Either.Left(CoreFailure.MissingClientRegistration))
+//        }, { clientId ->
+//            val pendingEventsFlow = pendingEventsFlow(clientId)
+//            val liveEventsFlow = liveEventsFlow(clientId)
+//            flowOf(pendingEventsFlow, liveEventsFlow).flattenConcat()
+//        })
+    override suspend fun liveEvents(): Either<CoreFailure, Flow<Event>> = clientRepository.currentClientId()
+        .map { clientId -> liveEventsFlow(clientId) }
 
     override suspend fun pendingEvents(): Flow<Either<CoreFailure, Event>> =
         clientRepository.currentClientId().fold(
@@ -53,16 +67,13 @@ class EventDataSource(
             { clientId -> pendingEventsFlow(clientId) }
         )
 
-    private suspend fun liveEventsFlow(clientId: ClientId): Flow<Either<CoreFailure, Event>> =
+    private suspend fun liveEventsFlow(clientId: ClientId): Flow<Event> =
         notificationApi.listenToLiveEvents(clientId.value)
             .map {
                 println("Mapping eventResponse from LiveFlow ${it}")
                 eventMapper.fromDTO(it).asFlow()
             }
             .flattenConcat()
-            .filterNotNull()
-            .map { Either.Right(it) }
-            .catch { e -> Either.Left(CoreFailure.Unknown(e)) }
 
     private suspend fun pendingEventsFlow(
         clientId: ClientId

@@ -65,7 +65,7 @@ interface MessageSender {
 class MessageSenderImpl(
     private val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
-    private val syncManager: SyncManager,
+    private val syncManager: Lazy<SyncManager>,
     private val messageSendFailureHandler: MessageSendFailureHandler,
     private val sessionEstablisher: SessionEstablisher,
     private val messageEnvelopeCreator: MessageEnvelopeCreator,
@@ -75,7 +75,7 @@ class MessageSenderImpl(
 ) : MessageSender {
 
     override suspend fun sendPendingMessage(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit> {
-        syncManager.waitForSlowSyncToComplete()
+        syncManager.value.waitForSyncToComplete()
         return messageRepository.getMessageById(conversationId, messageUuid).flatMap { message ->
             sendMessage(message)
         }.onFailure {

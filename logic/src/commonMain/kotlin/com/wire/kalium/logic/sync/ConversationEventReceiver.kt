@@ -35,7 +35,7 @@ class ConversationEventReceiver(
     private val mlsConversationRepository: MLSConversationRepository,
     private val userRepository: UserRepository,
     private val protoContentMapper: ProtoContentMapper,
-    private val callManagerImpl: CallManager,
+    private val callManagerImpl: Lazy<CallManager>,
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : EventReceiver<Event.Conversation> {
@@ -187,7 +187,7 @@ class ConversationEventReceiver(
             }
             is MessageContent.Calling -> {
                 kaliumLogger.d("$TAG - MessageContent.Calling")
-                callManagerImpl.onCallingMessageReceived(
+                callManagerImpl.value.onCallingMessageReceived(
                     message = message,
                     content = message.content
                 )
