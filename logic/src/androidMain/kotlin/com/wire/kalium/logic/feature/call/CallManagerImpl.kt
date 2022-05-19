@@ -173,6 +173,10 @@ actual class CallManagerImpl(
     override suspend fun rejectCall(conversationId: ConversationId) = withCalling {
         callingLogger.d("$TAG -> rejecting call for conversation = $conversationId..")
         wcall_reject(inst = deferredHandle.await(), conversationId = conversationId.toString())
+        callRepository.updateCallStatusById(
+            conversationId = conversationId.toString(),
+            status = CallStatus.CLOSED
+        )
         callingLogger.d("$TAG - wcall_reject() called -> call for conversation = $conversationId rejected")
     }
 

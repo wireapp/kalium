@@ -55,7 +55,8 @@ internal class CallDataSource(
     override fun updateCallProfileFlow(callProfile: CallProfile) {
         _callProfile.value = callProfile
     }
-    override fun callsFlow(): Flow<List<Call>> = allCalls.map{ it.calls.values.toList() }
+
+    override fun callsFlow(): Flow<List<Call>> = allCalls.map { it.calls.values.toList() }
 
     override fun incomingCallsFlow(): Flow<List<Call>> = allCalls.map {
         it.calls.values.filter { call ->
@@ -63,7 +64,7 @@ internal class CallDataSource(
         }
     }
 
-        override fun ongoingCallsFlow(): Flow<List<Call>> = allCalls.map {
+    override fun ongoingCallsFlow(): Flow<List<Call>> = allCalls.map {
         it.calls.values.filter { call ->
             call.status in listOf(
                 CallStatus.ESTABLISHED,
