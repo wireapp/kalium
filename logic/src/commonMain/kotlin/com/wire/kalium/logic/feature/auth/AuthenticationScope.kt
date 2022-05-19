@@ -33,6 +33,7 @@ import com.wire.kalium.logic.feature.user.EnableLoggingUseCase
 import com.wire.kalium.logic.feature.user.EnableLoggingUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsLoggingEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsLoggingEnabledUseCaseImpl
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.UnauthenticatedNetworkContainer
 import com.wire.kalium.persistence.client.TokenStorage
 import com.wire.kalium.persistence.client.TokenStorageImpl
@@ -47,6 +48,7 @@ class AuthenticationScope(
 ) {
 
     private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
+        kaliumLogger.d("AuthenticationScope is creating UnauthenticatedNetworkContainer")
         UnauthenticatedNetworkContainer()
     }
     private val serverConfigMapper: ServerConfigMapper get() = ServerConfigMapperImpl()
