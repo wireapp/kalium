@@ -6,7 +6,7 @@ import com.wire.kalium.logic.util.PlatformView
 
 class SetVideoPreviewUseCase(private val flowManagerService: FlowManagerService) {
 
-    operator fun invoke(conversationId: ConversationId, view: PlatformView) {
+    suspend operator fun invoke(conversationId: ConversationId, view: PlatformView) {
         flowManagerService.setVideoPreview(conversationId, view)
     }
 }

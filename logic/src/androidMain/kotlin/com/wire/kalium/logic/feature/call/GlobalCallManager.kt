@@ -13,6 +13,7 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.message.MessageSender
+import kotlinx.coroutines.Dispatchers
 
 actual class GlobalCallManager(
     private val appContext: Context
@@ -56,7 +57,7 @@ actual class GlobalCallManager(
         }
     }
 
-    actual fun getFlowManager(): FlowManagerService = FlowManagerServiceImpl(appContext)
+    actual fun getFlowManager(): FlowManagerService = FlowManagerServiceImpl(appContext, Dispatchers.Default)
 
     private fun initiateMediaManager() {
         mediaManager = MediaManager.getInstance(appContext)

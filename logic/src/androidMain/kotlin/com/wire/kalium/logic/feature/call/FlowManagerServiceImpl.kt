@@ -6,9 +6,12 @@ import com.waz.log.LogHandler
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.util.PlatformView
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.withContext
 
 actual class FlowManagerServiceImpl(
-    appContext: Context
+    appContext: Context,
+    private val dispatcher: CoroutineDispatcher
 ) : FlowManagerService {
 
     private val flowManager: FlowManager = FlowManager(
@@ -30,8 +33,10 @@ actual class FlowManagerServiceImpl(
         })
     }
 
-    override fun setVideoPreview(conversationId: ConversationId, platformView: PlatformView) {
-        flowManager.setVideoPreview(conversationId.toString(), platformView.view)
+    override suspend fun setVideoPreview(conversationId: ConversationId, platformView: PlatformView) {
+        withContext(dispatcher) {
+            flowManager.setVideoPreview(conversationId.toString(), platformView.view)
+        }
     }
 
     override fun setUIRotation(rotation: Int) {

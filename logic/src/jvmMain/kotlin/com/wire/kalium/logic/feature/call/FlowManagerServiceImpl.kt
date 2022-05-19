@@ -5,7 +5,7 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.PlatformView
 
 actual class FlowManagerServiceImpl : FlowManagerService {
-    override fun setVideoPreview(conversationId: ConversationId, view: PlatformView) {
+    override suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView) {
         kaliumLogger.w("setVideoPreview for JVM but not supported yet.")
     }
 
