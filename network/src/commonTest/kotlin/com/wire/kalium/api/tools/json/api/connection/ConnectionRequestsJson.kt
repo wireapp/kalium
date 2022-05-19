@@ -18,4 +18,12 @@ object ConnectionRequestsJson {
             }
         """.trimIndent()
     }
+
+    val validConnectionStatusUpdate = ValidJsonProvider(String) {
+        """
+            {
+                "status": "accepted"                            
+            }
+        """.trimIndent()
+    }
 }
