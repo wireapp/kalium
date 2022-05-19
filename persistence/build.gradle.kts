@@ -96,6 +96,7 @@ kotlin {
                 implementation(kotlin("test"))
                 // coroutines
                 implementation(Dependencies.Coroutines.test)
+                implementation(Dependencies.Test.turbine)
                 // MultiplatformSettings
                 implementation(Dependencies.MultiplatformSettings.test)
             }
