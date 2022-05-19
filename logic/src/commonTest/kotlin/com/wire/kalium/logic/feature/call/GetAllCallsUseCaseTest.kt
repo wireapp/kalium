@@ -34,7 +34,7 @@ class GetAllCallsUseCaseTest {
     }
 
     @Test
-    fun givenAFlowOfTwoCalls_whenUseCaseInvoked_thenAssertThatTheUseCaseIsEmittingTheRightCalls() = runTest {
+    fun givenCallsFlowEmitsANewValue_whenUseCaseIsCollected_thenAssertThatTheUseCaseIsEmittingTheRightCalls() = runTest {
         val calls1 = listOf(call1, call2)
         val calls2 = listOf(call2)
 
