@@ -42,6 +42,7 @@ import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
+import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.feature.client.ClientScope
@@ -225,7 +226,7 @@ abstract class UserSessionScopeCommon(
     private val callMapper: CallMapper
         get() = CallMapper()
 
-    private val callManager by lazy {
+    private val callManager: Lazy<CallManager> = lazy {
         globalCallManager.getCallManagerForClient(
             userId = userId,
             callRepository = callRepository,
