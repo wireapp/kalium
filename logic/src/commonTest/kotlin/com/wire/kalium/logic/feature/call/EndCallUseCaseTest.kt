@@ -23,7 +23,7 @@ class EndCallUseCaseTest {
 
     @BeforeTest
     fun setup() {
-        endCall = EndCallUseCase(callManager)
+        endCall = EndCallUseCase(lazy{ callManager })
     }
 
     @Test

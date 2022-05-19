@@ -7,11 +7,11 @@ interface AnswerCallUseCase {
 }
 
 internal class AnswerCallUseCaseImpl(
-    private val callManager: CallManager
+    private val callManager: Lazy<CallManager>
 ) : AnswerCallUseCase {
 
     override suspend fun invoke(conversationId: ConversationId) {
-        callManager.answerCall(
+        callManager.value.answerCall(
             conversationId = conversationId
         )
     }
