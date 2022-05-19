@@ -7,15 +7,19 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.configuration.ServerConfigApi
 import com.wire.kalium.network.api.configuration.ServerConfigResponse
 import com.wire.kalium.network.api.versioning.VersionApi
+import com.wire.kalium.network.tools.ServerConfigDTO
+import com.wire.kalium.persistence.dao_kalium_db.CurrentAuthenticationServerDAO
 import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAO
 import io.ktor.http.Url
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 
 
@@ -68,6 +72,10 @@ internal interface ServerConfigRepository {
      * update the api version of a locally stored config
      */
     suspend fun updateConfigApiVersion(id: String): Either<CoreFailure, Unit>
+
+    fun updateCurrentAuthServer(id: String): Either<StorageFailure, Unit>
+    fun currentAuthServer(): Either<StorageFailure, ServerConfigDTO>
+    fun authServerFlow(): Either<StorageFailure, Flow<ServerConfigDTO>>
 }
 
 internal class ServerConfigDataSource(
@@ -75,6 +83,7 @@ internal class ServerConfigDataSource(
     private val dao: ServerConfigurationDAO,
     private val versionApi: VersionApi,
     private val serverConfigUtil: ServerConfigUtil,
+    private val currentAuthenticationServerDAO: CurrentAuthenticationServerDAO,
     private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
 ) : ServerConfigRepository {
 
@@ -134,4 +143,22 @@ internal class ServerConfigDataSource(
         .flatMap { wrapApiRequest { versionApi.fetchApiVersion(Url(it.apiBaseUrl)) } }
         .flatMap { serverConfigUtil.calculateApiVersion(it.supported) }
         .flatMap { wrapStorageRequest { dao.updateApiVersion(id, it) } }
+
+    override fun updateCurrentAuthServer(id: String): Either<StorageFailure, Unit> =
+        wrapStorageRequest { currentAuthenticationServerDAO.update(id) }
+
+    override fun currentAuthServer(): Either<StorageFailure, ServerConfigDTO> =
+        wrapStorageRequest { currentAuthenticationServerDAO.currentConfigId() }
+            .flatMap { wrapStorageRequest { dao.configById(it) } }
+            .map { serverConfigMapper.toDTO(it) }
+
+    override fun authServerFlow(): Either<StorageFailure, Flow<ServerConfigDTO>> =
+        wrapStorageRequest { currentAuthenticationServerDAO.currentConfigIdFlow() }
+            .map { authServerIdFlow ->
+                authServerIdFlow.map { currentAuthServerId ->
+                    wrapStorageRequest { dao.configById(currentAuthServerId) }
+                        .map { configEntity -> serverConfigMapper.toDTO(configEntity) }
+                        .fold({ null }, { it })
+                }
+            }.map { authServerIdFlow -> authServerIdFlow.filterNotNull() }
 }

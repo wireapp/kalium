@@ -14,6 +14,7 @@ import com.wire.kalium.network.api.configuration.ServerConfigApi
 import com.wire.kalium.network.api.versioning.VersionApi
 import com.wire.kalium.network.api.versioning.VersionInfoDTO
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.persistence.dao_kalium_db.CurrentAuthenticationServerDAO
 import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAO
 import io.mockative.ConfigurationApi
 import io.mockative.Mock
@@ -52,11 +53,15 @@ class ServerConfigRepositoryTest {
     @Mock
     private val serverConfigUtil = mock(classOf<ServerConfigUtil>())
 
+    @Mock
+    private val currentAuthenticationServerDAO: CurrentAuthenticationServerDAO = mock(classOf<CurrentAuthenticationServerDAO>())
+
     private lateinit var serverConfigRepository: ServerConfigRepository
 
     @BeforeTest
     fun setup() {
-        serverConfigRepository = ServerConfigDataSource(serverConfigApi, serverConfigDAO, versionApi, serverConfigUtil)
+        serverConfigRepository =
+            ServerConfigDataSource(serverConfigApi, serverConfigDAO, versionApi, serverConfigUtil, currentAuthenticationServerDAO)
     }
 
     @Test

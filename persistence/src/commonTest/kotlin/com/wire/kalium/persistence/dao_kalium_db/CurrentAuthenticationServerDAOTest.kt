@@ -33,7 +33,7 @@ class CurrentAuthenticationServerDAOTest: GlobalDBBaseTest() {
         insertConfig(serverConfigEntity)
         db.currentAuthenticationServerDAO.update(expected)
 
-        db.currentAuthenticationServerDAO.select().also { actual ->
+        db.currentAuthenticationServerDAO.currentConfigId().also { actual ->
             assertEquals(expected, actual)
         }
     }
@@ -47,12 +47,12 @@ class CurrentAuthenticationServerDAOTest: GlobalDBBaseTest() {
         insertConfig(serverConfigEntity2)
 
         db.currentAuthenticationServerDAO.update(serverConfigEntity1.id)
-        db.currentAuthenticationServerDAO.select().also { actual ->
+        db.currentAuthenticationServerDAO.currentConfigId().also { actual ->
             assertEquals(serverConfigEntity1.id, actual)
         }
 
         db.currentAuthenticationServerDAO.update(serverConfigEntity2.id)
-        db.currentAuthenticationServerDAO.select().also { actual ->
+        db.currentAuthenticationServerDAO.currentConfigId().also { actual ->
             assertEquals(serverConfigEntity2.id, actual)
         }
     }

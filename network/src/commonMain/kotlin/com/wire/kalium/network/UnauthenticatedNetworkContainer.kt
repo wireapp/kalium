@@ -13,10 +13,11 @@ import com.wire.kalium.network.api.versioning.VersionApiImpl
 import io.ktor.client.engine.HttpClientEngine
 
 class UnauthenticatedNetworkContainer constructor(
+    private val authServerConfigManager: Lazy<AuthServerConfigManager>,
     engine: HttpClientEngine = defaultHttpEngine()
 ) {
     internal val unauthenticatedNetworkClient by lazy {
-        UnauthenticatedNetworkClient(engine)
+        UnauthenticatedNetworkClient(engine, authServerConfigManager.value)
     }
 
     val loginApi: LoginApi get() = LoginApiImpl(unauthenticatedNetworkClient)

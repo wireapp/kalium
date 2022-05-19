@@ -61,6 +61,7 @@ data class ServerConfig(
 interface ServerConfigMapper {
     fun toDTO(serverConfig: ServerConfig): ServerConfigDTO
     fun toEntity(serverConfig: ServerConfig): ServerConfigEntity
+    fun toDTO(serverConfigEntity: ServerConfigEntity): ServerConfigDTO
     fun fromEntity(serverConfigEntity: ServerConfigEntity): ServerConfig
 }
 
@@ -93,6 +94,19 @@ class ServerConfigMapperImpl : ServerConfigMapper {
                 federation,
                 commonApiVersion.version,
                 domain
+            )
+        }
+    override fun toDTO(serverConfigEntity: ServerConfigEntity): ServerConfigDTO =
+        with(serverConfigEntity) {
+            ServerConfigDTO(
+                Url(apiBaseUrl),
+                Url(accountBaseUrl),
+                Url(webSocketBaseUrl),
+                Url(blackListUrl),
+                Url(teamsUrl),
+                Url(websiteUrl),
+                title,
+                commonApiVersion
             )
         }
 

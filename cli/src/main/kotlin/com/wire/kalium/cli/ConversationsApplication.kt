@@ -9,6 +9,7 @@ import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.configuration.server.ServerConfigMapperImpl
+import com.wire.kalium.network.AuthServerConfigManager
 import com.wire.kalium.network.AuthenticatedNetworkContainer
 import com.wire.kalium.network.NetworkLogger
 import com.wire.kalium.network.UnauthenticatedNetworkContainer
@@ -43,6 +44,12 @@ class InMemorySessionManager(
     }
 }
 
+class InMemoryAuthServerManager(
+    private val serverConfigDTO: ServerConfigDTO,
+) : AuthServerConfigManager {
+    override fun getCurrentAuthServer(): ServerConfigDTO = serverConfigDTO
+}
+
 class ConversationsApplication : CliktCommand() {
     private val email: String by option(help = "wire account email").required()
     private val password: String by option(help = "wire account password").required()
@@ -52,10 +59,12 @@ class ConversationsApplication : CliktCommand() {
 
         val serverConfigMapper: ServerConfigMapper = ServerConfigMapperImpl()
         val serverConfigDTO: ServerConfigDTO = serverConfigMapper.toDTO(ServerConfig.DEFAULT)
-        val loginContainer = UnauthenticatedNetworkContainer()
+        val loginContainer = UnauthenticatedNetworkContainer(lazy { InMemoryAuthServerManager(serverConfigDTO) })
 
         val loginResult = loginContainer.loginApi.login(
-            LoginApi.LoginParam.LoginWithEmail(email = email, password = password, label = "ktor"), false, serverConfigDTO.apiBaseUrl.toString()
+            LoginApi.LoginParam.LoginWithEmail(email = email, password = password, label = "ktor"),
+            false,
+            serverConfigDTO.apiBaseUrl.toString()
         )
 
         if (!loginResult.isSuccessful()) {
@@ -73,7 +82,7 @@ class ConversationsApplication : CliktCommand() {
                     println("ID:${it.id}, Name: ${it.name}")
                 }
             }
-            uploadTestAsset(networkModule)
+            //uploadTestAsset(networkModule)
         }
     }
 

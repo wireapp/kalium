@@ -34,6 +34,7 @@ import com.wire.kalium.logic.feature.user.EnableLoggingUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsLoggingEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsLoggingEnabledUseCaseImpl
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.network.AuthServerConfigManager
 import com.wire.kalium.network.UnauthenticatedNetworkContainer
 import com.wire.kalium.persistence.client.TokenStorage
 import com.wire.kalium.persistence.client.TokenStorageImpl
@@ -43,14 +44,20 @@ import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 
 class AuthenticationScope(
-    private val clientLabel: String, private val sessionRepository: SessionRepository, private val globalDatabase: GlobalDatabaseProvider,
+    private val clientLabel: String,
+    private val sessionRepository: SessionRepository,
+    private val globalDatabase: GlobalDatabaseProvider,
     private val globalPreferences: KaliumPreferences
 ) {
 
+    private val authServerConfigManager: Lazy<AuthServerConfigManager> = lazy {
+        AuthServerConfigManagerImpl(serverConfigRepository)
+    }
     private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
         kaliumLogger.d("AuthenticationScope is creating UnauthenticatedNetworkContainer")
-        UnauthenticatedNetworkContainer()
+        UnauthenticatedNetworkContainer(authServerConfigManager)
     }
+
     private val serverConfigMapper: ServerConfigMapper get() = ServerConfigMapperImpl()
     private val idMapper: IdMapper get() = IdMapperImpl()
     private val sessionMapper: SessionMapper get() = SessionMapperImpl(serverConfigMapper, idMapper)
@@ -66,7 +73,8 @@ class AuthenticationScope(
             unauthenticatedNetworkContainer.serverConfigApi,
             globalDatabase.serverConfigurationDAO,
             unauthenticatedNetworkContainer.remoteVersion,
-            serverConfigUtil
+            serverConfigUtil,
+            globalDatabase.currentAuthenticationServerDAO
         )
 
     private val loginRepository: LoginRepository get() = LoginRepositoryImpl(unauthenticatedNetworkContainer.loginApi, clientLabel)

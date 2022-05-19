@@ -7,8 +7,8 @@ import kotlinx.coroutines.flow.Flow
 
 interface CurrentAuthenticationServerDAO {
     fun update(serverConfigId: String)
-    fun select(): String?
-    fun selectFlow(): Flow<String>
+    fun currentConfigId(): String?
+    fun currentConfigIdFlow(): Flow<String>
 }
 
 internal class CurrentAuthenticationServerDAOImpl(
@@ -16,7 +16,7 @@ internal class CurrentAuthenticationServerDAOImpl(
 ): CurrentAuthenticationServerDAO {
     override fun update(serverConfigId: String) = queries.update(serverConfigId)
 
-    override fun select(): String? = queries.select().executeAsOneOrNull()
+    override fun currentConfigId(): String? = queries.select().executeAsOneOrNull()
 
-    override fun selectFlow(): Flow<String> = queries.select().asFlow().mapToOne()
+    override fun currentConfigIdFlow(): Flow<String> = queries.select().asFlow().mapToOne()
 }
