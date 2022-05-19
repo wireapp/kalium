@@ -90,7 +90,7 @@ class WrapperWorkerFactory(private val coreLogic: CoreLogic) : WorkerFactory() {
         val innerWorkerClassName = workerParameters.inputData.getString(WORKER_CLASS_KEY)
 
         if (userId == null || innerWorkerClassName == null) {
-            throw RuntimeException("No user id was specified")
+            throw IllegalArgumentException("No user id was specified")
         }
 
         kaliumLogger.v("WrapperWorkerFactory, creating worker for class name: $innerWorkerClassName")
