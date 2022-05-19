@@ -40,7 +40,6 @@ data class CreateConversationRequest(
     val protocol: ConvProtocol?
 )
 
-@Suppress("EnforceSerializableFields")
 @Serializable(with = ReceiptMode.ReceiptModeAsIntSerializer::class)
 enum class ReceiptMode(val value: Int) {
     DISABLED(0),
@@ -54,7 +53,7 @@ enum class ReceiptMode(val value: Int) {
 
         override fun deserialize(decoder: Decoder): ReceiptMode {
             val value = decoder.decodeInt()
-            return if (value > 0) ReceiptMode.ENABLED else ReceiptMode.DISABLED
+            return if (value > 0) ENABLED else DISABLED
         }
     }
 }
@@ -63,6 +62,7 @@ enum class ReceiptMode(val value: Int) {
 enum class ConvProtocol {
     @SerialName("proteus")
     PROTEUS,
+
     @SerialName("mls")
     MLS;
 

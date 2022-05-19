@@ -636,4 +636,4 @@ style:
 WireRuleSet:
     EnforceSerializableFields:
         active: true
-        excludes: [ '**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**', '**/persistence/**']
+        excludes: [ '**/*test/**', '**/persistence/**', '**/logic/**' ]
