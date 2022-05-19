@@ -20,15 +20,18 @@
     <ID>ComplexMethod:otr.kt$private fun QualifiedNewOtrMessage.protoMergeImpl(plus: pbandk.Message?): QualifiedNewOtrMessage</ID>
     <ID>ConstructorParameterNaming:MessageApi.kt$MessageApi.Parameters.DefaultParameters$val `data`: String? = null</ID>
     <ID>ConstructorParameterNaming:MessageApi.kt$MessageApi.Parameters.QualifiedDefaultParameters$val `data`: String? = null</ID>
-    <ID>ConstructorParameterNaming:MessageApiImp.kt$MessageApiImp.RequestBody$@SerialName("data") val `data`: String?</ID>
     <ID>EmptyDefaultConstructor:KaliumException.kt$KaliumException$()</ID>
     <ID>EmptyDefaultConstructor:KaliumException.kt$KaliumException.FeatureError$()</ID>
     <ID>EmptyDefaultConstructor:ServerConfigurationDAO.kt$ServerConfigMapper$()</ID>
     <ID>EmptyDefaultConstructor:ValidateSSOCodeUseCase.kt$ValidateSSOCodeUseCaseImpl$()</ID>
     <ID>EmptyKtFile:SessionLocalRepository.kt$.SessionLocalRepository.kt</ID>
+    <ID>EnforceSerializableFields:AuthSession.kt$AuthSession</ID>
+    <ID>EnforceSerializableFields:CallClient.kt$CallClient</ID>
+    <ID>EnforceSerializableFields:CallClient.kt$CallClientList</ID>
+    <ID>EnforceSerializableFields:CallParticipants.kt$CallMember</ID>
+    <ID>EnforceSerializableFields:CallParticipants.kt$CallParticipants</ID>
     <ID>FunctionNaming:CallManagerTest.kt$CallManagerTest$@Test fun givenCallManager_whenCallingMessageIsReceived_then_wcall_recv_msg_IsCalled()</ID>
     <ID>FunctionNaming:Calling.kt$Calling$fun wcall_answer(inst: Handle, conversationId: String, callType: Int, cbrEnabled: Boolean)</ID>
-    <ID>FunctionNaming:Calling.kt$Calling$fun wcall_close()</ID>
     <ID>FunctionNaming:Calling.kt$Calling$fun wcall_config_update(inst: Handle, error: Int, jsonString: String)</ID>
     <ID>FunctionNaming:Calling.kt$Calling$fun wcall_create( userId: String, clientId: String, readyHandler: ReadyHandler, sendHandler: SendHandler, sftRequestHandler: SFTRequestHandler, incomingCallHandler: IncomingCallHandler, missedCallHandler: MissedCallHandler, answeredCallHandler: AnsweredCallHandler, establishedCallHandler: EstablishedCallHandler, closeCallHandler: CloseCallHandler, metricsHandler: MetricsHandler, callConfigRequestHandler: CallConfigRequestHandler, constantBitRateStateChangeHandler: ConstantBitRateStateChangeHandler, videoReceiveStateHandler: VideoReceiveStateHandler, arg: Pointer? ): Handle</ID>
     <ID>FunctionNaming:Calling.kt$Calling$fun wcall_end(inst: Handle, conversationId: String)</ID>
@@ -79,7 +82,6 @@
     <ID>FunctionParameterNaming:CryptoboxSession.module_@wireapp_cryptobox.kt$CryptoboxSession$pk_store: CryptoboxCRUDStore</ID>
     <ID>FunctionParameterNaming:KeyPair.module_@wireapp_proteus.kt$KeyPair.Companion$ed25519_key_pair: KeyPair</ID>
     <ID>FunctionParameterNaming:SetUserHandleUseCase.kt$SetUserHandleUseCase$_handle: String</ID>
-    <ID>LongMethod:CallManagerImpl.kt$CallManagerImpl$private fun startHandleAsync()</ID>
     <ID>LongParameterList:AuthenticatedDataSourceSet.kt$AuthenticatedDataSourceSet$( val authenticatedRootDir: String, val authenticatedNetworkContainer: AuthenticatedNetworkContainer, val proteusClient: ProteusClient, val workScheduler: WorkScheduler, val syncManager: SyncManager, val userDatabaseProvider: UserDatabaseProvider, val kaliumPreferencesSettings: KaliumPreferencesSettings, val encryptedSettingsHolder: EncryptedSettingsHolder )</ID>
     <ID>LongParameterList:Calling.kt$Calling$( inst: Handle, msg: ByteArray, len: Int, curr_time: Uint32_t, msg_time: Uint32_t, convId: String, userId: String, clientId: String )</ID>
     <ID>LongParameterList:Calling.kt$Calling$( userId: String, clientId: String, readyHandler: ReadyHandler, sendHandler: SendHandler, sftRequestHandler: SFTRequestHandler, incomingCallHandler: IncomingCallHandler, missedCallHandler: MissedCallHandler, answeredCallHandler: AnsweredCallHandler, establishedCallHandler: EstablishedCallHandler, closeCallHandler: CloseCallHandler, metricsHandler: MetricsHandler, callConfigRequestHandler: CallConfigRequestHandler, constantBitRateStateChangeHandler: ConstantBitRateStateChangeHandler, videoReceiveStateHandler: VideoReceiveStateHandler, arg: Pointer? )</ID>
@@ -88,7 +90,6 @@
     <ID>LongParameterList:ConversationRepository.kt$ConversationDataSource$( private val userRepository: UserRepository, private val mlsConversationRepository: MLSConversationRepository, private val conversationDAO: ConversationDAO, private val conversationApi: ConversationApi, private val clientApi: ClientApi, private val idMapper: IdMapper = MapperProvider.idMapper(), private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(), private val memberMapper: MemberMapper = MapperProvider.memberMapper(), private val conversationStatusMapper: ConversationStatusMapper = MapperProvider.conversationStatusMapper() )</ID>
     <ID>LongParameterList:GlobalCallManager.kt$GlobalCallManager$( userId: QualifiedID, callRepository: CallRepository, userRepository: UserRepository, clientRepository: ClientRepository, callMapper: CallMapper, messageSender: MessageSender )</ID>
     <ID>LongParameterList:IncomingCallHandler.kt$IncomingCallHandler$( conversationId: String, messageTime: Uint32_t, userId: String, clientId: String, isVideoCall: Boolean, shouldRing: Boolean, conversationType: Int, arg: Pointer? )</ID>
-    <ID>LongParameterList:LogoutUseCase.kt$LogoutUseCase$( private val logoutRepository: LogoutRepository, private val sessionRepository: SessionRepository, private val userId: QualifiedID, private val authenticatedDataSourceSet: AuthenticatedDataSourceSet, private val clientRepository: ClientRepository, private val mlsClientProvider: MLSClientProvider, private val authenticatedDataSourceSetProvider: AuthenticatedDataSourceSetProvider = AuthenticatedDataSourceSetProviderImpl )</ID>
     <ID>LongParameterList:MessageScope.kt$MessageScope$( internal val messageRepository: MessageRepository, private val conversationRepository: ConversationRepository, private val clientRepository: ClientRepository, private val proteusClient: ProteusClient, private val mlsClientProvider: MLSClientProvider, private val preKeyRepository: PreKeyRepository, private val userRepository: UserRepository, private val assetRepository: AssetRepository, private val syncManager: SyncManager, private val messageSendingScheduler: MessageSendingScheduler, private val timeParser: TimeParser, )</ID>
     <ID>LongParameterList:MessageSender.kt$MessageSenderImpl$( private val messageRepository: MessageRepository, private val conversationRepository: ConversationRepository, private val syncManager: SyncManager, private val messageSendFailureHandler: MessageSendFailureHandler, private val sessionEstablisher: SessionEstablisher, private val messageEnvelopeCreator: MessageEnvelopeCreator, private val mlsMessageCreator: MLSMessageCreator, private val messageSendingScheduler: MessageSendingScheduler, private val timeParser: TimeParser )</ID>
     <ID>LongParameterList:MessageSenderTest.kt$MessageSenderTest$( getMessageById: Boolean = true, getConversationProtocol: Boolean = true, getConversationsRecipient: Boolean = true, prepareRecipientsForNewOutGoingMessage: Boolean = true, createOutgoingEnvelope: Boolean = true, updateMessageDate: Boolean = true, updatePendingMessagesAddMillisToDate: Boolean = true, sendEnvelope: Either&lt;CoreFailure, String> = Either.Right("date"), updateMessageStatus: Boolean = true, )</ID>
@@ -96,11 +97,7 @@
     <ID>LongParameterList:NetworkQualityChangedHandler.kt$NetworkQualityChangedHandler$( conversationId: String, userId: String, clientId: String, quality: Int, roundTripTimeInMilliseconds: Int, upstreamPacketLossPercentage: Int, downstreamPacketLossPercentage: Int, arg: Pointer? )</ID>
     <ID>LongParameterList:RegisterAccountRepository.kt$RegisterAccountRepository$( email: String, code: String, name: String, password: String, teamName: String, teamIcon: String, serverConfig: ServerConfig )</ID>
     <ID>LongParameterList:RegisterAccountUseCase.kt$RegisterParam.Team$( firstName: String, lastName: String, email: String, password: String, val emailActivationCode: String, val teamName: String, val teamIcon: String )</ID>
-    <ID>LongParameterList:SendAssetMessageUseCase.kt$SendAssetMessageUseCaseImpl$( conversationId: ConversationId, dataSize: Long, assetName: String?, assetMimeType: String, sha256: ByteArray, otrKey: AES256Key, assetId: UploadedAssetId )</ID>
-    <ID>LongParameterList:SendAssetMessageUseCase.kt$SendAssetMessageUseCaseImpl$( dataSize: Long, assetName: String?, sha256: ByteArray, otrKey: AES256Key, assetId: UploadedAssetId, mimeType: String, )</ID>
     <ID>LongParameterList:SendHandler.kt$SendHandler$( context: Pointer?, conversationId: String, userIdSelf: String, clientIdSelf: String, userIdDestination: String?, clientIdDestination: String?, data: Pointer?, length: Size_t, isTransient: Boolean, arg: Pointer? )</ID>
-    <ID>LongParameterList:SendImageMessageUseCase.kt$SendImageMessageUseCaseImpl$( conversationId: ConversationId, dataSize: Long, imageName: String?, sha256: ByteArray, otrKey: AES256Key, assetId: UploadedAssetId, imgWidth: Int, imgHeight: Int )</ID>
-    <ID>LongParameterList:SendImageMessageUseCase.kt$SendImageMessageUseCaseImpl$( dataSize: Long, imageName: String?, sha256: ByteArray, otrKey: AES256Key, assetId: UploadedAssetId, imgWidth: Int, imgHeight: Int )</ID>
     <ID>LongParameterList:ServerConfigurationDAO.kt$ServerConfigurationDAO$( id: String, apiBaseUrl: String, accountBaseUrl: String, webSocketBaseUrl: String, blackListUrl: String, teamsUrl: String, websiteUrl: String, title: String )</ID>
     <ID>LongParameterList:UserRepository.kt$UserDataSource$( private val userDAO: UserDAO, private val metadataDAO: MetadataDAO, private val selfApi: SelfApi, private val userDetailsApi: UserDetailsApi, private val assetRepository: AssetRepository, private val idMapper: IdMapper = MapperProvider.idMapper(), private val userMapper: UserMapper = MapperProvider.userMapper(), private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper() )</ID>
     <ID>LongParameterList:UserStubs.kt$( id: String = "test", name: String = "testName", handle: String = "testHandle", email: String = "testEmail@wire.com", phone: String = "testPhone", accentId: Int = 1, team: String = "testTeam", connectionStatus: UserEntity.ConnectionState = UserEntity.ConnectionState.ACCEPTED, previewAssetId: String = "previewAssetId", completeAssetId: String = "completeAssetId", )</ID>
@@ -122,7 +119,6 @@
     <ID>MagicNumber:GlobalCallManager.kt$LogHandlerImpl$3</ID>
     <ID>MagicNumber:HttpEngine.kt$401</ID>
     <ID>MagicNumber:MLSClientImpl.kt$MLSClientImpl$30</ID>
-    <ID>MagicNumber:MessageApiImp.kt$MessageApiImp$412</ID>
     <ID>MagicNumber:MessageDAOImpl.kt$MessageMapper$16</ID>
     <ID>MagicNumber:NetworkUtils.kt$300</ID>
     <ID>MagicNumber:NetworkUtils.kt$399</ID>
@@ -205,7 +201,6 @@
     <ID>MatchingDeclarationName:Encoder.module_@wireapp_cbor.kt$Encoder</ID>
     <ID>MatchingDeclarationName:GetOngoingCallsUseCase.kt$GetOngoingCallUseCase</ID>
     <ID>MatchingDeclarationName:Handles.kt$QualifiedHandle</ID>
-    <ID>MatchingDeclarationName:HttpClientProvider.kt$HttpClientOptions</ID>
     <ID>MatchingDeclarationName:IDSample.kt$QualifiedIDSamples</ID>
     <ID>MatchingDeclarationName:IdentityKey.module_@wireapp_proteus.kt$IdentityKey</ID>
     <ID>MatchingDeclarationName:IdentityKeyPair.module_@wireapp_proteus.kt$IdentityKeyPair</ID>
@@ -222,8 +217,6 @@
     <ID>MatchingDeclarationName:ServerConfigResult.kt$GetServerConfigResult</ID>
     <ID>MatchingDeclarationName:SessionResult.kt$GetAllSessionsResult</ID>
     <ID>MatchingDeclarationName:SessionStorageTest.kt$SessionDAOTest</ID>
-    <ID>MaxLineLength:ApiTest.kt$ApiTest$assertTrue(contentType.match(this.body.contentType ?: ContentType.Any), "contentType: ${this.body.contentType} doesn't match expected contentType: $contentType")</ID>
-    <ID>MaxLineLength:AssetApiImpl.kt$AssetApiImpl$override suspend</ID>
     <ID>MaxLineLength:AssetRepositoryTest.kt$AssetRepositoryTest$val actual = assetRepository.uploadAndPersistPrivateAsset(encryptedAssetData = "the_image".encodeToByteArray(), mimeType = ImageAsset.JPEG)</ID>
     <ID>MaxLineLength:CLIApplication.kt$DeleteClientCommand$val deleteClientResult = userSession.client.deleteClient(DeleteClientParam(password, selfClientsResult.clients[clientIndex].clientId))</ID>
     <ID>MaxLineLength:CLIApplication.kt$ListenGroupCommand$val conversationIndex = prompt("Enter conversation index", promptSuffix = ": ")?.toInt() ?: throw PrintMessage("Index must be an integer")</ID>
@@ -237,51 +230,26 @@
     <ID>MaxLineLength:ConversationEvent.kt$ConversationMembers$@SerialName("user_ids") val userIds: List&lt;String></ID>
     <ID>MaxLineLength:ConversationEvent.kt$ConversationUsers$@SerialName("user_ids") val userIds: List&lt;String></ID>
     <ID>MaxLineLength:ConversationEventReceiver.kt$ConversationEventReceiver$// The asset message received contains the asset decryption keys, so update the preview message persisted previously</ID>
-    <ID>MaxLineLength:ConversationMapper.kt$ConversationMapperImpl$qualifiedUsers = if (options.protocol == ConversationOptions.Protocol.PROTEUS) members.map { idMapper.toApiModel(it.id) } else emptyList()</ID>
     <ID>MaxLineLength:ConversationRepository.kt$ConversationDataSource$is ProtocolInfo.MLS</ID>
-    <ID>MaxLineLength:ConversationRepository.kt$ConversationDataSource$val conversationEntity = conversationMapper.fromApiModelToDaoModel(conversationResponse, mlsGroupState = ConversationEntity.GroupState.PENDING, teamId)</ID>
     <ID>MaxLineLength:ConversationRepositoryTest.kt$ConversationRepositoryTest$val event = Event.Conversation.NewConversation("id", TestConversation.ID, "time", CONVERSATION_RESPONSE.copy(groupId = groupId, protocol = ConvProtocol.MLS))</ID>
     <ID>MaxLineLength:ConversationsApplication.kt$ConversationsApplication$LoginApi.LoginParam.LoginWithEmail(email = email, password = password, label = "ktor")</ID>
-    <ID>MaxLineLength:GetOrCreateOneToOneConversationUseCaseTest.kt$GetOrCreateOneToOneConversationUseCaseTest.Companion$val CONVERSATION = Conversation(id = CONVERSATION_ID, name = null, type = ConversationEntity.Type.ONE_ON_ONE, teamId = null, MutedConversationStatus.AllAllowed, null, null)</ID>
-    <ID>MaxLineLength:IdMapper.kt$IdMapperImpl$override fun fromApiToDao(qualifiedID: NetworkQualifiedId)</ID>
-    <ID>MaxLineLength:IdMapper.kt$IdMapperImpl$override fun fromDaoModel(persistenceId: PersistenceQualifiedId)</ID>
-    <ID>MaxLineLength:IdMapper.kt$IdMapperImpl$override fun toCryptoModel(qualifiedID: QualifiedID): CryptoQualifiedID</ID>
-    <ID>MaxLineLength:IdMapper.kt$IdMapperImpl$override fun toCryptoQualifiedIDId(qualifiedID: QualifiedID): CryptoQualifiedID</ID>
-    <ID>MaxLineLength:IdMapper.kt$IdMapperImpl$override fun toDaoModel(qualifiedID: QualifiedID): PersistenceQualifiedId</ID>
     <ID>MaxLineLength:IdentityKeyPair.module_@wireapp_proteus.kt$IdentityKeyPair$external open</ID>
     <ID>MaxLineLength:LocalNotification.kt$LocalNotificationMessage.Comment$data</ID>
-    <ID>MaxLineLength:MLSConversationRepository.kt$MLSConversationDataSource$Either.Right(mlsClient.decryptMessage((conversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId, messageEvent.content.decodeBase64Bytes()))</ID>
-    <ID>MaxLineLength:MLSConversationRepository.kt$MLSConversationDataSource$override suspend</ID>
-    <ID>MaxLineLength:MLSConversationRepository.kt$MLSConversationDataSource$val conversationID = conversationDAO.getConversationByGroupID(groupID).first()?.id ?: return Either.Left(StorageFailure.DataNotFound)</ID>
     <ID>MaxLineLength:MemoryEngine.module_@wireapp_store-engine.kt$MemoryEngine$override fun &lt;PrimaryKey, ChangesType> updateOrCreate(tableName: String, primaryKey: PrimaryKey, changes: ChangesType): Promise&lt;PrimaryKey></ID>
     <ID>MaxLineLength:MessageEnvelopeCreatorTest.kt$MessageEnvelopeCreatorTest$.</ID>
-    <ID>MaxLineLength:MessageRepository.kt$MessageDataSource$override suspend</ID>
-    <ID>MaxLineLength:MessageScope.kt$MessageScope$val getNotifications: GetNotificationsUseCase get() = GetNotificationsUseCaseImpl(messageRepository, userRepository, conversationRepository)</ID>
     <ID>MaxLineLength:MessageSenderTest.kt$MessageSenderTest$.</ID>
     <ID>MaxLineLength:PreKeyBundle.module_@wireapp_proteus.kt$PreKeyBundle$constructor(publicIdentityKey: IdentityKey, preKeyId: Number, publicKey: PublicKey, signature: Uint8Array? = definedExternally, version: Number = definedExternally)</ID>
     <ID>MaxLineLength:PreKeyListMapper.kt$PreKeyListMapper$fun</ID>
     <ID>MaxLineLength:ProtoContentMapper.kt$ProtoContentMapperImpl$// Backend sends some preview asset messages just with img metadata and no keys or asset id, so we need to overwrite one with the other one</ID>
     <ID>MaxLineLength:RegisterAccountRepositoryTest.kt$RegisterAccountRepositoryTest$val authSession = with(SESSION) { AuthSession(UserId(userId.value, userId.domain), accessToken, refreshToken, tokenType, serverConfig) }</ID>
-    <ID>MaxLineLength:RegisterClientUseCase.kt$RegisterClientUseCaseImpl$if</ID>
-    <ID>MaxLineLength:SSOLoginApi.kt$SSOLoginApi$suspend fun metaData(apiBaseUrl: Url): NetworkResponse&lt;String></ID>
-    <ID>MaxLineLength:SSOLoginApi.kt$SSOLoginApiImpl$override suspend</ID>
     <ID>MaxLineLength:SaveSessionUseCase.kt$SaveSessionUseCase$@Deprecated("unsafe API", replaceWith = ReplaceWith("com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase", "com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase"))</ID>
-    <ID>MaxLineLength:SendAssetMessageUseCase.kt$SendAssetMessageUseCaseImpl$prepareAndSendAssetMessage(conversationId, assetRawData.size.toLong(), assetName, assetMimeType, sha256, otrKey, assetId)</ID>
     <ID>MaxLineLength:SendAssetMessageUseCaseTest.kt$SendAssetMessageUseCaseTest$"some VERY long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long asset".toByteArray()</ID>
-    <ID>MaxLineLength:SendCallingMessage.kt$suspend</ID>
-    <ID>MaxLineLength:SendImageMessageUseCase.kt$SendImageMessageUseCaseImpl$prepareAndSendImageMessage(conversationId, imageRawData.size.toLong(), imageName, sha256, otrKey, assetId, imgWidth, imgHeight)</ID>
     <ID>MaxLineLength:SessionEstablisher.kt$SessionEstablisherImpl$private</ID>
     <ID>MaxLineLength:SessionEstablisherTest.kt$SessionEstablisherTest$val cryptoSessionId = CryptoSessionId(CryptoUserID(TEST_USER_ID_1.value, TEST_USER_ID_1.domain), CryptoClientId(clientPreKeyInfo.clientId))</ID>
-    <ID>MaxLineLength:SessionRepository.kt$SessionRepository$// TODO: exposing all session is unnecessary since we only need the IDs of the users getAllSessions(): Either&lt;SessionFailure, List&lt;UserIDs>></ID>
-    <ID>MaxLineLength:TestConversation.kt$TestConversation$val ENTITY = ConversationEntity(ENTITY_ID, "convo name", ConversationEntity.Type.SELF, "teamId", ConversationEntity.ProtocolInfo.Proteus, lastNotificationDate = null, lastModifiedDate = "2022-03-30T15:36:00.000Z")</ID>
-    <ID>MaxLineLength:TestConversation.kt$TestConversation$val GROUP = Conversation(ID.copy(value = "GROUP ID"), "GROUP Name", ConversationEntity.Type.GROUP, TestTeam.TEAM_ID, MutedConversationStatus.AllAllowed, null, null)</ID>
-    <ID>MaxLineLength:TestConversation.kt$TestConversation$val ONE_ON_ONE = Conversation(ID.copy(value = "1O1 ID"), "ONE_ON_ONE Name", ConversationEntity.Type.ONE_ON_ONE, TestTeam.TEAM_ID, MutedConversationStatus.AllAllowed, null, null)</ID>
-    <ID>MaxLineLength:TestConversation.kt$TestConversation$val SELF = Conversation(ID.copy(value = "SELF ID"), "SELF Name", ConversationEntity.Type.SELF, TestTeam.TEAM_ID, MutedConversationStatus.AllAllowed, null, null)</ID>
     <ID>MaxLineLength:TestCredentials.kt$accessToken = "eyJhbGciOiJIUzI1AnwarInR5cCI6IkpXVCJ9.eyJsb2dnZWRJbkFzIjoiYWRtaW4iLCJpYXQiOjE0MjI3Nzk2Mz69.gzSraSYS8EXBxLN_oWnFSRgCzcmJmMjLiuyu5CSpyHI"</ID>
     <ID>MaxLineLength:TestCredentials.kt$refreshToken = "a123bGciOiJIUzI1NiIsInR5cCI6IkpX2fr9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6Ik420G4gRG9lIiwiYWRtaW4iOnRydWV9.TJVA95OrM7E2cBab30RMHrHDcEfxjoYZgeFONFh7HgQ"</ID>
     <ID>MaxLineLength:UserDTO.kt$NewUserDTO$@SerialName("label") val label: String?</ID>
     <ID>MaxLineLength:UserSessionScope.kt$UserSessionScopeCommon$private val preKeyRemoteRepository: PreKeyRemoteRepository get() = PreKeyRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi)</ID>
-    <ID>MaxLineLength:UserSessionScope.kt$UserSessionScopeCommon$val client: ClientScope get() = ClientScope(clientRepository, preKeyRepository, keyPackageRepository, mlsClientProvider,notificationTokenRepository)</ID>
     <ID>MaxLineLength:ValidateUserHandleUseCaseTest.kt$ValidateUserHandleUseCaseTest$fun</ID>
     <ID>MaxLineLength:WrapApiRequestTest.kt$WrapApiRequestTest$val expected = NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "have you tried turning it off and on again?", "server_crash")))</ID>
     <ID>MaxLineLength:messages.kt$1 -> items = (items ?: pbandk.ListWithSize.Builder()).apply { this += _fieldValue as Sequence&lt;com.wire.kalium.protobuf.messages.Composite.Item> }</ID>
@@ -524,9 +492,7 @@
     <ID>PackageNaming:KaliumPreferences.kt$package com.wire.kalium.persistence.kmm_settings</ID>
     <ID>PackageNaming:SaveNotificationTokenUseCase.kt$package com.wire.kalium.logic.feature.notificationToken</ID>
     <ID>PackageNaming:ServerConfigurationDAO.kt$package com.wire.kalium.persistence.dao_kalium_db</ID>
-    <ID>ProtectedMemberInFinalClass:AuthenticationScope.kt$AuthenticationScope$protected val loginNetworkContainer: LoginNetworkContainer by lazy { LoginNetworkContainer() }</ID>
     <ID>ReturnCount:ConversationMapper.kt$ConversationMapperImpl$private fun determineOneToOneUserType(otherUser: OtherUser, selfUser: SelfUser): UserType</ID>
-    <ID>ReturnCount:MessageApiImp.kt$MessageApiImp$override suspend fun sendMessage( parameters: MessageApi.Parameters.DefaultParameters, conversationId: String, option: MessageApi.MessageOption ): NetworkResponse&lt;SendMessageResponse></ID>
     <ID>ReturnCount:NetworkUtils.kt$internal fun String.splitSetCookieHeader(): List&lt;String></ID>
     <ID>ReturnCount:WorkScheduler.kt$WrapperWorker$override suspend fun doWork(): Result</ID>
     <ID>TooGenericExceptionCaught:CoreFailure.kt$e: Exception</ID>
@@ -534,7 +500,6 @@
     <ID>TooGenericExceptionCaught:ProteusClientImpl.kt$ProteusClientImpl$e: Exception</ID>
     <ID>TooGenericExceptionThrown:MainActivity.kt$MainActivity$throw RuntimeException( "There was an error on the login :(" + "Check the credentials and the internet connection and try again" )</ID>
     <ID>TooGenericExceptionThrown:WorkScheduler.kt$WrapperWorkerFactory$throw RuntimeException("No user id was specified")</ID>
-    <ID>TooManyFunctions:CallManagerImpl.kt$CallManagerImpl : CallManagerCallConfigRequestHandlerSFTRequestHandler</ID>
     <ID>TooManyFunctions:Calling.kt$Calling : Library</ID>
     <ID>TooManyFunctions:ConversationDAO.kt$ConversationDAO</ID>
     <ID>TooManyFunctions:ConversationDAOImpl.kt$ConversationDAOImpl : ConversationDAO</ID>
@@ -617,9 +582,6 @@
     <ID>VariableNaming:PublicKey.module_@wireapp_proteus.kt$PublicKey$open var pub_edward: Uint8Array</ID>
     <ID>VariableNaming:SecretKey.module_@wireapp_proteus.kt$SecretKey$open var sec_curve: Uint8Array</ID>
     <ID>VariableNaming:SecretKey.module_@wireapp_proteus.kt$SecretKey$open var sec_edward: Uint8Array</ID>
-    <ID>WildcardImport:AssetApiImpl.kt$import io.ktor.client.*</ID>
-    <ID>WildcardImport:AssetApiImpl.kt$import io.ktor.client.request.*</ID>
-    <ID>WildcardImport:AssetMapper.kt$import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.*</ID>
     <ID>WildcardImport:CRUDEngine.module_@wireapp_store-engine.kt$import kotlin.js.*</ID>
     <ID>WildcardImport:CRUDEngine.module_@wireapp_store-engine.kt$import org.khronos.webgl.*</ID>
     <ID>WildcardImport:CRUDEngine.module_@wireapp_store-engine.kt$import org.w3c.dom.*</ID>
