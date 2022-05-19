@@ -15,7 +15,7 @@ import com.wire.kalium.logic.feature.call.usecase.UpdateVideoStateUseCase
 import com.wire.kalium.logic.sync.SyncManager
 
 class CallsScope(
-    private val callManager: CallManager,
+    private val callManager: Lazy<CallManager>,
     private val callRepository: CallRepository,
     private val flowManagerService: FlowManagerService,
     private val syncManager: SyncManager

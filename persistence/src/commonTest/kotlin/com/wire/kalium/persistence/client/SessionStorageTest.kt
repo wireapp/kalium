@@ -1,5 +1,6 @@
 package com.wire.kalium.persistence.client
 
+import app.cash.turbine.test
 import com.russhwolf.settings.MockSettings
 import com.russhwolf.settings.Settings
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -88,6 +89,9 @@ class SessionDAOTest {
     @Test
     fun givenAUserId_WhenCallingUpdateCurrentSession_ThenItWillBeStoredLocally() = runTest {
         assertNull(sessionStorage.currentSession())
+        sessionStorage.currentSessionFlow().test {
+            assertNull(awaitItem())
+        }
         val session1 =
             PersistenceSession(
                 QualifiedIDEntity("user_id_1", "user_domain_1"),
@@ -112,6 +116,9 @@ class SessionDAOTest {
         sessionStorage.setCurrentSession(QualifiedIDEntity("user_id_1", "user_domain_1"))
 
         assertEquals(session1, sessionStorage.currentSession())
+        sessionStorage.currentSessionFlow().test {
+            assertEquals(session1, awaitItem())
+        }
     }
 
     private companion object {
