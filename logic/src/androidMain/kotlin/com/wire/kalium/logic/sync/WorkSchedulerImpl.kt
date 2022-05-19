@@ -23,7 +23,6 @@ import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.R
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
-import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -143,10 +142,10 @@ class WrapperWorkerFactory(private val coreLogic: CoreLogic) : WorkerFactory() {
     }
 }
 
-actual class WorkScheduler(private val context: Context, private val userId: UserId) : MessageSendingScheduler {
+actual class WorkSchedulerImpl(private val context: Context, private val userId: UserId) : WorkScheduler {
 
     private val workerClass = WrapperWorker::class.java
-    actual fun enqueueImmediateWork(work: KClass<out UserSessionWorker>, name: String) {
+    override fun enqueueImmediateWork(work: KClass<out UserSessionWorker>, name: String) {
         val inputData = WrapperWorkerFactory
             .workData(work, userId)
 
