@@ -121,7 +121,7 @@ class WrapperWorkerFactory(private val coreLogic: CoreLogic) : WorkerFactory() {
     }
 
     private fun createApiVersionCheckWorker(workerParameters: WorkerParameters, appContext: Context): WrapperWorker {
-        val worker = UpdateApiVersionsWorker(coreLogic.apiVersionCheckManager, coreLogic.getAuthenticationScope().updateApiVersions)
+        val worker = UpdateApiVersionsWorker(coreLogic.getAuthenticationScope().updateApiVersions)
         return WrapperWorker(worker, appContext, workerParameters)
     }
 
@@ -219,26 +219,6 @@ actual sealed class WorkScheduler(private val appContext: Context) {
                 "${UpdateApiVersionsWorker.name}-periodic",
                 ExistingPeriodicWorkPolicy.KEEP,
                 requestPeriodicWork
-            )
-        }
-
-        override fun scheduleImmediateApiVersionUpdate() {
-            val inputData = WrapperWorkerFactory.workData(UpdateApiVersionsWorker::class)
-
-            val connectedConstraint = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
-                .build()
-
-            val requestOneTimeWork = OneTimeWorkRequest.Builder(workerClass)
-                .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-                .setConstraints(connectedConstraint)
-                .setInputData(inputData)
-                .build()
-
-            WorkManager.getInstance(appContext).enqueueUniqueWork(
-                "${UpdateApiVersionsWorker.name}-immediate",
-                ExistingWorkPolicy.KEEP,
-                requestOneTimeWork
             )
         }
 
