@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.call.usecase
 
 import app.cash.turbine.test
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.LegalHoldStatus
 import com.wire.kalium.logic.data.conversation.UserType
@@ -40,7 +41,7 @@ class GetIncomingCallsUseCaseTest {
     }
 
     @Test
-    fun givenEmptyCallList_thenEmptyNotificationList() = runTest {
+    fun givenAnEmptyCallList_whenInvokingGetIncomingCallsUseCase_thenEmitsAnEmptyListOfCalls() = runTest {
         given(syncManager).suspendFunction(syncManager::waitForSlowSyncToComplete).whenInvoked().thenReturn(Unit)
         given(callRepository).invocation { incomingCallsFlow() }.then { MutableStateFlow(listOf<Call>()) }
 
@@ -50,7 +51,7 @@ class GetIncomingCallsUseCaseTest {
     }
 
     @Test
-    fun givenCallListNotEmpty_thenNonEmptyNotificationList() = runTest {
+    fun givenNotEmptyCallList_whenInvokingGetIncomingCallsUseCase_thenNonEmptyNotificationList() = runTest {
         given(syncManager).suspendFunction(syncManager::waitForSlowSyncToComplete).whenInvoked().thenReturn(Unit)
         val oneOnOneDetails = ConversationDetails.OneOne(
             TestConversation.ONE_ON_ONE,
@@ -62,8 +63,8 @@ class GetIncomingCallsUseCaseTest {
         given(callRepository).invocation { incomingCallsFlow() }.then {
             MutableStateFlow(
                 listOf<Call>(
-                    Call(TestConversation.id(0), CallStatus.INCOMING, "client1", oneOnOneDetails, null, null),
-                    Call(TestConversation.id(1), CallStatus.INCOMING, "client2", oneOnOneDetails, null, null)
+                    Call(TestConversation.id(0), CallStatus.INCOMING, "client1", "ONE_ON_ONE Name", Conversation.Type.ONE_ON_ONE, null, null),
+                    Call(TestConversation.id(1), CallStatus.INCOMING, "client2", "ONE_ON_ONE Name", Conversation.Type.ONE_ON_ONE, null, null)
                 )
             )
         }

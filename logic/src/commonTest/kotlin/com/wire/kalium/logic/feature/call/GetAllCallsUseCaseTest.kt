@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.call
 
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.LegalHoldStatus
 import com.wire.kalium.logic.data.id.ConversationId
@@ -57,17 +58,19 @@ class GetAllCallsUseCaseTest {
                 ConversationId("first", "domain"),
                 CallStatus.STARTED,
                 "caller-id",
-                ConversationDetails.Group(TestConversation.ONE_ON_ONE, LegalHoldStatus.ENABLED),
-                TestUser.OTHER,
-                Team("team1", "team_1")
+                "ONE_ON_ONE Name",
+                Conversation.Type.ONE_ON_ONE,
+                "otherUsername",
+                "team1"
             ),
             Call(
                 ConversationId("second", "domain"),
                 CallStatus.INCOMING,
                 "caller-id",
-                ConversationDetails.Group(TestConversation.ONE_ON_ONE, LegalHoldStatus.ENABLED),
-                TestUser.OTHER,
-                Team("team2", "team_2")
+                "ONE_ON_ONE Name",
+                Conversation.Type.ONE_ON_ONE,
+                "otherUsername2",
+                "team2"
             )
         )
     }

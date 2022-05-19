@@ -83,7 +83,15 @@ internal class CallDataSource(
         val team = caller?.team
             ?.let { teamId -> teamRepository.getTeam(teamId).first() }
 
-        val call = Call(conversationId, status, callerId, conversation, caller, team)
+        val call = Call(
+            conversationId = conversationId,
+            status = status,
+            callerId = callerId,
+            conversationName = conversation.conversation.name,
+            conversationType = conversation.conversation.type,
+            callerName = caller?.name,
+            callerTeamName = team?.name
+        )
 
         val callProfile = _callProfile.value
         val updatedCalls = callProfile.calls.toMutableMap().apply {

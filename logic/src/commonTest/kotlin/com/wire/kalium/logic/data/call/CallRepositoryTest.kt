@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.call
 
 import app.cash.turbine.test
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.LegalHoldStatus
@@ -229,9 +230,10 @@ class CallRepositoryTest {
         callerId = "caller_id",
         participants = listOf(),
         maxParticipants = 0,
-        conversationDetails = ConversationDetails.Group(TestConversation.ONE_ON_ONE, LegalHoldStatus.ENABLED),
-        caller = TestUser.OTHER,
-        callerTeam = Team("team1", "team_1")
+        conversationName = "ONE_ON_ONE Name",
+        conversationType = Conversation.Type.ONE_ON_ONE,
+        callerName = "otherUsername",
+        callerTeamName = "team_1"
     )
 
     private companion object {
