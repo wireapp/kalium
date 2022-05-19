@@ -1,10 +1,13 @@
 package com.wire.kalium.logic.data.id
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class QualifiedID(
+    @SerialName("id")
     val value: String,
+    @SerialName("domain")
     val domain: String
 ) {
     companion object {

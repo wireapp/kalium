@@ -7,10 +7,10 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class TeamDTO(
-    val creator: String,
-    val icon: AssetId,
-    val name: String,
-    val id: TeamId,
+    @SerialName("creator") val creator: String,
+    @SerialName("icon") val icon: AssetId,
+    @SerialName("name") val name: String,
+    @SerialName("id") val id: TeamId,
     @SerialName("icon_key") val iconKey: AssetId?,
-    val binding: Boolean?
+    @SerialName("binding") val binding: Boolean?
 )
