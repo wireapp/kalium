@@ -42,7 +42,7 @@ class GetIncomingCallsUseCaseTest {
     @Test
     fun givenEmptyCallList_thenEmptyNotificationList() = runTest {
         given(syncManager).suspendFunction(syncManager::waitForSlowSyncToComplete).whenInvoked().thenReturn(Unit)
-        given(callRepository).invocation { getIncomingCalls() }.then { MutableStateFlow(listOf<Call>()) }
+        given(callRepository).invocation { incomingCallsFlow() }.then { MutableStateFlow(listOf<Call>()) }
 
         getIncomingCallsUseCase().test {
             assertTrue(awaitItem().isEmpty())
@@ -59,7 +59,7 @@ class GetIncomingCallsUseCaseTest {
             LegalHoldStatus.ENABLED,
             UserType.INTERNAL,
         )
-        given(callRepository).invocation { getIncomingCalls() }.then {
+        given(callRepository).invocation { incomingCallsFlow() }.then {
             MutableStateFlow(
                 listOf<Call>(
                     Call(TestConversation.id(0), CallStatus.INCOMING, "client1", oneOnOneDetails, null, null),

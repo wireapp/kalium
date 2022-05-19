@@ -1,8 +1,14 @@
 package com.wire.kalium.logic.feature.call
 
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.conversation.ConversationDetails
+import com.wire.kalium.logic.data.conversation.LegalHoldStatus
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.publicuser.model.OtherUser
+import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.feature.call.usecase.GetAllCallsUseCase
+import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncManager
 import io.mockative.Mock
 import io.mockative.classOf
@@ -50,12 +56,18 @@ class GetAllCallsUseCaseTest {
             Call(
                 ConversationId("first", "domain"),
                 CallStatus.STARTED,
-                "caller-id"
+                "caller-id",
+                ConversationDetails.Group(TestConversation.ONE_ON_ONE, LegalHoldStatus.ENABLED),
+                TestUser.OTHER,
+                Team("team1", "team_1")
             ),
             Call(
                 ConversationId("second", "domain"),
                 CallStatus.INCOMING,
-                "caller-id"
+                "caller-id",
+                ConversationDetails.Group(TestConversation.ONE_ON_ONE, LegalHoldStatus.ENABLED),
+                TestUser.OTHER,
+                Team("team2", "team_2")
             )
         )
     }
