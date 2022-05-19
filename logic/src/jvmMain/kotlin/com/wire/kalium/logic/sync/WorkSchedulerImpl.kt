@@ -2,7 +2,6 @@ package com.wire.kalium.logic.sync
 
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
