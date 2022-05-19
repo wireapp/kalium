@@ -23,8 +23,9 @@ class EnforceSerializableFields(config: Config = Config.empty) : Rule(config) {
     override fun visitClassOrObject(kClass: KtClassOrObject) {
         for (superEntry in kClass.annotationEntries) {
             if (superEntry.text?.startsWith(SERIALIZABLE_CLASS_ANNOTATION) == true) {
-                kClass.getValueParameters().forEach { parameter ->
-                    val hasMatchingRequirement = parameter.annotationEntries.any { annotation ->
+                getDeclarationsOfInterestForClass(kClass).forEach { annotatedValue ->
+                    println(annotatedValue.name)
+                    val hasMatchingRequirement = annotatedValue.annotationEntries.any { annotation ->
                         val annotationName = annotation.shortName.toString()
                         annotationName == "SerialName" || annotationName == "Serializable" || annotationName == "Transient"
                     }
@@ -32,7 +33,7 @@ class EnforceSerializableFields(config: Config = Config.empty) : Rule(config) {
                         report(
                             kClass,
                             "The Serializable class '${kClass.name}' declares "
-                                    + "a field '${parameter.name}' without proper Serializable annotation "
+                                    + "a field '${annotatedValue.name}' without proper Serializable annotation "
                                     + "'@SerialName | @Serializable | @Transient'."
                         )
                     }
@@ -40,6 +41,13 @@ class EnforceSerializableFields(config: Config = Config.empty) : Rule(config) {
             }
         }
     }
+
+    private fun getDeclarationsOfInterestForClass(kClass: KtClassOrObject): List<KtAnnotated> =
+        if (kClass is KtClass && kClass.isEnum()) {
+            kClass.declarations.filterIsInstance<KtEnumEntry>()
+        } else {
+            kClass.getValueParameters()
+        }
 
     private fun report(classOrObject: KtClassOrObject, message: String) {
         report(CodeSmell(issue, Entity.atName(classOrObject), message))
