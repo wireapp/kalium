@@ -21,6 +21,7 @@ data class OtherUser(
     val completePicture: UserAssetId?
 ) : User() {
 
+    @Suppress("ReturnCount")
     fun determineUserType(selfUser: SelfUser): UserType {
         if (isUsingWireCloudBackEnd()) {
             if (areNotInTheSameTeam(selfUser)) {
