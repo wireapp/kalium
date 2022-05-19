@@ -6,6 +6,7 @@ import com.wire.kalium.persistence.model.ServerConfigEntity
 import io.ktor.http.Url
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Serializer
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -15,17 +16,17 @@ import kotlinx.serialization.encoding.Encoder
 
 @Serializable
 data class ServerConfig(
-    val id: String,
-    val apiBaseUrl: String,
-    val accountsBaseUrl: String,
-    val webSocketBaseUrl: String,
-    val blackListUrl: String,
-    val teamsUrl: String,
-    val websiteUrl: String,
-    val title: String,
-    val federation: Boolean,
-    @Serializable(with = CommonApiVersionTypeSerializer::class) val commonApiVersion: CommonApiVersionType,
-    val domain: String?
+    @SerialName("id") val id: String,
+    @SerialName("apiBaseUrl") val apiBaseUrl: String,
+    @SerialName("accountsBaseUrl") val accountsBaseUrl: String,
+    @SerialName("webSocketBaseUrl") val webSocketBaseUrl: String,
+    @SerialName("blackListUrl") val blackListUrl: String,
+    @SerialName("teamsUrl") val teamsUrl: String,
+    @SerialName("websiteUrl") val websiteUrl: String,
+    @SerialName("title") val title: String,
+    @SerialName("federation") val federation: Boolean,
+    @SerialName("commonApiVersion") @Serializable(with = CommonApiVersionTypeSerializer::class) val commonApiVersion: CommonApiVersionType,
+    @SerialName("domain") val domain: String?
 ) {
     companion object {
         val PRODUCTION = ServerConfig(
