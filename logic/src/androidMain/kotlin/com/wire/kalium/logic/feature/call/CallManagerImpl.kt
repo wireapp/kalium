@@ -27,7 +27,6 @@ import com.wire.kalium.logic.feature.call.scenario.OnParticipantListChanged
 import com.wire.kalium.logic.feature.call.scenario.OnSFTRequest
 import com.wire.kalium.logic.feature.call.scenario.OnSendOTR
 import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.util.toInt
 import com.wire.kalium.logic.util.toTimeInMillis
 import kotlinx.coroutines.CoroutineScope
@@ -77,8 +76,8 @@ actual class CallManagerImpl(
                 onCallingReady()
             },
             //TODO(refactor): inject all of these CallbackHandlers in class constructor
-            sendHandler = OnSendOTR(deferredHandle, calling, selfUserId, selfClientId, messageSender, this),
-            sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, this),
+            sendHandler = OnSendOTR(deferredHandle, calling, selfUserId, selfClientId, messageSender, scope),
+            sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, scope),
             incomingCallHandler = OnIncomingCall(callRepository),
             missedCallHandler = OnMissedCall(callRepository),
             answeredCallHandler = OnAnsweredCall(callRepository),
@@ -87,7 +86,7 @@ actual class CallManagerImpl(
             metricsHandler = { conversationId: String, metricsJson: String, arg: Pointer? ->
                 callingLogger.i("$TAG -> metricsHandler")
             },
-            callConfigRequestHandler = OnConfigRequest(calling, callRepository, this),
+            callConfigRequestHandler = OnConfigRequest(calling, callRepository, scope),
             constantBitRateStateChangeHandler = { userId: String, clientId: String, isEnabled: Boolean, arg: Pointer? ->
                 callingLogger.i("$TAG -> constantBitRateStateChangeHandler")
             },

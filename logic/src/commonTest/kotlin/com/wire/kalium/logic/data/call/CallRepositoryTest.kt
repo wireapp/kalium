@@ -66,63 +66,63 @@ class CallRepositoryTest {
     }
 
     @Test
-    fun givenEmptyListOfCalls_whenGetAllCallsIsCalled_thenReturnAnEmptyListOfCalls() {
+    fun givenEmptyListOfCalls_whenGetAllCallsIsCalled_thenReturnAnEmptyListOfCalls() = runTest {
         val calls = callRepository.callsFlow()
 
-        assertEquals(0, calls.value.size)
+        assertEquals(0, calls.first().size)
     }
 
     @Test
-    fun givenAListOfCallProfiles_whenGetAllCallsIsCalled_thenReturnAListOfCalls() {
+    fun givenAListOfCallProfiles_whenGetAllCallsIsCalled_thenReturnAListOfCalls() = runTest {
         callRepository.updateCallProfileFlow(CallProfile(mapOfCallProfiles))
 
         val calls = callRepository.callsFlow()
 
-        assertEquals(mapOfCallProfiles.size, calls.value.size)
-        assertTrue(calls.value[0].instanceOf(Call::class))
+        assertEquals(mapOfCallProfiles.size, calls.first().size)
+        assertTrue(calls.first()[0].instanceOf(Call::class))
     }
 
     @Test
-    fun givenACallObject_whenCreateCallCalled_thenAddThatCallToTheFlow() {
+    fun givenACallObject_whenCreateCallCalled_thenAddThatCallToTheFlow() = runTest {
         callRepository.updateCallProfileFlow(CallProfile(mapOf(startedCall.conversationId.toString() to startedCall)))
 
         callRepository.createCall(answeredCall)
 
         val calls = callRepository.callsFlow()
-        assertEquals(2, calls.value.size)
-        assertEquals(calls.value[0], startedCall)
-        assertEquals(calls.value[1], answeredCall)
+        assertEquals(2, calls.first().size)
+        assertEquals(calls.first()[0], startedCall)
+        assertEquals(calls.first()[1], answeredCall)
     }
 
     @Test
-    fun givenACallObjectWithSameConversationIdAsAnotherOneInTheFlow_whenCreateCallCalled_thenReplaceTheCurrent() {
+    fun givenACallObjectWithSameConversationIdAsAnotherOneInTheFlow_whenCreateCallCalled_thenReplaceTheCurrent() = runTest {
         val incomingCall2 = provideCall(sharedConversationId, CallStatus.INCOMING)
         callRepository.updateCallProfileFlow(CallProfile(mapOfCallProfiles))
 
         callRepository.createCall(incomingCall2)
 
         val calls = callRepository.callsFlow()
-        assertEquals(mapOfCallProfiles.size, calls.value.size)
-        assertEquals(calls.value[0], incomingCall2)
+        assertEquals(mapOfCallProfiles.size, calls.first().size)
+        assertEquals(calls.first()[0], incomingCall2)
     }
 
     @Test
-    fun givenAConversationIdThatDoesNotExistsInTheFlow_whenUpdateCallStatusIsCalled_thenDoNotUpdateTheFlow() {
+    fun givenAConversationIdThatDoesNotExistsInTheFlow_whenUpdateCallStatusIsCalled_thenDoNotUpdateTheFlow() = runTest {
         callRepository.updateCallStatusById(randomConversationIdString, CallStatus.INCOMING)
 
         val calls = callRepository.callsFlow()
-        assertEquals(0, calls.value.size)
+        assertEquals(0, calls.first().size)
     }
 
     @Test
-    fun givenAConversationIdThatExistsInTheFlow_whenUpdateCallStatusIsCalled_thenUpdateCallStatusInTheFlow() {
+    fun givenAConversationIdThatExistsInTheFlow_whenUpdateCallStatusIsCalled_thenUpdateCallStatusInTheFlow() = runTest {
         callRepository.updateCallProfileFlow(CallProfile(mapOfCallProfiles))
 
         callRepository.updateCallStatusById(startedCall.conversationId.toString(), CallStatus.ESTABLISHED)
 
         val calls = callRepository.callsFlow()
-        assertEquals(mapOfCallProfiles.size, calls.value.size)
-        assertEquals(calls.value[0].status, CallStatus.ESTABLISHED)
+        assertEquals(mapOfCallProfiles.size, calls.first().size)
+        assertEquals(calls.first()[0].status, CallStatus.ESTABLISHED)
     }
 
     @Test
