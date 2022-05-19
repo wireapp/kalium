@@ -35,13 +35,13 @@ class WrapperWorker(private val innerWorker: UserSessionWorker, appContext: Cont
     override suspend fun doWork(): Result {
         return when (innerWorker.doWork()) {
             is com.wire.kalium.logic.sync.Result.Success -> {
-                return Result.success()
+                Result.success()
             }
             is com.wire.kalium.logic.sync.Result.Failure -> {
-                return Result.failure()
+                Result.failure()
             }
             is com.wire.kalium.logic.sync.Result.Retry -> {
-                return Result.retry()
+                Result.retry()
             }
         }
     }
