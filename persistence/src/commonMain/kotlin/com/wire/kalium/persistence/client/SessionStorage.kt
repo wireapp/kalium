@@ -4,6 +4,12 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.model.PersistenceSession
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.serialization.Serializable
 import kotlin.jvm.JvmInline
 
@@ -22,6 +28,11 @@ interface SessionStorage {
      * returns the current active user session
      */
     fun currentSession(): PersistenceSession?
+
+    /**
+     * returns the Flow of current active user session
+     */
+    fun currentSessionFlow(): Flow<PersistenceSession?>
 
     /**
      * changes the current active user session
@@ -47,6 +58,9 @@ interface SessionStorage {
 class SessionStorageImpl(
     private val kaliumPreferences: KaliumPreferences
 ) : SessionStorage {
+
+    private val sessionsUpdatedFlow = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
     override fun addSession(persistenceSession: PersistenceSession) =
         allSessions()?.let { sessionMap ->
             val temp = sessionMap.toMutableMap()
@@ -55,13 +69,14 @@ class SessionStorageImpl(
         } ?: run {
             val sessions = mapOf(persistenceSession.userId to persistenceSession)
             saveAllSessions(SessionsMap(sessions))
-        }
+        }.also { sessionsUpdatedFlow.tryEmit(Unit) }
 
     override fun deleteSession(userId: UserIDEntity) =
         allSessions()?.let { sessionMap ->
             // save the new map if the remove did not return null (session was deleted)
             val temp = sessionMap.toMutableMap()
             temp.remove(userId)?.let {
+                sessionsUpdatedFlow.tryEmit(Unit)
                 if (temp.isEmpty()) {
                     // in case it was the last session then delete sessions key/value from the file
                     removeAllSession()
@@ -83,18 +98,22 @@ class SessionStorageImpl(
             }
         }
 
+    override fun currentSessionFlow(): Flow<PersistenceSession?> = sessionsUpdatedFlow
+        .map { currentSession() }
+        .onStart { emit(currentSession()) }
+        .distinctUntilChanged()
 
     override fun setCurrentSession(userId: UserIDEntity) =
         kaliumPreferences.putSerializable(CURRENT_SESSION_KEY, userId, UserIDEntity.serializer())
+            .also { sessionsUpdatedFlow.tryEmit(Unit) }
 
     override fun allSessions(): Map<UserIDEntity, PersistenceSession>? =
-        kaliumPreferences.getSerializable(SESSIONS_KEY, SessionsMap.serializer())?.s
+        kaliumPreferences.getSerializable(SESSIONS_KEY, SessionsMap.serializer())?.s?.ifEmpty { null }
 
     override fun userSession(userId: UserIDEntity): PersistenceSession? =
         allSessions()?.let { sessionMap ->
             sessionMap[userId]
         }
-
 
     override fun sessionsExist(): Boolean = kaliumPreferences.hasValue(SESSIONS_KEY)
 

@@ -39,6 +39,7 @@ object Versions {
     const val mlsClient = "0.2.1"
     const val desugarJdk = "1.1.5"
     const val kermit = "1.0.0"
+    const val detekt = "1.19.0"
 }
 
 object Plugins {
@@ -162,6 +163,12 @@ object Dependencies {
         const val mockative = "io.mockative:mockative:${Versions.mockative}"
         const val mockativeProcessor = "io.mockative:mockative-processor:${Versions.mockative}"
         const val turbine = "app.cash.turbine:turbine:${Versions.turbine}"
+    }
+
+    object Detekt {
+        const val detektCli = "io.gitlab.arturbosch.detekt:detekt-cli:${Versions.detekt}"
+        const val detektApi = "io.gitlab.arturbosch.detekt:detekt-api:${Versions.detekt}"
+        const val detektTest = "io.gitlab.arturbosch.detekt:detekt-test:${Versions.detekt}"
     }
 
     object Protobuf {
