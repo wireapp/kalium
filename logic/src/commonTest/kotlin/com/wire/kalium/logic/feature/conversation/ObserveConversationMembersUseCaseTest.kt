@@ -4,6 +4,7 @@ import app.cash.turbine.test
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.conversation.MemberDetails
+import com.wire.kalium.logic.data.conversation.UserType
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
@@ -160,8 +161,8 @@ class ObserveConversationMembersUseCaseTest {
             .thenReturn(flowOf(members))
 
         observeConversationMembers(conversationID).test {
-            assertContentEquals(listOf(MemberDetails.Other(firstOtherUser)), awaitItem())
-            assertContentEquals(listOf(MemberDetails.Other(secondOtherUser)), awaitItem())
+            assertContentEquals(listOf(MemberDetails.Other(firstOtherUser,UserType.GUEST)), awaitItem())
+            assertContentEquals(listOf(MemberDetails.Other(secondOtherUser,UserType.GUEST)), awaitItem())
             awaitComplete()
         }
     }
@@ -190,10 +191,10 @@ class ObserveConversationMembersUseCaseTest {
 
         observeConversationMembers(conversationID).test {
             membersListChannel.send(listOf(Member(otherUser.id)))
-            assertContentEquals(listOf(MemberDetails.Other(otherUser)), awaitItem())
+            assertContentEquals(listOf(MemberDetails.Other(otherUser,UserType.GUEST)), awaitItem())
 
             membersListChannel.send(listOf(Member(otherUser.id), Member(selfUser.id)))
-            assertContentEquals(listOf(MemberDetails.Other(otherUser), MemberDetails.Self(selfUser)), awaitItem())
+            assertContentEquals(listOf(MemberDetails.Other(otherUser,UserType.GUEST), MemberDetails.Self(selfUser)), awaitItem())
 
             membersListChannel.close()
             awaitComplete()
