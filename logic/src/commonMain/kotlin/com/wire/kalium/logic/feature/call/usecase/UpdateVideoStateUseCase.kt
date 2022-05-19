@@ -4,9 +4,9 @@ import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.CallManager
 
-class UpdateVideoStateUseCase(private val callManager: CallManager) {
+class UpdateVideoStateUseCase(private val callManager: Lazy<CallManager>) {
 
     suspend operator fun invoke(conversationId: ConversationId, videoState: VideoState) {
-        callManager.updateVideoState(conversationId, videoState)
+        callManager.value.updateVideoState(conversationId, videoState)
     }
 }
