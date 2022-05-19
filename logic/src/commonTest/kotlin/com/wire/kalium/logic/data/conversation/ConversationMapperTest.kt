@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.UserTypeMapper
 import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.conversation.ConvProtocol
@@ -33,13 +34,16 @@ class ConversationMapperTest {
     val idMapper = mock(classOf<IdMapper>())
 
     @Mock
+    val userTypeMapper = mock(classOf<UserTypeMapper>())
+
+    @Mock
     val conversationStatusMapper = mock(classOf<ConversationStatusMapper>())
 
     private lateinit var conversationMapper: ConversationMapper
 
     @BeforeTest
     fun setup() {
-        conversationMapper = ConversationMapperImpl(idMapper, conversationStatusMapper)
+        conversationMapper = ConversationMapperImpl(idMapper, conversationStatusMapper, userTypeMapper)
     }
 
     @Test
@@ -159,6 +163,11 @@ class ConversationMapperTest {
         val commonTeam = "commonTeam"
         val selfUser = generateTestSelfUser(commonDomain, commonTeam)
         val otherUser = generateTestOtherUser(commonDomain, commonTeam)
+
+        given(userTypeMapper)
+            .function(userTypeMapper::fromOtherUserAndSelfUser)
+            .whenInvokedWith(any(), any())
+            .thenReturn(UserType.GUEST)
         //when
         val result = conversationMapper.toConversationDetailsOneToOne(TEST_CONVERSATION, otherUser, selfUser)
         //then
@@ -172,6 +181,11 @@ class ConversationMapperTest {
 
         val selfUser = generateTestSelfUser("domainA", commonTeam)
         val otherUser = generateTestOtherUser("domainB", commonTeam)
+
+        given(userTypeMapper)
+            .function(userTypeMapper::fromOtherUserAndSelfUser)
+            .whenInvokedWith(any(), any())
+            .thenReturn(UserType.GUEST)
         //when
         val result = conversationMapper.toConversationDetailsOneToOne(TEST_CONVERSATION, otherUser, selfUser)
         //then
@@ -185,6 +199,11 @@ class ConversationMapperTest {
 
         val selfUser = generateTestSelfUser(commonDomain, "teamA")
         val otherUser = generateTestOtherUser(commonDomain, "teamB")
+
+        given(userTypeMapper)
+            .function(userTypeMapper::fromOtherUserAndSelfUser)
+            .whenInvokedWith(any(), any())
+            .thenReturn(UserType.GUEST)
         //when
         val result = conversationMapper.toConversationDetailsOneToOne(TEST_CONVERSATION, otherUser, selfUser)
         //then
@@ -196,6 +215,11 @@ class ConversationMapperTest {
         //given
         val selfUser = generateTestSelfUser("domainA", "teamA")
         val otherUser = generateTestOtherUser("domainB", "teamB")
+
+        given(userTypeMapper)
+            .function(userTypeMapper::fromOtherUserAndSelfUser)
+            .whenInvokedWith(any(), any())
+            .thenReturn(UserType.GUEST)
         //when
         val result = conversationMapper.toConversationDetailsOneToOne(TEST_CONVERSATION, otherUser, selfUser)
         //then

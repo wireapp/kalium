@@ -4,6 +4,7 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.UserTypeMapper
 import com.wire.kalium.network.api.conversation.ConvProtocol
 import com.wire.kalium.network.api.conversation.ConvTeamInfo
 import com.wire.kalium.network.api.conversation.ConversationResponse
@@ -29,7 +30,9 @@ interface ConversationMapper {
 }
 
 internal class ConversationMapperImpl(
-    private val idMapper: IdMapper, private val conversationStatusMapper: ConversationStatusMapper
+    private val idMapper: IdMapper,
+    private val conversationStatusMapper: ConversationStatusMapper,
+    private val userTypeMapper: UserTypeMapper,
 ) : ConversationMapper {
 
     override fun fromApiModelToDaoModel(
@@ -84,7 +87,7 @@ internal class ConversationMapperImpl(
             connectionState = otherUser.connectionStatus,
             //TODO(user-metadata) get actual legal hold status
             legalHoldStatus = LegalHoldStatus.DISABLED,
-            userType = otherUser.determineUserType(selfUser)
+            userType = userTypeMapper.fromOtherUserAndSelfUser(otherUser, selfUser)
         )
     }
 
