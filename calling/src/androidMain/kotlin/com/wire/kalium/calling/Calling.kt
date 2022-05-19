@@ -59,8 +59,6 @@ interface Calling : Library {
 
     fun wcall_end(inst: Handle, conversationId: String)
 
-    fun wcall_close()
-
     fun wcall_set_mute(inst: Handle, muted: Int)
 
     fun wcall_sft_resp(

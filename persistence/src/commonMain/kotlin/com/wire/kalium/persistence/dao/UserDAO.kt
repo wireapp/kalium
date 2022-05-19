@@ -56,13 +56,19 @@ interface UserDAO {
     suspend fun insertUser(user: UserEntity)
     suspend fun insertUsers(users: List<UserEntity>)
     suspend fun updateUser(user: UserEntity)
+    suspend fun updateUsers(users: List<UserEntity>)
     suspend fun getAllUsers(): Flow<List<UserEntity>>
     suspend fun getAllUsersByConnectionStatus(connectionState: UserEntity.ConnectionState): List<UserEntity>
     suspend fun getUserByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserEntity?>
     suspend fun getUserByNameOrHandleOrEmailAndConnectionState(
         searchQuery: String,
         connectionState: UserEntity.ConnectionState
-    ): Flow<List<UserEntity>>
+    ): List<UserEntity>
+
+    suspend fun getUserByHandleAndConnectionState(
+        handle: String,
+        connectionState: UserEntity.ConnectionState
+    ) : List<UserEntity>
 
     suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity)
     suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String)

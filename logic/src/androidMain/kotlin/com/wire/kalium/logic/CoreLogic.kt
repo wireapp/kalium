@@ -5,6 +5,7 @@ import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.ProteusClientImpl
 import com.wire.kalium.logic.data.session.SessionDataSource
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.sync.InMemorySyncRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.UserSessionScopeProvider
 import com.wire.kalium.logic.di.UserSessionScopeProviderImpl
@@ -55,7 +56,7 @@ actual class CoreLogic(
             runBlocking { proteusClient.open() }
 
             val userSessionWorkScheduler = WorkScheduler.UserSession(appContext, userId)
-            val syncManager = SyncManagerImpl(userSessionWorkScheduler)
+            val syncManager = SyncManagerImpl(userSessionWorkScheduler, InMemorySyncRepository())
 
             val userIDEntity = idMapper.toDaoModel(userId)
             val encryptedSettingsHolder =
