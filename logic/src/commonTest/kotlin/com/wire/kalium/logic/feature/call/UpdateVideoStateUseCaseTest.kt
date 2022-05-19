@@ -24,7 +24,7 @@ class UpdateVideoStateUseCaseTest {
 
     @BeforeTest
     fun setup() {
-        updateVideoStateUseCase = UpdateVideoStateUseCase(callManager)
+        updateVideoStateUseCase = UpdateVideoStateUseCase(lazy { callManager })
     }
 
     @Test
