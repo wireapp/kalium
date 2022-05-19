@@ -47,9 +47,9 @@ internal class AuthenticatedNetworkClient(engine: HttpClientEngine, sessionManag
  * needed configurations to talk with a Wire backend, like
  * Serialization, and Content Negotiation.
  */
-internal class UnauthenticatedNetworkClient(engine: HttpClientEngine) {
-    // TODO: Make it so it has a base URL
-    val httpClient: HttpClient = provideBaseHttpClient(engine, HttpClientOptions.NoDefaultHost)
+internal class UnauthenticatedNetworkClient(engine: HttpClientEngine, serverConfigDTO: ServerConfigDTO) {
+    val httpClient: HttpClient =
+        provideBaseHttpClient(engine, HttpClientOptions.DefaultHost(serverConfigDTO))
 }
 
 /**
@@ -89,6 +89,7 @@ internal class AuthenticatedWebSocketClient(
 }
 
 internal sealed class HttpClientOptions {
+    @Deprecated("use either UnauthenticatedWireClient or ExternalClient")
     object NoDefaultHost : HttpClientOptions()
     data class DefaultHost(val serverConfigDTO: ServerConfigDTO) : HttpClientOptions()
 }
@@ -117,14 +118,12 @@ internal fun provideBaseHttpClient(
         when (options) {
             HttpClientOptions.NoDefaultHost -> {/* do nothing */
             }
-
             is HttpClientOptions.DefaultHost -> {
                 with(options.serverConfigDTO) {
                     // enforce https as url protocol
                     url.protocol = URLProtocol.HTTPS
                     // add the default host
                     url.host = apiBaseUrl.host
-
                     // for api version 0 no api version should be added to the request
                     url.encodedPath =
                         if (shouldAddApiVersion(apiVersion)) apiBaseUrl.encodedPath + "v${apiVersion}/"

@@ -10,7 +10,6 @@ import com.wire.kalium.network.utils.CustomErrors
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap
 import com.wire.kalium.network.utils.mapSuccess
-import com.wire.kalium.network.utils.setUrl
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.header
 import io.ktor.client.request.post
@@ -127,8 +126,7 @@ class RegisterApiImpl internal constructor(
     private val httpClient get() = unauthenticatedNetworkClient.httpClient
 
     private suspend fun getToken(refreshToken: String, apiBaseUrl: String): NetworkResponse<AccessTokenDTO> = wrapKaliumResponse {
-        httpClient.post {
-            setUrl(apiBaseUrl, PATH_ACCESS)
+        httpClient.post(PATH_ACCESS) {
             header(HttpHeaders.Cookie, "${RefreshTokenProperties.COOKIE_NAME}=$refreshToken")
         }
     }
@@ -136,8 +134,7 @@ class RegisterApiImpl internal constructor(
     override suspend fun register(
         param: RegisterApi.RegisterParam, apiBaseUrl: String
     ): NetworkResponse<Pair<UserDTO, SessionDTO>> = wrapKaliumResponse<UserDTO> {
-        httpClient.post {
-            setUrl(apiBaseUrl, REGISTER_PATH)
+        httpClient.post(REGISTER_PATH) {
             setBody(param.toBody())
         }
     }.flatMap { registerResponse ->
@@ -156,15 +153,13 @@ class RegisterApiImpl internal constructor(
     override suspend fun requestActivationCode(
         param: RegisterApi.RequestActivationCodeParam, apiBaseUrl: String
     ): NetworkResponse<Unit> = wrapKaliumResponse {
-        httpClient.post {
-            setUrl(apiBaseUrl, ACTIVATE_PATH, SEND_PATH)
+        httpClient.post("$ACTIVATE_PATH/$SEND_PATH") {
             setBody(param.toBody())
         }
     }
 
     override suspend fun activate(param: RegisterApi.ActivationParam, apiBaseUrl: String): NetworkResponse<Unit> = wrapKaliumResponse {
-        httpClient.post {
-            setUrl(apiBaseUrl, ACTIVATE_PATH)
+        httpClient.post(ACTIVATE_PATH) {
             setBody(param.toBody())
         }
     }
