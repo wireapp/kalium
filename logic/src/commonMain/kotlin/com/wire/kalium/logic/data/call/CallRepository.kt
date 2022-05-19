@@ -45,7 +45,7 @@ internal class CallDataSource(
         _callProfile.value = callProfile
     }
 
-    override fun callsFlow(): Flow<List<Call>> = _callProfile.map {
+    override fun callsFlow(): Flow<List<Call>> = allCalls.map {
                 it.calls.values.toList()
     }
 
