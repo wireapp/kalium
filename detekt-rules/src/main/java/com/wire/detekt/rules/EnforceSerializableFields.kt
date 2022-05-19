@@ -7,7 +7,7 @@ import io.gitlab.arturbosch.detekt.api.Entity
 import io.gitlab.arturbosch.detekt.api.Issue
 import io.gitlab.arturbosch.detekt.api.Rule
 import io.gitlab.arturbosch.detekt.api.Severity
-import org.jetbrains.kotlin.psi.KtAnnotated
+import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtEnumEntry
@@ -26,7 +26,7 @@ class EnforceSerializableFields(config: Config = Config.empty) : Rule(config) {
 
     override fun visitClassOrObject(kClass: KtClassOrObject) {
         for (superEntry in kClass.annotationEntries) {
-            if (superEntry.text?.startsWith(SERIALIZABLE_CLASS_ANNOTATION) == true) {
+            if (isSerializableAnnotationWithoutArgs(superEntry)) {
                 getDeclarationsOfInterestForClass(kClass).forEach { annotatedValue ->
                     val hasMatchingRequirement = annotatedValue.annotationEntries.any { annotation ->
                         val annotationName = annotation.shortName.toString()
@@ -45,18 +45,17 @@ class EnforceSerializableFields(config: Config = Config.empty) : Rule(config) {
         }
     }
 
-    private fun getDeclarationsOfInterestForClass(kClass: KtClassOrObject): List<KtAnnotated> {
-        return if (kClass is KtClass && kClass.isEnum()) {
-            if (kClass.annotationEntries.firstOrNull()?.getValueArgumentsInParentheses()?.isNotEmpty() == true) {
-                println("Ignoring internal entries for [${kClass.name}] since it has a custom [KSerializer] implementation")
-                emptyList()
-            } else {
-                kClass.declarations.filterIsInstance<KtEnumEntry>()
-            }
+    private fun getDeclarationsOfInterestForClass(kClass: KtClassOrObject) =
+        if (kClass is KtClass && kClass.isEnum()) {
+            kClass.declarations.filterIsInstance<KtEnumEntry>()
         } else {
             kClass.getValueParameters()
         }
-    }
+
+
+    private fun isSerializableAnnotationWithoutArgs(ktAnnotationEntry: KtAnnotationEntry) =
+        ktAnnotationEntry.text?.startsWith(SERIALIZABLE_CLASS_ANNOTATION) == true &&
+                ktAnnotationEntry.getValueArgumentsInParentheses().isEmpty()
 
     private fun report(classOrObject: KtClassOrObject, message: String) {
         report(CodeSmell(issue, Entity.atName(classOrObject), message))
