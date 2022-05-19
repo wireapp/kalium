@@ -21,9 +21,6 @@ data class OtherUser(
     val completePicture: UserAssetId?
 ) : User() {
 
-    private fun isUsingWireCloudBackEnd(): Boolean =
-        id.domain.contains(QualifiedID.WIRE_PRODUCTION_DOMAIN)
-
     fun determineUserType(selfUser: SelfUser): UserType {
         if (isUsingWireCloudBackEnd()) {
             if (areNotInTheSameTeam(selfUser)) {
@@ -38,10 +35,12 @@ data class OtherUser(
         return UserType.INTERNAL
     }
 
+    private fun isUsingWireCloudBackEnd(): Boolean =
+        id.domain.contains(QualifiedID.WIRE_PRODUCTION_DOMAIN)
+
     // if either self user has no team or other user,
     // does not make sense to compare them and we return false as of they are not on the same team
     private fun areNotInTheSameTeam(selfUser: SelfUser): Boolean =
         !(this.team != null && selfUser.team != null) || (this.team != selfUser.team)
-
 
 }
