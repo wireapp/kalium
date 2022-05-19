@@ -11,9 +11,9 @@ import kotlin.reflect.KClass
 
 
 @OptIn(DelicateCoroutinesApi::class)
-actual sealed class WorkScheduler {
+actual sealed class WorkSchedulerImpl : WorkScheduler {
 
-    actual fun enqueueImmediateWork(work: KClass<out DefaultWorker>, name: String) {
+    override fun enqueueImmediateWork(work: KClass<out DefaultWorker>, name: String) {
         GlobalScope.launch {
             val constructor = work.java.getDeclaredConstructor()
             val worker = constructor.newInstance() as DefaultWorker
@@ -23,7 +23,7 @@ actual sealed class WorkScheduler {
 
     actual class Global(
         private val coreLogic: CoreLogic
-    ) : WorkScheduler(), UpdateApiVersionsScheduler {
+    ) : WorkSchedulerImpl(), GlobalWorkScheduler {
 
         override fun schedulePeriodicApiVersionUpdate() {
             kaliumLogger.w(
@@ -34,8 +34,8 @@ actual sealed class WorkScheduler {
 
     actual class UserSession(
         private val coreLogic: CoreLogic,
-        actual val userId: UserId
-    ) : WorkScheduler(), MessageSendingScheduler, SlowSyncScheduler {
+        override val userId: UserId
+    ) : WorkSchedulerImpl(), UserSessionWorkScheduler {
 
         override fun scheduleSlowSync() {
             GlobalScope.launch {

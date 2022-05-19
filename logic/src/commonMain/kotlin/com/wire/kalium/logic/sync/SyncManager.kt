@@ -12,7 +12,7 @@ interface SyncManager {
 }
 
 class SyncManagerImpl(
-    private val userSessionWorkScheduler: WorkScheduler.UserSession,
+    private val userSessionWorkScheduler: UserSessionWorkScheduler,
     private val syncRepository: SyncRepository
 ) : SyncManager {
 
