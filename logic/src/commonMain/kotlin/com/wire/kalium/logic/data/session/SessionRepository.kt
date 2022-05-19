@@ -10,6 +10,8 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.client.SessionStorage
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 interface SessionRepository {
     fun storeSession(autSession: AuthSession): Either<StorageFailure, Unit>
@@ -21,6 +23,7 @@ interface SessionRepository {
     fun doesSessionExist(userId: UserId): Either<StorageFailure, Boolean>
     fun updateCurrentSession(userId: UserId): Either<StorageFailure, Unit>
     fun currentSession(): Either<StorageFailure, AuthSession>
+    fun currentSessionFlow(): Flow<Either<StorageFailure, AuthSession>>
     fun deleteSession(userId: UserId): Either<StorageFailure, Unit>
 }
 
@@ -65,6 +68,10 @@ internal class SessionDataSource(
     override fun currentSession(): Either<StorageFailure, AuthSession> =
         wrapStorageRequest { sessionStorage.currentSession() }.map { sessionMapper.fromPersistenceSession(it) }
 
+    override fun currentSessionFlow(): Flow<Either<StorageFailure, AuthSession>> =
+        sessionStorage.currentSessionFlow()
+            .wrapStorageRequest()
+            .map { it.map { sessionMapper.fromPersistenceSession(it) } }
 
     override fun deleteSession(userId: UserId): Either<StorageFailure, Unit> =
         idMapper.toDaoModel(userId).let { userIdEntity ->
