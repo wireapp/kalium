@@ -25,8 +25,8 @@ class EnforceSerializableFields(config: Config = Config.empty) : Rule(config) {
     )
 
     override fun visitClassOrObject(kClass: KtClassOrObject) {
-        for (superEntry in kClass.annotationEntries) {
-            if (isSerializableAnnotationWithoutArgs(superEntry)) {
+        for (ktAnnotationEntry in kClass.annotationEntries) {
+            if (isSerializableAnnotationWithoutArgs(ktAnnotationEntry)) {
                 getDeclarationsOfInterestForClass(kClass).forEach { annotatedValue ->
                     val hasMatchingRequirement = annotatedValue.annotationEntries.any { annotation ->
                         val annotationName = annotation.shortName.toString()
