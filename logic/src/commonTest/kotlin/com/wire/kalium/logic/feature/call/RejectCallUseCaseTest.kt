@@ -24,7 +24,7 @@ class RejectCallUseCaseTest {
 
     @BeforeTest
     fun setup() {
-        rejectCallUseCase = RejectCallUseCase(callManager)
+        rejectCallUseCase = RejectCallUseCase(lazy{ callManager })
     }
 
     @Test
