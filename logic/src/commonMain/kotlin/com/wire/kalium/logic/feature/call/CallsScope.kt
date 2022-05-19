@@ -15,36 +15,36 @@ import com.wire.kalium.logic.sync.SyncManager
 class CallsScope(
     private val callManager: Lazy<CallManager>,
     private val callRepository: CallRepository,
-    private val syncManager: Lazy<SyncManager>
+    private val syncManager: SyncManager
 ) {
 
     val allCalls: GetAllCallsUseCase
         get() = GetAllCallsUseCase(
             callRepository = callRepository,
-            syncManager = syncManager.value
+            syncManager = syncManager
         )
 
     val onGoingCall: GetOngoingCallUseCase
         get() = GetOngoingCallUseCase(
             callRepository = callRepository,
-            syncManager = syncManager.value
+            syncManager = syncManager
         )
 
     val getIncomingCalls: GetIncomingCallsUseCase
         get() = GetIncomingCallsUseCaseImpl(
             callRepository = callRepository,
-            syncManager = syncManager.value
+            syncManager = syncManager
         )
 
-    val startCall: StartCallUseCase get() = StartCallUseCase(callManager.value)
+    val startCall: StartCallUseCase get() = StartCallUseCase(callManager)
 
-    val answerCall: AnswerCallUseCase get() = AnswerCallUseCaseImpl(callManager.value)
+    val answerCall: AnswerCallUseCase get() = AnswerCallUseCaseImpl(callManager)
 
-    val endCall: EndCallUseCase get() = EndCallUseCase(callManager.value)
+    val endCall: EndCallUseCase get() = EndCallUseCase(callManager)
 
-    val rejectCall: RejectCallUseCase get() = RejectCallUseCase(callManager.value)
+    val rejectCall: RejectCallUseCase get() = RejectCallUseCase(callManager)
 
-    val muteCall: MuteCallUseCase get() = MuteCallUseCase(callManager.value)
+    val muteCall: MuteCallUseCase get() = MuteCallUseCase(callManager)
 
-    val unMuteCall: UnMuteCallUseCase get() = UnMuteCallUseCase(callManager.value)
+    val unMuteCall: UnMuteCallUseCase get() = UnMuteCallUseCase(callManager)
 }

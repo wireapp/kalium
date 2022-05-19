@@ -7,7 +7,7 @@ import com.wire.kalium.logic.sync.SyncManager
 class TeamScope(
     private val userRepository: UserRepository,
     private val teamRepository: TeamRepository,
-    private val syncManager: Lazy<SyncManager>,
+    private val syncManager: SyncManager,
 ) {
     internal val syncSelfTeamUseCase: SyncSelfTeamUseCase get() = SyncSelfTeamUseCaseImpl(
         userRepository = userRepository,
@@ -17,6 +17,6 @@ class TeamScope(
     val getSelfTeamUseCase: GetSelfTeamUseCase get() = GetSelfTeamUseCase(
         userRepository = userRepository,
         teamRepository = teamRepository,
-        syncManager = syncManager.value
+        syncManager = syncManager
     )
 }

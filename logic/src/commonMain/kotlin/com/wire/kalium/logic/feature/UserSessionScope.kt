@@ -217,7 +217,7 @@ abstract class UserSessionScopeCommon(
 
     private val syncRepository: SyncRepository by lazy { InMemorySyncRepository() }
 
-    val syncManager: Lazy<SyncManager> = lazy {
+    val syncManager: SyncManager by lazy {
         SyncManagerImpl(
             authenticatedDataSourceSet.workScheduler,
             eventRepository,
@@ -275,9 +275,9 @@ abstract class UserSessionScopeCommon(
 
     private val logoutRepository: LogoutRepository = LogoutDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi)
     val listenToEvents: ListenToEventsUseCase
-        get() = ListenToEventsUseCase(syncManager.value)
+        get() = ListenToEventsUseCase(syncManager)
     val syncPendingEvents: SyncPendingEventsUseCase
-        get() = SyncPendingEventsUseCase(syncManager.value)
+        get() = SyncPendingEventsUseCase(syncManager)
     val client: ClientScope
         get() = ClientScope(
             clientRepository,

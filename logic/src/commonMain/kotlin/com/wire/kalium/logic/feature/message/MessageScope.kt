@@ -32,7 +32,7 @@ class MessageScope(
     private val preKeyRepository: PreKeyRepository,
     private val userRepository: UserRepository,
     private val assetRepository: AssetRepository,
-    private val syncManager: Lazy<SyncManager>,
+    private val syncManager: SyncManager,
     private val messageSendingScheduler: MessageSendingScheduler,
     private val timeParser: TimeParser,
 ) {
@@ -73,7 +73,7 @@ class MessageScope(
             messageRepository,
             userRepository,
             clientRepository,
-            syncManager.value,
+            syncManager,
             messageSender
         )
 
@@ -108,7 +108,7 @@ class MessageScope(
             messageRepository,
             userRepository,
             clientRepository,
-            syncManager.value,
+            syncManager,
             messageSender,
             idMapper
         )

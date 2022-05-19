@@ -19,8 +19,8 @@ class SlowSyncWorker(
             .flatMap { userSessionScope.connection.syncConnections() }
             .flatMap { userSessionScope.team.syncSelfTeamUseCase() }
             .flatMap { userSessionScope.users.syncContacts() }
-            .onSuccess { userSessionScope.syncManager.value.onSlowSyncComplete() }
-            .onFailure { userSessionScope.syncManager.value.onSlowSyncFailure(it) }
+            .onSuccess { userSessionScope.syncManager.onSlowSyncComplete() }
+            .onFailure { userSessionScope.syncManager.onSlowSyncFailure(it) }
 
         return when (result) {
             is Either.Left -> {
