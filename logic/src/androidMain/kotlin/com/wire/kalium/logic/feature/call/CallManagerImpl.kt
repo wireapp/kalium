@@ -77,8 +77,8 @@ actual class CallManagerImpl(
                 onCallingReady()
             },
             //TODO(refactor): inject all of these CallbackHandlers in class constructor
-            sendHandler = OnSendOTR(deferredHandle, calling, selfUserId, selfClientId, messageSender, this),
-            sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, this),
+            sendHandler = OnSendOTR(deferredHandle, calling, selfUserId, selfClientId, messageSender, scope),
+            sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, scope),
             incomingCallHandler = OnIncomingCall(callRepository),
             missedCallHandler = OnMissedCall(callRepository),
             answeredCallHandler = OnAnsweredCall(callRepository),
@@ -87,7 +87,7 @@ actual class CallManagerImpl(
             metricsHandler = { conversationId: String, metricsJson: String, arg: Pointer? ->
                 callingLogger.i("$TAG -> metricsHandler")
             },
-            callConfigRequestHandler = OnConfigRequest(calling, callRepository, this),
+            callConfigRequestHandler = OnConfigRequest(calling, callRepository, scope),
             constantBitRateStateChangeHandler = { userId: String, clientId: String, isEnabled: Boolean, arg: Pointer? ->
                 callingLogger.i("$TAG -> constantBitRateStateChangeHandler")
             },

@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.call
 
+import app.cash.turbine.test
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.usecase.GetAllCallsUseCase
@@ -8,8 +9,7 @@ import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -34,29 +34,35 @@ class GetAllCallsUseCaseTest {
     }
 
     @Test
-    fun givenAFlowOfCalls_whenUseCaseInvoked_thenReturnThatFlow() = runTest {
+    fun givenCallsFlowEmitsANewValue_whenUseCaseIsCollected_thenAssertThatTheUseCaseIsEmittingTheRightCalls() = runTest {
+        val calls1 = listOf(call1, call2)
+        val calls2 = listOf(call2)
+
+        val callsFlow = flowOf(calls1, calls2)
         given(syncManager).coroutine { waitForSyncToComplete() }
             .thenReturn(Unit)
         given(callRepository).invocation { callsFlow() }
-            .then { MutableStateFlow(calls) }
+            .then { callsFlow }
 
         val result = getAllCallsUseCase()
 
-        assertEquals(calls, result.first())
+        result.test {
+            assertEquals(calls1, awaitItem())
+            assertEquals(calls2, awaitItem())
+            awaitComplete()
+        }
     }
 
     companion object {
-        private val calls = listOf(
-            Call(
-                ConversationId("first", "domain"),
-                CallStatus.STARTED,
-                "caller-id"
-            ),
-            Call(
-                ConversationId("second", "domain"),
-                CallStatus.INCOMING,
-                "caller-id"
-            )
+        private val call1 = Call(
+            ConversationId("first", "domain"),
+            CallStatus.STARTED,
+            "caller-id"
+        )
+        private val call2 = Call(
+            ConversationId("second", "domain"),
+            CallStatus.INCOMING,
+            "caller-id"
         )
     }
 
