@@ -19,12 +19,12 @@ data class Connection(
     @SerialName("last_update") val lastUpdate: String,
     @SerialName("qualified_conversation") val qualifiedConversationId: ConversationId,
     @SerialName("qualified_to") val qualifiedToId: UserId,
-    @SerialName("status") val status: ConnectionState,
+    @SerialName("status") val status: ConnectionStateDTO,
     @SerialName("to") val toId: String
 )
 
 @Serializable
-enum class ConnectionState {
+enum class ConnectionStateDTO {
     /** The other user has sent a connection request to this one */
     @SerialName("pending")
     PENDING,

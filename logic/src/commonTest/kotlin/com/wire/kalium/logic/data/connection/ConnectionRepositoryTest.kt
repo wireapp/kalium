@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.connection
 
+import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -7,7 +8,7 @@ import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.user.connection.Connection
 import com.wire.kalium.network.api.user.connection.ConnectionApi
 import com.wire.kalium.network.api.user.connection.ConnectionResponse
-import com.wire.kalium.network.api.user.connection.ConnectionState
+import com.wire.kalium.network.api.user.connection.ConnectionStateDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
@@ -161,6 +162,87 @@ class ConnectionRepositoryTest {
             .wasInvoked(once)
     }
 
+    @Test
+    fun givenAConnectionRequestUpdate_WhenSendingAConnectionStatusValid_thenTheConnectionShouldBePersisted() = runTest {
+        // given
+        val userId = NetworkUserId("user_id", "domain_id")
+        given(connectionApi)
+            .suspendFunction(connectionApi::updateConnection)
+            .whenInvokedWith(eq(userId), eq(ConnectionStateDTO.ACCEPTED))
+            .then { _, _ -> NetworkResponse.Success(connection1, mapOf(), 200) }
+        given(conversationDAO)
+            .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
+            .whenInvokedWith(eq(UserIDEntity(userId.value, userId.domain)), any(), any())
+            .then { _, _, _ -> return@then }
+
+        val result = connectionRepository.updateConnectionStatus(UserId(userId.value, userId.domain), ConnectionState.ACCEPTED)
+        result.shouldSucceed()
+
+        // then
+        verify(connectionApi)
+            .suspendFunction(connectionApi::updateConnection)
+            .with(eq(userId), eq(ConnectionStateDTO.ACCEPTED))
+            .wasInvoked(once)
+        verify(conversationDAO)
+            .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
+            .with(any(), any(), any())
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenAConnectionRequestUpdate_WhenSendingAConnectionStatusInvalid_thenTheConnectionShouldThrowAnError() = runTest {
+        // given
+        val userId = NetworkUserId("user_id", "domain_id")
+        given(connectionApi)
+            .suspendFunction(connectionApi::updateConnection)
+            .whenInvokedWith(eq(userId), any())
+            .then { _, _ -> NetworkResponse.Success(connection1, mapOf(), 200) }
+        given(conversationDAO)
+            .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
+            .whenInvokedWith(eq(UserIDEntity(userId.value, userId.domain)), any(), any())
+            .then { _, _, _ -> return@then }
+
+        val result = connectionRepository.updateConnectionStatus(UserId(userId.value, userId.domain), ConnectionState.NOT_CONNECTED)
+
+        // then
+        result.shouldFail()
+        verify(connectionApi)
+            .suspendFunction(connectionApi::updateConnection)
+            .with(eq(userId), eq(ConnectionStateDTO.ACCEPTED))
+            .wasNotInvoked()
+        verify(conversationDAO)
+            .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
+            .with(any(), any(), any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenAConnectionRequestUpdate_WhenSendingAConnectionStatusFails_thenShouldThrowAFailure() = runTest {
+        // given
+        val userId = NetworkUserId("user_id", "domain_id")
+        given(connectionApi)
+            .suspendFunction(connectionApi::updateConnection)
+            .whenInvokedWith(eq(userId), any())
+            .then { _, _ -> NetworkResponse.Error(KaliumException.GenericError(RuntimeException("An error the server threw!"))) }
+        given(conversationDAO)
+            .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
+            .whenInvokedWith(eq(UserIDEntity(userId.value, userId.domain)), any(), any())
+            .then { _, _, _ -> return@then }
+
+        val result = connectionRepository.updateConnectionStatus(UserId(userId.value, userId.domain), ConnectionState.ACCEPTED)
+
+        // then
+        result.shouldFail()
+        verify(connectionApi)
+            .suspendFunction(connectionApi::updateConnection)
+            .with(eq(userId), eq(ConnectionStateDTO.ACCEPTED))
+            .wasInvoked(once)
+        verify(conversationDAO)
+            .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
+            .with(any(), any(), any())
+            .wasNotInvoked()
+    }
+
     private companion object {
         val connection1 = Connection(
             conversationId = "conversationId1",
@@ -168,7 +250,7 @@ class ConnectionRepositoryTest {
             lastUpdate = "lastUpdate",
             qualifiedConversationId = ConversationId("conversationId1", "domain"),
             qualifiedToId = NetworkUserId("connectionId1", "domain"),
-            status = ConnectionState.ACCEPTED,
+            status = ConnectionStateDTO.ACCEPTED,
             toId = "connectionId1"
         )
         val connection2 = Connection(
@@ -177,7 +259,7 @@ class ConnectionRepositoryTest {
             lastUpdate = "lastUpdate",
             qualifiedConversationId = ConversationId("conversationId2", "domain"),
             qualifiedToId = NetworkUserId("connectionId2", "domain"),
-            status = ConnectionState.ACCEPTED,
+            status = ConnectionStateDTO.ACCEPTED,
             toId = "connectionId2"
         )
         val connectionsResponse = ConnectionResponse(
