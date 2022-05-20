@@ -4,9 +4,8 @@ import com.wire.kalium.logic.configuration.UserConfigDataSource
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
+import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigDataSource
-import com.wire.kalium.logic.configuration.server.ServerConfigMapper
-import com.wire.kalium.logic.configuration.server.ServerConfigMapperImpl
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.configuration.server.ServerConfigUtil
 import com.wire.kalium.logic.configuration.server.ServerConfigUtilImpl
@@ -14,13 +13,10 @@ import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.auth.login.LoginRepositoryImpl
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepositoryImpl
-import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.register.RegisterAccountDataSource
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
-import com.wire.kalium.logic.data.session.SessionMapper
-import com.wire.kalium.logic.data.session.SessionMapperImpl
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.auth.sso.SSOLoginScope
 import com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseCase
 import com.wire.kalium.logic.feature.register.RegisterScope
@@ -43,16 +39,16 @@ import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 
 class AuthenticationScope(
-    private val clientLabel: String, private val sessionRepository: SessionRepository, private val globalDatabase: GlobalDatabaseProvider,
+    private val clientLabel: String,
+    private val sessionRepository: SessionRepository,
+    private val globalDatabase: GlobalDatabaseProvider,
+    private val serverConfig: ServerConfig,
     private val globalPreferences: KaliumPreferences
 ) {
 
     private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
-        UnauthenticatedNetworkContainer()
+        UnauthenticatedNetworkContainer(MapperProvider.serverConfigMapper().toDTO(serverConfig))
     }
-    private val serverConfigMapper: ServerConfigMapper get() = ServerConfigMapperImpl()
-    private val idMapper: IdMapper get() = IdMapperImpl()
-    private val sessionMapper: SessionMapper get() = SessionMapperImpl(serverConfigMapper, idMapper)
 
     private val tokenStorage: TokenStorage get() = TokenStorageImpl(globalPreferences)
     private val userConfigStorage: UserConfigStorage get() = UserConfigStorageImpl(globalPreferences)
@@ -90,7 +86,7 @@ class AuthenticationScope(
     val updateApiVersions: UpdateApiVersionsUseCase get() = UpdateApiVersionsUseCaseImpl(serverConfigRepository)
     val session: SessionScope get() = SessionScope(sessionRepository)
     val register: RegisterScope get() = RegisterScope(registerAccountRepository)
-    val ssoLoginScope: SSOLoginScope get() = SSOLoginScope(ssoLoginRepository, sessionMapper)
+    val ssoLoginScope: SSOLoginScope get() = SSOLoginScope(ssoLoginRepository)
     val saveNotificationToken: SaveNotificationTokenUseCase get() = SaveNotificationTokenUseCase(notificationTokenRepository)
     val enableLogging: EnableLoggingUseCase get() = EnableLoggingUseCaseImpl(userConfigRepository)
     val isLoggingEnabled: IsLoggingEnabledUseCase get() = IsLoggingEnabledUseCaseImpl(userConfigRepository)
