@@ -150,8 +150,8 @@ private fun provideAssetMessageContent(
         assetDomain = null,  // TODO(assets): fill in the assetDomain, it's returned by the BE when uploading an asset.
         assetToken = assetId.assetToken
     ),
-    // Asset is already in our local storage and therefore accessible
-    downloadStatus = Message.DownloadStatus.DOWNLOADED
+    // Until we don't download it to external storage the asset will not be considered as "Downloaded"
+    downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
 )
 
 sealed class SendAssetMessageResult {
