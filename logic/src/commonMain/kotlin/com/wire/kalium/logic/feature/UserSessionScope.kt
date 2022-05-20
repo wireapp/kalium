@@ -42,6 +42,7 @@ import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
+import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.feature.client.ClientScope
@@ -193,7 +194,7 @@ abstract class UserSessionScopeCommon(
     private val messageSendingScheduler: MessageSendingScheduler
         get() = authenticatedDataSourceSet.workScheduler
 
-    // TODO code duplication, can't we get the MessageSender from the message scope?
+    // TODO(optimization) code duplication, can't we get the MessageSender from the message scope?
     private val messageSender: MessageSender
         get() = MessageSenderImpl(
             messageRepository,
@@ -222,7 +223,7 @@ abstract class UserSessionScopeCommon(
     private val callMapper: CallMapper
         get() = CallMapper()
 
-    private val callManager by lazy {
+    private val callManager: Lazy<CallManager> = lazy {
         globalCallManager.getCallManagerForClient(
             userId = userId,
             callRepository = callRepository,

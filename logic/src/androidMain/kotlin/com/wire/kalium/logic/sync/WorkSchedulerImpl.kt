@@ -23,7 +23,6 @@ import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.R
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
-import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -36,32 +35,33 @@ class WrapperWorker(private val innerWorker: UserSessionWorker, appContext: Cont
     override suspend fun doWork(): Result {
         return when (innerWorker.doWork()) {
             is com.wire.kalium.logic.sync.Result.Success -> {
-                return Result.success()
+                Result.success()
             }
             is com.wire.kalium.logic.sync.Result.Failure -> {
-                return Result.failure()
+                Result.failure()
             }
             is com.wire.kalium.logic.sync.Result.Retry -> {
-                return Result.retry()
+                Result.retry()
             }
         }
     }
 
-    //TODO: Add support for customization of foreground info when doing work on Android
+    //TODO(ui-polishing): Add support for customization of foreground info when doing work on Android
     override suspend fun getForegroundInfo(): ForegroundInfo {
         val notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Notification.Builder(applicationContext, createNotificationChannel().id)
         } else {
             Notification.Builder(applicationContext)
         }.setContentTitle(NOTIFICATION_TITLE)
-            .setSmallIcon(R.mipmap.ic_launcher) //TODO: Customize icons too
+            .setSmallIcon(R.mipmap.ic_launcher) //TODO(ui-polishing): Customize icons too
             .build()
         return ForegroundInfo(NOTIFICATION_ID, notification)
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun createNotificationChannel(): NotificationChannel {
-        //TODO: Internationalis(z)ation. Should come as a side-effect of enabling customization of notifications by consumer apps
+        //TODO(ui-polishing): Internationalis(z)ation. Should come as a
+        //                    side-effect of enabling customization of notifications by consumer apps
         val name = "Wire Sync"
         val descriptionText = "Updating conversations and contact information"
         val importance = NotificationManager.IMPORTANCE_NONE
@@ -90,7 +90,7 @@ class WrapperWorkerFactory(private val coreLogic: CoreLogic) : WorkerFactory() {
         val innerWorkerClassName = workerParameters.inputData.getString(WORKER_CLASS_KEY)
 
         if (userId == null || innerWorkerClassName == null) {
-            throw RuntimeException("No user id was specified")
+            throw IllegalArgumentException("No user id was specified")
         }
 
         kaliumLogger.v("WrapperWorkerFactory, creating worker for class name: $innerWorkerClassName")
@@ -142,10 +142,10 @@ class WrapperWorkerFactory(private val coreLogic: CoreLogic) : WorkerFactory() {
     }
 }
 
-actual class WorkScheduler(private val context: Context, private val userId: UserId) : MessageSendingScheduler {
+actual class WorkSchedulerImpl(private val context: Context, private val userId: UserId) : WorkScheduler {
 
     private val workerClass = WrapperWorker::class.java
-    actual fun enqueueImmediateWork(work: KClass<out UserSessionWorker>, name: String) {
+    override fun enqueueImmediateWork(work: KClass<out UserSessionWorker>, name: String) {
         val inputData = WrapperWorkerFactory
             .workData(work, userId)
 

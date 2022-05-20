@@ -4,6 +4,7 @@ import com.wire.kalium.api.ApiTest
 import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.user.connection.ConnectionApi
 import com.wire.kalium.network.api.user.connection.ConnectionApiImpl
+import com.wire.kalium.network.api.user.connection.ConnectionStateDTO
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
@@ -14,7 +15,7 @@ class ConnectionApiTest : ApiTest {
 
     @Test
     fun givenAGetConnectionsRequest_whenRequestingAllConnectionsWithSuccess_thenRequestShouldBeConfiguredCorrectly() = runTest {
-        val httpClient = mockAuthenticatedHttpClient(
+        val networkClient = mockAuthenticatedNetworkClient(
             GET_CONNECTIONS_RESPONSE.rawJson,
             statusCode = HttpStatusCode.OK,
             assertion = {
@@ -25,13 +26,13 @@ class ConnectionApiTest : ApiTest {
             }
         )
 
-        val connectionApi: ConnectionApi = ConnectionApiImpl(httpClient)
+        val connectionApi: ConnectionApi = ConnectionApiImpl(networkClient)
         connectionApi.fetchSelfUserConnections(pagingState = null)
     }
 
     @Test
     fun givenAGetConnectionsRequestWithPaging_whenRequestingAllConnectionsWithSuccess_thenRequestShouldBeConfiguredCorrectly() = runTest {
-        val httpClient = mockAuthenticatedHttpClient(
+        val networkClient = mockAuthenticatedNetworkClient(
             GET_CONNECTIONS_RESPONSE.rawJson,
             statusCode = HttpStatusCode.OK,
             assertion = {
@@ -42,7 +43,7 @@ class ConnectionApiTest : ApiTest {
             }
         )
 
-        val connectionApi: ConnectionApi = ConnectionApiImpl(httpClient)
+        val connectionApi: ConnectionApi = ConnectionApiImpl(networkClient)
         connectionApi.fetchSelfUserConnections(pagingState = null)
     }
 
@@ -50,7 +51,7 @@ class ConnectionApiTest : ApiTest {
     fun givenACreationRequest_whenRequestingAConnectionWithAnUser_thenShouldReturnsACorrectConnectionResponse() = runTest {
         // given
         val userId = UserId("user_id", "domain_id")
-        val httpClient = mockAuthenticatedHttpClient(
+        val httpClient = mockAuthenticatedNetworkClient(
             CREATE_CONNECTION_RESPONSE.rawJson,
             statusCode = HttpStatusCode.OK,
             assertion = {
@@ -69,6 +70,31 @@ class ConnectionApiTest : ApiTest {
 
     }
 
+    @Test
+    fun givenAConnectionRequestUpdate_whenInvokingWithAnUserAndAConnectionStatus_thenShouldReturnsACorrectConnectionResponse() =
+        runTest {
+            // given
+            val userId = UserId("user_id", "domain_id")
+            val httpClient = mockAuthenticatedNetworkClient(
+                CREATE_CONNECTION_RESPONSE.rawJson,
+                statusCode = HttpStatusCode.OK,
+                assertion = {
+                    assertJson()
+                    assertPut()
+                    assertPathEqual("$PATH_CONNECTIONS_ENDPOINT/${userId.domain}/${userId.value}")
+                    assertBodyContent(GET_CONNECTION_STATUS_REQUEST.rawJson)
+                }
+            )
+            val connectionApi = ConnectionApiImpl(httpClient)
+
+            // when
+            val response = connectionApi.updateConnection(userId, ConnectionStateDTO.ACCEPTED)
+
+            // then
+            assertTrue(response.isSuccessful())
+        }
+
+
     private companion object {
         const val PATH_CONNECTIONS = "/list-connections"
         const val PATH_CONNECTIONS_ENDPOINT = "/connections"
@@ -77,5 +103,6 @@ class ConnectionApiTest : ApiTest {
         val CREATE_CONNECTION_RESPONSE = ConnectionResponsesJson.CreateConnectionResponse.jsonProvider
         val GET_CONNECTIONS_NO_PAGING_REQUEST = ConnectionRequestsJson.validEmptyBody
         val GET_CONNECTIONS_WITH_PAGING_REQUEST = ConnectionRequestsJson.validPagingState
+        val GET_CONNECTION_STATUS_REQUEST = ConnectionRequestsJson.validConnectionStatusUpdate
     }
 }

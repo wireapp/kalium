@@ -15,7 +15,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.launch
 
-//TODO create unit test
+//TODO(testing): create unit test
 class OnSFTRequest(
     private val handle: Deferred<Handle>,
     private val calling: Calling,
@@ -41,11 +41,12 @@ class OnSFTRequest(
             }
         }
 
-        callingLogger.i("${CallManagerImpl.TAG} -> sftRequestHandler")
+        callingLogger.i("OnSFTRequest -> sftRequestHandler called")
         return AvsCallBackError.NONE.value
     }
 
     private suspend fun onSFTResponse(data: ByteArray?, context: Pointer?) {
+        callingLogger.i("OnSFTRequest - sending SFT Response..")
         val responseData = data ?: byteArrayOf()
         calling.wcall_sft_resp(
             inst = handle.await(),
@@ -54,7 +55,8 @@ class OnSFTRequest(
             length = responseData.size,
             ctx = context
         )
-        callingLogger.i("SFT Response sent.")
+        callingLogger.i("OnSFTRequest - wcall_sft_resp() called")
+        callingLogger.i("OnSFTRequest - SFT Response sent.")
     }
 
 }

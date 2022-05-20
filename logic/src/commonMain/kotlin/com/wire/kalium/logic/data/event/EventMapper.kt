@@ -1,15 +1,16 @@
 package com.wire.kalium.logic.data.event
 
+import com.wire.kalium.logic.data.connection.ConnectionStatusMapper
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.toUserId
 import com.wire.kalium.network.api.notification.EventContentDTO
 import com.wire.kalium.network.api.notification.EventResponse
 
-class EventMapper(private val idMapper: IdMapper) {
+class EventMapper(private val idMapper: IdMapper, private  val connectionMapper: ConnectionStatusMapper) {
 
     fun fromDTO(eventResponse: EventResponse): List<Event> {
-        // FIXME: Multiple payloads in the same event have the same ID, is this an issue when marking lastProcessedEventId?
+        // TODO(edge-case): Multiple payloads in the same event have the same ID, is this an issue when marking lastProcessedEventId?
         val id = eventResponse.id
         return eventResponse.payload?.map { eventContentDTO ->
             when (eventContentDTO) {
@@ -62,6 +63,7 @@ class EventMapper(private val idMapper: IdMapper) {
     ) = Event.User.Connection(
         id,
         eventConnectionDTO.connection.from.toUserId(),
+        status = connectionMapper.fromApiModel(eventConnectionDTO.connection.status)
     )
 
     private fun newConversation(

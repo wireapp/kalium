@@ -32,7 +32,7 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-// FIXME: missing unit test
+// TODO(testing): missing unit test
 interface UserRepository {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
     suspend fun fetchKnownUsers(): Either<CoreFailure, Unit>
@@ -90,7 +90,7 @@ class UserDataSource(
             userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(ids.map(idMapper::toApiModel)))
         }.flatMap {
             wrapStorageRequest {
-                userDAO.updateUsers(it.map(userMapper::fromApiModelToDaoModel))
+                userDAO.insertUsers(it.map(userMapper::fromApiModelToDaoModel))
             }
         }
 
@@ -104,16 +104,16 @@ class UserDataSource(
         }
     }
 
-    // FIXME: user info can be updated with null, null and null
+    // FIXME(refactor): user info can be updated with null, null and null
     override suspend fun updateSelfUser(newName: String?, newAccent: Int?, newAssetId: String?): Either<CoreFailure, SelfUser> {
         val user = getSelfUser().firstOrNull() ?: return Either.Left(CoreFailure.Unknown(NullPointerException()))
         val updateRequest = userMapper.fromModelToUpdateApiModel(user, newName, newAccent, newAssetId)
         return wrapApiRequest { selfApi.updateSelf(updateRequest) }
             .map { userMapper.fromUpdateRequestToDaoModel(user, updateRequest) }
-            .flatMap {
-                // TODO: handle storage error
-                userDAO.updateUser(it)
-                Either.Right(userMapper.fromDaoModelToSelfUser(it))
+            .flatMap { userEntity ->
+                wrapStorageRequest {
+                    userDAO.updateUser(userEntity)
+                }.map { userMapper.fromDaoModelToSelfUser(userEntity) }
             }
     }
 

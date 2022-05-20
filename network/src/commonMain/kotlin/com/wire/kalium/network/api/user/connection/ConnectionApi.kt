@@ -1,19 +1,24 @@
 package com.wire.kalium.network.api.user.connection
 
+import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
-import io.ktor.client.HttpClient
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import kotlinx.serialization.json.buildJsonObject
 
 interface ConnectionApi {
+
     suspend fun fetchSelfUserConnections(pagingState: String?): NetworkResponse<ConnectionResponse>
     suspend fun createConnection(userId: UserId): NetworkResponse<Connection>
+    suspend fun updateConnection(userId: UserId, connectionStatus: ConnectionStateDTO): NetworkResponse<Connection>
 }
 
-class ConnectionApiImpl(private val httpClient: HttpClient) : ConnectionApi {
+class ConnectionApiImpl internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : ConnectionApi {
+
+    private val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun fetchSelfUserConnections(pagingState: String?): NetworkResponse<ConnectionResponse> =
         wrapKaliumResponse {
@@ -31,6 +36,13 @@ class ConnectionApiImpl(private val httpClient: HttpClient) : ConnectionApi {
     override suspend fun createConnection(userId: UserId): NetworkResponse<Connection> =
         wrapKaliumResponse {
             httpClient.post("$PATH_CONNECTIONS_ENDPOINTS/${userId.domain}/${userId.value}")
+        }
+
+    override suspend fun updateConnection(userId: UserId, connectionStatus: ConnectionStateDTO): NetworkResponse<Connection> =
+        wrapKaliumResponse {
+            httpClient.put("$PATH_CONNECTIONS_ENDPOINTS/${userId.domain}/${userId.value}") {
+                setBody(connectionStatus)
+            }
         }
 
     private companion object {

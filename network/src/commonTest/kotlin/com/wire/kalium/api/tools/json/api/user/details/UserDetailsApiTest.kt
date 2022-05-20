@@ -23,7 +23,7 @@ class UserDetailsApiTest : ApiTest {
     fun givenListOfQualifiedIds_whenGettingListOfUsers_thenBodyShouldSerializeCorrectly() = runTest {
         val params = ListUserRequest.qualifiedIds(listOf(QualifiedIDSamples.one, QualifiedIDSamples.two))
         val expectedRequestBody = KtxSerializer.json.encodeToString(params)
-        val httpClient = mockAuthenticatedHttpClient(
+        val networkClient = mockAuthenticatedNetworkClient(
             ListUsersRequestJson.validIdsJsonProvider.rawJson,
             statusCode = HttpStatusCode.Created,
             assertion = {
@@ -34,7 +34,7 @@ class UserDetailsApiTest : ApiTest {
                 assertBodyContent(expectedRequestBody)
             }
         )
-        val userDetailsApi: UserDetailsApi = UserDetailsApiImpl(httpClient)
+        val userDetailsApi: UserDetailsApi = UserDetailsApiImpl(networkClient)
 
         userDetailsApi.getMultipleUsers(params)
     }
@@ -43,21 +43,21 @@ class UserDetailsApiTest : ApiTest {
     fun givenListOfQualifiedHandles_whenGettingListOfUsers_thenBodyShouldSerializeCorrectly() = runTest {
         val params = ListUserRequest.qualifiedHandles(listOf(QualifiedHandleSample.one, QualifiedHandleSample.two))
         val expectedRequestBody = KtxSerializer.json.encodeToString(params)
-        val httpClient = mockAuthenticatedHttpClient(
+        val networkClient = mockAuthenticatedNetworkClient(
             ListUsersRequestJson.validIdsJsonProvider.rawJson,
             statusCode = HttpStatusCode.Created,
             assertion = {
                 assertBodyContent(expectedRequestBody)
             }
         )
-        val userDetailsApi: UserDetailsApi = UserDetailsApiImpl(httpClient)
+        val userDetailsApi: UserDetailsApi = UserDetailsApiImpl(networkClient)
 
         userDetailsApi.getMultipleUsers(params)
     }
 
     @Test
     fun givenAValidRequest_whenGettingListOfUsers_thenCorrectHttpHeadersAndMethodShouldBeUsed() = runTest {
-        val httpClient = mockAuthenticatedHttpClient(
+        val networkClient = mockAuthenticatedNetworkClient(
             ListUsersRequestJson.validIdsJsonProvider.rawJson,
             statusCode = HttpStatusCode.Created,
             assertion = {
@@ -67,14 +67,14 @@ class UserDetailsApiTest : ApiTest {
                 assertPathEqual(PATH_LIST_USERS)
             }
         )
-        val userDetailsApi: UserDetailsApi = UserDetailsApiImpl(httpClient)
+        val userDetailsApi: UserDetailsApi = UserDetailsApiImpl(networkClient)
 
         userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(listOf()))
     }
 
     @Test
     fun givenAUserId_whenInvokingUserInfo_thenShouldConfigureTheRequestOkAndReturnAResultWithData() = runTest {
-        val httpClient = mockAuthenticatedHttpClient(
+        val httpClient = mockAuthenticatedNetworkClient(
             ListUsersRequestJson.validIdsJsonProvider.rawJson,
             statusCode = HttpStatusCode.OK,
             assertion = {

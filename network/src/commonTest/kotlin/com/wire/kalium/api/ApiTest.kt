@@ -1,14 +1,16 @@
 package com.wire.kalium.api
 
 import com.wire.kalium.api.tools.testCredentials
+import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.AuthenticatedNetworkContainer
-import com.wire.kalium.network.LoginNetworkContainer
+import com.wire.kalium.network.AuthenticatedWebSocketClient
+import com.wire.kalium.network.UnauthenticatedNetworkClient
+import com.wire.kalium.network.UnauthenticatedNetworkContainer
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.model.AccessTokenDTO
 import com.wire.kalium.network.api.model.RefreshTokenDTO
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.tools.ServerConfigDTO
-import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.HttpRequestData
@@ -52,7 +54,7 @@ class TestSessionManager : SessionManager {
 
 }
 
-interface ApiTest {
+internal interface ApiTest {
 
     val TEST_SESSION_NAMAGER: TestSessionManager get() = TestSessionManager()
 
@@ -63,17 +65,17 @@ interface ApiTest {
      * @param assertion lambda function to apply assertions to the request
      * @return mock Ktor http client
      */
-    fun mockAuthenticatedHttpClient(
+    fun mockAuthenticatedNetworkClient(
         responseBody: String,
         statusCode: HttpStatusCode,
         assertion: (HttpRequestData.() -> Unit) = {}
-    ): HttpClient = mockAuthenticatedHttpClient(ByteReadChannel(responseBody), statusCode, assertion)
+    ): AuthenticatedNetworkClient = mockAuthenticatedNetworkClient(ByteReadChannel(responseBody), statusCode, assertion)
 
-    private fun mockAuthenticatedHttpClient(
+    private fun mockAuthenticatedNetworkClient(
         responseBody: ByteReadChannel,
         statusCode: HttpStatusCode,
         assertion: (HttpRequestData.() -> Unit) = {}
-    ): HttpClient {
+    ): AuthenticatedNetworkClient {
         val mockEngine = MockEngine { request ->
             request.assertion()
             respond(
@@ -85,7 +87,17 @@ interface ApiTest {
         return AuthenticatedNetworkContainer(
             engine = mockEngine,
             sessionManager = TEST_SESSION_NAMAGER
-        ).authenticatedHttpClient
+        ).networkClient
+    }
+
+    fun mockWebsocketClient(): AuthenticatedWebSocketClient {
+        val mockEngine = MockEngine {
+            TODO("It's not yet possible to mock WebSockets from the client side")
+        }
+        return AuthenticatedNetworkContainer(
+            engine = mockEngine,
+            sessionManager = TEST_SESSION_NAMAGER
+        ).websocketClient
     }
 
     /**
@@ -95,19 +107,19 @@ interface ApiTest {
      * @param assertion lambda function to apply assertions to the request
      * @return mock Ktor http client
      */
-    fun mockUnauthenticatedHttpClient(
+    fun mockUnauthenticatedNetworkClient(
         responseBody: String,
         statusCode: HttpStatusCode,
         assertion: (HttpRequestData.() -> Unit) = {},
         headers: Map<String, String>? = null
-    ): HttpClient = mockUnauthenticatedHttpClient(ByteReadChannel(responseBody), statusCode, assertion, headers)
+    ): UnauthenticatedNetworkClient = mockUnauthenticatedNetworkClient(ByteReadChannel(responseBody), statusCode, assertion, headers)
 
-    private fun mockUnauthenticatedHttpClient(
+    private fun mockUnauthenticatedNetworkClient(
         responseBody: ByteReadChannel,
         statusCode: HttpStatusCode,
         assertion: (HttpRequestData.() -> Unit) = {},
         headers: Map<String, String>?
-    ): HttpClient {
+    ): UnauthenticatedNetworkClient {
         val head: Map<String, List<String>> = (headers?.let {
             mutableMapOf(HttpHeaders.ContentType to "application/json").plus(headers).mapValues { listOf(it.value) }
         } ?: run {
@@ -122,9 +134,9 @@ interface ApiTest {
                 headers = HeadersImpl(head)
             )
         }
-        return LoginNetworkContainer(
+        return UnauthenticatedNetworkContainer(
             engine = mockEngine
-        ).anonymousHttpClient
+        ).unauthenticatedNetworkClient
     }
 
     class TestRequestHandler(
@@ -135,9 +147,9 @@ interface ApiTest {
         val headers: Map<String, String>? = null
     )
 
-    fun mockUnauthenticatedHttpClient(
+    fun mockUnauthenticatedNetworkClient(
         expectedRequests: List<TestRequestHandler>
-    ): HttpClient {
+    ): UnauthenticatedNetworkClient {
         val mockEngine = MockEngine { currentRequest ->
             expectedRequests.forEach { request ->
                 val head: Map<String, List<String>> = (request.headers?.let {
@@ -155,9 +167,9 @@ interface ApiTest {
             }
             fail("no expected response was found for ${currentRequest.method.value}:${currentRequest.url}")
         }
-        return LoginNetworkContainer(
+        return UnauthenticatedNetworkContainer(
             engine = mockEngine
-        ).anonymousHttpClient
+        ).unauthenticatedNetworkClient
     }
 
     /**
@@ -167,11 +179,11 @@ interface ApiTest {
      * @param assertion lambda function to apply assertions to the request
      * @return mock Ktor http client
      */
-    fun mockAuthenticatedHttpClient(
+    fun mockAuthenticatedNetworkClient(
         responseBody: ByteArray,
         statusCode: HttpStatusCode,
         assertion: (HttpRequestData.() -> Unit) = {}
-    ): HttpClient {
+    ): AuthenticatedNetworkClient {
         val mockEngine = MockEngine { request ->
             request.assertion()
             respond(
@@ -183,7 +195,7 @@ interface ApiTest {
         return AuthenticatedNetworkContainer(
             engine = mockEngine,
             sessionManager = TEST_SESSION_NAMAGER
-        ).authenticatedHttpClient
+        ).networkClient
     }
 
     // query params assertions
@@ -230,7 +242,10 @@ interface ApiTest {
     // content type
     fun HttpRequestData.assertJson() = assertContentType(ContentType.Application.Json.withParameter("charset", "UTF-8"))
     fun HttpRequestData.assertContentType(contentType: ContentType) =
-        assertTrue(contentType.match(this.body.contentType ?: ContentType.Any), "contentType: ${this.body.contentType} doesn't match expected contentType: $contentType")
+        assertTrue(
+            contentType.match(this.body.contentType ?: ContentType.Any),
+            "contentType: ${this.body.contentType} doesn't match expected contentType: $contentType"
+        )
 
     // path
     fun HttpRequestData.assertPathEqual(path: String) = assertEquals(path, this.url.encodedPath)

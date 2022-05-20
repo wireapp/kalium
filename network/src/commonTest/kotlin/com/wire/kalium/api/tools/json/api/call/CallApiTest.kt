@@ -14,7 +14,7 @@ class CallApiTest : ApiTest {
 
     @Test
     fun givenCallApi_whenGettingCallConfigWithNoLimit_theRequestShouldBeConfiguredCorrectly() = runTest {
-        val httpClient = mockAuthenticatedHttpClient(
+        val networkClient = mockAuthenticatedNetworkClient(
             responseBody = GET_CALL_CONFIG.rawJson,
             statusCode = HttpStatusCode.OK,
             assertion = {
@@ -23,13 +23,13 @@ class CallApiTest : ApiTest {
             }
         )
 
-        val callApi: CallApi = CallApiImpl(httpClient = httpClient)
+        val callApi: CallApi = CallApiImpl(networkClient)
         callApi.getCallConfig(limit = null)
     }
 
     @Test
     fun givenCallApi_whenGettingCallConfigWithLimit_theRequestShouldBeConfiguredCorrectly() = runTest {
-        val httpClient = mockAuthenticatedHttpClient(
+        val networkClient = mockAuthenticatedNetworkClient(
             responseBody = GET_CALL_CONFIG.rawJson,
             statusCode = HttpStatusCode.OK,
             assertion = {
@@ -40,7 +40,7 @@ class CallApiTest : ApiTest {
             }
         )
 
-        val callApi: CallApi = CallApiImpl(httpClient = httpClient)
+        val callApi: CallApi = CallApiImpl(networkClient)
         callApi.getCallConfig(limit = 7)
     }
 

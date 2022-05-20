@@ -31,7 +31,7 @@ internal class UploadUserAvatarUseCaseImpl(
             UploadAvatarResult.Failure(it)
         }) { updatedUser ->
             UploadAvatarResult.Success(updatedUser.completePicture!!)
-        } // todo: remove old assets, non blocking this response, as will imply deleting locally and remotely
+        } // TODO(assets): remove old assets, non blocking this response, as will imply deleting locally and remotely
 }
 
 sealed class UploadAvatarResult {

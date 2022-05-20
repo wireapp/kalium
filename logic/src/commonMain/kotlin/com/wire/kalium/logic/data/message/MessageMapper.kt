@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
@@ -18,7 +19,8 @@ interface MessageMapper {
     fun fromMessageToLocalNotificationMessage(message: Message, author: LocalNotificationMessageAuthor): LocalNotificationMessage
 }
 
-class MessageMapperImpl(private val idMapper: IdMapper) : MessageMapper {
+class MessageMapperImpl(private val idMapper: IdMapper, private val assetMapper: AssetMapper = MapperProvider.assetMapper()) :
+    MessageMapper {
     override fun fromMessageToEntity(message: Message): MessageEntity {
         val status = when (message.status) {
             Message.Status.PENDING -> MessageEntity.Status.PENDING
@@ -45,7 +47,8 @@ class MessageMapperImpl(private val idMapper: IdMapper) : MessageMapper {
                         assetSha256Key = remoteData.sha256,
                         assetId = remoteData.assetId,
                         assetToken = remoteData.assetToken,
-                        assetEncryptionAlgorithm = remoteData.encryptionAlgorithm?.name
+                        assetEncryptionAlgorithm = remoteData.encryptionAlgorithm?.name,
+                        assetDownloadStatus = assetMapper.fromDownloadStatusToDaoModel(downloadStatus)
                     )
                 }
             }
@@ -107,7 +110,8 @@ class MessageMapperImpl(private val idMapper: IdMapper) : MessageMapper {
 
         return when (message.content) {
             is MessageContent.Text -> LocalNotificationMessage.Text(author, time, message.content.value)
-            else -> LocalNotificationMessage.Text(author, time, "Something not a text") //TODO
+            // TODO(notifications): Handle other message types
+            else -> LocalNotificationMessage.Text(author, time, "Something not a text")
         }
     }
 }

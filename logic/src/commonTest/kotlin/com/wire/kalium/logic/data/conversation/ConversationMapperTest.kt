@@ -241,7 +241,7 @@ class ConversationMapperTest {
                 domain = "testDomain",
             ),
             name = "testName",
-            type = ConversationEntity.Type.ONE_ON_ONE,
+            type = Conversation.Type.ONE_ON_ONE,
             teamId = TeamId("test"),
             mutedStatus = MutedConversationStatus.AllAllowed,
             lastNotificationDate = "testNotificationDate",

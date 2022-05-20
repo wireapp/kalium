@@ -1,18 +1,16 @@
 package com.wire.kalium.logic.sync
 
 import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
-import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlin.reflect.KClass
 
-actual class WorkScheduler(private val coreLogic: CoreLogic, private val userId: UserId): MessageSendingScheduler {
+actual class WorkSchedulerImpl(private val coreLogic: CoreLogic, private val userId: UserId): WorkScheduler {
 
-    actual fun enqueueImmediateWork(
+    override fun enqueueImmediateWork(
         work: KClass<out UserSessionWorker>,
         name: String
     ) {
