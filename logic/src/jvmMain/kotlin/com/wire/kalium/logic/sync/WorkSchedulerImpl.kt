@@ -2,7 +2,6 @@ package com.wire.kalium.logic.sync
 
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
@@ -11,9 +10,9 @@ import kotlin.reflect.KClass
 
 
 @OptIn(DelicateCoroutinesApi::class)
-actual sealed class WorkScheduler {
+actual sealed class WorkSchedulerImpl : WorkScheduler {
 
-    actual fun enqueueImmediateWork(work: KClass<out DefaultWorker>, name: String) {
+    override fun enqueueImmediateWork(work: KClass<out DefaultWorker>, name: String) {
         GlobalScope.launch {
             val constructor = work.java.getDeclaredConstructor()
             val worker = constructor.newInstance() as DefaultWorker
@@ -23,7 +22,7 @@ actual sealed class WorkScheduler {
 
     actual class Global(
         private val coreLogic: CoreLogic
-    ) : WorkScheduler(), UpdateApiVersionsScheduler {
+    ) : WorkSchedulerImpl(), GlobalWorkScheduler {
 
         override fun schedulePeriodicApiVersionUpdate() {
             kaliumLogger.w(
@@ -34,8 +33,8 @@ actual sealed class WorkScheduler {
 
     actual class UserSession(
         private val coreLogic: CoreLogic,
-        actual val userId: UserId
-    ) : WorkScheduler(), MessageSendingScheduler, SlowSyncScheduler {
+        override val userId: UserId
+    ) : WorkSchedulerImpl(), UserSessionWorkScheduler {
 
         override fun scheduleSlowSync() {
             GlobalScope.launch {

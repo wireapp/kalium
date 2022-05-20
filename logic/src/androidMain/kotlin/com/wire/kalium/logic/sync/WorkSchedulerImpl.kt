@@ -164,14 +164,14 @@ class WrapperWorkerFactory(private val coreLogic: CoreLogic) : WorkerFactory() {
     }
 }
 
-actual sealed class WorkScheduler(private val appContext: Context) {
+actual sealed class WorkSchedulerImpl(private val appContext: Context) : WorkScheduler {
     internal val workerClass = WrapperWorker::class.java
 
     /**
      * Schedules some work to be done in the background, in a "run and forget" way – free from client app observation.
      * On mobile clients for example, aims to start a job that will not be suspended by the user minimizing the app.
      */
-    actual fun enqueueImmediateWork(work: KClass<out DefaultWorker>, name: String) {
+    override fun enqueueImmediateWork(work: KClass<out DefaultWorker>, name: String) {
         val inputData = WrapperWorkerFactory.workData(work, if (this is UserSession) this.userId else null)
 
         val request = OneTimeWorkRequest.Builder(workerClass)
@@ -187,7 +187,7 @@ actual sealed class WorkScheduler(private val appContext: Context) {
 
     actual class Global(
         private val appContext: Context
-    ) : WorkScheduler(appContext), UpdateApiVersionsScheduler {
+    ) : WorkSchedulerImpl(appContext), GlobalWorkScheduler {
 
         override fun schedulePeriodicApiVersionUpdate() {
             val inputData = WrapperWorkerFactory.workData(UpdateApiVersionsWorker::class)
@@ -232,8 +232,8 @@ actual sealed class WorkScheduler(private val appContext: Context) {
 
     actual class UserSession(
         private val appContext: Context,
-        actual val userId: UserId
-    ) : WorkScheduler(appContext), MessageSendingScheduler, SlowSyncScheduler {
+        override val userId: UserId
+    ) : WorkSchedulerImpl(appContext), UserSessionWorkScheduler {
 
         override fun scheduleSlowSync() {
             enqueueImmediateWork(SlowSyncWorker::class, SlowSyncWorker.name)
