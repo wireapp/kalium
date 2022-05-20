@@ -17,7 +17,7 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.user.connection.Connection
 import com.wire.kalium.network.api.user.connection.ConnectionApi
-import com.wire.kalium.network.api.user.connection.ConnectionStateDTO
+import com.wire.kalium.network.api.user.connection.ConnectionStatusDTO
 import com.wire.kalium.persistence.dao.ConversationDAO
 
 interface ConnectionRepository {
@@ -58,7 +58,7 @@ internal class ConnectionDataSource(
         return wrapApiRequest {
             connectionApi.createConnection(idMapper.toApiModel(userId))
         }.map { connection ->
-            val connectionSent = connection.copy(status = ConnectionStateDTO.SENT)
+            val connectionSent = connection.copy(status = ConnectionStatusDTO.SENT)
             updateUserConnectionStatus(listOf(connectionSent))
         }
     }

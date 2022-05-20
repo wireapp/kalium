@@ -13,7 +13,7 @@ interface ConnectionApi {
 
     suspend fun fetchSelfUserConnections(pagingState: String?): NetworkResponse<ConnectionResponse>
     suspend fun createConnection(userId: UserId): NetworkResponse<Connection>
-    suspend fun updateConnection(userId: UserId, connectionStatus: ConnectionStateDTO): NetworkResponse<Connection>
+    suspend fun updateConnection(userId: UserId, connectionStatus: ConnectionStatusDTO): NetworkResponse<Connection>
 }
 
 class ConnectionApiImpl internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : ConnectionApi {
@@ -38,7 +38,7 @@ class ConnectionApiImpl internal constructor(private val authenticatedNetworkCli
             httpClient.post("$PATH_CONNECTIONS_ENDPOINTS/${userId.domain}/${userId.value}")
         }
 
-    override suspend fun updateConnection(userId: UserId, connectionStatus: ConnectionStateDTO): NetworkResponse<Connection> =
+    override suspend fun updateConnection(userId: UserId, connectionStatus: ConnectionStatusDTO): NetworkResponse<Connection> =
         wrapKaliumResponse {
             httpClient.put("$PATH_CONNECTIONS_ENDPOINTS/${userId.domain}/${userId.value}") {
                 setBody(connectionStatus)

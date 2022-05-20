@@ -4,7 +4,7 @@ import com.wire.kalium.api.ApiTest
 import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.user.connection.ConnectionApi
 import com.wire.kalium.network.api.user.connection.ConnectionApiImpl
-import com.wire.kalium.network.api.user.connection.ConnectionStateDTO
+import com.wire.kalium.network.api.user.connection.ConnectionStatusDTO
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
@@ -88,7 +88,7 @@ class ConnectionApiTest : ApiTest {
             val connectionApi = ConnectionApiImpl(httpClient)
 
             // when
-            val response = connectionApi.updateConnection(userId, ConnectionStateDTO.ACCEPTED)
+            val response = connectionApi.updateConnection(userId, ConnectionStatusDTO.ACCEPTED)
 
             // then
             assertTrue(response.isSuccessful())
