@@ -63,8 +63,24 @@ class GetIncomingCallsUseCaseTest {
         given(callRepository).invocation { incomingCallsFlow() }.then {
             MutableStateFlow(
                 listOf<Call>(
-                    Call(TestConversation.id(0), CallStatus.INCOMING, "client1", "ONE_ON_ONE Name", Conversation.Type.ONE_ON_ONE, null, null),
-                    Call(TestConversation.id(1), CallStatus.INCOMING, "client2", "ONE_ON_ONE Name", Conversation.Type.ONE_ON_ONE, null, null)
+                    Call(
+                        TestConversation.id(0),
+                        CallStatus.INCOMING,
+                        "client1",
+                        "ONE_ON_ONE Name",
+                        Conversation.Type.ONE_ON_ONE,
+                        null,
+                        null
+                    ),
+                    Call(
+                        TestConversation.id(1),
+                        CallStatus.INCOMING,
+                        "client2",
+                        "ONE_ON_ONE Name",
+                        Conversation.Type.ONE_ON_ONE,
+                        null,
+                        null
+                    )
                 )
             )
         }

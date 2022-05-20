@@ -9,11 +9,9 @@ import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.team.Team
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.call.CallApi
@@ -24,15 +22,15 @@ import io.mockative.any
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
+import io.mockative.once
 import io.mockative.oneOf
-import kotlinx.coroutines.CoroutineScope
+import io.mockative.verify
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class CallRepositoryTest {
@@ -115,7 +113,7 @@ class CallRepositoryTest {
     }
 
     @Test
-    fun givenACallObject_whenCreateCallCalled_thenAddThatCallToTheFlow() = runTest {
+    fun givenACallData_whenCreateCallCalled_thenAddThatCallToTheFlow() = runTest {
         given(conversationRepository).suspendFunction(conversationRepository::getConversationDetailsById)
             .whenInvokedWith(any())
             .thenReturn(flowOf(ConversationDetails.Group(TestConversation.ONE_ON_ONE, LegalHoldStatus.ENABLED)))
@@ -136,11 +134,26 @@ class CallRepositoryTest {
             assertEquals(2, list.size)
             assertEquals(list[0], startedCall)
             assertEquals(list[1], answeredCall)
+
+            verify(conversationRepository)
+                .suspendFunction(conversationRepository::getConversationDetailsById)
+                .with(any())
+                .wasInvoked(exactly = once)
+
+            verify(userRepository)
+                .suspendFunction(userRepository::getKnownUser)
+                .with(any())
+                .wasInvoked(exactly = once)
+
+            verify(teamRepository)
+                .suspendFunction(teamRepository::getTeam)
+                .with(any())
+                .wasInvoked(exactly = once)
         }
     }
 
     @Test
-    fun givenACallObjectWithSameConversationIdAsAnotherOneInTheFlow_whenCreateCallCalled_thenReplaceTheCurrent() = runTest {
+    fun givenACallDataWithSameConversationIdAsAnotherOneInTheFlow_whenCreateCallCalled_thenReplaceTheCurrent() = runTest {
         given(conversationRepository).suspendFunction(conversationRepository::getConversationDetailsById)
             .whenInvokedWith(any())
             .thenReturn(flowOf(ConversationDetails.Group(TestConversation.ONE_ON_ONE, LegalHoldStatus.ENABLED)))
@@ -161,6 +174,21 @@ class CallRepositoryTest {
             val list = awaitItem()
             assertEquals(mapOfCallProfiles.size, list.size)
             assertEquals(list[0], incomingCall2)
+
+            verify(conversationRepository)
+                .suspendFunction(conversationRepository::getConversationDetailsById)
+                .with(any())
+                .wasInvoked(exactly = once)
+
+            verify(userRepository)
+                .suspendFunction(userRepository::getKnownUser)
+                .with(any())
+                .wasInvoked(exactly = once)
+
+            verify(teamRepository)
+                .suspendFunction(teamRepository::getTeam)
+                .with(any())
+                .wasInvoked(exactly = once)
         }
     }
 
