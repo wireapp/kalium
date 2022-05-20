@@ -9,7 +9,6 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.call.CallApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlin.math.max
@@ -18,7 +17,7 @@ interface CallRepository {
     suspend fun getCallConfigResponse(limit: Int?): Either<CoreFailure, String>
     suspend fun connectToSFT(url: String, data: String): Either<CoreFailure, ByteArray>
     fun updateCallProfileFlow(callProfile: CallProfile)
-    fun callsFlow(): StateFlow<List<Call>>
+    fun callsFlow(): Flow<List<Call>>
     fun incomingCallsFlow(): Flow<List<Call>>
     fun ongoingCallsFlow(): Flow<List<Call>>
     fun createCall(call: Call)
@@ -46,7 +45,9 @@ internal class CallDataSource(
         _callProfile.value = callProfile
     }
 
-    override fun callsFlow(): StateFlow<List<Call>> = MutableStateFlow(allCalls.value.calls.values.toList())
+    override fun callsFlow(): Flow<List<Call>> = allCalls.map {
+                it.calls.values.toList()
+    }
 
     override fun incomingCallsFlow(): Flow<List<Call>> = allCalls.map {
         it.calls.values.filter { call ->

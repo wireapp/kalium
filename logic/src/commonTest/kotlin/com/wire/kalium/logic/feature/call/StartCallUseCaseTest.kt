@@ -25,7 +25,7 @@ class StartCallUseCaseTest {
 
     @BeforeTest
     fun setup() {
-        startCall = StartCallUseCase(callManager)
+        startCall = StartCallUseCase(lazy{ callManager })
     }
 
     @Test
