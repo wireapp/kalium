@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.kaliumLogger
 
 /**
  * Use Case that allows a user accept a connection request to connect with another User
@@ -26,6 +27,7 @@ internal class AcceptConnectionRequestUseCaseImpl(
     override suspend fun invoke(userId: UserId): AcceptConnectionRequestUseCaseResult {
         return connectionRepository.updateConnectionStatus(userId, ConnectionState.ACCEPTED)
             .fold({
+                kaliumLogger.e("An error occurred when accepting the connection request from $userId")
                 AcceptConnectionRequestUseCaseResult.Failure(it)
             }, {
                 AcceptConnectionRequestUseCaseResult.Success
