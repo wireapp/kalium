@@ -2,7 +2,9 @@ package com.wire.kalium.logic.feature.connection
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.connection.ConnectionRepository
+import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 
 /**
@@ -23,8 +25,13 @@ internal class AcceptConnectionRequestUseCaseImpl(
 ) : AcceptConnectionRequestUseCase {
 
     override suspend fun invoke(userId: UserId): AcceptConnectionRequestUseCaseResult {
-        kaliumLogger.d("accepting a connection request")
-        return AcceptConnectionRequestUseCaseResult.Success
+        return connectionRepository.updateConnectionStatus(userId, ConnectionState.ACCEPTED)
+            .fold({
+                kaliumLogger.e("An error occurred when accepting the connection request from $userId")
+                AcceptConnectionRequestUseCaseResult.Failure(it)
+            }, {
+                AcceptConnectionRequestUseCaseResult.Success
+            })
     }
 }
 
