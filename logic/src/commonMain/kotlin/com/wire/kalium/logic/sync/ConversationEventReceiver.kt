@@ -28,6 +28,8 @@ import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.logic.wrapCryptoRequest
 import io.ktor.utils.io.core.toByteArray
 
+// Suppressed as it's an old issue
+@Suppress("LongParameterList")
 class ConversationEventReceiver(
     private val proteusClient: ProteusClient,
     private val messageRepository: MessageRepository,
@@ -35,7 +37,7 @@ class ConversationEventReceiver(
     private val mlsConversationRepository: MLSConversationRepository,
     private val userRepository: UserRepository,
     private val protoContentMapper: ProtoContentMapper,
-    private val callManagerImpl: CallManager,
+    private val callManagerImpl: Lazy<CallManager>,
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : EventReceiver<Event.Conversation> {
@@ -187,7 +189,7 @@ class ConversationEventReceiver(
             }
             is MessageContent.Calling -> {
                 kaliumLogger.d("$TAG - MessageContent.Calling")
-                callManagerImpl.onCallingMessageReceived(
+                callManagerImpl.value.onCallingMessageReceived(
                     message = message,
                     content = message.content
                 )
