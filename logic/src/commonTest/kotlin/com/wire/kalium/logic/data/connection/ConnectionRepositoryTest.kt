@@ -8,7 +8,7 @@ import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.user.connection.Connection
 import com.wire.kalium.network.api.user.connection.ConnectionApi
 import com.wire.kalium.network.api.user.connection.ConnectionResponse
-import com.wire.kalium.network.api.user.connection.ConnectionStatusDTO
+import com.wire.kalium.network.api.user.connection.ConnectionStateDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
@@ -168,7 +168,7 @@ class ConnectionRepositoryTest {
         val userId = NetworkUserId("user_id", "domain_id")
         given(connectionApi)
             .suspendFunction(connectionApi::updateConnection)
-            .whenInvokedWith(eq(userId), eq(ConnectionStatusDTO.ACCEPTED))
+            .whenInvokedWith(eq(userId), eq(ConnectionStateDTO.ACCEPTED))
             .then { _, _ -> NetworkResponse.Success(connection1, mapOf(), 200) }
         given(conversationDAO)
             .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
@@ -181,7 +181,7 @@ class ConnectionRepositoryTest {
         // then
         verify(connectionApi)
             .suspendFunction(connectionApi::updateConnection)
-            .with(eq(userId), eq(ConnectionStatusDTO.ACCEPTED))
+            .with(eq(userId), eq(ConnectionStateDTO.ACCEPTED))
             .wasInvoked(once)
         verify(conversationDAO)
             .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
@@ -208,7 +208,7 @@ class ConnectionRepositoryTest {
         result.shouldFail()
         verify(connectionApi)
             .suspendFunction(connectionApi::updateConnection)
-            .with(eq(userId), eq(ConnectionStatusDTO.ACCEPTED))
+            .with(eq(userId), eq(ConnectionStateDTO.ACCEPTED))
             .wasNotInvoked()
         verify(conversationDAO)
             .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
@@ -235,7 +235,7 @@ class ConnectionRepositoryTest {
         result.shouldFail()
         verify(connectionApi)
             .suspendFunction(connectionApi::updateConnection)
-            .with(eq(userId), eq(ConnectionStatusDTO.ACCEPTED))
+            .with(eq(userId), eq(ConnectionStateDTO.ACCEPTED))
             .wasInvoked(once)
         verify(conversationDAO)
             .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
@@ -250,7 +250,7 @@ class ConnectionRepositoryTest {
             lastUpdate = "lastUpdate",
             qualifiedConversationId = ConversationId("conversationId1", "domain"),
             qualifiedToId = NetworkUserId("connectionId1", "domain"),
-            status = ConnectionStatusDTO.ACCEPTED,
+            status = ConnectionStateDTO.ACCEPTED,
             toId = "connectionId1"
         )
         val connection2 = Connection(
@@ -259,7 +259,7 @@ class ConnectionRepositoryTest {
             lastUpdate = "lastUpdate",
             qualifiedConversationId = ConversationId("conversationId2", "domain"),
             qualifiedToId = NetworkUserId("connectionId2", "domain"),
-            status = ConnectionStatusDTO.ACCEPTED,
+            status = ConnectionStateDTO.ACCEPTED,
             toId = "connectionId2"
         )
         val connectionsResponse = ConnectionResponse(
