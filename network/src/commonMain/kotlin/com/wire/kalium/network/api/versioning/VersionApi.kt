@@ -1,6 +1,6 @@
 package com.wire.kalium.network.api.versioning
 
-import com.wire.kalium.network.UnauthenticatedNetworkClient
+import com.wire.kalium.network.UnboundNetworkClient
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.setUrl
 import com.wire.kalium.network.utils.wrapKaliumResponse
@@ -13,11 +13,10 @@ interface VersionApi {
 }
 
 class VersionApiImpl internal constructor(
-    // TODO(network): change to UnboundNetworkClient
-    private val unauthenticatedNetworkClient: UnauthenticatedNetworkClient
+    private val unboundNetworkClient: UnboundNetworkClient
 ) : VersionApi {
 
-    private val httpClient get() = unauthenticatedNetworkClient.httpClient
+    private val httpClient get() = unboundNetworkClient.httpClient
 
     override suspend fun fetchApiVersion(baseApiUrl: Url): NetworkResponse<VersionInfoDTO> = wrapKaliumResponse({
         if (it.status.value != HttpStatusCode.NotFound.value) null

@@ -52,7 +52,7 @@ class ConversationsApplication : CliktCommand() {
 
         val serverConfigMapper: ServerConfigMapper = ServerConfigMapperImpl()
         val serverConfigDTO: ServerConfigDTO = serverConfigMapper.toDTO(ServerConfig.DEFAULT)
-        val loginContainer = UnauthenticatedNetworkContainer()
+        val loginContainer = UnauthenticatedNetworkContainer(serverConfigDTO)
 
         val loginResult = loginContainer.loginApi.login(
             LoginApi.LoginParam.LoginWithEmail(email = email, password = password, label = "ktor"), false, serverConfigDTO.apiBaseUrl.toString()

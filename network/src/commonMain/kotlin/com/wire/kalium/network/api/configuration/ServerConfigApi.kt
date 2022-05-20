@@ -1,6 +1,6 @@
 package com.wire.kalium.network.api.configuration
 
-import com.wire.kalium.network.UnauthenticatedNetworkClient
+import com.wire.kalium.network.UnboundNetworkClient
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.setUrl
 import com.wire.kalium.network.utils.wrapKaliumResponse
@@ -12,10 +12,10 @@ interface ServerConfigApi {
 }
 
 class ServerConfigApiImpl internal constructor(
-    private val unauthenticatedNetworkClient: UnauthenticatedNetworkClient
+    private val unboundNetworkClient: UnboundNetworkClient
 ) : ServerConfigApi {
 
-    private val httpClient get() = unauthenticatedNetworkClient.httpClient
+    private val httpClient get() = unboundNetworkClient.httpClient
 
     /**
      * Fetch remote configuration

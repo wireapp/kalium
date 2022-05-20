@@ -5,27 +5,16 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.configuration.server.ServerConfig
-import com.wire.kalium.logic.configuration.server.ServerConfigDataSource
-import com.wire.kalium.logic.configuration.server.ServerConfigRepository
-import com.wire.kalium.logic.configuration.server.ServerConfigUtil
-import com.wire.kalium.logic.configuration.server.ServerConfigUtilImpl
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.auth.login.LoginRepositoryImpl
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepositoryImpl
 import com.wire.kalium.logic.data.register.RegisterAccountDataSource
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
-import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.auth.sso.SSOLoginScope
 import com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseCase
 import com.wire.kalium.logic.feature.register.RegisterScope
-import com.wire.kalium.logic.feature.server.GetServerConfigUseCase
-import com.wire.kalium.logic.feature.server.ObserveServerConfigUseCase
-import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCase
-import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCaseImpl
-import com.wire.kalium.logic.feature.session.GetSessionsUseCase
-import com.wire.kalium.logic.feature.session.SessionScope
 import com.wire.kalium.logic.feature.user.EnableLoggingUseCase
 import com.wire.kalium.logic.feature.user.EnableLoggingUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsLoggingEnabledUseCase
@@ -40,10 +29,9 @@ import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 
 class AuthenticationScope(
     private val clientLabel: String,
-    private val sessionRepository: SessionRepository,
     private val globalDatabase: GlobalDatabaseProvider,
-    private val serverConfig: ServerConfig,
-    private val globalPreferences: KaliumPreferences
+    private val globalPreferences: KaliumPreferences,
+    private val serverConfig: ServerConfig
 ) {
 
     private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
@@ -53,16 +41,6 @@ class AuthenticationScope(
     private val tokenStorage: TokenStorage get() = TokenStorageImpl(globalPreferences)
     private val userConfigStorage: UserConfigStorage get() = UserConfigStorageImpl(globalPreferences)
 
-    private val serverConfigUtil: ServerConfigUtil get() = ServerConfigUtilImpl
-
-
-    private val serverConfigRepository: ServerConfigRepository
-        get() = ServerConfigDataSource(
-            unauthenticatedNetworkContainer.serverConfigApi,
-            globalDatabase.serverConfigurationDAO,
-            unauthenticatedNetworkContainer.remoteVersion,
-            serverConfigUtil
-        )
 
     private val loginRepository: LoginRepository get() = LoginRepositoryImpl(unauthenticatedNetworkContainer.loginApi, clientLabel)
     private val notificationTokenRepository: NotificationTokenRepository get() = NotificationTokenDataSource(tokenStorage)
@@ -78,13 +56,7 @@ class AuthenticationScope(
     val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
     val validatePasswordUseCase: ValidatePasswordUseCase get() = ValidatePasswordUseCaseImpl()
 
-    val addAuthenticatedAccount: AddAuthenticatedUserUseCase get() = AddAuthenticatedUserUseCase(sessionRepository)
     val login: LoginUseCase get() = LoginUseCaseImpl(loginRepository, validateEmailUseCase, validateUserHandleUseCase)
-    val getSessions: GetSessionsUseCase get() = GetSessionsUseCase(sessionRepository)
-    val getServerConfig: GetServerConfigUseCase get() = GetServerConfigUseCase(serverConfigRepository)
-    val observeServerConfig: ObserveServerConfigUseCase get() = ObserveServerConfigUseCase(serverConfigRepository, serverConfigUtil)
-    val updateApiVersions: UpdateApiVersionsUseCase get() = UpdateApiVersionsUseCaseImpl(serverConfigRepository)
-    val session: SessionScope get() = SessionScope(sessionRepository)
     val register: RegisterScope get() = RegisterScope(registerAccountRepository)
     val ssoLoginScope: SSOLoginScope get() = SSOLoginScope(ssoLoginRepository)
     val saveNotificationToken: SaveNotificationTokenUseCase get() = SaveNotificationTokenUseCase(notificationTokenRepository)

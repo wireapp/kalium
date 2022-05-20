@@ -32,15 +32,16 @@ actual class CoreLogic(
     clientLabel = clientLabel, rootPath = rootPath
 ) {
     override fun getSessionRepo(): SessionRepository {
-        val sessionStorage = SessionStorageImpl(globalPreferences)
+        // TODO: make lazier
+        val sessionStorage = SessionStorageImpl(globalPreferences.value)
         return SessionDataSource(sessionStorage)
     }
 
-    override val globalPreferences: KaliumPreferences by lazy {
+    override val globalPreferences: Lazy<KaliumPreferences> = lazy {
         KaliumPreferencesSettings(EncryptedSettingsHolder(SettingOptions.AppSettings).encryptedSettings)
     }
 
-    override val globalDatabase: GlobalDatabaseProvider by lazy { GlobalDatabaseProvider(File("$rootPath/global-storage")) }
+    override val globalDatabase: Lazy<GlobalDatabaseProvider> = lazy { GlobalDatabaseProvider(File("$rootPath/global-storage")) }
 
     override fun getSessionScope(userId: UserId): UserSessionScope {
         return userSessionScopeProvider.get(userId) ?: run {
@@ -73,7 +74,8 @@ actual class CoreLogic(
                 userDataSource,
                 sessionRepository,
                 globalCallManager,
-                globalPreferences
+                // TODO: make lazier
+                globalPreferences.value
             ).also {
                 userSessionScopeProvider.add(userId, it)
             }

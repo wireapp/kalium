@@ -3,12 +3,12 @@ package com.wire.kalium.cli
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
 import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.feature.register.RegisterParam
 import com.wire.kalium.logic.feature.register.RegisterResult
 import com.wire.kalium.logic.feature.register.RequestActivationCodeResult
-import com.wire.kalium.network.NetworkLogger
 import kotlinx.coroutines.runBlocking
 import java.util.Scanner
 import kotlin.properties.Delegates
@@ -29,7 +29,7 @@ class RegisterAccountApp : CliktCommand() {
     private var code by Delegates.notNull<Int>()
 
     override fun run(): Unit = runBlocking {
-        NetworkLogger.setLoggingLevel(KaliumLogLevel.DEBUG)
+        KaliumLogger.Config(KaliumLogLevel.DEBUG, "")
         when (val requestResult = requestCode()) {
             is RequestActivationCodeResult.Failure.Generic -> {
                 echo(requestResult.failure)
@@ -50,18 +50,18 @@ class RegisterAccountApp : CliktCommand() {
         }
     }
 
-    private suspend fun requestCode() = coreLogic.authenticationScope {
+    private suspend fun requestCode() = coreLogic.authenticationScope(serverConfig) {
         register.requestActivationCode(email, serverConfig)
     }
 
-    private suspend fun activate() = coreLogic.authenticationScope {
+    private suspend fun activate() = coreLogic.authenticationScope(serverConfig) {
         val reader = Scanner(System.`in`)
         echo("Enter the activation code: ")
         code = reader.nextInt()
         register.activate(email, code.toString(), serverConfig)
     }
 
-    private suspend fun register() = coreLogic.authenticationScope {
+    private suspend fun register() = coreLogic.authenticationScope(serverConfig) {
         val reader = Scanner(System.`in`)
         echo("Enter the activation code: ")
         code = reader.nextInt()

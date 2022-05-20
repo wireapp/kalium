@@ -1,14 +1,27 @@
 package com.wire.kalium.logic
 
+import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.configuration.server.ServerConfigDataSource
+import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.configuration.server.ServerConfigUtil
+import com.wire.kalium.logic.configuration.server.ServerConfigUtilImpl
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.UserSessionScope
+import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
+import com.wire.kalium.logic.feature.server.GetServerConfigUseCase
+import com.wire.kalium.logic.feature.server.ObserveServerConfigUseCase
+import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCase
+import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCaseImpl
+import com.wire.kalium.logic.feature.session.GetSessionsUseCase
+import com.wire.kalium.logic.feature.session.SessionScope
 import com.wire.kalium.logic.sync.UpdateApiVersionsScheduler
 import com.wire.kalium.logic.sync.WorkScheduler
+import com.wire.kalium.network.UnboundNetworkContainer
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 
@@ -27,20 +40,27 @@ abstract class CoreLogicCommon(
 
     protected abstract fun getSessionRepo(): SessionRepository
 
-    protected abstract val globalPreferences: KaliumPreferences
-    protected abstract val globalDatabase: GlobalDatabaseProvider
+    protected abstract val globalPreferences: Lazy<KaliumPreferences>
+    protected abstract val globalDatabase: Lazy<GlobalDatabaseProvider>
+
+    fun getGlobalScope(): KaliumScope = KaliumScope(globalDatabase, globalPreferences, sessionRepository)
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
-    fun getAuthenticationScope(): AuthenticationScope =
-        AuthenticationScope(clientLabel, sessionRepository, globalDatabase, globalPreferences)
+    fun getAuthenticationScope(serverConfig: ServerConfig): AuthenticationScope =
+        // TODO(logic): make it lazier
+        AuthenticationScope(clientLabel, globalDatabase.value, globalPreferences.value, serverConfig)
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     abstract fun getSessionScope(userId: UserId): UserSessionScope
 
-    suspend fun <T> authenticationScope(action: suspend AuthenticationScope.() -> T)
-            : T = getAuthenticationScope().action()
 
-    suspend fun <T> sessionScope(userId: UserId, action: suspend UserSessionScope.() -> T)
+    inline fun <T> globalScope(action: KaliumScope.() -> T)
+            : T = getGlobalScope().action()
+
+    inline fun <T> authenticationScope(serverConfig: ServerConfig, action: AuthenticationScope.() -> T)
+            : T = getAuthenticationScope(serverConfig).action()
+
+    inline fun <T> sessionScope(userId: UserId, action: UserSessionScope.() -> T)
             : T = getSessionScope(userId).action()
 
     protected abstract val globalCallManager: GlobalCallManager
@@ -48,4 +68,34 @@ abstract class CoreLogicCommon(
     protected abstract val globalWorkScheduler: WorkScheduler.Global
 
     val updateApiVersionsScheduler: UpdateApiVersionsScheduler get() = globalWorkScheduler
+}
+
+
+class KaliumScope(
+    private val globalDatabase: Lazy<GlobalDatabaseProvider>,
+    private val globalPreferences: Lazy<KaliumPreferences>,
+    private val sessionRepository: SessionRepository,
+) {
+
+    private val unboundNetworkContainer: UnboundNetworkContainer by lazy {
+        UnboundNetworkContainer()
+    }
+
+    private val serverConfigUtil: ServerConfigUtil get() = ServerConfigUtilImpl
+
+    private val serverConfigRepository: ServerConfigRepository
+        get() = ServerConfigDataSource(
+            unboundNetworkContainer.serverConfigApi,
+            globalDatabase.value.serverConfigurationDAO,
+            unboundNetworkContainer.remoteVersion,
+            serverConfigUtil
+        )
+
+    val addAuthenticatedAccount: AddAuthenticatedUserUseCase get() = AddAuthenticatedUserUseCase(sessionRepository)
+    val getSessions: GetSessionsUseCase get() = GetSessionsUseCase(sessionRepository)
+
+    val session: SessionScope get() = SessionScope(sessionRepository)
+    val fetchServerConfigFromDeepLink: GetServerConfigUseCase get() = GetServerConfigUseCase(serverConfigRepository)
+    val observeServerConfig: ObserveServerConfigUseCase get() = ObserveServerConfigUseCase(serverConfigRepository, serverConfigUtil)
+    val updateApiVersions: UpdateApiVersionsUseCase get() = UpdateApiVersionsUseCaseImpl(serverConfigRepository)
 }

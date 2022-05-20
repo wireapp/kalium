@@ -137,6 +137,9 @@ fun Int?.toCommonApiVersionType() = when {
 @Serializer(CommonApiVersionType::class)
 class CommonApiVersionTypeSerializer : KSerializer<CommonApiVersionType> {
     override val descriptor = PrimitiveSerialDescriptor("common_api_version", PrimitiveKind.INT)
-    override fun serialize(encoder: Encoder, value: CommonApiVersionType) { encoder.encodeInt(value.version) }
+    override fun serialize(encoder: Encoder, value: CommonApiVersionType) {
+        encoder.encodeInt(value.version)
+    }
+
     override fun deserialize(decoder: Decoder): CommonApiVersionType = decoder.decodeInt().toCommonApiVersionType()
 }

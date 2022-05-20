@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.feature.asset.PublicAssetResult
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
-import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.conversation.GetConversationsUseCase
 import kotlinx.coroutines.flow.first
 import java.io.IOException
@@ -39,10 +38,10 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun loginAndFetchConversationList(coreLogic: CoreLogic) = lifecycleScope.launchWhenCreated {
-        login(coreLogic.getAuthenticationScope())?.let {
+        login(coreLogic, serverConfig)?.let {
             val session = coreLogic.getSessionScope(it.userId)
             val conversations = session.conversations.getConversations().let { result ->
-                when(result) {
+                when (result) {
                     is GetConversationsUseCase.Result.Failure -> {
                         throw IOException()
                     }
@@ -67,20 +66,26 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private suspend fun login(authenticationScope: AuthenticationScope): AuthSession? {
-        val result = authenticationScope.login("jacob.persson+summer1@wire.com", "hepphepp", false, serverConfig)
+    private suspend fun login(coreLogic: CoreLogic, serverConfig: ServerConfig): AuthSession? {
+        val result = coreLogic.authenticationScope(serverConfig) {
+            login(
+                "jacob.persson+summer1@wire.com",
+                "hepphepp",
+                false,
+                serverConfig
+            )
+        }
 
         if (result !is AuthenticationResult.Success) {
             throw RuntimeException(
                 "There was an error on the login :(" +
-                    "Check the credentials and the internet connection and try again"
+                        "Check the credentials and the internet connection and try again"
             )
         }
 
-        authenticationScope.addAuthenticatedAccount(
-            authSession = result.userSession
-        )
-
+        coreLogic.globalScope {
+            addAuthenticatedAccount(authSession = result.userSession)
+        }
         return result.userSession
     }
 }

@@ -24,7 +24,17 @@ class UnauthenticatedNetworkContainer constructor(
     val registerApi: RegisterApi get() = RegisterApiImpl(unauthenticatedNetworkClient)
     val sso: SSOLoginApi get() = SSOLoginApiImpl(unauthenticatedNetworkClient)
 
-    // TODO(network): create new container "UnboundNetworkContainer"
-    val serverConfigApi: ServerConfigApi get() = ServerConfigApiImpl(unauthenticatedNetworkClient)
-    val remoteVersion: VersionApi get() = VersionApiImpl(unauthenticatedNetworkClient)
+
+}
+
+
+class UnboundNetworkContainer(
+    engine: HttpClientEngine = defaultHttpEngine()
+) {
+    internal val unboundNetworkClient by lazy {
+        UnboundNetworkClient(engine)
+    }
+
+    val serverConfigApi: ServerConfigApi get() = ServerConfigApiImpl(unboundNetworkClient)
+    val remoteVersion: VersionApi get() = VersionApiImpl(unboundNetworkClient)
 }

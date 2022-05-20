@@ -136,6 +136,7 @@ internal interface ApiTest {
             )
         }
         return UnauthenticatedNetworkContainer(
+            serverConfigDTO  = TEST_BACKEND_CONFIG,
             engine = mockEngine
         ).unauthenticatedNetworkClient
     }
@@ -169,6 +170,7 @@ internal interface ApiTest {
             fail("no expected response was found for ${currentRequest.method.value}:${currentRequest.url}")
         }
         return UnauthenticatedNetworkContainer(
+            serverConfigDTO  = TEST_BACKEND_CONFIG,
             engine = mockEngine
         ).unauthenticatedNetworkClient
     }

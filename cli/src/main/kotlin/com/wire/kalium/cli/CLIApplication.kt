@@ -33,7 +33,7 @@ import kotlinx.coroutines.runBlocking
 private val coreLogic = CoreLogic("Kalium CLI", "${CLIApplication.HOME_DIRECTORY}/.kalium/accounts")
 
 suspend fun restoreSession(): AuthSession? {
-    return coreLogic.authenticationScope {
+    return coreLogic.globalScope {
         when (val currentSessionResult = session.currentSession()) {
             is CurrentSessionResult.Success -> currentSessionResult.authSession
             else -> null
@@ -117,30 +117,34 @@ class LoginCommand: CliktCommand(name = "login") {
     }
 
     override fun run() = runBlocking {
-        val authSession = coreLogic.authenticationScope {
-            val loginResult = login(email, password, true, serverConfig)
-            if (loginResult !is AuthenticationResult.Success) {
-                throw PrintMessage("Login failed, check your credentials")
+        val loginSession = coreLogic.authenticationScope(serverConfig) {
+            login(email, password, true, serverConfig).let {
+                if (it !is AuthenticationResult.Success) {
+                    throw PrintMessage("Login failed, check your credentials")
+                } else {
+                    it.userSession
+                }
             }
+        }
 
+        val userId = coreLogic.globalScope {
             val allSessionsResult = this.session.allSessions()
             if (allSessionsResult !is GetAllSessionsResult.Success) {
                 throw PrintMessage("Failed retrieve existing sessions")
             }
 
-            if (allSessionsResult.sessions.map { it.userId }.contains(loginResult.userSession.userId)) {
-                this.session.updateCurrentSession(loginResult.userSession.userId)
+            if (allSessionsResult.sessions.map { it.userId }.contains(loginSession.userId)) {
+                this.session.updateCurrentSession(loginSession.userId)
             } else {
-                val addAccountResult = addAuthenticatedAccount(loginResult.userSession, true)
+                val addAccountResult = addAuthenticatedAccount(loginSession, true)
                 if (addAccountResult !is AddAuthenticatedUserUseCase.Result.Success) {
                     throw PrintMessage("Failed to save session")
                 }
             }
-
-            loginResult.userSession
+            loginSession.userId
         }
 
-        coreLogic.sessionScope(authSession.userId) {
+        coreLogic.sessionScope(userId) {
             if (client.needsToRegisterClient()) {
                 when (client.register(RegisterClientParam.ClientWithoutToken(password, emptyList()))) {
                     is RegisterClientResult.Failure -> throw PrintMessage("Client registration failed")
