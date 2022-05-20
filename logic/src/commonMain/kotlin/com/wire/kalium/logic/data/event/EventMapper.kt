@@ -2,6 +2,7 @@ package com.wire.kalium.logic.data.event
 
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.user.toUserId
 import com.wire.kalium.network.api.notification.EventContentDTO
 import com.wire.kalium.network.api.notification.EventResponse
 
@@ -18,6 +19,7 @@ class EventMapper(private val idMapper: IdMapper) {
                 is EventContentDTO.Conversation.MemberLeaveDTO -> memberLeave(id, eventContentDTO)
                 is EventContentDTO.Conversation.MLSWelcomeDTO -> welcomeMessage(id, eventContentDTO)
                 is EventContentDTO.Conversation.NewMLSMessageDTO -> newMLSMessage(id, eventContentDTO)
+                is EventContentDTO.User.NewConnectionDTO -> newConnection(id, eventContentDTO)
                 is EventContentDTO.User.NewClientDTO, EventContentDTO.Unknown -> Event.Unknown(id)
             }
         } ?: listOf()
@@ -54,6 +56,13 @@ class EventMapper(private val idMapper: IdMapper) {
         eventContentDTO.message
     )
 
+    private fun newConnection(
+        id: String,
+        eventConnectionDTO: EventContentDTO.User.NewConnectionDTO
+    ) = Event.User.Connection(
+        id,
+        eventConnectionDTO.connection.from.toUserId(),
+    )
 
     private fun newConversation(
         id: String,

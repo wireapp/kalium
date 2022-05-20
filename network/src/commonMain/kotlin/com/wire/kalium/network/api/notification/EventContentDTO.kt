@@ -5,9 +5,9 @@ import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.conversation.ConversationMembers
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.ConversationUsers
-import com.wire.kalium.network.api.message.MLSMessageApi
 import com.wire.kalium.network.api.notification.conversation.MessageEventData
 import com.wire.kalium.network.api.notification.user.NewClientEventData
+import com.wire.kalium.network.api.user.connection.Connection
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -92,6 +92,12 @@ sealed class EventContentDTO {
         @SerialName("user.client-add")
         data class NewClientDTO(
             @SerialName("client") val client: NewClientEventData,
+        ) : User()
+
+        @Serializable
+        @SerialName("user.connection")
+        data class NewConnectionDTO(
+            @SerialName("connection") val connection: Connection,
         ) : User()
     }
 
