@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.event
 import com.wire.kalium.logic.data.connection.ConnectionStatusMapper
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toConversationId
 import com.wire.kalium.logic.data.user.toUserId
 import com.wire.kalium.network.api.notification.EventContentDTO
 import com.wire.kalium.network.api.notification.EventResponse
@@ -63,7 +64,8 @@ class EventMapper(private val idMapper: IdMapper, private  val connectionMapper:
     ) = Event.User.Connection(
         id,
         eventConnectionDTO.connection.from.toUserId(),
-        status = connectionMapper.fromApiModel(eventConnectionDTO.connection.status)
+        connectionMapper.fromApiModel(eventConnectionDTO.connection.status),
+        eventConnectionDTO.connection.conversationId.toConversationId()
     )
 
     private fun newConversation(

@@ -9,7 +9,8 @@ import com.wire.kalium.logic.kaliumLogger
 class ListenToEventsUseCase(
     private val syncManager: SyncManager,
     private val eventRepository: EventRepository,
-    private val conversationEventReceiver: EventReceiver<Event.Conversation>
+    private val conversationEventReceiver: EventReceiver<Event.Conversation>,
+    private val userEventReceiver: EventReceiver<Event.User>
 ) {
 
     /**
@@ -26,6 +27,9 @@ class ListenToEventsUseCase(
                     when (event) {
                         is Event.Conversation -> {
                             conversationEventReceiver.onEvent(event)
+                        }
+                        is Event.User -> {
+                            userEventReceiver.onEvent(event)
                         }
                         else -> {
                             kaliumLogger.i(message = "Unhandled event id=${event.id}")

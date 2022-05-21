@@ -66,6 +66,7 @@ import com.wire.kalium.logic.sync.ConversationEventReceiver
 import com.wire.kalium.logic.sync.ListenToEventsUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.SyncPendingEventsUseCase
+import com.wire.kalium.logic.sync.UserEventReceiver
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.TimeParserImpl
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
@@ -245,6 +246,11 @@ abstract class UserSessionScopeCommon(
             callManager
         )
 
+    private val userEventReceiver: UserEventReceiver
+        get() = UserEventReceiver(
+            conversationRepository,
+        )
+
     private val preKeyRemoteRepository: PreKeyRemoteRepository get() = PreKeyRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi)
     private val preKeyRepository: PreKeyRepository
         get() = PreKeyDataSource(
@@ -260,7 +266,7 @@ abstract class UserSessionScopeCommon(
 
     private val logoutRepository: LogoutRepository = LogoutDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi)
     val listenToEvents: ListenToEventsUseCase
-        get() = ListenToEventsUseCase(syncManager, eventRepository, conversationEventReceiver)
+        get() = ListenToEventsUseCase(syncManager, eventRepository, conversationEventReceiver, userEventReceiver)
     val syncPendingEvents: SyncPendingEventsUseCase
         get() = SyncPendingEventsUseCase(syncManager, eventRepository, conversationEventReceiver)
     val client: ClientScope

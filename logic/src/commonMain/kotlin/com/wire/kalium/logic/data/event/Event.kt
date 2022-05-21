@@ -70,7 +70,8 @@ sealed class Event(open val id: String) {
         data class Connection(
             override val id: String,
             val senderUserId: UserId,
-            val status: ConnectionState
+            val status: ConnectionState,
+            val conversationId: ConversationId
         ) : User(id)
     }
 
