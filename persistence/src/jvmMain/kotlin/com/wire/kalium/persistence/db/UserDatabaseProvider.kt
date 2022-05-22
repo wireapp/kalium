@@ -5,6 +5,7 @@ import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.wire.kalium.persistence.Client
+import com.wire.kalium.persistence.Connection
 import com.wire.kalium.persistence.Conversation
 import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
@@ -51,6 +52,11 @@ actual class UserDatabaseProvider(private val storePath: File) {
         database = UserDatabase(
             driver,
             Client.Adapter(user_idAdapter = QualifiedIDAdapter()),
+            Connection.Adapter(
+                qualified_conversationAdapter = QualifiedIDAdapter(),
+                qualified_toAdapter = QualifiedIDAdapter(),
+                statusAdapter = EnumColumnAdapter()
+            ),
             Conversation.Adapter(
                 qualified_idAdapter = QualifiedIDAdapter(),
                 typeAdapter = EnumColumnAdapter(),

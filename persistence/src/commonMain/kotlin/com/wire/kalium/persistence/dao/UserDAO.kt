@@ -10,6 +10,7 @@ data class QualifiedIDEntity(
 )
 
 typealias UserIDEntity = QualifiedIDEntity
+typealias ConversationIDEntity = QualifiedIDEntity
 
 data class UserEntity(
     val id: QualifiedIDEntity,
@@ -23,6 +24,17 @@ data class UserEntity(
     val previewAssetId: UserAssetIdEntity?,
     val completeAssetId: UserAssetIdEntity?
 ) {
+
+    data class Connection (
+        val conversationId: String,
+        val from: String,
+        val lastUpdate: String,
+        val qualifiedConversationId: ConversationIDEntity,
+        val qualifiedToId: QualifiedIDEntity,
+        val status: ConnectionState,
+        val toId: String
+    )
+    
     enum class ConnectionState {
         /** Default - No connection state */
         NOT_CONNECTED,

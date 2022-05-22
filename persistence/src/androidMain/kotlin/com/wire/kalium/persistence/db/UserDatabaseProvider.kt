@@ -6,6 +6,7 @@ import app.cash.sqldelight.EnumColumnAdapter
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.wire.kalium.persistence.Client
+import com.wire.kalium.persistence.Connection
 import com.wire.kalium.persistence.Conversation
 import com.wire.kalium.persistence.DBUtil
 import com.wire.kalium.persistence.Member
@@ -59,6 +60,11 @@ actual class UserDatabaseProvider(private val context: Context, userId: UserIDEn
         database = UserDatabase(
             driver,
             Client.Adapter(user_idAdapter = QualifiedIDAdapter()),
+            Connection.Adapter(
+                qualified_conversationAdapter = QualifiedIDAdapter(),
+                qualified_toAdapter = QualifiedIDAdapter(),
+                statusAdapter = EnumColumnAdapter()
+            ),
             Conversation.Adapter(
                 qualified_idAdapter = QualifiedIDAdapter(),
                 typeAdapter = EnumColumnAdapter(),
