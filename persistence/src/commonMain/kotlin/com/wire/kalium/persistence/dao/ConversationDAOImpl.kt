@@ -152,7 +152,7 @@ class ConversationDAOImpl(
 
     override suspend fun updateOrInsertOneOnOneMemberWithConnectionStatus(
         userId: UserIDEntity,
-        status: UserEntity.ConnectionState,
+        status: ConnectionEntity.State,
         conversationID: QualifiedIDEntity
     ) {
         memberQueries.transaction {

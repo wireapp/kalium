@@ -11,8 +11,8 @@ import com.wire.kalium.network.api.user.connection.ConnectionResponse
 import com.wire.kalium.network.api.user.connection.ConnectionStateDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.ConversationDAO
-import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import io.mockative.Mock
 import io.mockative.any
@@ -103,7 +103,7 @@ class ConnectionRepositoryTest {
             .wasInvoked(once)
         verify(conversationDAO)
             .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
-            .with(any(), eq(UserEntity.ConnectionState.SENT), any())
+            .with(any(), eq(ConnectionEntity.State.SENT), any())
             .wasInvoked(once)
     }
 

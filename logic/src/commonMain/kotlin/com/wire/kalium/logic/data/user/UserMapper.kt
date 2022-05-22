@@ -11,6 +11,7 @@ import com.wire.kalium.network.api.model.getPreviewAssetOrNull
 import com.wire.kalium.network.api.teams.TeamsApi
 import com.wire.kalium.network.api.user.details.UserProfileDTO
 import com.wire.kalium.network.api.user.self.UserUpdateRequest
+import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity as UserIdEntity
@@ -34,8 +35,8 @@ interface UserMapper {
         teamMemberDTO: TeamsApi.TeamMemberDTO,
         userDomain: String
     ): UserEntity
-    fun fromDaoConnectionStateToUser(connectionState: UserEntity.ConnectionState): ConnectionState
-    fun fromUserConnectionStateToDao(connectionState: ConnectionState): UserEntity.ConnectionState
+    fun fromDaoConnectionStateToUser(connectionState: ConnectionEntity.State): ConnectionState
+    fun fromUserConnectionStateToDao(connectionState: ConnectionState): ConnectionEntity.State
 }
 
 internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
@@ -147,32 +148,32 @@ internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
             phone = null,
             accentId = 1,
             team = teamId,
-            connectionStatus = UserEntity.ConnectionState.ACCEPTED,
+            connectionStatus = ConnectionEntity.State.ACCEPTED,
             previewAssetId = null,
             completeAssetId = null
         )
 
-    override fun fromDaoConnectionStateToUser(connectionState: UserEntity.ConnectionState): ConnectionState =
+    override fun fromDaoConnectionStateToUser(connectionState: ConnectionEntity.State): ConnectionState =
         when(connectionState) {
-            UserEntity.ConnectionState.NOT_CONNECTED -> ConnectionState.NOT_CONNECTED
-            UserEntity.ConnectionState.PENDING -> ConnectionState.PENDING
-            UserEntity.ConnectionState.SENT -> ConnectionState.SENT
-            UserEntity.ConnectionState.BLOCKED -> ConnectionState.BLOCKED
-            UserEntity.ConnectionState.IGNORED -> ConnectionState.IGNORED
-            UserEntity.ConnectionState.CANCELLED -> ConnectionState.CANCELLED
-            UserEntity.ConnectionState.MISSING_LEGALHOLD_CONSENT -> ConnectionState.MISSING_LEGALHOLD_CONSENT
-            UserEntity.ConnectionState.ACCEPTED -> ConnectionState.ACCEPTED
+            ConnectionEntity.State.NOT_CONNECTED -> ConnectionState.NOT_CONNECTED
+            ConnectionEntity.State.PENDING -> ConnectionState.PENDING
+            ConnectionEntity.State.SENT -> ConnectionState.SENT
+            ConnectionEntity.State.BLOCKED -> ConnectionState.BLOCKED
+            ConnectionEntity.State.IGNORED -> ConnectionState.IGNORED
+            ConnectionEntity.State.CANCELLED -> ConnectionState.CANCELLED
+            ConnectionEntity.State.MISSING_LEGALHOLD_CONSENT -> ConnectionState.MISSING_LEGALHOLD_CONSENT
+            ConnectionEntity.State.ACCEPTED -> ConnectionState.ACCEPTED
         }
 
-    override fun fromUserConnectionStateToDao(connectionState: ConnectionState): UserEntity.ConnectionState =
+    override fun fromUserConnectionStateToDao(connectionState: ConnectionState): ConnectionEntity.State =
         when(connectionState) {
-            ConnectionState.NOT_CONNECTED -> UserEntity.ConnectionState.NOT_CONNECTED
-            ConnectionState.PENDING -> UserEntity.ConnectionState.PENDING
-            ConnectionState.SENT -> UserEntity.ConnectionState.SENT
-            ConnectionState.BLOCKED -> UserEntity.ConnectionState.BLOCKED
-            ConnectionState.IGNORED -> UserEntity.ConnectionState.IGNORED
-            ConnectionState.CANCELLED -> UserEntity.ConnectionState.CANCELLED
-            ConnectionState.MISSING_LEGALHOLD_CONSENT -> UserEntity.ConnectionState.MISSING_LEGALHOLD_CONSENT
-            ConnectionState.ACCEPTED -> UserEntity.ConnectionState.ACCEPTED
+            ConnectionState.NOT_CONNECTED -> ConnectionEntity.State.NOT_CONNECTED
+            ConnectionState.PENDING -> ConnectionEntity.State.PENDING
+            ConnectionState.SENT -> ConnectionEntity.State.SENT
+            ConnectionState.BLOCKED -> ConnectionEntity.State.BLOCKED
+            ConnectionState.IGNORED -> ConnectionEntity.State.IGNORED
+            ConnectionState.CANCELLED -> ConnectionEntity.State.CANCELLED
+            ConnectionState.MISSING_LEGALHOLD_CONSENT -> ConnectionEntity.State.MISSING_LEGALHOLD_CONSENT
+            ConnectionState.ACCEPTED -> ConnectionEntity.State.ACCEPTED
         }
 }

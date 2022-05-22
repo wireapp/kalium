@@ -1,4 +1,4 @@
-import com.wire.kalium.persistence.dao.UserEntity.ConnectionState;
+import com.wire.kalium.persistence.dao.ConnectionEntity;
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import kotlin.Int;
 
@@ -9,7 +9,7 @@ CREATE TABLE Connection (
     to_id TEXT,
     last_update TEXT,
     qualified_to TEXT AS QualifiedIDEntity,
-    status TEXT AS ConnectionState NOT NULL DEFAULT 'NOT_CONNECTED'
+    status TEXT AS ConnectionEntity.State NOT NULL DEFAULT 'NOT_CONNECTED'
 );
 
 deleteAllConnections:

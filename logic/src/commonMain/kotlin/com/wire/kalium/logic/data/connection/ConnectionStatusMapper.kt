@@ -2,36 +2,36 @@ package com.wire.kalium.logic.data.connection
 
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.network.api.user.connection.ConnectionStateDTO
-import com.wire.kalium.persistence.dao.UserEntity
+import com.wire.kalium.persistence.dao.ConnectionEntity
 
 interface ConnectionStatusMapper {
-    fun fromApiToDao(state: ConnectionStateDTO): UserEntity.ConnectionState
-    fun fromDaoToApi(state: UserEntity.ConnectionState): ConnectionStateDTO?
+    fun fromApiToDao(state: ConnectionStateDTO): ConnectionEntity.State
+    fun fromDaoToApi(state: ConnectionEntity.State): ConnectionStateDTO?
     fun fromApiModel(state: ConnectionStateDTO): ConnectionState
     fun toApiModel(state: ConnectionState): ConnectionStateDTO?
 
 }
 
 internal class ConnectionStatusMapperImpl : ConnectionStatusMapper {
-    override fun fromApiToDao(state: ConnectionStateDTO): UserEntity.ConnectionState = when (state) {
-        ConnectionStateDTO.PENDING -> UserEntity.ConnectionState.PENDING
-        ConnectionStateDTO.SENT -> UserEntity.ConnectionState.SENT
-        ConnectionStateDTO.BLOCKED -> UserEntity.ConnectionState.BLOCKED
-        ConnectionStateDTO.IGNORED -> UserEntity.ConnectionState.IGNORED
-        ConnectionStateDTO.CANCELLED -> UserEntity.ConnectionState.CANCELLED
-        ConnectionStateDTO.MISSING_LEGALHOLD_CONSENT -> UserEntity.ConnectionState.MISSING_LEGALHOLD_CONSENT
-        ConnectionStateDTO.ACCEPTED -> UserEntity.ConnectionState.ACCEPTED
+    override fun fromApiToDao(state: ConnectionStateDTO): ConnectionEntity.State = when (state) {
+        ConnectionStateDTO.PENDING -> ConnectionEntity.State.PENDING
+        ConnectionStateDTO.SENT -> ConnectionEntity.State.SENT
+        ConnectionStateDTO.BLOCKED -> ConnectionEntity.State.BLOCKED
+        ConnectionStateDTO.IGNORED -> ConnectionEntity.State.IGNORED
+        ConnectionStateDTO.CANCELLED -> ConnectionEntity.State.CANCELLED
+        ConnectionStateDTO.MISSING_LEGALHOLD_CONSENT -> ConnectionEntity.State.MISSING_LEGALHOLD_CONSENT
+        ConnectionStateDTO.ACCEPTED -> ConnectionEntity.State.ACCEPTED
     }
 
-    override fun fromDaoToApi(state: UserEntity.ConnectionState): ConnectionStateDTO? = when (state) {
-        UserEntity.ConnectionState.PENDING -> ConnectionStateDTO.PENDING
-        UserEntity.ConnectionState.SENT -> ConnectionStateDTO.SENT
-        UserEntity.ConnectionState.BLOCKED -> ConnectionStateDTO.BLOCKED
-        UserEntity.ConnectionState.IGNORED -> ConnectionStateDTO.IGNORED
-        UserEntity.ConnectionState.CANCELLED -> ConnectionStateDTO.CANCELLED
-        UserEntity.ConnectionState.MISSING_LEGALHOLD_CONSENT -> ConnectionStateDTO.MISSING_LEGALHOLD_CONSENT
-        UserEntity.ConnectionState.ACCEPTED -> ConnectionStateDTO.ACCEPTED
-        UserEntity.ConnectionState.NOT_CONNECTED -> null
+    override fun fromDaoToApi(state: ConnectionEntity.State): ConnectionStateDTO? = when (state) {
+        ConnectionEntity.State.PENDING -> ConnectionStateDTO.PENDING
+        ConnectionEntity.State.SENT -> ConnectionStateDTO.SENT
+        ConnectionEntity.State.BLOCKED -> ConnectionStateDTO.BLOCKED
+        ConnectionEntity.State.IGNORED -> ConnectionStateDTO.IGNORED
+        ConnectionEntity.State.CANCELLED -> ConnectionStateDTO.CANCELLED
+        ConnectionEntity.State.MISSING_LEGALHOLD_CONSENT -> ConnectionStateDTO.MISSING_LEGALHOLD_CONSENT
+        ConnectionEntity.State.ACCEPTED -> ConnectionStateDTO.ACCEPTED
+        ConnectionEntity.State.NOT_CONNECTED -> null
     }
 
     override fun fromApiModel(state: ConnectionStateDTO): ConnectionState = when (state) {

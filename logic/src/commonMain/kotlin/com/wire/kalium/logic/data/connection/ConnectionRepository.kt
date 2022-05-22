@@ -2,6 +2,7 @@ package com.wire.kalium.logic.data.connection
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
@@ -19,18 +20,22 @@ import com.wire.kalium.network.api.user.connection.Connection
 import com.wire.kalium.network.api.user.connection.ConnectionApi
 import com.wire.kalium.network.api.user.connection.ConnectionStateDTO
 import com.wire.kalium.persistence.dao.ConversationDAO
+import kotlinx.coroutines.flow.Flow
 
 interface ConnectionRepository {
     suspend fun fetchSelfUserConnections(): Either<CoreFailure, Unit>
     suspend fun sendUserConnection(userId: UserId): Either<CoreFailure, Unit>
     suspend fun updateConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, Unit>
+    suspend fun getConnections(): Either<StorageFailure, Flow<List<Connection>>>
+
 }
 
 internal class ConnectionDataSource(
     private val conversationDAO: ConversationDAO,
     private val connectionApi: ConnectionApi,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
-    private val connectionStatusMapper: ConnectionStatusMapper = MapperProvider.connectionStatusMapper()
+    private val connectionStatusMapper: ConnectionStatusMapper = MapperProvider.connectionStatusMapper(),
+    private val connectionMapper: ConnectionMapper = MapperProvider.connectionMapper(),
 ) : ConnectionRepository {
 
     override suspend fun fetchSelfUserConnections(): Either<CoreFailure, Unit> {
@@ -75,6 +80,10 @@ internal class ConnectionDataSource(
                 updateUserConnectionStatus(listOf(connectionSent))
             }
         }
+    }
+
+    override suspend fun getConnections(): Either<StorageFailure, Flow<List<Connection>>> {
+        TODO("Not yet implemented")
     }
 
     private suspend fun updateUserConnectionStatus(

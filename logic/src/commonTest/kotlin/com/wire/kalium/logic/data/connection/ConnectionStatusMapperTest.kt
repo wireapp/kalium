@@ -6,7 +6,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-internal typealias PersistenceConnectionState = com.wire.kalium.persistence.dao.UserEntity.ConnectionState
+internal typealias PersistenceConnectionState = com.wire.kalium.persistence.dao.ConnectionEntity.State
 
 class ConnectionStatusMapperTest {
 

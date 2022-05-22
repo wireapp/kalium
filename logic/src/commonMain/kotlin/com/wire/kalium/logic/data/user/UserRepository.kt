@@ -18,6 +18,7 @@ import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.network.api.user.details.qualifiedIds
 import com.wire.kalium.network.api.user.self.ChangeHandleRequest
 import com.wire.kalium.network.api.user.self.SelfApi
+import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
@@ -69,7 +70,7 @@ class UserDataSource(
     }
 
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
-        .map { userMapper.fromApiModelToDaoModel(it).copy(connectionStatus = UserEntity.ConnectionState.ACCEPTED) }
+        .map { userMapper.fromApiModelToDaoModel(it).copy(connectionStatus = ConnectionEntity.State.ACCEPTED) }
         .flatMap { userEntity ->
             assetRepository.downloadUsersPictureAssets(listOf(userEntity.previewAssetId, userEntity.completeAssetId))
             userDAO.insertUser(userEntity)
@@ -127,7 +128,7 @@ class UserDataSource(
     override suspend fun getAllContacts(): List<OtherUser> {
         val selfUserId = _getSelfUserId()
 
-        return userDAO.getAllUsersByConnectionStatus(connectionState = UserEntity.ConnectionState.ACCEPTED)
+        return userDAO.getAllUsersByConnectionStatus(connectionState = ConnectionEntity.State.ACCEPTED)
             .filter { it.id != selfUserId }
             .map { userEntity -> publicUserMapper.fromDaoModelToPublicUser(userEntity) }
     }

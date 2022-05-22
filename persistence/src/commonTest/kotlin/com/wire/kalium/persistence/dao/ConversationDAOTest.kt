@@ -119,7 +119,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
             userId = member1.user,
-            status = UserEntity.ConnectionState.ACCEPTED,
+            status = ConnectionEntity.State.ACCEPTED,
             conversationID = conversationEntity1.id
         )
 
@@ -132,16 +132,16 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenExistingConversation_ThenUserTableShouldBeUpdatedOnlyAndNotReplaced() = runTest {
         conversationDAO.insertConversation(conversationEntity1)
-        userDAO.insertUser(user1.copy(connectionStatus = UserEntity.ConnectionState.NOT_CONNECTED))
+        userDAO.insertUser(user1.copy(connectionStatus = ConnectionEntity.State.NOT_CONNECTED))
 
         conversationDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
             userId = member1.user,
-            status = UserEntity.ConnectionState.SENT,
+            status = ConnectionEntity.State.SENT,
             conversationID = conversationEntity1.id
         )
 
         assertEquals(setOf(member1), conversationDAO.getAllMembers(conversationEntity1.id).first().toSet())
-        assertEquals(UserEntity.ConnectionState.SENT, userDAO.getUserByQualifiedID(user1.id).first()?.connectionStatus)
+        assertEquals(ConnectionEntity.State.SENT, userDAO.getUserByQualifiedID(user1.id).first()?.connectionStatus)
         assertEquals(user1.name, userDAO.getUserByQualifiedID(user1.id).first()?.name)
     }
 
