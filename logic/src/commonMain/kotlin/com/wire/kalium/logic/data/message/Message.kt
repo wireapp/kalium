@@ -19,7 +19,7 @@ data class Message(
     }
 
     enum class DownloadStatus {
-        NOT_DOWNLOADED, IN_PROGRESS, DOWNLOADED, FAILED
+        NOT_DOWNLOADED, IN_PROGRESS, DOWNLOADED, SAVED_EXTERNALLY, FAILED
     }
 
     enum class Visibility {
