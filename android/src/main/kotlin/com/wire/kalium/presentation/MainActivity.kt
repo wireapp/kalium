@@ -38,8 +38,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun loginAndFetchConversationList(coreLogic: CoreLogic) = lifecycleScope.launchWhenCreated {
-        login(coreLogic, serverConfig)?.let {
-            val session = coreLogic.getSessionScope(it.userId)
+        login(coreLogic, serverConfig.links)?.let {
+            val session = coreLogic.getSessionScope(it.tokens.userId)
             val conversations = session.conversations.getConversations().let { result ->
                 when (result) {
                     is GetConversationsUseCase.Result.Failure -> {
@@ -66,27 +66,22 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private suspend fun login(coreLogic: CoreLogic, serverConfig: ServerConfig): AuthSession? {
-        val result = coreLogic.authenticationScope(serverConfig) {
-            login(
-                "jacob.persson+summer1@wire.com",
-                "hepphepp",
-                false,
-                serverConfig
-            )
+    private suspend fun login(coreLogic: CoreLogic, backendLinks: ServerConfig.Links): AuthSession? {
+        val result = coreLogic.authenticationScope(backendLinks) {
+            login("jacob.persson+summer1@wire.com", "hepphepp", false)
         }
 
         if (result !is AuthenticationResult.Success) {
             throw RuntimeException(
-                "There was an error on the login :(" +
-                        "Check the credentials and the internet connection and try again"
+                "There was an error on the login :(" + "Check the credentials and the internet connection and try again"
             )
         }
 
+        val session = AuthSession(result.userSession, serverConfig)
         coreLogic.globalScope {
-            addAuthenticatedAccount(authSession = result.userSession)
+            addAuthenticatedAccount(authSession = session)
         }
-        return result.userSession
+        return session
     }
 }
 
@@ -99,8 +94,7 @@ fun MainLayout(conversations: List<Conversation>, selfUser: SelfUser, avatarAsse
         Text("$selfUser")
 
         Divider(
-            modifier = Modifier.fillMaxWidth(),
-            thickness = 0.5.dp
+            modifier = Modifier.fillMaxWidth(), thickness = 0.5.dp
         )
 
         Text(text = "Avatar picture:")

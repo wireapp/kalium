@@ -6,9 +6,16 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class AuthSession(
-    val userId: QualifiedID,
-    val accessToken: String,
-    val refreshToken: String,
-    val tokenType: String,
+    val tokens: Tokens,
     val serverConfig: ServerConfig
-)
+) {
+    @Serializable
+    data class Tokens(
+        val userId: QualifiedID,
+        val accessToken: String,
+        val refreshToken: String,
+        val tokenType: String
+    )
+}
+
+

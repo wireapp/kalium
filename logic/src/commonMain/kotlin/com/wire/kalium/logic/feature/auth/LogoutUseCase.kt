@@ -6,9 +6,9 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.functional.isLeft
 import com.wire.kalium.logic.di.UserSessionScopeProvider
 import com.wire.kalium.logic.di.UserSessionScopeProviderImpl
+import com.wire.kalium.logic.functional.isLeft
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 
@@ -38,7 +38,7 @@ class LogoutUseCase @Suppress("LongParameterList") constructor(
     private fun clearUserSessionAndUpdateCurrent() {
         sessionRepository.deleteSession(userId)
         sessionRepository.allSessions().onSuccess {
-            sessionRepository.updateCurrentSession(it.first().userId)
+            sessionRepository.updateCurrentSession(it.first().tokens.userId)
         }
     }
 

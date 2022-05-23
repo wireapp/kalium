@@ -6,7 +6,6 @@ import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.session.installAuth
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.tools.ServerConfigDTO
-import com.wire.kalium.network.tools.WireServerDTO
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.HttpClientEngine
@@ -49,10 +48,15 @@ internal class AuthenticatedNetworkClient(engine: HttpClientEngine, sessionManag
  * needed configurations to talk with a Wire backend, like
  * Serialization, and Content Negotiation.
  */
-internal class UnauthenticatedNetworkClient(engine: HttpClientEngine, backend: WireServerDTO) {
+internal class UnauthenticatedNetworkClient(
+    engine: HttpClientEngine,
+    backendLinks: ServerConfigDTO.Links,
+    serverMetaDataManager: ServerMetaDataManager
+) {
     val httpClient: HttpClient = provideBaseHttpClient(engine) {
-            installWireBaseUrl(backend)
-        }
+        TODO()
+        //installWireBaseUrl(backendLinks, serverMetaDataManager)
+    }
 }
 
 /**
@@ -91,23 +95,6 @@ internal class AuthenticatedWebSocketClient(
         }
 }
 
-private fun HttpClientConfig<*>.installWireBaseUrl(backend: WireServerDTO) {
-    defaultRequest {
-        header(HttpHeaders.ContentType, ContentType.Application.Json)
-        with(backend) {
-            val apiBaseUrl = backend.links.api
-            // enforce https as url protocol
-            url.protocol = URLProtocol.HTTPS
-            // add the default host
-            url.host = apiBaseUrl.host
-            // for api version 0 no api version should be added to the request
-            url.encodedPath =
-                if (shouldAddApiVersion(metaData.commonApiVersion.version)) apiBaseUrl.encodedPath + "v${metaData.commonApiVersion}/"
-                else apiBaseUrl.encodedPath
-        }
-    }
-}
-
 /**
  * Provides a base [HttpClient] that has all the
  * needed configurations to talk with a Wire backend, like
@@ -119,18 +106,18 @@ private fun HttpClientConfig<*>.installWireBaseUrl(backend: WireServerDTO) {
  * @param options, some configuration presets
  * @param config, a block that allows further customisation of the [HttpClient]
  */
-@Deprecated("replace ServerConfigDTO with WireServerDTO")
-private fun HttpClientConfig<*>.installWireBaseUrl(serverConfigDTO: ServerConfigDTO) {
+private fun HttpClientConfig<*>.installWireBaseUrl(backend: ServerConfigDTO) {
     defaultRequest {
         header(HttpHeaders.ContentType, ContentType.Application.Json)
-        with(serverConfigDTO) {
+        with(backend) {
+            val apiBaseUrl = backend.links.api
             // enforce https as url protocol
             url.protocol = URLProtocol.HTTPS
             // add the default host
             url.host = apiBaseUrl.host
             // for api version 0 no api version should be added to the request
             url.encodedPath =
-                if (shouldAddApiVersion(apiVersion)) apiBaseUrl.encodedPath + "v${apiVersion}/"
+                if (shouldAddApiVersion(metaData.commonApiVersion.version)) apiBaseUrl.encodedPath + "v${metaData.commonApiVersion}/"
                 else apiBaseUrl.encodedPath
         }
     }

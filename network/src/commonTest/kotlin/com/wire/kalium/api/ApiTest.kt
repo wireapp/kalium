@@ -136,7 +136,7 @@ internal interface ApiTest {
             )
         }
         return UnauthenticatedNetworkContainer(
-            backendLinks = TEST_BACKEND_Links,
+            backendLinks = TEST_BACKEND.links,
             engine = mockEngine
         ).unauthenticatedNetworkClient
     }
@@ -170,7 +170,7 @@ internal interface ApiTest {
             fail("no expected response was found for ${currentRequest.method.value}:${currentRequest.url}")
         }
         return UnauthenticatedNetworkContainer(
-            backendLinks = TEST_BACKEND_Links,
+            backendLinks = TEST_BACKEND.links,
             engine = mockEngine
         ).unauthenticatedNetworkClient
     }

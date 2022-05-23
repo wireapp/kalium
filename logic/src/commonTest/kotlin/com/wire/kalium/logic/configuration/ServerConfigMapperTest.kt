@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.configuration
 
+import com.wire.kalium.logic.configuration.server.ApiVersionMapper
 import com.wire.kalium.logic.configuration.server.CommonApiVersionType
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
@@ -8,9 +9,14 @@ import com.wire.kalium.logic.configuration.server.toCommonApiVersionType
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.logic.util.stubs.newServerConfigDTO
 import com.wire.kalium.logic.util.stubs.newServerConfigEntity
+import com.wire.kalium.network.tools.ApiVersionDTO
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import io.ktor.http.Url
+import io.mockative.Mock
+import io.mockative.classOf
+import io.mockative.given
+import io.mockative.mock
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -20,30 +26,41 @@ class ServerConfigMapperTest {
 
     private lateinit var serverConfigMapper: ServerConfigMapper
 
+    @Mock
+    private val versionMapper = mock(classOf<ApiVersionMapper>())
+
     @BeforeTest
     fun setup() {
-        serverConfigMapper = ServerConfigMapperImpl()
+        serverConfigMapper = ServerConfigMapperImpl(versionMapper)
+        given(versionMapper).invocation { toDTO(SERVER_CONFIG_TEST.metaData.commonApiVersion) }.then { ApiVersionDTO.Valid(1) }
     }
 
     @Test
     fun givenAServerConfig_whenMappingToBackendConfig_thenValuesAreMappedCorrectly() {
         val serverConfig: ServerConfig = SERVER_CONFIG_TEST
-        val acuteValue: ServerConfigDTO =
+        val expected: ServerConfigDTO =
             with(serverConfig) {
                 ServerConfigDTO(
-                    Url(apiBaseUrl),
-                    Url(accountsBaseUrl),
-                    Url(webSocketBaseUrl),
-                    Url(blackListUrl),
-                    Url(teamsUrl),
-                    Url(websiteUrl),
-                    title,
-                    commonApiVersion.version
+                    id = id,
+                    ServerConfigDTO.Links(
+                        Url(links.api),
+                        Url(links.accounts),
+                        Url(links.webSocket),
+                        Url(links.blackList),
+                        Url(links.teams),
+                        Url(links.website),
+                        title,
+                    ),
+                    ServerConfigDTO.MetaData(
+                        metaData.federation,
+                        ApiVersionDTO.Valid(1),
+                        metaData.domain
+                    )
                 )
             }
 
-        val expectedValue: ServerConfigDTO = serverConfigMapper.toDTO(serverConfig)
-        assertEquals(expectedValue, acuteValue)
+        val actual: ServerConfigDTO = serverConfigMapper.toDTO(serverConfig)
+        assertEquals(expected, actual)
     }
 
     @Test
@@ -53,16 +70,20 @@ class ServerConfigMapperTest {
             with(serverConfigEntity) {
                 ServerConfig(
                     id,
-                    apiBaseUrl,
-                    accountBaseUrl,
-                    webSocketBaseUrl,
-                    blackListUrl,
-                    teamsUrl,
-                    websiteUrl,
                     title,
-                    federation,
-                    commonApiVersion.toCommonApiVersionType(),
-                    domain
+                    ServerConfig.Links(
+                        apiBaseUrl,
+                        accountBaseUrl,
+                        webSocketBaseUrl,
+                        blackListUrl,
+                        teamsUrl,
+                        websiteUrl
+                    ),
+                    ServerConfig.MetaData(
+                        federation,
+                        commonApiVersion.toCommonApiVersionType(),
+                        domain
+                    )
                 )
             }
 
@@ -77,16 +98,16 @@ class ServerConfigMapperTest {
             with(serverConfig) {
                 ServerConfigEntity(
                     id,
-                    apiBaseUrl,
-                    accountsBaseUrl,
-                    webSocketBaseUrl,
-                    blackListUrl,
-                    teamsUrl,
-                    websiteUrl,
+                    links.api,
+                    links.accounts,
+                    links.webSocket,
+                    links.blackList,
+                    links.teams,
+                    links.website,
                     title,
-                    federation,
-                    commonApiVersion.version,
-                    domain
+                    metaData.federation,
+                    metaData.commonApiVersion.version,
+                    metaData.domain
                 )
             }
 

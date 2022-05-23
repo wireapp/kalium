@@ -2,24 +2,24 @@ package com.wire.kalium.network
 
 import com.wire.kalium.network.api.versioning.VersionInfoDTO
 import com.wire.kalium.network.tools.ApiVersionDTO
-import com.wire.kalium.network.tools.WireServerDTO
+import com.wire.kalium.network.tools.ServerConfigDTO
 
 val SupportedApiVersions = setOf(0)
 
 interface BackendMetaDataUtil {
-    fun calculateApiVersion(versionInfoDTO: VersionInfoDTO, appVersion: Set<Int> = SupportedApiVersions): WireServerDTO.MetaData
+    fun calculateApiVersion(versionInfoDTO: VersionInfoDTO, appVersion: Set<Int> = SupportedApiVersions): ServerConfigDTO.MetaData
 
 }
 
 object BackendMetaDataUtilImpl : BackendMetaDataUtil {
-    override fun calculateApiVersion(versionInfoDTO: VersionInfoDTO, appVersion: Set<Int>): WireServerDTO.MetaData {
+    override fun calculateApiVersion(versionInfoDTO: VersionInfoDTO, appVersion: Set<Int>): ServerConfigDTO.MetaData {
         val apiVersion = commonApiVersion(versionInfoDTO.supported, appVersion)?.let { maxCommonVersion ->
             ApiVersionDTO.Valid(maxCommonVersion)
         } ?: run {
             handleNoCommonVersion(versionInfoDTO.supported, appVersion)
         }
 
-        return WireServerDTO.MetaData(
+        return ServerConfigDTO.MetaData(
             versionInfoDTO.federation,
             apiVersion,
             versionInfoDTO.domain

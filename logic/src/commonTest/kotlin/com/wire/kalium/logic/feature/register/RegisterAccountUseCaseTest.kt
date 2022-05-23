@@ -38,122 +38,94 @@ class RegisterAccountUseCaseTest {
 
     @Test
     fun givenRepositoryCallIsSuccessful_whenRegisteringPersonalAccount_thenSuccessIsPropagated() = runTest {
-        val serverConfig = TEST_SERVER_CONFIG
         val param = TEST_PRIVATE_ACCOUNT_PARAM
         val user = TEST_SELF_USER
         val session = TEST_AUTH_SESSION
-        val expected = Pair(user, session)
+        val expected = Pair(user, session.tokens)
 
-        given(registerAccountRepository)
-            .coroutine {
-                registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password, serverConfig)
-            }
-            .then { Either.Right(expected) }
+        given(registerAccountRepository).coroutine {
+            registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password)
+        }.then { Either.Right(expected) }
 
-        val actual = registerAccountUseCase(param, serverConfig)
+        val actual = registerAccountUseCase(param)
 
         assertIs<RegisterResult.Success>(actual)
         assertEquals(expected, actual.value)
 
-        verify(registerAccountRepository)
-            .coroutine {
-                registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password, serverConfig)
-            }
-            .wasInvoked(exactly = once)
+        verify(registerAccountRepository).coroutine {
+            registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password)
+        }.wasInvoked(exactly = once)
     }
 
     @Test
     fun givenRepositoryCallIsSuccessful_whenRegisteringTeamAccount_thenSuccessIsPropagated() = runTest {
-        val serverConfig = TEST_SERVER_CONFIG
         val param = TEST_TEAM_ACCOUNT_PARAM
         val user = TEST_SELF_USER
         val session = TEST_AUTH_SESSION
-        val expected = Pair(user, session)
+        val expected = Pair(user, session.tokens)
 
-        given(registerAccountRepository)
-            .coroutine {
-                registerTeamWithEmail(
-                    param.email, param.emailActivationCode, param.name, param.password, param.teamName, param.teamIcon, serverConfig
-                )
-            }
-            .then { Either.Right(expected) }
+        given(registerAccountRepository).coroutine {
+            registerTeamWithEmail(
+                param.email, param.emailActivationCode, param.name, param.password, param.teamName, param.teamIcon
+            )
+        }.then { Either.Right(expected) }
 
-        val actual = registerAccountUseCase(param, serverConfig)
+        val actual = registerAccountUseCase(param)
 
         assertIs<RegisterResult.Success>(actual)
         assertEquals(expected, actual.value)
 
-        verify(registerAccountRepository)
-            .coroutine {
-                registerTeamWithEmail(
-                    param.email, param.emailActivationCode, param.name, param.password, param.teamName, param.teamIcon, serverConfig
-                )
-            }
-            .wasInvoked(exactly = once)
+        verify(registerAccountRepository).coroutine {
+            registerTeamWithEmail(
+                param.email, param.emailActivationCode, param.name, param.password, param.teamName, param.teamIcon
+            )
+        }.wasInvoked(exactly = once)
     }
 
     @Test
     fun givenRepositoryCallIsSuccessful_shouldStoreSessionIsFalse_whenRegisteringPersonalAccount_thenDoNotStoreSessionAndReturnSuccess() =
         runTest {
-            val serverConfig = TEST_SERVER_CONFIG
             val param = TEST_PRIVATE_ACCOUNT_PARAM
             val user = TEST_SELF_USER
             val session = TEST_AUTH_SESSION
-            val expected = Pair(user, session)
+            val expected = Pair(user, session.tokens)
 
-            given(registerAccountRepository)
-                .coroutine {
-                    registerPersonalAccountWithEmail(
-                        param.email,
-                        param.emailActivationCode,
-                        param.name,
-                        param.password,
-                        serverConfig
-                    )
-                }
-                .then { Either.Right(expected) }
+            given(registerAccountRepository).coroutine {
+                registerPersonalAccountWithEmail(
+                    param.email, param.emailActivationCode, param.name, param.password
+                )
+            }.then { Either.Right(expected) }
 
-            val actual = registerAccountUseCase(param, serverConfig)
+            val actual = registerAccountUseCase(param)
 
             assertIs<RegisterResult.Success>(actual)
             assertEquals(expected, actual.value)
 
-            verify(registerAccountRepository)
-                .coroutine {
-                    registerPersonalAccountWithEmail(
-                        param.email,
-                        param.emailActivationCode,
-                        param.name,
-                        param.password,
-                        serverConfig
-                    )
-                }
-                .wasInvoked(exactly = once)
+            verify(registerAccountRepository).coroutine {
+                registerPersonalAccountWithEmail(
+                    param.email, param.emailActivationCode, param.name, param.password
+                )
+            }.wasInvoked(exactly = once)
         }
 
     @Test
     fun givenRepositoryCallFailWithGenericError_whenRegisteringPersonalAccount_thenErrorIsPropagated() = runTest {
-        val serverConfig = TEST_SERVER_CONFIG
         val param = TEST_PRIVATE_ACCOUNT_PARAM
         val expected = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
 
-        given(registerAccountRepository)
-            .coroutine {
-                registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password, serverConfig)
-            }
-            .then { Either.Left(expected) }
+        given(registerAccountRepository).coroutine {
+            registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password)
+        }.then { Either.Left(expected) }
 
-        val actual = registerAccountUseCase(param, serverConfig)
+        val actual = registerAccountUseCase(param)
 
         assertIs<RegisterResult.Failure.Generic>(actual)
         assertIs<NetworkFailure.ServerMiscommunication>(actual.failure)
         assertEquals(expected.kaliumException, (actual.failure as NetworkFailure.ServerMiscommunication).kaliumException)
 
-        verify(registerAccountRepository)
-            .coroutine {
-                registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password, serverConfig)
-            }
-            .wasInvoked(exactly = once)
+        verify(registerAccountRepository).coroutine {
+            registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password)
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -182,26 +154,21 @@ class RegisterAccountUseCaseTest {
 
 
     private fun testSpecificError(kaliumException: KaliumException, error: RegisterResult.Failure) = runTest {
-        val serverConfig = TEST_SERVER_CONFIG
         val param = TEST_PRIVATE_ACCOUNT_PARAM
         val expected = NetworkFailure.ServerMiscommunication(kaliumException)
 
-        given(registerAccountRepository)
-            .coroutine {
-                registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password, serverConfig)
-            }
-            .then { Either.Left(expected) }
+        given(registerAccountRepository).coroutine {
+            registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password)
+        }.then { Either.Left(expected) }
 
-        val actual = registerAccountUseCase(param, serverConfig)
+        val actual = registerAccountUseCase(param)
 
         assertIs<RegisterResult.Failure>(actual)
         assertEquals(error, actual)
 
-        verify(registerAccountRepository)
-            .coroutine {
-                registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password, serverConfig)
-            }
-            .wasInvoked(exactly = once)
+        verify(registerAccountRepository).coroutine {
+            registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password)
+        }.wasInvoked(exactly = once)
     }
 
 
@@ -214,8 +181,13 @@ class RegisterAccountUseCaseTest {
             firstName = "first", lastName = "last", email = TEST_EMAIL, password = TEST_PASSWORD, emailActivationCode = TEST_CODE
         )
         val TEST_TEAM_ACCOUNT_PARAM = RegisterParam.Team(
-            firstName = "first", lastName = "last", email = TEST_EMAIL, password = TEST_PASSWORD, emailActivationCode = TEST_CODE,
-            teamName = "teamName", teamIcon = "teamIcon"
+            firstName = "first",
+            lastName = "last",
+            email = TEST_EMAIL,
+            password = TEST_PASSWORD,
+            emailActivationCode = TEST_CODE,
+            teamName = "teamName",
+            teamIcon = "teamIcon"
         )
         val TEST_SELF_USER = SelfUser(
             id = UserId(value = "user_id", domain = "domain.com"),
@@ -229,6 +201,7 @@ class RegisterAccountUseCaseTest {
             previewPicture = null,
             completePicture = null
         )
-        val TEST_AUTH_SESSION = AuthSession(TEST_SELF_USER.id, "access_token", "refresh_token", "token_type", TEST_SERVER_CONFIG)
+        val TEST_AUTH_SESSION =
+            AuthSession(AuthSession.Tokens(TEST_SELF_USER.id, "access_token", "refresh_token", "token_type"), TEST_SERVER_CONFIG)
     }
 }

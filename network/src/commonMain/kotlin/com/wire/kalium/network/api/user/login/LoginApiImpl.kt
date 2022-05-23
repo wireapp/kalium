@@ -42,32 +42,31 @@ class LoginApiImpl internal constructor(
 
 
     override suspend fun login(
-        param: LoginApi.LoginParam, persist: Boolean, apiBaseUrl: String
-    ): NetworkResponse<SessionDTO> =
-        wrapKaliumResponse<AccessTokenDTO> {
-            httpClient.post(PATH_LOGIN) {
-                parameter(QUERY_PERSIST, persist)
-                setBody(param.toRequestBody())
+        param: LoginApi.LoginParam, persist: Boolean
+    ): NetworkResponse<SessionDTO> = wrapKaliumResponse<AccessTokenDTO> {
+        httpClient.post(PATH_LOGIN) {
+            parameter(QUERY_PERSIST, persist)
+            setBody(param.toRequestBody())
+        }
+    }.flatMap { accessTokenDTOResponse ->
+        with(accessTokenDTOResponse) {
+            cookies[RefreshTokenProperties.COOKIE_NAME]?.let { refreshToken ->
+                NetworkResponse.Success(refreshToken, headers, httpCode)
+            } ?: CustomErrors.MISSING_REFRESH_TOKEN
+        }.mapSuccess { Pair(accessTokenDTOResponse.value, it) }
+    }.flatMap { tokensPairResponse ->
+        // this is a hack to get the user QualifiedUserId on login
+        // TODO(optimization): remove this one when login endpoint return a QualifiedUserId
+        wrapKaliumResponse<UserDTO> {
+            httpClient.get(PATH_SELF) {
+                bearerAuth(tokensPairResponse.value.first.value)
             }
-        }.flatMap { accessTokenDTOResponse ->
-            with(accessTokenDTOResponse) {
-                cookies[RefreshTokenProperties.COOKIE_NAME]?.let { refreshToken ->
-                    NetworkResponse.Success(refreshToken, headers, httpCode)
-                } ?: CustomErrors.MISSING_REFRESH_TOKEN
-            }.mapSuccess { Pair(accessTokenDTOResponse.value, it) }
-        }.flatMap { tokensPairResponse ->
-            // this is a hack to get the user QualifiedUserId on login
-            // TODO(optimization): remove this one when login endpoint return a QualifiedUserId
-            wrapKaliumResponse<UserDTO> {
-                httpClient.get(PATH_SELF) {
-                    bearerAuth(tokensPairResponse.value.first.value)
-                }
-            }.mapSuccess {
-                with(tokensPairResponse.value) {
-                    first.toSessionDto(second, it.id)
-                }
+        }.mapSuccess {
+            with(tokensPairResponse.value) {
+                first.toSessionDto(second, it.id)
             }
         }
+    }
 
     private companion object {
         const val PATH_SELF = "self"

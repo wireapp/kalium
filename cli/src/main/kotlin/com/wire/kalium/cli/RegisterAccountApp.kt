@@ -50,18 +50,18 @@ class RegisterAccountApp : CliktCommand() {
         }
     }
 
-    private suspend fun requestCode() = coreLogic.authenticationScope(serverConfig) {
-        register.requestActivationCode(email, serverConfig)
+    private suspend fun requestCode() = coreLogic.authenticationScope(serverConfig.links) {
+        register.requestActivationCode(email)
     }
 
-    private suspend fun activate() = coreLogic.authenticationScope(serverConfig) {
+    private suspend fun activate() = coreLogic.authenticationScope(serverConfig.links) {
         val reader = Scanner(System.`in`)
         echo("Enter the activation code: ")
         code = reader.nextInt()
-        register.activate(email, code.toString(), serverConfig)
+        register.activate(email, code.toString())
     }
 
-    private suspend fun register() = coreLogic.authenticationScope(serverConfig) {
+    private suspend fun register() = coreLogic.authenticationScope(serverConfig.links) {
         val reader = Scanner(System.`in`)
         echo("Enter the activation code: ")
         code = reader.nextInt()
@@ -72,7 +72,7 @@ class RegisterAccountApp : CliktCommand() {
             emailActivationCode = code.toString(),
             password = "@Password123"
         )
-        register.register(param, serverConfig)
+        register.register(param)
     }
 
 

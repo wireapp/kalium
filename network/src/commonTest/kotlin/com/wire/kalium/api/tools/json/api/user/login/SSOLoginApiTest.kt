@@ -6,12 +6,9 @@ import com.wire.kalium.network.api.user.login.SSOLoginApiImpl
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.Url
-import io.ktor.http.protocolWithAuthority
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -32,10 +29,11 @@ class SSOLoginApiTest : ApiTest {
             }
         )
         val ssoApi: SSOLoginApi = SSOLoginApiImpl(networkClient)
-        val actual = ssoApi.initiate(param, TEST_HOST)
+        val actual = ssoApi.initiate(param)
 
         assertIs<NetworkResponse.Success<String>>(actual)
-        assertEquals("${TEST_HOST.protocolWithAuthority}$expectedPath", actual.value)
+        TODO()
+        //assertEquals("${TEST_HOST.protocolWithAuthority}$expectedPath", actual.value)
     }
 
     @Test
@@ -52,10 +50,11 @@ class SSOLoginApiTest : ApiTest {
             }
         )
         val ssoApi: SSOLoginApi = SSOLoginApiImpl(networkClient)
-        val actual = ssoApi.initiate(param, TEST_HOST)
+        val actual = ssoApi.initiate(param)
 
         assertIs<NetworkResponse.Success<String>>(actual)
-        assertEquals("${TEST_HOST.protocolWithAuthority}$expectedPathAndQuery", actual.value)
+        TODO()
+        //assertEquals("${TEST_HOST.protocolWithAuthority}$expectedPathAndQuery", actual.value)
     }
 
     @Test
@@ -71,7 +70,7 @@ class SSOLoginApiTest : ApiTest {
             }
         )
         val ssoApi: SSOLoginApi = SSOLoginApiImpl(networkClient)
-        val actual = ssoApi.finalize(cookie, TEST_HOST)
+        val actual = ssoApi.finalize(cookie)
 
         assertIs<NetworkResponse.Success<String>>(actual)
     }
@@ -80,8 +79,6 @@ class SSOLoginApiTest : ApiTest {
     private companion object {
         const val PATH_SSO_INITIATE = "/sso/initiate-login"
         const val PATH_SSO_FINALIZE = "/sso/finalize-login"
-
-        val TEST_HOST = Url("""https://test-https.wire.com""")
     }
 
 }

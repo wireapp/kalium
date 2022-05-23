@@ -2,7 +2,7 @@ package com.wire.kalium.network.tools
 
 import io.ktor.http.Url
 
-data class WireServerDTO(
+data class ServerConfigDTO(
     val id: String,
     val links: Links,
     val metaData: MetaData
@@ -37,16 +37,3 @@ sealed class ApiVersionDTO(open val version: Int) {
         const val MINIMUM_VALID_API_VERSION = 0
     }
 }
-
-
-@Deprecated("old model", replaceWith = ReplaceWith("com.wire.kalium.logic.configuration.server.WireServer"))
-data class ServerConfigDTO(
-    val apiBaseUrl: Url,
-    val accountsBaseUrl: Url,
-    val webSocketBaseUrl: Url,
-    val blackListUrl: Url,
-    val teamsUrl: Url,
-    val websiteUrl: Url,
-    val title: String,
-    val apiVersion: Int
-)

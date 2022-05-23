@@ -7,7 +7,6 @@ import com.wire.kalium.logic.configuration.server.ServerConfigUtil
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.logic.util.stubs.newServerConfig
-import com.wire.kalium.logic.util.stubs.newServerConfigDTO
 import com.wire.kalium.logic.util.stubs.newServerConfigEntity
 import com.wire.kalium.logic.util.stubs.newServerConfigResponse
 import com.wire.kalium.network.api.configuration.ServerConfigApi
@@ -141,7 +140,7 @@ class ServerConfigRepositoryTest {
     fun givenValidCompatibleApiVersion_whenStoringConfigLocally_thenConfigIsStored() = runTest {
         val testConfigResponse = newServerConfigResponse(1)
         val expected = newServerConfig(1)
-        val versionInfoDTO = VersionInfoDTO(expected.domain, expected.federation, listOf(1, 2))
+        val versionInfoDTO = VersionInfoDTO(expected.metaData.domain, expected.metaData.federation, listOf(1, 2))
         given(versionApi)
             .suspendFunction(versionApi::fetchApiVersion)
             .whenInvokedWith(any())
@@ -149,7 +148,7 @@ class ServerConfigRepositoryTest {
 
         given(serverConfigUtil)
             .invocation { calculateApiVersion(versionInfoDTO.supported) }
-            .then { Either.Right(expected.commonApiVersion.version) }
+            .then { Either.Right(expected.metaData.commonApiVersion.version) }
 
         given(serverConfigDAO)
             .function(serverConfigDAO::configById)
@@ -180,7 +179,6 @@ class ServerConfigRepositoryTest {
         const val SERVER_CONFIG_URL = "https://test.test/test.json"
         val SERVER_CONFIG_RESPONSE = newServerConfigResponse(1)
         val SERVER_CONFIG = newServerConfig(1)
-        val SERVER_CONFIG_DTO = newServerConfigDTO(1)
     }
 
 }

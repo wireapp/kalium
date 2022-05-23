@@ -131,7 +131,7 @@ internal class ServerConfigDataSource(
     }.map { serverConfigMapper.fromEntity(it) }
 
     override suspend fun updateConfigApiVersion(id: String): Either<CoreFailure, Unit> = configById(id)
-        .flatMap { wrapApiRequest { versionApi.fetchApiVersion(Url(it.apiBaseUrl)) } }
+        .flatMap { wrapApiRequest { versionApi.fetchApiVersion(Url(it.links.api)) } }
         .flatMap { serverConfigUtil.calculateApiVersion(it.supported) }
         .flatMap { wrapStorageRequest { dao.updateApiVersion(id, it) } }
 }

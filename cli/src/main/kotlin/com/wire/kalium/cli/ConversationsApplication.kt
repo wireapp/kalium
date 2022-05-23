@@ -6,6 +6,7 @@ import com.github.ajalt.clikt.parameters.options.required
 import com.wire.kalium.cli.CLIUtils.getResource
 import com.wire.kalium.cryptography.utils.calcMd5
 import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.logic.configuration.server.ApiVersionMapperImpl
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.configuration.server.ServerConfigMapperImpl
@@ -50,12 +51,12 @@ class ConversationsApplication : CliktCommand() {
     override fun run(): Unit = runBlocking {
         NetworkLogger.setLoggingLevel(level = KaliumLogLevel.DEBUG)
 
-        val serverConfigMapper: ServerConfigMapper = ServerConfigMapperImpl()
+        val serverConfigMapper: ServerConfigMapper = ServerConfigMapperImpl(ApiVersionMapperImpl())
         val serverConfigDTO: ServerConfigDTO = serverConfigMapper.toDTO(ServerConfig.DEFAULT)
-        val loginContainer = UnauthenticatedNetworkContainer(serverConfigDTO)
+        val loginContainer = UnauthenticatedNetworkContainer(serverConfigDTO.links)
 
         val loginResult = loginContainer.loginApi.login(
-            LoginApi.LoginParam.LoginWithEmail(email = email, password = password, label = "ktor"), false, serverConfigDTO.apiBaseUrl.toString()
+            LoginApi.LoginParam.LoginWithEmail(email = email, password = password, label = "ktor"), false
         )
 
         if (!loginResult.isSuccessful()) {

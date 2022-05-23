@@ -1,6 +1,8 @@
 package com.wire.kalium.logic.di
 
 import com.wire.kalium.logic.configuration.ClientConfig
+import com.wire.kalium.logic.configuration.server.ApiVersionMapper
+import com.wire.kalium.logic.configuration.server.ApiVersionMapperImpl
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.configuration.server.ServerConfigMapperImpl
 import com.wire.kalium.logic.data.asset.AssetMapper
@@ -33,8 +35,9 @@ import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.data.user.UserMapperImpl
 
 internal object MapperProvider {
+    fun apiVersionMapper(): ApiVersionMapper = ApiVersionMapperImpl()
     fun idMapper(): IdMapper = IdMapperImpl()
-    fun serverConfigMapper(): ServerConfigMapper = ServerConfigMapperImpl()
+    fun serverConfigMapper(): ServerConfigMapper = ServerConfigMapperImpl(apiVersionMapper())
     fun sessionMapper(): SessionMapper = SessionMapperImpl(serverConfigMapper(), idMapper())
     fun userMapper(): UserMapper = UserMapperImpl(idMapper())
     fun teamMapper(): TeamMapper = TeamMapperImpl()
