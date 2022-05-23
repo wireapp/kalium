@@ -15,7 +15,6 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity as UserIdEntity
 
-
 interface UserMapper {
     fun fromDtoToSelfUser(userDTO: UserDTO): SelfUser
     fun fromApiModelToDaoModel(userProfileDTO: UserProfileDTO): UserEntity
