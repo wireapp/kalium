@@ -11,9 +11,11 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -49,6 +51,19 @@ class SyncManagerImpl(
      */
     private val processingSupervisorJob = SupervisorJob()
 
+    private val coroutineExceptionHandler = CoroutineExceptionHandler { _, throwable ->
+        when (throwable) {
+            is CancellationException -> {
+                kaliumLogger.i("Sync job was cancelled")
+                syncRepository.updateSyncState { SyncState.WAITING }
+            }
+            else -> {
+                kaliumLogger.i("Sync job failed due to unknown reason", throwable)
+                syncRepository.updateSyncState { SyncState.FAILED }
+            }
+        }
+    }
+
     /**
      * The scope in which the processing of events run.
      * All coroutines will have limited parallelism, as this scope uses [eventProcessingDispatcher].
@@ -56,9 +71,8 @@ class SyncManagerImpl(
      * @see eventProcessingDispatcher
      * @see processingSupervisorJob
      */
-    private val processingScope = CoroutineScope(processingSupervisorJob + eventProcessingDispatcher)
+    private val processingScope = CoroutineScope(processingSupervisorJob + eventProcessingDispatcher + coroutineExceptionHandler)
     private var processingJob: Job? = null
-
 
     override fun onSlowSyncComplete() {
         syncRepository.updateSyncState { SyncState.PROCESSING_PENDING_EVENTS }
@@ -67,42 +81,17 @@ class SyncManagerImpl(
         val isRunning = processingJob?.isActive ?: false
         if (isRunning) return
 
-        processingJob = processingScope.launch {
-            try {
-                processAllEvents()
-            } catch (e: Throwable) {
-                kaliumLogger.e("Failure when receiving live events", e)
-                syncRepository.updateSyncState {
-                    // TODO: Expose cause of failure
-                    SyncState.FAILED
-                }
-            }
-        }
-        processingJob?.invokeOnCompletion { cause ->
-            when (cause) {
-                null -> kaliumLogger.w("Sync job completed? This shouldn't happen")
-                is CancellationException -> {
-                    kaliumLogger.i("Sync job was cancelled")
-                    syncRepository.updateSyncState { SyncState.WAITING }
-                }
-                else -> {
-                    kaliumLogger.i("Sync job failed due to unknown reason")
-                    syncRepository.updateSyncState { SyncState.FAILED }
-                }
-            }
-        }
+        processingJob = processingScope.launch { processAllEvents() }
     }
 
     private suspend fun processAllEvents() {
         syncRepository.updateSyncState { SyncState.PROCESSING_PENDING_EVENTS }
 
         eventRepository.pendingEvents().collect {
-            processingScope.launch {
-                it.onFailure { failure ->
-                    throw KaliumSyncException("Failure when receiving pending events", failure)
-                }.onSuccess { event ->
-                    processEvent(event)
-                }
+            it.onFailure { failure ->
+                throw KaliumSyncException("Failure when receiving pending events", failure)
+            }.onSuccess { event ->
+                processEvent(event)
             }
         }
 
@@ -113,14 +102,14 @@ class SyncManagerImpl(
         //  and delete them as we process the pending ones in case they
         //  show up both in the WS and the pending events pages.
         //  The not deleted/remaining ones would be the ones we would
-        //  have lost and we need to process them.
+        //  have lost, and we need to process them.
         eventRepository.liveEvents().onSuccess {
-            it.collect { event ->
-                processingScope.launch {
-                    processEvent(event)
-                }
+            it.catch { throwable ->
+                throw KaliumSyncException("Websocket disconnected", NetworkFailure.NoNetworkConnection(throwable))
+            }.collect { event ->
+                processEvent(event)
             }
-            throw KaliumSyncException("Websocket disconnected", NetworkFailure.NoNetworkConnection(null))
+            throw KaliumSyncException("Websocket event collecting stopped", NetworkFailure.NoNetworkConnection(null))
         }.onFailure { failure ->
             throw KaliumSyncException("Failure when receiving live events", failure)
         }
