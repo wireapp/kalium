@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.failure.InvalidConnectionStatusFailure
 import com.wire.kalium.logic.failure.InvalidMappingFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.isRight
@@ -64,17 +65,28 @@ internal class ConnectionDataSource(
     }
 
     override suspend fun updateConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, Unit> {
-        val connectionStatus = connectionStatusMapper.connectionStateToApi(connectionState)
-        return if (connectionStatus == null)
-            Either.Left(InvalidMappingFailure)
-        else {
-            wrapApiRequest {
-                connectionApi.updateConnection(idMapper.toApiModel(userId), connectionStatus)
-            }.map { connection ->
-                val connectionSent = connection.copy(status = connectionStatus)
-                updateUserConnectionStatus(listOf(connectionSent))
-            }
+        // Check if we can transition to the correct connection status
+        val canTransitionToStatus = checkIfCanTransitionToConnectionStatus(connectionState)
+        val newConnectionStatus = connectionStatusMapper.connectionStateToApi(connectionState) ?: return Either.Left(InvalidMappingFailure)
+        if (!canTransitionToStatus) {
+            return Either.Left(InvalidConnectionStatusFailure)
         }
+
+        return wrapApiRequest {
+            connectionApi.updateConnection(idMapper.toApiModel(userId), newConnectionStatus)
+        }.map { connection ->
+            val connectionSent = connection.copy(status = newConnectionStatus)
+            updateUserConnectionStatus(listOf(connectionSent))
+        }
+    }
+
+    private fun checkIfCanTransitionToConnectionStatus(connectionState: ConnectionState): Boolean {
+        val canTransitionToStatus = when (connectionState) {
+            ConnectionState.IGNORED -> false // TODO: implement and move to next case
+            ConnectionState.CANCELLED, ConnectionState.ACCEPTED -> true
+            else -> false
+        }
+        return canTransitionToStatus
     }
 
     private suspend fun updateUserConnectionStatus(
