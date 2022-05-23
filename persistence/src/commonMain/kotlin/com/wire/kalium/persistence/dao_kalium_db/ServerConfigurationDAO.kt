@@ -28,9 +28,7 @@ internal class ServerConfigMapper() {
 
 interface ServerConfigurationDAO {
     fun deleteById(id: String)
-    @Suppress("LongParameterList")
     fun insert(insertData: InsertData)
-
     fun allConfigFlow(): Flow<List<ServerConfigEntity>>
     fun allConfig(): List<ServerConfigEntity>
     fun configById(id: String): ServerConfigEntity?
