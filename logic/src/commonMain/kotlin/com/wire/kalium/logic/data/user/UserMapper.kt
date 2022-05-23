@@ -20,6 +20,7 @@ interface UserMapper {
     fun fromApiModelToDaoModel(userProfileDTO: UserProfileDTO): UserEntity
     fun fromApiModelToDaoModel(userDTO: UserDTO): UserEntity
     fun fromDaoModelToSelfUser(userEntity: UserEntity): SelfUser
+
     /**
      * Maps the user data to be updated. if the parameters [newName] [newAccent] [newAssetId] are nulls,
      * it indicates that not updation should be made.
@@ -34,6 +35,7 @@ interface UserMapper {
         teamMemberDTO: TeamsApi.TeamMemberDTO,
         userDomain: String
     ): UserEntity
+
     fun fromDaoConnectionStateToUser(connectionState: UserEntity.ConnectionState): ConnectionState
     fun fromUserConnectionStateToDao(connectionState: ConnectionState): UserEntity.ConnectionState
 }
@@ -153,7 +155,7 @@ internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
         )
 
     override fun fromDaoConnectionStateToUser(connectionState: UserEntity.ConnectionState): ConnectionState =
-        when(connectionState) {
+        when (connectionState) {
             UserEntity.ConnectionState.NOT_CONNECTED -> ConnectionState.NOT_CONNECTED
             UserEntity.ConnectionState.PENDING -> ConnectionState.PENDING
             UserEntity.ConnectionState.SENT -> ConnectionState.SENT
@@ -165,7 +167,7 @@ internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
         }
 
     override fun fromUserConnectionStateToDao(connectionState: ConnectionState): UserEntity.ConnectionState =
-        when(connectionState) {
+        when (connectionState) {
             ConnectionState.NOT_CONNECTED -> UserEntity.ConnectionState.NOT_CONNECTED
             ConnectionState.PENDING -> UserEntity.ConnectionState.PENDING
             ConnectionState.SENT -> UserEntity.ConnectionState.SENT
