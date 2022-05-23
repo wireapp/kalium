@@ -156,7 +156,8 @@ class AssetMapperImpl : AssetMapper {
         return when (downloadStatus) {
             Message.DownloadStatus.NOT_DOWNLOADED -> MessageEntity.DownloadStatus.NOT_DOWNLOADED
             Message.DownloadStatus.IN_PROGRESS -> MessageEntity.DownloadStatus.IN_PROGRESS
-            Message.DownloadStatus.DOWNLOADED -> MessageEntity.DownloadStatus.DOWNLOADED
+            Message.DownloadStatus.SAVED_INTERNALLY -> MessageEntity.DownloadStatus.SAVED_INTERNALLY
+            Message.DownloadStatus.SAVED_EXTERNALLY -> MessageEntity.DownloadStatus.SAVED_EXTERNALLY
             Message.DownloadStatus.FAILED -> MessageEntity.DownloadStatus.FAILED
         }
     }
@@ -165,7 +166,8 @@ class AssetMapperImpl : AssetMapper {
         return when (downloadStatus) {
             MessageEntity.DownloadStatus.NOT_DOWNLOADED -> Message.DownloadStatus.NOT_DOWNLOADED
             MessageEntity.DownloadStatus.IN_PROGRESS -> Message.DownloadStatus.IN_PROGRESS
-            MessageEntity.DownloadStatus.DOWNLOADED -> Message.DownloadStatus.DOWNLOADED
+            MessageEntity.DownloadStatus.SAVED_INTERNALLY -> Message.DownloadStatus.SAVED_INTERNALLY
+            MessageEntity.DownloadStatus.SAVED_EXTERNALLY -> Message.DownloadStatus.SAVED_EXTERNALLY
             MessageEntity.DownloadStatus.FAILED -> Message.DownloadStatus.FAILED
             null -> Message.DownloadStatus.NOT_DOWNLOADED
         }
