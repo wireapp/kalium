@@ -2,9 +2,9 @@ package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.feature.call.CallManager
 
-class UnMuteCallUseCase(private val callManager: CallManager) {
+class UnMuteCallUseCase(private val callManager: Lazy<CallManager>) {
 
     suspend operator fun invoke() {
-        callManager.muteCall(false)
+        callManager.value.muteCall(false)
     }
 }
