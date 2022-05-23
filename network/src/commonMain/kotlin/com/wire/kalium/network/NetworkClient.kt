@@ -6,12 +6,13 @@ import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.session.installAuth
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.tools.ServerConfigDTO
+import com.wire.kalium.network.tools.WireServerDTO
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.ContentNegotiation
-import io.ktor.client.plugins.DefaultRequest
 import io.ktor.client.plugins.UserAgent
+import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
@@ -48,10 +49,9 @@ internal class AuthenticatedNetworkClient(engine: HttpClientEngine, sessionManag
  * needed configurations to talk with a Wire backend, like
  * Serialization, and Content Negotiation.
  */
-internal class UnauthenticatedNetworkClient(engine: HttpClientEngine, serverConfigDTO: ServerConfigDTO) {
-    val httpClient: HttpClient =
-        provideBaseHttpClient(engine) {
-            installWireBaseUrl(serverConfigDTO)
+internal class UnauthenticatedNetworkClient(engine: HttpClientEngine, backend: WireServerDTO) {
+    val httpClient: HttpClient = provideBaseHttpClient(engine) {
+            installWireBaseUrl(backend)
         }
 }
 
@@ -73,7 +73,6 @@ internal class UnboundNetworkClient(engine: HttpClientEngine) {
 internal class AuthenticatedWebSocketClient(
     private val engine: HttpClientEngine, private val sessionManager: SessionManager
 ) {
-
     /**
      * Creates a disposable [HttpClient] for a single use.
      * Once the websocket is disconnected
@@ -92,6 +91,23 @@ internal class AuthenticatedWebSocketClient(
         }
 }
 
+private fun HttpClientConfig<*>.installWireBaseUrl(backend: WireServerDTO) {
+    defaultRequest {
+        header(HttpHeaders.ContentType, ContentType.Application.Json)
+        with(backend) {
+            val apiBaseUrl = backend.links.api
+            // enforce https as url protocol
+            url.protocol = URLProtocol.HTTPS
+            // add the default host
+            url.host = apiBaseUrl.host
+            // for api version 0 no api version should be added to the request
+            url.encodedPath =
+                if (shouldAddApiVersion(metaData.commonApiVersion.version)) apiBaseUrl.encodedPath + "v${metaData.commonApiVersion}/"
+                else apiBaseUrl.encodedPath
+        }
+    }
+}
+
 /**
  * Provides a base [HttpClient] that has all the
  * needed configurations to talk with a Wire backend, like
@@ -103,9 +119,9 @@ internal class AuthenticatedWebSocketClient(
  * @param options, some configuration presets
  * @param config, a block that allows further customisation of the [HttpClient]
  */
-
+@Deprecated("replace ServerConfigDTO with WireServerDTO")
 private fun HttpClientConfig<*>.installWireBaseUrl(serverConfigDTO: ServerConfigDTO) {
-    install(DefaultRequest) {
+    defaultRequest {
         header(HttpHeaders.ContentType, ContentType.Application.Json)
         with(serverConfigDTO) {
             // enforce https as url protocol

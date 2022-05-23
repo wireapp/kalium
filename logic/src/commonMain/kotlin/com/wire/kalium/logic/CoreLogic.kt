@@ -1,6 +1,6 @@
 package com.wire.kalium.logic
 
-import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.configuration.server.WireServer
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -34,9 +34,9 @@ abstract class CoreLogicCommon(
     fun getGlobalScope(): KaliumScope = KaliumScope(globalDatabase, globalPreferences, sessionRepository)
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
-    fun getAuthenticationScope(serverConfig: ServerConfig): AuthenticationScope =
+    fun getAuthenticationScope(backend: WireServer.Links): AuthenticationScope =
         // TODO(logic): make it lazier
-        AuthenticationScope(clientLabel, globalDatabase.value, globalPreferences.value, serverConfig)
+        AuthenticationScope(clientLabel, globalPreferences.value, backend)
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     abstract fun getSessionScope(userId: UserId): UserSessionScope
@@ -45,8 +45,8 @@ abstract class CoreLogicCommon(
     inline fun <T> globalScope(action: KaliumScope.() -> T)
             : T = getGlobalScope().action()
 
-    inline fun <T> authenticationScope(serverConfig: ServerConfig, action: AuthenticationScope.() -> T)
-            : T = getAuthenticationScope(serverConfig).action()
+    inline fun <T> authenticationScope(backend: WireServer.Links, action: AuthenticationScope.() -> T)
+            : T = getAuthenticationScope(backend).action()
 
     inline fun <T> sessionScope(userId: UserId, action: UserSessionScope.() -> T)
             : T = getSessionScope(userId).action()

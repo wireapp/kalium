@@ -8,7 +8,7 @@ import com.github.ajalt.clikt.parameters.options.prompt
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.CoreLogger
 import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.configuration.server.WireServer
 import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.conversation.Member
@@ -108,17 +108,17 @@ class LoginCommand: CliktCommand(name = "login") {
     private val password: String by option(help = "Account password").prompt("password", promptSuffix = ": ", hideInput = true)
     private val environment: String? by option(help = "Choose backend environment: can be production or staging")
 
-    private val serverConfig: ServerConfig by lazy {
+    private val serverConfig: WireServer.Links by lazy {
         if (environment == "production") {
-            ServerConfig.PRODUCTION
+            WireServer.PRODUCTION
         } else {
-            ServerConfig.DEFAULT
+            WireServer.DEFAULT
         }
     }
 
     override fun run() = runBlocking {
         val loginSession = coreLogic.authenticationScope(serverConfig) {
-            login(email, password, true, serverConfig).let {
+            login(email, password, true, TODO()).let {
                 if (it !is AuthenticationResult.Success) {
                     throw PrintMessage("Login failed, check your credentials")
                 } else {

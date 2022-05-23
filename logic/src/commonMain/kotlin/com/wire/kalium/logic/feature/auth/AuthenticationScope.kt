@@ -4,14 +4,13 @@ import com.wire.kalium.logic.configuration.UserConfigDataSource
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
-import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.configuration.server.WireServer
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.auth.login.LoginRepositoryImpl
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepositoryImpl
 import com.wire.kalium.logic.data.register.RegisterAccountDataSource
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
-import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.auth.sso.SSOLoginScope
 import com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseCase
 import com.wire.kalium.logic.feature.register.RegisterScope
@@ -24,18 +23,17 @@ import com.wire.kalium.persistence.client.TokenStorage
 import com.wire.kalium.persistence.client.TokenStorageImpl
 import com.wire.kalium.persistence.client.UserConfigStorage
 import com.wire.kalium.persistence.client.UserConfigStorageImpl
-import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 
 class AuthenticationScope(
     private val clientLabel: String,
-    private val globalDatabase: GlobalDatabaseProvider,
     private val globalPreferences: KaliumPreferences,
-    private val serverConfig: ServerConfig
+    private val backend: WireServer
 ) {
 
     private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
-        UnauthenticatedNetworkContainer(MapperProvider.serverConfigMapper().toDTO(serverConfig))
+        // "map backendLinks to WireServerDTO.Links"
+        UnauthenticatedNetworkContainer(TODO())
     }
 
     private val tokenStorage: TokenStorage get() = TokenStorageImpl(globalPreferences)

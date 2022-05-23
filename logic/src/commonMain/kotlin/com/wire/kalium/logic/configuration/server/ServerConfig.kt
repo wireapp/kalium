@@ -14,6 +14,51 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
+data class WireServer(
+    val id: String,
+    val title: String,
+    val links: Links,
+    val metaData: MetaData
+) {
+    @Serializable
+    data class Links(
+        @SerialName("apiBaseUrl") val api: String,
+        @SerialName("accountsBaseUrl") val accounts: String,
+        @SerialName("webSocketBaseUrl") val webSocket: String,
+        @SerialName("blackListUrl") val blackList: String,
+        @SerialName("teamsUrl") val teams: String,
+        @SerialName("websiteUrl") val website: String,
+    )
+    @Serializable
+    data class MetaData(
+        @SerialName("federation") val federation: Boolean,
+        @SerialName("commonApiVersion") @Serializable(with = CommonApiVersionTypeSerializer::class) val commonApiVersion: CommonApiVersionType,
+        @SerialName("domain") val domain: String?
+    )
+
+    companion object {
+        val PRODUCTION = Links(
+            api = """https://prod-nginz-https.wire.com""",
+            accounts = """https://account.wire.com""",
+            webSocket = """https://prod-nginz-ssl.wire.com""",
+            teams = """https://teams.wire.com""",
+            blackList = """https://clientblacklist.wire.com/prod""",
+            website = """https://wire.com""",
+        )
+        val STAGING = Links(
+            api = """https://staging-nginz-https.zinfra.io""",
+            accounts = """https://wire-account-staging.zinfra.io""",
+            webSocket = """https://staging-nginz-ssl.zinfra.io""",
+            teams = """https://wire-teams-staging.zinfra.io""",
+            blackList = """https://clientblacklist.wire.com/staging""",
+            website = """https://wire.com"""
+        )
+        val DEFAULT = PRODUCTION
+    }
+}
+
+
+@Deprecated("old model", replaceWith = ReplaceWith("com.wire.kalium.logic.configuration.server.WireServer"))
 @Serializable
 data class ServerConfig(
     @SerialName("id") val id: String,

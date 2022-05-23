@@ -5,11 +5,12 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.SupportedApiVersions
 
-
+@Deprecated("this logic has been moved to network")
 interface ServerConfigUtil {
     fun calculateApiVersion(serverVersion: List<Int>, appVersion: Set<Int> = SupportedApiVersions): Either<ServerConfigFailure, Int>
 }
 
+@Deprecated("this logic has been moved to network")
 object ServerConfigUtilImpl : ServerConfigUtil {
     override fun calculateApiVersion(serverVersion: List<Int>, appVersion: Set<Int>): Either<ServerConfigFailure, Int> =
         serverVersion.intersect(appVersion).maxOrNull().let { maxCommonVersion ->
