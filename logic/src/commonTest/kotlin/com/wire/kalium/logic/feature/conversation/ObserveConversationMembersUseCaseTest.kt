@@ -165,6 +165,11 @@ class ObserveConversationMembersUseCaseTest {
             .whenInvokedWith(anything())
             .thenReturn(flowOf(members))
 
+        given(userTypeMapper)
+            .function(userTypeMapper::fromOtherUserAndSelfUser)
+            .whenInvokedWith(anything(),anything())
+            .thenReturn(UserType.GUEST)
+
         observeConversationMembers(conversationID).test {
             assertContentEquals(listOf(MemberDetails.Other(firstOtherUser, UserType.GUEST)), awaitItem())
             assertContentEquals(listOf(MemberDetails.Other(secondOtherUser, UserType.GUEST)), awaitItem())
@@ -193,6 +198,11 @@ class ObserveConversationMembersUseCaseTest {
             .suspendFunction(conversationRepository::observeConversationMembers)
             .whenInvokedWith(anything())
             .thenReturn(membersListChannel.consumeAsFlow())
+
+        given(userTypeMapper)
+            .function(userTypeMapper::fromOtherUserAndSelfUser)
+            .whenInvokedWith(anything(),anything())
+            .thenReturn(UserType.GUEST)
 
         observeConversationMembers(conversationID).test {
             membersListChannel.send(listOf(Member(otherUser.id)))
