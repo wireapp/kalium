@@ -80,11 +80,11 @@ internal class ConnectionDataSource(
     }
 
     private fun checkIfCanTransitionToConnectionStatus(connectionState: ConnectionState): Boolean = when (connectionState) {
-      ConnectionState.IGNORED -> false // TODO: implement and move to next case
-      ConnectionState.CANCELLED, ConnectionState.ACCEPTED -> true
-      else -> false
-  }
+        ConnectionState.IGNORED -> false // TODO: implement and move to next case
+        ConnectionState.CANCELLED, ConnectionState.ACCEPTED -> true
+        else -> false
     }
+
 
     private suspend fun updateUserConnectionStatus(
         connections: List<Connection>
