@@ -67,14 +67,14 @@ internal class ConnectionDataSource(
         // Check if we can transition to the correct connection status
         val canTransitionToStatus = checkIfCanTransitionToConnectionStatus(connectionState)
         val newConnectionStatus = connectionStatusMapper.connectionStateToApi(connectionState)
-        if (!canTransitionToStatus) {
+        if (!canTransitionToStatus || newConnectionStatus == null) {
             return Either.Left(InvalidMappingFailure)
         }
 
         return wrapApiRequest {
-            connectionApi.updateConnection(idMapper.toApiModel(userId), newConnectionStatus!!)
+            connectionApi.updateConnection(idMapper.toApiModel(userId), newConnectionStatus)
         }.map { connection ->
-            val connectionSent = connection.copy(status = newConnectionStatus!!)
+            val connectionSent = connection.copy(status = newConnectionStatus)
             updateUserConnectionStatus(listOf(connectionSent))
         }
     }
