@@ -6,7 +6,6 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.failure.InvalidConnectionStatusFailure
 import com.wire.kalium.logic.failure.InvalidMappingFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.isRight
@@ -67,15 +66,15 @@ internal class ConnectionDataSource(
     override suspend fun updateConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, Unit> {
         // Check if we can transition to the correct connection status
         val canTransitionToStatus = checkIfCanTransitionToConnectionStatus(connectionState)
-        val newConnectionStatus = connectionStatusMapper.connectionStateToApi(connectionState) ?: return Either.Left(InvalidMappingFailure)
+        val newConnectionStatus = connectionStatusMapper.connectionStateToApi(connectionState)
         if (!canTransitionToStatus) {
-            return Either.Left(InvalidConnectionStatusFailure)
+            return Either.Left(InvalidMappingFailure)
         }
 
         return wrapApiRequest {
-            connectionApi.updateConnection(idMapper.toApiModel(userId), newConnectionStatus)
+            connectionApi.updateConnection(idMapper.toApiModel(userId), newConnectionStatus!!)
         }.map { connection ->
-            val connectionSent = connection.copy(status = newConnectionStatus)
+            val connectionSent = connection.copy(status = newConnectionStatus!!)
             updateUserConnectionStatus(listOf(connectionSent))
         }
     }
