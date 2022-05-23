@@ -41,7 +41,7 @@ class ConnectionApiImpl internal constructor(private val authenticatedNetworkCli
     override suspend fun updateConnection(userId: UserId, connectionStatus: ConnectionStateDTO): NetworkResponse<Connection> =
         wrapKaliumResponse {
             httpClient.put("$PATH_CONNECTIONS_ENDPOINTS/${userId.domain}/${userId.value}") {
-                setBody(connectionStatus)
+                setBody(UpdateConnectionRequest(connectionStatus))
             }
         }
 
