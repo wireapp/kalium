@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.UserTypeMapperImpl
 import com.wire.kalium.logic.sync.SyncManager
 
 class ConversationScope(
@@ -19,7 +20,7 @@ class ConversationScope(
         get() = ObserveConversationListDetailsUseCase(conversationRepository, syncManager)
 
     val observeConversationMembers: ObserveConversationMembersUseCase
-        get() = ObserveConversationMembersUseCase(conversationRepository, userRepository, syncManager)
+        get() = ObserveConversationMembersUseCase(conversationRepository, userRepository, syncManager, UserTypeMapperImpl())
 
     val observeConversationDetails: ObserveConversationDetailsUseCase
         get() = ObserveConversationDetailsUseCase(conversationRepository, syncManager)
