@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.sync
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.sync.SyncRepository
@@ -18,6 +19,7 @@ import kotlinx.coroutines.launch
 
 interface SyncManager {
     fun onSlowSyncComplete()
+
     /**
      * Blocks the caller until all pending events are processed.
      */
@@ -83,6 +85,10 @@ class SyncManagerImpl(
                     kaliumLogger.i("Sync job was cancelled")
                     syncRepository.updateSyncState { SyncState.WAITING }
                 }
+                else -> {
+                    kaliumLogger.i("Sync job failed due to unknown reason")
+                    syncRepository.updateSyncState { SyncState.FAILED }
+                }
             }
         }
     }
@@ -114,6 +120,7 @@ class SyncManagerImpl(
                     processEvent(event)
                 }
             }
+            throw KaliumSyncException("Websocket disconnected", NetworkFailure.NoNetworkConnection(null))
         }.onFailure { failure ->
             throw KaliumSyncException("Failure when receiving live events", failure)
         }
