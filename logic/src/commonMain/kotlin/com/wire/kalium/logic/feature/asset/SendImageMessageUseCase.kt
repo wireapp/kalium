@@ -151,8 +151,8 @@ internal class SendImageMessageUseCaseImpl(
                 assetDomain = null,  // TODO(assets): fill in the assetDomain, it's returned by the BE when uploading an asset.
                 assetToken = assetId.assetToken
             ),
-            // Asset is already in our local storage and therefore accessible but until we don't download it to external storage the asset will only
-            // be considered as "DOWNLOADED_INTERNALLY"
+            // Asset is already in our local storage and therefore accessible but until we don't download it to external storage the asset
+            // will only be treated as "DOWNLOADED_INTERNALLY"
             downloadStatus = Message.DownloadStatus.DOWNLOADED
         )
     }

@@ -151,7 +151,7 @@ private fun provideAssetMessageContent(
         assetToken = assetId.assetToken
     ),
     // Asset is already in our local storage and therefore accessible but until we don't download it to external storage the asset will only
-    // be considered as "DOWNLOADED_INTERNALLY"
+    // be treated as "DOWNLOADED_INTERNALLY"
     downloadStatus = Message.DownloadStatus.DOWNLOADED
 )
 
