@@ -64,18 +64,27 @@ internal class ConnectionDataSource(
     }
 
     override suspend fun updateConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, Unit> {
-        val connectionStatus = connectionStatusMapper.connectionStateToApi(connectionState)
-        return if (connectionStatus == null)
-            Either.Left(InvalidMappingFailure)
-        else {
-            wrapApiRequest {
-                connectionApi.updateConnection(idMapper.toApiModel(userId), connectionStatus)
-            }.map { connection ->
-                val connectionSent = connection.copy(status = connectionStatus)
-                updateUserConnectionStatus(listOf(connectionSent))
-            }
+        // Check if we can transition to the correct connection status
+        val canTransitionToStatus = checkIfCanTransitionToConnectionStatus(connectionState)
+        val newConnectionStatus = connectionStatusMapper.connectionStateToApi(connectionState)
+        if (!canTransitionToStatus || newConnectionStatus == null) {
+            return Either.Left(InvalidMappingFailure)
+        }
+
+        return wrapApiRequest {
+            connectionApi.updateConnection(idMapper.toApiModel(userId), newConnectionStatus)
+        }.map { connection ->
+            val connectionSent = connection.copy(status = newConnectionStatus)
+            updateUserConnectionStatus(listOf(connectionSent))
         }
     }
+
+    private fun checkIfCanTransitionToConnectionStatus(connectionState: ConnectionState): Boolean = when (connectionState) {
+        ConnectionState.IGNORED -> false // TODO: implement and move to next case
+        ConnectionState.CANCELLED, ConnectionState.ACCEPTED -> true
+        else -> false
+    }
+
 
     private suspend fun updateUserConnectionStatus(
         connections: List<Connection>
