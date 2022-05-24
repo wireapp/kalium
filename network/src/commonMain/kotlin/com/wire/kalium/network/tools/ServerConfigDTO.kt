@@ -25,13 +25,22 @@ data class ServerConfigDTO(
 }
 
 sealed class ApiVersionDTO(open val version: Int) {
-    sealed class Invalid(override val version: Int): ApiVersionDTO(version) {
+
+
+    sealed class Invalid(override val version: Int) : ApiVersionDTO(version) {
         object New : Invalid(NEW_API_VERSION_NUMBER)
         object Unknown : Invalid(UNKNOWN_API_VERSION_NUMBER)
     }
+
     data class Valid(override val version: Int) : ApiVersionDTO(version)
 
     companion object {
+        fun fromInt(value: Int): ApiVersionDTO {
+            return if (value >= MINIMUM_VALID_API_VERSION) Valid(value)
+            else if (value == NEW_API_VERSION_NUMBER) Invalid.New
+            else Invalid.Unknown
+        }
+
         const val NEW_API_VERSION_NUMBER = -1
         const val UNKNOWN_API_VERSION_NUMBER = -2
         const val MINIMUM_VALID_API_VERSION = 0

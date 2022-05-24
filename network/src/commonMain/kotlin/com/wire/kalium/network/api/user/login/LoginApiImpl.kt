@@ -6,6 +6,7 @@ import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.model.AccessTokenDTO
 import com.wire.kalium.network.api.model.UserDTO
 import com.wire.kalium.network.api.model.toSessionDto
+import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.utils.CustomErrors
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap
@@ -16,6 +17,8 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -45,8 +48,11 @@ class LoginApiImpl internal constructor(
         param: LoginApi.LoginParam, persist: Boolean
     ): NetworkResponse<SessionDTO> = wrapKaliumResponse<AccessTokenDTO> {
         httpClient.post(PATH_LOGIN) {
+            contentType(ContentType.Application.Json)
             parameter(QUERY_PERSIST, persist)
             setBody(param.toRequestBody())
+        }.also {
+            kaliumLogger.d(it.status.toString())
         }
     }.flatMap { accessTokenDTOResponse ->
         with(accessTokenDTOResponse) {

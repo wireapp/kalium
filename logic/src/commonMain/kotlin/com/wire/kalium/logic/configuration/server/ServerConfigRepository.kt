@@ -74,7 +74,6 @@ internal class ServerConfigDataSource(
     private val api: ServerConfigApi,
     private val dao: ServerConfigurationDAO,
     private val versionApi: VersionApi,
-    private val serverConfigUtil: ServerConfigUtil,
     private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
 ) : ServerConfigRepository {
 
@@ -118,11 +117,8 @@ internal class ServerConfigDataSource(
 
     override suspend fun fetchApiVersionAndStore(serverConfigResponse: ServerConfigResponse): Either<CoreFailure, ServerConfig> =
         wrapApiRequest { versionApi.fetchApiVersion(Url(serverConfigResponse.endpoints.apiBaseUrl)) }
-            .flatMap { versionInfoDTO ->
-                serverConfigUtil.calculateApiVersion(versionInfoDTO.supported)
-                    .flatMap { commonApiVersion ->
-                        storeConfig(serverConfigResponse, versionInfoDTO.domain, commonApiVersion, versionInfoDTO.federation)
-                    }
+            .flatMap { metaData ->
+                storeConfig(serverConfigResponse, metaData.domain, metaData.commonApiVersion.version, metaData.federation)
             }
 
 
@@ -132,6 +128,5 @@ internal class ServerConfigDataSource(
 
     override suspend fun updateConfigApiVersion(id: String): Either<CoreFailure, Unit> = configById(id)
         .flatMap { wrapApiRequest { versionApi.fetchApiVersion(Url(it.links.api)) } }
-        .flatMap { serverConfigUtil.calculateApiVersion(it.supported) }
-        .flatMap { wrapStorageRequest { dao.updateApiVersion(id, it) } }
+        .flatMap { wrapStorageRequest { dao.updateApiVersion(id, it.commonApiVersion.version) } }
 }

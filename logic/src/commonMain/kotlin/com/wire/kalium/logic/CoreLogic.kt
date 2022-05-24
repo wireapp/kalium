@@ -36,7 +36,7 @@ abstract class CoreLogicCommon(
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     fun getAuthenticationScope(backendLinks: ServerConfig.Links): AuthenticationScope =
         // TODO(logic): make it lazier
-        AuthenticationScope(clientLabel, globalPreferences.value, backendLinks)
+        AuthenticationScope(clientLabel, globalPreferences.value, globalDatabase.value, backendLinks)
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     abstract fun getSessionScope(userId: UserId): UserSessionScope

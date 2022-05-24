@@ -28,6 +28,7 @@ internal class ServerConfigMapper() {
 
 interface ServerConfigurationDAO {
     fun deleteById(id: String)
+
     @Suppress("LongParameterList")
     fun insert(
         id: String,
@@ -46,6 +47,7 @@ interface ServerConfigurationDAO {
     fun allConfigFlow(): Flow<List<ServerConfigEntity>>
     fun allConfig(): List<ServerConfigEntity>
     fun configById(id: String): ServerConfigEntity?
+    fun configByLinks(title: String, apiBaseUrl: String, webSocketBaseUrl: String): ServerConfigEntity?
     fun updateApiVersion(id: String, commonApiVersion: Int)
     fun updateApiVersionAndDomain(id: String, domain: String, commonApiVersion: Int)
     fun setFederationToTrue(id: String)
@@ -89,6 +91,9 @@ class ServerConfigurationDAOImpl(private val queries: ServerConfigurationQueries
     override fun allConfig(): List<ServerConfigEntity> = queries.storedConfig().executeAsList().map(mapper::toModel)
 
     override fun configById(id: String): ServerConfigEntity? = queries.getById(id).executeAsOneOrNull()?.let { mapper.toModel(it) }
+
+    override fun configByLinks(title: String, apiBaseUrl: String, webSocketBaseUrl: String): ServerConfigEntity? =
+        queries.getByLinks(title, apiBaseUrl, webSocketBaseUrl).executeAsOneOrNull()?.let { mapper.toModel(it) }
 
     override fun updateApiVersion(id: String, commonApiVersion: Int) = queries.updateApiVersion(commonApiVersion, id)
 

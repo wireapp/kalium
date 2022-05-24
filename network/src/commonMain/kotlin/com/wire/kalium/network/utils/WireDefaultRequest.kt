@@ -1,12 +1,22 @@
 package com.wire.kalium.network.utils
 
-import com.wire.kalium.network.api.versioning.VersionApi
+import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.tools.ServerConfigDTO
-import io.ktor.client.*
+import io.ktor.client.HttpClient
+import io.ktor.client.call.HttpClientCall
 import io.ktor.client.plugins.HttpClientPlugin
-import io.ktor.client.request.*
-import io.ktor.http.*
-import io.ktor.util.*
+import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.client.request.HttpRequestPipeline
+import io.ktor.http.HeadersBuilder
+import io.ktor.http.HttpMessageBuilder
+import io.ktor.http.URLBuilder
+import io.ktor.http.Url
+import io.ktor.http.set
+import io.ktor.http.takeFrom
+import io.ktor.util.AttributeKey
+import io.ktor.util.Attributes
+import io.ktor.util.appendAll
+
 
 /**
  * Sets default request parameters. Used to add common headers and URL for a request.
@@ -53,22 +63,33 @@ import io.ktor.util.*
  *   // <- requests "https://some.url/", ContentType = Application.Xml
  * ```
  */
-class WireDefaultRequest private constructor(private val block: suspend WireDefaultRequestBuilder.() -> Unit) {
-    public companion object Plugin : HttpClientPlugin<WireDefaultRequestBuilder, WireDefaultRequest> {
-        override val key: AttributeKey<WireDefaultRequest> = AttributeKey("DefaultRequest")
+class WireDefaultRequest private constructor(var provider: WireServerMetaDataConfig = WireServerMetaDataConfig()) {
 
-        override fun prepare(block: WireDefaultRequestBuilder.() -> Unit): WireDefaultRequest = WireDefaultRequest(block)
+    companion object Plugin : HttpClientPlugin<WireDefaultRequest, WireDefaultRequest> {
+        override val key: AttributeKey<WireDefaultRequest> = AttributeKey("WireDefaultRequest")
+
+        override fun prepare(block: WireDefaultRequest.() -> Unit): WireDefaultRequest =
+            WireDefaultRequest().apply(block)
 
         override fun install(plugin: WireDefaultRequest, scope: HttpClient) {
             scope.requestPipeline.intercept(HttpRequestPipeline.Before) {
+                val serverConfigDTO = plugin.provider._loadServerData() ?: run {
+                    when (val fetchMetaDataResult = plugin.provider._fetchMetadata(scope)) {
+                        is Either.Left -> return@intercept
+                        is Either.Right -> fetchMetaDataResult.value
+                    }
+                }
+
                 val defaultRequest = WireDefaultRequestBuilder().apply {
                     headers.appendAll(context.headers)
-                    plugin.block(this)
+                    plugin.provider._buildDefaultRequest(this, serverConfigDTO)
                 }
                 val defaultUrl = defaultRequest.url.build()
                 if (context.url.host.isEmpty()) {
                     mergeUrls(defaultUrl, context.url)
                 }
+                kaliumLogger.d(defaultUrl.toString())
+
                 defaultRequest.attributes.allKeys.forEach {
                     if (!context.attributes.contains(it)) {
                         @Suppress("UNCHECKED_CAST")
@@ -158,19 +179,34 @@ class WireDefaultRequest private constructor(private val block: suspend WireDefa
 }
 
 
-interface WireServerMetaDataProvider {
-    val fetchAndStoreMetadata: suspend () -> HttpRequestBuilder
-    val loadServerData: suspend () -> ServerConfigDTO?
-    val storeMetadata: suspend (backend: ServerConfigDTO) -> Unit
-    val block: WireDefaultRequest.WireDefaultRequestBuilder.(wireServer: ServerConfigDTO) -> Unit
-    val versionApi: VersionApi
+class WireServerMetaDataConfig {
+    internal var _fetchMetadata: suspend (HttpClient) -> Either<HttpClientCall, ServerConfigDTO> = { throw IllegalStateException() }
+    internal var _loadServerData: suspend () -> ServerConfigDTO? = { throw IllegalStateException() }
+    internal var _buildDefaultRequest: WireDefaultRequest.WireDefaultRequestBuilder.(wireServer: ServerConfigDTO) -> Unit =
+        { throw IllegalStateException() }
+
+    fun fetchMetadata(block: suspend (HttpClient) -> Either<HttpClientCall, ServerConfigDTO>) {
+        _fetchMetadata = block
+    }
+
+    fun loadServerData(block: suspend () -> ServerConfigDTO?) {
+        _loadServerData = block
+    }
+
+    fun buildDefaultRequest(block: WireDefaultRequest.WireDefaultRequestBuilder.(wireServer: ServerConfigDTO) -> Unit) {
+        _buildDefaultRequest = block
+    }
 }
 
-/**
- * Set default request parameters. See [WireDefaultRequest]
- */
-inline fun HttpClientConfig<*>.wireDefaultRequest(crossinline block: WireDefaultRequest.WireDefaultRequestBuilder.() -> Unit) {
-    install(WireDefaultRequest) {
-        block()
-    }
+fun WireDefaultRequest.config(block: () -> WireServerMetaDataConfig) {
+    provider = block()
+}
+
+
+sealed class Either<out L, out R> {
+    /** * Represents the left side of [Either] class which by convention is a "Failure". */
+    data class Left<out L>(val value: L) : Either<L, Nothing>()
+
+    /** * Represents the right side of [Either] class which by convention is a "Success". */
+    data class Right<out R>(val value: R) : Either<Nothing, R>()
 }

@@ -82,6 +82,7 @@ data class ServerConfig(
 interface ServerConfigMapper {
     fun toDTO(serverConfig: ServerConfig): ServerConfigDTO
     fun toDTO(links: ServerConfig.Links): ServerConfigDTO.Links
+    fun toDTO(serverConfigEntity: ServerConfigEntity): ServerConfigDTO
     fun fromDTO(wireServer: ServerConfigDTO): ServerConfig
     fun toEntity(backend: ServerConfig): ServerConfigEntity
     fun fromEntity(serverConfigEntity: ServerConfigEntity): ServerConfig
@@ -120,6 +121,26 @@ class ServerConfigMapperImpl(
             title,
         )
     }
+
+    override fun toDTO(serverConfigEntity: ServerConfigEntity): ServerConfigDTO = with(serverConfigEntity) {
+            ServerConfigDTO(
+                id = id,
+                links = ServerConfigDTO.Links(
+                    api = Url(apiBaseUrl),
+                    accounts = Url(accountBaseUrl),
+                    webSocket = Url(webSocketBaseUrl),
+                    blackList = Url(blackListUrl),
+                    teams = Url(teamsUrl),
+                    website = Url(websiteUrl),
+                    title = title,
+                ), ServerConfigDTO.MetaData(
+                    federation = federation,
+                    commonApiVersion = apiVersionMapper.toDTO(commonApiVersion),
+                    domain
+                )
+            )
+        }
+
 
     override fun fromDTO(wireServer: ServerConfigDTO): ServerConfig = with(wireServer) {
         ServerConfig(
@@ -206,6 +227,8 @@ class CommonApiVersionTypeSerializer : KSerializer<CommonApiVersionType> {
 interface ApiVersionMapper {
     fun fromDTO(apiVersionDTO: ApiVersionDTO): CommonApiVersionType
     fun toDTO(commonApiVersion: CommonApiVersionType): ApiVersionDTO
+    fun toDTO(commonApiVersion: Int): ApiVersionDTO
+
 }
 
 class ApiVersionMapperImpl : ApiVersionMapper {
@@ -220,4 +243,6 @@ class ApiVersionMapperImpl : ApiVersionMapper {
         CommonApiVersionType.Unknown -> ApiVersionDTO.Invalid.Unknown
         is CommonApiVersionType.Valid -> ApiVersionDTO.Valid(commonApiVersion.version)
     }
+
+    override fun toDTO(commonApiVersion: Int): ApiVersionDTO = ApiVersionDTO.fromInt(commonApiVersion)
 }

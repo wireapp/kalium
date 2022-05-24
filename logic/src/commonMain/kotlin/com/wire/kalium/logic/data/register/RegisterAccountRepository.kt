@@ -18,6 +18,7 @@ interface RegisterAccountRepository {
         email: String, code: String, name: String, password: String
     ): Either<NetworkFailure, Pair<SelfUser, AuthSession.Tokens>>
 
+    @Suppress("LongParameterList")
     suspend fun registerTeamWithEmail(
         email: String, code: String, name: String, password: String, teamName: String, teamIcon: String
     ): Either<NetworkFailure, Pair<SelfUser, AuthSession.Tokens>>

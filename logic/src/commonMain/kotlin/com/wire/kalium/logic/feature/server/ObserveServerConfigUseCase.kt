@@ -3,7 +3,6 @@ package com.wire.kalium.logic.feature.server
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
-import com.wire.kalium.logic.configuration.server.ServerConfigUtil
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
@@ -13,8 +12,7 @@ import com.wire.kalium.network.api.configuration.ServerConfigResponse
 import kotlinx.coroutines.flow.Flow
 
 class ObserveServerConfigUseCase internal constructor(
-    private val serverConfigRepository: ServerConfigRepository,
-    private val serverConfigUtil: ServerConfigUtil
+    private val serverConfigRepository: ServerConfigRepository
 ) {
     sealed class Result {
         data class Success(val value: Flow<List<ServerConfig>>) : Result()

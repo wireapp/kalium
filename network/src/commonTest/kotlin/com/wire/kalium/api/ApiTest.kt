@@ -4,6 +4,7 @@ import com.wire.kalium.api.tools.testCredentials
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.AuthenticatedNetworkContainer
 import com.wire.kalium.network.AuthenticatedWebSocketClient
+import com.wire.kalium.network.ServerMetaDataManager
 import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.UnauthenticatedNetworkContainer
 import com.wire.kalium.network.UnboundNetworkClient
@@ -52,6 +53,18 @@ class TestSessionManager : SessionManager {
 
     companion object {
         val SESSION = testCredentials
+    }
+
+}
+
+
+class TestServerMetaDataManager: ServerMetaDataManager {
+    override fun getLocalMetaData(backendLinks: ServerConfigDTO.Links): ServerConfigDTO? {
+        TODO("Not yet implemented")
+    }
+
+    override fun storeBackend(links: ServerConfigDTO.Links, metaData: ServerConfigDTO.MetaData): ServerConfigDTO {
+        TODO("Not yet implemented")
     }
 
 }
@@ -127,7 +140,8 @@ internal interface ApiTest {
 
         return UnauthenticatedNetworkContainer(
             backendLinks = TEST_BACKEND.links,
-            engine = mockEngine
+            engine = mockEngine,
+            serverMetaDataManager = TestServerMetaDataManager()
         ).unauthenticatedNetworkClient
     }
 
@@ -161,7 +175,8 @@ internal interface ApiTest {
         }
         return UnauthenticatedNetworkContainer(
             backendLinks = TEST_BACKEND.links,
-            engine = mockEngine
+            engine = mockEngine,
+            serverMetaDataManager = TestServerMetaDataManager()
         ).unauthenticatedNetworkClient
     }
 

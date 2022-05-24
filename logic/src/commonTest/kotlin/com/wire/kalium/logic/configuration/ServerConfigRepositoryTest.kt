@@ -3,7 +3,6 @@ package com.wire.kalium.logic.configuration
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigDataSource
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
-import com.wire.kalium.logic.configuration.server.ServerConfigUtil
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.logic.util.stubs.newServerConfig
@@ -11,7 +10,8 @@ import com.wire.kalium.logic.util.stubs.newServerConfigEntity
 import com.wire.kalium.logic.util.stubs.newServerConfigResponse
 import com.wire.kalium.network.api.configuration.ServerConfigApi
 import com.wire.kalium.network.api.versioning.VersionApi
-import com.wire.kalium.network.api.versioning.VersionInfoDTO
+import com.wire.kalium.network.tools.ApiVersionDTO
+import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAO
 import io.mockative.ConfigurationApi
@@ -48,14 +48,11 @@ class ServerConfigRepositoryTest {
     @Mock
     private val versionApi = mock(classOf<VersionApi>())
 
-    @Mock
-    private val serverConfigUtil = mock(classOf<ServerConfigUtil>())
-
     private lateinit var serverConfigRepository: ServerConfigRepository
 
     @BeforeTest
     fun setup() {
-        serverConfigRepository = ServerConfigDataSource(serverConfigApi, serverConfigDAO, versionApi, serverConfigUtil)
+        serverConfigRepository = ServerConfigDataSource(serverConfigApi, serverConfigDAO, versionApi)
     }
 
     @Test
@@ -140,15 +137,16 @@ class ServerConfigRepositoryTest {
     fun givenValidCompatibleApiVersion_whenStoringConfigLocally_thenConfigIsStored() = runTest {
         val testConfigResponse = newServerConfigResponse(1)
         val expected = newServerConfig(1)
-        val versionInfoDTO = VersionInfoDTO(expected.metaData.domain, expected.metaData.federation, listOf(1, 2))
+        val versionInfoDTO = ServerConfigDTO.MetaData(
+            domain = expected.metaData.domain,
+            federation = expected.metaData.federation,
+            commonApiVersion = ApiVersionDTO.Valid(1)
+            )
         given(versionApi)
             .suspendFunction(versionApi::fetchApiVersion)
             .whenInvokedWith(any())
             .then { NetworkResponse.Success(versionInfoDTO, mapOf(), 200) }
 
-        given(serverConfigUtil)
-            .invocation { calculateApiVersion(versionInfoDTO.supported) }
-            .then { Either.Right(expected.metaData.commonApiVersion.version) }
 
         given(serverConfigDAO)
             .function(serverConfigDAO::configById)
@@ -162,10 +160,6 @@ class ServerConfigRepositoryTest {
         verify(versionApi)
             .suspendFunction(versionApi::fetchApiVersion)
             .with(any())
-            .wasInvoked(exactly = once)
-        verify(serverConfigUtil)
-            .function(serverConfigUtil::calculateApiVersion)
-            .with(any(), any())
             .wasInvoked(exactly = once)
 
         verify(serverConfigDAO)

@@ -1,11 +1,17 @@
 package com.wire.kalium.network
 
+import com.wire.kalium.network.api.versioning.VersionApiImpl
 import com.wire.kalium.network.serialization.mls
 import com.wire.kalium.network.serialization.xprotobuf
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.session.installAuth
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.tools.ServerConfigDTO
+import com.wire.kalium.network.utils.Either
+import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.WireDefaultRequest
+import com.wire.kalium.network.utils.WireServerMetaDataConfig
+import com.wire.kalium.network.utils.config
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.HttpClientEngine
@@ -54,8 +60,42 @@ internal class UnauthenticatedNetworkClient(
     serverMetaDataManager: ServerMetaDataManager
 ) {
     val httpClient: HttpClient = provideBaseHttpClient(engine) {
-        TODO()
-        //installWireBaseUrl(backendLinks, serverMetaDataManager)
+        install(WireDefaultRequest) {
+            config {
+                WireServerMetaDataConfig().apply {
+                    loadServerData {
+                        serverMetaDataManager.getLocalMetaData(backendLinks)
+                    }
+
+                    fetchMetadata { httpClient ->
+                        val versionApi = VersionApiImpl(httpClient)
+                        when (val result = versionApi.fetchApiVersion(backendLinks.api)) {
+                            is NetworkResponse.Success -> Either.Right(
+                                serverMetaDataManager.storeBackend(
+                                    backendLinks, result.value
+                                )
+                            )
+                            is NetworkResponse.Error -> Either.Left(TODO())
+                        }
+                    }
+
+                    buildDefaultRequest {
+                        header(HttpHeaders.ContentType, ContentType.Application.Json)
+                        with(it) {
+                            val apiBaseUrl = links.api
+                            // enforce https as url protocol
+                            url.protocol = URLProtocol.HTTPS
+                            // add the default host
+                            url.host = apiBaseUrl.host
+                            // for api version 0 no api version should be added to the request
+                            url.encodedPath =
+                                if (shouldAddApiVersion(metaData.commonApiVersion.version)) apiBaseUrl.encodedPath + "v${metaData.commonApiVersion.version}/"
+                                else apiBaseUrl.encodedPath
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -117,7 +157,7 @@ private fun HttpClientConfig<*>.installWireBaseUrl(backend: ServerConfigDTO) {
             url.host = apiBaseUrl.host
             // for api version 0 no api version should be added to the request
             url.encodedPath =
-                if (shouldAddApiVersion(metaData.commonApiVersion.version)) apiBaseUrl.encodedPath + "v${metaData.commonApiVersion}/"
+                if (shouldAddApiVersion(metaData.commonApiVersion.version)) apiBaseUrl.encodedPath + "v${metaData.commonApiVersion.version}/"
                 else apiBaseUrl.encodedPath
         }
     }
@@ -126,7 +166,6 @@ private fun HttpClientConfig<*>.installWireBaseUrl(backend: ServerConfigDTO) {
 internal fun provideBaseHttpClient(
     engine: HttpClientEngine, config: HttpClientConfig<*>.() -> Unit = {}
 ) = HttpClient(engine) {
-
     install(UserAgent) {
         agent = "007"
     }
@@ -142,6 +181,7 @@ internal fun provideBaseHttpClient(
         json(KtxSerializer.json)
     }
     expectSuccess = false
+
     config()
 }
 
