@@ -11,14 +11,14 @@ interface SyncRepository {
 }
 
 internal class InMemorySyncRepository : SyncRepository {
-    private val _syncState = MutableStateFlow(SyncState.WAITING)
+    private val _syncState = MutableStateFlow<SyncState>(SyncState.Waiting)
 
     override val syncState: Flow<SyncState> get() = _syncState
 
     override fun updateSyncState(updateBlock: (currentState: SyncState) -> SyncState): SyncState =
         _syncState.updateAndGet { currentSyncState ->
             val newSyncState = updateBlock(currentSyncState)
-            kaliumLogger.i("SyncStatus Updated FROM:${currentSyncState.name}; TO: ${newSyncState.name}")
+            kaliumLogger.i("SyncStatus Updated FROM:$currentSyncState; TO: $newSyncState")
             newSyncState
         }
 }

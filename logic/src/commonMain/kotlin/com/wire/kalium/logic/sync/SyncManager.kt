@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.sync.SyncRepository
 import com.wire.kalium.logic.data.sync.SyncState
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
@@ -15,7 +16,6 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -55,11 +55,15 @@ class SyncManagerImpl(
         when (throwable) {
             is CancellationException -> {
                 kaliumLogger.i("Sync job was cancelled")
-                syncRepository.updateSyncState { SyncState.WAITING }
+                syncRepository.updateSyncState { SyncState.Waiting }
+            }
+            is KaliumSyncException -> {
+                kaliumLogger.i("SyncException during events processing", throwable)
+                syncRepository.updateSyncState { SyncState.Failed(throwable.coreFailureCause) }
             }
             else -> {
                 kaliumLogger.i("Sync job failed due to unknown reason", throwable)
-                syncRepository.updateSyncState { SyncState.FAILED }
+                syncRepository.updateSyncState { SyncState.Failed(CoreFailure.Unknown(throwable)) }
             }
         }
     }
@@ -75,7 +79,7 @@ class SyncManagerImpl(
     private var processingJob: Job? = null
 
     override fun onSlowSyncComplete() {
-        syncRepository.updateSyncState { SyncState.PROCESSING_PENDING_EVENTS }
+        syncRepository.updateSyncState { SyncState.ProcessingPendingEvents }
 
         // Processing already running, don't launch another
         val isRunning = processingJob?.isActive ?: false
@@ -85,17 +89,11 @@ class SyncManagerImpl(
     }
 
     private suspend fun processAllEvents() {
-        syncRepository.updateSyncState { SyncState.PROCESSING_PENDING_EVENTS }
+        syncRepository.updateSyncState { SyncState.ProcessingPendingEvents }
 
-        eventRepository.pendingEvents().collect {
-            it.onFailure { failure ->
-                throw KaliumSyncException("Failure when receiving pending events", failure)
-            }.onSuccess { event ->
-                processEvent(event)
-            }
-        }
+        processPendingEvents()
 
-        syncRepository.updateSyncState { SyncState.LIVE }
+        syncRepository.updateSyncState { SyncState.Live }
         // TODO: Connect to the WS BEFORE fetching pending events to make
         //  sure that no event is lost between last page and WS handshake.
         //  We need to collect and store the events we receive from the WS,
@@ -103,15 +101,37 @@ class SyncManagerImpl(
         //  show up both in the WS and the pending events pages.
         //  The not deleted/remaining ones would be the ones we would
         //  have lost, and we need to process them.
-        eventRepository.liveEvents().onSuccess {
-            it.catch { throwable ->
-                throw KaliumSyncException("Websocket disconnected", NetworkFailure.NoNetworkConnection(throwable))
-            }.collect { event ->
+        processLiveEvents()
+    }
+
+    /**
+     * Collects a stream of live events until connection is dropped or client is closed.
+     * In a perfect world where connections don't drop, this should never end.
+     * @throws KaliumSyncException when processing stops.
+     */
+    private suspend fun processLiveEvents() {
+        val processingStopCause = eventRepository.liveEvents().fold({ failure ->
+            KaliumSyncException("Failure when receiving live events", failure)
+        }, { eventFlow ->
+            try {
+                eventFlow.collect { event ->
+                    processEvent(event)
+                }
+                KaliumSyncException("Websocket event collecting stopped", NetworkFailure.NoNetworkConnection(null))
+            } catch (t: Throwable) {
+                KaliumSyncException("Websocket disconnected", NetworkFailure.NoNetworkConnection(t))
+            }
+        })
+        throw processingStopCause
+    }
+
+    private suspend fun processPendingEvents() {
+        eventRepository.pendingEvents().collect {
+            it.onFailure { failure ->
+                throw KaliumSyncException("Failure when receiving pending events", failure)
+            }.onSuccess { event ->
                 processEvent(event)
             }
-            throw KaliumSyncException("Websocket event collecting stopped", NetworkFailure.NoNetworkConnection(null))
-        }.onFailure { failure ->
-            throw KaliumSyncException("Failure when receiving live events", failure)
         }
     }
 
@@ -128,27 +148,27 @@ class SyncManagerImpl(
         eventRepository.updateLastProcessedEventId(event.id)
     }
 
-    override fun onSlowSyncFailure(cause: CoreFailure) = syncRepository.updateSyncState { SyncState.FAILED }
+    override fun onSlowSyncFailure(cause: CoreFailure) = syncRepository.updateSyncState { SyncState.Failed(cause) }
 
     override suspend fun waitForSyncToComplete() {
         performSyncIfWaitingOrFailed()
-        syncRepository.syncState.first { it == SyncState.LIVE }
+        syncRepository.syncState.first { it == SyncState.Live }
     }
 
     private fun performSyncIfWaitingOrFailed() {
         val syncState = syncRepository.updateSyncState {
             when (it) {
-                SyncState.WAITING, SyncState.FAILED -> SyncState.SLOW_SYNC
+                SyncState.Waiting, is SyncState.Failed -> SyncState.SlowSync
                 else -> it
             }
         }
 
-        if (syncState == SyncState.SLOW_SYNC) {
+        if (syncState == SyncState.SlowSync) {
             workScheduler.enqueueImmediateWork(SlowSyncWorker::class, SlowSyncWorker.name)
         }
     }
 
-    override suspend fun isSlowSyncOngoing(): Boolean = syncRepository.syncState.first() == SyncState.SLOW_SYNC
+    override suspend fun isSlowSyncOngoing(): Boolean = syncRepository.syncState.first() == SyncState.SlowSync
     override suspend fun isSlowSyncCompleted(): Boolean =
-        syncRepository.syncState.first() in setOf(SyncState.LIVE, SyncState.PROCESSING_PENDING_EVENTS)
+        syncRepository.syncState.first() in setOf(SyncState.Live, SyncState.ProcessingPendingEvents)
 }

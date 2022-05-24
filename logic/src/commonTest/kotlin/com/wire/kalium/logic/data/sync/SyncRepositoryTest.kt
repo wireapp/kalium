@@ -23,13 +23,13 @@ class SyncRepositoryTest {
         val result = syncRepository.syncState.first()
 
         //Then
-        assertEquals(SyncState.WAITING, result)
+        assertEquals(SyncState.Waiting, result)
     }
 
     @Test
     fun givenStateIsUpdated_whenGettingTheCurrentSyncState_thenTheResultIsTheUpdatedState() = runTest {
         //Given
-        val updatedState = SyncState.LIVE
+        val updatedState = SyncState.Live
         syncRepository.updateSyncState { updatedState }
 
         //When
@@ -42,14 +42,14 @@ class SyncRepositoryTest {
     @Test
     fun givenAState_whenUpdatingTheCurrentSyncState_thenTheCurrentStateIsAvailableInTheLambda() = runTest {
         //Given
-        val currentState = SyncState.LIVE
+        val currentState = SyncState.Live
         syncRepository.updateSyncState { currentState }
 
         //When
         var capturedState: SyncState? = null
         val result = syncRepository.updateSyncState {
             capturedState = it
-            SyncState.WAITING
+            SyncState.Waiting
         }
 
         //Then
