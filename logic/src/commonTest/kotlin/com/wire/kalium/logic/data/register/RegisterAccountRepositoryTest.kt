@@ -140,7 +140,7 @@ class RegisterAccountRepositoryTest {
                 AuthSession.Tokens(UserId(userId.value, userId.domain), accessToken, refreshToken, tokenType), serverConfig
             )
         }
-        val expected = Pair(selfUser, authSession)
+        val expected = Pair(selfUser, authSession.tokens)
 
         given(registerApi).coroutine {
             register(
@@ -152,7 +152,7 @@ class RegisterAccountRepositoryTest {
 
         val actual = registerAccountRepository.registerPersonalAccountWithEmail(email, code, name, password)
 
-        assertIs<Either.Right<Pair<SelfUser, AuthSession>>>(actual)
+        assertIs<Either.Right<Pair<SelfUser, AuthSession.Tokens>>>(actual)
         assertEquals(expected, actual.value)
 
         verify(registerApi).coroutine { register(RegisterApi.RegisterParam.PersonalAccount(email, code, name, password)) }
@@ -191,7 +191,7 @@ class RegisterAccountRepositoryTest {
                     serverConfig
                 )
             }
-        val expected = Pair(selfUser, authSession)
+        val expected = Pair(selfUser, authSession.tokens)
 
         given(registerApi).coroutine {
             register(RegisterApi.RegisterParam.TeamAccount(email, code, name, password, teamName, teamIcon))
@@ -203,7 +203,7 @@ class RegisterAccountRepositoryTest {
 
         val actual = registerAccountRepository.registerTeamWithEmail(email, code, name, password, teamName, teamIcon)
 
-        assertIs<Either.Right<Pair<SelfUser, AuthSession>>>(actual)
+        assertIs<Either.Right<Pair<SelfUser, AuthSession.Tokens>>>(actual)
         assertEquals(expected, actual.value)
 
         verify(registerApi).coroutine {

@@ -31,7 +31,7 @@ val TEST_BACKEND =
         links = TEST_BACKEND_LINKS,
         metaData = ServerConfigDTO.MetaData(
             false,
-            ApiVersionDTO.Valid(1),
+            ApiVersionDTO.Valid(0),
             domain = null
         )
     )

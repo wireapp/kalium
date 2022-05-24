@@ -84,7 +84,7 @@ internal fun newServerConfigDTO(id: Int) = ServerConfigDTO(
     ),
     ServerConfigDTO.MetaData(
         false,
-        ApiVersionDTO.Valid(id),
+        ApiVersionDTO.fromInt(id),
         domain = "domain$id.com",
     )
 )

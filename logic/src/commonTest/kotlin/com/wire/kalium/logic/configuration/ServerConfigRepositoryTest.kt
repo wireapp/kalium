@@ -10,13 +10,11 @@ import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.logic.util.stubs.newServerConfigEntity
 import com.wire.kalium.logic.util.stubs.newServerConfigResponse
 import com.wire.kalium.network.api.configuration.ServerConfigApi
-import com.wire.kalium.network.api.configuration.ServerConfigResponse
 import com.wire.kalium.network.api.versioning.VersionApi
 import com.wire.kalium.network.tools.ApiVersionDTO
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAO
-import com.wire.kalium.persistence.model.ServerConfigEntity
 import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.any
@@ -181,21 +179,21 @@ class ServerConfigRepositoryTest {
     fun givenStoredConfig_whenAddingTheSameOneWithNewApiVersionParams_thenStoredOneShouldBeUpdatedAndReturned() {
         val newApiVersion = 5
         val newFederation = true
-        val serverConfig = newServerConfigEntity(1)
-        val newServerConfig = newServerConfigEntity(1).copy(commonApiVersion = newApiVersion, federation = newFederation)
-        val expected = newServerConfig(1).copy(commonApiVersion = CommonApiVersionType.Valid(newApiVersion), federation = newFederation)
+        val serverConfigEntity = newServerConfigEntity(1)
+        val newServerConfigEntity = newServerConfigEntity(1).copy(commonApiVersion = newApiVersion, federation = newFederation)
+        val expected = newServerConfig(1).copy(metaData = ServerConfig.MetaData(commonApiVersion = CommonApiVersionType.Valid(newApiVersion), federation = newFederation, domain = serverConfigEntity.domain))
 
         given(serverConfigDAO)
-            .invocation { with(serverConfig) { configByUniqueFields(title, apiBaseUrl, webSocketBaseUrl, domain) } }
-            .then { serverConfig }
+            .invocation { with(serverConfigEntity) { configByUniqueFields(title, apiBaseUrl, webSocketBaseUrl, domain) } }
+            .then { serverConfigEntity }
         given(serverConfigDAO)
             .function(serverConfigDAO::configById)
             .whenInvokedWith(any())
-            .then { newServerConfig }
+            .then { newServerConfigEntity }
 
         serverConfigRepository
-            .storeConfig(newServerConfigResponse(1), serverConfig.domain, newApiVersion, newFederation)
-            .shouldSucceed { assertEquals(it, expected) }
+            .storeConfig(newServerConfigResponse(1), serverConfigEntity.domain, newApiVersion, newFederation)
+            .shouldSucceed { assertEquals(expected, it) }
 
         verify(serverConfigDAO)
             .function(serverConfigDAO::configByUniqueFields)
@@ -260,10 +258,8 @@ class ServerConfigRepositoryTest {
     }
 
     private companion object {
-
         const val SERVER_CONFIG_URL = "https://test.test/test.json"
         val SERVER_CONFIG_RESPONSE = newServerConfigResponse(1)
         val SERVER_CONFIG = newServerConfig(1)
     }
-
 }
