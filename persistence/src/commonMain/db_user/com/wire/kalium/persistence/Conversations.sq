@@ -22,8 +22,8 @@ deleteConversation:
 DELETE FROM Conversation WHERE qualified_id = ?;
 
 insertConversation:
-INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, protocol, muted_status, muted_time, last_modified_date)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, protocol, muted_status, muted_time, last_modified_date, last_notified_message_date)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
 name = excluded.name,
 type = excluded.type,
@@ -32,7 +32,8 @@ mls_group_id = excluded.mls_group_id,
 protocol = excluded.protocol,
 muted_status = excluded.muted_status,
 muted_time = excluded.muted_time,
-last_modified_date = excluded.last_modified_date;
+last_modified_date = last_modified_date,
+last_notified_message_date = last_notified_message_date;
 
 updateConversation:
 UPDATE Conversation
