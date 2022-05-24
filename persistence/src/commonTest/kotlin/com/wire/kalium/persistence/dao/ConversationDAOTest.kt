@@ -224,6 +224,20 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
 
+    @Test
+    fun givenConversation_whenInsertingStoredConversation_thenLastChangesTimeIsNotChanged() = runTest {
+        val conv1Stored = conversationEntity1.copy(lastNotificationDate = "2022-04-30T15:36:00.000Z", lastModifiedDate = "2022-03-30T15:36:00.000Z", name = "old name")
+        val conv1AfterSync = conversationEntity1.copy(lastNotificationDate = "2023-04-30T15:36:00.000Z", lastModifiedDate = "2023-03-30T15:36:00.000Z", name = "new name")
+
+        val expected = conv1AfterSync.copy(lastModifiedDate = "2022-03-30T15:36:00.000Z", lastNotificationDate = "2022-04-30T15:36:00.000Z")
+        conversationDAO.insertConversation(conv1Stored)
+        conversationDAO.insertConversation(conv1AfterSync)
+
+        val actual = conversationDAO.getConversationByQualifiedID(conv1AfterSync.id).first()
+        assertEquals(expected, actual)
+    }
+
+
     private companion object {
         val user1 = newUserEntity(id = "1")
         val user2 = newUserEntity(id = "2")
