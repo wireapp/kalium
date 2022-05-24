@@ -246,6 +246,26 @@ class ConnectionRepositoryTest {
             .wasNotInvoked()
     }
 
+    @Test
+    fun givenAConnectionRequestUpdate_WhenSendingAnInvalidConnectionStatusFails_thenShouldThrowAFailure() = runTest {
+        // given
+        val userId = NetworkUserId("user_id", "domain_id")
+
+        // when
+        val result = connectionRepository.updateConnectionStatus(UserId(userId.value, userId.domain), ConnectionState.PENDING)
+
+        // then
+        result.shouldFail()
+        verify(connectionApi)
+            .suspendFunction(connectionApi::updateConnection)
+            .with(eq(userId), eq(ConnectionStateDTO.PENDING))
+            .wasNotInvoked()
+        verify(conversationDAO)
+            .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
+            .with(any(), any(), any())
+            .wasNotInvoked()
+    }
+
     private companion object {
         val connection1 = ConnectionDTO(
             conversationId = "conversationId1",

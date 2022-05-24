@@ -1,7 +1,9 @@
 package com.wire.kalium.logic.data.user
 
+import com.wire.kalium.logic.data.conversation.UserType
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.VALUE_DOMAIN_SEPARATOR
+import com.wire.kalium.logic.data.publicuser.model.OtherUser
 
 typealias UserId = QualifiedID
 typealias ConversationId = QualifiedID
