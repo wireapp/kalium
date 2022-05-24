@@ -57,5 +57,5 @@ internal object MapperProvider {
     fun clientMapper(clientConfig: ClientConfig): ClientMapper = ClientMapper(preyKeyMapper(), locationMapper(), clientConfig)
     fun conversationStatusMapper(): ConversationStatusMapper = ConversationStatusMapperImpl()
     fun connectionStatusMapper(): ConnectionStatusMapper = ConnectionStatusMapperImpl()
-    fun connectionMapper(): ConnectionMapper = ConnectionMapperImpl(idMapper(), connectionStatusMapper())
+    fun connectionMapper(): ConnectionMapper = ConnectionMapperImpl(idMapper(), connectionStatusMapper(), userMapper())
 }

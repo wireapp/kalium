@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.network.api.TeamId
 import com.wire.kalium.network.api.model.AssetSizeDTO
 import com.wire.kalium.network.api.model.UserAssetDTO
@@ -21,6 +22,7 @@ interface UserMapper {
     fun fromApiModelToDaoModel(userProfileDTO: UserProfileDTO): UserEntity
     fun fromApiModelToDaoModel(userDTO: UserDTO): UserEntity
     fun fromDaoModelToSelfUser(userEntity: UserEntity): SelfUser
+    fun fromDaoModelToOtherUser(userEntity: UserEntity): OtherUser
 
     /**
      * Maps the user data to be updated. if the parameters [newName] [newAccent] [newAssetId] are nulls,
@@ -73,6 +75,19 @@ internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
     }
 
     override fun fromDaoModelToSelfUser(userEntity: UserEntity) = SelfUser(
+        idMapper.fromDaoModel(userEntity.id),
+        userEntity.name,
+        userEntity.handle,
+        userEntity.email,
+        userEntity.phone,
+        userEntity.accentId,
+        userEntity.team,
+        fromDaoConnectionStateToUser(connectionState = userEntity.connectionStatus),
+        userEntity.previewAssetId,
+        userEntity.completeAssetId
+    )
+
+    override fun fromDaoModelToOtherUser(userEntity: UserEntity) = OtherUser(
         idMapper.fromDaoModel(userEntity.id),
         userEntity.name,
         userEntity.handle,

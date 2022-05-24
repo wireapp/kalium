@@ -14,6 +14,7 @@ import com.wire.kalium.persistence.dao.UserEntity
 interface PublicUserMapper {
     fun fromDaoModelToPublicUser(userEntity: UserEntity): OtherUser
     fun fromUserDetailResponse(userDetailResponse: UserProfileDTO): OtherUser
+    fun fromUserApiToEntity(userDetailResponse: UserProfileDTO): UserEntity
     fun fromUserDetailResponses(userDetailResponse: List<UserProfileDTO>): List<OtherUser>
     fun fromDaoConnectionStateToUser(connectionState: ConnectionEntity.State): ConnectionState
     fun fromPublicUserToLocalNotificationMessageAuthor(author: OtherUser?): LocalNotificationMessageAuthor
@@ -45,11 +46,23 @@ class PublicUserMapperImpl(private val idMapper: IdMapper) : PublicUserMapper {
         completePicture = userDetailResponse.assets.getCompleteAssetOrNull()?.key,
     )
 
+    override fun fromUserApiToEntity(userDetailResponse: UserProfileDTO) = UserEntity(
+        id = idMapper.fromApiToDao(userDetailResponse.id),
+        name = userDetailResponse.name,
+        handle = userDetailResponse.handle,
+        email = userDetailResponse.email,
+        phone = null,
+        accentId = userDetailResponse.accentId,
+        team = userDetailResponse.teamId,
+        previewAssetId = userDetailResponse.assets.getPreviewAssetOrNull()?.key,
+        completeAssetId = userDetailResponse.assets.getCompleteAssetOrNull()?.key
+    )
+
     override fun fromUserDetailResponses(userDetailResponse: List<UserProfileDTO>) =
         userDetailResponse.map { fromUserDetailResponse(it) }
 
     override fun fromDaoConnectionStateToUser(connectionState: ConnectionEntity.State): ConnectionState =
-        when(connectionState) {
+        when (connectionState) {
             ConnectionEntity.State.NOT_CONNECTED -> ConnectionState.NOT_CONNECTED
             ConnectionEntity.State.PENDING -> ConnectionState.PENDING
             ConnectionEntity.State.SENT -> ConnectionState.SENT

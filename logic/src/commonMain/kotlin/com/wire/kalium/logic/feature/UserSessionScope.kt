@@ -149,7 +149,9 @@ abstract class UserSessionScopeCommon(
         get() = ConnectionDataSource(
             userDatabaseProvider.conversationDAO,
             userDatabaseProvider.connectionDAO,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.connectionApi
+            authenticatedDataSourceSet.authenticatedNetworkContainer.connectionApi,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
+            userDatabaseProvider.userDAO
         )
 
     private val publicUserRepository: SearchUserRepository

@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.user
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.VALUE_DOMAIN_SEPARATOR
+import com.wire.kalium.logic.data.publicuser.model.OtherUser
 
 typealias UserId = QualifiedID
 
@@ -18,7 +19,8 @@ data class Connection(
     val qualifiedConversationId: ConversationId,
     val qualifiedToId: UserId,
     val status: ConnectionState,
-    val toId: String
+    val toId: String,
+    val fromUser: OtherUser? = null
 )
 
 enum class ConnectionState {
