@@ -1,14 +1,17 @@
 package com.wire.kalium.api.tools.json.api.user.login
 
 import com.wire.kalium.api.ApiTest
+import com.wire.kalium.api.TEST_BACKEND
 import com.wire.kalium.network.api.user.login.SSOLoginApi
 import com.wire.kalium.network.api.user.login.SSOLoginApiImpl
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.protocolWithAuthority
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -32,8 +35,7 @@ class SSOLoginApiTest : ApiTest {
         val actual = ssoApi.initiate(param)
 
         assertIs<NetworkResponse.Success<String>>(actual)
-        TODO()
-        //assertEquals("${TEST_HOST.protocolWithAuthority}$expectedPath", actual.value)
+        assertEquals("${TEST_BACKEND.links.api.protocolWithAuthority}$$expectedPath", actual.value)
     }
 
     @Test
@@ -53,8 +55,7 @@ class SSOLoginApiTest : ApiTest {
         val actual = ssoApi.initiate(param)
 
         assertIs<NetworkResponse.Success<String>>(actual)
-        TODO()
-        //assertEquals("${TEST_HOST.protocolWithAuthority}$expectedPathAndQuery", actual.value)
+        assertEquals("${TEST_BACKEND.links.api.protocolWithAuthority}$expectedPathAndQuery", actual.value)
     }
 
     @Test

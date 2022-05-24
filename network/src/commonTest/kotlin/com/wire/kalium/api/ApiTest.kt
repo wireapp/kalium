@@ -6,6 +6,7 @@ import com.wire.kalium.network.AuthenticatedNetworkContainer
 import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.UnauthenticatedNetworkContainer
+import com.wire.kalium.network.UnboundNetworkClient
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.model.AccessTokenDTO
 import com.wire.kalium.network.api.model.RefreshTokenDTO
@@ -121,20 +122,9 @@ internal interface ApiTest {
         assertion: (HttpRequestData.() -> Unit) = {},
         headers: Map<String, String>?
     ): UnauthenticatedNetworkClient {
-        val head: Map<String, List<String>> = (headers?.let {
-            mutableMapOf(HttpHeaders.ContentType to "application/json").plus(headers).mapValues { listOf(it.value) }
-        } ?: run {
-            mapOf(HttpHeaders.ContentType to "application/json").mapValues { listOf(it.value) }
-        })
 
-        val mockEngine = MockEngine { request ->
-            request.assertion()
-            respond(
-                content = responseBody,
-                status = statusCode,
-                headers = HeadersImpl(head)
-            )
-        }
+        val mockEngine = createMockEngin(responseBody, statusCode, assertion, headers)
+
         return UnauthenticatedNetworkContainer(
             backendLinks = TEST_BACKEND.links,
             engine = mockEngine
@@ -185,21 +175,67 @@ internal interface ApiTest {
     fun mockAuthenticatedNetworkClient(
         responseBody: ByteArray,
         statusCode: HttpStatusCode,
-        assertion: (HttpRequestData.() -> Unit) = {}
+        assertion: (HttpRequestData.() -> Unit) = {},
+        headers: Map<String, String>? = null
     ): AuthenticatedNetworkClient {
-        val mockEngine = MockEngine { request ->
-            request.assertion()
-            respond(
-                content = responseBody,
-                status = statusCode,
-                headers = headersOf(HttpHeaders.ContentType, "application/json")
-            )
-        }
+        val mockEngine = createMockEngin(
+            ByteReadChannel(responseBody),
+            statusCode,
+            assertion,
+            headers
+        )
         return AuthenticatedNetworkContainer(
             engine = mockEngine,
             sessionManager = TEST_SESSION_NAMAGER
         ).networkClient
     }
+
+
+    /**
+     * Creates a mock Ktor Http client
+     * @param responseBody the response body as a ByteArray
+     * @param statusCode the response http status code
+     * @param assertion lambda function to apply assertions to the request
+     * @return mock Ktor http client
+     */
+    fun mockUnboundNetworkClient(
+        responseBody: String,
+        statusCode: HttpStatusCode,
+        assertion: (HttpRequestData.() -> Unit) = {},
+        headers: Map<String, String>? = null
+    ): UnboundNetworkClient {
+        val mockEngine = createMockEngin(
+            ByteReadChannel(responseBody),
+            statusCode,
+            assertion,
+            headers
+        )
+        return UnboundNetworkClient(engine = mockEngine)
+    }
+
+
+    private fun createMockEngin(
+        responseBody: ByteReadChannel,
+        statusCode: HttpStatusCode,
+        assertion: (HttpRequestData.() -> Unit) = {},
+        headers: Map<String, String>? = null
+    ): MockEngine {
+        val newHeaders: Map<String, List<String>> = (headers?.let {
+            mutableMapOf(HttpHeaders.ContentType to "application/json").plus(headers).mapValues { listOf(it.value) }
+        } ?: run {
+            mapOf(HttpHeaders.ContentType to "application/json").mapValues { listOf(it.value) }
+        })
+
+        return MockEngine { request ->
+            request.assertion()
+            respond(
+                content = responseBody,
+                status = statusCode,
+                headers = HeadersImpl(newHeaders)
+            )
+        }
+    }
+
 
     // query params assertions
     /**
