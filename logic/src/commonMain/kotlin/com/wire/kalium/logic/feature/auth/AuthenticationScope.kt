@@ -1,10 +1,6 @@
 package com.wire.kalium.logic.feature.auth
 
 import com.benasher44.uuid.uuid4
-import com.wire.kalium.logic.configuration.UserConfigDataSource
-import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
-import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.data.auth.login.LoginRepository
@@ -15,19 +11,10 @@ import com.wire.kalium.logic.data.register.RegisterAccountDataSource
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.auth.sso.SSOLoginScope
-import com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseCase
 import com.wire.kalium.logic.feature.register.RegisterScope
-import com.wire.kalium.logic.feature.user.EnableLoggingUseCase
-import com.wire.kalium.logic.feature.user.EnableLoggingUseCaseImpl
-import com.wire.kalium.logic.feature.user.IsLoggingEnabledUseCase
-import com.wire.kalium.logic.feature.user.IsLoggingEnabledUseCaseImpl
 import com.wire.kalium.network.ServerMetaDataManager
 import com.wire.kalium.network.UnauthenticatedNetworkContainer
 import com.wire.kalium.network.tools.ServerConfigDTO
-import com.wire.kalium.persistence.client.TokenStorage
-import com.wire.kalium.persistence.client.TokenStorageImpl
-import com.wire.kalium.persistence.client.UserConfigStorage
-import com.wire.kalium.persistence.client.UserConfigStorageImpl
 import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAO
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
@@ -45,14 +32,7 @@ class AuthenticationScope(
             serverMetaDataManager = ServerMetaDataManagerImpl(globalDataBae.serverConfigurationDAO)
         )
     }
-
-    private val tokenStorage: TokenStorage get() = TokenStorageImpl(globalPreferences)
-    private val userConfigStorage: UserConfigStorage get() = UserConfigStorageImpl(globalPreferences)
-
-
     private val loginRepository: LoginRepository get() = LoginRepositoryImpl(unauthenticatedNetworkContainer.loginApi, clientLabel)
-    private val notificationTokenRepository: NotificationTokenRepository get() = NotificationTokenDataSource(tokenStorage)
-    private val userConfigRepository: UserConfigRepository get() = UserConfigDataSource(userConfigStorage)
 
     private val registerAccountRepository: RegisterAccountRepository
         get() = RegisterAccountDataSource(
@@ -67,9 +47,6 @@ class AuthenticationScope(
     val login: LoginUseCase get() = LoginUseCaseImpl(loginRepository, validateEmailUseCase, validateUserHandleUseCase)
     val register: RegisterScope get() = RegisterScope(registerAccountRepository)
     val ssoLoginScope: SSOLoginScope get() = SSOLoginScope(ssoLoginRepository)
-    val saveNotificationToken: SaveNotificationTokenUseCase get() = SaveNotificationTokenUseCase(notificationTokenRepository)
-    val enableLogging: EnableLoggingUseCase get() = EnableLoggingUseCaseImpl(userConfigRepository)
-    val isLoggingEnabled: IsLoggingEnabledUseCase get() = IsLoggingEnabledUseCaseImpl(userConfigRepository)
 }
 
 class ServerMetaDataManagerImpl internal constructor(
