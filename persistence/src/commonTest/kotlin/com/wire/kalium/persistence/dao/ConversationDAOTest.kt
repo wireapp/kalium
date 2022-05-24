@@ -75,8 +75,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         )
         val result = conversationDAO.getConversationByQualifiedID(conversationEntity2.id).first()
         assertEquals(
-            (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState,
-            ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE
+            (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState, ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE
         )
     }
 
@@ -124,8 +123,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         )
 
         assertEquals(
-            setOf(member1),
-            conversationDAO.getAllMembers(conversationEntity1.id).first().toSet()
+            setOf(member1), conversationDAO.getAllMembers(conversationEntity1.id).first().toSet()
         )
     }
 
@@ -221,6 +219,24 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.getAllMembers(conversationEntity1.id).first().also { actual ->
             assertEquals(expected, actual)
         }
+    }
+
+
+    @Test
+    fun givenConversation_whenInsertingStoredConversation_thenLastChangesTimeIsNotChanged() = runTest {
+        val convStored = conversationEntity1.copy(
+            lastNotificationDate = "2022-04-30T15:36:00.000Z", lastModifiedDate = "2022-03-30T15:36:00.000Z", name = "old name"
+        )
+        val convAfterSync = conversationEntity1.copy(
+            lastNotificationDate = "2023-04-30T15:36:00.000Z", lastModifiedDate = "2023-03-30T15:36:00.000Z", name = "new name"
+        )
+
+        val expected = convAfterSync.copy(lastModifiedDate = "2022-03-30T15:36:00.000Z", lastNotificationDate = "2022-04-30T15:36:00.000Z")
+        conversationDAO.insertConversation(convStored)
+        conversationDAO.insertConversation(convAfterSync)
+
+        val actual = conversationDAO.getConversationByQualifiedID(convAfterSync.id).first()
+        assertEquals(expected, actual)
     }
 
 
