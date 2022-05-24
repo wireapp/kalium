@@ -150,7 +150,7 @@ actual class CallManagerImpl(
         withCalling {
             val avsCallType = callMapper.toCallTypeCalling(callType)
             val avsConversationType = callMapper.toConversationTypeCalling(conversationType)
-            val result = wcall_start(
+            wcall_start(
                 deferredHandle.await(),
                 conversationId.toString(),
                 avsCallType.avsValue,
@@ -158,7 +158,7 @@ actual class CallManagerImpl(
                 isAudioCbr.toInt()
             )
 
-            callingLogger.d("$TAG - wcall_start() called with $result ${calling.wcall_library_version()}-> Call for conversation = $conversationId started")
+            callingLogger.d("$TAG - wcall_start() called -> Call for conversation = $conversationId started")
         }
     }
 
