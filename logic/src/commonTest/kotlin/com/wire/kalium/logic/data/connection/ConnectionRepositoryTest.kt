@@ -9,11 +9,13 @@ import com.wire.kalium.network.api.user.connection.ConnectionDTO
 import com.wire.kalium.network.api.user.connection.ConnectionApi
 import com.wire.kalium.network.api.user.connection.ConnectionResponse
 import com.wire.kalium.network.api.user.connection.ConnectionStateDTO
+import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.ConversationDAO
+import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
 import io.mockative.Mock
 import io.mockative.any
@@ -41,6 +43,13 @@ class ConnectionRepositoryTest {
     @Mock
     private val connectionApi = mock(classOf<ConnectionApi>())
 
+    @Mock
+    private val userDetailsApi = mock(classOf<UserDetailsApi>())
+
+
+    @Mock
+    private val userDAO = mock(classOf<UserDAO>())
+
     private lateinit var connectionRepository: ConnectionRepository
 
     @BeforeTest
@@ -49,6 +58,8 @@ class ConnectionRepositoryTest {
             conversationDAO = conversationDAO,
             connectionApi = connectionApi,
             connectionDAO = connectionDAO,
+            userDetailsApi = userDetailsApi,
+            userDAO = userDAO
         )
     }
 

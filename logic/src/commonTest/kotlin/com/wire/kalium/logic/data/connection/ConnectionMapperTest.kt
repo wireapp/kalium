@@ -2,6 +2,7 @@ package com.wire.kalium.logic.data.connection
 
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.network.api.user.connection.ConnectionStateDTO
 import io.mockative.Mock
 import io.mockative.classOf
@@ -18,6 +19,9 @@ class ConnectionMapperTest {
     @Mock
     val statusMapper = mock(classOf<ConnectionStatusMapper>())
 
-    private val mapper = ConnectionMapperImpl(idMapper, statusMapper);
+    @Mock
+    val userMapper = mock(classOf<UserMapper>())
+
+    private val mapper = ConnectionMapperImpl(idMapper, statusMapper, userMapper);
 
 }
