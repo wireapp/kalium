@@ -7,7 +7,6 @@ import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.session.installAuth
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.tools.ServerConfigDTO
-import com.wire.kalium.network.utils.Either
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.WireDefaultRequest
 import com.wire.kalium.network.utils.WireServerMetaDataConfig
@@ -63,23 +62,22 @@ internal class UnauthenticatedNetworkClient(
         install(WireDefaultRequest) {
             config {
                 WireServerMetaDataConfig().apply {
-                    loadServerData {
+                    loadServerData = {
                         serverMetaDataManager.getLocalMetaData(backendLinks)
                     }
 
-                    fetchMetadata { httpClient ->
+                    fetchAndStoreMetadata = { httpClient ->
                         val versionApi = VersionApiImpl(httpClient)
                         when (val result = versionApi.fetchApiVersion(backendLinks.api)) {
-                            is NetworkResponse.Success -> Either.Right(
+                            is NetworkResponse.Success ->
                                 serverMetaDataManager.storeBackend(
                                     backendLinks, result.value
                                 )
-                            )
-                            is NetworkResponse.Error -> Either.Left(TODO())
+                            is NetworkResponse.Error -> null
                         }
                     }
 
-                    buildDefaultRequest {
+                    buildDefaultRequest = {
                         header(HttpHeaders.ContentType, ContentType.Application.Json)
                         with(it) {
                             val apiBaseUrl = links.api

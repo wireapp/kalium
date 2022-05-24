@@ -3,7 +3,6 @@ package com.wire.kalium.network.utils
 import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.HttpClient
-import io.ktor.client.call.HttpClientCall
 import io.ktor.client.plugins.HttpClientPlugin
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.HttpRequestPipeline
@@ -73,16 +72,12 @@ class WireDefaultRequest private constructor(var provider: WireServerMetaDataCon
 
         override fun install(plugin: WireDefaultRequest, scope: HttpClient) {
             scope.requestPipeline.intercept(HttpRequestPipeline.Before) {
-                val serverConfigDTO = plugin.provider._loadServerData() ?: run {
-                    when (val fetchMetaDataResult = plugin.provider._fetchMetadata(scope)) {
-                        is Either.Left -> return@intercept
-                        is Either.Right -> fetchMetaDataResult.value
-                    }
-                }
+                val serverConfigDTO: ServerConfigDTO =
+                    plugin.provider.loadServerData() ?: plugin.provider.fetchAndStoreMetadata(scope) ?: return@intercept
 
                 val defaultRequest = WireDefaultRequestBuilder().apply {
                     headers.appendAll(context.headers)
-                    plugin.provider._buildDefaultRequest(this, serverConfigDTO)
+                    plugin.provider.buildDefaultRequest(this, serverConfigDTO)
                 }
                 val defaultUrl = defaultRequest.url.build()
                 if (context.url.host.isEmpty()) {
@@ -180,33 +175,12 @@ class WireDefaultRequest private constructor(var provider: WireServerMetaDataCon
 
 
 class WireServerMetaDataConfig {
-    internal var _fetchMetadata: suspend (HttpClient) -> Either<HttpClientCall, ServerConfigDTO> = { throw IllegalStateException() }
-    internal var _loadServerData: suspend () -> ServerConfigDTO? = { throw IllegalStateException() }
-    internal var _buildDefaultRequest: WireDefaultRequest.WireDefaultRequestBuilder.(wireServer: ServerConfigDTO) -> Unit =
+    internal var fetchAndStoreMetadata: suspend (HttpClient) -> ServerConfigDTO? = { throw IllegalStateException() }
+    internal var loadServerData: suspend () -> ServerConfigDTO? = { throw IllegalStateException() }
+    internal var buildDefaultRequest: WireDefaultRequest.WireDefaultRequestBuilder.(wireServer: ServerConfigDTO) -> Unit =
         { throw IllegalStateException() }
-
-    fun fetchMetadata(block: suspend (HttpClient) -> Either<HttpClientCall, ServerConfigDTO>) {
-        _fetchMetadata = block
-    }
-
-    fun loadServerData(block: suspend () -> ServerConfigDTO?) {
-        _loadServerData = block
-    }
-
-    fun buildDefaultRequest(block: WireDefaultRequest.WireDefaultRequestBuilder.(wireServer: ServerConfigDTO) -> Unit) {
-        _buildDefaultRequest = block
-    }
 }
 
 fun WireDefaultRequest.config(block: () -> WireServerMetaDataConfig) {
     provider = block()
-}
-
-
-sealed class Either<out L, out R> {
-    /** * Represents the left side of [Either] class which by convention is a "Failure". */
-    data class Left<out L>(val value: L) : Either<L, Nothing>()
-
-    /** * Represents the right side of [Either] class which by convention is a "Success". */
-    data class Right<out R>(val value: R) : Either<Nothing, R>()
 }

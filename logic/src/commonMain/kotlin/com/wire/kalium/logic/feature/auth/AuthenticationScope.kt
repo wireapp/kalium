@@ -41,7 +41,8 @@ class AuthenticationScope(
 
     private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
         UnauthenticatedNetworkContainer(
-            MapperProvider.serverConfigMapper().toDTO(backendLinks), serverMetaDataManager = ServerMetaDataManagerImpl(globalDataBae.serverConfigurationDAO)
+            MapperProvider.serverConfigMapper().toDTO(backendLinks),
+            serverMetaDataManager = ServerMetaDataManagerImpl(globalDataBae.serverConfigurationDAO)
         )
     }
 
@@ -84,17 +85,19 @@ class ServerMetaDataManagerImpl internal constructor(
         val newId = uuid4().toString()
 
         serverConfigurationDAO.insert(
-            id = newId,
-            title = links.title,
-            apiBaseUrl = links.api.toString(),
-            accountBaseUrl = links.accounts.toString(),
-            webSocketBaseUrl = links.webSocket.toString(),
-            blackListUrl = links.blackList.toString(),
-            websiteUrl = links.website.toString(),
-            teamsUrl = links.teams.toString(),
-            federation = metaData.federation,
-            commonApiVersion = metaData.commonApiVersion.version,
-            domain = metaData.domain
+            ServerConfigurationDAO.InsertData(
+                id = newId,
+                title = links.title,
+                apiBaseUrl = links.api.toString(),
+                accountBaseUrl = links.accounts.toString(),
+                webSocketBaseUrl = links.webSocket.toString(),
+                blackListUrl = links.blackList.toString(),
+                websiteUrl = links.website.toString(),
+                teamsUrl = links.teams.toString(),
+                federation = metaData.federation,
+                commonApiVersion = metaData.commonApiVersion.version,
+                domain = metaData.domain
+            )
         )
         return ServerConfigDTO(newId, links, metaData)
     }

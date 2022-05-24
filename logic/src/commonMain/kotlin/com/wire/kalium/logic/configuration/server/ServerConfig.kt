@@ -33,7 +33,9 @@ data class ServerConfig(
     @Serializable
     data class MetaData(
         @SerialName("federation") val federation: Boolean,
-        @SerialName("commonApiVersion") @Serializable(with = CommonApiVersionTypeSerializer::class) val commonApiVersion: CommonApiVersionType,
+        @SerialName("commonApiVersion")
+        @Serializable(with = CommonApiVersionTypeSerializer::class)
+        val commonApiVersion: CommonApiVersionType,
         @SerialName("domain") val domain: String?
     )
 

@@ -31,7 +31,7 @@ interface SSOInitiateLoginUseCase {
         data class WithRedirect(
             override val ssoCode: String, val redirects: SSORedirects
         ) : Param() {
-            constructor(ssoCode: String, wireServerID: String): this (ssoCode, SSORedirects(wireServerID))
+            constructor(ssoCode: String, wireServerID: String) : this(ssoCode, SSORedirects(wireServerID))
         }
     }
 
@@ -56,8 +56,10 @@ internal class SSOInitiateLoginUseCaseImpl(
             )
         }.fold({
             if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
-                if (it.kaliumException.errorResponse.code == HttpStatusCode.BadRequest.value) return@fold SSOInitiateLoginResult.Failure.InvalidRedirect
-                if (it.kaliumException.errorResponse.code == HttpStatusCode.NotFound.value) return@fold SSOInitiateLoginResult.Failure.InvalidCode
+                if (it.kaliumException.errorResponse.code == HttpStatusCode.BadRequest.value)
+                    return@fold SSOInitiateLoginResult.Failure.InvalidRedirect
+                if (it.kaliumException.errorResponse.code == HttpStatusCode.NotFound.value)
+                    return@fold SSOInitiateLoginResult.Failure.InvalidCode
             }
             SSOInitiateLoginResult.Failure.Generic(it)
         }, {

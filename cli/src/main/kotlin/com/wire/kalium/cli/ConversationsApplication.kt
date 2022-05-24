@@ -46,7 +46,7 @@ class InMemorySessionManager(
     }
 }
 
-class InMemoryServerMetaDataManager(): ServerMetaDataManager {
+class InMemoryServerMetaDataManager: ServerMetaDataManager {
 
     val serverConfigMapper: ServerConfigMapper = ServerConfigMapperImpl(ApiVersionMapperImpl())
     val serverConfigDTO: ServerConfigDTO = serverConfigMapper.toDTO(ServerConfig.DEFAULT)
