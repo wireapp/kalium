@@ -221,6 +221,7 @@ actual class CallManagerImpl(
         scope.launch {
             withCalling {
                 val onNetworkQualityChanged = OnNetworkQualityChanged()
+                    .keepingStrongReference()
 
                 wcall_set_network_quality_handler(
                     inst = deferredHandle.await(),
