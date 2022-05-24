@@ -40,3 +40,7 @@ SELECT * FROM ServerConfiguration WHERE id = ?;
 
 getByLinks:
 SELECT * FROM ServerConfiguration WHERE title = ? AND apiBaseUrl = ? AND webSocketBaseUrl = ?;
+
+/** this function should only be used when trying to insert new config, because config with this data may already exist with a different ID */
+getByUniqueFields:
+SELECT * FROM ServerConfiguration WHERE title = ? AND apiBaseUrl = ? AND webSocketBaseUrl = ? AND domain = ?;

@@ -94,22 +94,34 @@ internal class ServerConfigDataSource(
     override fun storeConfig(
         serverConfigResponse: ServerConfigResponse, domain: String?, apiVersion: Int, federation: Boolean
     ): Either<StorageFailure, ServerConfig> = wrapStorageRequest {
-        val newId = uuid4().toString()
         with(serverConfigResponse.endpoints) {
-            dao.insert(
-                id = newId,
-                apiBaseUrl = apiBaseUrl,
-                accountBaseUrl = accountsBaseUrl,
-                webSocketBaseUrl = webSocketBaseUrl,
-                blackListUrl = blackListUrl,
-                teamsUrl = teamsUrl,
-                websiteUrl = websiteUrl,
-                title = serverConfigResponse.title,
-                federation = federation,
-                domain = domain,
-                commonApiVersion = apiVersion
-            )
-            newId
+            // check if such config is already inserted
+            val storedConfigId = dao.configByUniqueFields(serverConfigResponse.title, apiBaseUrl, webSocketBaseUrl, domain)?.id
+            if (storedConfigId != null) {
+                // if already exists then just update it
+                dao.updateApiVersion(storedConfigId, apiVersion)
+                if (federation) dao.setFederationToTrue(storedConfigId)
+                storedConfigId
+            } else {
+                // otherwise insert new config
+                val newId = uuid4().toString()
+                dao.insert(
+                    ServerConfigurationDAO.InsertData(
+                        id = newId,
+                        apiBaseUrl = apiBaseUrl,
+                        accountBaseUrl = accountsBaseUrl,
+                        webSocketBaseUrl = webSocketBaseUrl,
+                        blackListUrl = blackListUrl,
+                        teamsUrl = teamsUrl,
+                        websiteUrl = websiteUrl,
+                        title = serverConfigResponse.title,
+                        federation = federation,
+                        domain = domain,
+                        commonApiVersion = apiVersion
+                    )
+                )
+                newId
+            }
         }
     }.flatMap { storedConfigId ->
         wrapStorageRequest { dao.configById(storedConfigId) }
