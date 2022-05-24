@@ -2,6 +2,7 @@ package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.TeamId
 import com.wire.kalium.network.api.model.AssetSizeDTO
 import com.wire.kalium.network.api.model.UserAssetDTO
@@ -43,7 +44,7 @@ interface UserMapper {
     fun fromUserConnectionStateToDao(connectionState: ConnectionState): ConnectionEntity.State
 }
 
-internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
+internal class UserMapperImpl(private val idMapper: IdMapper = MapperProvider.idMapper()) : UserMapper {
 
     override fun fromDtoToSelfUser(userDTO: UserDTO): SelfUser = with(userDTO) {
         SelfUser(
