@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.call.scenario
 
 import com.sun.jna.Pointer
 import com.wire.kalium.calling.callbacks.NetworkQualityChangedHandler
+import com.wire.kalium.logic.callingLogger
 
 class OnNetworkQualityChanged : NetworkQualityChangedHandler {
 
@@ -16,5 +17,6 @@ class OnNetworkQualityChanged : NetworkQualityChangedHandler {
         arg: Pointer?
     ) {
         // Not yet implemented
+        callingLogger.i("OnNetworkQualityChanged() - ConversationID: $conversationId - Quality: $quality")
     }
 }
