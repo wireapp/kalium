@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.UserTypeMapperImpl
 import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
+import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 
 class ConversationScope(
@@ -41,5 +42,5 @@ class ConversationScope(
         get() = UpdateConversationMutedStatusUseCaseImpl(conversationRepository)
 
     val observeConnectionList: ObserveConnectionListUseCase
-        get() = ObserveConnectionListUseCase(connectionRepository, syncManager)
+        get() = ObserveConnectionListUseCaseImpl(connectionRepository, syncManager)
 }
