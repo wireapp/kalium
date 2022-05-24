@@ -6,6 +6,8 @@ import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
@@ -21,6 +23,7 @@ import io.mockative.any
 import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.given
+import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -92,6 +95,29 @@ class SendImageUseCaseTest {
             verify(arrangement.messageSender)
                 .suspendFunction(arrangement.messageSender::sendPendingMessage)
                 .with(eq(conversationId), any())
+                .wasInvoked(exactly = once)
+        }
+
+    @Test
+    fun givenASuccessfulSendImageMessageRequest_whenCheckingTheMessageRepository_thenTheAssetIsMarkedAsSavedInternally() =
+        runTest {
+            // Given
+            val mockedImg = getMockedImage()
+            val conversationId = ConversationId("some-convo-id", "some-domain-id")
+            val (arrangement, sendImageUseCase) = Arrangement()
+                .withSuccessfulResponse()
+                .arrange()
+
+            // When
+            sendImageUseCase.invoke(conversationId, mockedImg, "temp_image.jpg", 1, 1)
+
+            // Then
+            verify(arrangement.messageRepository)
+                .suspendFunction(arrangement.messageRepository::persistMessage)
+                .with(matching {
+                    val content = it.content
+                    content is MessageContent.Asset && content.value.downloadStatus == Message.DownloadStatus.SAVED_INTERNALLY
+                })
                 .wasInvoked(exactly = once)
         }
 
