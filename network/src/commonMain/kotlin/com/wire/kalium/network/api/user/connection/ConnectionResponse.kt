@@ -7,13 +7,13 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class ConnectionResponse(
-    @SerialName("connections") val connections: List<Connection>,
+    @SerialName("connections") val connections: List<ConnectionDTO>,
     @SerialName("has_more") val hasMore: Boolean,
     @SerialName("paging_state") val pagingState: String
 )
 
 @Serializable
-data class Connection(
+data class ConnectionDTO(
     @SerialName("conversation") val conversationId: String,
     @SerialName("from") val from: String,
     @SerialName("last_update") val lastUpdate: String,

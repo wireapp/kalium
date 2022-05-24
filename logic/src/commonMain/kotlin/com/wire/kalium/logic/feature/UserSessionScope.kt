@@ -148,6 +148,7 @@ abstract class UserSessionScopeCommon(
     private val connectionRepository: ConnectionRepository
         get() = ConnectionDataSource(
             userDatabaseProvider.conversationDAO,
+            userDatabaseProvider.connectionDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.connectionApi
         )
 
@@ -248,7 +249,7 @@ abstract class UserSessionScopeCommon(
 
     private val userEventReceiver: UserEventReceiver
         get() = UserEventReceiver(
-            conversationRepository,
+            connectionRepository,
         )
 
     private val preKeyRemoteRepository: PreKeyRemoteRepository get() = PreKeyRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi)
@@ -277,7 +278,7 @@ abstract class UserSessionScopeCommon(
             mlsClientProvider,
             notificationTokenRepository
         )
-    val conversations: ConversationScope get() = ConversationScope(conversationRepository, userRepository, syncManager)
+    val conversations: ConversationScope get() = ConversationScope(conversationRepository, connectionRepository, userRepository, syncManager)
     val messages: MessageScope
         get() = MessageScope(
             messageRepository,

@@ -284,7 +284,7 @@ class UserDAOTest : BaseDatabaseTest() {
             db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(commonPrefix, ConnectionEntity.State.ACCEPTED)
         //then
         searchResult.forEach { userEntity ->
-            assertEquals(ConnectionEntity.State.ACCEPTED, ConnectionEntityStatus)
+            assertEquals(ConnectionEntity.State.ACCEPTED, userEntity.connectionStatus)
         }
     }
 
@@ -307,7 +307,7 @@ class UserDAOTest : BaseDatabaseTest() {
         //then
         assertTrue(searchResult.size == 2)
         searchResult.forEach { userEntity ->
-            assertEquals(ConnectionEntity.State.ACCEPTED, ConnectionEntityStatus)
+            assertEquals(ConnectionEntity.State.ACCEPTED, userEntity.connectionStatus)
         }
     }
 

@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.event
 
+import com.wire.kalium.logic.data.connection.ConnectionMapper
 import com.wire.kalium.logic.data.connection.ConnectionStatusMapper
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.IdMapper
@@ -8,7 +9,7 @@ import com.wire.kalium.logic.data.user.toUserId
 import com.wire.kalium.network.api.notification.EventContentDTO
 import com.wire.kalium.network.api.notification.EventResponse
 
-class EventMapper(private val idMapper: IdMapper, private  val connectionMapper: ConnectionStatusMapper) {
+class EventMapper(private val idMapper: IdMapper, private  val connectionMapper: ConnectionMapper) {
 
     fun fromDTO(eventResponse: EventResponse): List<Event> {
         // TODO(edge-case): Multiple payloads in the same event have the same ID, is this an issue when marking lastProcessedEventId?
@@ -61,11 +62,9 @@ class EventMapper(private val idMapper: IdMapper, private  val connectionMapper:
     private fun newConnection(
         id: String,
         eventConnectionDTO: EventContentDTO.User.NewConnectionDTO
-    ) = Event.User.Connection(
+    ) = Event.User.NewConnection(
         id,
-        eventConnectionDTO.connection.from.toUserId(),
-        connectionMapper.fromApiModel(eventConnectionDTO.connection.status),
-        eventConnectionDTO.connection.conversationId.toConversationId()
+        connectionMapper.fromApiToModel(eventConnectionDTO.connection)
     )
 
     private fun newConversation(

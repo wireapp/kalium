@@ -41,4 +41,5 @@ data class ConnectionEntity (
 
 interface ConnectionDAO {
     suspend fun getConnectionRequests(): Flow<List<ConnectionEntity>>
+    suspend fun insertConnection(connectionEntity: ConnectionEntity)
 }

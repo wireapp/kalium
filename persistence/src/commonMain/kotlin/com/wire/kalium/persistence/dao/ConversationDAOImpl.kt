@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.map
 import com.wire.kalium.persistence.Conversation as SQLDelightConversation
 import com.wire.kalium.persistence.Member as SQLDelightMember
 
-class ConversationMapper {
+private class ConversationMapper {
     fun toModel(conversation: SQLDelightConversation): ConversationEntity {
         return ConversationEntity(
             conversation.qualified_id,

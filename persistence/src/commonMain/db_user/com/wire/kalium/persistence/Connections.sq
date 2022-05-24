@@ -3,12 +3,12 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import kotlin.Int;
 
 CREATE TABLE Connection (
-    from_id TEXT NOT NULL PRIMARY KEY,
-    conversation_id TEXT,
-    qualified_conversation TEXT AS QualifiedIDEntity,
-    to_id TEXT,
-    last_update TEXT,
-    qualified_to TEXT AS QualifiedIDEntity,
+    from_id TEXT NOT NULL,
+    conversation_id TEXT NOT NULL,
+    qualified_conversation TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY,
+    to_id TEXT NOT NULL,
+    last_update TEXT NOT NULL,
+    qualified_to TEXT AS QualifiedIDEntity NOT NULL,
     status TEXT AS ConnectionEntity.State NOT NULL DEFAULT 'NOT_CONNECTED'
 );
 
@@ -21,10 +21,6 @@ DELETE FROM Connection WHERE from_id = ?;
 insertConnection:
 INSERT OR REPLACE INTO Connection(from_id, conversation_id, qualified_conversation, to_id, last_update, qualified_to, status)
 VALUES(?, ?, ?, ?, ?, ?, ?);
-
-insertOrIgnoreConnectionId:
-INSERT OR IGNORE INTO Connection(from_id)
-VALUES(?);
 
 updateConnection:
 UPDATE Connection

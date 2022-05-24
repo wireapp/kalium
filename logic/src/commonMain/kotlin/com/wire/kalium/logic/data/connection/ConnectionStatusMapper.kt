@@ -9,6 +9,8 @@ interface ConnectionStatusMapper {
     fun fromDaoToApi(state: ConnectionEntity.State): ConnectionStateDTO?
     fun fromApiModel(state: ConnectionStateDTO): ConnectionState
     fun toApiModel(state: ConnectionState): ConnectionStateDTO?
+    fun fromDaoModel(state: ConnectionEntity.State): ConnectionState
+    fun toDaoModel(state: ConnectionState): ConnectionEntity.State
 
 }
 
@@ -53,6 +55,28 @@ internal class ConnectionStatusMapperImpl : ConnectionStatusMapper {
         ConnectionState.MISSING_LEGALHOLD_CONSENT -> ConnectionStateDTO.MISSING_LEGALHOLD_CONSENT
         ConnectionState.ACCEPTED -> ConnectionStateDTO.ACCEPTED
         ConnectionState.NOT_CONNECTED -> null
+    }
+
+    override fun fromDaoModel(state: ConnectionEntity.State): ConnectionState = when (state) {
+        ConnectionEntity.State.PENDING -> ConnectionState.PENDING
+        ConnectionEntity.State.SENT -> ConnectionState.SENT
+        ConnectionEntity.State.BLOCKED -> ConnectionState.BLOCKED
+        ConnectionEntity.State.IGNORED -> ConnectionState.IGNORED
+        ConnectionEntity.State.CANCELLED -> ConnectionState.CANCELLED
+        ConnectionEntity.State.MISSING_LEGALHOLD_CONSENT -> ConnectionState.MISSING_LEGALHOLD_CONSENT
+        ConnectionEntity.State.ACCEPTED -> ConnectionState.ACCEPTED
+        ConnectionEntity.State.NOT_CONNECTED -> ConnectionState.NOT_CONNECTED
+    }
+
+    override fun toDaoModel(state: ConnectionState): ConnectionEntity.State = when (state) {
+        ConnectionState.PENDING -> ConnectionEntity.State.PENDING
+        ConnectionState.SENT -> ConnectionEntity.State.SENT
+        ConnectionState.BLOCKED -> ConnectionEntity.State.BLOCKED
+        ConnectionState.IGNORED -> ConnectionEntity.State.IGNORED
+        ConnectionState.CANCELLED -> ConnectionEntity.State.CANCELLED
+        ConnectionState.MISSING_LEGALHOLD_CONSENT -> ConnectionEntity.State.MISSING_LEGALHOLD_CONSENT
+        ConnectionState.ACCEPTED -> ConnectionEntity.State.ACCEPTED
+        ConnectionState.NOT_CONNECTED -> ConnectionEntity.State.NOT_CONNECTED
     }
 }
 

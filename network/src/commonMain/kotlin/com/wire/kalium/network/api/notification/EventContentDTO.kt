@@ -7,7 +7,7 @@ import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.ConversationUsers
 import com.wire.kalium.network.api.notification.conversation.MessageEventData
 import com.wire.kalium.network.api.notification.user.NewClientEventData
-import com.wire.kalium.network.api.user.connection.Connection
+import com.wire.kalium.network.api.user.connection.ConnectionDTO
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -97,7 +97,7 @@ sealed class EventContentDTO {
         @Serializable
         @SerialName("user.connection")
         data class NewConnectionDTO(
-            @SerialName("connection") val connection: Connection,
+            @SerialName("connection") val connection: ConnectionDTO,
         ) : User()
     }
 

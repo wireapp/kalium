@@ -18,7 +18,7 @@ data class Conversation(
     val lastNotificationDate: String?,
     val lastModifiedDate: String?
 ) {
-    enum class Type { SELF, ONE_ON_ONE, GROUP }
+    enum class Type { SELF, ONE_ON_ONE, GROUP } //TODO AR-1735
 }
 
 sealed class ConversationDetails(open val conversation: Conversation) {
@@ -37,6 +37,8 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         override val conversation: Conversation,
         val legalHoldStatus: LegalHoldStatus
     ) : ConversationDetails(conversation)
+
+    //TODO AR-1735
 }
 
 class MembersInfo(val self: Member, val otherMembers: List<Member>)

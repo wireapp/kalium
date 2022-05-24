@@ -148,6 +148,7 @@ internal class ConversationMapperImpl(
             ConversationResponse.Type.ONE_TO_ONE,
             ConversationResponse.Type.INCOMING_CONNECTION,
             ConversationResponse.Type.WAIT_FOR_CONNECTION,
+                // TODO AR-1735 Prepare separate enums for that types to be able filtering them in app
             -> ConversationEntity.Type.ONE_ON_ONE
         }
     }

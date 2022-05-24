@@ -1,11 +1,14 @@
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
 import com.wire.kalium.logic.sync.SyncManager
 
 class ConversationScope(
     private val conversationRepository: ConversationRepository,
+    private val connectionRepository: ConnectionRepository,
     private val userRepository: UserRepository,
     private val syncManager: SyncManager
 ) {
@@ -35,4 +38,7 @@ class ConversationScope(
 
     val updateConversationMutedStatus: UpdateConversationMutedStatusUseCase
         get() = UpdateConversationMutedStatusUseCaseImpl(conversationRepository)
+
+    val observeConnectionList: ObserveConnectionListUseCase
+        get() = ObserveConnectionListUseCase(connectionRepository, syncManager)
 }

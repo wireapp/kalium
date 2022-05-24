@@ -13,6 +13,8 @@ import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.User
 import com.wire.kalium.persistence.UserDatabase
+import com.wire.kalium.persistence.dao.ConnectionDAO
+import com.wire.kalium.persistence.dao.ConnectionDAOImpl
 import com.wire.kalium.persistence.dao.ContentTypeAdapter
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationDAOImpl
@@ -93,6 +95,9 @@ actual class UserDatabaseProvider(private val context: Context, userId: UserIDEn
 
     actual val userDAO: UserDAO
         get() = UserDAOImpl(database.usersQueries)
+
+    actual val connectionDAO: ConnectionDAO
+        get() = ConnectionDAOImpl(database.connectionsQueries)
 
     actual val conversationDAO: ConversationDAO
         get() = ConversationDAOImpl(database.conversationsQueries, database.usersQueries, database.membersQueries)

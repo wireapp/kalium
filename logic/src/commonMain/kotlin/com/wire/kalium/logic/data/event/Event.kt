@@ -2,7 +2,7 @@ package com.wire.kalium.logic.data.event
 
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.conversation.ConversationMembers
 import com.wire.kalium.network.api.conversation.ConversationResponse
@@ -67,11 +67,10 @@ sealed class Event(open val id: String) {
     sealed class User(
         id: String,
     ) : Event(id) {
-        data class Connection(
+
+        data class NewConnection(
             override val id: String,
-            val senderUserId: UserId,
-            val status: ConnectionState,
-            val conversationId: ConversationId
+            val connection: Connection
         ) : User(id)
     }
 
