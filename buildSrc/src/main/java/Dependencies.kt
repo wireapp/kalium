@@ -80,6 +80,9 @@ object Plugins {
 
     fun carthage(scope: PluginDependenciesSpec) =
         scope.id("com.wire.carthage-gradle-plugin")
+
+    fun buildKonfigId(scope: PluginDependenciesSpec) =
+        scope.id("com.codingfeline.buildkonfig")
 }
 
 object Dependencies {

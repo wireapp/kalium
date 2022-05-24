@@ -1,10 +1,11 @@
-import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet
+import com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING
 
 plugins {
     Plugins.androidLibrary(this)
     Plugins.multiplatform(this)
     Plugins.serialization(this)
     Plugins.ksp(this)
+    Plugins.buildKonfigId(this)
 }
 
 group = "com.wire.kalium"
@@ -80,6 +81,23 @@ kotlin {
         val androidTest by getting
     }
 }
+buildkonfig {
+    packageName = "com.wire.kalium"
+    objectName = "KaliumConfig"
+
+    // default config is required
+    defaultConfigs {
+        buildConfigField(STRING, "name", "value")
+    }
+
+    // we can add targeted configs for each platform separately
+//    targetConfigs {
+//        android{
+//
+//        }
+//    }
+}
+
 
 dependencies {
     ksp(Dependencies.Test.mockativeProcessor)
