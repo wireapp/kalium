@@ -23,6 +23,7 @@ import com.wire.kalium.logic.feature.call.scenario.OnConfigRequest
 import com.wire.kalium.logic.feature.call.scenario.OnEstablishedCall
 import com.wire.kalium.logic.feature.call.scenario.OnIncomingCall
 import com.wire.kalium.logic.feature.call.scenario.OnMissedCall
+import com.wire.kalium.logic.feature.call.scenario.OnNetworkQualityChanged
 import com.wire.kalium.logic.feature.call.scenario.OnParticipantListChanged
 import com.wire.kalium.logic.feature.call.scenario.OnSFTRequest
 import com.wire.kalium.logic.feature.call.scenario.OnSendOTR
@@ -190,6 +191,7 @@ actual class CallManagerImpl(
      * Will start the handlers for: ParticipantsChanged, NetworkQuality, ClientsRequest and ActiveSpeaker
      */
     private fun onCallingReady() {
+        // Participants
         scope.launch {
             withCalling {
                 val onParticipantListChanged = OnParticipantListChanged(
@@ -208,13 +210,28 @@ actual class CallManagerImpl(
             }
         }
 
-        // TODO(calling): Network Quality handler
+        // Network Quality
+        scope.launch {
+            withCalling {
+                val onNetworkQualityChanged = OnNetworkQualityChanged()
+
+                wcall_set_network_quality_handler(
+                    inst = deferredHandle.await(),
+                    wcall_network_quality_h = onNetworkQualityChanged,
+                    intervalInSeconds = NETWORK_QUALITY_INTERVAL_SECONDS,
+                    arg = null
+                )
+                callingLogger.d("$TAG - wcall_set_network_quality_handler() called")
+            }
+        }
+
         // TODO(calling): Clients Request handler
         // TODO(calling): Active Speakers handler
     }
 
     companion object {
         const val TAG = "CallManager"
+        const val NETWORK_QUALITY_INTERVAL_SECONDS = 5
         const val UTF8_ENCODING = "UTF-8"
     }
 }
