@@ -1,40 +1,45 @@
 # Types
 'type: refactoring 🛠':
-  title: '^refactor(\(.+\))?:.*'
+    title: '^refactor(\(.+\))?:.*'
 'type: bug / fix 🐞':
-  title: '^(run)?fix(\(.+\))?:.*'
+    title: '^(run)?fix(\(.+\))?:.*'
 'type: chore 🧹':
-  title: '^chore(\(.+\))?:.*'
+    title: '^chore(\(.+\))?:.*'
 'type: documentation 📋':
-  title: '^docs(\(.+\))?:.*'
-'type: feature / request ✨':
-  title: '^feat(\(.+\))?:.*'
+    title: '^docs(\(.+\))?:.*'
+'type: feature ✨':
+    title: '^feat(\(.+\))?:.*'
 'type: test 👷':
-  title: '^test(\(.+\))?:.*'
+    title: '^test(\(.+\))?:.*'
 
 # Sizes
 '👕 size: XS':
-  size-below: 10
+    size-below: 10
 '👕 size: S':
-  size-above: 9
-  size-below: 100
+    size-above: 9
+    size-below: 100
 '👕 size: M':
-  size-above: 99
-  size-below: 300
+    size-above: 99
+    size-below: 300
 '👕 size: L':
-  size-above: 299
-  size-below: 500
+    size-above: 299
+    size-below: 500
 '👕 size: XL':
-  size-above: 499
-  size-below: 1000
+    size-above: 499
+    size-below: 1000
 '👕 size: XXL':
-  size-above: 999
+    size-above: 999
 
 # Components
-'comp: Models':
-  files:
-    - 'src/main/java/com/wire/kalium/assets/.*'
-    - 'src/main/java/com/wire/kalium/models/.*'
-'comp: Readme':
-  files:
-   - 'README.md'
+'comp: Crypto':
+    files:
+        - 'cryptography/.*'
+'comp: Logic':
+    files:
+        - 'logic/.*'
+
+# Danger zone, potential breaking api changes
+'🚨 Potential breaking changes':
+    files:
+        - 'logic/src/commonMain/kotlin/com/wire/kalium/logic/data/.*'
+        - 'logic/src/commonMain/kotlin/com/wire/kalium/logic/feature/.*'
