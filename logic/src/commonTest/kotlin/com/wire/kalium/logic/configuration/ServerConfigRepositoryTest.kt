@@ -142,7 +142,7 @@ class ServerConfigRepositoryTest {
             domain = expected.metaData.domain,
             federation = expected.metaData.federation,
             commonApiVersion = ApiVersionDTO.Valid(1)
-            )
+        )
         given(versionApi)
             .suspendFunction(versionApi::fetchApiVersion)
             .whenInvokedWith(any())
@@ -181,7 +181,13 @@ class ServerConfigRepositoryTest {
         val newFederation = true
         val serverConfigEntity = newServerConfigEntity(1)
         val newServerConfigEntity = newServerConfigEntity(1).copy(commonApiVersion = newApiVersion, federation = newFederation)
-        val expected = newServerConfig(1).copy(metaData = ServerConfig.MetaData(commonApiVersion = CommonApiVersionType.Valid(newApiVersion), federation = newFederation, domain = serverConfigEntity.domain))
+        val expected = newServerConfig(1).copy(
+            metaData = ServerConfig.MetaData(
+                commonApiVersion = CommonApiVersionType.Valid(newApiVersion),
+                federation = newFederation,
+                domain = serverConfigEntity.domain
+            )
+        )
 
         given(serverConfigDAO)
             .invocation { with(serverConfigEntity) { configByUniqueFields(title, apiBaseUrl, webSocketBaseUrl, domain) } }

@@ -87,7 +87,8 @@ internal class UnauthenticatedNetworkClient(
                             url.host = apiBaseUrl.host
                             // for api version 0 no api version should be added to the request
                             url.encodedPath =
-                                if (shouldAddApiVersion(metaData.commonApiVersion.version)) apiBaseUrl.encodedPath + "v${metaData.commonApiVersion.version}/"
+                                if (shouldAddApiVersion(metaData.commonApiVersion.version))
+                                    apiBaseUrl.encodedPath + "v${metaData.commonApiVersion.version}/"
                                 else apiBaseUrl.encodedPath
                         }
                     }
@@ -155,7 +156,8 @@ private fun HttpClientConfig<*>.installWireBaseUrl(backend: ServerConfigDTO) {
             url.host = apiBaseUrl.host
             // for api version 0 no api version should be added to the request
             url.encodedPath =
-                if (shouldAddApiVersion(metaData.commonApiVersion.version)) apiBaseUrl.encodedPath + "v${metaData.commonApiVersion.version}/"
+                if (shouldAddApiVersion(metaData.commonApiVersion.version))
+                    apiBaseUrl.encodedPath + "v${metaData.commonApiVersion.version}/"
                 else apiBaseUrl.encodedPath
         }
     }
