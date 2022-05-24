@@ -11,6 +11,7 @@ import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepositoryImpl
 import com.wire.kalium.logic.data.register.RegisterAccountDataSource
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.auth.sso.SSOLoginScope
 import com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseCase
 import com.wire.kalium.logic.feature.register.RegisterScope
@@ -33,14 +34,14 @@ class AuthenticationScope(
 
     private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
         // "map backendLinks to WireServerDTO.Links"
-        UnauthenticatedNetworkContainer(TODO())
+        UnauthenticatedNetworkContainer(MapperProvider.serverConfigMapper().toDTO(backendLinks))
     }
 
     private val tokenStorage: TokenStorage get() = TokenStorageImpl(globalPreferences)
     private val userConfigStorage: UserConfigStorage get() = UserConfigStorageImpl(globalPreferences)
 
 
-    private val loginRepository: LoginRepository get() = LoginRepositoryImpl(unauthenticatedNetworkContainer.loginApi, clientLabel, TODO())
+    private val loginRepository: LoginRepository get() = LoginRepositoryImpl(unauthenticatedNetworkContainer.loginApi, clientLabel)
     private val notificationTokenRepository: NotificationTokenRepository get() = NotificationTokenDataSource(tokenStorage)
     private val userConfigRepository: UserConfigRepository get() = UserConfigDataSource(userConfigStorage)
 

@@ -49,7 +49,7 @@ class ServerConfigMapperTest {
                         Url(links.blackList),
                         Url(links.teams),
                         Url(links.website),
-                        title,
+                        links.title,
                     ),
                     ServerConfigDTO.MetaData(
                         metaData.federation,
@@ -70,15 +70,15 @@ class ServerConfigMapperTest {
             with(serverConfigEntity) {
                 ServerConfig(
                     id,
-                    title,
                     ServerConfig.Links(
                         apiBaseUrl,
                         accountBaseUrl,
                         webSocketBaseUrl,
                         blackListUrl,
                         teamsUrl,
-                        websiteUrl
-                    ),
+                        websiteUrl,
+                        title,
+                        ),
                     ServerConfig.MetaData(
                         federation,
                         commonApiVersion.toCommonApiVersionType(),
@@ -104,7 +104,7 @@ class ServerConfigMapperTest {
                     links.blackList,
                     links.teams,
                     links.website,
-                    title,
+                    links.title,
                     metaData.federation,
                     metaData.commonApiVersion.version,
                     metaData.domain

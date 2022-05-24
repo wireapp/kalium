@@ -10,10 +10,10 @@ import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
 
 sealed class SSOLoginSessionResult {
-    data class Success(val userSession: AuthSession) : SSOLoginSessionResult()
+    data class Success(val userSession: AuthSession.Tokens) : SSOLoginSessionResult()
 
     sealed class Failure : SSOLoginSessionResult() {
-        object InvalidCookie : SSOLoginSessionResult.Failure()
+        object InvalidCookie : Failure()
         class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }
@@ -35,7 +35,7 @@ internal class GetSSOLoginSessionUseCaseImpl(
             }
             SSOLoginSessionResult.Failure.Generic(it)
         }, {
-            SSOLoginSessionResult.Success(TODO())
+            SSOLoginSessionResult.Success(sessionMapper.fromSessionDTO(it))
         })
 
 }

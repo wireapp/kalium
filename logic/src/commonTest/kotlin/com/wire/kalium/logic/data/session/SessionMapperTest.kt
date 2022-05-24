@@ -67,7 +67,7 @@ class SessionMapperTest {
                 links.blackList,
                 links.teams,
                 links.website,
-                title,
+                links.title,
                 metaData.federation,
                 metaData.commonApiVersion.version,
                 metaData.domain
@@ -99,7 +99,6 @@ class SessionMapperTest {
         val serverConfig = with(persistenceSession.serverConfigEntity) {
             ServerConfig(
                 id,
-                title,
                 ServerConfig.Links(
                     apiBaseUrl,
                     accountBaseUrl,
@@ -107,7 +106,8 @@ class SessionMapperTest {
                     blackListUrl,
                     teamsUrl,
                     websiteUrl,
-                ),
+                    title,
+                    ),
                 ServerConfig.MetaData(
                     federation,
                     commonApiVersion.toCommonApiVersionType(),
