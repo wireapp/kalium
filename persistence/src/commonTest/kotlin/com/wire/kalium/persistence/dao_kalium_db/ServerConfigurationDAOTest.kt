@@ -148,17 +148,19 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
     private fun insertConfig(serverConfigEntity: ServerConfigEntity) {
         with(serverConfigEntity) {
             db.serverConfigurationDAO.insert(
-                id,
-                apiBaseUrl,
-                accountBaseUrl,
-                webSocketBaseUrl,
-                blackListUrl,
-                teamsUrl,
-                websiteUrl,
-                title,
-                federation,
-                domain,
-                commonApiVersion
+                ServerConfigurationDAO.InsertData(
+                    id,
+                    apiBaseUrl,
+                    accountBaseUrl,
+                    webSocketBaseUrl,
+                    blackListUrl,
+                    teamsUrl,
+                    websiteUrl,
+                    title,
+                    federation,
+                    domain,
+                    commonApiVersion
+                )
             )
         }
     }

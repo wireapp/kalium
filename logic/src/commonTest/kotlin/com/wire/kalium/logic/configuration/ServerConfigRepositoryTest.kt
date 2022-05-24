@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.configuration
 
+import com.wire.kalium.logic.configuration.server.CommonApiVersionType
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigDataSource
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
@@ -11,10 +12,12 @@ import com.wire.kalium.logic.util.stubs.newServerConfigDTO
 import com.wire.kalium.logic.util.stubs.newServerConfigEntity
 import com.wire.kalium.logic.util.stubs.newServerConfigResponse
 import com.wire.kalium.network.api.configuration.ServerConfigApi
+import com.wire.kalium.network.api.configuration.ServerConfigResponse
 import com.wire.kalium.network.api.versioning.VersionApi
 import com.wire.kalium.network.api.versioning.VersionInfoDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAO
+import com.wire.kalium.persistence.model.ServerConfigEntity
 import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.any
@@ -69,7 +72,7 @@ class ServerConfigRepositoryTest {
 
         val actual = serverConfigRepository.fetchRemoteConfig(serverConfigUrl)
 
-        actual.shouldSucceed { expected.value }
+        actual.shouldSucceed { assertEquals(it, expected.value) }
         verify(serverConfigApi)
             .coroutine { serverConfigApi.fetchServerConfig(serverConfigUrl) }
             .wasInvoked(exactly = once)
@@ -81,7 +84,7 @@ class ServerConfigRepositoryTest {
         given(serverConfigDAO).invocation { allConfig() }
             .then { listOf(newServerConfigEntity(1), newServerConfigEntity(2), newServerConfigEntity(3)) }
 
-        serverConfigRepository.configList().shouldSucceed { Either.Right(expected) }
+        serverConfigRepository.configList().shouldSucceed { assertEquals(it, expected) }
 
         verify(serverConfigDAO).function(serverConfigDAO::allConfig).wasInvoked(exactly = once)
     }
@@ -156,6 +159,11 @@ class ServerConfigRepositoryTest {
             .whenInvokedWith(any())
             .then { newServerConfigEntity(1) }
 
+        given(serverConfigDAO)
+            .function(serverConfigDAO::configByUniqueFields)
+            .whenInvokedWith(any(), any(), any(), any())
+            .thenReturn(null)
+
         serverConfigRepository.fetchApiVersionAndStore(testConfigResponse).shouldSucceed {
             assertEquals(expected, it)
         }
@@ -173,6 +181,89 @@ class ServerConfigRepositoryTest {
             .function(serverConfigDAO::configById)
             .with(any())
             .wasInvoked(exactly = once)
+    }
+
+
+    @Test
+    fun givenStoredConfig_whenAddingTheSameOneWithNewApiVersionParams_thenStoredOneShouldBeUpdatedAndReturned() {
+        val newApiVersion = 5
+        val newFederation = true
+        val serverConfig = newServerConfigEntity(1)
+        val newServerConfig = newServerConfigEntity(1).copy(commonApiVersion = newApiVersion, federation = newFederation)
+        val expected = newServerConfig(1).copy(commonApiVersion = CommonApiVersionType.Valid(newApiVersion), federation = newFederation)
+
+        given(serverConfigDAO)
+            .invocation { with(serverConfig) { configByUniqueFields(title, apiBaseUrl, webSocketBaseUrl, domain) } }
+            .then { serverConfig }
+        given(serverConfigDAO)
+            .function(serverConfigDAO::configById)
+            .whenInvokedWith(any())
+            .then { newServerConfig }
+
+        serverConfigRepository
+            .storeConfig(newServerConfigResponse(1), serverConfig.domain, newApiVersion, newFederation)
+            .shouldSucceed { assertEquals(it, expected) }
+
+        verify(serverConfigDAO)
+            .function(serverConfigDAO::configByUniqueFields)
+            .with(any(), any(), any(), any())
+            .wasInvoked(exactly = once)
+        verify(serverConfigDAO)
+            .function(serverConfigDAO::insert)
+            .with(any())
+            .wasNotInvoked()
+        verify(serverConfigDAO)
+            .function(serverConfigDAO::updateApiVersion)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
+        verify(serverConfigDAO)
+            .function(serverConfigDAO::setFederationToTrue)
+            .with(any())
+            .wasInvoked(exactly = once)
+        verify(serverConfigDAO)
+            .function(serverConfigDAO::configById)
+            .with(any())
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenStoredConfig_whenAddingNewOne_thenNewOneShouldBeInsertedAndReturned() {
+        val serverConfig = newServerConfigEntity(1)
+        val expected = newServerConfig(1)
+
+        given(serverConfigDAO)
+            .invocation { with(serverConfig) { configByUniqueFields(title, apiBaseUrl, webSocketBaseUrl, domain) } }
+            .then { null }
+        given(serverConfigDAO)
+            .function(serverConfigDAO::configById)
+            .whenInvokedWith(any())
+            .then { serverConfig }
+
+        serverConfigRepository
+            .storeConfig(newServerConfigResponse(1), serverConfig.domain, serverConfig.commonApiVersion, serverConfig.federation)
+            .shouldSucceed { assertEquals(it, expected) }
+
+        verify(serverConfigDAO)
+            .function(serverConfigDAO::configByUniqueFields)
+            .with(any(), any(), any(), any())
+            .wasInvoked(exactly = once)
+        verify(serverConfigDAO)
+            .function(serverConfigDAO::insert)
+            .with(any())
+            .wasInvoked(exactly = once)
+        verify(serverConfigDAO)
+            .function(serverConfigDAO::updateApiVersion)
+            .with(any(), any())
+            .wasNotInvoked()
+        verify(serverConfigDAO)
+            .function(serverConfigDAO::setFederationToTrue)
+            .with(any())
+            .wasNotInvoked()
+        verify(serverConfigDAO)
+            .function(serverConfigDAO::configById)
+            .with(any())
+            .wasInvoked(exactly = once)
+
     }
 
     private companion object {
