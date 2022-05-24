@@ -95,6 +95,7 @@ interface Calling : Library {
         json: String
     )
 
+    @Suppress("FunctionNaming", "FunctionParameterNaming")
     fun wcall_set_participant_changed_handler(
         inst: Handle,
         wcall_participant_changed_h: ParticipantChangedHandler,
