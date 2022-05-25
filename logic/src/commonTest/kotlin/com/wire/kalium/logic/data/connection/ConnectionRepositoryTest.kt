@@ -5,14 +5,15 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.ConversationId
-import com.wire.kalium.network.api.user.connection.Connection
+import com.wire.kalium.network.api.user.connection.ConnectionDTO
 import com.wire.kalium.network.api.user.connection.ConnectionApi
 import com.wire.kalium.network.api.user.connection.ConnectionResponse
 import com.wire.kalium.network.api.user.connection.ConnectionStateDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.persistence.dao.ConnectionDAO
+import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.ConversationDAO
-import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import io.mockative.Mock
 import io.mockative.any
@@ -32,9 +33,10 @@ import com.wire.kalium.network.api.UserId as NetworkUserId
 class ConnectionRepositoryTest {
 
     @Mock
-    private val conversationDAO = configure(mock(classOf<ConversationDAO>())) {
-        stubsUnitByDefault = true
-    }
+    private val conversationDAO = configure(mock(classOf<ConversationDAO>())) { stubsUnitByDefault = true }
+
+    @Mock
+    private val connectionDAO = configure(mock(classOf<ConnectionDAO>())) { stubsUnitByDefault = true }
 
     @Mock
     private val connectionApi = mock(classOf<ConnectionApi>())
@@ -45,7 +47,8 @@ class ConnectionRepositoryTest {
     fun setUp() {
         connectionRepository = ConnectionDataSource(
             conversationDAO = conversationDAO,
-            connectionApi = connectionApi
+            connectionApi = connectionApi,
+            connectionDAO = connectionDAO,
         )
     }
 
@@ -103,7 +106,7 @@ class ConnectionRepositoryTest {
             .wasInvoked(once)
         verify(conversationDAO)
             .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
-            .with(any(), eq(UserEntity.ConnectionState.SENT), any())
+            .with(any(), eq(ConnectionEntity.State.SENT), any())
             .wasInvoked(once)
     }
 
@@ -264,7 +267,7 @@ class ConnectionRepositoryTest {
     }
 
     private companion object {
-        val connection1 = Connection(
+        val connection1 = ConnectionDTO(
             conversationId = "conversationId1",
             from = "fromId",
             lastUpdate = "lastUpdate",
@@ -273,7 +276,7 @@ class ConnectionRepositoryTest {
             status = ConnectionStateDTO.ACCEPTED,
             toId = "connectionId1"
         )
-        val connection2 = Connection(
+        val connection2 = ConnectionDTO(
             conversationId = "conversationId2",
             from = "fromId",
             lastUpdate = "lastUpdate",

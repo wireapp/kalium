@@ -12,8 +12,8 @@ import kotlinx.serialization.json.buildJsonObject
 interface ConnectionApi {
 
     suspend fun fetchSelfUserConnections(pagingState: String?): NetworkResponse<ConnectionResponse>
-    suspend fun createConnection(userId: UserId): NetworkResponse<Connection>
-    suspend fun updateConnection(userId: UserId, connectionStatus: ConnectionStateDTO): NetworkResponse<Connection>
+    suspend fun createConnection(userId: UserId): NetworkResponse<ConnectionDTO>
+    suspend fun updateConnection(userId: UserId, connectionStatus: ConnectionStateDTO): NetworkResponse<ConnectionDTO>
 }
 
 class ConnectionApiImpl internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : ConnectionApi {
@@ -33,12 +33,12 @@ class ConnectionApiImpl internal constructor(private val authenticatedNetworkCli
             }
         }
 
-    override suspend fun createConnection(userId: UserId): NetworkResponse<Connection> =
+    override suspend fun createConnection(userId: UserId): NetworkResponse<ConnectionDTO> =
         wrapKaliumResponse {
             httpClient.post("$PATH_CONNECTIONS_ENDPOINTS/${userId.domain}/${userId.value}")
         }
 
-    override suspend fun updateConnection(userId: UserId, connectionStatus: ConnectionStateDTO): NetworkResponse<Connection> =
+    override suspend fun updateConnection(userId: UserId, connectionStatus: ConnectionStateDTO): NetworkResponse<ConnectionDTO> =
         wrapKaliumResponse {
             httpClient.put("$PATH_CONNECTIONS_ENDPOINTS/${userId.domain}/${userId.value}") {
                 setBody(UpdateConnectionRequest(connectionStatus))

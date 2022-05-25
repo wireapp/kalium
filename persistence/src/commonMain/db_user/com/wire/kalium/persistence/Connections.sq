@@ -1,0 +1,37 @@
+import com.wire.kalium.persistence.dao.ConnectionEntity;
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import kotlin.Int;
+
+CREATE TABLE Connection (
+    from_id TEXT NOT NULL,
+    conversation_id TEXT NOT NULL,
+    qualified_conversation TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY,
+    to_id TEXT NOT NULL,
+    last_update TEXT NOT NULL,
+    qualified_to TEXT AS QualifiedIDEntity NOT NULL,
+    status TEXT AS ConnectionEntity.State NOT NULL DEFAULT 'NOT_CONNECTED'
+);
+
+deleteAllConnections:
+DELETE FROM Connection;
+
+deleteConnection:
+DELETE FROM Connection WHERE from_id = ?;
+
+insertConnection:
+INSERT OR REPLACE INTO Connection(from_id, conversation_id, qualified_conversation, to_id, last_update, qualified_to, status)
+VALUES(?, ?, ?, ?, ?, ?, ?);
+
+updateConnection:
+UPDATE Connection
+SET conversation_id = ?, qualified_conversation = ?, to_id = ?, last_update = ?, qualified_to = ?, status = ?
+WHERE from_id = ?;
+
+updateConnectionStatus:
+UPDATE Connection SET status = ? WHERE from_id = ?;
+
+selectConnectionRequests:
+SELECT * FROM Connection WHERE status = 'SENT' OR status = 'PENDING';
+
+selectChanges:
+SELECT changes();

@@ -2,7 +2,10 @@ package com.wire.kalium.logic.data.connection
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
@@ -15,22 +18,31 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.user.connection.Connection
 import com.wire.kalium.network.api.user.connection.ConnectionApi
+import com.wire.kalium.network.api.user.connection.ConnectionDTO
 import com.wire.kalium.network.api.user.connection.ConnectionStateDTO
+import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConversationDAO
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 interface ConnectionRepository {
     suspend fun fetchSelfUserConnections(): Either<CoreFailure, Unit>
     suspend fun sendUserConnection(userId: UserId): Either<CoreFailure, Unit>
     suspend fun updateConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, Unit>
+    suspend fun getConnections(): Either<StorageFailure, Flow<List<Connection>>>
+    suspend fun insertConnectionFromEvent(event: Event.User.NewConnection): Either<CoreFailure, Unit>
+    suspend fun observeConnectionList(): Flow<List<Connection>>
+
 }
 
 internal class ConnectionDataSource(
     private val conversationDAO: ConversationDAO,
+    private val connectionDAO: ConnectionDAO,
     private val connectionApi: ConnectionApi,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
-    private val connectionStatusMapper: ConnectionStatusMapper = MapperProvider.connectionStatusMapper()
+    private val connectionStatusMapper: ConnectionStatusMapper = MapperProvider.connectionStatusMapper(),
+    private val connectionMapper: ConnectionMapper = MapperProvider.connectionMapper(),
 ) : ConnectionRepository {
 
     override suspend fun fetchSelfUserConnections(): Either<CoreFailure, Unit> {
@@ -66,7 +78,7 @@ internal class ConnectionDataSource(
     override suspend fun updateConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, Unit> {
         // Check if we can transition to the correct connection status
         val canTransitionToStatus = checkIfCanTransitionToConnectionStatus(connectionState)
-        val newConnectionStatus = connectionStatusMapper.connectionStateToApi(connectionState)
+        val newConnectionStatus = connectionStatusMapper.toApiModel(connectionState)
         if (!canTransitionToStatus || newConnectionStatus == null) {
             return Either.Left(InvalidMappingFailure)
         }
@@ -86,14 +98,31 @@ internal class ConnectionDataSource(
     }
 
 
+    override suspend fun getConnections(): Either<StorageFailure, Flow<List<Connection>>> = wrapStorageRequest {
+        observeConnectionList()
+    }
+
+    override suspend fun observeConnectionList(): Flow<List<Connection>> {
+        return connectionDAO.getConnectionRequests().map { it.map(connectionMapper::fromDaoToModel) }
+    }
+
+    override suspend fun insertConnectionFromEvent(event: Event.User.NewConnection): Either<CoreFailure, Unit> =
+        persistConnection(event.connection)
+
+    private suspend fun persistConnection(
+        connection: Connection,
+    ) = wrapStorageRequest {
+        connectionDAO.insertConnection(connectionMapper.modelToDao(connection))
+    }
+
     private suspend fun updateUserConnectionStatus(
-        connections: List<Connection>
+        connections: List<ConnectionDTO>
     ) {
         wrapStorageRequest {
             connections.forEach { connection ->
                 conversationDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
                     userId = idMapper.fromApiToDao(connection.qualifiedToId),
-                    status = connectionStatusMapper.connectionStateToDao(state = connection.status),
+                    status = connectionStatusMapper.fromApiToDao(state = connection.status),
                     conversationID = idMapper.fromApiToDao(connection.qualifiedConversationId)
                 )
             }

@@ -19,6 +19,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 
 interface ConversationEventReceiver : EventReceiver<Event.Conversation>
+interface UserEventReceiver : EventReceiver<Event.User>
 
 class ListenToEventsUseCaseTest {
 
@@ -31,11 +32,14 @@ class ListenToEventsUseCaseTest {
     @Mock
     val conversationEventReceiver = configure(mock(ConversationEventReceiver::class)) { stubsUnitByDefault = true }
 
+    @Mock
+    val userEventReceiver = configure(mock(UserEventReceiver::class)) { stubsUnitByDefault = true }
+
     lateinit var listenToEvents: ListenToEventsUseCase
 
     @BeforeTest
     fun setup() {
-        listenToEvents = ListenToEventsUseCase(syncManager, eventRepository, conversationEventReceiver)
+        listenToEvents = ListenToEventsUseCase(syncManager, eventRepository, conversationEventReceiver, userEventReceiver)
     }
 
     @Test
