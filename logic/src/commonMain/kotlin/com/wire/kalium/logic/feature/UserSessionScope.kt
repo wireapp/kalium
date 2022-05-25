@@ -259,7 +259,8 @@ abstract class UserSessionScopeCommon(
             connectionRepository,
         )
 
-    private val preKeyRemoteRepository: PreKeyRemoteRepository get() = PreKeyRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi)
+    private val preKeyRemoteRepository: PreKeyRemoteRepository
+        get() = PreKeyRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi)
     private val preKeyRepository: PreKeyRepository
         get() = PreKeyDataSource(
             preKeyRemoteRepository, authenticatedDataSourceSet.proteusClient
@@ -285,7 +286,13 @@ abstract class UserSessionScopeCommon(
             mlsClientProvider,
             notificationTokenRepository
         )
-    val conversations: ConversationScope get() = ConversationScope(conversationRepository, connectionRepository, userRepository, syncManager)
+    val conversations: ConversationScope
+        get() = ConversationScope(
+            conversationRepository,
+            connectionRepository,
+            userRepository,
+            syncManager
+        )
     val messages: MessageScope
         get() = MessageScope(
             messageRepository,
