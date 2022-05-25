@@ -32,7 +32,7 @@ import kotlinx.coroutines.runBlocking
 
 private val coreLogic = CoreLogic("Kalium CLI", "${CLIApplication.HOME_DIRECTORY}/.kalium/accounts")
 
-suspend fun restoreSession(): AuthSession? {
+fun restoreSession(): AuthSession? {
     return coreLogic.globalScope {
         when (val currentSessionResult = session.currentSession()) {
             is CurrentSessionResult.Success -> currentSessionResult.authSession
@@ -109,7 +109,7 @@ class LoginCommand : CliktCommand(name = "login") {
     private val password: String by option(help = "Account password").prompt("password", promptSuffix = ": ", hideInput = true)
     private val environment: String? by option(help = "Choose backend environment: can be production or staging")
 
-    private val serverConfig: ServerConfig by lazy {
+    private val serverConfig: ServerConfig.Links by lazy {
         if (environment == "production") {
             ServerConfig.PRODUCTION
         } else {
@@ -118,7 +118,7 @@ class LoginCommand : CliktCommand(name = "login") {
     }
 
     override fun run() = runBlocking {
-        val loginTokens = coreLogic.authenticationScope(serverConfig.links) {
+        val loginTokens = coreLogic.authenticationScope(serverConfig) {
             login(email, password, true).let {
                 if (it !is AuthenticationResult.Success) {
                     throw PrintMessage("Login failed, check your credentials")
@@ -137,7 +137,7 @@ class LoginCommand : CliktCommand(name = "login") {
             if (allSessionsResult.sessions.map { it.tokens.userId }.contains(loginTokens.userId)) {
                 this.session.updateCurrentSession(loginTokens.userId)
             } else {
-                val addAccountResult = addAuthenticatedAccount(AuthSession(loginTokens, serverConfig), true)
+                val addAccountResult = addAuthenticatedAccount(AuthSession(loginTokens, TODO()), true)
                 if (addAccountResult !is AddAuthenticatedUserUseCase.Result.Success) {
                     throw PrintMessage("Failed to save session")
                 }

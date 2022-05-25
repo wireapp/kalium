@@ -29,7 +29,7 @@ import java.io.IOException
 
 class MainActivity : ComponentActivity() {
 
-    private val serverConfig: ServerConfig by lazy { ServerConfig.DEFAULT }
+    private val serverConfig: ServerConfig.Links by lazy { ServerConfig.DEFAULT }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,7 +38,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun loginAndFetchConversationList(coreLogic: CoreLogic) = lifecycleScope.launchWhenCreated {
-        login(coreLogic, serverConfig.links)?.let {
+        login(coreLogic, serverConfig)?.let {
             val session = coreLogic.getSessionScope(it.tokens.userId)
             val conversations = session.conversations.getConversations().let { result ->
                 when (result) {
@@ -77,7 +77,7 @@ class MainActivity : ComponentActivity() {
             )
         }
 
-        val session = AuthSession(result.userSession, serverConfig)
+        val session = AuthSession(result.userSession, TODO())
         coreLogic.globalScope {
             addAuthenticatedAccount(authSession = session)
         }
