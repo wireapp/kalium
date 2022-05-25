@@ -4,6 +4,7 @@ import com.sun.jna.Pointer
 import com.wire.kalium.calling.CallTypeCalling
 import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.types.Handle
+import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.calling.types.Uint32_t
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallMapper
@@ -23,6 +24,7 @@ import com.wire.kalium.logic.feature.call.scenario.OnConfigRequest
 import com.wire.kalium.logic.feature.call.scenario.OnEstablishedCall
 import com.wire.kalium.logic.feature.call.scenario.OnIncomingCall
 import com.wire.kalium.logic.feature.call.scenario.OnMissedCall
+import com.wire.kalium.logic.feature.call.scenario.OnNetworkQualityChanged
 import com.wire.kalium.logic.feature.call.scenario.OnParticipantListChanged
 import com.wire.kalium.logic.feature.call.scenario.OnSFTRequest
 import com.wire.kalium.logic.feature.call.scenario.OnSendOTR
@@ -52,6 +54,12 @@ actual class CallManagerImpl(
     private val scope = CoroutineScope(job + Dispatchers.IO)
     private val deferredHandle: Deferred<Handle> = startHandleAsync()
 
+    private val strongReferences = mutableListOf<Any>()
+    private fun <T : Any> T.keepingStrongReference(): T {
+        strongReferences.add(this)
+        return this
+    }
+
     private val clientId: Deferred<ClientId> = scope.async(start = CoroutineStart.LAZY) {
         clientRepository.currentClientId().fold({
             TODO("adjust correct variable calling")
@@ -75,25 +83,25 @@ actual class CallManagerImpl(
             readyHandler = { version: Int, arg: Pointer? ->
                 callingLogger.i("$TAG -> readyHandler")
                 onCallingReady()
-            },
+            }.keepingStrongReference(),
             //TODO(refactor): inject all of these CallbackHandlers in class constructor
-            sendHandler = OnSendOTR(deferredHandle, calling, selfUserId, selfClientId, messageSender, scope),
-            sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, scope),
-            incomingCallHandler = OnIncomingCall(callRepository),
-            missedCallHandler = OnMissedCall(callRepository),
-            answeredCallHandler = OnAnsweredCall(callRepository),
-            establishedCallHandler = OnEstablishedCall(callRepository),
-            closeCallHandler = OnCloseCall(callRepository),
+            sendHandler = OnSendOTR(deferredHandle, calling, selfUserId, selfClientId, messageSender, scope).keepingStrongReference(),
+            sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, scope).keepingStrongReference(),
+            incomingCallHandler = OnIncomingCall(callRepository).keepingStrongReference(),
+            missedCallHandler = OnMissedCall(callRepository).keepingStrongReference(),
+            answeredCallHandler = OnAnsweredCall(callRepository).keepingStrongReference(),
+            establishedCallHandler = OnEstablishedCall(callRepository).keepingStrongReference(),
+            closeCallHandler = OnCloseCall(callRepository).keepingStrongReference(),
             metricsHandler = { conversationId: String, metricsJson: String, arg: Pointer? ->
                 callingLogger.i("$TAG -> metricsHandler")
-            },
-            callConfigRequestHandler = OnConfigRequest(calling, callRepository, scope),
+            }.keepingStrongReference(),
+            callConfigRequestHandler = OnConfigRequest(calling, callRepository, scope).keepingStrongReference(),
             constantBitRateStateChangeHandler = { userId: String, clientId: String, isEnabled: Boolean, arg: Pointer? ->
                 callingLogger.i("$TAG -> constantBitRateStateChangeHandler")
-            },
+            }.keepingStrongReference(),
             videoReceiveStateHandler = { conversationId: String, userId: String, clientId: String, state: Int, arg: Pointer? ->
                 callingLogger.i("$TAG -> videoReceiveStateHandler")
-            },
+            }.keepingStrongReference(),
             arg = null
         )
         callingLogger.d("$TAG - wcall_create() called")
@@ -151,6 +159,7 @@ actual class CallManagerImpl(
                 avsConversationType.avsValue,
                 isAudioCbr.toInt()
             )
+
             callingLogger.d("$TAG - wcall_start() called -> Call for conversation = $conversationId started")
         }
     }
@@ -185,11 +194,23 @@ actual class CallManagerImpl(
         callingLogger.d("$TAG - wcall_set_mute() called")
     }
 
+    override suspend fun updateVideoState(conversationId: ConversationId, videoState: VideoState) {
+        withCalling {
+            callingLogger.d("$TAG -> changing video state to ${videoState.name}..")
+            scope.launch {
+                val videoStateCalling = callMapper.toVideoStateCalling(videoState)
+                wcall_set_video_send_state(deferredHandle.await(), conversationId.toString(), videoStateCalling.avsValue)
+                callingLogger.d("$TAG -> wcall_set_video_send_state called..")
+            }
+        }
+    }
+
     /**
      * onCallingReady
      * Will start the handlers for: ParticipantsChanged, NetworkQuality, ClientsRequest and ActiveSpeaker
      */
     private fun onCallingReady() {
+        // Participants
         scope.launch {
             withCalling {
                 val onParticipantListChanged = OnParticipantListChanged(
@@ -197,7 +218,7 @@ actual class CallManagerImpl(
                     calling = calling,
                     callRepository = callRepository,
                     participantMapper = callMapper.participantMapper
-                )
+                ).keepingStrongReference()
 
                 wcall_set_participant_changed_handler(
                     inst = deferredHandle.await(),
@@ -208,13 +229,29 @@ actual class CallManagerImpl(
             }
         }
 
-        // TODO(calling): Network Quality handler
+        // Network Quality
+        scope.launch {
+            withCalling {
+                val onNetworkQualityChanged = OnNetworkQualityChanged()
+                    .keepingStrongReference()
+
+                wcall_set_network_quality_handler(
+                    inst = deferredHandle.await(),
+                    wcall_network_quality_h = onNetworkQualityChanged,
+                    intervalInSeconds = NETWORK_QUALITY_INTERVAL_SECONDS,
+                    arg = null
+                )
+                callingLogger.d("$TAG - wcall_set_network_quality_handler() called")
+            }
+        }
+
         // TODO(calling): Clients Request handler
         // TODO(calling): Active Speakers handler
     }
 
     companion object {
         const val TAG = "CallManager"
+        const val NETWORK_QUALITY_INTERVAL_SECONDS = 5
         const val UTF8_ENCODING = "UTF-8"
     }
 }
