@@ -8,14 +8,17 @@ import com.wire.kalium.logic.feature.call.usecase.GetIncomingCallsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.GetOngoingCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.RejectCallUseCase
+import com.wire.kalium.logic.feature.call.usecase.SetVideoPreviewUseCase
 import com.wire.kalium.logic.feature.call.usecase.StartCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.UnMuteCallUseCase
+import com.wire.kalium.logic.feature.call.usecase.UpdateVideoStateUseCase
 import com.wire.kalium.logic.sync.SyncManager
 
 class CallsScope(
     private val callManager: Lazy<CallManager>,
     private val callRepository: CallRepository,
-    private val syncManager: SyncManager,
+    private val flowManagerService: FlowManagerService,
+    private val syncManager: SyncManager
 ) {
 
     val allCalls: GetAllCallsUseCase
@@ -33,7 +36,7 @@ class CallsScope(
     val getIncomingCalls: GetIncomingCallsUseCase
         get() = GetIncomingCallsUseCaseImpl(
             callRepository = callRepository,
-            syncManager = syncManager,
+            syncManager = syncManager
         )
 
     val startCall: StartCallUseCase get() = StartCallUseCase(callManager)
@@ -47,4 +50,8 @@ class CallsScope(
     val muteCall: MuteCallUseCase get() = MuteCallUseCase(callManager)
 
     val unMuteCall: UnMuteCallUseCase get() = UnMuteCallUseCase(callManager)
+
+    val updateVideoState: UpdateVideoStateUseCase get() = UpdateVideoStateUseCase(callManager)
+
+    val setVideoPreview: SetVideoPreviewUseCase get() = SetVideoPreviewUseCase(flowManagerService)
 }

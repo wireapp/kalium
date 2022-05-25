@@ -236,6 +236,11 @@ abstract class UserSessionScopeCommon(
             messageSender = messageSender
         )
     }
+
+    private val flowManagerService by lazy {
+        globalCallManager.getFlowManager()
+    }
+
     protected abstract val protoContentMapper: ProtoContentMapper
     private val conversationEventReceiver: ConversationEventReceiver
         get() = ConversationEventReceiver(
@@ -306,6 +311,7 @@ abstract class UserSessionScopeCommon(
         get() = CallsScope(
             callManager,
             callRepository,
+            flowManagerService,
             syncManager
         )
 
