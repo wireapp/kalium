@@ -163,6 +163,8 @@ class CallRepositoryTest {
     private fun provideCall(id: ConversationId, status: CallStatus) = Call(
         id,
         status,
+        isMuted = false,
+        isCameraOn = false,
         callerId = "caller-id",
         participants = listOf(),
         maxParticipants = 0

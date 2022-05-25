@@ -79,7 +79,7 @@ actual class CallManagerImpl(
             //TODO(refactor): inject all of these CallbackHandlers in class constructor
             sendHandler = OnSendOTR(deferredHandle, calling, selfUserId, selfClientId, messageSender, scope),
             sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, scope),
-            incomingCallHandler = OnIncomingCall(callRepository),
+            incomingCallHandler = OnIncomingCall(callRepository, callMapper),
             missedCallHandler = OnMissedCall(callRepository),
             answeredCallHandler = OnAnsweredCall(callRepository),
             establishedCallHandler = OnEstablishedCall(callRepository),
@@ -130,13 +130,17 @@ actual class CallManagerImpl(
         conversationId: ConversationId,
         callType: CallType,
         conversationType: ConversationType,
-        isAudioCbr: Boolean
+        isAudioCbr: Boolean,
+        isCameraOn: Boolean
     ) {
         callingLogger.d("$TAG -> starting call for conversation = $conversationId..")
+        val shouldMute = conversationType == ConversationType.Conference
         callRepository.createCall(
             call = Call(
                 conversationId = conversationId,
                 status = CallStatus.STARTED,
+                isMuted = shouldMute,
+                isCameraOn = isCameraOn,
                 callerId = userId.await().toString()
             )
         )

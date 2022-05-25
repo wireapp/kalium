@@ -15,6 +15,8 @@ enum class CallStatus {
 data class Call(
     val conversationId: ConversationId,
     val status: CallStatus,
+    val isMuted: Boolean = true,
+    val isCameraOn: Boolean = false,
     val callerId: String,
     val participants: List<Participant> = emptyList(),
     val maxParticipants: Int = 0 // Was used for tracking

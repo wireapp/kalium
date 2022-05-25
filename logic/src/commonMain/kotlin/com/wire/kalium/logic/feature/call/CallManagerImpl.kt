@@ -12,7 +12,8 @@ interface CallManager {
         conversationId: ConversationId,
         callType: CallType,
         conversationType: ConversationType,
-        isAudioCbr: Boolean = false
+        isAudioCbr: Boolean,
+        isCameraOn: Boolean
     ) //TODO(calling): Audio CBR
 
     suspend fun answerCall(conversationId: ConversationId)
