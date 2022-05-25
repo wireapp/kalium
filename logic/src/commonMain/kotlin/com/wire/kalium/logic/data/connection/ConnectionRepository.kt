@@ -5,6 +5,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.publicuser.PublicUserMapper
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
@@ -49,6 +50,7 @@ internal class ConnectionDataSource(
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val connectionStatusMapper: ConnectionStatusMapper = MapperProvider.connectionStatusMapper(),
     private val connectionMapper: ConnectionMapper = MapperProvider.connectionMapper(),
+    private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(),
 ) : ConnectionRepository {
 
     override suspend fun fetchSelfUserConnections(): Either<CoreFailure, Unit> {
@@ -114,7 +116,6 @@ internal class ConnectionDataSource(
                 val otherUser = userDAO.getUserByQualifiedID(connection.qualifiedToId)
                 connectionMapper.fromDaoToModel(connection, otherUser.first())
             }
-
         }
     }
 
@@ -126,11 +127,11 @@ internal class ConnectionDataSource(
     ) = wrapStorageRequest {
         connectionDAO.insertConnection(connectionMapper.modelToDao(connection))
     }.flatMap {
-        // This can fail, but the connection will be there and get synced in worst case in next slowλsync
+        // This can fail? but the connection will be there and get synced in worst case in next SlowSync
         wrapApiRequest {
             userDetailsApi.getUserInfo(idMapper.toApiModel(connection.qualifiedToId))
         }.map {
-            val userEntity = MapperProvider.publicUserMapper().fromUserApiToEntity(it)
+            val userEntity = publicUserMapper.fromUserApiToEntity(it)
             userDAO.insertUser(userEntity)
         }
     }
