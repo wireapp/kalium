@@ -67,13 +67,15 @@ class WireDefaultRequest private constructor(var provider: WireServerMetaDataCon
     companion object Plugin : HttpClientPlugin<WireDefaultRequest, WireDefaultRequest> {
         override val key: AttributeKey<WireDefaultRequest> = AttributeKey("WireDefaultRequest")
 
-        override fun prepare(block: WireDefaultRequest.() -> Unit): WireDefaultRequest =
-            WireDefaultRequest().apply(block)
+        override fun prepare(block: WireDefaultRequest.() -> Unit): WireDefaultRequest = WireDefaultRequest().apply(block)
+
+        lateinit var serverConfigDTO: ServerConfigDTO
 
         override fun install(plugin: WireDefaultRequest, scope: HttpClient) {
             scope.requestPipeline.intercept(HttpRequestPipeline.Before) {
-                val serverConfigDTO: ServerConfigDTO =
-                    plugin.provider.loadServerData() ?: plugin.provider.fetchAndStoreMetadata(scope) ?: return@intercept
+                if (!this@Plugin::serverConfigDTO.isInitialized) {
+                    serverConfigDTO = plugin.provider.loadServerData() ?: plugin.provider.fetchAndStoreMetadata() ?: return@intercept
+                }
 
                 val defaultRequest = WireDefaultRequestBuilder().apply {
                     headers.appendAll(context.headers)
@@ -83,12 +85,11 @@ class WireDefaultRequest private constructor(var provider: WireServerMetaDataCon
                 if (context.url.host.isEmpty()) {
                     mergeUrls(defaultUrl, context.url)
                 }
-                kaliumLogger.d(defaultUrl.toString())
+                kaliumLogger.d("wireDefaultRequest defaultUrl: $defaultUrl")
 
                 defaultRequest.attributes.allKeys.forEach {
                     if (!context.attributes.contains(it)) {
-                        @Suppress("UNCHECKED_CAST")
-                        context.attributes.put(it as AttributeKey<Any>, defaultRequest.attributes[it])
+                        @Suppress("UNCHECKED_CAST") context.attributes.put(it as AttributeKey<Any>, defaultRequest.attributes[it])
                     }
                 }
                 context.headers.appendMissing(defaultRequest.headers.build())
@@ -130,11 +131,7 @@ class WireDefaultRequest private constructor(var provider: WireServerMetaDataCon
          * Pass `null` to keep existing value in the [URLBuilder].
          */
         fun url(
-            scheme: String? = null,
-            host: String? = null,
-            port: Int? = null,
-            path: String? = null,
-            block: URLBuilder.() -> Unit = {}
+            scheme: String? = null, host: String? = null, port: Int? = null, path: String? = null, block: URLBuilder.() -> Unit = {}
         ) {
             url.set(scheme, host, port, path, block)
         }
@@ -175,10 +172,9 @@ class WireDefaultRequest private constructor(var provider: WireServerMetaDataCon
 
 
 class WireServerMetaDataConfig {
-    internal var fetchAndStoreMetadata: suspend (HttpClient) -> ServerConfigDTO? = { throw IllegalStateException() }
-    internal var loadServerData: suspend () -> ServerConfigDTO? = { throw IllegalStateException() }
-    internal var buildDefaultRequest: WireDefaultRequest.WireDefaultRequestBuilder.(wireServer: ServerConfigDTO) -> Unit =
-        { throw IllegalStateException() }
+    internal var fetchAndStoreMetadata: suspend () -> ServerConfigDTO? = { null }
+    internal var loadServerData: suspend () -> ServerConfigDTO? = { null }
+    internal var buildDefaultRequest: WireDefaultRequest.WireDefaultRequestBuilder.(wireServer: ServerConfigDTO) -> Unit = { }
 }
 
 fun WireDefaultRequest.config(block: () -> WireServerMetaDataConfig) {

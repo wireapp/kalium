@@ -60,7 +60,6 @@ class ServerMetaDataManagerImpl internal constructor(
 
     override fun storeBackend(links: ServerConfigDTO.Links, metaData: ServerConfigDTO.MetaData): ServerConfigDTO {
         val newId = uuid4().toString()
-
         serverConfigurationDAO.insert(
             ServerConfigurationDAO.InsertData(
                 id = newId,

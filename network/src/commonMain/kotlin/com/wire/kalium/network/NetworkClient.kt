@@ -66,8 +66,8 @@ internal class UnauthenticatedNetworkClient(
                         serverMetaDataManager.getLocalMetaData(backendLinks)
                     }
 
-                    fetchAndStoreMetadata = { httpClient ->
-                        val versionApi = VersionApiImpl(httpClient)
+                    fetchAndStoreMetadata = {
+                        val versionApi = VersionApiImpl(provideBaseHttpClient(defaultHttpEngine()))
                         when (val result = versionApi.fetchApiVersion(backendLinks.api)) {
                             is NetworkResponse.Success ->
                                 serverMetaDataManager.storeBackend(

@@ -49,14 +49,15 @@ class InMemorySessionManager(
 class InMemoryServerMetaDataManager: ServerMetaDataManager {
 
     val serverConfigMapper: ServerConfigMapper = ServerConfigMapperImpl(ApiVersionMapperImpl())
-    val serverConfigDTO: ServerConfigDTO = serverConfigMapper.toDTO(ServerConfig.DEFAULT)
+    var serverConfigDTO: ServerConfigDTO? = null
 
     override fun getLocalMetaData(backendLinks: ServerConfigDTO.Links): ServerConfigDTO? {
         return serverConfigDTO
     }
 
     override fun storeBackend(links: ServerConfigDTO.Links, metaData: ServerConfigDTO.MetaData): ServerConfigDTO {
-        return serverConfigDTO
+        serverConfigDTO = ServerConfigDTO(id = "id", links, metaData)
+        return serverConfigDTO!!
     }
 
 }
@@ -69,7 +70,7 @@ class ConversationsApplication : CliktCommand() {
         NetworkLogger.setLoggingLevel(level = KaliumLogLevel.DEBUG)
 
         val serverConfigMapper: ServerConfigMapper = ServerConfigMapperImpl(ApiVersionMapperImpl())
-        val serverConfigDTO: ServerConfigDTO = serverConfigMapper.toDTO(ServerConfig.DEFAULT)
+        val serverConfigDTO: ServerConfigDTO = serverConfigMapper.toDTO(ServerConfig.STAGING)
         val loginContainer = UnauthenticatedNetworkContainer(serverConfigDTO.links, InMemoryServerMetaDataManager())
 
         val loginResult = loginContainer.loginApi.login(
