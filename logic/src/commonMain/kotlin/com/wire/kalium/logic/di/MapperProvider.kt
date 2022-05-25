@@ -31,6 +31,8 @@ import com.wire.kalium.logic.data.team.TeamMapper
 import com.wire.kalium.logic.data.team.TeamMapperImpl
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.data.user.UserMapperImpl
+import com.wire.kalium.logic.data.user.UserTypeMapper
+import com.wire.kalium.logic.data.user.UserTypeMapperImpl
 
 internal object MapperProvider {
     fun idMapper(): IdMapper = IdMapperImpl()
@@ -40,7 +42,7 @@ internal object MapperProvider {
     fun teamMapper(): TeamMapper = TeamMapperImpl()
     fun messageMapper(): MessageMapper = MessageMapperImpl(idMapper())
     fun memberMapper(): MemberMapper = MemberMapperImpl(idMapper())
-    fun conversationMapper(): ConversationMapper = ConversationMapperImpl(idMapper(), ConversationStatusMapperImpl())
+    fun conversationMapper(): ConversationMapper = ConversationMapperImpl(idMapper(), ConversationStatusMapperImpl(), UserTypeMapperImpl())
     fun publicUserMapper(): PublicUserMapper = PublicUserMapperImpl(idMapper())
     fun sendMessageFailureMapper(): SendMessageFailureMapper = SendMessageFailureMapperImpl()
     fun assetMapper(): AssetMapper = AssetMapperImpl()

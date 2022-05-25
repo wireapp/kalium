@@ -36,7 +36,7 @@ class UpdateAssetMessageDownloadStatusUseCaseTest {
     @Test
     fun givenAnErrorDownloadStatusUpdateRequest_whenInvoked_thenCoreFailureIsReturned() = runTest {
         // Given
-        val newDownloadStatus = Message.DownloadStatus.DOWNLOADED
+        val newDownloadStatus = Message.DownloadStatus.SAVED_INTERNALLY
         val dummyConvId = ConversationId("dummy-value", "dummy.domain")
         val dummyMessageId = "dummy-message-id"
         val (arrangement, useCase) = Arrangement().withErrorResponse().arrange()
