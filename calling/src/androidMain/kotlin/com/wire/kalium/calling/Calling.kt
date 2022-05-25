@@ -12,6 +12,7 @@ import com.wire.kalium.calling.callbacks.IncomingCallHandler
 import com.wire.kalium.calling.callbacks.LogHandler
 import com.wire.kalium.calling.callbacks.MetricsHandler
 import com.wire.kalium.calling.callbacks.MissedCallHandler
+import com.wire.kalium.calling.callbacks.NetworkQualityChangedHandler
 import com.wire.kalium.calling.callbacks.ParticipantChangedHandler
 import com.wire.kalium.calling.callbacks.ReadyHandler
 import com.wire.kalium.calling.callbacks.SFTRequestHandler
@@ -97,6 +98,14 @@ interface Calling : Library {
     fun wcall_set_participant_changed_handler(
         inst: Handle,
         wcall_participant_changed_h: ParticipantChangedHandler,
+        arg: Pointer?
+    )
+
+    @Suppress("FunctionNaming", "FunctionParameterNaming")
+    fun wcall_set_network_quality_handler(
+        inst: Handle,
+        wcall_network_quality_h: NetworkQualityChangedHandler,
+        intervalInSeconds: Int,
         arg: Pointer?
     )
 
