@@ -88,9 +88,10 @@ interface Calling : Library {
         arg: Pointer?
     ): Int
 
+    @Suppress("FunctionNaming")
     fun wcall_request_video_streams(
         inst: Handle,
-        convId: String,
+        conversationId: String,
         mode: Int,
         json: String
     )
@@ -108,6 +109,9 @@ interface Calling : Library {
         intervalInSeconds: Int,
         arg: Pointer?
     )
+
+    @Suppress("FunctionNaming")
+    fun wcall_set_video_send_state(inst: Handle, conversationId: String, state: Int)
 
     companion object {
         val INSTANCE by lazy { Native.load("avs", Calling::class.java)!! }

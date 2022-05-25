@@ -17,4 +17,6 @@ expect class GlobalCallManager {
         callMapper: CallMapper,
         messageSender: MessageSender
     ): CallManager
+
+    fun getFlowManager() : FlowManagerService
 }
