@@ -2,19 +2,20 @@ package com.wire.kalium.logic.data.call
 
 import com.wire.kalium.calling.CallTypeCalling
 import com.wire.kalium.calling.ConversationTypeCalling
+import com.wire.kalium.calling.VideoStateCalling
 import com.wire.kalium.logic.data.id.QualifiedID
 
 class CallMapper {
 
-    fun toCallTypeCalling(callType: CallType) : CallTypeCalling {
-        return when(callType) {
+    fun toCallTypeCalling(callType: CallType): CallTypeCalling {
+        return when (callType) {
             CallType.AUDIO -> CallTypeCalling.AUDIO
             CallType.VIDEO -> CallTypeCalling.VIDEO
         }
     }
 
-    fun toConversationTypeCalling(conversationType: ConversationType) : ConversationTypeCalling {
-        return when(conversationType) {
+    fun toConversationTypeCalling(conversationType: ConversationType): ConversationTypeCalling {
+        return when (conversationType) {
             ConversationType.OneOnOne -> ConversationTypeCalling.OneOnOne
             ConversationType.Conference -> ConversationTypeCalling.Conference
             else -> ConversationTypeCalling.Unknown
@@ -26,6 +27,16 @@ class CallMapper {
             0 -> ConversationType.OneOnOne
             2 -> ConversationType.Conference
             else -> ConversationType.Unknown
+        }
+    }
+
+    fun toVideoStateCalling(videoState: VideoState): VideoStateCalling {
+        return when (videoState) {
+            VideoState.STOPPED -> VideoStateCalling.STOPPED
+            VideoState.STARTED -> VideoStateCalling.STARTED
+            VideoState.BAD_CONNECTION -> VideoStateCalling.BAD_CONNECTION
+            VideoState.PAUSED -> VideoStateCalling.PAUSED
+            VideoState.SCREENSHARE -> VideoStateCalling.SCREENSHARE
         }
     }
 

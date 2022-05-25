@@ -65,15 +65,24 @@ actual class ProteusClientImpl actual constructor(rootDir: String) : ProteusClie
 
         return wrapException {
             if (session != null) {
-                session.decrypt(message)
+                val decryptedMessage = session.decrypt(message)
+                session.save()
+                decryptedMessage
             } else {
-                box.initSessionFromMessage(sessionId.value, message).message
+                val result = box.initSessionFromMessage(sessionId.value, message)
+                result.session.save()
+                result.message
             }
         }
     }
 
     override suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
-        return wrapException { box.getSession(sessionId.value).encrypt(message) }
+        return wrapException {
+            val session = box.getSession(sessionId.value)
+            val encryptedMessage = session.encrypt(message)
+            session.save()
+            encryptedMessage
+        }
     }
 
     override suspend fun encryptWithPreKey(
@@ -83,7 +92,9 @@ actual class ProteusClientImpl actual constructor(rootDir: String) : ProteusClie
     ): ByteArray {
         return wrapException {
             val session = box.initSessionFromPreKey(sessionId.value, toPreKey(preKeyCrypto))
-            session.encrypt(message)
+            val encryptedMessage = session.encrypt(message)
+            session.save()
+            encryptedMessage
         }
     }
 
