@@ -80,6 +80,7 @@ internal class ConnectionDataSource(
         }.map { connection ->
             val connectionSent = connection.copy(status = ConnectionStateDTO.SENT)
             updateUserConnectionStatus(listOf(connectionSent))
+            persistConnection(connectionMapper.fromApiToModel(connectionSent))
         }
     }
 

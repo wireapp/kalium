@@ -29,7 +29,6 @@ internal class SendConnectionRequestUseCaseImpl(
                 kaliumLogger.e("An error occurred when sending a connection request to $userId")
                 SendConnectionRequestResult.Failure(coreFailure)
             }, {
-                connectionRepository.fetchSelfUserConnections()
                 SendConnectionRequestResult.Success
             })
     }
