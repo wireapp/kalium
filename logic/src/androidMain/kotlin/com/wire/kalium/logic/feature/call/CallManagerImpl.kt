@@ -4,6 +4,7 @@ import com.sun.jna.Pointer
 import com.wire.kalium.calling.CallTypeCalling
 import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.types.Handle
+import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.calling.types.Uint32_t
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallMapper
@@ -23,6 +24,7 @@ import com.wire.kalium.logic.feature.call.scenario.OnConfigRequest
 import com.wire.kalium.logic.feature.call.scenario.OnEstablishedCall
 import com.wire.kalium.logic.feature.call.scenario.OnIncomingCall
 import com.wire.kalium.logic.feature.call.scenario.OnMissedCall
+import com.wire.kalium.logic.feature.call.scenario.OnNetworkQualityChanged
 import com.wire.kalium.logic.feature.call.scenario.OnParticipantListChanged
 import com.wire.kalium.logic.feature.call.scenario.OnSFTRequest
 import com.wire.kalium.logic.feature.call.scenario.OnSendOTR
@@ -192,11 +194,23 @@ actual class CallManagerImpl(
         callingLogger.d("$TAG - wcall_set_mute() called")
     }
 
+    override suspend fun updateVideoState(conversationId: ConversationId, videoState: VideoState) {
+        withCalling {
+            callingLogger.d("$TAG -> changing video state to ${videoState.name}..")
+            scope.launch {
+                val videoStateCalling = callMapper.toVideoStateCalling(videoState)
+                wcall_set_video_send_state(deferredHandle.await(), conversationId.toString(), videoStateCalling.avsValue)
+                callingLogger.d("$TAG -> wcall_set_video_send_state called..")
+            }
+        }
+    }
+
     /**
      * onCallingReady
      * Will start the handlers for: ParticipantsChanged, NetworkQuality, ClientsRequest and ActiveSpeaker
      */
     private fun onCallingReady() {
+        // Participants
         scope.launch {
             withCalling {
                 val onParticipantListChanged = OnParticipantListChanged(
@@ -215,13 +229,29 @@ actual class CallManagerImpl(
             }
         }
 
-        // TODO(calling): Network Quality handler
+        // Network Quality
+        scope.launch {
+            withCalling {
+                val onNetworkQualityChanged = OnNetworkQualityChanged()
+                    .keepingStrongReference()
+
+                wcall_set_network_quality_handler(
+                    inst = deferredHandle.await(),
+                    wcall_network_quality_h = onNetworkQualityChanged,
+                    intervalInSeconds = NETWORK_QUALITY_INTERVAL_SECONDS,
+                    arg = null
+                )
+                callingLogger.d("$TAG - wcall_set_network_quality_handler() called")
+            }
+        }
+
         // TODO(calling): Clients Request handler
         // TODO(calling): Active Speakers handler
     }
 
     companion object {
         const val TAG = "CallManager"
+        const val NETWORK_QUALITY_INTERVAL_SECONDS = 5
         const val UTF8_ENCODING = "UTF-8"
     }
 }
