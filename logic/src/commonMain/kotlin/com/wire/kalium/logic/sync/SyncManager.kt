@@ -37,7 +37,7 @@ class SyncManagerImpl(
     private val eventRepository: EventRepository,
     kaliumDispatcher: KaliumDispatcher,
     private val syncRepository: SyncRepository,
-    private val conversationEventReceiver: EventReceiver<Event.Conversation>
+    private val conversationEventReceiver: ConversationEventReceiver
 ) : SyncManager {
 
     /**
@@ -80,8 +80,6 @@ class SyncManagerImpl(
     private var processingJob: Job? = null
 
     override fun onSlowSyncComplete() {
-        syncRepository.updateSyncState { SyncState.ProcessingPendingEvents }
-
         // Processing already running, don't launch another
         val isRunning = processingJob?.isActive ?: false
         if (isRunning) return

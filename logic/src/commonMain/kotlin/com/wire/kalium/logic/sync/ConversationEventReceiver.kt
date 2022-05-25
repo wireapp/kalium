@@ -28,9 +28,11 @@ import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.logic.wrapCryptoRequest
 import io.ktor.utils.io.core.toByteArray
 
+interface ConversationEventReceiver: EventReceiver<Event.Conversation>
+
 // Suppressed as it's an old issue
 @Suppress("LongParameterList")
-class ConversationEventReceiver(
+class ConversationEventReceiverImpl(
     private val proteusClient: ProteusClient,
     private val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
@@ -40,7 +42,7 @@ class ConversationEventReceiver(
     private val callManagerImpl: Lazy<CallManager>,
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper()
-) : EventReceiver<Event.Conversation> {
+) : ConversationEventReceiver {
 
     override suspend fun onEvent(event: Event.Conversation) {
         when (event) {

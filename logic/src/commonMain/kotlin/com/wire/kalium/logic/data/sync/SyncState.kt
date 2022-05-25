@@ -37,5 +37,5 @@ sealed class SyncState {
     /**
      * Sync was not completed due to a failure.
      */
-    class Failed(val cause: CoreFailure) : SyncState()
+    data class Failed(val cause: CoreFailure) : SyncState()
 }

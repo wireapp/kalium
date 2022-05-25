@@ -37,7 +37,7 @@ class SyncPendingEventsUseCaseTest {
 
     @BeforeTest
     fun setup() {
-        syncPendingEvents = SyncPendingEventsUseCase(syncManager, eventRepository, conversationEventReceiver)
+        syncPendingEvents = SyncPendingEventsUseCase(syncManager)
     }
 
     @Test
