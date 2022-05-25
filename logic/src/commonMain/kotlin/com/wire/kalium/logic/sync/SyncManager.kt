@@ -11,6 +11,7 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
+import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -109,6 +110,7 @@ class SyncManagerImpl(
      * In a perfect world where connections don't drop, this should never end.
      * @throws KaliumSyncException when processing stops.
      */
+    @Suppress("TooGenericExceptionCaught") // We need to catch any exceptions and mark Sync as failed
     private suspend fun processLiveEvents() {
         val processingStopCause = eventRepository.liveEvents().fold({ failure ->
             KaliumSyncException("Failure when receiving live events", failure)
@@ -118,8 +120,10 @@ class SyncManagerImpl(
                     processEvent(event)
                 }
                 KaliumSyncException("Websocket event collecting stopped", NetworkFailure.NoNetworkConnection(null))
+            } catch (io: IOException) {
+                KaliumSyncException("Websocket disconnected", NetworkFailure.NoNetworkConnection(io))
             } catch (t: Throwable) {
-                KaliumSyncException("Websocket disconnected", NetworkFailure.NoNetworkConnection(t))
+                KaliumSyncException("Unknown Websocket error", CoreFailure.Unknown(t))
             }
         })
         throw processingStopCause
