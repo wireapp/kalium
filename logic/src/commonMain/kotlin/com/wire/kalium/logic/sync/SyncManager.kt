@@ -11,6 +11,7 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -35,9 +36,9 @@ interface SyncManager {
 class SyncManagerImpl(
     private val workScheduler: WorkScheduler,
     private val eventRepository: EventRepository,
-    kaliumDispatcher: KaliumDispatcher,
     private val syncRepository: SyncRepository,
-    private val conversationEventReceiver: ConversationEventReceiver
+    private val conversationEventReceiver: ConversationEventReceiver,
+    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : SyncManager {
 
     /**

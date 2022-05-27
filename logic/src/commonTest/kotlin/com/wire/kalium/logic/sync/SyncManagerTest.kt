@@ -53,7 +53,6 @@ class SyncManagerTest {
         syncManager = SyncManagerImpl(
             workScheduler,
             eventRepository,
-            TestKaliumDispatcher,
             syncRepository,
             conversationEventReceiver
         )

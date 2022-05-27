@@ -222,9 +222,9 @@ abstract class UserSessionScopeCommon(
         SyncManagerImpl(
             authenticatedDataSourceSet.workScheduler,
             eventRepository,
-            KaliumDispatcherImpl,
             syncRepository,
-            conversationEventReceiver
+            conversationEventReceiver,
+            KaliumDispatcherImpl
         )
     }
 
