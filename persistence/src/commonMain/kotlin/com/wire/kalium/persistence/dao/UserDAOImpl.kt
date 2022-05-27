@@ -44,6 +44,7 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
         )
     }
 
+    // todo: expand multiple cases by usages (ie: not updating status if not comes from api)
     override suspend fun insertUsers(users: List<UserEntity>) {
         queries.transaction {
             for (user: UserEntity in users) {
