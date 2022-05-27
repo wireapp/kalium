@@ -21,7 +21,7 @@ class PrekeyApiTest : ApiTest {
 
     @Test
     fun givenAValidDomainToUserIdToClientsMap_whenCallingGetUsersPrekeyEndpoint_theRequestShouldBeConfiguredCorrectly() = runTest {
-        val httpClient = mockAuthenticatedHttpClient(
+        val networkClient = mockAuthenticatedNetworkClient(
             VALID_GET_USERS_PREKEY_RESPONSE.rawJson,
             statusCode = HttpStatusCode.OK,
             assertion = {
@@ -30,7 +30,7 @@ class PrekeyApiTest : ApiTest {
                 assertPathEqual(PATH_PREKEYS)
             }
         )
-        val preKeyApi: PreKeyApi = PreKeyApiImpl(httpClient)
+        val preKeyApi: PreKeyApi = PreKeyApiImpl(networkClient)
 
         val response = preKeyApi.getUsersPreKey(VALID_GET_USERS_PREKEY_REQUEST.serializableData)
         assertTrue(response.isSuccessful())
@@ -39,11 +39,11 @@ class PrekeyApiTest : ApiTest {
 
     @Test
     fun givenTheServerReturnsAnError_whenCallingGetUsersPrekeyEndpoint_theCorrectExceptionIsThrown() = runTest {
-        val httpClient = mockAuthenticatedHttpClient(
+        val networkClient = mockAuthenticatedNetworkClient(
             ErrorResponseJson.valid.rawJson,
             statusCode = HttpStatusCode.Forbidden,
         )
-        val preKeyApi: PreKeyApi = PreKeyApiImpl(httpClient)
+        val preKeyApi: PreKeyApi = PreKeyApiImpl(networkClient)
         val errorResponse = preKeyApi.getUsersPreKey(VALID_GET_USERS_PREKEY_REQUEST.serializableData)
         assertFalse(errorResponse.isSuccessful())
         assertTrue(errorResponse.kException is KaliumException.InvalidRequestError)

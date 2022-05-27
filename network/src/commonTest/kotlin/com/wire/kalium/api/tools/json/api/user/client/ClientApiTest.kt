@@ -21,7 +21,7 @@ class ClientApiTest : ApiTest {
     @Test
     fun givenAValidRegisterClientRequest_whenCallingTheRegisterClientEndpoint_theRequestShouldBeConfiguredCorrectly() =
         runTest {
-            val httpClient = mockAuthenticatedHttpClient(
+            val networkClient = mockAuthenticatedNetworkClient(
                 VALID_REGISTER_CLIENT_RESPONSE.rawJson,
                 statusCode = HttpStatusCode.Created,
                 assertion = {
@@ -31,7 +31,7 @@ class ClientApiTest : ApiTest {
                     assertPathEqual(PATH_CLIENTS)
                 }
             )
-            val clientApi: ClientApi = ClientApiImpl(httpClient)
+            val clientApi: ClientApi = ClientApiImpl(networkClient)
             val response = clientApi.registerClient(REGISTER_CLIENT_REQUEST.serializableData)
             assertTrue(response.isSuccessful())
             assertEquals(response.value, VALID_REGISTER_CLIENT_RESPONSE.serializableData)
@@ -39,11 +39,11 @@ class ClientApiTest : ApiTest {
 
     @Test
     fun givenTheServerReturnsAnError_whenCallingTheRegisterClientEndpoint_thenExceptionIsPropagated() = runTest {
-        val httpClient = mockAuthenticatedHttpClient(
+        val networkClient = mockAuthenticatedNetworkClient(
             ErrorResponseJson.valid.rawJson,
             statusCode = HttpStatusCode.BadRequest
         )
-        val clientApi: ClientApi = ClientApiImpl(httpClient)
+        val clientApi: ClientApi = ClientApiImpl(networkClient)
         val errorResponse = clientApi.registerClient(REGISTER_CLIENT_REQUEST.serializableData)
         assertFalse(errorResponse.isSuccessful())
         assertTrue(errorResponse.kException is KaliumException.InvalidRequestError)
@@ -53,7 +53,7 @@ class ClientApiTest : ApiTest {
     @Test
     fun givenAValidUpdateClientRequest_whenCallingTheUpdateClientEndpoint_theRequestShouldBeConfiguredCorrectly() =
         runTest {
-            val httpClient = mockAuthenticatedHttpClient(
+            val networkClient = mockAuthenticatedNetworkClient(
                 "",
                 statusCode = HttpStatusCode.OK,
                 assertion = {
@@ -63,7 +63,7 @@ class ClientApiTest : ApiTest {
                     assertPathEqual("$PATH_CLIENTS/$VALID_CLIENT_ID")
                 }
             )
-            val clientApi: ClientApi = ClientApiImpl(httpClient)
+            val clientApi: ClientApi = ClientApiImpl(networkClient)
             val response = clientApi.updateClient(UPDATE_CLIENT_REQUEST.serializableData, VALID_CLIENT_ID)
             assertTrue(response.isSuccessful())
         }
@@ -89,13 +89,13 @@ class ClientApiTest : ApiTest {
 
     @Test
     fun givenAValidRequest_whenRegisteredValidToken_theTokenRegisteredSuccessfully() = runTest {
-        val httpClient = mockAuthenticatedHttpClient(
+        val networkClient = mockAuthenticatedNetworkClient(
             RegisterTokenJson.registerTokenResponse, statusCode = HttpStatusCode.Created, assertion = {
                 assertPost()
                 assertBodyContent(VALID_PUSH_TOKEN_REQUEST.rawJson)
             }
         )
-        val clientApi = ClientApiImpl(httpClient)
+        val clientApi = ClientApiImpl(networkClient)
         clientApi.registerToken(VALID_PUSH_TOKEN_REQUEST.serializableData)
 
         val actual = clientApi.registerToken(VALID_PUSH_TOKEN_REQUEST.serializableData)

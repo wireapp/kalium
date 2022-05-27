@@ -12,6 +12,7 @@ import com.wire.kalium.calling.callbacks.IncomingCallHandler
 import com.wire.kalium.calling.callbacks.LogHandler
 import com.wire.kalium.calling.callbacks.MetricsHandler
 import com.wire.kalium.calling.callbacks.MissedCallHandler
+import com.wire.kalium.calling.callbacks.NetworkQualityChangedHandler
 import com.wire.kalium.calling.callbacks.ParticipantChangedHandler
 import com.wire.kalium.calling.callbacks.ReadyHandler
 import com.wire.kalium.calling.callbacks.SFTRequestHandler
@@ -59,8 +60,6 @@ interface Calling : Library {
 
     fun wcall_end(inst: Handle, conversationId: String)
 
-    fun wcall_close()
-
     fun wcall_set_mute(inst: Handle, muted: Int)
 
     fun wcall_sft_resp(
@@ -89,9 +88,10 @@ interface Calling : Library {
         arg: Pointer?
     ): Int
 
+    @Suppress("FunctionNaming")
     fun wcall_request_video_streams(
         inst: Handle,
-        convId: String,
+        conversationId: String,
         mode: Int,
         json: String
     )
@@ -101,6 +101,17 @@ interface Calling : Library {
         wcall_participant_changed_h: ParticipantChangedHandler,
         arg: Pointer?
     )
+
+    @Suppress("FunctionNaming", "FunctionParameterNaming")
+    fun wcall_set_network_quality_handler(
+        inst: Handle,
+        wcall_network_quality_h: NetworkQualityChangedHandler,
+        intervalInSeconds: Int,
+        arg: Pointer?
+    )
+
+    @Suppress("FunctionNaming")
+    fun wcall_set_video_send_state(inst: Handle, conversationId: String, state: Int)
 
     companion object {
         val INSTANCE by lazy { Native.load("avs", Calling::class.java)!! }

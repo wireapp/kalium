@@ -17,13 +17,13 @@ import kotlinx.serialization.encoding.Encoder
 @Serializable
 data class CreateConversationRequest(
     @SerialName("qualified_users")
-    val qualifiedUsers: List<UserId>,
+    val qualifiedUsers: List<UserId>?,
     @SerialName("name")
     val name: String?,
     @SerialName("access")
-    val access: List<ConversationAccess>,
+    val access: List<ConversationAccess>?,
     @SerialName("access_role_v2")
-    val accessRole: List<ConversationAccessRole>,
+    val accessRole: List<ConversationAccessRole>?,
     @SerialName("team")
     val convTeamInfo: ConvTeamInfo?,
     @SerialName("message_timer")
@@ -31,11 +31,11 @@ data class CreateConversationRequest(
     // Receipt mode, controls if read receipts are enabled for the conversation.
     // Any positive value is interpreted as enabled.
     @SerialName("receipt_mode")
-    val receiptMode: ReceiptMode,
+    val receiptMode: ReceiptMode?,
     // Role name, between 2 and 128 chars, 'wire_' prefix is reserved for roles
     // designed by Wire (i.e., no custom roles can have the same prefix)
     @SerialName("conversation_role")
-    val conversationRole: String,
+    val conversationRole: String?,
     @SerialName("protocol")
     val protocol: ConvProtocol?
 )
@@ -53,7 +53,7 @@ enum class ReceiptMode(val value: Int) {
 
         override fun deserialize(decoder: Decoder): ReceiptMode {
             val value = decoder.decodeInt()
-            return if (value > 0) ReceiptMode.ENABLED else ReceiptMode.DISABLED
+            return if (value > 0) ENABLED else DISABLED
         }
     }
 }
@@ -62,6 +62,7 @@ enum class ReceiptMode(val value: Int) {
 enum class ConvProtocol {
     @SerialName("proteus")
     PROTEUS,
+
     @SerialName("mls")
     MLS;
 

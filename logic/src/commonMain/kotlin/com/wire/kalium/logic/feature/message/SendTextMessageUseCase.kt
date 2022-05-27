@@ -25,7 +25,7 @@ class SendTextMessageUseCase(
 ) {
 
     suspend operator fun invoke(conversationId: ConversationId, text: String): Either<CoreFailure, Unit> {
-        syncManager.waitForSlowSyncToComplete()
+        syncManager.waitForSyncToComplete()
         val selfUser = userRepository.getSelfUser().first()
 
         val generatedMessageUuid = uuid4().toString()
@@ -44,10 +44,11 @@ class SendTextMessageUseCase(
         }.flatMap {
             messageSender.sendPendingMessage(conversationId, generatedMessageUuid)
         }.onFailure {
-            kaliumLogger.e("There was an error trying to send the message $it")
             if (it is CoreFailure.Unknown) {
-                //TODO Did I write multiplatform logging today?
+                kaliumLogger.e("There was an unknown error trying to send the message $it", it.rootCause)
                 it.rootCause?.printStackTrace()
+            } else {
+                kaliumLogger.e("There was an error trying to send the message $it")
             }
         }
     }

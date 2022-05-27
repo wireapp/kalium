@@ -25,7 +25,7 @@ data class UserSsoId(
     @SerialName("scim_external_id")
     val scimExternalId: String?,
     @SerialName("subject")
-    val subject: String,
+    val subject: String?,
     @SerialName("tenant")
     val tenant: String?
 )

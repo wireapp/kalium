@@ -75,7 +75,7 @@ class MessageSenderImpl(
 ) : MessageSender {
 
     override suspend fun sendPendingMessage(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit> {
-        syncManager.waitForSlowSyncToComplete()
+        syncManager.waitForSyncToComplete()
         return messageRepository.getMessageById(conversationId, messageUuid).flatMap { message ->
             sendMessage(message)
         }.onFailure {
@@ -110,7 +110,7 @@ class MessageSenderImpl(
                     attemptToSendWithMLS(protocolInfo.groupId, message)
                 }
                 is ConversationEntity.ProtocolInfo.Proteus -> {
-                    // TODO: make this thread safe (per user)
+                    // TODO(messaging): make this thread safe (per user)
                     attemptToSendWithProteus(message)
                 }
             }
@@ -131,9 +131,9 @@ class MessageSenderImpl(
         groupId: String,
         message: Message
     ): Either<CoreFailure, String> = mlsMessageCreator.createOutgoingMLSMessage(groupId, message).flatMap { mlsMessage ->
-        // TODO handle mls-stale-message
+        // TODO(mls): handle mls-stale-message
         messageRepository.sendMLSMessage(message.conversationId, mlsMessage).map {
-            message.date //TODO return actual server time from the response
+            message.date //TODO(mls): return actual server time from the response
         }
     }
 

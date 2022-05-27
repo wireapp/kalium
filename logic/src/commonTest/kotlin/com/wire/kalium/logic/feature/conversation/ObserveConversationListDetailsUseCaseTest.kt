@@ -47,7 +47,7 @@ class ObserveConversationListDetailsUseCaseTest {
         val conversations = listOf(TestConversation.SELF, TestConversation.GROUP)
 
         given(syncManager)
-            .suspendFunction(syncManager::waitForSlowSyncToComplete)
+            .suspendFunction(syncManager::waitForSyncToComplete)
             .whenInvoked()
             .thenReturn(Unit)
 
@@ -74,7 +74,7 @@ class ObserveConversationListDetailsUseCaseTest {
         val conversations = listOf(TestConversation.SELF, TestConversation.GROUP)
 
         given(syncManager)
-            .suspendFunction(syncManager::waitForSlowSyncToComplete)
+            .suspendFunction(syncManager::waitForSyncToComplete)
             .whenInvoked()
             .thenReturn(Unit)
 
@@ -91,7 +91,7 @@ class ObserveConversationListDetailsUseCaseTest {
         observeConversationsUseCase().collect()
 
         verify(syncManager)
-            .suspendFunction(syncManager::waitForSlowSyncToComplete)
+            .suspendFunction(syncManager::waitForSyncToComplete)
             .wasInvoked(exactly = once)
 
     }
@@ -101,7 +101,7 @@ class ObserveConversationListDetailsUseCaseTest {
         val conversations = listOf(TestConversation.SELF, TestConversation.GROUP)
 
         given(syncManager)
-            .suspendFunction(syncManager::waitForSlowSyncToComplete)
+            .suspendFunction(syncManager::waitForSyncToComplete)
             .whenInvoked()
             .thenReturn(Unit)
 
@@ -152,7 +152,7 @@ class ObserveConversationListDetailsUseCaseTest {
         )
 
         given(syncManager)
-            .suspendFunction(syncManager::waitForSlowSyncToComplete)
+            .suspendFunction(syncManager::waitForSyncToComplete)
             .whenInvoked()
             .thenReturn(Unit)
 
@@ -193,7 +193,7 @@ class ObserveConversationListDetailsUseCaseTest {
         conversationListUpdates.send(firstConversationsList)
 
         given(syncManager)
-            .suspendFunction(syncManager::waitForSlowSyncToComplete)
+            .suspendFunction(syncManager::waitForSyncToComplete)
             .whenInvoked()
             .thenReturn(Unit)
 

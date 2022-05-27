@@ -4,18 +4,19 @@ import com.benasher44.uuid.uuid4
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import io.ktor.http.Url
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class ServerConfig(
-    val id: String,
-    val apiBaseUrl: String,
-    val accountsBaseUrl: String,
-    val webSocketBaseUrl: String,
-    val blackListUrl: String,
-    val teamsUrl: String,
-    val websiteUrl: String,
-    val title: String
+    @SerialName("id") val id: String,
+    @SerialName("apiBaseUrl") val apiBaseUrl: String,
+    @SerialName("accountsBaseUrl") val accountsBaseUrl: String,
+    @SerialName("webSocketBaseUrl") val webSocketBaseUrl: String,
+    @SerialName("blackListUrl") val blackListUrl: String,
+    @SerialName("teamsUrl") val teamsUrl: String,
+    @SerialName("websiteUrl") val websiteUrl: String,
+    @SerialName("title") val title: String
 ) {
     companion object {
         val PRODUCTION = ServerConfig(

@@ -75,7 +75,8 @@ class ConversationDAOImpl(
             if (conversationEntity.protocolInfo is ConversationEntity.ProtocolInfo.MLS) ConversationEntity.Protocol.MLS else ConversationEntity.Protocol.PROTEUS,
             conversationEntity.mutedStatus,
             conversationEntity.mutedTime,
-            conversationEntity.lastModifiedDate
+            conversationEntity.lastModifiedDate,
+            conversationEntity.lastNotificationDate
         )
     }
 
@@ -150,13 +151,17 @@ class ConversationDAOImpl(
 
     }
 
-    override suspend fun insertOrUpdateOneOnOneMemberWithConnectionStatus(
+    override suspend fun updateOrInsertOneOnOneMemberWithConnectionStatus(
         userId: UserIDEntity,
         status: UserEntity.ConnectionState,
         conversationID: QualifiedIDEntity
     ) {
         memberQueries.transaction {
-            userQueries.insertOrReplaceUserIdWithConnectionStatus(userId, status)
+            userQueries.updateUserConnectionStatus(status, userId)
+            val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
+            if (recordDidNotExist) {
+                userQueries.insertOrIgnoreUserIdWithConnectionStatus(userId, status)
+            }
             memberQueries.insertMember(userId, conversationID)
         }
     }

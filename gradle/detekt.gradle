@@ -2,14 +2,22 @@ apply plugin: "io.gitlab.arturbosch.detekt"
 
 detekt {
     buildUponDefaultConfig = true
-    // allRules = false // activate all available (even unstable) rules.
+    // activate all available (even unstable) rules.
+    // allRules = false
     config = files("$projectDir/detekt/detekt.yml")
     input = files("$projectDir")
-    baseline = file("$projectDir/detekt/baseline.xml") // a way of suppressing issues before introducing detekt
+    // a way of suppressing issues before introducing detekt
+    baseline = file("$projectDir/detekt/baseline.xml")
 
     reports {
         html.enabled = true // observe findings in your browser with structure and code snippets
         xml.enabled = true
         txt.enabled = true
     }
+}
+
+dependencies {
+    // Can't add using the full version "Dependencies.Detekt.detektCli" (xml error on sync)
+    detekt "io.gitlab.arturbosch.detekt:detekt-cli:$Versions.detekt"
+    detekt project(path: ":detekt-rules")
 }

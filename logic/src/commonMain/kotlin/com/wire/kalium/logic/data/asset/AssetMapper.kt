@@ -2,13 +2,17 @@ package com.wire.kalium.logic.data.asset
 
 import com.wire.kalium.cryptography.utils.calcMd5
 import com.wire.kalium.logic.data.message.AssetContent
-import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.*
+import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
+import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
+import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Video
 import com.wire.kalium.logic.data.message.AssetContent.RemoteData.EncryptionAlgorithm.AES_CBC
 import com.wire.kalium.logic.data.message.AssetContent.RemoteData.EncryptionAlgorithm.AES_GCM
+import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.network.api.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.asset.AssetResponse
 import com.wire.kalium.network.api.model.AssetRetentionType
 import com.wire.kalium.persistence.dao.asset.AssetEntity
+import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityContent.AssetMessageContent
 import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.protobuf.messages.EncryptionAlgorithm
@@ -21,6 +25,8 @@ interface AssetMapper {
     fun fromUserAssetToDaoModel(assetKey: String, data: ByteArray): AssetEntity
     fun fromAssetEntityToAssetContent(assetContentEntity: AssetMessageContent): AssetContent
     fun fromProtoAssetMessageToAssetContent(protoAssetMessage: Asset): AssetContent
+    fun fromDownloadStatusToDaoModel(downloadStatus: Message.DownloadStatus): MessageEntity.DownloadStatus
+    fun fromDownloadStatusEntityToLogicModel(downloadStatus: MessageEntity.DownloadStatus?): Message.DownloadStatus
 }
 
 class AssetMapperImpl : AssetMapper {
@@ -74,7 +80,8 @@ class AssetMapperImpl : AssetMapper {
                         assetEncryptionAlgorithm?.contains("GCM") == true -> AES_GCM
                         else -> AES_CBC
                     }
-                )
+                ),
+                downloadStatus = fromDownloadStatusEntityToLogicModel(assetDownloadStatus)
             )
         }
     }
@@ -99,7 +106,16 @@ class AssetMapperImpl : AssetMapper {
             }
         }
 
+    @Suppress("ComplexMethod")
     override fun fromProtoAssetMessageToAssetContent(protoAssetMessage: Asset): AssetContent {
+        val defaultRemoteData = AssetContent.RemoteData(
+            otrKey = ByteArray(0),
+            sha256 = ByteArray(0),
+            assetId = "",
+            assetDomain = null,
+            assetToken = null,
+            encryptionAlgorithm = null
+        )
         with(protoAssetMessage) {
             return AssetContent(
                 sizeInBytes = original?.size ?: 0,
@@ -111,29 +127,49 @@ class AssetMapperImpl : AssetMapper {
                     else -> null
                 },
                 remoteData = status?.run {
-                    with((this as Asset.Status.Uploaded).value) {
-                        AssetContent.RemoteData(
-                            otrKey = otrKey.array,
-                            sha256 = sha256.array,
-                            assetId = assetId ?: "",
-                            assetDomain = assetDomain,
-                            assetToken = assetToken,
-                            encryptionAlgorithm = when (encryption) {
-                                EncryptionAlgorithm.AES_CBC -> AES_CBC
-                                EncryptionAlgorithm.AES_GCM -> AES_GCM
-                                else -> null
+                    when (this) {
+                        is Asset.Status.Uploaded -> {
+                            with(value) {
+                                AssetContent.RemoteData(
+                                    otrKey = otrKey.array,
+                                    sha256 = sha256.array,
+                                    assetId = assetId ?: "",
+                                    assetDomain = assetDomain,
+                                    assetToken = assetToken,
+                                    encryptionAlgorithm = when (encryption) {
+                                        EncryptionAlgorithm.AES_CBC -> AES_CBC
+                                        EncryptionAlgorithm.AES_GCM -> AES_GCM
+                                        else -> null
+                                    }
+                                )
                             }
-                        )
+                        }
+                        is Asset.Status.NotUploaded -> defaultRemoteData
                     }
-                } ?: AssetContent.RemoteData(
-                    otrKey = ByteArray(0),
-                    sha256 = ByteArray(0),
-                    assetId = "",
-                    assetDomain = null,
-                    assetToken = null,
-                    encryptionAlgorithm = null
-                )
+                } ?: defaultRemoteData,
+                downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
             )
+        }
+    }
+
+    override fun fromDownloadStatusToDaoModel(downloadStatus: Message.DownloadStatus): MessageEntity.DownloadStatus {
+        return when (downloadStatus) {
+            Message.DownloadStatus.NOT_DOWNLOADED -> MessageEntity.DownloadStatus.NOT_DOWNLOADED
+            Message.DownloadStatus.IN_PROGRESS -> MessageEntity.DownloadStatus.IN_PROGRESS
+            Message.DownloadStatus.SAVED_INTERNALLY -> MessageEntity.DownloadStatus.SAVED_INTERNALLY
+            Message.DownloadStatus.SAVED_EXTERNALLY -> MessageEntity.DownloadStatus.SAVED_EXTERNALLY
+            Message.DownloadStatus.FAILED -> MessageEntity.DownloadStatus.FAILED
+        }
+    }
+
+    override fun fromDownloadStatusEntityToLogicModel(downloadStatus: MessageEntity.DownloadStatus?): Message.DownloadStatus {
+        return when (downloadStatus) {
+            MessageEntity.DownloadStatus.NOT_DOWNLOADED -> Message.DownloadStatus.NOT_DOWNLOADED
+            MessageEntity.DownloadStatus.IN_PROGRESS -> Message.DownloadStatus.IN_PROGRESS
+            MessageEntity.DownloadStatus.SAVED_INTERNALLY -> Message.DownloadStatus.SAVED_INTERNALLY
+            MessageEntity.DownloadStatus.SAVED_EXTERNALLY -> Message.DownloadStatus.SAVED_EXTERNALLY
+            MessageEntity.DownloadStatus.FAILED -> Message.DownloadStatus.FAILED
+            null -> Message.DownloadStatus.NOT_DOWNLOADED
         }
     }
 }

@@ -14,12 +14,14 @@ import kotlin.test.assertNull
 class ConversationDAOTest : BaseDatabaseTest() {
 
     private lateinit var conversationDAO: ConversationDAO
+    private lateinit var userDAO: UserDAO
 
     @BeforeTest
     fun setUp() {
         deleteDatabase()
         val db = createDatabase()
         conversationDAO = db.conversationDAO
+        userDAO = db.userDAO
     }
 
     @Test
@@ -73,8 +75,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         )
         val result = conversationDAO.getConversationByQualifiedID(conversationEntity2.id).first()
         assertEquals(
-            (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState,
-            ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE
+            (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState, ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE
         )
     }
 
@@ -115,16 +116,27 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenExistingConversation_ThenInsertedOrUpdatedMembersAreRetrieved() = runTest {
         conversationDAO.insertConversation(conversationEntity1)
-        conversationDAO.insertOrUpdateOneOnOneMemberWithConnectionStatus(
-            userId = member1.user,
-            status = UserEntity.ConnectionState.ACCEPTED,
-            conversationID = conversationEntity1.id
+        conversationDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
+            userId = member1.user, status = UserEntity.ConnectionState.ACCEPTED, conversationID = conversationEntity1.id
         )
 
         assertEquals(
-            setOf(member1),
-            conversationDAO.getAllMembers(conversationEntity1.id).first().toSet()
+            setOf(member1), conversationDAO.getAllMembers(conversationEntity1.id).first().toSet()
         )
+    }
+
+    @Test
+    fun givenExistingConversation_ThenUserTableShouldBeUpdatedOnlyAndNotReplaced() = runTest {
+        conversationDAO.insertConversation(conversationEntity1)
+        userDAO.insertUser(user1.copy(connectionStatus = UserEntity.ConnectionState.NOT_CONNECTED))
+
+        conversationDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
+            userId = member1.user, status = UserEntity.ConnectionState.SENT, conversationID = conversationEntity1.id
+        )
+
+        assertEquals(setOf(member1), conversationDAO.getAllMembers(conversationEntity1.id).first().toSet())
+        assertEquals(UserEntity.ConnectionState.SENT, userDAO.getUserByQualifiedID(user1.id).first()?.connectionStatus)
+        assertEquals(user1.name, userDAO.getUserByQualifiedID(user1.id).first()?.name)
     }
 
     @Test
@@ -172,12 +184,12 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         conversationDAO.insertMember(member1, conversationEntity1.id)
         conversationDAO.insertMember(member2, conversationEntity1.id)
-        conversationDAO.getAllMembers(conversationEntity1.id).first().also {actual ->
+        conversationDAO.getAllMembers(conversationEntity1.id).first().also { actual ->
             assertEquals(expected, actual)
         }
         conversationDAO.insertMember(member1, conversationEntity1.id)
         conversationDAO.insertMember(member2, conversationEntity1.id)
-        conversationDAO.getAllMembers(conversationEntity1.id).first().also {actual ->
+        conversationDAO.getAllMembers(conversationEntity1.id).first().also { actual ->
             assertEquals(expected, actual)
         }
     }
@@ -192,17 +204,35 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         conversationDAO.insertMember(member1, conversationEntity1.id)
         conversationDAO.insertMember(member2, conversationEntity1.id)
-        conversationDAO.getAllMembers(conversationEntity1.id).first().also {actual ->
+        conversationDAO.getAllMembers(conversationEntity1.id).first().also { actual ->
             assertEquals(expected, actual)
         }
         conversationDAO.insertMember(member1, conversationEntity2.id)
         conversationDAO.insertMember(member2, conversationEntity2.id)
-        conversationDAO.getAllMembers(conversationEntity2.id).first().also {actual ->
+        conversationDAO.getAllMembers(conversationEntity2.id).first().also { actual ->
             assertEquals(expected, actual)
         }
-        conversationDAO.getAllMembers(conversationEntity1.id).first().also {actual ->
+        conversationDAO.getAllMembers(conversationEntity1.id).first().also { actual ->
             assertEquals(expected, actual)
         }
+    }
+
+
+    @Test
+    fun givenConversation_whenInsertingStoredConversation_thenLastChangesTimeIsNotChanged() = runTest {
+        val convStored = conversationEntity1.copy(
+            lastNotificationDate = "2022-04-30T15:36:00.000Z", lastModifiedDate = "2022-03-30T15:36:00.000Z", name = "old name"
+        )
+        val convAfterSync = conversationEntity1.copy(
+            lastNotificationDate = "2023-04-30T15:36:00.000Z", lastModifiedDate = "2023-03-30T15:36:00.000Z", name = "new name"
+        )
+
+        val expected = convAfterSync.copy(lastModifiedDate = "2022-03-30T15:36:00.000Z", lastNotificationDate = "2022-04-30T15:36:00.000Z")
+        conversationDAO.insertConversation(convStored)
+        conversationDAO.insertConversation(convAfterSync)
+
+        val actual = conversationDAO.getConversationByQualifiedID(convAfterSync.id).first()
+        assertEquals(expected, actual)
     }
 
 

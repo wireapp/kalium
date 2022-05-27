@@ -1,5 +1,6 @@
 package com.wire.kalium.network.api.keypackage
 
+import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
@@ -8,7 +9,10 @@ import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 
-class KeyPackageApiImpl(private val httpClient: HttpClient) : KeyPackageApi {
+class KeyPackageApiImpl internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : KeyPackageApi {
+
+    private val httpClient get() = authenticatedNetworkClient.httpClient
+
     override suspend fun claimKeyPackages(user: UserId): NetworkResponse<ClaimedKeyPackageList> =
         wrapKaliumResponse {
             httpClient.post("$PATH_KEY_PACKAGES/$PATH_CLAIM/${user.domain}/${user.value}")

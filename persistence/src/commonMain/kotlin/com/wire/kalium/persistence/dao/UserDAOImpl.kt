@@ -67,6 +67,29 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
         queries.updateUser(user.name, user.handle, user.email, user.accentId, user.previewAssetId, user.completeAssetId, user.id)
     }
 
+    override suspend fun updateUsers(users: List<UserEntity>) {
+        queries.transaction {
+            users.forEach { user ->
+                queries.updateUser(user.name, user.handle, user.email, user.accentId, user.previewAssetId, user.completeAssetId, user.id)
+                val recordDidNotExist = queries.selectChanges().executeAsOne() == 0L
+                if (recordDidNotExist) {
+                    queries.insertUser(
+                        user.id,
+                        user.name,
+                        user.handle,
+                        user.email,
+                        user.phone,
+                        user.accentId,
+                        user.team,
+                        user.connectionStatus,
+                        user.previewAssetId,
+                        user.completeAssetId
+                    )
+                }
+            }
+        }
+    }
+
     override suspend fun getAllUsers(): Flow<List<UserEntity>> = queries.selectAllUsers()
         .asFlow()
         .mapToList()
@@ -82,12 +105,16 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
     override suspend fun getUserByNameOrHandleOrEmailAndConnectionState(
         searchQuery: String,
         connectionState: UserEntity.ConnectionState
-    ): Flow<List<UserEntity>> {
-        return queries.selectByNameOrHandleOrEmailAndConnectionState(searchQuery, UserEntity.ConnectionState.ACCEPTED)
-            .asFlow()
-            .mapToList()
-            .map { entryList -> entryList.map(mapper::toModel) }
-    }
+    ) = queries.selectByNameOrHandleOrEmailAndConnectionState(searchQuery, connectionState)
+        .executeAsList()
+        .map(mapper::toModel)
+
+    override suspend fun getUserByHandleAndConnectionState(
+        handle: String,
+        connectionState: UserEntity.ConnectionState
+    ) = queries.selectByHandleAndConnectionState(handle, connectionState)
+        .executeAsList()
+        .map(mapper::toModel)
 
     override suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity) {
         queries.deleteUser(qualifiedID)
