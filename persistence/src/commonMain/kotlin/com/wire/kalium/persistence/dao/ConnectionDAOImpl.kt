@@ -41,4 +41,20 @@ class ConnectionDAOImpl(private val connectionsQueries: ConnectionsQueries) : Co
             status = connectionEntity.status
         )
     }
+
+    override suspend fun insertConnections(connections: List<ConnectionEntity>) {
+        connectionsQueries.transaction {
+            for (connectionEntity: ConnectionEntity in connections) {
+                connectionsQueries.insertConnection(
+                    from_id = connectionEntity.from,
+                    conversation_id = connectionEntity.conversationId,
+                    qualified_conversation = connectionEntity.qualifiedConversationId,
+                    to_id = connectionEntity.toId,
+                    last_update = connectionEntity.lastUpdate,
+                    qualified_to = connectionEntity.qualifiedToId,
+                    status = connectionEntity.status
+                )
+            }
+        }
+    }
 }
