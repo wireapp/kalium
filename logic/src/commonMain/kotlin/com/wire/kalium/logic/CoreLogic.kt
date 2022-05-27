@@ -31,7 +31,7 @@ abstract class CoreLogicCommon(
     protected abstract val globalPreferences: Lazy<KaliumPreferences>
     protected abstract val globalDatabase: Lazy<GlobalDatabaseProvider>
 
-    fun getGlobalScope(): KaliumScope = KaliumScope(globalDatabase, globalPreferences, sessionRepository)
+    fun getGlobalScope(): GlobalKaliumScope = GlobalKaliumScope(globalDatabase, globalPreferences, sessionRepository)
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     fun getAuthenticationScope(backendLinks: ServerConfig.Links): AuthenticationScope =
@@ -42,7 +42,7 @@ abstract class CoreLogicCommon(
     abstract fun getSessionScope(userId: UserId): UserSessionScope
 
 
-    inline fun <T> globalScope(action: KaliumScope.() -> T)
+    inline fun <T> globalScope(action: GlobalKaliumScope.() -> T)
             : T = getGlobalScope().action()
 
     inline fun <T> authenticationScope(backendLinks: ServerConfig.Links, action: AuthenticationScope.() -> T)

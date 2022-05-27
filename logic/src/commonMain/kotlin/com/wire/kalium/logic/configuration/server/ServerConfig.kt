@@ -16,7 +16,9 @@ import kotlinx.serialization.encoding.Encoder
 
 @Serializable
 data class ServerConfig(
-    val id: String, val links: Links, val metaData: MetaData
+    @SerialName("config_id") val id: String,
+    @SerialName("links") val links: Links,
+    @SerialName("metadata")val metaData: MetaData
 ) {
     @Serializable
     data class Links(

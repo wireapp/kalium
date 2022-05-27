@@ -46,9 +46,7 @@ class InMemorySessionManager(
     }
 }
 
-class InMemoryServerMetaDataManager: ServerMetaDataManager {
-
-    val serverConfigMapper: ServerConfigMapper = ServerConfigMapperImpl(ApiVersionMapperImpl())
+class InMemoryServerMetaDataManager : ServerMetaDataManager {
     var serverConfigDTO: ServerConfigDTO? = null
 
     override fun getLocalMetaData(backendLinks: ServerConfigDTO.Links): ServerConfigDTO? {

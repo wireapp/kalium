@@ -27,7 +27,17 @@ import com.wire.kalium.persistence.client.UserConfigStorageImpl
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 
-class KaliumScope(
+/**
+ * Scope that exposes all operations that are user and backend agnostic, like
+ * - Storing and retrieving sessions after authenticating
+ * - Updating client or device metadata (like push notification token)
+ * - Getting back-end information from a deeplink
+ *
+ * @see AuthenticationScope
+ * @see UserSessionScope
+ */
+
+class GlobalKaliumScope(
     private val globalDatabase: Lazy<GlobalDatabaseProvider>,
     private val globalPreferences: Lazy<KaliumPreferences>,
     private val sessionRepository: SessionRepository,

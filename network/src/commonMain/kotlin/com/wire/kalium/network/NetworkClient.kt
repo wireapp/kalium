@@ -15,7 +15,6 @@ import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.ContentNegotiation
-import io.ktor.client.plugins.UserAgent
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
@@ -166,9 +165,6 @@ private fun HttpClientConfig<*>.installWireBaseUrl(backend: ServerConfigDTO) {
 internal fun provideBaseHttpClient(
     engine: HttpClientEngine, config: HttpClientConfig<*>.() -> Unit = {}
 ) = HttpClient(engine) {
-    install(UserAgent) {
-        agent = "007"
-    }
 
     if (NetworkLogger.isRequestLoggingEnabled) {
         install(Logging) {
