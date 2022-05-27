@@ -20,16 +20,65 @@
     <ID>ComplexMethod:otr.kt$private fun QualifiedNewOtrMessage.protoMergeImpl(plus: pbandk.Message?): QualifiedNewOtrMessage</ID>
     <ID>ConstructorParameterNaming:MessageApi.kt$MessageApi.Parameters.DefaultParameters$val `data`: String? = null</ID>
     <ID>ConstructorParameterNaming:MessageApi.kt$MessageApi.Parameters.QualifiedDefaultParameters$val `data`: String? = null</ID>
+    <ID>EmptyCatchBlock:Customization.kt$Customization${ }</ID>
     <ID>EmptyDefaultConstructor:KaliumException.kt$KaliumException$()</ID>
     <ID>EmptyDefaultConstructor:KaliumException.kt$KaliumException.FeatureError$()</ID>
     <ID>EmptyDefaultConstructor:ServerConfigurationDAO.kt$ServerConfigMapper$()</ID>
     <ID>EmptyDefaultConstructor:ValidateSSOCodeUseCase.kt$ValidateSSOCodeUseCaseImpl$()</ID>
     <ID>EmptyKtFile:SessionLocalRepository.kt$.SessionLocalRepository.kt</ID>
-    <ID>EnforceSerializableFields:AuthSession.kt$AuthSession</ID>
-    <ID>EnforceSerializableFields:CallClient.kt$CallClient</ID>
-    <ID>EnforceSerializableFields:CallClient.kt$CallClientList</ID>
-    <ID>EnforceSerializableFields:CallParticipants.kt$CallMember</ID>
-    <ID>EnforceSerializableFields:CallParticipants.kt$CallParticipants</ID>
+    <ID>EnumNaming:Configs.kt$Configs._comment$_comment</ID>
+    <ID>EnumNaming:Configs.kt$Configs.accountsUrl$accountsUrl</ID>
+    <ID>EnumNaming:Configs.kt$Configs.allowChangeOfEmail$allowChangeOfEmail</ID>
+    <ID>EnumNaming:Configs.kt$Configs.allowMarketingCommunication$allowMarketingCommunication</ID>
+    <ID>EnumNaming:Configs.kt$Configs.allowSSO$allowSSO</ID>
+    <ID>EnumNaming:Configs.kt$Configs.allow_account_creation$allow_account_creation</ID>
+    <ID>EnumNaming:Configs.kt$Configs.appName$appName</ID>
+    <ID>EnumNaming:Configs.kt$Configs.app_lock_timeout$app_lock_timeout</ID>
+    <ID>EnumNaming:Configs.kt$Configs.applicationId$applicationId</ID>
+    <ID>EnumNaming:Configs.kt$Configs.backendUrl$backendUrl</ID>
+    <ID>EnumNaming:Configs.kt$Configs.blacklistHost$blacklistHost</ID>
+    <ID>EnumNaming:Configs.kt$Configs.block_on_jailbreak_or_root$block_on_jailbreak_or_root</ID>
+    <ID>EnumNaming:Configs.kt$Configs.block_on_password_policy$block_on_password_policy</ID>
+    <ID>EnumNaming:Configs.kt$Configs.candidate$candidate</ID>
+    <ID>EnumNaming:Configs.kt$Configs.certificate$certificate</ID>
+    <ID>EnumNaming:Configs.kt$Configs.certificatePin$certificatePin</ID>
+    <ID>EnumNaming:Configs.kt$Configs.countly_app_key$countly_app_key</ID>
+    <ID>EnumNaming:Configs.kt$Configs.countly_server_url$countly_server_url</ID>
+    <ID>EnumNaming:Configs.kt$Configs.custom_url_scheme$custom_url_scheme</ID>
+    <ID>EnumNaming:Configs.kt$Configs.dev$dev</ID>
+    <ID>EnumNaming:Configs.kt$Configs.developer_features_enabled$developer_features_enabled</ID>
+    <ID>EnumNaming:Configs.kt$Configs.domain$domain</ID>
+    <ID>EnumNaming:Configs.kt$Configs.enableBlacklist$enableBlacklist</ID>
+    <ID>EnumNaming:Configs.kt$Configs.experimental$experimental</ID>
+    <ID>EnumNaming:Configs.kt$Configs.fdroid$fdroid</ID>
+    <ID>EnumNaming:Configs.kt$Configs.file_restriction_enabled$file_restriction_enabled</ID>
+    <ID>EnumNaming:Configs.kt$Configs.file_restriction_list$file_restriction_list</ID>
+    <ID>EnumNaming:Configs.kt$Configs.firebaseAppId$firebaseAppId</ID>
+    <ID>EnumNaming:Configs.kt$Configs.firebasePushSenderId$firebasePushSenderId</ID>
+    <ID>EnumNaming:Configs.kt$Configs.force_app_lock$force_app_lock</ID>
+    <ID>EnumNaming:Configs.kt$Configs.force_constant_bitrate_calls$force_constant_bitrate_calls</ID>
+    <ID>EnumNaming:Configs.kt$Configs.force_hide_screen_content$force_hide_screen_content</ID>
+    <ID>EnumNaming:Configs.kt$Configs.force_private_keyboard$force_private_keyboard</ID>
+    <ID>EnumNaming:Configs.kt$Configs.http_proxy_port$http_proxy_port</ID>
+    <ID>EnumNaming:Configs.kt$Configs.http_proxy_url$http_proxy_url</ID>
+    <ID>EnumNaming:Configs.kt$Configs.internal$internal</ID>
+    <ID>EnumNaming:Configs.kt$Configs.keep_websocket_on$keep_websocket_on</ID>
+    <ID>EnumNaming:Configs.kt$Configs.launcherIcon$launcherIcon</ID>
+    <ID>EnumNaming:Configs.kt$Configs.logging_enabled$logging_enabled</ID>
+    <ID>EnumNaming:Configs.kt$Configs.maxAccounts$maxAccounts</ID>
+    <ID>EnumNaming:Configs.kt$Configs.new_password_maximum_length$new_password_maximum_length</ID>
+    <ID>EnumNaming:Configs.kt$Configs.new_password_minimum_length$new_password_minimum_length</ID>
+    <ID>EnumNaming:Configs.kt$Configs.password_max_attempts$password_max_attempts</ID>
+    <ID>EnumNaming:Configs.kt$Configs.prod$prod</ID>
+    <ID>EnumNaming:Configs.kt$Configs.safe_logging$safe_logging</ID>
+    <ID>EnumNaming:Configs.kt$Configs.submitCrashReports$submitCrashReports</ID>
+    <ID>EnumNaming:Configs.kt$Configs.supportEmail$supportEmail</ID>
+    <ID>EnumNaming:Configs.kt$Configs.teamsUrl$teamsUrl</ID>
+    <ID>EnumNaming:Configs.kt$Configs.userId$userId</ID>
+    <ID>EnumNaming:Configs.kt$Configs.web_link_preview$web_link_preview</ID>
+    <ID>EnumNaming:Configs.kt$Configs.websiteUrl$websiteUrl</ID>
+    <ID>EnumNaming:Configs.kt$Configs.websocketUrl$websocketUrl</ID>
+    <ID>EnumNaming:Configs.kt$Configs.wipe_on_cookie_invalid$wipe_on_cookie_invalid</ID>
     <ID>FunctionNaming:CallManagerTest.kt$CallManagerTest$@Test fun givenCallManager_whenCallingMessageIsReceived_then_wcall_recv_msg_IsCalled()</ID>
     <ID>FunctionNaming:Calling.kt$Calling$fun wcall_answer(inst: Handle, conversationId: String, callType: Int, cbrEnabled: Boolean)</ID>
     <ID>FunctionNaming:Calling.kt$Calling$fun wcall_config_update(inst: Handle, error: Int, jsonString: String)</ID>
@@ -39,7 +88,6 @@
     <ID>FunctionNaming:Calling.kt$Calling$fun wcall_library_version(): String</ID>
     <ID>FunctionNaming:Calling.kt$Calling$fun wcall_recv_msg( inst: Handle, msg: ByteArray, len: Int, curr_time: Uint32_t, msg_time: Uint32_t, convId: String, userId: String, clientId: String ): Int</ID>
     <ID>FunctionNaming:Calling.kt$Calling$fun wcall_reject(inst: Handle, conversationId: String)</ID>
-    <ID>FunctionNaming:Calling.kt$Calling$fun wcall_request_video_streams( inst: Handle, convId: String, mode: Int, json: String )</ID>
     <ID>FunctionNaming:Calling.kt$Calling$fun wcall_resp( inst: Handle, status: Int, reason: String, arg: Pointer? ): Int</ID>
     <ID>FunctionNaming:Calling.kt$Calling$fun wcall_set_log_handler(logHandler: LogHandler, arg: Pointer?)</ID>
     <ID>FunctionNaming:Calling.kt$Calling$fun wcall_set_mute(inst: Handle, muted: Int)</ID>
@@ -86,7 +134,6 @@
     <ID>LongParameterList:Calling.kt$Calling$( inst: Handle, msg: ByteArray, len: Int, curr_time: Uint32_t, msg_time: Uint32_t, convId: String, userId: String, clientId: String )</ID>
     <ID>LongParameterList:Calling.kt$Calling$( userId: String, clientId: String, readyHandler: ReadyHandler, sendHandler: SendHandler, sftRequestHandler: SFTRequestHandler, incomingCallHandler: IncomingCallHandler, missedCallHandler: MissedCallHandler, answeredCallHandler: AnsweredCallHandler, establishedCallHandler: EstablishedCallHandler, closeCallHandler: CloseCallHandler, metricsHandler: MetricsHandler, callConfigRequestHandler: CallConfigRequestHandler, constantBitRateStateChangeHandler: ConstantBitRateStateChangeHandler, videoReceiveStateHandler: VideoReceiveStateHandler, arg: Pointer? )</ID>
     <ID>LongParameterList:CloseCallHandler.kt$CloseCallHandler$( reason: Int, conversationId: String, messageTime: Uint32_t, userId: String, clientId: String, arg: Pointer? )</ID>
-    <ID>LongParameterList:ConversationEventReceiver.kt$ConversationEventReceiver$( private val proteusClient: ProteusClient, private val messageRepository: MessageRepository, private val conversationRepository: ConversationRepository, private val mlsConversationRepository: MLSConversationRepository, private val userRepository: UserRepository, private val protoContentMapper: ProtoContentMapper, private val callManagerImpl: CallManager, private val memberMapper: MemberMapper = MapperProvider.memberMapper(), private val idMapper: IdMapper = MapperProvider.idMapper() )</ID>
     <ID>LongParameterList:ConversationRepository.kt$ConversationDataSource$( private val userRepository: UserRepository, private val mlsConversationRepository: MLSConversationRepository, private val conversationDAO: ConversationDAO, private val conversationApi: ConversationApi, private val clientApi: ClientApi, private val idMapper: IdMapper = MapperProvider.idMapper(), private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(), private val memberMapper: MemberMapper = MapperProvider.memberMapper(), private val conversationStatusMapper: ConversationStatusMapper = MapperProvider.conversationStatusMapper() )</ID>
     <ID>LongParameterList:GlobalCallManager.kt$GlobalCallManager$( userId: QualifiedID, callRepository: CallRepository, userRepository: UserRepository, clientRepository: ClientRepository, callMapper: CallMapper, messageSender: MessageSender )</ID>
     <ID>LongParameterList:IncomingCallHandler.kt$IncomingCallHandler$( conversationId: String, messageTime: Uint32_t, userId: String, clientId: String, isVideoCall: Boolean, shouldRing: Boolean, conversationType: Int, arg: Pointer? )</ID>
@@ -238,6 +285,9 @@
     <ID>MaxLineLength:MemoryEngine.module_@wireapp_store-engine.kt$MemoryEngine$override fun &lt;PrimaryKey, ChangesType> updateOrCreate(tableName: String, primaryKey: PrimaryKey, changes: ChangesType): Promise&lt;PrimaryKey></ID>
     <ID>MaxLineLength:MessageEnvelopeCreatorTest.kt$MessageEnvelopeCreatorTest$.</ID>
     <ID>MaxLineLength:MessageSenderTest.kt$MessageSenderTest$.</ID>
+    <ID>MaxLineLength:PluginSpecBuilders.kt$* The `org.gradle.groovy-gradle-plugin` plugin implemented by [org.gradle.plugin.devel.internal.precompiled.PrecompiledGroovyPluginsPlugin].</ID>
+    <ID>MaxLineLength:PluginSpecBuilders.kt$* The `org.gradle.microsoft-visual-cpp-compiler` plugin implemented by [org.gradle.nativeplatform.toolchain.plugins.MicrosoftVisualCppCompilerPlugin].</ID>
+    <ID>MaxLineLength:PluginSpecBuilders.kt$* The `org.gradle.standard-tool-chains` plugin implemented by [org.gradle.nativeplatform.toolchain.internal.plugins.StandardToolChainsPlugin].</ID>
     <ID>MaxLineLength:PreKeyBundle.module_@wireapp_proteus.kt$PreKeyBundle$constructor(publicIdentityKey: IdentityKey, preKeyId: Number, publicKey: PublicKey, signature: Uint8Array? = definedExternally, version: Number = definedExternally)</ID>
     <ID>MaxLineLength:PreKeyListMapper.kt$PreKeyListMapper$fun</ID>
     <ID>MaxLineLength:ProtoContentMapper.kt$ProtoContentMapperImpl$// Backend sends some preview asset messages just with img metadata and no keys or asset id, so we need to overwrite one with the other one</ID>
@@ -487,19 +537,21 @@
     <ID>ModifierOrder:PublicKey.module_@wireapp_proteus.kt$PublicKey$external open</ID>
     <ID>ModifierOrder:SecretKey.module_@wireapp_proteus.kt$SecretKey$external open</ID>
     <ID>NestedBlockDepth:ValidateSSOCodeUseCase.kt$ValidateSSOCodeUseCaseImpl$override fun invoke(ssoCode: String): ValidateSSOCodeResult</ID>
+    <ID>NewLineAtEndOfFile:test.gradle.kts$.test.gradle.kts</ID>
     <ID>ObjectPropertyNaming:Decoder.module_@wireapp_cbor.kt$Decoder.Companion$var _check_overflow: Any</ID>
+    <ID>PackageNaming:Configs.kt$package configModels</ID>
     <ID>PackageNaming:EncryptedSettingsHolder.kt$package com.wire.kalium.persistence.kmm_settings</ID>
     <ID>PackageNaming:KaliumPreferences.kt$package com.wire.kalium.persistence.kmm_settings</ID>
+    <ID>PackageNaming:PluginSpecBuilders.kt$package gradle.kotlin.dsl.plugins._2324ea0a1251086637a60ef055056201</ID>
     <ID>PackageNaming:SaveNotificationTokenUseCase.kt$package com.wire.kalium.logic.feature.notification_token</ID>
     <ID>PackageNaming:ServerConfigurationDAO.kt$package com.wire.kalium.persistence.dao_kalium_db</ID>
-    <ID>ReturnCount:ConversationMapper.kt$ConversationMapperImpl$private fun determineOneToOneUserType(otherUser: OtherUser, selfUser: SelfUser): UserType</ID>
     <ID>ReturnCount:NetworkUtils.kt$internal fun String.splitSetCookieHeader(): List&lt;String></ID>
-    <ID>ReturnCount:WorkScheduler.kt$WrapperWorker$override suspend fun doWork(): Result</ID>
+    <ID>ThrowsCount:Customization.kt$Customization$// Will check out custom repo, if any, and load its configuration, merging it on top of the default configuration fun prepareCustomizationEnvironment( defaultConfig: MutableMap&lt;String, Any>, customCheckoutDir: String ): BuildTimeConfiguration</ID>
     <ID>TooGenericExceptionCaught:CoreFailure.kt$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:Customization.kt$Customization$e: Exception</ID>
     <ID>TooGenericExceptionCaught:NetworkUtils.kt$e: Exception</ID>
     <ID>TooGenericExceptionCaught:ProteusClientImpl.kt$ProteusClientImpl$e: Exception</ID>
     <ID>TooGenericExceptionThrown:MainActivity.kt$MainActivity$throw RuntimeException( "There was an error on the login :(" + "Check the credentials and the internet connection and try again" )</ID>
-    <ID>TooGenericExceptionThrown:WorkScheduler.kt$WrapperWorkerFactory$throw RuntimeException("No user id was specified")</ID>
     <ID>TooManyFunctions:Calling.kt$Calling : Library</ID>
     <ID>TooManyFunctions:ConversationDAO.kt$ConversationDAO</ID>
     <ID>TooManyFunctions:ConversationDAOImpl.kt$ConversationDAOImpl : ConversationDAO</ID>
@@ -513,6 +565,83 @@
     <ID>TooManyFunctions:MessageDAOImpl.kt$MessageDAOImpl : MessageDAO</ID>
     <ID>TooManyFunctions:messages.kt$com.wire.kalium.protobuf.messages.messages.kt</ID>
     <ID>TooManyFunctions:otr.kt$com.wire.kalium.protobuf.otr.otr.kt</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * Plugin ids starting with `org.gradle`. */ internal val `OrgPluginGroup`.`gradle`: `OrgGradlePluginGroup` get() = `OrgGradlePluginGroup`(plugins)</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * Plugin ids starting with `org`. */ internal val `PluginDependenciesSpec`.`org`: `OrgPluginGroup` get() = `OrgPluginGroup`(this)</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.antlr` plugin implemented by [org.gradle.api.plugins.antlr.AntlrPlugin]. */ internal val `OrgGradlePluginGroup`.`antlr`: PluginDependencySpec get() = plugins.id("org.gradle.antlr")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.application` plugin implemented by [org.gradle.api.plugins.ApplicationPlugin]. */ internal val `OrgGradlePluginGroup`.`application`: PluginDependencySpec get() = plugins.id("org.gradle.application")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.assembler-lang` plugin implemented by [org.gradle.language.assembler.plugins.AssemblerLangPlugin]. */ internal val `OrgGradlePluginGroup`.`assembler-lang`: PluginDependencySpec get() = plugins.id("org.gradle.assembler-lang")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.assembler` plugin implemented by [org.gradle.language.assembler.plugins.AssemblerPlugin]. */ internal val `OrgGradlePluginGroup`.`assembler`: PluginDependencySpec get() = plugins.id("org.gradle.assembler")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.base` plugin implemented by [org.gradle.api.plugins.BasePlugin]. */ internal val `OrgGradlePluginGroup`.`base`: PluginDependencySpec get() = plugins.id("org.gradle.base")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.binary-base` plugin implemented by [org.gradle.platform.base.plugins.BinaryBasePlugin]. */ internal val `OrgGradlePluginGroup`.`binary-base`: PluginDependencySpec get() = plugins.id("org.gradle.binary-base")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.build-dashboard` plugin implemented by [org.gradle.api.reporting.plugins.BuildDashboardPlugin]. */ internal val `OrgGradlePluginGroup`.`build-dashboard`: PluginDependencySpec get() = plugins.id("org.gradle.build-dashboard")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.build-init` plugin implemented by [org.gradle.buildinit.plugins.BuildInitPlugin]. */ internal val `OrgGradlePluginGroup`.`build-init`: PluginDependencySpec get() = plugins.id("org.gradle.build-init")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.c-lang` plugin implemented by [org.gradle.language.c.plugins.CLangPlugin]. */ internal val `OrgGradlePluginGroup`.`c-lang`: PluginDependencySpec get() = plugins.id("org.gradle.c-lang")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.c` plugin implemented by [org.gradle.language.c.plugins.CPlugin]. */ internal val `OrgGradlePluginGroup`.`c`: PluginDependencySpec get() = plugins.id("org.gradle.c")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.checkstyle` plugin implemented by [org.gradle.api.plugins.quality.CheckstylePlugin]. */ internal val `OrgGradlePluginGroup`.`checkstyle`: PluginDependencySpec get() = plugins.id("org.gradle.checkstyle")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.clang-compiler` plugin implemented by [org.gradle.nativeplatform.toolchain.plugins.ClangCompilerPlugin]. */ internal val `OrgGradlePluginGroup`.`clang-compiler`: PluginDependencySpec get() = plugins.id("org.gradle.clang-compiler")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.codenarc` plugin implemented by [org.gradle.api.plugins.quality.CodeNarcPlugin]. */ internal val `OrgGradlePluginGroup`.`codenarc`: PluginDependencySpec get() = plugins.id("org.gradle.codenarc")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.component-base` plugin implemented by [org.gradle.platform.base.plugins.ComponentBasePlugin]. */ internal val `OrgGradlePluginGroup`.`component-base`: PluginDependencySpec get() = plugins.id("org.gradle.component-base")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.component-model-base` plugin implemented by [org.gradle.language.base.plugins.ComponentModelBasePlugin]. */ internal val `OrgGradlePluginGroup`.`component-model-base`: PluginDependencySpec get() = plugins.id("org.gradle.component-model-base")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.cpp-application` plugin implemented by [org.gradle.language.cpp.plugins.CppApplicationPlugin]. */ internal val `OrgGradlePluginGroup`.`cpp-application`: PluginDependencySpec get() = plugins.id("org.gradle.cpp-application")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.cpp-lang` plugin implemented by [org.gradle.language.cpp.plugins.CppLangPlugin]. */ internal val `OrgGradlePluginGroup`.`cpp-lang`: PluginDependencySpec get() = plugins.id("org.gradle.cpp-lang")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.cpp-library` plugin implemented by [org.gradle.language.cpp.plugins.CppLibraryPlugin]. */ internal val `OrgGradlePluginGroup`.`cpp-library`: PluginDependencySpec get() = plugins.id("org.gradle.cpp-library")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.cpp-unit-test` plugin implemented by [org.gradle.nativeplatform.test.cpp.plugins.CppUnitTestPlugin]. */ internal val `OrgGradlePluginGroup`.`cpp-unit-test`: PluginDependencySpec get() = plugins.id("org.gradle.cpp-unit-test")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.cpp` plugin implemented by [org.gradle.language.cpp.plugins.CppPlugin]. */ internal val `OrgGradlePluginGroup`.`cpp`: PluginDependencySpec get() = plugins.id("org.gradle.cpp")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.cunit-test-suite` plugin implemented by [org.gradle.nativeplatform.test.cunit.plugins.CUnitPlugin]. */ internal val `OrgGradlePluginGroup`.`cunit-test-suite`: PluginDependencySpec get() = plugins.id("org.gradle.cunit-test-suite")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.cunit` plugin implemented by [org.gradle.nativeplatform.test.cunit.plugins.CUnitConventionPlugin]. */ internal val `OrgGradlePluginGroup`.`cunit`: PluginDependencySpec get() = plugins.id("org.gradle.cunit")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.distribution` plugin implemented by [org.gradle.api.distribution.plugins.DistributionPlugin]. */ internal val `OrgGradlePluginGroup`.`distribution`: PluginDependencySpec get() = plugins.id("org.gradle.distribution")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.ear` plugin implemented by [org.gradle.plugins.ear.EarPlugin]. */ internal val `OrgGradlePluginGroup`.`ear`: PluginDependencySpec get() = plugins.id("org.gradle.ear")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.eclipse-wtp` plugin implemented by [org.gradle.plugins.ide.eclipse.EclipseWtpPlugin]. */ internal val `OrgGradlePluginGroup`.`eclipse-wtp`: PluginDependencySpec get() = plugins.id("org.gradle.eclipse-wtp")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.eclipse` plugin implemented by [org.gradle.plugins.ide.eclipse.EclipsePlugin]. */ internal val `OrgGradlePluginGroup`.`eclipse`: PluginDependencySpec get() = plugins.id("org.gradle.eclipse")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.gcc-compiler` plugin implemented by [org.gradle.nativeplatform.toolchain.plugins.GccCompilerPlugin]. */ internal val `OrgGradlePluginGroup`.`gcc-compiler`: PluginDependencySpec get() = plugins.id("org.gradle.gcc-compiler")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.google-test-test-suite` plugin implemented by [org.gradle.nativeplatform.test.googletest.plugins.GoogleTestPlugin]. */ internal val `OrgGradlePluginGroup`.`google-test-test-suite`: PluginDependencySpec get() = plugins.id("org.gradle.google-test-test-suite")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.google-test` plugin implemented by [org.gradle.nativeplatform.test.googletest.plugins.GoogleTestConventionPlugin]. */ internal val `OrgGradlePluginGroup`.`google-test`: PluginDependencySpec get() = plugins.id("org.gradle.google-test")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.groovy-base` plugin implemented by [org.gradle.api.plugins.GroovyBasePlugin]. */ internal val `OrgGradlePluginGroup`.`groovy-base`: PluginDependencySpec get() = plugins.id("org.gradle.groovy-base")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.groovy-gradle-plugin` plugin implemented by [org.gradle.plugin.devel.internal.precompiled.PrecompiledGroovyPluginsPlugin]. */ internal val `OrgGradlePluginGroup`.`groovy-gradle-plugin`: PluginDependencySpec get() = plugins.id("org.gradle.groovy-gradle-plugin")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.groovy` plugin implemented by [org.gradle.api.plugins.GroovyPlugin]. */ internal val `OrgGradlePluginGroup`.`groovy`: PluginDependencySpec get() = plugins.id("org.gradle.groovy")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.help-tasks` plugin implemented by [org.gradle.api.plugins.HelpTasksPlugin]. */ internal val `OrgGradlePluginGroup`.`help-tasks`: PluginDependencySpec get() = plugins.id("org.gradle.help-tasks")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.idea` plugin implemented by [org.gradle.plugins.ide.idea.IdeaPlugin]. */ internal val `OrgGradlePluginGroup`.`idea`: PluginDependencySpec get() = plugins.id("org.gradle.idea")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.ivy-publish` plugin implemented by [org.gradle.api.publish.ivy.plugins.IvyPublishPlugin]. */ internal val `OrgGradlePluginGroup`.`ivy-publish`: PluginDependencySpec get() = plugins.id("org.gradle.ivy-publish")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.jacoco` plugin implemented by [org.gradle.testing.jacoco.plugins.JacocoPlugin]. */ internal val `OrgGradlePluginGroup`.`jacoco`: PluginDependencySpec get() = plugins.id("org.gradle.jacoco")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.java-base` plugin implemented by [org.gradle.api.plugins.JavaBasePlugin]. */ internal val `OrgGradlePluginGroup`.`java-base`: PluginDependencySpec get() = plugins.id("org.gradle.java-base")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.java-gradle-plugin` plugin implemented by [org.gradle.plugin.devel.plugins.JavaGradlePluginPlugin]. */ internal val `OrgGradlePluginGroup`.`java-gradle-plugin`: PluginDependencySpec get() = plugins.id("org.gradle.java-gradle-plugin")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.java-library-distribution` plugin implemented by [org.gradle.api.plugins.JavaLibraryDistributionPlugin]. */ internal val `OrgGradlePluginGroup`.`java-library-distribution`: PluginDependencySpec get() = plugins.id("org.gradle.java-library-distribution")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.java-library` plugin implemented by [org.gradle.api.plugins.JavaLibraryPlugin]. */ internal val `OrgGradlePluginGroup`.`java-library`: PluginDependencySpec get() = plugins.id("org.gradle.java-library")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.java-platform` plugin implemented by [org.gradle.api.plugins.JavaPlatformPlugin]. */ internal val `OrgGradlePluginGroup`.`java-platform`: PluginDependencySpec get() = plugins.id("org.gradle.java-platform")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.java-test-fixtures` plugin implemented by [org.gradle.api.plugins.JavaTestFixturesPlugin]. */ internal val `OrgGradlePluginGroup`.`java-test-fixtures`: PluginDependencySpec get() = plugins.id("org.gradle.java-test-fixtures")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.java` plugin implemented by [org.gradle.api.plugins.JavaPlugin]. */ internal val `OrgGradlePluginGroup`.`java`: PluginDependencySpec get() = plugins.id("org.gradle.java")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.jvm-ecosystem` plugin implemented by [org.gradle.api.plugins.JvmEcosystemPlugin]. */ internal val `OrgGradlePluginGroup`.`jvm-ecosystem`: PluginDependencySpec get() = plugins.id("org.gradle.jvm-ecosystem")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.language-base` plugin implemented by [org.gradle.language.base.plugins.LanguageBasePlugin]. */ internal val `OrgGradlePluginGroup`.`language-base`: PluginDependencySpec get() = plugins.id("org.gradle.language-base")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.lifecycle-base` plugin implemented by [org.gradle.language.base.plugins.LifecycleBasePlugin]. */ internal val `OrgGradlePluginGroup`.`lifecycle-base`: PluginDependencySpec get() = plugins.id("org.gradle.lifecycle-base")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.maven-publish` plugin implemented by [org.gradle.api.publish.maven.plugins.MavenPublishPlugin]. */ internal val `OrgGradlePluginGroup`.`maven-publish`: PluginDependencySpec get() = plugins.id("org.gradle.maven-publish")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.microsoft-visual-cpp-compiler` plugin implemented by [org.gradle.nativeplatform.toolchain.plugins.MicrosoftVisualCppCompilerPlugin]. */ internal val `OrgGradlePluginGroup`.`microsoft-visual-cpp-compiler`: PluginDependencySpec get() = plugins.id("org.gradle.microsoft-visual-cpp-compiler")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.native-component-model` plugin implemented by [org.gradle.nativeplatform.plugins.NativeComponentModelPlugin]. */ internal val `OrgGradlePluginGroup`.`native-component-model`: PluginDependencySpec get() = plugins.id("org.gradle.native-component-model")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.native-component` plugin implemented by [org.gradle.nativeplatform.plugins.NativeComponentPlugin]. */ internal val `OrgGradlePluginGroup`.`native-component`: PluginDependencySpec get() = plugins.id("org.gradle.native-component")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.objective-c-lang` plugin implemented by [org.gradle.language.objectivec.plugins.ObjectiveCLangPlugin]. */ internal val `OrgGradlePluginGroup`.`objective-c-lang`: PluginDependencySpec get() = plugins.id("org.gradle.objective-c-lang")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.objective-c` plugin implemented by [org.gradle.language.objectivec.plugins.ObjectiveCPlugin]. */ internal val `OrgGradlePluginGroup`.`objective-c`: PluginDependencySpec get() = plugins.id("org.gradle.objective-c")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.objective-cpp-lang` plugin implemented by [org.gradle.language.objectivecpp.plugins.ObjectiveCppLangPlugin]. */ internal val `OrgGradlePluginGroup`.`objective-cpp-lang`: PluginDependencySpec get() = plugins.id("org.gradle.objective-cpp-lang")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.objective-cpp` plugin implemented by [org.gradle.language.objectivecpp.plugins.ObjectiveCppPlugin]. */ internal val `OrgGradlePluginGroup`.`objective-cpp`: PluginDependencySpec get() = plugins.id("org.gradle.objective-cpp")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.pmd` plugin implemented by [org.gradle.api.plugins.quality.PmdPlugin]. */ internal val `OrgGradlePluginGroup`.`pmd`: PluginDependencySpec get() = plugins.id("org.gradle.pmd")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.project-report` plugin implemented by [org.gradle.api.plugins.ProjectReportsPlugin]. */ internal val `OrgGradlePluginGroup`.`project-report`: PluginDependencySpec get() = plugins.id("org.gradle.project-report")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.project-reports` plugin implemented by [org.gradle.api.plugins.ProjectReportsPlugin]. */ internal val `OrgGradlePluginGroup`.`project-reports`: PluginDependencySpec get() = plugins.id("org.gradle.project-reports")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.publishing` plugin implemented by [org.gradle.api.publish.plugins.PublishingPlugin]. */ internal val `OrgGradlePluginGroup`.`publishing`: PluginDependencySpec get() = plugins.id("org.gradle.publishing")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.reporting-base` plugin implemented by [org.gradle.api.plugins.ReportingBasePlugin]. */ internal val `OrgGradlePluginGroup`.`reporting-base`: PluginDependencySpec get() = plugins.id("org.gradle.reporting-base")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.scala-base` plugin implemented by [org.gradle.api.plugins.scala.ScalaBasePlugin]. */ internal val `OrgGradlePluginGroup`.`scala-base`: PluginDependencySpec get() = plugins.id("org.gradle.scala-base")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.scala` plugin implemented by [org.gradle.api.plugins.scala.ScalaPlugin]. */ internal val `OrgGradlePluginGroup`.`scala`: PluginDependencySpec get() = plugins.id("org.gradle.scala")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.signing` plugin implemented by [org.gradle.plugins.signing.SigningPlugin]. */ internal val `OrgGradlePluginGroup`.`signing`: PluginDependencySpec get() = plugins.id("org.gradle.signing")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.standard-tool-chains` plugin implemented by [org.gradle.nativeplatform.toolchain.internal.plugins.StandardToolChainsPlugin]. */ internal val `OrgGradlePluginGroup`.`standard-tool-chains`: PluginDependencySpec get() = plugins.id("org.gradle.standard-tool-chains")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.swift-application` plugin implemented by [org.gradle.language.swift.plugins.SwiftApplicationPlugin]. */ internal val `OrgGradlePluginGroup`.`swift-application`: PluginDependencySpec get() = plugins.id("org.gradle.swift-application")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.swift-library` plugin implemented by [org.gradle.language.swift.plugins.SwiftLibraryPlugin]. */ internal val `OrgGradlePluginGroup`.`swift-library`: PluginDependencySpec get() = plugins.id("org.gradle.swift-library")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.swiftpm-export` plugin implemented by [org.gradle.swiftpm.plugins.SwiftPackageManagerExportPlugin]. */ internal val `OrgGradlePluginGroup`.`swiftpm-export`: PluginDependencySpec get() = plugins.id("org.gradle.swiftpm-export")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.validate-external-gradle-plugin` plugin implemented by [org.gradle.plugin.devel.plugins.ExternalPluginValidationPlugin]. */ internal val `OrgGradlePluginGroup`.`validate-external-gradle-plugin`: PluginDependencySpec get() = plugins.id("org.gradle.validate-external-gradle-plugin")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.version-catalog` plugin implemented by [org.gradle.api.plugins.catalog.VersionCatalogPlugin]. */ internal val `OrgGradlePluginGroup`.`version-catalog`: PluginDependencySpec get() = plugins.id("org.gradle.version-catalog")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.visual-studio` plugin implemented by [org.gradle.ide.visualstudio.plugins.VisualStudioPlugin]. */ internal val `OrgGradlePluginGroup`.`visual-studio`: PluginDependencySpec get() = plugins.id("org.gradle.visual-studio")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.war` plugin implemented by [org.gradle.api.plugins.WarPlugin]. */ internal val `OrgGradlePluginGroup`.`war`: PluginDependencySpec get() = plugins.id("org.gradle.war")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.windows-resource-script` plugin implemented by [org.gradle.language.rc.plugins.WindowsResourceScriptPlugin]. */ internal val `OrgGradlePluginGroup`.`windows-resource-script`: PluginDependencySpec get() = plugins.id("org.gradle.windows-resource-script")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.windows-resources` plugin implemented by [org.gradle.language.rc.plugins.WindowsResourcesPlugin]. */ internal val `OrgGradlePluginGroup`.`windows-resources`: PluginDependencySpec get() = plugins.id("org.gradle.windows-resources")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.wrapper` plugin implemented by [org.gradle.buildinit.plugins.WrapperPlugin]. */ internal val `OrgGradlePluginGroup`.`wrapper`: PluginDependencySpec get() = plugins.id("org.gradle.wrapper")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.xcode` plugin implemented by [org.gradle.ide.xcode.plugins.XcodePlugin]. */ internal val `OrgGradlePluginGroup`.`xcode`: PluginDependencySpec get() = plugins.id("org.gradle.xcode")</ID>
+    <ID>TopLevelPropertyNaming:PluginSpecBuilders.kt$/** * The `org.gradle.xctest` plugin implemented by [org.gradle.nativeplatform.test.xctest.plugins.XCTestConventionPlugin]. */ internal val `OrgGradlePluginGroup`.`xctest`: PluginDependencySpec get() = plugins.id("org.gradle.xctest")</ID>
     <ID>TopLevelPropertyNaming:Uint32_t.kt$private const val integerSize = 4</ID>
     <ID>UnnecessaryAbstractClass:GlobalDBBaseTest.kt$GlobalDBBaseTest</ID>
     <ID>UnnecessaryAbstractClass:UserModel.kt$User</ID>
