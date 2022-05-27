@@ -1,3 +1,4 @@
+@file:Suppress("TooManyFunctions")
 package com.wire.kalium.network.exceptions
 
 import com.wire.kalium.network.api.ErrorResponse
@@ -18,7 +19,6 @@ import com.wire.kalium.network.exceptions.NetworkErrorLabel.TOO_MANY_CLIENTS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.TOO_MANY_MEMBERS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.USER_CREATION_RESTRICTED
 
-@Suppress("TooManyFunctions")
 sealed class KaliumException() : Exception() {
 
     class Unauthorized(val errorCode: Int) : KaliumException()
