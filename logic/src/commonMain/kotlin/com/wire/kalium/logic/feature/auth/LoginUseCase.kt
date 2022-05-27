@@ -2,14 +2,13 @@ package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isInvalidCredentials
 
 sealed class AuthenticationResult {
-    data class Success(val userSession: AuthSession) : AuthenticationResult()
+    data class Success(val userSession: AuthSession.Tokens) : AuthenticationResult()
 
     sealed class Failure : AuthenticationResult() {
         object InvalidCredentials : Failure()
@@ -20,10 +19,7 @@ sealed class AuthenticationResult {
 
 interface LoginUseCase {
     suspend operator fun invoke(
-        userIdentifier: String,
-        password: String,
-        shouldPersistClient: Boolean,
-        serverConfig: ServerConfig
+        userIdentifier: String, password: String, shouldPersistClient: Boolean
     ): AuthenticationResult
 }
 
@@ -33,20 +29,17 @@ internal class LoginUseCaseImpl(
     private val validateUserHandleUseCase: ValidateUserHandleUseCase
 ) : LoginUseCase {
     override suspend operator fun invoke(
-        userIdentifier: String,
-        password: String,
-        shouldPersistClient: Boolean,
-        serverConfig: ServerConfig
+        userIdentifier: String, password: String, shouldPersistClient: Boolean
     ): AuthenticationResult {
         // remove White Spaces around userIdentifier
         val cleanUserIdentifier = userIdentifier.trim()
 
         return when {
             validateEmailUseCase(cleanUserIdentifier) -> {
-                loginRepository.loginWithEmail(cleanUserIdentifier, password, shouldPersistClient, serverConfig)
+                loginRepository.loginWithEmail(cleanUserIdentifier, password, shouldPersistClient)
             }
             validateUserHandleUseCase(cleanUserIdentifier).isValid -> {
-                loginRepository.loginWithHandle(cleanUserIdentifier, password, shouldPersistClient, serverConfig)
+                loginRepository.loginWithHandle(cleanUserIdentifier, password, shouldPersistClient)
             }
             else -> return AuthenticationResult.Failure.InvalidUserIdentifier
         }.fold({

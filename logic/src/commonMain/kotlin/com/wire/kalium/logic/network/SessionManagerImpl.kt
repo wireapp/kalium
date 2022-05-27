@@ -30,10 +30,12 @@ class SessionManagerImpl(
             TODO("IMPORTANT! Not yet implemented")
         }, { authSession ->
             AuthSession(
-                authSession.userId,
-                newAccessTokenDTO.value,
-                newRefreshTokenDTO?.value ?: authSession.refreshToken,
-                newAccessTokenDTO.tokenType,
+                AuthSession.Tokens(
+                    authSession.tokens.userId,
+                    newAccessTokenDTO.value,
+                    newRefreshTokenDTO?.value ?: authSession.tokens.refreshToken,
+                    newAccessTokenDTO.tokenType,
+                ),
                 authSession.serverConfig
             ).let {
                 sessionRepository.storeSession(it)

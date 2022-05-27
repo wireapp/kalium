@@ -6,11 +6,13 @@ import com.github.ajalt.clikt.parameters.options.required
 import com.wire.kalium.cli.CLIUtils.getResource
 import com.wire.kalium.cryptography.utils.calcMd5
 import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.logic.configuration.server.ApiVersionMapperImpl
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.configuration.server.ServerConfigMapperImpl
 import com.wire.kalium.network.AuthenticatedNetworkContainer
 import com.wire.kalium.network.NetworkLogger
+import com.wire.kalium.network.ServerMetaDataManager
 import com.wire.kalium.network.UnauthenticatedNetworkContainer
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.asset.AssetMetadataRequest
@@ -18,6 +20,7 @@ import com.wire.kalium.network.api.model.AccessTokenDTO
 import com.wire.kalium.network.api.model.AssetRetentionType
 import com.wire.kalium.network.api.model.RefreshTokenDTO
 import com.wire.kalium.network.api.user.login.LoginApi
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.utils.isSuccessful
@@ -43,6 +46,20 @@ class InMemorySessionManager(
     }
 }
 
+class InMemoryServerMetaDataManager : ServerMetaDataManager {
+    var serverConfigDTO: ServerConfigDTO? = null
+
+    override fun getLocalMetaData(backendLinks: ServerConfigDTO.Links): ServerConfigDTO? {
+        return serverConfigDTO
+    }
+
+    override fun storeBackend(links: ServerConfigDTO.Links, metaData: ServerConfigDTO.MetaData): ServerConfigDTO {
+        serverConfigDTO = ServerConfigDTO(id = "id", links, metaData)
+        return serverConfigDTO!!
+    }
+
+}
+
 class ConversationsApplication : CliktCommand() {
     private val email: String by option(help = "wire account email").required()
     private val password: String by option(help = "wire account password").required()
@@ -50,15 +67,17 @@ class ConversationsApplication : CliktCommand() {
     override fun run(): Unit = runBlocking {
         NetworkLogger.setLoggingLevel(level = KaliumLogLevel.DEBUG)
 
-        val serverConfigMapper: ServerConfigMapper = ServerConfigMapperImpl()
-        val serverConfigDTO: ServerConfigDTO = serverConfigMapper.toDTO(ServerConfig.DEFAULT)
-        val loginContainer = UnauthenticatedNetworkContainer()
+        val serverConfigMapper: ServerConfigMapper = ServerConfigMapperImpl(ApiVersionMapperImpl())
+        val serverConfigDTO: ServerConfigDTO = serverConfigMapper.toDTO(ServerConfig.STAGING)
+        val loginContainer = UnauthenticatedNetworkContainer(serverConfigDTO.links, InMemoryServerMetaDataManager())
 
         val loginResult = loginContainer.loginApi.login(
-            LoginApi.LoginParam.LoginWithEmail(email = email, password = password, label = "ktor"), false, serverConfigDTO.apiBaseUrl.toString()
+            LoginApi.LoginParam.LoginWithEmail(email = email, password = password, label = "ktor"), false
         )
 
         if (!loginResult.isSuccessful()) {
+            loginResult.kException as KaliumException.GenericError
+            loginResult.kException.cause?.printStackTrace()
             println("There was an error on the login :( check the credentials and the internet connection and try again please")
         } else {
             val sessionData = loginResult.value

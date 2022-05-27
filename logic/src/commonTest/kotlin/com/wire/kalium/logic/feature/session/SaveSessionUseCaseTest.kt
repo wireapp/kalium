@@ -44,10 +44,12 @@ class SaveSessionUseCaseTest {
         val TEST_SERVER_CONFIG: ServerConfig = newServerConfig(1)
         val TEST_AUTH_SESSION =
             AuthSession(
-                userId = UserId("user_id", "domain.de"),
-                accessToken = "access_token",
-                refreshToken = "refresh_token",
-                tokenType = "token_type",
+                AuthSession.Tokens(
+                    userId = UserId("user_id", "domain.de"),
+                    accessToken = "access_token",
+                    refreshToken = "refresh_token",
+                    tokenType = "token_type"
+                ),
                 TEST_SERVER_CONFIG
             )
     }

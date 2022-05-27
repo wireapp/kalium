@@ -1,6 +1,6 @@
-package com.wire.kalium.logic.configuration
+package com.wire.kalium.api.tools.json
 
-import com.wire.kalium.logic.util.SupportedApiVersions
+import com.wire.kalium.network.SupportedApiVersions
 import kotlin.test.Test
 import kotlin.test.fail
 

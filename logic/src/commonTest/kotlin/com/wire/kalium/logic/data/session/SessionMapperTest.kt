@@ -46,10 +46,10 @@ class SessionMapperTest {
     fun givenAnAuthSession_whenMappingToSessionCredentials_thenValuesAreMappedCorrectly() {
         val authSession: AuthSession = randomAuthSession()
 
-        given(idMapper).invocation { toApiModel(authSession.userId) }
-            .then { QualifiedID(authSession.userId.value, authSession.userId.domain) }
+        given(idMapper).invocation { toApiModel(authSession.tokens.userId) }
+            .then { QualifiedID(authSession.tokens.userId.value, authSession.tokens.userId.domain) }
         val acuteValue: SessionDTO =
-            with(authSession) { SessionDTO(UserIdDTO(userId.value, userId.domain), tokenType, accessToken, refreshToken) }
+            with(authSession.tokens) { SessionDTO(UserIdDTO(userId.value, userId.domain), tokenType, accessToken, refreshToken) }
 
         val expectedValue: SessionDTO = sessionMapper.toSessionDTO(authSession)
         assertEquals(expectedValue, acuteValue)
@@ -61,24 +61,24 @@ class SessionMapperTest {
         val serverConfigEntity = with(authSession.serverConfig) {
             ServerConfigEntity(
                 id,
-                apiBaseUrl,
-                accountsBaseUrl,
-                webSocketBaseUrl,
-                blackListUrl,
-                teamsUrl,
-                websiteUrl,
-                title,
-                federation,
-                commonApiVersion.version,
-                domain
+                links.api,
+                links.accounts,
+                links.webSocket,
+                links.blackList,
+                links.teams,
+                links.website,
+                links.title,
+                metaData.federation,
+                metaData.commonApiVersion.version,
+                metaData.domain
             )
         }
 
-        given(idMapper).invocation { toDaoModel(authSession.userId) }
-            .then { PersistenceQualifiedId(authSession.userId.value, authSession.userId.domain) }
+        given(idMapper).invocation { toDaoModel(authSession.tokens.userId) }
+            .then { PersistenceQualifiedId(authSession.tokens.userId.value, authSession.tokens.userId.domain) }
         given(serverConfigMapper).invocation { toEntity(authSession.serverConfig) }.then { serverConfigEntity }
 
-        val acuteValue: PersistenceSession = with(authSession) {
+        val expected: PersistenceSession = with(authSession.tokens) {
             PersistenceSession(
                 userId = UserIDEntity(userId.value, userId.domain),
                 tokenType = tokenType,
@@ -88,8 +88,8 @@ class SessionMapperTest {
             )
         }
 
-        val expectedValue: PersistenceSession = sessionMapper.toPersistenceSession(authSession)
-        assertEquals(expectedValue, acuteValue)
+        val actual: PersistenceSession = sessionMapper.toPersistenceSession(authSession)
+        assertEquals(expected, actual)
         verify(serverConfigMapper).invocation { toEntity(authSession.serverConfig) }.wasInvoked(exactly = once)
     }
 
@@ -99,16 +99,20 @@ class SessionMapperTest {
         val serverConfig = with(persistenceSession.serverConfigEntity) {
             ServerConfig(
                 id,
-                apiBaseUrl,
-                accountBaseUrl,
-                webSocketBaseUrl,
-                blackListUrl,
-                teamsUrl,
-                websiteUrl,
-                title,
-                federation,
-                commonApiVersion.toCommonApiVersionType(),
-                domain
+                ServerConfig.Links(
+                    apiBaseUrl,
+                    accountBaseUrl,
+                    webSocketBaseUrl,
+                    blackListUrl,
+                    teamsUrl,
+                    websiteUrl,
+                    title,
+                    ),
+                ServerConfig.MetaData(
+                    federation,
+                    commonApiVersion.toCommonApiVersionType(),
+                    domain
+                )
             )
         }
 
@@ -118,10 +122,12 @@ class SessionMapperTest {
 
         val acuteValue: AuthSession = with(persistenceSession) {
             AuthSession(
-                userId = UserId(userId.value, userId.domain),
-                tokenType = tokenType,
-                accessToken = accessToken,
-                refreshToken = refreshToken,
+                AuthSession.Tokens(
+                    userId = UserId(userId.value, userId.domain),
+                    tokenType = tokenType,
+                    accessToken = accessToken,
+                    refreshToken = refreshToken
+                ),
                 serverConfig = serverConfig
             )
         }
@@ -137,7 +143,9 @@ class SessionMapperTest {
         val randomString get() = Random.nextBytes(64).decodeToString()
         val userId = UserId("user_id", "user.domain.io")
 
-        fun randomAuthSession(): AuthSession = AuthSession(userId, randomString, randomString, randomString, TEST_CONFIG)
+        fun randomAuthSession(): AuthSession =
+            AuthSession(AuthSession.Tokens(userId, randomString, randomString, randomString), TEST_CONFIG)
+
         fun randomPersistenceSession(): PersistenceSession =
             PersistenceSession(UserIDEntity(userId.value, userId.domain), randomString, randomString, randomString, TEST_ENTITY)
 

@@ -70,7 +70,7 @@ class NotificationApiImpl internal constructor(
         .webSocketSession(
             method = HttpMethod.Get
         ) {
-            setWSSUrl(serverConfigDTO.webSocketBaseUrl, PATH_AWAIT)
+            setWSSUrl(serverConfigDTO.links.webSocket, PATH_AWAIT)
             parameter(CLIENT_QUERY_KEY, clientId)
         }.incoming
         .consumeAsFlow()

@@ -121,7 +121,9 @@ class WrapperWorkerFactory(private val coreLogic: CoreLogic) : WorkerFactory() {
     }
 
     private fun createApiVersionCheckWorker(workerParameters: WorkerParameters, appContext: Context): WrapperWorker {
-        val worker = UpdateApiVersionsWorker(coreLogic.getAuthenticationScope().updateApiVersions)
+        val worker = coreLogic.globalScope {
+            UpdateApiVersionsWorker(updateApiVersions)
+        }
         return WrapperWorker(worker, appContext, workerParameters)
     }
 

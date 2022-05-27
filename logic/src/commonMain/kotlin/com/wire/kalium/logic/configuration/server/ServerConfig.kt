@@ -1,6 +1,6 @@
 package com.wire.kalium.logic.configuration.server
 
-import com.benasher44.uuid.uuid4
+import com.wire.kalium.network.tools.ApiVersionDTO
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import io.ktor.http.Url
@@ -16,103 +16,159 @@ import kotlinx.serialization.encoding.Encoder
 
 @Serializable
 data class ServerConfig(
-    @SerialName("id") val id: String,
-    @SerialName("apiBaseUrl") val apiBaseUrl: String,
-    @SerialName("accountsBaseUrl") val accountsBaseUrl: String,
-    @SerialName("webSocketBaseUrl") val webSocketBaseUrl: String,
-    @SerialName("blackListUrl") val blackListUrl: String,
-    @SerialName("teamsUrl") val teamsUrl: String,
-    @SerialName("websiteUrl") val websiteUrl: String,
-    @SerialName("title") val title: String,
-    @SerialName("federation") val federation: Boolean,
-    @SerialName("commonApiVersion") @Serializable(with = CommonApiVersionTypeSerializer::class) val commonApiVersion: CommonApiVersionType,
-    @SerialName("domain") val domain: String?
+    @SerialName("config_id") val id: String,
+    @SerialName("links") val links: Links,
+    @SerialName("metadata")val metaData: MetaData
 ) {
+    @Serializable
+    data class Links(
+        @SerialName("apiBaseUrl") val api: String,
+        @SerialName("accountsBaseUrl") val accounts: String,
+        @SerialName("webSocketBaseUrl") val webSocket: String,
+        @SerialName("blackListUrl") val blackList: String,
+        @SerialName("teamsUrl") val teams: String,
+        @SerialName("websiteUrl") val website: String,
+        @SerialName("title") val title: String
+    )
+
+    @Serializable
+    data class MetaData(
+        @SerialName("federation") val federation: Boolean,
+        @SerialName("commonApiVersion")
+        @Serializable(with = CommonApiVersionTypeSerializer::class)
+        val commonApiVersion: CommonApiVersionType,
+        @SerialName("domain") val domain: String?
+    )
+
     companion object {
-        val PRODUCTION = ServerConfig(
-            id = uuid4().toString(),
-            apiBaseUrl = """https://prod-nginz-https.wire.com""",
-            accountsBaseUrl = """https://account.wire.com""",
-            webSocketBaseUrl = """https://prod-nginz-ssl.wire.com""",
-            teamsUrl = """https://teams.wire.com""",
-            blackListUrl = """https://clientblacklist.wire.com/prod""",
-            websiteUrl = """https://wire.com""",
-            title = "Production",
-            federation = false,
-            commonApiVersion = CommonApiVersionType.Valid(1), // TODO: fetch the real value
-            domain = "wire.com"
+        val PRODUCTION = Links(
+            api = """https://prod-nginz-https.wire.com""",
+            accounts = """https://account.wire.com""",
+            webSocket = """https://prod-nginz-ssl.wire.com""",
+            teams = """https://teams.wire.com""",
+            blackList = """https://clientblacklist.wire.com/prod""",
+            website = """https://wire.com""",
+            title = "production"
         )
-        val STAGING = ServerConfig(
-            id = uuid4().toString(),
-            apiBaseUrl = """https://staging-nginz-https.zinfra.io""",
-            accountsBaseUrl = """https://wire-account-staging.zinfra.io""",
-            webSocketBaseUrl = """https://staging-nginz-ssl.zinfra.io""",
-            teamsUrl = """https://wire-teams-staging.zinfra.io""",
-            blackListUrl = """https://clientblacklist.wire.com/staging""",
-            websiteUrl = """https://wire.com""",
-            title = "Staging",
-            federation = false,
-            commonApiVersion = CommonApiVersionType.Valid(1), // TODO: fetch the real value
-            domain = "staging.zinfra.io"
+
+        val STAGING = Links(
+            api = """https://staging-nginz-https.zinfra.io""",
+            accounts = """https://wire-account-staging.zinfra.io""",
+            webSocket = """https://staging-nginz-ssl.zinfra.io""",
+            teams = """https://wire-teams-staging.zinfra.io""",
+            blackList = """https://clientblacklist.wire.com/staging""",
+            website = """https://wire.com""",
+            title = "staging"
         )
         val DEFAULT = PRODUCTION
     }
 }
 
+
 interface ServerConfigMapper {
     fun toDTO(serverConfig: ServerConfig): ServerConfigDTO
-    fun toEntity(serverConfig: ServerConfig): ServerConfigEntity
+    fun toDTO(links: ServerConfig.Links): ServerConfigDTO.Links
+    fun toDTO(serverConfigEntity: ServerConfigEntity): ServerConfigDTO
+    fun fromDTO(wireServer: ServerConfigDTO): ServerConfig
+    fun toEntity(backend: ServerConfig): ServerConfigEntity
     fun fromEntity(serverConfigEntity: ServerConfigEntity): ServerConfig
 }
 
-class ServerConfigMapperImpl : ServerConfigMapper {
-    override fun toDTO(serverConfig: ServerConfig): ServerConfigDTO =
-        with(serverConfig) {
-            ServerConfigDTO(
-                Url(apiBaseUrl),
-                Url(accountsBaseUrl),
-                Url(webSocketBaseUrl),
-                Url(blackListUrl),
-                Url(teamsUrl),
-                Url(websiteUrl),
-                title,
-                commonApiVersion.version
+class ServerConfigMapperImpl(
+    private val apiVersionMapper: ApiVersionMapper
+) : ServerConfigMapper {
+    override fun toDTO(serverConfig: ServerConfig): ServerConfigDTO = with(serverConfig) {
+        ServerConfigDTO(
+            id = id, links = ServerConfigDTO.Links(
+                Url(links.api),
+                Url(links.accounts),
+                Url(links.webSocket),
+                Url(links.blackList),
+                Url(links.teams),
+                Url(links.website),
+                links.title,
+            ), ServerConfigDTO.MetaData(
+                federation = metaData.federation, apiVersionMapper.toDTO(metaData.commonApiVersion), metaData.domain
             )
-        }
+        )
+    }
 
-    override fun toEntity(serverConfig: ServerConfig): ServerConfigEntity =
-        with(serverConfig) {
-            ServerConfigEntity(
-                id,
-                apiBaseUrl,
-                accountsBaseUrl,
-                webSocketBaseUrl,
-                blackListUrl,
-                teamsUrl,
-                websiteUrl,
-                title,
-                federation,
-                commonApiVersion.version,
-                domain
-            )
-        }
+    override fun toDTO(links: ServerConfig.Links): ServerConfigDTO.Links = with(links) {
+        ServerConfigDTO.Links(
+            Url(links.api),
+            Url(links.accounts),
+            Url(links.webSocket),
+            Url(links.blackList),
+            Url(links.teams),
+            Url(links.website),
+            title,
+        )
+    }
 
-    override fun fromEntity(serverConfigEntity: ServerConfigEntity): ServerConfig =
-        with(serverConfigEntity) {
-            ServerConfig(
-                id,
-                apiBaseUrl,
-                accountBaseUrl,
-                webSocketBaseUrl,
-                blackListUrl,
-                teamsUrl,
-                websiteUrl,
-                title,
-                federation,
-                commonApiVersion.toCommonApiVersionType(),
-                domain
+    override fun toDTO(serverConfigEntity: ServerConfigEntity): ServerConfigDTO = with(serverConfigEntity) {
+        ServerConfigDTO(
+            id = id, links = ServerConfigDTO.Links(
+                api = Url(apiBaseUrl),
+                accounts = Url(accountBaseUrl),
+                webSocket = Url(webSocketBaseUrl),
+                blackList = Url(blackListUrl),
+                teams = Url(teamsUrl),
+                website = Url(websiteUrl),
+                title = title,
+            ), ServerConfigDTO.MetaData(
+                federation = federation, commonApiVersion = apiVersionMapper.toDTO(commonApiVersion), domain
             )
-        }
+        )
+    }
+
+
+    override fun fromDTO(wireServer: ServerConfigDTO): ServerConfig = with(wireServer) {
+        ServerConfig(
+            id = id, ServerConfig.Links(
+                api = links.api.toString(),
+                website = links.website.toString(),
+                webSocket = links.webSocket.toString(),
+                accounts = links.accounts.toString(),
+                blackList = links.blackList.toString(),
+                teams = links.teams.toString(),
+                title = links.title,
+            ), ServerConfig.MetaData(
+                commonApiVersion = apiVersionMapper.fromDTO(metaData.commonApiVersion),
+                federation = metaData.federation,
+                domain = metaData.domain
+            )
+        )
+    }
+
+    override fun toEntity(backend: ServerConfig): ServerConfigEntity = with(backend) {
+        ServerConfigEntity(
+            id = id,
+            apiBaseUrl = links.api,
+            accountBaseUrl = links.accounts,
+            webSocketBaseUrl = links.webSocket,
+            blackListUrl = links.blackList,
+            teamsUrl = links.teams,
+            websiteUrl = links.website,
+            title = links.title,
+            federation = metaData.federation,
+            commonApiVersion = metaData.commonApiVersion.version,
+            domain = metaData.domain
+        )
+    }
+
+    override fun fromEntity(serverConfigEntity: ServerConfigEntity): ServerConfig = with(serverConfigEntity) {
+        ServerConfig(
+            id, ServerConfig.Links(
+                api = apiBaseUrl,
+                accounts = accountBaseUrl,
+                webSocket = webSocketBaseUrl,
+                blackList = blackListUrl,
+                teams = teamsUrl,
+                website = websiteUrl,
+                title = title,
+            ), ServerConfig.MetaData(federation, commonApiVersion.toCommonApiVersionType(), domain)
+        )
+    }
 }
 
 sealed class CommonApiVersionType(open val version: Int) {
@@ -137,6 +193,32 @@ fun Int?.toCommonApiVersionType() = when {
 @Serializer(CommonApiVersionType::class)
 class CommonApiVersionTypeSerializer : KSerializer<CommonApiVersionType> {
     override val descriptor = PrimitiveSerialDescriptor("common_api_version", PrimitiveKind.INT)
-    override fun serialize(encoder: Encoder, value: CommonApiVersionType) { encoder.encodeInt(value.version) }
+    override fun serialize(encoder: Encoder, value: CommonApiVersionType) {
+        encoder.encodeInt(value.version)
+    }
+
     override fun deserialize(decoder: Decoder): CommonApiVersionType = decoder.decodeInt().toCommonApiVersionType()
+}
+
+interface ApiVersionMapper {
+    fun fromDTO(apiVersionDTO: ApiVersionDTO): CommonApiVersionType
+    fun toDTO(commonApiVersion: CommonApiVersionType): ApiVersionDTO
+    fun toDTO(commonApiVersion: Int): ApiVersionDTO
+
+}
+
+class ApiVersionMapperImpl : ApiVersionMapper {
+    override fun fromDTO(apiVersionDTO: ApiVersionDTO): CommonApiVersionType = when (apiVersionDTO) {
+        ApiVersionDTO.Invalid.New -> CommonApiVersionType.New
+        ApiVersionDTO.Invalid.Unknown -> CommonApiVersionType.Unknown
+        is ApiVersionDTO.Valid -> CommonApiVersionType.Valid(apiVersionDTO.version)
+    }
+
+    override fun toDTO(commonApiVersion: CommonApiVersionType): ApiVersionDTO = when (commonApiVersion) {
+        CommonApiVersionType.New -> ApiVersionDTO.Invalid.New
+        CommonApiVersionType.Unknown -> ApiVersionDTO.Invalid.Unknown
+        is CommonApiVersionType.Valid -> ApiVersionDTO.Valid(commonApiVersion.version)
+    }
+
+    override fun toDTO(commonApiVersion: Int): ApiVersionDTO = ApiVersionDTO.fromInt(commonApiVersion)
 }
