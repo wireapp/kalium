@@ -170,7 +170,7 @@ internal fun provideBaseHttpClient(
         agent = "007"
     }
 
-    if (true) {
+    if (NetworkLogger.isRequestLoggingEnabled) {
         install(Logging) {
             logger = Logger.SIMPLE
             level = LogLevel.ALL
