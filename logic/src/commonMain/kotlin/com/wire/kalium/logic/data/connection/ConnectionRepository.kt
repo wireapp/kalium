@@ -63,6 +63,9 @@ internal class ConnectionDataSource(
                 kaliumLogger.v("Fetching connections page starting with pagingState $lastPagingState")
                 connectionApi.fetchSelfUserConnections(pagingState = lastPagingState)
             }.onSuccess {
+                it.connections.forEach {connectionDTO ->
+                    persistConnection(connectionMapper.fromApiToModel(connectionDTO))
+                }
                 updateUserConnectionStatus(connections = it.connections)
                 lastPagingState = it.pagingState
                 hasMore = it.hasMore
