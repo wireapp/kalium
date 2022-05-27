@@ -39,7 +39,7 @@ class GetAllCallsUseCaseTest {
         val calls2 = listOf(call2)
 
         val callsFlow = flowOf(calls1, calls2)
-        given(syncManager).coroutine { waitForSlowSyncToComplete() }
+        given(syncManager).coroutine { waitForSyncToComplete() }
             .thenReturn(Unit)
         given(callRepository).invocation { callsFlow() }
             .then { callsFlow }

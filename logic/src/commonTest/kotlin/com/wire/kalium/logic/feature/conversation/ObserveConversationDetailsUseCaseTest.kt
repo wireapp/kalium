@@ -39,7 +39,7 @@ class ObserveConversationDetailsUseCaseTest {
     fun givenAConversationId_whenObservingConversationUseCase_thenTheConversationRepositoryShouldBeCalledWithTheCorrectID() = runTest {
         val conversationId = TestConversation.ID
         given(syncManager)
-            .suspendFunction(syncManager::waitForSlowSyncToComplete)
+            .suspendFunction(syncManager::waitForSyncToComplete)
             .whenInvoked()
             .thenReturn(Unit)
 
@@ -61,7 +61,7 @@ class ObserveConversationDetailsUseCaseTest {
         val conversationId = TestConversation.ID
 
         given(syncManager)
-            .suspendFunction(syncManager::waitForSlowSyncToComplete)
+            .suspendFunction(syncManager::waitForSyncToComplete)
             .whenInvoked()
             .thenReturn(Unit)
 
@@ -73,7 +73,7 @@ class ObserveConversationDetailsUseCaseTest {
         observeConversationsUseCase(conversationId)
 
         verify(syncManager)
-            .suspendFunction(syncManager::waitForSlowSyncToComplete)
+            .suspendFunction(syncManager::waitForSyncToComplete)
             .wasInvoked(exactly = once)
     }
 
@@ -86,7 +86,7 @@ class ObserveConversationDetailsUseCaseTest {
         )
 
         given(syncManager)
-            .suspendFunction(syncManager::waitForSlowSyncToComplete)
+            .suspendFunction(syncManager::waitForSyncToComplete)
             .whenInvoked()
             .thenReturn(Unit)
 
