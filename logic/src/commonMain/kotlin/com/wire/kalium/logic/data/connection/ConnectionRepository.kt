@@ -5,12 +5,14 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.publicuser.PublicUserMapper
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.InvalidMappingFailure
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
@@ -21,9 +23,12 @@ import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.user.connection.ConnectionApi
 import com.wire.kalium.network.api.user.connection.ConnectionDTO
 import com.wire.kalium.network.api.user.connection.ConnectionStateDTO
+import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConversationDAO
+import com.wire.kalium.persistence.dao.UserDAO
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 interface ConnectionRepository {
@@ -40,9 +45,12 @@ internal class ConnectionDataSource(
     private val conversationDAO: ConversationDAO,
     private val connectionDAO: ConnectionDAO,
     private val connectionApi: ConnectionApi,
+    private val userDetailsApi: UserDetailsApi,
+    private val userDAO: UserDAO,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val connectionStatusMapper: ConnectionStatusMapper = MapperProvider.connectionStatusMapper(),
     private val connectionMapper: ConnectionMapper = MapperProvider.connectionMapper(),
+    private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(),
 ) : ConnectionRepository {
 
     override suspend fun fetchSelfUserConnections(): Either<CoreFailure, Unit> {
@@ -55,6 +63,9 @@ internal class ConnectionDataSource(
                 kaliumLogger.v("Fetching connections page starting with pagingState $lastPagingState")
                 connectionApi.fetchSelfUserConnections(pagingState = lastPagingState)
             }.onSuccess {
+                it.connections.forEach {connectionDTO ->
+                    persistConnection(connectionMapper.fromApiToModel(connectionDTO))
+                }
                 updateUserConnectionStatus(connections = it.connections)
                 lastPagingState = it.pagingState
                 hasMore = it.hasMore
@@ -69,9 +80,10 @@ internal class ConnectionDataSource(
     override suspend fun sendUserConnection(userId: UserId): Either<CoreFailure, Unit> {
         return wrapApiRequest {
             connectionApi.createConnection(idMapper.toApiModel(userId))
-        }.map { connection ->
+        }.flatMap { connection ->
             val connectionSent = connection.copy(status = ConnectionStateDTO.SENT)
             updateUserConnectionStatus(listOf(connectionSent))
+            persistConnection(connectionMapper.fromApiToModel(connection))
         }
     }
 
@@ -103,7 +115,12 @@ internal class ConnectionDataSource(
     }
 
     override suspend fun observeConnectionList(): Flow<List<Connection>> {
-        return connectionDAO.getConnectionRequests().map { it.map(connectionMapper::fromDaoToModel) }
+        return connectionDAO.getConnectionRequests().map {
+            it.map { connection ->
+                val otherUser = userDAO.getUserByQualifiedID(connection.qualifiedToId)
+                connectionMapper.fromDaoToModel(connection, otherUser.first())
+            }
+        }
     }
 
     override suspend fun insertConnectionFromEvent(event: Event.User.NewConnection): Either<CoreFailure, Unit> =
@@ -113,6 +130,14 @@ internal class ConnectionDataSource(
         connection: Connection,
     ) = wrapStorageRequest {
         connectionDAO.insertConnection(connectionMapper.modelToDao(connection))
+    }.flatMap {
+        // This can fail? but the connection will be there and get synced in worst case in next SlowSync
+        wrapApiRequest {
+            userDetailsApi.getUserInfo(idMapper.toApiModel(connection.qualifiedToId))
+        }.map {
+            val userEntity = publicUserMapper.fromUserApiToEntity(it)
+            userDAO.insertUser(userEntity)
+        }
     }
 
     private suspend fun updateUserConnectionStatus(

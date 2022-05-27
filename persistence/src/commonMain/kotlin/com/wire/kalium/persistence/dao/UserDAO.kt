@@ -23,9 +23,7 @@ data class UserEntity(
     val connectionStatus: ConnectionEntity.State = ConnectionEntity.State.NOT_CONNECTED,
     val previewAssetId: UserAssetIdEntity?,
     val completeAssetId: UserAssetIdEntity?
-) {
-    
-}
+)
 
 internal typealias UserAssetIdEntity = String
 
