@@ -5,11 +5,14 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.ConversationId
+import com.wire.kalium.network.api.QualifiedID
+import com.wire.kalium.network.api.user.LegalHoldStatusResponse
 import com.wire.kalium.network.api.user.connection.ConnectionApi
 import com.wire.kalium.network.api.user.connection.ConnectionDTO
 import com.wire.kalium.network.api.user.connection.ConnectionResponse
 import com.wire.kalium.network.api.user.connection.ConnectionStateDTO
 import com.wire.kalium.network.api.user.details.UserDetailsApi
+import com.wire.kalium.network.api.user.details.UserProfileDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConnectionDAO
@@ -32,6 +35,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import com.wire.kalium.network.api.UserId as NetworkUserId
 
+// TODO: refactor this tests to use arrangement pattern
 class ConnectionRepositoryTest {
 
     @Mock
@@ -105,6 +109,14 @@ class ConnectionRepositoryTest {
             .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
             .whenInvokedWith(eq(UserIDEntity(userId.value, userId.domain)), any(), any())
             .then { _, _, _ -> return@then }
+        given(userDetailsApi)
+            .suspendFunction(userDetailsApi::getUserInfo)
+            .whenInvokedWith(any())
+            .then { NetworkResponse.Success(userProfileDto, mapOf(), 200) }
+        given(userDAO)
+            .suspendFunction(userDAO::insertUser)
+            .whenInvokedWith(any())
+            .then { }
 
         // when
         val result = connectionRepository.sendUserConnection(UserId(userId.value, userId.domain))
@@ -161,6 +173,14 @@ class ConnectionRepositoryTest {
             .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
             .whenInvokedWith(eq(UserIDEntity(userId.value, userId.domain)), any(), any())
             .thenThrow(RuntimeException("An error occurred persisting the data"))
+        given(userDetailsApi)
+            .suspendFunction(userDetailsApi::getUserInfo)
+            .whenInvokedWith(any())
+            .then { NetworkResponse.Success(userProfileDto, mapOf(), 200) }
+        given(userDAO)
+            .suspendFunction(userDAO::insertUser)
+            .whenInvokedWith(any())
+            .then { }
 
         // when
         val result = connectionRepository.sendUserConnection(UserId(userId.value, userId.domain))
@@ -174,6 +194,10 @@ class ConnectionRepositoryTest {
             .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
             .with(any(), any(), any())
             .wasInvoked(once)
+        verify(conversationDAO)
+            .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
+            .with(any(), any(), any())
+            .wasNotInvoked()
     }
 
     @Test
@@ -300,6 +324,20 @@ class ConnectionRepositoryTest {
             connections = listOf(connection1, connection2),
             hasMore = false,
             pagingState = ""
+        )
+        val userProfileDto = UserProfileDTO(
+            accentId = 1,
+            handle = "handle",
+            id = QualifiedID(value = "value", domain = "domain"),
+            name = "name",
+            legalHoldStatus = LegalHoldStatusResponse.ENABLED,
+            teamId = "team",
+            assets = emptyList(),
+            deleted = null,
+            email = null,
+            expiresAt = null,
+            nonQualifiedId = "value",
+            service = null
         )
     }
 }

@@ -77,10 +77,10 @@ internal class ConnectionDataSource(
     override suspend fun sendUserConnection(userId: UserId): Either<CoreFailure, Unit> {
         return wrapApiRequest {
             connectionApi.createConnection(idMapper.toApiModel(userId))
-        }.map { connection ->
+        }.flatMap { connection ->
             val connectionSent = connection.copy(status = ConnectionStateDTO.SENT)
             updateUserConnectionStatus(listOf(connectionSent))
-            persistConnection(connectionMapper.fromApiToModel(connectionSent))
+            persistConnection(connectionMapper.fromApiToModel(connection))
         }
     }
 
