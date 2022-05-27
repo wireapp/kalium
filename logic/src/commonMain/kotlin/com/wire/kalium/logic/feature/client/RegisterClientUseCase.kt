@@ -18,6 +18,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.network.api.user.pushToken.PushTokenBody
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMissingAuth
+import com.wire.kalium.network.exceptions.isNotFound
 import com.wire.kalium.network.exceptions.isTooManyClients
 
 sealed class RegisterClientResult {
@@ -26,6 +27,7 @@ sealed class RegisterClientResult {
     sealed class Failure : RegisterClientResult() {
         object InvalidCredentials : Failure()
         object TooManyClients : Failure()
+        object PushTokenRegister: Failure()
         class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }
@@ -100,6 +102,8 @@ class RegisterClientUseCaseImpl(
                         when {
                             failure.kaliumException.isTooManyClients() -> RegisterClientResult.Failure.TooManyClients
                             failure.kaliumException.isMissingAuth() -> RegisterClientResult.Failure.InvalidCredentials
+                            //TODO: Handle in proper way when the backend add related error for registering push token
+                            failure.kaliumException.isNotFound() -> RegisterClientResult.Failure.PushTokenRegister
                             else -> RegisterClientResult.Failure.Generic(failure)
                         }
                     else RegisterClientResult.Failure.Generic(failure)

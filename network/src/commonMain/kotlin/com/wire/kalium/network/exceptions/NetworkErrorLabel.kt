@@ -14,6 +14,7 @@ internal object NetworkErrorLabel {
     const val TOO_MANY_MEMBERS = "too-many-team-members"
     const val INVALID_HANDLE = "invalid-handle"
     const val HANDLE_EXISTS = "handle-exists"
+    const val NOT_FOUND = "Not Found"
 
     object KaliumCustom {
         const val MISSING_REFRESH_TOKEN = "missing-refresh_token"

@@ -13,6 +13,7 @@ import com.wire.kalium.network.exceptions.NetworkErrorLabel.INVALID_EMAIL
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.INVALID_HANDLE
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.KEY_EXISTS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MISSING_AUTH
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.NOT_FOUND
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.TOO_MANY_CLIENTS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.TOO_MANY_MEMBERS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.USER_CREATION_RESTRICTED
@@ -66,6 +67,10 @@ fun KaliumException.InvalidRequestError.isMissingAuth(): Boolean {
 
 fun KaliumException.InvalidRequestError.isBadRequest(): Boolean {
     return errorResponse.label == BAD_REQUEST
+}
+
+fun KaliumException.InvalidRequestError.isNotFound(): Boolean {
+    return errorResponse.message == NOT_FOUND
 }
 
 fun KaliumException.InvalidRequestError.isDomainBlockedForRegistration(): Boolean {
