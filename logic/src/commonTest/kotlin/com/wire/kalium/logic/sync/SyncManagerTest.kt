@@ -54,7 +54,8 @@ class SyncManagerTest {
             workScheduler,
             eventRepository,
             syncRepository,
-            conversationEventReceiver
+            conversationEventReceiver,
+            TestKaliumDispatcher
         )
     }
 
