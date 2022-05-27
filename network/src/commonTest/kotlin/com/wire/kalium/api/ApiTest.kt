@@ -223,7 +223,7 @@ internal interface ApiTest {
     }
 
 
-    private fun createMockEngin(
+    private fun createMockEngine(
         responseBody: ByteReadChannel,
         statusCode: HttpStatusCode,
         assertion: (HttpRequestData.() -> Unit) = {},
