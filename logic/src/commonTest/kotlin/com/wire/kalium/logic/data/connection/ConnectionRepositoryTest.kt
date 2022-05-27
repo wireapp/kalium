@@ -69,7 +69,7 @@ class ConnectionRepositoryTest {
 
     @Test
     fun givenConnections_whenFetchingConnections_thenConnectionsAreInsertedOrUpdatedIntoDatabase() = runTest {
-
+        // given
         given(connectionApi)
             .suspendFunction(connectionApi::fetchSelfUserConnections)
             .whenInvokedWith(eq(null))
@@ -80,14 +80,22 @@ class ConnectionRepositoryTest {
                     200
                 )
             }
-
         given(conversationDAO)
             .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
             .whenInvokedWith(any(), any(), any())
+        given(userDetailsApi)
+            .suspendFunction(userDetailsApi::getUserInfo)
+            .whenInvokedWith(any())
+            .then { NetworkResponse.Success(userProfileDto, mapOf(), 200) }
+        given(userDAO)
+            .suspendFunction(userDAO::insertUser)
+            .whenInvokedWith(any())
+            .then { }
 
+        //when
         val result = connectionRepository.fetchSelfUserConnections()
 
-        // Verifies that conversationDAO was called the same amount there is connections
+        // then
         verify(conversationDAO)
             .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
             .with(any(), any(), any())
