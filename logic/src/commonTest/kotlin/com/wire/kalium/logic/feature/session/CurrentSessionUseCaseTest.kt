@@ -66,6 +66,9 @@ class CurrentSessionUseCaseTest {
         val TEST_SERVER_CONFIG: ServerConfig = newServerConfig(1)
 
         fun randomAuthSession(): AuthSession =
-            AuthSession(AuthSession.Tokens(UserId("user_id", "domain.de"), randomString, randomString, randomString), TEST_SERVER_CONFIG)
+            AuthSession(
+                AuthSession.Tokens(UserId("user_id", "domain.de"), randomString, randomString, randomString),
+                TEST_SERVER_CONFIG.links
+            )
     }
 }

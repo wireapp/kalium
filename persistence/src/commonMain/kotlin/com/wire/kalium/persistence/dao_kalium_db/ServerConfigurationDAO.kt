@@ -12,16 +12,20 @@ internal class ServerConfigMapper() {
     fun toModel(serverConfiguration: ServerConfiguration) = with(serverConfiguration) {
         ServerConfigEntity(
             id,
-            apiBaseUrl,
-            accountBaseUrl,
-            webSocketBaseUrl,
-            blackListUrl,
-            teamsUrl,
-            websiteUrl,
-            title,
-            federation,
-            commonApiVersion,
-            domain
+            ServerConfigEntity.Links(
+                api = apiBaseUrl,
+                accounts = accountBaseUrl,
+                webSocket = webSocketBaseUrl,
+                blackList = blackListUrl,
+                teams = teamsUrl,
+                website = websiteUrl,
+                title = title
+            ),
+            ServerConfigEntity.MetaData(
+                federation = federation,
+                apiVersion = commonApiVersion,
+                domain = domain
+            )
         )
     }
 }

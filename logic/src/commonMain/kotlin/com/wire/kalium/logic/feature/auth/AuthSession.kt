@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class AuthSession(
     val tokens: Tokens,
-    val serverConfig: ServerConfig
+    val serverLinks: ServerConfig.Links
 ) {
     @Serializable
     data class Tokens(

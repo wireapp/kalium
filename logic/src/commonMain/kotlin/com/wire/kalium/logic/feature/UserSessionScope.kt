@@ -29,7 +29,6 @@ import com.wire.kalium.logic.data.logout.LogoutDataSource
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.message.MessageDataSource
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.prekey.PreKeyDataSource
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteDataSource
@@ -186,10 +185,10 @@ abstract class UserSessionScopeCommon(
         get() = SessionEstablisherImpl(authenticatedDataSourceSet.proteusClient, preKeyRepository)
 
     private val messageEnvelopeCreator: MessageEnvelopeCreator
-        get() = MessageEnvelopeCreatorImpl(authenticatedDataSourceSet.proteusClient, protoContentMapper)
+        get() = MessageEnvelopeCreatorImpl(authenticatedDataSourceSet.proteusClient)
 
     private val mlsMessageCreator: MLSMessageCreator
-        get() = MLSMessageCreatorImpl(mlsClientProvider, protoContentMapper)
+        get() = MLSMessageCreatorImpl(mlsClientProvider)
 
     private val messageSendingScheduler: MessageSendingScheduler
         get() = authenticatedDataSourceSet.userSessionWorkScheduler
@@ -233,7 +232,6 @@ abstract class UserSessionScopeCommon(
             messageSender = messageSender
         )
     }
-    protected abstract val protoContentMapper: ProtoContentMapper
     private val conversationEventReceiver: ConversationEventReceiver
         get() = ConversationEventReceiver(
             authenticatedDataSourceSet.proteusClient,
@@ -241,7 +239,6 @@ abstract class UserSessionScopeCommon(
             conversationRepository,
             mlsConversationRepository,
             userRepository,
-            protoContentMapper,
             callManager
         )
 

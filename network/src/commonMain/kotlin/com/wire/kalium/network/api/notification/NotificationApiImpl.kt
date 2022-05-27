@@ -21,7 +21,7 @@ import kotlinx.serialization.decodeFromString
 class NotificationApiImpl internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient,
     private val authenticatedWebSocketClient: AuthenticatedWebSocketClient,
-    private val serverConfigDTO: ServerConfigDTO
+    private val serverLinks: ServerConfigDTO.Links
 ) : NotificationApi {
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
@@ -70,7 +70,8 @@ class NotificationApiImpl internal constructor(
         .webSocketSession(
             method = HttpMethod.Get
         ) {
-            setWSSUrl(serverConfigDTO.links.webSocket, PATH_AWAIT)
+            // TODO: setWSSUrl can be removed ?
+            setWSSUrl(serverLinks.webSocket, PATH_AWAIT)
             parameter(CLIENT_QUERY_KEY, clientId)
         }.incoming
         .consumeAsFlow()

@@ -1,16 +1,13 @@
 package com.wire.kalium.network
 
-import com.wire.kalium.network.api.versioning.VersionApiImpl
 import com.wire.kalium.network.serialization.mls
 import com.wire.kalium.network.serialization.xprotobuf
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.session.installAuth
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.tools.ServerConfigDTO
-import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.WireDefaultRequest
-import com.wire.kalium.network.utils.WireServerMetaDataConfig
 import com.wire.kalium.network.utils.config
+import com.wire.kalium.network.utils.installWireDefaultRequest
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.HttpClientEngine
@@ -37,9 +34,11 @@ import io.ktor.serialization.kotlinx.json.json
  * It's Authenticated, and will use the provided [SessionManager] to fill
  * necessary Authentication headers, and refresh tokens as they expire.
  */
-internal class AuthenticatedNetworkClient(engine: HttpClientEngine, sessionManager: SessionManager) {
+internal class AuthenticatedNetworkClient(
+    engine: HttpClientEngine, sessionManager: SessionManager, serverMetaDataManager: ServerMetaDataManager
+) {
     val httpClient: HttpClient = provideBaseHttpClient(engine) {
-        installWireBaseUrl(sessionManager.session().second)
+        installWireDefaultRequest(sessionManager.session().second, serverMetaDataManager)
         installAuth(sessionManager)
         install(ContentNegotiation) {
             mls()
@@ -59,42 +58,7 @@ internal class UnauthenticatedNetworkClient(
     serverMetaDataManager: ServerMetaDataManager
 ) {
     val httpClient: HttpClient = provideBaseHttpClient(engine) {
-        install(WireDefaultRequest) {
-            config {
-                WireServerMetaDataConfig().apply {
-                    loadServerData = {
-                        serverMetaDataManager.getLocalMetaData(backendLinks)
-                    }
-
-                    fetchAndStoreMetadata = {
-                        val versionApi = VersionApiImpl(provideBaseHttpClient(defaultHttpEngine()))
-                        when (val result = versionApi.fetchApiVersion(backendLinks.api)) {
-                            is NetworkResponse.Success ->
-                                serverMetaDataManager.storeBackend(
-                                    backendLinks, result.value
-                                )
-                            is NetworkResponse.Error -> null
-                        }
-                    }
-
-                    buildDefaultRequest = {
-                        header(HttpHeaders.ContentType, ContentType.Application.Json)
-                        with(it) {
-                            val apiBaseUrl = links.api
-                            // enforce https as url protocol
-                            url.protocol = URLProtocol.HTTPS
-                            // add the default host
-                            url.host = apiBaseUrl.host
-                            // for api version 0 no api version should be added to the request
-                            url.encodedPath =
-                                if (shouldAddApiVersion(metaData.commonApiVersion.version))
-                                    apiBaseUrl.encodedPath + "v${metaData.commonApiVersion.version}/"
-                                else apiBaseUrl.encodedPath
-                        }
-                    }
-                }
-            }
-        }
+        installWireDefaultRequest(backendLinks, serverMetaDataManager)
     }
 }
 
@@ -124,7 +88,7 @@ internal class AuthenticatedWebSocketClient(
      */
     fun createDisposableHttpClient(): HttpClient =
         provideBaseHttpClient(engine) {
-            installWireBaseUrl(sessionManager.session().second)
+            installWireBaseUrl(TODO("replace with wireDefaultRequest"))
             installAuth(sessionManager)
             install(ContentNegotiation) {
                 mls()

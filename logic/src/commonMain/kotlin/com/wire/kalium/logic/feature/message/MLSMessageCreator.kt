@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.kaliumLogger
@@ -21,7 +22,7 @@ interface MLSMessageCreator {
 
 class MLSMessageCreatorImpl(
     private val mlsClientProvider: MLSClientProvider,
-    private val protoContentMapper: ProtoContentMapper,
+    private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(),
 ): MLSMessageCreator {
 
     override suspend fun createOutgoingMLSMessage(groupId: String, message: Message): Either<CoreFailure, MLSMessageApi.Message> {

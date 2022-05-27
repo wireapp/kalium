@@ -137,7 +137,7 @@ class RegisterAccountRepositoryTest {
         }
         val authSession = with(SESSION) {
             AuthSession(
-                AuthSession.Tokens(UserId(userId.value, userId.domain), accessToken, refreshToken, tokenType), serverConfig
+                AuthSession.Tokens(UserId(userId.value, userId.domain), accessToken, refreshToken, tokenType), serverConfig.links
             )
         }
         val expected = Pair(selfUser, authSession.tokens)
@@ -188,7 +188,7 @@ class RegisterAccountRepositoryTest {
             with(SESSION) {
                 AuthSession(
                     AuthSession.Tokens(UserId(userId.value, userId.domain), accessToken, refreshToken, tokenType),
-                    serverConfig
+                    serverConfig.links
                 )
             }
         val expected = Pair(selfUser, authSession.tokens)

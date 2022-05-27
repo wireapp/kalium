@@ -36,13 +36,14 @@ import io.ktor.client.engine.HttpClientEngine
 
 class AuthenticatedNetworkContainer(
     private val sessionManager: SessionManager,
+    serverMetaDataManager: ServerMetaDataManager,
     private val engine: HttpClientEngine = defaultHttpEngine()
 ) {
 
     private val backendConfig = sessionManager.session().second
 
     internal val networkClient by lazy {
-        AuthenticatedNetworkClient(engine, sessionManager)
+        AuthenticatedNetworkClient(engine, sessionManager, serverMetaDataManager)
     }
     internal val websocketClient by lazy {
         AuthenticatedWebSocketClient(engine, sessionManager)

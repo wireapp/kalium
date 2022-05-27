@@ -43,7 +43,8 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
 
     @Test
     fun givenAlreadyStoredServerConfig_whenInsertingNewOneWithTheSameApiBaseUrl_thenNothingChanges() {
-        val duplicatedConfig = config1.copy(apiBaseUrl = "new_base_url.com")
+        val newLinks = config1.links.copy(api = "new_base_url.com")
+        val duplicatedConfig = config1.copy(links = newLinks)
         insertConfig(config1)
         insertConfig(duplicatedConfig)
 
@@ -55,7 +56,8 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
 
     @Test
     fun givenAlreadyStoredServerConfig_whenInsertingNewOneWithTheSameTitle_thenNothingChanges() {
-        val duplicatedConfig = config1.copy(title = "title")
+        val newLinks = config1.links.copy(title = "title")
+        val duplicatedConfig = config1.copy(links = newLinks)
         insertConfig(config1)
         insertConfig(duplicatedConfig)
 
@@ -68,7 +70,8 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
 
     @Test
     fun givenAlreadyStoredServerConfig_whenInsertingNewOneWithTheSameWSUrl_thenNothingChanges() {
-        val duplicatedConfig = config1.copy(websiteUrl = "ws_de.berlin.com")
+        val newLinks = config1.links.copy(website = "ws_de.berlin.com")
+        val duplicatedConfig = config1.copy(links = newLinks)
         insertConfig(config1)
         insertConfig(duplicatedConfig)
 
@@ -81,7 +84,8 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
 
     @Test
     fun givenAlreadyStoredServerConfig_whenInsertingNewOneWithTheSameDomain_thenNothingChanges() {
-        val duplicatedConfig = config1.copy(domain = "new_domain")
+        val newMetaData = config1.metaData.copy(domain = "new_domain")
+        val duplicatedConfig = config1.copy(metaData = newMetaData)
         insertConfig(config1)
         insertConfig(duplicatedConfig)
 
@@ -114,10 +118,10 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
     @Test
     fun givenNewApiVersion_thenItCanBeUpdated() {
         insertConfig(config1)
-        val newVersion = 2
-        val expected = config1.copy(commonApiVersion = 2)
+        val newVersion = config1.metaData.copy(apiVersion = 2)
+        val expected = config1.copy(metaData = newVersion)
 
-        db.serverConfigurationDAO.updateApiVersion(config1.id, newVersion)
+        db.serverConfigurationDAO.updateApiVersion(config1.id, newVersion.apiVersion)
         val actual = db.serverConfigurationDAO.configById(config1.id)
         assertEquals(expected, actual)
     }
@@ -127,7 +131,7 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
         insertConfig(config1)
         val newVersion = 2
         val newDomain = "new.domain.de"
-        val expected = config1.copy(commonApiVersion = 2, domain = newDomain)
+        val expected = config1.copy(metaData = config1.metaData.copy(apiVersion = newVersion, domain = newDomain))
 
         db.serverConfigurationDAO.updateApiVersionAndDomain(config1.id, newDomain, newVersion)
         val actual = db.serverConfigurationDAO.configById(config1.id)
@@ -136,8 +140,10 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
 
     @Test
     fun givenFederationEnabled_thenItCanBeUpdated() {
-        insertConfig(config1.copy(federation = false))
-        val expected = config1.copy(federation = true)
+        insertConfig(
+            config1.copy(metaData = config1.metaData.copy(federation = true))
+        )
+        val expected = config1.copy(metaData = config1.metaData.copy(federation = true))
 
         db.serverConfigurationDAO.setFederationToTrue(config1.id)
         val actual = db.serverConfigurationDAO.configById(config1.id)
@@ -149,17 +155,17 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
         with(serverConfigEntity) {
             db.serverConfigurationDAO.insert(
                 ServerConfigurationDAO.InsertData(
-                    id,
-                    apiBaseUrl,
-                    accountBaseUrl,
-                    webSocketBaseUrl,
-                    blackListUrl,
-                    teamsUrl,
-                    websiteUrl,
-                    title,
-                    federation,
-                    domain,
-                    commonApiVersion
+                    id = id,
+                    apiBaseUrl = links.api,
+                    accountBaseUrl = links.accounts,
+                    webSocketBaseUrl = links.webSocket,
+                    blackListUrl = links.blackList,
+                    teamsUrl = links.teams,
+                    websiteUrl = links.website,
+                    title = links.title,
+                    federation = metaData.federation,
+                    domain = metaData.domain,
+                    commonApiVersion = metaData.apiVersion
                 )
             )
         }

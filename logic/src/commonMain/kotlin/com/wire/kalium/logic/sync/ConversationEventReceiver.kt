@@ -36,8 +36,8 @@ class ConversationEventReceiver(
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val userRepository: UserRepository,
-    private val protoContentMapper: ProtoContentMapper,
     private val callManagerImpl: Lazy<CallManager>,
+    private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(),
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : EventReceiver<Event.Conversation> {

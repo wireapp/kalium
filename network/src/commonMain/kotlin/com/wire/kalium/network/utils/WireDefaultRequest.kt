@@ -1,15 +1,26 @@
 package com.wire.kalium.network.utils
 
+import com.wire.kalium.network.ServerMetaDataManager
+import com.wire.kalium.network.api.versioning.VersionApiImpl
+import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.kaliumLogger
+import com.wire.kalium.network.provideBaseHttpClient
+import com.wire.kalium.network.shouldAddApiVersion
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.HttpClient
+import io.ktor.client.HttpClientConfig
 import io.ktor.client.plugins.HttpClientPlugin
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.HttpRequestPipeline
+import io.ktor.client.request.header
+import io.ktor.http.ContentType
 import io.ktor.http.HeadersBuilder
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMessageBuilder
 import io.ktor.http.URLBuilder
+import io.ktor.http.URLProtocol
 import io.ktor.http.Url
+import io.ktor.http.encodedPath
 import io.ktor.http.set
 import io.ktor.http.takeFrom
 import io.ktor.util.AttributeKey
@@ -69,23 +80,23 @@ class WireDefaultRequest private constructor(var provider: WireServerMetaDataCon
 
         override fun prepare(block: WireDefaultRequest.() -> Unit): WireDefaultRequest = WireDefaultRequest().apply(block)
 
-        lateinit var serverConfigDTO: ServerConfigDTO
-
         override fun install(plugin: WireDefaultRequest, scope: HttpClient) {
+            var serverConfigDTO: ServerConfigDTO? = null
             scope.requestPipeline.intercept(HttpRequestPipeline.Before) {
-                if (!this@Plugin::serverConfigDTO.isInitialized) {
+                if (serverConfigDTO == null) {
                     serverConfigDTO = plugin.provider.loadServerData() ?: plugin.provider.fetchAndStoreMetadata() ?: return@intercept
                 }
 
                 val defaultRequest = WireDefaultRequestBuilder().apply {
                     headers.appendAll(context.headers)
-                    plugin.provider.buildDefaultRequest(this, serverConfigDTO)
+                    serverConfigDTO?.let {
+                        plugin.provider.buildDefaultRequest(this, it)
+                    }?: return@intercept
                 }
                 val defaultUrl = defaultRequest.url.build()
                 if (context.url.host.isEmpty()) {
                     mergeUrls(defaultUrl, context.url)
                 }
-                kaliumLogger.d("wireDefaultRequest defaultUrl: $defaultUrl")
 
                 defaultRequest.attributes.allKeys.forEach {
                     if (!context.attributes.contains(it)) {
@@ -179,4 +190,50 @@ class WireServerMetaDataConfig {
 
 fun WireDefaultRequest.config(block: () -> WireServerMetaDataConfig) {
     provider = block()
+}
+
+fun HttpClientConfig<*>.installWireDefaultRequest(
+    backendLinks: ServerConfigDTO.Links,
+    serverMetaDataManager: ServerMetaDataManager
+) {
+    install(WireDefaultRequest) {
+        config {
+            WireServerMetaDataConfig().apply {
+                loadServerData = {
+                    serverMetaDataManager.getLocalMetaData(backendLinks).also {
+                        kaliumLogger.d("WireDefaultRequest: loading server config from local: $it")
+                    }
+                }
+
+                fetchAndStoreMetadata = {
+                    val versionApi = VersionApiImpl(provideBaseHttpClient(defaultHttpEngine()))
+                    when (val result = versionApi.fetchApiVersion(backendLinks.api)) {
+                        is NetworkResponse.Success ->
+                            serverMetaDataManager.storeBackend(
+                                backendLinks, result.value
+                            )
+                        is NetworkResponse.Error -> null
+                    }.also {
+                        kaliumLogger.d("WireDefaultRequest: loading server config from remote: $it")
+                    }
+                }
+
+                buildDefaultRequest = {
+                    header(HttpHeaders.ContentType, ContentType.Application.Json)
+                    with(it) {
+                        val apiBaseUrl = links.api
+                        // enforce https as url protocol
+                        url.protocol = URLProtocol.HTTPS
+                        // add the default host
+                        url.host = apiBaseUrl.host
+                        // for api version 0 no api version should be added to the request
+                        url.encodedPath =
+                            if (shouldAddApiVersion(metaData.commonApiVersion.version))
+                                apiBaseUrl.encodedPath + "v${metaData.commonApiVersion.version}/"
+                            else apiBaseUrl.encodedPath
+                    }
+                }
+            }
+        }
+    }
 }

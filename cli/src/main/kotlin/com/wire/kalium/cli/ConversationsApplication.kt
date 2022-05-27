@@ -27,11 +27,11 @@ import com.wire.kalium.network.utils.isSuccessful
 import kotlinx.coroutines.runBlocking
 
 class InMemorySessionManager(
-    private val serverConfigDTO: ServerConfigDTO,
+    private val serverConfigDTO: ServerConfigDTO.Links,
     private var session: SessionDTO
 ) : SessionManager {
 
-    override fun session(): Pair<SessionDTO, ServerConfigDTO> = Pair(session, serverConfigDTO)
+    override fun session(): Pair<SessionDTO, ServerConfigDTO.Links> = Pair(session, serverConfigDTO)
 
     override fun updateSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO =
         SessionDTO(
@@ -48,11 +48,10 @@ class InMemorySessionManager(
 
 class InMemoryServerMetaDataManager: ServerMetaDataManager {
 
-    val serverConfigMapper: ServerConfigMapper = ServerConfigMapperImpl(ApiVersionMapperImpl())
-    var serverConfigDTO: ServerConfigDTO? = null
+    private var serverConfigDTO: ServerConfigDTO? = null
 
     override fun getLocalMetaData(backendLinks: ServerConfigDTO.Links): ServerConfigDTO? {
-        return serverConfigDTO
+        return null
     }
 
     override fun storeBackend(links: ServerConfigDTO.Links, metaData: ServerConfigDTO.MetaData): ServerConfigDTO {
@@ -70,8 +69,8 @@ class ConversationsApplication : CliktCommand() {
         NetworkLogger.setLoggingLevel(level = KaliumLogLevel.DEBUG)
 
         val serverConfigMapper: ServerConfigMapper = ServerConfigMapperImpl(ApiVersionMapperImpl())
-        val serverConfigDTO: ServerConfigDTO = serverConfigMapper.toDTO(ServerConfig.STAGING)
-        val loginContainer = UnauthenticatedNetworkContainer(serverConfigDTO.links, InMemoryServerMetaDataManager())
+        val serverConfigDTO: ServerConfigDTO.Links = serverConfigMapper.toDTO(ServerConfig.STAGING)
+        val loginContainer = UnauthenticatedNetworkContainer(serverConfigDTO, InMemoryServerMetaDataManager())
 
         val loginResult = loginContainer.loginApi.login(
             LoginApi.LoginParam.LoginWithEmail(email = email, password = password, label = "ktor"), false
@@ -83,7 +82,7 @@ class ConversationsApplication : CliktCommand() {
             println("There was an error on the login :( check the credentials and the internet connection and try again please")
         } else {
             val sessionData = loginResult.value
-            val networkModule = AuthenticatedNetworkContainer(InMemorySessionManager(serverConfigDTO, sessionData))
+            val networkModule = AuthenticatedNetworkContainer(InMemorySessionManager(serverConfigDTO, sessionData), InMemoryServerMetaDataManager())
             val conversationsResponse = networkModule.conversationApi.conversationsByBatch(null, 100)
 
             if (!conversationsResponse.isSuccessful()) {

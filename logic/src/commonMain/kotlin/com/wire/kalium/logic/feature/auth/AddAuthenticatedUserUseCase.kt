@@ -41,8 +41,8 @@ class AddAuthenticatedUserUseCase(
                 sessionRepository.userSession(newSession.tokens.userId).fold(
                     // in case of the new session have a different server configurations the new session should not be added
                     { Result.Failure.Generic(it) }, { oldSession ->
-                        if (oldSession.serverConfig == newSession.serverConfig) {
-                            storeUser(newSession)
+                        if (oldSession.serverLinks == newSession.serverLinks) {
+                            storeUser(newSession.copy(serverLinks = oldSession.serverLinks))
                         } else Result.Failure.UserAlreadyExists
                     }
                 )

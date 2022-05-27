@@ -19,10 +19,9 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
+@OptIn(ExperimentalCoroutinesApi::class, ConfigurationApi::class)
 class SaveSessionUseCaseTest {
 
-    @OptIn(ConfigurationApi::class)
     @Mock
     val sessionRepository = configure(mock(classOf<SessionRepository>())) { stubsUnitByDefault = true }
     lateinit var saveSessionUseCase: SaveSessionUseCase
@@ -50,7 +49,7 @@ class SaveSessionUseCaseTest {
                     refreshToken = "refresh_token",
                     tokenType = "token_type"
                 ),
-                TEST_SERVER_CONFIG
+                TEST_SERVER_CONFIG.links
             )
     }
 }
