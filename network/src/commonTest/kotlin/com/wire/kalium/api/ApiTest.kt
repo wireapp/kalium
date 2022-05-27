@@ -130,7 +130,7 @@ internal interface ApiTest {
         headers: Map<String, String>?
     ): UnauthenticatedNetworkClient {
 
-        val mockEngine = createMockEngin(responseBody, statusCode, assertion, headers)
+        val mockEngine = createMockEngine(responseBody, statusCode, assertion, headers)
 
         return UnauthenticatedNetworkContainer(
             backendLinks = TEST_BACKEND.links,
@@ -187,7 +187,7 @@ internal interface ApiTest {
         assertion: (HttpRequestData.() -> Unit) = {},
         headers: Map<String, String>? = null
     ): AuthenticatedNetworkClient {
-        val mockEngine = createMockEngin(
+        val mockEngine = createMockEngine(
             ByteReadChannel(responseBody),
             statusCode,
             assertion,
@@ -213,7 +213,7 @@ internal interface ApiTest {
         assertion: (HttpRequestData.() -> Unit) = {},
         headers: Map<String, String>? = null
     ): UnboundNetworkClient {
-        val mockEngine = createMockEngin(
+        val mockEngine = createMockEngine(
             ByteReadChannel(responseBody),
             statusCode,
             assertion,
