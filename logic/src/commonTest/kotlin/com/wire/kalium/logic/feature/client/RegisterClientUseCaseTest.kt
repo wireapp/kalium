@@ -15,6 +15,7 @@ import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
+import com.wire.kalium.logic.test_util.TestNetworkException.notFound
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.utils.io.errors.IOException
 import io.mockative.Mock
@@ -149,6 +150,21 @@ class RegisterClientUseCaseTest {
 
         assertIs<RegisterClientResult.Failure.TooManyClients>(result)
     }
+
+    @Test
+    fun givenRepositoryRegistrationFailsDueToPushNotificationRegisterError_whenRegistering_thenPushTokenRegisterErrorShouldBeReturned() =
+        runTest {
+            val pushTokenRegister = NetworkFailure.ServerMiscommunication(TestNetworkException.notFound)
+            given(clientRepository)
+                .suspendFunction(clientRepository::registerClient)
+                .whenInvokedWith(anything())
+                .then { Either.Left(pushTokenRegister) }
+
+            val result = registerClient(RegisterClientUseCase.RegisterClientParam.ClientWithoutToken(TEST_PASSWORD, TEST_CAPABILITIES))
+
+            assertIs<RegisterClientResult.Failure.PushTokenRegister>(result)
+        }
+
 
     @Test
     fun givenRepositoryRegistrationFails_whenRegistering_thenNoPersistenceShouldBeDone() = runTest {
