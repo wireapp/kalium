@@ -16,7 +16,7 @@ class GetSelfTeamUseCase(
     private val syncManager: SyncManager
 ) {
     suspend operator fun invoke(): Flow<Team?> {
-        syncManager.waitForSyncToComplete()
+        syncManager.startSyncIfIdle()
         return userRepository.getSelfUser()
             .flatMapLatest {
                 if (it.team != null) teamRepository.getTeam(it.team)

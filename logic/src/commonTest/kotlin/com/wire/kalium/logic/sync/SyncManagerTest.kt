@@ -66,7 +66,7 @@ class SyncManagerTest {
 
         //When
         val waitJob = launch {
-            syncManager.waitForSyncToComplete()
+            syncManager.waitUntilLive()
         }
 
         //Then
@@ -82,13 +82,59 @@ class SyncManagerTest {
     }
 
     @Test
+    fun givenSyncStatusWaiting_whenWaitingForSlowSyncToComplete_thenShouldSuspendUntilSlowSyncCompletion() =
+        runTest(TestKaliumDispatcher.default) {
+            //Given
+            syncRepository.updateSyncState { SyncState.Waiting }
+
+            //When
+            val waitJob = launch {
+                syncManager.waitUntilSlowSyncCompletion()
+            }
+
+            //Then
+            // Is suspending
+            assertTrue(waitJob.isActive)
+
+            // Sync completes
+            syncRepository.updateSyncState { SyncState.ProcessingPendingEvents }
+            waitJob.join()
+
+            // Stops suspending
+            assertFalse(waitJob.isActive)
+        }
+
+    @Test
+    fun givenSyncStatusSlowSync_whenWaitingForSlowSyncToComplete_thenShouldSuspendUntilSlowSyncCompletion() =
+        runTest(TestKaliumDispatcher.default) {
+            //Given
+            syncRepository.updateSyncState { SyncState.SlowSync }
+
+            //When
+            val waitJob = launch {
+                syncManager.waitUntilSlowSyncCompletion()
+            }
+
+            //Then
+            // Is suspending
+            assertTrue(waitJob.isActive)
+
+            // Sync completes
+            syncRepository.updateSyncState { SyncState.ProcessingPendingEvents }
+            waitJob.join()
+
+            // Stops suspending
+            assertFalse(waitJob.isActive)
+        }
+
+    @Test
     fun givenSyncStatusIsFailed_whenWaitingForSyncToComplete_thenShouldSuspendUntilCompletion() = runTest(TestKaliumDispatcher.default) {
         //Given
         syncRepository.updateSyncState { SyncState.Failed(NetworkFailure.NoNetworkConnection(null)) }
 
         //When
         val waitJob = launch {
-            syncManager.waitForSyncToComplete()
+            syncManager.waitUntilLive()
         }
 
         //Then
@@ -111,7 +157,7 @@ class SyncManagerTest {
 
         //When
         val waitJob = launch {
-            syncManager.waitForSyncToComplete()
+            syncManager.waitUntilLive()
         }
 
         //Then
@@ -121,13 +167,13 @@ class SyncManagerTest {
     }
 
     @Test
-    fun givenSyncIsWaiting_whenWaitingForSyncToComplete_thenShouldStartSyncCallingTheScheduler() = runTest(TestKaliumDispatcher.default) {
+    fun givenSyncIsFailed_whenWaitingForSyncToComplete_thenShouldStartSyncCallingTheScheduler() = runTest(TestKaliumDispatcher.default) {
         //Given
         syncRepository.updateSyncState { SyncState.Failed(NetworkFailure.NoNetworkConnection(null)) }
 
         //When
         val waitJob = launch {
-            syncManager.waitForSyncToComplete()
+            syncManager.waitUntilLive()
         }
         // Do stuff until there's no other job waiting
         advanceUntilIdle()
@@ -137,6 +183,51 @@ class SyncManagerTest {
         waitJob.join()
 
         //Then
+        assertEquals(1, workScheduler.enqueueImmediateWorkCallCount)
+    }
+
+    @Test
+    fun givenSyncStatusIsLive_whenStartingSync_thenShouldNotCallScheduler() = runTest(TestKaliumDispatcher.default) {
+        syncRepository.updateSyncState { SyncState.Live }
+
+        syncManager.startSyncIfIdle()
+
+        assertEquals(0, workScheduler.enqueueImmediateWorkCallCount)
+    }
+
+    @Test
+    fun givenSyncStatusIsProcessingPendingEvents_whenStartingSync_thenShouldNotCallScheduler() = runTest(TestKaliumDispatcher.default) {
+        syncRepository.updateSyncState { SyncState.ProcessingPendingEvents }
+
+        syncManager.startSyncIfIdle()
+
+        assertEquals(0, workScheduler.enqueueImmediateWorkCallCount)
+    }
+
+    @Test
+    fun givenSyncStatusIsSlowSync_whenStartingSync_thenShouldNotCallScheduler() = runTest(TestKaliumDispatcher.default) {
+        syncRepository.updateSyncState { SyncState.ProcessingPendingEvents }
+
+        syncManager.startSyncIfIdle()
+
+        assertEquals(0, workScheduler.enqueueImmediateWorkCallCount)
+    }
+
+    @Test
+    fun givenSyncIsFailed_whenStartingSync_thenShouldStartSyncCallingTheScheduler() = runTest(TestKaliumDispatcher.default) {
+        syncRepository.updateSyncState { SyncState.Failed(NetworkFailure.NoNetworkConnection(null)) }
+
+        syncManager.startSyncIfIdle()
+
+        assertEquals(1, workScheduler.enqueueImmediateWorkCallCount)
+    }
+
+    @Test
+    fun givenSyncIsWaiting_whenStartingSync_thenShouldStartSyncCallingTheScheduler() = runTest(TestKaliumDispatcher.default) {
+        syncRepository.updateSyncState { SyncState.Waiting }
+
+        syncManager.startSyncIfIdle()
+
         assertEquals(1, workScheduler.enqueueImmediateWorkCallCount)
     }
 

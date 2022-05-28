@@ -14,7 +14,7 @@ class ObserveConversationListDetailsUseCase(
 ) {
 
     suspend operator fun invoke(): Flow<List<ConversationDetails>> {
-        syncManager.waitForSyncToComplete()
+        syncManager.startSyncIfIdle()
         return conversationRepository.observeConversationList().map { conversations ->
             conversations.map { conversation ->
                 conversationRepository.getConversationDetailsById(conversation.id)

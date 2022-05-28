@@ -12,6 +12,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncManager
 import io.mockative.Mock
 import io.mockative.anything
+import io.mockative.configure
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
@@ -33,7 +34,7 @@ class ObserveConversationListDetailsUseCaseTest {
     private val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
 
     @Mock
-    private val syncManager: SyncManager = mock(SyncManager::class)
+    private val syncManager: SyncManager = configure(mock(SyncManager::class)) { stubsUnitByDefault = true }
 
     private lateinit var observeConversationsUseCase: ObserveConversationListDetailsUseCase
 
@@ -45,11 +46,6 @@ class ObserveConversationListDetailsUseCaseTest {
     @Test
     fun givenSomeConversations_whenObservingDetailsList_thenObserveConversationListShouldBeCalled() = runTest {
         val conversations = listOf(TestConversation.SELF, TestConversation.GROUP)
-
-        given(syncManager)
-            .suspendFunction(syncManager::waitForSyncToComplete)
-            .whenInvoked()
-            .thenReturn(Unit)
 
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationList)
@@ -73,11 +69,6 @@ class ObserveConversationListDetailsUseCaseTest {
     fun givenSomeConversations_whenObservingDetailsList_thenSyncManagerShouldBeCalled() = runTest {
         val conversations = listOf(TestConversation.SELF, TestConversation.GROUP)
 
-        given(syncManager)
-            .suspendFunction(syncManager::waitForSyncToComplete)
-            .whenInvoked()
-            .thenReturn(Unit)
-
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationList)
             .whenInvoked()
@@ -91,7 +82,7 @@ class ObserveConversationListDetailsUseCaseTest {
         observeConversationsUseCase().collect()
 
         verify(syncManager)
-            .suspendFunction(syncManager::waitForSyncToComplete)
+            .function(syncManager::startSyncIfIdle)
             .wasInvoked(exactly = once)
 
     }
@@ -99,11 +90,6 @@ class ObserveConversationListDetailsUseCaseTest {
     @Test
     fun givenSomeConversations_whenObservingDetailsList_thenObserveConversationDetailsShouldBeCalledForEachID() = runTest {
         val conversations = listOf(TestConversation.SELF, TestConversation.GROUP)
-
-        given(syncManager)
-            .suspendFunction(syncManager::waitForSyncToComplete)
-            .whenInvoked()
-            .thenReturn(Unit)
 
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationList)
@@ -151,11 +137,6 @@ class ObserveConversationListDetailsUseCaseTest {
             secondOneOnOneDetails
         )
 
-        given(syncManager)
-            .suspendFunction(syncManager::waitForSyncToComplete)
-            .whenInvoked()
-            .thenReturn(Unit)
-
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationList)
             .whenInvoked()
@@ -191,11 +172,6 @@ class ObserveConversationListDetailsUseCaseTest {
         val secondConversationsList = firstConversationsList + selfConversation
         val conversationListUpdates = Channel<List<Conversation>>(Channel.UNLIMITED)
         conversationListUpdates.send(firstConversationsList)
-
-        given(syncManager)
-            .suspendFunction(syncManager::waitForSyncToComplete)
-            .whenInvoked()
-            .thenReturn(Unit)
 
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationList)
