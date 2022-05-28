@@ -45,7 +45,7 @@ class AuthenticationScope(
     val validatePasswordUseCase: ValidatePasswordUseCase get() = ValidatePasswordUseCaseImpl()
 
     val login: LoginUseCase get() = LoginUseCaseImpl(loginRepository, validateEmailUseCase, validateUserHandleUseCase, backendLinks)
-    val register: RegisterScope get() = RegisterScope(registerAccountRepository)
+    val register: RegisterScope get() = RegisterScope(registerAccountRepository, backendLinks)
     val ssoLoginScope: SSOLoginScope get() = SSOLoginScope(ssoLoginRepository)
 }
 
