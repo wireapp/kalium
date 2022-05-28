@@ -26,7 +26,6 @@ data class ServerConfigDTO(
 
 sealed class ApiVersionDTO(open val version: Int) {
 
-
     sealed class Invalid(override val version: Int) : ApiVersionDTO(version) {
         object New : Invalid(NEW_API_VERSION_NUMBER)
         object Unknown : Invalid(UNKNOWN_API_VERSION_NUMBER)

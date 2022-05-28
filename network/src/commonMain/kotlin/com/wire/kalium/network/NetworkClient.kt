@@ -98,43 +98,11 @@ internal class AuthenticatedWebSocketClient(
         }
 }
 
-/**
- * Provides a base [HttpClient] that has all the
- * needed configurations to talk with a Wire backend, like
- * Serialization, and Content Negotiation.
- *
- * Also enables logs depending on [NetworkLogger] settings.
- *
- * @param engine, the HTTP engine that will perform the requests
- * @param options, some configuration presets
- * @param config, a block that allows further customisation of the [HttpClient]
- */
-private fun HttpClientConfig<*>.installWireBaseUrl(backend: ServerConfigDTO) {
-    defaultRequest {
-        header(HttpHeaders.ContentType, ContentType.Application.Json)
-        with(backend) {
-            val apiBaseUrl = backend.links.api
-            // enforce https as url protocol
-            url.protocol = URLProtocol.HTTPS
-            // add the default host
-            url.host = apiBaseUrl.host
-            // for api version 0 no api version should be added to the request
-            url.encodedPath =
-                if (shouldAddApiVersion(metaData.commonApiVersion.version))
-                    apiBaseUrl.encodedPath + "v${metaData.commonApiVersion.version}/"
-                else apiBaseUrl.encodedPath
-        }
-    }
-}
-
 internal fun provideBaseHttpClient(
     engine: HttpClientEngine, config: HttpClientConfig<*>.() -> Unit = {}
 ) = HttpClient(engine) {
-    install(UserAgent) {
-        agent = "007"
-    }
 
-    if (true) {
+    if (NetworkLogger.isRequestLoggingEnabled) {
         install(Logging) {
             logger = Logger.SIMPLE
             level = LogLevel.ALL
@@ -145,7 +113,6 @@ internal fun provideBaseHttpClient(
         json(KtxSerializer.json)
     }
     expectSuccess = false
-
     config()
 }
 

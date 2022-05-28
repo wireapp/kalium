@@ -16,7 +16,9 @@ import kotlinx.serialization.encoding.Encoder
 
 @Serializable
 data class ServerConfig(
-    val id: String, val links: Links, val metaData: MetaData
+    @SerialName("config_id") val id: String,
+    @SerialName("links") val links: Links,
+    @SerialName("metadata")val metaData: MetaData
 ) {
     @Serializable
     data class Links(
@@ -28,11 +30,12 @@ data class ServerConfig(
         @SerialName("websiteUrl") val website: String,
         @SerialName("title") val title: String
     )
-
     @Serializable
     data class MetaData(
         @SerialName("federation") val federation: Boolean,
-        @SerialName("commonApiVersion") @Serializable(with = CommonApiVersionTypeSerializer::class) val commonApiVersion: CommonApiVersionType,
+        @SerialName("commonApiVersion")
+        @Serializable(with = CommonApiVersionTypeSerializer::class)
+        val commonApiVersion: CommonApiVersionType,
         @SerialName("domain") val domain: String?
     )
 

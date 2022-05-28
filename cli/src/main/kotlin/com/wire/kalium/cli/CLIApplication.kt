@@ -118,7 +118,7 @@ class LoginCommand : CliktCommand(name = "login") {
     }
 
     override fun run() = runBlocking {
-        val authSession = coreLogic.authenticationScope(serverConfig) {
+        val loginTokens = coreLogic.authenticationScope(serverConfig) {
             login(email, password, true).let {
                 if (it !is AuthenticationResult.Success) {
                     throw PrintMessage("Login failed, check your credentials")
@@ -134,15 +134,15 @@ class LoginCommand : CliktCommand(name = "login") {
                 throw PrintMessage("Failed retrieve existing sessions")
             }
 
-            if (allSessionsResult.sessions.map { it.tokens.userId }.contains(authSession.tokens.userId)) {
-                this.session.updateCurrentSession(authSession.tokens.userId)
+            if (allSessionsResult.sessions.map { it.userId }.contains(loginResult.userSession.userId)) {
+                this.session.updateCurrentSession(loginResult.userSession.userId)
             } else {
-                val addAccountResult = addAuthenticatedAccount(authSession, true)
+                val addAccountResult = addAuthenticatedAccount(loginResult.userSession, true)
                 if (addAccountResult !is AddAuthenticatedUserUseCase.Result.Success) {
                     throw PrintMessage("Failed to save session")
                 }
             }
-            authSession.tokens.userId
+            loginResult.userSession
         }
 
         coreLogic.sessionScope(userId) {

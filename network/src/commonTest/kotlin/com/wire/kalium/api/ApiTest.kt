@@ -34,10 +34,10 @@ import kotlin.test.assertTrue
 import kotlin.test.fail
 
 class TestSessionManager : SessionManager {
-    private val serverConfig = TEST_BACKEND_CONFIG.links
+    private val serverConfig = TEST_BACKEND_CONFIG
     private var session = testCredentials
 
-    override fun session(): Pair<SessionDTO, ServerConfigDTO.Links> = Pair(session, serverConfig)
+    override fun session(): Pair<SessionDTO, ServerConfigDTO> = Pair(session, serverConfig)
 
     override fun updateSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO =
         SessionDTO(
@@ -95,8 +95,7 @@ internal interface ApiTest {
         }
         return AuthenticatedNetworkContainer(
             engine = mockEngine,
-            sessionManager = TEST_SESSION_NAMAGER,
-            serverMetaDataManager = TestServerMetaDataManager()
+            sessionManager = TEST_SESSION_NAMAGER
         ).networkClient
     }
 
@@ -106,8 +105,7 @@ internal interface ApiTest {
         }
         return AuthenticatedNetworkContainer(
             engine = mockEngine,
-            sessionManager = TEST_SESSION_NAMAGER,
-            serverMetaDataManager = TestServerMetaDataManager()
+            sessionManager = TEST_SESSION_NAMAGER
         ).websocketClient
     }
 
@@ -132,7 +130,7 @@ internal interface ApiTest {
         headers: Map<String, String>?
     ): UnauthenticatedNetworkClient {
 
-        val mockEngine = createMockEngin(responseBody, statusCode, assertion, headers)
+        val mockEngine = createMockEngine(responseBody, statusCode, assertion, headers)
 
         return UnauthenticatedNetworkContainer(
             backendLinks = TEST_BACKEND.links,
@@ -189,7 +187,7 @@ internal interface ApiTest {
         assertion: (HttpRequestData.() -> Unit) = {},
         headers: Map<String, String>? = null
     ): AuthenticatedNetworkClient {
-        val mockEngine = createMockEngin(
+        val mockEngine = createMockEngine(
             ByteReadChannel(responseBody),
             statusCode,
             assertion,
@@ -197,8 +195,7 @@ internal interface ApiTest {
         )
         return AuthenticatedNetworkContainer(
             engine = mockEngine,
-            sessionManager = TEST_SESSION_NAMAGER,
-            serverMetaDataManager = TestServerMetaDataManager()
+            sessionManager = TEST_SESSION_NAMAGER
         ).networkClient
     }
 
@@ -216,7 +213,7 @@ internal interface ApiTest {
         assertion: (HttpRequestData.() -> Unit) = {},
         headers: Map<String, String>? = null
     ): UnboundNetworkClient {
-        val mockEngine = createMockEngin(
+        val mockEngine = createMockEngine(
             ByteReadChannel(responseBody),
             statusCode,
             assertion,
@@ -226,7 +223,7 @@ internal interface ApiTest {
     }
 
 
-    private fun createMockEngin(
+    private fun createMockEngine(
         responseBody: ByteReadChannel,
         statusCode: HttpStatusCode,
         assertion: (HttpRequestData.() -> Unit) = {},
