@@ -26,8 +26,11 @@ interface SyncManager {
 
     /**
      * Triggers sync, if not yet running.
-     * Even though Sync will run on a Job of its own, this function
-     * suspends the caller until all pending events are processed.
+     * Suspends the caller until all pending events are processed,
+     * Even though Sync will run on a Job of its own.
+     *
+     * Suitable for operations where the user is required to be online anyway
+     * and without any pending events to be processed.
      * @see startSyncIfIdle
      */
     suspend fun waitForSyncToComplete()
@@ -35,6 +38,8 @@ interface SyncManager {
     /**
      * Triggers sync, if not yet running.
      * Will run in a parallel job without waiting for completion.
+     *
+     * Suitable for operations that the user can perform even while offline.
      * @see waitForSyncToComplete
      */
     fun startSyncIfIdle()
