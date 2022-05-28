@@ -61,7 +61,7 @@ class RegisterAccountApp : CliktCommand() {
         register.activate(email, code.toString())
     }
 
-    private suspend fun register() = coreLogic.authenticationScope {
+    private suspend fun register() = coreLogic.authenticationScope(serverConfig) {
         val reader = Scanner(System.`in`)
         echo("Enter the activation code: ")
         code = reader.nextInt()

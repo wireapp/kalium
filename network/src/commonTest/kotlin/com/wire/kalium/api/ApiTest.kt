@@ -37,7 +37,7 @@ class TestSessionManager : SessionManager {
     private val serverConfig = TEST_BACKEND_CONFIG
     private var session = testCredentials
 
-    override fun session(): Pair<SessionDTO, ServerConfigDTO> = Pair(session, serverConfig)
+    override fun session(): Pair<SessionDTO, ServerConfigDTO.Links> = Pair(session, serverConfig.links)
 
     override fun updateSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO =
         SessionDTO(
@@ -95,7 +95,8 @@ internal interface ApiTest {
         }
         return AuthenticatedNetworkContainer(
             engine = mockEngine,
-            sessionManager = TEST_SESSION_NAMAGER
+            sessionManager = TEST_SESSION_NAMAGER,
+            serverMetaDataManager = TestServerMetaDataManager()
         ).networkClient
     }
 
@@ -105,7 +106,8 @@ internal interface ApiTest {
         }
         return AuthenticatedNetworkContainer(
             engine = mockEngine,
-            sessionManager = TEST_SESSION_NAMAGER
+            sessionManager = TEST_SESSION_NAMAGER,
+            serverMetaDataManager = TestServerMetaDataManager()
         ).websocketClient
     }
 
@@ -195,7 +197,8 @@ internal interface ApiTest {
         )
         return AuthenticatedNetworkContainer(
             engine = mockEngine,
-            sessionManager = TEST_SESSION_NAMAGER
+            sessionManager = TEST_SESSION_NAMAGER,
+            serverMetaDataManager = TestServerMetaDataManager()
         ).networkClient
     }
 

@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class AuthSession(
     @SerialName("auth_tokens") val tokens: Tokens,
-    @SerialName("server_links") val serverConfig: ServerConfig
+    @SerialName("server_links") val serverLinks: ServerConfig.Links
 ) {
     @Serializable
     data class Tokens(

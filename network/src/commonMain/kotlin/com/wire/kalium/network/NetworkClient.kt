@@ -6,24 +6,16 @@ import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.session.installAuth
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.tools.ServerConfigDTO
-import com.wire.kalium.network.utils.config
 import com.wire.kalium.network.utils.installWireDefaultRequest
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.ContentNegotiation
-import io.ktor.client.plugins.UserAgent
-import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.logging.SIMPLE
 import io.ktor.client.plugins.websocket.WebSockets
-import io.ktor.client.request.header
-import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
-import io.ktor.http.URLProtocol
-import io.ktor.http.encodedPath
 import io.ktor.serialization.kotlinx.json.json
 
 
@@ -78,7 +70,9 @@ internal class UnboundNetworkClient(engine: HttpClientEngine) {
  * necessary Authentication headers, and refresh tokens as they expire.
  */
 internal class AuthenticatedWebSocketClient(
-    private val engine: HttpClientEngine, private val sessionManager: SessionManager
+    private val engine: HttpClientEngine,
+    private val sessionManager: SessionManager,
+    private val serverMetaDataManager: ServerMetaDataManager
 ) {
     /**
      * Creates a disposable [HttpClient] for a single use.
@@ -88,7 +82,7 @@ internal class AuthenticatedWebSocketClient(
      */
     fun createDisposableHttpClient(): HttpClient =
         provideBaseHttpClient(engine) {
-            installWireBaseUrl(TODO("replace with wireDefaultRequest"))
+            installWireDefaultRequest(sessionManager.session().second, serverMetaDataManager)
             installAuth(sessionManager)
             install(ContentNegotiation) {
                 mls()

@@ -46,7 +46,7 @@ class AuthenticatedNetworkContainer(
         AuthenticatedNetworkClient(engine, sessionManager, serverMetaDataManager)
     }
     internal val websocketClient by lazy {
-        AuthenticatedWebSocketClient(engine, sessionManager)
+        AuthenticatedWebSocketClient(engine, sessionManager, serverMetaDataManager)
     }
 
     val logoutApi: LogoutApi get() = LogoutImpl(networkClient, sessionManager)

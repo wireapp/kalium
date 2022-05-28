@@ -51,7 +51,7 @@ class InMemoryServerMetaDataManager: ServerMetaDataManager {
     private var serverConfigDTO: ServerConfigDTO? = null
 
     override fun getLocalMetaData(backendLinks: ServerConfigDTO.Links): ServerConfigDTO? {
-        return null
+        return serverConfigDTO
     }
 
     override fun storeBackend(links: ServerConfigDTO.Links, metaData: ServerConfigDTO.MetaData): ServerConfigDTO {
