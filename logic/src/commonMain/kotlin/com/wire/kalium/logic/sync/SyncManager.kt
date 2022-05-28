@@ -25,9 +25,19 @@ interface SyncManager {
     fun onSlowSyncComplete()
 
     /**
-     * Blocks the caller until all pending events are processed.
+     * Triggers sync, if not yet running.
+     * Even though Sync will run on a Job of its own, this function
+     * suspends the caller until all pending events are processed.
+     * @see startSyncIfIdle
      */
     suspend fun waitForSyncToComplete()
+
+    /**
+     * Triggers sync, if not yet running.
+     * Will run in a parallel job without waiting for completion.
+     * @see waitForSyncToComplete
+     */
+    fun startSyncIfIdle()
     suspend fun isSlowSyncOngoing(): Boolean
     suspend fun isSlowSyncCompleted(): Boolean
     fun onSlowSyncFailure(cause: CoreFailure): SyncState
@@ -154,11 +164,11 @@ class SyncManagerImpl(
     override fun onSlowSyncFailure(cause: CoreFailure) = syncRepository.updateSyncState { SyncState.Failed(cause) }
 
     override suspend fun waitForSyncToComplete() {
-        performSyncIfWaitingOrFailed()
+        startSyncIfIdle()
         syncRepository.syncState.first { it == SyncState.Live }
     }
 
-    private fun performSyncIfWaitingOrFailed() {
+    override fun startSyncIfIdle() {
         val syncState = syncRepository.updateSyncState {
             when (it) {
                 SyncState.Waiting, is SyncState.Failed -> SyncState.SlowSync
