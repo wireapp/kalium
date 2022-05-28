@@ -32,7 +32,7 @@ interface SyncManager {
      * Suitable for operations where the user is required to be online
      * and without any pending events to be processed, for maximum sync.
      * @see startSyncIfIdle
-     * @see awaitUntilSlowSyncCompletion
+     * @see waitUntilSlowSyncCompletion
      */
     suspend fun waitUntilLive()
 
@@ -45,7 +45,7 @@ interface SyncManager {
      * @see startSyncIfIdle
      * @see waitUntilLive
      */
-    suspend fun awaitUntilSlowSyncCompletion()
+    suspend fun waitUntilSlowSyncCompletion()
 
     /**
      * Triggers sync, if not yet running.
@@ -53,7 +53,7 @@ interface SyncManager {
      *
      * Suitable for operations that the user can perform even while offline.
      * @see waitUntilLive
-     * @see awaitUntilSlowSyncCompletion
+     * @see waitUntilSlowSyncCompletion
      */
     fun startSyncIfIdle()
     suspend fun isSlowSyncOngoing(): Boolean
@@ -186,7 +186,7 @@ class SyncManagerImpl(
         syncRepository.syncState.first { it == SyncState.Live }
     }
 
-    override suspend fun awaitUntilSlowSyncCompletion() {
+    override suspend fun waitUntilSlowSyncCompletion() {
         startSyncIfIdle()
         syncRepository.syncState.first { it is SyncState.ProcessingPendingEvents || it is SyncState.Live }
     }

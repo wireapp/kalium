@@ -89,7 +89,7 @@ class SyncManagerTest {
 
             //When
             val waitJob = launch {
-                syncManager.awaitUntilSlowSyncCompletion()
+                syncManager.waitUntilSlowSyncCompletion()
             }
 
             //Then
@@ -112,7 +112,7 @@ class SyncManagerTest {
 
             //When
             val waitJob = launch {
-                syncManager.awaitUntilSlowSyncCompletion()
+                syncManager.waitUntilSlowSyncCompletion()
             }
 
             //Then
