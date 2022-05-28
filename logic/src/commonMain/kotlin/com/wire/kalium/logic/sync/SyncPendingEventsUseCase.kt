@@ -12,6 +12,6 @@ class SyncPendingEventsUseCase(
      * Syncing only Pending Events, to find out what did we miss
      */
     suspend operator fun invoke() {
-        syncManager.waitForSyncToComplete()
+        syncManager.waitUntilLive()
     }
 }

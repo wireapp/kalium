@@ -66,7 +66,7 @@ class SyncManagerTest {
 
         //When
         val waitJob = launch {
-            syncManager.waitForSyncToComplete()
+            syncManager.waitUntilLive()
         }
 
         //Then
@@ -82,13 +82,59 @@ class SyncManagerTest {
     }
 
     @Test
+    fun givenSyncStatusWaiting_whenWaitingForSlowSyncToComplete_thenShouldSuspendUntilSlowSyncCompletion() =
+        runTest(TestKaliumDispatcher.default) {
+            //Given
+            syncRepository.updateSyncState { SyncState.Waiting }
+
+            //When
+            val waitJob = launch {
+                syncManager.awaitUntilSlowSyncCompletion()
+            }
+
+            //Then
+            // Is suspending
+            assertTrue(waitJob.isActive)
+
+            // Sync completes
+            syncRepository.updateSyncState { SyncState.ProcessingPendingEvents }
+            waitJob.join()
+
+            // Stops suspending
+            assertFalse(waitJob.isActive)
+        }
+
+    @Test
+    fun givenSyncStatusSlowSync_whenWaitingForSlowSyncToComplete_thenShouldSuspendUntilSlowSyncCompletion() =
+        runTest(TestKaliumDispatcher.default) {
+            //Given
+            syncRepository.updateSyncState { SyncState.SlowSync }
+
+            //When
+            val waitJob = launch {
+                syncManager.awaitUntilSlowSyncCompletion()
+            }
+
+            //Then
+            // Is suspending
+            assertTrue(waitJob.isActive)
+
+            // Sync completes
+            syncRepository.updateSyncState { SyncState.ProcessingPendingEvents }
+            waitJob.join()
+
+            // Stops suspending
+            assertFalse(waitJob.isActive)
+        }
+
+    @Test
     fun givenSyncStatusIsFailed_whenWaitingForSyncToComplete_thenShouldSuspendUntilCompletion() = runTest(TestKaliumDispatcher.default) {
         //Given
         syncRepository.updateSyncState { SyncState.Failed(NetworkFailure.NoNetworkConnection(null)) }
 
         //When
         val waitJob = launch {
-            syncManager.waitForSyncToComplete()
+            syncManager.waitUntilLive()
         }
 
         //Then
@@ -111,7 +157,7 @@ class SyncManagerTest {
 
         //When
         val waitJob = launch {
-            syncManager.waitForSyncToComplete()
+            syncManager.waitUntilLive()
         }
 
         //Then
@@ -127,7 +173,7 @@ class SyncManagerTest {
 
         //When
         val waitJob = launch {
-            syncManager.waitForSyncToComplete()
+            syncManager.waitUntilLive()
         }
         // Do stuff until there's no other job waiting
         advanceUntilIdle()

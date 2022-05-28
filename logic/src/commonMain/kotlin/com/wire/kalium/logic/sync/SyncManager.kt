@@ -27,20 +27,33 @@ interface SyncManager {
     /**
      * Triggers sync, if not yet running.
      * Suspends the caller until all pending events are processed,
-     * Even though Sync will run on a Job of its own.
+     * and the client has finished processing all pending events.
      *
-     * Suitable for operations where the user is required to be online anyway
-     * and without any pending events to be processed.
+     * Suitable for operations where the user is required to be online
+     * and without any pending events to be processed, for maximum sync.
      * @see startSyncIfIdle
+     * @see awaitUntilSlowSyncCompletion
      */
-    suspend fun waitForSyncToComplete()
+    suspend fun waitUntilLive()
+
+    /**
+     * Triggers sync, if not yet running.
+     * Suspends the caller until at least basic data is processed,
+     * even though Sync will run on a Job of its own.
+     *
+     * Suitable for operations where the user can be offline, but at least some basic post-login sync is done.
+     * @see startSyncIfIdle
+     * @see waitUntilLive
+     */
+    suspend fun awaitUntilSlowSyncCompletion()
 
     /**
      * Triggers sync, if not yet running.
      * Will run in a parallel job without waiting for completion.
      *
      * Suitable for operations that the user can perform even while offline.
-     * @see waitForSyncToComplete
+     * @see waitUntilLive
+     * @see awaitUntilSlowSyncCompletion
      */
     fun startSyncIfIdle()
     suspend fun isSlowSyncOngoing(): Boolean
@@ -168,9 +181,14 @@ class SyncManagerImpl(
 
     override fun onSlowSyncFailure(cause: CoreFailure) = syncRepository.updateSyncState { SyncState.Failed(cause) }
 
-    override suspend fun waitForSyncToComplete() {
+    override suspend fun waitUntilLive() {
         startSyncIfIdle()
         syncRepository.syncState.first { it == SyncState.Live }
+    }
+
+    override suspend fun awaitUntilSlowSyncCompletion() {
+        startSyncIfIdle()
+        syncRepository.syncState.first { it is SyncState.ProcessingPendingEvents || it is SyncState.Live }
     }
 
     override fun startSyncIfIdle() {

@@ -6,7 +6,7 @@ class ListenToEventsUseCase(
 ) {
 
     suspend operator fun invoke() {
-        syncManager.waitForSyncToComplete()
+        syncManager.waitUntilLive()
     }
 
 }
