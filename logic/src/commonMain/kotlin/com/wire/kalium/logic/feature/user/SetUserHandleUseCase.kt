@@ -28,7 +28,7 @@ class SetUserHandleUseCase(
 ) {
     suspend operator fun invoke(_handle: String): SetUserHandleResult {
         if (syncManager.isSlowSyncOngoing()) {
-            syncManager.waitForSyncToComplete()
+            syncManager.waitUntilLive()
         }
         return validateUserHandle(_handle).let { handleState ->
             when (handleState) {

@@ -8,6 +8,7 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.sync.SyncManager
 import io.mockative.Mock
 import io.mockative.anything
+import io.mockative.configure
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
@@ -26,7 +27,7 @@ class ObserveConversationDetailsUseCaseTest {
     private val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
 
     @Mock
-    private val syncManager: SyncManager = mock(SyncManager::class)
+    private val syncManager: SyncManager = configure(mock(SyncManager::class)) { stubsUnitByDefault = true }
 
     private lateinit var observeConversationsUseCase: ObserveConversationDetailsUseCase
 
@@ -38,10 +39,6 @@ class ObserveConversationDetailsUseCaseTest {
     @Test
     fun givenAConversationId_whenObservingConversationUseCase_thenTheConversationRepositoryShouldBeCalledWithTheCorrectID() = runTest {
         val conversationId = TestConversation.ID
-        given(syncManager)
-            .suspendFunction(syncManager::waitForSyncToComplete)
-            .whenInvoked()
-            .thenReturn(Unit)
 
         given(conversationRepository)
             .suspendFunction(conversationRepository::getConversationDetailsById)
@@ -60,11 +57,6 @@ class ObserveConversationDetailsUseCaseTest {
     fun givenAConversationID_whenObservingConversationUseCase_thenSyncManagerShouldBeCalled() = runTest {
         val conversationId = TestConversation.ID
 
-        given(syncManager)
-            .suspendFunction(syncManager::waitForSyncToComplete)
-            .whenInvoked()
-            .thenReturn(Unit)
-
         given(conversationRepository)
             .suspendFunction(conversationRepository::getConversationDetailsById)
             .whenInvokedWith(anything())
@@ -73,7 +65,7 @@ class ObserveConversationDetailsUseCaseTest {
         observeConversationsUseCase(conversationId)
 
         verify(syncManager)
-            .suspendFunction(syncManager::waitForSyncToComplete)
+            .function(syncManager::startSyncIfIdle)
             .wasInvoked(exactly = once)
     }
 
@@ -84,11 +76,6 @@ class ObserveConversationDetailsUseCaseTest {
             ConversationDetails.Group(conversation, LegalHoldStatus.DISABLED),
             ConversationDetails.Group(conversation.copy(name = "New Name"), LegalHoldStatus.DISABLED)
         )
-
-        given(syncManager)
-            .suspendFunction(syncManager::waitForSyncToComplete)
-            .whenInvoked()
-            .thenReturn(Unit)
 
         given(conversationRepository)
             .suspendFunction(conversationRepository::getConversationDetailsById)

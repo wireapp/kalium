@@ -105,7 +105,7 @@ class SetUserHandleUseCaseTest {
             .coroutine { updateLocalSelfUserHandle(handle) }
             .wasInvoked(exactly = once)
         verify(syncManager)
-            .coroutine { waitForSyncToComplete() }
+            .coroutine { waitUntilLive() }
             .wasInvoked(exactly = once)
     }
 
