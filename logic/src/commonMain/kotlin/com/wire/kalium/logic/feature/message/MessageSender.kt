@@ -75,7 +75,7 @@ class MessageSenderImpl(
 ) : MessageSender {
 
     override suspend fun sendPendingMessage(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit> {
-        syncManager.waitForSlowSyncToComplete()
+        syncManager.waitUntilLive()
         return messageRepository.getMessageById(conversationId, messageUuid).flatMap { message ->
             sendMessage(message)
         }.onFailure {
