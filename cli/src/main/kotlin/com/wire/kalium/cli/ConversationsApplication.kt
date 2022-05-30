@@ -58,7 +58,6 @@ class InMemoryServerMetaDataManager : ServerMetaDataManager {
         serverConfigDTO = ServerConfigDTO(id = "id", links, metaData)
         return serverConfigDTO!!
     }
-
 }
 
 class ConversationsApplication : CliktCommand() {
