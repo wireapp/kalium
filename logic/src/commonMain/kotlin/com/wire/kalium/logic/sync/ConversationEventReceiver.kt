@@ -20,19 +20,19 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.call.CallManager
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.logic.wrapCryptoRequest
+import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.ktor.utils.io.core.toByteArray
-
-interface ConversationEventReceiver: EventReceiver<Event.Conversation>
 
 // Suppressed as it's an old issue
 @Suppress("LongParameterList")
-class ConversationEventReceiverImpl(
+class ConversationEventReceiver(
     private val proteusClient: ProteusClient,
     private val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
@@ -42,7 +42,7 @@ class ConversationEventReceiverImpl(
     private val callManagerImpl: Lazy<CallManager>,
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper()
-) : ConversationEventReceiver {
+) : EventReceiver<Event.Conversation> {
 
     override suspend fun onEvent(event: Event.Conversation) {
         when (event) {
@@ -72,7 +72,8 @@ class ConversationEventReceiverImpl(
                     date = event.time,
                     senderUserId = event.senderUserId,
                     senderClientId = event.senderClientId,
-                    status = Message.Status.SENT
+                    status = Message.Status.SENT,
+                    editStatus = Message.EditStatus.NotEdited,
                 )
 
                 processMessage(message)
@@ -141,7 +142,8 @@ class ConversationEventReceiverImpl(
                     date = event.time,
                     senderUserId = event.senderUserId,
                     senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
-                    status = Message.Status.SENT
+                    status = Message.Status.SENT,
+                    editStatus = Message.EditStatus.NotEdited,
                 )
                 processMessage(message)
             }
@@ -161,8 +163,7 @@ class ConversationEventReceiverImpl(
                     .onSuccess { persistedMessage ->
                         // Check the second asset message is from the same original sender
                         if (isSenderVerified(persistedMessage.id, persistedMessage.conversationId, message.senderUserId)) {
-                            // The asset message received contains the asset decryption keys,
-                            // so update the preview message persisted previously
+                            // The asset message received contains the asset decryption keys, so update the preview message persisted previously
                             updateAssetMessage(persistedMessage, message.content.value.remoteData)?.let {
                                 messageRepository.persistMessage(it)
                             }
@@ -196,6 +197,25 @@ class ConversationEventReceiverImpl(
                     message = message,
                     content = message.content
                 )
+            }
+            is MessageContent.TextEdited -> {
+                messageRepository.updateTextMessageContent(
+                    conversationId = message.conversationId,
+                    messageId = message.content.messageId,
+                    newTextContent = MessageContent.Text(message.content.newContent)
+                ).flatMap {
+                    messageRepository.markMessageAsEdited(
+                        messageUuid = message.content.messageId,
+                        conversationId = message.conversationId,
+                        timeStamp = message.date
+                    )
+                }.flatMap {
+                    messageRepository.updateMessageId(
+                        conversationId = message.conversationId,
+                        oldMessageId = message.content.messageId,
+                        newMessageId = message.id
+                    )
+                }
             }
             is MessageContent.Unknown -> kaliumLogger.i(message = "Unknown Message received: $message")
         }
