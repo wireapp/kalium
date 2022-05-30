@@ -7,8 +7,6 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.network.api.configuration.EndPoints
-import com.wire.kalium.network.api.configuration.ServerConfigResponse
 import kotlinx.coroutines.flow.Flow
 
 class ObserveServerConfigUseCase internal constructor(
@@ -28,7 +26,7 @@ class ObserveServerConfigUseCase internal constructor(
         }.onSuccess { isEmpty ->
             if (isEmpty) {
                 // TODO: store all of the configs from the build json file
-                PRODUCTION.also { config ->
+                ServerConfig.DEFAULT.also { config ->
                     // TODO: what do do if one of the insert failed
                     serverConfigRepository.fetchApiVersionAndStore(config).onFailure {
                         return handleError(it)
@@ -43,37 +41,8 @@ class ObserveServerConfigUseCase internal constructor(
             Result.Success(it)
         })
     }
-
     private fun handleError(coreFailure: CoreFailure): Result.Failure {
         return Result.Failure.Generic(coreFailure)
-    }
-
-
-    private companion object {
-        // TODO: get the config from build json
-        val PRODUCTION = ServerConfigResponse(
-            EndPoints(
-                apiBaseUrl = """https://prod-nginz-https.wire.com""",
-                accountsBaseUrl = """https://account.wire.com""",
-                webSocketBaseUrl = """https://prod-nginz-ssl.wire.com""",
-                teamsUrl = """https://teams.wire.com""",
-                blackListUrl = """https://clientblacklist.wire.com/prod""",
-                websiteUrl = """https://wire.com""",
-            ),
-            title = "Production"
-        )
-        val STAGING = ServerConfigResponse(
-            EndPoints(
-                apiBaseUrl = """https://staging-nginz-https.zinfra.io""",
-                accountsBaseUrl = """https://wire-account-staging.zinfra.io""",
-                webSocketBaseUrl = """https://staging-nginz-ssl.zinfra.io""",
-                teamsUrl = """https://wire-teams-staging.zinfra.io""",
-                blackListUrl = """https://clientblacklist.wire.com/staging""",
-                websiteUrl = """https://wire.com"""
-            ),
-            title = "Staging",
-        )
-        val DEFAULT = PRODUCTION
     }
 }
 
