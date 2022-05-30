@@ -408,7 +408,7 @@ class UserDAOTest : BaseDatabaseTest() {
     fun givenAExistingUsers_whenUpsertingUsers_ThenResultsOneUpdatedAnotherInsertedWithNoConnectionStatusOverride() = runTest {
         //given
         val newTeamId = "new team id"
-        db.userDAO.insertUser(user1.copy(connectionStatus = UserEntity.ConnectionState.ACCEPTED))
+        db.userDAO.insertUser(user1.copy(connectionStatus = ConnectionEntity.State.ACCEPTED))
         //when
         val updatedUser1 = user1.copy(team = newTeamId)
         db.userDAO.upsertUsers(listOf(updatedUser1, user2))
@@ -416,7 +416,7 @@ class UserDAOTest : BaseDatabaseTest() {
         val updated1 = db.userDAO.getUserByQualifiedID(updatedUser1.id)
         val inserted2 = db.userDAO.getUserByQualifiedID(user2.id)
         assertEquals(newTeamId, updated1.first()?.team)
-        assertEquals(UserEntity.ConnectionState.ACCEPTED, updated1.first()?.connectionStatus)
+        assertEquals(ConnectionEntity.State.ACCEPTED, updated1.first()?.connectionStatus)
         assertNotNull(inserted2)
     }
 
