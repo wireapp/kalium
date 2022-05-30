@@ -20,7 +20,6 @@
     <ID>ComplexMethod:otr.kt$private fun QualifiedNewOtrMessage.protoMergeImpl(plus: pbandk.Message?): QualifiedNewOtrMessage</ID>
     <ID>ConstructorParameterNaming:MessageApi.kt$MessageApi.Parameters.DefaultParameters$val `data`: String? = null</ID>
     <ID>ConstructorParameterNaming:MessageApi.kt$MessageApi.Parameters.QualifiedDefaultParameters$val `data`: String? = null</ID>
-    <ID>EmptyCatchBlock:Customization.kt$Customization${ }</ID>
     <ID>EmptyDefaultConstructor:KaliumException.kt$KaliumException$()</ID>
     <ID>EmptyDefaultConstructor:KaliumException.kt$KaliumException.FeatureError$()</ID>
     <ID>EmptyDefaultConstructor:ServerConfigurationDAO.kt$ServerConfigMapper$()</ID>
@@ -77,7 +76,6 @@
     <ID>FunctionParameterNaming:CryptoboxSession.module_@wireapp_cryptobox.kt$CryptoboxSession$pk_store: CryptoboxCRUDStore</ID>
     <ID>FunctionParameterNaming:KeyPair.module_@wireapp_proteus.kt$KeyPair.Companion$ed25519_key_pair: KeyPair</ID>
     <ID>FunctionParameterNaming:SetUserHandleUseCase.kt$SetUserHandleUseCase$_handle: String</ID>
-    <ID>LongParameterList:AuthenticatedDataSourceSet.kt$AuthenticatedDataSourceSet$( val authenticatedRootDir: String, val authenticatedNetworkContainer: AuthenticatedNetworkContainer, val proteusClient: ProteusClient, val workScheduler: WorkScheduler, val syncManager: SyncManager, val userDatabaseProvider: UserDatabaseProvider, val kaliumPreferencesSettings: KaliumPreferencesSettings, val encryptedSettingsHolder: EncryptedSettingsHolder )</ID>
     <ID>LongParameterList:Calling.kt$Calling$( inst: Handle, msg: ByteArray, len: Int, curr_time: Uint32_t, msg_time: Uint32_t, convId: String, userId: String, clientId: String )</ID>
     <ID>LongParameterList:Calling.kt$Calling$( userId: String, clientId: String, readyHandler: ReadyHandler, sendHandler: SendHandler, sftRequestHandler: SFTRequestHandler, incomingCallHandler: IncomingCallHandler, missedCallHandler: MissedCallHandler, answeredCallHandler: AnsweredCallHandler, establishedCallHandler: EstablishedCallHandler, closeCallHandler: CloseCallHandler, metricsHandler: MetricsHandler, callConfigRequestHandler: CallConfigRequestHandler, constantBitRateStateChangeHandler: ConstantBitRateStateChangeHandler, videoReceiveStateHandler: VideoReceiveStateHandler, arg: Pointer? )</ID>
     <ID>LongParameterList:CloseCallHandler.kt$CloseCallHandler$( reason: Int, conversationId: String, messageTime: Uint32_t, userId: String, clientId: String, arg: Pointer? )</ID>
@@ -112,6 +110,9 @@
     <ID>MagicNumber:GetNotificationsUseCase.kt$GetNotificationsUseCaseImpl$100</ID>
     <ID>MagicNumber:GlobalCallManager.kt$LogHandlerImpl$3</ID>
     <ID>MagicNumber:HttpEngine.kt$401</ID>
+    <ID>MagicNumber:KaliumConfig.kt$KaliumConfig$10</ID>
+    <ID>MagicNumber:KaliumConfig.kt$KaliumConfig$120</ID>
+    <ID>MagicNumber:KaliumConfig.kt$KaliumConfig$8</ID>
     <ID>MagicNumber:MLSClientImpl.kt$MLSClientImpl$30</ID>
     <ID>MagicNumber:MessageDAOImpl.kt$MessageMapper$16</ID>
     <ID>MagicNumber:NetworkUtils.kt$300</ID>
@@ -223,11 +224,12 @@
     <ID>MaxLineLength:ConversationEvent.kt$ConversationMember$@SerialName("conversation_role") val conversationRole: String?</ID>
     <ID>MaxLineLength:ConversationEvent.kt$ConversationMembers$@SerialName("user_ids") val userIds: List&lt;String></ID>
     <ID>MaxLineLength:ConversationEvent.kt$ConversationUsers$@SerialName("user_ids") val userIds: List&lt;String></ID>
-    <ID>MaxLineLength:ConversationEventReceiver.kt$ConversationEventReceiver$// The asset message received contains the asset decryption keys, so update the preview message persisted previously</ID>
     <ID>MaxLineLength:ConversationRepository.kt$ConversationDataSource$is ProtocolInfo.MLS</ID>
     <ID>MaxLineLength:ConversationRepositoryTest.kt$ConversationRepositoryTest$val event = Event.Conversation.NewConversation("id", TestConversation.ID, "time", CONVERSATION_RESPONSE.copy(groupId = groupId, protocol = ConvProtocol.MLS))</ID>
     <ID>MaxLineLength:ConversationsApplication.kt$ConversationsApplication$LoginApi.LoginParam.LoginWithEmail(email = email, password = password, label = "ktor")</ID>
     <ID>MaxLineLength:IdentityKeyPair.module_@wireapp_proteus.kt$IdentityKeyPair$external open</ID>
+    <ID>MaxLineLength:KaliumConfig.kt$KaliumConfig$"3gpp, aac, amr, avi, bmp, css, csv, dib, doc, docx, eml, flac, gif, html, ico, jfif, jpeg, jpg, jpg-large, key, m4a, m4v, md, midi, mkv, mov, mp3, mp4, mpeg, mpeg3, mpg, msg, ods, odt, ogg, pdf, pjp, pjpeg, png, pps, ppt, pptx, psd, pst, rtf, sql, svg, tex, tiff, txt, vcf, vid, wav, webm, webp, wmv, xls, xlsx, xml"</ID>
+    <ID>MaxLineLength:KaliumConfig.kt$KaliumConfig$"MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAreYzBWuvnVKYfgNNX3dVjUnqIVtl4XqQnCcY6m/sWM15TTK0bo9FKnMxNAPtDzB6ViRvpZsKEefX8pi15Jcs4uZiuZ81ISV1bqxtpsjJ56Yjeme99Dca5ck35pThYuK6jZ8vG6pJiY9mRY9nGadid4qWL7uwAeoInx2mOM7HepCCh2NOXd+EjQ4sBsfgb+kWrcVQmBzvLHPUDoykm/m+BvL2eJ1njPNiM/GoeXbmIW1WM3ifucYJoD9g+V5NfHfANrVu2w4YcLDad0C85Nb8U1sgFNkrgOqzhd/1xHok1uOyjoeLTIHHYkryvbBEmdl6v+f2J1EM0+Fj9vseI2TYrQIDAQAB"</ID>
     <ID>MaxLineLength:LocalNotification.kt$LocalNotificationMessage.Comment$data</ID>
     <ID>MaxLineLength:MemoryEngine.module_@wireapp_store-engine.kt$MemoryEngine$override fun &lt;PrimaryKey, ChangesType> updateOrCreate(tableName: String, primaryKey: PrimaryKey, changes: ChangesType): Promise&lt;PrimaryKey></ID>
     <ID>MaxLineLength:MessageEnvelopeCreatorTest.kt$MessageEnvelopeCreatorTest$.</ID>
@@ -458,6 +460,91 @@
     <ID>MaxLineLength:otr.kt$clientMismatchStrategy is QualifiedNewOtrMessage.ClientMismatchStrategy.ReportOnly &amp;&amp; plus.clientMismatchStrategy is QualifiedNewOtrMessage.ClientMismatchStrategy.ReportOnly</ID>
     <ID>MaxLineLength:otr.kt$private</ID>
     <ID>MaxLineLength:otr.kt$public</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val accountsUrl: String = "https://account.wire.com"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val allowChangeOfEmail: Boolean = true</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val allowMarketingCommunication: Boolean = true</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val allowSSO: Boolean = true</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val allow_account_creation: Boolean = true</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val app_lock_timeout: Int = 10</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val backendUrl: String = "https://prod-nginz-https.wire.com"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val blacklistHost: String = "https://clientblacklist.wire.com/prod/android"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val block_on_jailbreak_or_root: Boolean = false</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val block_on_password_policy: Boolean = false</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val candidate_appName: String = "Wire Candidate"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val candidate_applicationId: String = "com.wire.candidate"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val candidate_comment: String = "appName must match the value of 'app_name' in strings.xml"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val candidate_developer_features_enabled: Boolean = true</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val candidate_launcherIcon: String = "ic_launcher_wire_candidate"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val candidate_logging_enabled: Boolean = true</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val candidate_safe_logging: Boolean = true</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val candidate_userId: String = ""</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val certificatePin_certificate: String = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAreYzBWuvnVKYfgNNX3dVjUnqIVtl4XqQnCcY6m/sWM15TTK0bo9FKnMxNAPtDzB6ViRvpZsKEefX8pi15Jcs4uZiuZ81ISV1bqxtpsjJ56Yjeme99Dca5ck35pThYuK6jZ8vG6pJiY9mRY9nGadid4qWL7uwAeoInx2mOM7HepCCh2NOXd+EjQ4sBsfgb+kWrcVQmBzvLHPUDoykm/m+BvL2eJ1njPNiM/GoeXbmIW1WM3ifucYJoD9g+V5NfHfANrVu2w4YcLDad0C85Nb8U1sgFNkrgOqzhd/1xHok1uOyjoeLTIHHYkryvbBEmdl6v+f2J1EM0+Fj9vseI2TYrQIDAQAB"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val certificatePin_domain: String = "*.wire.com"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val countly_app_key: String = "79c8fc20713e0e877aa8d320ea078530604d3ea6"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val countly_server_url: String = "https://countly.wire.com"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val custom_url_scheme: String = "wire"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val dev_appName: String = "Wire Dev"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val dev_applicationId: String = "com.waz.zclient.dev"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val dev_comment: String = "appName must match the value of 'app_name' in strings.xml"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val dev_developer_features_enabled: Boolean = true</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val dev_launcherIcon: String = "ic_launcher_wire_dev"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val dev_logging_enabled: Boolean = true</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val dev_safe_logging: Boolean = false</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val dev_userId: String = ""</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val enableBlacklist: Boolean = true</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val experimental_appName: String = "Wire Exp"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val experimental_applicationId: String = "com.wire.x"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val experimental_comment: String = "appName must match the value of 'app_name' in strings.xml"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val experimental_developer_features_enabled: Boolean = true</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val experimental_launcherIcon: String = "ic_launcher_wire_playground"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val experimental_logging_enabled: Boolean = true</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val experimental_safe_logging: Boolean = true</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val experimental_userId: String = ""</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val fdroid_appName: String = "Wire"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val fdroid_applicationId: String = "com.wire"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val fdroid_comment: String = "appName must match the value of 'app_name' in strings.xml"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val fdroid_developer_features_enabled: Boolean = false</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val fdroid_launcherIcon: String = "ic_launcher_wire"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val fdroid_logging_enabled: Boolean = false</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val fdroid_safe_logging: Boolean = true</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val fdroid_userId: String = "com.waz.userid"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val file_restriction_enabled: Boolean = false</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val file_restriction_list: String = "3gpp, aac, amr, avi, bmp, css, csv, dib, doc, docx, eml, flac, gif, html, ico, jfif, jpeg, jpg, jpg-large, key, m4a, m4v, md, midi, mkv, mov, mp3, mp4, mpeg, mpeg3, mpg, msg, ods, odt, ogg, pdf, pjp, pjpeg, png, pps, ppt, pptx, psd, pst, rtf, sql, svg, tex, tiff, txt, vcf, vid, wav, webm, webp, wmv, xls, xlsx, xml"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val firebaseAppId: String = "1:782078216207:android:d3db2443512d2055"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val firebasePushSenderId: String = "782078216207"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val force_app_lock: Boolean = false</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val force_constant_bitrate_calls: Boolean = false</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val force_hide_screen_content: Boolean = false</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val force_private_keyboard: Boolean = false</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val http_proxy_port: String = "8888"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val http_proxy_url: String = "none"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val internal_appName: String = "Wire Internal"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val internal_applicationId: String = "com.wire.internal"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val internal_comment: String = "appName must match the value of 'app_name' in strings.xml"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val internal_developer_features_enabled: Boolean = true</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val internal_launcherIcon: String = "ic_launcher_wire_internal"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val internal_logging_enabled: Boolean = true</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val internal_safe_logging: Boolean = true</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val internal_userId: String = ""</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val keep_websocket_on: Boolean = false</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val maxAccounts: Int = 2</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val new_password_maximum_length: Int = 120</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val new_password_minimum_length: Int = 8</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val password_max_attempts: Int = 0</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val prod_appName: String = "Wire"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val prod_applicationId: String = "com.wire"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val prod_comment: String = "appName must match the value of 'app_name' in strings.xml"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val prod_developer_features_enabled: Boolean = false</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val prod_launcherIcon: String = "ic_launcher_wire"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val prod_logging_enabled: Boolean = false</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val prod_safe_logging: Boolean = false</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val prod_userId: String = "com.waz.userid"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val submitCrashReports: Boolean = true</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val supportEmail: String = "support@wire.com"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val teamsUrl: String = "https://teams.wire.com"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val web_link_preview: Boolean = true</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val websiteUrl: String = "https://wire.com"</ID>
+    <ID>MayBeConst:KaliumConfig.kt$KaliumConfig$public val wipe_on_cookie_invalid: Boolean = false</ID>
     <ID>MayBeConst:KeyPackageApiImpl.kt$KeyPackageApiImpl.Companion$val PATH_CLAIM = "claim"</ID>
     <ID>MayBeConst:KeyPackageApiImpl.kt$KeyPackageApiImpl.Companion$val PATH_COUNT = "count"</ID>
     <ID>MayBeConst:KeyPackageApiImpl.kt$KeyPackageApiImpl.Companion$val PATH_KEY_PACKAGES = "mls/key-packages"</ID>
@@ -493,11 +580,15 @@
     <ID>PackageNaming:SaveNotificationTokenUseCase.kt$package com.wire.kalium.logic.feature.notification_token</ID>
     <ID>PackageNaming:ServerConfigurationDAO.kt$package com.wire.kalium.persistence.dao_kalium_db</ID>
     <ID>ReturnCount:NetworkUtils.kt$internal fun String.splitSetCookieHeader(): List&lt;String></ID>
-    <ID>ThrowsCount:Customization.kt$Customization$// Will check out custom repo, if any, and load its configuration, merging it on top of the default configuration fun prepareCustomizationEnvironment( defaultConfig: MutableMap&lt;String, Any>, customCheckoutDir: String ): BuildTimeConfiguration</ID>
+    <ID>ThrowsCount:Customization.kt$Customization$// Will check out custom repo, if any, and load its configuration, merging it on top of the default configuration private fun prepareCustomizationEnvironment( defaultConfig: MutableMap&lt;String, Any>, customCheckoutDir: String ): BuildTimeConfiguration</ID>
     <ID>TooGenericExceptionCaught:CoreFailure.kt$e: Exception</ID>
     <ID>TooGenericExceptionCaught:Customization.kt$Customization$e: Exception</ID>
     <ID>TooGenericExceptionCaught:NetworkUtils.kt$e: Exception</ID>
     <ID>TooGenericExceptionCaught:ProteusClientImpl.kt$ProteusClientImpl$e: Exception</ID>
+    <ID>TooGenericExceptionThrown:Customization.kt$Customization$throw Exception("Custom repo specified, but no grgit user provided")</ID>
+    <ID>TooGenericExceptionThrown:Customization.kt$Customization$throw Exception("Custom repo specified, but not client folder")</ID>
+    <ID>TooGenericExceptionThrown:Customization.kt$Customization$throw Exception("Custom repo specified, but not custom folder")</ID>
+    <ID>TooGenericExceptionThrown:Customization.kt$Customization$throw Exception("No custom repo")</ID>
     <ID>TooGenericExceptionThrown:MainActivity.kt$MainActivity$throw RuntimeException( "There was an error on the login :(" + "Check the credentials and the internet connection and try again" )</ID>
     <ID>TooManyFunctions:Calling.kt$Calling : Library</ID>
     <ID>TooManyFunctions:ConversationDAO.kt$ConversationDAO</ID>
