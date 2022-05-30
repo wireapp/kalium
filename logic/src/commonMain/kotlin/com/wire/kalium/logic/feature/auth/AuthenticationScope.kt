@@ -24,7 +24,8 @@ class AuthenticationScope(
     private val clientLabel: String,
     private val globalPreferences: KaliumPreferences,
     private val globalDataBae: GlobalDatabaseProvider,
-    private val backendLinks: ServerConfig.Links
+    private val backendLinks: ServerConfig.Links,
+    private val globalScope: GlobalKaliumScope
 ) {
 
     private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
