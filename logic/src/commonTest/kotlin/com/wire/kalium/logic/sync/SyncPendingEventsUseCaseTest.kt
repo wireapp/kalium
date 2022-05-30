@@ -46,8 +46,8 @@ class SyncPendingEventsUseCaseTest {
             "firstEventId",
             TestConversation.ID,
             TestUser.USER_ID,
-            ConversationMembers(listOf(), listOf()),
-            "someFrom"
+            listOf(),
+            "2022-03-30T15:36:00.000Z"
         )
         val events = listOf(Either.Right(event))
 

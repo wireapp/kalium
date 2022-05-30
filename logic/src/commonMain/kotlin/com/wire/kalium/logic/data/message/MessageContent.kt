@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.protobuf.messages.QualifiedConversationId
 
 sealed class MessageContent {
@@ -12,6 +13,7 @@ sealed class MessageContent {
         val conversationId: String,
         val qualifiedConversationId: QualifiedConversationId?
     ) : MessageContent()
-
+    data class MemberJoin(val members: List<Member>) : MessageContent()
+    data class MemberLeave(val members: List<Member>) : MessageContent()
     object Unknown : MessageContent()
 }

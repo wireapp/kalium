@@ -1,11 +1,10 @@
 package com.wire.kalium.logic.data.event
 
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.network.api.conversation.ConversationMembers
 import com.wire.kalium.network.api.conversation.ConversationResponse
-import com.wire.kalium.network.api.conversation.ConversationUsers
 import kotlinx.datetime.Clock
 
 sealed class Event(open val id: String) {
@@ -40,16 +39,16 @@ sealed class Event(open val id: String) {
             override val id: String,
             override val conversationId: ConversationId,
             val addedBy: UserId,
-            val members: ConversationMembers,
-            val from: String
+            val members: List<Member>,
+            val time: String
         ) : Conversation(id, conversationId)
 
         data class MemberLeave(
             override val id: String,
             override val conversationId: ConversationId,
             val removedBy: UserId,
-            val members: ConversationUsers,
-            val from: String
+            val members: List<Member>,
+            val time: String
         ) : Conversation(id, conversationId)
 
         data class MLSWelcome(

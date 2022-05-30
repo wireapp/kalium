@@ -18,6 +18,7 @@ import com.wire.kalium.persistence.dao.ConversationDAOImpl
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.MetadataDAOImpl
 import com.wire.kalium.persistence.dao.QualifiedIDAdapter
+import com.wire.kalium.persistence.dao.QualifiedIDListAdapter
 import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.TeamDAOImpl
 import com.wire.kalium.persistence.dao.UserDAO
@@ -75,7 +76,8 @@ actual class UserDatabaseProvider(private val context: Context, userId: UserIDEn
                 asset_image_heightAdapter = IntColumnAdapter,
                 asset_download_statusAdapter = EnumColumnAdapter(),
                 content_typeAdapter = ContentTypeAdapter(),
-                visibilityAdapter = EnumColumnAdapter()
+                visibilityAdapter = EnumColumnAdapter(),
+                member_listAdapter = QualifiedIDListAdapter()
             ),
             User.Adapter(
                 qualified_idAdapter = QualifiedIDAdapter(),

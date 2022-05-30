@@ -35,6 +35,8 @@ data class MessageEntity(
             val assetEncryptionAlgorithm: String?,
             val assetDownloadStatus: DownloadStatus? = null,
         ) : MessageEntityContent()
+        data class MemberJoinContent(val memberUserIdList: List<QualifiedIDEntity>) : MessageEntityContent()
+        data class MemberLeaveContent(val memberUserIdList: List<QualifiedIDEntity>) : MessageEntityContent()
     }
 
     enum class Status {
@@ -73,7 +75,7 @@ data class MessageEntity(
     }
 
     enum class ContentType {
-        TEXT, ASSET
+        TEXT, ASSET, MEMBER_JOIN, MEMBER_LEAVE
     }
 
     enum class Visibility {

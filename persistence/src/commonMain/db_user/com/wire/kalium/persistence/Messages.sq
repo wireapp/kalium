@@ -2,6 +2,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
 import com.wire.kalium.persistence.dao.message.MessageEntity;
 import kotlin.Int;
+import kotlin.collections.List;
 
 CREATE TABLE Message (
       id TEXT NOT NULL,
@@ -22,6 +23,9 @@ CREATE TABLE Message (
       asset_domain TEXT,
       asset_encryption_algorithm TEXT,
       asset_download_status TEXT AS MessageEntity.DownloadStatus,
+
+      -- Member Join / Leave message field
+      member_list TEXT AS List<QualifiedIDEntity>,
 
       -- Base message fields
       content_type TEXT AS ContentType NOT NULL,
@@ -51,8 +55,8 @@ SET visibility = 'DELETED', text_body = NULL
 WHERE id = ? AND conversation_id =? ;
 
 insertMessage:
-INSERT INTO Message(id, text_body, asset_mime_type, asset_size, asset_name, asset_image_width, asset_image_height, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, asset_download_status, content_type, conversation_id, date, sender_user_id, sender_client_id, visibility, status)
-VALUES(?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO Message(id, text_body, asset_mime_type, asset_size, asset_name, asset_image_width, asset_image_height, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, asset_download_status, member_list, content_type, conversation_id, date, sender_user_id, sender_client_id, visibility, status)
+VALUES(?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(id, conversation_id) DO UPDATE SET
 id = excluded.id,
 text_body = excluded.text_body,
@@ -67,6 +71,7 @@ asset_id = excluded.asset_id,
 asset_token = excluded.asset_token,
 asset_domain = excluded.asset_domain,
 asset_encryption_algorithm = excluded.asset_encryption_algorithm,
+member_list = excluded.member_list,
 content_type = excluded.content_type,
 text_body = excluded.text_body,
 date = excluded.date,

@@ -46,7 +46,7 @@ internal object MapperProvider {
     fun publicUserMapper(): PublicUserMapper = PublicUserMapperImpl(idMapper())
     fun sendMessageFailureMapper(): SendMessageFailureMapper = SendMessageFailureMapperImpl()
     fun assetMapper(): AssetMapper = AssetMapperImpl()
-    fun eventMapper(): EventMapper = EventMapper(idMapper())
+    fun eventMapper(): EventMapper = EventMapper(idMapper(), memberMapper())
     fun preyKeyMapper(): PreKeyMapper = PreKeyMapperImpl()
     fun preKeyListMapper(): PreKeyListMapper = PreKeyListMapper(preyKeyMapper())
     fun locationMapper(): LocationMapper = LocationMapper()

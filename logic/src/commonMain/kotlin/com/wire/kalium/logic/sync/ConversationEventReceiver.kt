@@ -107,17 +107,42 @@ class ConversationEventReceiver(
     //TODO(system-messages): insert a message to show a user added to the conversation
     private suspend fun handleMemberJoin(event: Event.Conversation.MemberJoin) = conversationRepository
         .persistMembers(
-            memberMapper.fromEventToDaoModel(event.members.users),
+            event.members.map { memberMapper.toDaoModel(it) },
             idMapper.toDaoModel(event.conversationId)
-        ).onFailure { kaliumLogger.e("$TAG - failure on member join event: $it") }
+        )
+        .onSuccess {
+            val message = Message(
+                id = event.id,
+                content = MessageContent.MemberJoin(members = event.members),
+                conversationId = event.conversationId,
+                date = event.time,
+                senderUserId = event.addedBy,
+                senderClientId = ClientId(""), // TODO: should we keep it empty or pass some server data?
+                status = Message.Status.SENT
+            )
+            processMessage(message)
+        }
+        .onFailure { kaliumLogger.e("$TAG - failure on member join event: $it") }
 
     //TODO(system-messages): insert a message to show a user deleted to the conversation
-    private suspend fun handleMemberLeave(event: Event.Conversation.MemberLeave) =
-        event.members.qualifiedUserIds.forEach { userId ->
-            conversationRepository.deleteMember(
-                idMapper.toDaoModel(event.conversationId), idMapper.fromApiToDao(userId)
-            ).onFailure { kaliumLogger.e("$TAG - failure on member leave event: $it") }
+    private suspend fun handleMemberLeave(event: Event.Conversation.MemberLeave) = conversationRepository
+        .deleteMembers(
+            event.members.map { idMapper.toDaoModel(it.id) },
+            idMapper.toDaoModel(event.conversationId)
+        )
+        .onSuccess {
+            val message = Message(
+                id = event.id,
+                content = MessageContent.MemberLeave(members = event.members),
+                conversationId = event.conversationId,
+                date = event.time,
+                senderUserId = event.removedBy,
+                senderClientId = ClientId(""), // TODO: should we keep it empty or pass some server data?
+                status = Message.Status.SENT
+            )
+            processMessage(message)
         }
+        .onFailure { kaliumLogger.e("$TAG - failure on member leave event: $it") }
 
     private suspend fun handleMLSWelcome(event: Event.Conversation.MLSWelcome) {
         mlsConversationRepository.establishMLSGroupFromWelcome(event)
