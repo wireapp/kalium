@@ -40,503 +40,503 @@ buildkonfig {
     defaultConfigs {
         buildConfigField(
             INT,
-            Configs.maxAccounts.name, "${buildtimeConfiguration?.configuration?.get(Configs.maxAccounts.name)}"
+            Configs.MAX_ACCOUNTS.value, "${buildtimeConfiguration?.configuration?.get(Configs.MAX_ACCOUNTS.value)}"
         )
 
         buildConfigField(
             STRING,
-            Configs.backendUrl.name, "${buildtimeConfiguration?.configuration?.get(Configs.backendUrl.name)}"
+            Configs.BACKEND_URL.value, "${buildtimeConfiguration?.configuration?.get(Configs.BACKEND_URL.value)}"
         )
         buildConfigField(
             STRING,
-            Configs.websocketUrl.name, "${buildtimeConfiguration?.configuration?.get(Configs.websocketUrl.name)}"
-        )
-
-        buildConfigField(
-            BOOLEAN,
-            Configs.allow_account_creation.name,
-            "${buildtimeConfiguration?.configuration?.get(Configs.allow_account_creation.name)}"
-        )
-        buildConfigField(
-            BOOLEAN,
-            Configs.allowSSO.name, "${buildtimeConfiguration?.configuration?.get(Configs.allowSSO.name)}"
-        )
-
-        buildConfigField(
-            STRING,
-            Configs.supportEmail.name, "${buildtimeConfiguration?.configuration?.get(Configs.supportEmail.name)}"
-        )
-
-        buildConfigField(
-            STRING,
-            Configs.firebasePushSenderId.name,
-            "${buildtimeConfiguration?.configuration?.get(Configs.firebasePushSenderId.name)}"
-        )
-        buildConfigField(
-            STRING,
-            Configs.firebaseAppId.name,
-            "${buildtimeConfiguration?.configuration?.get(Configs.firebaseAppId.name)}"
+            Configs.WEBSITE_URL.value, "${buildtimeConfiguration?.configuration?.get(Configs.WEBSITE_URL.value)}"
         )
 
         buildConfigField(
             BOOLEAN,
-            Configs.submitCrashReports.name,
-            "${buildtimeConfiguration?.configuration?.get(Configs.submitCrashReports.name)}"
+            Configs.ALLOW_ACCOUNT_CREATION.value,
+            "${buildtimeConfiguration?.configuration?.get(Configs.ALLOW_ACCOUNT_CREATION.value)}"
+        )
+        buildConfigField(
+            BOOLEAN,
+            Configs.ALLOW_SSO.value, "${buildtimeConfiguration?.configuration?.get(Configs.ALLOW_SSO.value)}"
+        )
+
+        buildConfigField(
+            STRING,
+            Configs.SUPPORT_EMAIL.value, "${buildtimeConfiguration?.configuration?.get(Configs.SUPPORT_EMAIL.value)}"
+        )
+
+        buildConfigField(
+            STRING,
+            Configs.FIREBASE_PUSH_SENDER_ID.value,
+            "${buildtimeConfiguration?.configuration?.get(Configs.FIREBASE_PUSH_SENDER_ID.value)}"
+        )
+        buildConfigField(
+            STRING,
+            Configs.FIREBASE_APP_ID.value,
+            "${buildtimeConfiguration?.configuration?.get(Configs.FIREBASE_APP_ID.value)}"
         )
 
         buildConfigField(
             BOOLEAN,
-            Configs.allowMarketingCommunication.name,
-            "${buildtimeConfiguration?.configuration?.get(Configs.allowMarketingCommunication.name)}"
+            Configs.SUBMIT_CRASH_REPORTS.value,
+            "${buildtimeConfiguration?.configuration?.get(Configs.SUBMIT_CRASH_REPORTS.value)}"
         )
 
         buildConfigField(
             BOOLEAN,
-            Configs.enableBlacklist.name,
-            "${buildtimeConfiguration?.configuration?.get(Configs.enableBlacklist.name)}"
-        )
-
-        buildConfigField(
-            STRING,
-            Configs.blacklistHost.name,
-            "${buildtimeConfiguration?.configuration?.get(Configs.blacklistHost.name)}"
+            Configs.ALLOW_MARKETING_COMMUNICATION.value,
+            "${buildtimeConfiguration?.configuration?.get(Configs.ALLOW_MARKETING_COMMUNICATION.value)}"
         )
 
         buildConfigField(
             BOOLEAN,
-            Configs.allowChangeOfEmail.name,
-            "${buildtimeConfiguration?.configuration?.get(Configs.allowChangeOfEmail.name)}"
+            Configs.ENABLE_BLACK_LIST.value,
+            "${buildtimeConfiguration?.configuration?.get(Configs.ENABLE_BLACK_LIST.value)}"
         )
 
         buildConfigField(
             STRING,
-            Configs.teamsUrl.name, "${buildtimeConfiguration?.configuration?.get(Configs.teamsUrl.name)}"
+            Configs.BLACKLIST_HOST.value,
+            "${buildtimeConfiguration?.configuration?.get(Configs.BLACKLIST_HOST.value)}"
+        )
+
+        buildConfigField(
+            BOOLEAN,
+            Configs.ALLOW_CHANGE_OF_EMAIL.value,
+            "${buildtimeConfiguration?.configuration?.get(Configs.ALLOW_CHANGE_OF_EMAIL.value)}"
+        )
+
+        buildConfigField(
+            STRING,
+            Configs.TEAMS_URL.value, "${buildtimeConfiguration?.configuration?.get(Configs.TEAMS_URL.value)}"
         )
         buildConfigField(
             STRING,
-            Configs.accountsUrl.name, "${buildtimeConfiguration?.configuration?.get(Configs.accountsUrl.name)}"
+            Configs.ACCOUNT_URL.value, "${buildtimeConfiguration?.configuration?.get(Configs.ACCOUNT_URL.value)}"
         )
         buildConfigField(
             STRING,
-            Configs.websiteUrl.name, "${buildtimeConfiguration?.configuration?.get(Configs.websiteUrl.name)}"
+            Configs.WEBSITE_URL.value, "${buildtimeConfiguration?.configuration?.get(Configs.WEBSITE_URL.value)}"
         )
         buildConfigField(
             STRING,
-            Configs.custom_url_scheme.name,
-            "${buildtimeConfiguration?.configuration?.get(Configs.custom_url_scheme.name)}"
+            Configs.CUSTOM_URL_SCHEME.value,
+            "${buildtimeConfiguration?.configuration?.get(Configs.CUSTOM_URL_SCHEME.value)}"
         )
 
         buildConfigField(
             INT,
-            Configs.new_password_minimum_length.name,
-            "${buildtimeConfiguration?.configuration?.get(Configs.new_password_minimum_length.name)}"
+            Configs.NEW_PASSWORD_MINIMUM_LENGTH.value,
+            "${buildtimeConfiguration?.configuration?.get(Configs.NEW_PASSWORD_MINIMUM_LENGTH.value)}"
         )
         buildConfigField(
             INT,
-            Configs.new_password_maximum_length.name,
-            "${buildtimeConfiguration?.configuration?.get(Configs.new_password_maximum_length.name)}"
+            Configs.NEW_PASSWORD_MAXIMUM_LENGTH.value,
+            "${buildtimeConfiguration?.configuration?.get(Configs.NEW_PASSWORD_MAXIMUM_LENGTH.value)}"
         )
 
         buildConfigField(
             STRING,
-            Configs.http_proxy_url.name,
-            "${buildtimeConfiguration?.configuration?.get(Configs.http_proxy_url.name)}"
+            Configs.HTTP_PROXY_URL.value,
+            "${buildtimeConfiguration?.configuration?.get(Configs.HTTP_PROXY_URL.value)}"
         )
 
         buildConfigField(
             STRING,
-            Configs.http_proxy_port.name,
-            "${buildtimeConfiguration?.configuration?.get(Configs.http_proxy_port.name)}"
+            Configs.HTTP_PROXY_PORT.value,
+            "${buildtimeConfiguration?.configuration?.get(Configs.HTTP_PROXY_PORT.value)}"
         )
 
         buildConfigField(
             BOOLEAN,
-            Configs.block_on_jailbreak_or_root.name,
-            "${buildtimeConfiguration?.configuration?.get(Configs.block_on_jailbreak_or_root.name)}"
+            Configs.BLOCK_ON_JAILBREAK_OR_ROOT.value,
+            "${buildtimeConfiguration?.configuration?.get(Configs.BLOCK_ON_JAILBREAK_OR_ROOT.value)}"
         )
 
         buildConfigField(
             BOOLEAN,
-            Configs.force_hide_screen_content.name,
-            "${buildtimeConfiguration?.configuration?.get(Configs.force_hide_screen_content.name)}"
+            Configs.FORCE_HIDE_SCREEN_CONTENT.value,
+            "${buildtimeConfiguration?.configuration?.get(Configs.FORCE_HIDE_SCREEN_CONTENT.value)}"
         )
 
         buildConfigField(
             BOOLEAN,
-            Configs.force_app_lock.name,
-            "${buildtimeConfiguration?.configuration?.get(Configs.force_app_lock.name)}"
-        )
-
-        buildConfigField(
-            INT,
-            Configs.app_lock_timeout.name,
-            "${buildtimeConfiguration?.configuration?.get(Configs.app_lock_timeout.name)}"
-        )
-
-        buildConfigField(
-            BOOLEAN,
-            Configs.block_on_password_policy.name,
-            "${buildtimeConfiguration?.configuration?.get(Configs.block_on_password_policy.name)}"
-        )
-
-        buildConfigField(
-            BOOLEAN,
-            Configs.wipe_on_cookie_invalid.name,
-            "${buildtimeConfiguration?.configuration?.get(Configs.wipe_on_cookie_invalid.name)}"
-        )
-
-        buildConfigField(
-            BOOLEAN,
-            Configs.force_private_keyboard.name,
-            "${buildtimeConfiguration?.configuration?.get(Configs.force_private_keyboard.name)}"
+            Configs.FORCE_APP_LOCK.value,
+            "${buildtimeConfiguration?.configuration?.get(Configs.FORCE_APP_LOCK.value)}"
         )
 
         buildConfigField(
             INT,
-            Configs.password_max_attempts.name,
-            "${buildtimeConfiguration?.configuration?.get(Configs.password_max_attempts.name)}"
+            Configs.APP_LOCK_TIMEOUT.value,
+            "${buildtimeConfiguration?.configuration?.get(Configs.APP_LOCK_TIMEOUT.value)}"
         )
 
         buildConfigField(
             BOOLEAN,
-            Configs.file_restriction_enabled.name,
-            "${buildtimeConfiguration?.configuration?.get(Configs.file_restriction_enabled.name)}"
+            Configs.BLOCK_ON_PASSWORD_POLICY.value,
+            "${buildtimeConfiguration?.configuration?.get(Configs.BLOCK_ON_PASSWORD_POLICY.value)}"
+        )
+
+        buildConfigField(
+            BOOLEAN,
+            Configs.WIPE_ON_COOKIE_INVALID.value,
+            "${buildtimeConfiguration?.configuration?.get(Configs.WIPE_ON_COOKIE_INVALID.value)}"
+        )
+
+        buildConfigField(
+            BOOLEAN,
+            Configs.FORCE_PRIVATE_KEYBOARD.value,
+            "${buildtimeConfiguration?.configuration?.get(Configs.FORCE_PRIVATE_KEYBOARD.value)}"
+        )
+
+        buildConfigField(
+            INT,
+            Configs.PASSWORD_MAX_ATTEMPTS.value,
+            "${buildtimeConfiguration?.configuration?.get(Configs.PASSWORD_MAX_ATTEMPTS.value)}"
+        )
+
+        buildConfigField(
+            BOOLEAN,
+            Configs.FILE_RESTRICTION_ENABLED.value,
+            "${buildtimeConfiguration?.configuration?.get(Configs.FILE_RESTRICTION_ENABLED.value)}"
         )
 
         buildConfigField(
             STRING,
-            Configs.file_restriction_list.name,
-            "${buildtimeConfiguration?.configuration?.get(Configs.file_restriction_list.name)}"
+            Configs.FILE_RESTRICTION_LIST.value,
+            "${buildtimeConfiguration?.configuration?.get(Configs.FILE_RESTRICTION_LIST.value)}"
         )
 
         buildConfigField(
             STRING,
-            Configs.countly_server_url.name,
-            "${buildtimeConfiguration?.configuration?.get(Configs.countly_server_url.name)}"
+            Configs.COUNTLY_SERVER_URL.value,
+            "${buildtimeConfiguration?.configuration?.get(Configs.COUNTLY_SERVER_URL.value)}"
         )
 
         buildConfigField(
             STRING,
-            Configs.countly_app_key.name,
-            "${buildtimeConfiguration?.configuration?.get(Configs.countly_app_key.name)}"
+            Configs.COUNTLY_APP_KEY.value,
+            "${buildtimeConfiguration?.configuration?.get(Configs.COUNTLY_APP_KEY.value)}"
         )
 
 
         buildConfigField(
             BOOLEAN,
-            Configs.force_constant_bitrate_calls.name,
-            "${buildtimeConfiguration?.configuration?.get(Configs.force_constant_bitrate_calls.name)}"
+            Configs.FORCE_CONSTANT_BITRATE_CALLS.value,
+            "${buildtimeConfiguration?.configuration?.get(Configs.FORCE_CONSTANT_BITRATE_CALLS.value)}"
         )
 
         buildConfigField(
             BOOLEAN,
-            Configs.web_link_preview.name,
-            "${buildtimeConfiguration?.configuration?.get(Configs.web_link_preview.name)}"
+            Configs.WEB_LINK_PREVIEW.value,
+            "${buildtimeConfiguration?.configuration?.get(Configs.WEB_LINK_PREVIEW.value)}"
         )
 
         buildConfigField(
             BOOLEAN,
-            Configs.keep_websocket_on.name,
-            "${buildtimeConfiguration?.configuration?.get(Configs.keep_websocket_on.name)}"
+            Configs.KEEP_WEB_SOCKET_ON.value,
+            "${buildtimeConfiguration?.configuration?.get(Configs.KEEP_WEB_SOCKET_ON.value)}"
         )
 
-        val certificatePinMap = buildtimeConfiguration?.configuration?.get(Configs.certificatePin.name) as Map<String, String>
+        val certificatePinMap = buildtimeConfiguration?.configuration?.get(Configs.CERTIFICATE_PIN.value) as Map<*, *>
         buildConfigField(
             STRING,
-            "${Configs.certificatePin.name}_${Configs.domain.name}",
-            "${certificatePinMap.get(Configs.domain.name)}"
-        )
-
-        buildConfigField(
-            STRING,
-            "${Configs.certificatePin.name}_${Configs.certificate.name}",
-            "${certificatePinMap.get(Configs.certificate.name)}"
-        )
-        val prodMap = buildtimeConfiguration?.configuration?.get(Configs.prod.name) as Map<String, String>
-        buildConfigField(
-            STRING,
-            "${Configs.prod.name}_${Configs.applicationId.name}",
-            "${prodMap[Configs.applicationId.name]}"
-        )
-        buildConfigField(
-            STRING,
-            "${Configs.prod.name}_${Configs.userId.name}",
-            "${prodMap[Configs.userId.name]}"
+            "${Configs.CERTIFICATE_PIN.value}_${Configs.DOMAIN.value}",
+            "${certificatePinMap[Configs.DOMAIN.value]}"
         )
 
         buildConfigField(
             STRING,
-            "${Configs.prod.name}${Configs._comment.name}",
-            "${prodMap[Configs._comment.name]}"
+            "${Configs.CERTIFICATE_PIN.value}_${Configs.CERTIFICATE.value}",
+            "${certificatePinMap[Configs.CERTIFICATE.value]}"
+        )
+        val prodMap = buildtimeConfiguration.configuration.get(Configs.PROD.value) as Map<*, *>
+        buildConfigField(
+            STRING,
+            "${Configs.PROD.value}_${Configs.APPLICATION_ID.value}",
+            "${prodMap[Configs.APPLICATION_ID.value]}"
+        )
+        buildConfigField(
+            STRING,
+            "${Configs.PROD.value}_${Configs.USER_ID.value}",
+            "${prodMap[Configs.USER_ID.value]}"
         )
 
         buildConfigField(
             STRING,
-            "${Configs.prod.name}_${Configs.appName.name}",
-            "${prodMap[Configs.appName.name]}"
+            "${Configs.PROD.value}${Configs.COMMENT.value}",
+            "${prodMap[Configs.COMMENT.value]}"
         )
 
         buildConfigField(
             STRING,
-            "${Configs.prod.name}_${Configs.launcherIcon.name}",
-            "${prodMap[Configs.launcherIcon.name]}"
+            "${Configs.PROD.value}_${Configs.APP_NAME.value}",
+            "${prodMap[Configs.APP_NAME.value]}"
+        )
+
+        buildConfigField(
+            STRING,
+            "${Configs.PROD.value}_${Configs.LAUNCHER_ICON.value}",
+            "${prodMap[Configs.LAUNCHER_ICON.value]}"
         )
         buildConfigField(
             BOOLEAN,
-            "${Configs.prod.name}_${Configs.developer_features_enabled.name}",
-            "${prodMap[Configs.developer_features_enabled.name]}"
-        )
-
-        buildConfigField(
-            BOOLEAN,
-            "${Configs.prod.name}_${Configs.safe_logging.name}",
-            "${prodMap[Configs.safe_logging.name]}"
+            "${Configs.PROD.value}_${Configs.DEVELOPER_FEATURES_ENABLED.value}",
+            "${prodMap[Configs.DEVELOPER_FEATURES_ENABLED.value]}"
         )
 
         buildConfigField(
             BOOLEAN,
-            "${Configs.prod.name}_${Configs.logging_enabled.name}",
-            "${prodMap[Configs.logging_enabled.name]}"
-        )
-
-
-        val devMap = buildtimeConfiguration?.configuration?.get(Configs.dev.name) as Map<String, String>
-        buildConfigField(
-            STRING,
-            "${Configs.dev.name}_${Configs.applicationId.name}",
-            "${devMap[Configs.applicationId.name]}"
-        )
-        buildConfigField(
-            STRING,
-            "${Configs.dev.name}_${Configs.userId.name}",
-            "${devMap[Configs.userId.name]}"
-        )
-
-        buildConfigField(
-            STRING,
-            "${Configs.dev.name}${Configs._comment.name}",
-            "${devMap[Configs._comment.name]}"
-        )
-
-        buildConfigField(
-            STRING,
-            "${Configs.dev.name}_${Configs.appName.name}",
-            "${devMap[Configs.appName.name]}"
-        )
-
-        buildConfigField(
-            STRING,
-            "${Configs.dev.name}_${Configs.launcherIcon.name}",
-            "${devMap[Configs.launcherIcon.name]}"
-        )
-        buildConfigField(
-            BOOLEAN,
-            "${Configs.dev.name}_${Configs.developer_features_enabled.name}",
-            "${devMap[Configs.developer_features_enabled.name]}"
+            "${Configs.PROD.value}_${Configs.SAFE_LOGGING.value}",
+            "${prodMap[Configs.SAFE_LOGGING.value]}"
         )
 
         buildConfigField(
             BOOLEAN,
-            "${Configs.dev.name}_${Configs.safe_logging.name}",
-            "${devMap[Configs.safe_logging.name]}"
+            "${Configs.PROD.value}_${Configs.LOGGING_ENABLED.value}",
+            "${prodMap[Configs.LOGGING_ENABLED.value]}"
+        )
+
+
+        val devMap = buildtimeConfiguration.configuration[Configs.DEV.value] as Map<*, *>
+        buildConfigField(
+            STRING,
+            "${Configs.DEV.value}_${Configs.APPLICATION_ID.value}",
+            "${devMap[Configs.APPLICATION_ID.value]}"
+        )
+        buildConfigField(
+            STRING,
+            "${Configs.DEV.value}_${Configs.USER_ID.value}",
+            "${devMap[Configs.USER_ID.value]}"
+        )
+
+        buildConfigField(
+            STRING,
+            "${Configs.DEV.value}${Configs.COMMENT.value}",
+            "${devMap[Configs.COMMENT.value]}"
+        )
+
+        buildConfigField(
+            STRING,
+            "${Configs.DEV.value}_${Configs.APP_NAME.value}",
+            "${devMap[Configs.APP_NAME.value]}"
+        )
+
+        buildConfigField(
+            STRING,
+            "${Configs.DEV.value}_${Configs.LAUNCHER_ICON.value}",
+            "${devMap[Configs.LAUNCHER_ICON.value]}"
+        )
+        buildConfigField(
+            BOOLEAN,
+            "${Configs.DEV.value}_${Configs.DEVELOPER_FEATURES_ENABLED.value}",
+            "${devMap[Configs.DEVELOPER_FEATURES_ENABLED.value]}"
         )
 
         buildConfigField(
             BOOLEAN,
-            "${Configs.dev.name}_${Configs.logging_enabled.name}",
-            "${devMap[Configs.logging_enabled.name]}"
-        )
-
-
-        val candidateMap = buildtimeConfiguration?.configuration?.get(Configs.candidate.name) as Map<String, String>
-        buildConfigField(
-            STRING,
-            "${Configs.candidate.name}_${Configs.applicationId.name}",
-            "${candidateMap[Configs.applicationId.name]}"
-        )
-        buildConfigField(
-            STRING,
-            "${Configs.candidate.name}_${Configs.userId.name}",
-            "${candidateMap[Configs.userId.name]}"
-        )
-
-        buildConfigField(
-            STRING,
-            "${Configs.candidate.name}${Configs._comment.name}",
-            "${candidateMap[Configs._comment.name]}"
-        )
-
-        buildConfigField(
-            STRING,
-            "${Configs.candidate.name}_${Configs.appName.name}",
-            "${candidateMap[Configs.appName.name]}"
-        )
-
-        buildConfigField(
-            STRING,
-            "${Configs.candidate.name}_${Configs.launcherIcon.name}",
-            "${candidateMap[Configs.launcherIcon.name]}"
-        )
-        buildConfigField(
-            BOOLEAN,
-            "${Configs.candidate.name}_${Configs.developer_features_enabled.name}",
-            "${candidateMap[Configs.developer_features_enabled.name]}"
+            "${Configs.DEV.value}_${Configs.SAFE_LOGGING.value}",
+            "${devMap[Configs.SAFE_LOGGING.value]}"
         )
 
         buildConfigField(
             BOOLEAN,
-            "${Configs.candidate.name}_${Configs.safe_logging.name}",
-            "${candidateMap[Configs.safe_logging.name]}"
+            "${Configs.DEV.value}_${Configs.LOGGING_ENABLED.value}",
+            "${devMap[Configs.LOGGING_ENABLED.value]}"
+        )
+
+
+        val candidateMap = buildtimeConfiguration.configuration[Configs.CANDIDATE.value] as Map<*, *>
+        buildConfigField(
+            STRING,
+            "${Configs.CANDIDATE.value}_${Configs.APPLICATION_ID.value}",
+            "${candidateMap[Configs.APPLICATION_ID.value]}"
+        )
+        buildConfigField(
+            STRING,
+            "${Configs.CANDIDATE.value}_${Configs.USER_ID.value}",
+            "${candidateMap[Configs.USER_ID.value]}"
+        )
+
+        buildConfigField(
+            STRING,
+            "${Configs.CANDIDATE.value}${Configs.COMMENT.value}",
+            "${candidateMap[Configs.COMMENT.value]}"
+        )
+
+        buildConfigField(
+            STRING,
+            "${Configs.CANDIDATE.value}_${Configs.APP_NAME.value}",
+            "${candidateMap[Configs.APP_NAME.value]}"
+        )
+
+        buildConfigField(
+            STRING,
+            "${Configs.CANDIDATE.value}_${Configs.LAUNCHER_ICON.value}",
+            "${candidateMap[Configs.LAUNCHER_ICON.value]}"
+        )
+        buildConfigField(
+            BOOLEAN,
+            "${Configs.CANDIDATE.value}_${Configs.DEVELOPER_FEATURES_ENABLED.value}",
+            "${candidateMap[Configs.DEVELOPER_FEATURES_ENABLED.value]}"
         )
 
         buildConfigField(
             BOOLEAN,
-            "${Configs.candidate.name}_${Configs.logging_enabled.name}",
-            "${candidateMap[Configs.logging_enabled.name]}"
-        )
-
-
-        val internalMap = buildtimeConfiguration?.configuration?.get(Configs.internal.name) as Map<String, String>
-        buildConfigField(
-            STRING,
-            "${Configs.internal.name}_${Configs.applicationId.name}",
-            "${internalMap[Configs.applicationId.name]}"
-        )
-        buildConfigField(
-            STRING,
-            "${Configs.internal.name}_${Configs.userId.name}",
-            "${internalMap[Configs.userId.name]}"
-        )
-
-        buildConfigField(
-            STRING,
-            "${Configs.internal.name}${Configs._comment.name}",
-            "${internalMap[Configs._comment.name]}"
-        )
-
-        buildConfigField(
-            STRING,
-            "${Configs.internal.name}_${Configs.appName.name}",
-            "${internalMap[Configs.appName.name]}"
-        )
-
-        buildConfigField(
-            STRING,
-            "${Configs.internal.name}_${Configs.launcherIcon.name}",
-            "${internalMap[Configs.launcherIcon.name]}"
-        )
-        buildConfigField(
-            BOOLEAN,
-            "${Configs.internal.name}_${Configs.developer_features_enabled.name}",
-            "${internalMap[Configs.developer_features_enabled.name]}"
+            "${Configs.CANDIDATE.value}_${Configs.SAFE_LOGGING.value}",
+            "${candidateMap[Configs.SAFE_LOGGING.value]}"
         )
 
         buildConfigField(
             BOOLEAN,
-            "${Configs.internal.name}_${Configs.safe_logging.name}",
-            "${internalMap[Configs.safe_logging.name]}"
+            "${Configs.CANDIDATE.value}_${Configs.LOGGING_ENABLED.value}",
+            "${candidateMap[Configs.LOGGING_ENABLED.value]}"
+        )
+
+
+        val internalMap = buildtimeConfiguration.configuration[Configs.INTERNAL.value] as Map<*, *>
+        buildConfigField(
+            STRING,
+            "${Configs.INTERNAL.value}_${Configs.APPLICATION_ID.value}",
+            "${internalMap[Configs.APPLICATION_ID.value]}"
+        )
+        buildConfigField(
+            STRING,
+            "${Configs.INTERNAL.value}_${Configs.USER_ID.value}",
+            "${internalMap[Configs.USER_ID.value]}"
+        )
+
+        buildConfigField(
+            STRING,
+            "${Configs.INTERNAL.value}${Configs.COMMENT.value}",
+            "${internalMap[Configs.COMMENT.value]}"
+        )
+
+        buildConfigField(
+            STRING,
+            "${Configs.INTERNAL.value}_${Configs.APP_NAME.value}",
+            "${internalMap[Configs.APP_NAME.value]}"
+        )
+
+        buildConfigField(
+            STRING,
+            "${Configs.INTERNAL.value}_${Configs.LAUNCHER_ICON.value}",
+            "${internalMap[Configs.LAUNCHER_ICON.value]}"
+        )
+        buildConfigField(
+            BOOLEAN,
+            "${Configs.INTERNAL.value}_${Configs.DEVELOPER_FEATURES_ENABLED.value}",
+            "${internalMap[Configs.DEVELOPER_FEATURES_ENABLED.value]}"
         )
 
         buildConfigField(
             BOOLEAN,
-            "${Configs.internal.name}_${Configs.logging_enabled.name}",
-            "${internalMap[Configs.logging_enabled.name]}"
-        )
-
-
-        val experimentalMap = buildtimeConfiguration?.configuration?.get(Configs.experimental.name) as Map<String, String>
-        buildConfigField(
-            STRING,
-            "${Configs.experimental.name}_${Configs.applicationId.name}",
-            "${experimentalMap[Configs.applicationId.name]}"
-        )
-        buildConfigField(
-            STRING,
-            "${Configs.experimental.name}_${Configs.userId.name}",
-            "${experimentalMap[Configs.userId.name]}"
-        )
-
-        buildConfigField(
-            STRING,
-            "${Configs.experimental.name}${Configs._comment.name}",
-            "${experimentalMap[Configs._comment.name]}"
-        )
-
-        buildConfigField(
-            STRING,
-            "${Configs.experimental.name}_${Configs.appName.name}",
-            "${experimentalMap[Configs.appName.name]}"
-        )
-
-        buildConfigField(
-            STRING,
-            "${Configs.experimental.name}_${Configs.launcherIcon.name}",
-            "${experimentalMap[Configs.launcherIcon.name]}"
-        )
-        buildConfigField(
-            BOOLEAN,
-            "${Configs.experimental.name}_${Configs.developer_features_enabled.name}",
-            "${experimentalMap[Configs.developer_features_enabled.name]}"
+            "${Configs.INTERNAL.value}_${Configs.SAFE_LOGGING.value}",
+            "${internalMap[Configs.SAFE_LOGGING.value]}"
         )
 
         buildConfigField(
             BOOLEAN,
-            "${Configs.experimental.name}_${Configs.safe_logging.name}",
-            "${experimentalMap[Configs.safe_logging.name]}"
+            "${Configs.INTERNAL.value}_${Configs.LOGGING_ENABLED.value}",
+            "${internalMap[Configs.LOGGING_ENABLED.value]}"
+        )
+
+
+        val experimentalMap = buildtimeConfiguration.configuration[Configs.EXPERIMENTAL.value] as Map<*, *>
+        buildConfigField(
+            STRING,
+            "${Configs.EXPERIMENTAL.value}_${Configs.APPLICATION_ID.value}",
+            "${experimentalMap[Configs.APPLICATION_ID.value]}"
+        )
+        buildConfigField(
+            STRING,
+            "${Configs.EXPERIMENTAL.value}_${Configs.USER_ID.value}",
+            "${experimentalMap[Configs.USER_ID.value]}"
+        )
+
+        buildConfigField(
+            STRING,
+            "${Configs.EXPERIMENTAL.value}${Configs.COMMENT.value}",
+            "${experimentalMap[Configs.COMMENT.value]}"
+        )
+
+        buildConfigField(
+            STRING,
+            "${Configs.EXPERIMENTAL.value}_${Configs.APP_NAME.value}",
+            "${experimentalMap[Configs.APP_NAME.value]}"
+        )
+
+        buildConfigField(
+            STRING,
+            "${Configs.EXPERIMENTAL.value}_${Configs.LAUNCHER_ICON.value}",
+            "${experimentalMap[Configs.LAUNCHER_ICON.value]}"
+        )
+        buildConfigField(
+            BOOLEAN,
+            "${Configs.EXPERIMENTAL.value}_${Configs.DEVELOPER_FEATURES_ENABLED.value}",
+            "${experimentalMap[Configs.DEVELOPER_FEATURES_ENABLED.value]}"
         )
 
         buildConfigField(
             BOOLEAN,
-            "${Configs.experimental.name}_${Configs.logging_enabled.name}",
-            "${experimentalMap[Configs.logging_enabled.name]}"
-        )
-
-
-        val fdroidMap = buildtimeConfiguration?.configuration?.get(Configs.fdroid.name) as Map<String, String>
-        buildConfigField(
-            STRING,
-            "${Configs.fdroid.name}_${Configs.applicationId.name}",
-            "${fdroidMap[Configs.applicationId.name]}"
-        )
-        buildConfigField(
-            STRING,
-            "${Configs.fdroid.name}_${Configs.userId.name}",
-            "${fdroidMap[Configs.userId.name]}"
-        )
-
-        buildConfigField(
-            STRING,
-            "${Configs.fdroid.name}${Configs._comment.name}",
-            "${fdroidMap[Configs._comment.name]}"
-        )
-
-        buildConfigField(
-            STRING,
-            "${Configs.fdroid.name}_${Configs.appName.name}",
-            "${fdroidMap[Configs.appName.name]}"
-        )
-
-        buildConfigField(
-            STRING,
-            "${Configs.fdroid.name}_${Configs.launcherIcon.name}",
-            "${fdroidMap[Configs.launcherIcon.name]}"
-        )
-        buildConfigField(
-            BOOLEAN,
-            "${Configs.fdroid.name}_${Configs.developer_features_enabled.name}",
-            "${fdroidMap[Configs.developer_features_enabled.name]}"
+            "${Configs.EXPERIMENTAL.value}_${Configs.SAFE_LOGGING.value}",
+            "${experimentalMap[Configs.SAFE_LOGGING.value]}"
         )
 
         buildConfigField(
             BOOLEAN,
-            "${Configs.fdroid.name}_${Configs.safe_logging.name}",
-            "${fdroidMap[Configs.safe_logging.name]}"
+            "${Configs.EXPERIMENTAL.value}_${Configs.LOGGING_ENABLED.value}",
+            "${experimentalMap[Configs.LOGGING_ENABLED.value]}"
+        )
+
+
+        val fdroidMap = buildtimeConfiguration.configuration[Configs.FDROID.value] as Map<*, *>
+        buildConfigField(
+            STRING,
+            "${Configs.FDROID.value}_${Configs.APPLICATION_ID.value}",
+            "${fdroidMap[Configs.APPLICATION_ID.value]}"
+        )
+        buildConfigField(
+            STRING,
+            "${Configs.FDROID.value}_${Configs.USER_ID.value}",
+            "${fdroidMap[Configs.USER_ID.value]}"
+        )
+
+        buildConfigField(
+            STRING,
+            "${Configs.FDROID.value}${Configs.COMMENT.value}",
+            "${fdroidMap[Configs.COMMENT.value]}"
+        )
+
+        buildConfigField(
+            STRING,
+            "${Configs.FDROID.value}_${Configs.APP_NAME.value}",
+            "${fdroidMap[Configs.APP_NAME.value]}"
+        )
+
+        buildConfigField(
+            STRING,
+            "${Configs.FDROID.value}_${Configs.LAUNCHER_ICON.value}",
+            "${fdroidMap[Configs.LAUNCHER_ICON.value]}"
+        )
+        buildConfigField(
+            BOOLEAN,
+            "${Configs.FDROID.value}_${Configs.DEVELOPER_FEATURES_ENABLED.value}",
+            "${fdroidMap[Configs.DEVELOPER_FEATURES_ENABLED.value]}"
         )
 
         buildConfigField(
             BOOLEAN,
-            "${Configs.fdroid.name}_${Configs.logging_enabled.name}",
-            "${fdroidMap[Configs.logging_enabled.name]}"
+            "${Configs.FDROID.value}_${Configs.SAFE_LOGGING.value}",
+            "${fdroidMap[Configs.SAFE_LOGGING.value]}"
+        )
+
+        buildConfigField(
+            BOOLEAN,
+            "${Configs.FDROID.value}_${Configs.LOGGING_ENABLED.value}",
+            "${fdroidMap[Configs.LOGGING_ENABLED.value]}"
         )
     }
 
@@ -548,5 +548,3 @@ buildkonfig {
 //        }
 //    }
 }
-
-

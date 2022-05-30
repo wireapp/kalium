@@ -6,8 +6,8 @@ import org.ajoberstar.grgit.Credentials
 
 
 object Customization {
-    val jsonReader = JsonSlurper()
-    val properties = java.util.Properties()
+    private val jsonReader = JsonSlurper()
+    private val properties = java.util.Properties()
 
 
     fun defaultBuildtimeConfiguration(rootDir: File): BuildTimeConfiguration? {
@@ -25,37 +25,37 @@ object Customization {
         val customRepository = System.getenv("CUSTOM_REPOSITORY") ?: properties.getProperty("CUSTOM_REPOSITORY")
 
         if (customRepository.isNullOrEmpty()) {
-            return BuildTimeConfiguration(defaultConfig, null)
+            return BuildTimeConfiguration(defaultConfig)
         } else {
             return prepareCustomizationEnvironment(defaultConfig, customCheckoutDir)
         }
     }
 
 
-    //     Will check out custom repo, if any, and load its configuration, merging it on top of the default configuration
-    fun prepareCustomizationEnvironment(
+    //  Will check out custom repo, if any, and load its configuration, merging it on top of the default configuration
+    private fun prepareCustomizationEnvironment(
         defaultConfig: MutableMap<String, Any>,
         customCheckoutDir: String
     ): BuildTimeConfiguration {
 
         val customRepository = System.getenv("CUSTOM_REPOSITORY") ?: properties.getProperty("CUSTOM_REPOSITORY")
         if (customRepository.isEmpty()) {
-            throw  GradleException("No custom repo")
+            throw  Exception("No custom repo")
         }
 
         val customFolder = System.getenv("CUSTOM_FOLDER") ?: properties.getProperty("CUSTOM_FOLDER")
         if (customFolder.isEmpty()) {
-            throw  GradleException("Custom repo specified, but not custom folder")
+            throw  Exception("Custom repo specified, but not custom folder")
         }
 
         val clientFolder = System.getenv("CLIENT_FOLDER") ?: properties.getProperty("CLIENT_FOLDER")
         if (clientFolder.isEmpty()) {
-            throw  GradleException("Custom repo specified, but not client folder")
+            throw  Exception("Custom repo specified, but not client folder")
         }
 
         val grGitUser = System.getenv("GRGIT_USER") ?: properties.getProperty("GRGIT_USER")
         if (grGitUser.isEmpty()) {
-            throw  GradleException("Custom repo specified, but no grgit user provided")
+            throw  Exception("Custom repo specified, but no grgit user provided")
         }
         val grGitPassword = System.getenv("GRGIT_PASSWORD") ?: properties.getProperty("GRGIT_PASSWORD")
 
@@ -68,31 +68,25 @@ object Customization {
             if (file.exists()) {
                 file.delete()
             }
+
+            val credentials = Credentials(grGitUser, grGitPassword)
+            Grgit.clone(mapOf("dir" to customCheckoutDir, "uri" to customRepository, "credentials" to credentials))
+
+            val customConfig = jsonReader.parseText(customConfigFile.readText()) as MutableMap<String, Any>
+            for (item in customConfig) {
+                defaultConfig.put(item.key, item.value)
+            }
         } catch (e: Exception) {
-
+            throw  e
         }
 
 
-        val credentials = Credentials(grGitUser, grGitPassword)
-        Grgit.clone(mapOf("dir" to customCheckoutDir, "uri" to customRepository, "credentials" to credentials))
-
-        val customConfig = jsonReader.parseText(customConfigFile.readText()) as MutableMap<String, Any>
-        for (item in customConfig) {
-            defaultConfig.put(item.key, item.value)
-        }
-
-
-        val buildtimeConfiguration = BuildTimeConfiguration(defaultConfig, customDirPath)
+        val buildtimeConfiguration = BuildTimeConfiguration(defaultConfig)
 
 
         return buildtimeConfiguration
     }
 
-    class BuildTimeConfiguration(val configuration: Map<String, Any>, val customResourcesPath: String?) {
-        fun isCustomBuild(): Boolean {
-            return customResourcesPath != null
-        }
-    }
-
+    class BuildTimeConfiguration(val configuration: Map<String, Any>)
 
 }

@@ -26,59 +26,6 @@
     <ID>EmptyDefaultConstructor:ServerConfigurationDAO.kt$ServerConfigMapper$()</ID>
     <ID>EmptyDefaultConstructor:ValidateSSOCodeUseCase.kt$ValidateSSOCodeUseCaseImpl$()</ID>
     <ID>EmptyKtFile:SessionLocalRepository.kt$.SessionLocalRepository.kt</ID>
-    <ID>EnumNaming:Configs.kt$Configs._comment$_comment</ID>
-    <ID>EnumNaming:Configs.kt$Configs.accountsUrl$accountsUrl</ID>
-    <ID>EnumNaming:Configs.kt$Configs.allowChangeOfEmail$allowChangeOfEmail</ID>
-    <ID>EnumNaming:Configs.kt$Configs.allowMarketingCommunication$allowMarketingCommunication</ID>
-    <ID>EnumNaming:Configs.kt$Configs.allowSSO$allowSSO</ID>
-    <ID>EnumNaming:Configs.kt$Configs.allow_account_creation$allow_account_creation</ID>
-    <ID>EnumNaming:Configs.kt$Configs.appName$appName</ID>
-    <ID>EnumNaming:Configs.kt$Configs.app_lock_timeout$app_lock_timeout</ID>
-    <ID>EnumNaming:Configs.kt$Configs.applicationId$applicationId</ID>
-    <ID>EnumNaming:Configs.kt$Configs.backendUrl$backendUrl</ID>
-    <ID>EnumNaming:Configs.kt$Configs.blacklistHost$blacklistHost</ID>
-    <ID>EnumNaming:Configs.kt$Configs.block_on_jailbreak_or_root$block_on_jailbreak_or_root</ID>
-    <ID>EnumNaming:Configs.kt$Configs.block_on_password_policy$block_on_password_policy</ID>
-    <ID>EnumNaming:Configs.kt$Configs.candidate$candidate</ID>
-    <ID>EnumNaming:Configs.kt$Configs.certificate$certificate</ID>
-    <ID>EnumNaming:Configs.kt$Configs.certificatePin$certificatePin</ID>
-    <ID>EnumNaming:Configs.kt$Configs.countly_app_key$countly_app_key</ID>
-    <ID>EnumNaming:Configs.kt$Configs.countly_server_url$countly_server_url</ID>
-    <ID>EnumNaming:Configs.kt$Configs.custom_url_scheme$custom_url_scheme</ID>
-    <ID>EnumNaming:Configs.kt$Configs.dev$dev</ID>
-    <ID>EnumNaming:Configs.kt$Configs.developer_features_enabled$developer_features_enabled</ID>
-    <ID>EnumNaming:Configs.kt$Configs.domain$domain</ID>
-    <ID>EnumNaming:Configs.kt$Configs.enableBlacklist$enableBlacklist</ID>
-    <ID>EnumNaming:Configs.kt$Configs.experimental$experimental</ID>
-    <ID>EnumNaming:Configs.kt$Configs.fdroid$fdroid</ID>
-    <ID>EnumNaming:Configs.kt$Configs.file_restriction_enabled$file_restriction_enabled</ID>
-    <ID>EnumNaming:Configs.kt$Configs.file_restriction_list$file_restriction_list</ID>
-    <ID>EnumNaming:Configs.kt$Configs.firebaseAppId$firebaseAppId</ID>
-    <ID>EnumNaming:Configs.kt$Configs.firebasePushSenderId$firebasePushSenderId</ID>
-    <ID>EnumNaming:Configs.kt$Configs.force_app_lock$force_app_lock</ID>
-    <ID>EnumNaming:Configs.kt$Configs.force_constant_bitrate_calls$force_constant_bitrate_calls</ID>
-    <ID>EnumNaming:Configs.kt$Configs.force_hide_screen_content$force_hide_screen_content</ID>
-    <ID>EnumNaming:Configs.kt$Configs.force_private_keyboard$force_private_keyboard</ID>
-    <ID>EnumNaming:Configs.kt$Configs.http_proxy_port$http_proxy_port</ID>
-    <ID>EnumNaming:Configs.kt$Configs.http_proxy_url$http_proxy_url</ID>
-    <ID>EnumNaming:Configs.kt$Configs.internal$internal</ID>
-    <ID>EnumNaming:Configs.kt$Configs.keep_websocket_on$keep_websocket_on</ID>
-    <ID>EnumNaming:Configs.kt$Configs.launcherIcon$launcherIcon</ID>
-    <ID>EnumNaming:Configs.kt$Configs.logging_enabled$logging_enabled</ID>
-    <ID>EnumNaming:Configs.kt$Configs.maxAccounts$maxAccounts</ID>
-    <ID>EnumNaming:Configs.kt$Configs.new_password_maximum_length$new_password_maximum_length</ID>
-    <ID>EnumNaming:Configs.kt$Configs.new_password_minimum_length$new_password_minimum_length</ID>
-    <ID>EnumNaming:Configs.kt$Configs.password_max_attempts$password_max_attempts</ID>
-    <ID>EnumNaming:Configs.kt$Configs.prod$prod</ID>
-    <ID>EnumNaming:Configs.kt$Configs.safe_logging$safe_logging</ID>
-    <ID>EnumNaming:Configs.kt$Configs.submitCrashReports$submitCrashReports</ID>
-    <ID>EnumNaming:Configs.kt$Configs.supportEmail$supportEmail</ID>
-    <ID>EnumNaming:Configs.kt$Configs.teamsUrl$teamsUrl</ID>
-    <ID>EnumNaming:Configs.kt$Configs.userId$userId</ID>
-    <ID>EnumNaming:Configs.kt$Configs.web_link_preview$web_link_preview</ID>
-    <ID>EnumNaming:Configs.kt$Configs.websiteUrl$websiteUrl</ID>
-    <ID>EnumNaming:Configs.kt$Configs.websocketUrl$websocketUrl</ID>
-    <ID>EnumNaming:Configs.kt$Configs.wipe_on_cookie_invalid$wipe_on_cookie_invalid</ID>
     <ID>FunctionNaming:CallManagerTest.kt$CallManagerTest$@Test fun givenCallManager_whenCallingMessageIsReceived_then_wcall_recv_msg_IsCalled()</ID>
     <ID>FunctionNaming:Calling.kt$Calling$fun wcall_answer(inst: Handle, conversationId: String, callType: Int, cbrEnabled: Boolean)</ID>
     <ID>FunctionNaming:Calling.kt$Calling$fun wcall_config_update(inst: Handle, error: Int, jsonString: String)</ID>
