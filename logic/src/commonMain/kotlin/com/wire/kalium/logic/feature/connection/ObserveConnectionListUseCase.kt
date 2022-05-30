@@ -23,7 +23,7 @@ internal class ObserveConnectionListUseCaseImpl(
 ) : ObserveConnectionListUseCase {
 
     override suspend operator fun invoke(): Flow<List<Connection>> {
-        syncManager.waitUntilSlowSyncCompletion()
+        syncManager.waitUntilLive()
         return connectionRepository.observeConnectionList()
     }
 }
