@@ -65,7 +65,6 @@ import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.team.TeamScope
 import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.sync.ConversationEventReceiver
-import com.wire.kalium.logic.sync.ConversationEventReceiverImpl
 import com.wire.kalium.logic.sync.ListenToEventsUseCase
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.SyncManager
@@ -256,7 +255,7 @@ abstract class UserSessionScopeCommon(
 
     protected abstract val protoContentMapper: ProtoContentMapper
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
-        ConversationEventReceiverImpl(
+        ConversationEventReceiver(
             authenticatedDataSourceSet.proteusClient,
             messageRepository,
             conversationRepository,
