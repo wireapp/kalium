@@ -7,11 +7,11 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.configuration.ServerConfigApi
-import com.wire.kalium.network.api.configuration.ServerConfigResponse
 import com.wire.kalium.network.api.versioning.VersionApi
 import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAO
 import io.ktor.http.Url
@@ -25,7 +25,7 @@ internal interface ServerConfigRepository {
      * @param serverConfigUrl url for the server configuration url
      * @return Either ServerConfigResponse or NetworkFailure
      */
-    suspend fun fetchRemoteConfig(serverConfigUrl: String): Either<NetworkFailure, ServerConfigResponse>
+    suspend fun fetchRemoteConfig(serverConfigUrl: String): Either<NetworkFailure, ServerConfig.Links>
 
     /**
      * @return list of all locally stored server configurations
@@ -42,12 +42,8 @@ internal interface ServerConfigRepository {
      */
     fun deleteById(id: String): Either<StorageFailure, Unit>
     fun delete(serverConfig: ServerConfig): Either<StorageFailure, Unit>
-    fun storeConfig(
-        serverConfigResponse: ServerConfigResponse,
-        domain: String?,
-        apiVersion: Int,
-        federation: Boolean
-    ): Either<StorageFailure, ServerConfig>
+    suspend fun getOrFetchMetadata(serverLinks: ServerConfig.Links): Either<CoreFailure, ServerConfig>
+    fun storeConfig(links: ServerConfig.Links, metadata: ServerConfig.MetaData): Either<StorageFailure, ServerConfig>
 
     /**
      * calculate the app/server common api version for a new non stored config and store it locally if the version is valid
@@ -57,7 +53,7 @@ internal interface ServerConfigRepository {
      * @return NetworkFailure in case of remote communication error
      * @return StorageFailure in case of DB errors when storing configuration
      */
-    suspend fun fetchApiVersionAndStore(serverConfigResponse: ServerConfigResponse): Either<CoreFailure, ServerConfig>
+    suspend fun fetchApiVersionAndStore(links: ServerConfig.Links): Either<CoreFailure, ServerConfig>
 
     /**
      * retrieve a config from the local DB by ID
@@ -77,9 +73,10 @@ internal class ServerConfigDataSource(
     private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
 ) : ServerConfigRepository {
 
-    override suspend fun fetchRemoteConfig(serverConfigUrl: String): Either<NetworkFailure, ServerConfigResponse> = wrapApiRequest {
+    override suspend fun fetchRemoteConfig(serverConfigUrl: String): Either<NetworkFailure, ServerConfig.Links> = wrapApiRequest {
         api.fetchServerConfig(serverConfigUrl)
-    }
+    }.map { serverConfigMapper.fromDTO(it) }
+
 
     override fun configList(): Either<StorageFailure, List<ServerConfig>> =
         wrapStorageRequest { dao.allConfig() }.map { it.map(serverConfigMapper::fromEntity) }
@@ -90,17 +87,21 @@ internal class ServerConfigDataSource(
     override fun deleteById(id: String) = wrapStorageRequest { dao.deleteById(id) }
 
     override fun delete(serverConfig: ServerConfig) = deleteById(serverConfig.id)
+    override suspend fun getOrFetchMetadata(serverLinks: ServerConfig.Links): Either<CoreFailure, ServerConfig> =
+        wrapStorageRequest { dao.configByLinks(serverLinks.title, serverLinks.api, serverLinks.webSocket) }.fold({
+            fetchApiVersionAndStore(serverLinks)
+        }, {
+            Either.Right(serverConfigMapper.fromEntity(it))
+        })
 
-    override fun storeConfig(
-        serverConfigResponse: ServerConfigResponse, domain: String?, apiVersion: Int, federation: Boolean
-    ): Either<StorageFailure, ServerConfig> = wrapStorageRequest {
-        with(serverConfigResponse.endpoints) {
+    override fun storeConfig(links: ServerConfig.Links, metadata: ServerConfig.MetaData): Either<StorageFailure, ServerConfig> =
+        wrapStorageRequest {
             // check if such config is already inserted
-            val storedConfigId = dao.configByUniqueFields(serverConfigResponse.title, apiBaseUrl, webSocketBaseUrl, domain)?.id
+            val storedConfigId = dao.configByLinks(links.title, links.api, links.webSocket)?.id
             if (storedConfigId != null) {
                 // if already exists then just update it
-                dao.updateApiVersion(storedConfigId, apiVersion)
-                if (federation) dao.setFederationToTrue(storedConfigId)
+                dao.updateApiVersion(storedConfigId, metadata.commonApiVersion.version)
+                if (metadata.federation) dao.setFederationToTrue(storedConfigId)
                 storedConfigId
             } else {
                 // otherwise insert new config
@@ -108,29 +109,28 @@ internal class ServerConfigDataSource(
                 dao.insert(
                     ServerConfigurationDAO.InsertData(
                         id = newId,
-                        apiBaseUrl = apiBaseUrl,
-                        accountBaseUrl = accountsBaseUrl,
-                        webSocketBaseUrl = webSocketBaseUrl,
-                        blackListUrl = blackListUrl,
-                        teamsUrl = teamsUrl,
-                        websiteUrl = websiteUrl,
-                        title = serverConfigResponse.title,
-                        federation = federation,
-                        domain = domain,
-                        commonApiVersion = apiVersion
+                        apiBaseUrl = links.api,
+                        accountBaseUrl = links.accounts,
+                        webSocketBaseUrl = links.webSocket,
+                        blackListUrl = links.blackList,
+                        teamsUrl = links.teams,
+                        websiteUrl = links.website,
+                        title = links.title,
+                        federation = metadata.federation,
+                        domain = metadata.domain,
+                        commonApiVersion = metadata.commonApiVersion.version
                     )
                 )
                 newId
             }
-        }
-    }.flatMap { storedConfigId ->
-        wrapStorageRequest { dao.configById(storedConfigId) }
-    }.map { serverConfigMapper.fromEntity(it) }
+        }.flatMap { storedConfigId ->
+            wrapStorageRequest { dao.configById(storedConfigId) }
+        }.map { serverConfigMapper.fromEntity(it) }
 
-    override suspend fun fetchApiVersionAndStore(serverConfigResponse: ServerConfigResponse): Either<CoreFailure, ServerConfig> =
-        wrapApiRequest { versionApi.fetchApiVersion(Url(serverConfigResponse.endpoints.apiBaseUrl)) }
+    override suspend fun fetchApiVersionAndStore(links: ServerConfig.Links): Either<CoreFailure, ServerConfig> =
+        wrapApiRequest { versionApi.fetchApiVersion(Url(links.api)) }
             .flatMap { metaData ->
-                storeConfig(serverConfigResponse, metaData.domain, metaData.commonApiVersion.version, metaData.federation)
+                storeConfig(links, serverConfigMapper.fromDTO(metaData))
             }
 
 

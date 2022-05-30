@@ -7,8 +7,8 @@ import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.logic.util.stubs.newServerConfig
+import com.wire.kalium.logic.util.stubs.newServerConfigDTO
 import com.wire.kalium.logic.util.stubs.newServerConfigEntity
-import com.wire.kalium.logic.util.stubs.newServerConfigResponse
 import com.wire.kalium.network.api.configuration.ServerConfigApi
 import com.wire.kalium.network.api.versioning.VersionApi
 import com.wire.kalium.network.tools.ApiVersionDTO
@@ -59,14 +59,14 @@ class ServerConfigRepositoryTest {
     @Test
     fun givenUrl_whenFetchingServerConfigSuccess_thenTheSuccessIsReturned() = runTest {
         val serverConfigUrl = SERVER_CONFIG_URL
-        val expected = NetworkResponse.Success(SERVER_CONFIG_RESPONSE, mapOf(), 200)
+        val expected = SERVER_CONFIG.links
         given(serverConfigApi)
             .coroutine { serverConfigApi.fetchServerConfig(serverConfigUrl) }
-            .then { expected }
+            .then { NetworkResponse.Success(SERVER_CONFIG_RESPONSE.links, mapOf(), 200) }
 
         val actual = serverConfigRepository.fetchRemoteConfig(serverConfigUrl)
 
-        actual.shouldSucceed { assertEquals(it, expected.value) }
+        actual.shouldSucceed { assertEquals(expected, it) }
         verify(serverConfigApi)
             .coroutine { serverConfigApi.fetchServerConfig(serverConfigUrl) }
             .wasInvoked(exactly = once)
@@ -136,7 +136,7 @@ class ServerConfigRepositoryTest {
 
     @Test
     fun givenValidCompatibleApiVersion_whenStoringConfigLocally_thenConfigIsStored() = runTest {
-        val testConfigResponse = newServerConfigResponse(1)
+        val testConfigResponse = newServerConfig(1).links
         val expected = newServerConfig(1)
         val versionInfoDTO = ServerConfigDTO.MetaData(
             domain = expected.metaData.domain,
@@ -155,8 +155,8 @@ class ServerConfigRepositoryTest {
             .then { newServerConfigEntity(1) }
 
         given(serverConfigDAO)
-            .function(serverConfigDAO::configByUniqueFields)
-            .whenInvokedWith(any(), any(), any(), any())
+            .function(serverConfigDAO::configByLinks)
+            .whenInvokedWith(any(), any(), any())
             .thenReturn(null)
 
         serverConfigRepository.fetchApiVersionAndStore(testConfigResponse).shouldSucceed {
@@ -195,7 +195,7 @@ class ServerConfigRepositoryTest {
         )
 
         given(serverConfigDAO)
-            .invocation { with(serverConfigEntity) { configByUniqueFields(links.title, links.api, links.webSocket, metaData.domain) } }
+            .invocation { with(serverConfigEntity) { configByLinks(links.title, links.api, links.webSocket) } }
             .then { serverConfigEntity }
         given(serverConfigDAO)
             .function(serverConfigDAO::configById)
@@ -203,12 +203,12 @@ class ServerConfigRepositoryTest {
             .then { newServerConfigEntity }
 
         serverConfigRepository
-            .storeConfig(newServerConfigResponse(1), serverConfigEntity.metaData.domain, newApiVersion, newFederation)
+            .storeConfig(expected.links, expected.metaData)
             .shouldSucceed { assertEquals(expected, it) }
 
         verify(serverConfigDAO)
-            .function(serverConfigDAO::configByUniqueFields)
-            .with(any(), any(), any(), any())
+            .function(serverConfigDAO::configByLinks)
+            .with(any(), any(), any())
             .wasInvoked(exactly = once)
         verify(serverConfigDAO)
             .function(serverConfigDAO::insert)
@@ -234,25 +234,24 @@ class ServerConfigRepositoryTest {
         val expected = newServerConfig(1)
 
         given(serverConfigDAO)
-            .invocation { with(serverConfig) { configByUniqueFields(links.title, links.api, links.webSocket, metaData.domain) } }
+            .invocation { with(serverConfig) { configByLinks(links.title, links.api, links.webSocket) } }
             .then { null }
         given(serverConfigDAO)
             .function(serverConfigDAO::configById)
             .whenInvokedWith(any())
             .then { serverConfig }
+        // config is not inserted before
+        given(serverConfigDAO)
+            .invocation { configByLinks(serverConfig.links.title, serverConfig.links.api, serverConfig.links.webSocket) }
+            .then { null }
 
         serverConfigRepository
-            .storeConfig(
-                newServerConfigResponse(1),
-                serverConfig.metaData.domain,
-                serverConfig.metaData.apiVersion,
-                serverConfig.metaData.federation
-            )
+            .storeConfig(expected.links, expected.metaData)
             .shouldSucceed { assertEquals(it, expected) }
 
         verify(serverConfigDAO)
-            .function(serverConfigDAO::configByUniqueFields)
-            .with(any(), any(), any(), any())
+            .function(serverConfigDAO::configByLinks)
+            .with(any(), any(), any())
             .wasInvoked(exactly = once)
         verify(serverConfigDAO)
             .function(serverConfigDAO::insert)
@@ -275,7 +274,7 @@ class ServerConfigRepositoryTest {
 
     private companion object {
         const val SERVER_CONFIG_URL = "https://test.test/test.json"
-        val SERVER_CONFIG_RESPONSE = newServerConfigResponse(1)
+        val SERVER_CONFIG_RESPONSE = newServerConfigDTO(1)
         val SERVER_CONFIG = newServerConfig(1)
     }
 }
