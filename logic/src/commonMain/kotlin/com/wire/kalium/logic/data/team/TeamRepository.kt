@@ -61,7 +61,7 @@ internal class TeamDataSource(
         }
     }.flatMap { teamMembers ->
         wrapStorageRequest {
-            userDAO.insertUsers(teamMembers)
+            userDAO.upsertTeamMembers(teamMembers)
         }
     }
 
