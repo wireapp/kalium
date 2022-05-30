@@ -1,11 +1,12 @@
 name: Auto assign author to PR
 on:
     pull_request:
-        types: [ opened ]
+        types: [ opened, ready_for_review, synchronize ]
 
 jobs:
     assignAuthor:
         runs-on: ubuntu-latest
+        if: github.event.pull_request.draft == false
         steps:
             -   uses: samspills/assign-pr-to-author@v1.0.1
                 with:
