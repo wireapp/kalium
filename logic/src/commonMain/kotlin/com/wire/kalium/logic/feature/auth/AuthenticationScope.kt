@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.auth
 
 import com.benasher44.uuid.uuid4
+import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.data.auth.login.LoginRepository
@@ -46,7 +47,7 @@ class AuthenticationScope(
 
     val login: LoginUseCase get() = LoginUseCaseImpl(loginRepository, validateEmailUseCase, validateUserHandleUseCase, backendLinks)
     val register: RegisterScope get() = RegisterScope(registerAccountRepository, backendLinks)
-    val ssoLoginScope: SSOLoginScope get() = SSOLoginScope(ssoLoginRepository)
+    val ssoLoginScope: SSOLoginScope get() = SSOLoginScope(ssoLoginRepository, backendLinks, globalScope.serverConfigRepository)
 }
 
 class ServerMetaDataManagerImpl internal constructor(
