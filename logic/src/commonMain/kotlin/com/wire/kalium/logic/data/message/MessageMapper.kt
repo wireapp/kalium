@@ -2,6 +2,7 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
@@ -9,9 +10,12 @@ import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Video
 import com.wire.kalium.logic.data.notification.LocalNotificationMessage
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.persistence.dao.Member as PersistedMember
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityContent.AssetMessageContent
 import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityContent.TextMessageContent
+import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityContent.MemberJoinContent
+import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityContent.MemberLeaveContent
 
 interface MessageMapper {
     fun fromMessageToEntity(message: Message): MessageEntity
@@ -19,7 +23,11 @@ interface MessageMapper {
     fun fromMessageToLocalNotificationMessage(message: Message, author: LocalNotificationMessageAuthor): LocalNotificationMessage
 }
 
-class MessageMapperImpl(private val idMapper: IdMapper, private val assetMapper: AssetMapper = MapperProvider.assetMapper()) :
+class MessageMapperImpl(
+    private val idMapper: IdMapper,
+    private val memberMapper: MemberMapper,
+    private val assetMapper: AssetMapper = MapperProvider.assetMapper()
+) :
     MessageMapper {
     override fun fromMessageToEntity(message: Message): MessageEntity {
         val status = when (message.status) {
@@ -52,6 +60,12 @@ class MessageMapperImpl(private val idMapper: IdMapper, private val assetMapper:
                     )
                 }
             }
+            is MessageContent.MemberJoin -> MemberJoinContent(
+                memberUserIdList = message.content.members.map { memberMapper.toDaoModel(it).user }
+            )
+            is MessageContent.MemberLeave -> MemberLeaveContent(
+                memberUserIdList = message.content.members.map { memberMapper.toDaoModel(it).user }
+            )
             else -> TextMessageContent(messageBody = "")
         }
 
@@ -79,6 +93,9 @@ class MessageMapperImpl(private val idMapper: IdMapper, private val assetMapper:
                     MapperProvider.assetMapper().fromAssetEntityToAssetContent(messageContent)
                 )
             }
+
+            is MemberJoinContent -> MessageContent.MemberJoin(messageContent.memberUserIdList.map { memberMapper.fromDaoModel(it) })
+            is MemberLeaveContent -> MessageContent.MemberLeave(messageContent.memberUserIdList.map { memberMapper.fromDaoModel(it) })
 
             else -> MessageContent.Unknown
         }

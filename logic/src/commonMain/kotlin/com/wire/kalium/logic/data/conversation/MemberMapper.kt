@@ -5,6 +5,7 @@ import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.conversation.ConversationMember
 import com.wire.kalium.network.api.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.user.client.SimpleClientResponse
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.Member as PersistedMember
 
 interface MemberMapper {
@@ -13,6 +14,7 @@ interface MemberMapper {
     fun fromMapOfClientsResponseToRecipients(qualifiedMap: Map<UserId, List<SimpleClientResponse>>): List<Recipient>
     fun fromApiModelToDaoModel(conversationMembersResponse: ConversationMembersResponse): List<PersistedMember>
     fun fromDaoModel(entity: PersistedMember): Member
+    fun fromDaoModel(qualifiedId: QualifiedIDEntity): Member
     fun toDaoModel(member: Member): PersistedMember
 }
 
@@ -50,4 +52,5 @@ internal class MemberMapperImpl(private val idMapper: IdMapper) : MemberMapper {
         }
 
     override fun fromDaoModel(entity: PersistedMember): Member = Member(idMapper.fromDaoModel(entity.user))
+    override fun fromDaoModel(qualifiedId: QualifiedIDEntity): Member = fromDaoModel(PersistedMember(qualifiedId))
 }
