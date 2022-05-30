@@ -7,13 +7,13 @@ import kotlinx.serialization.Serializable
  * data class representing the remote server config json
  */
 @Serializable
-data class ServerConfigResponse(
+internal data class ServerConfigResponse(
     @SerialName("endpoints") val endpoints: EndPoints,
     @SerialName("title") val title: String
 )
 
 @Serializable
-data class EndPoints(
+internal data class EndPoints(
     @SerialName("backendURL") val apiBaseUrl: String,
     @SerialName("backendWSURL") val webSocketBaseUrl: String,
     @SerialName("blackListURL") val blackListUrl: String,
