@@ -25,11 +25,21 @@ insertUser:
 INSERT OR REPLACE INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
+updateUser:
+UPDATE User
+SET name = ?, handle = ?, email = ?, phone = ?, accent_id = ?, team = ?, preview_asset_id = ?, complete_asset_id = ?
+WHERE qualified_id = ?;
+
+updateTeamMemberUser:
+UPDATE User
+SET team = ?, connection_status = ?
+WHERE qualified_id = ?;
+
 insertOrIgnoreUserId:
 INSERT OR IGNORE INTO User(qualified_id)
 VALUES(?);
 
-updateUser:
+updateSelfUser:
 UPDATE User
 SET name = ?, handle = ?, email = ?, accent_id = ?, preview_asset_id = ?, complete_asset_id = ?
 WHERE qualified_id = ?;
