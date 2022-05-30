@@ -18,7 +18,7 @@ import kotlinx.serialization.encoding.Encoder
 data class ServerConfig(
     @SerialName("config_id") val id: String,
     @SerialName("links") val links: Links,
-    @SerialName("metadata")val metaData: MetaData
+    @SerialName("metadata") val metaData: MetaData
 ) {
     @Serializable
     data class Links(
@@ -30,6 +30,7 @@ data class ServerConfig(
         @SerialName("websiteUrl") val website: String,
         @SerialName("title") val title: String
     )
+
     @Serializable
     data class MetaData(
         @SerialName("federation") val federation: Boolean,
@@ -69,9 +70,10 @@ interface ServerConfigMapper {
     fun toDTO(links: ServerConfig.Links): ServerConfigDTO.Links
     fun toDTO(serverConfigEntity: ServerConfigEntity): ServerConfigDTO
     fun fromDTO(wireServer: ServerConfigDTO): ServerConfig
+    fun fromDTO(links: ServerConfigDTO.Links): ServerConfig.Links
+    fun fromDTO(metadata: ServerConfigDTO.MetaData): ServerConfig.MetaData
     fun toEntity(serverLinks: ServerConfig): ServerConfigEntity
     fun toEntity(serverLinks: ServerConfig.Links): ServerConfigEntity.Links
-
     fun fromEntity(serverConfigEntity: ServerConfigEntity): ServerConfig
     fun fromEntity(serverConfigEntityLinls: ServerConfigEntity.Links): ServerConfig.Links
 
@@ -126,24 +128,26 @@ class ServerConfigMapperImpl(
 
 
     override fun fromDTO(wireServer: ServerConfigDTO): ServerConfig = with(wireServer) {
-        ServerConfig(
-            id = id, ServerConfig.Links(
-                api = links.api.toString(),
-                website = links.website.toString(),
-                webSocket = links.webSocket.toString(),
-                accounts = links.accounts.toString(),
-                blackList = links.blackList.toString(),
-                teams = links.teams.toString(),
-                title = links.title,
-            ), ServerConfig.MetaData(
-                commonApiVersion = apiVersionMapper.fromDTO(metaData.commonApiVersion),
-                federation = metaData.federation,
-                domain = metaData.domain
-            )
+        ServerConfig(id = id, links = fromDTO(links), metaData = fromDTO(metaData))
+    }
+
+    override fun fromDTO(links: ServerConfigDTO.Links): ServerConfig.Links = with(links) {
+        ServerConfig.Links(
+            api = api.toString(),
+            website = website.toString(),
+            webSocket = webSocket.toString(),
+            accounts = accounts.toString(),
+            blackList = blackList.toString(),
+            teams = teams.toString(),
+            title = title,
         )
     }
 
-    override fun toEntity(backend: ServerConfig): ServerConfigEntity = with(backend) {
+    override fun fromDTO(metadata: ServerConfigDTO.MetaData): ServerConfig.MetaData = with(metadata) {
+        ServerConfig.MetaData(federation, apiVersionMapper.fromDTO(commonApiVersion), domain)
+    }
+
+    override fun toEntity(serverLinks: ServerConfig): ServerConfigEntity = with(serverLinks) {
         ServerConfigEntity(
             id = id,
             links = toEntity(links),
