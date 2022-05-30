@@ -1,5 +1,4 @@
 import groovy.json.JsonSlurper
-import org.gradle.api.GradleException
 import org.ajoberstar.grgit.Grgit
 import java.io.File
 import org.ajoberstar.grgit.Credentials
