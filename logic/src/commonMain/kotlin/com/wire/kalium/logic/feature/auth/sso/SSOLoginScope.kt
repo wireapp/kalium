@@ -13,7 +13,13 @@ class SSOLoginScope internal constructor(
     private val sessionMapper: SessionMapper = MapperProvider.sessionMapper()
 ) {
     private val validateSSOCodeUseCase: ValidateSSOCodeUseCase get() = ValidateSSOCodeUseCaseImpl()
-    val initiate: SSOInitiateLoginUseCase get() = SSOInitiateLoginUseCaseImpl(ssoLoginRepository, validateSSOCodeUseCase, serverLinks, serverConfigRepository)
+    val initiate: SSOInitiateLoginUseCase
+        get() = SSOInitiateLoginUseCaseImpl(
+            ssoLoginRepository,
+            validateSSOCodeUseCase,
+            serverLinks,
+            serverConfigRepository
+        )
     val finalize: SSOFinalizeLoginUseCase get() = SSOFinalizeLoginUseCaseImpl(ssoLoginRepository)
     val getLoginSessionGet: GetSSOLoginSessionUseCase get() = GetSSOLoginSessionUseCaseImpl(ssoLoginRepository, sessionMapper, serverLinks)
     val metaData: SSOMetaDataUseCase get() = SSOMetaDataUseCaseImpl(ssoLoginRepository)

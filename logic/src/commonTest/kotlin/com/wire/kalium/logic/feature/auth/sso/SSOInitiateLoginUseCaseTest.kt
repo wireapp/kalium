@@ -23,8 +23,10 @@ class SSOInitiateLoginUseCaseTest {
 
     @Mock
     private val ssoLoginRepository = mock(SSOLoginRepository::class)
+
     @Mock
     private val validateUUIDUseCase = mock(ValidateSSOCodeUseCase::class)
+
     @Mock
     private val serverConfigRepository: ServerConfigRepository = mock(ServerConfigRepository::class)
 
@@ -35,7 +37,8 @@ class SSOInitiateLoginUseCaseTest {
 
     @BeforeTest
     fun setup() {
-        ssoInitiateLoginUseCase = SSOInitiateLoginUseCaseImpl(ssoLoginRepository, validateUUIDUseCase, serverConfig.links, serverConfigRepository)
+        ssoInitiateLoginUseCase =
+            SSOInitiateLoginUseCaseImpl(ssoLoginRepository, validateUUIDUseCase, serverConfig.links, serverConfigRepository)
     }
 
     @Test
