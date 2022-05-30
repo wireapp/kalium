@@ -53,7 +53,7 @@ class ConnectionStatusMapperTest {
     }
 
     @Test
-    fun givenAModelConnectionState_whenMappingToApiModelToAnInvalid_thenTheFieldsShouldReturnsNull() {
+    fun givenAModelConnectionState_whenMappingToAnInvalidApiModel_thenTheReturnFieldShouldBeNull() {
         val accepted = ConnectionState.NOT_CONNECTED
         val apiState = mapper.toApiModel(accepted)
 

@@ -221,6 +221,7 @@ class ConnectionRepositoryTest {
             .whenInvokedWith(eq(UserIDEntity(userId.value, userId.domain)), any(), any())
             .then { _, _, _ -> return@then }
 
+        // when
         val result = connectionRepository.updateConnectionStatus(UserId(userId.value, userId.domain), ConnectionState.ACCEPTED)
         result.shouldSucceed()
 
@@ -248,6 +249,7 @@ class ConnectionRepositoryTest {
             .whenInvokedWith(eq(UserIDEntity(userId.value, userId.domain)), any(), any())
             .then { _, _, _ -> return@then }
 
+        // when
         val result = connectionRepository.updateConnectionStatus(UserId(userId.value, userId.domain), ConnectionState.NOT_CONNECTED)
 
         // then
@@ -275,6 +277,7 @@ class ConnectionRepositoryTest {
             .whenInvokedWith(eq(UserIDEntity(userId.value, userId.domain)), any(), any())
             .then { _, _, _ -> return@then }
 
+        // when
         val result = connectionRepository.updateConnectionStatus(UserId(userId.value, userId.domain), ConnectionState.ACCEPTED)
 
         // then
