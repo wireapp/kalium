@@ -11,8 +11,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MEMBER_
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MEMBER_LEAVE
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.TEXT
 import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityContent.AssetMessageContent
-import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityContent.MemberJoinContent
-import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityContent.MemberLeaveContent
+import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityContent.MemberChangeContent
 import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityContent.TextMessageContent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -40,8 +39,8 @@ class MessageMapper {
                         assetDownloadStatus = msg.asset_download_status
                     )
                 }
-                MEMBER_JOIN -> MemberJoinContent(memberUserIdList = msg.member_list ?: listOf())
-                MEMBER_LEAVE -> MemberLeaveContent(memberUserIdList = msg.member_list ?: listOf())
+                MEMBER_JOIN -> MemberChangeContent.Join(memberUserIdList = msg.member_list ?: listOf())
+                MEMBER_LEAVE -> MemberChangeContent.Leave(memberUserIdList = msg.member_list ?: listOf())
             },
 
             // Common Message fields
@@ -95,11 +94,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             asset_domain = if (message.content is AssetMessageContent) message.content.assetDomain else null,
             asset_encryption_algorithm = if (message.content is AssetMessageContent) message.content.assetEncryptionAlgorithm else null,
             asset_download_status = if (message.content is AssetMessageContent) message.content.assetDownloadStatus else null,
-            member_list = when(message.content) {
-                is MemberJoinContent -> message.content.memberUserIdList
-                is MemberLeaveContent -> message.content.memberUserIdList
-                else -> null
-            },
+            member_list = if (message.content is MemberChangeContent) message.content.memberUserIdList else null,
             conversation_id = message.conversationId,
             date = message.date,
             sender_user_id = message.senderUserId,
@@ -147,8 +142,8 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
     private fun contentTypeOf(content: MessageEntity.MessageEntityContent): MessageEntity.ContentType = when (content) {
         is TextMessageContent -> TEXT
         is AssetMessageContent -> ASSET
-        is MemberJoinContent -> MEMBER_JOIN
-        is MemberLeaveContent -> MEMBER_LEAVE
+        is MemberChangeContent.Join -> MEMBER_JOIN
+        is MemberChangeContent.Leave -> MEMBER_LEAVE
     }
 
     override suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity) =

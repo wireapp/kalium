@@ -115,7 +115,7 @@ class ConversationEventReceiverImpl(
         .onSuccess {
             val message = Message(
                 id = event.id,
-                content = MessageContent.MemberJoin(members = event.members),
+                content = MessageContent.MemberChange.Join(members = event.members),
                 conversationId = event.conversationId,
                 date = event.time,
                 senderUserId = event.addedBy,
@@ -135,7 +135,7 @@ class ConversationEventReceiverImpl(
         .onSuccess {
             val message = Message(
                 id = event.id,
-                content = MessageContent.MemberLeave(members = event.members),
+                content = MessageContent.MemberChange.Leave(members = event.members),
                 conversationId = event.conversationId,
                 date = event.time,
                 senderUserId = event.removedBy,
@@ -222,6 +222,7 @@ class ConversationEventReceiverImpl(
                     content = message.content
                 )
             }
+            is MessageContent.MemberChange -> messageRepository.persistMessage(message)
             is MessageContent.Unknown -> kaliumLogger.i(message = "Unknown Message received: $message")
         }
 

@@ -10,12 +10,10 @@ import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Video
 import com.wire.kalium.logic.data.notification.LocalNotificationMessage
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.persistence.dao.Member as PersistedMember
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityContent.AssetMessageContent
 import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityContent.TextMessageContent
-import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityContent.MemberJoinContent
-import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityContent.MemberLeaveContent
+import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityContent.MemberChangeContent
 
 interface MessageMapper {
     fun fromMessageToEntity(message: Message): MessageEntity
@@ -60,12 +58,13 @@ class MessageMapperImpl(
                     )
                 }
             }
-            is MessageContent.MemberJoin -> MemberJoinContent(
-                memberUserIdList = message.content.members.map { memberMapper.toDaoModel(it).user }
-            )
-            is MessageContent.MemberLeave -> MemberLeaveContent(
-                memberUserIdList = message.content.members.map { memberMapper.toDaoModel(it).user }
-            )
+            is MessageContent.MemberChange -> {
+                val memberUserIdList = message.content.members.map { memberMapper.toDaoModel(it).user }
+                when(message.content) {
+                    is MessageContent.MemberChange.Join -> MemberChangeContent.Join(memberUserIdList)
+                    is MessageContent.MemberChange.Leave -> MemberChangeContent.Leave(memberUserIdList)
+                }
+            }
             else -> TextMessageContent(messageBody = "")
         }
 
@@ -94,8 +93,13 @@ class MessageMapperImpl(
                 )
             }
 
-            is MemberJoinContent -> MessageContent.MemberJoin(messageContent.memberUserIdList.map { memberMapper.fromDaoModel(it) })
-            is MemberLeaveContent -> MessageContent.MemberLeave(messageContent.memberUserIdList.map { memberMapper.fromDaoModel(it) })
+            is MemberChangeContent -> {
+                val memberList = messageContent.memberUserIdList.map { memberMapper.fromDaoModel(it) }
+                when(messageContent) {
+                    is MemberChangeContent.Join -> MessageContent.MemberChange.Join(memberList)
+                    is MemberChangeContent.Leave -> MessageContent.MemberChange.Leave(memberList)
+                }
+            }
 
             else -> MessageContent.Unknown
         }

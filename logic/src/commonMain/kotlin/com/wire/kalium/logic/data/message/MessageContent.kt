@@ -13,7 +13,9 @@ sealed class MessageContent {
         val conversationId: String,
         val qualifiedConversationId: QualifiedConversationId?
     ) : MessageContent()
-    data class MemberJoin(val members: List<Member>) : MessageContent()
-    data class MemberLeave(val members: List<Member>) : MessageContent()
+    sealed class MemberChange(open val members: List<Member>) : MessageContent() {
+        data class Join(override val members: List<Member>): MemberChange(members)
+        data class Leave(override val members: List<Member>): MemberChange(members)
+    }
     object Unknown : MessageContent()
 }

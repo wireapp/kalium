@@ -16,6 +16,7 @@ data class MessageEntity(
 ) {
     sealed class MessageEntityContent {
         data class TextMessageContent(val messageBody: String) : MessageEntityContent()
+
         data class AssetMessageContent(
             val assetMimeType: String,
             val assetSizeInBytes: Long,
@@ -35,8 +36,11 @@ data class MessageEntity(
             val assetEncryptionAlgorithm: String?,
             val assetDownloadStatus: DownloadStatus? = null,
         ) : MessageEntityContent()
-        data class MemberJoinContent(val memberUserIdList: List<QualifiedIDEntity>) : MessageEntityContent()
-        data class MemberLeaveContent(val memberUserIdList: List<QualifiedIDEntity>) : MessageEntityContent()
+
+        sealed class MemberChangeContent(open val memberUserIdList: List<QualifiedIDEntity>) : MessageEntityContent() {
+            data class Join(override val memberUserIdList: List<QualifiedIDEntity>): MemberChangeContent(memberUserIdList)
+            data class Leave(override val memberUserIdList: List<QualifiedIDEntity>): MemberChangeContent(memberUserIdList)
+        }
     }
 
     enum class Status {
