@@ -12,7 +12,7 @@ class ObserveConversationDetailsUseCase(
 ) {
 
     suspend operator fun invoke(conversationId: ConversationId): Flow<ConversationDetails> {
-        syncManager.waitForSlowSyncToComplete()
+        syncManager.startSyncIfIdle()
         return conversationRepository.getConversationDetailsById(conversationId)
     }
 }
