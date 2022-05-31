@@ -10,6 +10,7 @@ import com.wire.kalium.logic.feature.message.MessageSender
 
 expect class GlobalCallManager {
 
+    @Suppress("LongParameterList")
     fun getCallManagerForClient(
         userId: QualifiedID,
         callRepository: CallRepository,

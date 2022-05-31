@@ -45,6 +45,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
+@Suppress("LongParameterList")
 actual class CallManagerImpl(
     private val calling: Calling,
     private val callRepository: CallRepository,
