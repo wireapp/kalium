@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
 
+@Suppress("TooManyFunctions")
 interface MessageRepository {
     suspend fun getMessagesForConversation(conversationId: ConversationId, limit: Int, offset: Int): Flow<List<Message>>
     suspend fun persistMessage(message: Message): Either<CoreFailure, Unit>
