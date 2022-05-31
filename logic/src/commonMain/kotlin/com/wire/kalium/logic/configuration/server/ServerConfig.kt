@@ -73,7 +73,7 @@ interface ServerConfigMapper {
     fun toEntity(serverLinks: ServerConfig.Links): ServerConfigEntity.Links
 
     fun fromEntity(serverConfigEntity: ServerConfigEntity): ServerConfig
-    fun fromEntity(serverConfigEntityLinls: ServerConfigEntity.Links): ServerConfig.Links
+    fun fromEntity(serverConfigEntityLinks: ServerConfigEntity.Links): ServerConfig.Links
 
 }
 
@@ -173,7 +173,7 @@ class ServerConfigMapperImpl(
         )
     }
 
-    override fun fromEntity(serverConfigEntityLinls: ServerConfigEntity.Links): ServerConfig.Links = with(serverConfigEntityLinls) {
+    override fun fromEntity(serverConfigEntityLinks: ServerConfigEntity.Links): ServerConfig.Links = with(serverConfigEntityLinks) {
         ServerConfig.Links(
             api = api, accounts = accounts, webSocket = webSocket, blackList = blackList, teams = teams, website = website, title = title
         )
