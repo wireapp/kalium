@@ -1,5 +1,3 @@
-import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet
-
 plugins {
     Plugins.androidLibrary(this)
     Plugins.multiplatform(this)
@@ -21,6 +19,9 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
+    }
+    packagingOptions {
+        resources.pickFirsts.add("google/protobuf/*.proto")
     }
 }
 
