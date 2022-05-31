@@ -40,7 +40,7 @@ class ConnectionRepositoryTest {
     fun givenConnections_whenFetchingConnections_thenConnectionsAreInsertedOrUpdatedIntoDatabase() = runTest {
         // given
         val (arrangement, connectionRepository) = Arrangement().arrange()
-        arrangement.withSuccessfulResponse()
+        arrangement.withSuccessfulFetchSelfUserConnectionsResponse()
 
         //when
         val result = connectionRepository.fetchSelfUserConnections()
@@ -61,7 +61,7 @@ class ConnectionRepositoryTest {
         val userId = NetworkUserId("user_id", "domain_id")
         val (arrangement, connectionRepository) = Arrangement().arrange()
         arrangement
-            .withSuccessfulResponse()
+            .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
             .withSuccessfulCreateConnectionResponse(userId)
 
         // when
@@ -85,7 +85,7 @@ class ConnectionRepositoryTest {
         val userId = NetworkUserId("user_id", "domain_id")
         val (arrangement, connectionRepository) = Arrangement().arrange()
         arrangement
-            .withSuccessfulResponse()
+            .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
             .withErrorOnCreateConnectionResponse(userId)
 
         // when
@@ -109,7 +109,7 @@ class ConnectionRepositoryTest {
         val userId = NetworkUserId("user_id", "domain_id")
         val (arrangement, connectionRepository) = Arrangement().arrange()
         arrangement
-            .withSuccessfulResponse()
+            .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
             .withSuccessfulCreateConnectionResponse(userId)
             .withErrorOnPersistingConnectionResponse(userId)
 
@@ -331,7 +331,7 @@ class ConnectionRepositoryTest {
             return this
         }
 
-        fun withSuccessfulResponse(): Arrangement {
+        fun withSuccessfulFetchSelfUserConnectionsResponse(stubUserProfileDTO: UserProfileDTO): Arrangement {
             given(connectionApi)
                 .suspendFunction(connectionApi::fetchSelfUserConnections)
                 .whenInvokedWith(eq(null))
