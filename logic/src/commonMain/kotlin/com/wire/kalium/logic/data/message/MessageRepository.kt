@@ -77,7 +77,7 @@ interface MessageRepository {
     ): Either<CoreFailure, Unit>
 }
 
-@Suppress("LongParameterList","TooManyFunctions")
+@Suppress("LongParameterList", "TooManyFunctions")
 class MessageDataSource(
     private val messageApi: MessageApi,
     private val mlsMessageApi: MLSMessageApi,
@@ -217,14 +217,19 @@ class MessageDataSource(
     ): Either<CoreFailure, Unit> {
         val messageToUpdate = getMessageById(conversationId, messageId)
 
-        return messageToUpdate.flatMap {
+        return messageToUpdate.flatMap { message ->
             wrapStorageRequest {
-                messageDAO.updateTextMessageContent(
-                    idMapper.toDaoModel(conversationId),
-                    messageId,
-                    MessageEntity.MessageEntityContent.TextMessageContent(newTextContent)
-                )
+                if (message.content is MessageContent.Text) {
+                    messageDAO.updateTextMessageContent(
+                        idMapper.toDaoModel(conversationId),
+                        messageId,
+                        MessageEntity.MessageEntityContent.TextMessageContent(newTextContent)
+                    )
+                } else {
+                    throw IllegalStateException("Text message can only be updated on message having TextMessageContent")
+                }
             }
         }
     }
 }
+
