@@ -165,7 +165,8 @@ class ConversationEventReceiverImpl(
                     .onSuccess { persistedMessage ->
                         // Check the second asset message is from the same original sender
                         if (isSenderVerified(persistedMessage.id, persistedMessage.conversationId, message.senderUserId)) {
-                            // The asset message received contains the asset decryption keys, so update the preview message persisted previously
+                            // The asset message received contains the asset decryption keys,
+                            // so update the preview message persisted previously
                             updateAssetMessage(persistedMessage, message.content.value.remoteData)?.let {
                                 messageRepository.persistMessage(it)
                             }
