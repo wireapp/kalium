@@ -74,7 +74,7 @@ class MessageMapperImpl(
             conversationId = idMapper.toDaoModel(message.conversationId),
             date = message.date,
             senderUserId = idMapper.toDaoModel(message.senderUserId),
-            senderClientId = message.senderClientId.value,
+            senderClientId = message.senderClientId?.value,
             status = status
         )
     }
@@ -120,7 +120,7 @@ class MessageMapperImpl(
             idMapper.fromDaoModel(message.conversationId),
             message.date,
             idMapper.fromDaoModel(message.senderUserId),
-            ClientId(message.senderClientId),
+            message.senderClientId?.let { ClientId(it) },
             status,
             visibility
         )

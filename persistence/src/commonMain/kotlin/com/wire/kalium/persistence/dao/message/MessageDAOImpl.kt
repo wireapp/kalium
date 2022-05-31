@@ -75,61 +75,53 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
 
     @Suppress("ComplexMethod")
     private fun insertInDB(message: MessageEntity) {
-        queries.insertMessage(
-            id = message.id,
-            text_body = when (message.content) {
-                is TextMessageContent -> message.content.messageBody
-                else -> null
-            },
-            content_type = contentTypeOf(message.content),
-            asset_mime_type = if (message.content is AssetMessageContent) message.content.assetMimeType else null,
-            asset_size = if (message.content is AssetMessageContent) message.content.assetSizeInBytes else null,
-            asset_name = if (message.content is AssetMessageContent) message.content.assetName else null,
-            asset_image_width = if (message.content is AssetMessageContent) message.content.assetImageWidth else null,
-            asset_image_height = if (message.content is AssetMessageContent) message.content.assetImageHeight else null,
-            asset_otr_key = if (message.content is AssetMessageContent) message.content.assetOtrKey else null,
-            asset_sha256 = if (message.content is AssetMessageContent) message.content.assetSha256Key else null,
-            asset_id = if (message.content is AssetMessageContent) message.content.assetId else null,
-            asset_token = if (message.content is AssetMessageContent) message.content.assetToken else null,
-            asset_domain = if (message.content is AssetMessageContent) message.content.assetDomain else null,
-            asset_encryption_algorithm = if (message.content is AssetMessageContent) message.content.assetEncryptionAlgorithm else null,
-            asset_download_status = if (message.content is AssetMessageContent) message.content.assetDownloadStatus else null,
-            member_list = if (message.content is MemberChangeContent) message.content.memberUserIdList else null,
-            conversation_id = message.conversationId,
-            date = message.date,
-            sender_user_id = message.senderUserId,
-            sender_client_id = message.senderClientId,
-            visibility = message.visibility,
-            status = message.status
-        )
-    }
+        when(message.content) {
+            is TextMessageContent -> queries.insertTextMessage(
+                id = message.id,
+                conversation_id = message.conversationId,
+                date = message.date,
+                sender_user_id = message.senderUserId,
+                sender_client_id = message.senderClientId,
+                visibility = message.visibility,
+                status = message.status,
+                content_type = contentTypeOf(message.content),
+                text_body = message.content.messageBody
+            )
+            is AssetMessageContent -> queries.insertAssetMessage(
+                id = message.id,
+                conversation_id = message.conversationId,
+                date = message.date,
+                sender_user_id = message.senderUserId,
+                sender_client_id = message.senderClientId,
+                visibility = message.visibility,
+                status = message.status,
+                content_type = contentTypeOf(message.content),
+                asset_mime_type = message.content.assetMimeType,
+                asset_size = message.content.assetSizeInBytes,
+                asset_name = message.content.assetName,
+                asset_image_width = message.content.assetImageWidth,
+                asset_image_height = message.content.assetImageHeight,
+                asset_otr_key = message.content.assetOtrKey,
+                asset_sha256 = message.content.assetSha256Key,
+                asset_id = message.content.assetId,
+                asset_token = message.content.assetToken,
+                asset_domain = message.content.assetDomain,
+                asset_encryption_algorithm = message.content.assetEncryptionAlgorithm,
+                asset_download_status = message.content.assetDownloadStatus
 
-    override suspend fun updateMessage(message: MessageEntity) =
-        queries.updateMessages(
-            id = message.id,
-            text_body = when (message.content) {
-                is TextMessageContent -> message.content.messageBody
-                else -> null
-            },
-            content_type = contentTypeOf(message.content),
-            asset_mime_type = if (message.content is AssetMessageContent) message.content.assetMimeType else null,
-            asset_size = if (message.content is AssetMessageContent) message.content.assetSizeInBytes else null,
-            asset_name = if (message.content is AssetMessageContent) message.content.assetMimeType else null,
-            asset_image_width = if (message.content is AssetMessageContent) message.content.assetImageWidth else null,
-            asset_image_height = if (message.content is AssetMessageContent) message.content.assetImageHeight else null,
-            asset_otr_key = if (message.content is AssetMessageContent) message.content.assetOtrKey else null,
-            asset_sha256 = if (message.content is AssetMessageContent) message.content.assetSha256Key else null,
-            asset_id = if (message.content is AssetMessageContent) message.content.assetId else null,
-            asset_token = if (message.content is AssetMessageContent) message.content.assetToken else null,
-            asset_domain = if (message.content is AssetMessageContent) message.content.assetDomain else null,
-            asset_encryption_algorithm = if (message.content is AssetMessageContent) message.content.assetEncryptionAlgorithm else null,
-            conversation_id = message.conversationId,
-            date = message.date,
-            sender_user_id = message.senderUserId,
-            sender_client_id = message.senderClientId,
-            visibility = message.visibility,
-            status = message.status
-        )
+            )
+            is MemberChangeContent -> queries.insertMemberChangeMessage(
+                id = message.id,
+                conversation_id = message.conversationId,
+                date = message.date,
+                sender_user_id = message.senderUserId,
+                visibility = message.visibility,
+                status = message.status,
+                content_type = contentTypeOf(message.content),
+                member_list = message.content.memberUserIdList
+            )
+        }
+    }
 
     override suspend fun updateAssetDownloadStatus(
         downloadStatus: MessageEntity.DownloadStatus,

@@ -10,10 +10,15 @@ data class MessageEntity(
     val conversationId: QualifiedIDEntity,
     val date: String,
     val senderUserId: QualifiedIDEntity,
-    val senderClientId: String,
+    val senderClientId: String?, // null only for system messages (`MemberChangeContent`)
     val status: Status,
     val visibility: Visibility = Visibility.VISIBLE
 ) {
+    init {
+        if(content !is MessageEntityContent.MemberChangeContent)
+            requireNotNull(senderClientId) { "${content::class.simpleName} content type requires non-null senderClientId" }
+    }
+
     sealed class MessageEntityContent {
         data class TextMessageContent(val messageBody: String) : MessageEntityContent()
 
@@ -94,7 +99,6 @@ interface MessageDAO {
     suspend fun deleteAllMessages()
     suspend fun insertMessage(message: MessageEntity)
     suspend fun insertMessages(messages: List<MessageEntity>)
-    suspend fun updateMessage(message: MessageEntity)
     suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity)
     suspend fun updateMessageDate(date: String, id: String, conversationId: QualifiedIDEntity)
     suspend fun updateMessagesAddMillisToDate(millis: Long, conversationId: QualifiedIDEntity, status: MessageEntity.Status)

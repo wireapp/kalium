@@ -119,7 +119,7 @@ class ConversationEventReceiverImpl(
                 conversationId = event.conversationId,
                 date = event.time,
                 senderUserId = event.addedBy,
-                senderClientId = ClientId(""), // TODO: should we keep it empty or pass some server data?
+                senderClientId = null,
                 status = Message.Status.SENT
             )
             processMessage(message)
@@ -139,7 +139,7 @@ class ConversationEventReceiverImpl(
                 conversationId = event.conversationId,
                 date = event.time,
                 senderUserId = event.removedBy,
-                senderClientId = ClientId(""), // TODO: should we keep it empty or pass some server data?
+                senderClientId = null,
                 status = Message.Status.SENT
             )
             processMessage(message)

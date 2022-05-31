@@ -10,10 +10,14 @@ data class Message(
     val conversationId: ConversationId,
     val date: String,
     val senderUserId: UserId,
-    val senderClientId: ClientId,
+    val senderClientId: ClientId?, // null only for system messages (`MemberChange` content)
     val status: Status,
     val visibility: Visibility = Visibility.VISIBLE
 ) {
+    init {
+        if(content !is MessageContent.MemberChange)
+            requireNotNull(senderClientId) { "${content::class.simpleName} content type requires non-null senderClientId" }
+    }
     enum class Status {
         PENDING, SENT, READ, FAILED
     }
