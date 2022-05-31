@@ -9,7 +9,16 @@ fun newMessageEntity(
     conversationId: QualifiedIDEntity = QualifiedIDEntity("convId", "convDomain"),
     senderUserId: QualifiedIDEntity = QualifiedIDEntity("senderId", "senderDomain"),
     senderClientId: String = "senderClientId",
-    status: MessageEntity.Status = MessageEntity.Status.PENDING
+    status: MessageEntity.Status = MessageEntity.Status.PENDING,
+    editStatus : MessageEntity.EditStatus = MessageEntity.EditStatus.NotEdited
 ) = MessageEntity(
-    id, content, conversationId, date = "date time", senderUserId, senderClientId, status, visibility = MessageEntity.Visibility.VISIBLE
+    id = id,
+    content = content,
+    conversationId = conversationId,
+    date = "date time",
+    senderUserId = senderUserId,
+    senderClientId = senderClientId,
+    status = status,
+    editStatus = editStatus,
+    visibility = MessageEntity.Visibility.VISIBLE
 )
