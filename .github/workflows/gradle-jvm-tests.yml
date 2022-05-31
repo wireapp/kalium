@@ -3,6 +3,9 @@ name: "JVM & JS Tests"
 on:
   pull_request:
     types: [ opened, synchronize ] # Don't rerun on `edited` to save time
+  push:
+    branches: # Runs on develop to have the coverage diff on every PR
+        - 'develop'
 
 jobs:
   gradle-run-tests:
