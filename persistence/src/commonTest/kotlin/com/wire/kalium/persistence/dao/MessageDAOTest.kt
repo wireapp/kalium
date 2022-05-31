@@ -3,7 +3,6 @@ package com.wire.kalium.persistence.dao
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
-import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
@@ -12,8 +11,6 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
-import kotlin.test.assertFails
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class MessageDAOTest : BaseDatabaseTest() {
@@ -191,7 +188,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     private suspend fun insertInitialData() {
-        userDAO.insertUsers(listOf(userEntity1, userEntity2))
+        userDAO.upsertUsers(listOf(userEntity1, userEntity2))
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.insertConversation(conversationEntity2)
     }

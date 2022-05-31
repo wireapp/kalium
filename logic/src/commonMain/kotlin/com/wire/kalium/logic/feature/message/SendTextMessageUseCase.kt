@@ -25,7 +25,7 @@ class SendTextMessageUseCase(
 ) {
 
     suspend operator fun invoke(conversationId: ConversationId, text: String): Either<CoreFailure, Unit> {
-        syncManager.waitForSlowSyncToComplete()
+        syncManager.startSyncIfIdle()
         val selfUser = userRepository.getSelfUser().first()
 
         val generatedMessageUuid = uuid4().toString()

@@ -36,6 +36,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
@@ -77,12 +78,17 @@ actual class CallManagerImpl(
     private fun startHandleAsync() = scope.async(start = CoroutineStart.LAZY) {
         val selfUserId = userId.await().toString()
         val selfClientId = clientId.await().value
+
+        val waitInitializationJob = Job()
+
         val handle = calling.wcall_create(
             userId = selfUserId,
             clientId = selfClientId,
             readyHandler = { version: Int, arg: Pointer? ->
                 callingLogger.i("$TAG -> readyHandler")
                 onCallingReady()
+                waitInitializationJob.complete()
+                Unit
             }.keepingStrongReference(),
             //TODO(refactor): inject all of these CallbackHandlers in class constructor
             sendHandler = OnSendOTR(deferredHandle, calling, selfUserId, selfClientId, messageSender, scope).keepingStrongReference(),
@@ -105,6 +111,7 @@ actual class CallManagerImpl(
             arg = null
         )
         callingLogger.d("$TAG - wcall_create() called")
+        waitInitializationJob.join()
         handle
     }
 
