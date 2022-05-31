@@ -14,14 +14,18 @@ import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.toConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.toUserId
 import com.wire.kalium.logic.feature.call.scenario.OnAnsweredCall
+import com.wire.kalium.logic.feature.call.scenario.OnClientsRequest
 import com.wire.kalium.logic.feature.call.scenario.OnCloseCall
 import com.wire.kalium.logic.feature.call.scenario.OnConfigRequest
 import com.wire.kalium.logic.feature.call.scenario.OnEstablishedCall
+import com.wire.kalium.logic.feature.call.scenario.OnHttpRequest
 import com.wire.kalium.logic.feature.call.scenario.OnIncomingCall
 import com.wire.kalium.logic.feature.call.scenario.OnMissedCall
 import com.wire.kalium.logic.feature.call.scenario.OnNetworkQualityChanged
@@ -252,7 +256,31 @@ actual class CallManagerImpl(
             }
         }
 
-        // TODO(calling): Clients Request handler
+        // Clients Request
+        scope.launch {
+            withCalling {
+                val selfUserId = userId.await().toString()
+                val selfClientId = clientId.await().value
+
+                val onClientsRequest = OnClientsRequest(
+                    handle = deferredHandle,
+                    calling = calling,
+                    selfUserId = selfUserId,
+                    selfClientId = selfClientId,
+                    messageSender = messageSender,
+                    callingScope = scope
+                )
+
+                wcall_set_req_clients_handler(
+                    inst = deferredHandle.await(),
+                    wcall_req_clients_h = onClientsRequest
+                )
+
+                callingLogger.d("$TAG - wcall_set_req_clients_handler() called")
+            }
+        }
+
+
         // TODO(calling): Active Speakers handler
     }
 
