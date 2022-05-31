@@ -90,7 +90,7 @@ class UserDataSource(
             userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(ids.map(idMapper::toApiModel)))
         }.flatMap {
             wrapStorageRequest {
-                userDAO.insertUsers(it.map(userMapper::fromApiModelToDaoModel))
+                userDAO.upsertUsers(it.map(userMapper::fromApiModelToDaoModel))
             }
         }
 
@@ -112,7 +112,7 @@ class UserDataSource(
             .map { userMapper.fromUpdateRequestToDaoModel(user, updateRequest) }
             .flatMap { userEntity ->
                 wrapStorageRequest {
-                    userDAO.updateUser(userEntity)
+                    userDAO.updateSelfUser(userEntity)
                 }.map { userMapper.fromDaoModelToSelfUser(userEntity) }
             }
     }
