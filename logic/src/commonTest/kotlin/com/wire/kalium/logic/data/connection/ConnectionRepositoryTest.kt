@@ -40,7 +40,7 @@ class ConnectionRepositoryTest {
     fun givenConnections_whenFetchingConnections_thenConnectionsAreInsertedOrUpdatedIntoDatabase() = runTest {
         // given
         val (arrangement, connectionRepository) = Arrangement().arrange()
-        arrangement.withSuccessfulFetchSelfUserConnectionsResponse()
+        arrangement.withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
 
         //when
         val result = connectionRepository.fetchSelfUserConnections()
