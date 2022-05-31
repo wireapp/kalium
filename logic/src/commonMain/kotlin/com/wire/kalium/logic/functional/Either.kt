@@ -56,7 +56,7 @@ sealed class Either<out L, out R> {
  * @see Left
  * @see Right
  */
-inline fun <L, R, T> Either<L, R>.fold(fnL: (L) -> T, fnR: (R) -> T): T = nullableFold(fnL, fnR)!!
+inline fun <L, R, T: Any> Either<L, R>.fold(fnL: (L) -> T, fnR: (R) -> T): T = nullableFold(fnL, fnR)!!
 
 
 /**
