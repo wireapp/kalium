@@ -16,7 +16,7 @@ jobs:
 
       - name: Test with Gradle
         run: |
-          ./gradlew jvmTest -Djava.library.path=$LD_LIBRARY_PATH
+          ./gradlew jvmTest koverMergedXmlReport -Djava.library.path=$LD_LIBRARY_PATH
           ./gradlew jsTest
 
       - name: Install Pip for test result publishing
@@ -28,6 +28,11 @@ jobs:
         with:
           files: |
             **/build/test-results/**/*.xml
+
+      - name: Upload Test Report
+        uses: codecov/codecov-action@v2
+        with:
+            files: "build/reports/kover/report.xml"
 
       - name: Cleanup Gradle Cache
         # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
