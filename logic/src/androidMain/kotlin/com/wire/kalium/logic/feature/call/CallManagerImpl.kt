@@ -138,11 +138,11 @@ actual class CallManagerImpl(
         conversationId: ConversationId,
         callType: CallType,
         conversationType: ConversationType,
-        isAudioCbr: Boolean,
-        isCameraOn: Boolean
+        isAudioCbr: Boolean
     ) {
         callingLogger.d("$TAG -> starting call for conversation = $conversationId..")
         val shouldMute = conversationType == ConversationType.Conference
+        val isCameraOn = callType == CallType.VIDEO
         callRepository.createCall(
             call = Call(
                 conversationId = conversationId,

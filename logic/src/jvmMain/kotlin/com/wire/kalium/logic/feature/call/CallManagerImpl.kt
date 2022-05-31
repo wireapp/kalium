@@ -22,8 +22,7 @@ actual class CallManagerImpl : CallManager {
         conversationId: ConversationId,
         callType: CallType,
         conversationType: ConversationType,
-        isAudioCbr: Boolean,
-        isCameraOn: Boolean
+        isAudioCbr: Boolean
     ) {
         kaliumLogger.w("startCall for JVM but no supported yet.")
     }
