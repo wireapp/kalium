@@ -154,7 +154,7 @@ class TeamRepositoryTest {
 
         // Verifies that userDAO insertUsers was called with the correct mapped values
         verify(userDAO)
-            .suspendFunction(userDAO::insertUsers)
+            .suspendFunction(userDAO::upsertTeamMembers)
             .with(oneOf(listOf(mappedTeamMember)))
             .wasInvoked(exactly = once)
 
