@@ -76,7 +76,7 @@ interface MessageRepository {
     ): Either<CoreFailure, Unit>
 }
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList","TooManyFunctions")
 class MessageDataSource(
     private val messageApi: MessageApi,
     private val mlsMessageApi: MLSMessageApi,
