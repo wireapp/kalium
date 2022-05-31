@@ -79,8 +79,8 @@ class MessageMapperImpl(
         )
     }
 
-    override fun fromEntityToMessage(message: MessageEntity): Message {
-        val content = when (val messageContent = message.content) {
+    private fun fromMessageEntityContentToMessageContent(messageContent: MessageEntity.MessageEntityContent): MessageContent =
+        when (messageContent) {
             // It's a text message
             is TextMessageContent -> {
                 MessageContent.Text(messageContent.messageBody)
@@ -93,6 +93,7 @@ class MessageMapperImpl(
                 )
             }
 
+            // It's a server message
             is MemberChangeContent -> {
                 val memberList = messageContent.memberUserIdList.map { memberMapper.fromDaoModel(it) }
                 when(messageContent) {
@@ -103,6 +104,9 @@ class MessageMapperImpl(
 
             else -> MessageContent.Unknown
         }
+
+    override fun fromEntityToMessage(message: MessageEntity): Message {
+        val content = fromMessageEntityContentToMessageContent(message.content)
         val status = when (message.status) {
             MessageEntity.Status.PENDING -> Message.Status.PENDING
             MessageEntity.Status.SENT -> Message.Status.SENT
