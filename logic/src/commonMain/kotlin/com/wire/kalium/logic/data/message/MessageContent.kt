@@ -14,4 +14,5 @@ sealed class MessageContent {
     ) : MessageContent()
 
     object Unknown : MessageContent()
+    object Empty : MessageContent()
 }
