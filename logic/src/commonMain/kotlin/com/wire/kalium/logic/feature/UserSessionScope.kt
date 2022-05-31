@@ -70,6 +70,7 @@ import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.SyncManagerImpl
 import com.wire.kalium.logic.sync.SyncPendingEventsUseCase
+import com.wire.kalium.logic.sync.handler.MessageTextEditHandler
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.TimeParserImpl
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
@@ -253,6 +254,8 @@ abstract class UserSessionScopeCommon(
         globalCallManager.getFlowManager()
     }
 
+    private val messageTextEditHandler = MessageTextEditHandler(messageRepository)
+
     protected abstract val protoContentMapper: ProtoContentMapper
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiver(
@@ -262,7 +265,8 @@ abstract class UserSessionScopeCommon(
             mlsConversationRepository,
             userRepository,
             protoContentMapper,
-            callManager
+            callManager,
+            messageTextEditHandler
         )
     }
 

@@ -66,7 +66,7 @@ interface MessageRepository {
     suspend fun updateTextMessageContent(
         conversationId: ConversationId,
         messageId: String,
-        newTextContent: MessageContent.Text
+        newTextContent: String
     ): Either<CoreFailure, Unit>
 
     suspend fun updateMessageId(
@@ -212,18 +212,16 @@ class MessageDataSource(
     override suspend fun updateTextMessageContent(
         conversationId: ConversationId,
         messageId: String,
-        newTextContent: MessageContent.Text
+        newTextContent: String
     ): Either<CoreFailure, Unit> {
         val messageToUpdate = getMessageById(conversationId, messageId)
 
         return messageToUpdate.flatMap {
-            if (it.content !is MessageContent.Text) throw IllegalStateException("The message content is not TextMessageContent, cannot update message text")
-
             wrapStorageRequest {
                 messageDAO.updateTextMessageContent(
                     idMapper.toDaoModel(conversationId),
                     messageId,
-                    MessageEntity.MessageEntityContent.TextMessageContent(newTextContent.value)
+                    MessageEntity.MessageEntityContent.TextMessageContent(newTextContent)
                 )
             }
         }

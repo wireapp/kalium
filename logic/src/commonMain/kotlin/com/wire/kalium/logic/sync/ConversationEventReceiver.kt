@@ -20,14 +20,13 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.call.CallManager
-import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.sync.handler.MessageTextEditHandler
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.logic.wrapCryptoRequest
-import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.ktor.utils.io.core.toByteArray
 
 // Suppressed as it's an old issue
@@ -40,8 +39,9 @@ class ConversationEventReceiver(
     private val userRepository: UserRepository,
     private val protoContentMapper: ProtoContentMapper,
     private val callManagerImpl: Lazy<CallManager>,
+    private val editTextHandler: MessageTextEditHandler,
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
-    private val idMapper: IdMapper = MapperProvider.idMapper()
+    private val idMapper: IdMapper = MapperProvider.idMapper(),
 ) : EventReceiver<Event.Conversation> {
 
     override suspend fun onEvent(event: Event.Conversation) {
@@ -198,33 +198,7 @@ class ConversationEventReceiver(
                     content = message.content
                 )
             }
-            is MessageContent.TextEdited -> {
-                messageRepository.updateTextMessageContent(
-                    conversationId = message.conversationId,
-                    messageId = message.content.messageId,
-                    newTextContent = MessageContent.Text(message.content.newContent),
-                ).flatMap {
-                    messageRepository.markMessageAsEdited(
-                        messageUuid = message.content.messageId,
-                        conversationId = message.conversationId,
-                        timeStamp = message.date
-                    )
-                }.flatMap {
-                    // whenever "other" client updates the content message, it discards the previous id
-                    // and replaces it by a new id
-                    // in order to still point to the same message on our device and every other device displaying the message,
-                    // the "other client" sends us the "old" id, which will be equal to the
-                    // one we currently have, and a "new" id. we, first adjust the changes to the status and content
-                    // using the old id and after that we update the id which the one provided by the "other" client
-                    // when the update happens again we repeat the process, by doing it we always reference to the id
-                    // that the "other" client references, so that we can talk about the same message reference
-                    messageRepository.updateMessageId(
-                        conversationId = message.conversationId,
-                        oldMessageId = message.content.messageId,
-                        newMessageId = message.id
-                    )
-                }
-            }
+            is MessageContent.TextEdited -> editTextHandler.handle(message,message.content)
             is MessageContent.Unknown -> kaliumLogger.i(message = "Unknown Message received: $message")
         }
 
