@@ -57,12 +57,16 @@ class GetAllCallsUseCaseTest {
         private val call1 = Call(
             conversationId = ConversationId("first", "domain"),
             status = CallStatus.STARTED,
-            callerId = "caller-id"
+            callerId = "caller-id",
+            isMuted = true,
+            isCameraOn = false
         )
         private val call2 = Call(
             conversationId = ConversationId("second", "domain"),
             status = CallStatus.INCOMING,
-            callerId = "caller-id"
+            callerId = "caller-id",
+            isMuted = true,
+            isCameraOn = false
         )
     }
 

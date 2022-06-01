@@ -124,6 +124,47 @@ class CallRepositoryTest {
         assertEquals(calls.first()[0].status, CallStatus.ESTABLISHED)
     }
 
+
+    @Test
+    fun givenAConversationIdThatDoesNotExistsInTheFlow_whenUpdateIsMutedByIdIsCalled_thenDoNotUpdateTheFlow() = runTest {
+        callRepository.updateIsMutedById(randomConversationIdString, false)
+
+        val calls = callRepository.callsFlow()
+        assertEquals(0, calls.first().size)
+    }
+
+    @Test
+    fun givenAConversationIdThatExistsInTheFlow_whenUpdateIsMutedByIdIsCalled_thenUpdateCallStatusInTheFlow() = runTest {
+        val expectedValue= true
+        callRepository.updateCallProfileFlow(CallProfile(mapOfCallProfiles))
+
+        callRepository.updateIsMutedById(startedCall.conversationId.toString(), expectedValue)
+
+        val calls = callRepository.callsFlow()
+        assertEquals(mapOfCallProfiles.size, calls.first().size)
+        assertEquals(calls.first()[0].isMuted, expectedValue)
+    }
+
+    @Test
+    fun givenAConversationIdThatDoesNotExistsInTheFlow_whenUpdateIsCameraOnIdIsCalled_thenDoNotUpdateTheFlow() = runTest {
+        callRepository.updateIsCameraOnById(randomConversationIdString, false)
+
+        val calls = callRepository.callsFlow()
+        assertEquals(0, calls.first().size)
+    }
+
+    @Test
+    fun givenAConversationIdThatExistsInTheFlow_whenUpdateIsCameraOnByIdIsCalled_thenUpdateCallStatusInTheFlow() = runTest {
+        val expectedValue= true
+        callRepository.updateCallProfileFlow(CallProfile(mapOfCallProfiles))
+
+        callRepository.updateIsCameraOnById(startedCall.conversationId.toString(), expectedValue)
+
+        val calls = callRepository.callsFlow()
+        assertEquals(mapOfCallProfiles.size, calls.first().size)
+        assertEquals(calls.first()[0].isCameraOn, expectedValue)
+    }
+
     @Test
     fun givenNoIncomingCallsInTheFlow_whenGetIncomingCallsIsCalled_thenReturnAnEmptyListInTheFlow() = runTest {
         val calls = callRepository.incomingCallsFlow()
@@ -160,8 +201,8 @@ class CallRepositoryTest {
     }
 
     private fun provideCall(id: ConversationId, status: CallStatus) = Call(
-        id,
-        status,
+        conversationId = id,
+        status = status,
         isMuted = false,
         isCameraOn = false,
         callerId = "caller-id",

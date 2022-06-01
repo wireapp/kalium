@@ -141,6 +141,8 @@ actual class CallManagerImpl(
         isAudioCbr: Boolean
     ) {
         callingLogger.d("$TAG -> starting call for conversation = $conversationId..")
+
+        //TODO move call creation to the usecase since this one will run only for Android
         val shouldMute = conversationType == ConversationType.Conference
         val isCameraOn = callType == CallType.VIDEO
         callRepository.createCall(
