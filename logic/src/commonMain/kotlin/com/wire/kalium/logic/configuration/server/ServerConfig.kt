@@ -30,7 +30,6 @@ data class ServerConfig(
         @SerialName("websiteUrl") val website: String,
         @SerialName("title") val title: String
     )
-
     @Serializable
     data class MetaData(
         @SerialName("federation") val federation: Boolean,
@@ -75,8 +74,7 @@ interface ServerConfigMapper {
     fun toEntity(serverLinks: ServerConfig): ServerConfigEntity
     fun toEntity(serverLinks: ServerConfig.Links): ServerConfigEntity.Links
     fun fromEntity(serverConfigEntity: ServerConfigEntity): ServerConfig
-    fun fromEntity(serverConfigEntityLinls: ServerConfigEntity.Links): ServerConfig.Links
-
+    fun fromEntity(serverConfigEntityLinks: ServerConfigEntity.Links): ServerConfig.Links
 }
 
 class ServerConfigMapperImpl(
@@ -177,7 +175,7 @@ class ServerConfigMapperImpl(
         )
     }
 
-    override fun fromEntity(serverConfigEntityLinls: ServerConfigEntity.Links): ServerConfig.Links = with(serverConfigEntityLinls) {
+    override fun fromEntity(serverConfigEntityLinks: ServerConfigEntity.Links): ServerConfig.Links = with(serverConfigEntityLinks) {
         ServerConfig.Links(
             api = api, accounts = accounts, webSocket = webSocket, blackList = blackList, teams = teams, website = website, title = title
         )
