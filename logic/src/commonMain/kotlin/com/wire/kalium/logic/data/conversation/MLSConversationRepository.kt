@@ -81,6 +81,7 @@ class MLSConversationDataSource(
         }
 
     private suspend fun establishMLSGroup(groupID: String, members: List<UserId>): Either<CoreFailure, Unit> =
+        //todo: iterate all the clients of the users and then claim keypackages of each user
         keyPackageRepository.claimKeyPackages(members).flatMap { keyPackages ->
             mlsClientProvider.getMLSClient().flatMap { client ->
                 val clientKeyPackageList = keyPackages
