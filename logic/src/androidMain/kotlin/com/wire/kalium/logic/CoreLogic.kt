@@ -10,6 +10,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.UserSessionScopeProvider
 import com.wire.kalium.logic.di.UserSessionScopeProviderImpl
 import com.wire.kalium.logic.feature.UserSessionScope
+import com.wire.kalium.logic.feature.auth.ServerMetaDataManagerImpl
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.sync.GlobalWorkScheduler
@@ -53,7 +54,10 @@ actual class CoreLogic(
         return userSessionScopeProvider.get(userId) ?: run {
             val rootAccountPath = "$rootPath/${userId.domain}/${userId.value}"
             val rootProteusPath = "$rootAccountPath/proteus"
-            val networkContainer = AuthenticatedNetworkContainer(SessionManagerImpl(sessionRepository, userId))
+            val networkContainer = AuthenticatedNetworkContainer(
+                SessionManagerImpl(sessionRepository, userId),
+                ServerMetaDataManagerImpl(globalDatabase.value.serverConfigurationDAO)
+            )
             val proteusClient: ProteusClient = ProteusClientImpl(rootProteusPath)
             runBlocking { proteusClient.open() }
 

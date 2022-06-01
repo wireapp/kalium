@@ -19,10 +19,10 @@ class SessionManagerImpl(
     private val sessionMapper: SessionMapper = MapperProvider.sessionMapper(),
     private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
 ) : SessionManager {
-    override fun session(): Pair<SessionDTO, ServerConfigDTO> = sessionRepository.userSession(userId).fold({
+    override fun session(): Pair<SessionDTO, ServerConfigDTO.Links> = sessionRepository.userSession(userId).fold({
         TODO("IMPORTANT! Not yet implemented")
     }, { session ->
-        Pair(sessionMapper.toSessionDTO(session), serverConfigMapper.toDTO(session.serverConfig))
+        Pair(sessionMapper.toSessionDTO(session), serverConfigMapper.toDTO(session.serverLinks))
     })
 
     override fun updateSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO =
@@ -36,7 +36,7 @@ class SessionManagerImpl(
                     newRefreshTokenDTO?.value ?: authSession.tokens.refreshToken,
                     newAccessTokenDTO.tokenType,
                 ),
-                authSession.serverConfig
+                authSession.serverLinks
             ).let {
                 sessionRepository.storeSession(it)
                 sessionMapper.toSessionDTO(it)

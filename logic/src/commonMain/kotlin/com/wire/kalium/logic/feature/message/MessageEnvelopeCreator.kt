@@ -30,7 +30,7 @@ interface MessageEnvelopeCreator {
 
 class MessageEnvelopeCreatorImpl(
     private val proteusClient: ProteusClient,
-    private val protoContentMapper: ProtoContentMapper,
+    private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : MessageEnvelopeCreator {
 

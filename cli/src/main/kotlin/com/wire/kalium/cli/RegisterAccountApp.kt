@@ -18,7 +18,7 @@ class RegisterAccountApp : CliktCommand() {
     private val environment: String? by option(help = "Choose backend environment: can be production or staging")
     private val coreLogic = CoreLogic("Kalium CLI", ".proteus")
 
-    private val serverConfig: ServerConfig by lazy {
+    private val serverConfig: ServerConfig.Links by lazy {
         if (environment == "production") {
             ServerConfig.PRODUCTION
         } else {
@@ -50,18 +50,18 @@ class RegisterAccountApp : CliktCommand() {
         }
     }
 
-    private suspend fun requestCode() = coreLogic.authenticationScope(serverConfig.links) {
+    private suspend fun requestCode() = coreLogic.authenticationScope(serverConfig) {
         register.requestActivationCode(email)
     }
 
-    private suspend fun activate() = coreLogic.authenticationScope(serverConfig.links) {
+    private suspend fun activate() = coreLogic.authenticationScope(serverConfig) {
         val reader = Scanner(System.`in`)
         echo("Enter the activation code: ")
         code = reader.nextInt()
         register.activate(email, code.toString())
     }
 
-    private suspend fun register() = coreLogic.authenticationScope(serverConfig.links) {
+    private suspend fun register() = coreLogic.authenticationScope(serverConfig) {
         val reader = Scanner(System.`in`)
         echo("Enter the activation code: ")
         code = reader.nextInt()

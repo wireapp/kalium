@@ -1,31 +1,21 @@
 package com.wire.kalium.network
 
-import com.wire.kalium.network.api.versioning.VersionApiImpl
 import com.wire.kalium.network.serialization.mls
 import com.wire.kalium.network.serialization.xprotobuf
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.session.installAuth
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.tools.ServerConfigDTO
-import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.WireDefaultRequest
-import com.wire.kalium.network.utils.WireServerMetaDataConfig
-import com.wire.kalium.network.utils.config
+import com.wire.kalium.network.utils.installWireDefaultRequest
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.ContentNegotiation
-import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.logging.SIMPLE
 import io.ktor.client.plugins.websocket.WebSockets
-import io.ktor.client.request.header
-import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
-import io.ktor.http.URLProtocol
-import io.ktor.http.encodedPath
 import io.ktor.serialization.kotlinx.json.json
 
 
@@ -36,9 +26,11 @@ import io.ktor.serialization.kotlinx.json.json
  * It's Authenticated, and will use the provided [SessionManager] to fill
  * necessary Authentication headers, and refresh tokens as they expire.
  */
-internal class AuthenticatedNetworkClient(engine: HttpClientEngine, sessionManager: SessionManager) {
+internal class AuthenticatedNetworkClient(
+    engine: HttpClientEngine, sessionManager: SessionManager, serverMetaDataManager: ServerMetaDataManager
+) {
     val httpClient: HttpClient = provideBaseHttpClient(engine) {
-        installWireBaseUrl(sessionManager.session().second)
+        installWireDefaultRequest(sessionManager.session().second, serverMetaDataManager)
         installAuth(sessionManager)
         install(ContentNegotiation) {
             mls()
@@ -58,42 +50,7 @@ internal class UnauthenticatedNetworkClient(
     serverMetaDataManager: ServerMetaDataManager
 ) {
     val httpClient: HttpClient = provideBaseHttpClient(engine) {
-        install(WireDefaultRequest) {
-            config {
-                WireServerMetaDataConfig().apply {
-                    loadServerData = {
-                        serverMetaDataManager.getLocalMetaData(backendLinks)
-                    }
-
-                    fetchAndStoreMetadata = {
-                        val versionApi = VersionApiImpl(provideBaseHttpClient(defaultHttpEngine()))
-                        when (val result = versionApi.fetchApiVersion(backendLinks.api)) {
-                            is NetworkResponse.Success ->
-                                serverMetaDataManager.storeBackend(
-                                    backendLinks, result.value
-                                )
-                            is NetworkResponse.Error -> null
-                        }
-                    }
-
-                    buildDefaultRequest = {
-                        header(HttpHeaders.ContentType, ContentType.Application.Json)
-                        with(it) {
-                            val apiBaseUrl = links.api
-                            // enforce https as url protocol
-                            url.protocol = URLProtocol.HTTPS
-                            // add the default host
-                            url.host = apiBaseUrl.host
-                            // for api version 0 no api version should be added to the request
-                            url.encodedPath =
-                                if (shouldAddApiVersion(metaData.commonApiVersion.version))
-                                    apiBaseUrl.encodedPath + "v${metaData.commonApiVersion.version}/"
-                                else apiBaseUrl.encodedPath
-                        }
-                    }
-                }
-            }
-        }
+        installWireDefaultRequest(backendLinks, serverMetaDataManager)
     }
 }
 
@@ -113,7 +70,9 @@ internal class UnboundNetworkClient(engine: HttpClientEngine) {
  * necessary Authentication headers, and refresh tokens as they expire.
  */
 internal class AuthenticatedWebSocketClient(
-    private val engine: HttpClientEngine, private val sessionManager: SessionManager
+    private val engine: HttpClientEngine,
+    private val sessionManager: SessionManager,
+    private val serverMetaDataManager: ServerMetaDataManager
 ) {
     /**
      * Creates a disposable [HttpClient] for a single use.
@@ -123,7 +82,7 @@ internal class AuthenticatedWebSocketClient(
      */
     fun createDisposableHttpClient(): HttpClient =
         provideBaseHttpClient(engine) {
-            installWireBaseUrl(sessionManager.session().second)
+            installWireDefaultRequest(sessionManager.session().second, serverMetaDataManager)
             installAuth(sessionManager)
             install(ContentNegotiation) {
                 mls()
@@ -131,35 +90,6 @@ internal class AuthenticatedWebSocketClient(
             }
             install(WebSockets)
         }
-}
-
-/**
- * Provides a base [HttpClient] that has all the
- * needed configurations to talk with a Wire backend, like
- * Serialization, and Content Negotiation.
- *
- * Also enables logs depending on [NetworkLogger] settings.
- *
- * @param engine, the HTTP engine that will perform the requests
- * @param options, some configuration presets
- * @param config, a block that allows further customisation of the [HttpClient]
- */
-private fun HttpClientConfig<*>.installWireBaseUrl(backend: ServerConfigDTO) {
-    defaultRequest {
-        header(HttpHeaders.ContentType, ContentType.Application.Json)
-        with(backend) {
-            val apiBaseUrl = backend.links.api
-            // enforce https as url protocol
-            url.protocol = URLProtocol.HTTPS
-            // add the default host
-            url.host = apiBaseUrl.host
-            // for api version 0 no api version should be added to the request
-            url.encodedPath =
-                if (shouldAddApiVersion(metaData.commonApiVersion.version))
-                    apiBaseUrl.encodedPath + "v${metaData.commonApiVersion.version}/"
-                else apiBaseUrl.encodedPath
-        }
-    }
 }
 
 internal fun provideBaseHttpClient(
@@ -177,7 +107,6 @@ internal fun provideBaseHttpClient(
         json(KtxSerializer.json)
     }
     expectSuccess = false
-
     config()
 }
 

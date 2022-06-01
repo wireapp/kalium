@@ -35,10 +35,11 @@ class LoginUseCaseTest {
 
     lateinit var loginUseCase: LoginUseCase
 
+    private val serverLinks = TEST_AUTH_SESSION.serverLinks
 
     @BeforeTest
     fun setup() {
-        loginUseCase = LoginUseCaseImpl(loginRepository, validateEmailUseCase, validateUserHandleUseCase)
+        loginUseCase = LoginUseCaseImpl(loginRepository, validateEmailUseCase, validateUserHandleUseCase, serverLinks)
     }
 
     @Test
@@ -54,7 +55,7 @@ class LoginUseCaseTest {
 
             val loginUserCaseResult = loginUseCase("   $cleanEmail  ", TEST_PASSWORD, TEST_PERSIST_CLIENT)
 
-            assertEquals(loginUserCaseResult, AuthenticationResult.Success(TEST_AUTH_SESSION.tokens))
+            assertEquals(loginUserCaseResult, AuthenticationResult.Success(TEST_AUTH_SESSION))
 
             verify(validateEmailUseCase).invocation { invoke(cleanEmail) }.wasInvoked(exactly = once)
             verify(validateUserHandleUseCase).invocation { invoke(cleanEmail) }.wasNotInvoked()
@@ -77,7 +78,7 @@ class LoginUseCaseTest {
 
             val loginUserCaseResult = loginUseCase("   $cleanHandle  ", TEST_PASSWORD, TEST_PERSIST_CLIENT)
 
-            assertEquals(loginUserCaseResult, AuthenticationResult.Success(TEST_AUTH_SESSION.tokens))
+            assertEquals(loginUserCaseResult, AuthenticationResult.Success(TEST_AUTH_SESSION))
 
             verify(validateEmailUseCase).invocation { invoke(cleanHandle) }.wasInvoked(exactly = once)
             verify(validateUserHandleUseCase).invocation { invoke(cleanHandle) }.wasInvoked(exactly = once)
@@ -100,7 +101,7 @@ class LoginUseCaseTest {
 
             val loginUserCaseResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT)
 
-            assertEquals(loginUserCaseResult, AuthenticationResult.Success(TEST_AUTH_SESSION.tokens))
+            assertEquals(loginUserCaseResult, AuthenticationResult.Success(TEST_AUTH_SESSION))
 
             verify(validateEmailUseCase).invocation { invoke(TEST_EMAIL) }.wasInvoked(exactly = once)
             verify(validateUserHandleUseCase).function(validateUserHandleUseCase::invoke).with(any()).wasNotInvoked()
@@ -125,7 +126,7 @@ class LoginUseCaseTest {
             val loginUserCaseResult = loginUseCase(TEST_HANDLE, TEST_PASSWORD, TEST_PERSIST_CLIENT)
 
             // then
-            assertEquals(loginUserCaseResult, AuthenticationResult.Success(TEST_AUTH_SESSION.tokens))
+            assertEquals(loginUserCaseResult, AuthenticationResult.Success(TEST_AUTH_SESSION))
 
             verify(validateEmailUseCase)
                 .invocation { invoke(TEST_HANDLE) }
@@ -152,7 +153,7 @@ class LoginUseCaseTest {
 
             val loginUserCaseResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT)
 
-            assertEquals(loginUserCaseResult, AuthenticationResult.Success(TEST_AUTH_SESSION.tokens))
+            assertEquals(loginUserCaseResult, AuthenticationResult.Success(TEST_AUTH_SESSION))
         }
 
     @Test
@@ -237,7 +238,7 @@ class LoginUseCaseTest {
                     refreshToken = "refresh_token",
                     tokenType = "token_type"
                 ),
-                TEST_SERVER_CONFIG
+                TEST_SERVER_CONFIG.links
             )
     }
 }

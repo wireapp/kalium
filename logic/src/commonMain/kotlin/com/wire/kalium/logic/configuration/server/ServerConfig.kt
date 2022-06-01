@@ -30,7 +30,6 @@ data class ServerConfig(
         @SerialName("websiteUrl") val website: String,
         @SerialName("title") val title: String
     )
-
     @Serializable
     data class MetaData(
         @SerialName("federation") val federation: Boolean,
@@ -70,8 +69,12 @@ interface ServerConfigMapper {
     fun toDTO(links: ServerConfig.Links): ServerConfigDTO.Links
     fun toDTO(serverConfigEntity: ServerConfigEntity): ServerConfigDTO
     fun fromDTO(wireServer: ServerConfigDTO): ServerConfig
-    fun toEntity(backend: ServerConfig): ServerConfigEntity
+    fun toEntity(serverLinks: ServerConfig): ServerConfigEntity
+    fun toEntity(serverLinks: ServerConfig.Links): ServerConfigEntity.Links
+
     fun fromEntity(serverConfigEntity: ServerConfigEntity): ServerConfig
+    fun fromEntity(serverConfigEntityLinks: ServerConfigEntity.Links): ServerConfig.Links
+
 }
 
 class ServerConfigMapperImpl(
@@ -108,15 +111,15 @@ class ServerConfigMapperImpl(
     override fun toDTO(serverConfigEntity: ServerConfigEntity): ServerConfigDTO = with(serverConfigEntity) {
         ServerConfigDTO(
             id = id, links = ServerConfigDTO.Links(
-                api = Url(apiBaseUrl),
-                accounts = Url(accountBaseUrl),
-                webSocket = Url(webSocketBaseUrl),
-                blackList = Url(blackListUrl),
-                teams = Url(teamsUrl),
-                website = Url(websiteUrl),
-                title = title,
+                api = Url(links.api),
+                accounts = Url(links.accounts),
+                webSocket = Url(links.webSocket),
+                blackList = Url(links.blackList),
+                teams = Url(links.teams),
+                website = Url(links.website),
+                title = links.title,
             ), ServerConfigDTO.MetaData(
-                federation = federation, commonApiVersion = apiVersionMapper.toDTO(commonApiVersion), domain
+                federation = metaData.federation, commonApiVersion = apiVersionMapper.toDTO(metaData.apiVersion), domain = metaData.domain
             )
         )
     }
@@ -143,30 +146,36 @@ class ServerConfigMapperImpl(
     override fun toEntity(backend: ServerConfig): ServerConfigEntity = with(backend) {
         ServerConfigEntity(
             id = id,
-            apiBaseUrl = links.api,
-            accountBaseUrl = links.accounts,
-            webSocketBaseUrl = links.webSocket,
-            blackListUrl = links.blackList,
-            teamsUrl = links.teams,
-            websiteUrl = links.website,
-            title = links.title,
-            federation = metaData.federation,
-            commonApiVersion = metaData.commonApiVersion.version,
-            domain = metaData.domain
+            links = toEntity(links),
+            metaData = ServerConfigEntity.MetaData(
+                federation = metaData.federation, apiVersion = metaData.commonApiVersion.version, domain = metaData.domain
+            )
+        )
+    }
+
+    override fun toEntity(serverLinks: ServerConfig.Links): ServerConfigEntity.Links = with(serverLinks) {
+        ServerConfigEntity.Links(
+            api = api,
+            accounts = accounts,
+            webSocket = webSocket,
+            blackList = blackList,
+            teams = teams,
+            website = website,
+            title = title,
         )
     }
 
     override fun fromEntity(serverConfigEntity: ServerConfigEntity): ServerConfig = with(serverConfigEntity) {
         ServerConfig(
-            id, ServerConfig.Links(
-                api = apiBaseUrl,
-                accounts = accountBaseUrl,
-                webSocket = webSocketBaseUrl,
-                blackList = blackListUrl,
-                teams = teamsUrl,
-                website = websiteUrl,
-                title = title,
-            ), ServerConfig.MetaData(federation, commonApiVersion.toCommonApiVersionType(), domain)
+            id = id,
+            links = fromEntity(links),
+            metaData = ServerConfig.MetaData(metaData.federation, metaData.apiVersion.toCommonApiVersionType(), metaData.domain)
+        )
+    }
+
+    override fun fromEntity(serverConfigEntityLinks: ServerConfigEntity.Links): ServerConfig.Links = with(serverConfigEntityLinks) {
+        ServerConfig.Links(
+            api = api, accounts = accounts, webSocket = webSocket, blackList = blackList, teams = teams, website = website, title = title
         )
     }
 }

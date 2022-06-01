@@ -180,17 +180,22 @@ class ServerConfigRepositoryTest {
         val newApiVersion = 5
         val newFederation = true
         val serverConfigEntity = newServerConfigEntity(1)
-        val newServerConfigEntity = newServerConfigEntity(1).copy(commonApiVersion = newApiVersion, federation = newFederation)
+        val newServerConfigEntity = serverConfigEntity.copy(
+            metaData = serverConfigEntity.metaData.copy(
+                apiVersion = newApiVersion,
+                federation = newFederation
+            )
+        )
         val expected = newServerConfig(1).copy(
             metaData = ServerConfig.MetaData(
                 commonApiVersion = CommonApiVersionType.Valid(newApiVersion),
                 federation = newFederation,
-                domain = serverConfigEntity.domain
+                domain = serverConfigEntity.metaData.domain
             )
         )
 
         given(serverConfigDAO)
-            .invocation { with(serverConfigEntity) { configByUniqueFields(title, apiBaseUrl, webSocketBaseUrl, domain) } }
+            .invocation { with(serverConfigEntity) { configByUniqueFields(links.title, links.api, links.webSocket, metaData.domain) } }
             .then { serverConfigEntity }
         given(serverConfigDAO)
             .function(serverConfigDAO::configById)
@@ -198,7 +203,7 @@ class ServerConfigRepositoryTest {
             .then { newServerConfigEntity }
 
         serverConfigRepository
-            .storeConfig(newServerConfigResponse(1), serverConfigEntity.domain, newApiVersion, newFederation)
+            .storeConfig(newServerConfigResponse(1), serverConfigEntity.metaData.domain, newApiVersion, newFederation)
             .shouldSucceed { assertEquals(expected, it) }
 
         verify(serverConfigDAO)
@@ -229,7 +234,7 @@ class ServerConfigRepositoryTest {
         val expected = newServerConfig(1)
 
         given(serverConfigDAO)
-            .invocation { with(serverConfig) { configByUniqueFields(title, apiBaseUrl, webSocketBaseUrl, domain) } }
+            .invocation { with(serverConfig) { configByUniqueFields(links.title, links.api, links.webSocket, metaData.domain) } }
             .then { null }
         given(serverConfigDAO)
             .function(serverConfigDAO::configById)
@@ -237,7 +242,12 @@ class ServerConfigRepositoryTest {
             .then { serverConfig }
 
         serverConfigRepository
-            .storeConfig(newServerConfigResponse(1), serverConfig.domain, serverConfig.commonApiVersion, serverConfig.federation)
+            .storeConfig(
+                newServerConfigResponse(1),
+                serverConfig.metaData.domain,
+                serverConfig.metaData.apiVersion,
+                serverConfig.metaData.federation
+            )
             .shouldSucceed { assertEquals(it, expected) }
 
         verify(serverConfigDAO)

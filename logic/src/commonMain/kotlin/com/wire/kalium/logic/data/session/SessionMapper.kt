@@ -4,14 +4,14 @@ import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.network.api.SessionDTO
-import com.wire.kalium.persistence.model.PersistenceSession
+import com.wire.kalium.persistence.model.AuthSessionEntity
 
 interface SessionMapper {
     fun toSessionDTO(authSession: AuthSession): SessionDTO
     fun fromSessionDTO(sessionDTO: SessionDTO): AuthSession.Tokens
 
-    fun fromPersistenceSession(persistenceSession: PersistenceSession): AuthSession
-    fun toPersistenceSession(authSession: AuthSession): PersistenceSession
+    fun fromPersistenceSession(authSessionEntity: AuthSessionEntity): AuthSession
+    fun toPersistenceSession(authSession: AuthSession): AuthSessionEntity
 }
 
 internal class SessionMapperImpl(
@@ -27,23 +27,23 @@ internal class SessionMapperImpl(
             AuthSession.Tokens(idMapper.fromApiModel(userId), accessToken, refreshToken, tokenType)
     }
 
-    override fun fromPersistenceSession(persistenceSession: PersistenceSession): AuthSession = AuthSession(
+    override fun fromPersistenceSession(authSessionEntity: AuthSessionEntity): AuthSession = AuthSession(
         AuthSession.Tokens(
-            userId = idMapper.fromDaoModel(persistenceSession.userId),
-            accessToken = persistenceSession.accessToken,
-            refreshToken = persistenceSession.refreshToken,
-            tokenType = persistenceSession.tokenType,
+            userId = idMapper.fromDaoModel(authSessionEntity.userId),
+            accessToken = authSessionEntity.accessToken,
+            refreshToken = authSessionEntity.refreshToken,
+            tokenType = authSessionEntity.tokenType,
         ),
-        serverConfig = serverConfigMapper.fromEntity(persistenceSession.serverConfigEntity)
+        serverLinks = serverConfigMapper.fromEntity(authSessionEntity.serverLinks)
     )
 
-    override fun toPersistenceSession(authSession: AuthSession): PersistenceSession = with(authSession) {
-        PersistenceSession(
+    override fun toPersistenceSession(authSession: AuthSession): AuthSessionEntity = with(authSession) {
+        AuthSessionEntity(
             userId = idMapper.toDaoModel(tokens.userId),
             accessToken = tokens.accessToken,
             refreshToken = tokens.refreshToken,
             tokenType = tokens.tokenType,
-            serverConfigEntity = serverConfigMapper.toEntity(serverConfig)
+            serverLinks = serverConfigMapper.toEntity(serverLinks)
         )
     }
 }

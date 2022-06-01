@@ -71,18 +71,18 @@ class ServerConfigMapperTest {
                 ServerConfig(
                     id,
                     ServerConfig.Links(
-                        apiBaseUrl,
-                        accountBaseUrl,
-                        webSocketBaseUrl,
-                        blackListUrl,
-                        teamsUrl,
-                        websiteUrl,
-                        title,
-                        ),
+                        links.api,
+                        links.accounts,
+                        links.webSocket,
+                        links.blackList,
+                        links.teams,
+                        links.website,
+                        links.title,
+                    ),
                     ServerConfig.MetaData(
-                        federation,
-                        commonApiVersion.toCommonApiVersionType(),
-                        domain
+                        metaData.federation,
+                        metaData.apiVersion.toCommonApiVersionType(),
+                        metaData.domain
                     )
                 )
             }
@@ -98,16 +98,20 @@ class ServerConfigMapperTest {
             with(serverConfig) {
                 ServerConfigEntity(
                     id,
-                    links.api,
-                    links.accounts,
-                    links.webSocket,
-                    links.blackList,
-                    links.teams,
-                    links.website,
-                    links.title,
-                    metaData.federation,
-                    metaData.commonApiVersion.version,
-                    metaData.domain
+                    ServerConfigEntity.Links(
+                        links.api,
+                        links.accounts,
+                        links.webSocket,
+                        links.blackList,
+                        links.teams,
+                        links.website,
+                        links.title,
+                    ),
+                    ServerConfigEntity.MetaData(
+                        metaData.federation,
+                        metaData.commonApiVersion.version,
+                        metaData.domain
+                    )
                 )
             }
 

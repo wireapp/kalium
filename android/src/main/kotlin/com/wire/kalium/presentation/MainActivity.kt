@@ -77,11 +77,11 @@ class MainActivity : ComponentActivity() {
             )
         }
 
-        val session = AuthSession(result.userSession, TODO())
-        coreLogic.globalScope {
-            addAuthenticatedAccount(authSession = session)
+        coreLogic.globalScope{
+            addAuthenticatedAccount(authSession = result.userSession)
         }
-        return session
+
+        return result.userSession
     }
 }
 
