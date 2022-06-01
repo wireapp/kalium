@@ -1,6 +1,6 @@
 package com.wire.kalium.logic.featureFlags
 
-data class BuildTimeConfigs(
+data class KaliumConfigs(
     val isChangeEmailEnabled: Boolean = false,
     val isMarketingCommunicationEnabled: Boolean = false,
     val isSSoEnabled: Boolean = false,

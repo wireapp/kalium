@@ -4,15 +4,13 @@ import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.ProteusClientImpl
 import com.wire.kalium.logic.data.session.SessionDataSource
 import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.data.sync.InMemorySyncRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.UserSessionScopeProvider
 import com.wire.kalium.logic.di.UserSessionScopeProviderImpl
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
-import com.wire.kalium.logic.featureFlags.BuildTimeConfigs
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.network.SessionManagerImpl
-import com.wire.kalium.logic.sync.SyncManagerImpl
 import com.wire.kalium.logic.sync.WorkSchedulerImpl
 import com.wire.kalium.network.AuthenticatedNetworkContainer
 import com.wire.kalium.persistence.client.SessionStorageImpl
@@ -29,9 +27,9 @@ actual class CoreLogic(
     clientLabel: String,
     rootPath: String,
     private val userSessionScopeProvider: UserSessionScopeProvider = UserSessionScopeProviderImpl,
-    buildTimeConfigs: BuildTimeConfigs
+    kaliumConfigs: KaliumConfigs
 ) : CoreLogicCommon(
-    clientLabel = clientLabel, rootPath = rootPath, buildTimeConfigs = buildTimeConfigs
+    clientLabel = clientLabel, rootPath = rootPath, kaliumConfigs = kaliumConfigs
 ) {
     override fun getSessionRepo(): SessionRepository {
         val sessionStorage = SessionStorageImpl(globalPreferences)

@@ -29,9 +29,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase.RegisterClientParam
-import com.wire.kalium.logic.featureFlags.BuildTimeConfigs
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 
-private val coreLogic = CoreLogic("Kalium CLI", "${CLIApplication.HOME_DIRECTORY}/.kalium/accounts", buildTimeConfigs = BuildTimeConfigs())
+private val coreLogic = CoreLogic("Kalium CLI", "${CLIApplication.HOME_DIRECTORY}/.kalium/accounts", kaliumConfigs = KaliumConfigs())
 
 suspend fun restoreSession(): AuthSession? {
     return coreLogic.authenticationScope {

@@ -4,14 +4,14 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
 interface GetBuildConfigsUseCase {
-    suspend operator fun invoke(): Flow<BuildTimeConfigs>
+    suspend operator fun invoke(): Flow<KaliumConfigs>
 }
 
 internal class GetBuildConfigsUseCaseImpl(
-    private val buildTimeConfigs: BuildTimeConfigs,
+    private val kaliumConfigs: KaliumConfigs,
 ) : GetBuildConfigsUseCase {
 
-    override suspend operator fun invoke(): Flow<BuildTimeConfigs> {
-        return flowOf(buildTimeConfigs)
+    override suspend operator fun invoke(): Flow<KaliumConfigs> {
+        return flowOf(kaliumConfigs)
     }
 }
