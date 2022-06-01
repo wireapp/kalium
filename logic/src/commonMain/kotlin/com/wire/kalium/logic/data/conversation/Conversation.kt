@@ -18,7 +18,7 @@ data class Conversation(
     val lastNotificationDate: String?,
     val lastModifiedDate: String?
 ) {
-    enum class Type { SELF, ONE_ON_ONE, GROUP, CONNECTION }
+    enum class Type { SELF, ONE_ON_ONE, GROUP, CONNECTION_PENDING }
 }
 
 sealed class ConversationDetails(open val conversation: Conversation) {
@@ -48,7 +48,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         Conversation(
             id = conversationId,
             name = otherUser?.name,
-            type = Conversation.Type.CONNECTION,
+            type = Conversation.Type.CONNECTION_PENDING,
             teamId = otherUser?.team?.let { TeamId(it) },
             mutedStatus = MutedConversationStatus.AllAllowed,
             lastNotificationDate = null,
