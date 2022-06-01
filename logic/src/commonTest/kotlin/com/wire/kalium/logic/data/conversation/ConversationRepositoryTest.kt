@@ -35,7 +35,6 @@ import io.mockative.once
 import io.mockative.thenDoNothing
 import io.mockative.verify
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
@@ -129,7 +128,7 @@ class ConversationRepositoryTest {
     @Test
     fun givenTwoPagesOfConversation_whenFetchingConversations_thenThePagesShouldBeAddedTogetherWhenPersisting() = runTest {
         val firstResponse = ConversationPagingResponse(listOf(CONVERSATION_RESPONSE), true)
-        val lastConversationId = firstResponse.conversations.last().id.value
+        val lastConversationId = firstResponse.conversationsIds.last().id.value
 
         given(conversationApi)
             .suspendFunction(conversationApi::conversationsByBatch)
@@ -153,8 +152,8 @@ class ConversationRepositoryTest {
         verify(conversationDAO)
             .suspendFunction(conversationDAO::insertConversations)
             .with(matching { conversations ->
-                conversations.any { entity -> entity.id.value == firstResponse.conversations.first().id.value }
-                        && conversations.any { entity -> entity.id.value == secondResponse.conversations.first().id.value }
+                conversations.any { entity -> entity.id.value == firstResponse.conversationsIds.first().id.value }
+                        && conversations.any { entity -> entity.id.value == secondResponse.conversationsIds.first().id.value }
             })
             .wasInvoked(exactly = once)
     }

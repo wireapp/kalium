@@ -69,7 +69,7 @@ class ConversationsApplication : CliktCommand() {
                 println("There was an error loading the conversations :( check the internet connection and try again please")
             } else {
                 println("Your conversations:")
-                conversationsResponse.value.conversations.forEach {
+                conversationsResponse.value.conversationsIds.forEach {
                     println("ID:${it.id}, Name: ${it.name}")
                 }
             }

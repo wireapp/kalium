@@ -7,32 +7,34 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
-import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
+import kotlinx.serialization.json.buildJsonObject
 
 class ConversationApiImpl internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : ConversationApi {
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
-    override suspend fun conversationsByBatch(queryStart: String?, querySize: Int): NetworkResponse<ConversationPagingResponse> =
+    override suspend fun conversationsByBatch(pagingState: String?): NetworkResponse<ConversationPagingResponse> =
         wrapKaliumResponse {
-            httpClient.get(PATH_CONVERSATIONS) {
-                queryStart?.let { parameter(QUERY_KEY_START, it) }
-                parameter(QUERY_KEY_SIZE, querySize)
+            httpClient.post("$PATH_CONVERSATIONS$PATH_LIST_IDS") {
+                setBody(
+                    buildJsonObject {
+                        pagingState?.let {
+                            "paging_state" to it
+                        }
+                    }
+                )
             }
         }
 
-    override suspend fun fetchConversationsDetails(
-        queryStart: String?,
-        queryIds: List<String>
-    ): NetworkResponse<ConversationPagingResponse> = wrapKaliumResponse {
-        httpClient.get(PATH_CONVERSATIONS) {
-            queryStart?.let { parameter(QUERY_KEY_START, it) }
-            parameter(QUERY_KEY_IDS, queryIds)
+    override suspend fun fetchConversationsDetails(conversationsIds: List<ConversationId>): NetworkResponse<ConversationResponseDTO> =
+        wrapKaliumResponse {
+            httpClient.post("$PATH_CONVERSATIONS$PATH_CONVERSATIONS_LIST$PATH_V2") {
+                setBody(ConversationsDetailsRequest(conversationsIds = conversationsIds))
+            }
         }
-    }
 
     /**
      * returns 200 Member removed and 204 No change
@@ -104,9 +106,11 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
         const val PATH_MEMBERS = "/members"
         const val PATH_ONE_2_ONE = "/one2one"
         const val PATH_V2 = "/v2"
+        const val PATH_CONVERSATIONS_LIST = "/list"
+        const val PATH_LIST_IDS = "/list-ids"
 
         const val QUERY_KEY_START = "start"
         const val QUERY_KEY_SIZE = "size"
-        const val QUERY_KEY_IDS = "ids"
+        const val QUERY_KEY_IDS = "qualified_ids"
     }
 }

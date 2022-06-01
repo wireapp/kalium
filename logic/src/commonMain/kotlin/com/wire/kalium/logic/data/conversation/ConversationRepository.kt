@@ -39,6 +39,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import com.wire.kalium.network.api.ConversationId as RemoteConversationId
 import com.wire.kalium.persistence.dao.Member as MemberEntity
 
 interface ConversationRepository {
@@ -106,20 +107,29 @@ class ConversationDataSource(
 
     private suspend fun fetchAllConversationsFromAPI(): Either<NetworkFailure, List<ConversationResponse>> {
         var hasMore = true
-        val allConversations = mutableListOf<ConversationResponse>()
+        var lastPagingState: String? = null
         var latestResult: Either<NetworkFailure, Unit> = Either.Right(Unit)
+        val allConversationsIds = mutableSetOf<RemoteConversationId>()
+
         while (hasMore && latestResult.isRight()) {
             latestResult = wrapApiRequest {
-                val lastConversationIdValue = allConversations.lastOrNull()?.id?.value
-                kaliumLogger.v("Fetching conversation page starting with id $lastConversationIdValue")
-                conversationApi.conversationsByBatch(lastConversationIdValue, 100)
+                kaliumLogger.v("Fetching conversation page starting with pagingState $lastPagingState")
+                conversationApi.conversationsByBatch(pagingState = lastPagingState)
             }.onSuccess {
-                allConversations += it.conversations
+                allConversationsIds += it.conversationsIds
+                lastPagingState = it.pagingState
                 hasMore = it.hasMore
-            }.map { }
+            }.onFailure {
+                Either.Left(it)
+            }.map {
+
+            }
         }
-        return latestResult.map {
-            allConversations
+
+        return wrapApiRequest {
+            conversationApi.fetchConversationsDetails(allConversationsIds.toList())
+        }.map {
+            it.conversationsFound
         }
     }
 
@@ -196,15 +206,15 @@ class ConversationDataSource(
                             }
                         }
                         emptyFlow()
-                }, { otherUserIdOrNull ->
+                    }, { otherUserIdOrNull ->
                         otherUserIdOrNull?.let {
                             userRepository.getKnownUser(it)
-                        }?: run {
+                        } ?: run {
                             emptyFlow()
                         }
-                }).filterNotNull().map { otherUser ->
-                    conversationMapper.toConversationDetailsOneToOne(conversation, otherUser, selfUser)
-                }
+                    }).filterNotNull().map { otherUser ->
+                        conversationMapper.toConversationDetailsOneToOne(conversation, otherUser, selfUser)
+                    }
             }
         }
 
