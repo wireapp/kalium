@@ -114,7 +114,7 @@ class ConversationDataSource(
         while (hasMore && latestResult.isRight()) {
             latestResult = wrapApiRequest {
                 kaliumLogger.v("Fetching conversation page starting with pagingState $lastPagingState")
-                conversationApi.conversationsByBatch(pagingState = lastPagingState)
+                conversationApi.fetchConversationsIds(pagingState = lastPagingState)
             }.onSuccess {
                 allConversationsIds += it.conversationsIds
                 lastPagingState = it.pagingState
@@ -127,7 +127,7 @@ class ConversationDataSource(
         }
 
         return wrapApiRequest {
-            conversationApi.fetchConversationsDetails(allConversationsIds.toList())
+            conversationApi.fetchConversationsListDetails(allConversationsIds.toList())
         }.map {
             it.conversationsFound
         }

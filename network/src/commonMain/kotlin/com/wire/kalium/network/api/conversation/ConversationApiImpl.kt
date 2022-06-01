@@ -16,7 +16,7 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
-    override suspend fun conversationsByBatch(pagingState: String?): NetworkResponse<ConversationPagingResponse> =
+    override suspend fun fetchConversationsIds(pagingState: String?): NetworkResponse<ConversationPagingResponse> =
         wrapKaliumResponse {
             httpClient.post("$PATH_CONVERSATIONS$PATH_LIST_IDS") {
                 setBody(
@@ -29,7 +29,7 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
             }
         }
 
-    override suspend fun fetchConversationsDetails(conversationsIds: List<ConversationId>): NetworkResponse<ConversationResponseDTO> =
+    override suspend fun fetchConversationsListDetails(conversationsIds: List<ConversationId>): NetworkResponse<ConversationResponseDTO> =
         wrapKaliumResponse {
             httpClient.post("$PATH_CONVERSATIONS$PATH_CONVERSATIONS_LIST$PATH_V2") {
                 setBody(ConversationsDetailsRequest(conversationsIds = conversationsIds))

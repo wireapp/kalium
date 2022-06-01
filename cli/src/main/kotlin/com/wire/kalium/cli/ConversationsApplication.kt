@@ -10,8 +10,8 @@ import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.configuration.ServerConfigMapper
 import com.wire.kalium.logic.configuration.ServerConfigMapperImpl
 import com.wire.kalium.network.AuthenticatedNetworkContainer
-import com.wire.kalium.network.UnauthenticatedNetworkContainer
 import com.wire.kalium.network.NetworkLogger
+import com.wire.kalium.network.UnauthenticatedNetworkContainer
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.model.AccessTokenDTO
@@ -55,7 +55,9 @@ class ConversationsApplication : CliktCommand() {
         val loginContainer = UnauthenticatedNetworkContainer()
 
         val loginResult = loginContainer.loginApi.login(
-            LoginApi.LoginParam.LoginWithEmail(email = email, password = password, label = "ktor"), false, serverConfigDTO.apiBaseUrl.toString()
+            LoginApi.LoginParam.LoginWithEmail(email = email, password = password, label = "ktor"),
+            false,
+            serverConfigDTO.apiBaseUrl.toString()
         )
 
         if (!loginResult.isSuccessful()) {
@@ -63,14 +65,14 @@ class ConversationsApplication : CliktCommand() {
         } else {
             val sessionData = loginResult.value
             val networkModule = AuthenticatedNetworkContainer(InMemorySessionManager(serverConfigDTO, sessionData))
-            val conversationsResponse = networkModule.conversationApi.conversationsByBatch(null, 100)
+            val conversationsResponse = networkModule.conversationApi.fetchConversationsIds(null)
 
             if (!conversationsResponse.isSuccessful()) {
                 println("There was an error loading the conversations :( check the internet connection and try again please")
             } else {
                 println("Your conversations:")
                 conversationsResponse.value.conversationsIds.forEach {
-                    println("ID:${it.id}, Name: ${it.name}")
+                    println("ID:${it.value}, Name: ${it.domain}")
                 }
             }
             uploadTestAsset(networkModule)
