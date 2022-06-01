@@ -44,33 +44,10 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
         )
     }
 
-    override suspend fun insertUsers(users: List<UserEntity>) {
+    override suspend fun upsertTeamMembers(users: List<UserEntity>) {
         queries.transaction {
             for (user: UserEntity in users) {
-                queries.insertUser(
-                    user.id,
-                    user.name,
-                    user.handle,
-                    user.email,
-                    user.phone,
-                    user.accentId,
-                    user.team,
-                    user.connectionStatus,
-                    user.previewAssetId,
-                    user.completeAssetId
-                )
-            }
-        }
-    }
-
-    override suspend fun updateUser(user: UserEntity) {
-        queries.updateUser(user.name, user.handle, user.email, user.accentId, user.previewAssetId, user.completeAssetId, user.id)
-    }
-
-    override suspend fun updateUsers(users: List<UserEntity>) {
-        queries.transaction {
-            users.forEach { user ->
-                queries.updateUser(user.name, user.handle, user.email, user.accentId, user.previewAssetId, user.completeAssetId, user.id)
+                queries.updateTeamMemberUser(user.team, user.connectionStatus, user.id)
                 val recordDidNotExist = queries.selectChanges().executeAsOne() == 0L
                 if (recordDidNotExist) {
                     queries.insertUser(
@@ -88,6 +65,43 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
                 }
             }
         }
+    }
+
+    override suspend fun upsertUsers(users: List<UserEntity>) {
+        queries.transaction {
+            for (user: UserEntity in users) {
+                queries.updateUser(
+                    user.name,
+                    user.handle,
+                    user.email,
+                    user.phone,
+                    user.accentId,
+                    user.team,
+                    user.previewAssetId,
+                    user.completeAssetId,
+                    user.id
+                )
+                val recordDidNotExist = queries.selectChanges().executeAsOne() == 0L
+                if (recordDidNotExist) {
+                    queries.insertUser(
+                        user.id,
+                        user.name,
+                        user.handle,
+                        user.email,
+                        user.phone,
+                        user.accentId,
+                        user.team,
+                        user.connectionStatus,
+                        user.previewAssetId,
+                        user.completeAssetId
+                    )
+                }
+            }
+        }
+    }
+
+    override suspend fun updateSelfUser(user: UserEntity) {
+        queries.updateSelfUser(user.name, user.handle, user.email, user.accentId, user.previewAssetId, user.completeAssetId, user.id)
     }
 
     override suspend fun getAllUsers(): Flow<List<UserEntity>> = queries.selectAllUsers()

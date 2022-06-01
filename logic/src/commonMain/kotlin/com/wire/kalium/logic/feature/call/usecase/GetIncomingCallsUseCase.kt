@@ -29,7 +29,7 @@ internal class GetIncomingCallsUseCaseImpl(
 ) : GetIncomingCallsUseCase {
 
     override suspend operator fun invoke(): Flow<List<Call>> {
-        syncManager.waitForSlowSyncToComplete()
+        syncManager.startSyncIfIdle()
         return callRepository.incomingCallsFlow()
             .distinctUntilChanged()
     }

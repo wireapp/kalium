@@ -42,7 +42,8 @@ class GetIncomingCallsUseCaseTest {
 
     @Test
     fun givenAnEmptyCallList_whenInvokingGetIncomingCallsUseCase_thenEmitsAnEmptyListOfCalls() = runTest {
-        given(syncManager).suspendFunction(syncManager::waitForSlowSyncToComplete).whenInvoked().thenReturn(Unit)
+        given(syncManager).suspendFunction(syncManager::waitUntilSlowSyncCompletion).whenInvoked().thenReturn(Unit)
+        given(syncManager).invocation { startSyncIfIdle() }.thenReturn(Unit)
         given(callRepository).invocation { incomingCallsFlow() }.then { MutableStateFlow(listOf<Call>()) }
 
         getIncomingCallsUseCase().test {
@@ -52,7 +53,8 @@ class GetIncomingCallsUseCaseTest {
 
     @Test
     fun givenNotEmptyCallList_whenInvokingGetIncomingCallsUseCase_thenNonEmptyNotificationList() = runTest {
-        given(syncManager).suspendFunction(syncManager::waitForSlowSyncToComplete).whenInvoked().thenReturn(Unit)
+        given(syncManager).suspendFunction(syncManager::waitUntilSlowSyncCompletion).whenInvoked().thenReturn(Unit)
+        given(syncManager).invocation { startSyncIfIdle() }.thenReturn(Unit)
         val oneOnOneDetails = ConversationDetails.OneOne(
             TestConversation.ONE_ON_ONE,
             TestUser.OTHER,

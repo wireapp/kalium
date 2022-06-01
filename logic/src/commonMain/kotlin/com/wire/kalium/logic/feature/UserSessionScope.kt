@@ -6,7 +6,6 @@ import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSou
 import com.wire.kalium.logic.data.asset.AssetDataSource
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.call.CallDataSource
-import com.wire.kalium.logic.data.call.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientDataSource
 import com.wire.kalium.logic.data.client.ClientRepository
@@ -37,6 +36,8 @@ import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepositoryImpl
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.sync.InMemorySyncRepository
+import com.wire.kalium.logic.data.sync.SyncRepository
 import com.wire.kalium.logic.data.team.TeamDataSource
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserDataSource
@@ -63,8 +64,11 @@ import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.team.TeamScope
 import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.sync.ConversationEventReceiver
+import com.wire.kalium.logic.sync.ConversationEventReceiverImpl
 import com.wire.kalium.logic.sync.ListenToEventsUseCase
+import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncManagerImpl
 import com.wire.kalium.logic.sync.SyncPendingEventsUseCase
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.TimeParserImpl
@@ -77,6 +81,7 @@ import com.wire.kalium.persistence.event.EventInfoStorage
 import com.wire.kalium.persistence.event.EventInfoStorageImpl
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
+import com.wire.kalium.util.KaliumDispatcherImpl
 
 expect class UserSessionScope : UserSessionScopeCommon
 
@@ -214,7 +219,17 @@ abstract class UserSessionScopeCommon(
     private val assetRepository: AssetRepository
         get() = AssetDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.assetApi, userDatabaseProvider.assetDAO)
 
-    val syncManager: SyncManager get() = authenticatedDataSourceSet.syncManager
+    private val syncRepository: SyncRepository by lazy { InMemorySyncRepository() }
+
+    val syncManager: SyncManager by lazy {
+        SyncManagerImpl(
+            authenticatedDataSourceSet.workScheduler,
+            eventRepository,
+            syncRepository,
+            conversationEventReceiver,
+            KaliumDispatcherImpl
+        )
+    }
 
     private val timeParser: TimeParser = TimeParserImpl()
 
@@ -223,16 +238,12 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.authenticatedNetworkContainer.notificationApi, eventInfoStorage, clientRepository
         )
 
-    private val callMapper: CallMapper
-        get() = CallMapper()
-
     private val callManager: Lazy<CallManager> = lazy {
         globalCallManager.getCallManagerForClient(
             userId = userId,
             callRepository = callRepository,
             userRepository = userRepository,
             clientRepository = clientRepository,
-            callMapper = callMapper,
             messageSender = messageSender
         )
     }
@@ -242,8 +253,8 @@ abstract class UserSessionScopeCommon(
     }
 
     protected abstract val protoContentMapper: ProtoContentMapper
-    private val conversationEventReceiver: ConversationEventReceiver
-        get() = ConversationEventReceiver(
+    private val conversationEventReceiver: ConversationEventReceiver by lazy {
+        ConversationEventReceiverImpl(
             authenticatedDataSourceSet.proteusClient,
             messageRepository,
             conversationRepository,
@@ -252,6 +263,7 @@ abstract class UserSessionScopeCommon(
             protoContentMapper,
             callManager
         )
+    }
 
     private val preKeyRemoteRepository: PreKeyRemoteRepository get() = PreKeyRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi)
     private val preKeyRepository: PreKeyRepository
@@ -268,9 +280,11 @@ abstract class UserSessionScopeCommon(
 
     private val logoutRepository: LogoutRepository = LogoutDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi)
     val listenToEvents: ListenToEventsUseCase
-        get() = ListenToEventsUseCase(syncManager, eventRepository, conversationEventReceiver)
+        get() = ListenToEventsUseCase(syncManager)
     val syncPendingEvents: SyncPendingEventsUseCase
-        get() = SyncPendingEventsUseCase(syncManager, eventRepository, conversationEventReceiver)
+        get() = SyncPendingEventsUseCase(syncManager)
+    val observeSyncState: ObserveSyncStateUseCase
+        get() = ObserveSyncStateUseCase(syncRepository)
     val client: ClientScope
         get() = ClientScope(
             clientRepository,
