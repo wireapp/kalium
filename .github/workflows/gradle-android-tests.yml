@@ -56,7 +56,9 @@ jobs:
         with:
           api-level: ${{ matrix.api-level }}
           script: |
-            ./gradlew connectedAndroidTest
+            ./gradlew cryptography:connectedAndroidTest
+            ./gradlew persistence:connectedAndroidTest
+            ./gradlew logic:connectedAndroidTest
 
       - name: Publish Unit Test Results
         uses: EnricoMi/publish-unit-test-result-action/composite@v1.25
