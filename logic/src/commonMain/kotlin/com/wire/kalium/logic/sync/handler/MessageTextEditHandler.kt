@@ -12,11 +12,11 @@ class MessageTextEditHandler(private val messageRepository: MessageRepository) {
         messageContent: MessageContent.TextEdited
     ) = messageRepository.updateTextMessageContent(
         conversationId = message.conversationId,
-        messageId = messageContent.messageId,
+        messageId = messageContent.editMessageId,
         newTextContent = messageContent.newContent
     ).flatMap {
         messageRepository.markMessageAsEdited(
-            messageUuid = messageContent.messageId,
+            messageUuid = messageContent.editMessageId,
             conversationId = message.conversationId,
             timeStamp = message.date
         )
@@ -31,7 +31,7 @@ class MessageTextEditHandler(private val messageRepository: MessageRepository) {
         // that the "other" client references, so that we can talk about the same message reference
         messageRepository.updateMessageId(
             conversationId = message.conversationId,
-            oldMessageId = messageContent.messageId,
+            oldMessageId = messageContent.editMessageId,
             newMessageId = message.id
         )
     }

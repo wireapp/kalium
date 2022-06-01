@@ -41,7 +41,7 @@ class MessageTextEditHandlerTest {
         )
 
         val mockMessageContent = MessageContent.TextEdited(
-            messageId = "someId",
+            editMessageId = "someId",
             newContent = "some new content"
         )
 
@@ -64,17 +64,17 @@ class MessageTextEditHandlerTest {
         //then
         verify(messageRepository)
             .suspendFunction(messageRepository::updateTextMessageContent)
-            .with(eq(mockMessage.conversationId), eq(mockMessageContent.messageId), eq(mockMessageContent.newContent))
+            .with(eq(mockMessage.conversationId), eq(mockMessageContent.editMessageId), eq(mockMessageContent.newContent))
             .wasInvoked(exactly = once)
 
         verify(messageRepository)
             .suspendFunction(messageRepository::markMessageAsEdited)
-            .with(eq(mockMessageContent.messageId), eq(mockMessage.conversationId), eq(mockMessage.date))
+            .with(eq(mockMessageContent.editMessageId), eq(mockMessage.conversationId), eq(mockMessage.date))
             .wasInvoked(exactly = once)
 
         verify(messageRepository)
             .suspendFunction(messageRepository::updateMessageId)
-            .with(eq(mockMessage.conversationId), eq(mockMessageContent.messageId), eq(mockMessage.id))
+            .with(eq(mockMessage.conversationId), eq(mockMessageContent.editMessageId), eq(mockMessage.id))
             .wasInvoked(exactly = once)
     }
 
