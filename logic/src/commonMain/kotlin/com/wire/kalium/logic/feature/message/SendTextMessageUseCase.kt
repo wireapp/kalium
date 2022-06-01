@@ -25,7 +25,7 @@ class SendTextMessageUseCase(
 ) {
 
     suspend operator fun invoke(conversationId: ConversationId, text: String): Either<CoreFailure, Unit> {
-        syncManager.waitForSlowSyncToComplete()
+        syncManager.startSyncIfIdle()
         val selfUser = userRepository.getSelfUser().first()
 
         val generatedMessageUuid = uuid4().toString()
@@ -38,7 +38,8 @@ class SendTextMessageUseCase(
                 date = Clock.System.now().toString(),
                 senderUserId = selfUser.id,
                 senderClientId = currentClientId,
-                status = Message.Status.PENDING
+                status = Message.Status.PENDING,
+                editStatus = Message.EditStatus.NotEdited
             )
             messageRepository.persistMessage(message)
         }.flatMap {

@@ -5,6 +5,7 @@ import com.wire.kalium.logic.configuration.ServerConfigMapper
 import com.wire.kalium.logic.configuration.ServerConfigMapperImpl
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.asset.AssetMapperImpl
+import com.wire.kalium.logic.data.call.CallMapper
 import com.wire.kalium.logic.data.client.ClientMapper
 import com.wire.kalium.logic.data.conversation.ConversationMapper
 import com.wire.kalium.logic.data.conversation.ConversationMapperImpl
@@ -52,4 +53,5 @@ internal object MapperProvider {
     fun locationMapper(): LocationMapper = LocationMapper()
     fun clientMapper(clientConfig: ClientConfig): ClientMapper = ClientMapper(preyKeyMapper(), locationMapper(), clientConfig)
     fun conversationStatusMapper(): ConversationStatusMapper = ConversationStatusMapperImpl()
+    fun callMapper(): CallMapper = CallMapper()
 }

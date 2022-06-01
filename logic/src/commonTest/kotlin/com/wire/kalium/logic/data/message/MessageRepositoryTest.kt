@@ -181,7 +181,8 @@ class MessageRepositoryTest {
                 date = "date",
                 senderUserId = TEST_QUALIFIED_ID_ENTITY,
                 senderClientId = "sender",
-                status = SENT
+                status = SENT,
+                editStatus =  MessageEntity.EditStatus.NotEdited
             )
         val TEST_CONVERSATION_ID = ConversationId("value", "domain")
         val TEST_CLIENT_ID = ClientId("clientId")
@@ -190,7 +191,7 @@ class MessageRepositoryTest {
         val TEST_DATETIME = "2022-04-21T20:56:22.393Z"
         val TEST_MESSAGE = Message(
             "uid", TEST_CONTENT, TEST_CONVERSATION_ID, TEST_DATETIME, TEST_USER_ID, TEST_CLIENT_ID,
-            Message.Status.SENT
+            Message.Status.SENT, Message.EditStatus.NotEdited
         )
     }
 }

@@ -77,7 +77,7 @@ class ObserveConversationMembersUseCaseTest {
         observeConversationMembers(conversationID)
 
         verify(syncManager)
-            .suspendFunction(syncManager::waitForSlowSyncToComplete)
+            .function(syncManager::startSyncIfIdle)
             .wasInvoked(exactly = once)
     }
 

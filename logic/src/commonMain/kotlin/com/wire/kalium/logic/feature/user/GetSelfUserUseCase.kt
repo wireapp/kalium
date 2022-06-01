@@ -10,7 +10,7 @@ class GetSelfUserUseCase(private val userRepository: UserRepository,
 ) {
 
     suspend operator fun invoke(): Flow<SelfUser> {
-        syncManager.waitForSlowSyncToComplete()
+        syncManager.waitUntilSlowSyncCompletion()
         return userRepository.getSelfUser()
     }
 }

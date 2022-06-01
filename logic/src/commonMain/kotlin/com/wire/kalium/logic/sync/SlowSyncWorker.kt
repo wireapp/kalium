@@ -4,6 +4,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 
@@ -18,7 +19,8 @@ class SlowSyncWorker(
             .flatMap { userSessionScope.connection.syncConnections() }
             .flatMap { userSessionScope.team.syncSelfTeamUseCase() }
             .flatMap { userSessionScope.users.syncContacts() }
-            .onSuccess { userSessionScope.syncManager.completeSlowSync() }
+            .onSuccess { userSessionScope.syncManager.onSlowSyncComplete() }
+            .onFailure { userSessionScope.syncManager.onSlowSyncFailure(it) }
 
         return when (result) {
             is Either.Left -> {
