@@ -6,7 +6,6 @@ import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSou
 import com.wire.kalium.logic.data.asset.AssetDataSource
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.call.CallDataSource
-import com.wire.kalium.logic.data.call.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientDataSource
 import com.wire.kalium.logic.data.client.ClientRepository
@@ -67,6 +66,7 @@ import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.sync.ConversationEventReceiver
 import com.wire.kalium.logic.sync.ConversationEventReceiverImpl
 import com.wire.kalium.logic.sync.ListenToEventsUseCase
+import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.SyncManagerImpl
 import com.wire.kalium.logic.sync.SyncPendingEventsUseCase
@@ -235,16 +235,12 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.authenticatedNetworkContainer.notificationApi, eventInfoStorage, clientRepository
         )
 
-    private val callMapper: CallMapper
-        get() = CallMapper()
-
     private val callManager: Lazy<CallManager> = lazy {
         globalCallManager.getCallManagerForClient(
             userId = userId,
             callRepository = callRepository,
             userRepository = userRepository,
             clientRepository = clientRepository,
-            callMapper = callMapper,
             messageSender = messageSender
         )
     }
@@ -284,6 +280,8 @@ abstract class UserSessionScopeCommon(
         get() = ListenToEventsUseCase(syncManager)
     val syncPendingEvents: SyncPendingEventsUseCase
         get() = SyncPendingEventsUseCase(syncManager)
+    val observeSyncState: ObserveSyncStateUseCase
+        get() = ObserveSyncStateUseCase(syncRepository)
     val client: ClientScope
         get() = ClientScope(
             clientRepository,

@@ -9,21 +9,21 @@ class ValidatePasswordUseCaseTest {
     private val validatePasswordUseCase: ValidatePasswordUseCase = ValidatePasswordUseCaseImpl()
 
     @Test
-    fun `given a validatePasswordUseCase is invoked, when password is valid, then return true`() {
+    fun givenAValidatePasswordUseCaseIsInvoked_whenPasswordIsValid_thenReturnTrue() {
         VALID_PASSWORDS.forEach { validPassword ->
             assertTrue(message = "$validPassword is invalid ") { validatePasswordUseCase(validPassword) }
         }
     }
 
     @Test
-    fun `given a validatePasswordUseCase is invoked, when password is invalid, then return false`() {
+    fun givenAValidatePasswordUseCaseIsInvoked_whenPasswordIsInvalid_thenReturnFalse() {
         INVALID_PASSWORDS.forEach { invalidPassword ->
             assertFalse { validatePasswordUseCase(invalidPassword) }
         }
     }
 
     @Test
-    fun `given a validatePasswordUseCase is invoked, when password is short, then return false`() {
+    fun givenAValidatePasswordUseCaseIsInvoked_whenPasswordIsShort_thenReturnFalse() {
         assertFalse { validatePasswordUseCase("1@3.") }
     }
 

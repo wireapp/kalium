@@ -21,7 +21,7 @@ class ObserveConversationMembersUseCase(
 ) {
 
     suspend operator fun invoke(conversationId: ConversationId): Flow<List<MemberDetails>> {
-        syncManager.waitForSyncToComplete()
+        syncManager.startSyncIfIdle()
         val selfDetailsFlow = userRepository.getSelfUser()
         val selfUser = selfDetailsFlow.first()
 

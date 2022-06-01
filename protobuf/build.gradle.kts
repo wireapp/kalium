@@ -16,6 +16,7 @@ android {
         minSdk = Android.Sdk.min
         targetSdk = Android.Sdk.target
         consumerProguardFiles("consumer-proguard-rules.pro")
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
@@ -63,6 +64,12 @@ kotlin {
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
+            }
+        }
+        val androidTest by getting {
+            dependencies {
+                implementation(Dependencies.AndroidInstruments.androidTestRunner)
+                implementation(Dependencies.AndroidInstruments.androidTestRules)
             }
         }
     }

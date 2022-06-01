@@ -25,9 +25,37 @@ interface SyncManager {
     fun onSlowSyncComplete()
 
     /**
-     * Blocks the caller until all pending events are processed.
+     * Triggers sync, if not yet running.
+     * Suspends the caller until all pending events are processed,
+     * and the client has finished processing all pending events.
+     *
+     * Suitable for operations where the user is required to be online
+     * and without any pending events to be processed, for maximum sync.
+     * @see startSyncIfIdle
+     * @see waitUntilSlowSyncCompletion
      */
-    suspend fun waitForSyncToComplete()
+    suspend fun waitUntilLive()
+
+    /**
+     * Triggers sync, if not yet running.
+     * Suspends the caller until at least basic data is processed,
+     * even though Sync will run on a Job of its own.
+     *
+     * Suitable for operations where the user can be offline, but at least some basic post-login sync is done.
+     * @see startSyncIfIdle
+     * @see waitUntilLive
+     */
+    suspend fun waitUntilSlowSyncCompletion()
+
+    /**
+     * Triggers sync, if not yet running.
+     * Will run in a parallel job without waiting for completion.
+     *
+     * Suitable for operations that the user can perform even while offline.
+     * @see waitUntilLive
+     * @see waitUntilSlowSyncCompletion
+     */
+    fun startSyncIfIdle()
     suspend fun isSlowSyncOngoing(): Boolean
     suspend fun isSlowSyncCompleted(): Boolean
     fun onSlowSyncFailure(cause: CoreFailure): SyncState
@@ -153,12 +181,17 @@ class SyncManagerImpl(
 
     override fun onSlowSyncFailure(cause: CoreFailure) = syncRepository.updateSyncState { SyncState.Failed(cause) }
 
-    override suspend fun waitForSyncToComplete() {
-        performSyncIfWaitingOrFailed()
+    override suspend fun waitUntilLive() {
+        startSyncIfIdle()
         syncRepository.syncState.first { it == SyncState.Live }
     }
 
-    private fun performSyncIfWaitingOrFailed() {
+    override suspend fun waitUntilSlowSyncCompletion() {
+        startSyncIfIdle()
+        syncRepository.syncState.first { it is SyncState.ProcessingPendingEvents || it is SyncState.Live }
+    }
+
+    override fun startSyncIfIdle() {
         val syncState = syncRepository.updateSyncState {
             when (it) {
                 SyncState.Waiting, is SyncState.Failed -> SyncState.SlowSync
