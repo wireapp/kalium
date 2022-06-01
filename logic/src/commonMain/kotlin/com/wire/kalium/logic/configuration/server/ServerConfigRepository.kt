@@ -61,6 +61,11 @@ internal interface ServerConfigRepository {
     fun configById(id: String): Either<StorageFailure, ServerConfig>
 
     /**
+     * retrieve a config from the local DB by Links
+     */
+    fun configByLinks(links: ServerConfig.Links): Either<StorageFailure, ServerConfig>
+
+    /**
      * update the api version of a locally stored config
      */
     suspend fun updateConfigApiVersion(id: String): Either<CoreFailure, Unit>
@@ -137,6 +142,9 @@ internal class ServerConfigDataSource(
     override fun configById(id: String): Either<StorageFailure, ServerConfig> = wrapStorageRequest {
         dao.configById(id)
     }.map { serverConfigMapper.fromEntity(it) }
+
+    override fun configByLinks(links: ServerConfig.Links): Either<StorageFailure, ServerConfig> =
+        wrapStorageRequest { dao.configByLinks(links.title, links.api, links.webSocket) }.map { serverConfigMapper.fromEntity(it) }
 
     override suspend fun updateConfigApiVersion(id: String): Either<CoreFailure, Unit> = configById(id)
         .flatMap { wrapApiRequest { versionApi.fetchApiVersion(Url(it.links.api)) } }
