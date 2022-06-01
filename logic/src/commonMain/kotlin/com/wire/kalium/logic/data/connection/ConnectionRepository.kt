@@ -88,10 +88,9 @@ internal class ConnectionDataSource(
     }
 
     override suspend fun updateConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, Unit> {
-        // Check if we can transition to the correct connection status
-        val canTransitionToStatus = checkIfCanTransitionToConnectionStatus(connectionState)
+        val isValidConnectionState = isValidConnectionState(connectionState)
         val newConnectionStatus = connectionStatusMapper.toApiModel(connectionState)
-        if (!canTransitionToStatus || newConnectionStatus == null) {
+        if (!isValidConnectionState || newConnectionStatus == null) {
             return Either.Left(InvalidMappingFailure)
         }
 
@@ -103,7 +102,11 @@ internal class ConnectionDataSource(
         }
     }
 
-    private fun checkIfCanTransitionToConnectionStatus(connectionState: ConnectionState): Boolean = when (connectionState) {
+    /**
+     * Check if we can transition to the correct connection status
+     * [ConnectionState.CANCELLED] [ConnectionState.IGNORED] or [ConnectionState.ACCEPTED]
+     */
+    private fun isValidConnectionState(connectionState: ConnectionState): Boolean = when (connectionState) {
         ConnectionState.IGNORED -> false // TODO: implement and move to next case
         ConnectionState.CANCELLED, ConnectionState.ACCEPTED -> true
         else -> false
