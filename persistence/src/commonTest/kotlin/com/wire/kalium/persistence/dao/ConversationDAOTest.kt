@@ -155,12 +155,24 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenMultipleConversations_whenGettingConversationsForNotifications_thenOnlyUnnotifiedConversationsAreReturned() = runTest {
+
+        // GIVEN
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.insertConversation(conversationEntity2)
-        conversationDAO.updateConversationNotificationDate(QualifiedIDEntity("2", "wire.com"), "2022-03-30T15:36:10.000Z")
+        conversationDAO.insertConversation(conversationEntity3)
+
+        // WHEN
+        // Updating the last notified date to later than last modified
+        conversationDAO
+            .updateConversationNotificationDate(
+                QualifiedIDEntity("2", "wire.com"),
+                "2022-03-30T15:37:10.000Z"
+            )
 
         val result = conversationDAO.getConversationsForNotifications().first()
 
+        // THEN
+        // only conversation one should be selected for notifications
         assertEquals(listOf(conversationEntity1), result)
     }
 
@@ -249,7 +261,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             teamId,
             ConversationEntity.ProtocolInfo.Proteus,
             lastNotificationDate = null,
-            lastModifiedDate = "2022-03-30T15:36:00.000Z"
+            lastModifiedDate = "2022-03-30T15:36:00.000Z",
+            mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED
         )
         val conversationEntity2 = ConversationEntity(
             QualifiedIDEntity("2", "wire.com"),
@@ -258,7 +271,21 @@ class ConversationDAOTest : BaseDatabaseTest() {
             null,
             ConversationEntity.ProtocolInfo.MLS("group2", ConversationEntity.GroupState.ESTABLISHED),
             lastNotificationDate = null,
-            lastModifiedDate = "2021-03-30T15:36:00.000Z"
+            lastModifiedDate = "2021-03-30T15:36:00.000Z",
+            mutedStatus = ConversationEntity.MutedStatus.ALL_MUTED
+        )
+
+        val conversationEntity3 = ConversationEntity(
+            QualifiedIDEntity("3", "wire.com"),
+            "conversation3",
+            ConversationEntity.Type.GROUP,
+            null,
+            ConversationEntity.ProtocolInfo.MLS("group3", ConversationEntity.GroupState.ESTABLISHED),
+            // This conversation was modifieid after the last time the user was notified about it
+            lastNotificationDate = "2021-03-30T15:30:00.000Z",
+            lastModifiedDate = "2021-03-30T15:36:00.000Z",
+            // and it's status is set to be only notified if there is a mention for the user
+            mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_ALLOWED
         )
 
         val member1 = Member(user1.id)
