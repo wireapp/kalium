@@ -6,8 +6,14 @@ import com.wire.kalium.network.utils.NetworkResponse
 
 interface ConversationApi {
 
+    /**
+     * Fetch conversations id's in a paginated fashion, including federated conversations
+     */
     suspend fun fetchConversationsIds(pagingState: String?): NetworkResponse<ConversationPagingResponse>
 
+    /**
+     * Fetch conversations details by id's, including federated conversations
+     */
     suspend fun fetchConversationsListDetails(conversationsIds: List<ConversationId>): NetworkResponse<ConversationResponseDTO>
 
     suspend fun fetchConversationDetails(conversationId: ConversationId): NetworkResponse<ConversationResponse>
