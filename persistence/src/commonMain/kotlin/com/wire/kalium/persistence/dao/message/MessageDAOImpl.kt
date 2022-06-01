@@ -8,7 +8,6 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.ASSET
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.TEXT
-import com.wire.kalium.persistence.dao.message.MessageEntity.DownloadStatus.NOT_DOWNLOADED
 import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityContent.AssetMessageContent
 import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityContent.TextMessageContent
 import kotlinx.coroutines.flow.Flow
@@ -38,7 +37,6 @@ class MessageMapper {
                     )
                 }
             },
-
             // Common Message fields
             id = msg.id,
             conversationId = msg.conversation_id,
@@ -46,6 +44,7 @@ class MessageMapper {
             senderUserId = msg.sender_user_id,
             senderClientId = msg.sender_client_id,
             status = msg.status,
+            editStatus = MessageEntity.EditStatus.NotEdited,
             visibility = msg.visibility
         )
     }
@@ -56,9 +55,12 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
 
     override suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity) = queries.deleteMessage(id, conversationsId)
 
-
     override suspend fun markMessageAsDeleted(id: String, conversationsId: QualifiedIDEntity) =
         queries.markMessageAsDeleted(id, conversationsId)
+
+    override suspend fun markAsEdited(editTimeStamp: String, conversationId: QualifiedIDEntity, id: String) {
+        queries.markMessageAsEdited(editTimeStamp, id, conversationId)
+    }
 
     override suspend fun deleteAllMessages() = queries.deleteAllMessages()
 
@@ -142,6 +144,10 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
     override suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity) =
         queries.updateMessageStatus(status, id, conversationId)
 
+    override suspend fun updateMessageId(conversationId: QualifiedIDEntity, oldMesageId: String, newMessageId: String) {
+        queries.updateMessageId(newMessageId, oldMesageId, conversationId)
+    }
+
     override suspend fun updateMessageDate(date: String, id: String, conversationId: QualifiedIDEntity) =
         queries.updateMessageDate(date, id, conversationId)
 
@@ -177,4 +183,13 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             .executeAsList()
             .map(mapper::toModel)
     }
+
+    override suspend fun updateTextMessageContent(
+        conversationId: QualifiedIDEntity,
+        messageId: String,
+        newTextContent: TextMessageContent
+    ) {
+        queries.updatMessageTextContent(newTextContent.messageBody, messageId, conversationId)
+    }
+
 }
