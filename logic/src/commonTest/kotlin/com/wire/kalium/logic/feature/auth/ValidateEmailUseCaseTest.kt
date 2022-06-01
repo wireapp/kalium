@@ -9,21 +9,21 @@ class ValidateEmailUseCaseTest {
     private val validateEmailUseCase: ValidateEmailUseCase = ValidateEmailUseCaseImpl()
 
     @Test
-    fun `given a validateEmailUseCase is invoked, when email is valid, then return true`() {
+    fun givenAValidateEmailUseCaseIsInvoked_whenEmailIsValid_thenReturnTrue() {
         VALID_EMAILS.forEach { validEmail ->
             assertTrue(message = "$validEmail is invalid ") { validateEmailUseCase(validEmail) }
         }
     }
 
     @Test
-    fun `given a validateEmailUseCase is invoked, when email is inValid, then return false`() {
+    fun givenAValidateEmailUseCaseIsInvoked_whenEmailIsInValid_thenReturnFalse() {
         INVALID_EMAILS.forEach { inValidEmail ->
             assertFalse(message = "$inValidEmail is valid ") { validateEmailUseCase(inValidEmail) }
         }
     }
 
     @Test
-    fun `given a validateEmailUseCase is invoked, when email is short, then return false`() {
+    fun givenAValidateEmailUseCaseIsInvoked_whenEmailIsShort_thenReturnFalse() {
         assertFalse { validateEmailUseCase("1@3.") }
     }
 
