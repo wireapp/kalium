@@ -120,7 +120,8 @@ internal class SendAssetMessageUseCaseImpl(
             date = Clock.System.now().toString(),
             senderUserId = selfUser.id,
             senderClientId = currentClientId,
-            status = Message.Status.PENDING
+            status = Message.Status.PENDING,
+            editStatus = Message.EditStatus.NotEdited
         )
         messageRepository.persistMessage(message).map { message }
     }.flatMap { message ->
