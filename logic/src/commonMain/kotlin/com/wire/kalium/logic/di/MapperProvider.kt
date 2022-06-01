@@ -5,6 +5,7 @@ import com.wire.kalium.logic.configuration.ServerConfigMapper
 import com.wire.kalium.logic.configuration.ServerConfigMapperImpl
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.asset.AssetMapperImpl
+import com.wire.kalium.logic.data.call.CallMapper
 import com.wire.kalium.logic.data.client.ClientMapper
 import com.wire.kalium.logic.data.conversation.ConversationMapper
 import com.wire.kalium.logic.data.conversation.ConversationMapperImpl
@@ -31,6 +32,8 @@ import com.wire.kalium.logic.data.team.TeamMapper
 import com.wire.kalium.logic.data.team.TeamMapperImpl
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.data.user.UserMapperImpl
+import com.wire.kalium.logic.data.user.UserTypeMapper
+import com.wire.kalium.logic.data.user.UserTypeMapperImpl
 
 internal object MapperProvider {
     fun idMapper(): IdMapper = IdMapperImpl()
@@ -40,7 +43,7 @@ internal object MapperProvider {
     fun teamMapper(): TeamMapper = TeamMapperImpl()
     fun messageMapper(): MessageMapper = MessageMapperImpl(idMapper())
     fun memberMapper(): MemberMapper = MemberMapperImpl(idMapper())
-    fun conversationMapper(): ConversationMapper = ConversationMapperImpl(idMapper(), ConversationStatusMapperImpl())
+    fun conversationMapper(): ConversationMapper = ConversationMapperImpl(idMapper(), ConversationStatusMapperImpl(), UserTypeMapperImpl())
     fun publicUserMapper(): PublicUserMapper = PublicUserMapperImpl(idMapper())
     fun sendMessageFailureMapper(): SendMessageFailureMapper = SendMessageFailureMapperImpl()
     fun assetMapper(): AssetMapper = AssetMapperImpl()
@@ -50,4 +53,5 @@ internal object MapperProvider {
     fun locationMapper(): LocationMapper = LocationMapper()
     fun clientMapper(clientConfig: ClientConfig): ClientMapper = ClientMapper(preyKeyMapper(), locationMapper(), clientConfig)
     fun conversationStatusMapper(): ConversationStatusMapper = ConversationStatusMapperImpl()
+    fun callMapper(): CallMapper = CallMapper()
 }

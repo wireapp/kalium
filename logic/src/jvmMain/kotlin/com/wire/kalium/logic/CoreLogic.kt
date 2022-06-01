@@ -55,7 +55,6 @@ actual class CoreLogic(
             runBlocking { proteusClient.open() }
 
             val workScheduler = WorkSchedulerImpl(this, userId)
-            val syncManager = SyncManagerImpl(workScheduler, InMemorySyncRepository())
             val encryptedSettingsHolder = EncryptedSettingsHolder(SettingOptions.UserSettings(idMapper.toDaoModel(userId)))
             val userPreferencesSettings = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
             val userDatabase = UserDatabaseProvider(File(rootStoragePath))
@@ -65,7 +64,6 @@ actual class CoreLogic(
                 networkContainer,
                 proteusClient,
                 workScheduler,
-                syncManager,
                 userDatabase,
                 userPreferencesSettings,
                 encryptedSettingsHolder
