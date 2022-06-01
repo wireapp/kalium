@@ -20,8 +20,6 @@ data class KaliumConfigs(
     val isSafeLoggingEnabled: Boolean = false,
     val enableBlacklist: Boolean = false,
     val fileRestrictionEnabled: Boolean = false,
-    val countlyAppKey: String = "",
-    val countlyServerUrl: String = "",
     val customUrlScheme: String = "",
     val fileRestrictionList: String = "",
     val httpProxyPort: String = "",
