@@ -77,6 +77,7 @@ interface MessageRepository {
     ): Either<CoreFailure, Unit>
 }
 
+//TODO: suppress TooManyFunctions for now, something we need to fix in the future
 @Suppress("LongParameterList", "TooManyFunctions")
 class MessageDataSource(
     private val messageApi: MessageApi,
