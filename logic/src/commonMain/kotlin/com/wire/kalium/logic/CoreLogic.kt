@@ -7,6 +7,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
+import com.wire.kalium.logic.featureFlags.BuildTimeConfigs
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 
@@ -16,7 +17,8 @@ abstract class CoreLogicCommon(
     // TODO: can client label be replaced with clientConfig.deviceName() ?
     protected val clientLabel: String,
     protected val rootPath: String,
-    protected val idMapper: IdMapper = MapperProvider.idMapper()
+    protected val idMapper: IdMapper = MapperProvider.idMapper(),
+    protected val buildTimeConfigs: BuildTimeConfigs?
 ) {
 
     val sessionRepository: SessionRepository by lazy {

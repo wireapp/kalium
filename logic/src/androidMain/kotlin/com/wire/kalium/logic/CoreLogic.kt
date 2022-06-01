@@ -11,6 +11,7 @@ import com.wire.kalium.logic.di.UserSessionScopeProvider
 import com.wire.kalium.logic.di.UserSessionScopeProviderImpl
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
+import com.wire.kalium.logic.featureFlags.BuildTimeConfigs
 import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.sync.SyncManagerImpl
 import com.wire.kalium.logic.sync.WorkSchedulerImpl
@@ -33,8 +34,9 @@ actual class CoreLogic(
     private val appContext: Context,
     clientLabel: String,
     rootPath: String,
-    private val userSessionScopeProvider: UserSessionScopeProvider = UserSessionScopeProviderImpl
-) : CoreLogicCommon(clientLabel, rootPath) {
+    private val userSessionScopeProvider: UserSessionScopeProvider = UserSessionScopeProviderImpl,
+    buildTimeConfigs: BuildTimeConfigs?
+) : CoreLogicCommon(clientLabel, rootPath, buildTimeConfigs = buildTimeConfigs) {
 
     override fun getSessionRepo(): SessionRepository {
         val sessionStorage: SessionStorage = SessionStorageImpl(globalPreferences)

@@ -5,6 +5,7 @@ import androidx.work.Configuration
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.CoreLogger
 import com.wire.kalium.logic.CoreLogic
+import com.wire.kalium.logic.featureFlags.BuildTimeConfigs
 import com.wire.kalium.logic.sync.WrapperWorkerFactory
 import java.io.File
 
@@ -19,7 +20,8 @@ class KaliumApplication : Application(), Configuration.Provider {
         coreLogic = CoreLogic(
             appContext = applicationContext,
             clientLabel = "kalium",
-            rootPath = rootDir.absolutePath
+            rootPath = rootDir.absolutePath,
+            buildTimeConfigs = null
         )
         CoreLogger.setLoggingLevel(
             level = KaliumLogLevel.DEBUG, logWriter = null
