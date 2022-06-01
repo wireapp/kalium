@@ -35,7 +35,7 @@ actual class CoreLogic(
     clientLabel: String,
     rootPath: String,
     private val userSessionScopeProvider: UserSessionScopeProvider = UserSessionScopeProviderImpl,
-    buildTimeConfigs: BuildTimeConfigs?
+    buildTimeConfigs: BuildTimeConfigs
 ) : CoreLogicCommon(clientLabel, rootPath, buildTimeConfigs = buildTimeConfigs) {
 
     override fun getSessionRepo(): SessionRepository {

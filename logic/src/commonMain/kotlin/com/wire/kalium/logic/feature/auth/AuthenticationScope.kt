@@ -29,6 +29,9 @@ import com.wire.kalium.logic.feature.user.EnableLoggingUseCase
 import com.wire.kalium.logic.feature.user.EnableLoggingUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsLoggingEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsLoggingEnabledUseCaseImpl
+import com.wire.kalium.logic.featureFlags.BuildTimeConfigs
+import com.wire.kalium.logic.featureFlags.GetBuildConfigsUseCase
+import com.wire.kalium.logic.featureFlags.GetBuildConfigsUseCaseImpl
 import com.wire.kalium.network.UnauthenticatedNetworkContainer
 import com.wire.kalium.persistence.client.TokenStorage
 import com.wire.kalium.persistence.client.TokenStorageImpl
@@ -39,7 +42,8 @@ import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 
 class AuthenticationScope(
     private val clientLabel: String, private val sessionRepository: SessionRepository, private val globalDatabase: GlobalDatabaseProvider,
-    private val globalPreferences: KaliumPreferences
+    private val globalPreferences: KaliumPreferences,
+    private val buildTimeConfigs: BuildTimeConfigs
 ) {
 
     private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
@@ -83,4 +87,5 @@ class AuthenticationScope(
     val saveNotificationToken: SaveNotificationTokenUseCase get() = SaveNotificationTokenUseCase(notificationTokenRepository)
     val enableLogging: EnableLoggingUseCase get() = EnableLoggingUseCaseImpl(userConfigRepository)
     val isLoggingEnabled: IsLoggingEnabledUseCase get() = IsLoggingEnabledUseCaseImpl(userConfigRepository)
+    val buildConfigs: GetBuildConfigsUseCase get() = GetBuildConfigsUseCaseImpl(buildTimeConfigs)
 }

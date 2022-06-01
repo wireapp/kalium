@@ -21,7 +21,7 @@ class KaliumApplication : Application(), Configuration.Provider {
             appContext = applicationContext,
             clientLabel = "kalium",
             rootPath = rootDir.absolutePath,
-            buildTimeConfigs = null
+            buildTimeConfigs = BuildTimeConfigs()
         )
         CoreLogger.setLoggingLevel(
             level = KaliumLogLevel.DEBUG, logWriter = null

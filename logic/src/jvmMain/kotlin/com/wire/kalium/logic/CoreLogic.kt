@@ -29,7 +29,7 @@ actual class CoreLogic(
     clientLabel: String,
     rootPath: String,
     private val userSessionScopeProvider: UserSessionScopeProvider = UserSessionScopeProviderImpl,
-    buildTimeConfigs: BuildTimeConfigs?
+    buildTimeConfigs: BuildTimeConfigs
 ) : CoreLogicCommon(
     clientLabel = clientLabel, rootPath = rootPath, buildTimeConfigs = buildTimeConfigs
 ) {

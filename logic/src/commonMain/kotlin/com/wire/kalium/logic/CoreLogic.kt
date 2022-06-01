@@ -18,7 +18,7 @@ abstract class CoreLogicCommon(
     protected val clientLabel: String,
     protected val rootPath: String,
     protected val idMapper: IdMapper = MapperProvider.idMapper(),
-    protected val buildTimeConfigs: BuildTimeConfigs?
+    protected val buildTimeConfigs: BuildTimeConfigs
 ) {
 
     val sessionRepository: SessionRepository by lazy {
@@ -32,7 +32,7 @@ abstract class CoreLogicCommon(
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     fun getAuthenticationScope(): AuthenticationScope =
-        AuthenticationScope(clientLabel, sessionRepository, globalDatabase, globalPreferences)
+        AuthenticationScope(clientLabel, sessionRepository, globalDatabase, globalPreferences, buildTimeConfigs)
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     abstract fun getSessionScope(userId: UserId): UserSessionScope
