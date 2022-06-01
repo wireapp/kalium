@@ -3,6 +3,7 @@ package com.wire.kalium.persistence.utils.stubs
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 
+@Suppress("LongParameterList")
 fun newMessageEntity(
     id: String = "testMessage",
     content: MessageEntity.MessageEntityContent = MessageEntity.MessageEntityContent.TextMessageContent("Test Text"),
