@@ -63,7 +63,7 @@ internal class ConnectionDataSource(
                 kaliumLogger.v("Fetching connections page starting with pagingState $lastPagingState")
                 connectionApi.fetchSelfUserConnections(pagingState = lastPagingState)
             }.onSuccess {
-                it.connections.forEach {connectionDTO ->
+                it.connections.forEach { connectionDTO ->
                     persistConnection(connectionMapper.fromApiToModel(connectionDTO))
                 }
                 updateUserConnectionStatus(connections = it.connections)
@@ -137,9 +137,11 @@ internal class ConnectionDataSource(
         // This can fail? but the connection will be there and get synced in worst case in next SlowSync
         wrapApiRequest {
             userDetailsApi.getUserInfo(idMapper.toApiModel(connection.qualifiedToId))
-        }.map {
-            val userEntity = publicUserMapper.fromUserApiToEntity(it)
-            userDAO.insertUser(userEntity)
+        }.flatMap {
+            wrapStorageRequest {
+                val userEntity = publicUserMapper.fromUserApiToEntity(it)
+                userDAO.insertUser(userEntity)
+            }
         }
     }
 
