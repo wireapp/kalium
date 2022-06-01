@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
+import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.asset.GetAvatarAssetUseCase
 import com.wire.kalium.logic.feature.asset.GetAvatarAssetUseCaseImpl
@@ -21,7 +22,8 @@ class UserScope(
     private val userRepository: UserRepository,
     private val searchUserRepository: SearchUserRepository,
     private val syncManager: SyncManager,
-    private val assetRepository: AssetRepository
+    private val assetRepository: AssetRepository,
+    private val teamRepository: TeamRepository
 ) {
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
     val getSelfUser: GetSelfUserUseCase get() = GetSelfUserUseCase(userRepository, syncManager)
@@ -34,5 +36,5 @@ class UserScope(
     val setUserHandle: SetUserHandleUseCase get() = SetUserHandleUseCase(userRepository, validateUserHandleUseCase, syncManager)
     val getAllKnownUsers: GetAllContactsUseCase get() = GetAllContactsUseCaseImpl(userRepository)
     val getKnownUser: GetKnownUserUseCase get() = GetKnownUserUseCaseImpl(userRepository)
-    val getUserInfo: GetUserInfoUseCase get() = GetUserInfoUseCaseImpl(userRepository)
+    val getUserInfo: GetUserInfoUseCase get() = GetUserInfoUseCaseImpl(userRepository,teamRepository)
 }
