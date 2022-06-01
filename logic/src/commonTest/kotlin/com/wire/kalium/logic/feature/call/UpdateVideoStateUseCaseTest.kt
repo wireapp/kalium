@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.call
 
+import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.usecase.UpdateVideoStateUseCase
@@ -20,15 +21,19 @@ class UpdateVideoStateUseCaseTest {
     @Mock
     private val callManager = mock(classOf<CallManager>())
 
+    @Mock
+    private val callRepository = mock(classOf<CallRepository>())
+
     private lateinit var updateVideoStateUseCase: UpdateVideoStateUseCase
 
     @BeforeTest
     fun setup() {
-        updateVideoStateUseCase = UpdateVideoStateUseCase(lazy { callManager })
+        updateVideoStateUseCase = UpdateVideoStateUseCase(lazy { callManager }, callRepository)
     }
 
     @Test
     fun givenAValidConversationIdAndVideoState_whenUseCaseCalled_thenInvokeOnceUseCase() = runTest {
+        val isCameraOn = true
         val conversationId = ConversationId("default", "domain")
         val videoState = VideoState.STARTED
 
@@ -37,12 +42,26 @@ class UpdateVideoStateUseCaseTest {
             .whenInvokedWith(eq(conversationId), eq(videoState))
             .thenDoNothing()
 
+        given(callRepository)
+            .function(callRepository::updateIsCameraOnById)
+            .whenInvokedWith(eq(conversationId.toString()), eq(isCameraOn))
+            .thenDoNothing()
+
         updateVideoStateUseCase(conversationId, videoState)
 
         verify(callManager)
             .suspendFunction(callManager::updateVideoState)
             .with(eq(conversationId), eq(videoState))
             .wasInvoked(once)
+
+        verify(callRepository)
+            .function(callRepository::updateIsCameraOnById)
+            .with(eq(conversationId.toString()), eq(isCameraOn))
+            .wasInvoked(once)
+    }
+
+    companion object {
+        private val conversationId = ConversationId("value", "domain")
     }
 
 }
