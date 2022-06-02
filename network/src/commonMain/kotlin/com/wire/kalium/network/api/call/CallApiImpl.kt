@@ -1,16 +1,13 @@
 package com.wire.kalium.network.api.call
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
-import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.parameter
-import io.ktor.client.request.header
 import io.ktor.client.request.setBody
-import io.ktor.http.HttpHeaders
-import io.ktor.http.ContentType
 
 class CallApiImpl internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : CallApi {
 
@@ -26,8 +23,10 @@ class CallApiImpl internal constructor(private val authenticatedNetworkClient: A
     override suspend fun connectToSFT(url: String, data: String): NetworkResponse<ByteArray> =
         wrapKaliumResponse {
             httpClient.post(urlString = url) {
-                header(HttpHeaders.Accept, ContentType.Application.Json)
-                setBody(data)
+                // We are parsing the data string to json due to Ktor serialization escaping the string
+                // and thus backend not recognizing and returning a 400 - Bad Request
+                val json = KtxSerializer.json.parseToJsonElement(data)
+                setBody(json)
             }
         }
 
