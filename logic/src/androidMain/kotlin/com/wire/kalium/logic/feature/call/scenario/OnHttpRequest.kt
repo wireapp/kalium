@@ -19,6 +19,7 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 
 //TODO(testing): create unit test
+
 class OnHttpRequest(
     private val handle: Deferred<Handle>,
     private val calling: Calling,
@@ -114,7 +115,16 @@ class OnHttpRequest(
     ): Either<CoreFailure, Unit> {
         val messageContent = MessageContent.Calling(data)
         val date = Clock.System.now().toString()
-        val message = Message(uuid4().toString(), messageContent, conversationId, date, userId, clientId, Message.Status.SENT)
+        val message = Message(
+            uuid4().toString(),
+            messageContent,
+            conversationId,
+            date,
+            userId,
+            clientId,
+            Message.Status.SENT,
+            Message.EditStatus.NotEdited
+        )
         return messageSender.sendMessage(message)
     }
 }

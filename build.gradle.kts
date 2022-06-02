@@ -36,6 +36,7 @@ repositories {
 plugins {
     val dokkaVersion = "1.6.10"
     id("org.jetbrains.dokka") version "$dokkaVersion"
+    id("org.jetbrains.kotlinx.kover") version "0.5.1"
 }
 
 dependencies {
@@ -56,6 +57,14 @@ allprojects {
         mavenLocal()
         maven(url = "https://oss.sonatype.org/content/repositories/snapshots")
         maven(url = "https://raw.githubusercontent.com/wireapp/wire-maven/main/releases")
+    }
+}
+
+subprojects {
+    this.tasks.withType<Test> {
+        if (name != "jvmTest" && name != "jsTest") {
+            the<kotlinx.kover.api.KoverTaskExtension>().isDisabled = true
+        }
     }
 }
 

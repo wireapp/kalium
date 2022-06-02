@@ -132,10 +132,9 @@ internal class ConversationMapperImpl(
                     ConversationEntity.Type.GROUP
                 }
             }
-            ConversationResponse.Type.ONE_TO_ONE,
+            ConversationResponse.Type.ONE_TO_ONE -> ConversationEntity.Type.ONE_ON_ONE
             ConversationResponse.Type.INCOMING_CONNECTION,
-            ConversationResponse.Type.WAIT_FOR_CONNECTION,
-            -> ConversationEntity.Type.ONE_ON_ONE
+            ConversationResponse.Type.WAIT_FOR_CONNECTION -> ConversationEntity.Type.CONNECTION_PENDING
         }
     }
 
@@ -143,5 +142,6 @@ internal class ConversationMapperImpl(
         ConversationEntity.Type.SELF -> Conversation.Type.SELF
         ConversationEntity.Type.ONE_ON_ONE -> Conversation.Type.ONE_ON_ONE
         ConversationEntity.Type.GROUP -> Conversation.Type.GROUP
+        ConversationEntity.Type.CONNECTION_PENDING -> Conversation.Type.CONNECTION_PENDING
     }
 }
