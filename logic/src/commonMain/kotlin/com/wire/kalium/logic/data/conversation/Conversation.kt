@@ -18,7 +18,7 @@ data class Conversation(
     val lastNotificationDate: String?,
     val lastModifiedDate: String?
 ) {
-    enum class Type { SELF, ONE_ON_ONE, GROUP }
+    enum class Type { SELF, ONE_ON_ONE, GROUP, CONNECTION_PENDING }
 }
 
 sealed class ConversationDetails(open val conversation: Conversation) {
@@ -37,6 +37,24 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         override val conversation: Conversation,
         val legalHoldStatus: LegalHoldStatus
     ) : ConversationDetails(conversation)
+
+    data class Connection(
+        val conversationId: ConversationId,
+        val otherUser: OtherUser?,
+        val userType: UserType,
+        val lastModifiedDate: String?,
+        val connection: com.wire.kalium.logic.data.user.Connection,
+    ) : ConversationDetails(
+        Conversation(
+            id = conversationId,
+            name = otherUser?.name,
+            type = Conversation.Type.CONNECTION_PENDING,
+            teamId = otherUser?.team?.let { TeamId(it) },
+            mutedStatus = MutedConversationStatus.AllAllowed,
+            lastNotificationDate = null,
+            lastModifiedDate = lastModifiedDate,
+        )
+    )
 }
 
 class MembersInfo(val self: Member, val otherMembers: List<Member>)

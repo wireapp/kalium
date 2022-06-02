@@ -16,6 +16,7 @@ object TestMessage {
         "date",
         TEST_SENDER_USER_ID,
         TEST_SENDER_CLIENT_ID,
-        Message.Status.PENDING
+        Message.Status.PENDING,
+        Message.EditStatus.NotEdited
     )
 }

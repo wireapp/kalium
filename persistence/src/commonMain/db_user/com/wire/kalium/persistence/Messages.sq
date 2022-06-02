@@ -13,6 +13,7 @@ CREATE TABLE Message (
       sender_user_id TEXT AS QualifiedIDEntity NOT NULL,
       sender_client_id TEXT,
       status TEXT AS MessageEntity.Status NOT NULL,
+      last_edit_timeStamp TEXT ,
       visibility TEXT AS MessageEntity.Visibility NOT NULL DEFAULT 'visible',
 
       FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id),
@@ -89,6 +90,11 @@ markMessageAsDeleted {
    INSERT INTO MessageTextContent(message_id, conversation_id, text_body) VALUES(:message_id, :conversation_id, NULL);
 }
 
+markMessageAsEdited:
+UPDATE Message
+SET last_edit_timeStamp = ?
+WHERE id = ? AND conversation_id = ?;
+
 insertMessage:
 INSERT INTO Message(id, content_type, conversation_id, date, sender_user_id, sender_client_id, status, visibility)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?)
@@ -155,6 +161,16 @@ updateMessagesAddMillisToDate:
 UPDATE Message
 SET date = strftime('%Y-%m-%dT%H:%M:%fZ', date, '+' || ROUND(CAST(? AS REAL)/1000, 3) || ' seconds')
 WHERE conversation_id = ? AND status = ?;
+
+updateMessageTextContent:
+UPDATE MessageTextContent
+SET text_body = ?
+WHERE message_id = ? AND conversation_id = ?;
+
+updateMessageId:
+UPDATE Message
+SET id = ?
+WHERE id = ? AND conversation_id = ?;
 
 selectAllMessages:
 SELECT * FROM Message ORDER BY Datetime(date) DESC LIMIT ? OFFSET ?;

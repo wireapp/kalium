@@ -12,7 +12,7 @@ import kotlin.test.fail
 class EitherTest {
 
     @Test
-    fun `given fold is called, when either is Right, applies fnR and returns its result`() {
+    fun givenFoldIsCalled_whenEitherIsRight_appliesFnRAndReturnsItsResult() {
         val either = Either.Right("Success")
         val result = either.fold({ fail("Shouldn't be executed") }) { 5 }
 
@@ -20,7 +20,7 @@ class EitherTest {
     }
 
     @Test
-    fun `given fold is called, when either is Left, applies fnL and returns its result`() {
+    fun givenFoldIsCalled_whenEitherIsLeft_appliesFnLAndReturnsItsResult() {
         val either = Either.Left(12)
 
         val foldResult = "Fold Result"
@@ -30,7 +30,7 @@ class EitherTest {
     }
 
     @Test
-    fun `given flatMap is called, when either is Right, applies function and returns new Either`() {
+    fun givenFlatMapIsCalled_whenEitherIsRight_appliesFunctionAndReturnsNewEither() {
         val either = Either.Right("Success")
 
         val mapped = Either.Left(KaliumException.GenericError(KaliumException.GenericError(IllegalStateException())))
@@ -44,7 +44,7 @@ class EitherTest {
     }
 
     @Test
-    fun `given flatMap is called, when either is Left, doesn't invoke function and returns original Either`() {
+    fun givenFlatMapIsCalled_whenEitherIsLeft_doesNotInvokeFunctionAndReturnsOriginalEither() {
         val either = Either.Left(12)
 
         val result: Either<Int, Int> = either.flatMap {
@@ -56,7 +56,7 @@ class EitherTest {
     }
 
     @Test
-    fun `given onFailure is called, when either is Right, doesn't invoke function and returns original Either`() {
+    fun givenOnFailureIsCalled_whenEitherIsRight_doesNotInvokeFunctionAndReturnsOriginalEither() {
         val success = "Success"
         val either = Either.Right(success)
 
@@ -67,7 +67,7 @@ class EitherTest {
     }
 
     @Test
-    fun `given onFailure is called, when either is Left, invokes function with left value and returns original Either`() {
+    fun givenOnFailureIsCalled_whenEitherIsLeft_invokesFunctionWithLeftValueAndReturnsOriginalEither() {
         val either = Either.Left(12)
 
         var methodCalled = false
@@ -81,7 +81,7 @@ class EitherTest {
     }
 
     @Test
-    fun `given onSuccess is called, when either is Right, invokes function with right value and returns original Either`() {
+    fun givenOnSuccessIsCalled_whenEitherIsRight_invokesFunctionWithRightValueAndReturnsOriginalEither() {
         val success = "Success"
         val either = Either.Right(success)
 
@@ -96,7 +96,7 @@ class EitherTest {
     }
 
     @Test
-    fun `given onSuccess is called, when either is Left, doesn't invoke function and returns original Either`() {
+    fun givenOnSuccessIsCalled_whenEitherIsLeft_doesNotInvokeFunctionAndReturnsOriginalEither() {
         val either = Either.Left(12)
 
         val result = either.onSuccess {
@@ -107,7 +107,7 @@ class EitherTest {
     }
 
     @Test
-    fun `given map is called, when either is Right, invokes function with right value and returns a new Either`() {
+    fun givenMapIsCalled_whenEitherIsRight_invokesFunctionWithRightValueAndReturnsANewEither() {
         val success = "Success"
         val resultValue = "Result"
         val either = Either.Right(success)
@@ -121,7 +121,7 @@ class EitherTest {
     }
 
     @Test
-    fun `given map is called, when either is Left, doesn't invoke function and returns original Either`() {
+    fun givenMapIsCalled_whenEitherIsLeft_doesNotInvokeFunctionAndReturnsOriginalEither() {
         val either: Either<Int, Int> = Either.Left(12)
 
         val result = either.map {
@@ -133,7 +133,7 @@ class EitherTest {
     }
 
     @Test
-    fun `given a list and a mapper to either that succeeds, when folding to either while right, then accumulate values until the end`() {
+    fun givenAListAndAMapperToEitherThatSucceeds_whenFoldingToEitherWhileRight_thenAccumulateValuesUntilTheEnd() {
         val items = listOf(1, 1, 1)
 
         val result = items.foldToEitherWhileRight(0) { item, acc ->
@@ -146,7 +146,7 @@ class EitherTest {
     }
 
     @Test
-    fun `given a list and a mapper to either that fails, when folding to either while right, then return first Left`() {
+    fun givenAListAndAMapperToEitherThatFails_whenFoldingToEitherWhileRight_thenReturnFirstLeft() {
         val items = listOf(1, 2, 3)
 
         val result = items.foldToEitherWhileRight(0) { _, _ ->
@@ -159,7 +159,7 @@ class EitherTest {
     }
 
     @Test
-    fun `given a list and a mapper to either that fails, when folding to either while right, mappers after left should not be called`() {
+    fun givenAListAndAMapperToEitherThatFails_whenFoldingToEitherWhileRight_mappersAfterLeftShouldNotBeCalled() {
         var callCount = 0
         val mapFunction: () -> Either<Int, Int> = {
             callCount++

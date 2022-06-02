@@ -24,6 +24,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.sync.handler.MessageTextEditHandler
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.logic.wrapCryptoRequest
 import io.ktor.utils.io.core.toByteArray
@@ -40,8 +41,9 @@ class ConversationEventReceiverImpl(
     private val userRepository: UserRepository,
     private val protoContentMapper: ProtoContentMapper,
     private val callManagerImpl: Lazy<CallManager>,
+    private val editTextHandler: MessageTextEditHandler,
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
-    private val idMapper: IdMapper = MapperProvider.idMapper()
+    private val idMapper: IdMapper = MapperProvider.idMapper(),
 ) : ConversationEventReceiver {
 
     override suspend fun onEvent(event: Event.Conversation) {
@@ -72,7 +74,8 @@ class ConversationEventReceiverImpl(
                     date = event.time,
                     senderUserId = event.senderUserId,
                     senderClientId = event.senderClientId,
-                    status = Message.Status.SENT
+                    status = Message.Status.SENT,
+                    editStatus = Message.EditStatus.NotEdited,
                 )
 
                 processMessage(message)
@@ -164,7 +167,8 @@ class ConversationEventReceiverImpl(
                     date = event.time,
                     senderUserId = event.senderUserId,
                     senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
-                    status = Message.Status.SENT
+                    status = Message.Status.SENT,
+                    editStatus = Message.EditStatus.NotEdited,
                 )
                 processMessage(message)
             }
@@ -226,6 +230,7 @@ class ConversationEventReceiverImpl(
                         content = message.content
                     )
                 }
+                is MessageContent.TextEdited -> editTextHandler.handle(message,message.content)
                 is MessageContent.Unknown -> kaliumLogger.i(message = "Unknown Message received: $message")
             }
             is Message.Server -> when (message.content) {

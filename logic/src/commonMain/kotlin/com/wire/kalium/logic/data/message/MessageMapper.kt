@@ -60,6 +60,7 @@ class MessageMapperImpl(
         date = this.date,
         senderUserId = idMapper.toDaoModel(this.senderUserId),
         status = this.status.toMessageEntityStatus(),
+        editStatus = this.editStatus.toMessageEntityEditStatus(),
         visibility = this.visibility.toMessageEntityVisibility()
     )
 
@@ -71,6 +72,7 @@ class MessageMapperImpl(
         senderUserId = idMapper.fromDaoModel(this.senderUserId),
         senderClientId = ClientId(this.senderClientId),
         status = this.status.toMessageStatus(),
+        editStatus = this.editStatus.toMessageEditStatus(),
         visibility = this.visibility.toMessageVisibility()
     )
 
@@ -171,5 +173,15 @@ class MessageMapperImpl(
         Message.Visibility.VISIBLE -> MessageEntity.Visibility.VISIBLE
         Message.Visibility.HIDDEN -> MessageEntity.Visibility.HIDDEN
         Message.Visibility.DELETED -> MessageEntity.Visibility.DELETED
+    }
+
+    private fun MessageEntity.EditStatus.toMessageEditStatus() = when(this) {
+        MessageEntity.EditStatus.NotEdited -> Message.EditStatus.NotEdited
+        is MessageEntity.EditStatus.Edited -> Message.EditStatus.Edited(editStatus.lastTimeStamp)
+    }
+
+    private fun Message.EditStatus.toMessageEntityEditStatus() = when(this) {
+        Message.EditStatus.NotEdited -> MessageEntity.EditStatus.NotEdited
+        is Message.EditStatus.Edited -> MessageEntity.EditStatus.Edited(editStatus.lastTimeStamp)
     }
 }

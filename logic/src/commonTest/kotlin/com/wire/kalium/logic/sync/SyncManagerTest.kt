@@ -44,6 +44,10 @@ class SyncManagerTest {
     private val conversationEventReceiver: ConversationEventReceiver =
         configure(mock(ConversationEventReceiver::class)) { stubsUnitByDefault = true }
 
+    @Mock
+    private val userEventReceiver: UserEventReceiver =
+        configure(mock(UserEventReceiver::class)) { stubsUnitByDefault = true }
+
     private lateinit var syncRepository: SyncRepository
     private lateinit var syncManager: SyncManager
 
@@ -55,6 +59,7 @@ class SyncManagerTest {
             eventRepository,
             syncRepository,
             conversationEventReceiver,
+            userEventReceiver,
             TestKaliumDispatcher
         )
     }

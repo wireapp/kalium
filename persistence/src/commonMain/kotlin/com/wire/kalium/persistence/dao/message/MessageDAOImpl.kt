@@ -40,6 +40,7 @@ class MessageMapper {
             date = msg.date,
             senderUserId = msg.sender_user_id,
             status = msg.status,
+            editStatus = mapEditStatus(msg.last_edit_timeStamp),
             visibility = msg.visibility
         )
     }
@@ -67,6 +68,10 @@ class MessageMapper {
         memberUserIdList = content.member_change_list,
         memberChangeType = content.member_change_type
     )
+
+    private fun mapEditStatus(lastEditTimestamp: String?) =
+        lastEditTimestamp?.let { MessageEntity.EditStatus.Edited(it) }
+            ?: MessageEntity.EditStatus.NotEdited
 }
 
 class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
@@ -74,9 +79,12 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
 
     override suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity) = queries.deleteMessage(id, conversationsId)
 
-
     override suspend fun markMessageAsDeleted(id: String, conversationsId: QualifiedIDEntity) =
         queries.markMessageAsDeleted(id, conversationsId)
+
+    override suspend fun markAsEdited(editTimeStamp: String, conversationId: QualifiedIDEntity, id: String) {
+        queries.markMessageAsEdited(editTimeStamp, id, conversationId)
+    }
 
     override suspend fun deleteAllMessages() = queries.deleteAllMessages()
 
@@ -143,6 +151,10 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
     override suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity) =
         queries.updateMessageStatus(status, id, conversationId)
 
+    override suspend fun updateMessageId(conversationId: QualifiedIDEntity, oldMesageId: String, newMessageId: String) {
+        queries.updateMessageId(newMessageId, oldMesageId, conversationId)
+    }
+
     override suspend fun updateMessageDate(date: String, id: String, conversationId: QualifiedIDEntity) =
         queries.updateMessageDate(date, id, conversationId)
 
@@ -178,6 +190,14 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
         queries.selectMessagesFromUserByStatus(userId, MessageEntity.Status.PENDING)
             .executeAsList()
             .map { it.toMessageEntity() }
+
+    override suspend fun updateTextMessageContent(
+        conversationId: QualifiedIDEntity,
+        messageId: String,
+        newTextContent: TextMessageContent
+    ) {
+        queries.updateMessageTextContent(newTextContent.messageBody, messageId, conversationId)
+    }
 
     private fun contentTypeOf(content: MessageEntityContent): MessageEntity.ContentType = when (content) {
         is MessageEntityContent.Text -> TEXT

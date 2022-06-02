@@ -180,6 +180,7 @@ class ConversationDataSource(
                     )
                 )
             // TODO(connection-requests): Handle requests instead of filtering them out
+            Conversation.Type.CONNECTION_PENDING,
             Conversation.Type.ONE_ON_ONE -> {
                 val selfUser = userRepository.getSelfUser().first()
 
@@ -197,15 +198,15 @@ class ConversationDataSource(
                             }
                         }
                         emptyFlow()
-                }, { otherUserIdOrNull ->
+                    }, { otherUserIdOrNull ->
                         otherUserIdOrNull?.let {
                             userRepository.getKnownUser(it)
-                        }?: run {
+                        } ?: run {
                             emptyFlow()
                         }
-                }).filterNotNull().map { otherUser ->
-                    conversationMapper.toConversationDetailsOneToOne(conversation, otherUser, selfUser)
-                }
+                    }).filterNotNull().map { otherUser ->
+                        conversationMapper.toConversationDetailsOneToOne(conversation, otherUser, selfUser)
+                    }
             }
         }
 

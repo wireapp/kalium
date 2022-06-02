@@ -23,6 +23,7 @@ sealed class Message(
         override val senderUserId: UserId,
         val senderClientId: ClientId,
         override val status: Status,
+        val editStatus : EditStatus,
         override val visibility: Visibility = Visibility.VISIBLE
     ) : Message(id, content, conversationId, date, senderUserId, status, visibility)
 
@@ -38,6 +39,11 @@ sealed class Message(
 
     enum class Status {
         PENDING, SENT, READ, FAILED
+    }
+
+    sealed class EditStatus {
+        object NotEdited : EditStatus()
+        data class Edited (val lastTimeStamp : String) : EditStatus()
     }
 
     enum class DownloadStatus {
