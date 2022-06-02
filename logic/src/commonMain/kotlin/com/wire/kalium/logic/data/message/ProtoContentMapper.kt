@@ -62,6 +62,7 @@ class ProtoContentMapperImpl(
         }
     }
 
+    @Suppress("ComplexMethod")
     private fun getReadableContent(genericMessage: GenericMessage): MessageContent {
         val readableContent = when (val protoContent = genericMessage.content) {
             is GenericMessage.Content.Text -> MessageContent.Text(protoContent.value.content)
