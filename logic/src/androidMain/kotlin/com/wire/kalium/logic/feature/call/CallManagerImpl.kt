@@ -212,6 +212,9 @@ actual class CallManagerImpl(
         callingLogger.d("$TAG - wcall_set_mute() called")
     }
 
+    /**
+     * This method should NOT be called before while the call is still incoming or outgoing and not established.
+     */
     override suspend fun updateVideoState(conversationId: ConversationId, videoState: VideoState) {
         withCalling {
             callingLogger.d("$TAG -> changing video state to ${videoState.name}..")
