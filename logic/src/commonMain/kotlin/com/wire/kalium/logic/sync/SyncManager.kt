@@ -66,6 +66,7 @@ class SyncManagerImpl(
     private val eventRepository: EventRepository,
     private val syncRepository: SyncRepository,
     private val conversationEventReceiver: ConversationEventReceiver,
+    private val userEventReceiver: EventReceiver<Event.User>,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : SyncManager {
 
@@ -171,6 +172,9 @@ class SyncManagerImpl(
         when (event) {
             is Event.Conversation -> {
                 conversationEventReceiver.onEvent(event)
+            }
+            is Event.User -> {
+                userEventReceiver.onEvent(event)
             }
             else -> {
                 kaliumLogger.i(message = "Unhandled event id=${event.id}")
