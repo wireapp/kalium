@@ -48,7 +48,7 @@ class GlobalKaliumScope(
     }
 
 
-    private val serverConfigRepository: ServerConfigRepository
+    internal val serverConfigRepository: ServerConfigRepository
         get() = ServerConfigDataSource(
             unboundNetworkContainer.serverConfigApi,
             globalDatabase.value.serverConfigurationDAO,

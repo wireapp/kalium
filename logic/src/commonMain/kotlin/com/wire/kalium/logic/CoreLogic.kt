@@ -17,9 +17,7 @@ expect class CoreLogic : CoreLogicCommon
 
 abstract class CoreLogicCommon(
     // TODO: can client label be replaced with clientConfig.deviceName() ?
-    protected val clientLabel: String,
-    protected val rootPath: String,
-    protected val idMapper: IdMapper = MapperProvider.idMapper()
+    protected val clientLabel: String, protected val rootPath: String, protected val idMapper: IdMapper = MapperProvider.idMapper()
 ) {
 
     val sessionRepository: SessionRepository by lazy {
@@ -36,20 +34,18 @@ abstract class CoreLogicCommon(
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     fun getAuthenticationScope(backendLinks: ServerConfig.Links): AuthenticationScope =
         // TODO(logic): make it lazier
-        AuthenticationScope(clientLabel, globalPreferences.value, globalDatabase.value, backendLinks)
+        AuthenticationScope(clientLabel, globalPreferences.value, backendLinks, getGlobalScope())
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     abstract fun getSessionScope(userId: UserId): UserSessionScope
 
+    // TODO: make globalScope a singleton
+    inline fun <T> globalScope(action: GlobalKaliumScope.() -> T): T = getGlobalScope().action()
 
-    inline fun <T> globalScope(action: GlobalKaliumScope.() -> T)
-            : T = getGlobalScope().action()
+    inline fun <T> authenticationScope(backendLinks: ServerConfig.Links, action: AuthenticationScope.() -> T): T =
+        getAuthenticationScope(backendLinks).action()
 
-    inline fun <T> authenticationScope(backendLinks: ServerConfig.Links, action: AuthenticationScope.() -> T)
-            : T = getAuthenticationScope(backendLinks).action()
-
-    inline fun <T> sessionScope(userId: UserId, action: UserSessionScope.() -> T)
-            : T = getSessionScope(userId).action()
+    inline fun <T> sessionScope(userId: UserId, action: UserSessionScope.() -> T): T = getSessionScope(userId).action()
 
     protected abstract val globalCallManager: GlobalCallManager
 

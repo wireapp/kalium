@@ -29,11 +29,13 @@ class RegisterAccountUseCaseTest {
     @Mock
     private val registerAccountRepository = mock(classOf<RegisterAccountRepository>())
 
+    private val serverLinks = TEST_SERVER_CONFIG.links
+
     private lateinit var registerAccountUseCase: RegisterAccountUseCase
 
     @BeforeTest
     fun setup() {
-        registerAccountUseCase = RegisterAccountUseCase(registerAccountRepository)
+        registerAccountUseCase = RegisterAccountUseCase(registerAccountRepository, serverLinks)
     }
 
     @Test
@@ -41,11 +43,11 @@ class RegisterAccountUseCaseTest {
         val param = TEST_PRIVATE_ACCOUNT_PARAM
         val user = TEST_SELF_USER
         val session = TEST_AUTH_SESSION
-        val expected = Pair(user, session.tokens)
+        val expected = Pair(user, session)
 
         given(registerAccountRepository).coroutine {
             registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password)
-        }.then { Either.Right(expected) }
+        }.then { Either.Right(Pair(user, session.tokens)) }
 
         val actual = registerAccountUseCase(param)
 
@@ -62,13 +64,13 @@ class RegisterAccountUseCaseTest {
         val param = TEST_TEAM_ACCOUNT_PARAM
         val user = TEST_SELF_USER
         val session = TEST_AUTH_SESSION
-        val expected = Pair(user, session.tokens)
+        val expected = Pair(user, session)
 
         given(registerAccountRepository).coroutine {
             registerTeamWithEmail(
                 param.email, param.emailActivationCode, param.name, param.password, param.teamName, param.teamIcon
             )
-        }.then { Either.Right(expected) }
+        }.then { Either.Right(Pair(user, session.tokens)) }
 
         val actual = registerAccountUseCase(param)
 
@@ -88,13 +90,13 @@ class RegisterAccountUseCaseTest {
             val param = TEST_PRIVATE_ACCOUNT_PARAM
             val user = TEST_SELF_USER
             val session = TEST_AUTH_SESSION
-            val expected = Pair(user, session.tokens)
+            val expected = Pair(user, session)
 
             given(registerAccountRepository).coroutine {
                 registerPersonalAccountWithEmail(
                     param.email, param.emailActivationCode, param.name, param.password
                 )
-            }.then { Either.Right(expected) }
+            }.then { Either.Right(Pair(user, session.tokens)) }
 
             val actual = registerAccountUseCase(param)
 

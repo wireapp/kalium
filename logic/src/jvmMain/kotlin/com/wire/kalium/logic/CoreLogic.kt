@@ -53,7 +53,7 @@ actual class CoreLogic(
             val rootStoragePath = "$rootAccountPath/storage"
             val networkContainer = AuthenticatedNetworkContainer(
                 SessionManagerImpl(sessionRepository, userId),
-                ServerMetaDataManagerImpl(globalDatabase.value.serverConfigurationDAO)
+                ServerMetaDataManagerImpl(getGlobalScope().serverConfigRepository)
             )
 
             val proteusClient: ProteusClient = ProteusClientImpl(rootProteusPath)

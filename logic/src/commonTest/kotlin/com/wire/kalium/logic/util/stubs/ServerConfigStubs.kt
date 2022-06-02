@@ -2,8 +2,6 @@ package com.wire.kalium.logic.util.stubs
 
 import com.wire.kalium.logic.configuration.server.CommonApiVersionType
 import com.wire.kalium.logic.configuration.server.ServerConfig
-import com.wire.kalium.network.api.configuration.EndPoints
-import com.wire.kalium.network.api.configuration.ServerConfigResponse
 import com.wire.kalium.network.tools.ApiVersionDTO
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.persistence.model.ServerConfigEntity
@@ -12,12 +10,12 @@ import io.ktor.http.Url
 internal fun newTestServer(id: Int) = ServerConfig(
     id = "config-$id",
     links = ServerConfig.Links(
-        api = "https://server$id-apiBaseUrl.de",
-        accounts = "https://server$id-accountBaseUrl.de",
-        webSocket = "https://server$id-webSocketBaseUrl.de",
-        blackList = "https://server$id-blackListUrl.de",
-        teams = "https://server$id-teamsUrl.de",
-        website = "https://server$id-websiteUrl.de",
+        api = "https://server$id-apiBaseUrl.de/",
+        accounts = "https://server$id-accountBaseUrl.de/",
+        webSocket = "https://server$id-webSocketBaseUrl.de/",
+        blackList = "https://server$id-blackListUrl.de/",
+        teams = "https://server$id-teamsUrl.de/",
+        website = "https://server$id-websiteUrl.de/",
         title = "server$id-title"
     ),
     metaData = ServerConfig.MetaData(
@@ -30,12 +28,12 @@ internal fun newTestServer(id: Int) = ServerConfig(
 internal fun newServerConfig(id: Int) = ServerConfig(
     id = "config-$id",
     links = ServerConfig.Links(
-        api = "https://server$id-apiBaseUrl.de",
-        accounts = "https://server$id-accountBaseUrl.de",
-        webSocket = "https://server$id-webSocketBaseUrl.de",
-        blackList = "https://server$id-blackListUrl.de",
-        teams = "https://server$id-teamsUrl.de",
-        website = "https://server$id-websiteUrl.de",
+        api = "https://server$id-apiBaseUrl.de/",
+        accounts = "https://server$id-accountBaseUrl.de/",
+        webSocket = "https://server$id-webSocketBaseUrl.de/",
+        blackList = "https://server$id-blackListUrl.de/",
+        teams = "https://server$id-teamsUrl.de/",
+        website = "https://server$id-websiteUrl.de/",
         title = "server$id-title"
     ),
     metaData = ServerConfig.MetaData(
@@ -45,27 +43,15 @@ internal fun newServerConfig(id: Int) = ServerConfig(
     )
 )
 
-internal fun newServerConfigResponse(id: Int) = ServerConfigResponse(
-    EndPoints(
-        apiBaseUrl = "https://server$id-apiBaseUrl.de",
-        accountsBaseUrl = "https://server$id-accountBaseUrl.de",
-        webSocketBaseUrl = "https://server$id-webSocketBaseUrl.de",
-        blackListUrl = "https://server$id-blackListUrl.de",
-        teamsUrl = "https://server$id-teamsUrl.de",
-        websiteUrl = "https://server$id-websiteUrl.de"
-    ),
-    title = "server$id-title",
-)
-
 internal fun newServerConfigEntity(id: Int) = ServerConfigEntity(
     id = "config-$id",
     links = ServerConfigEntity.Links(
-        api = "https://server$id-apiBaseUrl.de",
-        accounts = "https://server$id-accountBaseUrl.de",
-        webSocket = "https://server$id-webSocketBaseUrl.de",
-        blackList = "https://server$id-blackListUrl.de",
-        teams = "https://server$id-teamsUrl.de",
-        website = "https://server$id-websiteUrl.de",
+        api = "https://server$id-apiBaseUrl.de/",
+        accounts = "https://server$id-accountBaseUrl.de/",
+        webSocket = "https://server$id-webSocketBaseUrl.de/",
+        blackList = "https://server$id-blackListUrl.de/",
+        teams = "https://server$id-teamsUrl.de/",
+        website = "https://server$id-websiteUrl.de/",
         title = "server$id-title",
     ),
     metaData = ServerConfigEntity.MetaData(

@@ -55,10 +55,10 @@ class SSOLoginApiImpl internal constructor(
         }
         accept(ContentType.Text.Plain)
     }.let { httpRequestBuilder ->
-        wrapKaliumResponse<Any> {
-            httpClient.head(httpRequestBuilder)
-        }.mapSuccess {
-            httpRequestBuilder.url.buildString()
+        val httpRequest = httpClient.head(httpRequestBuilder)
+        val url = httpRequest.call.request.url.toString()
+        wrapKaliumResponse<Any> { httpRequest }.mapSuccess {
+            url
         }
     }
 
@@ -73,22 +73,22 @@ class SSOLoginApiImpl internal constructor(
             header(HttpHeaders.Cookie, cookie)
         }
     }.flatMap { accessTokenDTOResponse ->
-            with(accessTokenDTOResponse) {
-                NetworkResponse.Success(cookie, headers, httpCode)
-            }.mapSuccess { Pair(accessTokenDTOResponse.value, it) }
-        }.flatMap { tokensPairResponse ->
-            // this is a hack to get the user QualifiedUserId on login
-            // TODO(optimization): remove this one when login endpoint return a QualifiedUserId
-            wrapKaliumResponse<UserDTO> {
-                httpClient.get(PATH_SELF) {
-                    bearerAuth(tokensPairResponse.value.first.value)
-                }
-            }.mapSuccess {
-                with(tokensPairResponse.value) {
-                    first.toSessionDto(second, it.id)
-                }
+        with(accessTokenDTOResponse) {
+            NetworkResponse.Success(cookie, headers, httpCode)
+        }.mapSuccess { Pair(accessTokenDTOResponse.value, it) }
+    }.flatMap { tokensPairResponse ->
+        // this is a hack to get the user QualifiedUserId on login
+        // TODO(optimization): remove this one when login endpoint return a QualifiedUserId
+        wrapKaliumResponse<UserDTO> {
+            httpClient.get(PATH_SELF) {
+                bearerAuth(tokensPairResponse.value.first.value)
+            }
+        }.mapSuccess {
+            with(tokensPairResponse.value) {
+                first.toSessionDto(second, it.id)
             }
         }
+    }
 
     override suspend fun metaData(): NetworkResponse<String> = wrapKaliumResponse {
         httpClient.get("$PATH_SSO/$PATH_METADATA")

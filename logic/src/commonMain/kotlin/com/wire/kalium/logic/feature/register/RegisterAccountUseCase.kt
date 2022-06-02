@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.register
 
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.feature.auth.AuthSession
@@ -38,7 +39,8 @@ sealed class RegisterParam(
 }
 
 class RegisterAccountUseCase(
-    private val registerAccountRepository: RegisterAccountRepository
+    private val registerAccountRepository: RegisterAccountRepository,
+    private val serverLinks: ServerConfig.Links
 ) {
     suspend operator fun invoke(
         param: RegisterParam
@@ -62,7 +64,7 @@ class RegisterAccountUseCase(
             RegisterResult.Failure.Generic(it)
         }
     }, {
-        RegisterResult.Success(it)
+        RegisterResult.Success(Pair(it.first, AuthSession(it.second, serverLinks)))
     })
 
     private fun handleSpecialErrors(error: KaliumException.InvalidRequestError) = with(error) {
@@ -81,7 +83,7 @@ class RegisterAccountUseCase(
 
 
 sealed class RegisterResult {
-    class Success(val value: Pair<SelfUser, AuthSession.Tokens>) : RegisterResult()
+    class Success(val value: Pair<SelfUser, AuthSession>) : RegisterResult()
     sealed class Failure : RegisterResult() {
         object EmailDomainBlocked : Failure()
         object AccountAlreadyExists : Failure()

@@ -36,7 +36,6 @@ interface ServerConfigurationDAO {
     fun allConfigFlow(): Flow<List<ServerConfigEntity>>
     fun allConfig(): List<ServerConfigEntity>
     fun configById(id: String): ServerConfigEntity?
-    fun configByUniqueFields(title: String, apiBaseUrl: String, webSocketBaseUrl: String, domain: String?): ServerConfigEntity?
     fun configByLinks(title: String, apiBaseUrl: String, webSocketBaseUrl: String): ServerConfigEntity?
     fun updateApiVersion(id: String, commonApiVersion: Int)
     fun updateApiVersionAndDomain(id: String, domain: String, commonApiVersion: Int)
@@ -87,9 +86,6 @@ class ServerConfigurationDAOImpl(private val queries: ServerConfigurationQueries
     override fun allConfig(): List<ServerConfigEntity> = queries.storedConfig().executeAsList().map(mapper::toModel)
 
     override fun configById(id: String): ServerConfigEntity? = queries.getById(id).executeAsOneOrNull()?.let { mapper.toModel(it) }
-
-    override fun configByUniqueFields(title: String, apiBaseUrl: String, webSocketBaseUrl: String, domain: String?) =
-        queries.getByUniqueFields(title, apiBaseUrl, webSocketBaseUrl, domain).executeAsOneOrNull()?.let { mapper.toModel(it) }
 
     override fun configByLinks(title: String, apiBaseUrl: String, webSocketBaseUrl: String): ServerConfigEntity? =
         queries.getByLinks(title, apiBaseUrl, webSocketBaseUrl).executeAsOneOrNull()?.let { mapper.toModel(it) }
