@@ -19,6 +19,8 @@ android {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
+    // Remove instrumented tests as Network tests can run as Unit tests for Android
+    sourceSets.remove(sourceSets["androidTest"])
 }
 
 kotlin {
