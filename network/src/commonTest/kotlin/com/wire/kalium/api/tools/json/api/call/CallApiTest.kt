@@ -44,6 +44,33 @@ class CallApiTest : ApiTest {
         callApi.getCallConfig(limit = 7)
     }
 
+    @Test
+    fun givenCallApi_whenConnectingToSFT_theREquestShouldBeConfiguredCorrectly() = runTest {
+        val sftConnectionURL = "sft.connection.url1"
+        val sftConnectionData = """
+            |{
+            |   "sft":"connection"
+            |}
+        """.trimIndent()
+
+        val networkClient = mockAuthenticatedNetworkClient(
+            responseBody = GET_CALL_SFT.rawJson,
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertJson()
+                assertPost()
+                assertPathEqual(sftConnectionURL)
+                assertBodyContent(sftConnectionData)
+            }
+        )
+
+        val callApi: CallApi = CallApiImpl(networkClient)
+        callApi.connectToSFT(
+            url = sftConnectionURL,
+            data = sftConnectionData
+        )
+    }
+
     private companion object {
 
         const val PATH_CALLS = "calls"
@@ -59,5 +86,6 @@ class CallApiTest : ApiTest {
             """.trimIndent()
         }
         val GET_CALL_CONFIG = AnyResponseProvider(data = "", jsonProvider)
+        val GET_CALL_SFT = AnyResponseProvider(data = "", jsonProvider)
     }
 }
