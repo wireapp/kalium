@@ -30,13 +30,13 @@
 '👕 size: XXL':
     size-above: 999
 
-# Components
-'comp: Crypto':
-    files:
-        - 'cryptography/.*'
-'comp: Logic':
-    files:
-        - 'logic/.*'
+# Components (disabled)
+#'comp: Crypto':
+#    files:
+#        - 'cryptography/.*'
+#'comp: Logic':
+#    files:
+#        - 'logic/.*'
 
 # Danger zone, potential breaking api changes
 '🚨 Potential breaking changes':
