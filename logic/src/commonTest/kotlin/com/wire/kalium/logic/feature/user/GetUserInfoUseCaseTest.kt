@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestUser.OTHER
@@ -22,11 +23,15 @@ class GetUserInfoUseCaseTest {
     @Mock
     private val userRepository: UserRepository = mock(UserRepository::class)
 
+    @Mock
+    private val teamRepository: TeamRepository = mock(TeamRepository::class)
+
+
     lateinit var getUserInfoUseCase: GetUserInfoUseCase
 
     @BeforeTest
     fun setUp() {
-        getUserInfoUseCase = GetUserInfoUseCaseImpl(userRepository)
+        getUserInfoUseCase = GetUserInfoUseCaseImpl(userRepository,teamRepository)
     }
 
     @Test
