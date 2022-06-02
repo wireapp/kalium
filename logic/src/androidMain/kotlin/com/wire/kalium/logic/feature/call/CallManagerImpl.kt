@@ -120,7 +120,7 @@ actual class CallManagerImpl(
         return calling.action(handle)
     }
 
-    override suspend fun onCallingMessageReceived(message: Message, content: MessageContent.Calling) =
+    override suspend fun onCallingMessageReceived(message: Message.Client, content: MessageContent.Calling) =
         withCalling {
             callingLogger.i("$TAG - onCallingMessageReceived called")
             val msg = content.value.toByteArray()
@@ -136,7 +136,7 @@ actual class CallManagerImpl(
                 msg_time = Uint32_t(value = msgTime / 1000),
                 convId = message.conversationId.toString(),
                 userId = message.senderUserId.toString(),
-                clientId = message.senderClientId!!.value
+                clientId = message.senderClientId.value
             )
             callingLogger.i("$TAG - wcall_recv_msg() called")
         }

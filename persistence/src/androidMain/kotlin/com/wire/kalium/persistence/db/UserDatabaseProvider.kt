@@ -10,6 +10,9 @@ import com.wire.kalium.persistence.Conversation
 import com.wire.kalium.persistence.DBUtil
 import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
+import com.wire.kalium.persistence.MessageAssetContent
+import com.wire.kalium.persistence.MessageMemberChangeContent
+import com.wire.kalium.persistence.MessageTextContent
 import com.wire.kalium.persistence.User
 import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.ContentTypeAdapter
@@ -72,12 +75,22 @@ actual class UserDatabaseProvider(private val context: Context, userId: UserIDEn
                 conversation_idAdapter = QualifiedIDAdapter(),
                 sender_user_idAdapter = QualifiedIDAdapter(),
                 statusAdapter = EnumColumnAdapter(),
-                asset_image_widthAdapter = IntColumnAdapter,
-                asset_image_heightAdapter = IntColumnAdapter,
-                asset_download_statusAdapter = EnumColumnAdapter(),
                 content_typeAdapter = ContentTypeAdapter(),
                 visibilityAdapter = EnumColumnAdapter(),
-                member_listAdapter = QualifiedIDListAdapter()
+            ),
+            MessageAssetContent.Adapter(
+                conversation_idAdapter = QualifiedIDAdapter(),
+                asset_widthAdapter = IntColumnAdapter,
+                asset_heightAdapter = IntColumnAdapter,
+                asset_download_statusAdapter = EnumColumnAdapter()
+                ),
+            MessageMemberChangeContent.Adapter(
+                conversation_idAdapter = QualifiedIDAdapter(),
+                member_change_listAdapter = QualifiedIDListAdapter(),
+                member_change_typeAdapter = EnumColumnAdapter()
+            ),
+            MessageTextContent.Adapter(
+                conversation_idAdapter = QualifiedIDAdapter()
             ),
             User.Adapter(
                 qualified_idAdapter = QualifiedIDAdapter(),

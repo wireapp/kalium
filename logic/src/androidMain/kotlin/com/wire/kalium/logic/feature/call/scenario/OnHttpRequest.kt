@@ -63,7 +63,7 @@ class OnHttpRequest(
     ): Either<CoreFailure, Unit> {
         val messageContent = MessageContent.Calling(data)
         val date = Clock.System.now().toString()
-        val message = Message(uuid4().toString(), messageContent, conversationId, date, userId, clientId, Message.Status.SENT)
+        val message = Message.Client(uuid4().toString(), messageContent, conversationId, date, userId, clientId, Message.Status.SENT)
         return messageSender.sendMessage(message)
     }
 }

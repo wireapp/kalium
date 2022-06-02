@@ -9,7 +9,7 @@ object TestMessage {
     val TEST_SENDER_USER_ID = TestUser.USER_ID
     val TEST_SENDER_CLIENT_ID = TestClient.CLIENT_ID
     val TEXT_CONTENT = MessageContent.Text("Ciao!")
-    val TEXT_MESSAGE = Message(
+    val TEXT_MESSAGE = Message.Client(
         TEST_MESSAGE_ID,
         TEXT_CONTENT,
         ConversationId("conv", "id"),

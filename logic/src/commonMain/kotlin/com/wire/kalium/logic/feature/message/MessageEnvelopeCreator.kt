@@ -23,7 +23,7 @@ interface MessageEnvelopeCreator {
 
     suspend fun createOutgoingEnvelope(
         recipients: List<Recipient>,
-        message: Message
+        message: Message.Client
     ): Either<CoreFailure, MessageEnvelope>
 
 }
@@ -36,9 +36,9 @@ class MessageEnvelopeCreatorImpl(
 
     override suspend fun createOutgoingEnvelope(
         recipients: List<Recipient>,
-        message: Message
+        message: Message.Client
     ): Either<CoreFailure, MessageEnvelope> {
-        val senderClientId = message.senderClientId!!
+        val senderClientId = message.senderClientId
         val content = protoContentMapper.encodeToProtobuf(ProtoContent(message.id, message.content))
 
         return recipients.foldToEitherWhileRight(mutableListOf<RecipientEntry>()) { recipient, recipientAccumulator ->

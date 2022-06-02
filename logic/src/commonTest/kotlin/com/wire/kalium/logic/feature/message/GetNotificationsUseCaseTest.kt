@@ -237,14 +237,14 @@ class GetNotificationsUseCaseTest {
         private fun otherUserId(number: Int = 0) = QualifiedID("other_user_id_${number}_value", "other_user_id_${number}_domain")
 
         private fun entityMessage(conversationId: QualifiedID, senderId: QualifiedID = MY_ID, messageId: String = "message_id") =
-            Message(
-                messageId,
-                MessageContent.Text("test message $messageId"),
-                conversationId,
-                "some_time",
-                senderId,
-                ClientId("client_1"),
-                Message.Status.SENT
+            Message.Client(
+                id = messageId,
+                content = MessageContent.Text("test message $messageId"),
+                conversationId = conversationId,
+                date = "some_time",
+                senderUserId = senderId,
+                senderClientId = ClientId("client_1"),
+                status = Message.Status.SENT
             )
 
         private fun notificationMessage(authorName: String = "Author Name", time: String = "some_time", text: String = "test text") =
