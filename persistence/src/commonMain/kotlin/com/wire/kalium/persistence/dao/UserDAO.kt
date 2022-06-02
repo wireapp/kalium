@@ -1,6 +1,5 @@
 package com.wire.kalium.persistence.dao
 
-import com.wire.kalium.persistence.dao.UserEntity.ConnectionState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
 
@@ -11,6 +10,7 @@ data class QualifiedIDEntity(
 )
 
 typealias UserIDEntity = QualifiedIDEntity
+typealias ConversationIDEntity = QualifiedIDEntity
 
 data class UserEntity(
     val id: QualifiedIDEntity,
@@ -20,36 +20,10 @@ data class UserEntity(
     val phone: String?,
     val accentId: Int,
     val team: String?,
-    val connectionStatus: ConnectionState = ConnectionState.NOT_CONNECTED,
+    val connectionStatus: ConnectionEntity.State = ConnectionEntity.State.NOT_CONNECTED,
     val previewAssetId: UserAssetIdEntity?,
     val completeAssetId: UserAssetIdEntity?
-) {
-    enum class ConnectionState {
-        /** Default - No connection state */
-        NOT_CONNECTED,
-
-        /** The other user has sent a connection request to this one */
-        PENDING,
-
-        /** This user has sent a connection request to another user */
-        SENT,
-
-        /** The user has been blocked */
-        BLOCKED,
-
-        /** The connection has been ignored */
-        IGNORED,
-
-        /** The connection has been cancelled */
-        CANCELLED,
-
-        /** The connection is missing legal hold consent */
-        MISSING_LEGALHOLD_CONSENT,
-
-        /** The connection is complete and the conversation is in its normal state */
-        ACCEPTED
-    }
-}
+)
 
 internal typealias UserAssetIdEntity = String
 
@@ -88,17 +62,17 @@ interface UserDAO {
      */
     suspend fun updateSelfUser(user: UserEntity)
     suspend fun getAllUsers(): Flow<List<UserEntity>>
-    suspend fun getAllUsersByConnectionStatus(connectionState: UserEntity.ConnectionState): List<UserEntity>
+    suspend fun getAllUsersByConnectionStatus(connectionState: ConnectionEntity.State): List<UserEntity>
     suspend fun getUserByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserEntity?>
     suspend fun getUserByNameOrHandleOrEmailAndConnectionState(
         searchQuery: String,
-        connectionState: UserEntity.ConnectionState
+        connectionState: ConnectionEntity.State
     ): List<UserEntity>
 
     suspend fun getUserByHandleAndConnectionState(
         handle: String,
-        connectionState: UserEntity.ConnectionState
-    ): List<UserEntity>
+        connectionState: ConnectionEntity.State
+    ) : List<UserEntity>
 
     suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity)
     suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String)

@@ -1,5 +1,6 @@
 package com.wire.kalium.persistence.utils.stubs
 
+import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserEntity
 
@@ -12,7 +13,7 @@ fun newUserEntity(id: String = "test") =
         phone = "phone$id",
         accentId = 1,
         team = "team",
-        UserEntity.ConnectionState.ACCEPTED,
+        ConnectionEntity.State.ACCEPTED,
         null, null
     )
 
@@ -25,7 +26,7 @@ fun newUserEntity(qualifiedID: QualifiedIDEntity, id: String = "test") =
         phone = "phone$id",
         accentId = 1,
         team = "team",
-        UserEntity.ConnectionState.ACCEPTED,
+        ConnectionEntity.State.ACCEPTED,
         null, null
     )
 
@@ -37,7 +38,7 @@ fun newUserEntity(
     phone: String = "testPhone",
     accentId: Int = 1,
     team: String = "testTeam",
-    connectionStatus: UserEntity.ConnectionState = UserEntity.ConnectionState.ACCEPTED,
+    connectionStatus: ConnectionEntity.State = ConnectionEntity.State.ACCEPTED,
     previewAssetId: String = "previewAssetId",
     completeAssetId: String = "completeAssetId",
 ): UserEntity {

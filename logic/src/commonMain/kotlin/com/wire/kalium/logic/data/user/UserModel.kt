@@ -1,6 +1,6 @@
 package com.wire.kalium.logic.data.user
 
-import com.wire.kalium.logic.data.conversation.UserType
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.VALUE_DOMAIN_SEPARATOR
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
@@ -10,6 +10,18 @@ typealias UserId = QualifiedID
 abstract class User {
     abstract val id: UserId
 }
+
+//TODO we should extract ConnectionModel and ConnectionState to separate logic AR-1734
+data class Connection(
+    val conversationId: String,
+    val from: String,
+    val lastUpdate: String,
+    val qualifiedConversationId: ConversationId,
+    val qualifiedToId: UserId,
+    val status: ConnectionState,
+    val toId: String,
+    val fromUser: OtherUser? = null
+)
 
 enum class ConnectionState {
     /** Default - No connection state */
