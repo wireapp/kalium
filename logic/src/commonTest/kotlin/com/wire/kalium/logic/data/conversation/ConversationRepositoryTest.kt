@@ -166,11 +166,11 @@ class ConversationRepositoryTest {
         )
 
         given(conversationDAO)
-            .suspendFunction(conversationDAO::getConversationByQualifiedID)
+            .suspendFunction(conversationDAO::getConversationByQualifiedIDFlow)
             .whenInvokedWith(any())
             .thenReturn(conversationEntityFlow)
 
-        conversationRepository.getConversationDetailsById(TestConversation.ID).test {
+        conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
             assertIs<ConversationDetails.Group>(awaitItem())
             awaitComplete()
         }
@@ -183,11 +183,11 @@ class ConversationRepositoryTest {
         )
 
         given(conversationDAO)
-            .suspendFunction(conversationDAO::getConversationByQualifiedID)
+            .suspendFunction(conversationDAO::getConversationByQualifiedIDFlow)
             .whenInvokedWith(any())
             .thenReturn(conversationEntityFlow)
 
-        conversationRepository.getConversationDetailsById(TestConversation.ID).test {
+        conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
             assertIs<ConversationDetails.Self>(awaitItem())
             awaitComplete()
         }
@@ -201,7 +201,7 @@ class ConversationRepositoryTest {
         )
 
         given(conversationDAO)
-            .suspendFunction(conversationDAO::getConversationByQualifiedID)
+            .suspendFunction(conversationDAO::getConversationByQualifiedIDFlow)
             .whenInvokedWith(any())
             .thenReturn(conversationEntityFlow)
 
@@ -220,7 +220,7 @@ class ConversationRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
 
-        conversationRepository.getConversationDetailsById(TestConversation.ID).test {
+        conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
             assertIs<ConversationDetails.OneOne>(awaitItem())
             awaitComplete()
         }
@@ -237,7 +237,7 @@ class ConversationRepositoryTest {
         val otherUserDetailsSequence = listOf(TestUser.OTHER, TestUser.OTHER.copy(name = "Other Name Was Updated"))
 
         given(conversationDAO)
-            .suspendFunction(conversationDAO::getConversationByQualifiedID)
+            .suspendFunction(conversationDAO::getConversationByQualifiedIDFlow)
             .whenInvokedWith(any())
             .thenReturn(conversationEntityFlow)
 
@@ -256,7 +256,7 @@ class ConversationRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(otherUserDetailsSequence.asFlow())
 
-        conversationRepository.getConversationDetailsById(TestConversation.ID).test {
+        conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
             val firstItem = awaitItem()
             assertIs<ConversationDetails.OneOne>(firstItem)
             assertEquals(otherUserDetailsSequence[0], firstItem.otherUser)
@@ -421,7 +421,7 @@ class ConversationRepositoryTest {
                 .then { flowOf(CONVERSATION_ENTITIES) }
 
             given(conversationDAO)
-                .suspendFunction(conversationDAO::getConversationByQualifiedID)
+                .suspendFunction(conversationDAO::getConversationByQualifiedIDFlow)
                 .whenInvokedWith(anything())
                 .then { flowOf(CONVERSATION_ENTITY) }
 
