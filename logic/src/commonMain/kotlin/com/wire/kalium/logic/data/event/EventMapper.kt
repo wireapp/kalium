@@ -1,11 +1,12 @@
 package com.wire.kalium.logic.data.event
 
+import com.wire.kalium.logic.data.connection.ConnectionMapper
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.network.api.notification.EventContentDTO
 import com.wire.kalium.network.api.notification.EventResponse
 
-class EventMapper(private val idMapper: IdMapper) {
+class EventMapper(private val idMapper: IdMapper, private  val connectionMapper: ConnectionMapper) {
 
     fun fromDTO(eventResponse: EventResponse): List<Event> {
         // TODO(edge-case): Multiple payloads in the same event have the same ID, is this an issue when marking lastProcessedEventId?
@@ -18,6 +19,7 @@ class EventMapper(private val idMapper: IdMapper) {
                 is EventContentDTO.Conversation.MemberLeaveDTO -> memberLeave(id, eventContentDTO)
                 is EventContentDTO.Conversation.MLSWelcomeDTO -> welcomeMessage(id, eventContentDTO)
                 is EventContentDTO.Conversation.NewMLSMessageDTO -> newMLSMessage(id, eventContentDTO)
+                is EventContentDTO.User.NewConnectionDTO -> connectionUpdate(id, eventContentDTO)
                 is EventContentDTO.User.NewClientDTO, EventContentDTO.Unknown -> Event.Unknown(id)
             }
         } ?: listOf()
@@ -54,6 +56,13 @@ class EventMapper(private val idMapper: IdMapper) {
         eventContentDTO.message
     )
 
+    private fun connectionUpdate(
+        id: String,
+        eventConnectionDTO: EventContentDTO.User.NewConnectionDTO
+    ) = Event.User.NewConnection(
+        id,
+        connectionMapper.fromApiToModel(eventConnectionDTO.connection)
+    )
 
     private fun newConversation(
         id: String,
