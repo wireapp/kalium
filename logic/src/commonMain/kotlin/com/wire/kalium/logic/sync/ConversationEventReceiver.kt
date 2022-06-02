@@ -173,7 +173,7 @@ class ConversationEventReceiverImpl(
                 processMessage(message)
             }
 
-    @Suppress("ComplexMethod")
+    @Suppress("ComplexMethod", "LongMethod")
     private suspend fun processMessage(message: Message) {
         kaliumLogger.i(message = "Message received: $message")
 
