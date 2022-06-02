@@ -27,7 +27,7 @@ class MLSMessageCreatorImpl(
     override suspend fun createOutgoingMLSMessage(groupId: String, message: Message): Either<CoreFailure, MLSMessageApi.Message> {
         return mlsClientProvider.getMLSClient().flatMap { client ->
             kaliumLogger.i("Creating outgoing MLS message (groupID = $groupId)")
-            val content = protoContentMapper.encodeToProtobuf(ProtoContent(message.id, message.content))
+            val content = protoContentMapper.encodeToProtobuf(ProtoContent.Readable(message.id, message.content))
             val encryptedContent = client.encryptMessage(groupId, content.data) // TODO(mls): handle MLS errors
             Either.Right(MLSMessageApi.Message(encryptedContent))
         }
