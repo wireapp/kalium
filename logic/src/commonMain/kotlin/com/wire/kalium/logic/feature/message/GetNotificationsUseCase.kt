@@ -92,9 +92,14 @@ class GetNotificationsUseCaseImpl(
                                             MutedConversationStatus.AllAllowed -> true
                                             MutedConversationStatus.OnlyMentionsAllowed -> {
                                                 when(val content = it.content) {
-                                                    is MessageContent.Text -> selfUser.name?.let { selfUsername ->
-                                                        content.value.contains(Regex(selfUsername))
-                                                    }.run { false }
+                                                    is MessageContent.Text ->  {
+                                                        val containsSelfUserName = selfUser.name?.let { selfUsername ->
+                                                            content.value.contains(selfUsername) } ?: false
+                                                        val containsSelfHandle = selfUser.handle?.let { selfHandle ->
+                                                            content.value.contains(selfHandle)
+                                                            } ?: false
+                                                        containsSelfUserName or containsSelfHandle
+                                                    }
                                                     else -> true
                                                 }
                                             }
