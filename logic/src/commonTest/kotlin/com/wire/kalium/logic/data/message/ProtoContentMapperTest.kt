@@ -132,6 +132,33 @@ class ProtoContentMapperTest {
         assertEquals(decoded, protoContent)
     }
 
+    @Test
+    fun givenEditedTextGenericMessage_whenMappingFromProtoData_thenTheReturnValueShouldHaveTheCorrectEditedMessageId() {
+        val replacedMessageId = "replacedMessageId"
+        val textContent = MessageEdit.Content.Text(Text("textContent"))
+        val genericMessage = GenericMessage(TEST_MESSAGE_UUID, GenericMessage.Content.Edited(MessageEdit(replacedMessageId, textContent)))
+        val protobufBlob = PlainMessageBlob(genericMessage.encodeToByteArray())
+
+        val result = protoContentMapper.decodeFromProtobuf(protobufBlob)
+
+        val content = result.messageContent
+        assertIs<MessageContent.TextEdited>(content)
+        assertEquals(replacedMessageId, content.editMessageId)
+    }
+
+    @Test
+    fun givenEditedTextGenericMessage_whenMappingFromProtoData_thenTheReturnValueShouldHaveTheCorrectUpdatedContent() {
+        val replacedMessageId = "replacedMessageId"
+        val textContent = MessageEdit.Content.Text(Text("textContent"))
+        val genericMessage = GenericMessage(TEST_MESSAGE_UUID, GenericMessage.Content.Edited(MessageEdit(replacedMessageId, textContent)))
+        val protobufBlob = PlainMessageBlob(genericMessage.encodeToByteArray())
+
+        val result = protoContentMapper.decodeFromProtobuf(protobufBlob)
+
+        val content = result.messageContent
+        assertIs<MessageContent.TextEdited>(content)
+        assertEquals(textContent.value.content, content.newContent)
+    }
 
     private companion object {
         const val TEST_MESSAGE_UUID = "testUuid"
