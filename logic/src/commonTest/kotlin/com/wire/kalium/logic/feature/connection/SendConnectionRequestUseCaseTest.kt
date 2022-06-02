@@ -47,7 +47,7 @@ class SendConnectionRequestUseCaseTest {
     }
 
     @Test
-    fun givenAConnectionRequest_whenInvokingASendAConnectionRequestFails_thenShouldReturnsASuccessFailure() = runTest {
+    fun givenAConnectionRequest_whenInvokingASendAConnectionRequestFails_thenShouldReturnsAFailureResult() = runTest {
         // given
         given(connectionRepository)
             .suspendFunction(connectionRepository::sendUserConnection)

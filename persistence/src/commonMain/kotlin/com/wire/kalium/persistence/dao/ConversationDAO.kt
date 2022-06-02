@@ -14,7 +14,7 @@ data class ConversationEntity(
     val lastModifiedDate: String,
 ) {
 
-    enum class Type { SELF, ONE_ON_ONE, GROUP }
+    enum class Type { SELF, ONE_ON_ONE, GROUP, CONNECTION_PENDING }
 
     enum class GroupState { PENDING, PENDING_WELCOME_MESSAGE, ESTABLISHED }
 
@@ -53,7 +53,7 @@ interface ConversationDAO {
     suspend fun getAllMembers(qualifiedID: QualifiedIDEntity): Flow<List<Member>>
     suspend fun updateOrInsertOneOnOneMemberWithConnectionStatus(
         userId: UserIDEntity,
-        status: UserEntity.ConnectionState,
+        status: ConnectionEntity.State,
         conversationID: QualifiedIDEntity
     )
     suspend fun updateConversationMutedStatus(

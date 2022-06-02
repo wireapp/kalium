@@ -118,14 +118,14 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
 
     override suspend fun getUserByNameOrHandleOrEmailAndConnectionState(
         searchQuery: String,
-        connectionState: UserEntity.ConnectionState
+        connectionState: ConnectionEntity.State
     ) = queries.selectByNameOrHandleOrEmailAndConnectionState(searchQuery, connectionState)
         .executeAsList()
         .map(mapper::toModel)
 
     override suspend fun getUserByHandleAndConnectionState(
         handle: String,
-        connectionState: UserEntity.ConnectionState
+        connectionState: ConnectionEntity.State
     ) = queries.selectByHandleAndConnectionState(handle, connectionState)
         .executeAsList()
         .map(mapper::toModel)
@@ -138,7 +138,7 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
         queries.updateUserhandle(handle, qualifiedID)
     }
 
-    override suspend fun getAllUsersByConnectionStatus(connectionState: UserEntity.ConnectionState): List<UserEntity> =
+    override suspend fun getAllUsersByConnectionStatus(connectionState: ConnectionEntity.State): List<UserEntity> =
         queries.selectAllUsersWithConnectionStatus(connectionState)
             .executeAsList()
             .map(mapper::toModel)

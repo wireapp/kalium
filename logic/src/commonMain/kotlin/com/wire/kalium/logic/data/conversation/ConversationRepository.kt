@@ -175,6 +175,7 @@ class ConversationDataSource(
                     )
                 )
             // TODO(connection-requests): Handle requests instead of filtering them out
+            Conversation.Type.CONNECTION_PENDING,
             Conversation.Type.ONE_ON_ONE -> {
                 val selfUser = userRepository.getSelfUser().first()
 
