@@ -11,7 +11,10 @@ import com.wire.kalium.protobuf.messages.EncryptionAlgorithm
 import com.wire.kalium.protobuf.messages.GenericMessage
 import com.wire.kalium.protobuf.messages.MessageDelete
 import com.wire.kalium.protobuf.messages.MessageHide
+import com.wire.kalium.protobuf.messages.MessageEdit
 import com.wire.kalium.protobuf.messages.Text
+import com.wire.kalium.protobuf.messages.Composite
+
 import pbandk.ByteArr
 
 interface ProtoContentMapper {
@@ -98,7 +101,22 @@ class ProtoContentMapperImpl : ProtoContentMapper {
             is GenericMessage.Content.Confirmation -> MessageContent.Unknown
             is GenericMessage.Content.DataTransfer -> MessageContent.Unknown
             is GenericMessage.Content.Deleted -> MessageContent.DeleteMessage(protoContent.value.messageId)
-            is GenericMessage.Content.Edited -> MessageContent.Unknown
+            is GenericMessage.Content.Edited -> {
+                val replacingMessageId = protoContent.value.replacingMessageId
+                when (val editContent = protoContent.value.content) {
+                    is MessageEdit.Content.Text -> {
+                        MessageContent.TextEdited(replacingMessageId, editContent.value.content)
+                    }
+                    //TODO: for now we do not implement it
+                    is MessageEdit.Content.Composite -> {
+                        MessageContent.Unknown
+                    }
+                    null -> {
+                        kaliumLogger.w("Edit content is unexpected. Message UUID = $genericMessage.")
+                        MessageContent.Unknown
+                    }
+                }
+            }
             is GenericMessage.Content.Ephemeral -> MessageContent.Unknown
             is GenericMessage.Content.External -> MessageContent.Unknown
             is GenericMessage.Content.Image -> MessageContent.Unknown // Deprecated in favor of GenericMessage.Content.Asset
