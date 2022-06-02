@@ -68,7 +68,7 @@ class ConversationsApplication : CliktCommand() {
         NetworkLogger.setLoggingLevel(level = KaliumLogLevel.DEBUG)
 
         val serverConfigMapper: ServerConfigMapper = ServerConfigMapperImpl(ApiVersionMapperImpl())
-        val serverConfigDTO: ServerConfigDTO.Links = serverConfigMapper.toDTO(ServerConfig.STAGING)
+        val serverConfigDTO: ServerConfigDTO.Links = serverConfigMapper.toDTO(ServerConfig.DEFAULT)
         val loginContainer = UnauthenticatedNetworkContainer(serverConfigDTO, InMemoryServerMetaDataManager())
 
         val loginResult = loginContainer.loginApi.login(

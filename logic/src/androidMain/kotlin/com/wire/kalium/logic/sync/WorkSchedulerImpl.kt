@@ -24,7 +24,6 @@ import androidx.work.WorkerParameters
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.R
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
@@ -159,7 +158,7 @@ class WrapperWorkerFactory(private val coreLogic: CoreLogic) : WorkerFactory() {
 
         fun workData(work: KClass<out DefaultWorker>, userId: UserId? = null) = Data.Builder()
             .putString(WORKER_CLASS_KEY, work.java.canonicalName)
-            .apply { if (userId != null) putSerializable(USER_ID_KEY, userId) }
+            .apply { userId?.let { putSerializable(USER_ID_KEY, it) } }
             .build()
     }
 }

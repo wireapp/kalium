@@ -12,7 +12,7 @@ import com.wire.kalium.network.exceptions.isDomainBlockedForRegistration
 import com.wire.kalium.network.exceptions.isInvalidCode
 import com.wire.kalium.network.exceptions.isInvalidEmail
 import com.wire.kalium.network.exceptions.isKeyExists
-import com.wire.kalium.network.exceptions.isTooMAnyMembers
+import com.wire.kalium.network.exceptions.isTooManyMembers
 import com.wire.kalium.network.exceptions.isUserCreationRestricted
 
 sealed class RegisterParam(
@@ -74,7 +74,7 @@ class RegisterAccountUseCase(
             isKeyExists() -> RegisterResult.Failure.AccountAlreadyExists
             isBlackListedEmail() -> RegisterResult.Failure.BlackListed
             isUserCreationRestricted() -> RegisterResult.Failure.UserCreationRestricted
-            isTooMAnyMembers() -> RegisterResult.Failure.TeamMembersLimitReached
+            isTooManyMembers() -> RegisterResult.Failure.TeamMembersLimitReached
             isDomainBlockedForRegistration() -> RegisterResult.Failure.EmailDomainBlocked
             else -> RegisterResult.Failure.Generic(NetworkFailure.ServerMiscommunication(this))
         }
