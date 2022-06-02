@@ -15,6 +15,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.message.MessageSender
@@ -148,7 +149,7 @@ internal class SendImageMessageUseCaseImpl(
                 otrKey = otrKey.data,
                 sha256 = sha256,
                 assetId = assetId.key,
-                encryptionAlgorithm = AssetContent.RemoteData.EncryptionAlgorithm.AES_CBC,
+                encryptionAlgorithm = MessageEncryptionAlgorithm.AES_CBC,
                 assetDomain = null,  // TODO(assets): fill in the assetDomain, it's returned by the BE when uploading an asset.
                 assetToken = assetId.assetToken
             ),
