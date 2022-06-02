@@ -110,6 +110,7 @@ class MessageMapperImpl(
             else -> LocalNotificationMessage.Text(author, message.date, "Something not a text")
         }
 
+    @Suppress("ComplexMethod")
     private fun MessageContent.Client.toMessageEntityContent(): MessageEntityContent.Client = when (this) {
         is MessageContent.Text -> MessageEntityContent.Text(messageBody = this.value)
         is MessageContent.Asset -> with(this.value) {
