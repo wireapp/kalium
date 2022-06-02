@@ -112,7 +112,7 @@ class UpdateVideoStateUseCaseTest {
     fun givenAFlowOfCallsWithADifferentIdFromCurrentCall_whenUseCaseInvoked_thenDoNotInvokeUpdateVideoState() = runTest {
         val randomCall = Call(
             ConversationId("different", "domain"),
-            CallStatus.CLOSED,
+            CallStatus.MISSED,
             isMuted = true,
             isCameraOn = true,
             callerId = "caller-id"
