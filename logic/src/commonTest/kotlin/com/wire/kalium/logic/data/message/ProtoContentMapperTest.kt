@@ -6,10 +6,13 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.protobuf.messages.GenericMessage
+import com.wire.kalium.protobuf.messages.MessageEdit
+import com.wire.kalium.protobuf.messages.Text
 import io.ktor.utils.io.core.toByteArray
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 class ProtoContentMapperTest {
 
