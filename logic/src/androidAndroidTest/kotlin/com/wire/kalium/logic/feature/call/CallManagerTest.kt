@@ -95,7 +95,8 @@ class CallManagerTest {
             date = "2022-03-30T15:36:00.000Z",
             senderUserId = UserId(value = "value", domain = "domain"),
             senderClientId = ClientId(value = "value"),
-            status = Message.Status.SENT
+            status = Message.Status.SENT,
+            editStatus = Message.EditStatus.NotEdited
         )
     }
 }

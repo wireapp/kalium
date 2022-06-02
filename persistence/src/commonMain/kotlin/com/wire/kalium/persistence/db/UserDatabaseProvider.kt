@@ -1,5 +1,6 @@
 package com.wire.kalium.persistence.db
 
+import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.TeamDAO
@@ -10,6 +11,7 @@ import com.wire.kalium.persistence.dao.message.MessageDAO
 
 expect class UserDatabaseProvider {
     val userDAO: UserDAO
+    val connectionDAO: ConnectionDAO
     val conversationDAO: ConversationDAO
     val metadataDAO: MetadataDAO
     val messageDAO: MessageDAO
