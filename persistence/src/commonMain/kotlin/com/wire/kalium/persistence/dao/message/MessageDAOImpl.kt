@@ -49,8 +49,7 @@ class MessageMapper {
         )
     }
 
-    pr
-    ivate fun mapEditStatus(lastEditTimestamp: String?) =
+    private fun mapEditStatus(lastEditTimestamp: String?) =
         lastEditTimestamp?.let { MessageEntity.EditStatus.Edited(it) }
             ?: MessageEntity.EditStatus.NotEdited
 }
