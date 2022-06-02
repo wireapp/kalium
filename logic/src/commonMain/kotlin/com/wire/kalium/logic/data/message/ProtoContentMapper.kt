@@ -111,8 +111,8 @@ class ProtoContentMapperImpl : ProtoContentMapper {
                     is MessageEdit.Content.Composite -> {
                         MessageContent.Unknown
                     }
-                    else -> {
-                        kaliumLogger.w("Edit content is null. Message UUID = $genericMessage.")
+                    null -> {
+                        kaliumLogger.w("Edit content is unexpected. Message UUID = $genericMessage.")
                         MessageContent.Unknown
                     }
                 }
