@@ -31,6 +31,7 @@ class MessageMapper {
             senderUserId = msg.sender_user_id,
             senderClientId = msg.sender_client_id!!,
             status = msg.status,
+            editStatus = mapEditStatus(msg.last_edit_timestamp),
             visibility = msg.visibility
         )
         is MessageEntityContent.Server -> MessageEntity.Server(
@@ -40,7 +41,6 @@ class MessageMapper {
             date = msg.date,
             senderUserId = msg.sender_user_id,
             status = msg.status,
-            editStatus = mapEditStatus(msg.last_edit_timeStamp),
             visibility = msg.visibility
         )
     }
@@ -194,7 +194,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
     override suspend fun updateTextMessageContent(
         conversationId: QualifiedIDEntity,
         messageId: String,
-        newTextContent: TextMessageContent
+        newTextContent: MessageEntityContent.Text
     ) {
         queries.updateMessageTextContent(newTextContent.messageBody, messageId, conversationId)
     }

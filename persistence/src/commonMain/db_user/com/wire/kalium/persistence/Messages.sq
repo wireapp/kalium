@@ -13,7 +13,7 @@ CREATE TABLE Message (
       sender_user_id TEXT AS QualifiedIDEntity NOT NULL,
       sender_client_id TEXT,
       status TEXT AS MessageEntity.Status NOT NULL,
-      last_edit_timeStamp TEXT ,
+      last_edit_timestamp TEXT ,
       visibility TEXT AS MessageEntity.Visibility NOT NULL DEFAULT 'visible',
 
       FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id),
@@ -92,7 +92,7 @@ markMessageAsDeleted {
 
 markMessageAsEdited:
 UPDATE Message
-SET last_edit_timeStamp = ?
+SET last_edit_timestamp = ?
 WHERE id = ? AND conversation_id = ?;
 
 insertMessage:

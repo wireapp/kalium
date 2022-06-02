@@ -19,6 +19,7 @@ sealed class MessageEntity(
         override val senderUserId: QualifiedIDEntity,
         val senderClientId: String,
         override val status: Status,
+        val editStatus: EditStatus,
         override val visibility: Visibility = Visibility.VISIBLE,
         override val content: MessageEntityContent.Client,
     ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility)
@@ -35,6 +36,11 @@ sealed class MessageEntity(
 
     enum class Status {
         PENDING, SENT, READ, FAILED
+    }
+
+    sealed class EditStatus {
+        object NotEdited : EditStatus()
+        data class Edited(val lastTimeStamp: String) : EditStatus()
     }
 
     enum class DownloadStatus {
