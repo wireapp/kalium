@@ -4,7 +4,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 
-
+@Suppress("LongParameterList")
 sealed class Message(
     open val id: String,
     open val content: MessageContent,

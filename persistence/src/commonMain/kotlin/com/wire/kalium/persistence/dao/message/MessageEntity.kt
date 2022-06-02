@@ -2,6 +2,7 @@ package com.wire.kalium.persistence.dao.message
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 
+@Suppress("LongParameterList")
 sealed class MessageEntity(
     open val id: String,
     open val content: MessageEntityContent,
@@ -9,7 +10,7 @@ sealed class MessageEntity(
     open val date: String,
     open val senderUserId: QualifiedIDEntity,
     open val status: Status,
-    open val visibility: Visibility,
+    open val visibility: Visibility
 ) {
 
     data class Client(

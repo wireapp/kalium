@@ -178,61 +178,7 @@ class ConversationEventReceiverImpl(
 
         val isMyMessage = userRepository.getSelfUserId() == message.senderUserId
         when (message) {
-            is Message.Client -> when (message.content) {
-                is MessageContent.Text -> messageRepository.persistMessage(message)
-                is MessageContent.Asset -> {
-                    messageRepository.getMessageById(message.conversationId, message.id)
-                        .onFailure {
-                            // No asset message was received previously, so just persist the preview asset message
-                            messageRepository.persistMessage(message)
-                        }
-                        .onSuccess { persistedMessage ->
-                            // Check the second asset message is from the same original sender
-                            if (isSenderVerified(persistedMessage.id, persistedMessage.conversationId, message.senderUserId)
-                                && persistedMessage is Message.Client && persistedMessage.content is MessageContent.Asset
-                            ) {
-                                // The asset message received contains the asset decryption keys,
-                                // so update the preview message persisted previously
-                                updateAssetMessage(persistedMessage, message.content.value.remoteData)?.let {
-                                    messageRepository.persistMessage(it)
-                                }
-                            }
-                        }
-                }
-                is MessageContent.DeleteMessage ->
-                    if (isSenderVerified(message.content.messageId, message.conversationId, message.senderUserId))
-                        messageRepository.markMessageAsDeleted(
-                            messageUuid = message.content.messageId,
-                            conversationId = message.conversationId
-                        )
-                    else kaliumLogger.i(message = "Delete message sender is not verified: $message")
-                is MessageContent.DeleteForMe -> {
-                    /*The conversationId comes with the hidden message[message.content] only carries the conversaionId VALUE,
-                    *  we need to get the DOMAIN from the self conversationId[here is the message.conversationId]*/
-                    val conversationId =
-                        if (message.content.qualifiedConversationId != null)
-                            idMapper.fromProtoModel(message.content.qualifiedConversationId)
-                        else ConversationId(
-                            message.content.conversationId,
-                            message.conversationId.domain
-                        )
-                    if (message.conversationId == conversationRepository.getSelfConversationId())
-                        messageRepository.deleteMessage(
-                            messageUuid = message.content.messageId,
-                            conversationId = conversationId
-                        )
-                    else kaliumLogger.i(message = "Delete message sender is not verified: $message")
-                }
-                is MessageContent.Calling -> {
-                    kaliumLogger.d("$TAG - MessageContent.Calling")
-                    callManagerImpl.value.onCallingMessageReceived(
-                        message = message,
-                        content = message.content
-                    )
-                }
-                is MessageContent.TextEdited -> editTextHandler.handle(message,message.content)
-                is MessageContent.Unknown -> kaliumLogger.i(message = "Unknown Message received: $message")
-            }
+            is Message.Client -> processClientMessage(message)
             is Message.Server -> when (message.content) {
                 is MessageContent.MemberChange ->  messageRepository.persistMessage(message)
             }
@@ -240,6 +186,64 @@ class ConversationEventReceiverImpl(
 
         if (isMyMessage) conversationRepository.updateConversationNotificationDate(message.conversationId, message.date)
         conversationRepository.updateConversationModifiedDate(message.conversationId, message.date)
+    }
+
+    private suspend fun processClientMessage(message: Message.Client) {
+        when (message.content) {
+            is MessageContent.Text -> messageRepository.persistMessage(message)
+            is MessageContent.Asset -> {
+                messageRepository.getMessageById(message.conversationId, message.id)
+                    .onFailure {
+                        // No asset message was received previously, so just persist the preview asset message
+                        messageRepository.persistMessage(message)
+                    }
+                    .onSuccess { persistedMessage ->
+                        // Check the second asset message is from the same original sender
+                        if (isSenderVerified(persistedMessage.id, persistedMessage.conversationId, message.senderUserId)
+                            && persistedMessage is Message.Client && persistedMessage.content is MessageContent.Asset
+                        ) {
+                            // The asset message received contains the asset decryption keys,
+                            // so update the preview message persisted previously
+                            updateAssetMessage(persistedMessage, message.content.value.remoteData)?.let {
+                                messageRepository.persistMessage(it)
+                            }
+                        }
+                    }
+            }
+            is MessageContent.DeleteMessage ->
+                if (isSenderVerified(message.content.messageId, message.conversationId, message.senderUserId))
+                    messageRepository.markMessageAsDeleted(
+                        messageUuid = message.content.messageId,
+                        conversationId = message.conversationId
+                    )
+                else kaliumLogger.i(message = "Delete message sender is not verified: $message")
+            is MessageContent.DeleteForMe -> {
+                /*The conversationId comes with the hidden message[message.content] only carries the conversaionId VALUE,
+                *  we need to get the DOMAIN from the self conversationId[here is the message.conversationId]*/
+                val conversationId =
+                    if (message.content.qualifiedConversationId != null)
+                        idMapper.fromProtoModel(message.content.qualifiedConversationId)
+                    else ConversationId(
+                        message.content.conversationId,
+                        message.conversationId.domain
+                    )
+                if (message.conversationId == conversationRepository.getSelfConversationId())
+                    messageRepository.deleteMessage(
+                        messageUuid = message.content.messageId,
+                        conversationId = conversationId
+                    )
+                else kaliumLogger.i(message = "Delete message sender is not verified: $message")
+            }
+            is MessageContent.Calling -> {
+                kaliumLogger.d("$TAG - MessageContent.Calling")
+                callManagerImpl.value.onCallingMessageReceived(
+                    message = message,
+                    content = message.content
+                )
+            }
+            is MessageContent.TextEdited -> editTextHandler.handle(message,message.content)
+            is MessageContent.Unknown -> kaliumLogger.i(message = "Unknown Message received: $message")
+        }
     }
 
     private companion object {
