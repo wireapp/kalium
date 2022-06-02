@@ -177,18 +177,29 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         // THEN
         // only conversation one should be selected for notifications
-        assertEquals(listOf(conversationEntity1), result)
+        assertEquals(listOf(conversationEntity1, conversationEntity3), result)
     }
 
     @Test
     fun givenMultipleConversations_whenGettingConversations_thenOrderIsCorrect() = runTest {
+        // GIVEN
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.insertConversation(conversationEntity2)
+        conversationDAO.insertConversation(conversationEntity3)
+
+        // WHEN
+        // Updating the last notified date to later than last modified
+        conversationDAO
+            .updateConversationNotificationDate(
+                QualifiedIDEntity("2", "wire.com"),
+                "2022-03-30T15:37:10.000Z"
+            )
 
         val result = conversationDAO.getConversationsForNotifications().first()
-
+        // THEN
+        // The order of the conversations is not affected
         assertEquals(conversationEntity1, result.first())
-        assertEquals(conversationEntity2, result[1])
+        assertEquals(conversationEntity3, result[1])
 
     }
 
@@ -285,7 +296,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             ConversationEntity.Type.GROUP,
             null,
             ConversationEntity.ProtocolInfo.MLS("group3", ConversationEntity.GroupState.ESTABLISHED),
-            // This conversation was modifieid after the last time the user was notified about it
+            // This conversation was modified after the last time the user was notified about it
             lastNotificationDate = "2021-03-30T15:30:00.000Z",
             lastModifiedDate = "2021-03-30T15:36:00.000Z",
             // and it's status is set to be only notified if there is a mention for the user

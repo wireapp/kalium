@@ -10,18 +10,16 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.notification.LocalNotificationConversation
 import com.wire.kalium.logic.data.publicuser.PublicUserMapper
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
+import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.flatMapFromIterable
-import com.wire.kalium.persistence.dao.ConversationEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.single
-import kotlinx.coroutines.sync.Mutex
 
 interface GetNotificationsUseCase {
     suspend operator fun invoke(): Flow<List<LocalNotificationConversation>>
@@ -35,6 +33,7 @@ class GetNotificationsUseCaseImpl(
     private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper()
 ) : GetNotificationsUseCase {
 
+    @Suppress("LongMethod")
     override suspend operator fun invoke(): Flow<List<LocalNotificationConversation>> {
 
         val selfUser = userRepository.getSelfUser().first()
@@ -55,8 +54,12 @@ class GetNotificationsUseCaseImpl(
 
                     messagesListFlow
                         .map { messages ->
-                            val messagesWithoutMy = messages.filter { msg -> msg.senderUserId != selfUserId }
-                            ConversationWithMessages(messagesWithoutMy, conversation)
+                            val eligibleMessages = messages
+                                .filter { message ->
+                                    message.senderUserId != selfUserId
+                                            && shouldIncludeMessageForNotifications(message, selfUser, conversation.mutedStatus)
+                                }
+                            ConversationWithMessages(eligibleMessages, conversation)
                         }
                 }
             }
@@ -87,25 +90,6 @@ class GetNotificationsUseCaseImpl(
                                 val conversationId = conversationWithMessages.conversation.id
                                 val conversationName = conversationWithMessages.conversation.name ?: ""
                                 val messages = conversationWithMessages.messages
-                                    .filter {
-                                        when(conversationWithMessages.conversation.mutedStatus) {
-                                            MutedConversationStatus.AllAllowed -> true
-                                            MutedConversationStatus.OnlyMentionsAllowed -> {
-                                                when(val content = it.content) {
-                                                    is MessageContent.Text ->  {
-                                                        val containsSelfUserName = selfUser.name?.let { selfUsername ->
-                                                            content.value.contains(selfUsername) } ?: false
-                                                        val containsSelfHandle = selfUser.handle?.let { selfHandle ->
-                                                            content.value.contains(selfHandle)
-                                                            } ?: false
-                                                        containsSelfUserName or containsSelfHandle
-                                                    }
-                                                    else -> true
-                                                }
-                                            }
-                                            else -> false
-                                        }
-                                    }
                                     .map {
                                         val author = getNotificationMessageAuthor(authors, it.senderUserId)
                                         messageMapper.fromMessageToLocalNotificationMessage(it, author)
@@ -127,6 +111,31 @@ class GetNotificationsUseCaseImpl(
 
     private fun getNotificationMessageAuthor(authors: List<OtherUser?>, senderUserId: UserId) =
         publicUserMapper.fromPublicUserToLocalNotificationMessageAuthor(authors.firstOrNull { it?.id == senderUserId })
+
+    private fun shouldIncludeMessageForNotifications(
+        message: Message,
+        selfUser: SelfUser,
+        conversationMutedStatus: MutedConversationStatus
+    ): Boolean =
+        when(conversationMutedStatus) {
+            MutedConversationStatus.AllAllowed -> true
+            MutedConversationStatus.OnlyMentionsAllowed -> {
+                when(val content = message.content) {
+                    is MessageContent.Text ->  {
+                        val containsSelfUserName = selfUser.name?.let { selfUsername ->
+                            content.value.contains("@$selfUsername")
+                        } ?: false
+                        val containsSelfHandle = selfUser.handle?.let { selfHandle ->
+                            content.value.contains("@$selfHandle")
+                        } ?: false
+
+                        containsSelfUserName or containsSelfHandle
+                    }
+                    else -> false
+                }
+            }
+            else -> false
+        }
 
     private data class ConversationWithMessages(val messages: List<Message>, val conversation: Conversation)
 }
