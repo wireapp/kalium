@@ -21,7 +21,6 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.user.connection.ConnectionApi
-import com.wire.kalium.network.api.user.connection.ConnectionDTO
 import com.wire.kalium.network.api.user.connection.ConnectionStateDTO
 import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.persistence.dao.ConnectionDAO
@@ -66,7 +65,7 @@ internal class ConnectionDataSource(
                 it.connections.forEach {connectionDTO ->
                     persistConnection(connectionMapper.fromApiToModel(connectionDTO))
                 }
-                updateUserConnectionStatus(connections = it.connections)
+                updateUserConnectionStatus(connections = it.connections.map { connectionDTO -> connectionMapper.fromApiToModel(connectionDTO) })
                 lastPagingState = it.pagingState
                 hasMore = it.hasMore
             }.onFailure {
@@ -82,9 +81,9 @@ internal class ConnectionDataSource(
             connectionApi.createConnection(idMapper.toApiModel(userId))
         }.flatMap { connection ->
             val connectionSent = connection.copy(status = ConnectionStateDTO.SENT)
-            updateUserConnectionStatus(listOf(connectionSent))
+            updateUserConnectionStatus(listOf(connectionMapper.fromApiToModel(connectionSent)))
             persistConnection(connectionMapper.fromApiToModel(connection))
-        }
+        }.map { }
     }
 
     override suspend fun updateConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, Unit> {
@@ -99,13 +98,13 @@ internal class ConnectionDataSource(
             connectionApi.updateConnection(idMapper.toApiModel(userId), newConnectionStatus)
         }.map { connection ->
             val connectionSent = connection.copy(status = newConnectionStatus)
-            updateUserConnectionStatus(listOf(connectionSent))
+            updateUserConnectionStatus(listOf(connectionMapper.fromApiToModel(connectionSent)))
+            persistConnection(connectionMapper.fromApiToModel(connection))
         }
     }
 
     private fun checkIfCanTransitionToConnectionStatus(connectionState: ConnectionState): Boolean = when (connectionState) {
-        ConnectionState.IGNORED -> false // TODO: implement and move to next case
-        ConnectionState.CANCELLED, ConnectionState.ACCEPTED -> true
+        ConnectionState.IGNORED, ConnectionState.CANCELLED, ConnectionState.ACCEPTED -> true
         else -> false
     }
 
@@ -124,7 +123,7 @@ internal class ConnectionDataSource(
     }
 
     override suspend fun insertConnectionFromEvent(event: Event.User.NewConnection): Either<CoreFailure, Unit> =
-        persistConnection(event.connection)
+        persistConnection(event.connection).map {  }
 
     private suspend fun persistConnection(
         connection: Connection,
@@ -134,21 +133,21 @@ internal class ConnectionDataSource(
         // This can fail? but the connection will be there and get synced in worst case in next SlowSync
         wrapApiRequest {
             userDetailsApi.getUserInfo(idMapper.toApiModel(connection.qualifiedToId))
-        }.map {
-            val userEntity = publicUserMapper.fromUserApiToEntity(it)
+        }.onSuccess {
+            val userEntity = publicUserMapper.fromUserApiToEntity(it, connectionStatusMapper.toDaoModel(connection.status))
             userDAO.insertUser(userEntity)
         }
     }
 
     private suspend fun updateUserConnectionStatus(
-        connections: List<ConnectionDTO>
+        connections: List<Connection>
     ) {
         wrapStorageRequest {
             connections.forEach { connection ->
                 conversationDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
-                    userId = idMapper.fromApiToDao(connection.qualifiedToId),
-                    status = connectionStatusMapper.fromApiToDao(state = connection.status),
-                    conversationID = idMapper.fromApiToDao(connection.qualifiedConversationId)
+                    userId = idMapper.toDaoModel(connection.qualifiedToId),
+                    status = connectionStatusMapper.toDaoModel(state = connection.status),
+                    conversationID = idMapper.toDaoModel(connection.qualifiedConversationId)
                 )
             }
         }
