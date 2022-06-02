@@ -12,8 +12,7 @@ import com.wire.kalium.logic.feature.call.AvsSFTError
 import com.wire.kalium.logic.feature.call.CallManagerImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.nullableFold
 import kotlinx.coroutines.launch
 
 //TODO(testing): create unit test
@@ -30,7 +29,7 @@ class OnSFTRequest(
                 val responseData = callRepository.connectToSFT(
                     url = url,
                     data = dataString
-                ).fold({
+                ).nullableFold({
                     callingLogger.i("Could not connect to SFT server.")
                     null
                 }, {

@@ -12,7 +12,8 @@ data class MessageEntity(
     val senderUserId: QualifiedIDEntity,
     val senderClientId: String,
     val status: Status,
-    val visibility: Visibility = Visibility.VISIBLE
+    val editStatus: EditStatus,
+    val visibility: Visibility = Visibility.VISIBLE,
 ) {
     sealed class MessageEntityContent {
         data class TextMessageContent(val messageBody: String) : MessageEntityContent()
@@ -39,6 +40,11 @@ data class MessageEntity(
 
     enum class Status {
         PENDING, SENT, READ, FAILED
+    }
+
+    sealed class EditStatus {
+        object NotEdited : EditStatus()
+        data class Edited(val lastTimeStamp: String) : EditStatus()
     }
 
     enum class DownloadStatus {
@@ -85,11 +91,13 @@ interface MessageDAO {
     suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity)
     suspend fun updateAssetDownloadStatus(downloadStatus: MessageEntity.DownloadStatus, id: String, conversationId: QualifiedIDEntity)
     suspend fun markMessageAsDeleted(id: String, conversationsId: QualifiedIDEntity)
+    suspend fun markAsEdited(editTimeStamp: String,conversationId: QualifiedIDEntity, id: String)
     suspend fun deleteAllMessages()
     suspend fun insertMessage(message: MessageEntity)
     suspend fun insertMessages(messages: List<MessageEntity>)
     suspend fun updateMessage(message: MessageEntity)
     suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity)
+    suspend fun updateMessageId(conversationId: QualifiedIDEntity, oldMessageId: String, newMessageId: String)
     suspend fun updateMessageDate(date: String, id: String, conversationId: QualifiedIDEntity)
     suspend fun updateMessagesAddMillisToDate(millis: Long, conversationId: QualifiedIDEntity, status: MessageEntity.Status)
     suspend fun getMessagesFromAllConversations(limit: Int, offset: Int): Flow<List<MessageEntity>>
@@ -97,4 +105,9 @@ interface MessageDAO {
     suspend fun getMessagesByConversation(conversationId: QualifiedIDEntity, limit: Int, offset: Int): Flow<List<MessageEntity>>
     suspend fun getMessagesByConversationAfterDate(conversationId: QualifiedIDEntity, date: String): Flow<List<MessageEntity>>
     suspend fun getAllPendingMessagesFromUser(userId: UserIDEntity): List<MessageEntity>
+    suspend fun updateTextMessageContent(
+        conversationId: QualifiedIDEntity,
+        messageId: String,
+        newTextContent: MessageEntity.MessageEntityContent.TextMessageContent
+    )
 }

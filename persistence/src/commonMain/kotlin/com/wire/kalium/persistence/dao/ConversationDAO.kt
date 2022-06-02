@@ -14,7 +14,7 @@ data class ConversationEntity(
     val lastModifiedDate: String,
 ) {
 
-    enum class Type { SELF, ONE_ON_ONE, GROUP, CONNECTION }
+    enum class Type { SELF, ONE_ON_ONE, GROUP, CONNECTION_PENDING }
 
     enum class GroupState { PENDING, PENDING_WELCOME_MESSAGE, ESTABLISHED }
 

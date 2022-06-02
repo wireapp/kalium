@@ -21,6 +21,7 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.user.connection.ConnectionApi
+import com.wire.kalium.network.api.user.connection.ConnectionDTO
 import com.wire.kalium.network.api.user.connection.ConnectionStateDTO
 import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.persistence.dao.ConnectionDAO
@@ -65,7 +66,7 @@ internal class ConnectionDataSource(
                 it.connections.forEach {connectionDTO ->
                     persistConnection(connectionMapper.fromApiToModel(connectionDTO))
                 }
-                updateUserConnectionStatus(connections = it.connections.map { connectionDTO -> connectionMapper.fromApiToModel(connectionDTO) })
+                updateUserConnectionStatus(connections = it.connections)
                 lastPagingState = it.pagingState
                 hasMore = it.hasMore
             }.onFailure {
@@ -81,16 +82,15 @@ internal class ConnectionDataSource(
             connectionApi.createConnection(idMapper.toApiModel(userId))
         }.flatMap { connection ->
             val connectionSent = connection.copy(status = ConnectionStateDTO.SENT)
-            updateUserConnectionStatus(listOf(connectionMapper.fromApiToModel(connectionSent)))
+            updateUserConnectionStatus(listOf(connectionSent))
             persistConnection(connectionMapper.fromApiToModel(connection))
-        }.map { }
+        }.map{ }
     }
 
     override suspend fun updateConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, Unit> {
-        // Check if we can transition to the correct connection status
-        val canTransitionToStatus = checkIfCanTransitionToConnectionStatus(connectionState)
+        val isValidConnectionState = isValidConnectionState(connectionState)
         val newConnectionStatus = connectionStatusMapper.toApiModel(connectionState)
-        if (!canTransitionToStatus || newConnectionStatus == null) {
+        if (!isValidConnectionState || newConnectionStatus == null) {
             return Either.Left(InvalidMappingFailure)
         }
 
@@ -98,12 +98,16 @@ internal class ConnectionDataSource(
             connectionApi.updateConnection(idMapper.toApiModel(userId), newConnectionStatus)
         }.map { connection ->
             val connectionSent = connection.copy(status = newConnectionStatus)
-            updateUserConnectionStatus(listOf(connectionMapper.fromApiToModel(connectionSent)))
+            updateUserConnectionStatus(listOf(connectionSent))
             persistConnection(connectionMapper.fromApiToModel(connection))
         }
     }
 
-    private fun checkIfCanTransitionToConnectionStatus(connectionState: ConnectionState): Boolean = when (connectionState) {
+    /**
+     * Check if we can transition to the correct connection status
+     * [ConnectionState.CANCELLED] [ConnectionState.IGNORED] or [ConnectionState.ACCEPTED]
+     */
+    private fun isValidConnectionState(connectionState: ConnectionState): Boolean = when (connectionState) {
         ConnectionState.IGNORED, ConnectionState.CANCELLED, ConnectionState.ACCEPTED -> true
         else -> false
     }
@@ -123,7 +127,7 @@ internal class ConnectionDataSource(
     }
 
     override suspend fun insertConnectionFromEvent(event: Event.User.NewConnection): Either<CoreFailure, Unit> =
-        persistConnection(event.connection).map {  }
+        persistConnection(event.connection)
 
     private suspend fun persistConnection(
         connection: Connection,
@@ -133,21 +137,23 @@ internal class ConnectionDataSource(
         // This can fail? but the connection will be there and get synced in worst case in next SlowSync
         wrapApiRequest {
             userDetailsApi.getUserInfo(idMapper.toApiModel(connection.qualifiedToId))
-        }.onSuccess {
-            val userEntity = publicUserMapper.fromUserApiToEntity(it, connectionStatusMapper.toDaoModel(connection.status))
-            userDAO.insertUser(userEntity)
+        }.flatMap {
+            wrapStorageRequest {
+                val userEntity = publicUserMapper.fromUserApiToEntity(it, connectionStatusMapper.toDaoModel(connection.status))
+                userDAO.insertUser(userEntity)
+            }
         }
     }
 
     private suspend fun updateUserConnectionStatus(
-        connections: List<Connection>
+        connections: List<ConnectionDTO>
     ) {
         wrapStorageRequest {
             connections.forEach { connection ->
                 conversationDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
-                    userId = idMapper.toDaoModel(connection.qualifiedToId),
-                    status = connectionStatusMapper.toDaoModel(state = connection.status),
-                    conversationID = idMapper.toDaoModel(connection.qualifiedConversationId)
+                    userId = idMapper.fromApiToDao(connection.qualifiedToId),
+                    status = connectionStatusMapper.fromApiToDao(state = connection.status),
+                    conversationID = idMapper.fromApiToDao(connection.qualifiedConversationId)
                 )
             }
         }

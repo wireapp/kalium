@@ -16,7 +16,7 @@ fun interface CancelConnectionRequestUseCase {
     /**
      * Use case [CancelConnectionRequestUseCase] operation
      *
-     * @param userId the target user to connect with
+     * @param userId the target user with whom to cancel the connection request
      * @return a [CancelConnectionRequestUseCaseResult] indicating the operation result
      */
     suspend operator fun invoke(userId: UserId): CancelConnectionRequestUseCaseResult
