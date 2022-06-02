@@ -14,7 +14,7 @@ fun interface IgnoreConnectionRequestUseCase {
     /**
      * Use case [IgnoreConnectionRequestUseCase] operation
      *
-     * @param userId the target user to ignore with
+     * @param userId the target user with whom to ignore the connection request
      * @return a [IgnoreConnectionRequestUseCaseResult] indicating the operation result
      */
     suspend operator fun invoke(userId: UserId): IgnoreConnectionRequestUseCaseResult
