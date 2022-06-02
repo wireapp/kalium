@@ -1,5 +1,6 @@
 package com.wire.kalium.persistence.db
 
+import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.TeamDAO
@@ -27,4 +28,7 @@ actual class UserDatabaseProvider {
     actual fun nuke(): Boolean {
         TODO("Not yet implemented")
     }
+
+    actual val connectionDAO: ConnectionDAO
+        get() = TODO("Not yet implemented")
 }

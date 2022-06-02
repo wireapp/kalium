@@ -244,7 +244,8 @@ class GetNotificationsUseCaseTest {
                 "some_time",
                 senderId,
                 ClientId("client_1"),
-                Message.Status.SENT
+                Message.Status.SENT,
+                Message.EditStatus.NotEdited
             )
 
         private fun notificationMessage(authorName: String = "Author Name", time: String = "some_time", text: String = "test text") =

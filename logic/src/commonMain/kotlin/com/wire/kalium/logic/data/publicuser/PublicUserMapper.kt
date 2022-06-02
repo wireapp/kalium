@@ -8,13 +8,15 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.model.getPreviewAssetOrNull
 import com.wire.kalium.network.api.user.details.UserProfileDTO
+import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.UserEntity
 
 interface PublicUserMapper {
     fun fromDaoModelToPublicUser(userEntity: UserEntity): OtherUser
     fun fromUserDetailResponse(userDetailResponse: UserProfileDTO): OtherUser
+    fun fromUserApiToEntity(userDetailResponse: UserProfileDTO): UserEntity
     fun fromUserDetailResponses(userDetailResponse: List<UserProfileDTO>): List<OtherUser>
-    fun fromDaoConnectionStateToUser(connectionState: UserEntity.ConnectionState): ConnectionState
+    fun fromDaoConnectionStateToUser(connectionState: ConnectionEntity.State): ConnectionState
     fun fromPublicUserToLocalNotificationMessageAuthor(author: OtherUser?): LocalNotificationMessageAuthor
 }
 
@@ -44,19 +46,31 @@ class PublicUserMapperImpl(private val idMapper: IdMapper) : PublicUserMapper {
         completePicture = userDetailResponse.assets.getCompleteAssetOrNull()?.key,
     )
 
+    override fun fromUserApiToEntity(userDetailResponse: UserProfileDTO) = UserEntity(
+        id = idMapper.fromApiToDao(userDetailResponse.id),
+        name = userDetailResponse.name,
+        handle = userDetailResponse.handle,
+        email = userDetailResponse.email,
+        phone = null,
+        accentId = userDetailResponse.accentId,
+        team = userDetailResponse.teamId,
+        previewAssetId = userDetailResponse.assets.getPreviewAssetOrNull()?.key,
+        completeAssetId = userDetailResponse.assets.getCompleteAssetOrNull()?.key
+    )
+
     override fun fromUserDetailResponses(userDetailResponse: List<UserProfileDTO>) =
         userDetailResponse.map { fromUserDetailResponse(it) }
 
-    override fun fromDaoConnectionStateToUser(connectionState: UserEntity.ConnectionState): ConnectionState =
-        when(connectionState) {
-            UserEntity.ConnectionState.NOT_CONNECTED -> ConnectionState.NOT_CONNECTED
-            UserEntity.ConnectionState.PENDING -> ConnectionState.PENDING
-            UserEntity.ConnectionState.SENT -> ConnectionState.SENT
-            UserEntity.ConnectionState.BLOCKED -> ConnectionState.BLOCKED
-            UserEntity.ConnectionState.IGNORED -> ConnectionState.IGNORED
-            UserEntity.ConnectionState.CANCELLED -> ConnectionState.CANCELLED
-            UserEntity.ConnectionState.MISSING_LEGALHOLD_CONSENT -> ConnectionState.MISSING_LEGALHOLD_CONSENT
-            UserEntity.ConnectionState.ACCEPTED -> ConnectionState.ACCEPTED
+    override fun fromDaoConnectionStateToUser(connectionState: ConnectionEntity.State): ConnectionState =
+        when (connectionState) {
+            ConnectionEntity.State.NOT_CONNECTED -> ConnectionState.NOT_CONNECTED
+            ConnectionEntity.State.PENDING -> ConnectionState.PENDING
+            ConnectionEntity.State.SENT -> ConnectionState.SENT
+            ConnectionEntity.State.BLOCKED -> ConnectionState.BLOCKED
+            ConnectionEntity.State.IGNORED -> ConnectionState.IGNORED
+            ConnectionEntity.State.CANCELLED -> ConnectionState.CANCELLED
+            ConnectionEntity.State.MISSING_LEGALHOLD_CONSENT -> ConnectionState.MISSING_LEGALHOLD_CONSENT
+            ConnectionEntity.State.ACCEPTED -> ConnectionState.ACCEPTED
         }
 
     override fun fromPublicUserToLocalNotificationMessageAuthor(author: OtherUser?) =

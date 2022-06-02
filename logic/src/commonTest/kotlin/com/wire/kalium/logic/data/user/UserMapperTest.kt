@@ -2,6 +2,7 @@ package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.framework.TestTeam
+import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import io.mockative.Mock
@@ -41,7 +42,7 @@ class UserMapperTest {
             phone = null,
             accentId = 1,
             team = "teamId",
-            connectionStatus = UserEntity.ConnectionState.ACCEPTED,
+            connectionStatus = ConnectionEntity.State.ACCEPTED,
             previewAssetId = null,
             completeAssetId = null
         )
