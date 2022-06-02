@@ -79,7 +79,8 @@ class OnHttpRequest(
                 Clock.System.now().toString(),
                 userId,
                 clientId,
-                Message.Status.SENT
+                Message.Status.SENT,
+                Message.EditStatus.NotEdited
             )
             when (val sentMessage = messageSender.sendClientDiscoveryMessage(message = message)) {
                 is Either.Right -> {
