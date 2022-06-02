@@ -12,10 +12,16 @@ data class Message(
     val senderUserId: UserId,
     val senderClientId: ClientId,
     val status: Status,
+    val editStatus : EditStatus,
     val visibility: Visibility = Visibility.VISIBLE
 ) {
     enum class Status {
         PENDING, SENT, READ, FAILED
+    }
+
+    sealed class EditStatus{
+        object NotEdited : EditStatus()
+        data class Edited(val lastTimeStamp : String) : EditStatus()
     }
 
     enum class DownloadStatus {

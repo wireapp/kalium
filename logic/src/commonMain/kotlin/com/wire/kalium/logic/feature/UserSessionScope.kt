@@ -6,7 +6,6 @@ import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSou
 import com.wire.kalium.logic.data.asset.AssetDataSource
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.call.CallDataSource
-import com.wire.kalium.logic.data.call.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientDataSource
 import com.wire.kalium.logic.data.client.ClientRepository
@@ -71,6 +70,9 @@ import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.SyncManagerImpl
 import com.wire.kalium.logic.sync.SyncPendingEventsUseCase
+import com.wire.kalium.logic.sync.UserEventReceiver
+import com.wire.kalium.logic.sync.UserEventReceiverImpl
+import com.wire.kalium.logic.sync.handler.MessageTextEditHandler
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.TimeParserImpl
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
@@ -153,7 +155,10 @@ abstract class UserSessionScopeCommon(
     private val connectionRepository: ConnectionRepository
         get() = ConnectionDataSource(
             userDatabaseProvider.conversationDAO,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.connectionApi
+            userDatabaseProvider.connectionDAO,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.connectionApi,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
+            userDatabaseProvider.userDAO
         )
 
     private val publicUserRepository: SearchUserRepository
@@ -225,6 +230,7 @@ abstract class UserSessionScopeCommon(
             eventRepository,
             syncRepository,
             conversationEventReceiver,
+            userEventReceiver,
             KaliumDispatcherImpl
         )
     }
@@ -236,16 +242,12 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.authenticatedNetworkContainer.notificationApi, eventInfoStorage, clientRepository
         )
 
-    private val callMapper: CallMapper
-        get() = CallMapper()
-
     private val callManager: Lazy<CallManager> = lazy {
         globalCallManager.getCallManagerForClient(
             userId = userId,
             callRepository = callRepository,
             userRepository = userRepository,
             clientRepository = clientRepository,
-            callMapper = callMapper,
             messageSender = messageSender
         )
     }
@@ -253,6 +255,8 @@ abstract class UserSessionScopeCommon(
     private val flowManagerService by lazy {
         globalCallManager.getFlowManager()
     }
+
+    private val messageTextEditHandler = MessageTextEditHandler(messageRepository)
 
     protected abstract val protoContentMapper: ProtoContentMapper
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
@@ -263,11 +267,18 @@ abstract class UserSessionScopeCommon(
             mlsConversationRepository,
             userRepository,
             protoContentMapper,
-            callManager
+            callManager,
+            messageTextEditHandler
         )
     }
 
-    private val preKeyRemoteRepository: PreKeyRemoteRepository get() = PreKeyRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi)
+    private val userEventReceiver: UserEventReceiver
+        get() = UserEventReceiverImpl(
+            connectionRepository,
+        )
+
+    private val preKeyRemoteRepository: PreKeyRemoteRepository
+        get() = PreKeyRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi)
     private val preKeyRepository: PreKeyRepository
         get() = PreKeyDataSource(
             preKeyRemoteRepository, authenticatedDataSourceSet.proteusClient
@@ -295,7 +306,13 @@ abstract class UserSessionScopeCommon(
             mlsClientProvider,
             notificationTokenRepository
         )
-    val conversations: ConversationScope get() = ConversationScope(conversationRepository, userRepository, syncManager)
+    val conversations: ConversationScope
+        get() = ConversationScope(
+            conversationRepository,
+            connectionRepository,
+            userRepository,
+            syncManager
+        )
     val messages: MessageScope
         get() = MessageScope(
             messageRepository,

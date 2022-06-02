@@ -9,26 +9,26 @@ class ValidateUserHandleUseCaseTest {
     private val validateUserHandleUseCase: ValidateUserHandleUseCase = ValidateUserHandleUseCaseImpl()
 
     @Test
-    fun `given a validUserHandleUseCase is invoked, when handle is valid, then return true`() {
+    fun givenAValidUserHandleUseCaseIsInvoked_whenHandleIsValid_thenReturnTrue() {
         VALID_HANDLES.forEach { validUserHandle ->
             assertTrue { validateUserHandleUseCase(validUserHandle).isValid }
         }
     }
 
     @Test
-    fun `given a validUserHandleUseCase is invoked, when handle is invalid, then return false`() {
+    fun givenAValidUserHandleUseCaseIsInvoked_whenHandleIsInvalid_thenReturnFalse() {
         INVALID_HANDLES.forEach { inValidUserHandle ->
             assertFalse { validateUserHandleUseCase(inValidUserHandle).isValid }
         }
     }
 
     @Test
-    fun `given a validUserHandleUseCase is invoked, when handle is too short, then return TooShort`() {
+    fun givenAValidUserHandleUseCaseIsInvoked_whenHandleIsTooShort_thenReturnTooShort() {
         assertTrue { validateUserHandleUseCase("a") is ValidateUserHandleResult.Invalid.TooShort }
     }
 
     @Test
-    fun `given a validUserHandleUseCase is invoked, when handle is too long, then return TooLong`() {
+    fun givenAValidUserHandleUseCaseIsInvoked_whenHandleIsTooLong_thenReturnTooLong() {
         assertTrue {
             validateUserHandleUseCase(
             "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890" +
@@ -38,13 +38,13 @@ class ValidateUserHandleUseCaseTest {
     }
 
     @Test
-    fun `given a validUserHandleUseCase is invoked, when handle is invalid, then return handle without invalid chars`() {
+    fun givenAValidUserHandleUseCaseIsInvoked_whenHandleIsInvalid_thenReturnHandleWithoutInvalidChars() {
         val result = validateUserHandleUseCase("@handle1_A")
         assertTrue { result is ValidateUserHandleResult.Invalid.InvalidCharacters && result.handle == "handle1_" }
     }
 
     @Test
-    fun `given a validUserHandleUseCase is invoked, when handle is too short and has invaled char, then return handle without invalid chars`() {
+    fun givenAValidUserHandleUseCaseIsInvoked_whenHandleIsTooShortAndHasInvaledChar_thenReturnHandleWithoutInvalidChars() {
         val result = validateUserHandleUseCase("$")
         assertTrue { result is ValidateUserHandleResult.Invalid.InvalidCharacters && result.handle == "" }
     }
