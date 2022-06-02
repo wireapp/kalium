@@ -31,6 +31,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class CallRepositoryTest {
@@ -215,6 +216,20 @@ class CallRepositoryTest {
             assertEquals(mapOfCallProfiles.size, list.size)
             assertEquals(list[0].status, CallStatus.ESTABLISHED)
         }
+    }
+
+    @Test
+    fun givenAConversationId_whenRemoveCallByIdIsCalled_thenRemoveThatCallFromTheFlow() = runTest {
+        callRepository.updateCallProfileFlow(CallProfile(mapOfCallProfiles))
+
+        callRepository.removeCallById(startedCall.conversationId.toString())
+
+        val calls = callRepository.callsFlow()
+        assertEquals(mapOfCallProfiles.size - 1, calls.first().size)
+        val removedItem = calls.first().find {
+            it.conversationId == startedCall.conversationId
+        }
+        assertNull(removedItem)
     }
 
     @Test

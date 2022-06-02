@@ -29,6 +29,7 @@ interface CallRepository {
     fun ongoingCallsFlow(): Flow<List<Call>>
     suspend fun createCall(conversationId: ConversationId, status: CallStatus, callerId: String)
     fun updateCallStatusById(conversationId: String, status: CallStatus)
+    fun removeCallById(conversationId: String)
     fun updateCallParticipants(conversationId: String, participants: List<Participant>)
 }
 
@@ -117,6 +118,12 @@ internal class CallDataSource(
                 calls = updatedCalls
             )
         }
+    }
+
+    override fun removeCallById(conversationId: String) {
+        val callProfile = _callProfile.value
+        val oldValues = callProfile.calls.filterKeys { it != conversationId }
+        _callProfile.value = CallProfile(oldValues)
     }
 
     override fun updateCallParticipants(conversationId: String, participants: List<Participant>) {
