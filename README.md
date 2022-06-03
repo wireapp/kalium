@@ -1,5 +1,5 @@
 # kalium
-Kalium
+[![codecov](https://codecov.io/gh/wireapp/kalium/branch/develop/graph/badge.svg?token=UWQ1P7DY7I)](https://codecov.io/gh/wireapp/kalium)
 
 ## How to build
 
