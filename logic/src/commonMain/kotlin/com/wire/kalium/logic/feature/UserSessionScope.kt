@@ -256,6 +256,10 @@ abstract class UserSessionScopeCommon(
         globalCallManager.getFlowManager()
     }
 
+    private val mediaManagerService by lazy {
+        globalCallManager.getMediaManager()
+    }
+
     private val messageTextEditHandler = MessageTextEditHandler(messageRepository)
 
     protected abstract val protoContentMapper: ProtoContentMapper
@@ -340,7 +344,7 @@ abstract class UserSessionScopeCommon(
 
     val team: TeamScope get() = TeamScope(userRepository, teamRepository, syncManager)
 
-    val calls: CallsScope get() = CallsScope(callManager, callRepository, flowManagerService, syncManager)
+    val calls: CallsScope get() = CallsScope(callManager, callRepository, flowManagerService, mediaManagerService, syncManager)
 
     val connection: ConnectionScope get() = ConnectionScope(connectionRepository)
 
