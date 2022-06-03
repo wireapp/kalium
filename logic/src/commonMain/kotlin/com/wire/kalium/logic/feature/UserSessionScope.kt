@@ -83,7 +83,6 @@ import com.wire.kalium.persistence.event.EventInfoStorage
 import com.wire.kalium.persistence.event.EventInfoStorageImpl
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
-import com.wire.kalium.util.KaliumDispatcherImpl
 
 expect class UserSessionScope : UserSessionScopeCommon
 
@@ -225,12 +224,11 @@ abstract class UserSessionScopeCommon(
 
     val syncManager: SyncManager by lazy {
         SyncManagerImpl(
-            authenticatedDataSourceSet.workScheduler,
+            authenticatedDataSourceSet.userSessionWorkScheduler,
             eventRepository,
             syncRepository,
             conversationEventReceiver,
-            userEventReceiver,
-            KaliumDispatcherImpl
+            userEventReceiver
         )
     }
 
@@ -257,7 +255,6 @@ abstract class UserSessionScopeCommon(
 
     private val messageTextEditHandler = MessageTextEditHandler(messageRepository)
 
-    protected abstract val protoContentMapper: ProtoContentMapper
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiverImpl(
             authenticatedDataSourceSet.proteusClient,
@@ -265,7 +262,6 @@ abstract class UserSessionScopeCommon(
             conversationRepository,
             mlsConversationRepository,
             userRepository,
-            callManager
             callManager,
             messageTextEditHandler
         )

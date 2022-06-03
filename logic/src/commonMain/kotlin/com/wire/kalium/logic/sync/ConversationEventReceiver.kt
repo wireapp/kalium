@@ -40,11 +40,11 @@ class ConversationEventReceiverImpl(
     private val mlsConversationRepository: MLSConversationRepository,
     private val userRepository: UserRepository,
     private val callManagerImpl: Lazy<CallManager>,
-    private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(),
     private val editTextHandler: MessageTextEditHandler,
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper(),
-) : ConversationEventReceiver {
+    private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper()
+    ) : ConversationEventReceiver {
 
     override suspend fun onEvent(event: Event.Conversation) {
         when (event) {
@@ -121,7 +121,9 @@ class ConversationEventReceiverImpl(
         event.members.qualifiedUserIds.forEach { userId ->
             conversationRepository.deleteMember(
                 idMapper.toDaoModel(event.conversationId), idMapper.fromApiToDao(userId)
-            ).onFailure { kaliumLogger.e("$TAG - failure on member leave event: $it") }
+            ).onFailure {
+                kaliumLogger.e("$TAG - failure on member leave event: $it")
+            }
         }
 
     private suspend fun handleMLSWelcome(event: Event.Conversation.MLSWelcome) {
@@ -144,7 +146,8 @@ class ConversationEventReceiverImpl(
                     date = event.time,
                     senderUserId = event.senderUserId,
                     senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
-                    status = Message.Status.SENT
+                    status = Message.Status.SENT,
+                    editStatus = Message.EditStatus.NotEdited
                 )
                 processMessage(message)
             }

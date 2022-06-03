@@ -12,7 +12,6 @@ import com.wire.kalium.logic.feature.auth.ServerMetaDataManagerImpl
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.sync.GlobalWorkScheduler
-import com.wire.kalium.logic.sync.SyncManagerImpl
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import com.wire.kalium.logic.sync.WorkSchedulerImpl
 import com.wire.kalium.network.AuthenticatedNetworkContainer
@@ -58,9 +57,7 @@ actual class CoreLogic(
             val proteusClient: ProteusClient = ProteusClientImpl(rootProteusPath)
             runBlocking { proteusClient.open() }
 
-            val workScheduler: UserSessionWorkScheduler = WorkSchedulerImpl.UserSession(this, userId)
-            val syncManager = SyncManagerImpl(workScheduler, InMemorySyncRepository())
-            val workScheduler = WorkSchedulerImpl(this, userId)
+            val userSessionWorkScheduler: UserSessionWorkScheduler = WorkSchedulerImpl.UserSession(this, userId)
             val encryptedSettingsHolder = EncryptedSettingsHolder(SettingOptions.UserSettings(idMapper.toDaoModel(userId)))
             val userPreferencesSettings = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
             val userDatabase = UserDatabaseProvider(File(rootStoragePath))
@@ -69,7 +66,7 @@ actual class CoreLogic(
                 rootAccountPath,
                 networkContainer,
                 proteusClient,
-                workScheduler,
+                userSessionWorkScheduler,
                 userDatabase,
                 userPreferencesSettings,
                 encryptedSettingsHolder
