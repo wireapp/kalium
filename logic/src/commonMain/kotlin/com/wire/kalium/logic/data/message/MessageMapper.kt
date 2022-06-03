@@ -62,6 +62,10 @@ class MessageMapperImpl(private val idMapper: IdMapper, private val assetMapper:
             date = message.date,
             senderUserId = idMapper.toDaoModel(message.senderUserId),
             senderClientId = message.senderClientId.value,
+            editStatus = when (val editStatus = message.editStatus) {
+                Message.EditStatus.NotEdited -> MessageEntity.EditStatus.NotEdited
+                is Message.EditStatus.Edited -> MessageEntity.EditStatus.Edited(editStatus.lastTimeStamp)
+            },
             status = status
         )
     }
@@ -93,6 +97,10 @@ class MessageMapperImpl(private val idMapper: IdMapper, private val assetMapper:
             MessageEntity.Visibility.HIDDEN -> Message.Visibility.HIDDEN
             MessageEntity.Visibility.DELETED -> Message.Visibility.DELETED
         }
+        val editStatus = when (val editStatus = message.editStatus) {
+            MessageEntity.EditStatus.NotEdited -> Message.EditStatus.NotEdited
+            is MessageEntity.EditStatus.Edited -> Message.EditStatus.Edited(editStatus.lastTimeStamp)
+        }
         return Message(
             message.id,
             content,
@@ -101,6 +109,7 @@ class MessageMapperImpl(private val idMapper: IdMapper, private val assetMapper:
             idMapper.fromDaoModel(message.senderUserId),
             ClientId(message.senderClientId),
             status,
+            editStatus,
             visibility
         )
     }
