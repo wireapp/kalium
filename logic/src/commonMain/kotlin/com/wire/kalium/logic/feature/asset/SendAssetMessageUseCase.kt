@@ -7,9 +7,12 @@ import com.wire.kalium.cryptography.utils.calcSHA256
 import com.wire.kalium.cryptography.utils.encryptDataWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.EncryptionFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.FileAsset
 import com.wire.kalium.logic.data.asset.UploadedAssetId
+import com.wire.kalium.logic.data.asset.kaliumFileSystem
+import com.wire.kalium.logic.data.asset.tempPath
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
@@ -26,6 +29,8 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
+import okio.buffer
+import okio.use
 
 fun interface SendAssetMessageUseCase {
     /**
@@ -61,31 +66,42 @@ internal class SendAssetMessageUseCaseImpl(
     ): SendAssetMessageResult {
         // Encrypt the asset data with the provided otr key
         val otrKey = generateRandomAES256Key()
-        val encryptedData = encryptDataWithAES256(PlainData(assetRawData), otrKey)
+        val encryptedDataPath = tempPath()
+        val encryptionSucceeded = encryptDataWithAES256(PlainData(assetRawData), otrKey, encryptedDataPath, kaliumFileSystem)
 
-        // Calculate the SHA of the encrypted data
-        val sha256 = calcSHA256(encryptedData.data)
-
-        // Upload the asset encrypted data
-        return assetDataSource.uploadAndPersistPrivateAsset(FileAsset(assetMimeType), encryptedData.data).flatMap { assetId ->
-            // Try to send the Asset Message
-            prepareAndSendAssetMessage(
-                conversationId,
-                assetRawData.size.toLong(),
-                assetName,
-                assetMimeType,
-                sha256,
-                otrKey,
-                assetId
-            ).flatMap {
-                Either.Right(Unit)
+        return if (encryptionSucceeded) {
+            // Calculate the SHA of the encrypted data
+            val encryptedData = kaliumFileSystem.source(encryptedDataPath).use {
+                it.buffer().use { bufferedFileSource ->
+                    bufferedFileSource.readByteArray()
+                }
             }
-        }.fold({
-            kaliumLogger.e("Something went wrong when sending the Asset Message")
-            SendAssetMessageResult.Failure(it)
-        }, {
-            SendAssetMessageResult.Success
-        })
+            val sha256 = calcSHA256(encryptedData)
+
+            // Upload the asset encrypted data
+            assetDataSource.uploadAndPersistPrivateAsset(FileAsset(assetMimeType), encryptedData).flatMap { assetId ->
+                // Try to send the Asset Message
+                prepareAndSendAssetMessage(
+                    conversationId,
+                    assetRawData.size.toLong(),
+                    assetName,
+                    assetMimeType,
+                    sha256,
+                    otrKey,
+                    assetId
+                ).flatMap {
+                    Either.Right(Unit)
+                }
+            }.fold({
+                kaliumLogger.e("Something went wrong when sending the Asset Message")
+                SendAssetMessageResult.Failure(it)
+            }, {
+                SendAssetMessageResult.Success
+            })
+        } else {
+            kaliumLogger.e("Something went wrong when encrypting the Asset Message")
+            SendAssetMessageResult.Failure(EncryptionFailure())
+        }
     }
 
     @Suppress("LongParameterList")

@@ -1,25 +1,42 @@
 package com.wire.kalium.cryptography.utils
 
+import com.wire.kalium.cryptography.kaliumLogger
+import okio.FileSystem
+import okio.Path
+import okio.buffer
+import okio.cipherSink
+import okio.cipherSource
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
+import kotlin.io.use
 
 internal class AESEncrypt {
 
-    internal fun encrypt(assetData: PlainData, key: AES256Key): EncryptedData {
-        // Fetch AES256 Algorithm
-        val cipher = Cipher.getInstance(KEY_ALGORITHM_CONFIGURATION)
+    internal fun encrypt(assetData: PlainData, key: AES256Key, outputPath: Path, kaliumFileSystem: FileSystem): Boolean {
+        return try {
+            // Fetch AES256 Algorithm
+            val cipher = Cipher.getInstance(KEY_ALGORITHM_CONFIGURATION)
 
-        // Parse Secret Key from our custom AES256Key model object
-        val symmetricAESKey = SecretKeySpec(key.data, 0, key.data.size, KEY_ALGORITHM)
+            // Parse Secret Key from our custom AES256Key model object
+            val symmetricAESKey = SecretKeySpec(key.data, 0, key.data.size, KEY_ALGORITHM)
 
-        // Do the encryption
-        cipher.init(Cipher.ENCRYPT_MODE, symmetricAESKey)
-        val cipherData = cipher.doFinal(assetData.data)
+            val iv = ByteArray(16)
 
-        // We prefix the first 16 bytes of the final encoded array with the Initialization Vector
-        return EncryptedData(cipher.iv + cipherData)
+            // Init the encryption
+            cipher.init(Cipher.ENCRYPT_MODE, symmetricAESKey, IvParameterSpec(iv))
+
+            // Encrypt and write the data to given outputPath
+            val cipherSink = kaliumFileSystem.sink(outputPath).cipherSink(cipher)
+            cipherSink.buffer().use {
+                it.write(assetData.data)
+            }
+            true
+        } catch (e: Exception) {
+            kaliumLogger.e("There was an error while encrypting the asset:\n $e}")
+            false
+        }
     }
 
     internal fun generateRandomAES256Key(): AES256Key {
@@ -32,19 +49,30 @@ internal class AESEncrypt {
 
 internal class AESDecrypt(private val secretKey: AES256Key) {
 
-    internal fun decrypt(encryptedData: EncryptedData): PlainData {
-        // Fetch AES256 Algorithm
-        val cipher = Cipher.getInstance(KEY_ALGORITHM_CONFIGURATION)
+    internal fun decrypt(encryptedDataPath: Path, outputPath: Path, kaliumFileSystem: FileSystem): Boolean {
+        return try {
+            // Fetch AES256 Algorithm
+            val cipher = Cipher.getInstance(KEY_ALGORITHM_CONFIGURATION)
 
-        // Parse Secret Key from our custom AES256Key model object
-        val symmetricAESKey = SecretKeySpec(secretKey.data, 0, secretKey.data.size, KEY_ALGORITHM)
+            // Parse Secret Key from our custom AES256Key model object
+            val symmetricAESKey = SecretKeySpec(secretKey.data, 0, secretKey.data.size, KEY_ALGORITHM)
 
-        // Do the decryption
-        cipher.init(Cipher.DECRYPT_MODE, symmetricAESKey, IvParameterSpec(ByteArray(16)))
-        val decryptedData = cipher.doFinal(encryptedData.data)
+            // Init the decryption
+            cipher.init(Cipher.DECRYPT_MODE, symmetricAESKey, IvParameterSpec(ByteArray(16)))
 
-        // We ignore the first 16 bytes as they are reserved for the Initialization Vector
-        return PlainData(decryptedData.copyOfRange(16, decryptedData.size))
+            // Decrypt and write the data to given outputPath
+            val source = kaliumFileSystem.source(encryptedDataPath)
+            val cipherSource = source.cipherSource(cipher)
+            cipherSource.buffer().use {
+                kaliumFileSystem.write(outputPath) {
+                    write(it.readByteArray())
+                }
+            }
+            true
+        } catch (e: Exception) {
+            kaliumLogger.e("There was an error while decrypting the asset:\n $e}")
+            false
+        }
     }
 }
 

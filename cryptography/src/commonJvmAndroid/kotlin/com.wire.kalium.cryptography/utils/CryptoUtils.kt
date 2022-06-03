@@ -1,6 +1,8 @@
 package com.wire.kalium.cryptography.utils
 
-import io.ktor.util.encodeBase64
+import io.ktor.util.*
+import okio.FileSystem
+import okio.Path
 import java.security.MessageDigest
 
 actual fun calcMd5(bytes: ByteArray): String = bytes.let {
@@ -15,8 +17,10 @@ actual fun calcSHA256(bytes: ByteArray): ByteArray {
     return md.digest(bytes)
 }
 
-actual fun encryptDataWithAES256(data: PlainData, key: AES256Key): EncryptedData = AESEncrypt().encrypt(data, key)
+actual fun encryptDataWithAES256(data: PlainData, key: AES256Key, encryptedDataPath: Path, kaliumFileSystem: FileSystem) =
+    AESEncrypt().encrypt(data, key, encryptedDataPath, kaliumFileSystem)
 
-actual fun decryptDataWithAES256(data: EncryptedData, secretKey: AES256Key): PlainData = AESDecrypt(secretKey).decrypt(data)
+actual fun decryptDataWithAES256(encryptedDataPath: Path, decryptedDataPath: Path, secretKey: AES256Key, kaliumFileSystem: FileSystem) =
+    AESDecrypt(secretKey).decrypt(encryptedDataPath, decryptedDataPath, kaliumFileSystem)
 
 actual fun generateRandomAES256Key(): AES256Key = AESEncrypt().generateRandomAES256Key()

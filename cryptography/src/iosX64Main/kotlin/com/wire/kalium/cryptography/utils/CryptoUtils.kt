@@ -3,6 +3,8 @@ package com.wire.kalium.cryptography.utils
 import kotlinx.cinterop.allocArrayOf
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.refTo
+import okio.FileSystem
+import okio.Path
 import platform.CoreCrypto.CC_MD5
 import platform.CoreCrypto.CC_MD5_DIGEST_LENGTH
 import platform.Foundation.NSData
@@ -25,11 +27,16 @@ private fun toData(data: ByteArray): NSData = memScoped {
     NSData.create(bytes = allocArrayOf(data), length = data.size.toULong())
 }
 
-actual fun encryptDataWithAES256(data: PlainData, key: AES256Key): EncryptedData {
+actual fun encryptDataWithAES256(data: PlainData, key: AES256Key, encryptedDataPath: Path, kaliumFileSystem: FileSystem): Boolean {
     TODO("Not yet implemented")
 }
 
-actual fun decryptDataWithAES256(data: EncryptedData, secretKey: AES256Key): PlainData {
+actual fun decryptDataWithAES256(
+    encryptedDataPath: Path,
+    decryptedDataPath: Path,
+    secretKey: AES256Key,
+    kaliumFileSystem: FileSystem
+): Boolean {
     TODO("Not yet implemented")
 }
 

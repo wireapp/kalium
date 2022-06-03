@@ -11,6 +11,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.utils.io.charsets.Charsets.UTF_8
 import io.ktor.utils.io.core.toByteArray
+import okio.Source
 
 class AssetApiImpl internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : AssetApi {
 
@@ -21,7 +22,19 @@ class AssetApiImpl internal constructor(private val authenticatedNetworkClient: 
      * @param assetKey the asset identifier
      * @param assetToken the asset token, can be null in case of public assets
      */
+    @Deprecated(message = "Needs to add assetKeyDomain parameter too", replaceWith = ReplaceWith("downloadAsset"))
     override suspend fun downloadAsset(assetKey: String, assetToken: String?): NetworkResponse<ByteArray> = wrapKaliumResponse {
+        httpClient.get("$PATH_PUBLIC_ASSETS/$assetKey") {
+            assetToken?.let { header(HEADER_ASSET_TOKEN, it) }
+        }
+    }
+
+    /**
+     * Downloads an asset
+     * @param assetKey the asset identifier
+     * @param assetToken the asset token, can be null in case of public assets
+     */
+    override suspend fun downloadAsset(assetKey: String, assetKeyDomain: String, assetToken: String?): NetworkResponse<Source> = wrapKaliumResponse {
         httpClient.get("$PATH_PUBLIC_ASSETS/$assetKey") {
             assetToken?.let { header(HEADER_ASSET_TOKEN, it) }
         }

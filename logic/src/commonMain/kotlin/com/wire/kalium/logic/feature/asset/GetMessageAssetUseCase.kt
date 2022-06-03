@@ -37,10 +37,10 @@ internal class GetMessageAssetUseCaseImpl(
             kaliumLogger.e("There was an error retrieving the asset message $messageId")
             MessageAssetResult.Failure(it)
         }, { message ->
-            val (assetKey, assetToken, encryptionKey) = when (val content = message.content) {
+            val assetDTO = when (val content = message.content) {
                 is MessageContent.Asset -> {
                     with(content.value.remoteData) {
-                        Triple(assetId, assetToken, otrKey)
+                        AssetDTO(content.value.name ?: "", assetId, assetDomain, assetToken, otrKey)
                     }
                 }
                 // This should never happen
@@ -48,11 +48,11 @@ internal class GetMessageAssetUseCaseImpl(
                     CoreFailure.Unknown(IllegalStateException("The message associated to this id, was not an asset message"))
                 )
             }
-            assetDataSource.downloadPrivateAsset(assetKey = assetKey, assetToken = assetToken).fold({
-                kaliumLogger.e("There was an error downloading asset with id => $assetKey")
+            assetDataSource.downloadPrivateAsset(assetKey = assetDTO.assetKey, assetKeyDomain = assetDTO.assetKeyDomain, assetToken = assetDTO.assetToken).fold({
+                kaliumLogger.e("There was an error downloading asset with id => $assetDTO.assetKey")
                 MessageAssetResult.Failure(it)
             }, { encodedAsset ->
-                val rawAsset = decryptDataWithAES256(EncryptedData(encodedAsset), AES256Key(encryptionKey)).data
+                val rawAsset = decryptDataWithAES256(EncryptedData(encodedAsset), AES256Key(assetDTO.encryptionKey)).data
                 MessageAssetResult.Success(rawAsset)
             })
         })
