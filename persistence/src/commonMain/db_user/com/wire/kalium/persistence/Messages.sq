@@ -119,10 +119,10 @@ INSERT INTO MessageAssetContent(message_id, conversation_id, asset_size, asset_n
 VALUES(?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(message_id, conversation_id) DO UPDATE SET
 message_id = excluded.message_id,
-asset_size = excluded.asset_size NOT NULL,
-asset_name = excluded.asset_name NOT NULL,
-asset_mime_type = excluded.asset_mime_type NOT NULL,
-asset_download_status = excluded.asset_download_status NOT NULL,
+asset_size = excluded.asset_size,
+asset_name = excluded.asset_name,
+asset_mime_type = excluded.asset_mime_type,
+asset_download_status = excluded.asset_download_status,
 asset_otr_key = excluded.asset_otr_key,
 asset_sha256 = excluded.asset_sha256,
 asset_id = excluded.asset_id,
