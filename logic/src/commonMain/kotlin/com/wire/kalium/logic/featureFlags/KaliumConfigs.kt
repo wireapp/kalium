@@ -2,15 +2,11 @@ package com.wire.kalium.logic.featureFlags
 
 data class KaliumConfigs(
     val isChangeEmailEnabled: Boolean = false,
-    val isMarketingCommunicationEnabled: Boolean = false,
     val isSSoEnabled: Boolean = false,
     val isAccountCreationEnabled: Boolean = false,
     val blockOnJailbreakOrRoot: Boolean = false,
     val blockOnPasswordPolicy: Boolean = false,
-    val forceAppLock: Boolean = false,
     val forceConstantBitrateCalls: Boolean = false,
-    val forceHideScreenContent: Boolean = false,
-    val forcePrivateKeyboard: Boolean = false,
     val keepWebSocketOn: Boolean = false,
     val wipeOnCookieInvalid: Boolean = false,
     val submitCrashReports: Boolean = false,
