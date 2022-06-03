@@ -12,7 +12,8 @@ data class MessageEntity(
     val senderUserId: QualifiedIDEntity,
     val senderClientId: String,
     val status: Status,
-    val visibility: Visibility = Visibility.VISIBLE
+    val editStatus: EditStatus,
+    val visibility: Visibility = Visibility.VISIBLE,
 ) {
     sealed class MessageEntityContent {
         data class TextMessageContent(val messageBody: String) : MessageEntityContent()
@@ -41,8 +42,40 @@ data class MessageEntity(
         PENDING, SENT, READ, FAILED
     }
 
+    sealed class EditStatus {
+        object NotEdited : EditStatus()
+        data class Edited(val lastTimeStamp: String) : EditStatus()
+    }
+
     enum class DownloadStatus {
-        NOT_DOWNLOADED, IN_PROGRESS, DOWNLOADED, FAILED
+        /**
+         * There was no attempt done to fetch the asset's data from remote (server) storage.
+         */
+        NOT_DOWNLOADED,
+
+        /**
+         * The asset is currently being downloaded and will be saved internally after a successful download
+         * @see SAVED_INTERNALLY
+         */
+        IN_PROGRESS,
+
+        /**
+         * The asset was downloaded and saved in the internal storage, that should be only readable by this Kalium client.
+         */
+        SAVED_INTERNALLY,
+
+        /**
+         * The asset was downloaded internally and saved in an external storage, readable by other software on the machine that this Kalium
+         * client is currently running on.
+         *
+         * _.e.g_: Asset was saved in Downloads, Desktop or other user-chosen directory.
+         */
+        SAVED_EXTERNALLY,
+
+        /**
+         * The last attempt at fetching and saving this asset's data failed.
+         */
+        FAILED
     }
 
     enum class ContentType {
@@ -58,11 +91,13 @@ interface MessageDAO {
     suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity)
     suspend fun updateAssetDownloadStatus(downloadStatus: MessageEntity.DownloadStatus, id: String, conversationId: QualifiedIDEntity)
     suspend fun markMessageAsDeleted(id: String, conversationsId: QualifiedIDEntity)
+    suspend fun markAsEdited(editTimeStamp: String,conversationId: QualifiedIDEntity, id: String)
     suspend fun deleteAllMessages()
     suspend fun insertMessage(message: MessageEntity)
     suspend fun insertMessages(messages: List<MessageEntity>)
     suspend fun updateMessage(message: MessageEntity)
     suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity)
+    suspend fun updateMessageId(conversationId: QualifiedIDEntity, oldMessageId: String, newMessageId: String)
     suspend fun updateMessageDate(date: String, id: String, conversationId: QualifiedIDEntity)
     suspend fun updateMessagesAddMillisToDate(millis: Long, conversationId: QualifiedIDEntity, status: MessageEntity.Status)
     suspend fun getMessagesFromAllConversations(limit: Int, offset: Int): Flow<List<MessageEntity>>
@@ -70,4 +105,9 @@ interface MessageDAO {
     suspend fun getMessagesByConversation(conversationId: QualifiedIDEntity, limit: Int, offset: Int): Flow<List<MessageEntity>>
     suspend fun getMessagesByConversationAfterDate(conversationId: QualifiedIDEntity, date: String): Flow<List<MessageEntity>>
     suspend fun getAllPendingMessagesFromUser(userId: UserIDEntity): List<MessageEntity>
+    suspend fun updateTextMessageContent(
+        conversationId: QualifiedIDEntity,
+        messageId: String,
+        newTextContent: MessageEntity.MessageEntityContent.TextMessageContent
+    )
 }

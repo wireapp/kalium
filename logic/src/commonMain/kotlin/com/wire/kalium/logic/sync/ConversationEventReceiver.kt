@@ -24,13 +24,16 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.sync.handler.MessageTextEditHandler
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.logic.wrapCryptoRequest
 import io.ktor.utils.io.core.toByteArray
 
+interface ConversationEventReceiver: EventReceiver<Event.Conversation>
+
 // Suppressed as it's an old issue
 @Suppress("LongParameterList")
-class ConversationEventReceiver(
+class ConversationEventReceiverImpl(
     private val proteusClient: ProteusClient,
     private val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
@@ -38,9 +41,10 @@ class ConversationEventReceiver(
     private val userRepository: UserRepository,
     private val callManagerImpl: Lazy<CallManager>,
     private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(),
+    private val editTextHandler: MessageTextEditHandler,
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
-    private val idMapper: IdMapper = MapperProvider.idMapper()
-) : EventReceiver<Event.Conversation> {
+    private val idMapper: IdMapper = MapperProvider.idMapper(),
+) : ConversationEventReceiver {
 
     override suspend fun onEvent(event: Event.Conversation) {
         when (event) {
@@ -70,7 +74,8 @@ class ConversationEventReceiver(
                     date = event.time,
                     senderUserId = event.senderUserId,
                     senderClientId = event.senderClientId,
-                    status = Message.Status.SENT
+                    status = Message.Status.SENT,
+                    editStatus = Message.EditStatus.NotEdited,
                 )
 
                 processMessage(message)
@@ -159,7 +164,8 @@ class ConversationEventReceiver(
                     .onSuccess { persistedMessage ->
                         // Check the second asset message is from the same original sender
                         if (isSenderVerified(persistedMessage.id, persistedMessage.conversationId, message.senderUserId)) {
-                            // The asset message received contains the asset decryption keys, so update the preview message persisted previously
+                            // The asset message received contains the asset decryption keys,
+                            // so update the preview message persisted previously
                             updateAssetMessage(persistedMessage, message.content.value.remoteData)?.let {
                                 messageRepository.persistMessage(it)
                             }
@@ -194,6 +200,7 @@ class ConversationEventReceiver(
                     content = message.content
                 )
             }
+            is MessageContent.TextEdited -> editTextHandler.handle(message,message.content)
             is MessageContent.Unknown -> kaliumLogger.i(message = "Unknown Message received: $message")
         }
 

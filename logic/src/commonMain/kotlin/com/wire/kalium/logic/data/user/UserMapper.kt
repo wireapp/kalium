@@ -1,6 +1,8 @@
 package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.publicuser.model.OtherUser
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.TeamId
 import com.wire.kalium.network.api.model.AssetSizeDTO
 import com.wire.kalium.network.api.model.UserAssetDTO
@@ -11,6 +13,7 @@ import com.wire.kalium.network.api.model.getPreviewAssetOrNull
 import com.wire.kalium.network.api.teams.TeamsApi
 import com.wire.kalium.network.api.user.details.UserProfileDTO
 import com.wire.kalium.network.api.user.self.UserUpdateRequest
+import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity as UserIdEntity
@@ -20,6 +23,8 @@ interface UserMapper {
     fun fromApiModelToDaoModel(userProfileDTO: UserProfileDTO): UserEntity
     fun fromApiModelToDaoModel(userDTO: UserDTO): UserEntity
     fun fromDaoModelToSelfUser(userEntity: UserEntity): SelfUser
+    fun fromDaoModelToOtherUser(userEntity: UserEntity): OtherUser
+
     /**
      * Maps the user data to be updated. if the parameters [newName] [newAccent] [newAssetId] are nulls,
      * it indicates that not updation should be made.
@@ -34,11 +39,12 @@ interface UserMapper {
         teamMemberDTO: TeamsApi.TeamMemberDTO,
         userDomain: String
     ): UserEntity
-    fun fromDaoConnectionStateToUser(connectionState: UserEntity.ConnectionState): ConnectionState
-    fun fromUserConnectionStateToDao(connectionState: ConnectionState): UserEntity.ConnectionState
+
+    fun fromDaoConnectionStateToUser(connectionState: ConnectionEntity.State): ConnectionState
+    fun fromUserConnectionStateToDao(connectionState: ConnectionState): ConnectionEntity.State
 }
 
-internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
+internal class UserMapperImpl(private val idMapper: IdMapper = MapperProvider.idMapper()) : UserMapper {
 
     override fun fromDtoToSelfUser(userDTO: UserDTO): SelfUser = with(userDTO) {
         SelfUser(
@@ -70,6 +76,19 @@ internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
     }
 
     override fun fromDaoModelToSelfUser(userEntity: UserEntity) = SelfUser(
+        idMapper.fromDaoModel(userEntity.id),
+        userEntity.name,
+        userEntity.handle,
+        userEntity.email,
+        userEntity.phone,
+        userEntity.accentId,
+        userEntity.team,
+        fromDaoConnectionStateToUser(connectionState = userEntity.connectionStatus),
+        userEntity.previewAssetId,
+        userEntity.completeAssetId
+    )
+
+    override fun fromDaoModelToOtherUser(userEntity: UserEntity) = OtherUser(
         idMapper.fromDaoModel(userEntity.id),
         userEntity.name,
         userEntity.handle,
@@ -147,32 +166,32 @@ internal class UserMapperImpl(private val idMapper: IdMapper) : UserMapper {
             phone = null,
             accentId = 1,
             team = teamId,
-            connectionStatus = UserEntity.ConnectionState.ACCEPTED,
+            connectionStatus = ConnectionEntity.State.ACCEPTED,
             previewAssetId = null,
             completeAssetId = null
         )
 
-    override fun fromDaoConnectionStateToUser(connectionState: UserEntity.ConnectionState): ConnectionState =
-        when(connectionState) {
-            UserEntity.ConnectionState.NOT_CONNECTED -> ConnectionState.NOT_CONNECTED
-            UserEntity.ConnectionState.PENDING -> ConnectionState.PENDING
-            UserEntity.ConnectionState.SENT -> ConnectionState.SENT
-            UserEntity.ConnectionState.BLOCKED -> ConnectionState.BLOCKED
-            UserEntity.ConnectionState.IGNORED -> ConnectionState.IGNORED
-            UserEntity.ConnectionState.CANCELLED -> ConnectionState.CANCELLED
-            UserEntity.ConnectionState.MISSING_LEGALHOLD_CONSENT -> ConnectionState.MISSING_LEGALHOLD_CONSENT
-            UserEntity.ConnectionState.ACCEPTED -> ConnectionState.ACCEPTED
+    override fun fromDaoConnectionStateToUser(connectionState: ConnectionEntity.State): ConnectionState =
+        when (connectionState) {
+            ConnectionEntity.State.NOT_CONNECTED -> ConnectionState.NOT_CONNECTED
+            ConnectionEntity.State.PENDING -> ConnectionState.PENDING
+            ConnectionEntity.State.SENT -> ConnectionState.SENT
+            ConnectionEntity.State.BLOCKED -> ConnectionState.BLOCKED
+            ConnectionEntity.State.IGNORED -> ConnectionState.IGNORED
+            ConnectionEntity.State.CANCELLED -> ConnectionState.CANCELLED
+            ConnectionEntity.State.MISSING_LEGALHOLD_CONSENT -> ConnectionState.MISSING_LEGALHOLD_CONSENT
+            ConnectionEntity.State.ACCEPTED -> ConnectionState.ACCEPTED
         }
 
-    override fun fromUserConnectionStateToDao(connectionState: ConnectionState): UserEntity.ConnectionState =
-        when(connectionState) {
-            ConnectionState.NOT_CONNECTED -> UserEntity.ConnectionState.NOT_CONNECTED
-            ConnectionState.PENDING -> UserEntity.ConnectionState.PENDING
-            ConnectionState.SENT -> UserEntity.ConnectionState.SENT
-            ConnectionState.BLOCKED -> UserEntity.ConnectionState.BLOCKED
-            ConnectionState.IGNORED -> UserEntity.ConnectionState.IGNORED
-            ConnectionState.CANCELLED -> UserEntity.ConnectionState.CANCELLED
-            ConnectionState.MISSING_LEGALHOLD_CONSENT -> UserEntity.ConnectionState.MISSING_LEGALHOLD_CONSENT
-            ConnectionState.ACCEPTED -> UserEntity.ConnectionState.ACCEPTED
+    override fun fromUserConnectionStateToDao(connectionState: ConnectionState): ConnectionEntity.State =
+        when (connectionState) {
+            ConnectionState.NOT_CONNECTED -> ConnectionEntity.State.NOT_CONNECTED
+            ConnectionState.PENDING -> ConnectionEntity.State.PENDING
+            ConnectionState.SENT -> ConnectionEntity.State.SENT
+            ConnectionState.BLOCKED -> ConnectionEntity.State.BLOCKED
+            ConnectionState.IGNORED -> ConnectionEntity.State.IGNORED
+            ConnectionState.CANCELLED -> ConnectionEntity.State.CANCELLED
+            ConnectionState.MISSING_LEGALHOLD_CONSENT -> ConnectionEntity.State.MISSING_LEGALHOLD_CONSENT
+            ConnectionState.ACCEPTED -> ConnectionEntity.State.ACCEPTED
         }
 }

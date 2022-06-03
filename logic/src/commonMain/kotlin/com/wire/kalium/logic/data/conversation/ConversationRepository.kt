@@ -28,7 +28,6 @@ import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.emptyFlow
@@ -167,9 +166,9 @@ class ConversationDataSource(
         conversationDAO.getConversationByQualifiedID(idMapper.toDaoModel(conversationID))
             .filterNotNull()
             .map(conversationMapper::fromDaoModel)
-            .flatMapLatest(::getDetailsFlowConversation)
+            .flatMapLatest(::getConversationDetailsFlow)
 
-    private suspend fun getDetailsFlowConversation(conversation: Conversation): Flow<ConversationDetails> =
+    private suspend fun getConversationDetailsFlow(conversation: Conversation): Flow<ConversationDetails> =
         when (conversation.type) {
             Conversation.Type.SELF -> flowOf(ConversationDetails.Self(conversation))
             Conversation.Type.GROUP ->
@@ -180,6 +179,7 @@ class ConversationDataSource(
                     )
                 )
             // TODO(connection-requests): Handle requests instead of filtering them out
+            Conversation.Type.CONNECTION_PENDING,
             Conversation.Type.ONE_ON_ONE -> {
                 val selfUser = userRepository.getSelfUser().first()
 
@@ -188,17 +188,24 @@ class ConversationDataSource(
                         members.firstOrNull { itemId -> itemId != selfUser.id }
                     }
                     .fold({
-                    // TODO: How to Handle failure when dealing with flows?
-                    throw IOException("Failure to fetch other user of 1:1 Conversation")
-                }, { otherUserIdOrNull ->
+                        when (it) {
+                            StorageFailure.DataNotFound -> {
+                                kaliumLogger.e("DataNotFound when fetching conversation members: $it")
+                            }
+                            is StorageFailure.Generic -> {
+                                kaliumLogger.e("Failure getting other 1:1 user for $conversation", it.rootCause)
+                            }
+                        }
+                        emptyFlow()
+                    }, { otherUserIdOrNull ->
                         otherUserIdOrNull?.let {
                             userRepository.getKnownUser(it)
-                        }?: run {
+                        } ?: run {
                             emptyFlow()
                         }
-                }).filterNotNull().map { otherUser ->
-                    conversationMapper.toConversationDetailsOneToOne(conversation, otherUser, selfUser)
-                }
+                    }).filterNotNull().map { otherUser ->
+                        conversationMapper.toConversationDetailsOneToOne(conversation, otherUser, selfUser)
+                    }
             }
         }
 

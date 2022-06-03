@@ -2,7 +2,10 @@ package com.wire.kalium.logic.data.event
 
 import app.cash.turbine.test
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.connection.ConnectionMapperImpl
+import com.wire.kalium.logic.data.connection.ConnectionStatusMapperImpl
 import com.wire.kalium.logic.data.id.IdMapperImpl
+import com.wire.kalium.logic.data.user.UserMapperImpl
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
@@ -47,139 +50,14 @@ class EventRepositoryTest {
     private val clientRepository: ClientRepository = mock(classOf<ClientRepository>())
 
     @Mock
-    private val eventMapper: EventMapper = EventMapper(IdMapperImpl())
+    private val eventMapper: EventMapper =
+        EventMapper(IdMapperImpl(), ConnectionMapperImpl(IdMapperImpl(), ConnectionStatusMapperImpl(), UserMapperImpl()))
 
     private lateinit var eventRepository: EventRepository
 
     @BeforeTest
     fun setup() {
         eventRepository = EventDataSource(notificationApi, eventInfoStorage, clientRepository, eventMapper)
-    }
-
-    @Test
-    fun givenNoEventWasProcessedBefore_whenGettingEvents_thenGetAllNotificationsIsCalled() = runTest {
-        val firstPage = EventResponse(
-            "eventId",
-            listOf()
-        )
-        val notificationsPageResponse = NotificationResponse("time", false, listOf(firstPage))
-
-        given(eventInfoStorage)
-            .getter(eventInfoStorage::lastProcessedId)
-            .whenInvoked()
-            .thenReturn(null)
-
-        given(notificationApi)
-            .suspendFunction(notificationApi::getAllNotifications)
-            .whenInvokedWith(any(), any())
-            .thenReturn(NetworkResponse.Success(notificationsPageResponse, mapOf(), 200))
-
-        given(notificationApi)
-            .suspendFunction(notificationApi::listenToLiveEvents)
-            .whenInvokedWith(any())
-            .thenReturn(flowOf())
-
-        val clientId = TestClient.CLIENT_ID
-        given(clientRepository)
-            .function(clientRepository::currentClientId)
-            .whenInvoked()
-            .thenReturn(Either.Right(clientId))
-
-        eventRepository.events().collect()
-
-        verify(notificationApi)
-            .suspendFunction(notificationApi::getAllNotifications)
-            .with(any(), eq(clientId.value))
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenSomeEventWasProcessedBefore_whenGettingEvents_thenGetByBatchStartingOnLastProcessedID() = runTest {
-        val lastProcessedEventId = "someNotificationID"
-        val firstPage = EventResponse(
-            "eventId",
-            listOf(
-                EventContentDTO.Conversation.NewMessageDTO(
-                    TestConversation.NETWORK_ID,
-                    UserId("value", "domain"),
-                    "eventTime",
-                    MessageEventData("text", "senderId", "recipient")
-                )
-            )
-        )
-        val notificationsPageResponse = NotificationResponse("time", false, listOf(firstPage))
-
-        given(eventInfoStorage)
-            .getter(eventInfoStorage::lastProcessedId)
-            .whenInvoked()
-            .thenReturn(lastProcessedEventId)
-
-        given(notificationApi)
-            .suspendFunction(notificationApi::notificationsByBatch)
-            .whenInvokedWith(any(), any(), any())
-            .thenReturn(NetworkResponse.Success(notificationsPageResponse, mapOf(), 200))
-
-        given(notificationApi)
-            .suspendFunction(notificationApi::listenToLiveEvents)
-            .whenInvokedWith(any())
-            .thenReturn(flowOf())
-
-        val clientId = TestClient.CLIENT_ID
-        given(clientRepository)
-            .function(clientRepository::currentClientId)
-            .whenInvoked()
-            .thenReturn(Either.Right(clientId))
-
-        eventRepository.events().collect()
-
-        verify(notificationApi)
-            .suspendFunction(notificationApi::notificationsByBatch)
-            .with(any(), eq(clientId.value), eq(lastProcessedEventId))
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenPendingEventsAndLiveEvents_whenGettingEvents_thenReturnPendingFirstFollowedByLive() = runTest {
-        val pendingEventPayload = EventContentDTO.Conversation.NewMessageDTO(
-            TestConversation.NETWORK_ID,
-            UserId("value", "domain"),
-            "eventTime",
-            MessageEventData("text", "senderId", "recipient")
-        )
-        val pendingEvent = EventResponse("pendingEventId", listOf(pendingEventPayload))
-        val liveEvent = pendingEvent.copy(id = "liveEventId")
-        val notificationsPageResponse = NotificationResponse("time", false, listOf(pendingEvent))
-
-        given(eventInfoStorage)
-            .getter(eventInfoStorage::lastProcessedId)
-            .whenInvoked()
-            .thenReturn("someNotificationId")
-
-        given(notificationApi)
-            .suspendFunction(notificationApi::notificationsByBatch)
-            .whenInvokedWith(any(), any(), any())
-            .thenReturn(NetworkResponse.Success(notificationsPageResponse, mapOf(), 200))
-
-        given(notificationApi)
-            .suspendFunction(notificationApi::listenToLiveEvents)
-            .whenInvokedWith(any())
-            .thenReturn(flowOf(liveEvent))
-
-        val clientId = TestClient.CLIENT_ID
-        given(clientRepository)
-            .function(clientRepository::currentClientId)
-            .whenInvoked()
-            .thenReturn(Either.Right(clientId))
-
-        eventRepository.events().test {
-            awaitItem().shouldSucceed {
-                assertEquals(pendingEvent.id, it.id)
-            }
-            awaitItem().shouldSucceed {
-                assertEquals(liveEvent.id, it.id)
-            }
-            awaitComplete()
-        }
     }
 
     @Test

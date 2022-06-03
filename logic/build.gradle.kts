@@ -1,5 +1,3 @@
-import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet
-
 plugins {
     Plugins.androidLibrary(this)
     Plugins.multiplatform(this)
@@ -17,10 +15,14 @@ android {
         minSdk = Android.Sdk.min
         targetSdk = Android.Sdk.target
         consumerProguardFiles("consumer-proguard-rules.pro")
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
+    }
+    packagingOptions {
+        resources.pickFirsts.add("google/protobuf/*.proto")
     }
 }
 
@@ -43,7 +45,8 @@ kotlin {
                 implementation(project(":persistence"))
                 implementation(project(":protobuf"))
                 api(project(":logger"))
-                implementation(project(":calling"))
+                api(project(":calling"))
+                implementation(project(":util"))
 
                 // coroutines
                 implementation(Dependencies.Coroutines.core) {
@@ -77,7 +80,12 @@ kotlin {
                 implementation(Dependencies.Android.work)
             }
         }
-        val androidTest by getting
+        val androidTest by getting {
+            dependencies {
+                implementation(Dependencies.AndroidInstruments.androidTestRunner)
+                implementation(Dependencies.AndroidInstruments.androidTestRules)
+            }
+        }
     }
 }
 

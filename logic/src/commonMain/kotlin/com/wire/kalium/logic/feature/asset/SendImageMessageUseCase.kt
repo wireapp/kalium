@@ -118,7 +118,8 @@ internal class SendImageMessageUseCaseImpl(
                 date = Clock.System.now().toString(),
                 senderUserId = selfUser.id,
                 senderClientId = currentClientId,
-                status = Message.Status.PENDING
+                status = Message.Status.PENDING,
+                editStatus = Message.EditStatus.NotEdited
             )
             messageRepository.persistMessage(message)
         }.flatMap {
@@ -139,7 +140,7 @@ internal class SendImageMessageUseCaseImpl(
         imgHeight: Int
     ): AssetContent {
         return AssetContent(
-            sizeInBytes = dataSize, 
+            sizeInBytes = dataSize,
             name = imageName,
             mimeType = ImageAsset.JPEG.name,
             metadata = AssetContent.AssetMetadata.Image(imgWidth, imgHeight),
@@ -151,8 +152,9 @@ internal class SendImageMessageUseCaseImpl(
                 assetDomain = null,  // TODO(assets): fill in the assetDomain, it's returned by the BE when uploading an asset.
                 assetToken = assetId.assetToken
             ),
-            // Asset is already in our local storage and therefore accessible
-            downloadStatus = Message.DownloadStatus.DOWNLOADED
+            // Asset is already in our local storage and therefore accessible but until we don't save it to external storage the asset
+            // will only be treated as "SAVED_INTERNALLY"
+            downloadStatus = Message.DownloadStatus.SAVED_INTERNALLY
         )
     }
 }

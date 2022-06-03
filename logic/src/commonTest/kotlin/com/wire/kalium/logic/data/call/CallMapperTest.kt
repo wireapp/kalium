@@ -2,6 +2,7 @@ package com.wire.kalium.logic.data.call
 
 import com.wire.kalium.calling.CallTypeCalling
 import com.wire.kalium.calling.ConversationTypeCalling
+import com.wire.kalium.calling.VideoStateCalling
 import com.wire.kalium.logic.data.id.QualifiedID
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -33,6 +34,21 @@ class CallMapperTest {
 
         assertEquals(ConversationTypeCalling.OneOnOne, oneOnOneMap)
         assertEquals(ConversationTypeCalling.Conference, conferenceMap)
+    }
+
+    @Test
+    fun givenVideoStates_whenMappingWithToVideoStateCalling_thenReturnsTheCorrespondentValues() = runTest {
+        val stopped = callMapper.toVideoStateCalling(videoState = VideoState.STOPPED)
+        val started = callMapper.toVideoStateCalling(videoState = VideoState.STARTED)
+        val badConnection = callMapper.toVideoStateCalling(videoState = VideoState.BAD_CONNECTION)
+        val paused = callMapper.toVideoStateCalling(videoState = VideoState.PAUSED)
+        val screenshare = callMapper.toVideoStateCalling(videoState = VideoState.SCREENSHARE)
+
+        assertEquals(VideoStateCalling.STOPPED, stopped)
+        assertEquals(VideoStateCalling.STARTED, started)
+        assertEquals(VideoStateCalling.BAD_CONNECTION, badConnection)
+        assertEquals(VideoStateCalling.PAUSED, paused)
+        assertEquals(VideoStateCalling.SCREENSHARE, screenshare)
     }
 
     @Test

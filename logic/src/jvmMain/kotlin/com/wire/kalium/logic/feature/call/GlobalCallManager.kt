@@ -9,12 +9,15 @@ import com.wire.kalium.logic.feature.message.MessageSender
 
 actual class GlobalCallManager {
 
+    @Suppress("LongParameterList")
     actual fun getCallManagerForClient(
         userId: QualifiedID,
         callRepository: CallRepository,
         userRepository: UserRepository,
         clientRepository: ClientRepository,
-        callMapper: CallMapper,
-        messageSender: MessageSender
+        messageSender: MessageSender,
+        callMapper: CallMapper
     ): CallManager = CallManagerImpl()
+
+    actual fun getFlowManager(): FlowManagerService = FlowManagerServiceImpl()
 }
