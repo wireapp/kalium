@@ -62,7 +62,7 @@ data class SelfUser(
     val completePicture: UserAssetId?
 ) : User()
 
-typealias UserAssetId = String
+typealias UserAssetId = QualifiedID
 
 fun String.toUserId(): UserId {
     if (contains(VALUE_DOMAIN_SEPARATOR)) {
