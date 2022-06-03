@@ -14,7 +14,7 @@ import com.wire.kalium.persistence.dao.UserEntity
 interface PublicUserMapper {
     fun fromDaoModelToPublicUser(userEntity: UserEntity): OtherUser
     fun fromUserDetailResponse(userDetailResponse: UserProfileDTO): OtherUser
-    fun fromUserApiToEntity(userDetailResponse: UserProfileDTO): UserEntity
+    fun fromUserApiToEntity(userDetailResponse: UserProfileDTO, connectionState: ConnectionEntity.State): UserEntity
     fun fromUserDetailResponses(userDetailResponse: List<UserProfileDTO>): List<OtherUser>
     fun fromDaoConnectionStateToUser(connectionState: ConnectionEntity.State): ConnectionState
     fun fromPublicUserToLocalNotificationMessageAuthor(author: OtherUser?): LocalNotificationMessageAuthor
@@ -46,7 +46,7 @@ class PublicUserMapperImpl(private val idMapper: IdMapper) : PublicUserMapper {
         completePicture = userDetailResponse.assets.getCompleteAssetOrNull()?.key,
     )
 
-    override fun fromUserApiToEntity(userDetailResponse: UserProfileDTO) = UserEntity(
+    override fun fromUserApiToEntity(userDetailResponse: UserProfileDTO, connectionState: ConnectionEntity.State) = UserEntity(
         id = idMapper.fromApiToDao(userDetailResponse.id),
         name = userDetailResponse.name,
         handle = userDetailResponse.handle,
@@ -55,7 +55,8 @@ class PublicUserMapperImpl(private val idMapper: IdMapper) : PublicUserMapper {
         accentId = userDetailResponse.accentId,
         team = userDetailResponse.teamId,
         previewAssetId = userDetailResponse.assets.getPreviewAssetOrNull()?.key,
-        completeAssetId = userDetailResponse.assets.getCompleteAssetOrNull()?.key
+        completeAssetId = userDetailResponse.assets.getCompleteAssetOrNull()?.key,
+        connectionStatus = connectionState
     )
 
     override fun fromUserDetailResponses(userDetailResponse: List<UserProfileDTO>) =
