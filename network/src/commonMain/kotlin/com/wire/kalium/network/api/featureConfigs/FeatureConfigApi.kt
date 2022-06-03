@@ -17,7 +17,7 @@ class FeatureConfigApiImpl internal constructor(private val authenticatedNetwork
         wrapKaliumResponse { httpClient.get(FILE_SHARING) }
 
 
-    private companion object {
+    companion object {
         const val FEATURE_CONFIG = "feature-config/"
         const val FILE_SHARING = "$FEATURE_CONFIG/fileSharing"
     }
