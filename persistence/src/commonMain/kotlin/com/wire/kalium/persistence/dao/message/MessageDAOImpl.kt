@@ -44,10 +44,14 @@ class MessageMapper {
             senderUserId = msg.sender_user_id,
             senderClientId = msg.sender_client_id,
             status = msg.status,
-            editStatus = MessageEntity.EditStatus.NotEdited,
+            editStatus = mapEditStatus(msg.last_edit_timeStamp),
             visibility = msg.visibility
         )
     }
+
+    private fun mapEditStatus(lastEditTimestamp: String?) =
+        lastEditTimestamp?.let { MessageEntity.EditStatus.Edited(it) }
+            ?: MessageEntity.EditStatus.NotEdited
 }
 
 class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
