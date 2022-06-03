@@ -65,6 +65,9 @@ subprojects {
         if (name != "jvmTest" && name != "jsTest") {
             the<kotlinx.kover.api.KoverTaskExtension>().apply {
                 isDisabled = true
+            }
+        } else {
+            the<kotlinx.kover.api.KoverTaskExtension>().apply {
                 includes = listOf("com.wire.kalium.*")
             }
         }
