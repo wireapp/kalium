@@ -4,13 +4,13 @@ import com.sun.jna.Pointer
 import com.wire.kalium.calling.CallTypeCalling
 import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.types.Handle
-import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.calling.types.Uint32_t
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.call.ConversationType
+import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
@@ -18,6 +18,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.call.scenario.OnAnsweredCall
 import com.wire.kalium.logic.feature.call.scenario.OnCloseCall
 import com.wire.kalium.logic.feature.call.scenario.OnConfigRequest
@@ -32,26 +33,31 @@ import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.util.toInt
 import com.wire.kalium.logic.util.toTimeInMillis
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
+@Suppress("LongParameterList")
 actual class CallManagerImpl(
     private val calling: Calling,
     private val callRepository: CallRepository,
     private val userRepository: UserRepository,
     private val clientRepository: ClientRepository,
-    private val callMapper: CallMapper,
-    private val messageSender: MessageSender
+    private val messageSender: MessageSender,
+    kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    private val callMapper: CallMapper = MapperProvider.callMapper()
 ) : CallManager {
 
     private val job = SupervisorJob() // TODO(calling): clear job method
-    private val scope = CoroutineScope(job + Dispatchers.IO)
+    private val scope = CoroutineScope(job + kaliumDispatchers.io)
     private val deferredHandle: Deferred<Handle> = startHandleAsync()
 
     private val strongReferences = mutableListOf<Any>()
@@ -77,12 +83,17 @@ actual class CallManagerImpl(
     private fun startHandleAsync() = scope.async(start = CoroutineStart.LAZY) {
         val selfUserId = userId.await().toString()
         val selfClientId = clientId.await().value
+
+        val waitInitializationJob = Job()
+
         val handle = calling.wcall_create(
             userId = selfUserId,
             clientId = selfClientId,
             readyHandler = { version: Int, arg: Pointer? ->
                 callingLogger.i("$TAG -> readyHandler")
                 onCallingReady()
+                waitInitializationJob.complete()
+                Unit
             }.keepingStrongReference(),
             //TODO(refactor): inject all of these CallbackHandlers in class constructor
             sendHandler = OnSendOTR(deferredHandle, calling, selfUserId, selfClientId, messageSender, scope).keepingStrongReference(),
@@ -105,6 +116,7 @@ actual class CallManagerImpl(
             arg = null
         )
         callingLogger.d("$TAG - wcall_create() called")
+        waitInitializationJob.join()
         handle
     }
 

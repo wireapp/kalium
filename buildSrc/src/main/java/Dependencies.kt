@@ -37,7 +37,7 @@ object Versions {
     const val protobufLite = "3.19.4"
     const val pbandk = "0.13.0"
     const val turbine = "0.7.0"
-    const val avs = "8.1.3"
+    const val avs = "8.1.16"
     const val jna = "5.6.0@aar"
     const val mlsClient = "0.2.1"
     const val desugarJdk = "1.1.5"

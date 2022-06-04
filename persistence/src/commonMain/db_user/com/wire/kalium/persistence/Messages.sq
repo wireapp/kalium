@@ -30,6 +30,7 @@ CREATE TABLE Message (
       sender_user_id TEXT AS QualifiedIDEntity NOT NULL,
       sender_client_id TEXT NOT NULL,
       status TEXT AS MessageEntity.Status NOT NULL,
+      last_edit_timeStamp TEXT ,
       visibility TEXT AS MessageEntity.Visibility NOT NULL DEFAULT 'visible',
       FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id),
       FOREIGN KEY (sender_user_id) REFERENCES User(qualified_id),
@@ -48,7 +49,12 @@ DELETE FROM Message WHERE  id = ?;
 markMessageAsDeleted:
 UPDATE Message
 SET visibility = 'DELETED', text_body = NULL
-WHERE id = ? AND conversation_id =? ;
+WHERE id = ? AND conversation_id = ?;
+
+markMessageAsEdited:
+UPDATE Message
+SET last_edit_timeStamp = ?
+WHERE id = ? AND conversation_id = ?;
 
 insertMessage:
 INSERT INTO Message(id, text_body, asset_mime_type, asset_size, asset_name, asset_image_width, asset_image_height, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, asset_download_status, content_type, conversation_id, date, sender_user_id, sender_client_id, visibility, status)
@@ -99,6 +105,16 @@ updateMessagesAddMillisToDate:
 UPDATE Message
 SET date = strftime('%Y-%m-%dT%H:%M:%fZ', date, '+' || ROUND(CAST(? AS REAL)/1000, 3) || ' seconds')
 WHERE conversation_id = ? AND status = ?;
+
+updatMessageTextContent:
+UPDATE Message
+SET text_body = ?
+WHERE id = ? AND conversation_id = ?;
+
+updateMessageId:
+UPDATE Message
+SET id = ?
+WHERE id = ? AND conversation_id = ?;
 
 selectAllMessages:
 SELECT * FROM Message ORDER BY Datetime(date) DESC LIMIT ? OFFSET ?;

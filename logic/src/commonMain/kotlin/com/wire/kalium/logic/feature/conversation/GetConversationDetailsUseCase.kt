@@ -18,7 +18,7 @@ class GetConversationDetailsUseCase(
     }
 
     suspend operator fun invoke(conversationId: QualifiedID): Result {
-        syncManager.waitForSlowSyncToComplete()
+        syncManager.startSyncIfIdle()
         return conversationRepository.getConversationDetails(conversationId).fold({
             Result.Failure(it)
         }, {
