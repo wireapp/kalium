@@ -1,6 +1,11 @@
 package com.wire.kalium.logic.data.asset
 
-import okio.*
+import okio.FileHandle
+import okio.FileMetadata
+import okio.FileSystem
+import okio.Path
+import okio.Sink
+import okio.Source
 
 actual class KaliumFileSystem : FileSystem() {
     override fun appendingSink(file: Path, mustExist: Boolean): Sink {
