@@ -1,12 +1,14 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestUser.OTHER
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
@@ -31,7 +33,7 @@ class GetUserInfoUseCaseTest {
 
     @BeforeTest
     fun setUp() {
-        getUserInfoUseCase = GetUserInfoUseCaseImpl(userRepository,teamRepository)
+        getUserInfoUseCase = GetUserInfoUseCaseImpl(userRepository, teamRepository)
     }
 
     @Test
@@ -72,6 +74,10 @@ class GetUserInfoUseCaseTest {
             .whenInvokedWith(eq(userId))
             .thenReturn(flowOf(OTHER))
 
+        given(teamRepository)
+            .suspendFunction(teamRepository::getTeam)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(team))
         // when
         val result = getUserInfoUseCase(userId)
 
@@ -107,6 +113,7 @@ class GetUserInfoUseCaseTest {
 
         // then
         assertEquals(GetUserInfoResult.Failure, result)
+
         verify(userRepository)
             .suspendFunction(userRepository::getKnownUser)
             .with(eq(userId))
@@ -118,8 +125,80 @@ class GetUserInfoUseCaseTest {
             .wasInvoked(once)
     }
 
+
+    @Test
+    fun givenAUserWithNoTeam_WhenGettingDetails_thenShouldReturnSuccessResultAndDoNotRetrieveTeam() = runTest {
+        // given
+        given(userRepository)
+            .suspendFunction(userRepository::getKnownUser)
+            .whenInvokedWith(eq(userId))
+            .thenReturn(flowOf(OTHER.copy(team = null)))
+
+        given(teamRepository)
+            .suspendFunction(teamRepository::getTeam)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(team))
+        // when
+        val result = getUserInfoUseCase(userId)
+
+        // then
+        assertEquals(OTHER.copy(team = null), (result as GetUserInfoResult.Success).otherUser)
+
+        verify(userRepository)
+            .suspendFunction(userRepository::getKnownUser)
+            .with(eq(userId))
+            .wasInvoked(once)
+
+        verify(teamRepository)
+            .suspendFunction(teamRepository::getTeam)
+            .with(any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenAUserWithTeamNotExistiningLocally_WhenGettingDetails_thenShouldReturnSuccessResultAndGetRemoteUserTeam() = runTest {
+        // given
+        given(userRepository)
+            .suspendFunction(userRepository::getKnownUser)
+            .whenInvokedWith(eq(userId))
+            .thenReturn(flowOf(OTHER))
+
+        given(teamRepository)
+            .suspendFunction(teamRepository::getTeam)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(null))
+
+        given(teamRepository)
+            .suspendFunction(teamRepository::fetchTeamById)
+            .whenInvokedWith(any())
+            .thenReturn(Either.Right(team))
+        // when
+        val result = getUserInfoUseCase(userId)
+
+        // then
+        assertEquals(OTHER, (result as GetUserInfoResult.Success).otherUser)
+
+        verify(userRepository)
+            .suspendFunction(userRepository::getKnownUser)
+            .with(eq(userId))
+            .wasInvoked(once)
+
+        verify(teamRepository)
+            .suspendFunction(teamRepository::getTeam)
+            .with(any())
+            .wasInvoked(once)
+
+        verify(teamRepository)
+            .suspendFunction(teamRepository::fetchTeamById)
+            .with(any())
+            .wasInvoked(once)
+    }
+
     private companion object {
         val userId = UserId("some_user", "some_domain")
+
+        val team = Team("teamId", "teamName")
+
     }
 
 }
