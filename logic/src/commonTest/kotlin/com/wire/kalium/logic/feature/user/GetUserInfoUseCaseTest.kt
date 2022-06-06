@@ -44,11 +44,15 @@ class GetUserInfoUseCaseTest {
             .whenInvokedWith(eq(userId))
             .thenReturn(flowOf(null))
 
+        given(teamRepository)
+            .suspendFunction(teamRepository::getTeam)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(team))
+
         given(userRepository)
             .suspendFunction(userRepository::fetchUserInfo)
             .whenInvokedWith(eq(userId))
             .thenReturn(Either.Right(OTHER))
-
         // when
         val result = getUserInfoUseCase(userId)
 
