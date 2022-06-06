@@ -416,23 +416,13 @@ class ConversationRepositoryTest {
         runTest {
             //given
             given(conversationDAO)
-                .suspendFunction(conversationDAO::getAllConversations)
-                .whenInvoked()
-                .then { flowOf(CONVERSATION_ENTITIES) }
-
-            given(conversationDAO)
-                .suspendFunction(conversationDAO::getConversationByQualifiedIDFlow)
+                .suspendFunction(conversationDAO::getAllConversationWithOtherUser)
                 .whenInvokedWith(anything())
-                .then { flowOf(CONVERSATION_ENTITY) }
+                .then { listOf(CONVERSATION_ENTITY) }
 
             given(userRepository)
                 .coroutine { userRepository.getSelfUser() }
                 .then { flowOf(TestUser.SELF) }
-
-            given(conversationDAO)
-                .suspendFunction(conversationDAO::getAllMembers)
-                .whenInvokedWith(anything())
-                .thenReturn(flowOf(listOf(Member(TestUser.ENTITY_ID))))
 
             given(userRepository)
                 .suspendFunction(userRepository::getKnownUser)
