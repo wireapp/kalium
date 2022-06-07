@@ -15,6 +15,7 @@ import com.wire.kalium.network.api.user.details.UserProfileDTO
 import com.wire.kalium.network.api.user.self.UserUpdateRequest
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity as UserIdEntity
 
@@ -42,6 +43,8 @@ interface UserMapper {
 
     fun fromDaoConnectionStateToUser(connectionState: ConnectionEntity.State): ConnectionState
     fun fromUserConnectionStateToDao(connectionState: ConnectionState): ConnectionEntity.State
+    fun fromDaoAvailabilityStatusToUser(status: UserAvailabilityStatusEntity?): UserAvailabilityStatus?
+    fun fromUserAvailabilityStatusToDao(status: UserAvailabilityStatus?): UserAvailabilityStatusEntity?
 }
 
 internal class UserMapperImpl(private val idMapper: IdMapper = MapperProvider.idMapper()) : UserMapper {
@@ -57,7 +60,8 @@ internal class UserMapperImpl(private val idMapper: IdMapper = MapperProvider.id
             team = teamId,
             connectionStatus = ConnectionState.NOT_CONNECTED,
             previewPicture = assets.getPreviewAssetOrNull()?.key,
-            completePicture = assets.getCompleteAssetOrNull()?.key
+            completePicture = assets.getCompleteAssetOrNull()?.key,
+            availabilityStatus = null
         )
     }
 
@@ -71,7 +75,8 @@ internal class UserMapperImpl(private val idMapper: IdMapper = MapperProvider.id
             accentId = userProfileDTO.accentId,
             team = userProfileDTO.teamId,
             previewAssetId = userProfileDTO.assets.getPreviewAssetOrNull()?.key,
-            completeAssetId = userProfileDTO.assets.getCompleteAssetOrNull()?.key
+            completeAssetId = userProfileDTO.assets.getCompleteAssetOrNull()?.key,
+            availabilityStatus = null
         )
     }
 
@@ -85,7 +90,8 @@ internal class UserMapperImpl(private val idMapper: IdMapper = MapperProvider.id
         userEntity.team,
         fromDaoConnectionStateToUser(connectionState = userEntity.connectionStatus),
         userEntity.previewAssetId,
-        userEntity.completeAssetId
+        userEntity.completeAssetId,
+        fromDaoAvailabilityStatusToUser(userEntity.availabilityStatus)
     )
 
     override fun fromDaoModelToOtherUser(userEntity: UserEntity) = OtherUser(
@@ -98,7 +104,8 @@ internal class UserMapperImpl(private val idMapper: IdMapper = MapperProvider.id
         userEntity.team,
         fromDaoConnectionStateToUser(connectionState = userEntity.connectionStatus),
         userEntity.previewAssetId,
-        userEntity.completeAssetId
+        userEntity.completeAssetId,
+        fromDaoAvailabilityStatusToUser(userEntity.availabilityStatus)
     )
 
     override fun fromModelToUpdateApiModel(
@@ -127,7 +134,8 @@ internal class UserMapperImpl(private val idMapper: IdMapper = MapperProvider.id
             team = user.team,
             connectionStatus = fromUserConnectionStateToDao(connectionState = user.connectionStatus),
             previewAssetId = updateRequest.assets?.getPreviewAssetOrNull()?.key,
-            completeAssetId = updateRequest.assets?.getCompleteAssetOrNull()?.key
+            completeAssetId = updateRequest.assets?.getCompleteAssetOrNull()?.key,
+            availabilityStatus = null
         )
     }
 
@@ -141,7 +149,8 @@ internal class UserMapperImpl(private val idMapper: IdMapper = MapperProvider.id
             accentId = accentId,
             team = teamId,
             previewAssetId = assets.getPreviewAssetOrNull()?.key,
-            completeAssetId = assets.getCompleteAssetOrNull()?.key
+            completeAssetId = assets.getCompleteAssetOrNull()?.key,
+            availabilityStatus = null
         )
     }
 
@@ -168,7 +177,8 @@ internal class UserMapperImpl(private val idMapper: IdMapper = MapperProvider.id
             team = teamId,
             connectionStatus = ConnectionEntity.State.ACCEPTED,
             previewAssetId = null,
-            completeAssetId = null
+            completeAssetId = null,
+            availabilityStatus = null
         )
 
     override fun fromDaoConnectionStateToUser(connectionState: ConnectionEntity.State): ConnectionState =
@@ -193,5 +203,23 @@ internal class UserMapperImpl(private val idMapper: IdMapper = MapperProvider.id
             ConnectionState.CANCELLED -> ConnectionEntity.State.CANCELLED
             ConnectionState.MISSING_LEGALHOLD_CONSENT -> ConnectionEntity.State.MISSING_LEGALHOLD_CONSENT
             ConnectionState.ACCEPTED -> ConnectionEntity.State.ACCEPTED
+        }
+
+    override fun fromDaoAvailabilityStatusToUser(status: UserAvailabilityStatusEntity?): UserAvailabilityStatus? =
+        when (status) {
+            UserAvailabilityStatusEntity.AVAILABLE -> UserAvailabilityStatus.AVAILABLE
+            UserAvailabilityStatusEntity.BUSY -> UserAvailabilityStatus.BUSY
+            UserAvailabilityStatusEntity.AWAY -> UserAvailabilityStatus.AVAILABLE
+            UserAvailabilityStatusEntity.NONE -> UserAvailabilityStatus.NONE
+            null -> null
+        }
+
+    override fun fromUserAvailabilityStatusToDao(status: UserAvailabilityStatus?): UserAvailabilityStatusEntity? =
+        when (status) {
+            UserAvailabilityStatus.AVAILABLE -> UserAvailabilityStatusEntity.AVAILABLE
+            UserAvailabilityStatus.BUSY -> UserAvailabilityStatusEntity.BUSY
+            UserAvailabilityStatus.AWAY -> UserAvailabilityStatusEntity.AWAY
+            UserAvailabilityStatus.NONE -> UserAvailabilityStatusEntity.NONE
+            null -> null
         }
 }

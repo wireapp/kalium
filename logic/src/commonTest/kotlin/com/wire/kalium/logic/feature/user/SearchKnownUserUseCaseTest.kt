@@ -56,7 +56,8 @@ class SearchKnownUserUseCaseTest {
                             team = null,
                             connectionStatus = ConnectionState.ACCEPTED,
                             previewPicture = null,
-                            completePicture = null
+                            completePicture = null,
+                            availabilityStatus = null
                         )
                     )
                 )
@@ -99,7 +100,8 @@ class SearchKnownUserUseCaseTest {
                             team = null,
                             connectionStatus = ConnectionState.ACCEPTED,
                             previewPicture = null,
-                            completePicture = null
+                            completePicture = null,
+                            availabilityStatus = null
                         )
                     )
                 )

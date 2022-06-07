@@ -142,7 +142,8 @@ class TeamRepositoryTest {
             accentId = 1,
             team = "teamId",
             previewAssetId = null,
-            completeAssetId = null
+            completeAssetId = null,
+            availabilityStatus = null
         )
 
         given(userMapper)

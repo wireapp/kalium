@@ -289,7 +289,8 @@ class SearchUserRepositoryTest {
                         accentId = i,
                         team = "team$i",
                         previewPicture = null,
-                        completePicture = null
+                        completePicture = null,
+                        availabilityStatus = null
                     )
                 )
             }

@@ -56,7 +56,8 @@ class PublicUserMapperImpl(private val idMapper: IdMapper) : PublicUserMapper {
         team = userDetailResponse.teamId,
         previewAssetId = userDetailResponse.assets.getPreviewAssetOrNull()?.key,
         completeAssetId = userDetailResponse.assets.getCompleteAssetOrNull()?.key,
-        connectionStatus = connectionState
+        connectionStatus = connectionState,
+        availabilityStatus = null
     )
 
     override fun fromUserDetailResponses(userDetailResponse: List<UserProfileDTO>) =

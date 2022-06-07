@@ -44,7 +44,8 @@ class UserMapperTest {
             team = "teamId",
             connectionStatus = ConnectionEntity.State.ACCEPTED,
             previewAssetId = null,
-            completeAssetId = null
+            completeAssetId = null,
+            availabilityStatus = null
         )
 
         val result = userMapper.fromTeamMemberToDaoModel(

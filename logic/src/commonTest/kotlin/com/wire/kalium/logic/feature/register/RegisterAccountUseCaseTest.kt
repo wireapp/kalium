@@ -227,7 +227,8 @@ class RegisterAccountUseCaseTest {
             team = null,
             connectionStatus = ConnectionState.ACCEPTED,
             previewPicture = null,
-            completePicture = null
+            completePicture = null,
+            availabilityStatus = null
         )
         val TEST_AUTH_SESSION = AuthSession(TEST_SELF_USER.id, "access_token", "refresh_token", "token_type", TEST_SERVER_CONFIG)
     }

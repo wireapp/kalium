@@ -140,7 +140,8 @@ class RegisterAccountRepositoryTest {
                 team = teamId,
                 connectionStatus = ConnectionState.ACCEPTED,
                 previewPicture = assets.getPreviewAssetOrNull()?.key,
-                completePicture = assets.getCompleteAssetOrNull()?.key
+                completePicture = assets.getCompleteAssetOrNull()?.key,
+                availabilityStatus = null
             )
         }
         val authSession = with(SESSION) { AuthSession(UserId(userId.value, userId.domain), accessToken, refreshToken, tokenType, serverConfig) }
@@ -195,7 +196,8 @@ class RegisterAccountRepositoryTest {
                 team = teamId,
                 connectionStatus = ConnectionState.ACCEPTED,
                 previewPicture = assets.getPreviewAssetOrNull()?.key,
-                completePicture = assets.getCompleteAssetOrNull()?.key
+                completePicture = assets.getCompleteAssetOrNull()?.key,
+                availabilityStatus = null
             )
         }
         val authSession = with(SESSION) { AuthSession(UserId(userId.value, userId.domain), accessToken, refreshToken, tokenType, serverConfig) }

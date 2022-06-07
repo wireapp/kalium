@@ -102,7 +102,8 @@ class GetOrCreateOneToOneConversationUseCaseTest {
             accentId = 0,
             team = null,
             previewPicture = null,
-            completePicture = null
+            completePicture = null,
+            availabilityStatus = null
         )
         val CONVERSATION_DETAILS = ConversationDetails.OneOne(
             CONVERSATION,
