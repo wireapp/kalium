@@ -120,6 +120,13 @@ interface Calling : Library {
         wcall_req_clients_h: ClientsRequestHandler
     )
 
+    @Suppress("FunctionNaming")
+    fun wcall_set_clients_for_conv(
+        inst: Handle,
+        convId: String,
+        clientsJson: String
+    )
+
     companion object {
         val INSTANCE by lazy { Native.load("avs", Calling::class.java)!! }
     }
