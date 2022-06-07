@@ -58,6 +58,8 @@ class GetAllCallsUseCaseTest {
         private val call1 = Call(
             ConversationId("first", "domain"),
             CallStatus.STARTED,
+            true,
+            false,
             "caller-id",
             "ONE_ON_ONE Name",
             Conversation.Type.ONE_ON_ONE,
@@ -67,6 +69,8 @@ class GetAllCallsUseCaseTest {
         private val call2 = Call(
             ConversationId("second", "domain"),
             CallStatus.INCOMING,
+            true,
+            false,
             "caller-id",
             "ONE_ON_ONE Name",
             Conversation.Type.ONE_ON_ONE,

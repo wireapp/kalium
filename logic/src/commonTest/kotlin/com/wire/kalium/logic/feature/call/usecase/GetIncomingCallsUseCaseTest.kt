@@ -68,6 +68,8 @@ class GetIncomingCallsUseCaseTest {
                     Call(
                         TestConversation.id(0),
                         CallStatus.INCOMING,
+                        false,
+                        false,
                         "client1",
                         "ONE_ON_ONE Name",
                         Conversation.Type.ONE_ON_ONE,
@@ -77,6 +79,8 @@ class GetIncomingCallsUseCaseTest {
                     Call(
                         TestConversation.id(1),
                         CallStatus.INCOMING,
+                        false,
+                        false,
                         "client2",
                         "ONE_ON_ONE Name",
                         Conversation.Type.ONE_ON_ONE,

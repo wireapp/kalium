@@ -18,6 +18,8 @@ enum class CallStatus {
 data class Call(
     val conversationId: ConversationId,
     val status: CallStatus,
+    val isMuted: Boolean,
+    val isCameraOn: Boolean,
     val callerId: String,
     val conversationName: String?,
     val conversationType: Conversation.Type,

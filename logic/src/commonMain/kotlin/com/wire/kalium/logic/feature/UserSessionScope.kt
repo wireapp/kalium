@@ -251,6 +251,7 @@ abstract class UserSessionScopeCommon(
             callRepository = callRepository,
             userRepository = userRepository,
             clientRepository = clientRepository,
+            conversationRepository = conversationRepository,
             messageSender = messageSender
         )
     }
