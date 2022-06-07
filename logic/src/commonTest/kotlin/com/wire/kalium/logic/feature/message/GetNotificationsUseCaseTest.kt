@@ -302,14 +302,14 @@ class GetNotificationsUseCaseTest {
             messageId: String = "message_id"
         ) =
             Message.Client(
-                messageId,
-                MessageContent.Text("test message $messageId"),
-                conversationId,
-                "some_time",
-                senderId,
-                ClientId("client_1"),
-                Message.Status.SENT,
-                Message.EditStatus.NotEdited
+                id = messageId,
+                content = MessageContent.Text("test message $messageId"),
+                conversationId = conversationId,
+                date = "some_time",
+                senderUserId = senderId,
+                senderClientId = ClientId("client_1"),
+                status = Message.Status.SENT,
+                editStatus = Message.EditStatus.NotEdited
             )
 
         private fun entityAssetMessage(
@@ -319,7 +319,7 @@ class GetNotificationsUseCaseTest {
             assetId: String
         ) =
             Message.Client(
-                messageId,
+                id = messageId,
                 content = MessageContent.Asset(
                     AssetContent(
                         sizeInBytes = 1000,
@@ -337,12 +337,12 @@ class GetNotificationsUseCaseTest {
                         downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
                     )
                 ),
-                conversationId,
-                "some_time",
-                senderId,
-                ClientId("client_1"),
-                Message.Status.SENT,
-                Message.EditStatus.NotEdited
+                conversationId = conversationId,
+                date = "some_time",
+                senderUserId = senderId,
+                senderClientId = ClientId("client_1"),
+                status = Message.Status.SENT,
+                editStatus = Message.EditStatus.NotEdited
             )
 
         private fun notificationMessageText(

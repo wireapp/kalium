@@ -10,13 +10,13 @@ object TestMessage {
     val TEST_SENDER_CLIENT_ID = TestClient.CLIENT_ID
     val TEXT_CONTENT = MessageContent.Text("Ciao!")
     val TEXT_MESSAGE = Message.Client(
-        TEST_MESSAGE_ID,
-        TEXT_CONTENT,
-        ConversationId("conv", "id"),
-        "date",
-        TEST_SENDER_USER_ID,
-        TEST_SENDER_CLIENT_ID,
-        Message.Status.PENDING,
-        Message.EditStatus.NotEdited
+        id = TEST_MESSAGE_ID,
+        content = TEXT_CONTENT,
+        conversationId = ConversationId("conv", "id"),
+        date = "date",
+        senderUserId = TEST_SENDER_USER_ID,
+        senderClientId = TEST_SENDER_CLIENT_ID,
+        status = Message.Status.PENDING,
+        editStatus = Message.EditStatus.NotEdited
     )
 }
