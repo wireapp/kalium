@@ -47,11 +47,11 @@ class CallsScope(
 
     val rejectCall: RejectCallUseCase get() = RejectCallUseCase(callManager)
 
-    val muteCall: MuteCallUseCase get() = MuteCallUseCase(callManager)
+    val muteCall: MuteCallUseCase get() = MuteCallUseCase(callManager, callRepository)
 
-    val unMuteCall: UnMuteCallUseCase get() = UnMuteCallUseCase(callManager)
+    val unMuteCall: UnMuteCallUseCase get() = UnMuteCallUseCase(callManager, callRepository)
 
-    val updateVideoState: UpdateVideoStateUseCase get() = UpdateVideoStateUseCase(callManager)
+    val updateVideoState: UpdateVideoStateUseCase get() = UpdateVideoStateUseCase(callManager, callRepository)
 
     val setVideoPreview: SetVideoPreviewUseCase get() = SetVideoPreviewUseCase(flowManagerService)
 }
