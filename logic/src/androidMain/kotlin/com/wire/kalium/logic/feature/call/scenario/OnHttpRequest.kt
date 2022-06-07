@@ -5,7 +5,6 @@ import com.sun.jna.Pointer
 import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
@@ -52,57 +51,6 @@ class OnHttpRequest(
                             arg = context
                         )
                     }
-                }
-            }
-        }
-    }
-
-    fun sendClientDiscoveryMessage(
-        conversationId: ConversationId,
-        userId: UserId,
-        clientId: ClientId,
-    ) {
-        /*
-
-          val message = QualifiedOtrMessage(selfClientId, QEncryptedContent.Empty, nativePush = false)
-            msgClient.postMessage(convId, message).future.map {
-              case Left(error) => Left(error)
-              case Right(resp) => Right(resp.missing)
-            }
-
-         */
-        callingScope.launch {
-            val message = Message(
-                uuid4().toString(),
-                MessageContent.Empty,
-                conversationId,
-                Clock.System.now().toString(),
-                userId,
-                clientId,
-                Message.Status.SENT,
-                Message.EditStatus.NotEdited
-            )
-            when (val sentMessage = messageSender.sendClientDiscoveryMessage(message = message)) {
-                is Either.Right -> {
-                    callingLogger.i("OnHttpRequest() -> sendClientDiscoveryMessage() - Success: ${sentMessage.value}")
-                    callingLogger.i(sentMessage.value)
-
-                    /*
-
-                    val clients = userClients.entries.flatMap { case (userId, clientIds) =>
-                      clientIds.map { clientId =>
-                        AvsClient(userId.str, clientId.str)
-                      }
-                    }
-
-                    val json = encode(AvsClientList(clients.toSeq))
-                    withAvs(wcall_set_clients_for_conv(wCall, convId.str, json))
-
-
-                     */
-                }
-                is Either.Left -> {
-                    callingLogger.e("OnHttpRequest() -> sendClientDiscoveryMessage() - Error: ${sentMessage.value}")
                 }
             }
         }
