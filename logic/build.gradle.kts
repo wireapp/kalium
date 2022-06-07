@@ -60,6 +60,9 @@ kotlin {
                 implementation(Dependencies.UUID.benAsherUUID)
                 // the Dependency is duplicated between here and persistence build.gradle.kts
                 implementation(Dependencies.MultiplatformSettings.settings)
+
+                // Okio
+                implementation(Dependencies.Okio.core)
             }
         }
         val commonTest by getting {
@@ -71,6 +74,7 @@ kotlin {
 
                 // mocking
                 implementation(Dependencies.Test.mockative)
+                    implementation(Dependencies.Test.okio)
             }
         }
         val jvmMain by getting {}
