@@ -6,7 +6,6 @@ import com.wire.kalium.logic.data.featureConfig.FileSharingModel
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNoTeam
-import com.wire.kalium.network.exceptions.isOperationDenied
 
 interface GetFileSharingStatusUseCase {
     suspend operator fun invoke(): GetFileSharingStatusResult
