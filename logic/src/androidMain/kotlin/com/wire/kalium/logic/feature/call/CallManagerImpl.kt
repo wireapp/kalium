@@ -281,7 +281,6 @@ actual class CallManagerImpl(
             }
         }
 
-
         // TODO(calling): Active Speakers handler
     }
 
