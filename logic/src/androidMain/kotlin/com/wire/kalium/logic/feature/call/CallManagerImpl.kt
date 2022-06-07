@@ -215,7 +215,7 @@ actual class CallManagerImpl(
     }
 
     /**
-     * This method should NOT be called before while the call is still incoming or outgoing and not established.
+     * This method should NOT be called while the call is still incoming or outgoing and not established yet.
      */
     override suspend fun updateVideoState(conversationId: ConversationId, videoState: VideoState) {
         withCalling {
