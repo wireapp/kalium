@@ -9,9 +9,10 @@ interface KeyPackageApi {
      * Claim a key package for each client of a given user.
      *
      * @param user user ID to claim key packages from.
+     * @param selfClientId to skip selfClient key package.
      * @return a list claimed key packages.
      */
-    suspend fun claimKeyPackages(user: UserId): NetworkResponse<ClaimedKeyPackageList>
+    suspend fun claimKeyPackages(user: UserId, selfClientId: String? = null): NetworkResponse<ClaimedKeyPackageList>
 
     /**
      * Upload a batch fresh key packages from the self client

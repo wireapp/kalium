@@ -37,10 +37,9 @@ class KeyPackageDataSource(
         clientRepository.currentClientId().flatMap { selfClientId ->
             userIds.map { userId ->
                 wrapApiRequest {
-                    keyPackageApi.claimKeyPackages(idMapper.toApiModel(userId))
-                }.flatMap { keyPackageList ->
-                    // TODO: filtering out key packages from the self user client (will be removed soon when BE is updated).
-                    Either.Right(keyPackageList.keyPackages.filter { it.clientID != selfClientId.value })
+                    keyPackageApi.claimKeyPackages(idMapper.toApiModel(userId), selfClientId.value)
+                }.flatMap {
+                    Either.Right(it.keyPackages)
                 }
             }.foldToEitherWhileRight(emptyList()) { item, acc ->
                 item.flatMap { Either.Right(acc + it) }
