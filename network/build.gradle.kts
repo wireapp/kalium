@@ -57,6 +57,9 @@ kotlin {
                 implementation(Dependencies.Ktor.authClient)
                 implementation(Dependencies.Ktor.webSocket)
                 implementation(Dependencies.Ktor.contentNegotiation)
+
+                // Okio
+                implementation(Dependencies.Okio.core)
             }
         }
         val commonTest by getting {
