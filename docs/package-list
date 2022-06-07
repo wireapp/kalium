@@ -81,6 +81,7 @@ $dokka.location:com.wire.kalium.calling/Calling/wcall_start/#com.wire.kalium.cal
 $dokka.location:com.wire.kalium.calling/ConversationTypeCalling.Conference///PointingToDeclaration/calling/calling/com.wire.kalium.calling/-conversation-type-calling/-conference/index.html
 $dokka.location:com.wire.kalium.calling/ConversationTypeCalling.Group///PointingToDeclaration/calling/calling/com.wire.kalium.calling/-conversation-type-calling/-group/index.html
 $dokka.location:com.wire.kalium.calling/ConversationTypeCalling.OneOnOne///PointingToDeclaration/calling/calling/com.wire.kalium.calling/-conversation-type-calling/-one-on-one/index.html
+$dokka.location:com.wire.kalium.calling/ConversationTypeCalling.Unknown///PointingToDeclaration/calling/calling/com.wire.kalium.calling/-conversation-type-calling/-unknown/index.html
 $dokka.location:com.wire.kalium.calling/ConversationTypeCalling///PointingToDeclaration/calling/calling/com.wire.kalium.calling/-conversation-type-calling/index.html
 $dokka.location:com.wire.kalium.calling/ConversationTypeCalling/avsValue/#/PointingToDeclaration/calling/calling/com.wire.kalium.calling/-conversation-type-calling/avs-value.html
 $dokka.location:com.wire.kalium.calling/VideoStateCalling.BAD_CONNECTION///PointingToDeclaration/calling/calling/com.wire.kalium.calling/-video-state-calling/-b-a-d_-c-o-n-n-e-c-t-i-o-n/index.html
