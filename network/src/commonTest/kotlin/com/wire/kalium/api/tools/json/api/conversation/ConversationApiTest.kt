@@ -13,7 +13,7 @@ import kotlin.test.assertTrue
 class ConversationApiTest : ApiTest {
 
     @Test
-    fun givenACreateNewConversationRequest_whenCallingCreateNewConversation_thenTheRequestShouldBeConfiguredCorrectly() = runTest {
+    fun givenACreateNewConversationRequest_whenCallingCreateNewConversation_thenTheRequestShouldBeConfiguredOK() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(
             CREATE_CONVERSATION_RESPONSE,
             statusCode = HttpStatusCode.Created,
@@ -31,7 +31,7 @@ class ConversationApiTest : ApiTest {
     }
 
     @Test
-    fun givenARequestToUpdateMuteStatus_whenCallingUpdateConversationState_thenTheRequestShouldBeOK() = runTest {
+    fun givenARequestToUpdateMuteStatus_whenCallingUpdateConversationState_thenTheRequestShouldBeConfiguredOK() = runTest {
         val conversationId = "conv-id"
         val domain = "domain"
         val networkClient = mockAuthenticatedNetworkClient(
@@ -53,11 +53,54 @@ class ConversationApiTest : ApiTest {
         assertTrue(result.isSuccessful())
     }
 
+    @Test
+    fun givenFetchConversationsIds_whenCallingFetchConversations_thenTheRequestShouldBeConfiguredOK() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(
+            responseBody = CONVERSATION_IDS_RESPONSE.rawJson,
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertPost()
+                assertJson()
+                assertPathEqual(PATH_CONVERSATIONS_IDS)
+            }
+        )
+
+        val conversationApi = ConversationApiImpl(networkClient)
+        conversationApi.fetchConversationsIds(pagingState = null)
+    }
+
+    @Test
+    fun givenFetchConversationsDetails_whenCallingFetchWithIdList_thenTheRequestShouldBeConfiguredOK() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(
+            CONVERSATION_DETAILS_RESPONSE.rawJson,
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertPost()
+                assertJson()
+                assertBodyContent(CREATE_CONVERSATION_IDS_REQUEST.rawJson)
+                assertPathEqual(PATH_CONVERSATIONS_LIST_V2)
+            }
+        )
+
+        val conversationApi = ConversationApiImpl(networkClient)
+        conversationApi.fetchConversationsListDetails(
+            listOf(
+                ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
+                ConversationId("f4680835-2cfe-4d4d-8491-cbb201bd5c2b", "anta.wire.link")
+            )
+        )
+    }
+
     private companion object {
         const val PATH_CONVERSATIONS = "/conversations"
+        const val PATH_CONVERSATIONS_LIST_V2 = "/conversations/list/v2"
+        const val PATH_CONVERSATIONS_IDS = "/conversations/list-ids"
         const val PATH_SELF = "/self"
         val CREATE_CONVERSATION_RESPONSE = ConversationResponseJson.validGroup.rawJson
         val CREATE_CONVERSATION_REQUEST = CreateConversationRequestJson.valid
+        val CREATE_CONVERSATION_IDS_REQUEST = ConversationListIdsResponseJson.validRequestIds
+        val CONVERSATION_IDS_RESPONSE = ConversationListIdsResponseJson.validGetIds
+        val CONVERSATION_DETAILS_RESPONSE = ConversationDetailsResponse.validGetDetailsForIds
         val MEMBER_UPDATE_REQUEST = MemberUpdateRequestJson.valid
     }
 }
