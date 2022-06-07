@@ -40,6 +40,5 @@ sealed class GetFileSharingStatusResult {
         object OperationDenied : Failure()
         object NoTeam : Failure()
         class Generic(val failure: NetworkFailure) : Failure()
-
     }
 }

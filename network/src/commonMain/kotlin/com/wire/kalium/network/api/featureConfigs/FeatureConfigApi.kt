@@ -5,7 +5,6 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.get
 
-
 interface FeatureConfigApi {
     suspend fun fileSharingFeatureConfig(): NetworkResponse<FeatureConfigResponse>
 }
@@ -15,7 +14,6 @@ class FeatureConfigApiImpl internal constructor(private val authenticatedNetwork
 
     override suspend fun fileSharingFeatureConfig(): NetworkResponse<FeatureConfigResponse> =
         wrapKaliumResponse { httpClient.get(FILE_SHARING) }
-
 
     companion object {
         const val FEATURE_CONFIG = "feature-config/"

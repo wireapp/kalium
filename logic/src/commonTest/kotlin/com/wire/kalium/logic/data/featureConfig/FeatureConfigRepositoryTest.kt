@@ -1,11 +1,13 @@
 package com.wire.kalium.logic.data.featureConfig
 
-import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.ErrorResponse
+import com.wire.kalium.network.api.featureConfigs.FeatureConfigApi
+import com.wire.kalium.network.api.featureConfigs.FeatureConfigResponse
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.given
@@ -21,60 +23,115 @@ class FeatureConfigRepositoryTest {
 
     @Test
     fun whenFileSharingFeatureConfigSuccess_thenTheSuccessIsReturned() = runTest {
-        val arrangement = Arrangement()
+        // Given
+        val (arrangement, featureConfigRepository) = Arrangement().arrange()
         arrangement.withSuccessfulResponse()
 
-        val actual = arrangement.featureConfigRepository.getFileSharingFeatureConfig()
+        // when
+        val result = featureConfigRepository.getFileSharingFeatureConfig()
 
-        actual.shouldSucceed { arrangement.expectedSuccess.value }
-        verify(arrangement.featureConfigRepository)
-            .coroutine { arrangement.featureConfigRepository.getFileSharingFeatureConfig() }
+        // then
+        result.shouldSucceed { arrangement.expectedSuccess.value }
+        verify(arrangement.featureConfigApi)
+            .suspendFunction(arrangement.featureConfigApi::fileSharingFeatureConfig)
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun whenFileSharingFeatureConfigFailWithOperationDeniedError_thenTheErrorIsPropagated() = runTest {
+        // Given
+        val (arrangement, featureConfigRepository) = Arrangement().arrange()
+        arrangement.withOperationDeniedErrorResponse()
+
+        // when
+        val result = featureConfigRepository.getFileSharingFeatureConfig()
+
+        // then
+        result.shouldFail { arrangement.operationDeniedFailExpected.value }
+
+        verify(arrangement.featureConfigApi)
+            .suspendFunction(arrangement.featureConfigApi::fileSharingFeatureConfig)
             .wasInvoked(exactly = once)
     }
 
     @Test
-    fun whenFileSharingFeatureConfigFail_thenTheErrorIsPropagated() = runTest {
-        val arrangement = Arrangement()
-        arrangement.withErrorResponse()
+    fun whenFileSharingFeatureConfigFailWithNoTeamError_thenTheErrorIsPropagated() = runTest {
+        // Given
+        val (arrangement, featureConfigRepository) = Arrangement().arrange()
+        arrangement.withNoTeamErrorResponse()
 
-        val actual = arrangement.featureConfigRepository.getFileSharingFeatureConfig()
+        // when
+        val result = featureConfigRepository.getFileSharingFeatureConfig()
 
-        actual.shouldFail { arrangement.failExpected.value }
+        // then
+        result.shouldFail { arrangement.noTeamFailExpected.value }
 
-        verify(arrangement.featureConfigRepository)
-            .coroutine { arrangement.featureConfigRepository.getFileSharingFeatureConfig() }
+        verify(arrangement.featureConfigApi)
+            .suspendFunction(arrangement.featureConfigApi::fileSharingFeatureConfig)
             .wasInvoked(exactly = once)
     }
 
     private class Arrangement {
+
+
         private val fileSharingModel = FileSharingModel(lockStatus = "locked", status = "enabled")
-        private val errorResponse = NetworkFailure.ServerMiscommunication(
-            KaliumException.InvalidRequestError(
-                ErrorResponse(
-                    403, "Insufficient permissions", "operation-denied"
-                )
+        private val operationDeniedErrorResponse = KaliumException.InvalidRequestError(
+            ErrorResponse(
+                403, "Insufficient permissions", "operation-denied"
+            )
+        )
+
+        private val noTeamErrorResponse = KaliumException.InvalidRequestError(
+            ErrorResponse(
+                404, "Team not found", "no-team"
             )
         )
 
         val expectedSuccess = Either.Right(fileSharingModel)
-        val failExpected = Either.Left(errorResponse)
+        val operationDeniedFailExpected = Either.Left(operationDeniedErrorResponse)
+        val noTeamFailExpected = Either.Left(noTeamErrorResponse)
+
+        val featureConfigResponse = FeatureConfigResponse("locked", "enabled")
 
         @Mock
-        val featureConfigRepository = mock(classOf<FeatureConfigRepository>())
+        val featureConfigApi: FeatureConfigApi = mock(classOf<FeatureConfigApi>())
 
+        var featureConfigRepository = FeatureConfigDataSource(featureConfigApi)
 
-        suspend fun withSuccessfulResponse(): Arrangement {
-            given(featureConfigRepository)
-                .coroutine { featureConfigRepository.getFileSharingFeatureConfig() }
-                .then { expectedSuccess }
+        fun withSuccessfulResponse(): Arrangement {
+            given(featureConfigApi)
+                .suspendFunction(featureConfigApi::fileSharingFeatureConfig).whenInvoked().then {
+                    NetworkResponse.Success(featureConfigResponse, mapOf(), 200)
+                }
             return this
         }
 
-        suspend fun withErrorResponse(): Arrangement {
-            given(featureConfigRepository)
-                .coroutine { featureConfigRepository.getFileSharingFeatureConfig() }
-                .then { failExpected }
+        fun withOperationDeniedErrorResponse(): Arrangement {
+            given(featureConfigApi)
+                .suspendFunction(featureConfigApi::fileSharingFeatureConfig)
+                .whenInvoked()
+                .then {
+                    NetworkResponse.Error(
+                        operationDeniedErrorResponse
+                    )
+                }
+
             return this
         }
+
+        fun withNoTeamErrorResponse(): Arrangement {
+            given(featureConfigApi)
+                .suspendFunction(featureConfigApi::fileSharingFeatureConfig)
+                .whenInvoked()
+                .then {
+                    NetworkResponse.Error(
+                        noTeamErrorResponse
+                    )
+                }
+
+            return this
+        }
+
+        fun arrange() = this to featureConfigRepository
     }
 }

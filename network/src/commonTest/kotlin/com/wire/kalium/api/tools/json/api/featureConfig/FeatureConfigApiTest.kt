@@ -14,6 +14,7 @@ class FeatureConfigApiTest : ApiTest {
 
     @Test
     fun givenValidRequest_WhenCallingTheFileSharingApi_SuccessResponseExpected() = runTest {
+        // Given
         val apiPath = FILE_SHARING
         val networkClient = mockAuthenticatedNetworkClient(
             responseBody = FeatureConfigJson.featureConfigResponseSerializerResponse.rawJson,
@@ -36,6 +37,7 @@ class FeatureConfigApiTest : ApiTest {
 
     @Test
     fun givenInValidRequestWithInsufficientPermission_WhenCallingTheFileSharingApi_ErrorResponseExpected() = runTest {
+        // Given
         val apiPath = FILE_SHARING
         val networkClient = mockAuthenticatedNetworkClient(
             responseBody = FeatureConfigJson.insufficientPermissionsErrorResponse.rawJson,
@@ -59,7 +61,7 @@ class FeatureConfigApiTest : ApiTest {
 
     @Test
     fun givenInValidRequestWithNoTeam_WhenCallingTheFileSharingApi_ErrorResponseExpected() = runTest {
-
+        // Given
         val apiPath = FILE_SHARING
         val networkClient = mockAuthenticatedNetworkClient(
             responseBody = FeatureConfigJson.teamNotFoundErrorResponse.rawJson,
@@ -81,10 +83,8 @@ class FeatureConfigApiTest : ApiTest {
         assertTrue(response.kException is KaliumException.InvalidRequestError)
     }
 
-
     companion object {
         const val FEATURE_CONFIG = "/feature-config/"
         const val FILE_SHARING = "$FEATURE_CONFIG/fileSharing"
-
     }
 }
