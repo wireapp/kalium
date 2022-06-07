@@ -19,7 +19,7 @@ sealed class Event(open val id: String) {
             override val conversationId: ConversationId,
             val senderUserId: UserId,
             val senderClientId: ClientId,
-            val time: String,
+            val timestampIso: String,
             val content: String
         ) : Conversation(id, conversationId)
 
@@ -27,14 +27,14 @@ sealed class Event(open val id: String) {
             override val id: String,
             override val conversationId: ConversationId,
             val senderUserId: UserId,
-            val time: String,
+            val timestampIso: String,
             val content: String
         ) : Conversation(id, conversationId)
 
         data class NewConversation(
             override val id: String,
             override val conversationId: ConversationId,
-            val time: String,
+            val timestampIso: String,
             val conversation: ConversationResponse
         ) : Conversation(id, conversationId)
 
@@ -43,7 +43,7 @@ sealed class Event(open val id: String) {
             override val conversationId: ConversationId,
             val addedBy: UserId,
             val members: List<Member>,
-            val time: String
+            val timestampIso: String
         ) : Conversation(id, conversationId)
 
         data class MemberLeave(
@@ -51,7 +51,7 @@ sealed class Event(open val id: String) {
             override val conversationId: ConversationId,
             val removedBy: UserId,
             val members: List<Member>,
-            val time: String
+            val timestampIso: String
         ) : Conversation(id, conversationId)
 
         data class MLSWelcome(
@@ -59,7 +59,7 @@ sealed class Event(open val id: String) {
             override val conversationId: ConversationId,
             val senderUserId: UserId,
             val message: String,
-            val date: String = Clock.System.now().toString()
+            val timestampIso: String = Clock.System.now().toString()
         ) : Conversation(id, conversationId)
 
 

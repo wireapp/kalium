@@ -21,10 +21,10 @@ sealed class Message(
         override val conversationId: ConversationId,
         override val date: String,
         override val senderUserId: UserId,
-        val senderClientId: ClientId,
         override val status: Status,
-        val editStatus : EditStatus,
-        override val visibility: Visibility = Visibility.VISIBLE
+        override val visibility: Visibility = Visibility.VISIBLE,
+        val senderClientId: ClientId,
+        val editStatus : EditStatus
     ) : Message(id, content, conversationId, date, senderUserId, status, visibility)
 
     data class Server(

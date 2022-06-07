@@ -24,7 +24,7 @@ sealed class MessageContent {
 
     // server message content types
     sealed class MemberChange(open val members: List<Member>) : Server() {
-        data class Join(override val members: List<Member>) : MemberChange(members)
-        data class Leave(override val members: List<Member>) : MemberChange(members)
+        data class Added(override val members: List<Member>) : MemberChange(members)
+        data class Removed(override val members: List<Member>) : MemberChange(members)
     }
 }

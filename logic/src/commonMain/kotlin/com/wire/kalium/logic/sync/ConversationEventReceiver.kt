@@ -71,7 +71,7 @@ class ConversationEventReceiverImpl(
                     id = protoContent.messageUid,
                     content = protoContent.messageContent,
                     conversationId = event.conversationId,
-                    date = event.time,
+                    date = event.timestampIso,
                     senderUserId = event.senderUserId,
                     senderClientId = event.senderClientId,
                     status = Message.Status.SENT,
@@ -109,7 +109,6 @@ class ConversationEventReceiverImpl(
         conversationRepository.insertConversationFromEvent(event)
             .onFailure { kaliumLogger.e("$TAG - failure on new conversation event: $it") }
 
-    //TODO(system-messages): insert a message to show a user added to the conversation
     private suspend fun handleMemberJoin(event: Event.Conversation.MemberJoin) = conversationRepository
         .persistMembers(
             event.members.map { memberMapper.toDaoModel(it) },
@@ -118,9 +117,9 @@ class ConversationEventReceiverImpl(
         .onSuccess {
             val message = Message.Server(
                 id = event.id,
-                content = MessageContent.MemberChange.Join(members = event.members),
+                content = MessageContent.MemberChange.Added(members = event.members),
                 conversationId = event.conversationId,
-                date = event.time,
+                date = event.timestampIso,
                 senderUserId = event.addedBy,
                 status = Message.Status.SENT
             )
@@ -128,7 +127,6 @@ class ConversationEventReceiverImpl(
         }
         .onFailure { kaliumLogger.e("$TAG - failure on member join event: $it") }
 
-    //TODO(system-messages): insert a message to show a user deleted to the conversation
     private suspend fun handleMemberLeave(event: Event.Conversation.MemberLeave) = conversationRepository
         .deleteMembers(
             event.members.map { idMapper.toDaoModel(it.id) },
@@ -137,9 +135,9 @@ class ConversationEventReceiverImpl(
         .onSuccess {
             val message = Message.Server(
                 id = event.id,
-                content = MessageContent.MemberChange.Leave(members = event.members),
+                content = MessageContent.MemberChange.Removed(members = event.members),
                 conversationId = event.conversationId,
-                date = event.time,
+                date = event.timestampIso,
                 senderUserId = event.removedBy,
                 status = Message.Status.SENT
             )
@@ -164,7 +162,7 @@ class ConversationEventReceiverImpl(
                     id = protoContent.messageUid,
                     content = protoContent.messageContent,
                     conversationId = event.conversationId,
-                    date = event.time,
+                    date = event.timestampIso,
                     senderUserId = event.senderUserId,
                     senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
                     status = Message.Status.SENT,

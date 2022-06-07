@@ -18,11 +18,11 @@ sealed class MessageEntity(
         override val conversationId: QualifiedIDEntity,
         override val date: String,
         override val senderUserId: QualifiedIDEntity,
-        val senderClientId: String,
         override val status: Status,
-        val editStatus: EditStatus,
         override val visibility: Visibility = Visibility.VISIBLE,
         override val content: MessageEntityContent.Client,
+        val senderClientId: String,
+        val editStatus: EditStatus
     ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility)
 
     data class Server(
@@ -80,7 +80,7 @@ sealed class MessageEntity(
     }
 
     enum class MemberChangeType {
-        JOIN, LEAVE
+        ADDED, REMOVED
     }
 
     enum class Visibility {

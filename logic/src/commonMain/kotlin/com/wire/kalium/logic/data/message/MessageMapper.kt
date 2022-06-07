@@ -152,10 +152,10 @@ class MessageMapperImpl(
         is MessageContent.MemberChange -> {
             val memberUserIdList = this.members.map { memberMapper.toDaoModel(it).user }
             when (this) {
-                is MessageContent.MemberChange.Join ->
-                    MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.JOIN)
-                is MessageContent.MemberChange.Leave ->
-                    MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.LEAVE)
+                is MessageContent.MemberChange.Added ->
+                    MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.ADDED)
+                is MessageContent.MemberChange.Removed ->
+                    MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.REMOVED)
             }
         }
     }
@@ -171,8 +171,8 @@ class MessageMapperImpl(
         is MessageEntityContent.MemberChange -> {
             val memberList = this.memberUserIdList.map { memberMapper.fromDaoModel(it) }
             when (this.memberChangeType) {
-                MessageEntity.MemberChangeType.JOIN -> MessageContent.MemberChange.Join(memberList)
-                MessageEntity.MemberChangeType.LEAVE -> MessageContent.MemberChange.Leave(memberList)
+                MessageEntity.MemberChangeType.ADDED -> MessageContent.MemberChange.Added(memberList)
+                MessageEntity.MemberChangeType.REMOVED -> MessageContent.MemberChange.Removed(memberList)
             }
         }
     }

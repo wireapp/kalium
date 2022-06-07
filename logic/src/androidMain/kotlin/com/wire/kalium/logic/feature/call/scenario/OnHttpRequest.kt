@@ -65,14 +65,14 @@ class OnHttpRequest(
         val messageContent = MessageContent.Calling(data)
         val date = Clock.System.now().toString()
         val message = Message.Client(
-            uuid4().toString(),
-            messageContent,
-            conversationId,
-            date,
-            userId,
-            clientId,
-            Message.Status.SENT,
-            Message.EditStatus.NotEdited
+            id = uuid4().toString(),
+            content = messageContent,
+            conversationId = conversationId,
+            date = date,
+            senderUserId = userId,
+            senderClientId = clientId,
+            status = Message.Status.SENT,
+            editStatus = Message.EditStatus.NotEdited
         )
         return messageSender.sendMessage(message)
     }
