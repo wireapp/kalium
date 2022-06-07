@@ -13,6 +13,7 @@ import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -20,6 +21,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.call.scenario.OnAnsweredCall
+import com.wire.kalium.logic.feature.call.scenario.OnClientsRequest
 import com.wire.kalium.logic.feature.call.scenario.OnCloseCall
 import com.wire.kalium.logic.feature.call.scenario.OnConfigRequest
 import com.wire.kalium.logic.feature.call.scenario.OnEstablishedCall
@@ -38,7 +40,6 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
@@ -51,6 +52,7 @@ actual class CallManagerImpl(
     private val callRepository: CallRepository,
     private val userRepository: UserRepository,
     private val clientRepository: ClientRepository,
+    private val conversationRepository: ConversationRepository,
     private val messageSender: MessageSender,
     kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl,
     private val callMapper: CallMapper = MapperProvider.callMapper()
@@ -257,7 +259,28 @@ actual class CallManagerImpl(
             }
         }
 
-        // TODO(calling): Clients Request handler
+        // Clients Request
+        scope.launch {
+            withCalling {
+                val selfUserId = userId.await().toString()
+                val selfClientId = clientId.await().value
+
+                val onClientsRequest = OnClientsRequest(
+                    calling = calling,
+                    selfUserId = selfUserId,
+                    conversationRepository = conversationRepository,
+                    callingScope = scope
+                )
+
+                wcall_set_req_clients_handler(
+                    inst = deferredHandle.await(),
+                    wcall_req_clients_h = onClientsRequest
+                )
+
+                callingLogger.d("$TAG - wcall_set_req_clients_handler() called")
+            }
+        }
+
         // TODO(calling): Active Speakers handler
     }
 

@@ -21,6 +21,7 @@ sealed class MessageContent {
     ) : Client()
 
     object Unknown : Client()
+    object Empty : Client()
 
     // server message content types
     sealed class MemberChange(open val members: List<Member>) : Server() {
