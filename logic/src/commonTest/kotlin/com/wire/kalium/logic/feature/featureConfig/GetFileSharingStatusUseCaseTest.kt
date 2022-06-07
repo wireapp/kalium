@@ -3,15 +3,11 @@ package com.wire.kalium.logic.feature.featureConfig
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.featureConfig.FileSharingModel
-import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCaseTest
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
-import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
-import io.mockative.any
 import io.mockative.classOf
-import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
@@ -20,7 +16,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
 class GetFileSharingStatusUseCaseTest {
@@ -36,7 +32,7 @@ class GetFileSharingStatusUseCaseTest {
         val actual = getFileSharingStatusUseCase.invoke()
 
         // Then
-        assertIs<GetFileSharingStatusResult.Success>(actual)
+        assertTrue(actual is GetFileSharingStatusResult.Success)
         assertEquals(arrangement.fileSharingModel, actual.fileSharingModel)
 
         verify(arrangement.featureConfigRepository)
@@ -47,15 +43,16 @@ class GetFileSharingStatusUseCaseTest {
     @Test
     fun givenRepositoryCallFailWithInvalidCredentials_thenOperationDeniedIsReturned() = runTest {
         // Given
+        val operationDeniedException = TestNetworkException.operationDenied
         val (arrangement, getFileSharingStatusUseCase) = Arrangement()
-            .withOperationDeniedErrorResponse()
+            .withGetFileSharingStatusErrorResponse(operationDeniedException)
             .arrange()
 
         // When
         val actual = getFileSharingStatusUseCase.invoke()
 
         // Then
-        assertIs<GetFileSharingStatusResult.Failure.OperationDenied>(actual)
+        assertTrue(actual is GetFileSharingStatusResult.Failure.OperationDenied)
         assertEquals(arrangement.operationDeniedFailure, actual)
 
         verify(arrangement.featureConfigRepository)
@@ -66,15 +63,16 @@ class GetFileSharingStatusUseCaseTest {
     @Test
     fun givenRepositoryCallFailWithUserThatNotInTheTeam_thenNoTeamIsReturned() = runTest {
         // Given
+        val noTeamException = TestNetworkException.noTeam
         val (arrangement, getFileSharingStatusUseCase) = Arrangement()
-            .withNoTeamErrorResponse()
+            .withGetFileSharingStatusErrorResponse(noTeamException)
             .arrange()
 
         // When
         val actual = getFileSharingStatusUseCase.invoke()
 
         // Then
-        assertIs<GetFileSharingStatusResult.Failure.NoTeam>(actual)
+        assertTrue(actual is GetFileSharingStatusResult.Failure.NoTeam)
         assertEquals(arrangement.noTeamFailure, actual)
 
         verify(arrangement.featureConfigRepository)
@@ -84,28 +82,15 @@ class GetFileSharingStatusUseCaseTest {
 
 
     private class Arrangement {
-
         val fileSharingModel = FileSharingModel("locked", "enabled")
         val operationDeniedFailure = GetFileSharingStatusResult.Failure.OperationDenied
         val noTeamFailure = GetFileSharingStatusResult.Failure.NoTeam
-
-        private val operationDeniedErrorResponse = KaliumException.InvalidRequestError(
-            ErrorResponse(
-                403, "Insufficient permissions", "operation-denied"
-            )
-        )
-        private val noTeamErrorResponse = KaliumException.InvalidRequestError(
-            ErrorResponse(
-                404, "Team not found", "no-team"
-            )
-        )
 
         @Mock
         val featureConfigRepository = mock(classOf<FeatureConfigRepository>())
 
         val getFileSharingStatusUseCase =
             GetFileSharingStatusUseCaseImpl(featureConfigRepository)
-
 
         fun withSuccessfulResponse(): Arrangement {
             given(featureConfigRepository)
@@ -114,18 +99,11 @@ class GetFileSharingStatusUseCaseTest {
             return this
         }
 
-
-        suspend fun withOperationDeniedErrorResponse(): Arrangement {
+        fun withGetFileSharingStatusErrorResponse(exception: KaliumException): Arrangement {
             given(featureConfigRepository)
-                .suspendFunction(featureConfigRepository::getFileSharingFeatureConfig).whenInvoked()
-                .then { Either.Left(NetworkFailure.ServerMiscommunication(operationDeniedErrorResponse)) }
-            return this
-        }
-
-        suspend fun withNoTeamErrorResponse(): Arrangement {
-            given(featureConfigRepository)
-                .suspendFunction(featureConfigRepository::getFileSharingFeatureConfig).whenInvoked()
-                .then { Either.Left(NetworkFailure.ServerMiscommunication(noTeamErrorResponse)) }
+                .suspendFunction(featureConfigRepository::getFileSharingFeatureConfig)
+                .whenInvoked()
+                .thenReturn(Either.Left(NetworkFailure.ServerMiscommunication(exception)))
             return this
         }
 
