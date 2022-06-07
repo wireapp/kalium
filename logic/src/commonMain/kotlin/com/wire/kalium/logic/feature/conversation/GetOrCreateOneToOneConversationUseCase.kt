@@ -15,14 +15,14 @@ class GetOrCreateOneToOneConversationUseCase(
     suspend operator fun invoke(otherUserId: UserId): CreateConversationResult {
         return conversationRepository.getOneToOneConversationDetailsByUserId(otherUserId)
             .fold({ conversationFailure ->
-                if (getConversationFailure is StorageFailure.DataNotFound) {
+                if (conversationFailure is StorageFailure.DataNotFound) {
                     conversationRepository.createGroupConversation(members = listOf(Member(otherUserId)))
                         .fold(
                             CreateConversationResult::Failure,
                             CreateConversationResult::Success
                         )
                 } else {
-                    CreateConversationResult.Failure(getConversationFailure)
+                    CreateConversationResult.Failure(conversationFailure)
                 }
             }, { conversationDetails ->
                 CreateConversationResult.Success(conversationDetails.conversation)

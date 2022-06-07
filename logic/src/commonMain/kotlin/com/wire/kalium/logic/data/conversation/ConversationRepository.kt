@@ -18,6 +18,7 @@ import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.functional.onlyRight
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
@@ -160,7 +161,8 @@ class ConversationDataSource(
      */
     override suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<ConversationDetails> =
         conversationDAO.getConversationByQualifiedIDFlow(idMapper.toDaoModel(conversationID))
-            .filterNotNull()
+            .wrapStorageRequest()
+            .onlyRight()
             .map(conversationMapper::fromDaoModel)
             .flatMapLatest(::getConversationDetailsFlow)
 
