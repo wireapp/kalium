@@ -1,5 +1,3 @@
-import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet
-
 plugins {
     Plugins.androidLibrary(this)
     Plugins.multiplatform(this)
@@ -17,10 +15,14 @@ android {
         minSdk = Android.Sdk.min
         targetSdk = Android.Sdk.target
         consumerProguardFiles("consumer-proguard-rules.pro")
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
+    }
+    packagingOptions {
+        resources.pickFirsts.add("google/protobuf/*.proto")
     }
 }
 
@@ -58,6 +60,9 @@ kotlin {
                 implementation(Dependencies.UUID.benAsherUUID)
                 // the Dependency is duplicated between here and persistence build.gradle.kts
                 implementation(Dependencies.MultiplatformSettings.settings)
+
+                // Okio
+                implementation(Dependencies.Okio.core)
             }
         }
         val commonTest by getting {
@@ -69,6 +74,7 @@ kotlin {
 
                 // mocking
                 implementation(Dependencies.Test.mockative)
+                    implementation(Dependencies.Test.okio)
             }
         }
         val jvmMain by getting {}
@@ -78,7 +84,12 @@ kotlin {
                 implementation(Dependencies.Android.work)
             }
         }
-        val androidTest by getting
+        val androidTest by getting {
+            dependencies {
+                implementation(Dependencies.AndroidInstruments.androidTestRunner)
+                implementation(Dependencies.AndroidInstruments.androidTestRules)
+            }
+        }
     }
 }
 

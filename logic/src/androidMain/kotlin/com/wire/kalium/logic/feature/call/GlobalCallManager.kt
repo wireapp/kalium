@@ -12,6 +12,7 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.message.MessageSender
 import kotlinx.coroutines.Dispatchers
 
@@ -37,13 +38,14 @@ actual class GlobalCallManager(
     /**
      * Get a [CallManager] for a session, shouldn't be instantiated more than one CallManager for a single session.
      */
+    @Suppress("LongParameterList")
     actual fun getCallManagerForClient(
         userId: QualifiedID,
         callRepository: CallRepository,
         userRepository: UserRepository,
         clientRepository: ClientRepository,
-        callMapper: CallMapper,
-        messageSender: MessageSender
+        messageSender: MessageSender,
+        callMapper: CallMapper
     ): CallManager {
         return callManagerHolder[userId] ?: CallManagerImpl(
             calling = calling,

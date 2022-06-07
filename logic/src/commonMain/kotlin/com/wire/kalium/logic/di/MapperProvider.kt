@@ -5,7 +5,12 @@ import com.wire.kalium.logic.configuration.ServerConfigMapper
 import com.wire.kalium.logic.configuration.ServerConfigMapperImpl
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.asset.AssetMapperImpl
+import com.wire.kalium.logic.data.call.CallMapper
 import com.wire.kalium.logic.data.client.ClientMapper
+import com.wire.kalium.logic.data.connection.ConnectionMapper
+import com.wire.kalium.logic.data.connection.ConnectionMapperImpl
+import com.wire.kalium.logic.data.connection.ConnectionStatusMapper
+import com.wire.kalium.logic.data.connection.ConnectionStatusMapperImpl
 import com.wire.kalium.logic.data.conversation.ConversationMapper
 import com.wire.kalium.logic.data.conversation.ConversationMapperImpl
 import com.wire.kalium.logic.data.conversation.ConversationStatusMapper
@@ -46,10 +51,13 @@ internal object MapperProvider {
     fun publicUserMapper(): PublicUserMapper = PublicUserMapperImpl(idMapper())
     fun sendMessageFailureMapper(): SendMessageFailureMapper = SendMessageFailureMapperImpl()
     fun assetMapper(): AssetMapper = AssetMapperImpl()
-    fun eventMapper(): EventMapper = EventMapper(idMapper())
+    fun eventMapper(): EventMapper = EventMapper(idMapper(), connectionMapper())
     fun preyKeyMapper(): PreKeyMapper = PreKeyMapperImpl()
     fun preKeyListMapper(): PreKeyListMapper = PreKeyListMapper(preyKeyMapper())
     fun locationMapper(): LocationMapper = LocationMapper()
     fun clientMapper(clientConfig: ClientConfig): ClientMapper = ClientMapper(preyKeyMapper(), locationMapper(), clientConfig)
     fun conversationStatusMapper(): ConversationStatusMapper = ConversationStatusMapperImpl()
+    fun callMapper(): CallMapper = CallMapper()
+    fun connectionStatusMapper(): ConnectionStatusMapper = ConnectionStatusMapperImpl()
+    fun connectionMapper(): ConnectionMapper = ConnectionMapperImpl(idMapper(), connectionStatusMapper(), userMapper())
 }

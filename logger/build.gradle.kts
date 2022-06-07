@@ -13,6 +13,7 @@ android {
         minSdk = Android.Sdk.min
         targetSdk = Android.Sdk.target
         consumerProguardFiles("consumer-proguard-rules.pro")
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
@@ -44,6 +45,12 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 api(Dependencies.Logging.kermit)
+            }
+        }
+        val androidTest by getting {
+            dependencies {
+                implementation(Dependencies.AndroidInstruments.androidTestRunner)
+                implementation(Dependencies.AndroidInstruments.androidTestRules)
             }
         }
     }
