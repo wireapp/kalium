@@ -21,6 +21,8 @@ import com.wire.kalium.logic.data.conversation.MLSConversationDataSource
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.event.EventDataSource
 import com.wire.kalium.logic.data.event.EventRepository
+import com.wire.kalium.logic.data.featureConfig.FeatureConfigDataSource
+import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.keypackage.KeyPackageDataSource
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
@@ -49,6 +51,8 @@ import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
+import com.wire.kalium.logic.feature.featureConfig.GetFileSharingStatusUseCase
+import com.wire.kalium.logic.feature.featureConfig.GetFileSharingStatusUseCaseImpl
 import com.wire.kalium.logic.feature.message.MLSMessageCreator
 import com.wire.kalium.logic.feature.message.MLSMessageCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
@@ -337,6 +341,10 @@ abstract class UserSessionScopeCommon(
             clientRepository,
             mlsClientProvider
         )
+    private val featureConfigRepository: FeatureConfigRepository
+        get() = FeatureConfigDataSource(featureConfigApi = authenticatedDataSourceSet.authenticatedNetworkContainer.featureConfigApi)
+
+    val fileSharingStatus: GetFileSharingStatusUseCase get() = GetFileSharingStatusUseCaseImpl(featureConfigRepository)
 
     val team: TeamScope get() = TeamScope(userRepository, teamRepository, syncManager)
 
