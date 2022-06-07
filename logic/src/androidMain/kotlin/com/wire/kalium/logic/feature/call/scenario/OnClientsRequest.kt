@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-class OnClientsRequest(
+internal class OnClientsRequest(
     private val calling: Calling,
     private val selfUserId: String,
     private val conversationRepository: ConversationRepository,
