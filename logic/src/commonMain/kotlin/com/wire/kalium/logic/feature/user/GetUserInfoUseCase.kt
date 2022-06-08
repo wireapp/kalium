@@ -8,6 +8,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.wrapStorageRequest
 import kotlinx.coroutines.flow.firstOrNull
 
 /**
@@ -40,12 +41,14 @@ internal class GetUserInfoUseCaseImpl(
     }
 
     private suspend fun getOtherUser(userId: UserId): Either<CoreFailure, OtherUser> {
-        val localOtherUser = userRepository.getKnownUser(userId).firstOrNull()
+        return wrapStorageRequest {
+            val localOtherUser = userRepository.getKnownUser(userId).firstOrNull()
 
-        return if (localOtherUser != null) {
-            Either.Right(localOtherUser)
-        } else {
-            userRepository.fetchUserInfo(userId)
+            return if (localOtherUser != null) {
+                Either.Right(localOtherUser)
+            } else {
+                userRepository.fetchUserInfo(userId)
+            }
         }
     }
 
