@@ -81,7 +81,8 @@ class ConversationsApplication : CliktCommand() {
             println("There was an error on the login :( check the credentials and the internet connection and try again please")
         } else {
             val sessionData = loginResult.value
-            val networkModule = AuthenticatedNetworkContainer(InMemorySessionManager(serverConfigDTO, sessionData), InMemoryServerMetaDataManager())
+            val networkModule =
+                AuthenticatedNetworkContainer(InMemorySessionManager(serverConfigDTO, sessionData), InMemoryServerMetaDataManager())
             val conversationsResponse = networkModule.conversationApi.fetchConversationsIds(null)
 
             if (!conversationsResponse.isSuccessful()) {

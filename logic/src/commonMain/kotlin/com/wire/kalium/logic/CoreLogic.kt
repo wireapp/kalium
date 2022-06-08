@@ -8,9 +8,9 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.GlobalWorkScheduler
 import com.wire.kalium.logic.sync.UpdateApiVersionsScheduler
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 
@@ -33,7 +33,7 @@ abstract class CoreLogicCommon(
     protected abstract val globalPreferences: Lazy<KaliumPreferences>
     protected abstract val globalDatabase: Lazy<GlobalDatabaseProvider>
 
-    fun getGlobalScope(): GlobalKaliumScope = GlobalKaliumScope(globalDatabase, globalPreferences, sessionRepository)
+    fun getGlobalScope(): GlobalKaliumScope = GlobalKaliumScope(globalDatabase, globalPreferences, sessionRepository, kaliumConfigs)
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     fun getAuthenticationScope(backendLinks: ServerConfig.Links): AuthenticationScope =
