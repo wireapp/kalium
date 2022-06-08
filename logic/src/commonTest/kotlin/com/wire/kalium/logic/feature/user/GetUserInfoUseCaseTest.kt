@@ -19,6 +19,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 class GetUserInfoUseCaseTest {
 
@@ -27,7 +28,6 @@ class GetUserInfoUseCaseTest {
 
     @Mock
     private val teamRepository: TeamRepository = mock(TeamRepository::class)
-
 
     lateinit var getUserInfoUseCase: GetUserInfoUseCase
 
@@ -198,11 +198,90 @@ class GetUserInfoUseCaseTest {
             .wasInvoked(once)
     }
 
+    @Test
+    fun givenAUserWithTeamNotExistingLocallyAndFetchingUserInfoFails_WhenGettingDetails_ThenPropagateTheFailureAndDoNotGetTheTeamDetails() = runTest {
+        // given
+        given(userRepository)
+            .suspendFunction(userRepository::getKnownUser)
+            .whenInvokedWith(eq(userId))
+            .thenReturn(flowOf(null))
+
+        given(userRepository)
+            .suspendFunction(userRepository::fetchUserInfo)
+            .whenInvokedWith(any())
+            .thenReturn(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
+
+        // when
+        val result = getUserInfoUseCase(userId)
+
+        // then
+        assertIs<GetUserInfoResult.Failure>(result)
+
+        verify(userRepository)
+            .suspendFunction(userRepository::getKnownUser)
+            .with(eq(userId))
+            .wasInvoked(once)
+
+        verify(userRepository)
+            .suspendFunction(userRepository::fetchUserInfo)
+            .with(any())
+            .wasInvoked(once)
+
+        verify(teamRepository)
+            .suspendFunction(teamRepository::getTeam)
+            .with(any())
+            .wasNotInvoked()
+
+        verify(teamRepository)
+            .suspendFunction(teamRepository::fetchTeamById)
+            .with(any())
+            .wasInvoked()
+    }
+
+    @Test
+    fun givenAUserWithTeamNotExistingLocallyAndFetchingTeamFails_WhenGettingDetails_ThenPropagateTheFailure() = runTest {
+        // given
+        given(userRepository)
+            .suspendFunction(userRepository::getKnownUser)
+            .whenInvokedWith(eq(userId))
+            .thenReturn(flowOf(OTHER))
+
+        given(teamRepository)
+            .suspendFunction(teamRepository::getTeam)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(null))
+
+        given(teamRepository)
+            .suspendFunction(teamRepository::fetchTeamById)
+            .whenInvokedWith(any())
+            .thenReturn(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
+        // when
+        val result = getUserInfoUseCase(userId)
+
+        // then
+        assertIs<GetUserInfoResult.Failure>(result)
+
+        verify(userRepository)
+            .suspendFunction(userRepository::getKnownUser)
+            .with(eq(userId))
+            .wasInvoked(once)
+
+        verify(teamRepository)
+            .suspendFunction(teamRepository::getTeam)
+            .with(any())
+            .wasInvoked(once)
+
+        verify(teamRepository)
+            .suspendFunction(teamRepository::fetchTeamById)
+            .with(any())
+            .wasInvoked(once)
+    }
+
+
     private companion object {
         val userId = UserId("some_user", "some_domain")
 
         val team = Team("teamId", "teamName")
-
     }
 
 }
