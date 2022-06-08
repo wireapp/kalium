@@ -1,11 +1,13 @@
 package com.wire.kalium.logic.feature.featureConfig
 
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.featureConfig.FileSharingModel
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.persistence.client.UserConfigStorage
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.given
@@ -89,8 +91,12 @@ class GetFileSharingStatusUseCaseTest {
         @Mock
         val featureConfigRepository = mock(classOf<FeatureConfigRepository>())
 
+        @Mock
+        val userConfigRepository = mock(classOf<UserConfigRepository>())
+
+
         val getFileSharingStatusUseCase =
-            GetFileSharingStatusUseCaseImpl(featureConfigRepository)
+            GetFileSharingStatusUseCaseImpl(userConfigRepository, featureConfigRepository)
 
         fun withSuccessfulResponse(): Arrangement {
             given(featureConfigRepository)
