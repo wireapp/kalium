@@ -5,6 +5,7 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.Either
@@ -201,7 +202,8 @@ class RegisterAccountUseCaseTest {
             team = null,
             connectionStatus = ConnectionState.ACCEPTED,
             previewPicture = null,
-            completePicture = null
+            completePicture = null,
+            availabilityStatus = UserAvailabilityStatus.NONE
         )
         val TEST_AUTH_SESSION =
             AuthSession(AuthSession.Tokens(TEST_SELF_USER.id, "access_token", "refresh_token", "token_type"), TEST_SERVER_CONFIG.links)
