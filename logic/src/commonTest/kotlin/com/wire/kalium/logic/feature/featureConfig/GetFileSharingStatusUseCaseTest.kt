@@ -9,6 +9,7 @@ import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.persistence.client.UserConfigStorage
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
@@ -99,6 +100,11 @@ class GetFileSharingStatusUseCaseTest {
             GetFileSharingStatusUseCaseImpl(userConfigRepository, featureConfigRepository)
 
         fun withSuccessfulResponse(): Arrangement {
+            given(userConfigRepository)
+                .function(userConfigRepository::persistFileSharingStatus)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
+
             given(featureConfigRepository)
                 .suspendFunction(featureConfigRepository::getFileSharingFeatureConfig).whenInvoked()
                 .thenReturn(Either.Right(fileSharingModel))
