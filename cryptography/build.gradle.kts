@@ -83,12 +83,16 @@ kotlin {
                 // coroutines
                 implementation(Dependencies.Coroutines.core)
                 api(Dependencies.Ktor.core)
+
+                // Okio
+                implementation(Dependencies.Okio.core)
             }
         }
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
                 implementation(Dependencies.Coroutines.test)
+                implementation(Dependencies.Test.okio)
             }
         }
         fun org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet.addCommonKotlinJvmSourceDir() {

@@ -8,6 +8,7 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.feature.register.RegisterParam
 import com.wire.kalium.logic.feature.register.RegisterResult
 import com.wire.kalium.logic.feature.register.RequestActivationCodeResult
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.NetworkLogger
 import kotlinx.coroutines.runBlocking
 import java.util.Scanner
@@ -16,7 +17,7 @@ import kotlin.properties.Delegates
 class RegisterAccountApp : CliktCommand() {
 
     private val environment: String? by option(help = "Choose backend environment: can be production or staging")
-    private val coreLogic = CoreLogic("Kalium CLI", ".proteus")
+    private val coreLogic = CoreLogic("Kalium CLI", ".proteus", kaliumConfigs = KaliumConfigs())
 
     private val serverConfig: ServerConfig.Links by lazy {
         if (environment == "production") {

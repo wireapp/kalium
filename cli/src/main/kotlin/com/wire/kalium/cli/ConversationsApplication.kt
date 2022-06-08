@@ -12,8 +12,8 @@ import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.configuration.server.ServerConfigMapperImpl
 import com.wire.kalium.network.AuthenticatedNetworkContainer
 import com.wire.kalium.network.NetworkLogger
-import com.wire.kalium.network.ServerMetaDataManager
 import com.wire.kalium.network.UnauthenticatedNetworkContainer
+import com.wire.kalium.network.ServerMetaDataManager
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.model.AccessTokenDTO
@@ -81,16 +81,15 @@ class ConversationsApplication : CliktCommand() {
             println("There was an error on the login :( check the credentials and the internet connection and try again please")
         } else {
             val sessionData = loginResult.value
-            val networkModule =
-                AuthenticatedNetworkContainer(InMemorySessionManager(serverConfigDTO, sessionData), InMemoryServerMetaDataManager())
-            val conversationsResponse = networkModule.conversationApi.conversationsByBatch(null, 100)
+            val networkModule = AuthenticatedNetworkContainer(InMemorySessionManager(serverConfigDTO, sessionData))
+            val conversationsResponse = networkModule.conversationApi.fetchConversationsIds(null)
 
             if (!conversationsResponse.isSuccessful()) {
                 println("There was an error loading the conversations :( check the internet connection and try again please")
             } else {
                 println("Your conversations:")
-                conversationsResponse.value.conversations.forEach {
-                    println("ID:${it.id}, Name: ${it.name}")
+                conversationsResponse.value.conversationsIds.forEach {
+                    println("ID:${it.value}, Name: ${it.domain}")
                 }
             }
             uploadTestAsset(networkModule)
