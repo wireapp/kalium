@@ -1,19 +1,21 @@
 package com.wire.kalium.logic.feature.featureConfig
 
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.featureConfig.FileSharingModel
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNoTeam
 
-interface GetFileSharingStatusUseCase {
+interface GetAndSaveFileSharingStatusUseCase {
     suspend operator fun invoke(): GetFileSharingStatusResult
 }
 
 class GetFileSharingStatusUseCaseImpl(
+    private val userConfigRepository: UserConfigRepository,
     private val featureConfigRepository: FeatureConfigRepository
-) : GetFileSharingStatusUseCase {
+) : GetAndSaveFileSharingStatusUseCase {
     override suspend operator fun invoke(): GetFileSharingStatusResult =
         featureConfigRepository.getFileSharingFeatureConfig().fold({
             if (
@@ -30,6 +32,11 @@ class GetFileSharingStatusUseCaseImpl(
             }
 
         }, {
+            if (it.status.lowercase() == "enabled") {
+                userConfigRepository.persistFileSharingStatus(true)
+            } else {
+                userConfigRepository.persistFileSharingStatus(false)
+            }
             GetFileSharingStatusResult.Success(it)
         })
 }
