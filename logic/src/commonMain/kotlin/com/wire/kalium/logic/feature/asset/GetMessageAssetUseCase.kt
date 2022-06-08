@@ -8,7 +8,6 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
@@ -39,10 +38,10 @@ internal class GetMessageAssetUseCaseImpl(
             kaliumLogger.e("There was an error retrieving the asset message $messageId")
             MessageAssetResult.Failure(it)
         }, { message ->
-            val (assetKey, assetToken, encryptionKey) = when (val content = message.content) {
+            val assetMetadata = when (val content = message.content) {
                 is MessageContent.Asset -> {
                     with(content.value.remoteData) {
-                        Triple(assetId, assetToken, otrKey)
+                        DownloadAssetMessageMetadata(assetId, assetDomain, assetToken, otrKey)
                     }
                 }
                 // This should never happen
@@ -51,14 +50,14 @@ internal class GetMessageAssetUseCaseImpl(
                 )
             }
             assetDataSource.downloadPrivateAsset(
-                assetId = UserAssetId(assetKey, conversationId.domain),// fixme: should pass it to repo and there maps
-                assetToken = assetToken
+                assetId = UserAssetId(assetMetadata.assetId, assetMetadata.assetDomain!!),
+                assetToken = assetMetadata.assetToken
             )
                 .fold({
-                    kaliumLogger.e("There was an error downloading asset with id => $assetKey")
+                    kaliumLogger.e("There was an error downloading asset with id => ${assetMetadata.assetId}")
                     MessageAssetResult.Failure(it)
                 }, { encodedAsset ->
-                    val rawAsset = decryptDataWithAES256(EncryptedData(encodedAsset), AES256Key(encryptionKey)).data
+                    val rawAsset = decryptDataWithAES256(EncryptedData(encodedAsset), AES256Key(assetMetadata.assetEncryptionKey)).data
                     MessageAssetResult.Success(rawAsset)
                 })
         })
