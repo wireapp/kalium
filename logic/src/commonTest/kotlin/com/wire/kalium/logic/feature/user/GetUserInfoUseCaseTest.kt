@@ -58,6 +58,7 @@ class GetUserInfoUseCaseTest {
 
         // then
         assertEquals(OTHER, (result as GetUserInfoResult.Success).otherUser)
+
         verify(userRepository)
             .suspendFunction(userRepository::getKnownUser)
             .with(eq(userId))
@@ -278,11 +279,8 @@ class GetUserInfoUseCaseTest {
     }
 
 
-    private companion object {
-        val userId = UserId("some_user", "some_domain")
-
-        val team = Team("teamId", "teamName")
-    }
 
 }
+
+
 
