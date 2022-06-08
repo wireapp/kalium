@@ -11,6 +11,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.message.MessageSender
@@ -153,7 +154,7 @@ class SendImageUseCaseTest {
             ConnectionState.ACCEPTED,
             "some_key",
             "some_key",
-            null
+            UserAvailabilityStatus.NONE
         )
 
         val sendImageUseCase =

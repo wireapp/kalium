@@ -18,7 +18,7 @@ data class OtherUser(
     val connectionStatus: ConnectionState = ConnectionState.NOT_CONNECTED,
     val previewPicture: UserAssetId?,
     val completePicture: UserAssetId?,
-    val availabilityStatus: UserAvailabilityStatus?
+    val availabilityStatus: UserAvailabilityStatus
 ) : User() {
 
     fun isUsingWireCloudBackEnd(): Boolean =

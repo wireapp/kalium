@@ -29,7 +29,7 @@ data class UserEntity(
     val completeAssetId: UserAssetIdEntity?,
     // for now availabilityStatus is stored only locally and ignored for API models,
     // later, when API start supporting it, it should be added into API model too
-    val availabilityStatus: UserAvailabilityStatusEntity?
+    val availabilityStatus: UserAvailabilityStatusEntity
 )
 
 internal typealias UserAssetIdEntity = String

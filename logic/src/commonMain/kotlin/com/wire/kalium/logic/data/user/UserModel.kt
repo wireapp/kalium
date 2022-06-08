@@ -64,7 +64,7 @@ data class SelfUser(
     val connectionStatus: ConnectionState,
     val previewPicture: UserAssetId?,
     val completePicture: UserAssetId?,
-    val availabilityStatus: UserAvailabilityStatus?
+    val availabilityStatus: UserAvailabilityStatus
 ) : User()
 
 typealias UserAssetId = String

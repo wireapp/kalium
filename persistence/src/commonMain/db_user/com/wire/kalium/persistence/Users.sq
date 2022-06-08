@@ -14,7 +14,7 @@ CREATE TABLE User (
     connection_status TEXT AS ConnectionEntity.State NOT NULL DEFAULT 'NOT_CONNECTED',
     preview_asset_id TEXT,
     complete_asset_id TEXT,
-    user_availability_status TEXT AS UserAvailabilityStatusEntity
+    user_availability_status TEXT AS UserAvailabilityStatusEntity NOT NULL DEFAULT 'NONE'
 );
 
 deleteAllUsers:

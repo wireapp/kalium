@@ -87,7 +87,7 @@ class UserTypeMapperTest {
             connectionStatus = ConnectionState.ACCEPTED,
             previewPicture = "testPreviewPicture",
             completePicture = "testCompletePicture",
-            availabilityStatus = null
+            availabilityStatus = UserAvailabilityStatus.NONE
         )
     }
 
@@ -106,7 +106,7 @@ class UserTypeMapperTest {
             connectionStatus = ConnectionState.ACCEPTED,
             previewPicture = "testPreviewPicture",
             completePicture = "testCompletePicture",
-            availabilityStatus = null,
+            availabilityStatus = UserAvailabilityStatus.NONE,
         )
     }
 }

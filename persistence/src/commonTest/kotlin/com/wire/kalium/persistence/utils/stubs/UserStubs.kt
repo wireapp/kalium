@@ -43,7 +43,7 @@ fun newUserEntity(
     connectionStatus: ConnectionEntity.State = ConnectionEntity.State.ACCEPTED,
     previewAssetId: String = "previewAssetId",
     completeAssetId: String = "completeAssetId",
-    availabilityStatusEntity: UserAvailabilityStatusEntity? = null
+    availabilityStatusEntity: UserAvailabilityStatusEntity = UserAvailabilityStatusEntity.NONE
 ): UserEntity {
     return UserEntity(
         id = QualifiedIDEntity(id, "wire.com"),
