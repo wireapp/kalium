@@ -13,15 +13,7 @@ import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.auth.sso.SSOLoginScope
 import com.wire.kalium.logic.feature.register.RegisterScope
-import com.wire.kalium.logic.feature.session.GetSessionsUseCase
-import com.wire.kalium.logic.feature.session.SessionScope
-import com.wire.kalium.logic.feature.user.EnableLoggingUseCase
-import com.wire.kalium.logic.feature.user.EnableLoggingUseCaseImpl
-import com.wire.kalium.logic.feature.user.IsLoggingEnabledUseCase
-import com.wire.kalium.logic.feature.user.IsLoggingEnabledUseCaseImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.featureFlags.GetBuildConfigsUseCase
-import com.wire.kalium.logic.featureFlags.GetBuildConfigsUseCaseImpl
 import com.wire.kalium.logic.functional.nullableFold
 import com.wire.kalium.network.ServerMetaDataManager
 import com.wire.kalium.network.UnauthenticatedNetworkContainer
@@ -57,20 +49,6 @@ class AuthenticationScope(
     val login: LoginUseCase get() = LoginUseCaseImpl(loginRepository, validateEmailUseCase, validateUserHandleUseCase, backendLinks)
     val register: RegisterScope get() = RegisterScope(registerAccountRepository, backendLinks)
     val ssoLoginScope: SSOLoginScope get() = SSOLoginScope(ssoLoginRepository, backendLinks, globalScope.serverConfigRepository)
-
-    /*
-    val addAuthenticatedAccount: AddAuthenticatedUserUseCase get() = AddAuthenticatedUserUseCase(sessionRepository)
-    val login: LoginUseCase get() = LoginUseCaseImpl(loginRepository, validateEmailUseCase, validateUserHandleUseCase)
-    val getSessions: GetSessionsUseCase get() = GetSessionsUseCase(sessionRepository)
-    val getServerConfig: GetServerConfigUseCase get() = GetServerConfigUseCase(serverConfigRepository)
-    val session: SessionScope get() = SessionScope(sessionRepository)
-    val register: RegisterScope get() = RegisterScope(registerAccountRepository)
-    val ssoLoginScope: SSOLoginScope get() = SSOLoginScope(ssoLoginRepository, sessionMapper)
-    val saveNotificationToken: SaveNotificationTokenUseCase get() = SaveNotificationTokenUseCase(notificationTokenRepository)
-    val enableLogging: EnableLoggingUseCase get() = EnableLoggingUseCaseImpl(userConfigRepository)
-    val isLoggingEnabled: IsLoggingEnabledUseCase get() = IsLoggingEnabledUseCaseImpl(userConfigRepository)
-    val buildConfigs: GetBuildConfigsUseCase get() = GetBuildConfigsUseCaseImpl(kaliumConfigs)
-     */
 }
 
 
