@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.call
 
+import com.wire.kalium.logic.data.call.ActiveSpeaker
 import com.wire.kalium.logic.data.call.Participant
 import com.wire.kalium.logic.data.id.ConversationId
 
@@ -16,5 +17,6 @@ data class Call(
     val status: CallStatus,
     val callerId: String,
     val participants: List<Participant> = emptyList(),
-    val maxParticipants: Int = 0 // Was used for tracking
+    val maxParticipants: Int = 0, // Was used for tracking
+    val activeSpeakers: List<ActiveSpeaker> = emptyList()
 )
