@@ -9,6 +9,7 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.notification.LocalNotificationCommentType
 import com.wire.kalium.logic.data.notification.LocalNotificationMessage
@@ -333,7 +334,7 @@ class GetNotificationsUseCaseTest {
                             assetId = assetId,
                             assetToken = "==some-asset-token",
                             assetDomain = "some-asset-domain.com",
-                            encryptionAlgorithm = AssetContent.RemoteData.EncryptionAlgorithm.AES_GCM
+                            encryptionAlgorithm = MessageEncryptionAlgorithm.AES_GCM
                         ),
                         downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
                     )
