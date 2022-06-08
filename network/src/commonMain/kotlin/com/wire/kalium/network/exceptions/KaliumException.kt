@@ -17,6 +17,7 @@ import com.wire.kalium.network.exceptions.NetworkErrorLabel.MISSING_AUTH
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.TOO_MANY_CLIENTS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.TOO_MANY_MEMBERS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.USER_CREATION_RESTRICTED
+import io.ktor.http.HttpStatusCode
 
 sealed class KaliumException() : Exception() {
 
@@ -70,7 +71,7 @@ fun KaliumException.InvalidRequestError.isBadRequest(): Boolean {
 }
 
 fun KaliumException.InvalidRequestError.isNotFound(): Boolean {
-    return errorResponse.code == 404
+    return errorResponse.code == HttpStatusCode.NotFound.value
 }
 
 fun KaliumException.InvalidRequestError.isDomainBlockedForRegistration(): Boolean {
