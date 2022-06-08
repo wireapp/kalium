@@ -4,6 +4,7 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserAssetId
+import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 
 data class OtherUser(
@@ -16,7 +17,8 @@ data class OtherUser(
     val team: String?,
     val connectionStatus: ConnectionState = ConnectionState.NOT_CONNECTED,
     val previewPicture: UserAssetId?,
-    val completePicture: UserAssetId?
+    val completePicture: UserAssetId?,
+    val availabilityStatus: UserAvailabilityStatus
 ) : User() {
 
     fun isUsingWireCloudBackEnd(): Boolean =

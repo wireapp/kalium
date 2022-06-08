@@ -21,8 +21,8 @@ import com.wire.kalium.network.api.user.self.SelfApi
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserDAO
-import com.wire.kalium.persistence.dao.UserEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -46,6 +46,7 @@ interface UserRepository {
     suspend fun getAllContacts(): List<OtherUser>
     suspend fun getKnownUser(userId: UserId): Flow<OtherUser?>
     suspend fun fetchUserInfo(userId: UserId): Either<CoreFailure, OtherUser>
+    suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatusEntity)
 }
 
 class UserDataSource(
@@ -141,6 +142,10 @@ class UserDataSource(
         wrapApiRequest { userDetailsApi.getUserInfo(idMapper.toApiModel(userId)) }.map { userProfile ->
             publicUserMapper.fromUserDetailResponse(userProfile)
         }
+
+    override suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatusEntity) {
+        userDAO.updateUserAvailabilityStatus(_getSelfUserId(), status)
+    }
 
     companion object {
         const val SELF_USER_ID_KEY = "selfUserID"

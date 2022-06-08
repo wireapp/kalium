@@ -18,6 +18,15 @@ class CallMapper {
         return when (conversationType) {
             ConversationType.OneOnOne -> ConversationTypeCalling.OneOnOne
             ConversationType.Conference -> ConversationTypeCalling.Conference
+            else -> ConversationTypeCalling.Unknown
+        }
+    }
+
+    fun fromIntToConversationType(conversationType: Int): ConversationType {
+        return when (conversationType) {
+            0 -> ConversationType.OneOnOne
+            2 -> ConversationType.Conference
+            else -> ConversationType.Unknown
         }
     }
 
