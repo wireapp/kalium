@@ -6,10 +6,13 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.protobuf.messages.GenericMessage
+import com.wire.kalium.protobuf.messages.MessageEdit
+import com.wire.kalium.protobuf.messages.Text
 import io.ktor.utils.io.core.toByteArray
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 class ProtoContentMapperTest {
 
@@ -132,6 +135,33 @@ class ProtoContentMapperTest {
         assertEquals(decoded, protoContent)
     }
 
+    @Test
+    fun givenEditedTextGenericMessage_whenMappingFromProtoData_thenTheReturnValueShouldHaveTheCorrectEditedMessageId() {
+        val replacedMessageId = "replacedMessageId"
+        val textContent = MessageEdit.Content.Text(Text("textContent"))
+        val genericMessage = GenericMessage(TEST_MESSAGE_UUID, GenericMessage.Content.Edited(MessageEdit(replacedMessageId, textContent)))
+        val protobufBlob = PlainMessageBlob(genericMessage.encodeToByteArray())
+
+        val result = protoContentMapper.decodeFromProtobuf(protobufBlob)
+
+        val content = result.messageContent
+        assertIs<MessageContent.TextEdited>(content)
+        assertEquals(replacedMessageId, content.editMessageId)
+    }
+
+    @Test
+    fun givenEditedTextGenericMessage_whenMappingFromProtoData_thenTheReturnValueShouldHaveTheCorrectUpdatedContent() {
+        val replacedMessageId = "replacedMessageId"
+        val textContent = MessageEdit.Content.Text(Text("textContent"))
+        val genericMessage = GenericMessage(TEST_MESSAGE_UUID, GenericMessage.Content.Edited(MessageEdit(replacedMessageId, textContent)))
+        val protobufBlob = PlainMessageBlob(genericMessage.encodeToByteArray())
+
+        val result = protoContentMapper.decodeFromProtobuf(protobufBlob)
+
+        val content = result.messageContent
+        assertIs<MessageContent.TextEdited>(content)
+        assertEquals(textContent.value.content, content.newContent)
+    }
 
     private companion object {
         const val TEST_MESSAGE_UUID = "testUuid"

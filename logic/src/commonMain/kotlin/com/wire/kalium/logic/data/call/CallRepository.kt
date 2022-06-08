@@ -21,7 +21,10 @@ interface CallRepository {
     fun incomingCallsFlow(): Flow<List<Call>>
     fun ongoingCallsFlow(): Flow<List<Call>>
     fun createCall(call: Call)
+    fun removeCallById(conversationId: String)
     fun updateCallStatusById(conversationId: String, status: CallStatus)
+    fun updateIsMutedById(conversationId: String, isMuted: Boolean)
+    fun updateIsCameraOnById(conversationId: String, isCameraOn: Boolean)
     fun updateCallParticipants(conversationId: String, participants: List<Participant>)
 }
 
@@ -88,6 +91,42 @@ internal class CallDataSource(
                 calls = updatedCalls
             )
         }
+    }
+
+    override fun updateIsMutedById(conversationId: String, isMuted: Boolean) {
+        val callProfile = _callProfile.value
+        callProfile.calls[conversationId]?.let { call ->
+            val updatedCalls = callProfile.calls.toMutableMap().apply {
+                this[conversationId] = call.copy(
+                    isMuted = isMuted
+                )
+            }
+
+            _callProfile.value = callProfile.copy(
+                calls = updatedCalls
+            )
+        }
+    }
+
+    override fun updateIsCameraOnById(conversationId: String, isCameraOn: Boolean) {
+        val callProfile = _callProfile.value
+        callProfile.calls[conversationId]?.let { call ->
+            val updatedCalls = callProfile.calls.toMutableMap().apply {
+                this[conversationId] = call.copy(
+                    isCameraOn = isCameraOn
+                )
+            }
+
+            _callProfile.value = callProfile.copy(
+                calls = updatedCalls
+            )
+        }
+    }
+
+    override fun removeCallById(conversationId: String) {
+        val callProfile = _callProfile.value
+        val oldValues = callProfile.calls.filterKeys { it != conversationId }
+        _callProfile.value = CallProfile(oldValues)
     }
 
     override fun updateCallParticipants(conversationId: String, participants: List<Participant>) {

@@ -95,6 +95,6 @@ class EventDataSource(
 
 
     private companion object {
-        const val NOTIFICATIONS_QUERY_SIZE = 500
+        const val NOTIFICATIONS_QUERY_SIZE = 100
     }
 }

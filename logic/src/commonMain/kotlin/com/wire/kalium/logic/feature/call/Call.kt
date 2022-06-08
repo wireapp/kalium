@@ -8,13 +8,14 @@ enum class CallStatus {
     INCOMING,
     MISSED,
     ANSWERED,
-    ESTABLISHED,
-    CLOSED
+    ESTABLISHED
 }
 
 data class Call(
     val conversationId: ConversationId,
     val status: CallStatus,
+    val isMuted: Boolean,
+    val isCameraOn: Boolean,
     val callerId: String,
     val participants: List<Participant> = emptyList(),
     val maxParticipants: Int = 0 // Was used for tracking
