@@ -22,7 +22,7 @@ class GetUserInfoUseCaseTestArrangement {
     @Mock
     private val teamRepository: TeamRepository = mock(TeamRepository::class)
 
-    lateinit var getUserInfoUseCase: GetUserInfoUseCase
+    private lateinit var getUserInfoUseCase: GetUserInfoUseCase
 
     @BeforeTest
     fun setUp() {
@@ -43,7 +43,7 @@ class GetUserInfoUseCaseTestArrangement {
                 )
             )
 
-        if (localUserPresent) {
+        if (!localUserPresent) {
             given(userRepository)
                 .suspendFunction(userRepository::fetchUserInfo)
                 .whenInvokedWith(any())
@@ -56,7 +56,7 @@ class GetUserInfoUseCaseTestArrangement {
     fun withFailingUserRetrive() {
         given(userRepository)
             .suspendFunction(userRepository::getKnownUser)
-            .whenInvokedWith(eq(userId))
+            .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
 
         given(userRepository)
@@ -65,11 +65,56 @@ class GetUserInfoUseCaseTestArrangement {
             .thenReturn(
                 Either.Left(CoreFailure.Unknown(RuntimeException("some error")))
             )
+
+        return this
+    }
+
+    fun withSuccessTeamRetrive(
+        localTeamPresent: Boolean = true,
+    ): GetUserInfoUseCaseTestArrangement {
+        given(teamRepository)
+            .suspendFunction(teamRepository::getTeam)
+            .whenInvokedWith(any())
+            .thenReturn(
+                flowOf(
+                    if (!localTeamPresent) null
+                    else team
+                )
+            )
+
+        if (!localTeamPresent) {
+            given(userRepository)
+                .suspendFunction(userRepository::fetchUserInfo)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(TestUser.OTHER))
+        }
+
+        return this
+    }
+
+    fun withFailingTeamRetrieve(): GetUserInfoUseCaseTestArrangement {
+        given(teamRepository)
+            .suspendFunction(teamRepository::getTeam)
+            .whenInvokedWith(any())
+            .thenReturn(
+                flowOf(team)
+            )
+
+        given(teamRepository)
+            .suspendFunction(teamRepository::fetchTeamById)
+            .whenInvokedWith(any())
+            .thenReturn(
+                Either.Left(CoreFailure.Unknown(RuntimeException("some error")))
+            )
+
+        return this
+    }
+
+    fun arrange(): Pair<GetUserInfoUseCaseTestArrangement, GetUserInfoUseCase> {
+        return this to getUserInfoUseCase
     }
 
     private companion object {
-        val userId = UserId("some_user", "some_domain")
-
         val team = Team("teamId", "teamName")
     }
 }
