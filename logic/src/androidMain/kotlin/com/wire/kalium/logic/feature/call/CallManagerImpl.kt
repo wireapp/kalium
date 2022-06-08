@@ -233,6 +233,7 @@ actual class CallManagerImpl(
      * onCallingReady
      * Will start the handlers for: ParticipantsChanged, NetworkQuality, ClientsRequest and ActiveSpeaker
      */
+    @Suppress("LongMethod")
     private fun onCallingReady() {
         // Participants
         scope.launch {
