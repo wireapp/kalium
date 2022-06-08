@@ -9,7 +9,7 @@ CREATE TABLE Conversation (
     mls_group_id TEXT,
     mls_group_state TEXT AS ConversationEntity.GroupState NOT NULL,
     protocol TEXT AS ConversationEntity.Protocol NOT NULL,
-    muted_status TEXT AS ConversationEntity.MutedStatus DEFAULT "all_allowed" NOT NULL,
+    muted_status TEXT AS ConversationEntity.MutedStatus DEFAULT "ALL_ALLOWED" NOT NULL,
     muted_time INTEGER DEFAULT 0 NOT NULL,
     last_modified_date TEXT NOT NULL,
     last_notified_message_date TEXT
@@ -65,7 +65,7 @@ selectByGroupId:
 SELECT * FROM Conversation WHERE mls_group_id = ?;
 
 selectConversationsWithUnnotifiedMessages:
-SELECT * FROM Conversation WHERE last_notified_message_date ISNULL OR DateTime(last_modified_date) > DateTime(last_notified_message_date);
+SELECT * FROM Conversation WHERE muted_status != 'ALL_MUTED' AND (last_notified_message_date ISNULL OR DateTime(last_modified_date) > DateTime(last_notified_message_date));
 
 updateConversationMutingStatus:
 UPDATE Conversation
