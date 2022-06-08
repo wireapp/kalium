@@ -154,6 +154,7 @@ class WrapperWorkerFactory(private val coreLogic: CoreLogic) : WorkerFactory() {
     internal companion object {
         private const val WORKER_CLASS_KEY = "worker_class"
         internal const val USER_ID_KEY = "user-id-worker-param"
+        // TODO: delete not used anymore
         internal const val SERVER_CONFIG_ID_KEY = "server-config-id-worker-param"
 
         fun workData(work: KClass<out DefaultWorker>, userId: UserId? = null) = Data.Builder()
