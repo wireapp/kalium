@@ -1,5 +1,5 @@
-import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.ConnectionEntity;
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import kotlin.Int;
 
 CREATE TABLE User (
@@ -11,8 +11,8 @@ CREATE TABLE User (
     accent_id INTEGER AS Int NOT NULL DEFAULT 0,
     team TEXT,
     connection_status TEXT AS ConnectionEntity.State NOT NULL DEFAULT 'NOT_CONNECTED',
-    preview_asset_id TEXT,
-    complete_asset_id TEXT
+    preview_asset_id TEXT AS QualifiedIDEntity,
+    complete_asset_id TEXT AS QualifiedIDEntity
 );
 
 deleteAllUsers:

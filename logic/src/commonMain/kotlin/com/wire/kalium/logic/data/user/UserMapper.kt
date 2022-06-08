@@ -56,8 +56,10 @@ internal class UserMapperImpl(private val idMapper: IdMapper = MapperProvider.id
             accentId = accentId,
             team = teamId,
             connectionStatus = ConnectionState.NOT_CONNECTED,
-            previewPicture = assets.getPreviewAssetOrNull()?.key,
-            completePicture = assets.getCompleteAssetOrNull()?.key
+            previewPicture = assets.getPreviewAssetOrNull()
+                ?.let { idMapper.toQualifiedUserAssetId(it.key, id.domain) }, // assume the same domain as the userId
+            completePicture = assets.getCompleteAssetOrNull()
+                ?.let { idMapper.toQualifiedUserAssetId(it.key, id.domain) }, // assume the same domain as the userId
         )
     }
 
@@ -70,8 +72,12 @@ internal class UserMapperImpl(private val idMapper: IdMapper = MapperProvider.id
             phone = null,
             accentId = userProfileDTO.accentId,
             team = userProfileDTO.teamId,
-            previewAssetId = userProfileDTO.assets.getPreviewAssetOrNull()?.key,
-            completeAssetId = userProfileDTO.assets.getCompleteAssetOrNull()?.key
+            previewAssetId = userProfileDTO.assets.getPreviewAssetOrNull()?.let {
+                idMapper.toQualifiedUserAssetIdEntity(it.key, userProfileDTO.id.domain)
+            },
+            completeAssetId = userProfileDTO.assets.getCompleteAssetOrNull()?.let {
+                idMapper.toQualifiedUserAssetIdEntity(it.key, userProfileDTO.id.domain)
+            }
         )
     }
 
@@ -84,8 +90,8 @@ internal class UserMapperImpl(private val idMapper: IdMapper = MapperProvider.id
         userEntity.accentId,
         userEntity.team,
         fromDaoConnectionStateToUser(connectionState = userEntity.connectionStatus),
-        userEntity.previewAssetId,
-        userEntity.completeAssetId
+        userEntity.previewAssetId?.let { idMapper.fromDaoModel(it) },
+        userEntity.completeAssetId?.let { idMapper.fromDaoModel(it) }
     )
 
     override fun fromDaoModelToOtherUser(userEntity: UserEntity) = OtherUser(
@@ -97,8 +103,8 @@ internal class UserMapperImpl(private val idMapper: IdMapper = MapperProvider.id
         userEntity.accentId,
         userEntity.team,
         fromDaoConnectionStateToUser(connectionState = userEntity.connectionStatus),
-        userEntity.previewAssetId,
-        userEntity.completeAssetId
+        userEntity.previewAssetId?.let { idMapper.fromDaoModel(it) },
+        userEntity.completeAssetId?.let { idMapper.fromDaoModel(it) }
     )
 
     override fun fromModelToUpdateApiModel(
@@ -126,8 +132,10 @@ internal class UserMapperImpl(private val idMapper: IdMapper = MapperProvider.id
             accentId = updateRequest.accentId ?: user.accentId,
             team = user.team,
             connectionStatus = fromUserConnectionStateToDao(connectionState = user.connectionStatus),
-            previewAssetId = updateRequest.assets?.getPreviewAssetOrNull()?.key,
-            completeAssetId = updateRequest.assets?.getCompleteAssetOrNull()?.key
+            previewAssetId = updateRequest.assets.getPreviewAssetOrNull()
+                ?.let { idMapper.toQualifiedUserAssetIdEntity(it.key, user.id.domain) },
+            completeAssetId = updateRequest.assets.getCompleteAssetOrNull()
+                ?.let { idMapper.toQualifiedUserAssetIdEntity(it.key, user.id.domain) },
         )
     }
 
@@ -140,8 +148,8 @@ internal class UserMapperImpl(private val idMapper: IdMapper = MapperProvider.id
             phone = phone,
             accentId = accentId,
             team = teamId,
-            previewAssetId = assets.getPreviewAssetOrNull()?.key,
-            completeAssetId = assets.getCompleteAssetOrNull()?.key
+            previewAssetId = assets.getPreviewAssetOrNull()?.let { idMapper.toQualifiedUserAssetIdEntity(it.key, id.domain) },
+            completeAssetId = assets.getCompleteAssetOrNull()?.let { idMapper.toQualifiedUserAssetIdEntity(it.key, id.domain) },
         )
     }
 

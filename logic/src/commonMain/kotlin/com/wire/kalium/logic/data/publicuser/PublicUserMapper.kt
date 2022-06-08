@@ -31,8 +31,8 @@ class PublicUserMapperImpl(private val idMapper: IdMapper) : PublicUserMapper {
         accentId = userEntity.accentId,
         team = userEntity.team,
         connectionStatus = fromDaoConnectionStateToUser(connectionState = userEntity.connectionStatus),
-        previewPicture = userEntity.previewAssetId,
-        completePicture = userEntity.completeAssetId
+        previewPicture = userEntity.previewAssetId?.let { idMapper.fromDaoModel(it) },
+        completePicture = userEntity.completeAssetId?.let { idMapper.fromDaoModel(it) }
     )
 
     override fun fromUserDetailResponse(userDetailResponse: UserProfileDTO) = OtherUser(
@@ -42,8 +42,10 @@ class PublicUserMapperImpl(private val idMapper: IdMapper) : PublicUserMapper {
         accentId = userDetailResponse.accentId,
         team = userDetailResponse.teamId,
         connectionStatus = ConnectionState.NOT_CONNECTED,
-        previewPicture = userDetailResponse.assets.getPreviewAssetOrNull()?.key,
-        completePicture = userDetailResponse.assets.getCompleteAssetOrNull()?.key,
+        previewPicture = userDetailResponse.assets.getPreviewAssetOrNull()
+            ?.let { idMapper.toQualifiedUserAssetId(it.key, userDetailResponse.id.domain) },
+        completePicture = userDetailResponse.assets.getCompleteAssetOrNull()
+            ?.let { idMapper.toQualifiedUserAssetId(it.key, userDetailResponse.id.domain) }
     )
 
     override fun fromUserApiToEntity(userDetailResponse: UserProfileDTO, connectionState: ConnectionEntity.State) = UserEntity(
@@ -54,8 +56,10 @@ class PublicUserMapperImpl(private val idMapper: IdMapper) : PublicUserMapper {
         phone = null,
         accentId = userDetailResponse.accentId,
         team = userDetailResponse.teamId,
-        previewAssetId = userDetailResponse.assets.getPreviewAssetOrNull()?.key,
-        completeAssetId = userDetailResponse.assets.getCompleteAssetOrNull()?.key,
+        previewAssetId = userDetailResponse.assets.getPreviewAssetOrNull()
+            ?.let { idMapper.toQualifiedUserAssetIdEntity(it.key, userDetailResponse.id.domain) },
+        completeAssetId = userDetailResponse.assets.getCompleteAssetOrNull()
+            ?.let { idMapper.toQualifiedUserAssetIdEntity(it.key, userDetailResponse.id.domain) },
         connectionStatus = connectionState
     )
 

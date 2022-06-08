@@ -8,6 +8,8 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.user.User
+import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 
@@ -48,13 +50,17 @@ internal class GetMessageAssetUseCaseImpl(
                     CoreFailure.Unknown(IllegalStateException("The message associated to this id, was not an asset message"))
                 )
             }
-            assetDataSource.downloadPrivateAsset(assetKey = assetKey, assetToken = assetToken).fold({
-                kaliumLogger.e("There was an error downloading asset with id => $assetKey")
-                MessageAssetResult.Failure(it)
-            }, { encodedAsset ->
-                val rawAsset = decryptDataWithAES256(EncryptedData(encodedAsset), AES256Key(encryptionKey)).data
-                MessageAssetResult.Success(rawAsset)
-            })
+            assetDataSource.downloadPrivateAsset(
+                assetId = UserAssetId(assetKey, conversationId.domain),// fixme: should pass it to repo and there maps
+                assetToken = assetToken
+            )
+                .fold({
+                    kaliumLogger.e("There was an error downloading asset with id => $assetKey")
+                    MessageAssetResult.Failure(it)
+                }, { encodedAsset ->
+                    val rawAsset = decryptDataWithAES256(EncryptedData(encodedAsset), AES256Key(encryptionKey)).data
+                    MessageAssetResult.Success(rawAsset)
+                })
         })
 }
 

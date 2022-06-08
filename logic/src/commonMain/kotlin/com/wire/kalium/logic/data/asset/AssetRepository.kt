@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.asset
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
@@ -36,7 +37,7 @@ interface AssetRepository {
      * @param assetId the asset identifier
      * @return [Either] a [CoreFailure] if anything went wrong, or the asset as a decoded ByteArray of data
      */
-    suspend fun downloadPublicAsset(assetId: AssetId): Either<CoreFailure, ByteArray>
+    suspend fun downloadPublicAsset(assetId: UserAssetId): Either<CoreFailure, ByteArray>
 
     /**
      * Method used to download and persist to local memory a private asset
@@ -44,7 +45,7 @@ interface AssetRepository {
      * @param assetToken the asset token used to provide an extra layer of asset/user authentication
      * @return [Either] a [CoreFailure] if anything went wrong, or the asset as an encoded ByteArray of data
      */
-    suspend fun downloadPrivateAsset(assetId: AssetId, assetToken: String?): Either<CoreFailure, ByteArray>
+    suspend fun downloadPrivateAsset(assetId: UserAssetId, assetToken: String?): Either<CoreFailure, ByteArray>
 
     /**
      * Method used to download the list of avatar pictures of the current logged in user
@@ -57,7 +58,8 @@ interface AssetRepository {
 internal class AssetDataSource(
     private val assetApi: AssetApi,
     private val assetDao: AssetDAO,
-    private val assetMapper: AssetMapper = MapperProvider.assetMapper()
+    private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
+    private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : AssetRepository {
 
     override suspend fun uploadAndPersistPublicAsset(mimeType: AssetType, rawAssetData: ByteArray): Either<CoreFailure, UploadedAssetId> {
@@ -85,11 +87,11 @@ internal class AssetDataSource(
             }.map { assetMapper.fromApiUploadResponseToDomainModel(assetResponse) }
         }
 
-    override suspend fun downloadPublicAsset(assetId: AssetId): Either<CoreFailure, ByteArray> =
-        downloadAsset(assetId = assetId, assetToken = null)
+    override suspend fun downloadPublicAsset(assetId: UserAssetId): Either<CoreFailure, ByteArray> =
+        downloadAsset(assetId = idMapper.toApiModel(assetId), assetToken = null)
 
-    override suspend fun downloadPrivateAsset(assetId: AssetId, assetToken: String?): Either<CoreFailure, ByteArray> =
-        downloadAsset(assetId = assetId, assetToken = assetToken)
+    override suspend fun downloadPrivateAsset(assetId: UserAssetId, assetToken: String?): Either<CoreFailure, ByteArray> =
+        downloadAsset(assetId = idMapper.toApiModel(assetId), assetToken = assetToken)
 
     private suspend fun downloadAsset(assetId: AssetId, assetToken: String?): Either<CoreFailure, ByteArray> =
         wrapStorageRequest { assetDao.getAssetByKey(assetId.value).firstOrNull() }.fold({
@@ -104,7 +106,7 @@ internal class AssetDataSource(
 
     override suspend fun downloadUsersPictureAssets(assetIdList: List<UserAssetId?>): Either<CoreFailure, Unit> {
         assetIdList.filterNotNull().forEach { userAssetId ->
-            downloadPublicAsset(assetMapper.fromUserAssetIdToApiModel(userAssetId))
+            downloadPublicAsset(idMapper.toQualifiedUserAssetId(userAssetId.value, userAssetId.domain))
         }
         return Either.Right(Unit)
     }
