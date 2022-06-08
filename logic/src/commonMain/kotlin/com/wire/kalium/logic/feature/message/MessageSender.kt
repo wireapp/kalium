@@ -60,6 +60,11 @@ interface MessageSender {
      * @see [sendPendingMessage]
      */
     suspend fun sendMessage(message: Message): Either<CoreFailure, Unit>
+
+    /**
+     * Attemps to send the given Client Discovery [Message] to suitable recipients.
+     */
+    suspend fun sendClientDiscoveryMessage(message: Message): Either<CoreFailure, String>
 }
 
 class MessageSenderImpl(
@@ -102,6 +107,8 @@ class MessageSenderImpl(
             timeParser.calculateMillisDifference(message.date, messageRemoteTime)
         )
     }
+
+    override suspend fun sendClientDiscoveryMessage(message: Message): Either<CoreFailure, String> = attemptToSend(message)
 
     private suspend fun attemptToSend(message: Message): Either<CoreFailure, String> =
         conversationRepository.getConversationProtocolInfo(message.conversationId).flatMap { protocolInfo ->

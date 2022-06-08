@@ -10,8 +10,14 @@ class StartCallUseCase(private val callManager: Lazy<CallManager>) {
     suspend operator fun invoke(
         conversationId: ConversationId,
         callType: CallType = CallType.AUDIO,
-        conversationType: ConversationType = ConversationType.OneOnOne
+        conversationType: ConversationType,
+        isAudioCbr: Boolean = false
     ) {
-        callManager.value.startCall(conversationId, callType, conversationType)
+        callManager.value.startCall(
+            conversationId = conversationId,
+            callType = callType,
+            conversationType = conversationType,
+            isAudioCbr = isAudioCbr
+        )
     }
 }
