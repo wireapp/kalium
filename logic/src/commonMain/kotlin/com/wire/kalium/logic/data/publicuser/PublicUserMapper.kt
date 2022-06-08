@@ -4,11 +4,13 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.model.getPreviewAssetOrNull
 import com.wire.kalium.network.api.user.details.UserProfileDTO
 import com.wire.kalium.persistence.dao.ConnectionEntity
+import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
 
 interface PublicUserMapper {
@@ -18,6 +20,8 @@ interface PublicUserMapper {
     fun fromUserDetailResponses(userDetailResponse: List<UserProfileDTO>): List<OtherUser>
     fun fromDaoConnectionStateToUser(connectionState: ConnectionEntity.State): ConnectionState
     fun fromPublicUserToLocalNotificationMessageAuthor(author: OtherUser?): LocalNotificationMessageAuthor
+    fun fromDaoAvailabilityStatusToUser(status: UserAvailabilityStatusEntity?): UserAvailabilityStatus?
+    fun fromUserAvailabilityStatusToDao(status: UserAvailabilityStatus?): UserAvailabilityStatusEntity?
 }
 
 class PublicUserMapperImpl(private val idMapper: IdMapper) : PublicUserMapper {
@@ -32,7 +36,8 @@ class PublicUserMapperImpl(private val idMapper: IdMapper) : PublicUserMapper {
         team = userEntity.team,
         connectionStatus = fromDaoConnectionStateToUser(connectionState = userEntity.connectionStatus),
         previewPicture = userEntity.previewAssetId,
-        completePicture = userEntity.completeAssetId
+        completePicture = userEntity.completeAssetId,
+        availabilityStatus = fromDaoAvailabilityStatusToUser(userEntity.availabilityStatus)
     )
 
     override fun fromUserDetailResponse(userDetailResponse: UserProfileDTO) = OtherUser(
@@ -44,6 +49,7 @@ class PublicUserMapperImpl(private val idMapper: IdMapper) : PublicUserMapper {
         connectionStatus = ConnectionState.NOT_CONNECTED,
         previewPicture = userDetailResponse.assets.getPreviewAssetOrNull()?.key,
         completePicture = userDetailResponse.assets.getCompleteAssetOrNull()?.key,
+        availabilityStatus = null
     )
 
     override fun fromUserApiToEntity(userDetailResponse: UserProfileDTO, connectionState: ConnectionEntity.State) = UserEntity(
@@ -77,4 +83,22 @@ class PublicUserMapperImpl(private val idMapper: IdMapper) : PublicUserMapper {
 
     override fun fromPublicUserToLocalNotificationMessageAuthor(author: OtherUser?) =
         LocalNotificationMessageAuthor(author?.name ?: "", null)
+
+    override fun fromDaoAvailabilityStatusToUser(status: UserAvailabilityStatusEntity?): UserAvailabilityStatus? =
+        when (status) {
+            UserAvailabilityStatusEntity.AVAILABLE -> UserAvailabilityStatus.AVAILABLE
+            UserAvailabilityStatusEntity.BUSY -> UserAvailabilityStatus.BUSY
+            UserAvailabilityStatusEntity.AWAY -> UserAvailabilityStatus.AVAILABLE
+            UserAvailabilityStatusEntity.NONE -> UserAvailabilityStatus.NONE
+            null -> null
+        }
+
+    override fun fromUserAvailabilityStatusToDao(status: UserAvailabilityStatus?): UserAvailabilityStatusEntity? =
+        when (status) {
+            UserAvailabilityStatus.AVAILABLE -> UserAvailabilityStatusEntity.AVAILABLE
+            UserAvailabilityStatus.BUSY -> UserAvailabilityStatusEntity.BUSY
+            UserAvailabilityStatus.AWAY -> UserAvailabilityStatusEntity.AWAY
+            UserAvailabilityStatus.NONE -> UserAvailabilityStatusEntity.NONE
+            null -> null
+        }
 }
