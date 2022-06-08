@@ -108,6 +108,7 @@ actual class UserDatabaseProvider(private val context: Context, userId: UserIDEn
                 qualified_idAdapter = QualifiedIDAdapter(),
                 accent_idAdapter = IntColumnAdapter,
                 connection_statusAdapter = EnumColumnAdapter(),
+                user_availability_statusAdapter = EnumColumnAdapter(),
             )
         )
     }

@@ -14,6 +14,7 @@ import com.wire.kalium.logic.data.notification.LocalNotificationCommentType
 import com.wire.kalium.logic.data.notification.LocalNotificationMessage
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
+import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestUser
 import io.mockative.Mock
@@ -381,7 +382,8 @@ class GetNotificationsUseCaseTest {
                 accentId = 0,
                 previewPicture = null,
                 completePicture = null,
-                team = null
+                team = null,
+                availabilityStatus = UserAvailabilityStatus.NONE
             )
 
         private fun otherUserName(id: QualifiedID) = "Other User Name ${id.value}"

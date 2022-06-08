@@ -20,7 +20,8 @@ class UserMapper {
             team = user.team,
             connectionStatus = user.connection_status,
             previewAssetId = user.preview_asset_id,
-            completeAssetId = user.complete_asset_id
+            completeAssetId = user.complete_asset_id,
+            availabilityStatus = user.user_availability_status
         )
     }
 }
@@ -136,6 +137,10 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
 
     override suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String) {
         queries.updateUserhandle(handle, qualifiedID)
+    }
+
+    override suspend fun updateUserAvailabilityStatus(qualifiedID: QualifiedIDEntity, status: UserAvailabilityStatusEntity) {
+        queries.updateUserAvailabilityStatus(status, qualifiedID)
     }
 
     override suspend fun getAllUsersByConnectionStatus(connectionState: ConnectionEntity.State): List<UserEntity> =
