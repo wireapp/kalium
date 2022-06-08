@@ -14,6 +14,7 @@ import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
 import com.wire.kalium.persistence.MessageMemberChangeContent
 import com.wire.kalium.persistence.MessageTextContent
+import com.wire.kalium.persistence.MessageUnknownContent
 import com.wire.kalium.persistence.User
 import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.ConnectionDAO
@@ -98,6 +99,9 @@ actual class UserDatabaseProvider(private val context: Context, userId: UserIDEn
                 member_change_typeAdapter = EnumColumnAdapter()
             ),
             MessageTextContent.Adapter(
+                conversation_idAdapter = QualifiedIDAdapter()
+            ),
+            MessageUnknownContent.Adapter(
                 conversation_idAdapter = QualifiedIDAdapter()
             ),
             User.Adapter(

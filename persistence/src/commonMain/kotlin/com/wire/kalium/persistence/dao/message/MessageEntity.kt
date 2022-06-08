@@ -76,7 +76,7 @@ sealed class MessageEntity(
     }
 
     enum class ContentType {
-        TEXT, ASSET, MEMBER_CHANGE
+        TEXT, ASSET, MEMBER_CHANGE, UNKNOWN
     }
 
     enum class MemberChangeType {
@@ -115,6 +115,8 @@ sealed class MessageEntityContent {
         val assetDurationMs: Long? = null,
         val assetNormalizedLoudness: ByteArray? = null,
     ) : Client()
+
+    data class Unknown(val encodedData: ByteArray? = null) : Client()
 
     data class MemberChange(
         val memberUserIdList: List<QualifiedIDEntity>,

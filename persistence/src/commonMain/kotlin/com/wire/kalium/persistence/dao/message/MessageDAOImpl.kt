@@ -10,6 +10,7 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.ASSET
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MEMBER_CHANGE
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.TEXT
+import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.UNKNOWN
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -20,6 +21,7 @@ import com.wire.kalium.persistence.Message as SQLDelightMessage
 import com.wire.kalium.persistence.MessageAssetContent as SQLDelightMessageAssetContent
 import com.wire.kalium.persistence.MessageMemberChangeContent as SQLDelightMessageMemberChangeContent
 import com.wire.kalium.persistence.MessageTextContent as SQLDelightMessageTextContent
+import com.wire.kalium.persistence.MessageUnknownContent as SQLDelightMessageUnknownContent
 
 class MessageMapper {
     fun toModel(msg: SQLDelightMessage, content: MessageEntityContent): MessageEntity = when (content) {
@@ -68,6 +70,8 @@ class MessageMapper {
         memberUserIdList = content.member_change_list,
         memberChangeType = content.member_change_type
     )
+
+    fun toModel(content: SQLDelightMessageUnknownContent) = MessageEntityContent.Unknown(encodedData = content.unknown_encoded_data)
 
     private fun mapEditStatus(lastEditTimestamp: String?) =
         lastEditTimestamp?.let { MessageEntity.EditStatus.Edited(it) }
@@ -131,6 +135,11 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
                     asset_height = content.assetHeight,
                     asset_duration_ms = content.assetDurationMs,
                     asset_normalized_loudness = content.assetNormalizedLoudness
+                )
+                is MessageEntityContent.Unknown -> queries.insertMessageUnknownContent(
+                    message_id = message.id,
+                    conversation_id = message.conversationId,
+                    unknown_encoded_data = content.encodedData
                 )
                 is MessageEntityContent.MemberChange -> queries.insertMemberChangeMessage(
                     message_id = message.id,
@@ -203,6 +212,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
         is MessageEntityContent.Text -> TEXT
         is MessageEntityContent.Asset -> ASSET
         is MessageEntityContent.MemberChange -> MEMBER_CHANGE
+        is MessageEntityContent.Unknown -> UNKNOWN
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -215,12 +225,14 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
         TEXT -> this.queryOneOrDefaultFlow(queries::selectMessageTextContent, mapper::toModel)
         ASSET -> this.queryOneOrDefaultFlow(queries::selectMessageAssetContent, mapper::toModel)
         MEMBER_CHANGE -> this.queryOneOrDefaultFlow(queries::selectMessageMemberChangeContent, mapper::toModel)
+        UNKNOWN -> this.queryOneOrDefaultFlow(queries::selectMessageUnknownContent, mapper::toModel)
     }.map { mapper.toModel(this, it) }
 
     private fun SQLDelightMessage.toMessageEntity() = when (this.content_type) {
         TEXT -> this.queryOneOrDefault(queries::selectMessageTextContent, mapper::toModel)
         ASSET -> this.queryOneOrDefault(queries::selectMessageAssetContent, mapper::toModel)
         MEMBER_CHANGE -> this.queryOneOrDefault(queries::selectMessageMemberChangeContent, mapper::toModel)
+        UNKNOWN -> this.queryOneOrDefault(queries::selectMessageUnknownContent, mapper::toModel)
     }.let { mapper.toModel(this, it) }
 
     private val defaultMessageEntityContent = MessageEntityContent.Text("")

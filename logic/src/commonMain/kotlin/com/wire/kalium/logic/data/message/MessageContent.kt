@@ -20,7 +20,7 @@ sealed class MessageContent {
         val qualifiedConversationId: QualifiedConversationId?
     ) : Client()
 
-    object Unknown : Client()
+    data class Unknown(val encodedData: ByteArray? = null) : Client()
     object Empty : Client()
 
     // server message content types

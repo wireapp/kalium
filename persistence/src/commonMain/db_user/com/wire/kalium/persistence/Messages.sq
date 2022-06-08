@@ -69,6 +69,16 @@ CREATE TABLE MessageMemberChangeContent (
       PRIMARY KEY (message_id, conversation_id)
 );
 
+CREATE TABLE MessageUnknownContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      unknown_encoded_data BLOB,
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE,
+      PRIMARY KEY (message_id, conversation_id)
+);
+
 deleteAllMessages:
 DELETE FROM Message;
 
@@ -86,6 +96,7 @@ markMessageAsDeleted {
    DELETE FROM MessageTextContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
    DELETE FROM MessageAssetContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
    DELETE FROM MessageMemberChangeContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
+   DELETE FROM MessageUnknownContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
 
    INSERT INTO MessageTextContent(message_id, conversation_id, text_body) VALUES(:message_id, :conversation_id, NULL);
 }
@@ -142,6 +153,13 @@ message_id = excluded.message_id,
 member_change_list = excluded.member_change_list,
 member_change_type = excluded.member_change_type;
 
+insertMessageUnknownContent:
+INSERT INTO MessageUnknownContent(message_id, conversation_id, unknown_encoded_data)
+VALUES(?, ?, ?)
+ON CONFLICT(message_id, conversation_id) DO UPDATE SET
+message_id = excluded.message_id,
+unknown_encoded_data = excluded.unknown_encoded_data;
+
 updateMessageStatus:
 UPDATE Message
 SET status = ?
@@ -195,3 +213,6 @@ SELECT * FROM MessageAssetContent WHERE message_id = ? AND conversation_id = ?;
 
 selectMessageMemberChangeContent:
 SELECT * FROM MessageMemberChangeContent WHERE message_id = ? AND conversation_id = ?;
+
+selectMessageUnknownContent:
+SELECT * FROM MessageUnknownContent WHERE message_id = ? AND conversation_id = ?;

@@ -230,10 +230,17 @@ class ConversationEventReceiverImpl(
                     )
                 }
                 is MessageContent.TextEdited -> editTextHandler.handle(message,message.content)
-                is MessageContent.Unknown -> kaliumLogger.i(message = "Unknown Message received: $message")
+                is MessageContent.Unknown -> {
+                    kaliumLogger.i(message = "Unknown Message received: $message")
+                    messageRepository.persistMessage(message)
+                }
+                MessageContent.Empty -> TODO()
             }
             is Message.Server -> when (message.content) {
-                is MessageContent.MemberChange ->  messageRepository.persistMessage(message)
+                is MessageContent.MemberChange ->  {
+                    kaliumLogger.i(message = "System MemberChange Message received: $message")
+                    messageRepository.persistMessage(message)
+                }
             }
         }
 
