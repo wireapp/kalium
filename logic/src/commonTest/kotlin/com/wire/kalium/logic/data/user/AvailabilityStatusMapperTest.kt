@@ -17,7 +17,7 @@ class AvailabilityStatusMapperTest {
     @Test
     fun givenDaoAvailabilityStatus_whenMappingFromDao_thenApiStatusReturn() {
         val expectedResult = UserAvailabilityStatus.AVAILABLE
-        val result = availabilityStatusMapper.fromDaoAvailabilityStatusToUser(UserAvailabilityStatusEntity.AVAILABLE)
+        val result = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(UserAvailabilityStatusEntity.AVAILABLE)
 
         assertEquals(expectedResult, result)
     }
@@ -25,7 +25,7 @@ class AvailabilityStatusMapperTest {
     @Test
     fun givenApiAvailabilityStatus_whenMappingFromApi_thenDaoStatusReturn() {
         val expectedResult = UserAvailabilityStatus.BUSY
-        val result = availabilityStatusMapper.fromDaoAvailabilityStatusToUser(UserAvailabilityStatusEntity.BUSY)
+        val result = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(UserAvailabilityStatusEntity.BUSY)
 
         assertEquals(expectedResult, result)
     }

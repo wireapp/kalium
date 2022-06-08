@@ -41,7 +41,7 @@ class PublicUserMapperImpl(
         connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionState = userEntity.connectionStatus),
         previewPicture = userEntity.previewAssetId,
         completePicture = userEntity.completeAssetId,
-        availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToUser(userEntity.availabilityStatus)
+        availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(userEntity.availabilityStatus)
     )
 
     override fun fromUserDetailResponse(userDetailResponse: UserProfileDTO) = OtherUser(

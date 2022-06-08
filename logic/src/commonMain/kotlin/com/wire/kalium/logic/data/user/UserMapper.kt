@@ -88,7 +88,7 @@ internal class UserMapperImpl(
         connectionStateMapper.fromDaoConnectionStateToUser(connectionState = userEntity.connectionStatus),
         userEntity.previewAssetId,
         userEntity.completeAssetId,
-        availabilityStatusMapper.fromDaoAvailabilityStatusToUser(userEntity.availabilityStatus)
+        availabilityStatusMapper.fromDaoAvailabilityStatusToModel(userEntity.availabilityStatus)
     )
 
     override fun fromModelToUpdateApiModel(
