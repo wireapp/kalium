@@ -12,6 +12,10 @@ data class QualifiedIDEntity(
 typealias UserIDEntity = QualifiedIDEntity
 typealias ConversationIDEntity = QualifiedIDEntity
 
+enum class UserAvailabilityStatusEntity {
+    NONE, AVAILABLE, BUSY, AWAY
+}
+
 data class UserEntity(
     val id: QualifiedIDEntity,
     val name: String?,
@@ -22,7 +26,10 @@ data class UserEntity(
     val team: String?,
     val connectionStatus: ConnectionEntity.State = ConnectionEntity.State.NOT_CONNECTED,
     val previewAssetId: UserAssetIdEntity?,
-    val completeAssetId: UserAssetIdEntity?
+    val completeAssetId: UserAssetIdEntity?,
+    // for now availabilityStatus is stored only locally and ignored for API models,
+    // later, when API start supporting it, it should be added into API model too
+    val availabilityStatus: UserAvailabilityStatusEntity
 )
 
 internal typealias UserAssetIdEntity = QualifiedIDEntity
@@ -77,4 +84,5 @@ interface UserDAO {
 
     suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity)
     suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String)
+    suspend fun updateUserAvailabilityStatus(qualifiedID: QualifiedIDEntity, status: UserAvailabilityStatusEntity)
 }

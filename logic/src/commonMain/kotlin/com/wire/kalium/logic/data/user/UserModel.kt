@@ -23,6 +23,10 @@ data class Connection(
     val fromUser: OtherUser? = null
 )
 
+enum class UserAvailabilityStatus {
+    NONE, AVAILABLE, BUSY, AWAY
+}
+
 enum class ConnectionState {
     /** Default - No connection state */
     NOT_CONNECTED,
@@ -59,7 +63,8 @@ data class SelfUser(
     val team: String?,
     val connectionStatus: ConnectionState,
     val previewPicture: UserAssetId?,
-    val completePicture: UserAssetId?
+    val completePicture: UserAssetId?,
+    val availabilityStatus: UserAvailabilityStatus
 ) : User()
 
 typealias UserAssetId = QualifiedID

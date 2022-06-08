@@ -10,6 +10,7 @@ import com.wire.kalium.logic.data.conversation.UserType
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.persistence.dao.ConversationEntity
@@ -102,7 +103,8 @@ class GetOrCreateOneToOneConversationUseCaseTest {
             accentId = 0,
             team = null,
             previewPicture = null,
-            completePicture = null
+            completePicture = null,
+            availabilityStatus = UserAvailabilityStatus.NONE
         )
         val CONVERSATION_DETAILS = ConversationDetails.OneOne(
             CONVERSATION,
