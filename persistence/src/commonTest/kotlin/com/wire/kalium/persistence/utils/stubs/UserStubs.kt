@@ -15,7 +15,9 @@ fun newUserEntity(id: String = "test") =
         accentId = 1,
         team = "team",
         ConnectionEntity.State.ACCEPTED,
-        null, null, null
+        null,
+        null,
+        UserAvailabilityStatusEntity.NONE
     )
 
 fun newUserEntity(qualifiedID: QualifiedIDEntity, id: String = "test") =
@@ -28,7 +30,9 @@ fun newUserEntity(qualifiedID: QualifiedIDEntity, id: String = "test") =
         accentId = 1,
         team = "team",
         ConnectionEntity.State.ACCEPTED,
-        null, null, null
+        null,
+        null,
+        UserAvailabilityStatusEntity.NONE
     )
 
 @Suppress("LongParameterList")

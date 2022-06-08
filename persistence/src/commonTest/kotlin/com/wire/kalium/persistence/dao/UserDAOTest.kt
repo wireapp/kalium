@@ -59,7 +59,7 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.insertUser(user1)
         val updatedUser1 = UserEntity(
             user1.id, "John Doe", "johndoe", "email1", "phone1", 1, "team",
-            ConnectionEntity.State.ACCEPTED, UserAssetIdEntity(), UserAssetIdEntity(), null
+            ConnectionEntity.State.ACCEPTED, UserAssetIdEntity(), UserAssetIdEntity(), UserAvailabilityStatusEntity.NONE
         )
         db.userDAO.updateSelfUser(updatedUser1)
         val result = db.userDAO.getUserByQualifiedID(user1.id).first()
@@ -71,7 +71,7 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.insertUser(user1)
         val updatedUser1 = UserEntity(
             user1.id, "John Doe", "johndoe", "email1", "phone1", 1, "team",
-            ConnectionEntity.State.ACCEPTED, UserAssetIdEntity(), UserAssetIdEntity(), null
+            ConnectionEntity.State.ACCEPTED, UserAssetIdEntity(), UserAssetIdEntity(), UserAvailabilityStatusEntity.NONE
         )
 
         val result = db.userDAO.getUserByQualifiedID(user1.id)
@@ -86,7 +86,7 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.insertUser(user1)
         val updatedUser1 = UserEntity(
             user1.id, "John Doe", "johndoe", "email1", "phone1", 1, "team",
-            ConnectionEntity.State.ACCEPTED, null, null, null
+            ConnectionEntity.State.ACCEPTED, null, null, UserAvailabilityStatusEntity.NONE
         )
 
         val result = db.userDAO.getUserByQualifiedID(user1.id)
@@ -161,7 +161,9 @@ class UserDAOTest : BaseDatabaseTest() {
                     accentId = 4,
                     team = "testTeam4",
                     ConnectionEntity.State.ACCEPTED,
-                    null, null, null
+                    null,
+                    null,
+                    UserAvailabilityStatusEntity.NONE
                 ),
                 UserEntity(
                     id = QualifiedIDEntity("5", "wire.com"),
@@ -172,7 +174,9 @@ class UserDAOTest : BaseDatabaseTest() {
                     accentId = 5,
                     team = "testTeam5",
                     ConnectionEntity.State.ACCEPTED,
-                    null, null, null
+                    null,
+                    null,
+                    UserAvailabilityStatusEntity.NONE
                 )
             )
             val mockUsers = commonEmailUsers + notCommonEmailUsers
