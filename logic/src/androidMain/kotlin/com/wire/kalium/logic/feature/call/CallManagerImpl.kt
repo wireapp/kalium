@@ -101,7 +101,7 @@ actual class CallManagerImpl(
             //TODO(refactor): inject all of these CallbackHandlers in class constructor
             sendHandler = OnSendOTR(deferredHandle, calling, selfUserId, selfClientId, messageSender, scope).keepingStrongReference(),
             sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, scope).keepingStrongReference(),
-            incomingCallHandler = OnIncomingCall(callRepository).keepingStrongReference(),
+            incomingCallHandler = OnIncomingCall(callRepository, callMapper).keepingStrongReference(),
             missedCallHandler = OnMissedCall(callRepository).keepingStrongReference(),
             answeredCallHandler = OnAnsweredCall(callRepository).keepingStrongReference(),
             establishedCallHandler = OnEstablishedCall(callRepository).keepingStrongReference(),
@@ -156,10 +156,16 @@ actual class CallManagerImpl(
         isAudioCbr: Boolean
     ) {
         callingLogger.d("$TAG -> starting call for conversation = $conversationId..")
+
+        //TODO move call creation to the usecase since this one will run only for Android
+        val shouldMute = conversationType == ConversationType.Conference
+        val isCameraOn = callType == CallType.VIDEO
         callRepository.createCall(
             call = Call(
                 conversationId = conversationId,
                 status = CallStatus.STARTED,
+                isMuted = shouldMute,
+                isCameraOn = isCameraOn,
                 callerId = userId.await().toString()
             )
         )
@@ -209,6 +215,9 @@ actual class CallManagerImpl(
         callingLogger.d("$TAG - wcall_set_mute() called")
     }
 
+    /**
+     * This method should NOT be called while the call is still incoming or outgoing and not established yet.
+     */
     override suspend fun updateVideoState(conversationId: ConversationId, videoState: VideoState) {
         withCalling {
             callingLogger.d("$TAG -> changing video state to ${videoState.name}..")

@@ -31,9 +31,11 @@ class CallMapperTest {
     fun whenMappingToConversationTypeCalling_withConversationType_thenReturnConversationTypeCalling() = runTest {
         val oneOnOneMap = callMapper.toConversationTypeCalling(conversationType = ConversationType.OneOnOne)
         val conferenceMap = callMapper.toConversationTypeCalling(conversationType = ConversationType.Conference)
+        val unknown = callMapper.toConversationTypeCalling(conversationType = ConversationType.Unknown)
 
         assertEquals(ConversationTypeCalling.OneOnOne, oneOnOneMap)
         assertEquals(ConversationTypeCalling.Conference, conferenceMap)
+        assertEquals(ConversationTypeCalling.Unknown, unknown)
     }
 
     @Test
@@ -81,6 +83,33 @@ class CallMapperTest {
         )
 
         assertEquals(expectedCallClient, callClientMap)
+    }
+
+    @Test
+    fun given0AsAConversationTypeInputValue_whenMappingToConversationType_ThenReturnOneOnOneType() {
+        val expected = ConversationType.OneOnOne
+
+        val actual = callMapper.fromIntToConversationType(0)
+
+        assertEquals(expected, actual)
+    }
+
+    @Test
+    fun given2AsAConversationTypeInputValue_whenMappingToConversationType_ThenReturnConferenceType() {
+        val expected = ConversationType.Conference
+
+        val actual = callMapper.fromIntToConversationType(2)
+
+        assertEquals(expected, actual)
+    }
+
+    @Test
+    fun givenADifferentAConversationTypeInputValue_whenMappingToConversationType_ThenReturnConferenceType() {
+        val expected = ConversationType.Unknown
+
+        val actual = callMapper.fromIntToConversationType(4)
+
+        assertEquals(expected, actual)
     }
 
     @Test
