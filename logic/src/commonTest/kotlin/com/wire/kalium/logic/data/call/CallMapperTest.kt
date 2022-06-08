@@ -83,6 +83,22 @@ class CallMapperTest {
         assertEquals(expectedCallClient, callClientMap)
     }
 
+    @Test
+    fun whenMappingToActiveSpeaker_withCallActiveSpeaker_thenReturnActiveSpeaker() = runTest {
+        val callActiveSpeakerMap = callMapper.activeSpeakerMapper.fromCallActiveSpeakerToActiveSpeaker(
+            callActiveSpeaker = DUMMY_CALL_ACTIVE_SPEAKER
+        )
+
+        val expectedActiveSpeaker = ActiveSpeaker(
+            userId = "userid",
+            clientId = "clientid",
+            audioLevel = 1,
+            audioLevelNow = 1
+        )
+
+        assertEquals(expectedActiveSpeaker, callActiveSpeakerMap)
+    }
+
     private companion object {
         private val DUMMY_CALL_MEMBER = CallMember(
             userid = "userid@domain",
@@ -90,6 +106,12 @@ class CallMapperTest {
             aestab = 0,
             vrecv = 0,
             muted = 0
+        )
+        private val DUMMY_CALL_ACTIVE_SPEAKER = CallActiveSpeaker(
+            userId = "userid@domain",
+            clientId = "clientid",
+            audioLevel = 1,
+            audioLevelNow = 1
         )
     }
 
