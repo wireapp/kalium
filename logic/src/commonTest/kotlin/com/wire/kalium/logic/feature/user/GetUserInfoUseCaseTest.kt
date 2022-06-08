@@ -160,7 +160,7 @@ class GetUserInfoUseCaseTest {
     }
 
     @Test
-    fun givenAUserWithTeamNotExistiningLocally_WhenGettingDetails_thenShouldReturnSuccessResultAndGetRemoteUserTeam() = runTest {
+    fun givenAUserWithTeamNotExistingLocally_WhenGettingDetails_thenShouldReturnSuccessResultAndGetRemoteUserTeam() = runTest {
         // given
         given(userRepository)
             .suspendFunction(userRepository::getKnownUser)
