@@ -152,7 +152,8 @@ class SendImageUseCaseTest {
             null,
             ConnectionState.ACCEPTED,
             "some_key",
-            "some_key"
+            "some_key",
+            null
         )
 
         val sendImageUseCase =

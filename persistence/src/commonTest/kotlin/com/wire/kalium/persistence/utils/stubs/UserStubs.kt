@@ -31,6 +31,7 @@ fun newUserEntity(qualifiedID: QualifiedIDEntity, id: String = "test") =
         null, null, null
     )
 
+@Suppress("LongParameterList")
 fun newUserEntity(
     id: String = "test",
     name: String = "testName",

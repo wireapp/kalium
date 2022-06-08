@@ -381,7 +381,8 @@ class GetNotificationsUseCaseTest {
                 accentId = 0,
                 previewPicture = null,
                 completePicture = null,
-                team = null
+                team = null,
+                availabilityStatus = null
             )
 
         private fun otherUserName(id: QualifiedID) = "Other User Name ${id.value}"
