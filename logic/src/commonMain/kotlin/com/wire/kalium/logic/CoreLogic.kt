@@ -7,6 +7,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 
@@ -16,7 +17,8 @@ abstract class CoreLogicCommon(
     // TODO: can client label be replaced with clientConfig.deviceName() ?
     protected val clientLabel: String,
     protected val rootPath: String,
-    protected val idMapper: IdMapper = MapperProvider.idMapper()
+    protected val idMapper: IdMapper = MapperProvider.idMapper(),
+    protected val kaliumConfigs: KaliumConfigs
 ) {
 
     val sessionRepository: SessionRepository by lazy {
@@ -30,7 +32,7 @@ abstract class CoreLogicCommon(
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     fun getAuthenticationScope(): AuthenticationScope =
-        AuthenticationScope(clientLabel, sessionRepository, globalDatabase, globalPreferences)
+        AuthenticationScope(clientLabel, sessionRepository, globalDatabase, globalPreferences, kaliumConfigs)
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     abstract fun getSessionScope(userId: UserId): UserSessionScope
