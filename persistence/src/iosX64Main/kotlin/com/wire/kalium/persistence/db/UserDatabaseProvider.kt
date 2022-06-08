@@ -66,7 +66,8 @@ actual class UserDatabaseProvider(userId: UserIDEntity, passphrase: String) {
             User.Adapter(
                 qualified_idAdapter = QualifiedIDAdapter(),
                 accent_idAdapter = IntColumnAdapter,
-                connection_statusAdapter = EnumColumnAdapter()
+                connection_statusAdapter = EnumColumnAdapter(),
+                user_availability_statusAdapter = EnumColumnAdapter(),
             )
         )
         driver.execute(null, "PRAGMA foreign_keys=ON", 0)
