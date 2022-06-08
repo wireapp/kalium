@@ -82,8 +82,7 @@ actual class UserDatabaseProvider(private val storePath: File) {
             User.Adapter(
                 qualified_idAdapter = QualifiedIDAdapter(),
                 accent_idAdapter = IntColumnAdapter,
-                connection_statusAdapter = EnumColumnAdapter(),
-                user_availability_statusAdapter = EnumColumnAdapter(),
+                connection_statusAdapter = EnumColumnAdapter()
             )
         )
     }

@@ -88,8 +88,7 @@ actual class UserDatabaseProvider(private val context: Context, userId: UserIDEn
             User.Adapter(
                 qualified_idAdapter = QualifiedIDAdapter(),
                 accent_idAdapter = IntColumnAdapter,
-                connection_statusAdapter = EnumColumnAdapter(),
-                user_availability_statusAdapter = EnumColumnAdapter(),
+                connection_statusAdapter = EnumColumnAdapter()
             )
         )
     }
