@@ -1,5 +1,6 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.ConnectionEntity;
+import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity;
 import kotlin.Int;
 
 CREATE TABLE User (
@@ -12,7 +13,8 @@ CREATE TABLE User (
     team TEXT,
     connection_status TEXT AS ConnectionEntity.State NOT NULL DEFAULT 'NOT_CONNECTED',
     preview_asset_id TEXT,
-    complete_asset_id TEXT
+    complete_asset_id TEXT,
+    user_availability_status TEXT AS UserAvailabilityStatusEntity NOT NULL DEFAULT 'NONE'
 );
 
 deleteAllUsers:
@@ -77,3 +79,6 @@ UPDATE User SET handle = ? WHERE qualified_id = ?;
 
 selectChanges:
 SELECT changes();
+
+updateUserAvailabilityStatus:
+UPDATE User SET user_availability_status = ? WHERE qualified_id = ?;
