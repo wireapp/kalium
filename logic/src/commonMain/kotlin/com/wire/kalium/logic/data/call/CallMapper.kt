@@ -31,7 +31,14 @@ class CallMapper {
         }
     }
 
+    private val DOMAIN_SEPARATOR = "@"
+
+    private fun String.removeDomain() = if (contains(DOMAIN_SEPARATOR)) split(DOMAIN_SEPARATOR).first() else this
+
+    private fun String.getDomain() = if (contains(DOMAIN_SEPARATOR)) split(DOMAIN_SEPARATOR).last() else ""
+
     val participantMapper = ParticipantMapper()
+    val activeSpeakerMapper = ActiveSpeakerMapper()
 
     inner class ParticipantMapper {
 
@@ -55,11 +62,17 @@ class CallMapper {
                 clientId = clientid
             )
         }
+    }
 
-        private val DOMAIN_SEPARATOR = "@"
+    inner class ActiveSpeakerMapper {
 
-        private fun String.removeDomain() = if (contains(DOMAIN_SEPARATOR)) split(DOMAIN_SEPARATOR).first() else ""
-
-        private fun String.getDomain() = if (contains(DOMAIN_SEPARATOR)) split(DOMAIN_SEPARATOR).last() else ""
+        fun fromCallActiveSpeakerToActiveSpeaker(callActiveSpeaker: CallActiveSpeaker): ActiveSpeaker = with(callActiveSpeaker) {
+            ActiveSpeaker(
+                userId = userId.removeDomain(),
+                clientId = clientId,
+                audioLevel = audioLevel,
+                audioLevelNow = audioLevelNow
+            )
+        }
     }
 }

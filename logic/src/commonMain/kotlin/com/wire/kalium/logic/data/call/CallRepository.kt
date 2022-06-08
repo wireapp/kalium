@@ -24,6 +24,7 @@ interface CallRepository {
     fun updateCallStatusById(conversationId: String, status: CallStatus)
     fun removeCallById(conversationId: String)
     fun updateCallParticipants(conversationId: String, participants: List<Participant>)
+    fun updateActiveSpeakers(conversationId: String, activeSpeakers: List<ActiveSpeaker>)
 }
 
 internal class CallDataSource(
@@ -101,16 +102,29 @@ internal class CallDataSource(
         val callProfile = _callProfile.value
 
         callProfile[conversationId]?.let {
-            callingLogger.i("onParticipantsChanged() - conversationId: $conversationId")
-            participants.forEachIndexed { index, participant ->
-                callingLogger.i("onParticipantsChanged() - Participant[$index/${participants.size}]: ${participant.id}")
-            }
+            callingLogger.i("updateCallParticipants() - conversationId: $conversationId with size of: ${participants.size}")
 
             _callProfile.value = callProfile.copy(
                 calls = callProfile.calls.apply {
                     this.toMutableMap()[conversationId] = it.copy(
                         participants = participants,
                         maxParticipants = max(it.maxParticipants, participants.size + 1)
+                    )
+                }
+            )
+        }
+    }
+
+    override fun updateActiveSpeakers(conversationId: String, activeSpeakers: List<ActiveSpeaker>) {
+        val callProfile = _callProfile.value
+
+        callProfile[conversationId]?.let {
+            callingLogger.i("updateActiveSpeakers() - conversationId: $conversationId with size of: ${activeSpeakers.size}")
+
+            _callProfile.value = callProfile.copy(
+                calls = callProfile.calls.apply {
+                    this.toMutableMap()[conversationId] = it.copy(
+                        activeSpeakers = activeSpeakers
                     )
                 }
             )

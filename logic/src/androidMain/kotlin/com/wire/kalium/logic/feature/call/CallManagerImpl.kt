@@ -20,6 +20,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.call.scenario.OnActiveSpeakers
 import com.wire.kalium.logic.feature.call.scenario.OnAnsweredCall
 import com.wire.kalium.logic.feature.call.scenario.OnClientsRequest
 import com.wire.kalium.logic.feature.call.scenario.OnCloseCall
@@ -263,14 +264,13 @@ actual class CallManagerImpl(
         scope.launch {
             withCalling {
                 val selfUserId = userId.await().toString()
-                val selfClientId = clientId.await().value
 
                 val onClientsRequest = OnClientsRequest(
                     calling = calling,
                     selfUserId = selfUserId,
                     conversationRepository = conversationRepository,
                     callingScope = scope
-                )
+                ).keepingStrongReference()
 
                 wcall_set_req_clients_handler(
                     inst = deferredHandle.await(),
@@ -281,7 +281,22 @@ actual class CallManagerImpl(
             }
         }
 
-        // TODO(calling): Active Speakers handler
+        // Active Speakers
+        scope.launch {
+            withCalling {
+                val activeSpeakersHandler = OnActiveSpeakers(
+                    callRepository = callRepository,
+                    activeSpeakerMapper = callMapper.activeSpeakerMapper
+                ).keepingStrongReference()
+
+                wcall_set_active_speaker_handler(
+                    inst = deferredHandle.await(),
+                    wcall_active_speaker_h = activeSpeakersHandler
+                )
+
+                callingLogger.d("$TAG - wcall_set_req_clients_handler() called")
+            }
+        }
     }
 
     companion object {
