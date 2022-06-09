@@ -14,7 +14,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-@Ignore
 @OptIn(ExperimentalCoroutinesApi::class)
 class VersionApiTest : ApiTest {
 
