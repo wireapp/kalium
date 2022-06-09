@@ -13,7 +13,7 @@ import com.wire.kalium.network.api.asset.AssetResponse
 import com.wire.kalium.network.api.model.AssetRetentionType
 import com.wire.kalium.persistence.dao.asset.AssetEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
-import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityContent.AssetMessageContent
+import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.protobuf.messages.EncryptionAlgorithm
 import kotlinx.datetime.Clock
@@ -23,7 +23,7 @@ interface AssetMapper {
     fun fromApiUploadResponseToDomainModel(asset: AssetResponse): UploadedAssetId
     fun fromUploadedAssetToDaoModel(uploadAssetData: UploadAssetData, uploadedAssetResponse: AssetResponse): AssetEntity
     fun fromUserAssetToDaoModel(assetKey: String, data: ByteArray): AssetEntity
-    fun fromAssetEntityToAssetContent(assetContentEntity: AssetMessageContent): AssetContent
+    fun fromAssetEntityToAssetContent(assetContentEntity: MessageEntityContent.Asset): AssetContent
     fun fromProtoAssetMessageToAssetContent(protoAssetMessage: Asset): AssetContent
     fun fromDownloadStatusToDaoModel(downloadStatus: Message.DownloadStatus): MessageEntity.DownloadStatus
     fun fromDownloadStatusEntityToLogicModel(downloadStatus: MessageEntity.DownloadStatus?): Message.DownloadStatus
@@ -62,7 +62,7 @@ class AssetMapperImpl : AssetMapper {
         )
     }
 
-    override fun fromAssetEntityToAssetContent(assetContentEntity: AssetMessageContent): AssetContent {
+    override fun fromAssetEntityToAssetContent(assetContentEntity: MessageEntityContent.Asset): AssetContent {
         with(assetContentEntity) {
             return AssetContent(
                 mimeType = assetMimeType,
@@ -86,21 +86,24 @@ class AssetMapperImpl : AssetMapper {
         }
     }
 
-    private fun getAssetContentMetadata(assetMimeType: String, assetContentEntity: AssetMessageContent): AssetContent.AssetMetadata? =
+    private fun getAssetContentMetadata(
+        assetMimeType: String,
+        assetContentEntity: MessageEntityContent.Asset
+    ): AssetContent.AssetMetadata? =
         with(assetContentEntity) {
             when {
                 assetMimeType.contains("image/") -> Image(
-                    width = assetImageWidth ?: 0,
-                    height = assetImageHeight ?: 0
+                    width = assetWidth ?: 0,
+                    height = assetHeight ?: 0
                 )
                 assetMimeType.contains("video/") -> Video(
-                    width = assetVideoWidth,
-                    height = assetVideoHeight,
-                    durationMs = assetVideoDurationMs
+                    width = assetWidth,
+                    height = assetHeight,
+                    durationMs = assetDurationMs
                 )
                 assetMimeType.contains("audio/") -> Audio(
-                    durationMs = assetAudioDurationMs,
-                    normalizedLoudness = assetAudioNormalizedLoudness
+                    durationMs = assetDurationMs,
+                    normalizedLoudness = assetNormalizedLoudness
                 )
                 else -> null
             }

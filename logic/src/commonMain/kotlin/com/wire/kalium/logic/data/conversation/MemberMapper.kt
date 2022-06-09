@@ -5,18 +5,23 @@ import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.conversation.ConversationMember
 import com.wire.kalium.network.api.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.user.client.SimpleClientResponse
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.Member as PersistedMember
 
 interface MemberMapper {
+    fun fromApiModel(conversationMember: ConversationMember): Member
     fun fromApiModel(conversationMembersResponse: ConversationMembersResponse): MembersInfo
     fun fromMapOfClientsResponseToRecipients(qualifiedMap: Map<UserId, List<SimpleClientResponse>>): List<Recipient>
     fun fromApiModelToDaoModel(conversationMembersResponse: ConversationMembersResponse): List<PersistedMember>
-    fun fromEventToDaoModel(members: List<ConversationMember>): List<PersistedMember>
     fun fromDaoModel(entity: PersistedMember): Member
+    fun fromDaoModel(qualifiedId: QualifiedIDEntity): Member
     fun toDaoModel(member: Member): PersistedMember
 }
 
 internal class MemberMapperImpl(private val idMapper: IdMapper) : MemberMapper {
+
+    override fun fromApiModel(conversationMember: ConversationMember): Member =
+        Member(idMapper.fromApiModel(conversationMember.qualifiedId))
 
     override fun fromApiModel(conversationMembersResponse: ConversationMembersResponse): MembersInfo {
         val self = Member(idMapper.fromApiModel(conversationMembersResponse.self.userId))
@@ -34,10 +39,6 @@ internal class MemberMapperImpl(private val idMapper: IdMapper) : MemberMapper {
         return otherMembers + selfMember
     }
 
-    override fun fromEventToDaoModel(members: List<ConversationMember>) = members.map { member ->
-        PersistedMember(idMapper.fromApiToDao(member.qualifiedId))
-    }
-
     override fun toDaoModel(member: Member): PersistedMember =
         PersistedMember(idMapper.toDaoModel(member.id))
 
@@ -51,4 +52,5 @@ internal class MemberMapperImpl(private val idMapper: IdMapper) : MemberMapper {
         }
 
     override fun fromDaoModel(entity: PersistedMember): Member = Member(idMapper.fromDaoModel(entity.user))
+    override fun fromDaoModel(qualifiedId: QualifiedIDEntity): Member = fromDaoModel(PersistedMember(qualifiedId))
 }
