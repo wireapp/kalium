@@ -128,10 +128,10 @@ interface Calling : Library {
         clientsJson: String
     )
 
-    @Suppress("FunctionNaming", "FunctionParameterNaming")
+    @Suppress("FunctionNaming")
     fun wcall_set_active_speaker_handler(
         inst: Handle,
-        wcall_active_speaker_h: ActiveSpeakersHandler
+        activeSpeakersHandler: ActiveSpeakersHandler
     )
 
     companion object {

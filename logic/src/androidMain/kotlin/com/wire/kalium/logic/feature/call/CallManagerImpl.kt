@@ -309,7 +309,7 @@ actual class CallManagerImpl(
 
                 wcall_set_active_speaker_handler(
                     inst = deferredHandle.await(),
-                    wcall_active_speaker_h = activeSpeakersHandler
+                    activeSpeakersHandler = activeSpeakersHandler
                 )
 
                 callingLogger.d("$TAG - wcall_set_req_clients_handler() called")
