@@ -16,6 +16,7 @@ import com.wire.kalium.network.exceptions.NetworkErrorLabel.MISSING_AUTH
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.TOO_MANY_CLIENTS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.TOO_MANY_MEMBERS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.USER_CREATION_RESTRICTED
+import io.ktor.http.HttpStatusCode
 
 sealed class KaliumException() : Exception() {
 
@@ -102,4 +103,8 @@ fun KaliumException.InvalidRequestError.isUserCreationRestricted(): Boolean {
 
 fun KaliumException.InvalidRequestError.isTooMAnyMembers(): Boolean {
     return errorResponse.label == TOO_MANY_MEMBERS
+}
+
+fun KaliumException.InvalidRequestError.isNotFound(): Boolean {
+    return errorResponse.code == HttpStatusCode.NotFound.value
 }

@@ -148,8 +148,8 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
     override suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity) =
         queries.updateMessageStatus(status, id, conversationId)
 
-    override suspend fun updateMessageId(conversationId: QualifiedIDEntity, oldMesageId: String, newMessageId: String) {
-        queries.updateMessageId(newMessageId, oldMesageId, conversationId)
+    override suspend fun updateMessageId(conversationId: QualifiedIDEntity, oldMessageId: String, newMessageId: String) {
+        queries.updateMessageId(newMessageId, oldMessageId, conversationId)
     }
 
     override suspend fun updateMessageDate(date: String, id: String, conversationId: QualifiedIDEntity) =
