@@ -1,3 +1,4 @@
+@file:Suppress("TooManyFunctions")
 package com.wire.kalium.network.exceptions
 
 import com.wire.kalium.network.api.ErrorResponse
