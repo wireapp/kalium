@@ -3,13 +3,17 @@ package com.wire.kalium.logic.sync
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.sync.SyncRepository
 import com.wire.kalium.logic.data.sync.SyncState
+import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.network.api.notification.WebSocketEvent
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.utils.io.errors.IOException
@@ -18,8 +22,24 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.concatWith
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 interface SyncManager {
     fun onSlowSyncComplete()
@@ -67,7 +87,8 @@ class SyncManagerImpl(
     private val syncRepository: SyncRepository,
     private val conversationEventReceiver: ConversationEventReceiver,
     private val userEventReceiver: EventReceiver<Event.User>,
-    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
+    private val eventMapper: EventMapper = MapperProvider.eventMapper()
 ) : SyncManager {
 
     /**
@@ -109,60 +130,113 @@ class SyncManagerImpl(
     private val processingScope = CoroutineScope(processingSupervisorJob + eventProcessingDispatcher + coroutineExceptionHandler)
     private var processingJob: Job? = null
 
+    private val gatheringDispatcher = kaliumDispatcher.default.limitedParallelism(1)
+    private val gatheringScope = CoroutineScope(processingSupervisorJob + gatheringDispatcher + coroutineExceptionHandler)
+    private var gatheringJob: Job? = null
+
+    // Do not access this variable directly of I will cut off your hands
+    private val offlineEventsBuffer = mutableListOf<Event>()
+
+    private var processingEventFlow = MutableSharedFlow<Event>()
+
+    private val mutex = Mutex()
+
+    private suspend fun addToOfflineEventBuffer(event: Event) =
+        mutex.withLock {
+            offlineEventsBuffer.add(event)
+        }
+
+    private suspend fun isEventPresentInOfflineBuffer(event: Event): Boolean =
+        mutex.withLock {
+            offlineEventsBuffer.contains(event)
+        }
+
+    private suspend fun clearOfflineEventBuffer() =
+        mutex.withLock {
+            offlineEventsBuffer.clear()
+        }
+
     override fun onSlowSyncComplete() {
         // Processing already running, don't launch another
         val isRunning = processingJob?.isActive ?: false
         if (isRunning) return
 
-        processingJob = processingScope.launch { processAllEvents() }
+        syncRepository.updateSyncState { SyncState.GatheringPendingEvents }
+
+        gatheringJob?.cancel(null)
+        gatheringJob = gatheringScope.launch { startGathering() }
+        processingJob?.cancel(null)
+        processingJob = processingScope.launch { startProcessing() }
     }
 
-    private suspend fun processAllEvents() {
-        syncRepository.updateSyncState { SyncState.ProcessingPendingEvents }
-
-        processPendingEvents()
-
-        syncRepository.updateSyncState { SyncState.Live }
-        // TODO: Connect to the WS BEFORE fetching pending events to make
-        //  sure that no event is lost between last page and WS handshake.
-        //  We need to collect and store the events we receive from the WS,
-        //  and delete them as we process the pending ones in case they
-        //  show up both in the WS and the pending events pages.
-        //  The not deleted/remaining ones would be the ones we would
-        //  have lost, and we need to process them.
-        processLiveEvents()
+    private suspend fun startGathering() {
+        withContext(gatheringScope.coroutineContext) {
+            gatherEvents()
+        }
     }
 
-    /**
-     * Collects a stream of live events until connection is dropped or client is closed.
-     * In a perfect world where connections don't drop, this should never end.
-     * @throws KaliumSyncException when processing stops.
-     */
-    @Suppress("TooGenericExceptionCaught") // We need to catch any exceptions and mark Sync as failed
-    private suspend fun processLiveEvents() {
-        val processingStopCause = eventRepository.liveEvents().fold({ failure ->
-            KaliumSyncException("Failure when receiving live events", failure)
-        }, { eventFlow ->
-            try {
-                eventFlow.collect { event ->
-                    processEvent(event)
-                }
-                KaliumSyncException("Websocket event collecting stopped", NetworkFailure.NoNetworkConnection(null))
-            } catch (io: IOException) {
-                KaliumSyncException("Websocket disconnected", NetworkFailure.NoNetworkConnection(io))
-            } catch (t: Throwable) {
-                KaliumSyncException("Unknown Websocket error", CoreFailure.Unknown(t))
+    private suspend fun startProcessing() {
+        processingEventFlow
+            .collect {
+                processEvent(it)
             }
-        })
-        throw processingStopCause
     }
 
-    private suspend fun processPendingEvents() {
-        eventRepository.pendingEvents().collect {
-            it.onFailure { failure ->
-                throw KaliumSyncException("Failure when receiving pending events", failure)
-            }.onSuccess { event ->
-                processEvent(event)
+    private suspend fun gatherEvents() {
+        eventRepository.getLastProcessedEventId().onSuccess { clientId ->
+            eventRepository.updateLastProcessedEventId(clientId)
+            eventRepository.liveEvents()
+                .onSuccess { webSocketEventFlow ->
+                    webSocketEventFlow.collect { webSocketEvent ->
+                        when(webSocketEvent) {
+                            is WebSocketEvent.Open -> {
+                                eventRepository
+                                    .pendingEvents()
+                                    .mapNotNull { offlineEventOrFailure ->
+                                        when(offlineEventOrFailure) {
+                                            is Either.Left -> null
+                                            is Either.Right -> offlineEventOrFailure.value
+                                        }
+                                    }
+                                    .collect {
+                                        addToOfflineEventBuffer(it)
+                                        processingEventFlow.emit(it)
+                                    }
+                            }
+                            is WebSocketEvent.BinaryPayloadReceived -> {
+                                val mappedEvent = eventMapper.fromDTO(webSocketEvent.payload)
+                                mappedEvent.forEach {
+                                    if(!isEventPresentInOfflineBuffer(it)) {
+                                        syncRepository.updateSyncState { SyncState.ProcessingLiveEvents }
+                                        processingEventFlow.emit(it)
+                                    }
+                                    else {
+                                        kaliumLogger.v(
+                                            "Skipping emit of event from WebSocket because already emitted as offline event"
+                                        )
+                                        clearOfflineEventBuffer()
+                                    }
+                                }
+                            }
+                            is WebSocketEvent.Close -> {
+                                throw when (val cause = webSocketEvent.cause) {
+                                    is IOException ->
+                                        KaliumSyncException("Websocket disconnected", NetworkFailure.NoNetworkConnection(cause))
+                                    is Throwable ->
+                                        KaliumSyncException("Unknown Websocket error", CoreFailure.Unknown(cause))
+                                    else -> KaliumSyncException(
+                                        "Websocket event collecting stopped",
+                                        NetworkFailure.NoNetworkConnection(null)
+                                    )
+                                }
+                            }
+                            is WebSocketEvent.NonBinaryPayloadReceived -> {
+                                kaliumLogger.w(
+                                    "Non binary event received on Websocket"
+                                )
+                            }
+                        }
+                    }
             }
         }
     }
@@ -187,12 +261,12 @@ class SyncManagerImpl(
 
     override suspend fun waitUntilLive() {
         startSyncIfIdle()
-        syncRepository.syncState.first { it == SyncState.Live }
+        syncRepository.syncState.first { it == SyncState.ProcessingLiveEvents }
     }
 
     override suspend fun waitUntilSlowSyncCompletion() {
         startSyncIfIdle()
-        syncRepository.syncState.first { it is SyncState.ProcessingPendingEvents || it is SyncState.Live }
+        syncRepository.syncState.first { it in setOf(SyncState.GatheringPendingEvents, SyncState.ProcessingLiveEvents) }
     }
 
     override fun startSyncIfIdle() {
@@ -210,5 +284,5 @@ class SyncManagerImpl(
 
     override suspend fun isSlowSyncOngoing(): Boolean = syncRepository.syncState.first() == SyncState.SlowSync
     override suspend fun isSlowSyncCompleted(): Boolean =
-        syncRepository.syncState.first() in setOf(SyncState.Live, SyncState.ProcessingPendingEvents)
+        syncRepository.syncState.first() in setOf(SyncState.GatheringPendingEvents, SyncState.ProcessingLiveEvents)
 }

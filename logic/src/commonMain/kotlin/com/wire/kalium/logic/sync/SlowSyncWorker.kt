@@ -14,7 +14,8 @@ class SlowSyncWorker(
 
     override suspend fun doWork(): Result {
 
-        val result = userSessionScope.users.syncSelfUser()
+        val result =
+            userSessionScope.users.syncSelfUser()
             .flatMap { userSessionScope.conversations.syncConversations() }
             .flatMap { userSessionScope.connection.syncConnections() }
             .flatMap { userSessionScope.team.syncSelfTeamUseCase() }

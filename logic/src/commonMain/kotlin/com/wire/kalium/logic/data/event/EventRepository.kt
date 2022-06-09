@@ -6,17 +6,19 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.network.api.notification.NotificationApi
 import com.wire.kalium.network.api.notification.NotificationResponse
+import com.wire.kalium.network.api.notification.WebSocketEvent
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import com.wire.kalium.persistence.event.EventInfoStorage
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -26,8 +28,9 @@ import kotlin.coroutines.coroutineContext
 
 interface EventRepository {
     suspend fun pendingEvents(): Flow<Either<CoreFailure, Event>>
-    suspend fun liveEvents(): Either<CoreFailure, Flow<Event>>
+    suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent>>
     suspend fun updateLastProcessedEventId(eventId: String)
+    suspend fun getLastProcessedEventId(): Either<CoreFailure, String>
 }
 
 class EventDataSource(
@@ -39,8 +42,8 @@ class EventDataSource(
 
     // TODO(edge-case): handle Missing notification response (notify user that some messages are missing)
 
-    override suspend fun liveEvents(): Either<CoreFailure, Flow<Event>> = clientRepository.currentClientId()
-        .map { clientId -> liveEventsFlow(clientId) }
+//    override suspend fun liveEvents(): Either<CoreFailure, Flow<Event>> = clientRepository.currentClientId()
+//        .map { clientId -> liveEventsFlow(clientId) }
 
     override suspend fun pendingEvents(): Flow<Either<CoreFailure, Event>> =
         clientRepository.currentClientId().fold(
@@ -48,19 +51,26 @@ class EventDataSource(
             { clientId -> pendingEventsFlow(clientId) }
         )
 
-    private suspend fun liveEventsFlow(clientId: ClientId): Flow<Event> =
-        notificationApi.listenToLiveEvents(clientId.value)
-            .map {
-                println("Mapping eventResponse from LiveFlow ${it}")
-                eventMapper.fromDTO(it).asFlow()
-            }
-            .flattenConcat()
+    override suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent>> = clientRepository.currentClientId().fold(
+        { Either.Left(it) },
+        { clientId -> Either.Right(notificationApi.listenToLiveEvents(clientId.value)) }
+    )
+
+//    private suspend fun liveEventsFlow(clientId: ClientId): Flow<Event> =
+//        notificationApi.listenToLiveEvents(clientId.value)
+//            .map {
+//                println("Mapping eventResponse from LiveFlow ${it}")
+//                eventMapper.fromDTO(it).asFlow()
+//            }
+//            .flattenConcat()
 
     private suspend fun pendingEventsFlow(
         clientId: ClientId
     ) = flow<Either<CoreFailure, Event>> {
+
         var hasMore = true
         var lastFetchedNotificationId = eventInfoStorage.lastProcessedId
+
         while (coroutineContext.isActive && hasMore) {
             val notificationsPageResult = getNextPendingEventsPage(lastFetchedNotificationId, clientId)
 
@@ -81,6 +91,20 @@ class EventDataSource(
         }
     }
 
+    override suspend fun getLastProcessedEventId(): Either<CoreFailure, String> =
+        clientRepository.currentClientId().fold(
+            { Either.Left(it) },
+            { clientId ->
+                val lastNotificationResult = notificationApi.lastNotification(clientId.value)
+                if(lastNotificationResult.isSuccessful()) {
+                    Either.Right(lastNotificationResult.value.id)
+                }
+                else {
+                    Either.Left(NetworkFailure.ServerMiscommunication(lastNotificationResult.kException))
+                }
+            }
+        )
+
     override suspend fun updateLastProcessedEventId(eventId: String) {
         eventInfoStorage.lastProcessedId = eventId
     }
@@ -92,7 +116,6 @@ class EventDataSource(
         lastFetchedNotificationId?.let {
             notificationApi.notificationsByBatch(NOTIFICATIONS_QUERY_SIZE, clientId.value, it)
         } ?: notificationApi.getAllNotifications(NOTIFICATIONS_QUERY_SIZE, clientId.value)
-
 
     private companion object {
         const val NOTIFICATIONS_QUERY_SIZE = 100
