@@ -2,6 +2,7 @@ package com.wire.kalium.logic.data.call
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.callingLogger
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.functional.Either
@@ -26,11 +27,12 @@ interface CallRepository {
     fun updateIsMutedById(conversationId: String, isMuted: Boolean)
     fun updateIsCameraOnById(conversationId: String, isCameraOn: Boolean)
     fun updateCallParticipants(conversationId: String, participants: List<Participant>)
-    fun updateActiveSpeakers(conversationId: String, activeSpeakers: List<ActiveSpeaker>)
+    fun updateParticipantsActiveSpeaker(conversationId: String, activeSpeakers: CallActiveSpeakers)
 }
 
 internal class CallDataSource(
-    private val callApi: CallApi
+    private val callApi: CallApi,
+    private val callMapper: CallMapper = MapperProvider.callMapper()
 ) : CallRepository {
 
     //TODO(question): to be saved somewhere ?
@@ -149,15 +151,21 @@ internal class CallDataSource(
         }
     }
 
-    override fun updateActiveSpeakers(conversationId: String, activeSpeakers: List<ActiveSpeaker>) {
+    override fun updateParticipantsActiveSpeaker(conversationId: String, activeSpeakers: CallActiveSpeakers) {
         val callProfile = _callProfile.value
 
         callProfile.calls[conversationId]?.let { call ->
-            callingLogger.i("updateActiveSpeakers() - conversationId: $conversationId with size of: ${activeSpeakers.size}")
+            callingLogger.i("updateActiveSpeakers() - conversationId: $conversationId with size of: ${activeSpeakers.activeSpeakers.size}")
+
+            val updatedParticipants = callMapper.activeSpeakerMapper.mapParticipantsActiveSpeaker(
+                participants = call.participants,
+                activeSpeakers = activeSpeakers
+            )
 
             val updatedCalls = callProfile.calls.toMutableMap().apply {
                 this[conversationId] = call.copy(
-                    activeSpeakers = activeSpeakers
+                    participants = updatedParticipants,
+                    maxParticipants = max(call.maxParticipants, updatedParticipants.size + 1)
                 )
             }
 

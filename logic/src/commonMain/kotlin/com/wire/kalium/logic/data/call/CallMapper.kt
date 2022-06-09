@@ -68,13 +68,14 @@ class CallMapper {
     }
 
     inner class ActiveSpeakerMapper {
-
-        fun fromCallActiveSpeakerToActiveSpeaker(callActiveSpeaker: CallActiveSpeaker): ActiveSpeaker = with(callActiveSpeaker) {
-            ActiveSpeaker(
-                userId = userId.removeDomain(),
-                clientId = clientId,
-                audioLevel = audioLevel,
-                audioLevelNow = audioLevelNow
+        fun mapParticipantsActiveSpeaker(
+            participants: List<Participant>,
+            activeSpeakers: CallActiveSpeakers
+        ) : List<Participant> = participants.map { participant ->
+            participant.copy(
+                isSpeaking = activeSpeakers.activeSpeakers.any {
+                    it.userId == participant.id.toString()
+                }
             )
         }
     }

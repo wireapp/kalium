@@ -303,8 +303,7 @@ actual class CallManagerImpl(
         scope.launch {
             withCalling {
                 val activeSpeakersHandler = OnActiveSpeakers(
-                    callRepository = callRepository,
-                    activeSpeakerMapper = callMapper.activeSpeakerMapper
+                    callRepository = callRepository
                 ).keepingStrongReference()
 
                 wcall_set_active_speaker_handler(
