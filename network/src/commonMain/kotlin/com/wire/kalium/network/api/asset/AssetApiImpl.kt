@@ -18,14 +18,26 @@ class AssetApiImpl internal constructor(private val authenticatedNetworkClient: 
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
     /**
-     * Downloads an asset, this will consume api v4 (federated aware endpoint)
+     * Downloads an asset, this will try to consume api v4 (federated aware endpoint)
      * @param assetId the asset identifier
      * @param assetToken the asset token, can be null in case of public assets
      */
     override suspend fun downloadAsset(assetId: AssetId, assetToken: String?): NetworkResponse<ByteArray> = wrapKaliumResponse {
-        httpClient.get("$PATH_PUBLIC_ASSETS_V4/${assetId.domain}/${assetId.value}") {
+        httpClient.get(buildAssetsPath(assetId)) {
             assetToken?.let { header(HEADER_ASSET_TOKEN, it) }
         }
+    }
+
+    /**
+     * Build path for assets endpoint download.
+     * The case for using V3 is a fallback and should not happen.
+     *
+     *  TODO(assets): once API v2 is alive, this should be changed/merged.
+     * https://github.com/wireapp/wire-server/blob/dfe207073b54a63372898a75f670e972dd482118/changelog.d/1-api-changes/api-versioning
+     */
+    private fun buildAssetsPath(assetId: AssetId): String {
+        return if (assetId.domain.isNotBlank()) "$PATH_PUBLIC_ASSETS_V4/${assetId.domain}/${assetId.value}"
+        else "$PATH_PUBLIC_ASSETS_V3/${assetId.value}"
     }
 
     /** Uploads an already encrypted asset

@@ -67,7 +67,8 @@ data class SelfUser(
     val availabilityStatus: UserAvailabilityStatus
 ) : User()
 
-typealias UserAssetId = QualifiedID
+typealias UserAssetId = AssetId
+typealias AssetId = QualifiedID
 
 fun String.toUserId(): UserId {
     if (contains(VALUE_DOMAIN_SEPARATOR)) {

@@ -46,6 +46,7 @@ class MessageMapperImpl(private val idMapper: IdMapper, private val assetMapper:
                         assetOtrKey = remoteData.otrKey,
                         assetSha256Key = remoteData.sha256,
                         assetId = remoteData.assetId,
+                        assetDomain = remoteData.assetDomain,
                         assetToken = remoteData.assetToken,
                         assetEncryptionAlgorithm = remoteData.encryptionAlgorithm?.name,
                         assetDownloadStatus = assetMapper.fromDownloadStatusToDaoModel(downloadStatus)

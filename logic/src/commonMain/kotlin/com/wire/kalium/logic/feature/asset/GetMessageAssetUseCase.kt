@@ -8,7 +8,7 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.user.UserAssetId
+import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 
@@ -50,7 +50,7 @@ internal class GetMessageAssetUseCaseImpl(
                 )
             }
             assetDataSource.downloadPrivateAsset(
-                assetId = UserAssetId(assetMetadata.assetId, assetMetadata.assetDomain!!),
+                assetId = AssetId(assetMetadata.assetId, assetMetadata.assetDomain.orEmpty()),
                 assetToken = assetMetadata.assetToken
             )
                 .fold({
