@@ -32,13 +32,14 @@ class GetFileSharingStatusUseCaseImpl(
             }
 
         }, {
-            if (it.status.lowercase() == "enabled") {
-                userConfigRepository.persistFileSharingStatus(true)
-            } else {
-                userConfigRepository.persistFileSharingStatus(false)
-            }
+            userConfigRepository.setFileSharingStatus(it.status.lowercase() == ENABLED)
             GetFileSharingStatusResult.Success(it)
         })
+
+
+    companion object {
+        const val ENABLED = "enabled"
+    }
 }
 
 sealed class GetFileSharingStatusResult {

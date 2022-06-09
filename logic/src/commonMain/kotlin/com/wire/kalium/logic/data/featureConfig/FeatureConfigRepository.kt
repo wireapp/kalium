@@ -19,6 +19,6 @@ class FeatureConfigDataSource(
     override suspend fun getFileSharingFeatureConfig(): Either<NetworkFailure, FileSharingModel> = wrapApiRequest {
         featureConfigApi.fileSharingFeatureConfig()
     }.map { featureConfigResponse ->
-        featureConfigMapper.fromFileSharingResponse(featureConfigResponse)
+        featureConfigMapper.fromFileSharingDTO(featureConfigResponse)
     }
 }

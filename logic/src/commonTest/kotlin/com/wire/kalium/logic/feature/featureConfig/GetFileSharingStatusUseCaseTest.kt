@@ -7,7 +7,6 @@ import com.wire.kalium.logic.data.featureConfig.FileSharingModel
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.persistence.client.UserConfigStorage
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -101,7 +100,7 @@ class GetFileSharingStatusUseCaseTest {
 
         fun withSuccessfulResponse(): Arrangement {
             given(userConfigRepository)
-                .function(userConfigRepository::persistFileSharingStatus)
+                .function(userConfigRepository::setFileSharingStatus)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
 

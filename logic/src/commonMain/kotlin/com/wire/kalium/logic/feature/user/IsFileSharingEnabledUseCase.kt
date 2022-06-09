@@ -17,11 +17,11 @@ class IsFileSharingEnabledUseCaseImpl(
         userConfigRepository.isFileSharingEnabled().fold({
             when (it) {
                 StorageFailure.DataNotFound -> {
-                    kaliumLogger.e("Data not found")
+                    kaliumLogger.e("Data not found in IsFileSharingEnabledUseCase")
                     false
                 }
                 is StorageFailure.Generic -> {
-                    kaliumLogger.e("Storage Error : ${it.rootCause}")
+                    kaliumLogger.e("Storage Error : ${it.rootCause} in IsFileSharingEnabledUseCase")
                     false
                 }
             }

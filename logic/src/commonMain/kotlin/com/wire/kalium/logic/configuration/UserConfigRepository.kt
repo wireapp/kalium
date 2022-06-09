@@ -11,7 +11,7 @@ interface UserConfigRepository {
     fun persistEnableLogging(enabled: Boolean): Either<StorageFailure, Unit>
     fun isLoggingEnabled(): Either<StorageFailure, Boolean>
 
-    fun persistFileSharingStatus(enabled: Boolean): Either<StorageFailure, Unit>
+    fun setFileSharingStatus(enabled: Boolean): Either<StorageFailure, Unit>
     fun isFileSharingEnabled(): Either<StorageFailure, Boolean>
 
 }
@@ -25,7 +25,7 @@ class UserConfigDataSource(
 
     override fun isLoggingEnabled(): Either<StorageFailure, Boolean> = wrapStorageRequest { userConfigStorage.isLoggingEnables() }
 
-    override fun persistFileSharingStatus(enabled: Boolean): Either<StorageFailure, Unit> =
+    override fun setFileSharingStatus(enabled: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigStorage.persistFileSharingStatus(enabled) }
 
     override fun isFileSharingEnabled(): Either<StorageFailure, Boolean> = wrapStorageRequest { userConfigStorage.isFileSharingEnabled() }
