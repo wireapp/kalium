@@ -22,7 +22,7 @@ class GetUserInfoUseCaseTestArrangement {
     @Mock
     val teamRepository: TeamRepository = mock(TeamRepository::class)
 
-    fun withSuccessFullUserRetrive(
+    fun withSuccessfulUserRetrieve(
         localUserPresent: Boolean = true,
         hasTeam: Boolean = true
     ): GetUserInfoUseCaseTestArrangement {
