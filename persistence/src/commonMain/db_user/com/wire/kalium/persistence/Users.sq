@@ -24,8 +24,18 @@ deleteUser:
 DELETE FROM User WHERE qualified_id = ?;
 
 insertUser:
-INSERT OR REPLACE INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT(qualified_id) DO UPDATE SET
+name = excluded.name,
+handle = excluded.handle,
+email = excluded.email,
+phone = excluded.phone,
+accent_id = excluded.accent_id,
+team = excluded.team,
+connection_status = excluded.connection_status,
+preview_asset_id = excluded.preview_asset_id,
+complete_asset_id = excluded.complete_asset_id;
 
 updateUser:
 UPDATE User
