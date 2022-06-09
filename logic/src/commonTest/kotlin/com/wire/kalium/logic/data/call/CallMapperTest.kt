@@ -113,7 +113,7 @@ class CallMapperTest {
     }
 
     @Test
-    fun whenMappingToActiveSpeaker_withCallActiveSpeaker_thenReturnActiveSpeaker() = runTest {
+    fun givenCallActiveSpeaker_whenMappingToActiveSpeaker_thenReturnActiveSpeaker() = runTest {
         val callActiveSpeakerMap = callMapper.activeSpeakerMapper.fromCallActiveSpeakerToActiveSpeaker(
             callActiveSpeaker = DUMMY_CALL_ACTIVE_SPEAKER
         )
