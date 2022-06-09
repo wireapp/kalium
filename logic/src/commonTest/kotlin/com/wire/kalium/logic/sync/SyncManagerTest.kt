@@ -284,8 +284,8 @@ class SyncManagerTest {
             eventId,
             TestConversation.ID,
             TestUser.USER_ID,
-            ConversationMembers(listOf(), listOf()),
-            "from"
+            listOf(),
+            "2022-03-30T15:36:00.000Z"
         )
 
         given(eventRepository)
@@ -317,8 +317,8 @@ class SyncManagerTest {
             eventId,
             TestConversation.ID,
             TestUser.USER_ID,
-            ConversationMembers(listOf(), listOf()),
-            "from"
+            listOf(),
+            "2022-03-30T15:36:00.000Z"
         )
         given(eventRepository)
             .suspendFunction(eventRepository::pendingEvents)
@@ -346,9 +346,11 @@ class SyncManagerTest {
         //Given
         val eventId = "eventId"
         val event = Event.Conversation.MemberJoin(
-            eventId, TestConversation.ID, TestUser.USER_ID, ConversationMembers(
-                listOf(), listOf()
-            ), "from"
+            eventId,
+            TestConversation.ID,
+            TestUser.USER_ID,
+            listOf(),
+            "2022-03-30T15:36:00.000Z"
         )
         val liveEventsChannel = Channel<Event>()
         given(eventRepository)
@@ -378,9 +380,11 @@ class SyncManagerTest {
         //Given
         val eventId = "eventId"
         val event = Event.Conversation.MemberJoin(
-            eventId, TestConversation.ID, TestUser.USER_ID, ConversationMembers(
-                listOf(), listOf()
-            ), "from"
+            eventId,
+            TestConversation.ID,
+            TestUser.USER_ID,
+            listOf(),
+            "2022-03-30T15:36:00.000Z"
         )
         val liveEventsChannel = Channel<Event>()
         given(eventRepository)

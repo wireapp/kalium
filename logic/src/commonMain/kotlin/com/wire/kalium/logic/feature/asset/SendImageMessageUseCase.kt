@@ -101,7 +101,7 @@ internal class SendImageMessageUseCaseImpl(
         val generatedMessageUuid = uuid4().toString()
 
         return clientRepository.currentClientId().flatMap { currentClientId ->
-            val message = Message(
+            val message = Message.Client(
                 id = generatedMessageUuid,
                 content = MessageContent.Asset(
                     provideAssetMessageContent(
