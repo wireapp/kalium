@@ -29,7 +29,7 @@ import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.logic.wrapCryptoRequest
 import io.ktor.utils.io.core.toByteArray
 
-interface ConversationEventReceiver: EventReceiver<Event.Conversation>
+interface ConversationEventReceiver : EventReceiver<Event.Conversation>
 
 // Suppressed as it's an old issue
 @Suppress("LongParameterList")
@@ -67,11 +67,11 @@ class ConversationEventReceiverImpl(
                 kaliumLogger.e("$TAG - failure on proteus message: ${it.proteusException.stackTraceToString()}")
             }.onSuccess { plainMessageBlob ->
                 val protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)
-                val message = Message(
+                val message = Message.Client(
                     id = protoContent.messageUid,
                     content = protoContent.messageContent,
                     conversationId = event.conversationId,
-                    date = event.time,
+                    date = event.timestampIso,
                     senderUserId = event.senderUserId,
                     senderClientId = event.senderClientId,
                     status = Message.Status.SENT,
@@ -82,7 +82,7 @@ class ConversationEventReceiverImpl(
             }
     }
 
-    private fun updateAssetMessage(persistedMessage: Message, newMessageRemoteData: AssetContent.RemoteData): Message? =
+    private fun updateAssetMessage(persistedMessage: Message.Client, newMessageRemoteData: AssetContent.RemoteData): Message? =
         // The message was previously received with just metadata info, so let's update it with the raw data info
         if (persistedMessage.content is MessageContent.Asset) {
             persistedMessage.copy(
@@ -109,20 +109,41 @@ class ConversationEventReceiverImpl(
         conversationRepository.insertConversationFromEvent(event)
             .onFailure { kaliumLogger.e("$TAG - failure on new conversation event: $it") }
 
-    //TODO(system-messages): insert a message to show a user added to the conversation
     private suspend fun handleMemberJoin(event: Event.Conversation.MemberJoin) = conversationRepository
         .persistMembers(
-            memberMapper.fromEventToDaoModel(event.members.users),
+            event.members.map { memberMapper.toDaoModel(it) },
             idMapper.toDaoModel(event.conversationId)
-        ).onFailure { kaliumLogger.e("$TAG - failure on member join event: $it") }
-
-    //TODO(system-messages): insert a message to show a user deleted to the conversation
-    private suspend fun handleMemberLeave(event: Event.Conversation.MemberLeave) =
-        event.members.qualifiedUserIds.forEach { userId ->
-            conversationRepository.deleteMember(
-                idMapper.toDaoModel(event.conversationId), idMapper.fromApiToDao(userId)
-            ).onFailure { kaliumLogger.e("$TAG - failure on member leave event: $it") }
+        )
+        .onSuccess {
+            val message = Message.Server(
+                id = event.id,
+                content = MessageContent.MemberChange.Added(members = event.members),
+                conversationId = event.conversationId,
+                date = event.timestampIso,
+                senderUserId = event.addedBy,
+                status = Message.Status.SENT
+            )
+            processMessage(message)
         }
+        .onFailure { kaliumLogger.e("$TAG - failure on member join event: $it") }
+
+    private suspend fun handleMemberLeave(event: Event.Conversation.MemberLeave) = conversationRepository
+        .deleteMembers(
+            event.members.map { idMapper.toDaoModel(it.id) },
+            idMapper.toDaoModel(event.conversationId)
+        )
+        .onSuccess {
+            val message = Message.Server(
+                id = event.id,
+                content = MessageContent.MemberChange.Removed(members = event.members),
+                conversationId = event.conversationId,
+                date = event.timestampIso,
+                senderUserId = event.removedBy,
+                status = Message.Status.SENT
+            )
+            processMessage(message)
+        }
+        .onFailure { kaliumLogger.e("$TAG - failure on member leave event: $it") }
 
     private suspend fun handleMLSWelcome(event: Event.Conversation.MLSWelcome) {
         mlsConversationRepository.establishMLSGroupFromWelcome(event)
@@ -137,11 +158,11 @@ class ConversationEventReceiverImpl(
             }.onSuccess { mlsMessage ->
                 val plainMessageBlob = mlsMessage?.let { PlainMessageBlob(it) } ?: return@onSuccess
                 val protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)
-                val message = Message(
+                val message = Message.Client(
                     id = protoContent.messageUid,
                     content = protoContent.messageContent,
                     conversationId = event.conversationId,
-                    date = event.time,
+                    date = event.timestampIso,
                     senderUserId = event.senderUserId,
                     senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
                     status = Message.Status.SENT,
@@ -150,59 +171,77 @@ class ConversationEventReceiverImpl(
                 processMessage(message)
             }
 
+    @Suppress("ComplexMethod", "LongMethod")
     private suspend fun processMessage(message: Message) {
         kaliumLogger.i(message = "Message received: $message")
 
         val isMyMessage = userRepository.getSelfUserId() == message.senderUserId
-        when (message.content) {
-            is MessageContent.Text -> messageRepository.persistMessage(message)
-            is MessageContent.Asset -> {
-                messageRepository.getMessageById(message.conversationId, message.id)
-                    .onFailure {
-                        // No asset message was received previously, so just persist the preview asset message
-                        messageRepository.persistMessage(message)
-                    }
-                    .onSuccess { persistedMessage ->
-                        // Check the second asset message is from the same original sender
-                        if (isSenderVerified(persistedMessage.id, persistedMessage.conversationId, message.senderUserId)) {
-                            // The asset message received contains the asset decryption keys,
-                            // so update the preview message persisted previously
-                            updateAssetMessage(persistedMessage, message.content.value.remoteData)?.let {
-                                messageRepository.persistMessage(it)
+        when (message) {
+            is Message.Client -> when (message.content) {
+                is MessageContent.Text -> messageRepository.persistMessage(message)
+                is MessageContent.Asset -> {
+                    messageRepository.getMessageById(message.conversationId, message.id)
+                        .onFailure {
+                            // No asset message was received previously, so just persist the preview asset message
+                            messageRepository.persistMessage(message)
+                        }
+                        .onSuccess { persistedMessage ->
+                            // Check the second asset message is from the same original sender
+                            if (isSenderVerified(persistedMessage.id, persistedMessage.conversationId, message.senderUserId)
+                                && persistedMessage is Message.Client && persistedMessage.content is MessageContent.Asset
+                            ) {
+                                // The asset message received contains the asset decryption keys,
+                                // so update the preview message persisted previously
+                                updateAssetMessage(persistedMessage, message.content.value.remoteData)?.let {
+                                    messageRepository.persistMessage(it)
+                                }
                             }
                         }
-                    }
-            }
-            is MessageContent.DeleteMessage ->
-                if (isSenderVerified(message.content.messageId, message.conversationId, message.senderUserId))
-                    messageRepository.markMessageAsDeleted(messageUuid = message.content.messageId, conversationId = message.conversationId)
-                else kaliumLogger.i(message = "Delete message sender is not verified: $message")
-            is MessageContent.DeleteForMe -> {
-                /*The conversationId comes with the hidden message[message.content] only carries the conversaionId VALUE,
-                *  we need to get the DOMAIN from the self conversationId[here is the message.conversationId]*/
-                val conversationId =
-                    if (message.content.qualifiedConversationId != null)
-                        idMapper.fromProtoModel(message.content.qualifiedConversationId)
-                    else ConversationId(
-                        message.content.conversationId,
-                        message.conversationId.domain
+                }
+                is MessageContent.DeleteMessage ->
+                    if (isSenderVerified(message.content.messageId, message.conversationId, message.senderUserId))
+                        messageRepository.markMessageAsDeleted(
+                            messageUuid = message.content.messageId,
+                            conversationId = message.conversationId
+                        )
+                    else kaliumLogger.i(message = "Delete message sender is not verified: $message")
+                is MessageContent.DeleteForMe -> {
+                    /*The conversationId comes with the hidden message[message.content] only carries the conversaionId VALUE,
+                    *  we need to get the DOMAIN from the self conversationId[here is the message.conversationId]*/
+                    val conversationId =
+                        if (message.content.qualifiedConversationId != null)
+                            idMapper.fromProtoModel(message.content.qualifiedConversationId)
+                        else ConversationId(
+                            message.content.conversationId,
+                            message.conversationId.domain
+                        )
+                    if (message.conversationId == conversationRepository.getSelfConversationId())
+                        messageRepository.deleteMessage(
+                            messageUuid = message.content.messageId,
+                            conversationId = conversationId
+                        )
+                    else kaliumLogger.i(message = "Delete message sender is not verified: $message")
+                }
+                is MessageContent.Calling -> {
+                    kaliumLogger.d("$TAG - MessageContent.Calling")
+                    callManagerImpl.value.onCallingMessageReceived(
+                        message = message,
+                        content = message.content
                     )
-                if (message.conversationId == conversationRepository.getSelfConversationId())
-                    messageRepository.deleteMessage(
-                        messageUuid = message.content.messageId,
-                        conversationId = conversationId
-                    )
-                else kaliumLogger.i(message = "Delete message sender is not verified: $message")
+                }
+                is MessageContent.TextEdited -> editTextHandler.handle(message,message.content)
+                is MessageContent.Unknown -> {
+                    kaliumLogger.i(message = "Unknown Message received: $message")
+                    messageRepository.persistMessage(message)
+                }
+                MessageContent.Empty -> TODO()
             }
-            is MessageContent.Calling -> {
-                kaliumLogger.d("$TAG - MessageContent.Calling")
-                callManagerImpl.value.onCallingMessageReceived(
-                    message = message,
-                    content = message.content
-                )
+            is Message.Server -> when (message.content) {
+                is MessageContent.MemberChange ->  {
+                    kaliumLogger.i(message = "System MemberChange Message received: $message")
+                    messageRepository.persistMessage(message)
+                }
             }
-            is MessageContent.TextEdited -> editTextHandler.handle(message,message.content)
-            is MessageContent.Unknown -> kaliumLogger.i(message = "Unknown Message received: $message")
         }
 
         if (isMyMessage) conversationRepository.updateConversationNotificationDate(message.conversationId, message.date)
