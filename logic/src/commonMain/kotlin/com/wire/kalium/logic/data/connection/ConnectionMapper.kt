@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.connection
 
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.publicuser.PublicUserMapper
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.network.api.user.connection.ConnectionDTO
@@ -17,7 +18,7 @@ interface ConnectionMapper {
 internal class ConnectionMapperImpl(
     private val idMapper: IdMapper,
     private val statusMapper: ConnectionStatusMapper,
-    private val userMapper: UserMapper
+    private val publicUserMapper: PublicUserMapper
 ) : ConnectionMapper {
     override fun fromApiToDao(state: ConnectionDTO): ConnectionEntity = ConnectionEntity(
         conversationId = state.conversationId,
@@ -37,7 +38,7 @@ internal class ConnectionMapperImpl(
         qualifiedToId = idMapper.fromDaoModel(state.qualifiedToId),
         status = statusMapper.fromDaoModel(state.status),
         toId = state.toId,
-        fromUser = otherUser?.let { userMapper.fromDaoModelToOtherUser(it) }
+        fromUser = otherUser?.let { publicUserMapper.fromDaoModelToPublicUser(it) }
     )
 
     override fun fromApiToModel(state: ConnectionDTO): Connection = Connection(
