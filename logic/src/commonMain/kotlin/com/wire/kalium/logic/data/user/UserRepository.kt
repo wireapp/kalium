@@ -48,6 +48,7 @@ interface UserRepository {
     suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus)
 }
 
+@Suppress("LongParameterList")
 class UserDataSource(
     private val userDAO: UserDAO,
     private val metadataDAO: MetadataDAO,
