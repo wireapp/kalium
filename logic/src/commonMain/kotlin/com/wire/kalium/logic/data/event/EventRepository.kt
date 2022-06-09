@@ -92,18 +92,21 @@ class EventDataSource(
     }
 
     override suspend fun getLastProcessedEventId(): Either<CoreFailure, String> =
-        clientRepository.currentClientId().fold(
-            { Either.Left(it) },
-            { clientId ->
-                val lastNotificationResult = notificationApi.lastNotification(clientId.value)
-                if(lastNotificationResult.isSuccessful()) {
-                    Either.Right(lastNotificationResult.value.id)
+        eventInfoStorage.lastProcessedId?.let {
+            Either.Right(it)
+        } ?: run {
+            clientRepository.currentClientId().fold(
+                { Either.Left(it) },
+                { clientId ->
+                    val lastNotificationResult = notificationApi.lastNotification(clientId.value)
+                    if (lastNotificationResult.isSuccessful()) {
+                        Either.Right(lastNotificationResult.value.id)
+                    } else {
+                        Either.Left(NetworkFailure.ServerMiscommunication(lastNotificationResult.kException))
+                    }
                 }
-                else {
-                    Either.Left(NetworkFailure.ServerMiscommunication(lastNotificationResult.kException))
-                }
-            }
-        )
+            )
+        }
 
     override suspend fun updateLastProcessedEventId(eventId: String) {
         eventInfoStorage.lastProcessedId = eventId
