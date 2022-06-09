@@ -76,6 +76,7 @@ class ConversationEventReceiverImpl(
                     senderClientId = event.senderClientId,
                     status = Message.Status.SENT,
                     editStatus = Message.EditStatus.NotEdited,
+                    visibility = protoContent.visibility
                 )
 
                 processMessage(message)
@@ -167,6 +168,7 @@ class ConversationEventReceiverImpl(
                     senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
                     status = Message.Status.SENT,
                     editStatus = Message.EditStatus.NotEdited,
+                    visibility = protoContent.visibility
                 )
                 processMessage(message)
             }
@@ -235,6 +237,9 @@ class ConversationEventReceiverImpl(
                     messageRepository.persistMessage(message)
                 }
                 MessageContent.Empty -> TODO()
+                MessageContent.Ignored -> {
+                    kaliumLogger.i(message = "Ignored Message received: $message")
+                }
             }
             is Message.Server -> when (message.content) {
                 is MessageContent.MemberChange ->  {

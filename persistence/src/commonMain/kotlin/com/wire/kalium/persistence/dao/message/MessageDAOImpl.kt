@@ -183,14 +183,23 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             .mapToOneOrNull()
             .flatMapLatest { it?.toMessageEntityFlow() ?: flowOf(null) }
 
-    override suspend fun getMessagesByConversation(conversationId: QualifiedIDEntity, limit: Int, offset: Int): Flow<List<MessageEntity>> =
-        queries.selectByConversationId(conversationId, limit.toLong(), offset.toLong())
+    override suspend fun getMessagesByConversationAndVisibility(
+        conversationId: QualifiedIDEntity,
+        limit: Int,
+        offset: Int,
+        visibility: List<MessageEntity.Visibility>
+    ): Flow<List<MessageEntity>> =
+        queries.selectByConversationIdAndVisibility(conversationId, visibility, limit.toLong(), offset.toLong())
             .asFlow()
             .mapToList()
             .toMessageEntityListFlow()
 
-    override suspend fun getMessagesByConversationAfterDate(conversationId: QualifiedIDEntity, date: String): Flow<List<MessageEntity>> =
-        queries.selectMessagesByConversationIdAfterDate(conversationId, date)
+    override suspend fun getMessagesByConversationAndVisibilityAfterDate(
+        conversationId: QualifiedIDEntity,
+        date: String,
+        visibility: List<MessageEntity.Visibility>
+    ): Flow<List<MessageEntity>>  =
+        queries.selectMessagesByConversationIdAndVisibilityAfterDate(conversationId, visibility, date)
             .asFlow()
             .mapToList()
             .toMessageEntityListFlow()

@@ -47,9 +47,18 @@ class GetNotificationsUseCaseImpl(
                     // Fetching the Messages for the Conversation that are newer than `lastNotificationDate`
                     val messagesListFlow = if (conversation.lastNotificationDate == null) {
                         // that is a new conversation, lets just fetch last 100 messages for it
-                        messageRepository.getMessagesForConversation(conversation.id, 100, 0)
+                        messageRepository.getMessagesByConversationIdAndVisibility(
+                            conversation.id,
+                            100,
+                            0,
+                            listOf(Message.Visibility.VISIBLE)
+                        )
                     } else {
-                        messageRepository.getMessagesByConversationAfterDate(conversation.id, conversation.lastNotificationDate)
+                        messageRepository.getMessagesByConversationIdAndVisibilityAfterDate(
+                            conversation.id,
+                            conversation.lastNotificationDate,
+                            listOf(Message.Visibility.VISIBLE)
+                        )
                     }
 
                     messagesListFlow

@@ -83,9 +83,9 @@ class GetNotificationsUseCaseTest {
             .coroutine { getConversationsForNotifications() }
             .then { flowOf(listOf(entityConversation())) }
         given(messageRepository)
-            .suspendFunction(messageRepository::getMessagesByConversationAfterDate)
-            .whenInvokedWith(anything(), anything())
-            .then { _, _ -> flowOf(listOf()) }
+            .suspendFunction(messageRepository::getMessagesByConversationIdAndVisibilityAfterDate)
+            .whenInvokedWith(anything(), anything(), anything())
+            .then { _, _, _ -> flowOf(listOf()) }
 
         val notificationsListFlow = getNotificationsUseCase()
 
@@ -108,9 +108,9 @@ class GetNotificationsUseCaseTest {
             .coroutine { getConversationsForNotifications() }
             .then { flowOf(listOf(entityConversation())) }
         given(messageRepository)
-            .suspendFunction(messageRepository::getMessagesByConversationAfterDate)
-            .whenInvokedWith(anything(), anything())
-            .then { conversationId, _ ->
+            .suspendFunction(messageRepository::getMessagesByConversationIdAndVisibilityAfterDate)
+            .whenInvokedWith(anything(), anything(), anything())
+            .then { conversationId, _, _ ->
                 flowOf(
                     listOf(
                         entityTextMessage(conversationId),
@@ -144,9 +144,9 @@ class GetNotificationsUseCaseTest {
             .whenInvokedWith(any())
             .then { id -> flowOf(otherUser(id)) }
         given(messageRepository)
-            .suspendFunction(messageRepository::getMessagesByConversationAfterDate)
-            .whenInvokedWith(eq(conversationId()), anything())
-            .then { _, _ ->
+            .suspendFunction(messageRepository::getMessagesByConversationIdAndVisibilityAfterDate)
+            .whenInvokedWith(anything(), anything(), anything())
+            .then { _, _, _ ->
                 flowOf(
                     listOf(
                         entityTextMessage(conversationId()),
@@ -198,9 +198,9 @@ class GetNotificationsUseCaseTest {
             .whenInvokedWith(any())
             .then { id -> flowOf(otherUser(id)) }
         given(messageRepository)
-            .suspendFunction(messageRepository::getMessagesByConversationAfterDate)
-            .whenInvokedWith(anything(), anything())
-            .then { conversationId, _ ->
+            .suspendFunction(messageRepository::getMessagesByConversationIdAndVisibilityAfterDate)
+            .whenInvokedWith(anything(), anything(), anything())
+            .then { conversationId, _, _ ->
                 flowOf(
                     listOf(
                         entityTextMessage(conversationId, otherUserId(), "0"),
@@ -258,9 +258,9 @@ class GetNotificationsUseCaseTest {
             .whenInvokedWith(any())
             .then { id -> flowOf(otherUser(id)) }
         given(messageRepository)
-            .suspendFunction(messageRepository::getMessagesByConversationAfterDate)
-            .whenInvokedWith(anything(), anything())
-            .then { conversationId, _ ->
+            .suspendFunction(messageRepository::getMessagesByConversationIdAndVisibilityAfterDate)
+            .whenInvokedWith(anything(), anything(), anything())
+            .then { conversationId, _, _ ->
                 flowOf(
                     listOf(
                         entityTextMessage(conversationId, otherUserId(), "0"),

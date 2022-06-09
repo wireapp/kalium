@@ -73,20 +73,20 @@ class MessageRepositoryTest {
             .then { mappedId }
 
         given(messageDAO)
-            .suspendFunction(messageDAO::getMessagesByConversation)
-            .whenInvokedWith(anything(), anything(), anything())
-            .then { _, _, _ -> flowOf(listOf()) }
+            .suspendFunction(messageDAO::getMessagesByConversationAndVisibility)
+            .whenInvokedWith(anything(), anything(), anything(), anything())
+            .then { _, _, _, _ -> flowOf(listOf()) }
 
         given(messageMapper)
             .function(messageMapper::fromEntityToMessage)
             .whenInvokedWith(anything())
             .then { TEST_MESSAGE }
 
-        messageRepository.getMessagesForConversation(TEST_CONVERSATION_ID, 0, 0).collect()
+        messageRepository.getMessagesByConversationIdAndVisibility(TEST_CONVERSATION_ID, 0, 0).collect()
 
         verify(messageDAO)
-            .suspendFunction(messageDAO::getMessagesByConversation)
-            .with(eq(mappedId), anything(), anything())
+            .suspendFunction(messageDAO::getMessagesByConversationAndVisibility)
+            .with(eq(mappedId), anything(), anything(), anything())
             .wasInvoked(exactly = once)
     }
 
@@ -100,16 +100,16 @@ class MessageRepositoryTest {
             .then { mappedMessage }
 
         given(messageDAO)
-            .suspendFunction(messageDAO::getMessagesByConversation)
-            .whenInvokedWith(anything(), anything(), anything())
-            .then { _, _, _ -> flowOf(listOf(entity)) }
+            .suspendFunction(messageDAO::getMessagesByConversationAndVisibility)
+            .whenInvokedWith(anything(), anything(), anything(), anything())
+            .then { _, _, _, _ -> flowOf(listOf(entity)) }
 
         given(idMapper)
             .function(idMapper::toDaoModel)
             .whenInvokedWith(anything())
             .then { TEST_QUALIFIED_ID_ENTITY }
 
-        val messageList = messageRepository.getMessagesForConversation(TEST_CONVERSATION_ID, 0, 0)
+        val messageList = messageRepository.getMessagesByConversationIdAndVisibility(TEST_CONVERSATION_ID, 0, 0)
             .first()
         assertEquals(listOf(mappedMessage), messageList)
 

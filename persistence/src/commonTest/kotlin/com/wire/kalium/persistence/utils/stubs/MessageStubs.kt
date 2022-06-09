@@ -13,7 +13,8 @@ fun newMessageEntity(
     senderClientId: String = "senderClientId",
     status: MessageEntity.Status = MessageEntity.Status.PENDING,
     editStatus : MessageEntity.EditStatus = MessageEntity.EditStatus.NotEdited,
-    date: String = "2022-03-30T15:36:00.000Z"
+    date: String = "2022-03-30T15:36:00.000Z",
+    visibility: MessageEntity.Visibility = MessageEntity.Visibility.VISIBLE
 ) = MessageEntity.Client(
     id = id,
     content = content,
@@ -23,5 +24,5 @@ fun newMessageEntity(
     senderClientId = senderClientId,
     status = status,
     editStatus = editStatus,
-    visibility = MessageEntity.Visibility.VISIBLE
+    visibility = visibility
 )

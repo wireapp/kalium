@@ -32,11 +32,7 @@ class MessageMapperImpl(
             Message.Status.READ -> MessageEntity.Status.READ
             Message.Status.FAILED -> MessageEntity.Status.FAILED
         }
-        val visibility = when (message.visibility) {
-            Message.Visibility.VISIBLE -> MessageEntity.Visibility.VISIBLE
-            Message.Visibility.HIDDEN -> MessageEntity.Visibility.HIDDEN
-            Message.Visibility.DELETED -> MessageEntity.Visibility.DELETED
-        }
+        val visibility = message.visibility.toEntityVisibility()
         return when (message) {
             is Message.Client -> MessageEntity.Client(
                 id = message.id,
@@ -178,4 +174,10 @@ class MessageMapperImpl(
             }
         }
     }
+}
+
+fun Message.Visibility.toEntityVisibility(): MessageEntity.Visibility = when (this) {
+    Message.Visibility.VISIBLE -> MessageEntity.Visibility.VISIBLE
+    Message.Visibility.HIDDEN -> MessageEntity.Visibility.HIDDEN
+    Message.Visibility.DELETED -> MessageEntity.Visibility.DELETED
 }
