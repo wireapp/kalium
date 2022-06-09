@@ -34,24 +34,29 @@ import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.session.SessionMapperImpl
 import com.wire.kalium.logic.data.team.TeamMapper
 import com.wire.kalium.logic.data.team.TeamMapperImpl
+import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
+import com.wire.kalium.logic.data.user.AvailabilityStatusMapperImpl
+import com.wire.kalium.logic.data.user.ConnectionStateMapper
+import com.wire.kalium.logic.data.user.ConnectionStateMapperImpl
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.data.user.UserMapperImpl
-import com.wire.kalium.logic.data.user.UserTypeMapper
 import com.wire.kalium.logic.data.user.UserTypeMapperImpl
 
 internal object MapperProvider {
     fun idMapper(): IdMapper = IdMapperImpl()
     fun serverConfigMapper(): ServerConfigMapper = ServerConfigMapperImpl()
     fun sessionMapper(): SessionMapper = SessionMapperImpl(serverConfigMapper(), idMapper())
+    fun availabilityStatusMapper(): AvailabilityStatusMapper = AvailabilityStatusMapperImpl()
+    fun connectionStateMapper(): ConnectionStateMapper = ConnectionStateMapperImpl()
     fun userMapper(): UserMapper = UserMapperImpl(idMapper())
     fun teamMapper(): TeamMapper = TeamMapperImpl()
-    fun messageMapper(): MessageMapper = MessageMapperImpl(idMapper())
+    fun messageMapper(): MessageMapper = MessageMapperImpl(idMapper(), memberMapper())
     fun memberMapper(): MemberMapper = MemberMapperImpl(idMapper())
     fun conversationMapper(): ConversationMapper = ConversationMapperImpl(idMapper(), ConversationStatusMapperImpl(), UserTypeMapperImpl())
     fun publicUserMapper(): PublicUserMapper = PublicUserMapperImpl(idMapper())
     fun sendMessageFailureMapper(): SendMessageFailureMapper = SendMessageFailureMapperImpl()
     fun assetMapper(): AssetMapper = AssetMapperImpl()
-    fun eventMapper(): EventMapper = EventMapper(idMapper(), connectionMapper())
+    fun eventMapper(): EventMapper = EventMapper(idMapper(), memberMapper(), connectionMapper())
     fun preyKeyMapper(): PreKeyMapper = PreKeyMapperImpl()
     fun preKeyListMapper(): PreKeyListMapper = PreKeyListMapper(preyKeyMapper())
     fun locationMapper(): LocationMapper = LocationMapper()
@@ -59,5 +64,5 @@ internal object MapperProvider {
     fun conversationStatusMapper(): ConversationStatusMapper = ConversationStatusMapperImpl()
     fun callMapper(): CallMapper = CallMapper()
     fun connectionStatusMapper(): ConnectionStatusMapper = ConnectionStatusMapperImpl()
-    fun connectionMapper(): ConnectionMapper = ConnectionMapperImpl(idMapper(), connectionStatusMapper(), userMapper())
+    fun connectionMapper(): ConnectionMapper = ConnectionMapperImpl(idMapper(), connectionStatusMapper(), publicUserMapper())
 }

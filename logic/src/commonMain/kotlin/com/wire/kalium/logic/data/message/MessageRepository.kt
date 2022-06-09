@@ -22,6 +22,7 @@ import com.wire.kalium.network.api.message.MessagePriority
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
@@ -222,7 +223,7 @@ class MessageDataSource(
                     messageDAO.updateTextMessageContent(
                         idMapper.toDaoModel(conversationId),
                         messageId,
-                        MessageEntity.MessageEntityContent.TextMessageContent(newTextContent)
+                        MessageEntityContent.Text(newTextContent)
                     )
                 } else {
                     throw IllegalStateException("Text message can only be updated on message having TextMessageContent set as content")
