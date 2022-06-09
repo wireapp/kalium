@@ -46,7 +46,7 @@ class GetUserInfoUseCaseTestArrangement {
         return this
     }
 
-    fun withFailingUserRetrive(): GetUserInfoUseCaseTestArrangement {
+    fun withFailingUserRetrieve(): GetUserInfoUseCaseTestArrangement {
         given(userRepository)
             .suspendFunction(userRepository::getKnownUser)
             .whenInvokedWith(any())
