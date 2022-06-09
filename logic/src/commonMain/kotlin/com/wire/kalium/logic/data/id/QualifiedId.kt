@@ -18,6 +18,7 @@ data class QualifiedID(
 }
 
 const val VALUE_DOMAIN_SEPARATOR = "@"
+val FEDERATION_REGEX = Regex("[^@.]+@[^@.]+\\.[^@]+")
 
 typealias ConversationId = QualifiedID
 
@@ -38,4 +39,12 @@ fun String.parseIntoQualifiedID(): QualifiedID {
     val components = split("@")
     if (components.size < 2) throw IllegalStateException("The string trying to parse is not a valid one")
     return QualifiedID(value = components.first(), domain = components.last())
+}
+
+fun String.parseSearchQueryToQualifiedID(): QualifiedID {
+    val isFederationSearch = matches(FEDERATION_REGEX)
+
+    return if (isFederationSearch) parseIntoQualifiedID() else
+        QualifiedID(this, "")
+
 }
