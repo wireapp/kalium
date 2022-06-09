@@ -336,7 +336,8 @@ abstract class UserSessionScopeCommon(
             userId,
             authenticatedDataSourceSet,
             clientRepository,
-            mlsClientProvider
+            mlsClientProvider,
+            client.deregisterNativePushToken
         )
 
     val team: TeamScope get() = TeamScope(userRepository, teamRepository, syncManager)
