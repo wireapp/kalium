@@ -17,17 +17,10 @@ import kotlin.test.BeforeTest
 class GetUserInfoUseCaseTestArrangement {
 
     @Mock
-    private val userRepository: UserRepository = mock(UserRepository::class)
+    val userRepository: UserRepository = mock(UserRepository::class)
 
     @Mock
-    private val teamRepository: TeamRepository = mock(TeamRepository::class)
-
-    private lateinit var getUserInfoUseCase: GetUserInfoUseCase
-
-    @BeforeTest
-    fun setUp() {
-        getUserInfoUseCase = GetUserInfoUseCaseImpl(userRepository, teamRepository)
-    }
+    val teamRepository: TeamRepository = mock(TeamRepository::class)
 
     fun withSuccessFullUserRetrive(
         localUserPresent: Boolean = true,
@@ -53,11 +46,11 @@ class GetUserInfoUseCaseTestArrangement {
         return this
     }
 
-    fun withFailingUserRetrive() {
+    fun withFailingUserRetrive(): GetUserInfoUseCaseTestArrangement {
         given(userRepository)
             .suspendFunction(userRepository::getKnownUser)
             .whenInvokedWith(any())
-            .thenReturn(flowOf(TestUser.OTHER))
+            .thenReturn(flowOf(null))
 
         given(userRepository)
             .suspendFunction(userRepository::fetchUserInfo)
@@ -83,10 +76,10 @@ class GetUserInfoUseCaseTestArrangement {
             )
 
         if (!localTeamPresent) {
-            given(userRepository)
-                .suspendFunction(userRepository::fetchUserInfo)
+            given(teamRepository)
+                .suspendFunction(teamRepository::fetchTeamById)
                 .whenInvokedWith(any())
-                .thenReturn(Either.Right(TestUser.OTHER))
+                .thenReturn(Either.Right(team))
         }
 
         return this
@@ -97,7 +90,7 @@ class GetUserInfoUseCaseTestArrangement {
             .suspendFunction(teamRepository::getTeam)
             .whenInvokedWith(any())
             .thenReturn(
-                flowOf(team)
+                flowOf(null)
             )
 
         given(teamRepository)
@@ -111,7 +104,7 @@ class GetUserInfoUseCaseTestArrangement {
     }
 
     fun arrange(): Pair<GetUserInfoUseCaseTestArrangement, GetUserInfoUseCase> {
-        return this to getUserInfoUseCase
+        return this to GetUserInfoUseCaseImpl(userRepository, teamRepository)
     }
 
     private companion object {
