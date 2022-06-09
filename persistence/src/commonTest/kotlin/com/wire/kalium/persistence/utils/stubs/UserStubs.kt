@@ -2,6 +2,7 @@ package com.wire.kalium.persistence.utils.stubs
 
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
 
 fun newUserEntity(id: String = "test") =
@@ -14,7 +15,9 @@ fun newUserEntity(id: String = "test") =
         accentId = 1,
         team = "team",
         ConnectionEntity.State.ACCEPTED,
-        null, null
+        null,
+        null,
+        UserAvailabilityStatusEntity.NONE
     )
 
 fun newUserEntity(qualifiedID: QualifiedIDEntity, id: String = "test") =
@@ -27,9 +30,12 @@ fun newUserEntity(qualifiedID: QualifiedIDEntity, id: String = "test") =
         accentId = 1,
         team = "team",
         ConnectionEntity.State.ACCEPTED,
-        null, null
+        null,
+        null,
+        UserAvailabilityStatusEntity.NONE
     )
 
+@Suppress("LongParameterList")
 fun newUserEntity(
     id: String = "test",
     name: String = "testName",
@@ -41,6 +47,7 @@ fun newUserEntity(
     connectionStatus: ConnectionEntity.State = ConnectionEntity.State.ACCEPTED,
     previewAssetId: String = "previewAssetId",
     completeAssetId: String = "completeAssetId",
+    availabilityStatusEntity: UserAvailabilityStatusEntity = UserAvailabilityStatusEntity.NONE
 ): UserEntity {
     return UserEntity(
         id = QualifiedIDEntity(id, "wire.com"),
@@ -52,6 +59,7 @@ fun newUserEntity(
         team = team,
         connectionStatus = connectionStatus,
         previewAssetId = previewAssetId,
-        completeAssetId = completeAssetId
+        completeAssetId = completeAssetId,
+        availabilityStatus = availabilityStatusEntity
     )
 }

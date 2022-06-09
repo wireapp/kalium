@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.feature.auth.AuthSession
@@ -18,6 +19,7 @@ import com.wire.kalium.network.api.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.model.getPreviewAssetOrNull
 import com.wire.kalium.network.api.user.register.RegisterApi
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -140,7 +142,8 @@ class RegisterAccountRepositoryTest {
                 team = teamId,
                 connectionStatus = ConnectionState.ACCEPTED,
                 previewPicture = assets.getPreviewAssetOrNull()?.key,
-                completePicture = assets.getCompleteAssetOrNull()?.key
+                completePicture = assets.getCompleteAssetOrNull()?.key,
+                availabilityStatus = UserAvailabilityStatus.NONE
             )
         }
         val authSession = with(SESSION) { AuthSession(UserId(userId.value, userId.domain), accessToken, refreshToken, tokenType, serverConfig) }
@@ -195,7 +198,8 @@ class RegisterAccountRepositoryTest {
                 team = teamId,
                 connectionStatus = ConnectionState.ACCEPTED,
                 previewPicture = assets.getPreviewAssetOrNull()?.key,
-                completePicture = assets.getCompleteAssetOrNull()?.key
+                completePicture = assets.getCompleteAssetOrNull()?.key,
+                availabilityStatus = UserAvailabilityStatus.NONE
             )
         }
         val authSession = with(SESSION) { AuthSession(UserId(userId.value, userId.domain), accessToken, refreshToken, tokenType, serverConfig) }

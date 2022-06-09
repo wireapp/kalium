@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
@@ -99,6 +100,7 @@ class UploadUserAvatarUseCaseTest {
         null,
         ConnectionState.ACCEPTED,
         "some_key",
-        "some_key"
+        "some_key",
+        UserAvailabilityStatus.NONE
     )
 }

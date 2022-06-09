@@ -15,6 +15,7 @@ object Versions {
     const val javaxCrypto = "1.1.0-alpha03"
     const val kover = "0.4.4"
     const val ktor = "2.0.0-beta-1"
+    const val okio = "3.0.0"
     const val okHttp = "4.9.3"
     const val mockative = "1.1.4"
     const val androidWork = "2.7.1"
@@ -28,8 +29,10 @@ object Versions {
     const val multiplatformSettings = "0.8.1"
     const val androidSecurity = "1.0.0"
     const val sqlDelight = "2.0.0-alpha01"
+
     @Deprecated("A new implementation is available. Use the protobuf project instead.")
     const val wireJvmMessageProto = "1.36.0"
+
     @Deprecated("A new implementation is available. Use the protobuf project instead.")
     const val protobufLite = "3.19.4"
     const val pbandk = "0.13.0"
@@ -148,6 +151,10 @@ object Dependencies {
         const val iosHttp = "io.ktor:ktor-client-ios:${Versions.ktor}"
     }
 
+    object Okio {
+        const val core = "com.squareup.okio:okio:${Versions.okio}"
+    }
+
     object SqlDelight {
         const val runtime = "app.cash.sqldelight:runtime:${Versions.sqlDelight}"
         const val coroutinesExtension = "app.cash.sqldelight:coroutines-extensions:${Versions.sqlDelight}"
@@ -163,6 +170,7 @@ object Dependencies {
         const val mockative = "io.mockative:mockative:${Versions.mockative}"
         const val mockativeProcessor = "io.mockative:mockative-processor:${Versions.mockative}"
         const val turbine = "app.cash.turbine:turbine:${Versions.turbine}"
+        const val okio = "com.squareup.okio:okio-fakefilesystem:${Versions.okio}"
     }
 
     object Detekt {
@@ -174,6 +182,7 @@ object Dependencies {
     object Protobuf {
         @Deprecated("A new implementation is available. Use the protobuf project instead.")
         const val wireJvmMessageProto = "com.wire:generic-message-proto:${Versions.wireJvmMessageProto}"
+
         @Deprecated("A new implementation is available. Use the protobuf project instead.")
         const val protobufLite = "com.google.protobuf:protobuf-javalite:${Versions.protobufLite}"
         const val pbandkRuntime = "pro.streem.pbandk:pbandk-runtime:${Versions.pbandk}"
