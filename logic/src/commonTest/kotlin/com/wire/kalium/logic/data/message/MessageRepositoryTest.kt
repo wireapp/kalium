@@ -15,6 +15,7 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.Status.SENT
+import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import io.mockative.Mock
 import io.mockative.anything
 import io.mockative.configure
@@ -174,9 +175,9 @@ class MessageRepositoryTest {
         val TEST_QUALIFIED_ID_ENTITY = PersistenceQualifiedId("value", "domain")
         val TEST_NETWORK_QUALIFIED_ID_ENTITY = NetworkQualifiedId("value", "domain")
         val TEST_MESSAGE_ENTITY =
-            MessageEntity(
+            MessageEntity.Client(
                 id = "uid",
-                content = MessageEntity.MessageEntityContent.TextMessageContent("content"),
+                content = MessageEntityContent.Text("content"),
                 conversationId = TEST_QUALIFIED_ID_ENTITY,
                 date = "date",
                 senderUserId = TEST_QUALIFIED_ID_ENTITY,
@@ -189,9 +190,15 @@ class MessageRepositoryTest {
         val TEST_USER_ID = UserId("userId", "domain")
         val TEST_CONTENT = MessageContent.Text("Ciao!")
         val TEST_DATETIME = "2022-04-21T20:56:22.393Z"
-        val TEST_MESSAGE = Message(
-            "uid", TEST_CONTENT, TEST_CONVERSATION_ID, TEST_DATETIME, TEST_USER_ID, TEST_CLIENT_ID,
-            Message.Status.SENT, Message.EditStatus.NotEdited
+        val TEST_MESSAGE = Message.Client(
+            id = "uid",
+            content = TEST_CONTENT,
+            conversationId = TEST_CONVERSATION_ID,
+            date = TEST_DATETIME,
+            senderUserId = TEST_USER_ID,
+            senderClientId = TEST_CLIENT_ID,
+            status = Message.Status.SENT,
+            editStatus = Message.EditStatus.NotEdited
         )
     }
 }

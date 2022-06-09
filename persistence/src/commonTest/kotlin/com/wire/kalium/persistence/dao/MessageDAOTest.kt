@@ -187,6 +187,111 @@ class MessageDAOTest : BaseDatabaseTest() {
         assertTrue { notDeletedMessage.first()?.visibility == MessageEntity.Visibility.VISIBLE }
     }
 
+    @Test
+    fun givenMessagesAreInserted_whenGettingMessagesFromAllConversations_thenAllMessagesAreReturned() = runTest {
+        insertInitialData()
+
+        val allMessages = listOf(
+            newMessageEntity(
+                "1",
+                conversationId = conversationEntity1.id,
+                senderUserId = userEntity1.id,
+                status = MessageEntity.Status.PENDING
+            ),
+            newMessageEntity(
+                "2",
+                // different conversation
+                conversationId = conversationEntity2.id,
+                // different user
+                senderUserId = userEntity2.id,
+                status = MessageEntity.Status.READ
+            )
+        )
+
+        messageDAO.insertMessages(allMessages)
+        val result = messageDAO.getMessagesFromAllConversations(10, 0)
+        assertContentEquals(allMessages, result.first())
+    }
+
+
+    @Test
+    fun givenMessagesAreInserted_whenGettingMessagesByConversation_thenOnlyRelevantMessagesAreReturned() = runTest {
+        insertInitialData()
+
+        val conversationInQuestion = conversationEntity1
+        val otherConversation = conversationEntity2
+
+        val expectedMessages = listOf(
+            newMessageEntity(
+                "1",
+                conversationId = conversationInQuestion.id,
+                senderUserId = userEntity1.id,
+                status = MessageEntity.Status.PENDING
+            ),
+            newMessageEntity(
+                "2",
+                conversationId = conversationInQuestion.id,
+                senderUserId = userEntity1.id,
+                status = MessageEntity.Status.PENDING
+            )
+        )
+
+        val allMessages = expectedMessages + listOf(
+            newMessageEntity(
+                "3",
+                // different conversation
+                conversationId = otherConversation.id,
+                senderUserId = userEntity1.id,
+                status = MessageEntity.Status.READ
+            ),
+            newMessageEntity(
+                "4",
+                // different conversation
+                conversationId = otherConversation.id,
+                senderUserId = userEntity1.id,
+                status = MessageEntity.Status.PENDING
+            )
+        )
+
+        messageDAO.insertMessages(allMessages)
+        val result = messageDAO.getMessagesByConversation(conversationInQuestion.id, 10, 0)
+        assertContentEquals(expectedMessages, result.first())
+    }
+
+    @Test
+    fun givenMessagesAreInserted_whenGettingMessagesByConversationAfterDate_thenOnlyRelevantMessagesAreReturned() = runTest {
+        insertInitialData()
+
+        val conversationInQuestion = conversationEntity1
+        val dateInQuestion = "2022-03-30T15:36:00.000Z"
+
+        val expectedMessages = listOf(
+            newMessageEntity(
+                "1",
+                conversationId = conversationInQuestion.id,
+                senderUserId = userEntity1.id,
+                status = MessageEntity.Status.PENDING,
+                // date after
+                date = "2022-03-30T15:37:00.000Z",
+            )
+        )
+
+        val allMessages = expectedMessages + listOf(
+            newMessageEntity(
+                "2",
+                conversationId = conversationInQuestion.id,
+                senderUserId = userEntity1.id,
+                status = MessageEntity.Status.READ,
+                // date before
+                date = "2022-03-30T15:35:00.000Z",
+            )
+        )
+
+        messageDAO.insertMessages(allMessages)
+        val result = messageDAO.getMessagesByConversationAfterDate(conversationInQuestion.id, dateInQuestion)
+        assertContentEquals(expectedMessages, result.first())
+    }
+
     private suspend fun insertInitialData() {
         userDAO.upsertUsers(listOf(userEntity1, userEntity2))
         conversationDAO.insertConversation(conversationEntity1)
