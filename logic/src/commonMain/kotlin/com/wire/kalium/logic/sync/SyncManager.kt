@@ -9,8 +9,6 @@ import com.wire.kalium.logic.data.sync.SyncRepository
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.api.notification.WebSocketEvent
@@ -22,20 +20,9 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.concatWith
-import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
-import kotlinx.coroutines.flow.onCompletion
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -188,12 +175,12 @@ class SyncManagerImpl(
             eventRepository.liveEvents()
                 .onSuccess { webSocketEventFlow ->
                     webSocketEventFlow.collect { webSocketEvent ->
-                        when(webSocketEvent) {
+                        when (webSocketEvent) {
                             is WebSocketEvent.Open -> {
                                 eventRepository
                                     .pendingEvents()
                                     .mapNotNull { offlineEventOrFailure ->
-                                        when(offlineEventOrFailure) {
+                                        when (offlineEventOrFailure) {
                                             is Either.Left -> null
                                             is Either.Right -> offlineEventOrFailure.value
                                         }
@@ -202,15 +189,14 @@ class SyncManagerImpl(
                                         addToOfflineEventBuffer(it)
                                         processingEventFlow.emit(it)
                                     }
+                                syncRepository.updateSyncState { SyncState.ProcessingLiveEvents }
                             }
                             is WebSocketEvent.BinaryPayloadReceived -> {
                                 val mappedEvent = eventMapper.fromDTO(webSocketEvent.payload)
                                 mappedEvent.forEach {
-                                    if(!isEventPresentInOfflineBuffer(it)) {
-                                        syncRepository.updateSyncState { SyncState.ProcessingLiveEvents }
+                                    if (!isEventPresentInOfflineBuffer(it)) {
                                         processingEventFlow.emit(it)
-                                    }
-                                    else {
+                                    } else {
                                         kaliumLogger.v(
                                             "Skipping emit of event from WebSocket because already emitted as offline event"
                                         )
@@ -237,7 +223,7 @@ class SyncManagerImpl(
                             }
                         }
                     }
-            }
+                }
         }
     }
 
