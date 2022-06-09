@@ -13,6 +13,7 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.TeamEntity
+import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserEntity
 import io.mockative.ConfigurationApi
@@ -156,7 +157,8 @@ class TeamRepositoryTest {
             accentId = 1,
             team = "teamId",
             previewAssetId = null,
-            completeAssetId = null
+            completeAssetId = null,
+            availabilityStatus = UserAvailabilityStatusEntity.NONE
         )
 
         given(userMapper)

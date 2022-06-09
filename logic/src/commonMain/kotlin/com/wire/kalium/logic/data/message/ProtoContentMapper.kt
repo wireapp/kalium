@@ -91,15 +91,15 @@ class ProtoContentMapperImpl : ProtoContentMapper {
                 // Backend sends some preview asset messages just with img metadata and no keys or asset id, so we need to overwrite one with the other one
                 MessageContent.Asset(MapperProvider.assetMapper().fromProtoAssetMessageToAssetContent(protoContent.value))
             }
-            is GenericMessage.Content.Availability -> MessageContent.Unknown
-            is GenericMessage.Content.ButtonAction -> MessageContent.Unknown
-            is GenericMessage.Content.ButtonActionConfirmation -> MessageContent.Unknown
+            is GenericMessage.Content.Availability -> MessageContent.Unknown(encodedContent.data)
+            is GenericMessage.Content.ButtonAction -> MessageContent.Unknown(encodedContent.data)
+            is GenericMessage.Content.ButtonActionConfirmation -> MessageContent.Unknown(encodedContent.data)
             is GenericMessage.Content.Calling -> MessageContent.Calling(value = protoContent.value.content)
-            is GenericMessage.Content.Cleared -> MessageContent.Unknown
-            is GenericMessage.Content.ClientAction -> MessageContent.Unknown
-            is GenericMessage.Content.Composite -> MessageContent.Unknown
-            is GenericMessage.Content.Confirmation -> MessageContent.Unknown
-            is GenericMessage.Content.DataTransfer -> MessageContent.Unknown
+            is GenericMessage.Content.Cleared -> MessageContent.Unknown(encodedContent.data)
+            is GenericMessage.Content.ClientAction -> MessageContent.Unknown(encodedContent.data)
+            is GenericMessage.Content.Composite -> MessageContent.Unknown(encodedContent.data)
+            is GenericMessage.Content.Confirmation -> MessageContent.Unknown(encodedContent.data)
+            is GenericMessage.Content.DataTransfer -> MessageContent.Unknown(encodedContent.data)
             is GenericMessage.Content.Deleted -> MessageContent.DeleteMessage(protoContent.value.messageId)
             is GenericMessage.Content.Edited -> {
                 val replacingMessageId = protoContent.value.replacingMessageId
@@ -109,33 +109,34 @@ class ProtoContentMapperImpl : ProtoContentMapper {
                     }
                     //TODO: for now we do not implement it
                     is MessageEdit.Content.Composite -> {
-                        MessageContent.Unknown
+                        MessageContent.Unknown(encodedContent.data)
                     }
                     null -> {
                         kaliumLogger.w("Edit content is unexpected. Message UUID = $genericMessage.")
-                        MessageContent.Unknown
+                        MessageContent.Unknown(encodedContent.data)
                     }
                 }
             }
-            is GenericMessage.Content.Ephemeral -> MessageContent.Unknown
-            is GenericMessage.Content.External -> MessageContent.Unknown
-            is GenericMessage.Content.Image -> MessageContent.Unknown // Deprecated in favor of GenericMessage.Content.Asset
+            is GenericMessage.Content.Ephemeral -> MessageContent.Unknown(encodedContent.data)
+            is GenericMessage.Content.External -> MessageContent.Unknown(encodedContent.data)
+            is GenericMessage.Content.Image ->
+                MessageContent.Unknown(encodedContent.data) // Deprecated in favor of GenericMessage.Content.Asset
             is GenericMessage.Content.Hidden -> {
                 val hiddenMessage = genericMessage.hidden
                 if (hiddenMessage != null) {
                     MessageContent.DeleteForMe(hiddenMessage.messageId, hiddenMessage.conversationId, hiddenMessage.qualifiedConversationId)
                 } else {
                     kaliumLogger.w("Hidden message is null. Message UUID = $genericMessage.")
-                    MessageContent.Unknown
+                    MessageContent.Unknown(encodedContent.data)
                 }
             }
-            is GenericMessage.Content.Knock -> MessageContent.Unknown
-            is GenericMessage.Content.LastRead -> MessageContent.Unknown
-            is GenericMessage.Content.Location -> MessageContent.Unknown
-            is GenericMessage.Content.Reaction -> MessageContent.Unknown
+            is GenericMessage.Content.Knock -> MessageContent.Unknown(encodedContent.data)
+            is GenericMessage.Content.LastRead -> MessageContent.Unknown(encodedContent.data)
+            is GenericMessage.Content.Location -> MessageContent.Unknown(encodedContent.data)
+            is GenericMessage.Content.Reaction -> MessageContent.Unknown(encodedContent.data)
             else -> {
                 kaliumLogger.w("Null content when parsing protobuf. Message UUID = $genericMessage.")
-                MessageContent.Unknown
+                MessageContent.Unknown(encodedContent.data)
             }
         }
         return ProtoContent(genericMessage.messageId, content)
