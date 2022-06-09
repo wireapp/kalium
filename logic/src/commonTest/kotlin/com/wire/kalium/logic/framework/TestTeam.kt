@@ -14,7 +14,7 @@ object TestTeam {
 
     fun dto(
         creator: String = "creator",
-        icon: AssetId = "assetId",
+        icon: AssetId = AssetId("value1", "domain"),
         name: String = "name",
         id: TeamIdDTO = "teamId",
         iconKey: AssetId? = null,
