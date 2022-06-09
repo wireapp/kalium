@@ -40,7 +40,6 @@ class VersionApiTest : ApiTest {
         }
     }
 
-    @Ignore
     @Test
     fun given404Response_whenFetchingSupportedRemoteVersion_thenResultIsApiVersion0AndFederationFalse() = runTest {
         val expected = VersionInfoDTOJson.valid404Result
