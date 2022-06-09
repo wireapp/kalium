@@ -133,16 +133,18 @@ internal class CallDataSource(
     override fun updateCallParticipants(conversationId: String, participants: List<Participant>) {
         val callProfile = _callProfile.value
 
-        callProfile[conversationId]?.let {
+        callProfile[conversationId]?.let { call ->
             callingLogger.i("updateCallParticipants() - conversationId: $conversationId with size of: ${participants.size}")
 
+            val updatedCalls = callProfile.calls.toMutableMap().apply {
+                this[conversationId] = call.copy(
+                    participants = participants,
+                    maxParticipants = max(call.maxParticipants, participants.size + 1)
+                )
+            }
+
             _callProfile.value = callProfile.copy(
-                calls = callProfile.calls.apply {
-                    this.toMutableMap()[conversationId] = it.copy(
-                        participants = participants,
-                        maxParticipants = max(it.maxParticipants, participants.size + 1)
-                    )
-                }
+                calls = updatedCalls
             )
         }
     }
@@ -150,15 +152,17 @@ internal class CallDataSource(
     override fun updateActiveSpeakers(conversationId: String, activeSpeakers: List<ActiveSpeaker>) {
         val callProfile = _callProfile.value
 
-        callProfile[conversationId]?.let {
+        callProfile.calls[conversationId]?.let { call ->
             callingLogger.i("updateActiveSpeakers() - conversationId: $conversationId with size of: ${activeSpeakers.size}")
 
+            val updatedCalls = callProfile.calls.toMutableMap().apply {
+                this[conversationId] = call.copy(
+                    activeSpeakers = activeSpeakers
+                )
+            }
+
             _callProfile.value = callProfile.copy(
-                calls = callProfile.calls.apply {
-                    this.toMutableMap()[conversationId] = it.copy(
-                        activeSpeakers = activeSpeakers
-                    )
-                }
+                calls = updatedCalls
             )
         }
     }
