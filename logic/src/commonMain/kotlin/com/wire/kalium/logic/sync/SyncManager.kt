@@ -20,13 +20,17 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.delayEach
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Clock
 
 interface SyncManager {
     fun onSlowSyncComplete()
@@ -170,13 +174,20 @@ class SyncManagerImpl(
     }
 
     private suspend fun gatherEvents() {
-        eventRepository.getLastProcessedEventId().onSuccess { clientId ->
-            eventRepository.updateLastProcessedEventId(clientId)
+        eventRepository.getLastProcessedEventId().onSuccess { eventId ->
+            eventRepository.updateLastProcessedEventId(eventId)
             eventRepository.liveEvents()
                 .onSuccess { webSocketEventFlow ->
                     webSocketEventFlow.collect { webSocketEvent ->
                         when (webSocketEvent) {
                             is WebSocketEvent.Open -> {
+                                kaliumLogger.i("SYNC: Websocket Open")
+
+//                                val delay = Clock.System.now().epochSeconds + 5
+//                                while(Clock.System.now().epochSeconds < delay) {
+//
+//                                }
+
                                 eventRepository
                                     .pendingEvents()
                                     .mapNotNull { offlineEventOrFailure ->
@@ -186,19 +197,25 @@ class SyncManagerImpl(
                                         }
                                     }
                                     .collect {
+                                        kaliumLogger.i("SYNC: Collecting offline event: ${it.id}")
                                         addToOfflineEventBuffer(it)
                                         processingEventFlow.emit(it)
                                     }
+                                kaliumLogger.i("SYNC: Offline events collection finished")
                                 syncRepository.updateSyncState { SyncState.ProcessingLiveEvents }
                             }
                             is WebSocketEvent.BinaryPayloadReceived -> {
+                                kaliumLogger.i("SYNC: Websocket Received binary payload")
                                 val mappedEvent = eventMapper.fromDTO(webSocketEvent.payload)
                                 mappedEvent.forEach {
                                     if (!isEventPresentInOfflineBuffer(it)) {
+                                        kaliumLogger.v(
+                                            "SYNC: Event never seen before ${it.id} - We are live"
+                                        )
                                         processingEventFlow.emit(it)
                                     } else {
                                         kaliumLogger.v(
-                                            "Skipping emit of event from WebSocket because already emitted as offline event"
+                                            "SYNC: Skipping emit of event from WebSocket because already emitted as offline event ${it.id}"
                                         )
                                         clearOfflineEventBuffer()
                                     }
@@ -228,7 +245,7 @@ class SyncManagerImpl(
     }
 
     private suspend fun processEvent(event: Event) {
-        kaliumLogger.i(message = "Event received: $event")
+        kaliumLogger.i(message = "SYNC: Processing event ${event.id}")
         when (event) {
             is Event.Conversation -> {
                 conversationEventReceiver.onEvent(event)
