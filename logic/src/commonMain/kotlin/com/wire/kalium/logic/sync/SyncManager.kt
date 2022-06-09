@@ -74,7 +74,7 @@ class SyncManagerImpl(
     private val syncRepository: SyncRepository,
     private val conversationEventReceiver: ConversationEventReceiver,
     private val userEventReceiver: EventReceiver<Event.User>,
-    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
+    private val kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
     private val eventMapper: EventMapper = MapperProvider.eventMapper()
 ) : SyncManager {
 
@@ -114,12 +114,8 @@ class SyncManagerImpl(
      * @see eventProcessingDispatcher
      * @see processingSupervisorJob
      */
-    private val processingScope = CoroutineScope(processingSupervisorJob + eventProcessingDispatcher + coroutineExceptionHandler)
+    private val eventProcessingScope = CoroutineScope(processingSupervisorJob + eventProcessingDispatcher + coroutineExceptionHandler)
     private var processingJob: Job? = null
-
-    private val gatheringDispatcher = kaliumDispatcher.default.limitedParallelism(1)
-    private val gatheringScope = CoroutineScope(processingSupervisorJob + gatheringDispatcher + coroutineExceptionHandler)
-    private var gatheringJob: Job? = null
 
     // Do not access this variable directly of I will cut off your hands
     private val offlineEventsBuffer = mutableListOf<Event>()
@@ -150,23 +146,18 @@ class SyncManagerImpl(
 
         syncRepository.updateSyncState { SyncState.GatheringPendingEvents }
 
-        gatheringJob?.cancel(null)
-        gatheringJob = gatheringScope.launch { startGathering() }
         processingJob?.cancel(null)
-        processingJob = processingScope.launch { startProcessing() }
-    }
-
-    private suspend fun startGathering() {
-        withContext(gatheringScope.coroutineContext) {
-            gatherEvents()
-        }
+        processingJob = eventProcessingScope.launch { startProcessing() }
     }
 
     private suspend fun startProcessing() {
-        processingEventFlow
-            .collect {
-                processEvent(it)
-            }
+        withContext(kaliumDispatcher.io) {
+            gatherEvents()
+        }
+
+        processingEventFlow.collect {
+            processEvent(it)
+        }
     }
 
     private suspend fun gatherEvents() {
