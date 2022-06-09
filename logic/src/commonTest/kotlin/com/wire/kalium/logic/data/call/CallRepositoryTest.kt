@@ -15,13 +15,11 @@ import io.mockative.mock
 import io.mockative.oneOf
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
-import kotlin.math.exp
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import kotlin.test.expect
 
 class CallRepositoryTest {
 
@@ -255,23 +253,42 @@ class CallRepositoryTest {
             )
         )
 
-        val expectedActiveSpeakers = listOf(
-            ActiveSpeaker(
-                userId = "userid",
+        val calls = callRepository.callsFlow()
+
+        val participants = listOf(
+            Participant(
+                id = QualifiedID(
+                    value = "value1",
+                    domain = "domain1"
+                ),
                 clientId = "clientid",
-                audioLevel = 1,
-                audioLevelNow = 1
+                muted = false,
+                isSpeaking = false
             )
         )
 
-        val calls = callRepository.callsFlow()
+        callRepository.updateCallParticipants(
+            conversationId = establishedCall.conversationId.toString(),
+            participants = participants
+        )
 
-        callRepository.updateActiveSpeakers(
+        val expectedActiveSpeakers = CallActiveSpeakers(
+            activeSpeakers = listOf(
+                CallActiveSpeaker(
+                    userId = "value1@domain1",
+                    clientId = "clientid",
+                    audioLevel = 1,
+                    audioLevelNow = 1
+                )
+            )
+        )
+
+        callRepository.updateParticipantsActiveSpeaker(
             conversationId = establishedCall.conversationId.toString(),
             activeSpeakers = expectedActiveSpeakers
         )
 
-        assertEquals(expectedActiveSpeakers, calls.first()[0].activeSpeakers)
+        assertEquals(true, calls.first()[0].participants.first().isSpeaking)
     }
 
     private fun provideCall(id: ConversationId, status: CallStatus) = Call(
