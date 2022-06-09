@@ -32,7 +32,7 @@ class AssetApiImpl internal constructor(private val authenticatedNetworkClient: 
      * Build path for assets endpoint download.
      * The case for using V3 is a fallback and should not happen.
      *
-     *  TODO(assets): once API v2 is alive, this should be changed/merged.
+     * TODO(assets): once API v2 is alive, this should be changed/merged.
      * https://github.com/wireapp/wire-server/blob/dfe207073b54a63372898a75f670e972dd482118/changelog.d/1-api-changes/api-versioning
      */
     private fun buildAssetsPath(assetId: AssetId): String {
