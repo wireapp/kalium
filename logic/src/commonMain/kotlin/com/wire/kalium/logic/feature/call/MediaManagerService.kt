@@ -1,11 +1,11 @@
 package com.wire.kalium.logic.feature.call
 
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 
 interface MediaManagerService {
     fun turnLoudSpeakerOn()
     fun turnLoudSpeakerOff()
-    fun observeSpeaker(): Flow<Boolean>
+    fun observeSpeaker(): StateFlow<Boolean>
 }
 
 expect class MediaManagerServiceImpl : MediaManagerService

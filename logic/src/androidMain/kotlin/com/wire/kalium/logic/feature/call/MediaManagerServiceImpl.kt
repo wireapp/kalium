@@ -6,6 +6,7 @@ import com.waz.media.manager.MediaManagerListener
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 actual class MediaManagerServiceImpl(
@@ -35,5 +36,5 @@ actual class MediaManagerServiceImpl(
         mediaManager.turnLoudSpeakerOff()
     }
 
-    override fun observeSpeaker(): Flow<Boolean> = isLoudSpeakerOnFlow
+    override fun observeSpeaker(): StateFlow<Boolean> = isLoudSpeakerOnFlow
 }
