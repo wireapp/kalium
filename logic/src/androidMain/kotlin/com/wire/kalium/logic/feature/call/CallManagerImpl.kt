@@ -233,9 +233,14 @@ actual class CallManagerImpl(
      * onCallingReady
      * Will start the handlers for: ParticipantsChanged, NetworkQuality, ClientsRequest and ActiveSpeaker
      */
-    @Suppress("LongMethod")
     private fun onCallingReady() {
-        // Participants
+        initParticipantsHandler()
+        initClientsHandler()
+        initNetworkHandler()
+        initActiveSpeakersHandler()
+    }
+
+    private fun initParticipantsHandler() {
         scope.launch {
             withCalling {
                 val onParticipantListChanged = OnParticipantListChanged(
@@ -253,8 +258,9 @@ actual class CallManagerImpl(
                 callingLogger.d("$TAG - wcall_set_participant_changed_handler() called")
             }
         }
+    }
 
-        // Network Quality
+    private fun initClientsHandler() {
         scope.launch {
             withCalling {
                 val onNetworkQualityChanged = OnNetworkQualityChanged()
@@ -269,8 +275,9 @@ actual class CallManagerImpl(
                 callingLogger.d("$TAG - wcall_set_network_quality_handler() called")
             }
         }
+    }
 
-        // Clients Request
+    private fun initNetworkHandler() {
         scope.launch {
             withCalling {
                 val selfUserId = userId.await().toString()
@@ -290,8 +297,9 @@ actual class CallManagerImpl(
                 callingLogger.d("$TAG - wcall_set_req_clients_handler() called")
             }
         }
+    }
 
-        // Active Speakers
+    private fun initActiveSpeakersHandler() {
         scope.launch {
             withCalling {
                 val activeSpeakersHandler = OnActiveSpeakers(
