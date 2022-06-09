@@ -62,7 +62,7 @@ class GetUserInfoUseCaseTestArrangement {
         return this
     }
 
-    fun withSuccessTeamRetrive(
+    fun withSuccessfulTeamRetrieve(
         localTeamPresent: Boolean = true,
     ): GetUserInfoUseCaseTestArrangement {
         given(teamRepository)
