@@ -42,7 +42,9 @@ interface ConversationDAO {
     suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity, date: String)
     suspend fun updateAllConversationsNotificationDate(date: String)
     suspend fun getAllConversations(): Flow<List<ConversationEntity>>
-    suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>
+    suspend fun observeGetConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>
+    suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity?
+    suspend fun getAllConversationWithOtherUser(userId: UserIDEntity): List<ConversationEntity>
     suspend fun getConversationByGroupID(groupID: String): Flow<ConversationEntity?>
     suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity)
     suspend fun insertMember(member: Member, conversationID: QualifiedIDEntity)
