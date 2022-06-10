@@ -17,7 +17,7 @@ class ObserveConversationListDetailsUseCase(
         syncManager.startSyncIfIdle()
         return conversationRepository.observeConversationList().map { conversations ->
             conversations.map { conversation ->
-                conversationRepository.getConversationDetailsById(conversation.id)
+                conversationRepository.observeConversationDetailsById(conversation.id)
             }
         }.flatMapLatest { flowsOfDetails ->
             combine(flowsOfDetails) { latestValues -> latestValues.asList() }

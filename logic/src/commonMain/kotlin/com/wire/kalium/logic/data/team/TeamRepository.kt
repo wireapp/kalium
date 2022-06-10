@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 interface TeamRepository {
-    suspend fun fetchTeamById(teamId: TeamId): Either<CoreFailure, Unit>
+    suspend fun fetchTeamById(teamId: TeamId): Either<CoreFailure, Team>
     suspend fun fetchMembersByTeamId(teamId: TeamId, userDomain: String): Either<CoreFailure, Unit>
     suspend fun getTeam(teamId: TeamId): Flow<Team?>
 }
@@ -29,12 +29,14 @@ internal class TeamDataSource(
     private val teamMapper: TeamMapper = MapperProvider.teamMapper(),
 ) : TeamRepository {
 
-    override suspend fun fetchTeamById(teamId: TeamId): Either<CoreFailure, Unit> = wrapApiRequest {
+    override suspend fun fetchTeamById(teamId: TeamId): Either<CoreFailure, Team> = wrapApiRequest {
         teamsApi.getTeamInfo(teamId = teamId)
     }.map { teamDTO ->
         teamMapper.fromDtoToEntity(teamDTO)
     }.map { teamEntity ->
         teamDAO.insertTeam(team = teamEntity)
+
+        teamMapper.fromDaoModelToTeam(teamEntity)
     }
 
     override suspend fun fetchMembersByTeamId(teamId: TeamId, userDomain: String): Either<CoreFailure, Unit> = wrapApiRequest {
