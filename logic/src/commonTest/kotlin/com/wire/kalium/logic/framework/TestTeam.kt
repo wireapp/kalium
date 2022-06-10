@@ -1,7 +1,6 @@
 package com.wire.kalium.logic.framework
 
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.network.api.AssetId
 import com.wire.kalium.network.api.NonQualifiedUserId
 import com.wire.kalium.network.api.model.TeamDTO
 import com.wire.kalium.network.api.teams.TeamsApi
@@ -14,10 +13,10 @@ object TestTeam {
 
     fun dto(
         creator: String = "creator",
-        icon: AssetId = AssetId("value1", "domain"),
+        icon: String = "value1",
         name: String = "name",
         id: TeamIdDTO = "teamId",
-        iconKey: AssetId? = null,
+        iconKey: String? = null,
         binding: Boolean? = false
     ): TeamDTO = TeamDTO(
         creator = creator,
