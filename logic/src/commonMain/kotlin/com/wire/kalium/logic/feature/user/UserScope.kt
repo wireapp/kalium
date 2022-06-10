@@ -37,4 +37,7 @@ class UserScope(
     val getAllKnownUsers: GetAllContactsUseCase get() = GetAllContactsUseCaseImpl(userRepository)
     val getKnownUser: GetKnownUserUseCase get() = GetKnownUserUseCaseImpl(userRepository)
     val getUserInfo: GetUserInfoUseCase get() = GetUserInfoUseCaseImpl(userRepository,teamRepository)
+    val updateSelfAvailabilityStatus: UpdateSelfAvailabilityStatusUseCase
+        get() =
+            UpdateSelfAvailabilityStatusUseCase(userRepository, syncManager)
 }
