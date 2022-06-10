@@ -8,7 +8,6 @@ import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Video
 import com.wire.kalium.logic.data.message.AssetContent.RemoteData.EncryptionAlgorithm.AES_CBC
 import com.wire.kalium.logic.data.message.AssetContent.RemoteData.EncryptionAlgorithm.AES_GCM
 import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.network.api.AssetId
 import com.wire.kalium.network.api.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.asset.AssetResponse
@@ -29,7 +28,6 @@ interface AssetMapper {
     fun fromProtoAssetMessageToAssetContent(protoAssetMessage: Asset): AssetContent
     fun fromDownloadStatusToDaoModel(downloadStatus: Message.DownloadStatus): MessageEntity.DownloadStatus
     fun fromDownloadStatusEntityToLogicModel(downloadStatus: MessageEntity.DownloadStatus?): Message.DownloadStatus
-    fun fromUserAssetIdToApiModel(userAssetId: UserAssetId): AssetId
 }
 
 class AssetMapperImpl : AssetMapper {
@@ -178,6 +176,4 @@ class AssetMapperImpl : AssetMapper {
             null -> Message.DownloadStatus.NOT_DOWNLOADED
         }
     }
-
-    override fun fromUserAssetIdToApiModel(userAssetId: UserAssetId) = AssetId(userAssetId.value, userAssetId.domain)
 }

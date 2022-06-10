@@ -52,9 +52,9 @@ class PublicUserMapperImpl(
         team = userDetailResponse.teamId,
         connectionStatus = ConnectionState.NOT_CONNECTED,
         previewPicture = userDetailResponse.assets.getPreviewAssetOrNull()
-            ?.let { idMapper.toQualifiedUserAssetId(it.key, userDetailResponse.id.domain) },
+            ?.let { idMapper.toQualifiedAssetId(it.key, userDetailResponse.id.domain) },
         completePicture = userDetailResponse.assets.getCompleteAssetOrNull()
-            ?.let { idMapper.toQualifiedUserAssetId(it.key, userDetailResponse.id.domain) },
+            ?.let { idMapper.toQualifiedAssetId(it.key, userDetailResponse.id.domain) },
         availabilityStatus = UserAvailabilityStatus.NONE
     )
 

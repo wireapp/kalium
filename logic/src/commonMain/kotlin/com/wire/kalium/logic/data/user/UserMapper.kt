@@ -57,9 +57,9 @@ internal class UserMapperImpl(
             team = teamId,
             connectionStatus = ConnectionState.NOT_CONNECTED,
             previewPicture = assets.getPreviewAssetOrNull()
-                ?.let { idMapper.toQualifiedUserAssetId(it.key, id.domain) }, // assume the same domain as the userId
+                ?.let { idMapper.toQualifiedAssetId(it.key, id.domain) }, // assume the same domain as the userId
             completePicture = assets.getCompleteAssetOrNull()
-                ?.let { idMapper.toQualifiedUserAssetId(it.key, id.domain) }, // assume the same domain as the userId
+                ?.let { idMapper.toQualifiedAssetId(it.key, id.domain) }, // assume the same domain as the userId
             availabilityStatus = UserAvailabilityStatus.NONE
         )
     }
