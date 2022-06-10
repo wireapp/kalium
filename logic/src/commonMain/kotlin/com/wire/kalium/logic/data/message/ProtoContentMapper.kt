@@ -16,10 +16,12 @@ import com.wire.kalium.protobuf.messages.Text
 import com.wire.kalium.protobuf.messages.Composite
 
 import pbandk.ByteArr
+import pbandk.Message as ProtoMessage
 
 interface ProtoContentMapper {
     fun encodeToProtobuf(protoContent: ProtoContent): PlainMessageBlob
     fun decodeFromProtobuf(encodedContent: PlainMessageBlob): ProtoContent
+    fun contentTypeName(encodedContent: PlainMessageBlob): String?
 }
 
 class ProtoContentMapperImpl : ProtoContentMapper {
@@ -150,5 +152,10 @@ class ProtoContentMapperImpl : ProtoContentMapper {
             else -> Message.Visibility.HIDDEN
         }
         return ProtoContent(genericMessage.messageId, content, visibility)
+    }
+
+    override fun contentTypeName(encodedContent: PlainMessageBlob): String? {
+        val genericMessage = GenericMessage.decodeFromByteArray(encodedContent.data)
+        return genericMessage.content?.value?.let { it as? ProtoMessage }?.descriptor?.name
     }
 }
