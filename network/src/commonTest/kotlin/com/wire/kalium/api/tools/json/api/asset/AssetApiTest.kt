@@ -125,6 +125,32 @@ class AssetApiTest : ApiTest {
     }
 
     @Test
+    fun givenAValidAssetDownloadApiRequest_whenCallingTheAssetDownloadWithoutADomaino_theRequestShouldBeConfiguredToV3Fallback() = runTest {
+        // Given
+        val downloadedAsset = ByteArray(16)
+        val networkClient = mockAuthenticatedNetworkClient(
+            responseBody = downloadedAsset,
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertGet()
+                assertNoQueryParams()
+                assertAuthorizationHeaderExist()
+                assertHeaderExist(HEADER_ASSET_TOKEN)
+                assertPathEqual("$PATH_PUBLIC_ASSETS/$ASSET_KEY")
+            }
+        )
+
+        // When
+        val assetApi: AssetApi = AssetApiImpl(networkClient)
+        val assetIdFallback = assetId.copy(domain = "")
+        val response = assetApi.downloadAsset(assetIdFallback, ASSET_TOKEN)
+
+        // Then
+        assertTrue(response.isSuccessful())
+        assertEquals(response.value.decodeToString(), downloadedAsset.decodeToString())
+    }
+
+    @Test
     fun givenAnInvalidAssetDownloadApiRequest_whenCallingTheAssetDownloadApiEndpoint_theResponseShouldContainAnError() = runTest {
         // Given
         val apiPath = "$PATH_DOWNLOAD_ASSETS_V4/$ASSET_DOMAIN/$ASSET_KEY"
