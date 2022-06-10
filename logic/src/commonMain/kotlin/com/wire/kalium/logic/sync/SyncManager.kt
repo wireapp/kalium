@@ -20,17 +20,12 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.delayEach
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.mapNotNull
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
-import kotlinx.datetime.Clock
 
 interface SyncManager {
     fun onSlowSyncComplete()
@@ -154,8 +149,8 @@ class SyncManagerImpl(
         processingJob = eventProcessingScope.launch { startProcessing() }
     }
 
-    private suspend fun startProcessing() {
-        withContext(kaliumDispatcher.io) {
+    private suspend fun startProcessing() = eventProcessingScope.launch {
+        launch(kaliumDispatcher.io) {
             gatherEvents()
         }
 
