@@ -41,14 +41,14 @@ class ObserveConversationDetailsUseCaseTest {
         val conversationId = TestConversation.ID
 
         given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationDetailsById)
+            .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(anything())
             .then { flowOf() }
 
         observeConversationsUseCase(conversationId)
 
         verify(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationDetailsById)
+            .suspendFunction(conversationRepository::observeConversationDetailsById)
             .with(eq(conversationId))
             .wasInvoked(exactly = once)
     }
@@ -58,7 +58,7 @@ class ObserveConversationDetailsUseCaseTest {
         val conversationId = TestConversation.ID
 
         given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationDetailsById)
+            .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(anything())
             .then { flowOf() }
 
@@ -78,7 +78,7 @@ class ObserveConversationDetailsUseCaseTest {
         )
 
         given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationDetailsById)
+            .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(anything())
             .then { conversationDetailsValues.asFlow() }
 

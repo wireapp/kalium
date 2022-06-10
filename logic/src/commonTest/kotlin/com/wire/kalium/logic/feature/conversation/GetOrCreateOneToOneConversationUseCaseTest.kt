@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -15,6 +16,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.persistence.dao.ConversationEntity
 import io.mockative.Mock
+import io.mockative.Times
 import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.given
@@ -47,7 +49,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
         given(conversationRepository)
             .suspendFunction(conversationRepository::getOneToOneConversationDetailsByUserId)
             .whenInvokedWith(anything())
-            .thenReturn(Either.Right(null))
+            .thenReturn(Either.Right(CONVERSATION_DETAILS))
 
         given(conversationRepository)
             .suspendFunction(conversationRepository::createGroupConversation)
@@ -61,7 +63,12 @@ class GetOrCreateOneToOneConversationUseCaseTest {
         verify(conversationRepository)
             .suspendFunction(conversationRepository::createGroupConversation)
             .with(anything(), anything(), anything())
-            .wasInvoked(exactly = once)
+            .wasNotInvoked()
+
+        verify(conversationRepository)
+            .suspendFunction(conversationRepository::getOneToOneConversationDetailsByUserId)
+            .with(anything())
+            .wasInvoked()
     }
 
     @Test
@@ -69,7 +76,12 @@ class GetOrCreateOneToOneConversationUseCaseTest {
         //given
         given(conversationRepository)
             .coroutine { getOneToOneConversationDetailsByUserId(USER_ID) }
-            .then { Either.Right(CONVERSATION_DETAILS) }
+            .then { Either.Left(StorageFailure.DataNotFound) }
+
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::createGroupConversation)
+            .whenInvokedWith(anything(), anything(), anything())
+            .thenReturn(Either.Right(CONVERSATION))
         //when
         val result = getOrCreateOneToOneConversationUseCase.invoke(USER_ID)
         //then
@@ -77,7 +89,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
 
         verify(conversationRepository)
             .coroutine { createGroupConversation(members = MEMBER) }
-            .wasNotInvoked()
+            .wasInvoked()
     }
 
     private companion object {
