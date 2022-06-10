@@ -4,6 +4,7 @@ import app.cash.turbine.test
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.AssetContent
@@ -279,6 +280,51 @@ class GetNotificationsUseCaseTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenConversationWithMessageListIncludingNotAllowedMessages_thenNotificationListWithoutTheseMessages() = runTest {
+        given(userRepository)
+            .suspendFunction(userRepository::getSelfUser)
+            .whenInvoked()
+            .thenReturn(flowOf(TestUser.SELF))
+        given(userRepository)
+            .coroutine { getSelfUserId() }
+            .then { MY_ID }
+        given(conversationRepository)
+            .coroutine { getConversationsForNotifications() }
+            .then { flowOf(listOf(entityConversation())) }
+        given(userRepository)
+            .suspendFunction(userRepository::getKnownUser)
+            .whenInvokedWith(any())
+            .then { id -> flowOf(otherUser(id)) }
+        given(messageRepository)
+            .suspendFunction(messageRepository::getMessagesByConversationIdAndVisibilityAfterDate)
+            .whenInvokedWith(anything(), anything(), anything())
+            .then { _, _, _ ->
+                flowOf(
+                    listOf(
+                        entityTextMessage(conversationId(), otherUserId(), "0"),
+                        entityServerMessage(conversationId(), otherUserId(), "1"),
+                        entityTextMessage(conversationId(), otherUserId(), "2", visibility = Message.Visibility.HIDDEN),
+                    )
+                )
+            }
+
+        val notificationsListFlow = getNotificationsUseCase()
+
+        notificationsListFlow.test {
+            val actual = awaitItem()
+
+            assertTrue(actual.size == 1)
+            assertEquals(
+                actual[0].messages,
+                listOf(
+                    notificationMessageText(authorName = otherUserName(otherUserId()), text = "test message 0")
+                )
+            )
+            awaitComplete()
+        }
+    }
+
     companion object {
 
         private val MY_ID = TestUser.USER_ID
@@ -300,7 +346,8 @@ class GetNotificationsUseCaseTest {
         private fun entityTextMessage(
             conversationId: QualifiedID,
             senderId: QualifiedID = TestUser.USER_ID,
-            messageId: String = "message_id"
+            messageId: String = "message_id",
+            visibility: Message.Visibility = Message.Visibility.VISIBLE
         ) =
             Message.Client(
                 id = messageId,
@@ -310,7 +357,8 @@ class GetNotificationsUseCaseTest {
                 senderUserId = senderId,
                 senderClientId = ClientId("client_1"),
                 status = Message.Status.SENT,
-                editStatus = Message.EditStatus.NotEdited
+                editStatus = Message.EditStatus.NotEdited,
+                visibility = visibility
             )
 
         private fun entityAssetMessage(
@@ -344,6 +392,20 @@ class GetNotificationsUseCaseTest {
                 senderClientId = ClientId("client_1"),
                 status = Message.Status.SENT,
                 editStatus = Message.EditStatus.NotEdited
+            )
+
+        private fun entityServerMessage(
+            conversationId: QualifiedID,
+            senderId: QualifiedID = TestUser.USER_ID,
+            messageId: String = "message_id"
+        ) =
+            Message.Server(
+                id = messageId,
+                content = MessageContent.MemberChange.Removed(listOf(Member(senderId))),
+                conversationId = conversationId,
+                date = "some_time",
+                senderUserId = senderId,
+                status = Message.Status.SENT
             )
 
         private fun notificationMessageText(

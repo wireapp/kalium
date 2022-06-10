@@ -126,24 +126,28 @@ class GetNotificationsUseCaseImpl(
         selfUser: SelfUser,
         conversationMutedStatus: MutedConversationStatus
     ): Boolean =
-        when(conversationMutedStatus) {
-            MutedConversationStatus.AllAllowed -> true
-            MutedConversationStatus.OnlyMentionsAllowed -> {
-                when(val content = message.content) {
-                    is MessageContent.Text ->  {
-                        val containsSelfUserName = selfUser.name?.let { selfUsername ->
-                            content.value.contains("@$selfUsername")
-                        } ?: false
-                        val containsSelfHandle = selfUser.handle?.let { selfHandle ->
-                            content.value.contains("@$selfHandle")
-                        } ?: false
+        when {
+            message is Message.Server -> false
+            message.visibility != Message.Visibility.VISIBLE -> false
+            else -> when (conversationMutedStatus) {
+                MutedConversationStatus.AllAllowed -> true
+                MutedConversationStatus.OnlyMentionsAllowed -> {
+                    when (val content = message.content) {
+                        is MessageContent.Text -> {
+                            val containsSelfUserName = selfUser.name?.let { selfUsername ->
+                                content.value.contains("@$selfUsername")
+                            } ?: false
+                            val containsSelfHandle = selfUser.handle?.let { selfHandle ->
+                                content.value.contains("@$selfHandle")
+                            } ?: false
 
-                        containsSelfUserName or containsSelfHandle
+                            containsSelfUserName or containsSelfHandle
+                        }
+                        else -> false
                     }
-                    else -> false
                 }
+                else -> false
             }
-            else -> false
         }
 
     private data class ConversationWithMessages(val messages: List<Message>, val conversation: Conversation)
