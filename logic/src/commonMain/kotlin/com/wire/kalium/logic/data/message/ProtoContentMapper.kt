@@ -119,8 +119,7 @@ class ProtoContentMapperImpl : ProtoContentMapper {
             }
             is GenericMessage.Content.Ephemeral -> MessageContent.Ignored
             is GenericMessage.Content.External -> MessageContent.Unknown(encodedContent.data)
-            is GenericMessage.Content.Image ->
-                MessageContent.Unknown(encodedContent.data) // Deprecated in favor of GenericMessage.Content.Asset
+            is GenericMessage.Content.Image -> MessageContent.Ignored // Deprecated in favor of GenericMessage.Content.Asset
             is GenericMessage.Content.Hidden -> {
                 val hiddenMessage = genericMessage.hidden
                 if (hiddenMessage != null) {
@@ -146,7 +145,6 @@ class ProtoContentMapperImpl : ProtoContentMapper {
             is GenericMessage.Content.Composite,
             is GenericMessage.Content.Edited,
             is GenericMessage.Content.External,
-            is GenericMessage.Content.Image,
             is GenericMessage.Content.Location -> Message.Visibility.VISIBLE
             is GenericMessage.Content.Deleted -> Message.Visibility.DELETED
             else -> Message.Visibility.HIDDEN
