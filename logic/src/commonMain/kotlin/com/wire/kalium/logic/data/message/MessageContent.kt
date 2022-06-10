@@ -20,7 +20,10 @@ sealed class MessageContent {
         val qualifiedConversationId: QualifiedConversationId?
     ) : Client()
 
-    data class Unknown(val encodedData: ByteArray? = null) : Client() // messages that aren't yet handled properly but stored in db in case
+    data class Unknown( // messages that aren't yet handled properly but stored in db in case
+        val typeName: String? = null,
+        val encodedData: ByteArray? = null
+    ) : Client()
     object Ignored : Client() // messages that aren't processed in any way
     object Empty : Client()
 

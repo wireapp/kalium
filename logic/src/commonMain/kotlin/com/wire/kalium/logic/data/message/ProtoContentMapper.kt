@@ -16,12 +16,10 @@ import com.wire.kalium.protobuf.messages.Text
 import com.wire.kalium.protobuf.messages.Composite
 
 import pbandk.ByteArr
-import pbandk.Message as ProtoMessage
 
 interface ProtoContentMapper {
     fun encodeToProtobuf(protoContent: ProtoContent): PlainMessageBlob
     fun decodeFromProtobuf(encodedContent: PlainMessageBlob): ProtoContent
-    fun contentTypeName(encodedContent: PlainMessageBlob): String?
 }
 
 class ProtoContentMapperImpl : ProtoContentMapper {
@@ -87,6 +85,7 @@ class ProtoContentMapperImpl : ProtoContentMapper {
         val genericMessage = GenericMessage.decodeFromByteArray(encodedContent.data)
 
         kaliumLogger.d("Received message $genericMessage")
+        val typeName = genericMessage.content?.value?.let { it as? pbandk.Message }?.descriptor?.name
         val content = when (val protoContent = genericMessage.content) {
             is GenericMessage.Content.Text -> MessageContent.Text(protoContent.value.content)
             is GenericMessage.Content.Asset -> {
@@ -94,12 +93,12 @@ class ProtoContentMapperImpl : ProtoContentMapper {
                 MessageContent.Asset(MapperProvider.assetMapper().fromProtoAssetMessageToAssetContent(protoContent.value))
             }
             is GenericMessage.Content.Availability -> MessageContent.Ignored
-            is GenericMessage.Content.ButtonAction -> MessageContent.Unknown(encodedContent.data)
-            is GenericMessage.Content.ButtonActionConfirmation -> MessageContent.Unknown(encodedContent.data)
+            is GenericMessage.Content.ButtonAction -> MessageContent.Unknown(typeName, encodedContent.data)
+            is GenericMessage.Content.ButtonActionConfirmation -> MessageContent.Unknown(typeName, encodedContent.data)
             is GenericMessage.Content.Calling -> MessageContent.Calling(value = protoContent.value.content)
             is GenericMessage.Content.Cleared -> MessageContent.Ignored
             is GenericMessage.Content.ClientAction -> MessageContent.Ignored
-            is GenericMessage.Content.Composite -> MessageContent.Unknown(encodedContent.data)
+            is GenericMessage.Content.Composite -> MessageContent.Unknown(typeName, encodedContent.data)
             is GenericMessage.Content.Confirmation -> MessageContent.Ignored
             is GenericMessage.Content.DataTransfer -> MessageContent.Ignored
             is GenericMessage.Content.Deleted -> MessageContent.DeleteMessage(protoContent.value.messageId)
@@ -111,7 +110,7 @@ class ProtoContentMapperImpl : ProtoContentMapper {
                     }
                     //TODO: for now we do not implement it
                     is MessageEdit.Content.Composite -> {
-                        MessageContent.Unknown(encodedContent.data)
+                        MessageContent.Unknown(typeName, encodedContent.data)
                     }
                     null -> {
                         kaliumLogger.w("Edit content is unexpected. Message UUID = $genericMessage.")
@@ -120,7 +119,7 @@ class ProtoContentMapperImpl : ProtoContentMapper {
                 }
             }
             is GenericMessage.Content.Ephemeral -> MessageContent.Ignored
-            is GenericMessage.Content.External -> MessageContent.Unknown(encodedContent.data)
+            is GenericMessage.Content.External -> MessageContent.Unknown(typeName, encodedContent.data)
             is GenericMessage.Content.Image -> MessageContent.Ignored // Deprecated in favor of GenericMessage.Content.Asset
             is GenericMessage.Content.Hidden -> {
                 val hiddenMessage = genericMessage.hidden
@@ -133,11 +132,11 @@ class ProtoContentMapperImpl : ProtoContentMapper {
             }
             is GenericMessage.Content.Knock -> MessageContent.Ignored
             is GenericMessage.Content.LastRead -> MessageContent.Ignored
-            is GenericMessage.Content.Location -> MessageContent.Unknown(encodedContent.data)
+            is GenericMessage.Content.Location -> MessageContent.Unknown(typeName, encodedContent.data)
             is GenericMessage.Content.Reaction -> MessageContent.Ignored
             else -> {
                 kaliumLogger.w("Null content when parsing protobuf. Message UUID = $genericMessage.")
-                MessageContent.Unknown(encodedContent.data)
+                MessageContent.Unknown(typeName, encodedContent.data)
             }
         }
         val visibility = when (genericMessage.content) {
@@ -152,10 +151,5 @@ class ProtoContentMapperImpl : ProtoContentMapper {
             else -> Message.Visibility.HIDDEN
         }
         return ProtoContent(genericMessage.messageId, content, visibility)
-    }
-
-    override fun contentTypeName(encodedContent: PlainMessageBlob): String? {
-        val genericMessage = GenericMessage.decodeFromByteArray(encodedContent.data)
-        return genericMessage.content?.value?.let { it as? ProtoMessage }?.descriptor?.name
     }
 }

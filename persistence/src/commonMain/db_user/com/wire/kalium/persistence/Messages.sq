@@ -73,6 +73,7 @@ CREATE TABLE MessageUnknownContent (
       message_id TEXT NOT NULL,
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
 
+      unknown_type_name TEXT,
       unknown_encoded_data BLOB,
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE,
@@ -154,10 +155,11 @@ member_change_list = excluded.member_change_list,
 member_change_type = excluded.member_change_type;
 
 insertMessageUnknownContent:
-INSERT INTO MessageUnknownContent(message_id, conversation_id, unknown_encoded_data)
-VALUES(?, ?, ?)
+INSERT INTO MessageUnknownContent(message_id, conversation_id, unknown_type_name, unknown_encoded_data)
+VALUES(?, ?, ?, ?)
 ON CONFLICT(message_id, conversation_id) DO UPDATE SET
 message_id = excluded.message_id,
+unknown_type_name = excluded.unknown_type_name,
 unknown_encoded_data = excluded.unknown_encoded_data;
 
 updateMessageStatus:

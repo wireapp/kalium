@@ -71,7 +71,10 @@ class MessageMapper {
         memberChangeType = content.member_change_type
     )
 
-    fun toModel(content: SQLDelightMessageUnknownContent) = MessageEntityContent.Unknown(encodedData = content.unknown_encoded_data)
+    fun toModel(content: SQLDelightMessageUnknownContent) = MessageEntityContent.Unknown(
+        typeName = content.unknown_type_name,
+        encodedData = content.unknown_encoded_data
+    )
 
     private fun mapEditStatus(lastEditTimestamp: String?) =
         lastEditTimestamp?.let { MessageEntity.EditStatus.Edited(it) }
@@ -139,7 +142,8 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
                 is MessageEntityContent.Unknown -> queries.insertMessageUnknownContent(
                     message_id = message.id,
                     conversation_id = message.conversationId,
-                    unknown_encoded_data = content.encodedData
+                    unknown_encoded_data = content.encodedData,
+                    unknown_type_name = content.typeName
                 )
                 is MessageEntityContent.MemberChange -> queries.insertMemberChangeMessage(
                     message_id = message.id,

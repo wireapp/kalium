@@ -116,7 +116,10 @@ sealed class MessageEntityContent {
         val assetNormalizedLoudness: ByteArray? = null,
     ) : Client()
 
-    data class Unknown(val encodedData: ByteArray? = null) : Client()
+    data class Unknown(
+        val typeName: String? = null,
+        val encodedData: ByteArray? = null
+    ) : Client()
 
     data class MemberChange(
         val memberUserIdList: List<QualifiedIDEntity>,

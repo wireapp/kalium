@@ -141,7 +141,7 @@ class MessageMapperImpl(
                 assetNormalizedLoudness = if (metadata is Audio) metadata.normalizedLoudness else null
             )
         }
-        is MessageContent.Unknown -> MessageEntityContent.Unknown(this.encodedData)
+        is MessageContent.Unknown -> MessageEntityContent.Unknown(this.typeName, this.encodedData)
         else -> MessageEntityContent.Unknown()
     }
 
@@ -162,7 +162,7 @@ class MessageMapperImpl(
         is MessageEntityContent.Asset -> MessageContent.Asset(
             MapperProvider.assetMapper().fromAssetEntityToAssetContent(this)
         )
-        is MessageEntityContent.Unknown -> MessageContent.Unknown(this.encodedData)
+        is MessageEntityContent.Unknown -> MessageContent.Unknown(this.typeName, this.encodedData)
     }
 
     private fun MessageEntityContent.Server.toMessageContent(): MessageContent.Server = when (this) {
