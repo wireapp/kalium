@@ -175,7 +175,7 @@ class ConversationRepositoryTest {
         )
 
         given(conversationDAO)
-            .suspendFunction(conversationDAO::getConversationByQualifiedIDFlow)
+            .suspendFunction(conversationDAO::observeGetConversationByQualifiedID)
             .whenInvokedWith(any())
             .thenReturn(conversationEntityFlow)
 
@@ -192,7 +192,7 @@ class ConversationRepositoryTest {
         )
 
         given(conversationDAO)
-            .suspendFunction(conversationDAO::getConversationByQualifiedIDFlow)
+            .suspendFunction(conversationDAO::observeGetConversationByQualifiedID)
             .whenInvokedWith(any())
             .thenReturn(conversationEntityFlow)
 
@@ -210,7 +210,7 @@ class ConversationRepositoryTest {
         )
 
         given(conversationDAO)
-            .suspendFunction(conversationDAO::getConversationByQualifiedIDFlow)
+            .suspendFunction(conversationDAO::observeGetConversationByQualifiedID)
             .whenInvokedWith(any())
             .thenReturn(conversationEntityFlow)
 
@@ -246,7 +246,7 @@ class ConversationRepositoryTest {
         val otherUserDetailsSequence = listOf(TestUser.OTHER, TestUser.OTHER.copy(name = "Other Name Was Updated"))
 
         given(conversationDAO)
-            .suspendFunction(conversationDAO::getConversationByQualifiedIDFlow)
+            .suspendFunction(conversationDAO::observeGetConversationByQualifiedID)
             .whenInvokedWith(any())
             .thenReturn(conversationEntityFlow)
 

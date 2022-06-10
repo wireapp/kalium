@@ -116,7 +116,7 @@ class ConversationDAOImpl(
             .map { it.map(conversationMapper::toModel) }
     }
 
-    override suspend fun getConversationByQualifiedIDFlow(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?> {
+    override suspend fun observeGetConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?> {
         return conversationQueries.selectByQualifiedId(qualifiedID)
             .asFlow()
             .mapToOneOrNull()

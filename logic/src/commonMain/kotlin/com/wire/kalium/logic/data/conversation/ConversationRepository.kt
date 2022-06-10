@@ -170,7 +170,7 @@ class ConversationDataSource(
      * Gets a flow that allows observing of
      */
     override suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<ConversationDetails> =
-        conversationDAO.getConversationByQualifiedIDFlow(idMapper.toDaoModel(conversationID))
+        conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationID))
             .wrapStorageRequest()
             .onlyRight()
             .map(conversationMapper::fromDaoModel)
@@ -221,14 +221,14 @@ class ConversationDataSource(
     @Deprecated("This doesn't return conversation details", ReplaceWith("getConversationDetailsById"))
     override suspend fun getConversationDetails(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation>> =
         wrapStorageRequest {
-            conversationDAO.getConversationByQualifiedIDFlow(idMapper.toDaoModel(conversationId))
+            conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationId))
                 .filterNotNull()
                 .map(conversationMapper::fromDaoModel)
         }
 
     override suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, ProtocolInfo> =
         wrapStorageRequest {
-            conversationDAO.getConversationByQualifiedIDFlow(idMapper.toDaoModel(conversationId)).first()?.protocolInfo
+            conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationId)).first()?.protocolInfo
         }
 
     override suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Member>> =
