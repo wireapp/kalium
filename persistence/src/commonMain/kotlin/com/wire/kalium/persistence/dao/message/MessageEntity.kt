@@ -13,21 +13,21 @@ sealed class MessageEntity(
     open val visibility: Visibility
 ) {
 
-    data class Client(
+    data class Regular(
         override val id: String,
         override val conversationId: QualifiedIDEntity,
         override val date: String,
         override val senderUserId: QualifiedIDEntity,
         override val status: Status,
         override val visibility: Visibility = Visibility.VISIBLE,
-        override val content: MessageEntityContent.Client,
+        override val content: MessageEntityContent.Regular,
         val senderClientId: String,
         val editStatus: EditStatus
     ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility)
 
-    data class Server(
+    data class System(
         override val id: String,
-        override val content: MessageEntityContent.Server,
+        override val content: MessageEntityContent.System,
         override val conversationId: QualifiedIDEntity,
         override val date: String,
         override val senderUserId: QualifiedIDEntity,
@@ -90,10 +90,10 @@ sealed class MessageEntity(
 
 sealed class MessageEntityContent {
 
-    sealed class Client : MessageEntityContent()
-    sealed class Server : MessageEntityContent()
+    sealed class Regular : MessageEntityContent()
+    sealed class System : MessageEntityContent()
 
-    data class Text(val messageBody: String) : Client()
+    data class Text(val messageBody: String) : Regular()
 
     data class Asset(
         val assetSizeInBytes: Long,
@@ -114,15 +114,15 @@ sealed class MessageEntityContent {
         val assetHeight: Int? = null,
         val assetDurationMs: Long? = null,
         val assetNormalizedLoudness: ByteArray? = null,
-    ) : Client()
+    ) : Regular()
 
     data class Unknown(
         val typeName: String? = null,
         val encodedData: ByteArray? = null
-    ) : Client()
+    ) : Regular()
 
     data class MemberChange(
         val memberUserIdList: List<QualifiedIDEntity>,
         val memberChangeType: MessageEntity.MemberChangeType
-    ) : Server()
+    ) : System()
 }

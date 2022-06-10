@@ -25,7 +25,7 @@ import com.wire.kalium.persistence.MessageUnknownContent as SQLDelightMessageUnk
 
 class MessageMapper {
     fun toModel(msg: SQLDelightMessage, content: MessageEntityContent): MessageEntity = when (content) {
-        is MessageEntityContent.Client -> MessageEntity.Client(
+        is MessageEntityContent.Regular -> MessageEntity.Regular(
             content = content,
             id = msg.id,
             conversationId = msg.conversation_id,
@@ -36,7 +36,7 @@ class MessageMapper {
             editStatus = mapEditStatus(msg.last_edit_timestamp),
             visibility = msg.visibility
         )
-        is MessageEntityContent.Server -> MessageEntity.Server(
+        is MessageEntityContent.System -> MessageEntity.System(
             content = content,
             id = msg.id,
             conversationId = msg.conversation_id,
@@ -110,7 +110,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
                 conversation_id = message.conversationId,
                 date = message.date,
                 sender_user_id = message.senderUserId,
-                sender_client_id = if (message is MessageEntity.Client) message.senderClientId else null,
+                sender_client_id = if (message is MessageEntity.Regular) message.senderClientId else null,
                 visibility = message.visibility,
                 status = message.status,
                 content_type = contentTypeOf(message.content)

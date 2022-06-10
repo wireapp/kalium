@@ -104,7 +104,7 @@ internal class SendAssetMessageUseCaseImpl(
         // Create a unique message ID
         val generatedMessageUuid = uuid4().toString()
 
-        val message = Message.Client(
+        val message = Message.Regular(
             id = generatedMessageUuid,
             content = MessageContent.Asset(
                 provideAssetMessageContent(

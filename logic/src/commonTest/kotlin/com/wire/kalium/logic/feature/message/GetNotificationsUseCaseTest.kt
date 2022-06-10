@@ -22,7 +22,6 @@ import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
 import io.mockative.classOf
-import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
@@ -349,7 +348,7 @@ class GetNotificationsUseCaseTest {
             messageId: String = "message_id",
             visibility: Message.Visibility = Message.Visibility.VISIBLE
         ) =
-            Message.Client(
+            Message.Regular(
                 id = messageId,
                 content = MessageContent.Text("test message $messageId"),
                 conversationId = conversationId,
@@ -367,7 +366,7 @@ class GetNotificationsUseCaseTest {
             messageId: String = "message_id",
             assetId: String
         ) =
-            Message.Client(
+            Message.Regular(
                 id = messageId,
                 content = MessageContent.Asset(
                     AssetContent(
@@ -399,7 +398,7 @@ class GetNotificationsUseCaseTest {
             senderId: QualifiedID = TestUser.USER_ID,
             messageId: String = "message_id"
         ) =
-            Message.Server(
+            Message.System(
                 id = messageId,
                 content = MessageContent.MemberChange.Removed(listOf(Member(senderId))),
                 conversationId = conversationId,

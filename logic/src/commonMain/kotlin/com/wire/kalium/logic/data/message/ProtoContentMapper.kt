@@ -94,8 +94,8 @@ class ProtoContentMapperImpl : ProtoContentMapper {
                 MessageContent.Asset(MapperProvider.assetMapper().fromProtoAssetMessageToAssetContent(protoContent.value))
             }
             is GenericMessage.Content.Availability -> MessageContent.Ignored
-            is GenericMessage.Content.ButtonAction -> MessageContent.Unknown(typeName, encodedContent.data)
-            is GenericMessage.Content.ButtonActionConfirmation -> MessageContent.Unknown(typeName, encodedContent.data)
+            is GenericMessage.Content.ButtonAction -> MessageContent.Unknown(typeName, encodedContent.data, true)
+            is GenericMessage.Content.ButtonActionConfirmation -> MessageContent.Unknown(typeName, encodedContent.data, true)
             is GenericMessage.Content.Calling -> MessageContent.Calling(value = protoContent.value.content)
             is GenericMessage.Content.Cleared -> MessageContent.Ignored
             is GenericMessage.Content.ClientAction -> MessageContent.Ignored
@@ -137,20 +137,9 @@ class ProtoContentMapperImpl : ProtoContentMapper {
             is GenericMessage.Content.Reaction -> MessageContent.Ignored
             else -> {
                 kaliumLogger.w("Null content when parsing protobuf. Message UUID = $genericMessage.")
-                MessageContent.Unknown(typeName, encodedContent.data)
+                MessageContent.Ignored
             }
         }
-        val visibility = when (genericMessage.content) {
-            is GenericMessage.Content.Text,
-            is GenericMessage.Content.Asset,
-            is GenericMessage.Content.Calling,
-            is GenericMessage.Content.Composite,
-            is GenericMessage.Content.Edited,
-            is GenericMessage.Content.External,
-            is GenericMessage.Content.Location -> Message.Visibility.VISIBLE
-            is GenericMessage.Content.Deleted -> Message.Visibility.DELETED
-            else -> Message.Visibility.HIDDEN
-        }
-        return ProtoContent(genericMessage.messageId, content, visibility)
+        return ProtoContent(genericMessage.messageId, content)
     }
 }

@@ -122,7 +122,7 @@ class GetNotificationsUseCaseImpl(
         publicUserMapper.fromPublicUserToLocalNotificationMessageAuthor(authors.firstOrNull { it?.id == senderUserId })
 
     private fun shouldMessageBeVisibleAsNotification(message: Message) =
-        message !is Message.Server && message.visibility == Message.Visibility.VISIBLE
+        message !is Message.System && message.visibility == Message.Visibility.VISIBLE
 
     private fun shouldIncludeMessageForNotifications(
         message: Message,

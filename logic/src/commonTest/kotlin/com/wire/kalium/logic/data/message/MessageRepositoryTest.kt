@@ -175,7 +175,7 @@ class MessageRepositoryTest {
         val TEST_QUALIFIED_ID_ENTITY = PersistenceQualifiedId("value", "domain")
         val TEST_NETWORK_QUALIFIED_ID_ENTITY = NetworkQualifiedId("value", "domain")
         val TEST_MESSAGE_ENTITY =
-            MessageEntity.Client(
+            MessageEntity.Regular(
                 id = "uid",
                 content = MessageEntityContent.Text("content"),
                 conversationId = TEST_QUALIFIED_ID_ENTITY,
@@ -190,7 +190,7 @@ class MessageRepositoryTest {
         val TEST_USER_ID = UserId("userId", "domain")
         val TEST_CONTENT = MessageContent.Text("Ciao!")
         val TEST_DATETIME = "2022-04-21T20:56:22.393Z"
-        val TEST_MESSAGE = Message.Client(
+        val TEST_MESSAGE = Message.Regular(
             id = "uid",
             content = TEST_CONTENT,
             conversationId = TEST_CONVERSATION_ID,

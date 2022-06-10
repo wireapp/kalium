@@ -7,7 +7,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntityContent
 @Suppress("LongParameterList")
 fun newMessageEntity(
     id: String = "testMessage",
-    content: MessageEntityContent.Client = MessageEntityContent.Text("Test Text"),
+    content: MessageEntityContent.Regular = MessageEntityContent.Text("Test Text"),
     conversationId: QualifiedIDEntity = QualifiedIDEntity("convId", "convDomain"),
     senderUserId: QualifiedIDEntity = QualifiedIDEntity("senderId", "senderDomain"),
     senderClientId: String = "senderClientId",
@@ -15,7 +15,7 @@ fun newMessageEntity(
     editStatus : MessageEntity.EditStatus = MessageEntity.EditStatus.NotEdited,
     date: String = "2022-03-30T15:36:00.000Z",
     visibility: MessageEntity.Visibility = MessageEntity.Visibility.VISIBLE
-) = MessageEntity.Client(
+) = MessageEntity.Regular(
     id = id,
     content = content,
     conversationId = conversationId,
