@@ -235,8 +235,8 @@ actual class CallManagerImpl(
      */
     private fun onCallingReady() {
         initParticipantsHandler()
-        initClientsHandler()
         initNetworkHandler()
+        initClientsHandler()
         initActiveSpeakersHandler()
     }
 
@@ -260,7 +260,7 @@ actual class CallManagerImpl(
         }
     }
 
-    private fun initClientsHandler() {
+    private fun initNetworkHandler() {
         scope.launch {
             withCalling {
                 val onNetworkQualityChanged = OnNetworkQualityChanged()
@@ -277,7 +277,7 @@ actual class CallManagerImpl(
         }
     }
 
-    private fun initNetworkHandler() {
+    private fun initClientsHandler() {
         scope.launch {
             withCalling {
                 val selfUserId = userId.await().toString()
