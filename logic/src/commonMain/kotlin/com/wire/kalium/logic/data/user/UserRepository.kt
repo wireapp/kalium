@@ -86,7 +86,6 @@ class UserDataSource(
             it.add(userEntity.previewAssetId?.let { asset -> idMapper.fromDaoModel(asset) })
             it.add(userEntity.completeAssetId?.let { asset -> idMapper.fromDaoModel(asset) })
         }
-
     }
 
     override suspend fun fetchKnownUsers(): Either<CoreFailure, Unit> {

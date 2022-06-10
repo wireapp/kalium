@@ -50,11 +50,11 @@ internal class GetMessageAssetUseCaseImpl(
                 )
             }
             assetDataSource.downloadPrivateAsset(
-                assetId = AssetId(assetMetadata.assetId, assetMetadata.assetDomain.orEmpty()),
+                assetId = AssetId(assetMetadata.assetKey, assetMetadata.assetDomain.orEmpty()),
                 assetToken = assetMetadata.assetToken
             )
                 .fold({
-                    kaliumLogger.e("There was an error downloading asset with id => ${assetMetadata.assetId}")
+                    kaliumLogger.e("There was an error downloading asset with id => ${assetMetadata.assetKey}")
                     MessageAssetResult.Failure(it)
                 }, { encodedAsset ->
                     val rawAsset = decryptDataWithAES256(EncryptedData(encodedAsset), AES256Key(assetMetadata.assetEncryptionKey)).data
