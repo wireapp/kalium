@@ -60,7 +60,7 @@ class TestSessionManager : SessionManager {
 
 class TestServerMetaDataManager: ServerMetaDataManager {
     override fun getLocalMetaData(backendLinks: ServerConfigDTO.Links): ServerConfigDTO? = TEST_BACKEND
-    override fun storeBackend(links: ServerConfigDTO.Links, metaData: ServerConfigDTO.MetaData): ServerConfigDTO = TEST_BACKEND
+    override fun storeServerConfig(links: ServerConfigDTO.Links, metaData: ServerConfigDTO.MetaData): ServerConfigDTO = TEST_BACKEND
 }
 
 internal interface ApiTest {

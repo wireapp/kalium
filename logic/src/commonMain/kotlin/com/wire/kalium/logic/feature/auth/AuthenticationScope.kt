@@ -64,7 +64,7 @@ class ServerMetaDataManagerImpl internal constructor(
             serverConfigMapper.toDTO(it)
         })
 
-    override fun storeBackend(links: ServerConfigDTO.Links, metaData: ServerConfigDTO.MetaData): ServerConfigDTO? {
+    override fun storeServerConfig(links: ServerConfigDTO.Links, metaData: ServerConfigDTO.MetaData): ServerConfigDTO? {
         return serverConfigRepository.storeConfig(serverConfigMapper.fromDTO(links), serverConfigMapper.fromDTO(metaData)).nullableFold({
             null
         }, {

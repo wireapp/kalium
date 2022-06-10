@@ -209,7 +209,7 @@ fun HttpClientConfig<*>.installWireDefaultRequest(
                     val versionApi = VersionApiImpl(provideBaseHttpClient(defaultHttpEngine()))
                     when (val result = versionApi.fetchApiVersion(backendLinks.api)) {
                         is NetworkResponse.Success ->
-                            serverMetaDataManager.storeBackend(
+                            serverMetaDataManager.storeServerConfig(
                                 backendLinks, result.value
                             )
                         is NetworkResponse.Error -> null

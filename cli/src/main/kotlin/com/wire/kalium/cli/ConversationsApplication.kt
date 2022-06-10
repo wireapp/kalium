@@ -54,7 +54,7 @@ class InMemoryServerMetaDataManager : ServerMetaDataManager {
         return serverConfigDTO
     }
 
-    override fun storeBackend(links: ServerConfigDTO.Links, metaData: ServerConfigDTO.MetaData): ServerConfigDTO {
+    override fun storeServerConfig(links: ServerConfigDTO.Links, metaData: ServerConfigDTO.MetaData): ServerConfigDTO {
         serverConfigDTO = ServerConfigDTO(id = "id", links, metaData)
         return serverConfigDTO!!
     }
