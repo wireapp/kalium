@@ -133,7 +133,7 @@ class ProtoContentMapperImpl : ProtoContentMapper {
             is GenericMessage.Content.Knock -> MessageContent.Ignored
             is GenericMessage.Content.LastRead -> MessageContent.Ignored
             is GenericMessage.Content.Location -> MessageContent.Unknown(encodedContent.data)
-            is GenericMessage.Content.Reaction -> MessageContent.Unknown(encodedContent.data)
+            is GenericMessage.Content.Reaction -> MessageContent.Ignored
             else -> {
                 kaliumLogger.w("Null content when parsing protobuf. Message UUID = $genericMessage.")
                 MessageContent.Unknown(encodedContent.data)
@@ -143,6 +143,7 @@ class ProtoContentMapperImpl : ProtoContentMapper {
             is GenericMessage.Content.Text,
             is GenericMessage.Content.Asset,
             is GenericMessage.Content.Calling,
+            is GenericMessage.Content.Composite,
             is GenericMessage.Content.Edited,
             is GenericMessage.Content.External,
             is GenericMessage.Content.Image,
