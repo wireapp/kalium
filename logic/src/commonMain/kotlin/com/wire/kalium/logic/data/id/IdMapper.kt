@@ -20,7 +20,7 @@ interface IdMapper {
     fun fromProtoModel(qualifiedConversationID: QualifiedConversationId): ConversationId
     fun toProtoModel(conversationId: ConversationId): QualifiedConversationId
     fun toQualifiedAssetId(value: String, domain: String = ""): QualifiedID
-    fun toQualifiedUserAssetIdEntity(value: String, domain: String = ""): PersistenceQualifiedId
+    fun toQualifiedAssetIdEntity(value: String, domain: String = ""): PersistenceQualifiedId
 }
 
 internal class IdMapperImpl : IdMapper {
@@ -54,5 +54,5 @@ internal class IdMapperImpl : IdMapper {
 
     override fun toQualifiedAssetId(value: String, domain: String) = QualifiedID(value, domain)
 
-    override fun toQualifiedUserAssetIdEntity(value: String, domain: String) = PersistenceQualifiedId(value, domain)
+    override fun toQualifiedAssetIdEntity(value: String, domain: String) = PersistenceQualifiedId(value, domain)
 }

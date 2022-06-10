@@ -74,10 +74,10 @@ internal class UserMapperImpl(
             accentId = userProfileDTO.accentId,
             team = userProfileDTO.teamId,
             previewAssetId = userProfileDTO.assets.getPreviewAssetOrNull()?.let {
-                idMapper.toQualifiedUserAssetIdEntity(it.key, userProfileDTO.id.domain)
+                idMapper.toQualifiedAssetIdEntity(it.key, userProfileDTO.id.domain)
             },
             completeAssetId = userProfileDTO.assets.getCompleteAssetOrNull()?.let {
-                idMapper.toQualifiedUserAssetIdEntity(it.key, userProfileDTO.id.domain)
+                idMapper.toQualifiedAssetIdEntity(it.key, userProfileDTO.id.domain)
             },
             availabilityStatus = UserAvailabilityStatusEntity.NONE
         )
@@ -123,9 +123,9 @@ internal class UserMapperImpl(
             team = user.team,
             connectionStatus = connectionStateMapper.fromUserConnectionStateToDao(connectionState = user.connectionStatus),
             previewAssetId = updateRequest.assets.getPreviewAssetOrNull()
-                ?.let { idMapper.toQualifiedUserAssetIdEntity(it.key, user.id.domain) },
+                ?.let { idMapper.toQualifiedAssetIdEntity(it.key, user.id.domain) },
             completeAssetId = updateRequest.assets.getCompleteAssetOrNull()
-                ?.let { idMapper.toQualifiedUserAssetIdEntity(it.key, user.id.domain) },
+                ?.let { idMapper.toQualifiedAssetIdEntity(it.key, user.id.domain) },
             availabilityStatus = UserAvailabilityStatusEntity.NONE
         )
     }
@@ -139,8 +139,8 @@ internal class UserMapperImpl(
             phone = phone,
             accentId = accentId,
             team = teamId,
-            previewAssetId = assets.getPreviewAssetOrNull()?.let { idMapper.toQualifiedUserAssetIdEntity(it.key, id.domain) },
-            completeAssetId = assets.getCompleteAssetOrNull()?.let { idMapper.toQualifiedUserAssetIdEntity(it.key, id.domain) },
+            previewAssetId = assets.getPreviewAssetOrNull()?.let { idMapper.toQualifiedAssetIdEntity(it.key, id.domain) },
+            completeAssetId = assets.getCompleteAssetOrNull()?.let { idMapper.toQualifiedAssetIdEntity(it.key, id.domain) },
             availabilityStatus = UserAvailabilityStatusEntity.NONE
         )
     }

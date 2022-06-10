@@ -67,9 +67,9 @@ class PublicUserMapperImpl(
         accentId = userDetailResponse.accentId,
         team = userDetailResponse.teamId,
         previewAssetId = userDetailResponse.assets.getPreviewAssetOrNull()
-            ?.let { idMapper.toQualifiedUserAssetIdEntity(it.key, userDetailResponse.id.domain) },
+            ?.let { idMapper.toQualifiedAssetIdEntity(it.key, userDetailResponse.id.domain) },
         completeAssetId = userDetailResponse.assets.getCompleteAssetOrNull()
-            ?.let { idMapper.toQualifiedUserAssetIdEntity(it.key, userDetailResponse.id.domain) },
+            ?.let { idMapper.toQualifiedAssetIdEntity(it.key, userDetailResponse.id.domain) },
         connectionStatus = connectionState,
         availabilityStatus = UserAvailabilityStatusEntity.NONE
     )
