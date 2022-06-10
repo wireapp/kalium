@@ -81,6 +81,7 @@ class ProtoContentMapperImpl : ProtoContentMapper {
         return PlainMessageBlob(message.encodeToByteArray())
     }
 
+    @Suppress("ComplexMethod", "LongMethod")
     override fun decodeFromProtobuf(encodedContent: PlainMessageBlob): ProtoContent {
         val genericMessage = GenericMessage.decodeFromByteArray(encodedContent.data)
 

@@ -112,7 +112,7 @@ class GetNotificationsUseCaseImpl(
                                     messages = messages,
                                     isOneToOneConversation = isOneToOneConversation
                                 )
-                        }
+                            }
                     }
             }
             .distinctUntilChanged()
@@ -121,33 +121,32 @@ class GetNotificationsUseCaseImpl(
     private fun getNotificationMessageAuthor(authors: List<OtherUser?>, senderUserId: UserId) =
         publicUserMapper.fromPublicUserToLocalNotificationMessageAuthor(authors.firstOrNull { it?.id == senderUserId })
 
+    private fun shouldMessageBeVisibleAsNotification(message: Message) =
+        message !is Message.Server && message.visibility == Message.Visibility.VISIBLE
+
     private fun shouldIncludeMessageForNotifications(
         message: Message,
         selfUser: SelfUser,
         conversationMutedStatus: MutedConversationStatus
     ): Boolean =
-        when {
-            message is Message.Server -> false
-            message.visibility != Message.Visibility.VISIBLE -> false
-            else -> when (conversationMutedStatus) {
-                MutedConversationStatus.AllAllowed -> true
-                MutedConversationStatus.OnlyMentionsAllowed -> {
-                    when (val content = message.content) {
-                        is MessageContent.Text -> {
-                            val containsSelfUserName = selfUser.name?.let { selfUsername ->
-                                content.value.contains("@$selfUsername")
-                            } ?: false
-                            val containsSelfHandle = selfUser.handle?.let { selfHandle ->
-                                content.value.contains("@$selfHandle")
-                            } ?: false
+        shouldMessageBeVisibleAsNotification(message) && when (conversationMutedStatus) {
+            MutedConversationStatus.AllAllowed -> true
+            MutedConversationStatus.OnlyMentionsAllowed -> {
+                when (val content = message.content) {
+                    is MessageContent.Text -> {
+                        val containsSelfUserName = selfUser.name?.let { selfUsername ->
+                            content.value.contains("@$selfUsername")
+                        } ?: false
+                        val containsSelfHandle = selfUser.handle?.let { selfHandle ->
+                            content.value.contains("@$selfHandle")
+                        } ?: false
 
-                            containsSelfUserName or containsSelfHandle
-                        }
-                        else -> false
+                        containsSelfUserName or containsSelfHandle
                     }
+                    else -> false
                 }
-                else -> false
             }
+            else -> false
         }
 
     private data class ConversationWithMessages(val messages: List<Message>, val conversation: Conversation)
