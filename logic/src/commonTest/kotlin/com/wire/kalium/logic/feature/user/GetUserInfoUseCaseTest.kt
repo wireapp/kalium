@@ -19,8 +19,8 @@ class GetUserInfoUseCaseTest {
     fun givenAUserId_whenInvokingGetUserInfoDetails_thenShouldReturnsASuccessResult() = runTest {
         // given
         val (arrangement, useCase) = arrangement
-            .withSuccessFullUserRetrive(localUserPresent = false)
-            .withSuccessTeamRetrive(localTeamPresent = true)
+            .withSuccessfulUserRetrieve(localUserPresent = false)
+            .withSuccessfulTeamRetrieve(localTeamPresent = true)
             .arrange()
 
         // when
@@ -46,8 +46,8 @@ class GetUserInfoUseCaseTest {
     fun givenAUserId_whenInvokingGetUserInfoDetailsAndExistsLocally_thenShouldReturnsImmediatelySuccessResult() = runTest {
         // given
         val (arrangement, useCase) = arrangement
-            .withSuccessFullUserRetrive(localUserPresent = true)
-            .withSuccessTeamRetrive(localTeamPresent = true)
+            .withSuccessfulUserRetrieve(localUserPresent = true)
+            .withSuccessfulTeamRetrieve(localTeamPresent = true)
             .arrange()
 
         // when
@@ -73,8 +73,8 @@ class GetUserInfoUseCaseTest {
     fun givenAUserId_whenInvokingGetUserInfoDetailsWithErrors_thenShouldReturnsAFailure() = runTest {
         // given
         val (arrangement, useCase) = arrangement
-            .withFailingUserRetrive()
-            .withSuccessTeamRetrive()
+            .withFailingUserRetrieve()
+            .withSuccessfulTeamRetrieve()
             .arrange()
 
         // when
@@ -100,7 +100,7 @@ class GetUserInfoUseCaseTest {
     fun givenAUserWithNoTeam_WhenGettingDetails_thenShouldReturnSuccessResultAndDoNotRetrieveTeam() = runTest {
         // given
         val (arrangement, useCase) = arrangement
-            .withSuccessFullUserRetrive(hasTeam = false)
+            .withSuccessfulUserRetrieve(hasTeam = false)
             .arrange()
 
         // when
@@ -126,8 +126,8 @@ class GetUserInfoUseCaseTest {
     fun givenAUserWithTeamNotExistingLocally_WhenGettingDetails_thenShouldReturnSuccessResultAndGetRemoteUserTeam() = runTest {
         // given
         val (arrangement, useCase) = arrangement
-            .withSuccessFullUserRetrive()
-            .withSuccessTeamRetrive(localTeamPresent = false)
+            .withSuccessfulUserRetrieve()
+            .withSuccessfulTeamRetrieve(localTeamPresent = false)
             .arrange()
 
         // when
@@ -159,7 +159,7 @@ class GetUserInfoUseCaseTest {
         runTest {
             // given
             val (arrangement, useCase) = arrangement
-                .withFailingUserRetrive()
+                .withFailingUserRetrieve()
                 .withFailingTeamRetrieve()
                 .arrange()
             // when
@@ -196,7 +196,7 @@ class GetUserInfoUseCaseTest {
         // given
 
         val (arrangement, useCase) = arrangement
-            .withSuccessFullUserRetrive(localUserPresent = true)
+            .withSuccessfulUserRetrieve(localUserPresent = true)
             .withFailingTeamRetrieve()
             .arrange()
 
