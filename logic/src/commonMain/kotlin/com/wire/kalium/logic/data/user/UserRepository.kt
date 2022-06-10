@@ -34,7 +34,6 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 // TODO(testing): missing unit test
-@Suppress("TooManyFunctions")
 interface UserRepository {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
     suspend fun fetchKnownUsers(): Either<CoreFailure, Unit>
@@ -50,7 +49,7 @@ interface UserRepository {
     suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus)
 }
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 class UserDataSource(
     private val userDAO: UserDAO,
     private val metadataDAO: MetadataDAO,

@@ -1,6 +1,8 @@
 package com.wire.kalium.logic.data.asset
 
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.data.id.NetworkQualifiedId
+import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -17,13 +19,13 @@ import io.mockative.any
 import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.given
+import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.thenDoNothing
 import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -146,14 +148,14 @@ class AssetRepositoryTest {
 
     @Test
     fun givenAListOfAssets_whenSavingAssets_thenShouldSucceed() = runTest {
-        val assetsIdToPersist = listOf(UserAssetId("value1", "domain1"), UserAssetId("value2", "domain2"))
+        val assetsIdToPersist = listOf(AssetId("value1", "domain1"), AssetId("value2", "domain2"))
         val expectedImage = "my_image_asset".toByteArray()
 
         assetsIdToPersist.forEach { assetKey ->
             mockAssetDaoGetByKeyCall(assetKey, null)
             given(assetApi)
                 .suspendFunction(assetApi::downloadAsset)
-                .whenInvokedWith(eq(assetKey.value), eq(null))
+                .whenInvokedWith(matching { assetId -> assetId.value == assetKey.value }, eq(null))
                 .thenReturn(NetworkResponse.Success(expectedImage, mapOf(), 200))
 
             given(assetDAO)
@@ -179,20 +181,16 @@ class AssetRepositoryTest {
         val expectedImage = "my_image_asset".toByteArray()
 
         mockAssetDaoGetByKeyCall(assetKey, null)
-        given(assetDAO)
-            .suspendFunction(assetDAO::getAssetByKey)
-            .whenInvokedWith(any())
-            .thenReturn(flowOf(stubAssetEntity(assetKey.value, expectedImage)))
         given(assetApi)
             .suspendFunction(assetApi::downloadAsset)
-            .whenInvokedWith(eq(assetKey), eq(null))
+            .whenInvokedWith(matching { it.value == assetKey.value }, eq(null))
             .thenReturn(NetworkResponse.Success(expectedImage, mapOf(), 200))
         given(assetDAO)
             .suspendFunction(assetDAO::insertAsset)
             .whenInvokedWith(any())
             .thenReturn(Unit)
 
-        val actual = assetRepository.downloadPublicAsset(UserAssetId("value1", "domain1"))
+        val actual = assetRepository.downloadPublicAsset(assetKey)
 
         actual.shouldSucceed {
             assertEquals(it, expectedImage)
@@ -202,7 +200,7 @@ class AssetRepositoryTest {
             .with(eq(assetKey.value))
             .wasInvoked(exactly = once)
         verify(assetApi).suspendFunction(assetApi::downloadAsset)
-            .with(eq(assetKey), eq(null))
+            .with(matching { it.value == assetKey.value }, eq(null))
             .wasInvoked(exactly = once)
         verify(assetDAO)
             .suspendFunction(assetDAO::insertAsset)
@@ -212,7 +210,7 @@ class AssetRepositoryTest {
 
     @Test
     fun givenAnError_whenDownloadingAssets_thenShouldReturnThrowNetworkFailure() = runTest {
-        val assetKey = UserAssetId("value1", "domain1")
+        val assetKey = NetworkQualifiedId("value1", "domain1")
         mockAssetDaoGetByKeyCall(UserAssetId("value1", "domain1"), null)
         given(assetApi)
             .suspendFunction(assetApi::downloadAsset)
@@ -226,7 +224,7 @@ class AssetRepositoryTest {
         }
 
         verify(assetDAO).suspendFunction(assetDAO::getAssetByKey)
-            .with(eq(assetKey))
+            .with(matching { it == assetKey.value })
             .wasInvoked(exactly = once)
 
         verify(assetApi).suspendFunction(assetApi::downloadAsset)
@@ -247,21 +245,21 @@ class AssetRepositoryTest {
         }
 
         verify(assetDAO).suspendFunction(assetDAO::getAssetByKey)
-            .with(eq(assetKey))
+            .with(eq(assetKey.value))
             .wasInvoked(exactly = once)
 
         verify(assetApi).suspendFunction(assetApi::downloadAsset)
-            .with(eq(assetKey), eq(null))
+            .with(matching { it.value == assetKey.value }, eq(null))
             .wasNotInvoked()
     }
 
     private fun mockAssetDaoGetByKeyCall(assetKey: UserAssetId, expectedAssetEntity: AssetEntity?) {
         given(assetDAO)
             .suspendFunction(assetDAO::getAssetByKey)
-            .whenInvokedWith(eq(assetKey))
+            .whenInvokedWith(eq(assetKey.value))
             .thenReturn(flowOf(expectedAssetEntity))
     }
 
     private fun stubAssetEntity(assetKey: String, rawData: ByteArray) =
-        AssetEntity(assetKey, "some_domain", null, rawData, null, 1)
+        AssetEntity(assetKey, "domain", null, rawData, null, 1)
 }
