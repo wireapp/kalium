@@ -74,7 +74,7 @@ class CallMapper {
         ) : List<Participant> = participants.map { participant ->
             participant.copy(
                 isSpeaking = activeSpeakers.activeSpeakers.any {
-                    it.userId == participant.id.toString()
+                    it.userId == participant.id.toString() && it.clientId == participant.clientId
                 }
             )
         }

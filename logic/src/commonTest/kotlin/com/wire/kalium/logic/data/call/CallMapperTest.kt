@@ -114,8 +114,15 @@ class CallMapperTest {
 
     @Test
     fun givenCallActiveSpeakers_whenMappingToParticipantsActiveSpeaker_thenReturnParticipantsActiveSpeaker() = runTest {
+        val dummyParticipantWithDifferentClientId = DUMMY_PARTICIPANT.copy(
+            clientId = "anotherClientId"
+        )
+
         val callActiveSpeakerMap = callMapper.activeSpeakerMapper.mapParticipantsActiveSpeaker(
-            participants = listOf(DUMMY_PARTICIPANT),
+            participants = listOf(
+                DUMMY_PARTICIPANT,
+                dummyParticipantWithDifferentClientId
+            ),
             activeSpeakers = CallActiveSpeakers(
                 activeSpeakers = listOf(DUMMY_CALL_ACTIVE_SPEAKER)
             )
@@ -124,7 +131,8 @@ class CallMapperTest {
         val expectedParticipantsActiveSpeaker = listOf(
             DUMMY_PARTICIPANT.copy(
                 isSpeaking = true
-            )
+            ),
+            dummyParticipantWithDifferentClientId
         )
 
         assertEquals(expectedParticipantsActiveSpeaker, callActiveSpeakerMap)
