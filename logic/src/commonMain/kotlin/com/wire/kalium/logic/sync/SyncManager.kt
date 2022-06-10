@@ -195,12 +195,12 @@ class SyncManagerImpl(
                                 val mappedEvent = eventMapper.fromDTO(webSocketEvent.payload)
                                 mappedEvent.forEach {
                                     if (!isEventPresentInOfflineBuffer(it)) {
-                                        kaliumLogger.v(
+                                        kaliumLogger.d(
                                             "SYNC: Event never seen before ${it.id} - We are live"
                                         )
                                         processingEventFlow.emit(it)
                                     } else {
-                                        kaliumLogger.v(
+                                        kaliumLogger.d(
                                             "SYNC: Skipping emit of event from WebSocket because already emitted as offline event ${it.id}"
                                         )
                                         clearOfflineEventBuffer()
