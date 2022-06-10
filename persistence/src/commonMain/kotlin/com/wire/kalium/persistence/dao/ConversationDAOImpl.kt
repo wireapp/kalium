@@ -178,8 +178,16 @@ class ConversationDAOImpl(
         }
     }
 
-    override suspend fun deleteMemberByQualifiedID(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity) {
+    override suspend fun deleteMemberByQualifiedID(userID: QualifiedIDEntity, conversationID: QualifiedIDEntity) {
         memberQueries.deleteMember(conversationID, userID)
+    }
+
+    override suspend fun deleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity) {
+        memberQueries.transaction {
+            userIDList.forEach {
+                memberQueries.deleteMember(conversationID, it)
+            }
+        }
     }
 
     override suspend fun getAllMembers(qualifiedID: QualifiedIDEntity): Flow<List<Member>> {
