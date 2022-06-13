@@ -45,8 +45,10 @@ interface UserRepository {
     suspend fun getAllContacts(): List<OtherUser>
     suspend fun getKnownUser(userId: UserId): Flow<OtherUser?>
     suspend fun fetchUserInfo(userId: UserId): Either<CoreFailure, OtherUser>
+    suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus)
 }
 
+@Suppress("LongParameterList")
 class UserDataSource(
     private val userDAO: UserDAO,
     private val metadataDAO: MetadataDAO,
@@ -55,7 +57,8 @@ class UserDataSource(
     private val assetRepository: AssetRepository,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
-    private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper()
+    private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(),
+    private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper()
 ) : UserRepository {
 
     override suspend fun getSelfUserId(): QualifiedID {
@@ -140,6 +143,10 @@ class UserDataSource(
         wrapApiRequest { userDetailsApi.getUserInfo(idMapper.toApiModel(userId)) }.map { userProfile ->
             publicUserMapper.fromUserDetailResponse(userProfile)
         }
+
+    override suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus) {
+        userDAO.updateUserAvailabilityStatus(_getSelfUserId(), availabilityStatusMapper.fromModelAvailabilityStatusToDao(status))
+    }
 
     companion object {
         const val SELF_USER_ID_KEY = "selfUserID"

@@ -29,8 +29,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase.RegisterClientParam
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 
-private val coreLogic = CoreLogic("Kalium CLI", "${CLIApplication.HOME_DIRECTORY}/.kalium/accounts")
+private val coreLogic = CoreLogic("Kalium CLI", "${CLIApplication.HOME_DIRECTORY}/.kalium/accounts", kaliumConfigs = KaliumConfigs())
 
 suspend fun restoreSession(): AuthSession? {
     return coreLogic.authenticationScope {
@@ -41,7 +42,7 @@ suspend fun restoreSession(): AuthSession? {
     }
 }
 
-class DeleteClientCommand: CliktCommand(name = "delete-client") {
+class DeleteClientCommand : CliktCommand(name = "delete-client") {
 
     private val password: String by option(help = "Account password").prompt("password", promptSuffix = ": ", hideInput = true)
 
@@ -60,7 +61,8 @@ class DeleteClientCommand: CliktCommand(name = "delete-client") {
         }
 
         val clientIndex = prompt("Enter client index", promptSuffix = ": ")?.toInt() ?: throw PrintMessage("Index must be an integer")
-        val deleteClientResult =  userSession.client.deleteClient(DeleteClientParam(password, selfClientsResult.clients[clientIndex].clientId))
+        val deleteClientResult =
+            userSession.client.deleteClient(DeleteClientParam(password, selfClientsResult.clients[clientIndex].clientId))
 
         when (deleteClientResult) {
             is DeleteClientResult.Failure.Generic -> throw PrintMessage("Delete client failed: ${deleteClientResult.genericFailure}")
@@ -102,7 +104,7 @@ class CreateGroupCommand : CliktCommand(name = "create-group") {
 
 }
 
-class LoginCommand: CliktCommand(name = "login") {
+class LoginCommand : CliktCommand(name = "login") {
 
     private val email: String by option(help = "Account email").prompt("email", promptSuffix = ": ")
     private val password: String by option(help = "Account password").prompt("password", promptSuffix = ": ", hideInput = true)
@@ -142,7 +144,7 @@ class LoginCommand: CliktCommand(name = "login") {
 
         coreLogic.sessionScope(authSession.userId) {
             if (client.needsToRegisterClient()) {
-                when (client.register(RegisterClientParam.ClientWithoutToken(password, emptyList()))) {
+                when (client.register(RegisterClientParam(password, emptyList()))) {
                     is RegisterClientResult.Failure -> throw PrintMessage("Client registration failed")
                     is RegisterClientResult.Success -> echo("Login successful")
                 }
@@ -151,7 +153,7 @@ class LoginCommand: CliktCommand(name = "login") {
     }
 }
 
-class ListenGroupCommand: CliktCommand(name = "listen-group") {
+class ListenGroupCommand : CliktCommand(name = "listen-group") {
 
     override fun run() = runBlocking {
         val authSession = restoreSession() ?: throw PrintMessage("no active session")
@@ -168,7 +170,8 @@ class ListenGroupCommand: CliktCommand(name = "listen-group") {
             echo("$index) ${conversation.id.value}  Name: ${conversation.name}")
         }
 
-        val conversationIndex = prompt("Enter conversation index", promptSuffix = ": ")?.toInt() ?: throw PrintMessage("Index must be an integer")
+        val conversationIndex =
+            prompt("Enter conversation index", promptSuffix = ": ")?.toInt() ?: throw PrintMessage("Index must be an integer")
         val conversationID = conversations[conversationIndex].id
 
         GlobalScope.launch(Dispatchers.Default) {
@@ -180,7 +183,7 @@ class ListenGroupCommand: CliktCommand(name = "listen-group") {
                 for (message in it) {
                     when (val content = message.content) {
                         is MessageContent.Text -> echo("> ${content.value}")
-                        MessageContent.Unknown -> { /* do nothing */ }
+                        is MessageContent.Unknown -> { /* do nothing */ }
                     }
                 }
             }

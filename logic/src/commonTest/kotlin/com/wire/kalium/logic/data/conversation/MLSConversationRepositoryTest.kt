@@ -14,7 +14,6 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.Member
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import io.ktor.util.encodeBase64
 import io.mockative.Mock
 import io.mockative.anyInstanceOf
@@ -195,7 +194,7 @@ class MLSConversationRepositoryTest {
             TestConversation.ID,
             TestUser.USER_ID,
             WELCOME.encodeBase64(),
-            date = "2022-03-30T15:36:00.000Z"
+            timestampIso = "2022-03-30T15:36:00.000Z"
         )
     }
 }

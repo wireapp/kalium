@@ -248,6 +248,7 @@ abstract class UserSessionScopeCommon(
             callRepository = callRepository,
             userRepository = userRepository,
             clientRepository = clientRepository,
+            conversationRepository = conversationRepository,
             messageSender = messageSender
         )
     }
@@ -327,7 +328,7 @@ abstract class UserSessionScopeCommon(
             messageSendingScheduler,
             timeParser
         )
-    val users: UserScope get() = UserScope(userRepository, publicUserRepository, syncManager, assetRepository)
+    val users: UserScope get() = UserScope(userRepository, publicUserRepository, syncManager, assetRepository, teamRepository)
     val logout: LogoutUseCase
         get() = LogoutUseCase(
             logoutRepository,

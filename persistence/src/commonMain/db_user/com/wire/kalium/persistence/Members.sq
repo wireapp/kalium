@@ -15,3 +15,8 @@ DELETE FROM Member WHERE conversation = ? AND user = ?;
 
 selectAllMembersByConversation:
 SELECT * FROM Member WHERE conversation = ?;
+
+selectAllConversationsByMember:
+SELECT * FROM Member WHERE user = ?;
+
+

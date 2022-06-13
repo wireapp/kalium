@@ -14,6 +14,7 @@ import com.wire.kalium.logic.data.notification.LocalNotificationCommentType
 import com.wire.kalium.logic.data.notification.LocalNotificationMessage
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
+import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestUser
 import io.mockative.Mock
@@ -301,15 +302,15 @@ class GetNotificationsUseCaseTest {
             senderId: QualifiedID = TestUser.USER_ID,
             messageId: String = "message_id"
         ) =
-            Message(
-                messageId,
-                MessageContent.Text("test message $messageId"),
-                conversationId,
-                "some_time",
-                senderId,
-                ClientId("client_1"),
-                Message.Status.SENT,
-                Message.EditStatus.NotEdited
+            Message.Client(
+                id = messageId,
+                content = MessageContent.Text("test message $messageId"),
+                conversationId = conversationId,
+                date = "some_time",
+                senderUserId = senderId,
+                senderClientId = ClientId("client_1"),
+                status = Message.Status.SENT,
+                editStatus = Message.EditStatus.NotEdited
             )
 
         private fun entityAssetMessage(
@@ -318,8 +319,8 @@ class GetNotificationsUseCaseTest {
             messageId: String = "message_id",
             assetId: String
         ) =
-            Message(
-                messageId,
+            Message.Client(
+                id = messageId,
                 content = MessageContent.Asset(
                     AssetContent(
                         sizeInBytes = 1000,
@@ -337,12 +338,12 @@ class GetNotificationsUseCaseTest {
                         downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
                     )
                 ),
-                conversationId,
-                "some_time",
-                senderId,
-                ClientId("client_1"),
-                Message.Status.SENT,
-                Message.EditStatus.NotEdited
+                conversationId = conversationId,
+                date = "some_time",
+                senderUserId = senderId,
+                senderClientId = ClientId("client_1"),
+                status = Message.Status.SENT,
+                editStatus = Message.EditStatus.NotEdited
             )
 
         private fun notificationMessageText(
@@ -381,7 +382,8 @@ class GetNotificationsUseCaseTest {
                 accentId = 0,
                 previewPicture = null,
                 completePicture = null,
-                team = null
+                team = null,
+                availabilityStatus = UserAvailabilityStatus.NONE
             )
 
         private fun otherUserName(id: QualifiedID) = "Other User Name ${id.value}"
