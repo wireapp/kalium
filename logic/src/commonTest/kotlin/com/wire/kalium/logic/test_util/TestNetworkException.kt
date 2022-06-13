@@ -32,6 +32,10 @@ object TestNetworkException {
         ErrorResponse(404, message = "invalid code", label = "invalid-code")
     )
 
+    val notFound = KaliumException.InvalidRequestError(
+        ErrorResponse(404, message = "Not Found", label = "")
+    )
+
     val handleExists = KaliumException.InvalidRequestError(
         ErrorResponse(409, message = "handle exists", label = "handle-exists")
     )

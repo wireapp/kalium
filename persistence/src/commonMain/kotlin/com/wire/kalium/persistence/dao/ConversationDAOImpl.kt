@@ -116,11 +116,24 @@ class ConversationDAOImpl(
             .map { it.map(conversationMapper::toModel) }
     }
 
-    override suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?> {
+    override suspend fun observeGetConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?> {
         return conversationQueries.selectByQualifiedId(qualifiedID)
             .asFlow()
             .mapToOneOrNull()
             .map { it?.let { conversationMapper.toModel(it) } }
+    }
+
+    override suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity {
+        return conversationQueries.selectByQualifiedId(qualifiedID).executeAsOne().let {
+            conversationMapper.toModel(it)
+        }
+    }
+
+    override suspend fun getAllConversationWithOtherUser(userId: UserIDEntity): List<ConversationEntity> {
+        val allMemberConversations = memberQueries.selectAllConversationsByMember(userId)
+            .executeAsList()
+
+        return allMemberConversations.map { getConversationByQualifiedID(it.conversation) }
     }
 
     override suspend fun getConversationByGroupID(groupID: String): Flow<ConversationEntity?> {
@@ -148,7 +161,6 @@ class ConversationDAOImpl(
                 memberQueries.insertMember(member.user, conversationID)
             }
         }
-
     }
 
     override suspend fun updateOrInsertOneOnOneMemberWithConnectionStatus(
@@ -166,8 +178,16 @@ class ConversationDAOImpl(
         }
     }
 
-    override suspend fun deleteMemberByQualifiedID(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity) {
+    override suspend fun deleteMemberByQualifiedID(userID: QualifiedIDEntity, conversationID: QualifiedIDEntity) {
         memberQueries.deleteMember(conversationID, userID)
+    }
+
+    override suspend fun deleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity) {
+        memberQueries.transaction {
+            userIDList.forEach {
+                memberQueries.deleteMember(conversationID, it)
+            }
+        }
     }
 
     override suspend fun getAllMembers(qualifiedID: QualifiedIDEntity): Flow<List<Member>> {

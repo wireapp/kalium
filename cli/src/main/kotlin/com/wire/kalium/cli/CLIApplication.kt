@@ -144,7 +144,7 @@ class LoginCommand : CliktCommand(name = "login") {
 
         coreLogic.sessionScope(authSession.userId) {
             if (client.needsToRegisterClient()) {
-                when (client.register(RegisterClientParam.ClientWithoutToken(password, emptyList()))) {
+                when (client.register(RegisterClientParam(password, emptyList()))) {
                     is RegisterClientResult.Failure -> throw PrintMessage("Client registration failed")
                     is RegisterClientResult.Success -> echo("Login successful")
                 }
@@ -183,7 +183,7 @@ class ListenGroupCommand : CliktCommand(name = "listen-group") {
                 for (message in it) {
                     when (val content = message.content) {
                         is MessageContent.Text -> echo("> ${content.value}")
-                        MessageContent.Unknown -> { /* do nothing */ }
+                        is MessageContent.Unknown -> { /* do nothing */ }
                     }
                 }
             }
