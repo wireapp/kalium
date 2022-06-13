@@ -127,7 +127,7 @@ actual class CallManagerImpl(
         return calling.action(handle)
     }
 
-    override suspend fun onCallingMessageReceived(message: Message.Client, content: MessageContent.Calling) =
+    override suspend fun onCallingMessageReceived(message: Message.Regular, content: MessageContent.Calling) =
         withCalling {
             callingLogger.i("$TAG - onCallingMessageReceived called")
             val msg = content.value.toByteArray()

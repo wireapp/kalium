@@ -93,7 +93,7 @@ class CallManagerTest {
         val CLIENT_ID = ClientId(value = "clientId")
         val USER_ID = UserId(value = "userId", domain = "domainId")
         val CALL_CONTENT = MessageContent.Calling(value = "content")
-        val CALL_MESSAGE = Message.Client(
+        val CALL_MESSAGE = Message.Regular(
             id = "id",
             content = CALL_CONTENT,
             conversationId = ConversationId(value = "value", domain = "domain"),

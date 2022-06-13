@@ -32,7 +32,7 @@ class DeleteMessageUseCase(
 
         val generatedMessageUuid = uuid4().toString()
         return clientRepository.currentClientId().flatMap { currentClientId ->
-            val message = Message.Client(
+            val message = Message.Regular(
                 id = generatedMessageUuid,
                 content = if (deleteForEveryone) MessageContent.DeleteMessage(messageId) else MessageContent.DeleteForMe(
                     messageId,

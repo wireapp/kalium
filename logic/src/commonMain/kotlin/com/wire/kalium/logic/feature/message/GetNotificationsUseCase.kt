@@ -51,9 +51,18 @@ class GetNotificationsUseCaseImpl(
                     // Fetching the Messages for the Conversation that are newer than `lastNotificationDate`
                     val messagesListFlow = if (conversation.lastNotificationDate == null) {
                         // that is a new conversation, lets just fetch last 100 messages for it
-                        messageRepository.getMessagesForConversation(conversation.id, 100, 0)
+                        messageRepository.getMessagesByConversationIdAndVisibility(
+                            conversation.id,
+                            100,
+                            0,
+                            listOf(Message.Visibility.VISIBLE)
+                        )
                     } else {
-                        messageRepository.getMessagesByConversationAfterDate(conversation.id, conversation.lastNotificationDate)
+                        messageRepository.getMessagesByConversationIdAndVisibilityAfterDate(
+                            conversation.id,
+                            conversation.lastNotificationDate,
+                            listOf(Message.Visibility.VISIBLE)
+                        )
                     }
 
                     messagesListFlow
@@ -107,7 +116,7 @@ class GetNotificationsUseCaseImpl(
                                     messages = messages,
                                     isOneToOneConversation = isOneToOneConversation
                                 )
-                        }
+                            }
                     }
             }
             .distinctUntilChanged()
@@ -116,16 +125,19 @@ class GetNotificationsUseCaseImpl(
     private fun getNotificationMessageAuthor(authors: List<OtherUser?>, senderUserId: UserId) =
         notificationAuthorMessageMapper.fromOtherUserToLocalNotificationMessageAuthor(authors.firstOrNull { it?.id == senderUserId })
 
+    private fun shouldMessageBeVisibleAsNotification(message: Message) =
+        message !is Message.System && message.visibility == Message.Visibility.VISIBLE
+
     private fun shouldIncludeMessageForNotifications(
         message: Message,
         selfUser: SelfUser,
         conversationMutedStatus: MutedConversationStatus
     ): Boolean =
-        when(conversationMutedStatus) {
+        shouldMessageBeVisibleAsNotification(message) && when (conversationMutedStatus) {
             MutedConversationStatus.AllAllowed -> true
             MutedConversationStatus.OnlyMentionsAllowed -> {
-                when(val content = message.content) {
-                    is MessageContent.Text ->  {
+                when (val content = message.content) {
+                    is MessageContent.Text -> {
                         val containsSelfUserName = selfUser.name?.let { selfUsername ->
                             content.value.contains("@$selfUsername")
                         } ?: false
