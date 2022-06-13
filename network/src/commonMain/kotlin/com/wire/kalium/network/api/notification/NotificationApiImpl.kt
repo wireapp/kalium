@@ -74,7 +74,7 @@ class NotificationApiImpl internal constructor(
         }
     }
 
-    override suspend fun listenToLiveEvents(clientId: String): Flow<WebSocketEvent> = flow {
+    override suspend fun listenToLiveEvents(clientId: String): Flow<WebSocketEvent<EventResponse>> = flow {
 
         val session = authenticatedWebSocketClient
             .createDisposableHttpClient()
@@ -87,7 +87,7 @@ class NotificationApiImpl internal constructor(
 
         kaliumLogger.i("Websocket open")
 
-        emit(WebSocketEvent.Open)
+        emit(WebSocketEvent.Open())
 
         session
             .incoming

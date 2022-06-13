@@ -6,17 +6,13 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.network.api.notification.NotificationApi
 import com.wire.kalium.network.api.notification.NotificationResponse
 import com.wire.kalium.network.api.notification.WebSocketEvent
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import com.wire.kalium.persistence.event.EventInfoStorage
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flattenConcat
@@ -28,7 +24,7 @@ import kotlin.coroutines.coroutineContext
 
 interface EventRepository {
     suspend fun pendingEvents(): Flow<Either<CoreFailure, Event>>
-    suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent>>
+    suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<Event>>>
     suspend fun updateLastProcessedEventId(eventId: String)
     suspend fun getLastProcessedEventId(): Either<CoreFailure, String>
 }
@@ -51,18 +47,32 @@ class EventDataSource(
             { clientId -> pendingEventsFlow(clientId) }
         )
 
-    override suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent>> = clientRepository.currentClientId().fold(
+    override suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<Event>>> = clientRepository.currentClientId().fold(
         { Either.Left(it) },
-        { clientId -> Either.Right(notificationApi.listenToLiveEvents(clientId.value)) }
+        { clientId -> Either.Right(liveEventsFlow(clientId)) }
     )
 
-//    private suspend fun liveEventsFlow(clientId: ClientId): Flow<Event> =
-//        notificationApi.listenToLiveEvents(clientId.value)
-//            .map {
-//                println("Mapping eventResponse from LiveFlow ${it}")
-//                eventMapper.fromDTO(it).asFlow()
-//            }
-//            .flattenConcat()
+    private suspend fun liveEventsFlow(clientId: ClientId): Flow<WebSocketEvent<Event>> =
+        notificationApi.listenToLiveEvents(clientId.value)
+            .map { webSocketEvent ->
+                when (webSocketEvent) {
+                    is WebSocketEvent.Open -> {
+                        flowOf(WebSocketEvent.Open())
+                    }
+                    is WebSocketEvent.NonBinaryPayloadReceived -> {
+                        flowOf(WebSocketEvent.NonBinaryPayloadReceived<Event>(webSocketEvent.payload))
+                    }
+                    is WebSocketEvent.Close -> {
+                        flowOf(WebSocketEvent.Close(webSocketEvent.cause))
+                    }
+                    is WebSocketEvent.BinaryPayloadReceived -> {
+                        eventMapper
+                            .fromDTO(webSocketEvent.payload)
+                            .asFlow()
+                            .map { WebSocketEvent.BinaryPayloadReceived(it) }
+                    }
+                }
+            }.flattenConcat()
 
     private suspend fun pendingEventsFlow(
         clientId: ClientId

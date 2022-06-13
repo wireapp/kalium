@@ -3,11 +3,9 @@ package com.wire.kalium.logic.sync
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.sync.SyncRepository
 import com.wire.kalium.logic.data.sync.SyncState
-import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
@@ -23,6 +21,7 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.mapNotNull
@@ -76,8 +75,7 @@ class SyncManagerImpl(
     private val syncRepository: SyncRepository,
     private val conversationEventReceiver: ConversationEventReceiver,
     private val userEventReceiver: EventReceiver<Event.User>,
-    private val kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
-    private val eventMapper: EventMapper = MapperProvider.eventMapper()
+    private val kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : SyncManager {
 
     /**
@@ -136,10 +134,26 @@ class SyncManagerImpl(
             offlineEventsBuffer.contains(event)
         }
 
-    private suspend fun clearOfflineEventBuffer() =
+    private suspend fun removeEventFromOfflineBuffer(event: Event) =
+        mutex.withLock {
+            offlineEventsBuffer.remove(event)
+        }
+
+    private suspend fun clearOfflineEventBufferIfLastEventEquals(event: Event): Boolean =
+        mutex.withLock {
+            if (offlineEventsBuffer.last() == event) {
+                offlineEventsBuffer.clear()
+                true
+            } else {
+                false
+            }
+        }
+
+    private suspend fun clearOfflineEventBuffer() {
         mutex.withLock {
             offlineEventsBuffer.clear()
         }
+    }
 
     override fun onSlowSyncComplete() {
         // Processing already running, don't launch another
@@ -153,6 +167,7 @@ class SyncManagerImpl(
     }
 
     private suspend fun startProcessing() = eventProcessingScope.launch {
+        clearOfflineEventBuffer()
         launch(kaliumDispatcher.io) {
             gatherEvents()
         }
@@ -178,10 +193,12 @@ class SyncManagerImpl(
     }
 
 
-    private suspend fun handleWebsocketEvent(webSocketEvent: WebSocketEvent) {
+    private suspend fun handleWebsocketEvent(webSocketEvent: WebSocketEvent<Event>) {
         when (webSocketEvent) {
             is WebSocketEvent.Open -> {
                 kaliumLogger.i("SYNC: Websocket Open")
+
+                delay(5000)
 
                 eventRepository
                     .pendingEvents()
@@ -201,19 +218,26 @@ class SyncManagerImpl(
             }
             is WebSocketEvent.BinaryPayloadReceived -> {
                 kaliumLogger.i("SYNC: Websocket Received binary payload")
-                val mappedEvent = eventMapper.fromDTO(webSocketEvent.payload)
-                mappedEvent.forEach {
-                    if (!isEventPresentInOfflineBuffer(it)) {
-                        clearOfflineEventBuffer()
+                val event = webSocketEvent.payload
+                if (isEventPresentInOfflineBuffer(event)) {
+                    if (clearOfflineEventBufferIfLastEventEquals(event)) {
                         kaliumLogger.d(
-                            "SYNC: Event never seen before ${it.id} - We are live"
+                            // Really live
+                            "SYNC: Removed most recent event from offlineEventBuffer: '${event.id}'"
                         )
-                        processingEventFlow.emit(it)
                     } else {
                         kaliumLogger.d(
-                            "SYNC: Skipping emit of event from WebSocket because already emitted as offline event ${it.id}"
+                            // Really live
+                            "SYNC: Removing event from offlineEventBuffer: ${event.id}"
                         )
+                        removeEventFromOfflineBuffer(event)
                     }
+                    kaliumLogger.d(
+                        "SYNC: Skipping emit of event from WebSocket because already emitted as offline event ${event.id}"
+                    )
+                } else {
+                    kaliumLogger.d("SYNC: Event never seen before ${event.id} - We are live")
+                    processingEventFlow.emit(event)
                 }
             }
             is WebSocketEvent.Close -> {

@@ -3,17 +3,17 @@ package com.wire.kalium.network.api.notification
 import com.wire.kalium.network.utils.NetworkResponse
 import kotlinx.coroutines.flow.Flow
 
-sealed class WebSocketEvent {
-    object Open: WebSocketEvent()
+sealed class WebSocketEvent<BinaryPayloadType> {
+    class Open<BinaryPayloadType>: WebSocketEvent<BinaryPayloadType>()
 
-    data class BinaryPayloadReceived(val payload: EventResponse): WebSocketEvent()
+    data class BinaryPayloadReceived<BinaryPayloadType>(val payload: BinaryPayloadType): WebSocketEvent<BinaryPayloadType>()
 
-    data class NonBinaryPayloadReceived(val payload: ByteArray): WebSocketEvent() {
+    data class NonBinaryPayloadReceived<BinaryPayloadType>(val payload: ByteArray): WebSocketEvent<BinaryPayloadType>() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other == null || this::class != other::class) return false
 
-            other as NonBinaryPayloadReceived
+            other as NonBinaryPayloadReceived<*>
 
             if (!payload.contentEquals(other.payload)) return false
 
@@ -25,7 +25,7 @@ sealed class WebSocketEvent {
         }
     }
 
-    data class Close(val cause: Throwable?): WebSocketEvent()
+    data class Close<BinaryPayloadType>(val cause: Throwable?): WebSocketEvent<BinaryPayloadType>()
 }
 
 interface NotificationApi {
@@ -38,6 +38,6 @@ interface NotificationApi {
      */
     suspend fun getAllNotifications(querySize: Int, queryClient: String): NetworkResponse<NotificationResponse>
 
-    suspend fun listenToLiveEvents(clientId: String): Flow<WebSocketEvent>
+    suspend fun listenToLiveEvents(clientId: String): Flow<WebSocketEvent<EventResponse>>
 
 }
