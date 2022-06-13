@@ -1,6 +1,12 @@
-package com.wire.kalium.logic.data.user
+package com.wire.kalium.logic.data.user.mapper
 
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
+import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.ConnectionStateMapper
+import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.UserAvailabilityStatus
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.TeamId
 import com.wire.kalium.network.api.model.AssetSizeDTO

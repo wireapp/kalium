@@ -1,7 +1,7 @@
 package com.wire.kalium.logic.data.team
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.user.UserMapper
+import com.wire.kalium.logic.data.user.mapper.UserMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap

@@ -10,7 +10,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.self.SelfUserRepository
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
@@ -34,7 +34,7 @@ class CallManagerTest {
     private val callRepository = mock(classOf<CallRepository>())
 
     @Mock
-    private val userRepository = mock(classOf<UserRepository>())
+    private val selfUserRepository = mock(classOf<SelfUserRepository>())
 
     @Mock
     private val messageSender = mock(classOf<MessageSender>())
@@ -54,7 +54,7 @@ class CallManagerTest {
         callManagerImpl = CallManagerImpl(
             calling = calling,
             callRepository = callRepository,
-            userRepository = userRepository,
+            userRepository = selfUserRepository,
             clientRepository = clientRepository,
             conversationRepository = conversationRepository,
             messageSender = messageSender,

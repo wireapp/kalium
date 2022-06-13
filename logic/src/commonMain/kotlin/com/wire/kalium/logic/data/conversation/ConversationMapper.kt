@@ -2,9 +2,9 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.data.publicuser.model.OtherUser
+import com.wire.kalium.logic.data.user.other.model.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
-import com.wire.kalium.logic.data.user.UserTypeMapper
+import com.wire.kalium.logic.data.user.mapper.UserTypeMapper
 import com.wire.kalium.network.api.conversation.ConvProtocol
 import com.wire.kalium.network.api.conversation.ConvTeamInfo
 import com.wire.kalium.network.api.conversation.ConversationResponse

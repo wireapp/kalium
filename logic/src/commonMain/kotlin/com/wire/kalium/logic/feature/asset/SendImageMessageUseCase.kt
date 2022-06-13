@@ -16,7 +16,7 @@ import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.self.SelfUserRepository
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -50,7 +50,7 @@ internal class SendImageMessageUseCaseImpl(
     private val messageRepository: MessageRepository,
     private val clientRepository: ClientRepository,
     private val assetDataSource: AssetRepository,
-    private val userRepository: UserRepository,
+    private val selfUserRepository: SelfUserRepository,
     private val messageSender: MessageSender
 ) : SendImageMessageUseCase {
 
@@ -95,7 +95,7 @@ internal class SendImageMessageUseCaseImpl(
         imgHeight: Int
     ): Either<CoreFailure, Unit> {
         // Get my current user
-        val selfUser = userRepository.getSelfUser().first()
+        val selfUser = selfUserRepository.getSelfUser().first()
 
         // Create a unique image message ID
         val generatedMessageUuid = uuid4().toString()

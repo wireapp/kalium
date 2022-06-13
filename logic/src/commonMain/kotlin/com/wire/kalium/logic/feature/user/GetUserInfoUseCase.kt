@@ -1,11 +1,11 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.publicuser.model.OtherUser
+import com.wire.kalium.logic.data.user.other.model.OtherUser
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.self.SelfUserRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.wrapStorageRequest
@@ -25,7 +25,7 @@ fun interface GetUserInfoUseCase {
 }
 
 internal class GetUserInfoUseCaseImpl(
-    private val userRepository: UserRepository,
+    private val selfUserRepository: SelfUserRepository,
     private val teamRepository: TeamRepository
 ) : GetUserInfoUseCase {
 
@@ -42,12 +42,12 @@ internal class GetUserInfoUseCaseImpl(
 
     private suspend fun getOtherUser(userId: UserId): Either<CoreFailure, OtherUser> {
         return wrapStorageRequest {
-            val localOtherUser = userRepository.getKnownUser(userId).firstOrNull()
+            val localOtherUser = selfUserRepository.getKnownUser(userId).firstOrNull()
 
             return if (localOtherUser != null) {
                 Either.Right(localOtherUser)
             } else {
-                userRepository.fetchUserInfo(userId)
+                selfUserRepository.fetchUserInfo(userId)
             }
         }
     }

@@ -3,8 +3,8 @@ package com.wire.kalium.logic.feature.conversation
 import app.cash.turbine.test
 import com.wire.kalium.logic.data.conversation.MemberDetails
 import com.wire.kalium.logic.data.conversation.UserType
-import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.user.UserTypeMapper
+import com.wire.kalium.logic.data.user.self.SelfUserRepository
+import com.wire.kalium.logic.data.user.mapper.UserTypeMapper
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncManager
 import io.mockative.Mock
@@ -24,7 +24,7 @@ import kotlin.test.assertContentEquals
 class ObserveMemberDetailsByIdsUseCaseTest {
 
     @Mock
-    private val userRepository = mock(UserRepository::class)
+    private val selfUserRepository = mock(SelfUserRepository::class)
 
     @Mock
     private val userTypeMapper = mock(UserTypeMapper::class)
@@ -39,7 +39,7 @@ class ObserveMemberDetailsByIdsUseCaseTest {
     @BeforeTest
     fun setup() {
         observeMemberDetailsByIds = ObserveMemberDetailsByIdsUseCase(
-            userRepository,
+            selfUserRepository,
             syncManager,
             userTypeMapper
         )
@@ -49,13 +49,13 @@ class ObserveMemberDetailsByIdsUseCaseTest {
     fun givenAUserIdList_whenObservingMembers_thenTheSyncManagerIsCalled() = runTest {
         val userIds = listOf(TestUser.SELF.id)
 
-        given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+        given(selfUserRepository)
+            .suspendFunction(selfUserRepository::getSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
 
-        given(userRepository)
-            .suspendFunction(userRepository::getKnownUser)
+        given(selfUserRepository)
+            .suspendFunction(selfUserRepository::getKnownUser)
             .whenInvokedWith(anything())
             .thenReturn(flowOf())
 
@@ -73,13 +73,13 @@ class ObserveMemberDetailsByIdsUseCaseTest {
         val selfUserUpdates = listOf(firstSelfUser, secondSelfUser)
         val userIds = listOf(firstSelfUser.id)
 
-        given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+        given(selfUserRepository)
+            .suspendFunction(selfUserRepository::getSelfUser)
             .whenInvoked()
             .thenReturn(selfUserUpdates.asFlow())
 
-        given(userRepository)
-            .suspendFunction(userRepository::getKnownUser)
+        given(selfUserRepository)
+            .suspendFunction(selfUserRepository::getKnownUser)
             .whenInvokedWith(anything())
             .thenReturn(flowOf())
 
@@ -97,13 +97,13 @@ class ObserveMemberDetailsByIdsUseCaseTest {
         val otherUserUpdates = listOf(firstOtherUser, secondOtherUser)
         val userIds = listOf(firstOtherUser.id)
 
-        given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+        given(selfUserRepository)
+            .suspendFunction(selfUserRepository::getSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
 
-        given(userRepository)
-            .suspendFunction(userRepository::getKnownUser)
+        given(selfUserRepository)
+            .suspendFunction(selfUserRepository::getKnownUser)
             .whenInvokedWith(anything())
             .thenReturn(otherUserUpdates.asFlow())
 

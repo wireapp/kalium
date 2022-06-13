@@ -1,21 +1,21 @@
 package com.wire.kalium.logic.feature.publicuser
 
-import com.wire.kalium.logic.data.publicuser.SearchUserRepository
-import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
+import com.wire.kalium.logic.data.user.other.OtherUserRepository
+import com.wire.kalium.logic.data.user.other.model.OtherUserSearchResult
 
 interface SearchKnownUsersUseCase {
-    suspend operator fun invoke(searchQuery: String): UserSearchResult
+    suspend operator fun invoke(searchQuery: String): OtherUserSearchResult
 }
 
 internal class SearchKnownUsersUseCaseImpl(
-    private val searchUserRepository: SearchUserRepository
+    private val contactRepository: OtherUserRepository
 ) : SearchKnownUsersUseCase {
 
-    override suspend operator fun invoke(searchQuery: String): UserSearchResult {
+    override suspend operator fun invoke(searchQuery: String): OtherUserSearchResult {
         return if (isUserLookingForHandle(searchQuery)) {
-            searchUserRepository.searchKnownUsersByHandle(searchQuery)
+            contactRepository.searchKnownUsersByHandle(searchQuery)
         } else {
-            searchUserRepository.searchKnownUsersByNameOrHandleOrEmail(searchQuery)
+            contactRepository.searchKnownUsersByNameOrHandleOrEmail(searchQuery)
         }
     }
 

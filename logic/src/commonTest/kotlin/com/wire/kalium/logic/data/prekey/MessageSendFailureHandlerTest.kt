@@ -4,7 +4,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.self.SelfUserRepository
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandlerImpl
@@ -30,7 +30,7 @@ class MessageSendFailureHandlerTest {
     val clientRepository = mock(classOf<ClientRepository>())
 
     @Mock
-    val userRepository = mock(classOf<UserRepository>())
+    val selfUserRepository = mock(classOf<SelfUserRepository>())
 
     private lateinit var messageSendFailureHandler: MessageSendFailureHandler
 
@@ -39,7 +39,7 @@ class MessageSendFailureHandlerTest {
 
     @BeforeTest
     fun setup() {
-        messageSendFailureHandler = MessageSendFailureHandlerImpl(userRepository, clientRepository)
+        messageSendFailureHandler = MessageSendFailureHandlerImpl(selfUserRepository, clientRepository)
         userOne = UserId("userId1", "anta.wire") to listOf(ClientId("clientId"), ClientId("secondClientId"))
         userTwo = UserId("userId2", "bella.wire") to listOf(ClientId("clientId2"), ClientId("secondClientId2"))
     }
@@ -49,8 +49,8 @@ class MessageSendFailureHandlerTest {
     fun givenMissingClients_whenHandlingClientsHaveChangedFailure_thenUsersThatControlTheseClientsShouldBeFetched() = runTest {
         val failureData = ProteusSendMessageFailure(missingClientsOfUsers = mapOf(userOne, userTwo), mapOf(), mapOf())
 
-        given(userRepository)
-            .suspendFunction(userRepository::fetchUsersByIds)
+        given(selfUserRepository)
+            .suspendFunction(selfUserRepository::fetchUsersByIds)
             .whenInvokedWith(eq(failureData.missingClientsOfUsers.keys))
             .thenReturn(Either.Right(Unit))
 
@@ -61,8 +61,8 @@ class MessageSendFailureHandlerTest {
 
         messageSendFailureHandler.handleClientsHaveChangedFailure(failureData)
 
-        verify(userRepository)
-            .suspendFunction(userRepository::fetchUsersByIds)
+        verify(selfUserRepository)
+            .suspendFunction(selfUserRepository::fetchUsersByIds)
             .with(eq(failureData.missingClientsOfUsers.keys))
             .wasInvoked(once)
     }
@@ -72,8 +72,8 @@ class MessageSendFailureHandlerTest {
     fun givenMissingContactsAndClients_whenHandlingClientsHaveChangedFailureThenClientsShouldBeAddedToContacts() = runTest {
         val failureData = ProteusSendMessageFailure(missingClientsOfUsers = mapOf(userOne, userTwo), mapOf(), mapOf())
 
-        given(userRepository)
-            .suspendFunction(userRepository::fetchUsersByIds)
+        given(selfUserRepository)
+            .suspendFunction(selfUserRepository::fetchUsersByIds)
             .whenInvokedWith(eq(failureData.missingClientsOfUsers.keys))
             .thenReturn(Either.Right(Unit))
 
@@ -99,8 +99,8 @@ class MessageSendFailureHandlerTest {
     @Test
     fun givenRepositoryFailsToFetchContacts_whenHandlingClientsHaveChangedFailure_thenFailureShouldBePropagated() = runTest {
         val failure = NETWORK_ERROR
-        given(userRepository)
-            .suspendFunction(userRepository::fetchUsersByIds)
+        given(selfUserRepository)
+            .suspendFunction(selfUserRepository::fetchUsersByIds)
             .whenInvokedWith(any())
             .thenReturn(Either.Left(failure))
         val failureData = ProteusSendMessageFailure(mapOf(), mapOf(), mapOf())
@@ -113,8 +113,8 @@ class MessageSendFailureHandlerTest {
     @Test
     fun givenRepositoryFailsToAddClientsToContacts_whenHandlingClientsHaveChangedFailure_thenFailureShouldBePropagated() = runTest {
         val failure = NETWORK_ERROR
-        given(userRepository)
-            .suspendFunction(userRepository::fetchUsersByIds)
+        given(selfUserRepository)
+            .suspendFunction(selfUserRepository::fetchUsersByIds)
             .whenInvokedWith(any())
             .thenReturn(Either.Right(Unit))
         given(clientRepository)

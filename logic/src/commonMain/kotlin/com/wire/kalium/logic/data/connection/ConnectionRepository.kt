@@ -5,7 +5,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.publicuser.PublicUserMapper
+import com.wire.kalium.logic.data.user.other.OtherUserMapper
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
@@ -50,7 +50,7 @@ internal class ConnectionDataSource(
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val connectionStatusMapper: ConnectionStatusMapper = MapperProvider.connectionStatusMapper(),
     private val connectionMapper: ConnectionMapper = MapperProvider.connectionMapper(),
-    private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(),
+    private val otherUserMapper: OtherUserMapper = MapperProvider.publicUserMapper(),
 ) : ConnectionRepository {
 
     override suspend fun fetchSelfUserConnections(): Either<CoreFailure, Unit> {
@@ -139,7 +139,7 @@ internal class ConnectionDataSource(
             userDetailsApi.getUserInfo(idMapper.toApiModel(connection.qualifiedToId))
         }.flatMap {
             wrapStorageRequest {
-                val userEntity = publicUserMapper.fromUserApiToEntity(it, connectionStatusMapper.toDaoModel(connection.status))
+                val userEntity = otherUserMapper.fromUserApiToEntity(it, connectionStatusMapper.toDaoModel(connection.status))
                 userDAO.insertUser(userEntity)
             }
         }

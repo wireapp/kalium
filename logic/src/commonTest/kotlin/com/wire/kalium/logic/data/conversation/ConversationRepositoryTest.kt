@@ -3,7 +3,7 @@ package com.wire.kalium.logic.data.conversation
 import app.cash.turbine.test
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.self.SelfUserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
@@ -48,7 +48,7 @@ import kotlin.test.assertIs
 class ConversationRepositoryTest {
 
     @Mock
-    private val userRepository = mock(UserRepository::class)
+    private val selfUserRepository = mock(SelfUserRepository::class)
 
     @Mock
     private val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
@@ -67,7 +67,7 @@ class ConversationRepositoryTest {
     @BeforeTest
     fun setup() {
         conversationRepository = ConversationDataSource(
-            userRepository,
+            selfUserRepository,
             mlsConversationRepository,
             conversationDAO,
             conversationApi,
@@ -79,8 +79,8 @@ class ConversationRepositoryTest {
     fun givenNewConversationEvent_whenCallingInsertConversationFromEvent_thenConversationShouldBePersisted() = runTest {
         val event = Event.Conversation.NewConversation("id", TestConversation.ID, "time", CONVERSATION_RESPONSE)
 
-        given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+        given(selfUserRepository)
+            .suspendFunction(selfUserRepository::getSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
 
@@ -105,8 +105,8 @@ class ConversationRepositoryTest {
         )
         val protocolInfo = ConversationEntity.ProtocolInfo.MLS(groupId, ConversationEntity.GroupState.ESTABLISHED)
 
-        given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+        given(selfUserRepository)
+            .suspendFunction(selfUserRepository::getSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
 
@@ -149,8 +149,8 @@ class ConversationRepositoryTest {
                     it.size == 2
                 }).thenReturn(NetworkResponse.Success(CONVERSATION_RESPONSE_DTO, emptyMap(), HttpStatusCode.OK.value))
 
-            given(userRepository)
-                .suspendFunction(userRepository::getSelfUser)
+            given(selfUserRepository)
+                .suspendFunction(selfUserRepository::getSelfUser)
                 .whenInvoked()
                 .thenReturn(flowOf(TestUser.SELF))
 
@@ -214,8 +214,8 @@ class ConversationRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(conversationEntityFlow)
 
-        given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+        given(selfUserRepository)
+            .suspendFunction(selfUserRepository::getSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
 
@@ -224,8 +224,8 @@ class ConversationRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(flowOf(listOf(Member(TestUser.ENTITY_ID))))
 
-        given(userRepository)
-            .suspendFunction(userRepository::getKnownUser)
+        given(selfUserRepository)
+            .suspendFunction(selfUserRepository::getKnownUser)
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
 
@@ -250,8 +250,8 @@ class ConversationRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(conversationEntityFlow)
 
-        given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+        given(selfUserRepository)
+            .suspendFunction(selfUserRepository::getSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
 
@@ -260,8 +260,8 @@ class ConversationRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(flowOf(listOf(Member(TestUser.ENTITY_ID))))
 
-        given(userRepository)
-            .suspendFunction(userRepository::getKnownUser)
+        given(selfUserRepository)
+            .suspendFunction(selfUserRepository::getKnownUser)
             .whenInvokedWith(any())
             .thenReturn(otherUserDetailsSequence.asFlow())
 
@@ -286,8 +286,8 @@ class ConversationRepositoryTest {
             .whenInvokedWith(anything())
             .thenReturn(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201))
 
-        given(userRepository)
-            .coroutine { userRepository.getSelfUser() }
+        given(selfUserRepository)
+            .coroutine { selfUserRepository.getSelfUser() }
             .then { flowOf(TestUser.SELF) }
 
         given(conversationDAO)
@@ -330,8 +330,8 @@ class ConversationRepositoryTest {
             .whenInvokedWith(anything())
             .thenReturn(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201))
 
-        given(userRepository)
-            .coroutine { userRepository.getSelfUser() }
+        given(selfUserRepository)
+            .coroutine { selfUserRepository.getSelfUser() }
             .then { flowOf(selfUserWithoutTeam) }
 
         given(conversationDAO)
@@ -373,12 +373,12 @@ class ConversationRepositoryTest {
             .whenInvokedWith(anything())
             .thenReturn(NetworkResponse.Success(conversationResponse, emptyMap(), 201))
 
-        given(userRepository)
-            .coroutine { userRepository.getSelfUser() }
+        given(selfUserRepository)
+            .coroutine { selfUserRepository.getSelfUser() }
             .then { flowOf(TestUser.SELF) }
 
-        given(userRepository)
-            .coroutine { userRepository.getSelfUserId() }
+        given(selfUserRepository)
+            .coroutine { selfUserRepository.getSelfUserId() }
             .then { TestUser.SELF.id }
 
         given(conversationDAO)
@@ -429,12 +429,12 @@ class ConversationRepositoryTest {
                 .whenInvokedWith(anything())
                 .then { listOf(CONVERSATION_ENTITY) }
 
-            given(userRepository)
-                .coroutine { userRepository.getSelfUser() }
+            given(selfUserRepository)
+                .coroutine { selfUserRepository.getSelfUser() }
                 .then { flowOf(TestUser.SELF) }
 
-            given(userRepository)
-                .suspendFunction(userRepository::getKnownUser)
+            given(selfUserRepository)
+                .suspendFunction(selfUserRepository::getKnownUser)
                 .whenInvokedWith(any())
                 .thenReturn(flowOf(TestUser.OTHER))
 

@@ -9,7 +9,7 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.self.SelfUserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -74,7 +74,7 @@ interface ConversationRepository {
 }
 
 class ConversationDataSource(
-    private val userRepository: UserRepository,
+    private val selfUserRepository: SelfUserRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val conversationDAO: ConversationDAO,
     private val conversationApi: ConversationApi,
@@ -87,7 +87,7 @@ class ConversationDataSource(
 
     override suspend fun fetchConversations(): Either<CoreFailure, Unit> {
         kaliumLogger.d("Fetching conversations")
-        val selfUserTeamId = userRepository.getSelfUser().first().team
+        val selfUserTeamId = selfUserRepository.getSelfUser().first().team
 
         return fetchAllConversationsFromAPI().onFailure { networkFailure ->
             val throwable = (networkFailure as? NetworkFailure.ServerMiscommunication)?.rootCause
@@ -99,7 +99,7 @@ class ConversationDataSource(
     }
 
     override suspend fun insertConversationFromEvent(event: Event.Conversation.NewConversation): Either<CoreFailure, Unit> {
-        val selfUserTeamId = userRepository.getSelfUser().first().team
+        val selfUserTeamId = selfUserRepository.getSelfUser().first().team
         return persistConversations(listOf(event.conversation), selfUserTeamId)
     }
 
@@ -190,7 +190,7 @@ class ConversationDataSource(
             // TODO(connection-requests): Handle requests instead of filtering them out
             Conversation.Type.CONNECTION_PENDING,
             Conversation.Type.ONE_ON_ONE -> {
-                val selfUser = userRepository.getSelfUser().first()
+                val selfUser = selfUserRepository.getSelfUser().first()
 
                 getConversationMembers(conversation.id)
                     .map { members ->
@@ -208,7 +208,7 @@ class ConversationDataSource(
                         emptyFlow()
                     }, { otherUserIdOrNull ->
                         otherUserIdOrNull?.let {
-                            userRepository.getKnownUser(it)
+                            selfUserRepository.getKnownUser(it)
                         } ?: run {
                             emptyFlow()
                         }
@@ -261,7 +261,7 @@ class ConversationDataSource(
         members: List<Member>,
         options: ConversationOptions
     ): Either<CoreFailure, Conversation> = wrapStorageRequest {
-        userRepository.getSelfUser().first()
+        selfUserRepository.getSelfUser().first()
     }.flatMap { selfUser ->
         wrapApiRequest {
             conversationApi.createNewConversation(
@@ -324,7 +324,7 @@ class ConversationDataSource(
     ): Either<CoreFailure, Unit> {
         return wrapStorageRequest {
             val conversationId = idMapper.fromApiToDao(conversationResponse.id)
-            val selfUserId = userRepository.getSelfUserId()
+            val selfUserId = selfUserRepository.getSelfUserId()
             val selfMember = Member(selfUserId)
             conversationDAO.insertMembers((members + selfMember).map(memberMapper::toDaoModel), conversationId)
         }
@@ -347,8 +347,8 @@ class ConversationDataSource(
                 ?.let { conversationEntity ->
                     conversationMapper.fromDaoModel(conversationEntity)
                 }?.let { conversation ->
-                    userRepository.getKnownUser(otherUserId).first()?.let { otherUser ->
-                        val selfUser = userRepository.getSelfUser().first()
+                    selfUserRepository.getKnownUser(otherUserId).first()?.let { otherUser ->
+                        val selfUser = selfUserRepository.getSelfUser().first()
 
                         conversationMapper.toConversationDetailsOneToOne(conversation, otherUser, selfUser)
                     }

@@ -13,9 +13,9 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.notification.LocalNotificationCommentType
 import com.wire.kalium.logic.data.notification.LocalNotificationMessage
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
-import com.wire.kalium.logic.data.publicuser.model.OtherUser
+import com.wire.kalium.logic.data.user.other.model.OtherUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.self.SelfUserRepository
 import com.wire.kalium.logic.framework.TestUser
 import io.mockative.Mock
 import io.mockative.any
@@ -40,7 +40,7 @@ class GetNotificationsUseCaseTest {
     val messageRepository: MessageRepository = mock(classOf<MessageRepository>())
 
     @Mock
-    val userRepository: UserRepository = mock(classOf<UserRepository>())
+    val selfUserRepository: SelfUserRepository = mock(classOf<SelfUserRepository>())
 
     @Mock
     val conversationRepository: ConversationRepository = mock(classOf<ConversationRepository>())
@@ -49,13 +49,13 @@ class GetNotificationsUseCaseTest {
 
     @BeforeTest
     fun setup() {
-        getNotificationsUseCase = GetNotificationsUseCaseImpl(messageRepository, userRepository, conversationRepository)
+        getNotificationsUseCase = GetNotificationsUseCaseImpl(messageRepository, selfUserRepository, conversationRepository)
     }
 
     @Test
     fun givenEmptyConversationList_thenEmptyNotificationList() = runTest {
-        given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+        given(selfUserRepository)
+            .suspendFunction(selfUserRepository::getSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
         given(conversationRepository)
@@ -72,11 +72,11 @@ class GetNotificationsUseCaseTest {
 
     @Test
     fun givenConversationWithEmptyMessageList_thenEmptyNotificationList() = runTest {
-        given(userRepository)
+        given(selfUserRepository)
             .coroutine { getSelfUserId() }
             .then { MY_ID }
-        given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+        given(selfUserRepository)
+            .suspendFunction(selfUserRepository::getSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
         given(conversationRepository)
@@ -97,11 +97,11 @@ class GetNotificationsUseCaseTest {
 
     @Test
     fun givenConversationWithOnlyMyMessageList_thenEmptyNotificationList() = runTest {
-        given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+        given(selfUserRepository)
+            .suspendFunction(selfUserRepository::getSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
-        given(userRepository)
+        given(selfUserRepository)
             .coroutine { getSelfUserId() }
             .then { MY_ID }
         given(conversationRepository)
@@ -129,18 +129,18 @@ class GetNotificationsUseCaseTest {
 
     @Test
     fun givenConversationWithMessageListIncludingMyMessages_thenNotificationListWithoutMyMessages() = runTest {
-        given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+        given(selfUserRepository)
+            .suspendFunction(selfUserRepository::getSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
-        given(userRepository)
+        given(selfUserRepository)
             .coroutine { getSelfUserId() }
             .then { MY_ID }
         given(conversationRepository)
             .coroutine { getConversationsForNotifications() }
             .then { flowOf(listOf(entityConversation())) }
-        given(userRepository)
-            .suspendFunction(userRepository::getKnownUser)
+        given(selfUserRepository)
+            .suspendFunction(selfUserRepository::getKnownUser)
             .whenInvokedWith(any())
             .then { id -> flowOf(otherUser(id)) }
         given(messageRepository)
@@ -176,11 +176,11 @@ class GetNotificationsUseCaseTest {
 
     @Test
     fun givenFewConversationWithMessageLists_thenListOfFewNotifications() = runTest {
-        given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+        given(selfUserRepository)
+            .suspendFunction(selfUserRepository::getSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
-        given(userRepository)
+        given(selfUserRepository)
             .coroutine { getSelfUserId() }
             .then { MY_ID }
         given(conversationRepository)
@@ -193,8 +193,8 @@ class GetNotificationsUseCaseTest {
                     )
                 )
             }
-        given(userRepository)
-            .suspendFunction(userRepository::getKnownUser)
+        given(selfUserRepository)
+            .suspendFunction(selfUserRepository::getKnownUser)
             .whenInvokedWith(any())
             .then { id -> flowOf(otherUser(id)) }
         given(messageRepository)
@@ -236,11 +236,11 @@ class GetNotificationsUseCaseTest {
 
     @Test
     fun givenFewConversationWithMessageListsButSameAuthor_thenAuthorInfoRequestedOnce() = runTest {
-        given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+        given(selfUserRepository)
+            .suspendFunction(selfUserRepository::getSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
-        given(userRepository)
+        given(selfUserRepository)
             .coroutine { getSelfUserId() }
             .then { MY_ID }
         given(conversationRepository)
@@ -253,8 +253,8 @@ class GetNotificationsUseCaseTest {
                     )
                 )
             }
-        given(userRepository)
-            .suspendFunction(userRepository::getKnownUser)
+        given(selfUserRepository)
+            .suspendFunction(selfUserRepository::getKnownUser)
             .whenInvokedWith(any())
             .then { id -> flowOf(otherUser(id)) }
         given(messageRepository)
@@ -275,7 +275,7 @@ class GetNotificationsUseCaseTest {
             awaitComplete()
         }
 
-        verify(userRepository).coroutine { getKnownUser(otherUserId()) }
+        verify(selfUserRepository).coroutine { getKnownUser(otherUserId()) }
             .wasInvoked(exactly = once)
     }
 

@@ -18,7 +18,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.self.SelfUserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.call.scenario.OnAnsweredCall
 import com.wire.kalium.logic.feature.call.scenario.OnClientsRequest
@@ -50,7 +50,7 @@ import kotlinx.coroutines.launch
 actual class CallManagerImpl(
     private val calling: Calling,
     private val callRepository: CallRepository,
-    private val userRepository: UserRepository,
+    private val selfUserRepository: SelfUserRepository,
     private val clientRepository: ClientRepository,
     private val conversationRepository: ConversationRepository,
     private val messageSender: MessageSender,
@@ -77,7 +77,7 @@ actual class CallManagerImpl(
         })
     }
     private val userId: Deferred<UserId> = scope.async(start = CoroutineStart.LAZY) {
-        userRepository.getSelfUser().first().id.also {
+        selfUserRepository.getSelfUser().first().id.also {
             callingLogger.d("$TAG - userId $it")
         }
     }

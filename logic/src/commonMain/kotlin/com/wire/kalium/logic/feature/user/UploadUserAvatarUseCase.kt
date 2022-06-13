@@ -4,7 +4,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.ImageAsset
 import com.wire.kalium.logic.data.user.UserAssetId
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.self.SelfUserRepository
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 
@@ -20,7 +20,7 @@ interface UploadUserAvatarUseCase {
 }
 
 internal class UploadUserAvatarUseCaseImpl(
-    private val userDataSource: UserRepository,
+    private val userDataSource: SelfUserRepository,
     private val assetDataSource: AssetRepository
 ) : UploadUserAvatarUseCase {
 

@@ -30,13 +30,13 @@ class GetUserInfoUseCaseTest {
         assertEquals(OTHER, (result as GetUserInfoResult.Success).otherUser)
 
         with(arrangement) {
-            verify(userRepository)
-                .suspendFunction(userRepository::getKnownUser)
+            verify(selfUserRepository)
+                .suspendFunction(selfUserRepository::getKnownUser)
                 .with(eq(userId))
                 .wasInvoked(once)
 
-            verify(userRepository)
-                .suspendFunction(userRepository::fetchUserInfo)
+            verify(selfUserRepository)
+                .suspendFunction(selfUserRepository::fetchUserInfo)
                 .with(eq(userId))
                 .wasInvoked(once)
         }
@@ -57,13 +57,13 @@ class GetUserInfoUseCaseTest {
         assertEquals(OTHER, (result as GetUserInfoResult.Success).otherUser)
 
         with(arrangement) {
-            verify(userRepository)
-                .suspendFunction(userRepository::getKnownUser)
+            verify(selfUserRepository)
+                .suspendFunction(selfUserRepository::getKnownUser)
                 .with(eq(userId))
                 .wasInvoked(once)
 
-            verify(userRepository)
-                .suspendFunction(userRepository::fetchUserInfo)
+            verify(selfUserRepository)
+                .suspendFunction(selfUserRepository::fetchUserInfo)
                 .with(eq(userId))
                 .wasNotInvoked()
         }
@@ -84,13 +84,13 @@ class GetUserInfoUseCaseTest {
         assertEquals(GetUserInfoResult.Failure, result)
 
         with(arrangement) {
-            verify(userRepository)
-                .suspendFunction(userRepository::getKnownUser)
+            verify(selfUserRepository)
+                .suspendFunction(selfUserRepository::getKnownUser)
                 .with(eq(userId))
                 .wasInvoked(once)
 
-            verify(userRepository)
-                .suspendFunction(userRepository::fetchUserInfo)
+            verify(selfUserRepository)
+                .suspendFunction(selfUserRepository::fetchUserInfo)
                 .with(eq(userId))
                 .wasInvoked(once)
         }
@@ -110,8 +110,8 @@ class GetUserInfoUseCaseTest {
         assertEquals(OTHER.copy(team = null), (result as GetUserInfoResult.Success).otherUser)
 
         with(arrangement) {
-            verify(userRepository)
-                .suspendFunction(userRepository::getKnownUser)
+            verify(selfUserRepository)
+                .suspendFunction(selfUserRepository::getKnownUser)
                 .with(eq(userId))
                 .wasInvoked(once)
 
@@ -137,8 +137,8 @@ class GetUserInfoUseCaseTest {
         assertEquals(OTHER, (result as GetUserInfoResult.Success).otherUser)
 
         with(arrangement) {
-            verify(userRepository)
-                .suspendFunction(userRepository::getKnownUser)
+            verify(selfUserRepository)
+                .suspendFunction(selfUserRepository::getKnownUser)
                 .with(eq(userId))
                 .wasInvoked(once)
 
@@ -169,13 +169,13 @@ class GetUserInfoUseCaseTest {
             assertIs<GetUserInfoResult.Failure>(result)
 
             with(arrangement) {
-                verify(userRepository)
-                    .suspendFunction(userRepository::getKnownUser)
+                verify(selfUserRepository)
+                    .suspendFunction(selfUserRepository::getKnownUser)
                     .with(eq(userId))
                     .wasInvoked(once)
 
-                verify(userRepository)
-                    .suspendFunction(userRepository::fetchUserInfo)
+                verify(selfUserRepository)
+                    .suspendFunction(selfUserRepository::fetchUserInfo)
                     .with(any())
                     .wasInvoked(once)
 
@@ -207,8 +207,8 @@ class GetUserInfoUseCaseTest {
         assertIs<GetUserInfoResult.Failure>(result)
 
         with(arrangement) {
-            verify(userRepository)
-                .suspendFunction(userRepository::getKnownUser)
+            verify(selfUserRepository)
+                .suspendFunction(selfUserRepository::getKnownUser)
                 .with(eq(userId))
                 .wasInvoked(once)
 

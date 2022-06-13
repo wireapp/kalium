@@ -7,7 +7,7 @@ import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.self.SelfUserRepository
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
@@ -28,13 +28,13 @@ class UploadUserAvatarUseCaseTest {
     private val assetRepository = mock(classOf<AssetRepository>())
 
     @Mock
-    private val userRepository = mock(classOf<UserRepository>())
+    private val selfUserRepository = mock(classOf<SelfUserRepository>())
 
     private lateinit var uploadUserAvatarUseCase: UploadUserAvatarUseCase
 
     @BeforeTest
     fun setUp() {
-        uploadUserAvatarUseCase = UploadUserAvatarUseCaseImpl(userRepository, assetRepository)
+        uploadUserAvatarUseCase = UploadUserAvatarUseCaseImpl(selfUserRepository, assetRepository)
     }
 
     @Test
@@ -45,8 +45,8 @@ class UploadUserAvatarUseCaseTest {
             .whenInvokedWith(any(), any())
             .thenReturn(Either.Right(expected))
 
-        given(userRepository)
-            .suspendFunction(userRepository::updateSelfUser)
+        given(selfUserRepository)
+            .suspendFunction(selfUserRepository::updateSelfUser)
             .whenInvokedWith(eq(null), eq(null), eq(expected.key))
             .thenReturn(Either.Right(stubSelfUser()))
 
@@ -60,8 +60,8 @@ class UploadUserAvatarUseCaseTest {
             .with(any(), any())
             .wasInvoked(exactly = once)
 
-        verify(userRepository)
-            .suspendFunction(userRepository::updateSelfUser)
+        verify(selfUserRepository)
+            .suspendFunction(selfUserRepository::updateSelfUser)
             .with(eq(null), eq(null), eq(expected.key))
             .wasInvoked(exactly = once)
     }
@@ -84,8 +84,8 @@ class UploadUserAvatarUseCaseTest {
             .with(any(), any())
             .wasInvoked(exactly = once)
 
-        verify(userRepository)
-            .suspendFunction(userRepository::updateSelfUser)
+        verify(selfUserRepository)
+            .suspendFunction(selfUserRepository::updateSelfUser)
             .with(eq(null), eq(null), eq(expected.key))
             .wasNotInvoked()
     }

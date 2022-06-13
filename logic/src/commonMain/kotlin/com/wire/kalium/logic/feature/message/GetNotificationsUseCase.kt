@@ -8,11 +8,11 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.notification.LocalNotificationConversation
-import com.wire.kalium.logic.data.publicuser.PublicUserMapper
-import com.wire.kalium.logic.data.publicuser.model.OtherUser
+import com.wire.kalium.logic.data.user.other.OtherUserMapper
+import com.wire.kalium.logic.data.user.other.model.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.self.SelfUserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.flatMapFromIterable
 import kotlinx.coroutines.flow.Flow
@@ -27,22 +27,22 @@ interface GetNotificationsUseCase {
 
 class GetNotificationsUseCaseImpl(
     private val messageRepository: MessageRepository,
-    private val userRepository: UserRepository,
+    private val selfUserRepository: SelfUserRepository,
     private val conversationRepository: ConversationRepository,
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(),
-    private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper()
+    private val otherUserMapper: OtherUserMapper = MapperProvider.publicUserMapper()
 ) : GetNotificationsUseCase {
 
     @Suppress("LongMethod")
     override suspend operator fun invoke(): Flow<List<LocalNotificationConversation>> {
 
-        val selfUser = userRepository.getSelfUser().first()
+        val selfUser = selfUserRepository.getSelfUser().first()
 
         return conversationRepository.getConversationsForNotifications()
             .flatMapMerge { conversations ->
                 // Fetched the list of Conversations that have messages to notify user about
                 conversations.flatMapFromIterable { conversation ->
-                    val selfUserId = userRepository.getSelfUserId()
+                    val selfUserId = selfUserRepository.getSelfUserId()
 
                     // Fetching the Messages for the Conversation that are newer than `lastNotificationDate`
                     val messagesListFlow = if (conversation.lastNotificationDate == null) {
@@ -81,7 +81,7 @@ class GetNotificationsUseCaseImpl(
 
                 // Fetching all the authors by ID
                 authorIds
-                    .flatMapFromIterable { userId -> userRepository.getKnownUser(userId) }
+                    .flatMapFromIterable { userId -> selfUserRepository.getKnownUser(userId) }
                     .map { authors ->
                         // Mapping all the fetched data into LocalNotificationConversation to pass it forward
                         conversationsWithMessages
@@ -110,7 +110,7 @@ class GetNotificationsUseCaseImpl(
     }
 
     private fun getNotificationMessageAuthor(authors: List<OtherUser?>, senderUserId: UserId) =
-        publicUserMapper.fromPublicUserToLocalNotificationMessageAuthor(authors.firstOrNull { it?.id == senderUserId })
+        otherUserMapper.fromPublicUserToLocalNotificationMessageAuthor(authors.firstOrNull { it?.id == senderUserId })
 
     private fun shouldIncludeMessageForNotifications(
         message: Message,

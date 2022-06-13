@@ -3,21 +3,19 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.self.SelfUserRepository
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import kotlinx.coroutines.flow.flowOf
-import kotlin.test.BeforeTest
 
 class GetUserInfoUseCaseTestArrangement {
 
     @Mock
-    val userRepository: UserRepository = mock(UserRepository::class)
+    val selfUserRepository: SelfUserRepository = mock(SelfUserRepository::class)
 
     @Mock
     val teamRepository: TeamRepository = mock(TeamRepository::class)
@@ -26,8 +24,8 @@ class GetUserInfoUseCaseTestArrangement {
         localUserPresent: Boolean = true,
         hasTeam: Boolean = true
     ): GetUserInfoUseCaseTestArrangement {
-        given(userRepository)
-            .suspendFunction(userRepository::getKnownUser)
+        given(selfUserRepository)
+            .suspendFunction(selfUserRepository::getKnownUser)
             .whenInvokedWith(any())
             .thenReturn(
                 flowOf(
@@ -37,8 +35,8 @@ class GetUserInfoUseCaseTestArrangement {
             )
 
         if (!localUserPresent) {
-            given(userRepository)
-                .suspendFunction(userRepository::fetchUserInfo)
+            given(selfUserRepository)
+                .suspendFunction(selfUserRepository::fetchUserInfo)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(TestUser.OTHER))
         }
@@ -47,13 +45,13 @@ class GetUserInfoUseCaseTestArrangement {
     }
 
     fun withFailingUserRetrieve(): GetUserInfoUseCaseTestArrangement {
-        given(userRepository)
-            .suspendFunction(userRepository::getKnownUser)
+        given(selfUserRepository)
+            .suspendFunction(selfUserRepository::getKnownUser)
             .whenInvokedWith(any())
             .thenReturn(flowOf(null))
 
-        given(userRepository)
-            .suspendFunction(userRepository::fetchUserInfo)
+        given(selfUserRepository)
+            .suspendFunction(selfUserRepository::fetchUserInfo)
             .whenInvokedWith(any())
             .thenReturn(
                 Either.Left(CoreFailure.Unknown(RuntimeException("some error")))
@@ -104,7 +102,7 @@ class GetUserInfoUseCaseTestArrangement {
     }
 
     fun arrange(): Pair<GetUserInfoUseCaseTestArrangement, GetUserInfoUseCase> {
-        return this to GetUserInfoUseCaseImpl(userRepository, teamRepository)
+        return this to GetUserInfoUseCaseImpl(selfUserRepository, teamRepository)
     }
 
     private companion object {

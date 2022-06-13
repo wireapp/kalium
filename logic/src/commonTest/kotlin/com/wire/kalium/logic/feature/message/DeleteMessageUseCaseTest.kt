@@ -8,7 +8,7 @@ import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.self.SelfUserRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
@@ -28,7 +28,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
-import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DeleteMessageUseCaseTest {
@@ -37,7 +36,7 @@ class DeleteMessageUseCaseTest {
     private val messageRepository: MessageRepository = mock(MessageRepository::class)
 
     @Mock
-    val userRepository: UserRepository = mock(UserRepository::class)
+    val selfUserRepository: SelfUserRepository = mock(SelfUserRepository::class)
 
     @Mock
     private val clientRepository: ClientRepository = mock(ClientRepository::class)
@@ -56,7 +55,7 @@ class DeleteMessageUseCaseTest {
     fun setup() {
         deleteMessageUseCase = DeleteMessageUseCase(
             messageRepository,
-            userRepository,
+            selfUserRepository,
             clientRepository,
             syncManager,
             messageSender,
@@ -72,8 +71,8 @@ class DeleteMessageUseCaseTest {
             .suspendFunction(messageSender::sendMessage)
             .whenInvokedWith(anything())
             .thenReturn(Either.Right(Unit))
-        given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+        given(selfUserRepository)
+            .suspendFunction(selfUserRepository::getSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
         given(clientRepository)
@@ -110,8 +109,8 @@ class DeleteMessageUseCaseTest {
             .suspendFunction(messageSender::sendMessage)
             .whenInvokedWith(anything())
             .thenReturn(Either.Right(Unit))
-        given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+        given(selfUserRepository)
+            .suspendFunction(selfUserRepository::getSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
         given(clientRepository)

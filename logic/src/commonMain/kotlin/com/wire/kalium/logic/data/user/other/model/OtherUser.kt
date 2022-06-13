@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.data.publicuser.model
+package com.wire.kalium.logic.data.user.other.model
 
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.ConnectionState

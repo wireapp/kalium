@@ -2,8 +2,8 @@ package com.wire.kalium.logic.feature.publicuser
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.data.publicuser.SearchUserRepository
-import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
+import com.wire.kalium.logic.data.user.other.OtherUserRepository
+import com.wire.kalium.logic.data.user.other.model.OtherUserSearchResult
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
@@ -18,14 +18,14 @@ interface SearchUserDirectoryUseCase {
 }
 
 internal class SearchUserDirectoryUseCaseImpl(
-    private val searchUserRepository: SearchUserRepository
+    private val contactRepository: OtherUserRepository
 ) : SearchUserDirectoryUseCase {
 
     override suspend fun invoke(
         searchQuery: String,
         domain: String,
         maxResultSize: Int?
-    ): Result = searchUserRepository.searchUserDirectory(
+    ): Result = contactRepository.searchRemoteUsers(
         searchQuery = searchQuery,
         domain = domain,
         maxResultSize = maxResultSize
@@ -43,7 +43,7 @@ internal class SearchUserDirectoryUseCaseImpl(
 }
 
 sealed class Result {
-    data class Success(val userSearchResult: UserSearchResult) : Result()
+    data class Success(val otherUserSearchResult: OtherUserSearchResult) : Result()
     sealed class Failure : Result() {
         object InvalidQuery : Failure()
         object InvalidRequest : Failure()

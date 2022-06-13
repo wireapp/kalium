@@ -3,7 +3,7 @@ package com.wire.kalium.logic.data.user
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.VALUE_DOMAIN_SEPARATOR
-import com.wire.kalium.logic.data.publicuser.model.OtherUser
+import com.wire.kalium.logic.data.user.other.model.OtherUser
 
 typealias UserId = QualifiedID
 

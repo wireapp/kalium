@@ -1,8 +1,8 @@
-package com.wire.kalium.logic.data.publicuser
+package com.wire.kalium.logic.data.user.other
 
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
-import com.wire.kalium.logic.data.publicuser.model.OtherUser
+import com.wire.kalium.logic.data.user.other.model.OtherUser
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.ConnectionStateMapper
@@ -16,21 +16,21 @@ import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
 
-interface PublicUserMapper {
-    fun fromDaoModelToPublicUser(userEntity: UserEntity): OtherUser
+interface OtherUserMapper {
+    fun fromDaoModelToOtherUser(userEntity: UserEntity): OtherUser
     fun fromUserDetailResponse(userDetailResponse: UserProfileDTO): OtherUser
     fun fromUserApiToEntity(userDetailResponse: UserProfileDTO, connectionState: ConnectionEntity.State): UserEntity
     fun fromUserDetailResponses(userDetailResponse: List<UserProfileDTO>): List<OtherUser>
     fun fromPublicUserToLocalNotificationMessageAuthor(author: OtherUser?): LocalNotificationMessageAuthor
 }
 
-class PublicUserMapperImpl(
+class OtherUserMapperImpl(
     private val idMapper: IdMapper,
     private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
     private val connectionStateMapper: ConnectionStateMapper = MapperProvider.connectionStateMapper()
-) : PublicUserMapper {
+) : OtherUserMapper {
 
-    override fun fromDaoModelToPublicUser(userEntity: UserEntity) = OtherUser(
+    override fun fromDaoModelToOtherUser(userEntity: UserEntity) = OtherUser(
         id = idMapper.fromDaoModel(userEntity.id),
         name = userEntity.name,
         handle = userEntity.handle,

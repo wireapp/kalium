@@ -1,9 +1,13 @@
 package com.wire.kalium.logic.data.publicuser
 
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.data.publicuser.model.OtherUser
-import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
+import com.wire.kalium.logic.data.user.other.model.OtherUser
+import com.wire.kalium.logic.data.user.other.model.OtherUserSearchResult
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.other.OtherUserMapper
+import com.wire.kalium.logic.data.user.other.OtherUserRepository
+import com.wire.kalium.logic.data.user.other.OtherUserRepositoryImpl
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.network.api.QualifiedID
@@ -39,16 +43,16 @@ class SearchUserRepositoryTest {
     private val userDetailsApi: UserDetailsApi = mock(classOf<UserDetailsApi>())
 
     @Mock
-    private val publicUserMapper: PublicUserMapper = mock(classOf<PublicUserMapper>())
+    private val otherUserMapper: OtherUserMapper = mock(classOf<OtherUserMapper>())
 
     @Mock
     private val userDAO: UserDAO = mock(classOf<UserDAO>())
 
-    private lateinit var searchUserRepository: SearchUserRepository
+    private lateinit var contactRepository: OtherUserRepository
 
     @BeforeTest
     fun setup() {
-        searchUserRepository = SearchUserRepositoryImpl(userDAO, userSearchApi, userDetailsApi, publicUserMapper)
+        contactRepository = OtherUserRepositoryImpl(userDAO, userSearchApi, userDetailsApi, otherUserMapper)
     }
 
     @Test
@@ -60,7 +64,7 @@ class SearchUserRepositoryTest {
             .then { TestNetworkResponseError.genericError() }
 
         //when
-        val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
+        val actual = contactRepository.searchRemoteUsers(TEST_QUERY, TEST_DOMAIN)
 
         //then
         assertIs<Either.Left<NetworkFailure>>(actual)
@@ -75,7 +79,7 @@ class SearchUserRepositoryTest {
             .then { TestNetworkResponseError.genericError() }
 
         //when
-        val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
+        val actual = contactRepository.searchRemoteUsers(TEST_QUERY, TEST_DOMAIN)
 
         //then
         verify(userSearchApi)
@@ -93,15 +97,15 @@ class SearchUserRepositoryTest {
             .then { TestNetworkResponseError.genericError() }
 
         //when
-        val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
+        val actual = contactRepository.searchRemoteUsers(TEST_QUERY, TEST_DOMAIN)
         //then
         verify(userDetailsApi)
             .suspendFunction(userDetailsApi::getMultipleUsers)
             .with(any())
             .wasNotInvoked()
 
-        verify(publicUserMapper)
-            .function(publicUserMapper::fromUserDetailResponse)
+        verify(otherUserMapper)
+            .function(otherUserMapper::fromUserDetailResponse)
             .with(any())
             .wasNotInvoked()
     }
@@ -119,7 +123,7 @@ class SearchUserRepositoryTest {
             .whenInvokedWith(any())
             .then { TestNetworkResponseError.genericError() }
         //when
-        val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
+        val actual = contactRepository.searchRemoteUsers(TEST_QUERY, TEST_DOMAIN)
 
         //then
         assertIs<Either.Left<NetworkFailure>>(actual)
@@ -138,11 +142,11 @@ class SearchUserRepositoryTest {
             .whenInvokedWith(any())
             .then { TestNetworkResponseError.genericError() }
         //when
-        val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
+        val actual = contactRepository.searchRemoteUsers(TEST_QUERY, TEST_DOMAIN)
 
         //then
-        verify(publicUserMapper)
-            .function(publicUserMapper::fromUserDetailResponse)
+        verify(otherUserMapper)
+            .function(otherUserMapper::fromUserDetailResponse)
             .with(any())
             .wasNotInvoked()
     }
@@ -161,7 +165,7 @@ class SearchUserRepositoryTest {
                 .whenInvokedWith(any())
                 .then { TestNetworkResponseError.genericError() }
             //when
-            val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
+            val actual = contactRepository.searchRemoteUsers(TEST_QUERY, TEST_DOMAIN)
 
             //then
             verify(userSearchApi)
@@ -188,16 +192,16 @@ class SearchUserRepositoryTest {
             .whenInvokedWith(any())
             .then { NetworkResponse.Success(GET_MULTIPLE_USER_RESPONSE, mapOf(), 200) }
 
-        given(publicUserMapper)
-            .function(publicUserMapper::fromUserDetailResponses)
+        given(otherUserMapper)
+            .function(otherUserMapper::fromUserDetailResponses)
             .whenInvokedWith(any())
             .then { PUBLIC_USERS }
 
         //when
-        val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
+        val actual = contactRepository.searchRemoteUsers(TEST_QUERY, TEST_DOMAIN)
 
         //then
-        assertIs<Either.Right<UserSearchResult>>(actual)
+        assertIs<Either.Right<OtherUserSearchResult>>(actual)
     }
 
     @Test
@@ -214,18 +218,18 @@ class SearchUserRepositoryTest {
                 .whenInvokedWith(any())
                 .then { NetworkResponse.Success(GET_MULTIPLE_USER_RESPONSE, mapOf(), 200) }
 
-            given(publicUserMapper)
-                .function(publicUserMapper::fromUserDetailResponses)
+            given(otherUserMapper)
+                .function(otherUserMapper::fromUserDetailResponses)
                 .whenInvokedWith(any())
                 .then { PUBLIC_USERS }
 
-            val expectedResult = UserSearchResult(
+            val expectedResult = OtherUserSearchResult(
                 result = PUBLIC_USERS
             )
             //when
-            val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
+            val actual = contactRepository.searchRemoteUsers(TEST_QUERY, TEST_DOMAIN)
 
-            assertIs<Either.Right<UserSearchResult>>(actual)
+            assertIs<Either.Right<OtherUserSearchResult>>(actual)
             assertEquals(expectedResult, actual.value)
         }
 
@@ -243,18 +247,18 @@ class SearchUserRepositoryTest {
                 .whenInvokedWith(any())
                 .then { NetworkResponse.Success(emptyList(), mapOf(), 200) }
 
-            given(publicUserMapper)
-                .function(publicUserMapper::fromUserDetailResponses)
+            given(otherUserMapper)
+                .function(otherUserMapper::fromUserDetailResponses)
                 .whenInvokedWith(any())
                 .then { emptyList() }
 
-            val expectedResult = UserSearchResult(
+            val expectedResult = OtherUserSearchResult(
                 result = emptyList()
             )
             //when
-            val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
+            val actual = contactRepository.searchRemoteUsers(TEST_QUERY, TEST_DOMAIN)
 
-            assertIs<Either.Right<UserSearchResult>>(actual)
+            assertIs<Either.Right<OtherUserSearchResult>>(actual)
             assertEquals(expectedResult, actual.value)
         }
 

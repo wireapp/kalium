@@ -17,7 +17,7 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.self.SelfUserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.functional.map
@@ -38,7 +38,7 @@ class ConversationEventReceiverImpl(
     private val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
-    private val userRepository: UserRepository,
+    private val selfUserRepository: SelfUserRepository,
     private val protoContentMapper: ProtoContentMapper,
     private val callManagerImpl: Lazy<CallManager>,
     private val editTextHandler: MessageTextEditHandler,
@@ -175,7 +175,7 @@ class ConversationEventReceiverImpl(
     private suspend fun processMessage(message: Message) {
         kaliumLogger.i(message = "Message received: $message")
 
-        val isMyMessage = userRepository.getSelfUserId() == message.senderUserId
+        val isMyMessage = selfUserRepository.getSelfUserId() == message.senderUserId
         when (message) {
             is Message.Client -> when (message.content) {
                 is MessageContent.Text -> messageRepository.persistMessage(message)

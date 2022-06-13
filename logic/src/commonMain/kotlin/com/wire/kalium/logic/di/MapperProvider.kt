@@ -28,8 +28,8 @@ import com.wire.kalium.logic.data.message.SendMessageFailureMapperImpl
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.logic.data.prekey.PreKeyMapperImpl
 import com.wire.kalium.logic.data.prekey.remote.PreKeyListMapper
-import com.wire.kalium.logic.data.publicuser.PublicUserMapper
-import com.wire.kalium.logic.data.publicuser.PublicUserMapperImpl
+import com.wire.kalium.logic.data.user.other.OtherUserMapper
+import com.wire.kalium.logic.data.user.other.OtherUserMapperImpl
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.session.SessionMapperImpl
 import com.wire.kalium.logic.data.team.TeamMapper
@@ -38,9 +38,9 @@ import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapperImpl
 import com.wire.kalium.logic.data.user.ConnectionStateMapper
 import com.wire.kalium.logic.data.user.ConnectionStateMapperImpl
-import com.wire.kalium.logic.data.user.UserMapper
-import com.wire.kalium.logic.data.user.UserMapperImpl
-import com.wire.kalium.logic.data.user.UserTypeMapperImpl
+import com.wire.kalium.logic.data.user.mapper.UserMapper
+import com.wire.kalium.logic.data.user.mapper.UserMapperImpl
+import com.wire.kalium.logic.data.user.mapper.UserTypeMapperImpl
 
 internal object MapperProvider {
     fun idMapper(): IdMapper = IdMapperImpl()
@@ -53,7 +53,7 @@ internal object MapperProvider {
     fun messageMapper(): MessageMapper = MessageMapperImpl(idMapper(), memberMapper())
     fun memberMapper(): MemberMapper = MemberMapperImpl(idMapper())
     fun conversationMapper(): ConversationMapper = ConversationMapperImpl(idMapper(), ConversationStatusMapperImpl(), UserTypeMapperImpl())
-    fun publicUserMapper(): PublicUserMapper = PublicUserMapperImpl(idMapper())
+    fun publicUserMapper(): OtherUserMapper = OtherUserMapperImpl(idMapper())
     fun sendMessageFailureMapper(): SendMessageFailureMapper = SendMessageFailureMapperImpl()
     fun assetMapper(): AssetMapper = AssetMapperImpl()
     fun eventMapper(): EventMapper = EventMapper(idMapper(), memberMapper(), connectionMapper())

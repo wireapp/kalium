@@ -1,16 +1,14 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.data.publicuser.SearchUserRepository
-import com.wire.kalium.logic.data.publicuser.model.OtherUser
-import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
+import com.wire.kalium.logic.data.user.other.OtherUserRepository
+import com.wire.kalium.logic.data.user.other.model.OtherUser
+import com.wire.kalium.logic.data.user.other.model.OtherUserSearchResult
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.feature.publicuser.SearchKnownUsersUseCase
 import com.wire.kalium.logic.feature.publicuser.SearchKnownUsersUseCaseImpl
-import io.ktor.client.plugins.convertLongTimeoutToLongWithInfiniteAsZero
 import io.mockative.Mock
-import io.mockative.Times
 import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.eq
@@ -24,13 +22,13 @@ import kotlin.test.Test
 class SearchKnownUserUseCaseTest {
 
     @Mock
-    private val searchUserRepository = mock(classOf<SearchUserRepository>())
+    private val otherUserRepository = mock(classOf<OtherUserRepository>())
 
     private lateinit var searchKnownUsersUseCase: SearchKnownUsersUseCase
 
     @BeforeTest
     fun setUp() {
-        searchKnownUsersUseCase = SearchKnownUsersUseCaseImpl(searchUserRepository)
+        searchKnownUsersUseCase = SearchKnownUsersUseCaseImpl(otherUserRepository)
     }
 
     @Test
@@ -38,11 +36,11 @@ class SearchKnownUserUseCaseTest {
         //given
         val handleSearchQuery = "@someHandle"
 
-        given(searchUserRepository)
-            .suspendFunction(searchUserRepository::searchKnownUsersByHandle)
+        given(otherUserRepository)
+            .suspendFunction(otherUserRepository::searchKnownUsersByHandle)
             .whenInvokedWith(eq(handleSearchQuery))
             .thenReturn(
-                UserSearchResult(
+                OtherUserSearchResult(
                     listOf(
                         OtherUser(
                             id = QualifiedID(
@@ -66,13 +64,13 @@ class SearchKnownUserUseCaseTest {
         //when
         searchKnownUsersUseCase(handleSearchQuery)
         //then
-        verify(searchUserRepository)
-            .suspendFunction(searchUserRepository::searchKnownUsersByHandle)
+        verify(otherUserRepository)
+            .suspendFunction(otherUserRepository::searchKnownUsersByHandle)
             .with(eq(handleSearchQuery))
             .wasInvoked()
 
-        verify(searchUserRepository)
-            .suspendFunction(searchUserRepository::searchKnownUsersByNameOrHandleOrEmail)
+        verify(otherUserRepository)
+            .suspendFunction(otherUserRepository::searchKnownUsersByNameOrHandleOrEmail)
             .with(anything())
             .wasNotInvoked()
     }
@@ -82,11 +80,11 @@ class SearchKnownUserUseCaseTest {
         //given
         val searchQuery = "someSearchQuery"
 
-        given(searchUserRepository)
-            .suspendFunction(searchUserRepository::searchKnownUsersByNameOrHandleOrEmail)
+        given(otherUserRepository)
+            .suspendFunction(otherUserRepository::searchKnownUsersByNameOrHandleOrEmail)
             .whenInvokedWith(eq(searchQuery))
             .thenReturn(
-                UserSearchResult(
+                OtherUserSearchResult(
                     listOf(
                         OtherUser(
                             id = QualifiedID(
@@ -110,13 +108,13 @@ class SearchKnownUserUseCaseTest {
         //when
         searchKnownUsersUseCase(searchQuery)
         //then
-        verify(searchUserRepository)
-            .suspendFunction(searchUserRepository::searchKnownUsersByHandle)
+        verify(otherUserRepository)
+            .suspendFunction(otherUserRepository::searchKnownUsersByHandle)
             .with(anything())
             .wasNotInvoked()
 
-        verify(searchUserRepository)
-            .suspendFunction(searchUserRepository::searchKnownUsersByNameOrHandleOrEmail)
+        verify(otherUserRepository)
+            .suspendFunction(otherUserRepository::searchKnownUsersByNameOrHandleOrEmail)
             .with(eq(searchQuery))
             .wasInvoked()
     }

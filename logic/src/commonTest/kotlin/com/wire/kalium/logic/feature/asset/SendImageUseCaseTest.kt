@@ -13,7 +13,7 @@ import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.self.SelfUserRepository
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
@@ -134,7 +134,7 @@ class SendImageUseCaseTest {
         private val assetDataSource = mock(classOf<AssetRepository>())
 
         @Mock
-        private val userRepository = mock(classOf<UserRepository>())
+        private val selfUserRepository = mock(classOf<SelfUserRepository>())
 
         @Mock
         val messageSender = mock(classOf<MessageSender>())
@@ -158,15 +158,15 @@ class SendImageUseCaseTest {
         )
 
         val sendImageUseCase =
-            SendImageMessageUseCaseImpl(messageRepository, clientRepository, assetDataSource, userRepository, messageSender)
+            SendImageMessageUseCaseImpl(messageRepository, clientRepository, assetDataSource, selfUserRepository, messageSender)
 
         fun withSuccessfulResponse(): Arrangement {
             given(assetDataSource)
                 .suspendFunction(assetDataSource::uploadAndPersistPrivateAsset)
                 .whenInvokedWith(any(), any())
                 .thenReturn(Either.Right(someAssetId))
-            given(userRepository)
-                .suspendFunction(userRepository::getSelfUser)
+            given(selfUserRepository)
+                .suspendFunction(selfUserRepository::getSelfUser)
                 .whenInvoked()
                 .thenReturn(flowOf(fakeSelfUser()))
             given(clientRepository)

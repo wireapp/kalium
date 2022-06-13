@@ -1,7 +1,7 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.self.SelfUserRepository
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleResult
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.logic.functional.Either
@@ -30,7 +30,7 @@ class SetUserHandleUseCaseTest {
     private val validateHandleUseCase = mock(classOf<ValidateUserHandleUseCase>())
 
     @Mock
-    private val userRepository = configure(mock(classOf<UserRepository>())) { stubsUnitByDefault = true }
+    private val selfUserRepository = configure(mock(classOf<SelfUserRepository>())) { stubsUnitByDefault = true }
 
     @Mock
     private val syncManager = configure(mock(classOf<SyncManager>())) { stubsUnitByDefault = true }
@@ -39,7 +39,7 @@ class SetUserHandleUseCaseTest {
 
     @BeforeTest
     fun setup() {
-        setUserHandleUseCase = SetUserHandleUseCase(userRepository, validateHandleUseCase, syncManager)
+        setUserHandleUseCase = SetUserHandleUseCase(selfUserRepository, validateHandleUseCase, syncManager)
     }
 
     @Test
@@ -49,7 +49,7 @@ class SetUserHandleUseCaseTest {
             .function(validateHandleUseCase::invoke)
             .whenInvokedWith(any())
             .then { ValidateUserHandleResult.Valid(handle) }
-        given(userRepository)
+        given(selfUserRepository)
             .coroutine { updateSelfHandle(handle) }
             .then { Either.Right(Unit) }
         given(syncManager)
@@ -66,10 +66,10 @@ class SetUserHandleUseCaseTest {
         verify(validateHandleUseCase)
             .invocation { invoke(handle) }
             .wasInvoked(exactly = once)
-        verify(userRepository)
+        verify(selfUserRepository)
             .coroutine { updateSelfHandle(handle) }
             .wasInvoked(exactly = once)
-        verify(userRepository)
+        verify(selfUserRepository)
             .coroutine { updateLocalSelfUserHandle(handle) }
             .wasInvoked(exactly = once)
     }
@@ -81,7 +81,7 @@ class SetUserHandleUseCaseTest {
             .function(validateHandleUseCase::invoke)
             .whenInvokedWith(any())
             .then { ValidateUserHandleResult.Valid(handle) }
-        given(userRepository)
+        given(selfUserRepository)
             .coroutine { updateSelfHandle(handle) }
             .then { Either.Right(Unit) }
         given(syncManager)
@@ -98,10 +98,10 @@ class SetUserHandleUseCaseTest {
         verify(validateHandleUseCase)
             .invocation { invoke(handle) }
             .wasInvoked(exactly = once)
-        verify(userRepository)
+        verify(selfUserRepository)
             .coroutine { updateSelfHandle(handle) }
             .wasInvoked(exactly = once)
-        verify(userRepository)
+        verify(selfUserRepository)
             .coroutine { updateLocalSelfUserHandle(handle) }
             .wasInvoked(exactly = once)
         verify(syncManager)
@@ -116,7 +116,7 @@ class SetUserHandleUseCaseTest {
             .function(validateHandleUseCase::invoke)
             .whenInvokedWith(any())
             .then { ValidateUserHandleResult.Valid(handle) }
-        given(userRepository)
+        given(selfUserRepository)
             .coroutine { updateSelfHandle(handle) }
             .then { Either.Right(Unit) }
         given(syncManager)
@@ -133,10 +133,10 @@ class SetUserHandleUseCaseTest {
         verify(validateHandleUseCase)
             .invocation { invoke(handle) }
             .wasInvoked(exactly = once)
-        verify(userRepository)
+        verify(selfUserRepository)
             .coroutine { updateSelfHandle(handle) }
             .wasInvoked(exactly = once)
-        verify(userRepository)
+        verify(selfUserRepository)
             .coroutine { updateLocalSelfUserHandle(handle) }
             .wasNotInvoked()
     }
@@ -160,8 +160,8 @@ class SetUserHandleUseCaseTest {
         verify(validateHandleUseCase)
             .invocation { invoke(handle) }
             .wasInvoked(exactly = once)
-        verify(userRepository)
-            .suspendFunction(userRepository::updateSelfHandle)
+        verify(selfUserRepository)
+            .suspendFunction(selfUserRepository::updateSelfHandle)
             .with(any())
             .wasNotInvoked()
     }
@@ -175,7 +175,7 @@ class SetUserHandleUseCaseTest {
             .function(validateHandleUseCase::invoke)
             .whenInvokedWith(any())
             .then { ValidateUserHandleResult.Valid(handle) }
-        given(userRepository)
+        given(selfUserRepository)
             .coroutine { updateSelfHandle(handle) }
             .then { Either.Left(expected) }
         given(syncManager)
@@ -191,7 +191,7 @@ class SetUserHandleUseCaseTest {
         verify(validateHandleUseCase)
             .invocation { invoke(handle) }
             .wasInvoked(exactly = once)
-        verify(userRepository)
+        verify(selfUserRepository)
             .coroutine { updateSelfHandle(handle) }
             .wasInvoked(exactly = once)
     }
@@ -212,7 +212,7 @@ class SetUserHandleUseCaseTest {
             .function(validateHandleUseCase::invoke)
             .whenInvokedWith(any())
             .then { ValidateUserHandleResult.Valid(handle) }
-        given(userRepository)
+        given(selfUserRepository)
             .coroutine { updateSelfHandle(handle) }
             .then { Either.Left(error) }
         given(syncManager)
@@ -227,7 +227,7 @@ class SetUserHandleUseCaseTest {
         verify(validateHandleUseCase)
             .invocation { invoke(handle) }
             .wasInvoked(exactly = once)
-        verify(userRepository)
+        verify(selfUserRepository)
             .coroutine { updateSelfHandle(handle) }
             .wasInvoked(exactly = once)
     }

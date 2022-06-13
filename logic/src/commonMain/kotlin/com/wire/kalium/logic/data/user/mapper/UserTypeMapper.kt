@@ -1,7 +1,8 @@
-package com.wire.kalium.logic.data.user
+package com.wire.kalium.logic.data.user.mapper
 
 import com.wire.kalium.logic.data.conversation.UserType
-import com.wire.kalium.logic.data.publicuser.model.OtherUser
+import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.other.model.OtherUser
 
 interface UserTypeMapper {
     fun fromOtherUserAndSelfUser(otherUser: OtherUser, selfUser: SelfUser): UserType

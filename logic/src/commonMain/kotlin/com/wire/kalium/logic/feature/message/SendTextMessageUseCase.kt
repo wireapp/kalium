@@ -7,7 +7,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.self.SelfUserRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
@@ -18,7 +18,7 @@ import kotlinx.datetime.Clock
 
 class SendTextMessageUseCase(
     private val messageRepository: MessageRepository,
-    private val userRepository: UserRepository,
+    private val selfUserRepository: SelfUserRepository,
     private val clientRepository: ClientRepository,
     private val syncManager: SyncManager,
     private val messageSender: MessageSender
@@ -26,7 +26,7 @@ class SendTextMessageUseCase(
 
     suspend operator fun invoke(conversationId: ConversationId, text: String): Either<CoreFailure, Unit> {
         syncManager.startSyncIfIdle()
-        val selfUser = userRepository.getSelfUser().first()
+        val selfUser = selfUserRepository.getSelfUser().first()
 
         val generatedMessageUuid = uuid4().toString()
 

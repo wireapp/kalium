@@ -33,15 +33,15 @@ import com.wire.kalium.logic.data.prekey.PreKeyDataSource
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteDataSource
 import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteRepository
-import com.wire.kalium.logic.data.publicuser.SearchUserRepository
-import com.wire.kalium.logic.data.publicuser.SearchUserRepositoryImpl
+import com.wire.kalium.logic.data.user.other.OtherUserRepository
+import com.wire.kalium.logic.data.user.other.OtherUserRepositoryImpl
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.sync.InMemorySyncRepository
 import com.wire.kalium.logic.data.sync.SyncRepository
 import com.wire.kalium.logic.data.team.TeamDataSource
 import com.wire.kalium.logic.data.team.TeamRepository
-import com.wire.kalium.logic.data.user.UserDataSource
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.self.SelfUserRepositoryImpl
+import com.wire.kalium.logic.data.user.self.SelfUserRepository
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.CallsScope
@@ -122,7 +122,7 @@ abstract class UserSessionScopeCommon(
 
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(
-            userRepository,
+            selfUserRepository,
             mlsConversationRepository,
             userDatabaseProvider.conversationDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
@@ -136,8 +136,8 @@ abstract class UserSessionScopeCommon(
             userDatabaseProvider.messageDAO
         )
 
-    private val userRepository: UserRepository
-        get() = UserDataSource(
+    private val selfUserRepository: SelfUserRepository
+        get() = SelfUserRepositoryImpl(
             userDatabaseProvider.userDAO,
             userDatabaseProvider.metadataDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.selfApi,
@@ -161,8 +161,8 @@ abstract class UserSessionScopeCommon(
             userDatabaseProvider.userDAO
         )
 
-    private val publicUserRepository: SearchUserRepository
-        get() = SearchUserRepositoryImpl(
+    private val publicUserRepository: OtherUserRepository
+        get() = OtherUserRepositoryImpl(
             userDatabaseProvider.userDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userSearchApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi
@@ -191,7 +191,7 @@ abstract class UserSessionScopeCommon(
         get() = ClientDataSource(clientRemoteRepository, clientRegistrationStorage, userDatabaseProvider.clientDAO)
 
     private val messageSendFailureHandler: MessageSendFailureHandler
-        get() = MessageSendFailureHandlerImpl(userRepository, clientRepository)
+        get() = MessageSendFailureHandlerImpl(selfUserRepository, clientRepository)
 
     private val sessionEstablisher: SessionEstablisher
         get() = SessionEstablisherImpl(authenticatedDataSourceSet.proteusClient, preKeyRepository)
@@ -246,7 +246,7 @@ abstract class UserSessionScopeCommon(
         globalCallManager.getCallManagerForClient(
             userId = userId,
             callRepository = callRepository,
-            userRepository = userRepository,
+            selfUserRepository = selfUserRepository,
             clientRepository = clientRepository,
             conversationRepository = conversationRepository,
             messageSender = messageSender
@@ -266,7 +266,7 @@ abstract class UserSessionScopeCommon(
             messageRepository,
             conversationRepository,
             mlsConversationRepository,
-            userRepository,
+            selfUserRepository,
             protoContentMapper,
             callManager,
             messageTextEditHandler
@@ -311,7 +311,7 @@ abstract class UserSessionScopeCommon(
         get() = ConversationScope(
             conversationRepository,
             connectionRepository,
-            userRepository,
+            selfUserRepository,
             syncManager
         )
     val messages: MessageScope
@@ -322,13 +322,13 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.proteusClient,
             mlsClientProvider,
             preKeyRepository,
-            userRepository,
+            selfUserRepository,
             assetRepository,
             syncManager,
             messageSendingScheduler,
             timeParser
         )
-    val users: UserScope get() = UserScope(userRepository, publicUserRepository, syncManager, assetRepository, teamRepository)
+    val users: UserScope get() = UserScope(selfUserRepository, publicUserRepository, syncManager, assetRepository, teamRepository)
     val logout: LogoutUseCase
         get() = LogoutUseCase(
             logoutRepository,
@@ -339,7 +339,7 @@ abstract class UserSessionScopeCommon(
             mlsClientProvider
         )
 
-    val team: TeamScope get() = TeamScope(userRepository, teamRepository, syncManager)
+    val team: TeamScope get() = TeamScope(selfUserRepository, teamRepository, syncManager)
 
     val calls: CallsScope get() = CallsScope(callManager, callRepository, flowManagerService, syncManager)
 

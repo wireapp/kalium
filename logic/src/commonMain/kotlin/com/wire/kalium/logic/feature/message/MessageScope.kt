@@ -11,7 +11,7 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.self.SelfUserRepository
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCase
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCaseImpl
 import com.wire.kalium.logic.feature.asset.SendAssetMessageUseCase
@@ -30,7 +30,7 @@ class MessageScope(
     private val proteusClient: ProteusClient,
     private val mlsClientProvider: MLSClientProvider,
     private val preKeyRepository: PreKeyRepository,
-    private val userRepository: UserRepository,
+    private val selfUserRepository: SelfUserRepository,
     private val assetRepository: AssetRepository,
     private val syncManager: SyncManager,
     private val messageSendingScheduler: MessageSendingScheduler,
@@ -38,7 +38,7 @@ class MessageScope(
 ) {
 
     private val messageSendFailureHandler: MessageSendFailureHandler
-        get() = MessageSendFailureHandlerImpl(userRepository, clientRepository)
+        get() = MessageSendFailureHandlerImpl(selfUserRepository, clientRepository)
 
     private val sessionEstablisher: SessionEstablisher
         get() = SessionEstablisherImpl(proteusClient, preKeyRepository)
@@ -71,7 +71,7 @@ class MessageScope(
     val sendTextMessage: SendTextMessageUseCase
         get() = SendTextMessageUseCase(
             messageRepository,
-            userRepository,
+            selfUserRepository,
             clientRepository,
             syncManager,
             messageSender
@@ -82,7 +82,7 @@ class MessageScope(
             messageRepository,
             clientRepository,
             assetRepository,
-            userRepository,
+            selfUserRepository,
             messageSender
         )
 
@@ -91,7 +91,7 @@ class MessageScope(
             messageRepository,
             clientRepository,
             assetRepository,
-            userRepository,
+            selfUserRepository,
             messageSender
         )
 
@@ -106,7 +106,7 @@ class MessageScope(
     val deleteMessage: DeleteMessageUseCase
         get() = DeleteMessageUseCase(
             messageRepository,
-            userRepository,
+            selfUserRepository,
             clientRepository,
             syncManager,
             messageSender,
@@ -122,7 +122,7 @@ class MessageScope(
     val getNotifications: GetNotificationsUseCase
         get() = GetNotificationsUseCaseImpl(
             messageRepository,
-            userRepository,
+            selfUserRepository,
             conversationRepository
         )
 }
