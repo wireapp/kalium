@@ -37,7 +37,7 @@ internal class ConnectionMapperImpl(
         qualifiedToId = idMapper.fromDaoModel(state.qualifiedToId),
         status = statusMapper.fromDaoModel(state.status),
         toId = state.toId,
-        fromUser = otherUser?.let { otherUserMapper.fromDaoModel(it) }
+        fromUser = otherUser?.let { otherUserMapper.fromUserEntity(it) }
     )
 
     override fun fromApiToModel(state: ConnectionDTO): Connection = Connection(

@@ -105,7 +105,7 @@ class SearchUserRepositoryTest {
             .wasNotInvoked()
 
         verify(otherUserMapper)
-            .function(otherUserMapper::fromUserDetailResponse)
+            .function(otherUserMapper::fromUserProfileDTO)
             .with(any())
             .wasNotInvoked()
     }
@@ -146,7 +146,7 @@ class SearchUserRepositoryTest {
 
         //then
         verify(otherUserMapper)
-            .function(otherUserMapper::fromUserDetailResponse)
+            .function(otherUserMapper::fromUserProfileDTO)
             .with(any())
             .wasNotInvoked()
     }
@@ -193,7 +193,7 @@ class SearchUserRepositoryTest {
             .then { NetworkResponse.Success(GET_MULTIPLE_USER_RESPONSE, mapOf(), 200) }
 
         given(otherUserMapper)
-            .function(otherUserMapper::fromUserDetailResponses)
+            .function(otherUserMapper::fromUserProfileDTOs)
             .whenInvokedWith(any())
             .then { PUBLIC_USERS }
 
@@ -219,7 +219,7 @@ class SearchUserRepositoryTest {
                 .then { NetworkResponse.Success(GET_MULTIPLE_USER_RESPONSE, mapOf(), 200) }
 
             given(otherUserMapper)
-                .function(otherUserMapper::fromUserDetailResponses)
+                .function(otherUserMapper::fromUserProfileDTOs)
                 .whenInvokedWith(any())
                 .then { PUBLIC_USERS }
 
@@ -248,7 +248,7 @@ class SearchUserRepositoryTest {
                 .then { NetworkResponse.Success(emptyList(), mapOf(), 200) }
 
             given(otherUserMapper)
-                .function(otherUserMapper::fromUserDetailResponses)
+                .function(otherUserMapper::fromUserProfileDTOs)
                 .whenInvokedWith(any())
                 .then { emptyList() }
 

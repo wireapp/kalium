@@ -14,9 +14,9 @@ import com.wire.kalium.network.api.user.details.UserProfileDTO
 import com.wire.kalium.persistence.dao.UserEntity
 
 interface OtherUserMapper {
-    fun fromDaoModel(userEntity: UserEntity): OtherUser
-    fun fromUserDetailResponse(userDetailResponse: UserProfileDTO): OtherUser
-    fun fromUserDetailResponses(userDetailResponse: List<UserProfileDTO>): List<OtherUser>
+    fun fromUserEntity(userEntity: UserEntity): OtherUser
+    fun fromUserProfileDTO(userProfileDTO: UserProfileDTO): OtherUser
+    fun fromUserProfileDTOs(userProfileDTOs: List<UserProfileDTO>): List<OtherUser>
 }
 
 class OtherUserMapperImpl(
@@ -25,7 +25,7 @@ class OtherUserMapperImpl(
     private val connectionStateMapper: ConnectionStateMapper = MapperProvider.connectionStateMapper()
 ) : OtherUserMapper {
 
-    override fun fromDaoModel(userEntity: UserEntity) = OtherUser(
+    override fun fromUserEntity(userEntity: UserEntity) = OtherUser(
         id = idMapper.fromDaoModel(userEntity.id),
         name = userEntity.name,
         handle = userEntity.handle,
@@ -39,19 +39,19 @@ class OtherUserMapperImpl(
         availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(userEntity.availabilityStatus)
     )
 
-    override fun fromUserDetailResponse(userDetailResponse: UserProfileDTO) = OtherUser(
-        id = UserId(userDetailResponse.id.value, userDetailResponse.id.domain),
-        name = userDetailResponse.name,
-        handle = userDetailResponse.handle,
-        accentId = userDetailResponse.accentId,
-        team = userDetailResponse.teamId,
+    override fun fromUserProfileDTO(userProfileDTO: UserProfileDTO) = OtherUser(
+        id = UserId(userProfileDTO.id.value, userProfileDTO.id.domain),
+        name = userProfileDTO.name,
+        handle = userProfileDTO.handle,
+        accentId = userProfileDTO.accentId,
+        team = userProfileDTO.teamId,
         connectionStatus = ConnectionState.NOT_CONNECTED,
-        previewPicture = userDetailResponse.assets.getPreviewAssetOrNull()?.key,
-        completePicture = userDetailResponse.assets.getCompleteAssetOrNull()?.key,
+        previewPicture = userProfileDTO.assets.getPreviewAssetOrNull()?.key,
+        completePicture = userProfileDTO.assets.getCompleteAssetOrNull()?.key,
         availabilityStatus = UserAvailabilityStatus.NONE
     )
 
-    override fun fromUserDetailResponses(userDetailResponse: List<UserProfileDTO>) =
-        userDetailResponse.map { fromUserDetailResponse(it) }
+    override fun fromUserProfileDTOs(userProfileDTOs: List<UserProfileDTO>) =
+        userProfileDTOs.map { fromUserProfileDTO(it) }
 
 }

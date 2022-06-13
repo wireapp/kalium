@@ -22,7 +22,7 @@ interface UserEntityMapper {
     fun fromUserProfileDTO(userProfileDTO: UserProfileDTO): UserEntity
     fun fromUserDTO(userDTO: UserDTO): UserEntity
     fun fromUserProfileDTOWithConnectionState(userProfileDTO: UserProfileDTO, connectionState: ConnectionEntity.State): UserEntity
-    fun fromUpdateRequestToDaoModel(selfUser: SelfUser, updateRequest: UserUpdateRequest): UserEntity
+    fun fromSelfUserWithUserUpdateRequest(selfUser: SelfUser, userUpdateRequest: UserUpdateRequest): UserEntity
     fun toUserIdPersistence(userId: UserId): UserIdEntity
     fun fromTeamMemberToDaoModel(
         teamId: TeamId,
@@ -51,18 +51,18 @@ internal class UserEntityMapperImpl(
         )
     }
 
-    override fun fromUpdateRequestToDaoModel(selfUser: SelfUser, updateRequest: UserUpdateRequest): UserEntity {
+    override fun fromSelfUserWithUserUpdateRequest(selfUser: SelfUser, userUpdateRequest: UserUpdateRequest): UserEntity {
         return UserEntity(
             id = idMapper.toDaoModel(selfUser.id),
-            name = updateRequest.name ?: selfUser.name,
+            name = userUpdateRequest.name ?: selfUser.name,
             handle = selfUser.handle,
             email = selfUser.email,
             phone = selfUser.phone,
-            accentId = updateRequest.accentId ?: selfUser.accentId,
+            accentId = userUpdateRequest.accentId ?: selfUser.accentId,
             team = selfUser.team,
             connectionStatus = connectionStateMapper.fromUserConnectionStateToDao(connectionState = selfUser.connectionStatus),
-            previewAssetId = updateRequest.assets?.getPreviewAssetOrNull()?.key,
-            completeAssetId = updateRequest.assets?.getCompleteAssetOrNull()?.key,
+            previewAssetId = userUpdateRequest.assets?.getPreviewAssetOrNull()?.key,
+            completeAssetId = userUpdateRequest.assets?.getCompleteAssetOrNull()?.key,
             availabilityStatus = UserAvailabilityStatusEntity.NONE
         )
     }

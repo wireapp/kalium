@@ -62,7 +62,7 @@ class OtherUserRepositoryImpl(
 
         return userDAO.getAllUsersByConnectionStatus(connectionState = ConnectionEntity.State.ACCEPTED)
             .filter { it.id != selfUserId }
-            .map { userEntity -> otherUserMapper.fromDaoModel(userEntity) }
+            .map { userEntity -> otherUserMapper.fromUserEntity(userEntity) }
     }
 
     private suspend fun getSelfUserIdEntity(): QualifiedIDEntity {
@@ -74,7 +74,7 @@ class OtherUserRepositoryImpl(
 
     override suspend fun getKnownUserById(userId: UserId): Flow<OtherUser?> =
         userDAO.getUserByQualifiedID(qualifiedID = idMapper.toDaoModel(userId))
-            .map { userEntity -> userEntity?.let { otherUserMapper.fromDaoModel(userEntity) } }
+            .map { userEntity -> userEntity?.let { otherUserMapper.fromUserEntity(userEntity) } }
 
     override suspend fun fetchKnownUsers(): Either<CoreFailure, Unit> {
         val ids = userDAO.getAllUsers().first().map { userEntry ->
@@ -94,8 +94,8 @@ class OtherUserRepositoryImpl(
         }
 
     override suspend fun getRemoteUser(userId: UserId): Either<CoreFailure, OtherUser> =
-        wrapApiRequest { userDetailsApi.getUserInfo(idMapper.toApiModel(userId)) }.map { userProfile ->
-            otherUserMapper.fromUserDetailResponse(userProfile)
+        wrapApiRequest { userDetailsApi.getUserInfo(idMapper.toApiModel(userId)) }.map { userProfileResponse ->
+            otherUserMapper.fromUserProfileDTO(userProfileResponse)
         }
 
     override suspend fun searchKnownUsersByNameOrHandleOrEmail(searchQuery: String) =
@@ -103,7 +103,7 @@ class OtherUserRepositoryImpl(
             result = userDAO.getUserByNameOrHandleOrEmailAndConnectionState(
                 searchQuery = searchQuery,
                 connectionState = ConnectionEntity.State.ACCEPTED
-            ).map(otherUserMapper::fromDaoModel)
+            ).map(otherUserMapper::fromUserEntity)
         )
 
     override suspend fun searchKnownUsersByHandle(handle: String) =
@@ -111,7 +111,7 @@ class OtherUserRepositoryImpl(
             result = userDAO.getUserByHandleAndConnectionState(
                 handle = handle,
                 connectionState = ConnectionEntity.State.ACCEPTED
-            ).map(otherUserMapper::fromDaoModel)
+            ).map(otherUserMapper::fromUserEntity)
         )
 
     override suspend fun searchRemoteUsers(
@@ -130,7 +130,7 @@ class OtherUserRepositoryImpl(
         wrapApiRequest {
             userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(contactResultValue.documents.map { it.qualifiedID }))
         }.map { userDetailsResponses ->
-            OtherUserSearchResult(otherUserMapper.fromUserDetailResponses(userDetailsResponses))
+            OtherUserSearchResult(otherUserMapper.fromUserProfileDTOs(userDetailsResponses))
         }
     }
 

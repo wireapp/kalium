@@ -142,6 +142,7 @@ internal class ConnectionDataSource(
         }.flatMap {
             wrapStorageRequest {
                 val userEntity = userEntityMapper.fromUserProfileDTOWithConnectionState(it, connectionStatusMapper.toDaoModel(connection.status))
+
                 userDAO.insertUser(userEntity)
             }
         }

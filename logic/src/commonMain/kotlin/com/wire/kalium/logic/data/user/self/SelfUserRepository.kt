@@ -67,7 +67,7 @@ class SelfUserRepositoryImpl(
     }
 
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
-        .map { userEntityMapper.fromUserProfileDTO(it).copy(connectionStatus = ConnectionEntity.State.ACCEPTED) }
+        .map { userEntityMapper.fromUserDTO(it).copy(connectionStatus = ConnectionEntity.State.ACCEPTED) }
         .flatMap { userEntity ->
             assetRepository.downloadUsersPictureAssets(listOf(userEntity.previewAssetId, userEntity.completeAssetId))
             userDAO.insertUser(userEntity)
@@ -87,7 +87,7 @@ class SelfUserRepositoryImpl(
         val user = getSelfUser().firstOrNull() ?: return Either.Left(CoreFailure.Unknown(NullPointerException()))
         val updateRequest = userUpdateRequestMapper.fromModelToUpdateApiModel(user, newName, newAccent, newAssetId)
         return wrapApiRequest { selfApi.updateSelf(updateRequest) }
-            .map { userEntityMapper.fromUpdateRequestToDaoModel(user, updateRequest) }
+            .map { userEntityMapper.fromSelfUserWithUserUpdateRequest(user, updateRequest) }
             .flatMap { userEntity ->
                 wrapStorageRequest {
                     userDAO.updateSelfUser(userEntity)
