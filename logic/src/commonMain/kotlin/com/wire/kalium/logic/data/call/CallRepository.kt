@@ -85,7 +85,7 @@ internal class CallDataSource(
         isCameraOn: Boolean
     ) {
         val conversation: ConversationDetails = conversationRepository
-            .getConversationDetailsById(conversationId)
+            .observeConversationDetailsById(conversationId)
             .first()
 
         val caller = userRepository.getKnownUser(callerId.toUserId()).first()
