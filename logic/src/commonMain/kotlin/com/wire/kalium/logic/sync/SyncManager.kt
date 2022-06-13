@@ -188,7 +188,7 @@ class SyncManagerImpl(
                                         processingEventFlow.emit(it)
                                     }
                                 kaliumLogger.i("SYNC: Offline events collection finished")
-                                syncRepository.updateSyncState { SyncState.ProcessingLiveEvents }
+                                syncRepository.updateSyncState { SyncState.Live }
                             }
                             is WebSocketEvent.BinaryPayloadReceived -> {
                                 kaliumLogger.i("SYNC: Websocket Received binary payload")
@@ -250,12 +250,12 @@ class SyncManagerImpl(
 
     override suspend fun waitUntilLive() {
         startSyncIfIdle()
-        syncRepository.syncState.first { it == SyncState.ProcessingLiveEvents }
+        syncRepository.syncState.first { it == SyncState.Live }
     }
 
     override suspend fun waitUntilSlowSyncCompletion() {
         startSyncIfIdle()
-        syncRepository.syncState.first { it in setOf(SyncState.GatheringPendingEvents, SyncState.ProcessingLiveEvents) }
+        syncRepository.syncState.first { it in setOf(SyncState.GatheringPendingEvents, SyncState.Live) }
     }
 
     override fun startSyncIfIdle() {
@@ -273,5 +273,5 @@ class SyncManagerImpl(
 
     override suspend fun isSlowSyncOngoing(): Boolean = syncRepository.syncState.first() == SyncState.SlowSync
     override suspend fun isSlowSyncCompleted(): Boolean =
-        syncRepository.syncState.first() in setOf(SyncState.GatheringPendingEvents, SyncState.ProcessingLiveEvents)
+        syncRepository.syncState.first() in setOf(SyncState.GatheringPendingEvents, SyncState.Live)
 }

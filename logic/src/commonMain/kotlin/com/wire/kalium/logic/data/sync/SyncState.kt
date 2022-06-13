@@ -21,13 +21,17 @@ sealed class SyncState {
      */
     object SlowSync : SyncState()
 
+    /**
+     * Is fetching events lost while this client was offline.
+     * Implies that [SlowSync] is done.
+     */
     object GatheringPendingEvents : SyncState()
 
     /**
-     * Is connected to the server and receiving real-time events.
-     * This implies that [ProcessingPendingEvents] is done.
+     * Is processing events, connected to the server and receiving real-time events.
+     * This implies that [GatheringPendingEvents] is done.
      */
-    object ProcessingLiveEvents : SyncState()
+    object Live : SyncState()
 
     /**
      * Sync was not completed due to a failure.
