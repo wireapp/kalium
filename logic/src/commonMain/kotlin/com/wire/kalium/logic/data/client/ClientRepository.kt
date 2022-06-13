@@ -32,7 +32,6 @@ class ClientDataSource(
     private val clientRemoteRepository: ClientRemoteRepository,
     private val clientRegistrationStorage: ClientRegistrationStorage,
     private val clientDAO: ClientDAO,
-    private val userEntityMapper: UserEntityMapper = MapperProvider.userMapper(),
     private val userIdEntityMapper: UserIdEntityMapper = MapperProvider.userIdEntityMapper()
 ) : ClientRepository {
     override suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client> {

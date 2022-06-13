@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.user.other.model.OtherUser
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.other.OtherUserRepository
 import com.wire.kalium.logic.data.user.self.SelfUserRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
@@ -25,7 +26,7 @@ fun interface GetUserInfoUseCase {
 }
 
 internal class GetUserInfoUseCaseImpl(
-    private val selfUserRepository: SelfUserRepository,
+    private val otherUserRepository: OtherUserRepository,
     private val teamRepository: TeamRepository
 ) : GetUserInfoUseCase {
 
@@ -42,12 +43,12 @@ internal class GetUserInfoUseCaseImpl(
 
     private suspend fun getOtherUser(userId: UserId): Either<CoreFailure, OtherUser> {
         return wrapStorageRequest {
-            val localOtherUser = selfUserRepository.getKnownUser(userId).firstOrNull()
+            val localOtherUser = otherUserRepository.getKnownUserById(userId).firstOrNull()
 
             return if (localOtherUser != null) {
                 Either.Right(localOtherUser)
             } else {
-                selfUserRepository.fetchUserInfo(userId)
+                otherUserRepository.getRemoteUser(userId)
             }
         }
     }
