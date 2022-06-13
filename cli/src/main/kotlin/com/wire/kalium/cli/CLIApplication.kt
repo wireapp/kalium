@@ -147,7 +147,7 @@ class LoginCommand : CliktCommand(name = "login") {
 
         coreLogic.sessionScope(userId) {
             if (client.needsToRegisterClient()) {
-                when (client.register(RegisterClientParam.ClientWithoutToken(password, emptyList()))) {
+                when (client.register(RegisterClientParam(password, emptyList()))) {
                     is RegisterClientResult.Failure -> throw PrintMessage("Client registration failed")
                     is RegisterClientResult.Success -> echo("Login successful")
                 }
