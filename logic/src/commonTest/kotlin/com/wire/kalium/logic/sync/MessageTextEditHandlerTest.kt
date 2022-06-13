@@ -28,7 +28,7 @@ class MessageTextEditHandlerTest {
     @Test
     fun givenACorrectMessageAndMessageContent_whenHandeling_ThenDataGetsUpdatedCorrectly() = runTest {
         //given
-        val mockMessage = Message.Client(
+        val mockMessage = Message.Regular(
             id = "someId",
             content = MessageContent.Text("some new content"),
             conversationId = ConversationId("someValue", "someDomain"),
