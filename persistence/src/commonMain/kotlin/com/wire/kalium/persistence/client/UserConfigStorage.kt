@@ -38,12 +38,10 @@ class UserConfigStorageImpl(private val kaliumPreferences: KaliumPreferences) : 
 
     override fun persistFileSharingStatus(enabled: Boolean) {
         kaliumPreferences.putBoolean(FILE_SHARING, enabled)
-
     }
 
     override fun isFileSharingEnabled(): Boolean =
         kaliumPreferences.getBoolean(FILE_SHARING)
-
 
     private companion object {
         const val ENABLE_LOGGING = "enable_logging"

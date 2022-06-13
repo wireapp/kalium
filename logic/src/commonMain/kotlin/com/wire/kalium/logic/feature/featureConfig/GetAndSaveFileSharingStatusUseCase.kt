@@ -8,6 +8,10 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNoTeam
 
+/**
+ * This use case is to get the file sharing status of the team management settings from the server and
+ * save it in the local storage (in Android case is shared preference)
+ */
 interface GetAndSaveFileSharingStatusUseCase {
     suspend operator fun invoke(): GetFileSharingStatusResult
 }
@@ -18,24 +22,28 @@ class GetFileSharingStatusUseCaseImpl(
 ) : GetAndSaveFileSharingStatusUseCase {
     override suspend operator fun invoke(): GetFileSharingStatusResult =
         featureConfigRepository.getFileSharingFeatureConfig().fold({
-            if (
-                it is NetworkFailure.ServerMiscommunication &&
-                it.kaliumException is KaliumException.InvalidRequestError
-            ) {
-                if (it.kaliumException.isNoTeam()) {
-                    GetFileSharingStatusResult.Failure.NoTeam
-                } else {
-                    GetFileSharingStatusResult.Failure.OperationDenied
-                }
-            } else {
-                GetFileSharingStatusResult.Failure.Generic(it)
-            }
-
+            mapFileSharingFailure(it)
         }, {
             userConfigRepository.setFileSharingStatus(it.status.lowercase() == ENABLED)
             GetFileSharingStatusResult.Success(it)
         })
 
+
+    private fun mapFileSharingFailure(networkFailure: NetworkFailure): GetFileSharingStatusResult {
+        return if (
+            networkFailure is NetworkFailure.ServerMiscommunication &&
+            networkFailure.kaliumException is KaliumException.InvalidRequestError
+        ) {
+            if (networkFailure.kaliumException.isNoTeam()) {
+                GetFileSharingStatusResult.Failure.NoTeam
+            } else {
+                GetFileSharingStatusResult.Failure.OperationDenied
+            }
+        } else {
+            GetFileSharingStatusResult.Failure.Generic(networkFailure)
+        }
+
+    }
 
     companion object {
         const val ENABLED = "enabled"

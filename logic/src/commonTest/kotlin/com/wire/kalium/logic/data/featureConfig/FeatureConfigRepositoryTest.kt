@@ -25,8 +25,7 @@ class FeatureConfigRepositoryTest {
     fun whenFileSharingFeatureConfigSuccess_thenTheSuccessIsReturned() = runTest {
         // Given
         val expectedSuccess = Either.Right(FileSharingModel(lockStatus = "locked", status = "enabled"))
-        val (arrangement, featureConfigRepository) = Arrangement().arrange()
-        arrangement.withSuccessfulResponse()
+        val (arrangement, featureConfigRepository) = Arrangement().withSuccessfulResponse().arrange()
 
         // When
         val result = featureConfigRepository.getFileSharingFeatureConfig()
@@ -42,8 +41,8 @@ class FeatureConfigRepositoryTest {
     fun whenFileSharingFeatureConfigFailWithOperationDeniedError_thenTheErrorIsPropagated() = runTest {
         // Given
         val operationDeniedException = TestNetworkException.operationDenied
-        val (arrangement, featureConfigRepository) = Arrangement().arrange()
-        arrangement.withErrorResponse(operationDeniedException)
+        val (arrangement, featureConfigRepository) = Arrangement()
+            .withErrorResponse(operationDeniedException).arrange()
 
         // When
         val result = featureConfigRepository.getFileSharingFeatureConfig()
@@ -60,8 +59,8 @@ class FeatureConfigRepositoryTest {
     fun whenFileSharingFeatureConfigFailWithNoTeamError_thenTheErrorIsPropagated() = runTest {
         // Given
         val noTeamException = TestNetworkException.noTeam
-        val (arrangement, featureConfigRepository) = Arrangement().arrange()
-        arrangement.withErrorResponse(noTeamException)
+        val (arrangement, featureConfigRepository) = Arrangement()
+            .withErrorResponse(noTeamException).arrange()
 
         // When
         val result = featureConfigRepository.getFileSharingFeatureConfig()
