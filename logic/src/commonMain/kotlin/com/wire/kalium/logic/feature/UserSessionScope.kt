@@ -193,7 +193,7 @@ abstract class UserSessionScopeCommon(
         get() = ClientDataSource(clientRemoteRepository, clientRegistrationStorage, userDatabaseProvider.clientDAO)
 
     private val messageSendFailureHandler: MessageSendFailureHandler
-        get() = MessageSendFailureHandlerImpl(selfUserRepository, clientRepository)
+        get() = MessageSendFailureHandlerImpl(otherUserRepository, clientRepository)
 
     private val sessionEstablisher: SessionEstablisher
         get() = SessionEstablisherImpl(authenticatedDataSourceSet.proteusClient, preKeyRepository)
@@ -326,6 +326,7 @@ abstract class UserSessionScopeCommon(
             mlsClientProvider,
             preKeyRepository,
             selfUserRepository,
+            otherUserRepository,
             assetRepository,
             syncManager,
             messageSendingScheduler,

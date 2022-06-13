@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.user.other.OtherUserRepository
 import com.wire.kalium.logic.data.user.self.SelfUserRepository
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.logic.functional.Either
@@ -20,14 +21,14 @@ interface MessageSendFailureHandler {
 }
 
 class MessageSendFailureHandlerImpl(
-    private val selfUserRepository: SelfUserRepository,
+    private val otherUserRepository: OtherUserRepository,
     private val clientRepository: ClientRepository
 ) : MessageSendFailureHandler {
 
     override suspend fun handleClientsHaveChangedFailure(sendFailure: ProteusSendMessageFailure): Either<CoreFailure, Unit> =
         //TODO(optimization): add/remove members to/from conversation
         //TODO(optimization): remove clients from conversation
-        selfUserRepository.fetchUsersByIds(sendFailure.missingClientsOfUsers.keys).flatMap {
+        otherUserRepository.fetchUsersByIds(sendFailure.missingClientsOfUsers.keys).flatMap {
             sendFailure.missingClientsOfUsers.entries.foldToEitherWhileRight(Unit) { entry, _ ->
                 clientRepository.saveNewClients(entry.key, entry.value)
             }

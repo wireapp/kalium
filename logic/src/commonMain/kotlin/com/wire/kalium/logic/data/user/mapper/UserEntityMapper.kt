@@ -20,8 +20,8 @@ import com.wire.kalium.persistence.dao.UserIDEntity as UserIdEntity
 
 interface UserEntityMapper {
     fun fromUserProfileDTO(userProfileDTO: UserProfileDTO): UserEntity
-    fun fromUserProfileDTO(userDTO: UserDTO): UserEntity
-    fun fromUserApiToEntity(userDetailResponse: UserProfileDTO, connectionState: ConnectionEntity.State): UserEntity
+    fun fromUserDTO(userDTO: UserDTO): UserEntity
+    fun fromUserProfileDTOWithConnectionState(userProfileDTO: UserProfileDTO, connectionState: ConnectionEntity.State): UserEntity
     fun fromUpdateRequestToDaoModel(selfUser: SelfUser, updateRequest: UserUpdateRequest): UserEntity
     fun toUserIdPersistence(userId: UserId): UserIdEntity
     fun fromTeamMemberToDaoModel(
@@ -67,7 +67,7 @@ internal class UserEntityMapperImpl(
         )
     }
 
-    override fun fromUserProfileDTO(userDTO: UserDTO): UserEntity = with(userDTO) {
+    override fun fromUserDTO(userDTO: UserDTO): UserEntity = with(userDTO) {
         return UserEntity(
             id = idMapper.fromApiToDao(id),
             name = name,
@@ -82,16 +82,16 @@ internal class UserEntityMapperImpl(
         )
     }
 
-    override fun fromUserApiToEntity(userDetailResponse: UserProfileDTO, connectionState: ConnectionEntity.State) = UserEntity(
-        id = idMapper.fromApiToDao(userDetailResponse.id),
-        name = userDetailResponse.name,
-        handle = userDetailResponse.handle,
-        email = userDetailResponse.email,
+    override fun fromUserProfileDTOWithConnectionState(userProfileDTO: UserProfileDTO, connectionState: ConnectionEntity.State) = UserEntity(
+        id = idMapper.fromApiToDao(userProfileDTO.id),
+        name = userProfileDTO.name,
+        handle = userProfileDTO.handle,
+        email = userProfileDTO.email,
         phone = null,
-        accentId = userDetailResponse.accentId,
-        team = userDetailResponse.teamId,
-        previewAssetId = userDetailResponse.assets.getPreviewAssetOrNull()?.key,
-        completeAssetId = userDetailResponse.assets.getCompleteAssetOrNull()?.key,
+        accentId = userProfileDTO.accentId,
+        team = userProfileDTO.teamId,
+        previewAssetId = userProfileDTO.assets.getPreviewAssetOrNull()?.key,
+        completeAssetId = userProfileDTO.assets.getCompleteAssetOrNull()?.key,
         connectionStatus = connectionState,
         availabilityStatus = UserAvailabilityStatusEntity.NONE
     )

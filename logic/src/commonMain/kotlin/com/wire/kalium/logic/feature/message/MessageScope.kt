@@ -40,7 +40,7 @@ class MessageScope(
 ) {
 
     private val messageSendFailureHandler: MessageSendFailureHandler
-        get() = MessageSendFailureHandlerImpl(selfUserRepository, clientRepository)
+        get() = MessageSendFailureHandlerImpl(otherUserRepository, clientRepository)
 
     private val sessionEstablisher: SessionEstablisher
         get() = SessionEstablisherImpl(proteusClient, preKeyRepository)
