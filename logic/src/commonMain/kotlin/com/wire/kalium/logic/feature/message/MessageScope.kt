@@ -11,6 +11,7 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
+import com.wire.kalium.logic.data.user.other.OtherUserRepository
 import com.wire.kalium.logic.data.user.self.SelfUserRepository
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCase
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCaseImpl
@@ -31,6 +32,7 @@ class MessageScope(
     private val mlsClientProvider: MLSClientProvider,
     private val preKeyRepository: PreKeyRepository,
     private val selfUserRepository: SelfUserRepository,
+    private val otherUserRepository : OtherUserRepository,
     private val assetRepository: AssetRepository,
     private val syncManager: SyncManager,
     private val messageSendingScheduler: MessageSendingScheduler,
@@ -123,6 +125,7 @@ class MessageScope(
         get() = GetNotificationsUseCaseImpl(
             messageRepository,
             selfUserRepository,
+            otherUserRepository,
             conversationRepository
         )
 }

@@ -28,8 +28,8 @@ import com.wire.kalium.logic.data.message.SendMessageFailureMapperImpl
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.logic.data.prekey.PreKeyMapperImpl
 import com.wire.kalium.logic.data.prekey.remote.PreKeyListMapper
-import com.wire.kalium.logic.data.user.other.OtherUserMapper
-import com.wire.kalium.logic.data.user.other.OtherUserMapperImpl
+import com.wire.kalium.logic.data.user.other.mapper.OtherUserMapper
+import com.wire.kalium.logic.data.user.other.mapper.OtherUserMapperImpl
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.session.SessionMapperImpl
 import com.wire.kalium.logic.data.team.TeamMapper
@@ -38,9 +38,15 @@ import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapperImpl
 import com.wire.kalium.logic.data.user.ConnectionStateMapper
 import com.wire.kalium.logic.data.user.ConnectionStateMapperImpl
+import com.wire.kalium.logic.data.user.NotificationAuthorMessageMapper
+import com.wire.kalium.logic.data.user.NotificationAuthorMessageMapperImpl
 import com.wire.kalium.logic.data.user.mapper.UserEntityMapper
 import com.wire.kalium.logic.data.user.mapper.UserEntityMapperImpl
 import com.wire.kalium.logic.data.user.mapper.UserTypeMapperImpl
+import com.wire.kalium.logic.data.user.mapper.UserUpdateRequestMapper
+import com.wire.kalium.logic.data.user.mapper.UserUpdateRequestMapperImpl
+import com.wire.kalium.logic.data.user.self.mapper.SelfUserMapper
+import com.wire.kalium.logic.data.user.self.mapper.SelfUserMapperImpl
 
 internal object MapperProvider {
     fun idMapper(): IdMapper = IdMapperImpl()
@@ -65,4 +71,8 @@ internal object MapperProvider {
     fun callMapper(): CallMapper = CallMapper()
     fun connectionStatusMapper(): ConnectionStatusMapper = ConnectionStatusMapperImpl()
     fun connectionMapper(): ConnectionMapper = ConnectionMapperImpl(idMapper(), connectionStatusMapper(), publicUserMapper())
+    fun selfUserMapper() : SelfUserMapper = SelfUserMapperImpl()
+    fun userUpdateRequestMapper() : UserUpdateRequestMapper = UserUpdateRequestMapperImpl()
+    fun userEntityMapper() : UserEntityMapper = UserEntityMapperImpl()
+    fun notificationAuthorMessageMapper() : NotificationAuthorMessageMapper = NotificationAuthorMessageMapperImpl()
 }

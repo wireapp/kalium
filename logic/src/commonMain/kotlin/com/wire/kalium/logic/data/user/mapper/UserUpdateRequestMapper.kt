@@ -1,5 +1,6 @@
-package com.wire.kalium.logic.data.user
+package com.wire.kalium.logic.data.user.mapper
 
+import com.wire.kalium.logic.data.user.self.model.SelfUser
 import com.wire.kalium.network.api.model.AssetSizeDTO
 import com.wire.kalium.network.api.model.UserAssetDTO
 import com.wire.kalium.network.api.model.UserAssetTypeDTO
@@ -13,14 +14,21 @@ import com.wire.kalium.network.api.user.self.UserUpdateRequest
  *  TODO(assets): handle deletion of assets references, emptyAssetList
  */
 interface UserUpdateRequestMapper {
-    fun fromModelToUpdateApiModel(user: SelfUser, newName: String?, newAccent: Int?, newAssetId: String?): UserUpdateRequest
+    fun fromModelToUpdateApiModel(
+        selfUser: SelfUser,
+        newName: String?,
+        newAccent: Int?,
+        newAssetId: String?
+    ): UserUpdateRequest
 }
-
 
 class UserUpdateRequestMapperImpl : UserUpdateRequestMapper {
 
     override fun fromModelToUpdateApiModel(
-        user: SelfUser, newName: String?, newAccent: Int?, newAssetId: String?
+        selfUser: SelfUser,
+        newName: String?,
+        newAccent: Int?,
+        newAssetId: String?
     ): UserUpdateRequest {
         return UserUpdateRequest(
             name = newName, accentId = newAccent, assets = if (newAssetId != null) {

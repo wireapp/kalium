@@ -3,8 +3,8 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.other.model.OtherUser
-import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.mapper.UserTypeMapper
+import com.wire.kalium.logic.data.user.self.model.SelfUser
 import com.wire.kalium.network.api.conversation.ConvProtocol
 import com.wire.kalium.network.api.conversation.ConvTeamInfo
 import com.wire.kalium.network.api.conversation.ConversationResponse
@@ -79,7 +79,9 @@ internal class ConversationMapperImpl(
         )
 
     override fun toConversationDetailsOneToOne(
-        conversation: Conversation, otherUser: OtherUser, selfUser: SelfUser
+        conversation: Conversation,
+        otherUser: OtherUser,
+        selfUser: SelfUser
     ): ConversationDetails.OneOne {
         return ConversationDetails.OneOne(
             conversation = conversation,
@@ -98,7 +100,7 @@ internal class ConversationMapperImpl(
         ConversationOptions.Access.LINK -> ConversationAccess.LINK
     }
 
-    override fun toApiModel(access: ConversationOptions.AccessRole): ConversationAccessRole = when (access) {
+    override fun toApiModel(accessRole: ConversationOptions.AccessRole): ConversationAccessRole = when (accessRole) {
         ConversationOptions.AccessRole.TEAM_MEMBER -> ConversationAccessRole.TEAM_MEMBER
         ConversationOptions.AccessRole.NON_TEAM_MEMBER -> ConversationAccessRole.NON_TEAM_MEMBER
         ConversationOptions.AccessRole.GUEST -> ConversationAccessRole.GUEST

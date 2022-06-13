@@ -6,9 +6,11 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
-import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.mapper.UserEntityMapper
+import com.wire.kalium.logic.data.user.mapper.UserUpdateRequestMapper
+import com.wire.kalium.logic.data.user.self.mapper.SelfUserMapper
+import com.wire.kalium.logic.data.user.self.model.SelfUser
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -48,7 +50,9 @@ class SelfUserRepositoryImpl(
     private val assetRepository: AssetRepository,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val userEntityMapper: UserEntityMapper = MapperProvider.userMapper(),
-    private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper()
+    private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
+    private val selfUserMapper: SelfUserMapper = MapperProvider.selfUserMapper(),
+    private val userUpdateRequestMapper: UserUpdateRequestMapper = MapperProvider.userUpdateRequestMapper()
 ) : SelfUserRepository {
 
     override suspend fun getSelfUserId(): QualifiedID {
@@ -63,7 +67,7 @@ class SelfUserRepositoryImpl(
     }
 
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
-        .map { userEntityMapper.fromApiModelToDaoModel(it).copy(connectionStatus = ConnectionEntity.State.ACCEPTED) }
+        .map { userEntityMapper.fromUserProfileDTO(it).copy(connectionStatus = ConnectionEntity.State.ACCEPTED) }
         .flatMap { userEntity ->
             assetRepository.downloadUsersPictureAssets(listOf(userEntity.previewAssetId, userEntity.completeAssetId))
             userDAO.insertUser(userEntity)
@@ -75,19 +79,19 @@ class SelfUserRepositoryImpl(
         // TODO: handle storage error
         return userDAO.getUserByQualifiedID(getSelfUserIdEntity())
             .filterNotNull()
-            .map(userEntityMapper::fromDaoModelToSelfUser)
+            .map(selfUserMapper::fromUserEntity)
     }
 
     // FIXME(refactor): user info can be updated with null, null and null
     override suspend fun updateSelfUser(newName: String?, newAccent: Int?, newAssetId: String?): Either<CoreFailure, SelfUser> {
         val user = getSelfUser().firstOrNull() ?: return Either.Left(CoreFailure.Unknown(NullPointerException()))
-        val updateRequest = userEntityMapper.fromModelToUpdateApiModel(user, newName, newAccent, newAssetId)
+        val updateRequest = userUpdateRequestMapper.fromModelToUpdateApiModel(user, newName, newAccent, newAssetId)
         return wrapApiRequest { selfApi.updateSelf(updateRequest) }
             .map { userEntityMapper.fromUpdateRequestToDaoModel(user, updateRequest) }
             .flatMap { userEntity ->
                 wrapStorageRequest {
                     userDAO.updateSelfUser(userEntity)
-                }.map { userEntityMapper.fromDaoModelToSelfUser(userEntity) }
+                }.map { selfUserMapper.fromUserEntity(userEntity) }
             }
     }
 

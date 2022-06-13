@@ -1,11 +1,11 @@
-package com.wire.kalium.logic.data.user.self
+package com.wire.kalium.logic.data.user.self.mapper
 
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.ConnectionStateMapper
-import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
+import com.wire.kalium.logic.data.user.self.model.SelfUser
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.model.UserDTO
 import com.wire.kalium.network.api.model.getCompleteAssetOrNull
@@ -13,8 +13,8 @@ import com.wire.kalium.network.api.model.getPreviewAssetOrNull
 import com.wire.kalium.persistence.dao.UserEntity
 
 interface SelfUserMapper {
-    fun fromDtoToSelfUser(userDTO: UserDTO): SelfUser
-    fun fromDaoModelToSelfUser(userEntity: UserEntity): SelfUser
+    fun fromUserDTO(userDTO: UserDTO): SelfUser
+    fun fromUserEntity(userEntity: UserEntity): SelfUser
 }
 
 class SelfUserMapperImpl(
@@ -23,7 +23,7 @@ class SelfUserMapperImpl(
     private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
 ) : SelfUserMapper {
 
-    override fun fromDtoToSelfUser(userDTO: UserDTO): SelfUser = with(userDTO) {
+    override fun fromUserDTO(userDTO: UserDTO): SelfUser = with(userDTO) {
         SelfUser(
             id = idMapper.fromApiModel(id),
             name = name,
@@ -39,7 +39,7 @@ class SelfUserMapperImpl(
         )
     }
 
-    override fun fromDaoModelToSelfUser(userEntity: UserEntity) = SelfUser(
+    override fun fromUserEntity(userEntity: UserEntity) = SelfUser(
         id = idMapper.fromDaoModel(userEntity.id),
         name = userEntity.name,
         handle = userEntity.handle,

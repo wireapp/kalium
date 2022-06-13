@@ -53,19 +53,6 @@ enum class ConnectionState {
     ACCEPTED
 }
 
-data class SelfUser(
-    override val id: UserId,
-    val name: String?,
-    val handle: String?,
-    val email: String?,
-    val phone: String?,
-    val accentId: Int,
-    val team: String?,
-    val connectionStatus: ConnectionState,
-    val previewPicture: UserAssetId?,
-    val completePicture: UserAssetId?,
-    val availabilityStatus: UserAvailabilityStatus
-) : User()
 
 typealias UserAssetId = String
 

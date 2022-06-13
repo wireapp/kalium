@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.data.user
 
-import com.wire.kalium.logic.data.conversation.UserType
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.mapper.UserTypeMapper
 import com.wire.kalium.logic.data.user.mapper.UserTypeMapperImpl

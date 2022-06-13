@@ -1,17 +1,11 @@
 package com.wire.kalium.logic.data.user.mapper
 
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
-import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.ConnectionStateMapper
-import com.wire.kalium.logic.data.user.SelfUser
-import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.self.model.SelfUser
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.TeamId
-import com.wire.kalium.network.api.model.AssetSizeDTO
-import com.wire.kalium.network.api.model.UserAssetDTO
-import com.wire.kalium.network.api.model.UserAssetTypeDTO
 import com.wire.kalium.network.api.model.UserDTO
 import com.wire.kalium.network.api.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.model.getPreviewAssetOrNull
@@ -25,10 +19,10 @@ import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity as UserIdEntity
 
 interface UserEntityMapper {
-    fun fromApiModelToDaoModel(userProfileDTO: UserProfileDTO): UserEntity
-    fun fromApiModelToDaoModel(userDTO: UserDTO): UserEntity
+    fun fromUserProfileDTO(userProfileDTO: UserProfileDTO): UserEntity
+    fun fromUserProfileDTO(userDTO: UserDTO): UserEntity
     fun fromUserApiToEntity(userDetailResponse: UserProfileDTO, connectionState: ConnectionEntity.State): UserEntity
-    fun fromUpdateRequestToDaoModel(user: SelfUser, updateRequest: UserUpdateRequest): UserEntity
+    fun fromUpdateRequestToDaoModel(selfUser: SelfUser, updateRequest: UserUpdateRequest): UserEntity
     fun toUserIdPersistence(userId: UserId): UserIdEntity
     fun fromTeamMemberToDaoModel(
         teamId: TeamId,
@@ -42,7 +36,7 @@ internal class UserEntityMapperImpl(
     private val connectionStateMapper: ConnectionStateMapper = MapperProvider.connectionStateMapper()
 ) : UserEntityMapper {
 
-    override fun fromApiModelToDaoModel(userProfileDTO: UserProfileDTO): UserEntity {
+    override fun fromUserProfileDTO(userProfileDTO: UserProfileDTO): UserEntity {
         return UserEntity(
             id = idMapper.fromApiToDao(userProfileDTO.id),
             name = userProfileDTO.name,
@@ -57,23 +51,23 @@ internal class UserEntityMapperImpl(
         )
     }
 
-    override fun fromUpdateRequestToDaoModel(user: SelfUser, updateRequest: UserUpdateRequest): UserEntity {
+    override fun fromUpdateRequestToDaoModel(selfUser: SelfUser, updateRequest: UserUpdateRequest): UserEntity {
         return UserEntity(
-            id = idMapper.toDaoModel(user.id),
-            name = updateRequest.name ?: user.name,
-            handle = user.handle,
-            email = user.email,
-            phone = user.phone,
-            accentId = updateRequest.accentId ?: user.accentId,
-            team = user.team,
-            connectionStatus = connectionStateMapper.fromUserConnectionStateToDao(connectionState = user.connectionStatus),
+            id = idMapper.toDaoModel(selfUser.id),
+            name = updateRequest.name ?: selfUser.name,
+            handle = selfUser.handle,
+            email = selfUser.email,
+            phone = selfUser.phone,
+            accentId = updateRequest.accentId ?: selfUser.accentId,
+            team = selfUser.team,
+            connectionStatus = connectionStateMapper.fromUserConnectionStateToDao(connectionState = selfUser.connectionStatus),
             previewAssetId = updateRequest.assets?.getPreviewAssetOrNull()?.key,
             completeAssetId = updateRequest.assets?.getCompleteAssetOrNull()?.key,
             availabilityStatus = UserAvailabilityStatusEntity.NONE
         )
     }
 
-    override fun fromApiModelToDaoModel(userDTO: UserDTO): UserEntity = with(userDTO) {
+    override fun fromUserProfileDTO(userDTO: UserDTO): UserEntity = with(userDTO) {
         return UserEntity(
             id = idMapper.fromApiToDao(id),
             name = name,

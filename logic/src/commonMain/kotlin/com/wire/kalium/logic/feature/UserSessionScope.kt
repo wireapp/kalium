@@ -40,6 +40,7 @@ import com.wire.kalium.logic.data.sync.InMemorySyncRepository
 import com.wire.kalium.logic.data.sync.SyncRepository
 import com.wire.kalium.logic.data.team.TeamDataSource
 import com.wire.kalium.logic.data.team.TeamRepository
+import com.wire.kalium.logic.data.user.other.model.OtherUser
 import com.wire.kalium.logic.data.user.self.SelfUserRepositoryImpl
 import com.wire.kalium.logic.data.user.self.SelfUserRepository
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
@@ -123,6 +124,7 @@ abstract class UserSessionScopeCommon(
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(
             selfUserRepository,
+            otherUserRepository,
             mlsConversationRepository,
             userDatabaseProvider.conversationDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
@@ -141,8 +143,15 @@ abstract class UserSessionScopeCommon(
             userDatabaseProvider.userDAO,
             userDatabaseProvider.metadataDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.selfApi,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
             assetRepository
+        )
+
+    private val otherUserRepository : OtherUserRepository
+        get() = OtherUserRepositoryImpl(
+            userDatabaseProvider.userDAO,
+            userDatabaseProvider.metadataDAO,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.userSearchApi,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi
         )
 
     private val teamRepository: TeamRepository
@@ -159,13 +168,6 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.authenticatedNetworkContainer.connectionApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
             userDatabaseProvider.userDAO
-        )
-
-    private val publicUserRepository: OtherUserRepository
-        get() = OtherUserRepositoryImpl(
-            userDatabaseProvider.userDAO,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.userSearchApi,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi
         )
 
     private val callRepository: CallRepository by lazy {
@@ -312,6 +314,7 @@ abstract class UserSessionScopeCommon(
             conversationRepository,
             connectionRepository,
             selfUserRepository,
+            otherUserRepository,
             syncManager
         )
     val messages: MessageScope
@@ -328,7 +331,7 @@ abstract class UserSessionScopeCommon(
             messageSendingScheduler,
             timeParser
         )
-    val users: UserScope get() = UserScope(selfUserRepository, publicUserRepository, syncManager, assetRepository, teamRepository)
+    val users: UserScope get() = UserScope(selfUserRepository, otherUserRepository, syncManager, assetRepository, teamRepository)
     val logout: LogoutUseCase
         get() = LogoutUseCase(
             logoutRepository,

@@ -8,11 +8,13 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.notification.LocalNotificationConversation
-import com.wire.kalium.logic.data.user.other.OtherUserMapper
+import com.wire.kalium.logic.data.user.NotificationAuthorMessageMapper
+import com.wire.kalium.logic.data.user.other.mapper.OtherUserMapper
 import com.wire.kalium.logic.data.user.other.model.OtherUser
-import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.other.OtherUserRepository
 import com.wire.kalium.logic.data.user.self.SelfUserRepository
+import com.wire.kalium.logic.data.user.self.model.SelfUser
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.flatMapFromIterable
 import kotlinx.coroutines.flow.Flow
@@ -28,9 +30,11 @@ interface GetNotificationsUseCase {
 class GetNotificationsUseCaseImpl(
     private val messageRepository: MessageRepository,
     private val selfUserRepository: SelfUserRepository,
+    private val otherUserRepository: OtherUserRepository,
     private val conversationRepository: ConversationRepository,
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(),
-    private val otherUserMapper: OtherUserMapper = MapperProvider.publicUserMapper()
+    private val otherUserMapper: OtherUserMapper = MapperProvider.publicUserMapper(),
+    private val notificationAuthorMessageMapper: NotificationAuthorMessageMapper = MapperProvider.notificationAuthorMessageMapper()
 ) : GetNotificationsUseCase {
 
     @Suppress("LongMethod")
@@ -81,7 +85,7 @@ class GetNotificationsUseCaseImpl(
 
                 // Fetching all the authors by ID
                 authorIds
-                    .flatMapFromIterable { userId -> selfUserRepository.getKnownUser(userId) }
+                    .flatMapFromIterable { userId -> otherUserRepository.getKnownUserById(userId) }
                     .map { authors ->
                         // Mapping all the fetched data into LocalNotificationConversation to pass it forward
                         conversationsWithMessages
@@ -110,7 +114,7 @@ class GetNotificationsUseCaseImpl(
     }
 
     private fun getNotificationMessageAuthor(authors: List<OtherUser?>, senderUserId: UserId) =
-        otherUserMapper.fromPublicUserToLocalNotificationMessageAuthor(authors.firstOrNull { it?.id == senderUserId })
+        notificationAuthorMessageMapper.fromOtherUserToLocalNotificationMessageAuthor(authors.firstOrNull { it?.id == senderUserId })
 
     private fun shouldIncludeMessageForNotifications(
         message: Message,

@@ -5,6 +5,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.mapper.UserEntityMapper
+import com.wire.kalium.logic.data.user.other.mapper.OtherUserMapper
 import com.wire.kalium.logic.data.user.other.model.OtherUser
 import com.wire.kalium.logic.data.user.other.model.OtherUserSearchResult
 import com.wire.kalium.logic.data.user.self.SelfUserRepositoryImpl
@@ -88,7 +89,7 @@ class OtherUserRepositoryImpl(
             userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(ids.map(idMapper::toApiModel)))
         }.flatMap {
             wrapStorageRequest {
-                userDAO.upsertUsers(it.map(userEntityMapper::fromApiModelToDaoModel))
+                userDAO.upsertUsers(it.map(userEntityMapper::fromUserProfileDTO))
             }
         }
 

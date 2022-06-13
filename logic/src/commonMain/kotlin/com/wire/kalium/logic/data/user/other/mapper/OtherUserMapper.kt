@@ -1,7 +1,6 @@
-package com.wire.kalium.logic.data.user.other
+package com.wire.kalium.logic.data.user.other.mapper
 
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
 import com.wire.kalium.logic.data.user.other.model.OtherUser
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.ConnectionState
@@ -12,8 +11,6 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.model.getPreviewAssetOrNull
 import com.wire.kalium.network.api.user.details.UserProfileDTO
-import com.wire.kalium.persistence.dao.ConnectionEntity
-import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
 
 interface OtherUserMapper {

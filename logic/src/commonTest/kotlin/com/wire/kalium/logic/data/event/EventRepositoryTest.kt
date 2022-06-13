@@ -6,7 +6,7 @@ import com.wire.kalium.logic.data.conversation.MemberMapperImpl
 import com.wire.kalium.logic.data.connection.ConnectionMapperImpl
 import com.wire.kalium.logic.data.connection.ConnectionStatusMapperImpl
 import com.wire.kalium.logic.data.id.IdMapperImpl
-import com.wire.kalium.logic.data.user.other.OtherUserMapperImpl
+import com.wire.kalium.logic.data.user.other.mapper.OtherUserMapperImpl
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapperImpl
 import com.wire.kalium.logic.data.user.ConnectionStateMapperImpl
 import com.wire.kalium.logic.framework.TestClient
