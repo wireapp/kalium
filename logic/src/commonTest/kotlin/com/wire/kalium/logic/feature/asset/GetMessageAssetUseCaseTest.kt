@@ -101,7 +101,7 @@ class GetMessageAssetUseCaseTest {
         val someAssetToken = "==some-asset-token"
 
         private val mockedMessage by lazy {
-            Message.Client(
+            Message.Regular(
                 id = msgId,
                 content = MessageContent.Asset(
                     AssetContent(
