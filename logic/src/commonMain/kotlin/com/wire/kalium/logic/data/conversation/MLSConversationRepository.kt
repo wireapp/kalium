@@ -41,7 +41,7 @@ class MLSConversationDataSource(
     override suspend fun messageFromMLSMessage(messageEvent: Event.Conversation.NewMLSMessage): Either<CoreFailure, ByteArray?> =
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapStorageRequest {
-                conversationDAO.getConversationByQualifiedID(idMapper.toDaoModel(messageEvent.conversationId)).first()
+                conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(messageEvent.conversationId)).first()
             }.flatMap { conversation ->
                 if (conversation.protocolInfo is ConversationEntity.ProtocolInfo.MLS) {
                     Either.Right(

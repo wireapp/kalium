@@ -1,3 +1,4 @@
+@file:Suppress("TooManyFunctions")
 package com.wire.kalium.network.exceptions
 
 import com.wire.kalium.network.api.ErrorResponse
@@ -18,6 +19,7 @@ import com.wire.kalium.network.exceptions.NetworkErrorLabel.OPERATION_DENIED
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.TOO_MANY_CLIENTS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.TOO_MANY_MEMBERS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.USER_CREATION_RESTRICTED
+import io.ktor.http.HttpStatusCode
 
 sealed class KaliumException() : Exception() {
 
@@ -68,6 +70,10 @@ fun KaliumException.InvalidRequestError.isMissingAuth(): Boolean {
 
 fun KaliumException.InvalidRequestError.isBadRequest(): Boolean {
     return errorResponse.label == BAD_REQUEST
+}
+
+fun KaliumException.InvalidRequestError.isNotFound(): Boolean {
+    return errorResponse.code == HttpStatusCode.NotFound.value
 }
 
 fun KaliumException.InvalidRequestError.isDomainBlockedForRegistration(): Boolean {
