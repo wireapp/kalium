@@ -1,7 +1,7 @@
 package com.wire.kalium.logic.data.team
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.user.mapper.UserMapper
+import com.wire.kalium.logic.data.user.mapper.UserEntityMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -25,7 +25,7 @@ internal class TeamDataSource(
     private val userDAO: UserDAO,
     private val teamDAO: TeamDAO,
     private val teamsApi: TeamsApi,
-    private val userMapper: UserMapper = MapperProvider.userMapper(),
+    private val userEntityMapper: UserEntityMapper = MapperProvider.userMapper(),
     private val teamMapper: TeamMapper = MapperProvider.teamMapper(),
 ) : TeamRepository {
 
@@ -52,7 +52,7 @@ internal class TeamDataSource(
          */
         if (teamMemberList.hasMore.not()) {
             teamMemberList.members.map { teamMember ->
-                userMapper.fromTeamMemberToDaoModel(
+                userEntityMapper.fromTeamMemberToDaoModel(
                     teamId = teamId,
                     teamMemberDTO = teamMember,
                     userDomain = userDomain

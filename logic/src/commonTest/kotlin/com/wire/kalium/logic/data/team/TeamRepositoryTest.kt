@@ -2,7 +2,7 @@ package com.wire.kalium.logic.data.team
 
 import app.cash.turbine.test
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.data.user.mapper.UserMapper
+import com.wire.kalium.logic.data.user.mapper.UserEntityMapper
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -51,7 +51,7 @@ class TeamRepositoryTest {
     private val teamMapper = mock(classOf<TeamMapper>())
 
     @Mock
-    private val userMapper = mock(classOf<UserMapper>())
+    private val userEntityMapper = mock(classOf<UserEntityMapper>())
 
     @Mock
     private val teamsApi = mock(classOf<TeamsApi>())
@@ -61,7 +61,7 @@ class TeamRepositoryTest {
     @BeforeTest
     fun setUp() {
         teamRepository = TeamDataSource(
-            teamDAO = teamDAO, teamMapper = teamMapper, teamsApi = teamsApi, userDAO = userDAO, userMapper = userMapper
+            teamDAO = teamDAO, teamMapper = teamMapper, teamsApi = teamsApi, userDAO = userDAO, userMapper = userEntityMapper
         )
     }
 
@@ -161,8 +161,8 @@ class TeamRepositoryTest {
             availabilityStatus = UserAvailabilityStatusEntity.NONE
         )
 
-        given(userMapper)
-            .function(userMapper::fromTeamMemberToDaoModel)
+        given(userEntityMapper)
+            .function(userEntityMapper::fromTeamMemberToDaoModel)
             .whenInvokedWith(oneOf("teamId"), oneOf(teamMember), oneOf("userDomain"))
             .thenReturn(mappedTeamMember)
 

@@ -1,8 +1,8 @@
 package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.user.mapper.UserMapper
-import com.wire.kalium.logic.data.user.mapper.UserMapperImpl
+import com.wire.kalium.logic.data.user.mapper.UserEntityMapper
+import com.wire.kalium.logic.data.user.mapper.UserEntityMapperImpl
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -18,14 +18,14 @@ import kotlin.test.assertEquals
 
 class UserMapperTest {
 
-    private lateinit var userMapper: UserMapper
+    private lateinit var userEntityMapper: UserEntityMapper
 
     @Mock
     private val idMapper = mock(classOf<IdMapper>())
 
     @BeforeTest
     fun setUp() {
-        userMapper = UserMapperImpl(idMapper = idMapper)
+        userEntityMapper = UserEntityMapperImpl(idMapper = idMapper)
     }
 
     @Test
@@ -51,7 +51,7 @@ class UserMapperTest {
             availabilityStatus = UserAvailabilityStatusEntity.NONE
         )
 
-        val result = userMapper.fromTeamMemberToDaoModel(
+        val result = userEntityMapper.fromTeamMemberToDaoModel(
             teamId = "teamId",
             teamMemberDTO = apiModel,
             userDomain = "userDomain"

@@ -24,19 +24,10 @@ import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity as UserIdEntity
 
-interface UserMapper {
-    fun fromDtoToSelfUser(userDTO: UserDTO): SelfUser
+interface UserEntityMapper {
     fun fromApiModelToDaoModel(userProfileDTO: UserProfileDTO): UserEntity
     fun fromApiModelToDaoModel(userDTO: UserDTO): UserEntity
-    fun fromDaoModelToSelfUser(userEntity: UserEntity): SelfUser
-
-    /**
-     * Maps the user data to be updated. if the parameters [newName] [newAccent] [newAssetId] are nulls,
-     * it indicates that not updation should be made.
-     *
-     *  TODO(assets): handle deletion of assets references, emptyAssetList
-     */
-    fun fromModelToUpdateApiModel(user: SelfUser, newName: String?, newAccent: Int?, newAssetId: String?): UserUpdateRequest
+    fun fromUserApiToEntity(userDetailResponse: UserProfileDTO, connectionState: ConnectionEntity.State): UserEntity
     fun fromUpdateRequestToDaoModel(user: SelfUser, updateRequest: UserUpdateRequest): UserEntity
     fun toUserIdPersistence(userId: UserId): UserIdEntity
     fun fromTeamMemberToDaoModel(
@@ -46,27 +37,10 @@ interface UserMapper {
     ): UserEntity
 }
 
-internal class UserMapperImpl(
+internal class UserEntityMapperImpl(
     private val idMapper: IdMapper = MapperProvider.idMapper(),
-    private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
     private val connectionStateMapper: ConnectionStateMapper = MapperProvider.connectionStateMapper()
-) : UserMapper {
-
-    override fun fromDtoToSelfUser(userDTO: UserDTO): SelfUser = with(userDTO) {
-        SelfUser(
-            id = idMapper.fromApiModel(id),
-            name = name,
-            handle = handle,
-            email = email,
-            phone = phone,
-            accentId = accentId,
-            team = teamId,
-            connectionStatus = ConnectionState.NOT_CONNECTED,
-            previewPicture = assets.getPreviewAssetOrNull()?.key,
-            completePicture = assets.getCompleteAssetOrNull()?.key,
-            availabilityStatus = UserAvailabilityStatus.NONE
-        )
-    }
+) : UserEntityMapper {
 
     override fun fromApiModelToDaoModel(userProfileDTO: UserProfileDTO): UserEntity {
         return UserEntity(
@@ -80,35 +54,6 @@ internal class UserMapperImpl(
             previewAssetId = userProfileDTO.assets.getPreviewAssetOrNull()?.key,
             completeAssetId = userProfileDTO.assets.getCompleteAssetOrNull()?.key,
             availabilityStatus = UserAvailabilityStatusEntity.NONE
-        )
-    }
-
-    override fun fromDaoModelToSelfUser(userEntity: UserEntity) = SelfUser(
-        idMapper.fromDaoModel(userEntity.id),
-        userEntity.name,
-        userEntity.handle,
-        userEntity.email,
-        userEntity.phone,
-        userEntity.accentId,
-        userEntity.team,
-        connectionStateMapper.fromDaoConnectionStateToUser(connectionState = userEntity.connectionStatus),
-        userEntity.previewAssetId,
-        userEntity.completeAssetId,
-        availabilityStatusMapper.fromDaoAvailabilityStatusToModel(userEntity.availabilityStatus)
-    )
-
-    override fun fromModelToUpdateApiModel(
-        user: SelfUser, newName: String?, newAccent: Int?, newAssetId: String?
-    ): UserUpdateRequest {
-        return UserUpdateRequest(
-            name = newName, accentId = newAccent, assets = if (newAssetId != null) {
-                listOf(
-                    UserAssetDTO(newAssetId, AssetSizeDTO.COMPLETE, UserAssetTypeDTO.IMAGE),
-                    UserAssetDTO(newAssetId, AssetSizeDTO.PREVIEW, UserAssetTypeDTO.IMAGE)
-                )
-            } else {
-                null
-            }
         )
     }
 
@@ -143,6 +88,20 @@ internal class UserMapperImpl(
         )
     }
 
+    override fun fromUserApiToEntity(userDetailResponse: UserProfileDTO, connectionState: ConnectionEntity.State) = UserEntity(
+        id = idMapper.fromApiToDao(userDetailResponse.id),
+        name = userDetailResponse.name,
+        handle = userDetailResponse.handle,
+        email = userDetailResponse.email,
+        phone = null,
+        accentId = userDetailResponse.accentId,
+        team = userDetailResponse.teamId,
+        previewAssetId = userDetailResponse.assets.getPreviewAssetOrNull()?.key,
+        completeAssetId = userDetailResponse.assets.getCompleteAssetOrNull()?.key,
+        connectionStatus = connectionState,
+        availabilityStatus = UserAvailabilityStatusEntity.NONE
+    )
+
     override fun toUserIdPersistence(userId: UserId) = UserIdEntity(userId.value, userId.domain)
 
     /**
@@ -169,4 +128,5 @@ internal class UserMapperImpl(
             completeAssetId = null,
             availabilityStatus = UserAvailabilityStatusEntity.NONE
         )
+
 }

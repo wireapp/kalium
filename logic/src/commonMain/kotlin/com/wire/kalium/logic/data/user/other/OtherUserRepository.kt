@@ -4,7 +4,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.mapper.UserMapper
+import com.wire.kalium.logic.data.user.mapper.UserEntityMapper
 import com.wire.kalium.logic.data.user.other.model.OtherUser
 import com.wire.kalium.logic.data.user.other.model.OtherUserSearchResult
 import com.wire.kalium.logic.data.user.self.SelfUserRepositoryImpl
@@ -51,7 +51,7 @@ class OtherUserRepositoryImpl(
     private val metadataDAO: MetadataDAO,
     private val userSearchApi: UserSearchApi,
     private val userDetailsApi: UserDetailsApi,
-    private val userMapper: UserMapper = MapperProvider.userMapper(),
+    private val userEntityMapper: UserEntityMapper = MapperProvider.userMapper(),
     private val otherUserMapper: OtherUserMapper = MapperProvider.publicUserMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper(),
 ) : OtherUserRepository {
@@ -61,7 +61,7 @@ class OtherUserRepositoryImpl(
 
         return userDAO.getAllUsersByConnectionStatus(connectionState = ConnectionEntity.State.ACCEPTED)
             .filter { it.id != selfUserId }
-            .map { userEntity -> otherUserMapper.fromDaoModelToOtherUser(userEntity) }
+            .map { userEntity -> otherUserMapper.fromDaoModel(userEntity) }
     }
 
     private suspend fun getSelfUserIdEntity(): QualifiedIDEntity {
@@ -73,7 +73,7 @@ class OtherUserRepositoryImpl(
 
     override suspend fun getKnownUserById(userId: UserId): Flow<OtherUser?> =
         userDAO.getUserByQualifiedID(qualifiedID = idMapper.toDaoModel(userId))
-            .map { userEntity -> userEntity?.let { otherUserMapper.fromDaoModelToOtherUser(userEntity) } }
+            .map { userEntity -> userEntity?.let { otherUserMapper.fromDaoModel(userEntity) } }
 
     override suspend fun fetchKnownUsers(): Either<CoreFailure, Unit> {
         val ids = userDAO.getAllUsers().first().map { userEntry ->
@@ -88,7 +88,7 @@ class OtherUserRepositoryImpl(
             userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(ids.map(idMapper::toApiModel)))
         }.flatMap {
             wrapStorageRequest {
-                userDAO.upsertUsers(it.map(userMapper::fromApiModelToDaoModel))
+                userDAO.upsertUsers(it.map(userEntityMapper::fromApiModelToDaoModel))
             }
         }
 
@@ -102,7 +102,7 @@ class OtherUserRepositoryImpl(
             result = userDAO.getUserByNameOrHandleOrEmailAndConnectionState(
                 searchQuery = searchQuery,
                 connectionState = ConnectionEntity.State.ACCEPTED
-            ).map(otherUserMapper::fromDaoModelToOtherUser)
+            ).map(otherUserMapper::fromDaoModel)
         )
 
     override suspend fun searchKnownUsersByHandle(handle: String) =
@@ -110,7 +110,7 @@ class OtherUserRepositoryImpl(
             result = userDAO.getUserByHandleAndConnectionState(
                 handle = handle,
                 connectionState = ConnectionEntity.State.ACCEPTED
-            ).map(otherUserMapper::fromDaoModelToOtherUser)
+            ).map(otherUserMapper::fromDaoModel)
         )
 
     override suspend fun searchRemoteUsers(

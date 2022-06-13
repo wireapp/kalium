@@ -9,6 +9,7 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.other.OtherUserRepository
 import com.wire.kalium.logic.data.user.self.SelfUserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
@@ -75,6 +76,7 @@ interface ConversationRepository {
 
 class ConversationDataSource(
     private val selfUserRepository: SelfUserRepository,
+    private val otherUserRepository: OtherUserRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val conversationDAO: ConversationDAO,
     private val conversationApi: ConversationApi,
@@ -208,7 +210,7 @@ class ConversationDataSource(
                         emptyFlow()
                     }, { otherUserIdOrNull ->
                         otherUserIdOrNull?.let {
-                            selfUserRepository.getKnownUser(it)
+                            otherUserRepository.getKnownUserById(it)
                         } ?: run {
                             emptyFlow()
                         }
@@ -347,7 +349,7 @@ class ConversationDataSource(
                 ?.let { conversationEntity ->
                     conversationMapper.fromDaoModel(conversationEntity)
                 }?.let { conversation ->
-                    selfUserRepository.getKnownUser(otherUserId).first()?.let { otherUser ->
+                    otherUserRepository.getKnownUserById(otherUserId).first()?.let { otherUser ->
                         val selfUser = selfUserRepository.getSelfUser().first()
 
                         conversationMapper.toConversationDetailsOneToOne(conversation, otherUser, selfUser)

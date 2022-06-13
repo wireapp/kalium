@@ -10,12 +10,12 @@ class TeamScope(
     private val syncManager: SyncManager,
 ) {
     internal val syncSelfTeamUseCase: SyncSelfTeamUseCase get() = SyncSelfTeamUseCaseImpl(
-        userRepository = selfUserRepository,
+        selfUserRepository = selfUserRepository,
         teamRepository = teamRepository
     )
 
     val getSelfTeamUseCase: GetSelfTeamUseCase get() = GetSelfTeamUseCase(
-        userRepository = selfUserRepository,
+        selfUserRepository = selfUserRepository,
         teamRepository = teamRepository,
         syncManager = syncManager
     )

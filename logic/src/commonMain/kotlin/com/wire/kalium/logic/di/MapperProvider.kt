@@ -38,8 +38,8 @@ import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapperImpl
 import com.wire.kalium.logic.data.user.ConnectionStateMapper
 import com.wire.kalium.logic.data.user.ConnectionStateMapperImpl
-import com.wire.kalium.logic.data.user.mapper.UserMapper
-import com.wire.kalium.logic.data.user.mapper.UserMapperImpl
+import com.wire.kalium.logic.data.user.mapper.UserEntityMapper
+import com.wire.kalium.logic.data.user.mapper.UserEntityMapperImpl
 import com.wire.kalium.logic.data.user.mapper.UserTypeMapperImpl
 
 internal object MapperProvider {
@@ -48,7 +48,7 @@ internal object MapperProvider {
     fun sessionMapper(): SessionMapper = SessionMapperImpl(serverConfigMapper(), idMapper())
     fun availabilityStatusMapper(): AvailabilityStatusMapper = AvailabilityStatusMapperImpl()
     fun connectionStateMapper(): ConnectionStateMapper = ConnectionStateMapperImpl()
-    fun userMapper(): UserMapper = UserMapperImpl(idMapper())
+    fun userMapper(): UserEntityMapper = UserEntityMapperImpl(idMapper())
     fun teamMapper(): TeamMapper = TeamMapperImpl()
     fun messageMapper(): MessageMapper = MessageMapperImpl(idMapper(), memberMapper())
     fun memberMapper(): MemberMapper = MemberMapperImpl(idMapper())

@@ -5,7 +5,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.id.PlainId
-import com.wire.kalium.logic.data.user.mapper.UserMapper
+import com.wire.kalium.logic.data.user.mapper.UserEntityMapper
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
@@ -56,13 +56,13 @@ class ClientRepositoryTest {
     private val clientDAO = mock(classOf<ClientDAO>())
 
     @Mock
-    private val userMapper = mock(classOf<UserMapper>())
+    private val userEntityMapper = mock(classOf<UserEntityMapper>())
 
     private lateinit var clientRepository: ClientRepository
 
     @BeforeTest
     fun setup() {
-        clientRepository = ClientDataSource(clientRemoteRepository, clientRegistrationStorage, clientDAO, userMapper)
+        clientRepository = ClientDataSource(clientRemoteRepository, clientRegistrationStorage, clientDAO, userEntityMapper)
     }
 
     @Test

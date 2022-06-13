@@ -17,11 +17,9 @@ import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
 
 interface OtherUserMapper {
-    fun fromDaoModelToOtherUser(userEntity: UserEntity): OtherUser
+    fun fromDaoModel(userEntity: UserEntity): OtherUser
     fun fromUserDetailResponse(userDetailResponse: UserProfileDTO): OtherUser
-    fun fromUserApiToEntity(userDetailResponse: UserProfileDTO, connectionState: ConnectionEntity.State): UserEntity
     fun fromUserDetailResponses(userDetailResponse: List<UserProfileDTO>): List<OtherUser>
-    fun fromPublicUserToLocalNotificationMessageAuthor(author: OtherUser?): LocalNotificationMessageAuthor
 }
 
 class OtherUserMapperImpl(
@@ -30,7 +28,7 @@ class OtherUserMapperImpl(
     private val connectionStateMapper: ConnectionStateMapper = MapperProvider.connectionStateMapper()
 ) : OtherUserMapper {
 
-    override fun fromDaoModelToOtherUser(userEntity: UserEntity) = OtherUser(
+    override fun fromDaoModel(userEntity: UserEntity) = OtherUser(
         id = idMapper.fromDaoModel(userEntity.id),
         name = userEntity.name,
         handle = userEntity.handle,
@@ -56,24 +54,7 @@ class OtherUserMapperImpl(
         availabilityStatus = UserAvailabilityStatus.NONE
     )
 
-    override fun fromUserApiToEntity(userDetailResponse: UserProfileDTO, connectionState: ConnectionEntity.State) = UserEntity(
-        id = idMapper.fromApiToDao(userDetailResponse.id),
-        name = userDetailResponse.name,
-        handle = userDetailResponse.handle,
-        email = userDetailResponse.email,
-        phone = null,
-        accentId = userDetailResponse.accentId,
-        team = userDetailResponse.teamId,
-        previewAssetId = userDetailResponse.assets.getPreviewAssetOrNull()?.key,
-        completeAssetId = userDetailResponse.assets.getCompleteAssetOrNull()?.key,
-        connectionStatus = connectionState,
-        availabilityStatus = UserAvailabilityStatusEntity.NONE
-    )
-
     override fun fromUserDetailResponses(userDetailResponse: List<UserProfileDTO>) =
         userDetailResponse.map { fromUserDetailResponse(it) }
-
-    override fun fromPublicUserToLocalNotificationMessageAuthor(author: OtherUser?) =
-        LocalNotificationMessageAuthor(author?.name ?: "", null)
 
 }

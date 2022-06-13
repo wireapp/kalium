@@ -8,7 +8,7 @@ import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.mapper.UserMapper
+import com.wire.kalium.logic.data.user.mapper.UserEntityMapper
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
@@ -40,7 +40,7 @@ class RegisterAccountRepositoryTest {
     private val registerApi: RegisterApi = mock(classOf<RegisterApi>())
 
     @Mock
-    private val userMapper = mock(classOf<UserMapper>())
+    private val userEntityMapper = mock(classOf<UserEntityMapper>())
 
     @Mock
     private val sessionMapper = mock(classOf<SessionMapper>())
@@ -49,7 +49,7 @@ class RegisterAccountRepositoryTest {
 
     @BeforeTest
     fun setup() {
-        registerAccountRepository = RegisterAccountDataSource(registerApi, userMapper, sessionMapper)
+        registerAccountRepository = RegisterAccountDataSource(registerApi, userEntityMapper, sessionMapper)
     }
 
     @Test
@@ -154,7 +154,7 @@ class RegisterAccountRepositoryTest {
                     RegisterApi.RegisterParam.PersonalAccount(email, code, name, password), serverConfig.apiBaseUrl
                 )
             }.then { NetworkResponse.Success(Pair(TEST_USER, SESSION), mapOf(), 200) }
-        given(userMapper)
+        given(userEntityMapper)
             .invocation { fromDtoToSelfUser(TEST_USER) }
             .then { selfUser }
         given(sessionMapper)
@@ -172,7 +172,7 @@ class RegisterAccountRepositoryTest {
         verify(sessionMapper)
             .invocation { fromSessionDTO(SESSION, serverConfig) }
             .wasInvoked(exactly = once)
-        verify(userMapper)
+        verify(userEntityMapper)
             .invocation { fromDtoToSelfUser(TEST_USER) }
             .wasInvoked(exactly = once)
     }
@@ -208,7 +208,7 @@ class RegisterAccountRepositoryTest {
             .coroutine {
                 register(RegisterApi.RegisterParam.TeamAccount(email, code, name, password, teamName, teamIcon), serverConfig.apiBaseUrl)
             }.then { NetworkResponse.Success(Pair(TEST_USER, SESSION), mapOf(), 200) }
-        given(userMapper)
+        given(userEntityMapper)
             .invocation { fromDtoToSelfUser(TEST_USER) }
             .then { selfUser }
         given(sessionMapper)
@@ -228,7 +228,7 @@ class RegisterAccountRepositoryTest {
         verify(sessionMapper)
             .invocation { fromSessionDTO(SESSION, serverConfig) }
             .wasInvoked(exactly = once)
-        verify(userMapper)
+        verify(userEntityMapper)
             .invocation { fromDtoToSelfUser(TEST_USER) }
             .wasInvoked(exactly = once)
     }
@@ -265,8 +265,8 @@ class RegisterAccountRepositoryTest {
             .wasNotInvoked()
 
 
-        verify(userMapper)
-            .function(userMapper::fromDtoToSelfUser)
+        verify(userEntityMapper)
+            .function(userEntityMapper::fromDtoToSelfUser)
             .with(any())
             .wasNotInvoked()
 
