@@ -67,7 +67,12 @@ class TeamRepositoryTest {
 
     @Test
     fun givenSelfUserExists_whenFetchingTeamInfo_thenTeamInfoShouldBeSuccessful() = runTest {
-        val team = TestTeam.dto(
+        val teamDto = TestTeam.dto(
+            id = "teamId",
+            name = "teamName"
+        )
+
+        val team = Team(
             id = "teamId",
             name = "teamName"
         )
@@ -75,7 +80,7 @@ class TeamRepositoryTest {
         given(teamsApi)
             .suspendFunction(teamsApi::getTeamInfo)
             .whenInvokedWith(oneOf("teamId"))
-            .then { NetworkResponse.Success(value = team, headers = mapOf(), httpCode = 200) }
+            .then { NetworkResponse.Success(value = teamDto, headers = mapOf(), httpCode = 200) }
 
         val teamEntity = TeamEntity(
             id = "teamId", name = "teamName"
@@ -83,8 +88,15 @@ class TeamRepositoryTest {
 
         given(teamMapper)
             .function(teamMapper::fromDtoToEntity)
-            .whenInvokedWith(oneOf(team))
+            .whenInvokedWith(oneOf(teamDto))
             .then { teamEntity }
+
+        given(teamMapper)
+            .function(teamMapper::fromDaoModelToTeam)
+            .whenInvokedWith(oneOf(teamEntity))
+            .then { team }
+
+        teamMapper.fromDaoModelToTeam(teamEntity)
 
         val result = teamRepository.fetchTeamById(teamId = "teamId")
 
@@ -96,7 +108,9 @@ class TeamRepositoryTest {
 
 
         // Verifies that when fetching team by id, it succeeded
-        result.shouldSucceed()
+        result.shouldSucceed{ returnTeam ->
+            assertEquals(team,returnTeam)
+        }
     }
 
     @Test
