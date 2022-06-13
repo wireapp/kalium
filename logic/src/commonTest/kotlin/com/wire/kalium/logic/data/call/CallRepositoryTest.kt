@@ -115,7 +115,7 @@ class CallRepositoryTest {
 
     @Test
     fun givenACallData_whenCreateCallCalled_thenAddThatCallToTheFlow() = runTest {
-        given(conversationRepository).suspendFunction(conversationRepository::getConversationDetailsById)
+        given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(any())
             .thenReturn(flowOf(ConversationDetails.Group(TestConversation.ONE_ON_ONE, LegalHoldStatus.ENABLED)))
         given(userRepository).suspendFunction(userRepository::getKnownUser)
@@ -137,7 +137,7 @@ class CallRepositoryTest {
             assertEquals(list[1], answeredCall)
 
             verify(conversationRepository)
-                .suspendFunction(conversationRepository::getConversationDetailsById)
+                .suspendFunction(conversationRepository::observeConversationDetailsById)
                 .with(any())
                 .wasInvoked(exactly = once)
 
@@ -155,7 +155,7 @@ class CallRepositoryTest {
 
     @Test
     fun givenACallDataWithSameConversationIdAsAnotherOneInTheFlow_whenCreateCallCalled_thenReplaceTheCurrent() = runTest {
-        given(conversationRepository).suspendFunction(conversationRepository::getConversationDetailsById)
+        given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(any())
             .thenReturn(flowOf(ConversationDetails.Group(TestConversation.ONE_ON_ONE, LegalHoldStatus.ENABLED)))
         given(userRepository).suspendFunction(userRepository::getKnownUser)
@@ -177,7 +177,7 @@ class CallRepositoryTest {
             assertEquals(list[0], incomingCall2)
 
             verify(conversationRepository)
-                .suspendFunction(conversationRepository::getConversationDetailsById)
+                .suspendFunction(conversationRepository::observeConversationDetailsById)
                 .with(any())
                 .wasInvoked(exactly = once)
 
