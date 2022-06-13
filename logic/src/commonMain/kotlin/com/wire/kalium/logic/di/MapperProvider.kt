@@ -42,6 +42,8 @@ import com.wire.kalium.logic.data.user.NotificationAuthorMessageMapper
 import com.wire.kalium.logic.data.user.NotificationAuthorMessageMapperImpl
 import com.wire.kalium.logic.data.user.mapper.UserEntityMapper
 import com.wire.kalium.logic.data.user.mapper.UserEntityMapperImpl
+import com.wire.kalium.logic.data.user.mapper.UserIdEntityMapper
+import com.wire.kalium.logic.data.user.mapper.UserIdEntityMapperImpl
 import com.wire.kalium.logic.data.user.mapper.UserTypeMapperImpl
 import com.wire.kalium.logic.data.user.mapper.UserUpdateRequestMapper
 import com.wire.kalium.logic.data.user.mapper.UserUpdateRequestMapperImpl
@@ -75,4 +77,5 @@ internal object MapperProvider {
     fun userUpdateRequestMapper() : UserUpdateRequestMapper = UserUpdateRequestMapperImpl()
     fun userEntityMapper() : UserEntityMapper = UserEntityMapperImpl()
     fun notificationAuthorMessageMapper() : NotificationAuthorMessageMapper = NotificationAuthorMessageMapperImpl()
+    fun userIdEntityMapper() : UserIdEntityMapper = UserIdEntityMapperImpl()
 }

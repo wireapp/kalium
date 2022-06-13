@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.mapper.UserEntityMapper
+import com.wire.kalium.logic.data.user.mapper.UserIdEntityMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.wrapStorageRequest
@@ -31,7 +32,8 @@ class ClientDataSource(
     private val clientRemoteRepository: ClientRemoteRepository,
     private val clientRegistrationStorage: ClientRegistrationStorage,
     private val clientDAO: ClientDAO,
-    private val userEntityMapper: UserEntityMapper = MapperProvider.userMapper()
+    private val userEntityMapper: UserEntityMapper = MapperProvider.userMapper(),
+    private val userIdEntityMapper: UserIdEntityMapper = MapperProvider.userIdEntityMapper()
 ) : ClientRepository {
     override suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client> {
         return clientRemoteRepository.registerClient(param)
@@ -63,7 +65,7 @@ class ClientDataSource(
         clientRemoteRepository.registerMLSClient(clientId, publicKey.encodeBase64())
 
     override suspend fun saveNewClients(userId: UserId, clients: List<ClientId>): Either<CoreFailure, Unit> =
-        userEntityMapper.toUserIdPersistence(userId).let { userEntity ->
+        userIdEntityMapper.toUserIdPersistence(userId).let { userEntity ->
             clients.map { ClientEntity(userEntity, it.value) }.let { clientEntityList ->
                 wrapStorageRequest { clientDAO.insertClients(clientEntityList) }
             }
