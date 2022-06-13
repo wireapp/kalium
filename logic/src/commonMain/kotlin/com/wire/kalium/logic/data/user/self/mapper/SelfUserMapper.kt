@@ -39,18 +39,20 @@ class SelfUserMapperImpl(
         )
     }
 
-    override fun fromUserEntity(userEntity: UserEntity) = SelfUser(
-        id = idMapper.fromDaoModel(userEntity.id),
-        name = userEntity.name,
-        handle = userEntity.handle,
-        email = userEntity.email,
-        phone = userEntity.phone,
-        accentId = userEntity.accentId,
-        team = userEntity.team,
-        connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionState = userEntity.connectionStatus),
-        previewPicture = userEntity.previewAssetId,
-        completePicture = userEntity.completeAssetId,
-        availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(userEntity.availabilityStatus)
-    )
+    override fun fromUserEntity(userEntity: UserEntity) = with(userEntity) {
+        SelfUser(
+            id = idMapper.fromDaoModel(id),
+            name = name,
+            handle = handle,
+            email = email,
+            phone = phone,
+            accentId = accentId,
+            team = team,
+            connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionState = connectionStatus),
+            previewPicture = userEntity.previewAssetId,
+            completePicture = userEntity.completeAssetId,
+            availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(status = availabilityStatus)
+        )
+    }
 
 }

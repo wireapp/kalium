@@ -25,31 +25,35 @@ class OtherUserMapperImpl(
     private val connectionStateMapper: ConnectionStateMapper = MapperProvider.connectionStateMapper()
 ) : OtherUserMapper {
 
-    override fun fromUserEntity(userEntity: UserEntity) = OtherUser(
-        id = idMapper.fromDaoModel(userEntity.id),
-        name = userEntity.name,
-        handle = userEntity.handle,
-        email = userEntity.email,
-        phone = userEntity.phone,
-        accentId = userEntity.accentId,
-        team = userEntity.team,
-        connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionState = userEntity.connectionStatus),
-        previewPicture = userEntity.previewAssetId,
-        completePicture = userEntity.completeAssetId,
-        availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(userEntity.availabilityStatus)
-    )
+    override fun fromUserEntity(userEntity: UserEntity) = with(userEntity) {
+        OtherUser(
+            id = idMapper.fromDaoModel(id),
+            name = name,
+            handle = handle,
+            email = email,
+            phone = phone,
+            accentId = accentId,
+            team = team,
+            connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionState = connectionStatus),
+            previewPicture = previewAssetId,
+            completePicture = completeAssetId,
+            availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(status = availabilityStatus)
+        )
+    }
 
-    override fun fromUserProfileDTO(userProfileDTO: UserProfileDTO) = OtherUser(
-        id = UserId(userProfileDTO.id.value, userProfileDTO.id.domain),
-        name = userProfileDTO.name,
-        handle = userProfileDTO.handle,
-        accentId = userProfileDTO.accentId,
-        team = userProfileDTO.teamId,
-        connectionStatus = ConnectionState.NOT_CONNECTED,
-        previewPicture = userProfileDTO.assets.getPreviewAssetOrNull()?.key,
-        completePicture = userProfileDTO.assets.getCompleteAssetOrNull()?.key,
-        availabilityStatus = UserAvailabilityStatus.NONE
-    )
+    override fun fromUserProfileDTO(userProfileDTO: UserProfileDTO) = with(userProfileDTO) {
+        OtherUser(
+            id = UserId(id.value, id.domain),
+            name = name,
+            handle = handle,
+            accentId = accentId,
+            team = teamId,
+            connectionStatus = ConnectionState.NOT_CONNECTED,
+            previewPicture = assets.getPreviewAssetOrNull()?.key,
+            completePicture = assets.getCompleteAssetOrNull()?.key,
+            availabilityStatus = UserAvailabilityStatus.NONE
+        )
+    }
 
     override fun fromUserProfileDTOs(userProfileDTOs: List<UserProfileDTO>) =
         userProfileDTOs.map { fromUserProfileDTO(it) }

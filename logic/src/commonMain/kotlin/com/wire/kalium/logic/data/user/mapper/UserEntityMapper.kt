@@ -34,38 +34,42 @@ internal class UserEntityMapperImpl(
 ) : UserEntityMapper {
 
     override fun fromUserProfileDTO(userProfileDTO: UserProfileDTO): UserEntity {
-        return UserEntity(
-            id = idMapper.fromApiToDao(userProfileDTO.id),
-            name = userProfileDTO.name,
-            handle = userProfileDTO.handle,
-            email = null,
-            phone = null,
-            accentId = userProfileDTO.accentId,
-            team = userProfileDTO.teamId,
-            previewAssetId = userProfileDTO.assets.getPreviewAssetOrNull()?.key,
-            completeAssetId = userProfileDTO.assets.getCompleteAssetOrNull()?.key,
-            availabilityStatus = UserAvailabilityStatusEntity.NONE
-        )
+        with(userProfileDTO) {
+            return UserEntity(
+                id = idMapper.fromApiToDao(id),
+                name = name,
+                handle = handle,
+                email = null,
+                phone = null,
+                accentId = accentId,
+                team = teamId,
+                previewAssetId = assets.getPreviewAssetOrNull()?.key,
+                completeAssetId = assets.getCompleteAssetOrNull()?.key,
+                availabilityStatus = UserAvailabilityStatusEntity.NONE
+            )
+        }
     }
 
     override fun fromSelfUserWithUserUpdateRequest(selfUser: SelfUser, userUpdateRequest: UserUpdateRequest): UserEntity {
-        return UserEntity(
-            id = idMapper.toDaoModel(selfUser.id),
-            name = userUpdateRequest.name ?: selfUser.name,
-            handle = selfUser.handle,
-            email = selfUser.email,
-            phone = selfUser.phone,
-            accentId = userUpdateRequest.accentId ?: selfUser.accentId,
-            team = selfUser.team,
-            connectionStatus = connectionStateMapper.fromUserConnectionStateToDao(connectionState = selfUser.connectionStatus),
-            previewAssetId = userUpdateRequest.assets?.getPreviewAssetOrNull()?.key,
-            completeAssetId = userUpdateRequest.assets?.getCompleteAssetOrNull()?.key,
-            availabilityStatus = UserAvailabilityStatusEntity.NONE
-        )
+        with(selfUser) {
+            return UserEntity(
+                id = idMapper.toDaoModel(id),
+                name = userUpdateRequest.name ?: name,
+                handle = handle,
+                email = email,
+                phone = phone,
+                accentId = userUpdateRequest.accentId ?: accentId,
+                team = team,
+                connectionStatus = connectionStateMapper.fromUserConnectionStateToDao(connectionState = connectionStatus),
+                previewAssetId = userUpdateRequest.assets?.getPreviewAssetOrNull()?.key,
+                completeAssetId = userUpdateRequest.assets?.getCompleteAssetOrNull()?.key,
+                availabilityStatus = UserAvailabilityStatusEntity.NONE
+            )
+        }
     }
 
     override fun fromUserDTO(userDTO: UserDTO): UserEntity = with(userDTO) {
-        return UserEntity(
+        UserEntity(
             id = idMapper.fromApiToDao(id),
             name = name,
             handle = handle,
@@ -80,19 +84,21 @@ internal class UserEntityMapperImpl(
     }
 
     override fun fromUserProfileDTOWithConnectionState(userProfileDTO: UserProfileDTO, connectionState: ConnectionEntity.State) =
-        UserEntity(
-            id = idMapper.fromApiToDao(userProfileDTO.id),
-            name = userProfileDTO.name,
-            handle = userProfileDTO.handle,
-            email = userProfileDTO.email,
-            phone = null,
-            accentId = userProfileDTO.accentId,
-            team = userProfileDTO.teamId,
-            previewAssetId = userProfileDTO.assets.getPreviewAssetOrNull()?.key,
-            completeAssetId = userProfileDTO.assets.getCompleteAssetOrNull()?.key,
-            connectionStatus = connectionState,
-            availabilityStatus = UserAvailabilityStatusEntity.NONE
-        )
+        with(userProfileDTO) {
+            UserEntity(
+                id = idMapper.fromApiToDao(id),
+                name = name,
+                handle = handle,
+                email = email,
+                phone = null,
+                accentId = accentId,
+                team = teamId,
+                previewAssetId = assets.getPreviewAssetOrNull()?.key,
+                completeAssetId = assets.getCompleteAssetOrNull()?.key,
+                connectionStatus = connectionState,
+                availabilityStatus = UserAvailabilityStatusEntity.NONE
+            )
+        }
 
     /**
      * Null and default/hardcoded values will be replaced later when fetching known users.
@@ -101,22 +107,21 @@ internal class UserEntityMapperImpl(
         teamId: TeamId,
         teamMemberDTO: TeamsApi.TeamMemberDTO,
         userDomain: String
-    ): UserEntity =
-        UserEntity(
-            id = QualifiedIDEntity(
-                value = teamMemberDTO.nonQualifiedUserId,
-                domain = userDomain
-            ),
-            name = null,
-            handle = null,
-            email = null,
-            phone = null,
-            accentId = 1,
-            team = teamId,
-            connectionStatus = ConnectionEntity.State.ACCEPTED,
-            previewAssetId = null,
-            completeAssetId = null,
-            availabilityStatus = UserAvailabilityStatusEntity.NONE
-        )
+    ): UserEntity = UserEntity(
+        id = QualifiedIDEntity(
+            value = teamMemberDTO.nonQualifiedUserId,
+            domain = userDomain
+        ),
+        name = null,
+        handle = null,
+        email = null,
+        phone = null,
+        accentId = 1,
+        team = teamId,
+        connectionStatus = ConnectionEntity.State.ACCEPTED,
+        previewAssetId = null,
+        completeAssetId = null,
+        availabilityStatus = UserAvailabilityStatusEntity.NONE
+    )
 
 }
