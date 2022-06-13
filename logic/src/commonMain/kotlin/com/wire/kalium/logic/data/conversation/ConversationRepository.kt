@@ -48,7 +48,8 @@ interface ConversationRepository {
     suspend fun insertConversationFromEvent(event: Event.Conversation.NewConversation): Either<CoreFailure, Unit>
     suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>>
     suspend fun observeConversationList(): Flow<List<Conversation>>
-    suspend fun getConversationDetailsById(conversationID: ConversationId): Flow<ConversationDetails>
+    suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<ConversationDetails>
+    suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun getConversationDetails(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation>>
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
     suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, ProtocolInfo>
@@ -173,11 +174,20 @@ class ConversationDataSource(
     /**
      * Gets a flow that allows observing of
      */
-    override suspend fun getConversationDetailsById(conversationID: ConversationId): Flow<ConversationDetails> =
+    override suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<ConversationDetails> =
         conversationDAO.getConversationByQualifiedID(idMapper.toDaoModel(conversationID))
             .filterNotNull()
             .map(conversationMapper::fromDaoModel)
             .flatMapLatest(::getConversationDetailsFlow)
+
+    override suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit> {
+        return wrapApiRequest {
+            conversationApi.fetchConversationDetails(idMapper.toApiModel(conversationID))
+        }.flatMap {
+            val selfUserTeamId = userRepository.getSelfUser().first().team
+            persistConversations(listOf(it), selfUserTeamId)
+        }
+    }
 
     private suspend fun getConversationDetailsFlow(conversation: Conversation): Flow<ConversationDetails> =
         when (conversation.type) {
@@ -348,7 +358,7 @@ class ConversationDataSource(
         return wrapStorageRequest {
             observeConversationList()
                 .flatMapMerge { it.asFlow() }
-                .flatMapMerge { getConversationDetailsById(it.id) }
+                .flatMapMerge { observeConversationDetailsById(it.id) }
                 .filterIsInstance<ConversationDetails.OneOne>()
                 .firstOrNull { otherUserId == it.otherUser.id }
         }

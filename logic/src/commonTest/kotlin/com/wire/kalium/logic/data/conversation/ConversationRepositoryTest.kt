@@ -179,7 +179,7 @@ class ConversationRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(conversationEntityFlow)
 
-        conversationRepository.getConversationDetailsById(TestConversation.ID).test {
+        conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
             assertIs<ConversationDetails.Group>(awaitItem())
             awaitComplete()
         }
@@ -196,7 +196,7 @@ class ConversationRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(conversationEntityFlow)
 
-        conversationRepository.getConversationDetailsById(TestConversation.ID).test {
+        conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
             assertIs<ConversationDetails.Self>(awaitItem())
             awaitComplete()
         }
@@ -229,7 +229,7 @@ class ConversationRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
 
-        conversationRepository.getConversationDetailsById(TestConversation.ID).test {
+        conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
             assertIs<ConversationDetails.OneOne>(awaitItem())
             awaitComplete()
         }
@@ -265,7 +265,7 @@ class ConversationRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(otherUserDetailsSequence.asFlow())
 
-        conversationRepository.getConversationDetailsById(TestConversation.ID).test {
+        conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
             val firstItem = awaitItem()
             assertIs<ConversationDetails.OneOne>(firstItem)
             assertEquals(otherUserDetailsSequence[0], firstItem.otherUser)
