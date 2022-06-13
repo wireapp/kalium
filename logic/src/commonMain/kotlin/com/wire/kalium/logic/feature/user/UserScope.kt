@@ -21,7 +21,6 @@ import com.wire.kalium.logic.sync.SyncManager
 class UserScope(
     private val otherUserRepository: OtherUserRepository,
     private val selfUserRepository: SelfUserRepository,
-    private val contactRepository: OtherUserRepository,
     private val syncManager: SyncManager,
     private val assetRepository: AssetRepository,
     private val teamRepository: TeamRepository
@@ -31,9 +30,9 @@ class UserScope(
     val syncSelfUser: SyncSelfUserUseCase get() = SyncSelfUserUseCase(selfUserRepository)
     val syncContacts: SyncContactsUseCase get() = SyncContactsUseCaseImpl(otherUserRepository)
     val uploadUserAvatar: UploadUserAvatarUseCase get() = UploadUserAvatarUseCaseImpl(selfUserRepository, assetRepository)
-    val searchKnownUsers: SearchKnownUsersUseCase get() = SearchKnownUsersUseCaseImpl(contactRepository)
+    val searchKnownUsers: SearchKnownUsersUseCase get() = SearchKnownUsersUseCaseImpl(otherUserRepository)
     val getPublicAsset: GetAvatarAssetUseCase get() = GetAvatarAssetUseCaseImpl(assetRepository)
-    val searchUserDirectory: SearchUserDirectoryUseCase get() = SearchUserDirectoryUseCaseImpl(contactRepository)
+    val searchUserDirectory: SearchUserDirectoryUseCase get() = SearchUserDirectoryUseCaseImpl(otherUserRepository)
     val setUserHandle: SetUserHandleUseCase get() = SetUserHandleUseCase(selfUserRepository, validateUserHandleUseCase, syncManager)
     val getAllKnownUsers: GetAllContactsUseCase get() = GetAllContactsUseCaseImpl(otherUserRepository)
     val getKnownUser: GetKnownUserUseCase get() = GetKnownUserUseCaseImpl(otherUserRepository)

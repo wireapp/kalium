@@ -51,7 +51,7 @@ actual class GlobalCallManager(
         return callManagerHolder[userId] ?: CallManagerImpl(
             calling = calling,
             callRepository = callRepository,
-            userRepository = selfUserRepository,
+            selfUserRepository = selfUserRepository,
             clientRepository = clientRepository,
             callMapper = callMapper,
             messageSender = messageSender,

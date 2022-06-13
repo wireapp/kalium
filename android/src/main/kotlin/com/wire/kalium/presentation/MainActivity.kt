@@ -19,7 +19,7 @@ import com.wire.kalium.KaliumApplication
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.self.model.SelfUser
 import com.wire.kalium.logic.feature.asset.PublicAssetResult
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthenticationResult

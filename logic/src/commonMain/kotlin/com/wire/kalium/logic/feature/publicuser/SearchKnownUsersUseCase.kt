@@ -8,14 +8,14 @@ interface SearchKnownUsersUseCase {
 }
 
 internal class SearchKnownUsersUseCaseImpl(
-    private val contactRepository: OtherUserRepository
+    private val otherUserRepository: OtherUserRepository
 ) : SearchKnownUsersUseCase {
 
     override suspend operator fun invoke(searchQuery: String): OtherUserSearchResult {
         return if (isUserLookingForHandle(searchQuery)) {
-            contactRepository.searchKnownUsersByHandle(searchQuery)
+            otherUserRepository.searchKnownUsersByHandle(searchQuery)
         } else {
-            contactRepository.searchKnownUsersByNameOrHandleOrEmail(searchQuery)
+            otherUserRepository.searchKnownUsersByNameOrHandleOrEmail(searchQuery)
         }
     }
 

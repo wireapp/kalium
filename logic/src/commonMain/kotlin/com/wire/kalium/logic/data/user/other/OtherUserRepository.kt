@@ -37,9 +37,9 @@ interface OtherUserRepository {
     suspend fun getKnownUserById(userId: UserId): Flow<OtherUser?>
     suspend fun fetchKnownUsers(): Either<CoreFailure, Unit>
     suspend fun fetchUsersByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
+    suspend fun getRemoteUser(userId: UserId): Either<CoreFailure, OtherUser>
     suspend fun searchKnownUsersByNameOrHandleOrEmail(searchQuery: String): OtherUserSearchResult
     suspend fun searchKnownUsersByHandle(handle: String): OtherUserSearchResult
-    suspend fun getRemoteUser(userId: UserId): Either<CoreFailure, OtherUser>
     suspend fun searchRemoteUsers(
         searchQuery: String,
         domain: String,
