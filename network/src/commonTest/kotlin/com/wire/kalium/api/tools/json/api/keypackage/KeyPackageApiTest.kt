@@ -59,7 +59,7 @@ class KeyPackageApiTest: ApiTest {
         )
         val keyPackageApi: KeyPackageApi = KeyPackageApiImpl(networkClient)
 
-        val response = keyPackageApi.claimKeyPackages(VALID_USER_ID)
+        val response = keyPackageApi.claimKeyPackages(KeyPackageApi.Param.IncludeOwnClient(VALID_USER_ID))
         assertTrue(response.isSuccessful())
         assertEquals(response.value, VALID_CLAIM_KEY_PACKAGES_RESPONSE.serializableData)
     }

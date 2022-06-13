@@ -93,10 +93,10 @@ class MLSConversationDataSource(
 
                 client.createConversation(groupID, clientKeyPackageList)?.let { (handshake, welcome) ->
                     wrapApiRequest {
-                        mlsMessageApi.sendWelcomeMessage(MLSMessageApi.WelcomeMessage(welcome))
+                        mlsMessageApi.sendMessage(MLSMessageApi.Message(handshake))
                     }.flatMap {
                         wrapApiRequest {
-                            mlsMessageApi.sendMessage(MLSMessageApi.Message(handshake))
+                            mlsMessageApi.sendWelcomeMessage(MLSMessageApi.WelcomeMessage(welcome))
                         }
                     }.flatMap {
                         wrapStorageRequest {
