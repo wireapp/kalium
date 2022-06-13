@@ -38,9 +38,7 @@ class KeyPackageDataSource(
             userIds.map { userId ->
                 wrapApiRequest {
                     keyPackageApi.claimKeyPackages(idMapper.toApiModel(userId), selfClientId.value)
-                }.flatMap {
-                    Either.Right(it.keyPackages)
-                }
+                }.map { it.keyPackages }
             }.foldToEitherWhileRight(emptyList()) { item, acc ->
                 item.flatMap { Either.Right(acc + it) }
             }
