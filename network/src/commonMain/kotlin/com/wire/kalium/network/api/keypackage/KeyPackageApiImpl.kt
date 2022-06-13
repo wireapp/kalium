@@ -32,10 +32,10 @@ class KeyPackageApiImpl internal constructor(private val authenticatedNetworkCli
         wrapKaliumResponse { httpClient.get("$PATH_KEY_PACKAGES/$PATH_SELF/$clientId/$PATH_COUNT") }
 
     private companion object {
-        val PATH_KEY_PACKAGES = "mls/key-packages"
-        val PATH_CLAIM = "claim"
-        val PATH_SELF = "self"
-        val PATH_COUNT = "count"
-        val QUERY_SKIP_OWN = "skip_own"
+        const val PATH_KEY_PACKAGES = "mls/key-packages"
+        const val PATH_CLAIM = "claim"
+        const val PATH_SELF = "self"
+        const val PATH_COUNT = "count"
+        const val QUERY_SKIP_OWN = "skip_own"
     }
 }
