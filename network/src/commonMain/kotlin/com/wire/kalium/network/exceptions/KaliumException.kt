@@ -70,6 +70,10 @@ fun KaliumException.InvalidRequestError.isBadRequest(): Boolean {
     return errorResponse.label == BAD_REQUEST
 }
 
+fun KaliumException.InvalidRequestError.isNotFound(): Boolean {
+    return errorResponse.code == HttpStatusCode.NotFound.value
+}
+
 fun KaliumException.InvalidRequestError.isDomainBlockedForRegistration(): Boolean {
     return errorResponse.label == DOMAIN_BLOCKED_FOR_REGISTRATION
 }
