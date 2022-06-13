@@ -20,6 +20,7 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.mapNotNull
@@ -169,10 +170,7 @@ class SyncManagerImpl(
                             is WebSocketEvent.Open -> {
                                 kaliumLogger.i("SYNC: Websocket Open")
 
-//                                val delay = Clock.System.now().epochSeconds + 5
-//                                while(Clock.System.now().epochSeconds < delay) {
-//
-//                                }
+                                delay(5000)
 
                                 eventRepository
                                     .pendingEvents()
@@ -195,6 +193,7 @@ class SyncManagerImpl(
                                 val mappedEvent = eventMapper.fromDTO(webSocketEvent.payload)
                                 mappedEvent.forEach {
                                     if (!isEventPresentInOfflineBuffer(it)) {
+                                        clearOfflineEventBuffer()
                                         kaliumLogger.d(
                                             "SYNC: Event never seen before ${it.id} - We are live"
                                         )
@@ -203,7 +202,6 @@ class SyncManagerImpl(
                                         kaliumLogger.d(
                                             "SYNC: Skipping emit of event from WebSocket because already emitted as offline event ${it.id}"
                                         )
-                                        clearOfflineEventBuffer()
                                     }
                                 }
                             }
