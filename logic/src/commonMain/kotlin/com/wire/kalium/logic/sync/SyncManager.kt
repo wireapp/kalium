@@ -9,6 +9,9 @@ import com.wire.kalium.logic.data.sync.SyncRepository
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.api.notification.WebSocketEvent
@@ -20,7 +23,6 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.mapNotNull
@@ -161,70 +163,76 @@ class SyncManagerImpl(
     }
 
     private suspend fun gatherEvents() {
-        eventRepository.getLastProcessedEventId().onSuccess { eventId ->
+        eventRepository.getLastProcessedEventId().map { eventId ->
             eventRepository.updateLastProcessedEventId(eventId)
+        }.flatMap {
             eventRepository.liveEvents()
-                .onSuccess { webSocketEventFlow ->
-                    webSocketEventFlow.collect { webSocketEvent ->
-                        when (webSocketEvent) {
-                            is WebSocketEvent.Open -> {
-                                kaliumLogger.i("SYNC: Websocket Open")
+        }.onSuccess { webSocketEventFlow ->
+            webSocketEventFlow.collect { webSocketEvent ->
+                handleWebsocketEvent(webSocketEvent)
+            }
+        }.onFailure {
+            // throw so it is handled by coroutineExceptionHandler
+            throw KaliumSyncException("Failure when gathering events", it)
+        }
+    }
 
-                                delay(5000)
 
-                                eventRepository
-                                    .pendingEvents()
-                                    .mapNotNull { offlineEventOrFailure ->
-                                        when (offlineEventOrFailure) {
-                                            is Either.Left -> null
-                                            is Either.Right -> offlineEventOrFailure.value
-                                        }
-                                    }
-                                    .collect {
-                                        kaliumLogger.i("SYNC: Collecting offline event: ${it.id}")
-                                        addToOfflineEventBuffer(it)
-                                        processingEventFlow.emit(it)
-                                    }
-                                kaliumLogger.i("SYNC: Offline events collection finished")
-                                syncRepository.updateSyncState { SyncState.Live }
-                            }
-                            is WebSocketEvent.BinaryPayloadReceived -> {
-                                kaliumLogger.i("SYNC: Websocket Received binary payload")
-                                val mappedEvent = eventMapper.fromDTO(webSocketEvent.payload)
-                                mappedEvent.forEach {
-                                    if (!isEventPresentInOfflineBuffer(it)) {
-                                        clearOfflineEventBuffer()
-                                        kaliumLogger.d(
-                                            "SYNC: Event never seen before ${it.id} - We are live"
-                                        )
-                                        processingEventFlow.emit(it)
-                                    } else {
-                                        kaliumLogger.d(
-                                            "SYNC: Skipping emit of event from WebSocket because already emitted as offline event ${it.id}"
-                                        )
-                                    }
-                                }
-                            }
-                            is WebSocketEvent.Close -> {
-                                throw when (val cause = webSocketEvent.cause) {
-                                    is IOException ->
-                                        KaliumSyncException("Websocket disconnected", NetworkFailure.NoNetworkConnection(cause))
-                                    is Throwable ->
-                                        KaliumSyncException("Unknown Websocket error", CoreFailure.Unknown(cause))
-                                    else -> KaliumSyncException(
-                                        "Websocket event collecting stopped",
-                                        NetworkFailure.NoNetworkConnection(null)
-                                    )
-                                }
-                            }
-                            is WebSocketEvent.NonBinaryPayloadReceived -> {
-                                kaliumLogger.w(
-                                    "Non binary event received on Websocket"
-                                )
-                            }
+    private suspend fun handleWebsocketEvent(webSocketEvent: WebSocketEvent) {
+        when (webSocketEvent) {
+            is WebSocketEvent.Open -> {
+                kaliumLogger.i("SYNC: Websocket Open")
+
+                eventRepository
+                    .pendingEvents()
+                    .mapNotNull { offlineEventOrFailure ->
+                        when (offlineEventOrFailure) {
+                            is Either.Left -> null
+                            is Either.Right -> offlineEventOrFailure.value
                         }
                     }
+                    .collect {
+                        kaliumLogger.i("SYNC: Collecting offline event: ${it.id}")
+                        addToOfflineEventBuffer(it)
+                        processingEventFlow.emit(it)
+                    }
+                kaliumLogger.i("SYNC: Offline events collection finished")
+                syncRepository.updateSyncState { SyncState.Live }
+            }
+            is WebSocketEvent.BinaryPayloadReceived -> {
+                kaliumLogger.i("SYNC: Websocket Received binary payload")
+                val mappedEvent = eventMapper.fromDTO(webSocketEvent.payload)
+                mappedEvent.forEach {
+                    if (!isEventPresentInOfflineBuffer(it)) {
+                        clearOfflineEventBuffer()
+                        kaliumLogger.d(
+                            "SYNC: Event never seen before ${it.id} - We are live"
+                        )
+                        processingEventFlow.emit(it)
+                    } else {
+                        kaliumLogger.d(
+                            "SYNC: Skipping emit of event from WebSocket because already emitted as offline event ${it.id}"
+                        )
+                    }
                 }
+            }
+            is WebSocketEvent.Close -> {
+                throw when (val cause = webSocketEvent.cause) {
+                    is IOException ->
+                        KaliumSyncException("Websocket disconnected", NetworkFailure.NoNetworkConnection(cause))
+                    is Throwable ->
+                        KaliumSyncException("Unknown Websocket error", CoreFailure.Unknown(cause))
+                    else -> KaliumSyncException(
+                        "Websocket event collecting stopped",
+                        NetworkFailure.NoNetworkConnection(null)
+                    )
+                }
+            }
+            is WebSocketEvent.NonBinaryPayloadReceived -> {
+                kaliumLogger.w(
+                    "Non binary event received on Websocket"
+                )
+            }
         }
     }
 
