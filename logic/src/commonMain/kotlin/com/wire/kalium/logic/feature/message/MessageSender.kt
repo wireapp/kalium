@@ -60,12 +60,12 @@ interface MessageSender {
      * @param message that will be sent
      * @see [sendPendingMessage]
      */
-    suspend fun sendMessage(message: Message.Client): Either<CoreFailure, Unit>
+    suspend fun sendMessage(message: Message.Regular): Either<CoreFailure, Unit>
 
     /**
      * Attemps to send the given Client Discovery [Message] to suitable recipients.
      */
-    suspend fun sendClientDiscoveryMessage(message: Message.Client): Either<CoreFailure, String>
+    suspend fun sendClientDiscoveryMessage(message: Message.Regular): Either<CoreFailure, String>
 }
 
 class MessageSenderImpl(
@@ -83,7 +83,7 @@ class MessageSenderImpl(
     override suspend fun sendPendingMessage(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit> {
         syncManager.waitUntilLive()
         return messageRepository.getMessageById(conversationId, messageUuid).flatMap { message ->
-            if (message is Message.Client) sendMessage(message)
+            if (message is Message.Regular) sendMessage(message)
             else Either.Left(StorageFailure.Generic(IllegalArgumentException("Client cannot send server messages")))
         }.onFailure {
             kaliumLogger.i("Failed to send message. Failure = $it")
@@ -96,7 +96,7 @@ class MessageSenderImpl(
         }
     }
 
-    override suspend fun sendMessage(message: Message.Client): Either<CoreFailure, Unit> = attemptToSend(message)
+    override suspend fun sendMessage(message: Message.Regular): Either<CoreFailure, Unit> = attemptToSend(message)
         .flatMap { messageRemoteTime ->
             messageRepository.updateMessageDate(message.conversationId, message.id, messageRemoteTime)
                 .map { messageRemoteTime }
@@ -113,9 +113,9 @@ class MessageSenderImpl(
             )
         }
 
-    override suspend fun sendClientDiscoveryMessage(message: Message.Client): Either<CoreFailure, String> = attemptToSend(message)
+    override suspend fun sendClientDiscoveryMessage(message: Message.Regular): Either<CoreFailure, String> = attemptToSend(message)
 
-    private suspend fun attemptToSend(message: Message.Client): Either<CoreFailure, String> =
+    private suspend fun attemptToSend(message: Message.Regular): Either<CoreFailure, String> =
         conversationRepository.getConversationProtocolInfo(message.conversationId).flatMap { protocolInfo ->
             when (protocolInfo) {
                 is ConversationEntity.ProtocolInfo.MLS -> {
@@ -128,7 +128,7 @@ class MessageSenderImpl(
             }
         }
 
-    private suspend fun attemptToSendWithProteus(message: Message.Client): Either<CoreFailure, String> {
+    private suspend fun attemptToSendWithProteus(message: Message.Regular): Either<CoreFailure, String> {
         val conversationId = message.conversationId
         return conversationRepository.getConversationRecipients(conversationId).flatMap { recipients ->
             sessionEstablisher.prepareRecipientsForNewOutgoingMessage(recipients).map { recipients }
@@ -139,7 +139,7 @@ class MessageSenderImpl(
         }
     }
 
-    private suspend fun attemptToSendWithMLS(groupId: String, message: Message.Client): Either<CoreFailure, String> =
+    private suspend fun attemptToSendWithMLS(groupId: String, message: Message.Regular): Either<CoreFailure, String> =
         mlsMessageCreator.createOutgoingMLSMessage(groupId, message).flatMap { mlsMessage ->
             // TODO(mls): handle mls-stale-message
             messageRepository.sendMLSMessage(message.conversationId, mlsMessage).map {
@@ -151,7 +151,7 @@ class MessageSenderImpl(
      * Attempts to send a Proteus envelope
      * Will handle the failure and retry in case of [ProteusSendMessageFailure].
      */
-    private suspend fun trySendingProteusEnvelope(envelope: MessageEnvelope, message: Message.Client): Either<CoreFailure, String> =
+    private suspend fun trySendingProteusEnvelope(envelope: MessageEnvelope, message: Message.Regular): Either<CoreFailure, String> =
         messageRepository.sendEnvelope(message.conversationId, envelope).fold({
             when (it) {
                 is ProteusSendMessageFailure -> messageSendFailureHandler.handleClientsHaveChangedFailure(it).flatMap {
