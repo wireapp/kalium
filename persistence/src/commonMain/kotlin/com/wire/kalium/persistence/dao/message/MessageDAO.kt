@@ -18,8 +18,17 @@ interface MessageDAO {
     suspend fun updateMessagesAddMillisToDate(millis: Long, conversationId: QualifiedIDEntity, status: MessageEntity.Status)
     suspend fun getMessagesFromAllConversations(limit: Int, offset: Int): Flow<List<MessageEntity>>
     suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?>
-    suspend fun getMessagesByConversation(conversationId: QualifiedIDEntity, limit: Int, offset: Int): Flow<List<MessageEntity>>
-    suspend fun getMessagesByConversationAfterDate(conversationId: QualifiedIDEntity, date: String): Flow<List<MessageEntity>>
+    suspend fun getMessagesByConversationAndVisibility(
+        conversationId: QualifiedIDEntity,
+        limit: Int,
+        offset: Int,
+        visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.values().toList()
+    ): Flow<List<MessageEntity>>
+    suspend fun getMessagesByConversationAndVisibilityAfterDate(
+        conversationId: QualifiedIDEntity,
+        date: String,
+        visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.values().toList()
+    ): Flow<List<MessageEntity>>
     suspend fun getAllPendingMessagesFromUser(userId: UserIDEntity): List<MessageEntity>
     suspend fun updateTextMessageContent(
         conversationId: QualifiedIDEntity,

@@ -25,7 +25,7 @@ import com.wire.kalium.persistence.MessageUnknownContent as SQLDelightMessageUnk
 
 class MessageMapper {
     fun toModel(msg: SQLDelightMessage, content: MessageEntityContent): MessageEntity = when (content) {
-        is MessageEntityContent.Client -> MessageEntity.Client(
+        is MessageEntityContent.Regular -> MessageEntity.Regular(
             content = content,
             id = msg.id,
             conversationId = msg.conversation_id,
@@ -36,7 +36,7 @@ class MessageMapper {
             editStatus = mapEditStatus(msg.last_edit_timestamp),
             visibility = msg.visibility
         )
-        is MessageEntityContent.Server -> MessageEntity.Server(
+        is MessageEntityContent.System -> MessageEntity.System(
             content = content,
             id = msg.id,
             conversationId = msg.conversation_id,
@@ -71,7 +71,10 @@ class MessageMapper {
         memberChangeType = content.member_change_type
     )
 
-    fun toModel(content: SQLDelightMessageUnknownContent) = MessageEntityContent.Unknown(encodedData = content.unknown_encoded_data)
+    fun toModel(content: SQLDelightMessageUnknownContent) = MessageEntityContent.Unknown(
+        typeName = content.unknown_type_name,
+        encodedData = content.unknown_encoded_data
+    )
 
     private fun mapEditStatus(lastEditTimestamp: String?) =
         lastEditTimestamp?.let { MessageEntity.EditStatus.Edited(it) }
@@ -107,7 +110,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
                 conversation_id = message.conversationId,
                 date = message.date,
                 sender_user_id = message.senderUserId,
-                sender_client_id = if (message is MessageEntity.Client) message.senderClientId else null,
+                sender_client_id = if (message is MessageEntity.Regular) message.senderClientId else null,
                 visibility = message.visibility,
                 status = message.status,
                 content_type = contentTypeOf(message.content)
@@ -139,7 +142,8 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
                 is MessageEntityContent.Unknown -> queries.insertMessageUnknownContent(
                     message_id = message.id,
                     conversation_id = message.conversationId,
-                    unknown_encoded_data = content.encodedData
+                    unknown_encoded_data = content.encodedData,
+                    unknown_type_name = content.typeName
                 )
                 is MessageEntityContent.MemberChange -> queries.insertMemberChangeMessage(
                     message_id = message.id,
@@ -183,14 +187,23 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             .mapToOneOrNull()
             .flatMapLatest { it?.toMessageEntityFlow() ?: flowOf(null) }
 
-    override suspend fun getMessagesByConversation(conversationId: QualifiedIDEntity, limit: Int, offset: Int): Flow<List<MessageEntity>> =
-        queries.selectByConversationId(conversationId, limit.toLong(), offset.toLong())
+    override suspend fun getMessagesByConversationAndVisibility(
+        conversationId: QualifiedIDEntity,
+        limit: Int,
+        offset: Int,
+        visibility: List<MessageEntity.Visibility>
+    ): Flow<List<MessageEntity>> =
+        queries.selectByConversationIdAndVisibility(conversationId, visibility, limit.toLong(), offset.toLong())
             .asFlow()
             .mapToList()
             .toMessageEntityListFlow()
 
-    override suspend fun getMessagesByConversationAfterDate(conversationId: QualifiedIDEntity, date: String): Flow<List<MessageEntity>> =
-        queries.selectMessagesByConversationIdAfterDate(conversationId, date)
+    override suspend fun getMessagesByConversationAndVisibilityAfterDate(
+        conversationId: QualifiedIDEntity,
+        date: String,
+        visibility: List<MessageEntity.Visibility>
+    ): Flow<List<MessageEntity>>  =
+        queries.selectMessagesByConversationIdAndVisibilityAfterDate(conversationId, visibility, date)
             .asFlow()
             .mapToList()
             .toMessageEntityListFlow()

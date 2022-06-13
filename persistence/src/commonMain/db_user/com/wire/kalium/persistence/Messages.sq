@@ -73,6 +73,7 @@ CREATE TABLE MessageUnknownContent (
       message_id TEXT NOT NULL,
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
 
+      unknown_type_name TEXT,
       unknown_encoded_data BLOB,
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE,
@@ -154,10 +155,11 @@ member_change_list = excluded.member_change_list,
 member_change_type = excluded.member_change_type;
 
 insertMessageUnknownContent:
-INSERT INTO MessageUnknownContent(message_id, conversation_id, unknown_encoded_data)
-VALUES(?, ?, ?)
+INSERT INTO MessageUnknownContent(message_id, conversation_id, unknown_type_name, unknown_encoded_data)
+VALUES(?, ?, ?, ?)
 ON CONFLICT(message_id, conversation_id) DO UPDATE SET
 message_id = excluded.message_id,
+unknown_type_name = excluded.unknown_type_name,
 unknown_encoded_data = excluded.unknown_encoded_data;
 
 updateMessageStatus:
@@ -196,11 +198,11 @@ SELECT * FROM Message ORDER BY Datetime(date) DESC LIMIT ? OFFSET ?;
 selectById:
 SELECT * FROM Message WHERE id = ? AND conversation_id = ?;
 
-selectByConversationId:
-SELECT * FROM Message WHERE conversation_id = ? ORDER BY Datetime(date) DESC LIMIT ? OFFSET ?;
+selectByConversationIdAndVisibility:
+SELECT * FROM Message WHERE conversation_id = ? AND visibility IN ? ORDER BY Datetime(date) DESC LIMIT ? OFFSET ?;
 
-selectMessagesByConversationIdAfterDate:
-SELECT * FROM Message WHERE conversation_id = ? AND Datetime(date) > Datetime(?) ORDER BY Datetime(date) DESC;
+selectMessagesByConversationIdAndVisibilityAfterDate:
+SELECT * FROM Message WHERE conversation_id = ? AND visibility IN ? AND Datetime(date) > Datetime(?) ORDER BY Datetime(date) DESC;
 
 selectMessagesFromUserByStatus:
 SELECT * FROM Message WHERE sender_user_id = ? AND status = ?;
