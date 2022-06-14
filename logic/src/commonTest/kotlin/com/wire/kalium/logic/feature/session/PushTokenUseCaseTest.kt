@@ -1,8 +1,9 @@
 package com.wire.kalium.logic.feature.session
 
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.configuration.notification.NotificationToken
+import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.api.user.pushToken.PushTokenBody
@@ -25,11 +26,17 @@ class PushTokenUseCaseTest {
     @Mock
     val clientRemoteRepository = mock(classOf<ClientRepository>())
 
+    @Mock
+    private val notificationTokenRepository = mock(classOf<NotificationTokenRepository>())
+
     private lateinit var pushTokenUseCase: RegisterTokenUseCase
 
     @BeforeTest
     fun setup() {
-        pushTokenUseCase = RegisterTokenUseCase(clientRemoteRepository)
+        pushTokenUseCase = RegisterTokenUseCaseImpl(clientRemoteRepository, notificationTokenRepository)
+        given(notificationTokenRepository).function(notificationTokenRepository::getNotificationToken).whenInvoked().thenReturn(
+            Either.Right(NotificationToken(token = MOCK_TOKEN, transport = MOCK_TRANSPORT))
+        )
     }
 
 
@@ -41,7 +48,7 @@ class PushTokenUseCaseTest {
 
         val actual = pushTokenUseCase(
             senderId = "7239",
-            clientId = "cliId", token = "7239", transport = "GCM"
+            clientId = "cliId"
         )
 
         assertIs<RegisterTokenResult.Success>(actual)
@@ -62,7 +69,7 @@ class PushTokenUseCaseTest {
 
         val actual = pushTokenUseCase(
             senderId = "7239",
-            clientId = "cliId", token = "7239", transport = "GCM"
+            clientId = "cliId"
         )
 
         assertIs<RegisterTokenResult.Failure.AppNotFound>(actual)
@@ -82,7 +89,7 @@ class PushTokenUseCaseTest {
 
         val actual = pushTokenUseCase(
             senderId = "7239",
-            clientId = "cliId", token = "7239", transport = "GCM"
+            clientId = "cliId"
         )
 
         assertIs<RegisterTokenResult.Failure.Generic>(actual)
@@ -94,9 +101,12 @@ class PushTokenUseCaseTest {
     }
 
     companion object {
+        private const val MOCK_TOKEN = "7239"
+        private const val MOCK_TRANSPORT = "GCM"
+
         private val pushTokenRequestBody = PushTokenBody(
             senderId = "7239",
-            client = "cliId", token = "7239", transport = "GCM"
+            client = "cliId", token = MOCK_TOKEN, transport = MOCK_TRANSPORT
         )
     }
 }

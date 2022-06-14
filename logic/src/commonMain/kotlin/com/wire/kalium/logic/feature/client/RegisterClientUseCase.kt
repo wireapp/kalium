@@ -18,6 +18,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.network.api.user.pushToken.PushTokenBody
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMissingAuth
+import com.wire.kalium.network.exceptions.isNotFound
 import com.wire.kalium.network.exceptions.isTooManyClients
 
 sealed class RegisterClientResult {
@@ -41,32 +42,13 @@ interface RegisterClientUseCase {
      * capabilities :Hints provided by the client for the backend so it can behave in a backwards-compatible way.
      * ex : legalHoldConsent
      * preKeysToSend : the initial public keys to start a conversation with another client
-     *
-     * Sender ID : used only when we have a generated token that is related to the notifications
-     * in the case of android it represent the firebase project number
-     *
-     * @see [RegisterClientParam.ClientWithoutToken]
-     * @see [RegisterClientParam.ClientWithToken]
+     * @see [RegisterClientParam]
      */
-    sealed class RegisterClientParam {
-        abstract val password: String?
-        abstract val capabilities: List<ClientCapability>?
-        abstract val preKeysToSend: Int
-
-        data class ClientWithoutToken(
-            override val password: String?,
-            override val capabilities: List<ClientCapability>?,
-            override val preKeysToSend: Int = DEFAULT_PRE_KEYS_COUNT
-        ) : RegisterClientParam()
-
-        data class ClientWithToken(
-            override val password: String?,
-            override val capabilities: List<ClientCapability>?,
-            val senderId: String,
-            override val preKeysToSend: Int = DEFAULT_PRE_KEYS_COUNT
-        ) : RegisterClientParam()
-
-    }
+    data class RegisterClientParam(
+        val password: String?,
+        val capabilities: List<ClientCapability>?,
+        val preKeysToSend: Int = DEFAULT_PRE_KEYS_COUNT
+    )
 
     companion object {
         const val FIRST_KEY_ID = 0
@@ -78,8 +60,7 @@ class RegisterClientUseCaseImpl(
     private val clientRepository: ClientRepository,
     private val preKeyRepository: PreKeyRepository,
     private val keyPackageRepository: KeyPackageRepository,
-    private val mlsClientProvider: MLSClientProvider,
-    private val notificationTokenRepository: NotificationTokenRepository
+    private val mlsClientProvider: MLSClientProvider
 ) : RegisterClientUseCase {
 
     override suspend operator fun invoke(registerClientParam: RegisterClientUseCase.RegisterClientParam): RegisterClientResult =
@@ -89,12 +70,6 @@ class RegisterClientUseCaseImpl(
             }, { registerClientParam ->
                 clientRepository.registerClient(registerClientParam).flatMap { client ->
                     createMLSClient(client)
-                }.flatMap { client ->
-                    if (this is RegisterClientUseCase.RegisterClientParam.ClientWithToken) {
-                        registerToken(client, senderId)
-                    } else {
-                        Either.Right(client)
-                    }
                 }.fold({ failure ->
                     if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError)
                         when {
@@ -107,22 +82,6 @@ class RegisterClientUseCaseImpl(
                     RegisterClientResult.Success(client)
                 })
             })
-        }
-
-
-    /**
-     * to save the generated token that is related to the notifications , in the android case it's firebase token
-     */
-    private suspend fun registerToken(client: Client, senderId: String): Either<CoreFailure, Client> =
-        notificationTokenRepository.getNotificationToken().flatMap { notificationToken ->
-            clientRepository.registerToken(
-                PushTokenBody(
-                    senderId = senderId,
-                    client = client.clientId.value,
-                    token = notificationToken.token,
-                    transport = notificationToken.transport
-                )
-            ).map { client }
         }
 
     // TODO(mls): when https://github.com/wireapp/core-crypto/issues/11 is implemented we

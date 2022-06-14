@@ -15,9 +15,9 @@ sealed class Message(
     open val visibility: Visibility
 ) {
 
-    data class Client(
+    data class Regular(
         override val id: String,
-        override val content: MessageContent.Client,
+        override val content: MessageContent.Regular,
         override val conversationId: ConversationId,
         override val date: String,
         override val senderUserId: UserId,
@@ -27,9 +27,9 @@ sealed class Message(
         val editStatus : EditStatus
     ) : Message(id, content, conversationId, date, senderUserId, status, visibility)
 
-    data class Server(
+    data class System(
         override val id: String,
-        override val content: MessageContent.Server,
+        override val content: MessageContent.System,
         override val conversationId: ConversationId,
         override val date: String,
         override val senderUserId: UserId,
