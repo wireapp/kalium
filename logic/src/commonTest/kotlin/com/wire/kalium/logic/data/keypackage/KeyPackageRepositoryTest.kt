@@ -12,6 +12,7 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.keypackage.ClaimedKeyPackageList
 import com.wire.kalium.network.api.keypackage.KeyPackage
 import com.wire.kalium.network.api.keypackage.KeyPackageApi
+import com.wire.kalium.network.api.keypackage.KeyPackageCountDTO
 import com.wire.kalium.network.api.keypackage.KeyPackageDTO
 import com.wire.kalium.network.api.keypackage.KeyPackageRef
 import com.wire.kalium.network.utils.NetworkResponse
@@ -67,12 +68,12 @@ class KeyPackageRepositoryTest {
     @Test
     fun givenExistingClient_whenGettingAvailableKeyPackageCount_thenResultShouldBePropagated() = runTest {
         given(keyPackageApi).suspendFunction(keyPackageApi::getAvailableKeyPackageCount).whenInvokedWith(eq(SELF_CLIENT_ID.value))
-            .thenReturn(NetworkResponse.Success(KEY_PACKAGE_COUNT, mapOf(), 200))
+            .thenReturn(NetworkResponse.Success(KEY_PACKAGE_COUNT_DTO, mapOf(), 200))
 
         val keyPackageCount = keyPackageRepository.getAvailableKeyPackageCount(SELF_CLIENT_ID)
 
-        assertIs<Either.Right<Int>>(keyPackageCount)
-        assertEquals(KEY_PACKAGE_COUNT, keyPackageCount.value)
+        assertIs<Either.Right<KeyPackageCountDTO>>(keyPackageCount)
+        assertEquals(KEY_PACKAGE_COUNT_DTO.count, keyPackageCount.value.count)
     }
 
     @Test
@@ -92,6 +93,7 @@ class KeyPackageRepositoryTest {
 
     private companion object {
         const val KEY_PACKAGE_COUNT = 100
+        val KEY_PACKAGE_COUNT_DTO = KeyPackageCountDTO(KEY_PACKAGE_COUNT)
         val SELF_CLIENT_ID: ClientId = PlainId("client_self")
         val OTHER_CLIENT_ID: ClientId = PlainId("client_other")
         val USER_ID = UserId("user_id", "wire.com")
