@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.user
 import com.wire.kalium.logic.data.conversation.UserType
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
+import com.wire.kalium.logic.data.user.type.UserTypeMapper
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

@@ -103,6 +103,7 @@ actual class UserDatabaseProvider(private val storePath: File) {
                 accent_idAdapter = IntColumnAdapter,
                 connection_statusAdapter = EnumColumnAdapter(),
                 user_availability_statusAdapter = EnumColumnAdapter(),
+                user_typeAdapter = EnumColumnAdapter()
             )
         )
     }

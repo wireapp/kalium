@@ -9,6 +9,7 @@ import com.wire.kalium.logic.data.publicuser.PublicUserMapper
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.InvalidMappingFailure
 import com.wire.kalium.logic.functional.Either
@@ -26,6 +27,7 @@ import com.wire.kalium.network.api.user.connection.ConnectionStateDTO
 import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConversationDAO
+import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.UserDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -38,7 +40,6 @@ interface ConnectionRepository {
     suspend fun getConnections(): Either<StorageFailure, Flow<List<Connection>>>
     suspend fun insertConnectionFromEvent(event: Event.User.NewConnection): Either<CoreFailure, Unit>
     suspend fun observeConnectionList(): Flow<List<Connection>>
-
 }
 
 internal class ConnectionDataSource(
@@ -47,10 +48,12 @@ internal class ConnectionDataSource(
     private val connectionApi: ConnectionApi,
     private val userDetailsApi: UserDetailsApi,
     private val userDAO: UserDAO,
+    private val metadataDAO: MetadataDAO,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val connectionStatusMapper: ConnectionStatusMapper = MapperProvider.connectionStatusMapper(),
-    private val connectionMapper: ConnectionMapper = MapperProvider.connectionMapper(),
-    private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(),
+    private val connectionMapper: ConnectionMapper = MapperProvider.connectionMapper(userDAO, metadataDAO),
+    private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(userDAO, metadataDAO),
+    private val userTypeEntityTypeMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper(userDAO, metadataDAO)
 ) : ConnectionRepository {
 
     override suspend fun fetchSelfUserConnections(): Either<CoreFailure, Unit> {
@@ -63,7 +66,7 @@ internal class ConnectionDataSource(
                 kaliumLogger.v("Fetching connections page starting with pagingState $lastPagingState")
                 connectionApi.fetchSelfUserConnections(pagingState = lastPagingState)
             }.onSuccess {
-                it.connections.forEach {connectionDTO ->
+                it.connections.forEach { connectionDTO ->
                     persistConnection(connectionMapper.fromApiToModel(connectionDTO))
                 }
                 updateUserConnectionStatus(connections = it.connections)
@@ -84,7 +87,7 @@ internal class ConnectionDataSource(
             val connectionSent = connection.copy(status = ConnectionStateDTO.SENT)
             updateUserConnectionStatus(listOf(connectionSent))
             persistConnection(connectionMapper.fromApiToModel(connection))
-        }.map{ }
+        }.map { }
     }
 
     override suspend fun updateConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, Unit> {
@@ -137,9 +140,16 @@ internal class ConnectionDataSource(
         // This can fail? but the connection will be there and get synced in worst case in next SlowSync
         wrapApiRequest {
             userDetailsApi.getUserInfo(idMapper.toApiModel(connection.qualifiedToId))
-        }.flatMap {
+        }.flatMap { userProfileDTO ->
             wrapStorageRequest {
-                val userEntity = publicUserMapper.fromUserApiToEntity(it, connectionStatusMapper.toDaoModel(connection.status))
+                val userEntity = publicUserMapper.fromUserApiToEntityWithConnectionStateAndUserTypeEntity(
+                    userDetailResponse = userProfileDTO,
+                    connectionState = connectionStatusMapper.toDaoModel(state = connection.status),
+                    userTypeEntity = userTypeEntityTypeMapper.fromOtherUserTeamAndDomain(
+                        otherUserDomain = userProfileDTO.id.domain,
+                        otherUserTeamID = userProfileDTO.teamId
+                    )
+                )
                 userDAO.insertUser(userEntity)
             }
         }

@@ -63,7 +63,7 @@ class Member(override val id: UserId) : User()
 
 sealed class MemberDetails {
     data class Self(val selfUser: SelfUser) : MemberDetails()
-    data class Other(val otherUser: OtherUser, val userType: UserType) : MemberDetails()
+    data class Other(val otherUser: OtherUser) : MemberDetails()
 }
 
 typealias ClientId = PlainId

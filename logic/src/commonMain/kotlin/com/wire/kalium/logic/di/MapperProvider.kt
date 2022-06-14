@@ -25,6 +25,8 @@ import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessageMapperImpl
 import com.wire.kalium.logic.data.message.SendMessageFailureMapper
 import com.wire.kalium.logic.data.message.SendMessageFailureMapperImpl
+import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapper
+import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapperImpl
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.logic.data.prekey.PreKeyMapperImpl
 import com.wire.kalium.logic.data.prekey.remote.PreKeyListMapper
@@ -38,9 +40,14 @@ import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapperImpl
 import com.wire.kalium.logic.data.user.ConnectionStateMapper
 import com.wire.kalium.logic.data.user.ConnectionStateMapperImpl
+import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
+import com.wire.kalium.logic.data.user.type.UserEntityTypeMapperImpl
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.data.user.UserMapperImpl
-import com.wire.kalium.logic.data.user.UserTypeMapperImpl
+import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
+import com.wire.kalium.logic.data.user.type.DomainUserTypeMapperImpl
+import com.wire.kalium.persistence.dao.MetadataDAO
+import com.wire.kalium.persistence.dao.UserDAO
 
 internal object MapperProvider {
     fun idMapper(): IdMapper = IdMapperImpl()
@@ -52,11 +59,13 @@ internal object MapperProvider {
     fun teamMapper(): TeamMapper = TeamMapperImpl()
     fun messageMapper(): MessageMapper = MessageMapperImpl(idMapper(), memberMapper())
     fun memberMapper(): MemberMapper = MemberMapperImpl(idMapper())
-    fun conversationMapper(): ConversationMapper = ConversationMapperImpl(idMapper(), ConversationStatusMapperImpl(), UserTypeMapperImpl())
-    fun publicUserMapper(): PublicUserMapper = PublicUserMapperImpl(idMapper())
+    fun conversationMapper(): ConversationMapper = ConversationMapperImpl(idMapper(), ConversationStatusMapperImpl())
+    fun publicUserMapper(userDao: UserDAO, metaDao: MetadataDAO): PublicUserMapper = PublicUserMapperImpl(userDao, metaDao, idMapper())
     fun sendMessageFailureMapper(): SendMessageFailureMapper = SendMessageFailureMapperImpl()
     fun assetMapper(): AssetMapper = AssetMapperImpl()
-    fun eventMapper(): EventMapper = EventMapper(idMapper(), memberMapper(), connectionMapper())
+    fun eventMapper(userDao: UserDAO, metaDao: MetadataDAO): EventMapper =
+        EventMapper(idMapper(), memberMapper(), connectionMapper(userDao, metaDao))
+
     fun preyKeyMapper(): PreKeyMapper = PreKeyMapperImpl()
     fun preKeyListMapper(): PreKeyListMapper = PreKeyListMapper(preyKeyMapper())
     fun locationMapper(): LocationMapper = LocationMapper()
@@ -64,5 +73,20 @@ internal object MapperProvider {
     fun conversationStatusMapper(): ConversationStatusMapper = ConversationStatusMapperImpl()
     fun callMapper(): CallMapper = CallMapper()
     fun connectionStatusMapper(): ConnectionStatusMapper = ConnectionStatusMapperImpl()
-    fun connectionMapper(): ConnectionMapper = ConnectionMapperImpl(idMapper(), connectionStatusMapper(), publicUserMapper())
+    fun localNotificationMessageMapper(): LocalNotificationMessageMapper = LocalNotificationMessageMapperImpl()
+    fun connectionMapper(
+        userDao: UserDAO,
+        metaDao: MetadataDAO
+    ): ConnectionMapper = ConnectionMapperImpl(idMapper(), connectionStatusMapper(), publicUserMapper(userDao, metaDao))
+
+    fun userTypeEntityMapper(userDao: UserDAO, metaDao: MetadataDAO): UserEntityTypeMapper =
+        UserEntityTypeMapperImpl(userDao, metaDao, userMapper())
+
+    fun userTypeMapper(userDao: UserDAO, metaDao: MetadataDAO): DomainUserTypeMapper =
+        DomainUserTypeMapperImpl(
+            userDao,
+            metaDao,
+            userMapper()
+        )
+
 }

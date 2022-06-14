@@ -114,7 +114,7 @@ actual class UserDatabaseProvider(private val context: Context, userId: UserIDEn
     }
 
     actual val userDAO: UserDAO
-        get() = UserDAOImpl(database.usersQueries)
+        get() = UserDAOImpl(database.usersQueries, database.metadataQueries)
 
     actual val connectionDAO: ConnectionDAO
         get() = ConnectionDAOImpl(database.connectionsQueries)

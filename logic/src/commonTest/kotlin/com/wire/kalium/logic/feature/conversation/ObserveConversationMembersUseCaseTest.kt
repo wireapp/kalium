@@ -6,7 +6,7 @@ import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.conversation.MemberDetails
 import com.wire.kalium.logic.data.conversation.UserType
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.user.UserTypeMapper
+import com.wire.kalium.logic.data.user.type.UserTypeMapper
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncManager

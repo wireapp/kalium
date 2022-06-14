@@ -4,7 +4,6 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MemberDetails
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.user.UserTypeMapper
 import com.wire.kalium.logic.sync.SyncManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -16,8 +15,7 @@ import kotlinx.coroutines.flow.map
 class ObserveConversationMembersUseCase(
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
-    private val syncManager: SyncManager,
-    private val userTypeMapper: UserTypeMapper,
+    private val syncManager: SyncManager
 ) {
 
     suspend operator fun invoke(conversationId: ConversationId): Flow<List<MemberDetails>> {
@@ -32,8 +30,7 @@ class ObserveConversationMembersUseCase(
                 } else {
                     userRepository.getKnownUser(it.id).filterNotNull().map { otherUser ->
                         MemberDetails.Other(
-                            otherUser = otherUser,
-                            userType = userTypeMapper.fromOtherUserAndSelfUser(otherUser, selfUser)
+                            otherUser = otherUser
                         )
                     }
                 }

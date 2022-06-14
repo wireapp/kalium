@@ -30,6 +30,7 @@ data class UserEntity(
     // for now availabilityStatus is stored only locally and ignored for API models,
     // later, when API start supporting it, it should be added into API model too
     val availabilityStatus: UserAvailabilityStatusEntity,
+
     val userTypEntity : UserTypeEntity,
 )
 
@@ -53,9 +54,7 @@ enum class UserTypeEntity {
      * A temporary user that joined using the guest web interface,
      * from outside the backend network
      */
-    GUEST,
-
-    SELF;
+    GUEST;
 }
 
 internal typealias UserAssetIdEntity = String
@@ -110,4 +109,6 @@ interface UserDAO {
     suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity)
     suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String)
     suspend fun updateUserAvailabilityStatus(qualifiedID: QualifiedIDEntity, status: UserAvailabilityStatusEntity)
+
+    suspend fun getSelfUser() : UserEntity
 }
