@@ -2,9 +2,11 @@ package com.wire.kalium.persistence.db
 
 import android.content.Context
 import androidx.sqlite.db.SupportSQLiteDatabase
+import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.wire.kalium.persistence.DBUtil
 import com.wire.kalium.persistence.GlobalDatabase
+import com.wire.kalium.persistence.ServerConfiguration
 import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAO
 import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAOImpl
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
@@ -33,7 +35,11 @@ actual class GlobalDatabaseProvider(private val context: Context, kaliumPreferen
             factory = supportFactory,
             callback = onConnectCallback
         )
-        database = GlobalDatabase(driver)
+        database = GlobalDatabase(
+            driver, ServerConfiguration.Adapter(
+                commonApiVersionAdapter = IntColumnAdapter
+            )
+        )
     }
 
     actual val serverConfigurationDAO: ServerConfigurationDAO

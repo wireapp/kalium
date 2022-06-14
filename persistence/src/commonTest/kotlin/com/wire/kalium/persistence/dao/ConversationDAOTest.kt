@@ -27,15 +27,15 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenConversation_ThenConversationCanBeInserted() = runTest {
         conversationDAO.insertConversation(conversationEntity1)
-        val result = conversationDAO.getConversationByQualifiedID(conversationEntity1.id).first()
+        val result = conversationDAO.observeGetConversationByQualifiedID(conversationEntity1.id).first()
         assertEquals(conversationEntity1, result)
     }
 
     @Test
     fun givenListOfConversations_ThenMultipleConversationsCanBeInsertedAtOnce() = runTest {
         conversationDAO.insertConversations(listOf(conversationEntity1, conversationEntity2))
-        val result1 = conversationDAO.getConversationByQualifiedID(conversationEntity1.id).first()
-        val result2 = conversationDAO.getConversationByQualifiedID(conversationEntity2.id).first()
+        val result1 = conversationDAO.observeGetConversationByQualifiedID(conversationEntity1.id).first()
+        val result2 = conversationDAO.observeGetConversationByQualifiedID(conversationEntity2.id).first()
         assertEquals(conversationEntity1, result1)
         assertEquals(conversationEntity2, result2)
     }
@@ -44,7 +44,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     fun givenExistingConversation_ThenConversationCanBeDeleted() = runTest {
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.deleteConversationByQualifiedID(conversationEntity1.id)
-        val result = conversationDAO.getConversationByQualifiedID(conversationEntity1.id).first()
+        val result = conversationDAO.observeGetConversationByQualifiedID(conversationEntity1.id).first()
         assertNull(result)
     }
 
@@ -53,7 +53,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity1)
         val updatedConversation1Entity = conversationEntity1.copy(name = "Updated conversation1")
         conversationDAO.updateConversation(updatedConversation1Entity)
-        val result = conversationDAO.getConversationByQualifiedID(conversationEntity1.id).first()
+        val result = conversationDAO.observeGetConversationByQualifiedID(conversationEntity1.id).first()
         assertEquals(updatedConversation1Entity, result)
     }
 
@@ -73,7 +73,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,
             (conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
         )
-        val result = conversationDAO.getConversationByQualifiedID(conversationEntity2.id).first()
+        val result = conversationDAO.observeGetConversationByQualifiedID(conversationEntity2.id).first()
         assertEquals(
             (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState, ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE
         )
@@ -84,7 +84,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity1)
         val updatedConversation1Entity = conversationEntity1.copy(name = "Updated conversation1")
         conversationDAO.insertConversation(updatedConversation1Entity)
-        val result = conversationDAO.getConversationByQualifiedID(conversationEntity1.id).first()
+        val result = conversationDAO.observeGetConversationByQualifiedID(conversationEntity1.id).first()
         assertEquals(updatedConversation1Entity, result)
     }
 
@@ -152,7 +152,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             mutedStatusTimestamp = 1649702788L
         )
 
-        val result = conversationDAO.getConversationByQualifiedID(conversationEntity2.id).first()
+        val result = conversationDAO.observeGetConversationByQualifiedID(conversationEntity2.id).first()
 
         assertEquals(ConversationEntity.MutedStatus.ONLY_MENTIONS_ALLOWED, result?.mutedStatus)
     }
@@ -258,7 +258,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(convStored)
         conversationDAO.insertConversation(convAfterSync)
 
-        val actual = conversationDAO.getConversationByQualifiedID(convAfterSync.id).first()
+        val actual = conversationDAO.observeGetConversationByQualifiedID(convAfterSync.id).first()
         assertEquals(expected, actual)
     }
 

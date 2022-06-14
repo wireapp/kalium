@@ -2,9 +2,11 @@ package com.wire.kalium.logic.feature.auth.sso
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.configuration.ServerConfig
+import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.data.sso.SSOUtil
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
@@ -27,15 +29,9 @@ data class SSORedirects(val success: String, val error: String) {
 interface SSOInitiateLoginUseCase {
     sealed class Param {
         abstract val ssoCode: String
-        abstract val serverConfig: ServerConfig
 
-        data class WithoutRedirect(override val ssoCode: String, override val serverConfig: ServerConfig) : Param()
-        data class WithRedirect(
-            override val ssoCode: String,
-            override val serverConfig: ServerConfig,
-            val redirects: SSORedirects = SSORedirects(serverConfig.id)
-        ) :
-            Param()
+        data class WithoutRedirect(override val ssoCode: String) : Param()
+        data class WithRedirect(override val ssoCode: String) : Param()
     }
 
     suspend operator fun invoke(param: Param): SSOInitiateLoginResult
@@ -43,7 +39,9 @@ interface SSOInitiateLoginUseCase {
 
 internal class SSOInitiateLoginUseCaseImpl(
     private val ssoLoginRepository: SSOLoginRepository,
-    private val validateSSOCodeUseCase: ValidateSSOCodeUseCase
+    private val validateSSOCodeUseCase: ValidateSSOCodeUseCase,
+    private val serverLinks: ServerConfig.Links,
+    private val serverConfigRepository: ServerConfigRepository
 ) : SSOInitiateLoginUseCase {
 
     override suspend fun invoke(param: SSOInitiateLoginUseCase.Param): SSOInitiateLoginResult = with(param) {
@@ -54,13 +52,15 @@ internal class SSOInitiateLoginUseCaseImpl(
             }
         }
         when (this) {
-            is SSOInitiateLoginUseCase.Param.WithoutRedirect -> ssoLoginRepository.initiate(validUuid, serverConfig)
-            is SSOInitiateLoginUseCase.Param.WithRedirect -> ssoLoginRepository.initiate(
-                validUuid,
-                redirects.success,
-                redirects.error,
-                serverConfig
-            )
+            is SSOInitiateLoginUseCase.Param.WithoutRedirect -> ssoLoginRepository.initiate(validUuid)
+            is SSOInitiateLoginUseCase.Param.WithRedirect -> {
+                serverConfigRepository.getOrFetchMetadata(serverLinks).flatMap {
+                    val redirects = SSORedirects(it.id)
+                    ssoLoginRepository.initiate(
+                        validUuid, redirects.success, redirects.error
+                    )
+                }
+            }
         }.fold({
             if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
                 if (it.kaliumException.errorResponse.code == HttpStatusCode.BadRequest.value)

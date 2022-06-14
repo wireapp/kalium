@@ -1,7 +1,7 @@
 package com.wire.kalium.logic.feature.session
 
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.configuration.ServerConfig
+import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.auth.AuthSession
@@ -66,6 +66,9 @@ class CurrentSessionUseCaseTest {
         val TEST_SERVER_CONFIG: ServerConfig = newServerConfig(1)
 
         fun randomAuthSession(): AuthSession =
-            AuthSession(UserId("user_id", "domain.de"), randomString, randomString, randomString, TEST_SERVER_CONFIG)
+            AuthSession(
+                AuthSession.Tokens(UserId("user_id", "domain.de"), randomString, randomString, randomString),
+                TEST_SERVER_CONFIG.links
+            )
     }
 }

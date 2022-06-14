@@ -8,7 +8,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 
 interface CallManager {
-    suspend fun onCallingMessageReceived(message: Message.Client, content: MessageContent.Calling)
+    suspend fun onCallingMessageReceived(message: Message.Regular, content: MessageContent.Calling)
     suspend fun startCall(
         conversationId: ConversationId,
         callType: CallType,

@@ -7,6 +7,7 @@ data class Participant(
     val id: QualifiedID,
     val clientId: String,
     val name: String = "",
-    val isMuted: Boolean = true,
+    val isMuted: Boolean,
+    val isSpeaking: Boolean = false,
     val avatarAssetId: UserAssetId? = null
 )
