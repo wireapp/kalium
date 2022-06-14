@@ -95,7 +95,7 @@ internal class SendImageMessageUseCaseImpl(
         imgHeight: Int
     ): Either<CoreFailure, Unit> {
         // Get my current user
-        val selfUser = userRepository.getSelfUser().first()
+        val selfUser = userRepository.observeSelfUser().first()
 
         // Create a unique image message ID
         val generatedMessageUuid = uuid4().toString()

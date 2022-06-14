@@ -28,7 +28,7 @@ class DeleteMessageUseCase(
 
     suspend operator fun invoke(conversationId: ConversationId, messageId: String, deleteForEveryone: Boolean): Either<CoreFailure, Unit> {
         syncManager.waitUntilLive()
-        val selfUser = userRepository.getSelfUser().first()
+        val selfUser = userRepository.observeSelfUser().first()
 
         val generatedMessageUuid = uuid4().toString()
         return clientRepository.currentClientId().flatMap { currentClientId ->

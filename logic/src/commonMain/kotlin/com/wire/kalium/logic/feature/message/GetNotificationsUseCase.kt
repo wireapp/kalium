@@ -36,7 +36,7 @@ class GetNotificationsUseCaseImpl(
     @Suppress("LongMethod")
     override suspend operator fun invoke(): Flow<List<LocalNotificationConversation>> {
 
-        val selfUser = userRepository.getSelfUser().first()
+        val selfUser = userRepository.observeSelfUser().first()
 
         return conversationRepository.getConversationsForNotifications()
             .flatMapMerge { conversations ->

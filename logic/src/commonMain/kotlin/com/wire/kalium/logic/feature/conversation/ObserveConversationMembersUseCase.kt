@@ -22,7 +22,7 @@ class ObserveConversationMembersUseCase(
 
     suspend operator fun invoke(conversationId: ConversationId): Flow<List<MemberDetails>> {
         syncManager.startSyncIfIdle()
-        val selfDetailsFlow = userRepository.getSelfUser()
+        val selfDetailsFlow = userRepository.observeSelfUser()
         val selfUser = selfDetailsFlow.first()
 
         return conversationRepository.observeConversationMembers(conversationId).map { members ->

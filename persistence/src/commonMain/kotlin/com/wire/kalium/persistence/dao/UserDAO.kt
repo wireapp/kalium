@@ -29,8 +29,34 @@ data class UserEntity(
     val completeAssetId: UserAssetIdEntity?,
     // for now availabilityStatus is stored only locally and ignored for API models,
     // later, when API start supporting it, it should be added into API model too
-    val availabilityStatus: UserAvailabilityStatusEntity
+    val availabilityStatus: UserAvailabilityStatusEntity,
+    val userTypEntity : UserTypeEntity,
 )
+
+enum class UserTypeEntity {
+    INTERNAL,
+
+    // TODO(user-metadata): for now External will not be implemented
+    /**Team member with limited permissions */
+    EXTERNAL,
+
+    /**
+     * A user on the same backend but not on your team or,
+     * Any user on another backend using the Wire application,
+     */
+    FEDERATED,
+
+    /**
+     * Any user in wire.com using the Wire application or,
+     * A temporary user that joined using the guest web interface,
+     * from inside the backend network or,
+     * A temporary user that joined using the guest web interface,
+     * from outside the backend network
+     */
+    GUEST,
+
+    SELF;
+}
 
 internal typealias UserAssetIdEntity = String
 

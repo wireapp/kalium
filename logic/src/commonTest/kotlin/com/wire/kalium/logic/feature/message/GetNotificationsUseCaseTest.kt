@@ -55,7 +55,7 @@ class GetNotificationsUseCaseTest {
     @Test
     fun givenEmptyConversationList_thenEmptyNotificationList() = runTest {
         given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+            .suspendFunction(userRepository::observeSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
         given(conversationRepository)
@@ -76,7 +76,7 @@ class GetNotificationsUseCaseTest {
             .coroutine { getSelfUserId() }
             .then { MY_ID }
         given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+            .suspendFunction(userRepository::observeSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
         given(conversationRepository)
@@ -98,7 +98,7 @@ class GetNotificationsUseCaseTest {
     @Test
     fun givenConversationWithOnlyMyMessageList_thenEmptyNotificationList() = runTest {
         given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+            .suspendFunction(userRepository::observeSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
         given(userRepository)
@@ -130,7 +130,7 @@ class GetNotificationsUseCaseTest {
     @Test
     fun givenConversationWithMessageListIncludingMyMessages_thenNotificationListWithoutMyMessages() = runTest {
         given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+            .suspendFunction(userRepository::observeSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
         given(userRepository)
@@ -177,7 +177,7 @@ class GetNotificationsUseCaseTest {
     @Test
     fun givenFewConversationWithMessageLists_thenListOfFewNotifications() = runTest {
         given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+            .suspendFunction(userRepository::observeSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
         given(userRepository)
@@ -237,7 +237,7 @@ class GetNotificationsUseCaseTest {
     @Test
     fun givenFewConversationWithMessageListsButSameAuthor_thenAuthorInfoRequestedOnce() = runTest {
         given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+            .suspendFunction(userRepository::observeSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
         given(userRepository)
@@ -282,7 +282,7 @@ class GetNotificationsUseCaseTest {
     @Test
     fun givenConversationWithMessageListIncludingNotAllowedMessages_thenNotificationListWithoutTheseMessages() = runTest {
         given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+            .suspendFunction(userRepository::observeSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
         given(userRepository)

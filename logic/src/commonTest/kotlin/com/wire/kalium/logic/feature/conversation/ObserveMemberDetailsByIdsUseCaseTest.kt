@@ -50,7 +50,7 @@ class ObserveMemberDetailsByIdsUseCaseTest {
         val userIds = listOf(TestUser.SELF.id)
 
         given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+            .suspendFunction(userRepository::observeSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
 
@@ -74,7 +74,7 @@ class ObserveMemberDetailsByIdsUseCaseTest {
         val userIds = listOf(firstSelfUser.id)
 
         given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+            .suspendFunction(userRepository::observeSelfUser)
             .whenInvoked()
             .thenReturn(selfUserUpdates.asFlow())
 
@@ -98,7 +98,7 @@ class ObserveMemberDetailsByIdsUseCaseTest {
         val userIds = listOf(firstOtherUser.id)
 
         given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+            .suspendFunction(userRepository::observeSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
 

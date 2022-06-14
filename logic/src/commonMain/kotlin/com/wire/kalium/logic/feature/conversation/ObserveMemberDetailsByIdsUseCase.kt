@@ -21,7 +21,7 @@ class ObserveMemberDetailsByIdsUseCase(
 
     suspend operator fun invoke(userIdList: List<UserId>): Flow<List<MemberDetails>> {
         syncManager.startSyncIfIdle()
-        val selfDetailsFlow = userRepository.getSelfUser()
+        val selfDetailsFlow = userRepository.observeSelfUser()
         val selfUser = selfDetailsFlow.first()
 
         return flowOf(userIdList).map { members ->

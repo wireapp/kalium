@@ -28,7 +28,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
-import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DeleteMessageUseCaseTest {
@@ -73,7 +72,7 @@ class DeleteMessageUseCaseTest {
             .whenInvokedWith(anything())
             .thenReturn(Either.Right(Unit))
         given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+            .suspendFunction(userRepository::observeSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
         given(clientRepository)
@@ -111,7 +110,7 @@ class DeleteMessageUseCaseTest {
             .whenInvokedWith(anything())
             .thenReturn(Either.Right(Unit))
         given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+            .suspendFunction(userRepository::observeSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
         given(clientRepository)

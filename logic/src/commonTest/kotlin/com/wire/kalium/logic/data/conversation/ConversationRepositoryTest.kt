@@ -80,7 +80,7 @@ class ConversationRepositoryTest {
         val event = Event.Conversation.NewConversation("id", TestConversation.ID, "time", CONVERSATION_RESPONSE)
 
         given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+            .suspendFunction(userRepository::observeSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
 
@@ -106,7 +106,7 @@ class ConversationRepositoryTest {
         val protocolInfo = ConversationEntity.ProtocolInfo.MLS(groupId, ConversationEntity.GroupState.ESTABLISHED)
 
         given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+            .suspendFunction(userRepository::observeSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
 
@@ -150,7 +150,7 @@ class ConversationRepositoryTest {
                 }).thenReturn(NetworkResponse.Success(CONVERSATION_RESPONSE_DTO, emptyMap(), HttpStatusCode.OK.value))
 
             given(userRepository)
-                .suspendFunction(userRepository::getSelfUser)
+                .suspendFunction(userRepository::observeSelfUser)
                 .whenInvoked()
                 .thenReturn(flowOf(TestUser.SELF))
 
@@ -215,7 +215,7 @@ class ConversationRepositoryTest {
             .thenReturn(conversationEntityFlow)
 
         given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+            .suspendFunction(userRepository::observeSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
 
@@ -251,7 +251,7 @@ class ConversationRepositoryTest {
             .thenReturn(conversationEntityFlow)
 
         given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+            .suspendFunction(userRepository::observeSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
 
@@ -287,7 +287,7 @@ class ConversationRepositoryTest {
             .thenReturn(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201))
 
         given(userRepository)
-            .coroutine { userRepository.getSelfUser() }
+            .coroutine { userRepository.observeSelfUser() }
             .then { flowOf(TestUser.SELF) }
 
         given(conversationDAO)
@@ -331,7 +331,7 @@ class ConversationRepositoryTest {
             .thenReturn(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201))
 
         given(userRepository)
-            .coroutine { userRepository.getSelfUser() }
+            .coroutine { userRepository.observeSelfUser() }
             .then { flowOf(selfUserWithoutTeam) }
 
         given(conversationDAO)
@@ -374,7 +374,7 @@ class ConversationRepositoryTest {
             .thenReturn(NetworkResponse.Success(conversationResponse, emptyMap(), 201))
 
         given(userRepository)
-            .coroutine { userRepository.getSelfUser() }
+            .coroutine { userRepository.observeSelfUser() }
             .then { flowOf(TestUser.SELF) }
 
         given(userRepository)
@@ -430,7 +430,7 @@ class ConversationRepositoryTest {
                 .then { listOf(CONVERSATION_ENTITY) }
 
             given(userRepository)
-                .coroutine { userRepository.getSelfUser() }
+                .coroutine { userRepository.observeSelfUser() }
                 .then { flowOf(TestUser.SELF) }
 
             given(userRepository)

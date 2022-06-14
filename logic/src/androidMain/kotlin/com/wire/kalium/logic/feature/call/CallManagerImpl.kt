@@ -77,7 +77,7 @@ actual class CallManagerImpl(
         })
     }
     private val userId: Deferred<UserId> = scope.async(start = CoroutineStart.LAZY) {
-        userRepository.getSelfUser().first().id.also {
+        userRepository.observeSelfUser().first().id.also {
             callingLogger.d("$TAG - userId $it")
         }
     }

@@ -22,6 +22,7 @@ import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
+import com.wire.kalium.persistence.dao.UserEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -37,7 +38,7 @@ interface UserRepository {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
     suspend fun fetchKnownUsers(): Either<CoreFailure, Unit>
     suspend fun fetchUsersByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
-    suspend fun getSelfUser(): Flow<SelfUser>
+    suspend fun observeSelfUser(): Flow<SelfUser>
     suspend fun getSelfUserId(): QualifiedID
     suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, SelfUser>
     suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit>
@@ -58,7 +59,8 @@ class UserDataSource(
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(),
-    private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper()
+    private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
+    private val userTypeEntityTypeMapper: UserEntityTypeMapperImpl,
 ) : UserRepository {
 
     override suspend fun getSelfUserId(): QualifiedID {
@@ -93,11 +95,31 @@ class UserDataSource(
             userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(ids.map(idMapper::toApiModel)))
         }.flatMap {
             wrapStorageRequest {
-                userDAO.upsertUsers(it.map(userMapper::fromApiModelToDaoModel))
+                userDAO.upsertUsers(it.map(userMapper::fromApiModelToDaoModel).map(::fillLocalData))
             }
         }
 
-    override suspend fun getSelfUser(): Flow<SelfUser> {
+    /*
+     Back-end does not return all the information for the UserEntity, we are able to fill
+     the remaining data by using our "local" models.
+     */
+    private suspend fun fillLocalData(userEntity: UserEntity): UserEntity {
+        val selfUser = observeSelfUser().firstOrNull()
+
+        return if (selfUser != null) {
+            return userEntity.copy(
+                userTypEntity = userTypeEntityTypeMapper.fromOtherUserTeamIdAndIdWithSelfUser(
+                    userEntity.id.domain,
+                    userEntity.team,
+                    selfUser.team
+                )
+            )
+        } else {
+            userEntity
+        }
+    }
+
+    override suspend fun observeSelfUser(): Flow<SelfUser> {
         // TODO: handle storage error
         return metadataDAO.valueByKey(SELF_USER_ID_KEY).filterNotNull().flatMapMerge { encodedValue ->
             val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
@@ -109,7 +131,7 @@ class UserDataSource(
 
     // FIXME(refactor): user info can be updated with null, null and null
     override suspend fun updateSelfUser(newName: String?, newAccent: Int?, newAssetId: String?): Either<CoreFailure, SelfUser> {
-        val user = getSelfUser().firstOrNull() ?: return Either.Left(CoreFailure.Unknown(NullPointerException()))
+        val user = observeSelfUser().firstOrNull() ?: return Either.Left(CoreFailure.Unknown(NullPointerException()))
         val updateRequest = userMapper.fromModelToUpdateApiModel(user, newName, newAccent, newAssetId)
         return wrapApiRequest { selfApi.updateSelf(updateRequest) }
             .map { userMapper.fromUpdateRequestToDaoModel(user, updateRequest) }

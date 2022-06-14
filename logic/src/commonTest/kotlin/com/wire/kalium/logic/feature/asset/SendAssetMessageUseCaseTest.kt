@@ -164,7 +164,7 @@ class SendAssetMessageUseCaseTest {
                 .whenInvokedWith(any(), any())
                 .thenReturn(Either.Right(someAssetId))
             given(userRepository)
-                .suspendFunction(userRepository::getSelfUser)
+                .suspendFunction(userRepository::observeSelfUser)
                 .whenInvoked()
                 .thenReturn(flowOf(fakeSelfUser()))
             given(clientRepository)
