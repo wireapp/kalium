@@ -84,6 +84,22 @@ class ClientApiTest : ApiTest {
         assertTrue(actual.isSuccessful())
     }
 
+
+    @Test
+    fun whenUnregisteringToken_theRequestIsConfiguredCorrectly() = runTest {
+        val pid = "token_id"
+        val networkClient = mockAuthenticatedNetworkClient(
+            "", statusCode = HttpStatusCode.Created, assertion = {
+                assertDelete()
+                assertPathEqual("/push/tokens/$pid")
+            }
+        )
+        val clientApi = ClientApiImpl(networkClient)
+        val actual = clientApi.deregisterToken(pid)
+        assertIs<NetworkResponse.Success<Unit>>(actual)
+        assertTrue(actual.isSuccessful())
+    }
+
     private companion object {
         const val VALID_CLIENT_ID = "39s3ds2020sda"
         const val PATH_CLIENTS = "/clients"
