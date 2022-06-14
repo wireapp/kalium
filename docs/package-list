@@ -92,40 +92,6 @@ $dokka.location:com.wire.kalium.calling/VideoStateCalling.STARTED///PointingToDe
 $dokka.location:com.wire.kalium.calling/VideoStateCalling.STOPPED///PointingToDeclaration/calling/calling/com.wire.kalium.calling/-video-state-calling/-s-t-o-p-p-e-d/index.html
 $dokka.location:com.wire.kalium.calling/VideoStateCalling///PointingToDeclaration/calling/calling/com.wire.kalium.calling/-video-state-calling/index.html
 $dokka.location:com.wire.kalium.calling/VideoStateCalling/avsValue/#/PointingToDeclaration/calling/calling/com.wire.kalium.calling/-video-state-calling/avs-value.html
-$dokka.location:com.wire.kalium.cli////PointingToDeclaration/cli/cli/com.wire.kalium.cli/index.html
-$dokka.location:com.wire.kalium.cli//main/#kotlin.Array[kotlin.String]/PointingToDeclaration/cli/cli/com.wire.kalium.cli/main.html
-$dokka.location:com.wire.kalium.cli//restoreSession/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/restore-session.html
-$dokka.location:com.wire.kalium.cli/CLIApplication.Companion///PointingToDeclaration/cli/cli/com.wire.kalium.cli/-c-l-i-application/-companion/index.html
-$dokka.location:com.wire.kalium.cli/CLIApplication.Companion/HOME_DIRECTORY/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-c-l-i-application/-companion/-h-o-m-e_-d-i-r-e-c-t-o-r-y.html
-$dokka.location:com.wire.kalium.cli/CLIApplication///PointingToDeclaration/cli/cli/com.wire.kalium.cli/-c-l-i-application/index.html
-$dokka.location:com.wire.kalium.cli/CLIApplication/CLIApplication/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-c-l-i-application/-c-l-i-application.html
-$dokka.location:com.wire.kalium.cli/CLIApplication/run/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-c-l-i-application/run.html
-$dokka.location:com.wire.kalium.cli/CLIUtils///PointingToDeclaration/cli/cli/com.wire.kalium.cli/-c-l-i-utils/index.html
-$dokka.location:com.wire.kalium.cli/CLIUtils/getResource/#kotlin.String/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-c-l-i-utils/get-resource.html
-$dokka.location:com.wire.kalium.cli/CLIUtils/toByteArray/#java.io.InputStream?/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-c-l-i-utils/to-byte-array.html
-$dokka.location:com.wire.kalium.cli/ConversationsApplication///PointingToDeclaration/cli/cli/com.wire.kalium.cli/-conversations-application/index.html
-$dokka.location:com.wire.kalium.cli/ConversationsApplication/ConversationsApplication/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-conversations-application/-conversations-application.html
-$dokka.location:com.wire.kalium.cli/ConversationsApplication/run/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-conversations-application/run.html
-$dokka.location:com.wire.kalium.cli/CreateGroupCommand///PointingToDeclaration/cli/cli/com.wire.kalium.cli/-create-group-command/index.html
-$dokka.location:com.wire.kalium.cli/CreateGroupCommand/CreateGroupCommand/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-create-group-command/-create-group-command.html
-$dokka.location:com.wire.kalium.cli/CreateGroupCommand/run/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-create-group-command/run.html
-$dokka.location:com.wire.kalium.cli/DeleteClientCommand///PointingToDeclaration/cli/cli/com.wire.kalium.cli/-delete-client-command/index.html
-$dokka.location:com.wire.kalium.cli/DeleteClientCommand/DeleteClientCommand/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-delete-client-command/-delete-client-command.html
-$dokka.location:com.wire.kalium.cli/DeleteClientCommand/run/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-delete-client-command/run.html
-$dokka.location:com.wire.kalium.cli/InMemorySessionManager///PointingToDeclaration/cli/cli/com.wire.kalium.cli/-in-memory-session-manager/index.html
-$dokka.location:com.wire.kalium.cli/InMemorySessionManager/InMemorySessionManager/#com.wire.kalium.network.tools.ServerConfigDTO#com.wire.kalium.network.api.SessionDTO/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-in-memory-session-manager/-in-memory-session-manager.html
-$dokka.location:com.wire.kalium.cli/InMemorySessionManager/onSessionExpired/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-in-memory-session-manager/on-session-expired.html
-$dokka.location:com.wire.kalium.cli/InMemorySessionManager/session/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-in-memory-session-manager/session.html
-$dokka.location:com.wire.kalium.cli/InMemorySessionManager/updateSession/#com.wire.kalium.network.api.model.AccessTokenDTO#com.wire.kalium.network.api.model.RefreshTokenDTO?/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-in-memory-session-manager/update-session.html
-$dokka.location:com.wire.kalium.cli/ListenGroupCommand///PointingToDeclaration/cli/cli/com.wire.kalium.cli/-listen-group-command/index.html
-$dokka.location:com.wire.kalium.cli/ListenGroupCommand/ListenGroupCommand/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-listen-group-command/-listen-group-command.html
-$dokka.location:com.wire.kalium.cli/ListenGroupCommand/run/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-listen-group-command/run.html
-$dokka.location:com.wire.kalium.cli/LoginCommand///PointingToDeclaration/cli/cli/com.wire.kalium.cli/-login-command/index.html
-$dokka.location:com.wire.kalium.cli/LoginCommand/LoginCommand/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-login-command/-login-command.html
-$dokka.location:com.wire.kalium.cli/LoginCommand/run/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-login-command/run.html
-$dokka.location:com.wire.kalium.cli/RegisterAccountApp///PointingToDeclaration/cli/cli/com.wire.kalium.cli/-register-account-app/index.html
-$dokka.location:com.wire.kalium.cli/RegisterAccountApp/RegisterAccountApp/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-register-account-app/-register-account-app.html
-$dokka.location:com.wire.kalium.cli/RegisterAccountApp/run/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-register-account-app/run.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl.Companion///PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]-companion/index.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl.Companion/toByteArray/#kotlin.collections.List[kotlin.UByte]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]-companion/to-byte-array.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl.Companion/toUByteList/#kotlin.ByteArray/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]-companion/to-u-byte-list.html
@@ -175,8 +141,11 @@ $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/startCall/#co
 $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/updateVideoState/#com.wire.kalium.logic.data.id.QualifiedID#com.wire.kalium.logic.data.call.VideoState/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/-call-manager-impl/[jvm]update-video-state.html
 $dokka.location:com.wire.kalium.logic.feature.call/FlowManagerServiceImpl/setUIRotation/#kotlin.Int/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/-flow-manager-service-impl/[jvm]set-u-i-rotation.html
 $dokka.location:com.wire.kalium.logic.feature.call/FlowManagerServiceImpl/setVideoPreview/#com.wire.kalium.logic.data.id.QualifiedID#com.wire.kalium.logic.util.PlatformView/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/-flow-manager-service-impl/[jvm]set-video-preview.html
-$dokka.location:com.wire.kalium.logic.sync/WorkSchedulerImpl/enqueueImmediateWork/#kotlin.reflect.KClass[com.wire.kalium.logic.sync.UserSessionWorker]#kotlin.String/PointingToDeclaration/logic/com.wire.kalium.logic.sync/-work-scheduler-impl/[jvm]enqueue-immediate-work.html
-$dokka.location:com.wire.kalium.logic.sync/WorkSchedulerImpl/scheduleSendingOfPendingMessages/#/PointingToDeclaration/logic/com.wire.kalium.logic.sync/-work-scheduler-impl/[jvm]schedule-sending-of-pending-messages.html
+$dokka.location:com.wire.kalium.logic.sync/WorkSchedulerImpl.Global/schedulePeriodicApiVersionUpdate/#/PointingToDeclaration/logic/com.wire.kalium.logic.sync/-work-scheduler-impl/-global/[jvm]schedule-periodic-api-version-update.html
+$dokka.location:com.wire.kalium.logic.sync/WorkSchedulerImpl.UserSession/scheduleSendingOfPendingMessages/#/PointingToDeclaration/logic/com.wire.kalium.logic.sync/-work-scheduler-impl/-user-session/[jvm]schedule-sending-of-pending-messages.html
+$dokka.location:com.wire.kalium.logic.sync/WorkSchedulerImpl.UserSession/scheduleSlowSync/#/PointingToDeclaration/logic/com.wire.kalium.logic.sync/-work-scheduler-impl/-user-session/[jvm]schedule-slow-sync.html
+$dokka.location:com.wire.kalium.logic.sync/WorkSchedulerImpl.UserSession/userId/#/PointingToDeclaration/logic/com.wire.kalium.logic.sync/-work-scheduler-impl/-user-session/[jvm]user-id.html
+$dokka.location:com.wire.kalium.logic.sync/WorkSchedulerImpl/enqueueImmediateWork/#kotlin.reflect.KClass[com.wire.kalium.logic.sync.DefaultWorker]#kotlin.String/PointingToDeclaration/logic/com.wire.kalium.logic.sync/-work-scheduler-impl/[jvm]enqueue-immediate-work.html
 $dokka.location:com.wire.kalium.logic.util/PlatformView/view/#/PointingToDeclaration/logic/com.wire.kalium.logic.util/-platform-view/[jvm]view.html
 $dokka.location:com.wire.kalium.logic/CoreLogic/getSessionScope/#com.wire.kalium.logic.data.id.QualifiedID/PointingToDeclaration/logic/com.wire.kalium.logic/-core-logic/[jvm]get-session-scope.html
 $dokka.location:com.wire.kalium.network.api.message/EnvelopeProtoMapperImpl///PointingToDeclaration/network/com.wire.kalium.network.api.message/[jvm]-envelope-proto-mapper-impl/index.html
@@ -212,6 +181,7 @@ module:logic
 com.wire.kalium.logic
 com.wire.kalium.logic.configuration
 com.wire.kalium.logic.configuration.notification
+com.wire.kalium.logic.configuration.server
 com.wire.kalium.logic.data.asset
 com.wire.kalium.logic.data.auth.login
 com.wire.kalium.logic.data.call
@@ -249,9 +219,10 @@ com.wire.kalium.logic.feature.client
 com.wire.kalium.logic.feature.connection
 com.wire.kalium.logic.feature.conversation
 com.wire.kalium.logic.feature.message
-com.wire.kalium.logic.feature.notification_token
+com.wire.kalium.logic.feature.notificationToken
 com.wire.kalium.logic.feature.publicuser
 com.wire.kalium.logic.feature.register
+com.wire.kalium.logic.feature.server
 com.wire.kalium.logic.feature.session
 com.wire.kalium.logic.feature.team
 com.wire.kalium.logic.feature.user
@@ -287,6 +258,7 @@ com.wire.kalium.network.api.user.logout
 com.wire.kalium.network.api.user.pushToken
 com.wire.kalium.network.api.user.register
 com.wire.kalium.network.api.user.self
+com.wire.kalium.network.api.versioning
 com.wire.kalium.network.exceptions
 com.wire.kalium.network.serialization
 com.wire.kalium.network.session
