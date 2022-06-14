@@ -58,8 +58,17 @@ class UserDAOTest : BaseDatabaseTest() {
     fun givenExistingUser_ThenUserCanBeUpdated() = runTest {
         db.userDAO.insertUser(user1)
         val updatedUser1 = UserEntity(
-            user1.id, "John Doe", "johndoe", "email1", "phone1", 1, "team",
-            ConnectionEntity.State.ACCEPTED, UserAssetIdEntity(), UserAssetIdEntity(), UserAvailabilityStatusEntity.NONE
+            user1.id,
+            "John Doe",
+            "johndoe",
+            "email1",
+            "phone1",
+            1,
+            "team",
+            ConnectionEntity.State.ACCEPTED,
+            UserAssetIdEntity("asset1", "domain"),
+            UserAssetIdEntity("asset1", "domain"),
+            UserAvailabilityStatusEntity.NONE
         )
         db.userDAO.updateSelfUser(updatedUser1)
         val result = db.userDAO.getUserByQualifiedID(user1.id).first()
@@ -70,8 +79,17 @@ class UserDAOTest : BaseDatabaseTest() {
     fun givenListOfUsers_ThenUserCanBeQueriedByName() = runTest {
         db.userDAO.insertUser(user1)
         val updatedUser1 = UserEntity(
-            user1.id, "John Doe", "johndoe", "email1", "phone1", 1, "team",
-            ConnectionEntity.State.ACCEPTED, UserAssetIdEntity(), UserAssetIdEntity(), UserAvailabilityStatusEntity.NONE
+            user1.id,
+            "John Doe",
+            "johndoe",
+            "email1",
+            "phone1",
+            1,
+            "team",
+            ConnectionEntity.State.ACCEPTED,
+            UserAssetIdEntity("asset1", "domain"),
+            UserAssetIdEntity("asset2", "domain"),
+            UserAvailabilityStatusEntity.NONE
         )
 
         val result = db.userDAO.getUserByQualifiedID(user1.id)

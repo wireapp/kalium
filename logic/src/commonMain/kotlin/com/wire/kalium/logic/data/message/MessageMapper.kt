@@ -133,6 +133,7 @@ class MessageMapperImpl(
                 assetOtrKey = remoteData.otrKey,
                 assetSha256Key = remoteData.sha256,
                 assetId = remoteData.assetId,
+                assetDomain = remoteData.assetDomain,
                 assetToken = remoteData.assetToken,
                 assetEncryptionAlgorithm = remoteData.encryptionAlgorithm?.name,
                 assetWidth = assetWidth,

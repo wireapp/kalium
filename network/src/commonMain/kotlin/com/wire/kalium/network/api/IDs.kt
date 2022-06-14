@@ -8,7 +8,7 @@ typealias NonQualifiedConversationId = String
 typealias UserId = QualifiedID
 typealias NonQualifiedUserId = String
 typealias TeamId = String
-typealias AssetId = String
+typealias AssetId = QualifiedID
 typealias AssetKey = String
 typealias MLSPublicKey = String
 

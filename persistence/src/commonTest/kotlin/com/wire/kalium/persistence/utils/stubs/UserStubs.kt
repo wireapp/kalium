@@ -34,32 +34,3 @@ fun newUserEntity(qualifiedID: QualifiedIDEntity, id: String = "test") =
         null,
         UserAvailabilityStatusEntity.NONE
     )
-
-@Suppress("LongParameterList")
-fun newUserEntity(
-    id: String = "test",
-    name: String = "testName",
-    handle: String = "testHandle",
-    email: String = "testEmail@wire.com",
-    phone: String = "testPhone",
-    accentId: Int = 1,
-    team: String = "testTeam",
-    connectionStatus: ConnectionEntity.State = ConnectionEntity.State.ACCEPTED,
-    previewAssetId: String = "previewAssetId",
-    completeAssetId: String = "completeAssetId",
-    availabilityStatusEntity: UserAvailabilityStatusEntity = UserAvailabilityStatusEntity.NONE
-): UserEntity {
-    return UserEntity(
-        id = QualifiedIDEntity(id, "wire.com"),
-        name = name,
-        handle = handle,
-        email = email,
-        phone = phone,
-        accentId = accentId,
-        team = team,
-        connectionStatus = connectionStatus,
-        previewAssetId = previewAssetId,
-        completeAssetId = completeAssetId,
-        availabilityStatus = availabilityStatusEntity
-    )
-}
