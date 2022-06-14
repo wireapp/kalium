@@ -28,7 +28,7 @@ class OnParticipantListChanged(
     private val callingScope: CoroutineScope
 ) : ParticipantChangedHandler {
 
-    override fun onParticipantChanged(conversationId: String, data: String, arg: Pointer?) {
+    override fun onParticipantChanged(remoteConversationIdString: String, data: String, arg: Pointer?) {
         val participants = mutableListOf<Participant>()
         val clients = mutableListOf<CallClient>()
 
@@ -48,19 +48,20 @@ class OnParticipantListChanged(
             }
 
             callRepository.updateCallParticipants(
-                conversationId = conversationId,
+                //TODO should be handled properly after supporting federated calls
+                conversationId = remoteConversationIdString.toConversationId().toString(),
                 participants = participants
             )
         }
         calling.wcall_request_video_streams(
             inst = handle,
-            conversationId = conversationId,
+            conversationId = remoteConversationIdString,
             mode = DEFAULT_REQUEST_VIDEO_STREAMS_MODE,
             json = CallClientList(clients = clients).toJsonString()
         )
         callingLogger.i("onParticipantsChanged() - wcall_request_video_streams() called")
 
-        callingLogger.i("onParticipantsChanged() - Total Participants: ${participants.size} for $conversationId")
+        callingLogger.i("onParticipantsChanged() - Total Participants: ${participants.size} for $remoteConversationIdString")
     }
 
     private companion object {
