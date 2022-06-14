@@ -240,7 +240,9 @@ actual class CallManagerImpl(
                     handle = deferredHandle.await(),
                     calling = calling,
                     callRepository = callRepository,
-                    participantMapper = callMapper.participantMapper
+                    participantMapper = callMapper.participantMapper,
+                    userRepository = userRepository,
+                    callingScope = scope
                 ).keepingStrongReference()
 
                 wcall_set_participant_changed_handler(

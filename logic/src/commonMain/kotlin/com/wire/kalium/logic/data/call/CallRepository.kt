@@ -135,12 +135,12 @@ internal class CallDataSource(
         callProfile[conversationId]?.let {
             callingLogger.i("onParticipantsChanged() - conversationId: $conversationId")
             participants.forEachIndexed { index, participant ->
-                callingLogger.i("onParticipantsChanged() - Participant[$index/${participants.size}]: ${participant.id}")
+                callingLogger.i("onParticipantsChanged() - Participant[$index/${participants.size - 1}]: ${participant.id}")
             }
 
             _callProfile.value = callProfile.copy(
-                calls = callProfile.calls.apply {
-                    this.toMutableMap()[conversationId] = it.copy(
+                calls = callProfile.calls.toMutableMap().apply {
+                    this[conversationId] = it.copy(
                         participants = participants,
                         maxParticipants = max(it.maxParticipants, participants.size + 1)
                     )

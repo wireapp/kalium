@@ -65,7 +65,7 @@ class CallMapperTest {
                 domain = "domain"
             ),
             clientId = "clientid",
-            muted = false
+            isMuted = false
         )
 
         assertEquals(expectedParticipant, participantMap)
@@ -114,11 +114,11 @@ class CallMapperTest {
 
     private companion object {
         private val DUMMY_CALL_MEMBER = CallMember(
-            userid = "userid@domain",
-            clientid = "clientid",
+            userId = "userid@domain",
+            clientId = "clientid",
             aestab = 0,
             vrecv = 0,
-            muted = 0
+            isMuted = 0
         )
     }
 

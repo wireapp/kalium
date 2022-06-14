@@ -11,6 +11,11 @@ import com.wire.kalium.logic.data.call.CallMapper
 import com.wire.kalium.logic.data.call.CallParticipants
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.Participant
+import com.wire.kalium.logic.data.id.toConversationId
+import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.functional.map
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
@@ -18,7 +23,9 @@ class OnParticipantListChanged(
     private val handle: Handle,
     private val calling: Calling,
     private val callRepository: CallRepository,
-    private val participantMapper: CallMapper.ParticipantMapper
+    private val participantMapper: CallMapper.ParticipantMapper,
+    private val userRepository: UserRepository,
+    private val callingScope: CoroutineScope
 ) : ParticipantChangedHandler {
 
     override fun onParticipantChanged(conversationId: String, data: String, arg: Pointer?) {
@@ -26,16 +33,25 @@ class OnParticipantListChanged(
         val clients = mutableListOf<CallClient>()
 
         val participantsChange = Json.decodeFromString<CallParticipants>(data)
-        for (member in participantsChange.members) {
-            participants.add(participantMapper.fromCallMemberToParticipant(member = member))
-            clients.add(participantMapper.fromCallMemberToCallClient(member = member))
+        callingScope.launch {
+            for (member in participantsChange.members) {
+                val participant = participantMapper.fromCallMemberToParticipant(member = member)
+                userRepository.fetchUserInfo(member.userId.toConversationId()).map {
+                    val updatedParticipant = participant.copy(
+                        name = it.name!!,
+                        avatarAssetId = it.completePicture
+                    )
+                    participants.add(updatedParticipant)
+                }
+
+                clients.add(participantMapper.fromCallMemberToCallClient(member = member))
+            }
+
+            callRepository.updateCallParticipants(
+                conversationId = conversationId,
+                participants = participants
+            )
         }
-
-        callRepository.updateCallParticipants(
-            conversationId = conversationId,
-            participants = participants
-        )
-
         calling.wcall_request_video_streams(
             inst = handle,
             conversationId = conversationId,

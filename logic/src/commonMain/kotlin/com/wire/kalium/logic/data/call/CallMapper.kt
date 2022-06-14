@@ -47,21 +47,21 @@ class CallMapper {
         fun fromCallMemberToParticipant(member: CallMember): Participant = with(member) {
             Participant(
                 id = QualifiedID(
-                    value = userid.removeDomain(),
-                    domain = userid.getDomain()
+                    value = userId.removeDomain(),
+                    domain = userId.getDomain()
                 ),
-                clientId = clientid,
-                muted = muted == 1
+                clientId = clientId,
+                isMuted = isMuted == 1
             )
         }
 
         fun fromCallMemberToCallClient(member: CallMember): CallClient = with(member) {
             CallClient(
                 userId = QualifiedID(
-                    value = userid.removeDomain(),
-                    domain = userid.getDomain()
+                    value = userId.removeDomain(),
+                    domain = userId.getDomain()
                 ).toString(),
-                clientId = clientid
+                clientId = clientId
             )
         }
 
