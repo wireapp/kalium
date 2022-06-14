@@ -41,7 +41,7 @@ class MLSConversationDataSource(
     override suspend fun messageFromMLSMessage(messageEvent: Event.Conversation.NewMLSMessage): Either<CoreFailure, ByteArray?> =
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapStorageRequest {
-                conversationDAO.getConversationByQualifiedID(idMapper.toDaoModel(messageEvent.conversationId)).first()
+                conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(messageEvent.conversationId)).first()
             }.flatMap { conversation ->
                 if (conversation.protocolInfo is ConversationEntity.ProtocolInfo.MLS) {
                     Either.Right(
@@ -93,10 +93,10 @@ class MLSConversationDataSource(
 
                 client.createConversation(groupID, clientKeyPackageList)?.let { (handshake, welcome) ->
                     wrapApiRequest {
-                        mlsMessageApi.sendWelcomeMessage(MLSMessageApi.WelcomeMessage(welcome))
+                        mlsMessageApi.sendMessage(MLSMessageApi.Message(handshake))
                     }.flatMap {
                         wrapApiRequest {
-                            mlsMessageApi.sendMessage(MLSMessageApi.Message(handshake))
+                            mlsMessageApi.sendWelcomeMessage(MLSMessageApi.WelcomeMessage(welcome))
                         }
                     }.flatMap {
                         wrapStorageRequest {
