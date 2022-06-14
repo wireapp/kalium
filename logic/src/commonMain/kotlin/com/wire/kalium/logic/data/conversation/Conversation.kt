@@ -8,6 +8,7 @@ import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.type.UserType
 
 data class Conversation(
     val id: ConversationId,
@@ -70,25 +71,3 @@ typealias ClientId = PlainId
 
 data class Recipient(val member: Member, val clients: List<ClientId>)
 
-enum class UserType {
-    INTERNAL,
-
-    // TODO(user-metadata): for now External will not be implemented
-    /**Team member with limited permissions */
-    EXTERNAL,
-
-    /**
-     * A user on the same backend but not on your team or,
-     * Any user on another backend using the Wire application,
-     */
-    FEDERATED,
-
-    /**
-     * Any user in wire.com using the Wire application or,
-     * A temporary user that joined using the guest web interface,
-     * from inside the backend network or,
-     * A temporary user that joined using the guest web interface,
-     * from outside the backend network
-     */
-    GUEST;
-}

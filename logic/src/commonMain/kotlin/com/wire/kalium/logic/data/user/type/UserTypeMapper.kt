@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.data.user.type
 
-import com.wire.kalium.logic.data.conversation.UserType
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserDataSource
@@ -22,7 +21,7 @@ abstract class DomainUserTypeMapper(
     metadataDAO: MetadataDAO,
     userMapper: UserMapper,
     userTypeConverter: UserTypeConverter<UserType>
-) : UserTypeMapper<UserType>(userDAO, metadataDAO, userMapper, userTypeConverter) {
+) : UserTypeMapper<UserType>(userDAO, metadataDAO, userMapper,userTypeConverter) {
     abstract fun fromUserTypeEntity(userTypeEntity: UserTypeEntity): UserType
 }
 

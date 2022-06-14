@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.data.user.type
 
-import com.wire.kalium.logic.data.conversation.UserType
 import com.wire.kalium.persistence.dao.UserTypeEntity
 
 interface UserTypeConverter<T> {
