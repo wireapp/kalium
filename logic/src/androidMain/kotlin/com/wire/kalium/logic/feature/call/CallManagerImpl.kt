@@ -20,6 +20,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.call.scenario.OnActiveSpeakers
 import com.wire.kalium.logic.feature.call.scenario.OnAnsweredCall
 import com.wire.kalium.logic.feature.call.scenario.OnClientsRequest
 import com.wire.kalium.logic.feature.call.scenario.OnCloseCall
@@ -46,7 +47,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 actual class CallManagerImpl(
     private val calling: Calling,
     private val callRepository: CallRepository,
@@ -233,7 +234,13 @@ actual class CallManagerImpl(
      * Will start the handlers for: ParticipantsChanged, NetworkQuality, ClientsRequest and ActiveSpeaker
      */
     private fun onCallingReady() {
-        // Participants
+        initParticipantsHandler()
+        initNetworkHandler()
+        initClientsHandler()
+        initActiveSpeakersHandler()
+    }
+
+    private fun initParticipantsHandler() {
         scope.launch {
             withCalling {
                 val onParticipantListChanged = OnParticipantListChanged(
@@ -251,8 +258,9 @@ actual class CallManagerImpl(
                 callingLogger.d("$TAG - wcall_set_participant_changed_handler() called")
             }
         }
+    }
 
-        // Network Quality
+    private fun initNetworkHandler() {
         scope.launch {
             withCalling {
                 val onNetworkQualityChanged = OnNetworkQualityChanged()
@@ -267,19 +275,19 @@ actual class CallManagerImpl(
                 callingLogger.d("$TAG - wcall_set_network_quality_handler() called")
             }
         }
+    }
 
-        // Clients Request
+    private fun initClientsHandler() {
         scope.launch {
             withCalling {
                 val selfUserId = userId.await().toString()
-                val selfClientId = clientId.await().value
 
                 val onClientsRequest = OnClientsRequest(
                     calling = calling,
                     selfUserId = selfUserId,
                     conversationRepository = conversationRepository,
                     callingScope = scope
-                )
+                ).keepingStrongReference()
 
                 wcall_set_req_clients_handler(
                     inst = deferredHandle.await(),
@@ -289,8 +297,23 @@ actual class CallManagerImpl(
                 callingLogger.d("$TAG - wcall_set_req_clients_handler() called")
             }
         }
+    }
 
-        // TODO(calling): Active Speakers handler
+    private fun initActiveSpeakersHandler() {
+        scope.launch {
+            withCalling {
+                val activeSpeakersHandler = OnActiveSpeakers(
+                    callRepository = callRepository
+                ).keepingStrongReference()
+
+                wcall_set_active_speaker_handler(
+                    inst = deferredHandle.await(),
+                    activeSpeakersHandler = activeSpeakersHandler
+                )
+
+                callingLogger.d("$TAG - wcall_set_req_clients_handler() called")
+            }
+        }
     }
 
     companion object {
