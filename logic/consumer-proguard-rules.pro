@@ -21,7 +21,7 @@
 #-renamesourcefileattribute SourceFile
 
 # Keep all classes that extend UserSessionWorker for scheduled workers
--keep class * extends com.wire.kalium.logic.sync.UserSessionWorker {
+-keep class * extends com.wire.kalium.logic.sync.DefaultWorker {
    <init>(...);
 }
 

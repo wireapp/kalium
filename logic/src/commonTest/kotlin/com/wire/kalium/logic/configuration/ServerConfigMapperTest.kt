@@ -1,55 +1,89 @@
 package com.wire.kalium.logic.configuration
 
+import com.wire.kalium.logic.configuration.server.ApiVersionMapper
+import com.wire.kalium.logic.configuration.server.CommonApiVersionType
+import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.configuration.server.ServerConfigMapper
+import com.wire.kalium.logic.configuration.server.ServerConfigMapperImpl
+import com.wire.kalium.logic.configuration.server.toCommonApiVersionType
+import com.wire.kalium.logic.util.stubs.newServerConfig
+import com.wire.kalium.logic.util.stubs.newServerConfigDTO
+import com.wire.kalium.logic.util.stubs.newServerConfigEntity
+import com.wire.kalium.network.tools.ApiVersionDTO
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import io.ktor.http.Url
+import io.mockative.Mock
+import io.mockative.classOf
+import io.mockative.given
+import io.mockative.mock
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 class ServerConfigMapperTest {
 
     private lateinit var serverConfigMapper: ServerConfigMapper
 
+    @Mock
+    private val versionMapper = mock(classOf<ApiVersionMapper>())
+
     @BeforeTest
     fun setup() {
-        serverConfigMapper = ServerConfigMapperImpl()
+        serverConfigMapper = ServerConfigMapperImpl(versionMapper)
+        given(versionMapper).invocation { toDTO(SERVER_CONFIG_TEST.metaData.commonApiVersion) }.then { ApiVersionDTO.Valid(1) }
     }
 
     @Test
     fun givenAServerConfig_whenMappingToBackendConfig_thenValuesAreMappedCorrectly() {
-        val serverConfig: ServerConfig = serverConfig()
-        val acuteValue: ServerConfigDTO =
+        val serverConfig: ServerConfig = SERVER_CONFIG_TEST
+        val expected: ServerConfigDTO =
             with(serverConfig) {
                 ServerConfigDTO(
-                    Url(apiBaseUrl),
-                    Url(accountsBaseUrl),
-                    Url(webSocketBaseUrl),
-                    Url(blackListUrl),
-                    Url(teamsUrl),
-                    Url(websiteUrl),
-                    title
+                    id = id,
+                    ServerConfigDTO.Links(
+                        Url(links.api),
+                        Url(links.accounts),
+                        Url(links.webSocket),
+                        Url(links.blackList),
+                        Url(links.teams),
+                        Url(links.website),
+                        links.title,
+                    ),
+                    ServerConfigDTO.MetaData(
+                        metaData.federation,
+                        ApiVersionDTO.Valid(1),
+                        metaData.domain
+                    )
                 )
             }
 
-        val expectedValue: ServerConfigDTO = serverConfigMapper.toDTO(serverConfig)
-        assertEquals(expectedValue, acuteValue)
+        val actual: ServerConfigDTO = serverConfigMapper.toDTO(serverConfig)
+        assertEquals(expected, actual)
     }
 
     @Test
     fun givenANetworkConfigEntity_whenMappingFromNetworkConfig_thenValuesAreMappedCorrectly() {
-        val serverConfigEntity: ServerConfigEntity = serverConfigEntity()
+        val serverConfigEntity: ServerConfigEntity = ENTITY_TEST
         val acuteValue: ServerConfig =
             with(serverConfigEntity) {
                 ServerConfig(
                     id,
-                    apiBaseUrl,
-                    accountBaseUrl,
-                    webSocketBaseUrl,
-                    blackListUrl,
-                    teamsUrl,
-                    websiteUrl,
-                    title
+                    ServerConfig.Links(
+                        links.api,
+                        links.accounts,
+                        links.webSocket,
+                        links.blackList,
+                        links.teams,
+                        links.website,
+                        links.title,
+                    ),
+                    ServerConfig.MetaData(
+                        metaData.federation,
+                        metaData.apiVersion.toCommonApiVersionType(),
+                        metaData.domain
+                    )
                 )
             }
 
@@ -59,18 +93,25 @@ class ServerConfigMapperTest {
 
     @Test
     fun givenAServerConfig_whenMappingToNetworkConfig_thenValuesAreMappedCorrectly() {
-        val serverConfig: ServerConfig = serverConfig()
+        val serverConfig: ServerConfig = SERVER_CONFIG_TEST
         val acuteValue: ServerConfigEntity =
             with(serverConfig) {
                 ServerConfigEntity(
                     id,
-                    apiBaseUrl,
-                    accountsBaseUrl,
-                    webSocketBaseUrl,
-                    blackListUrl,
-                    teamsUrl,
-                    websiteUrl,
-                    title
+                    ServerConfigEntity.Links(
+                        links.api,
+                        links.accounts,
+                        links.webSocket,
+                        links.blackList,
+                        links.teams,
+                        links.website,
+                        links.title,
+                    ),
+                    ServerConfigEntity.MetaData(
+                        metaData.federation,
+                        metaData.commonApiVersion.version,
+                        metaData.domain
+                    )
                 )
             }
 
@@ -78,23 +119,27 @@ class ServerConfigMapperTest {
         assertEquals(expectedValue, acuteValue)
     }
 
+    @Test
+    fun givenACommonApiVersion_whenMapping_thenValuesAreMappedCorrectly() {
+        val expectedUnknown = -2
+        val actualUnknown = expectedUnknown.toCommonApiVersionType()
+        assertIs<CommonApiVersionType.Unknown>(actualUnknown)
+        assertEquals(expectedUnknown, actualUnknown.version)
+
+        val expectedNew = -1
+        val actualNew = expectedNew.toCommonApiVersionType()
+        assertIs<CommonApiVersionType.New>(actualNew)
+        assertEquals(expectedNew, actualNew.version)
+
+        val expectedValid = 1
+        val actualValid = expectedValid.toCommonApiVersionType()
+        assertIs<CommonApiVersionType.Valid>(actualValid)
+        assertEquals(expectedValid, actualValid.version)
+    }
+
     private companion object {
-        fun serverConfigDTO(): ServerConfigDTO =
-            ServerConfigDTO(
-                Url("https://test.api.com"), Url("https://test.account.com"), Url("https://test.ws.com"),
-                Url("https://test.blacklist"), Url("https://test.teams.com"), Url("https://test.wire.com"), "Test Title"
-            )
-
-        fun serverConfig(): ServerConfig =
-            ServerConfig(
-                "config-id", "https://test.api.com", "https://test.account.com", "https://test.ws.com",
-                "https://test.blacklist", "https://test.teams.com", "https://test.wire.com", "Test Title"
-            )
-
-        fun serverConfigEntity(): ServerConfigEntity =
-            ServerConfigEntity(
-                "config-id", "https://test.api.com", "https://test.account.com", "https://test.ws.com",
-                "https://test.blacklist", "https://test.teams.com", "https://test.wire.com", "Test Title"
-            )
+        val DTO_TEST: ServerConfigDTO = newServerConfigDTO(1)
+        val SERVER_CONFIG_TEST: ServerConfig = newServerConfig(1)
+        val ENTITY_TEST: ServerConfigEntity = newServerConfigEntity(1)
     }
 }

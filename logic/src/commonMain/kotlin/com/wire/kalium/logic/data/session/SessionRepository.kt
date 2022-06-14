@@ -53,7 +53,7 @@ internal class SessionDataSource(
             }
         }, { sessionsList ->
             sessionsList.forEach {
-                if (it.userId == userId) {
+                if (it.tokens.userId == userId) {
                     return@fold Either.Right(true)
                 }
             }

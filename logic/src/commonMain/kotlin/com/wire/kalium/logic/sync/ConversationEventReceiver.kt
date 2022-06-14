@@ -29,7 +29,6 @@ import com.wire.kalium.logic.sync.handler.MessageTextEditHandler
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.logic.wrapCryptoRequest
 import io.ktor.utils.io.core.toByteArray
-import kotlin.math.sign
 
 interface ConversationEventReceiver : EventReceiver<Event.Conversation>
 
@@ -41,12 +40,12 @@ class ConversationEventReceiverImpl(
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val userRepository: UserRepository,
-    private val protoContentMapper: ProtoContentMapper,
     private val callManagerImpl: Lazy<CallManager>,
     private val editTextHandler: MessageTextEditHandler,
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper(),
-) : ConversationEventReceiver {
+    private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper()
+    ) : ConversationEventReceiver {
 
     override suspend fun onEvent(event: Event.Conversation) {
         when (event) {
@@ -213,6 +212,7 @@ class ConversationEventReceiverImpl(
         }
     }
 
+    // TODO(qol): split this function so it's easier to maintain
     @Suppress("ComplexMethod", "LongMethod")
     private suspend fun processMessage(message: Message) {
         kaliumLogger.i(message = "Message received: $message")
