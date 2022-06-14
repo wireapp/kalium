@@ -26,8 +26,6 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 
 interface SyncManager {
     fun onSlowSyncComplete()
@@ -69,7 +67,7 @@ interface SyncManager {
     fun onSlowSyncFailure(cause: CoreFailure): SyncState
 }
 
-class SyncManagerImpl(
+internal class SyncManagerImpl(
     private val workScheduler: WorkScheduler,
     private val eventRepository: EventRepository,
     private val syncRepository: SyncRepository,
@@ -118,42 +116,9 @@ class SyncManagerImpl(
     private var processingJob: Job? = null
 
     // Do not access this variable directly of I will cut off your hands
-    private val offlineEventsBuffer = mutableListOf<Event>()
+    private val offlineEventBuffer = EventBuffer()
 
     private var processingEventFlow = MutableSharedFlow<Event>()
-
-    private val mutex = Mutex()
-
-    private suspend fun addToOfflineEventBuffer(event: Event) =
-        mutex.withLock {
-            offlineEventsBuffer.add(event)
-        }
-
-    private suspend fun isEventPresentInOfflineBuffer(event: Event): Boolean =
-        mutex.withLock {
-            offlineEventsBuffer.contains(event)
-        }
-
-    private suspend fun removeEventFromOfflineBuffer(event: Event) =
-        mutex.withLock {
-            offlineEventsBuffer.remove(event)
-        }
-
-    private suspend fun clearOfflineEventBufferIfLastEventEquals(event: Event): Boolean =
-        mutex.withLock {
-            if (offlineEventsBuffer.last() == event) {
-                offlineEventsBuffer.clear()
-                true
-            } else {
-                false
-            }
-        }
-
-    private suspend fun clearOfflineEventBuffer() {
-        mutex.withLock {
-            offlineEventsBuffer.clear()
-        }
-    }
 
     override fun onSlowSyncComplete() {
         // Processing already running, don't launch another
@@ -167,7 +132,7 @@ class SyncManagerImpl(
     }
 
     private suspend fun startProcessing() = eventProcessingScope.launch {
-        clearOfflineEventBuffer()
+        offlineEventBuffer.clearBuffer()
         launch(kaliumDispatcher.io) {
             gatherEvents()
         }
@@ -210,7 +175,7 @@ class SyncManagerImpl(
                     }
                     .collect {
                         kaliumLogger.i("SYNC: Collecting offline event: ${it.id}")
-                        addToOfflineEventBuffer(it)
+                        offlineEventBuffer.addToBuffer(it)
                         processingEventFlow.emit(it)
                     }
                 kaliumLogger.i("SYNC: Offline events collection finished")
@@ -219,8 +184,8 @@ class SyncManagerImpl(
             is WebSocketEvent.BinaryPayloadReceived -> {
                 kaliumLogger.i("SYNC: Websocket Received binary payload")
                 val event = webSocketEvent.payload
-                if (isEventPresentInOfflineBuffer(event)) {
-                    if (clearOfflineEventBufferIfLastEventEquals(event)) {
+                if (offlineEventBuffer.isEventPresentInBuffer(event)) {
+                    if (offlineEventBuffer.clearBufferIfLastEventEquals(event)) {
                         kaliumLogger.d(
                             // Really live
                             "SYNC: Removed most recent event from offlineEventBuffer: '${event.id}'"
@@ -230,7 +195,7 @@ class SyncManagerImpl(
                             // Really live
                             "SYNC: Removing event from offlineEventBuffer: ${event.id}"
                         )
-                        removeEventFromOfflineBuffer(event)
+                        offlineEventBuffer.removeEventFromBuffer(event)
                     }
                     kaliumLogger.d(
                         "SYNC: Skipping emit of event from WebSocket because already emitted as offline event ${event.id}"
