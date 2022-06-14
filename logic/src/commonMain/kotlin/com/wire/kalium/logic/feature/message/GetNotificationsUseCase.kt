@@ -59,7 +59,7 @@ class GetNotificationsUseCaseImpl(
                         observeMessagesList(conversation)
                             .map { messages ->
                                 // Filtering messages according to UserAvailabilityStatus and MutedConversationStatus
-                                val eligibleMessages = messages.filterAccordingToStatuses(selfUserId, selfUser, conversation)
+                                val eligibleMessages = messages.onlyEligibleMessages(selfUserId, selfUser, conversation)
                                 // If some messages were filtered by status, we need to update lastNotificationDate,
                                 // to not notify User about that messages, when User changes status
                                 updateConversationNotificationDateIfNeeded(eligibleMessages, messages, conversation)
@@ -119,9 +119,18 @@ class GetNotificationsUseCaseImpl(
     private suspend fun observeMessagesList(conversation: Conversation) =
         if (conversation.lastNotificationDate == null) {
             // that is a new conversation, lets just fetch last 100 messages for it
-            messageRepository.getMessagesForConversation(conversation.id, 100, 0)
+            messageRepository.getMessagesByConversationIdAndVisibility(
+                conversation.id,
+                100,
+                0,
+                listOf(Message.Visibility.VISIBLE)
+            )
         } else {
-            messageRepository.getMessagesByConversationAfterDate(conversation.id, conversation.lastNotificationDate)
+            messageRepository.getMessagesByConversationIdAndVisibilityAfterDate(
+                conversation.id,
+                conversation.lastNotificationDate,
+                listOf(Message.Visibility.VISIBLE)
+            )
         }
 
     private fun getNotificationMessageAuthor(authors: List<OtherUser?>, senderUserId: UserId) =
@@ -146,15 +155,16 @@ class GetNotificationsUseCaseImpl(
         }
     }
 
-    private fun List<Message>.filterAccordingToStatuses(
+    private fun List<Message>.onlyEligibleMessages(
         selfUserId: QualifiedID,
         selfUser: SelfUser,
         conversation: Conversation
     ): List<Message> =
         filter { message ->
-            (message.senderUserId != selfUserId
+            message.senderUserId != selfUserId
+                    && shouldMessageBeVisibleAsNotification(message)
                     && isSupportedForNotificationsMessageType(message)
-                    && shouldIncludeMessageForNotifications(message, selfUser, conversation.mutedStatus))
+                    && shouldIncludeMessageForNotifications(message, selfUser, conversation.mutedStatus)
         }
 
     private fun shouldIncludeMessageForNotifications(
@@ -198,9 +208,12 @@ class GetNotificationsUseCaseImpl(
 
     private fun isSupportedForNotificationsMessageType(message: Message): Boolean =
         message.content !is MessageContent.Unknown
-                && message.content !is MessageContent.Server
+                && message.content !is MessageContent.System
                 && message.content !is MessageContent.DeleteMessage
                 && message.content !is MessageContent.DeleteForMe
+
+    private fun shouldMessageBeVisibleAsNotification(message: Message) =
+        message.visibility == Message.Visibility.VISIBLE
 
     private data class ConversationWithMessages(val messages: List<Message>, val conversation: Conversation)
 }

@@ -4,6 +4,7 @@ import app.cash.turbine.test
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -281,36 +282,64 @@ class GetNotificationsUseCaseTest {
     }
 
     @Test
-    fun givenConversationWithOnlyMentionMuteStatus_whenNewMessageCome_thenNotificationsWithMentionComes(): TestResult {
+    fun givenConversationWithOnlyMentionMuteStatus_whenNewMessageCome_thenNotificationsWithMentionComes(): TestResult = runTest {
         val mentionMessageText = "@handle message with Mention"
-        return runTest {
-            val (arrange, getNotifications) = Arrangement()
-                .withSelfUserId()
-                .withSelfUser(selfUserWithStatus())
-                .withConversationsForNotifications(listOf(entityConversation(mutedStatus = MutedConversationStatus.OnlyMentionsAllowed)))
-                .withMessagesByConversationAfterDate { conversationId ->
-                    listOf(
-                        entityTextMessage(conversationId, otherUserId(), "0"),
-                        entityTextMessage(conversationId, otherUserId(), "1"),
-                        entityTextMessage(conversationId, otherUserId(), "2", MessageContent.Text(mentionMessageText))
-                    )
-                }
-                .withKnownUser()
-                .arrange()
-
-            getNotifications().test {
-                val actual = awaitItem()
-                val expected = listOf(notificationMessageText(authorName = otherUserName(otherUserId()), text = mentionMessageText))
-
-                assertEquals(1, actual.size)
-                assertEquals(expected, actual[0].messages)
-                verify(arrange.conversationRepository)
-                    .suspendFunction(arrange.conversationRepository::updateConversationNotificationDate)
-                    .with(any(), any())
-                    .wasInvoked(exactly = once)
-
-                awaitComplete()
+        val (arrange, getNotifications) = Arrangement()
+            .withSelfUserId()
+            .withSelfUser(selfUserWithStatus())
+            .withConversationsForNotifications(listOf(entityConversation(mutedStatus = MutedConversationStatus.OnlyMentionsAllowed)))
+            .withMessagesByConversationAfterDate { conversationId ->
+                listOf(
+                    entityTextMessage(conversationId, otherUserId(), "0"),
+                    entityTextMessage(conversationId, otherUserId(), "1"),
+                    entityTextMessage(conversationId, otherUserId(), "2", MessageContent.Text(mentionMessageText))
+                )
             }
+            .withKnownUser()
+            .arrange()
+
+        getNotifications().test {
+            val actual = awaitItem()
+            val expected = listOf(notificationMessageText(authorName = otherUserName(otherUserId()), text = mentionMessageText))
+
+            assertEquals(1, actual.size)
+            assertEquals(expected, actual[0].messages)
+            verify(arrange.conversationRepository)
+                .suspendFunction(arrange.conversationRepository::updateConversationNotificationDate)
+                .with(any(), any())
+                .wasInvoked(exactly = once)
+
+            awaitComplete()
+        }
+    }
+
+    @Test
+    fun givenConversationWithMessageListIncludingNotAllowedMessages_thenNotificationListWithoutTheseMessages() = runTest {
+        val (arrange, getNotifications) = Arrangement()
+            .withSelfUserId()
+            .withSelfUser()
+            .withKnownUser()
+            .withConversationsForNotifications(listOf(entityConversation()))
+            .withMessagesByConversationAfterDate { conversationId ->
+                listOf(
+                    entityTextMessage(conversationId(), otherUserId(), "0"),
+                    entityServerMessage(conversationId(), otherUserId(), "1"),
+                    entityTextMessage(conversationId(), otherUserId(), "2", visibility = Message.Visibility.HIDDEN)
+                )
+            }
+            .arrange()
+
+        getNotifications().test {
+            val actual = awaitItem()
+
+            assertTrue(actual.size == 1)
+            assertEquals(
+                actual[0].messages,
+                listOf(
+                    notificationMessageText(authorName = otherUserName(otherUserId()), text = "test message 0")
+                )
+            )
+            awaitComplete()
         }
     }
 
@@ -382,9 +411,9 @@ class GetNotificationsUseCaseTest {
 
         fun withMessagesByConversationAfterDate(messagesFun: (ConversationId) -> List<Message>): Arrangement {
             given(messageRepository)
-                .suspendFunction(messageRepository::getMessagesByConversationAfterDate)
-                .whenInvokedWith(any(), any())
-                .then { conversationId, _ -> flowOf(messagesFun(conversationId)) }
+                .suspendFunction(messageRepository::getMessagesByConversationIdAndVisibilityAfterDate)
+                .whenInvokedWith(any(), any(), any())
+                .then { conversationId, _, _ -> flowOf(messagesFun(conversationId)) }
 
             return this
         }
@@ -419,9 +448,10 @@ class GetNotificationsUseCaseTest {
             conversationId: QualifiedID,
             senderId: QualifiedID = TestUser.USER_ID,
             messageId: String = "message_id",
-            content: MessageContent.Client = MessageContent.Text("test message $messageId")
+            content: MessageContent.Regular = MessageContent.Text("test message $messageId"),
+            visibility: Message.Visibility = Message.Visibility.VISIBLE
         ) =
-            Message.Client(
+            Message.Regular(
                 id = messageId,
                 content = content,
                 conversationId = conversationId,
@@ -429,7 +459,8 @@ class GetNotificationsUseCaseTest {
                 senderUserId = senderId,
                 senderClientId = ClientId("client_1"),
                 status = Message.Status.SENT,
-                editStatus = Message.EditStatus.NotEdited
+                editStatus = Message.EditStatus.NotEdited,
+                visibility = visibility
             )
 
         private fun entityAssetMessage(
@@ -438,7 +469,7 @@ class GetNotificationsUseCaseTest {
             messageId: String = "message_id",
             assetId: String
         ) =
-            Message.Client(
+            Message.Regular(
                 id = messageId,
                 content = MessageContent.Asset(
                     AssetContent(
@@ -463,6 +494,20 @@ class GetNotificationsUseCaseTest {
                 senderClientId = ClientId("client_1"),
                 status = Message.Status.SENT,
                 editStatus = Message.EditStatus.NotEdited
+            )
+
+        private fun entityServerMessage(
+            conversationId: QualifiedID,
+            senderId: QualifiedID = TestUser.USER_ID,
+            messageId: String = "message_id"
+        ) =
+            Message.System(
+                id = messageId,
+                content = MessageContent.MemberChange.Removed(listOf(Member(senderId))),
+                conversationId = conversationId,
+                date = "some_time",
+                senderUserId = senderId,
+                status = Message.Status.SENT
             )
 
         private fun notificationMessageText(

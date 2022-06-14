@@ -56,7 +56,7 @@ class MainActivity : ComponentActivity() {
 
             val selfUser = session.users.getSelfUser().first()
 
-            val avatarAsset = when (val publicAsset = session.users.getPublicAsset(selfUser.previewPicture.toString())) {
+            val avatarAsset = when (val publicAsset = session.users.getPublicAsset(selfUser.previewPicture!!)) {
                 is PublicAssetResult.Success -> publicAsset.asset
                 else -> null
             }
