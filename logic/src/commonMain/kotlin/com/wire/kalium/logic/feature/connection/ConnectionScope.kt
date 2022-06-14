@@ -15,7 +15,11 @@ class ConnectionScope(
 
     val sendConnectionRequest: SendConnectionRequestUseCase get() = SendConnectionRequestUseCaseImpl(connectionRepository)
 
-    val acceptConnectionRequest: AcceptConnectionRequestUseCase get() = AcceptConnectionRequestUseCaseImpl(connectionRepository, conversationRepository)
+    val acceptConnectionRequest: AcceptConnectionRequestUseCase
+        get() = AcceptConnectionRequestUseCaseImpl(
+            connectionRepository,
+            conversationRepository
+        )
 
     val cancelConnectionRequest: CancelConnectionRequestUseCase get() = CancelConnectionRequestUseCaseImpl(connectionRepository)
 
