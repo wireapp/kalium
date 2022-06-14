@@ -11,6 +11,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.keypackage.KeyPackageApi
 import com.wire.kalium.network.api.keypackage.KeyPackageDTO
@@ -37,10 +38,11 @@ class KeyPackageDataSource(
         clientRepository.currentClientId().flatMap { selfClientId ->
             userIds.map { userId ->
                 wrapApiRequest {
-                    keyPackageApi.claimKeyPackages(idMapper.toApiModel(userId))
-                }.flatMap { keyPackageList ->
-                    // TODO: filtering out key packages from the self user client (will be removed soon when BE is updated).
-                    Either.Right(keyPackageList.keyPackages.filter { it.clientID != selfClientId.value })
+                    keyPackageApi.claimKeyPackages(
+                        KeyPackageApi.Param.SkipOwnClient(idMapper.toApiModel(userId), selfClientId.value)
+                    )
+                }.map {
+                    it.keyPackages
                 }
             }.foldToEitherWhileRight(emptyList()) { item, acc ->
                 item.flatMap { Either.Right(acc + it) }
