@@ -11,7 +11,6 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import com.wire.kalium.network.api.conversation.ConversationMembers
 import com.wire.kalium.network.api.notification.WebSocketEvent
 import io.mockative.Mock
 import io.mockative.configure
@@ -248,7 +247,7 @@ class SyncManagerTest {
             .thenReturn(emptyFlow())
 
         given(eventRepository)
-            .suspendFunction(eventRepository::getLastProcessedEventId)
+            .suspendFunction(eventRepository::lastEventId)
             .whenInvoked()
             .thenReturn(Either.Right("lastProcessedEventId"))
 
@@ -293,7 +292,7 @@ class SyncManagerTest {
             .thenReturn(Either.Right(flowOf(WebSocketEvent.Open())))
 
         given(eventRepository)
-            .suspendFunction(eventRepository::getLastProcessedEventId)
+            .suspendFunction(eventRepository::lastEventId)
             .whenInvoked()
             .thenReturn(Either.Right("lastProcessedId"))
 
@@ -330,7 +329,7 @@ class SyncManagerTest {
         )
 
         given(eventRepository)
-            .suspendFunction(eventRepository::getLastProcessedEventId)
+            .suspendFunction(eventRepository::lastEventId)
             .whenInvoked()
             .thenReturn(Either.Right("lastProcessedId"))
 
@@ -367,7 +366,7 @@ class SyncManagerTest {
             "2022-03-30T15:36:00.000Z"
         )
         given(eventRepository)
-            .suspendFunction(eventRepository::getLastProcessedEventId)
+            .suspendFunction(eventRepository::lastEventId)
             .whenInvoked()
             .thenReturn(Either.Right("lastProcessedId"))
 
@@ -406,7 +405,7 @@ class SyncManagerTest {
         val liveEventsChannel = Channel<WebSocketEvent<Event>>()
 
         given(eventRepository)
-            .suspendFunction(eventRepository::getLastProcessedEventId)
+            .suspendFunction(eventRepository::lastEventId)
             .whenInvoked()
             .thenReturn(Either.Right("lastProcessedId"))
 
@@ -450,7 +449,7 @@ class SyncManagerTest {
         val liveEventsChannel = Channel<WebSocketEvent<Event>>()
 
         given(eventRepository)
-            .suspendFunction(eventRepository::getLastProcessedEventId)
+            .suspendFunction(eventRepository::lastEventId)
             .whenInvoked()
             .thenReturn(Either.Right("lastProcessedId"))
 
@@ -497,7 +496,7 @@ class SyncManagerTest {
         val liveEventsChannel = Channel<WebSocketEvent<Event>>()
 
         given(eventRepository)
-            .suspendFunction(eventRepository::getLastProcessedEventId)
+            .suspendFunction(eventRepository::lastEventId)
             .whenInvoked()
             .thenReturn(Either.Right("lastProcessedId"))
 

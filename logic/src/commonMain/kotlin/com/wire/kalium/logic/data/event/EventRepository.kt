@@ -26,7 +26,13 @@ interface EventRepository {
     suspend fun pendingEvents(): Flow<Either<CoreFailure, Event>>
     suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<Event>>>
     suspend fun updateLastProcessedEventId(eventId: String)
-    suspend fun getLastProcessedEventId(): Either<CoreFailure, String>
+
+    /**
+     * Gets the last processed event ID, if it exists.
+     * Otherwise, it attempts to fetch the last event stored
+     * in remote.
+     */
+    suspend fun lastEventId(): Either<CoreFailure, String>
 }
 
 class EventDataSource(
@@ -37,9 +43,6 @@ class EventDataSource(
 ) : EventRepository {
 
     // TODO(edge-case): handle Missing notification response (notify user that some messages are missing)
-
-//    override suspend fun liveEvents(): Either<CoreFailure, Flow<Event>> = clientRepository.currentClientId()
-//        .map { clientId -> liveEventsFlow(clientId) }
 
     override suspend fun pendingEvents(): Flow<Either<CoreFailure, Event>> =
         clientRepository.currentClientId().fold(
@@ -101,7 +104,7 @@ class EventDataSource(
         }
     }
 
-    override suspend fun getLastProcessedEventId(): Either<CoreFailure, String> =
+    override suspend fun lastEventId(): Either<CoreFailure, String> =
         eventInfoStorage.lastProcessedId?.let {
             Either.Right(it)
         } ?: run {

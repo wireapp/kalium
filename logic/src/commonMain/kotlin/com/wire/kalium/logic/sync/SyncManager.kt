@@ -143,7 +143,7 @@ internal class SyncManagerImpl(
     }
 
     private suspend fun gatherEvents() {
-        eventRepository.getLastProcessedEventId().map { eventId ->
+        eventRepository.lastEventId().map { eventId ->
             eventRepository.updateLastProcessedEventId(eventId)
         }.flatMap {
             eventRepository.liveEvents()
