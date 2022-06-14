@@ -131,9 +131,9 @@ internal class SyncManagerImpl(
         processingJob = eventProcessingScope.launch { startProcessing() }
     }
 
-    private suspend fun startProcessing() = eventProcessingScope.launch {
+    private suspend fun startProcessing() {
         offlineEventBuffer.clearBuffer()
-        launch(kaliumDispatcher.io) {
+        eventProcessingScope.launch(kaliumDispatcher.io) {
             gatherEvents()
         }
 
@@ -217,6 +217,7 @@ internal class SyncManagerImpl(
                     )
                 }
             }
+
             is WebSocketEvent.NonBinaryPayloadReceived -> {
                 kaliumLogger.w(
                     "Non binary event received on Websocket"
@@ -254,15 +255,15 @@ internal class SyncManagerImpl(
     }
 
     override fun startSyncIfIdle() {
-        val syncState = syncRepository.updateSyncState {
+        syncRepository.updateSyncState {
             when (it) {
-                SyncState.Waiting, is SyncState.Failed -> SyncState.SlowSync
+                SyncState.Waiting, is SyncState.Failed -> {
+                    workScheduler.enqueueImmediateWork(SlowSyncWorker::class, SlowSyncWorker.name)
+                    SyncState.SlowSync
+                }
+
                 else -> it
             }
-        }
-
-        if (syncState == SyncState.SlowSync) {
-            workScheduler.enqueueImmediateWork(SlowSyncWorker::class, SlowSyncWorker.name)
         }
     }
 
