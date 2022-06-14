@@ -36,6 +36,7 @@ class OnSendOTR(
         isTransient: Boolean,
         arg: Pointer?
     ): Int {
+        callingLogger.i("OnSendOTR: conversationId = $conversationId")
         return if (selfUserId != userIdSelf && selfClientId != clientIdSelf) {
             callingLogger.i("OnSendOTR -> sendHandler error called")
             AvsCallBackError.INVALID_ARGUMENT.value
