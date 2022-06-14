@@ -2,6 +2,7 @@ package com.wire.kalium.logic.data.call
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.callingLogger
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.functional.Either
@@ -26,10 +27,12 @@ interface CallRepository {
     fun updateIsMutedById(conversationId: String, isMuted: Boolean)
     fun updateIsCameraOnById(conversationId: String, isCameraOn: Boolean)
     fun updateCallParticipants(conversationId: String, participants: List<Participant>)
+    fun updateParticipantsActiveSpeaker(conversationId: String, activeSpeakers: CallActiveSpeakers)
 }
 
 internal class CallDataSource(
-    private val callApi: CallApi
+    private val callApi: CallApi,
+    private val callMapper: CallMapper = MapperProvider.callMapper()
 ) : CallRepository {
 
     //TODO(question): to be saved somewhere ?
@@ -132,19 +135,42 @@ internal class CallDataSource(
     override fun updateCallParticipants(conversationId: String, participants: List<Participant>) {
         val callProfile = _callProfile.value
 
-        callProfile[conversationId]?.let {
-            callingLogger.i("onParticipantsChanged() - conversationId: $conversationId")
-            participants.forEachIndexed { index, participant ->
-                callingLogger.i("onParticipantsChanged() - Participant[$index/${participants.size}]: ${participant.id}")
+        callProfile[conversationId]?.let { call ->
+            callingLogger.i("updateCallParticipants() - conversationId: $conversationId with size of: ${participants.size}")
+
+            val updatedCalls = callProfile.calls.toMutableMap().apply {
+                this[conversationId] = call.copy(
+                    participants = participants,
+                    maxParticipants = max(call.maxParticipants, participants.size + 1)
+                )
             }
 
             _callProfile.value = callProfile.copy(
-                calls = callProfile.calls.apply {
-                    this.toMutableMap()[conversationId] = it.copy(
-                        participants = participants,
-                        maxParticipants = max(it.maxParticipants, participants.size + 1)
-                    )
-                }
+                calls = updatedCalls
+            )
+        }
+    }
+
+    override fun updateParticipantsActiveSpeaker(conversationId: String, activeSpeakers: CallActiveSpeakers) {
+        val callProfile = _callProfile.value
+
+        callProfile.calls[conversationId]?.let { call ->
+            callingLogger.i("updateActiveSpeakers() - conversationId: $conversationId with size of: ${activeSpeakers.activeSpeakers.size}")
+
+            val updatedParticipants = callMapper.activeSpeakerMapper.mapParticipantsActiveSpeaker(
+                participants = call.participants,
+                activeSpeakers = activeSpeakers
+            )
+
+            val updatedCalls = callProfile.calls.toMutableMap().apply {
+                this[conversationId] = call.copy(
+                    participants = updatedParticipants,
+                    maxParticipants = max(call.maxParticipants, updatedParticipants.size + 1)
+                )
+            }
+
+            _callProfile.value = callProfile.copy(
+                calls = updatedCalls
             )
         }
     }

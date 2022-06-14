@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapper
@@ -133,8 +134,8 @@ class RegisterAccountRepositoryTest {
                 accentId = accentId,
                 team = teamId,
                 connectionStatus = ConnectionState.ACCEPTED,
-                previewPicture = assets.getPreviewAssetOrNull()?.key,
-                completePicture = assets.getCompleteAssetOrNull()?.key,
+                previewPicture = UserAssetId("value1","domain"),
+                completePicture = UserAssetId("value2","domain"),
                 availabilityStatus = UserAvailabilityStatus.NONE
             )
         }
@@ -183,8 +184,8 @@ class RegisterAccountRepositoryTest {
                 accentId = accentId,
                 team = teamId,
                 connectionStatus = ConnectionState.ACCEPTED,
-                previewPicture = assets.getPreviewAssetOrNull()?.key,
-                completePicture = assets.getCompleteAssetOrNull()?.key,
+                previewPicture = UserAssetId("value1","domain"),
+                completePicture = UserAssetId("value2","domain"),
                 availabilityStatus = UserAvailabilityStatus.NONE
             )
         }

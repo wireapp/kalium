@@ -23,7 +23,7 @@ interface MessageEnvelopeCreator {
 
     suspend fun createOutgoingEnvelope(
         recipients: List<Recipient>,
-        message: Message.Client
+        message: Message.Regular
     ): Either<CoreFailure, MessageEnvelope>
 
 }
@@ -36,7 +36,7 @@ class MessageEnvelopeCreatorImpl(
 
     override suspend fun createOutgoingEnvelope(
         recipients: List<Recipient>,
-        message: Message.Client
+        message: Message.Regular
     ): Either<CoreFailure, MessageEnvelope> {
         val senderClientId = message.senderClientId
         val content = protoContentMapper.encodeToProtobuf(ProtoContent(message.id, message.content))
