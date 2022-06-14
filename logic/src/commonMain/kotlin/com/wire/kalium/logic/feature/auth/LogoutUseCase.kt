@@ -8,11 +8,11 @@ import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.di.UserSessionScopeProvider
 import com.wire.kalium.logic.di.UserSessionScopeProviderImpl
+import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.functional.isLeft
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 
-@Suppress("")
 class LogoutUseCase @Suppress("LongParameterList") constructor(
     private val logoutRepository: LogoutRepository,
     private val sessionRepository: SessionRepository,
@@ -20,10 +20,12 @@ class LogoutUseCase @Suppress("LongParameterList") constructor(
     private val authenticatedDataSourceSet: AuthenticatedDataSourceSet,
     private val clientRepository: ClientRepository,
     private val mlsClientProvider: MLSClientProvider,
+    private val deregisterTokenUseCase: DeregisterTokenUseCase,
     private val userSessionScopeProvider: UserSessionScopeProvider = UserSessionScopeProviderImpl
 ) {
     suspend operator fun invoke() {
         //TODO(important): deregister push notification token
+        deregisterTokenUseCase()
         logoutRepository.logout()
         clearCrypto()
         clearUserStorage()
@@ -33,6 +35,10 @@ class LogoutUseCase @Suppress("LongParameterList") constructor(
 
     private fun clearInMemoryUserSession() {
         userSessionScopeProvider.delete(userId)
+    }
+
+    private suspend fun deregisterNativePushToken() {
+        deregisterTokenUseCase()
     }
 
     private fun clearUserSessionAndUpdateCurrent() {
