@@ -32,13 +32,9 @@ class MessageMapperImpl(
             Message.Status.READ -> MessageEntity.Status.READ
             Message.Status.FAILED -> MessageEntity.Status.FAILED
         }
-        val visibility = when (message.visibility) {
-            Message.Visibility.VISIBLE -> MessageEntity.Visibility.VISIBLE
-            Message.Visibility.HIDDEN -> MessageEntity.Visibility.HIDDEN
-            Message.Visibility.DELETED -> MessageEntity.Visibility.DELETED
-        }
+        val visibility = message.visibility.toEntityVisibility()
         return when (message) {
-            is Message.Client -> MessageEntity.Client(
+            is Message.Regular -> MessageEntity.Regular(
                 id = message.id,
                 content = message.content.toMessageEntityContent(),
                 conversationId = idMapper.toDaoModel(message.conversationId),
@@ -52,7 +48,7 @@ class MessageMapperImpl(
                 },
                 visibility = visibility
             )
-            is Message.Server -> MessageEntity.Server(
+            is Message.System -> MessageEntity.System(
                 id = message.id,
                 content = message.content.toMessageEntityContent(),
                 conversationId = idMapper.toDaoModel(message.conversationId),
@@ -77,9 +73,9 @@ class MessageMapperImpl(
             MessageEntity.Visibility.DELETED -> Message.Visibility.DELETED
         }
         return when (message) {
-            is MessageEntity.Client -> Message.Client(
+            is MessageEntity.Regular -> Message.Regular(
                 id = message.id,
-                content = message.content.toMessageContent(),
+                content = message.content.toMessageContent(visibility == Message.Visibility.HIDDEN),
                 conversationId = idMapper.fromDaoModel(message.conversationId),
                 date = message.date,
                 senderUserId = idMapper.fromDaoModel(message.senderUserId),
@@ -91,7 +87,7 @@ class MessageMapperImpl(
                 },
                 visibility = visibility
             )
-            is MessageEntity.Server -> Message.Server(
+            is MessageEntity.System -> Message.System(
                 id = message.id,
                 content = message.content.toMessageContent(),
                 conversationId = idMapper.fromDaoModel(message.conversationId),
@@ -111,7 +107,7 @@ class MessageMapperImpl(
         }
 
     @Suppress("ComplexMethod")
-    private fun MessageContent.Client.toMessageEntityContent(): MessageEntityContent.Client = when (this) {
+    private fun MessageContent.Regular.toMessageEntityContent(): MessageEntityContent.Regular = when (this) {
         is MessageContent.Text -> MessageEntityContent.Text(messageBody = this.value)
         is MessageContent.Asset -> with(this.value) {
             val assetWidth = when (metadata) {
@@ -145,11 +141,11 @@ class MessageMapperImpl(
                 assetNormalizedLoudness = if (metadata is Audio) metadata.normalizedLoudness else null
             )
         }
-        is MessageContent.Unknown -> MessageEntityContent.Unknown(this.encodedData)
+        is MessageContent.Unknown -> MessageEntityContent.Unknown(this.typeName, this.encodedData)
         else -> MessageEntityContent.Unknown()
     }
 
-    private fun MessageContent.Server.toMessageEntityContent(): MessageEntityContent.Server = when (this) {
+    private fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System = when (this) {
         is MessageContent.MemberChange -> {
             val memberUserIdList = this.members.map { memberMapper.toDaoModel(it).user }
             when (this) {
@@ -161,15 +157,15 @@ class MessageMapperImpl(
         }
     }
 
-    private fun MessageEntityContent.Client.toMessageContent(): MessageContent.Client = when (this) {
+    private fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean): MessageContent.Regular = when (this) {
         is MessageEntityContent.Text -> MessageContent.Text(this.messageBody)
         is MessageEntityContent.Asset -> MessageContent.Asset(
             MapperProvider.assetMapper().fromAssetEntityToAssetContent(this)
         )
-        is MessageEntityContent.Unknown -> MessageContent.Unknown(this.encodedData)
+        is MessageEntityContent.Unknown -> MessageContent.Unknown(this.typeName, this.encodedData, hidden)
     }
 
-    private fun MessageEntityContent.Server.toMessageContent(): MessageContent.Server = when (this) {
+    private fun MessageEntityContent.System.toMessageContent(): MessageContent.System = when (this) {
         is MessageEntityContent.MemberChange -> {
             val memberList = this.memberUserIdList.map { memberMapper.fromDaoModel(it) }
             when (this.memberChangeType) {
@@ -178,4 +174,10 @@ class MessageMapperImpl(
             }
         }
     }
+}
+
+fun Message.Visibility.toEntityVisibility(): MessageEntity.Visibility = when (this) {
+    Message.Visibility.VISIBLE -> MessageEntity.Visibility.VISIBLE
+    Message.Visibility.HIDDEN -> MessageEntity.Visibility.HIDDEN
+    Message.Visibility.DELETED -> MessageEntity.Visibility.DELETED
 }

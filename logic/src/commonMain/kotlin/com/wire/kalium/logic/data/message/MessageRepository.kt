@@ -29,7 +29,6 @@ import kotlinx.coroutines.flow.map
 
 @Suppress("TooManyFunctions")
 interface MessageRepository {
-    suspend fun getMessagesForConversation(conversationId: ConversationId, limit: Int, offset: Int): Flow<List<Message>>
     suspend fun persistMessage(message: Message): Either<CoreFailure, Unit>
     suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun markMessageAsDeleted(messageUuid: String, conversationId: ConversationId): Either<StorageFailure, Unit>
@@ -49,7 +48,17 @@ interface MessageRepository {
     suspend fun updateMessageDate(conversationId: ConversationId, messageUuid: String, date: String): Either<CoreFailure, Unit>
     suspend fun updatePendingMessagesAddMillisToDate(conversationId: ConversationId, millis: Long): Either<CoreFailure, Unit>
     suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message>
-    suspend fun getMessagesByConversationAfterDate(conversationId: ConversationId, date: String): Flow<List<Message>>
+    suspend fun getMessagesByConversationIdAndVisibility(
+        conversationId: ConversationId,
+        limit: Int,
+        offset: Int,
+        visibility: List<Message.Visibility> = Message.Visibility.values().toList()
+    ): Flow<List<Message>>
+    suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
+        conversationId: ConversationId,
+        date: String,
+        visibility: List<Message.Visibility> = Message.Visibility.values().toList()
+    ): Flow<List<Message>>
 
     /**
      * Send a Proteus [MessageEnvelope] to the given [conversationId].
@@ -88,11 +97,18 @@ class MessageDataSource(
     private val sendMessageFailureMapper: SendMessageFailureMapper = MapperProvider.sendMessageFailureMapper()
 ) : MessageRepository {
 
-    override suspend fun getMessagesForConversation(conversationId: ConversationId, limit: Int, offset: Int): Flow<List<Message>> {
-        return messageDAO.getMessagesByConversation(idMapper.toDaoModel(conversationId), limit, offset).map { messagelist ->
-            messagelist.map(messageMapper::fromEntityToMessage)
-        }
-    }
+    override suspend fun getMessagesByConversationIdAndVisibility(
+        conversationId: ConversationId,
+        limit: Int,
+        offset: Int,
+        visibility: List<Message.Visibility>
+    ): Flow<List<Message>> =
+        messageDAO.getMessagesByConversationAndVisibility(
+            idMapper.toDaoModel(conversationId),
+            limit,
+            offset,
+            visibility.map { it.toEntityVisibility() }
+        ).map { messagelist -> messagelist.map(messageMapper::fromEntityToMessage) }
 
     override suspend fun persistMessage(message: Message): Either<CoreFailure, Unit> = wrapStorageRequest {
         messageDAO.insertMessage(messageMapper.fromMessageToEntity(message))
@@ -128,11 +144,15 @@ class MessageDataSource(
             Either.Left(it)
         }
 
-    override suspend fun getMessagesByConversationAfterDate(conversationId: ConversationId, date: String): Flow<List<Message>> {
-        return messageDAO.getMessagesByConversationAfterDate(idMapper.toDaoModel(conversationId), date).map { messageList ->
-            messageList.map(messageMapper::fromEntityToMessage)
-        }
-    }
+    override suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
+        conversationId: ConversationId,
+        date: String,
+        visibility: List<Message.Visibility>
+    ): Flow<List<Message>> = messageDAO.getMessagesByConversationAndVisibilityAfterDate(
+        idMapper.toDaoModel(conversationId),
+        date,
+        visibility.map { it.toEntityVisibility() }
+    ).map { messageList -> messageList.map(messageMapper::fromEntityToMessage) }
 
     override suspend fun updateMessageStatus(messageStatus: MessageEntity.Status, conversationId: ConversationId, messageUuid: String) =
         wrapStorageRequest {

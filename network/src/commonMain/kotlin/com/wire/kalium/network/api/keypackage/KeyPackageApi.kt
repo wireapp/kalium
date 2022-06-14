@@ -5,13 +5,27 @@ import com.wire.kalium.network.utils.NetworkResponse
 
 interface KeyPackageApi {
 
+    sealed class Param(open val user: UserId) {
+
+        /**
+         * @param user user ID to claim key packages from.
+         * @param selfClientId to skip selfClient key package.
+         */
+        data class SkipOwnClient(override val user: UserId, val selfClientId: String) : Param(user)
+
+        /**
+         * @param user user ID to claim key packages from.
+         */
+        data class IncludeOwnClient(override val user: UserId) : Param(user)
+    }
+
     /**
      * Claim a key package for each client of a given user.
      *
-     * @param user user ID to claim key packages from.
+     * @param param api params
      * @return a list claimed key packages.
      */
-    suspend fun claimKeyPackages(user: UserId): NetworkResponse<ClaimedKeyPackageList>
+    suspend fun claimKeyPackages(param: Param): NetworkResponse<ClaimedKeyPackageList>
 
     /**
      * Upload a batch fresh key packages from the self client
