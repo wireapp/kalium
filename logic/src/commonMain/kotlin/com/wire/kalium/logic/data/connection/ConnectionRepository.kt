@@ -8,7 +8,10 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.publicuser.PublicUserMapper
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.InvalidMappingFailure
@@ -28,10 +31,16 @@ import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.MetadataDAO
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 
 interface ConnectionRepository {
     suspend fun fetchSelfUserConnections(): Either<CoreFailure, Unit>
@@ -50,6 +59,7 @@ internal class ConnectionDataSource(
     private val userDAO: UserDAO,
     private val metadataDAO: MetadataDAO,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
+    private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val connectionStatusMapper: ConnectionStatusMapper = MapperProvider.connectionStatusMapper(),
     private val connectionMapper: ConnectionMapper = MapperProvider.connectionMapper(userDAO, metadataDAO),
     private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(userDAO, metadataDAO),
@@ -147,12 +157,28 @@ internal class ConnectionDataSource(
                     connectionState = connectionStatusMapper.toDaoModel(state = connection.status),
                     userTypeEntity = userTypeEntityTypeMapper.fromOtherUserTeamAndDomain(
                         otherUserDomain = userProfileDTO.id.domain,
+                        selfUserTeamId = getSelfUser().team,
                         otherUserTeamID = userProfileDTO.teamId
                     )
                 )
+
                 userDAO.insertUser(userEntity)
             }
         }
+    }
+
+    //TODO: code duplication here for getting self user, what would be best ?
+    // creating SelfUserDao, to UserEntity corresponding to SelfUser ?
+    private suspend fun getSelfUser(): SelfUser {
+        return metadataDAO.valueByKey(UserDataSource.SELF_USER_ID_KEY)
+            .filterNotNull()
+            .flatMapMerge { encodedValue ->
+                val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
+
+                userDAO.getUserByQualifiedID(selfUserID)
+                    .filterNotNull()
+                    .map(userMapper::fromDaoModelToSelfUser)
+            }.firstOrNull() ?: throw  IllegalStateException()
     }
 
     private suspend fun updateUserConnectionStatus(

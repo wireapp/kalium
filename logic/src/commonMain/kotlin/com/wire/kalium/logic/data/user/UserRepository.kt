@@ -45,6 +45,7 @@ interface UserRepository {
     suspend fun observeSelfUser(): Flow<SelfUser>
     suspend fun getSelfUserId(): QualifiedID
     suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, SelfUser>
+    suspend fun getSelfUser(): SelfUser
     suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit>
     suspend fun updateLocalSelfUserHandle(handle: String)
     suspend fun getAllContacts(): List<OtherUser>
@@ -62,9 +63,9 @@ class UserDataSource(
     private val assetRepository: AssetRepository,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
-    private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(userDAO,metadataDAO),
+    private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(userDAO, metadataDAO),
     private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
-    private val userTypeEntityTypeMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper(userDAO,metadataDAO),
+    private val userTypeEntityTypeMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper(userDAO, metadataDAO),
     private val userTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper(userDAO, metadataDAO)
 ) : UserRepository {
 
@@ -135,6 +136,9 @@ class UserDataSource(
                 }.map { userMapper.fromDaoModelToSelfUser(userEntity) }
             }
     }
+
+    override suspend fun getSelfUser(): SelfUser =
+        observeSelfUser().firstOrNull() ?: throw IllegalStateException()
 
     override suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit> = wrapApiRequest {
         selfApi.changeHandle(ChangeHandleRequest(handle))

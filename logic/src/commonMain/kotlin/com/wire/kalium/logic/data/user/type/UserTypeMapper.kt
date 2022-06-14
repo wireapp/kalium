@@ -17,19 +17,12 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
 abstract class DomainUserTypeMapper(
-    userDAO: UserDAO,
-    metadataDAO: MetadataDAO,
-    userMapper: UserMapper,
     userTypeConverter: UserTypeConverter<UserType>
-) : UserTypeMapper<UserType>(userDAO, metadataDAO, userMapper,userTypeConverter) {
+) : UserTypeMapper<UserType>(userTypeConverter) {
     abstract fun fromUserTypeEntity(userTypeEntity: UserTypeEntity): UserType
 }
 
-class DomainUserTypeMapperImpl(
-    userDAO: UserDAO,
-    metadataDAO: MetadataDAO,
-    userMapper: UserMapper
-) : DomainUserTypeMapper(userDAO, metadataDAO, userMapper, DomainUserTypeConverter()) {
+class DomainUserTypeMapperImpl : DomainUserTypeMapper(DomainUserTypeConverter()) {
 
     override fun fromUserTypeEntity(userTypeEntity: UserTypeEntity): UserType {
         return when (userTypeEntity) {
@@ -43,67 +36,41 @@ class DomainUserTypeMapperImpl(
 }
 
 abstract class UserTypeMapper<T>(
-    private val userDAO: UserDAO,
-    private val metadataDAO: MetadataDAO,
-    private val userMapper: UserMapper,
     userTypeConverter: UserTypeConverter<T>
 ) : UserTypeConverter<T> by userTypeConverter {
 
-    private suspend fun observeSelfUser(): Flow<SelfUser> {
-        // TODO: handle storage error
-        return metadataDAO.valueByKey(UserDataSource.SELF_USER_ID_KEY).filterNotNull().flatMapMerge { encodedValue ->
-            val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
-            userDAO.getUserByQualifiedID(selfUserID)
-                .filterNotNull()
-                .map(userMapper::fromDaoModelToSelfUser)
-        }
-    }
-
     @Suppress("ReturnCount")
-    suspend fun fromOtherUserTeamAndDomain(
+    fun fromOtherUserTeamAndDomain(
         otherUserDomain: String,
+        selfUserTeamId: String?,
         otherUserTeamID: String?
     ): T {
-        val selfUser = observeSelfUser().firstOrNull()
-
-        return if (selfUser != null) {
-            if (isUsingWireCloudBackEnd(otherUserDomain)) {
-                if (areNotInTheSameTeam(otherUserTeamID, selfUser.team)) {
-                    //delegate
-                    return guest
-                }
-            } else {
-                if (areNotInTheSameTeam(otherUserTeamID, selfUser.team)) {
-                    //delegate
-                    return federated
-                }
+        if (isUsingWireCloudBackEnd(otherUserDomain)) {
+            if (areNotInTheSameTeam(otherUserTeamID, selfUserTeamId)) {
+                //delegate
+                return guest
             }
-
-            //delegate
-            return internal
         } else {
-            internal
+            if (areNotInTheSameTeam(otherUserTeamID, selfUserTeamId)) {
+                //delegate
+                return federated
+            }
         }
+
+        //delegate
+        return internal
     }
 
     private fun isUsingWireCloudBackEnd(domain: String): Boolean =
         domain.contains(QualifiedID.WIRE_PRODUCTION_DOMAIN)
 
     // if either self user has no team or other user,
-    // does not make sense to compare them and we return false as of they are not on the same team
+// does not make sense to compare them and we return false as of they are not on the same team
     private fun areNotInTheSameTeam(otherUserTeamId: String?, selfUserTeamId: String?): Boolean =
         !(otherUserTeamId != null && selfUserTeamId != null) || (otherUserTeamId != selfUserTeamId)
 }
 
-abstract class UserEntityTypeMapper(
-    userDAO: UserDAO,
-    metadataDAO: MetadataDAO,
-    userMapper: UserMapper
-) : UserTypeMapper<UserTypeEntity>(userDAO, metadataDAO, userMapper, EntityUserTypeConverter())
+abstract class UserEntityTypeMapper : UserTypeMapper<UserTypeEntity>(EntityUserTypeConverter())
 
-class UserEntityTypeMapperImpl(
-    userDAO: UserDAO,
-    metadataDAO: MetadataDAO,
-    userMapper: UserMapper
-) : UserEntityTypeMapper(userDAO, metadataDAO, userMapper)
+class UserEntityTypeMapperImpl : UserEntityTypeMapper()
 
