@@ -61,10 +61,10 @@ class CallMapperTest {
 
         val expectedParticipant = Participant(
             id = QualifiedID(
-                value = "userid",
-                domain = "domain"
+                value = "dummyId",
+                domain = "dummyDomain"
             ),
-            clientId = "clientid",
+            clientId = "dummyClientId",
             muted = false
         )
 
@@ -78,8 +78,8 @@ class CallMapperTest {
         )
 
         val expectedCallClient = CallClient(
-            userId = "userid@domain",
-            clientId = "clientid"
+            userId = "dummyId@dummyDomain",
+            clientId = "dummyClientId"
         )
 
         assertEquals(expectedCallClient, callClientMap)
@@ -112,13 +112,54 @@ class CallMapperTest {
         assertEquals(expected, actual)
     }
 
+    @Test
+    fun givenCallActiveSpeakers_whenMappingToParticipantsActiveSpeaker_thenReturnParticipantsActiveSpeaker() = runTest {
+        val dummyParticipantWithDifferentClientId = DUMMY_PARTICIPANT.copy(
+            clientId = "anotherClientId"
+        )
+
+        val callActiveSpeakerMap = callMapper.activeSpeakerMapper.mapParticipantsActiveSpeaker(
+            participants = listOf(
+                DUMMY_PARTICIPANT,
+                dummyParticipantWithDifferentClientId
+            ),
+            activeSpeakers = CallActiveSpeakers(
+                activeSpeakers = listOf(DUMMY_CALL_ACTIVE_SPEAKER)
+            )
+        )
+
+        val expectedParticipantsActiveSpeaker = listOf(
+            DUMMY_PARTICIPANT.copy(
+                isSpeaking = true
+            ),
+            dummyParticipantWithDifferentClientId
+        )
+
+        assertEquals(expectedParticipantsActiveSpeaker, callActiveSpeakerMap)
+    }
+
     private companion object {
         private val DUMMY_CALL_MEMBER = CallMember(
-            userid = "userid@domain",
-            clientid = "clientid",
+            userid = "dummyId@dummyDomain",
+            clientid = "dummyClientId",
             aestab = 0,
             vrecv = 0,
             muted = 0
+        )
+        private val DUMMY_CALL_ACTIVE_SPEAKER = CallActiveSpeaker(
+            userId = "dummyId@dummyDomain",
+            clientId = "dummyClientId",
+            audioLevel = 1,
+            audioLevelNow = 1
+        )
+        private val DUMMY_PARTICIPANT = Participant(
+            id = QualifiedID(
+                value = "dummyId",
+                domain = "dummyDomain"
+            ),
+            clientId = "dummyClientId",
+            muted = false,
+            isSpeaking = false
         )
     }
 

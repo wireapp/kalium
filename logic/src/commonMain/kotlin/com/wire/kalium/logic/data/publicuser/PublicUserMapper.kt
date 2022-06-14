@@ -39,8 +39,8 @@ class PublicUserMapperImpl(
         accentId = userEntity.accentId,
         team = userEntity.team,
         connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionState = userEntity.connectionStatus),
-        previewPicture = userEntity.previewAssetId,
-        completePicture = userEntity.completeAssetId,
+        previewPicture = userEntity.previewAssetId?.let { idMapper.fromDaoModel(it) },
+        completePicture = userEntity.completeAssetId?.let { idMapper.fromDaoModel(it) },
         availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(userEntity.availabilityStatus)
     )
 
@@ -51,8 +51,10 @@ class PublicUserMapperImpl(
         accentId = userDetailResponse.accentId,
         team = userDetailResponse.teamId,
         connectionStatus = ConnectionState.NOT_CONNECTED,
-        previewPicture = userDetailResponse.assets.getPreviewAssetOrNull()?.key,
-        completePicture = userDetailResponse.assets.getCompleteAssetOrNull()?.key,
+        previewPicture = userDetailResponse.assets.getPreviewAssetOrNull()
+            ?.let { idMapper.toQualifiedAssetId(it.key, userDetailResponse.id.domain) },
+        completePicture = userDetailResponse.assets.getCompleteAssetOrNull()
+            ?.let { idMapper.toQualifiedAssetId(it.key, userDetailResponse.id.domain) },
         availabilityStatus = UserAvailabilityStatus.NONE
     )
 
@@ -64,8 +66,10 @@ class PublicUserMapperImpl(
         phone = null,
         accentId = userDetailResponse.accentId,
         team = userDetailResponse.teamId,
-        previewAssetId = userDetailResponse.assets.getPreviewAssetOrNull()?.key,
-        completeAssetId = userDetailResponse.assets.getCompleteAssetOrNull()?.key,
+        previewAssetId = userDetailResponse.assets.getPreviewAssetOrNull()
+            ?.let { idMapper.toQualifiedAssetIdEntity(it.key, userDetailResponse.id.domain) },
+        completeAssetId = userDetailResponse.assets.getCompleteAssetOrNull()
+            ?.let { idMapper.toQualifiedAssetIdEntity(it.key, userDetailResponse.id.domain) },
         connectionStatus = connectionState,
         availabilityStatus = UserAvailabilityStatusEntity.NONE
     )

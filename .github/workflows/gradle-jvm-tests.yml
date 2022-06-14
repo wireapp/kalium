@@ -13,7 +13,7 @@ jobs:
     container: wirebot/cryptobox:1.1.1
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
