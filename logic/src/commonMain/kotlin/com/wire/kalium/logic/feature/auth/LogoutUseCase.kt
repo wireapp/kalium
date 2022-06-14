@@ -44,7 +44,7 @@ class LogoutUseCase @Suppress("LongParameterList") constructor(
     private fun clearUserSessionAndUpdateCurrent() {
         sessionRepository.deleteSession(userId)
         sessionRepository.allSessions().onSuccess {
-            sessionRepository.updateCurrentSession(it.first().userId)
+            sessionRepository.updateCurrentSession(it.first().tokens.userId)
         }
     }
 

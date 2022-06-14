@@ -4,8 +4,10 @@ import com.wire.kalium.api.tools.testCredentials
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.AuthenticatedNetworkContainer
 import com.wire.kalium.network.AuthenticatedWebSocketClient
+import com.wire.kalium.network.ServerMetaDataManager
 import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.UnauthenticatedNetworkContainer
+import com.wire.kalium.network.UnboundNetworkClient
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.model.AccessTokenDTO
 import com.wire.kalium.network.api.model.RefreshTokenDTO
@@ -24,6 +26,7 @@ import io.ktor.http.content.TextContent
 import io.ktor.http.headersOf
 import io.ktor.utils.io.ByteReadChannel
 import kotlinx.serialization.json.buildJsonObject
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
@@ -34,7 +37,7 @@ class TestSessionManager : SessionManager {
     private val serverConfig = TEST_BACKEND_CONFIG
     private var session = testCredentials
 
-    override fun session(): Pair<SessionDTO, ServerConfigDTO> = Pair(session, serverConfig)
+    override fun session(): Pair<SessionDTO, ServerConfigDTO.Links> = Pair(session, serverConfig.links)
 
     override fun updateSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO =
         SessionDTO(
@@ -52,6 +55,12 @@ class TestSessionManager : SessionManager {
         val SESSION = testCredentials
     }
 
+}
+
+
+class TestServerMetaDataManager: ServerMetaDataManager {
+    override fun getLocalMetaData(backendLinks: ServerConfigDTO.Links): ServerConfigDTO? = TEST_BACKEND
+    override fun storeServerConfig(links: ServerConfigDTO.Links, metaData: ServerConfigDTO.MetaData): ServerConfigDTO = TEST_BACKEND
 }
 
 internal interface ApiTest {
@@ -86,7 +95,8 @@ internal interface ApiTest {
         }
         return AuthenticatedNetworkContainer(
             engine = mockEngine,
-            sessionManager = TEST_SESSION_NAMAGER
+            sessionManager = TEST_SESSION_NAMAGER,
+            serverMetaDataManager = TestServerMetaDataManager()
         ).networkClient
     }
 
@@ -96,7 +106,8 @@ internal interface ApiTest {
         }
         return AuthenticatedNetworkContainer(
             engine = mockEngine,
-            sessionManager = TEST_SESSION_NAMAGER
+            sessionManager = TEST_SESSION_NAMAGER,
+            serverMetaDataManager = TestServerMetaDataManager()
         ).websocketClient
     }
 
@@ -120,22 +131,13 @@ internal interface ApiTest {
         assertion: (HttpRequestData.() -> Unit) = {},
         headers: Map<String, String>?
     ): UnauthenticatedNetworkClient {
-        val head: Map<String, List<String>> = (headers?.let {
-            mutableMapOf(HttpHeaders.ContentType to "application/json").plus(headers).mapValues { listOf(it.value) }
-        } ?: run {
-            mapOf(HttpHeaders.ContentType to "application/json").mapValues { listOf(it.value) }
-        })
 
-        val mockEngine = MockEngine { request ->
-            request.assertion()
-            respond(
-                content = responseBody,
-                status = statusCode,
-                headers = HeadersImpl(head)
-            )
-        }
+        val mockEngine = createMockEngine(responseBody, statusCode, assertion, headers)
+
         return UnauthenticatedNetworkContainer(
-            engine = mockEngine
+            backendLinks = TEST_BACKEND.links,
+            engine = mockEngine,
+            serverMetaDataManager = TestServerMetaDataManager()
         ).unauthenticatedNetworkClient
     }
 
@@ -168,7 +170,9 @@ internal interface ApiTest {
             fail("no expected response was found for ${currentRequest.method.value}:${currentRequest.url}")
         }
         return UnauthenticatedNetworkContainer(
-            engine = mockEngine
+            backendLinks = TEST_BACKEND.links,
+            engine = mockEngine,
+            serverMetaDataManager = TestServerMetaDataManager()
         ).unauthenticatedNetworkClient
     }
 
@@ -182,21 +186,68 @@ internal interface ApiTest {
     fun mockAuthenticatedNetworkClient(
         responseBody: ByteArray,
         statusCode: HttpStatusCode,
-        assertion: (HttpRequestData.() -> Unit) = {}
+        assertion: (HttpRequestData.() -> Unit) = {},
+        headers: Map<String, String>? = null
     ): AuthenticatedNetworkClient {
-        val mockEngine = MockEngine { request ->
+        val mockEngine = createMockEngine(
+            ByteReadChannel(responseBody),
+            statusCode,
+            assertion,
+            headers
+        )
+        return AuthenticatedNetworkContainer(
+            engine = mockEngine,
+            sessionManager = TEST_SESSION_NAMAGER,
+            serverMetaDataManager = TestServerMetaDataManager()
+        ).networkClient
+    }
+
+
+    /**
+     * Creates a mock Ktor Http client
+     * @param responseBody the response body as a ByteArray
+     * @param statusCode the response http status code
+     * @param assertion lambda function to apply assertions to the request
+     * @return mock Ktor http client
+     */
+    fun mockUnboundNetworkClient(
+        responseBody: String,
+        statusCode: HttpStatusCode,
+        assertion: (HttpRequestData.() -> Unit) = {},
+        headers: Map<String, String>? = null
+    ): UnboundNetworkClient {
+        val mockEngine = createMockEngine(
+            ByteReadChannel(responseBody),
+            statusCode,
+            assertion,
+            headers
+        )
+        return UnboundNetworkClient(engine = mockEngine)
+    }
+
+
+    private fun createMockEngine(
+        responseBody: ByteReadChannel,
+        statusCode: HttpStatusCode,
+        assertion: (HttpRequestData.() -> Unit) = {},
+        headers: Map<String, String>? = null
+    ): MockEngine {
+        val newHeaders: Map<String, List<String>> = (headers?.let {
+            mutableMapOf(HttpHeaders.ContentType to "application/json").plus(headers).mapValues { listOf(it.value) }
+        } ?: run {
+            mapOf(HttpHeaders.ContentType to "application/json").mapValues { listOf(it.value) }
+        })
+
+        return MockEngine { request ->
             request.assertion()
             respond(
                 content = responseBody,
                 status = statusCode,
-                headers = headersOf(HttpHeaders.ContentType, "application/json")
+                headers = HeadersImpl(newHeaders)
             )
         }
-        return AuthenticatedNetworkContainer(
-            engine = mockEngine,
-            sessionManager = TEST_SESSION_NAMAGER
-        ).networkClient
     }
+
 
     // query params assertions
     /**
@@ -248,7 +299,8 @@ internal interface ApiTest {
         )
 
     // path
-    fun HttpRequestData.assertPathEqual(path: String) = assertEquals(path, this.url.encodedPath)
+    // assertContains is used here instead of equals because the path can contain other data like api version
+    fun HttpRequestData.assertPathEqual(path: String) = assertContains(this.url.encodedPath, path)
 
     // path and query
     fun HttpRequestData.assertPathAndQueryEqual(pathAndQuery: String) = assertEquals(pathAndQuery, this.url.encodedPathAndQuery)

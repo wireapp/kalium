@@ -85,8 +85,8 @@ class AssetApiImpl internal constructor(private val authenticatedNetworkClient: 
     }
 
     private companion object {
-        const val PATH_PUBLIC_ASSETS_V3 = "/assets/v3"
-        const val PATH_PUBLIC_ASSETS_V4 = "/assets/v4"
+        const val PATH_PUBLIC_ASSETS_V3 = "assets/v3"
+        const val PATH_PUBLIC_ASSETS_V4 = "assets/v4"
         const val HEADER_ASSET_TOKEN = "Asset-Token"
     }
 }
