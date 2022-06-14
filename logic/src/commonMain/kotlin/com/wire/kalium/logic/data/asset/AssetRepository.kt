@@ -14,28 +14,35 @@ import com.wire.kalium.network.api.asset.AssetApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import kotlinx.coroutines.flow.firstOrNull
-import okio.Buffer
-import okio.BufferedSink
+import okio.FileSystem
 import okio.Path
 import okio.Path.Companion.toPath
-import okio.buffer
 
 interface AssetRepository {
     /**
      * Method used to upload and persist to local memory a public asset
      * @param mimeType type of the asset to be uploaded
-     * @param rawAssetData unencrypted data to be uploaded
+     * @param assetDataPath the path of the unencrypted data to be uploaded
+     * @param assetDataSize the size of the unencrypted data to be uploaded
      * @return [Either] a [CoreFailure] if anything went wrong, or the [UploadedAssetId] of the asset if successful
      */
-    suspend fun uploadAndPersistPublicAsset(mimeType: AssetType, rawAssetData: ByteArray): Either<CoreFailure, UploadedAssetId>
+    suspend fun uploadAndPersistPublicAsset(
+        mimeType: AssetType,
+        assetDataPath: Path,
+        assetDataSize: Long
+    ): Either<CoreFailure, UploadedAssetId>
 
     /**
      * Method used to upload and persist to local memory a private asset
      * @param mimeType type of the asset to be uploaded
-     * @param encryptedAssetData encrypted data to be uploaded
+     * @param encryptedAssetDataPath the path of the encrypted data to be uploaded
      * @return [Either] a [CoreFailure] if anything went wrong, or the [UploadedAssetId] of the asset if successful
      */
-    suspend fun uploadAndPersistPrivateAsset(mimeType: AssetType, encryptedAssetData: ByteArray): Either<CoreFailure, UploadedAssetId>
+    suspend fun uploadAndPersistPrivateAsset(
+        mimeType: AssetType,
+        encryptedAssetDataPath: Path,
+        assetDataSize: Long
+    ): Either<CoreFailure, UploadedAssetId>
 
     /**
      * Method used to download and persist to local memory a public asset
@@ -64,27 +71,37 @@ interface AssetRepository {
 internal class AssetDataSource(
     private val assetApi: AssetApi,
     private val assetDao: AssetDAO,
-    private val assetMapper: AssetMapper = MapperProvider.assetMapper()
+    private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
+    private val kaliumFileSystem: KaliumFileSystem
 ) : AssetRepository {
 
-    override suspend fun uploadAndPersistPublicAsset(mimeType: AssetType, rawAssetData: ByteArray): Either<CoreFailure, UploadedAssetId> {
-        val uploadAssetData = UploadAssetData(rawAssetData, mimeType, true, RetentionType.ETERNAL)
+    override suspend fun uploadAndPersistPublicAsset(
+        mimeType: AssetType,
+        assetDataPath: Path,
+        assetDataSize: Long
+    ): Either<CoreFailure, UploadedAssetId> {
+        val uploadAssetData = UploadAssetData(assetDataPath, assetDataSize, mimeType, true, RetentionType.ETERNAL)
         return uploadAndPersistAsset(uploadAssetData)
     }
 
     override suspend fun uploadAndPersistPrivateAsset(
         mimeType: AssetType,
-        encryptedAssetData: ByteArray
+        encryptedAssetDataPath: Path,
+        assetDataSize: Long
     ): Either<CoreFailure, UploadedAssetId> {
-        val uploadAssetData = UploadAssetData(encryptedAssetData, mimeType, false, RetentionType.PERSISTENT)
+        val uploadAssetData = UploadAssetData(encryptedAssetDataPath, assetDataSize, mimeType, false, RetentionType.PERSISTENT)
         return uploadAndPersistAsset(uploadAssetData)
     }
 
     private suspend fun uploadAndPersistAsset(uploadAssetData: UploadAssetData): Either<CoreFailure, UploadedAssetId> =
-        assetMapper.toMetadataApiModel(uploadAssetData).let { metaData ->
+        assetMapper.toMetadataApiModel(uploadAssetData, kaliumFileSystem).let { metaData ->
             wrapApiRequest {
+                val tempOutputPath = kaliumFileSystem.tempFilePath("temp_output")
+                val outputSink = kaliumFileSystem.sink(tempOutputPath)
+                val dataSource = kaliumFileSystem.source(uploadAssetData.dataPath)
+
                 // we should also consider for avatar images, the compression for preview vs complete picture
-                assetApi.uploadAsset(metaData, uploadAssetData.data)
+                assetApi.uploadAsset(metaData, outputSink, dataSource, uploadAssetData.dataSize)
             }
         }.flatMap { assetResponse ->
             assetMapper.fromUploadedAssetToDaoModel(uploadAssetData, assetResponse).let { assetEntity ->
@@ -106,7 +123,7 @@ internal class AssetDataSource(
         assetKeyDomain: String?,
         assetToken: String?
     ): Either<CoreFailure, Path> {
-       return if (assetKeyDomain == null) {
+        return if (assetKeyDomain == null) {
             Either.Left(
                 NetworkFailure.ServerMiscommunication(
                     KaliumException.GenericError(
@@ -115,21 +132,32 @@ internal class AssetDataSource(
                 )
             )
         } else
-        wrapStorageRequest { assetDao.getAssetByKey(assetKey).firstOrNull() }.fold({
-            wrapApiRequest {
-                // Backend sends asset messages with empty asset tokens
-                assetApi.downloadAsset(assetKey, assetKeyDomain, assetToken?.ifEmpty { null })
-            }.flatMap { assetDataSource ->
-                val mustCreate = !kaliumFileSystem.exists(assetKey.toPath())
-                kaliumFileSystem.write(assetKey.toPath(), mustCreate) {
-                    writeAll(assetDataSource)
-                }
+            wrapStorageRequest { assetDao.getAssetByKey(assetKey).firstOrNull() }.fold({
+                wrapApiRequest {
+                    assetApi.downloadAsset(assetKey, assetKeyDomain, assetToken?.ifEmpty { null })
+                }.flatMap { assetDataSource ->
+                    val assetDataPath = assetKey.toPath()
+                    val mustCreate = !kaliumFileSystem.exists(assetDataPath)
+                    var assetDataSize = 0L
 
-                Either.Right(assetKey.toPath())
-//                wrapStorageRequest { assetDao.insertAsset(assetMapper.fromUserAssetToDaoModel(assetKey, assetDataSource)) }
-//                    .map { assetDataSource }
-            }
-        }, { Either.Right(assetKey.toPath()) })
+                    kaliumFileSystem.write(assetKey.toPath(), mustCreate) {
+                        assetDataSize = writeAll(assetDataSource)
+                    }
+
+                    wrapStorageRequest {
+                        assetDao.insertAsset(
+                            assetMapper.fromUserAssetToDaoModel(
+                                assetKey,
+                                assetKeyDomain,
+                                assetDataPath,
+                                assetDataSize
+                            )
+                        )
+                    }
+                        .map { assetDataSource }
+                    Either.Right(assetKey.toPath())
+                }
+            }, { Either.Right(assetKey.toPath()) })
     }
 
     override suspend fun downloadUsersPictureAssets(assetIdList: List<UserAssetId?>): Either<CoreFailure, Unit> {
@@ -137,10 +165,6 @@ internal class AssetDataSource(
             downloadPublicAsset(it)
         }
         return Either.Right(Unit)
-    }
-
-    companion object {
-        const val ASSETS_STORAGE_FOLDER = "assets_storage_folder"
     }
 }
 

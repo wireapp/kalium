@@ -17,25 +17,26 @@ import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityConten
 import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.protobuf.messages.EncryptionAlgorithm
 import kotlinx.datetime.Clock
+import okio.Path
 
 interface AssetMapper {
-    fun toMetadataApiModel(uploadAssetMetadata: UploadAssetData): AssetMetadataRequest
+    fun toMetadataApiModel(uploadAssetMetadata: UploadAssetData, kaliumFileSystem: KaliumFileSystem): AssetMetadataRequest
     fun fromApiUploadResponseToDomainModel(asset: AssetResponse): UploadedAssetId
     fun fromUploadedAssetToDaoModel(uploadAssetData: UploadAssetData, uploadedAssetResponse: AssetResponse): AssetEntity
-    fun fromUserAssetToDaoModel(assetKey: String, data: ByteArray): AssetEntity
+    fun fromUserAssetToDaoModel(assetKey: String, assetKeyDomain: String, dataPath: Path, dataSize: Long): AssetEntity
     fun fromAssetEntityToAssetContent(assetContentEntity: AssetMessageContent): AssetContent
     fun fromProtoAssetMessageToAssetContent(protoAssetMessage: Asset): AssetContent
     fun fromDownloadStatusToDaoModel(downloadStatus: Message.DownloadStatus): MessageEntity.DownloadStatus
     fun fromDownloadStatusEntityToLogicModel(downloadStatus: MessageEntity.DownloadStatus?): Message.DownloadStatus
 }
 
-class AssetMapperImpl : AssetMapper {
-    override fun toMetadataApiModel(uploadAssetMetadata: UploadAssetData): AssetMetadataRequest {
+class AssetMapperImpl() : AssetMapper {
+    override fun toMetadataApiModel(uploadAssetMetadata: UploadAssetData, kaliumFileSystem: KaliumFileSystem): AssetMetadataRequest {
         return AssetMetadataRequest(
-            uploadAssetMetadata.mimeType.name,
+            uploadAssetMetadata.assetType.mimeType,
             uploadAssetMetadata.isPublic,
             AssetRetentionType.valueOf(uploadAssetMetadata.retentionType.name),
-            calcMd5(uploadAssetMetadata.data)
+            calcMd5(uploadAssetMetadata.dataPath, kaliumFileSystem)
         )
     }
 
@@ -46,18 +47,20 @@ class AssetMapperImpl : AssetMapper {
         return AssetEntity(
             key = uploadedAssetResponse.key,
             domain = uploadedAssetResponse.domain,
-            mimeType = uploadAssetData.mimeType.name,
-            rawData = uploadAssetData.data,
+            mimeType = uploadAssetData.assetType.mimeType,
+            dataPath = uploadAssetData.dataPath.name,
+            dataSize = uploadAssetData.dataSize,
             downloadedDate = Clock.System.now().toEpochMilliseconds()
         )
     }
 
-    override fun fromUserAssetToDaoModel(assetKey: String, data: ByteArray): AssetEntity {
+    override fun fromUserAssetToDaoModel(assetKey: String, assetKeyDomain: String, dataPath: Path, dataSize: Long): AssetEntity {
         return AssetEntity(
             key = assetKey,
-            domain = "", // is it possible to know this on contacts sync avatars ?
-            mimeType = ImageAsset.JPEG.name,
-            rawData = data,
+            domain = assetKeyDomain,
+            mimeType = ImageAsset.JPEG.mimeType,
+            dataPath = dataPath.name,
+            dataSize = dataSize,
             downloadedDate = Clock.System.now().toEpochMilliseconds()
         )
     }

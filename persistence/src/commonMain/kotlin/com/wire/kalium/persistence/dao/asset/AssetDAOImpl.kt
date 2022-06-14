@@ -13,7 +13,8 @@ class AssetMapper {
             key = asset.key,
             domain = asset.domain,
             mimeType = asset.mime_type,
-            rawData = asset.raw_data,
+            dataPath = asset.data_path,
+            dataSize = asset.data_size,
             downloadedDate = asset.downloaded_date
         )
     }
@@ -28,7 +29,8 @@ class AssetDAOImpl(private val queries: AssetsQueries) : AssetDAO {
             assetEntity.key,
             assetEntity.domain,
             assetEntity.mimeType,
-            assetEntity.rawData,
+            assetEntity.dataPath,
+            assetEntity.dataSize,
             assetEntity.downloadedDate
         )
     }
@@ -40,7 +42,8 @@ class AssetDAOImpl(private val queries: AssetsQueries) : AssetDAO {
                     asset.key,
                     asset.domain,
                     asset.mimeType,
-                    asset.rawData,
+                    asset.dataPath,
+                    asset.dataSize,
                     asset.downloadedDate
                 )
             }
@@ -59,6 +62,6 @@ class AssetDAOImpl(private val queries: AssetsQueries) : AssetDAO {
     }
 
     override suspend fun updateAsset(assetEntity: AssetEntity) {
-        queries.updateAsset(assetEntity.downloadedDate, assetEntity.rawData, assetEntity.mimeType, assetEntity.key)
+        queries.updateAsset(assetEntity.downloadedDate, assetEntity.dataPath, assetEntity.dataSize, assetEntity.mimeType, assetEntity.key)
     }
 }

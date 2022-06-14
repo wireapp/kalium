@@ -12,6 +12,7 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
+import okio.Path.Companion.toPath
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -31,17 +32,17 @@ class GetPublicAssetUseCaseTest {
     @Test
     fun givenACallToGetAPublicAsset_whenEverythingGoesWell_thenShouldReturnsASuccessResultWithData() = runTest {
         val assetKey = "some_key"
-        val expectedData = "A".toByteArray()
+        val expectedPath = "expected_encrypted_path".toPath()
 
         given(assetRepository)
             .suspendFunction(assetRepository::downloadPublicAsset)
             .whenInvokedWith(eq(assetKey))
-            .thenReturn(Either.Right(expectedData))
+            .thenReturn(Either.Right(expectedPath))
 
         val publicAsset = getPublicAsset(assetKey)
 
         assertEquals(PublicAssetResult.Success::class, publicAsset::class)
-        assertEquals(expectedData, (publicAsset as PublicAssetResult.Success).asset)
+        assertEquals(expectedPath, (publicAsset as PublicAssetResult.Success).asset)
 
         verify(assetRepository)
             .suspendFunction(assetRepository::downloadPublicAsset)

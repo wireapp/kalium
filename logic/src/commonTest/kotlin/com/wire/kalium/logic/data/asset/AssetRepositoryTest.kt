@@ -24,12 +24,16 @@ import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import okio.Path.Companion.toPath
+import okio.fakefilesystem.FakeFileSystem
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AssetRepositoryTest {
+
+    val fakeFileSystem = FakeFileSystem()
 
     @Mock
     private val assetApi = mock(classOf<AssetApi>())
@@ -93,7 +97,8 @@ class AssetRepositoryTest {
                 )
             )
 
-        val actual = assetRepository.uploadAndPersistPrivateAsset(encryptedAssetData = "the_image".encodeToByteArray(), mimeType = ImageAsset.JPEG)
+        val actual =
+            assetRepository.uploadAndPersistPrivateAsset(encryptedAssetDataPath = "the_image".encodeToByteArray(), mimeType = ImageAsset.JPEG)
 
         actual.shouldSucceed {
             assertEquals("some_key", it.key)
@@ -129,7 +134,8 @@ class AssetRepositoryTest {
             .whenInvokedWith(any(), any())
             .thenReturn(NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))))
 
-        val actual = assetRepository.uploadAndPersistPrivateAsset(encryptedAssetData = "the_image".encodeToByteArray(), mimeType = ImageAsset.JPEG)
+        val actual =
+            assetRepository.uploadAndPersistPrivateAsset(encryptedAssetDataPath = "the_image".encodeToByteArray(), mimeType = ImageAsset.JPEG)
 
         actual.shouldFail {
             assertEquals(it::class, NetworkFailure.ServerMiscommunication::class)
@@ -143,14 +149,15 @@ class AssetRepositoryTest {
     @Test
     fun givenAListOfAssets_whenSavingAssets_thenShouldSucceed() = runTest {
         val assetsIdToPersist = listOf("assetId1", "assetId2")
-        val expectedImage = "my_image_asset".toByteArray()
+        val dummyPath = "dummy_path".toPath()
+        val expectedDataSource = fakeFileSystem.source(dummyPath)
 
         assetsIdToPersist.forEach { assetKey ->
             mockAssetDaoGetByKeyCall(assetKey, null)
             given(assetApi)
                 .suspendFunction(assetApi::downloadAsset)
-                .whenInvokedWith(eq(assetKey), eq(null))
-                .thenReturn(NetworkResponse.Success(expectedImage, mapOf(), 200))
+                .whenInvokedWith(eq(assetKey), any(), eq(null))
+                .thenReturn(NetworkResponse.Success(expectedDataSource, mapOf(), 200))
 
             given(assetDAO)
                 .suspendFunction(assetDAO::insertAsset)
@@ -172,29 +179,26 @@ class AssetRepositoryTest {
     @Test
     fun givenAnAssetId_whenDownloadingAssetsAndNotPresentInDB_thenShouldReturnItsBinaryDataFromRemoteAndPersistIt() = runTest {
         val assetKey = "1-3-an-asset-key"
-        val expectedImage = "my_image_asset".toByteArray()
+        val dummyPath = "dummy_path".toPath()
+        val expectedDataSource = fakeFileSystem.source(dummyPath)
 
         mockAssetDaoGetByKeyCall(assetKey, null)
         given(assetApi)
             .suspendFunction(assetApi::downloadAsset)
-            .whenInvokedWith(eq(assetKey), eq(null))
-            .thenReturn(NetworkResponse.Success(expectedImage, mapOf(), 200))
+            .whenInvokedWith(eq(assetKey), any(), eq(null))
+            .thenReturn(NetworkResponse.Success(expectedDataSource, mapOf(), 200))
         given(assetDAO)
             .suspendFunction(assetDAO::insertAsset)
             .whenInvokedWith(any())
             .thenReturn(Unit)
 
-        val actual = assetRepository.downloadPublicAsset(assetKey)
-
-        actual.shouldSucceed {
-            assertEquals(it, expectedImage)
-        }
+        assetRepository.downloadPublicAsset(assetKey)
 
         verify(assetDAO).suspendFunction(assetDAO::getAssetByKey)
             .with(eq(assetKey))
             .wasInvoked(exactly = once)
         verify(assetApi).suspendFunction(assetApi::downloadAsset)
-            .with(eq(assetKey), eq(null))
+            .with(eq(assetKey), any(), eq(null))
             .wasInvoked(exactly = once)
         verify(assetDAO)
             .suspendFunction(assetDAO::insertAsset)
@@ -209,7 +213,7 @@ class AssetRepositoryTest {
         mockAssetDaoGetByKeyCall(assetKey, null)
         given(assetApi)
             .suspendFunction(assetApi::downloadAsset)
-            .whenInvokedWith(eq(assetKey), eq(null))
+            .whenInvokedWith(eq(assetKey), any(), eq(null))
             .thenReturn(NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))))
 
         val actual = assetRepository.downloadPublicAsset(assetKey)
@@ -223,7 +227,7 @@ class AssetRepositoryTest {
             .wasInvoked(exactly = once)
 
         verify(assetApi).suspendFunction(assetApi::downloadAsset)
-            .with(eq(assetKey), eq(null))
+            .with(eq(assetKey), any(), eq(null))
             .wasInvoked(exactly = once)
     }
 
@@ -233,18 +237,14 @@ class AssetRepositoryTest {
         val expectedImage = "my_image_asset".toByteArray()
         mockAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey, expectedImage))
 
-        val actual = assetRepository.downloadPublicAsset(assetKey)
-
-        actual.shouldSucceed {
-            assertEquals(expectedImage, it)
-        }
+        assetRepository.downloadPublicAsset(assetKey)
 
         verify(assetDAO).suspendFunction(assetDAO::getAssetByKey)
             .with(eq(assetKey))
             .wasInvoked(exactly = once)
 
         verify(assetApi).suspendFunction(assetApi::downloadAsset)
-            .with(eq(assetKey), eq(null))
+            .with(eq(assetKey), any(), eq(null))
             .wasNotInvoked()
     }
 

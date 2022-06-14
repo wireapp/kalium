@@ -5,24 +5,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import app.cash.sqldelight.EnumColumnAdapter
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
-import com.wire.kalium.persistence.Client
-import com.wire.kalium.persistence.Conversation
-import com.wire.kalium.persistence.DBUtil
+import com.wire.kalium.persistence.*
 import com.wire.kalium.persistence.Member
-import com.wire.kalium.persistence.Message
-import com.wire.kalium.persistence.User
-import com.wire.kalium.persistence.UserDatabase
-import com.wire.kalium.persistence.dao.ContentTypeAdapter
-import com.wire.kalium.persistence.dao.ConversationDAO
-import com.wire.kalium.persistence.dao.ConversationDAOImpl
-import com.wire.kalium.persistence.dao.MetadataDAO
-import com.wire.kalium.persistence.dao.MetadataDAOImpl
-import com.wire.kalium.persistence.dao.QualifiedIDAdapter
-import com.wire.kalium.persistence.dao.TeamDAO
-import com.wire.kalium.persistence.dao.TeamDAOImpl
-import com.wire.kalium.persistence.dao.UserDAO
-import com.wire.kalium.persistence.dao.UserDAOImpl
-import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.*
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetDAOImpl
 import com.wire.kalium.persistence.dao.client.ClientDAO
@@ -32,8 +17,15 @@ import com.wire.kalium.persistence.dao.message.MessageDAOImpl
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.util.FileNameUtil
 import net.sqlcipher.database.SupportFactory
+import java.io.File
 
-actual class UserDatabaseProvider(private val context: Context, userId: UserIDEntity, kaliumPreferences: KaliumPreferences) {
+actual class UserDatabaseProvider(
+    private val context: Context,
+    userId: UserIDEntity,
+    kaliumPreferences: KaliumPreferences,
+    storePath: File,
+    cacheAssetPath: File
+) {
     private val dbName = FileNameUtil.userDBName(userId)
     private val driver: AndroidSqliteDriver
     private val database: UserDatabase
@@ -47,6 +39,8 @@ actual class UserDatabaseProvider(private val context: Context, userId: UserIDEn
                 db.execSQL("PRAGMA foreign_keys=ON;")
             }
         }
+        storePath.mkdirs()
+        cacheAssetPath.mkdirs()
 
         driver = AndroidSqliteDriver(
             schema = UserDatabase.Schema,

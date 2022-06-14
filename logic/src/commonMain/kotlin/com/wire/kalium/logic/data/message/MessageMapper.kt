@@ -76,7 +76,7 @@ class MessageMapperImpl(private val idMapper: IdMapper, private val assetMapper:
             // It's an asset message
             is AssetMessageContent -> {
                 MessageContent.Asset(
-                    MapperProvider.assetMapper().fromAssetEntityToAssetContent(messageContent)
+                    assetMapper.fromAssetEntityToAssetContent(messageContent)
                 )
             }
 

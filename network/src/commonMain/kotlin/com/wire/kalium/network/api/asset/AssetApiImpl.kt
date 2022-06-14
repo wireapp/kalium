@@ -3,56 +3,69 @@ package com.wire.kalium.network.api.asset
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
-import io.ktor.client.request.get
-import io.ktor.client.request.header
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
-import io.ktor.http.ContentType
-import io.ktor.http.contentType
+import io.ktor.client.request.*
+import io.ktor.http.*
 import io.ktor.utils.io.charsets.Charsets.UTF_8
-import io.ktor.utils.io.core.toByteArray
+import io.ktor.utils.io.core.*
+import okio.Sink
 import okio.Source
+import okio.buffer
+import okio.use
 
-class AssetApiImpl internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : AssetApi {
+interface AssetApi {
+    suspend fun downloadAsset(assetKey: String, assetKeyDomain: String, assetToken: String?): NetworkResponse<Source>
+    suspend fun uploadAsset(
+        metadata: AssetMetadataRequest,
+        tempOutputSink: Sink,
+        encryptedDataSource: Source,
+        encryptedDataSize: Long
+    ): NetworkResponse<AssetResponse>
+}
+
+class AssetApiImpl internal constructor(
+    private val authenticatedNetworkClient: AuthenticatedNetworkClient
+) : AssetApi {
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
     /**
      * Downloads an asset
      * @param assetKey the asset identifier
+     * @param assetKeyDomain the domain of the asset identifier
      * @param assetToken the asset token, can be null in case of public assets
      */
-    @Deprecated(message = "Needs to add assetKeyDomain parameter too", replaceWith = ReplaceWith("downloadAsset"))
-    override suspend fun downloadAsset(assetKey: String, assetToken: String?): NetworkResponse<ByteArray> = wrapKaliumResponse {
-        httpClient.get("$PATH_PUBLIC_ASSETS/$assetKey") {
-            assetToken?.let { header(HEADER_ASSET_TOKEN, it) }
-        }
-    }
-
-    /**
-     * Downloads an asset
-     * @param assetKey the asset identifier
-     * @param assetToken the asset token, can be null in case of public assets
-     */
-    override suspend fun downloadAsset(assetKey: String, assetKeyDomain: String, assetToken: String?): NetworkResponse<Source> = wrapKaliumResponse {
-        httpClient.get("$PATH_PUBLIC_ASSETS/$assetKey") {
-            assetToken?.let { header(HEADER_ASSET_TOKEN, it) }
-        }
-    }
-
-    /** Uploads an already encrypted asset
-     * @param metadata the metadata associated to the asset that wants to be uploaded
-     * @param encryptedData the encrypted data on a ByteArray shape
-     */
-    override suspend fun uploadAsset(metadata: AssetMetadataRequest, encryptedData: ByteArray): NetworkResponse<AssetResponse> =
+    override suspend fun downloadAsset(assetKey: String, assetKeyDomain: String, assetToken: String?): NetworkResponse<Source> =
         wrapKaliumResponse {
-            httpClient.post(PATH_PUBLIC_ASSETS) {
-                contentType(ContentType.MultiPart.Mixed)
-                setBody(provideAssetRequestBody(metadata, encryptedData))
+            httpClient.get("$PATH_PUBLIC_ASSETS/$assetKeyDomain/$assetKey") {
+                assetToken?.let { header(HEADER_ASSET_TOKEN, it) }
             }
         }
 
-    private fun provideAssetRequestBody(metadata: AssetMetadataRequest, encryptedData: ByteArray): ByteArray {
+    /** Uploads an already encrypted asset
+     * @param metadata the metadata associated to the asset that wants to be uploaded
+     * @param tempOutputSink the temporary sink that will be used to stream the encrypted data to the backend
+     * @param encryptedDataSource the source of the encrypted data to be uploaded
+     * @param encryptedDataSize the size in bytes of the asset to be uploaded
+     */
+    override suspend fun uploadAsset(
+        metadata: AssetMetadataRequest,
+        tempOutputSink: Sink,
+        encryptedDataSource: Source,
+        encryptedDataSize: Long
+    ): NetworkResponse<AssetResponse> =
+        wrapKaliumResponse {
+            httpClient.post(PATH_PUBLIC_ASSETS) {
+                contentType(ContentType.MultiPart.Mixed)
+                setBody(provideAssetRequestBody(metadata, tempOutputSink, encryptedDataSource, encryptedDataSize))
+            }
+        }
+
+    private fun provideAssetRequestBody(
+        metadata: AssetMetadataRequest,
+        tempOutputSink: Sink,
+        encryptedDataSource: Source,
+        encryptedDataSize: Long,
+    ): Sink {
         val body = StringBuilder()
 
         // Part 1
@@ -71,7 +84,7 @@ class AssetApiImpl internal constructor(private val authenticatedNetworkClient: 
         body.append("Content-Type: application/octet-stream")
             .append("\r\n")
         body.append("Content-Length: ")
-            .append(encryptedData.size)
+            .append(encryptedDataSize)
             .append("\r\n")
         body.append("Content-MD5: ")
             .append(metadata.md5)
@@ -80,8 +93,15 @@ class AssetApiImpl internal constructor(private val authenticatedNetworkClient: 
         val bodyArray = body.toString().toByteArray(UTF_8)
         val closingArray = "\r\n--frontier--\r\n".toByteArray(UTF_8)
 
-        // Merge all sections on the request
-        return bodyArray + encryptedData + closingArray
+        tempOutputSink.buffer().use { sink ->
+            // Merge all sections on the request
+            sink.write(bodyArray)
+            encryptedDataSource.use { source ->
+                sink.writeAll(source)
+            }
+            sink.write(closingArray)
+        }
+        return tempOutputSink
     }
 
     private companion object {

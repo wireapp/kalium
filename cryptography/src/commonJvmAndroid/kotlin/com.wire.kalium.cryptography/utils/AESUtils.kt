@@ -14,7 +14,7 @@ import kotlin.io.use
 
 internal class AESEncrypt {
 
-    internal fun encrypt(assetData: PlainData, key: AES256Key, outputPath: Path, kaliumFileSystem: FileSystem): Boolean {
+    internal fun encrypt(assetDataPath: Path, key: AES256Key, outputPath: Path, kaliumFileSystem: FileSystem): Boolean {
         return try {
             // Fetch AES256 Algorithm
             val cipher = Cipher.getInstance(KEY_ALGORITHM_CONFIGURATION)
@@ -29,8 +29,8 @@ internal class AESEncrypt {
 
             // Encrypt and write the data to given outputPath
             val cipherSink = kaliumFileSystem.sink(outputPath).cipherSink(cipher)
-            cipherSink.buffer().use {
-                it.write(assetData.data)
+            cipherSink.buffer().use { sink ->
+                sink.writeAll(kaliumFileSystem.source(assetDataPath))
             }
             true
         } catch (e: Exception) {
@@ -63,9 +63,9 @@ internal class AESDecrypt(private val secretKey: AES256Key) {
             // Decrypt and write the data to given outputPath
             val source = kaliumFileSystem.source(encryptedDataPath)
             val cipherSource = source.cipherSource(cipher)
-            cipherSource.buffer().use {
+            cipherSource.buffer().use { bufferedSource ->
                 kaliumFileSystem.write(outputPath) {
-                    write(it.readByteArray())
+                    write(bufferedSource.readByteArray())
                 }
             }
             true

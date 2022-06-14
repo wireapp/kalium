@@ -3,15 +3,15 @@ package com.wire.kalium.cryptography.utils
 import okio.FileSystem
 import okio.Path
 
-actual fun calcMd5(bytes: ByteArray): String {
+actual fun calcMd5(dataPath: Path, kaliumFileSystem: FileSystem): String {
     TODO("Not yet implemented")
 }
 
-actual fun calcSHA256(bytes: ByteArray): ByteArray {
+actual fun calcSHA256(dataPath: Path): ByteArray {
     TODO("Not yet implemented")
 }
 
-actual fun encryptDataWithAES256(data: PlainData, key: AES256Key, encryptedDataPath: Path, kaliumFileSystem: FileSystem): Boolean {
+actual fun encryptDataWithAES256(unencryptedDataPath: Path, key: AES256Key, encryptedDataPath: Path, kaliumFileSystem: FileSystem): Boolean {
     TODO("Not yet implemented")
 }
 

@@ -9,9 +9,12 @@ import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.configuration.ServerConfigMapper
 import com.wire.kalium.logic.configuration.ServerConfigMapperImpl
+import com.wire.kalium.logic.data.asset.DataStoragePaths
+import com.wire.kalium.logic.data.id.AssetsStorageFolder
+import com.wire.kalium.logic.data.id.CacheFolder
 import com.wire.kalium.network.AuthenticatedNetworkContainer
-import com.wire.kalium.network.UnauthenticatedNetworkContainer
 import com.wire.kalium.network.NetworkLogger
+import com.wire.kalium.network.UnauthenticatedNetworkContainer
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.model.AccessTokenDTO
@@ -22,6 +25,7 @@ import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.utils.isSuccessful
 import kotlinx.coroutines.runBlocking
+import okio.Path.Companion.toPath
 
 class InMemorySessionManager(
     private val serverConfigDTO: ServerConfigDTO,
@@ -44,8 +48,12 @@ class InMemorySessionManager(
 }
 
 class ConversationsApplication : CliktCommand() {
+
     private val email: String by option(help = "wire account email").required()
     private val password: String by option(help = "wire account password").required()
+    private val assetsStoragePath = AssetsStorageFolder("assetsStorageFolder/")
+    private val cachePath = CacheFolder("cacheStorageFolder/")
+    private val cliFileSystem = CliFileSystem(DataStoragePaths(assetsStoragePath, cachePath))
 
     override fun run(): Unit = runBlocking {
         NetworkLogger.setLoggingLevel(level = KaliumLogLevel.DEBUG)
@@ -55,7 +63,9 @@ class ConversationsApplication : CliktCommand() {
         val loginContainer = UnauthenticatedNetworkContainer()
 
         val loginResult = loginContainer.loginApi.login(
-            LoginApi.LoginParam.LoginWithEmail(email = email, password = password, label = "ktor"), false, serverConfigDTO.apiBaseUrl.toString()
+            LoginApi.LoginParam.LoginWithEmail(email = email, password = password, label = "ktor"),
+            false,
+            serverConfigDTO.apiBaseUrl.toString()
         )
 
         if (!loginResult.isSuccessful()) {
@@ -79,9 +89,19 @@ class ConversationsApplication : CliktCommand() {
 
     private suspend fun uploadTestAsset(networkModule: AuthenticatedNetworkContainer) {
         val imageBytes: ByteArray = getResource("moon1.jpg")
+        val imageSize = imageBytes.size
+        val imagePath = cliFileSystem.tempFilePath()
+        val tempOutputPath = "temp_output".toPath()
+        val outputSink = cliFileSystem.sink(tempOutputPath)
+
+        cliFileSystem.write(imagePath) {
+            write(imageBytes)
+        }
         val uploadResult = networkModule.assetApi.uploadAsset(
-            AssetMetadataRequest("image/jpeg", true, AssetRetentionType.ETERNAL, calcMd5(imageBytes)),
-            imageBytes
+            AssetMetadataRequest("image/jpeg", true, AssetRetentionType.ETERNAL, calcMd5(imagePath, cliFileSystem)),
+            outputSink,
+            cliFileSystem.source(imagePath),
+            imageSize.toLong()
         )
         println("The upload result is -> $uploadResult")
     }

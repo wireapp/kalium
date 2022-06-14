@@ -1,15 +1,16 @@
 package com.wire.kalium.logic.feature.asset
 
 import com.wire.kalium.cryptography.utils.AES256Key
-import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.cryptography.utils.decryptDataWithAES256
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
+import okio.Path
 
 interface GetMessageAssetUseCase {
     /**
@@ -27,7 +28,8 @@ interface GetMessageAssetUseCase {
 
 internal class GetMessageAssetUseCaseImpl(
     private val assetDataSource: AssetRepository,
-    private val messageRepository: MessageRepository
+    private val messageRepository: MessageRepository,
+    private val kaliumFileSystem: KaliumFileSystem
 ) : GetMessageAssetUseCase {
     override suspend fun invoke(
         conversationId: ConversationId,
@@ -40,7 +42,7 @@ internal class GetMessageAssetUseCaseImpl(
             val assetDTO = when (val content = message.content) {
                 is MessageContent.Asset -> {
                     with(content.value.remoteData) {
-                        AssetDTO(content.value.name ?: "", assetId, assetDomain, assetToken, otrKey)
+                        AssetDTO(content.value.name ?: "", content.value.sizeInBytes, assetId, assetDomain, assetToken, AES256Key(otrKey))
                     }
                 }
                 // This should never happen
@@ -48,17 +50,22 @@ internal class GetMessageAssetUseCaseImpl(
                     CoreFailure.Unknown(IllegalStateException("The message associated to this id, was not an asset message"))
                 )
             }
-            assetDataSource.downloadPrivateAsset(assetKey = assetDTO.assetKey, assetKeyDomain = assetDTO.assetKeyDomain, assetToken = assetDTO.assetToken).fold({
+            assetDataSource.downloadPrivateAsset(
+                assetKey = assetDTO.assetKey,
+                assetKeyDomain = assetDTO.assetKeyDomain,
+                assetToken = assetDTO.assetToken
+            ).fold({
                 kaliumLogger.e("There was an error downloading asset with id => $assetDTO.assetKey")
                 MessageAssetResult.Failure(it)
-            }, { encodedAsset ->
-                val rawAsset = decryptDataWithAES256(EncryptedData(encodedAsset), AES256Key(assetDTO.encryptionKey)).data
-                MessageAssetResult.Success(rawAsset)
+            }, { encodedAssetPath ->
+                val decryptedAssetPath = kaliumFileSystem.createAssetPath(assetDTO.assetKey)
+                decryptDataWithAES256(encodedAssetPath, decryptedAssetPath, assetDTO.encryptionKey, kaliumFileSystem)
+                MessageAssetResult.Success(decryptedAssetPath, assetDTO.assetSize)
             })
         })
 }
 
 sealed class MessageAssetResult {
-    class Success(val decodedAsset: ByteArray) : MessageAssetResult()
+    class Success(val decodedAssetPath: Path, val assetSize: Long) : MessageAssetResult()
     class Failure(val coreFailure: CoreFailure) : MessageAssetResult()
 }

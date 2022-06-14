@@ -3,6 +3,10 @@ package com.wire.kalium.logic
 import android.content.Context
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.ProteusClientImpl
+import com.wire.kalium.logic.data.asset.DataStoragePaths
+import com.wire.kalium.logic.data.asset.KaliumFileSystem
+import com.wire.kalium.logic.data.id.AssetsStorageFolder
+import com.wire.kalium.logic.data.id.CacheFolder
 import com.wire.kalium.logic.data.session.SessionDataSource
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.sync.InMemorySyncRepository
@@ -24,6 +28,7 @@ import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
 import com.wire.kalium.persistence.kmm_settings.SettingOptions
 import kotlinx.coroutines.runBlocking
+import java.io.File
 
 /**
  * This class is only for platform specific variables,
@@ -51,6 +56,9 @@ actual class CoreLogic(
         return userSessionScopeProvider.get(userId) ?: run {
             val rootAccountPath = "$rootPath/${userId.domain}/${userId.value}"
             val rootProteusPath = "$rootAccountPath/proteus"
+            val rootFileSystemPath = AssetsStorageFolder("$rootAccountPath/assets_storage")
+            val rootCachePath = CacheFolder("$rootAccountPath/cache")
+            val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath)
             val networkContainer = AuthenticatedNetworkContainer(SessionManagerImpl(sessionRepository, userId))
             val proteusClient: ProteusClient = ProteusClientImpl(rootProteusPath)
             runBlocking { proteusClient.open() }
@@ -62,7 +70,13 @@ actual class CoreLogic(
             val encryptedSettingsHolder =
                 EncryptedSettingsHolder(appContext, SettingOptions.UserSettings(userIDEntity))
             val userPreferencesSettings = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
-            val userDatabaseProvider = UserDatabaseProvider(appContext, userIDEntity, userPreferencesSettings)
+            val userDatabaseProvider = UserDatabaseProvider(
+                appContext,
+                userIDEntity,
+                userPreferencesSettings,
+                File(rootFileSystemPath.value),
+                File(rootCachePath.value)
+            )
             val userDataSource = AuthenticatedDataSourceSet(
                 rootAccountPath,
                 networkContainer,
@@ -79,7 +93,8 @@ actual class CoreLogic(
                 userDataSource,
                 sessionRepository,
                 globalCallManager,
-                globalPreferences
+                globalPreferences,
+                dataStoragePaths
             ).also {
                 userSessionScopeProvider.add(userId, it)
             }

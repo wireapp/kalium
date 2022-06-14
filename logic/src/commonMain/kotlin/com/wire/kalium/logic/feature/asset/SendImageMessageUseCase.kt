@@ -2,13 +2,15 @@ package com.wire.kalium.logic.feature.asset
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.cryptography.utils.AES256Key
-import com.wire.kalium.cryptography.utils.PlainData
 import com.wire.kalium.cryptography.utils.calcSHA256
 import com.wire.kalium.cryptography.utils.encryptDataWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.EncryptionFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.asset.DataStoragePaths
 import com.wire.kalium.logic.data.asset.ImageAsset
+import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -23,15 +25,20 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.util.fileExtension
+import com.wire.kalium.logic.util.fileExtensionToAssetType
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
+import okio.Path
+import okio.Path.Companion.toPath
 
 fun interface SendImageMessageUseCase {
     /**
      * Function that enables sending an image as a private asset
      *
      * @param conversationId the id of the conversation where the asset wants to be sent
-     * @param imageRawData the raw data of the image to be uploaded to the backend and sent to the given conversation
+     * @param imageDataPath the [Path] of the image to be uploaded to the backend and sent to the given conversation
+     * @param imageDataSize the size of the original image file
      * @param imageName the name of the original image file
      * @param imgWidth the image width in pixels
      * @param imgHeight the image height in pixels
@@ -39,8 +46,9 @@ fun interface SendImageMessageUseCase {
      */
     suspend operator fun invoke(
         conversationId: ConversationId,
-        imageRawData: ByteArray,
-        imageName: String?,
+        imageDataPath: Path,
+        imageDataSize: Long,
+        imageName: String,
         imgWidth: Int,
         imgHeight: Int
     ): SendImageMessageResult
@@ -51,36 +59,45 @@ internal class SendImageMessageUseCaseImpl(
     private val clientRepository: ClientRepository,
     private val assetDataSource: AssetRepository,
     private val userRepository: UserRepository,
-    private val messageSender: MessageSender
+    private val messageSender: MessageSender,
+    private val kaliumFileSystem: KaliumFileSystem
 ) : SendImageMessageUseCase {
 
     override suspend fun invoke(
         conversationId: ConversationId,
-        imageRawData: ByteArray,
-        imageName: String?,
+        imageDataPath: Path,
+        imageDataSize: Long,
+        imageName: String,
         imgWidth: Int,
         imgHeight: Int
     ): SendImageMessageResult {
         // Encrypt the asset data with the provided otr key
         val otrKey = generateRandomAES256Key()
-        val encryptedData = encryptDataWithAES256(PlainData(imageRawData), otrKey)
+        val encryptedDataPath = kaliumFileSystem.tempFilePath("temp_encrypted.aes")
+        val encryptedDataSucceeded = encryptDataWithAES256(imageDataPath, otrKey, encryptedDataPath, kaliumFileSystem)
 
-        // Calculate the SHA of the encrypted data
-        val sha256 = calcSHA256(encryptedData.data)
+        return if (encryptedDataSucceeded) {
+            // Calculate the SHA of the encrypted data
+            val sha256 = calcSHA256(encryptedDataPath)
 
-        // Upload the asset encrypted data
-        return assetDataSource.uploadAndPersistPrivateAsset(ImageAsset.JPEG, encryptedData.data).flatMap { assetId ->
-            // Try to send the Image Message
-            prepareAndSendImageMessage(
-                conversationId, imageRawData.size.toLong(),
-                imageName, sha256, otrKey, assetId, imgWidth, imgHeight
-            )
-        }.fold({
-            kaliumLogger.e("Something went wrong when sending the Image Message")
-            SendImageMessageResult.Failure(it)
-        }, {
-            SendImageMessageResult.Success
-        })
+            // Upload the asset encrypted data
+            return assetDataSource.uploadAndPersistPrivateAsset(
+                imageName.fileExtension().fileExtensionToAssetType(),
+                encryptedDataPath,
+                imageDataSize
+            ).flatMap { assetId ->
+                // Try to send the Image Message
+                prepareAndSendImageMessage(conversationId, imageDataSize, imageName, sha256, otrKey, assetId, imgWidth, imgHeight)
+            }.fold({
+                kaliumLogger.e("Something went wrong when sending the Image Message")
+                SendImageMessageResult.Failure(it)
+            }, {
+                SendImageMessageResult.Success
+            })
+        } else {
+            kaliumLogger.e("Something went wrong when encrypting the Image Asset Message")
+            SendImageMessageResult.Failure(EncryptionFailure())
+        }
     }
 
     @Suppress("LongParameterList")
@@ -139,9 +156,9 @@ internal class SendImageMessageUseCaseImpl(
         imgHeight: Int
     ): AssetContent {
         return AssetContent(
-            sizeInBytes = dataSize, 
+            sizeInBytes = dataSize,
             name = imageName,
-            mimeType = ImageAsset.JPEG.name,
+            mimeType = ImageAsset.JPEG.mimeType,
             metadata = AssetContent.AssetMetadata.Image(imgWidth, imgHeight),
             remoteData = AssetContent.RemoteData(
                 otrKey = otrKey.data,

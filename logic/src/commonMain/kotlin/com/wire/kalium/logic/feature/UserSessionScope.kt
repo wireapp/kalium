@@ -4,7 +4,11 @@ import com.wire.kalium.logic.AuthenticatedDataSourceSet
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
 import com.wire.kalium.logic.data.asset.AssetDataSource
+import com.wire.kalium.logic.data.asset.AssetMapper
+import com.wire.kalium.logic.data.asset.AssetMapperImpl
 import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.asset.DataStoragePaths
+import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.call.CallDataSource
 import com.wire.kalium.logic.data.call.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
@@ -85,7 +89,8 @@ abstract class UserSessionScopeCommon(
     private val authenticatedDataSourceSet: AuthenticatedDataSourceSet,
     private val sessionRepository: SessionRepository,
     private val globalCallManager: GlobalCallManager,
-    private val globalPreferences: KaliumPreferences
+    private val globalPreferences: KaliumPreferences,
+    private val dataStoragePaths: DataStoragePaths
 ) {
 
     private val encryptedSettingsHolder: EncryptedSettingsHolder = authenticatedDataSourceSet.encryptedSettingsHolder
@@ -169,9 +174,7 @@ abstract class UserSessionScopeCommon(
         get() = TokenStorageImpl(globalPreferences)
 
     private val clientRemoteRepository: ClientRemoteRepository
-        get() = ClientRemoteDataSource(
-            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi, clientConfig
-        )
+        get() = ClientRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi, clientConfig)
 
     private val clientRegistrationStorage: ClientRegistrationStorage
         get() = ClientRegistrationStorageImpl(userPreferencesSettings)
@@ -209,7 +212,11 @@ abstract class UserSessionScopeCommon(
         )
 
     private val assetRepository: AssetRepository
-        get() = AssetDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.assetApi, userDatabaseProvider.assetDAO)
+        get() = AssetDataSource(
+            assetApi = authenticatedDataSourceSet.authenticatedNetworkContainer.assetApi,
+            assetDao = userDatabaseProvider.assetDAO,
+            kaliumFileSystem = kaliumFileSystem
+        )
 
     val syncManager: SyncManager get() = authenticatedDataSourceSet.syncManager
 
@@ -289,7 +296,8 @@ abstract class UserSessionScopeCommon(
             assetRepository,
             syncManager,
             messageSendingScheduler,
-            timeParser
+            timeParser,
+            kaliumFileSystem
         )
     val users: UserScope get() = UserScope(userRepository, publicUserRepository, syncManager, assetRepository)
     val logout: LogoutUseCase
@@ -308,4 +316,5 @@ abstract class UserSessionScopeCommon(
 
     val connection: ConnectionScope get() = ConnectionScope(connectionRepository)
 
+    val kaliumFileSystem: KaliumFileSystem = KaliumFileSystem(dataStoragePaths)
 }

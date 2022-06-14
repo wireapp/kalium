@@ -4,6 +4,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.functional.fold
+import okio.Path
 
 interface GetAvatarAssetUseCase {
     /**
@@ -27,6 +28,6 @@ internal class GetAvatarAssetUseCaseImpl(private val assetDataSource: AssetRepos
 }
 
 sealed class PublicAssetResult {
-    class Success(val asset: ByteArray) : PublicAssetResult()
+    class Success(val asset: Path) : PublicAssetResult()
     class Failure(val coreFailure: CoreFailure) : PublicAssetResult()
 }

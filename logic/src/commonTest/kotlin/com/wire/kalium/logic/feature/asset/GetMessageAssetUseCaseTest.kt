@@ -15,13 +15,12 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
-import io.mockative.any
-import io.mockative.classOf
-import io.mockative.given
-import io.mockative.mock
+import io.mockative.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import okio.Path
+import okio.Path.Companion.toPath
+import okio.fakefilesystem.FakeFileSystem
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -30,15 +29,17 @@ import kotlin.test.assertTrue
 class GetMessageAssetUseCaseTest {
 
     @Test
-    fun givenACallToGetAMessageAsset_whenEverythingGoesWell_thenShouldReturnTheAssetDecodedData() = runTest {
+    fun givenACallToGetAMessageAsset_whenEverythingGoesWell_thenShouldReturnTheAssetDecodedDataPath() = runTest {
         // Given
         val expectedDecodedAsset = byteArrayOf(14, 2, 10, 63, -2, -1, 34, 0, 12, 4, 5, 6, 8, 9, -22, 9, 63)
         val randomAES256Key = generateRandomAES256Key()
-        val encodedAsset = encryptDataWithAES256(PlainData(expectedDecodedAsset), randomAES256Key)
+        val fakeFileSystem = FakeFileSystem()
+        val encryptedPath = "output_encrypted_path".toPath()
+        val encodedSuccessfully = encryptDataWithAES256(PlainData(expectedDecodedAsset), randomAES256Key, encryptedPath, fakeFileSystem)
         val someConversationId = ConversationId("some-conversation-id", "some-domain.com")
         val someMessageId = "some-message-id"
         val (_, getMessageAsset) = Arrangement()
-            .withSuccessfulFlow(someConversationId, someMessageId, encodedAsset.data, randomAES256Key)
+            .withSuccessfulFlow(someConversationId, someMessageId, encryptedPath, randomAES256Key)
             .arrange()
 
         // When
@@ -46,8 +47,8 @@ class GetMessageAssetUseCaseTest {
 
         // Then
         assertTrue(result is MessageAssetResult.Success)
-        assertEquals(result.decodedAsset.size, expectedDecodedAsset.size)
-        assertTrue(result.decodedAsset.contentEquals(expectedDecodedAsset))
+        assertTrue(encodedSuccessfully)
+        assertEquals(result.decodedAssetPath, encryptedPath)
     }
 
     @Test
@@ -133,7 +134,7 @@ class GetMessageAssetUseCaseTest {
         fun withSuccessfulFlow(
             conversationId: ConversationId,
             messageId: String,
-            encodedAsset: ByteArray,
+            encodedPath: Path,
             secretKey: AES256Key
         ): Arrangement {
             convId = conversationId
@@ -145,8 +146,8 @@ class GetMessageAssetUseCaseTest {
                 .thenReturn(Either.Right(mockedMessage))
             given(assetDataSource)
                 .suspendFunction(assetDataSource::downloadPrivateAsset)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Right(encodedAsset))
+                .whenInvokedWith(eq(secretKey), any(), any())
+                .thenReturn(Either.Right(encodedPath))
             return this
         }
 
@@ -168,7 +169,7 @@ class GetMessageAssetUseCaseTest {
                 .thenReturn(Either.Right(mockedMessage))
             given(assetDataSource)
                 .suspendFunction(assetDataSource::downloadPrivateAsset)
-                .whenInvokedWith(any(), any())
+                .whenInvokedWith(any(), any(), any())
                 .thenReturn(Either.Left(noNetworkConnection))
             return this
         }

@@ -2,6 +2,10 @@ package com.wire.kalium.logic
 
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.ProteusClientImpl
+import com.wire.kalium.logic.data.asset.DataStoragePaths
+import com.wire.kalium.logic.data.asset.KaliumFileSystem
+import com.wire.kalium.logic.data.id.AssetsStorageFolder
+import com.wire.kalium.logic.data.id.CacheFolder
 import com.wire.kalium.logic.data.session.SessionDataSource
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.sync.InMemorySyncRepository
@@ -47,6 +51,9 @@ actual class CoreLogic(
             val rootAccountPath = "$rootPath/${userId.domain}/${userId.value}"
             val rootProteusPath = "$rootAccountPath/proteus"
             val rootStoragePath = "$rootAccountPath/storage"
+            val rootFileSystemPath = AssetsStorageFolder(rootStoragePath)
+            val rootCachePath = CacheFolder("$rootAccountPath/cache")
+            val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath)
             val networkContainer = AuthenticatedNetworkContainer(SessionManagerImpl(sessionRepository, userId))
 
             val proteusClient: ProteusClient = ProteusClientImpl(rootProteusPath)
@@ -73,7 +80,8 @@ actual class CoreLogic(
                 userDataSource,
                 sessionRepository,
                 globalCallManager,
-                globalPreferences
+                globalPreferences,
+                dataStoragePaths
             ).also {
                 userSessionScopeProvider.add(userId, it)
             }
@@ -81,5 +89,4 @@ actual class CoreLogic(
     }
 
     override val globalCallManager: GlobalCallManager = GlobalCallManager()
-
 }
