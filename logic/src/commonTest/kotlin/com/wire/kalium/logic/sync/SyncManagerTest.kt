@@ -12,6 +12,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.network.api.conversation.ConversationMembers
+import com.wire.kalium.network.api.notification.WebSocketEvent
 import io.mockative.Mock
 import io.mockative.configure
 import io.mockative.eq
@@ -102,7 +103,7 @@ class SyncManagerTest {
             assertTrue(waitJob.isActive)
 
             // Sync completes
-            syncRepository.updateSyncState { SyncState.ProcessingPendingEvents }
+            syncRepository.updateSyncState { SyncState.GatheringPendingEvents }
             waitJob.join()
 
             // Stops suspending
@@ -125,7 +126,7 @@ class SyncManagerTest {
             assertTrue(waitJob.isActive)
 
             // Sync completes
-            syncRepository.updateSyncState { SyncState.ProcessingPendingEvents }
+            syncRepository.updateSyncState { SyncState.GatheringPendingEvents }
             waitJob.join()
 
             // Stops suspending
@@ -201,8 +202,8 @@ class SyncManagerTest {
     }
 
     @Test
-    fun givenSyncStatusIsProcessingPendingEvents_whenStartingSync_thenShouldNotCallScheduler() = runTest(TestKaliumDispatcher.default) {
-        syncRepository.updateSyncState { SyncState.ProcessingPendingEvents }
+    fun givenSyncStatusIsGatheringPendingEvents_whenStartingSync_thenShouldNotCallScheduler() = runTest(TestKaliumDispatcher.default) {
+        syncRepository.updateSyncState { SyncState.GatheringPendingEvents }
 
         syncManager.startSyncIfIdle()
 
@@ -211,7 +212,7 @@ class SyncManagerTest {
 
     @Test
     fun givenSyncStatusIsSlowSync_whenStartingSync_thenShouldNotCallScheduler() = runTest(TestKaliumDispatcher.default) {
-        syncRepository.updateSyncState { SyncState.ProcessingPendingEvents }
+        syncRepository.updateSyncState { SyncState.SlowSync }
 
         syncManager.startSyncIfIdle()
 
@@ -259,8 +260,7 @@ class SyncManagerTest {
             advanceUntilIdle()
 
             //Then
-            assertIs<SyncState.ProcessingPendingEvents>(awaitItem())
-            assertIs<SyncState.Live>(awaitItem())
+            assertIs<SyncState.GatheringPendingEvents>(awaitItem())
 
             // A failure happens when live events close the flow
             cancelAndIgnoreRemainingEvents()
@@ -352,11 +352,11 @@ class SyncManagerTest {
             listOf(),
             "2022-03-30T15:36:00.000Z"
         )
-        val liveEventsChannel = Channel<Event>()
+        val liveEventsChannel = Channel<WebSocketEvent<Event>>()
         given(eventRepository)
             .suspendFunction(eventRepository::pendingEvents)
             .whenInvoked()
-            .thenReturn(flowOf(Either.Right(event)))
+            .thenReturn(emptyFlow())
 
         given(eventRepository)
             .suspendFunction(eventRepository::liveEvents)
@@ -367,7 +367,7 @@ class SyncManagerTest {
         syncManager.onSlowSyncComplete()
         advanceUntilIdle()
 
-        liveEventsChannel.send(event)
+        liveEventsChannel.send(WebSocketEvent.BinaryPayloadReceived(event))
         //Then
         verify(eventRepository)
             .suspendFunction(eventRepository::updateLastProcessedEventId)
@@ -386,7 +386,7 @@ class SyncManagerTest {
             listOf(),
             "2022-03-30T15:36:00.000Z"
         )
-        val liveEventsChannel = Channel<Event>()
+        val liveEventsChannel = Channel<WebSocketEvent<Event>>()
         given(eventRepository)
             .suspendFunction(eventRepository::pendingEvents)
             .whenInvoked()
@@ -403,7 +403,7 @@ class SyncManagerTest {
         syncManager.onSlowSyncComplete()
         advanceUntilIdle()
 
-        liveEventsChannel.send(event)
+        liveEventsChannel.send(WebSocketEvent.BinaryPayloadReceived(event))
 
         //Then
         verify(conversationEventReceiver)
