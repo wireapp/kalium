@@ -31,11 +31,11 @@ internal class OnClientsRequest(
             conversationRecipients.map { recipients ->
                 callingLogger.d("OnClientsRequest() -> Mapping ${recipients.size} recipients")
                 recipients
-                    .filter { it.member.id.toString() != selfUserId }
+                    .filter { it.member.id.value != selfUserId }
                     .flatMap { recipient ->
                         recipient.clients.map { clientId ->
                             CallClient(
-                                userId = recipient.member.id.toString(),
+                                userId = recipient.member.id.value,
                                 clientId = clientId.value
                             )
                         }
