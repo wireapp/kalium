@@ -30,6 +30,18 @@ interface GetNotificationsUseCase {
     suspend operator fun invoke(): Flow<List<LocalNotificationConversation>>
 }
 
+/**
+ *
+ * @param messageRepository MessageRepository for getting Messages that user should be notified about
+ * @param userRepository UserRepository for getting SelfUser data, Self userId and OtherUser data (authors of messages)
+ * @param conversationRepository ConversationRepository for getting conversations that have messages that user should be notified about
+ * @param timeParser TimeParser for getting current time as a formatted String and making some calculation on String TimeStamp
+ * @param messageMapper MessageMapper for mapping Message object into LocalNotificationMessage
+ * @param publicUserMapper PublicUserMapper for mapping PublicUser object into LocalNotificationMessageAuthor
+ *
+ * @return Flow<List<LocalNotificationConversation>> - Flow of Notification List that should be shown to the user.
+ * That Flow emits everytime when the list is changed
+ */
 class GetNotificationsUseCaseImpl(
     private val messageRepository: MessageRepository,
     private val userRepository: UserRepository,
@@ -121,8 +133,8 @@ class GetNotificationsUseCaseImpl(
             // that is a new conversation, lets just fetch last 100 messages for it
             messageRepository.getMessagesByConversationIdAndVisibility(
                 conversation.id,
-                100,
-                0,
+                DEFAULT_MESSAGE_LIMIT,
+                DEFAULT_MESSAGE_OFFSET,
                 listOf(Message.Visibility.VISIBLE)
             )
         } else {
@@ -163,7 +175,7 @@ class GetNotificationsUseCaseImpl(
         filter { message ->
             message.senderUserId != selfUserId
                     && shouldMessageBeVisibleAsNotification(message)
-                    && isSupportedForNotificationsMessageType(message)
+                    && isMessageContentSupportedInNotifications(message)
                     && shouldIncludeMessageForNotifications(message, selfUser, conversation.mutedStatus)
         }
 
@@ -206,7 +218,7 @@ class GetNotificationsUseCaseImpl(
         conversationMutedStatus == MutedConversationStatus.OnlyMentionsAllowed
                 || selfUser.availabilityStatus == UserAvailabilityStatus.BUSY
 
-    private fun isSupportedForNotificationsMessageType(message: Message): Boolean =
+    private fun isMessageContentSupportedInNotifications(message: Message): Boolean =
         message.content !is MessageContent.Unknown
                 && message.content !is MessageContent.System
                 && message.content !is MessageContent.DeleteMessage
@@ -216,4 +228,9 @@ class GetNotificationsUseCaseImpl(
         message.visibility == Message.Visibility.VISIBLE
 
     private data class ConversationWithMessages(val messages: List<Message>, val conversation: Conversation)
+
+    companion object {
+        private const val DEFAULT_MESSAGE_LIMIT = 100
+        private const val DEFAULT_MESSAGE_OFFSET = 0
+    }
 }

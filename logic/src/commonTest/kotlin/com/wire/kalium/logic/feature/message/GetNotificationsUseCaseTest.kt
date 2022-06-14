@@ -42,8 +42,8 @@ class GetNotificationsUseCaseTest {
     @Test
     fun givenEmptyConversationList_thenEmptyNotificationList() = runTest {
         val (_, getNotifications) = Arrangement()
-            .withSelfUserId()
-            .withSelfUser()
+            .withSelfUserId(MY_ID)
+            .withSelfUser(selfUserWithStatus())
             .withConversationsForNotifications(listOf())
             .arrange()
 
@@ -56,8 +56,8 @@ class GetNotificationsUseCaseTest {
     @Test
     fun givenConversationWithEmptyMessageList_thenEmptyNotificationList() = runTest {
         val (_, getNotifications) = Arrangement()
-            .withSelfUserId()
-            .withSelfUser()
+            .withSelfUserId(MY_ID)
+            .withSelfUser(selfUserWithStatus())
             .withConversationsForNotifications(listOf(entityConversation()))
             .withMessagesByConversationAfterDate { listOf() }
             .arrange()
@@ -71,8 +71,8 @@ class GetNotificationsUseCaseTest {
     @Test
     fun givenConversationWithOnlyMyMessageList_thenEmptyNotificationList() = runTest {
         val (_, getNotifications) = Arrangement()
-            .withSelfUserId()
-            .withSelfUser()
+            .withSelfUserId(MY_ID)
+            .withSelfUser(selfUserWithStatus())
             .withConversationsForNotifications(listOf(entityConversation()))
             .withMessagesByConversationAfterDate { conversationId ->
                 listOf(
@@ -91,8 +91,8 @@ class GetNotificationsUseCaseTest {
     @Test
     fun givenConversationWithMessageListIncludingMyMessages_thenNotificationListWithoutMyMessages() = runTest {
         val (_, getNotifications) = Arrangement()
-            .withSelfUserId()
-            .withSelfUser()
+            .withSelfUserId(MY_ID)
+            .withSelfUser(selfUserWithStatus())
             .withKnownUser()
             .withConversationsForNotifications(listOf(entityConversation()))
             .withMessagesByConversationAfterDate { conversationId ->
@@ -123,8 +123,8 @@ class GetNotificationsUseCaseTest {
     @Test
     fun givenFewConversationWithMessageLists_thenListOfFewNotifications() = runTest {
         val (_, getNotifications) = Arrangement()
-            .withSelfUserId()
-            .withSelfUser()
+            .withSelfUserId(MY_ID)
+            .withSelfUser(selfUserWithStatus())
             .withKnownUser()
             .withConversationsForNotifications(
                 listOf(entityConversation(0), entityConversation(1))
@@ -165,8 +165,8 @@ class GetNotificationsUseCaseTest {
     @Test
     fun givenFewConversationWithMessageListsButSameAuthor_thenAuthorInfoRequestedOnce() = runTest {
         val (arrange, getNotifications) = Arrangement()
-            .withSelfUserId()
-            .withSelfUser()
+            .withSelfUserId(MY_ID)
+            .withSelfUser(selfUserWithStatus())
             .withKnownUser()
             .withConversationsForNotifications(
                 listOf(entityConversation(0), entityConversation(1))
@@ -192,7 +192,7 @@ class GetNotificationsUseCaseTest {
     @Test
     fun givenSelfUserWithStatusAway_whenNewMessageCome_thenNoNotificationsAndAllConversationNotificationDateUpdated() = runTest {
         val (arrange, getNotifications) = Arrangement()
-            .withSelfUserId()
+            .withSelfUserId(MY_ID)
             .withSelfUser(selfUserWithStatus(UserAvailabilityStatus.AWAY))
             .withKnownUser()
             .withConversationsForNotifications(listOf(entityConversation()))
@@ -219,44 +219,42 @@ class GetNotificationsUseCaseTest {
     }
 
     @Test
-    fun givenSelfUserWithStatusBusy_whenNewMessageCome_thenNotificationsWithMentionComesAndNotificationDateUpdated(): TestResult {
+    fun givenSelfUserWithStatusBusy_whenNewMessageCome_thenNotificationsWithMentionComesAndNotificationDateUpdated() = runTest {
         val mentionMessageText = "@handle message with Mention"
-        return runTest {
-            val (arrange, getNotifications) = Arrangement()
-                .withSelfUserId()
-                .withSelfUser(selfUserWithStatus(UserAvailabilityStatus.BUSY))
-                .withKnownUser()
-                .withConversationsForNotifications(listOf(entityConversation()))
-                .withMessagesByConversationAfterDate { conversationId ->
-                    listOf(
-                        entityTextMessage(conversationId, otherUserId(), "0"),
-                        entityTextMessage(conversationId, otherUserId(), "1"),
-                        entityTextMessage(conversationId, otherUserId(), "2", MessageContent.Text(mentionMessageText))
-                    )
-                }
-                .arrange()
-
-            getNotifications().test {
-                val actual = awaitItem()
-                val expected = listOf(notificationMessageText(authorName = otherUserName(otherUserId()), text = mentionMessageText))
-
-                assertEquals(1, actual.size)
-                assertEquals(expected, actual[0].messages)
-                verify(arrange.conversationRepository)
-                    .suspendFunction(arrange.conversationRepository::updateConversationNotificationDate)
-                    .with(any(), any())
-                    .wasInvoked(exactly = once)
-
-                awaitComplete()
+        val (arrange, getNotifications) = Arrangement()
+            .withSelfUserId(MY_ID)
+            .withSelfUser(selfUserWithStatus(UserAvailabilityStatus.BUSY))
+            .withKnownUser()
+            .withConversationsForNotifications(listOf(entityConversation()))
+            .withMessagesByConversationAfterDate { conversationId ->
+                listOf(
+                    entityTextMessage(conversationId, otherUserId(), "0"),
+                    entityTextMessage(conversationId, otherUserId(), "1"),
+                    entityTextMessage(conversationId, otherUserId(), "2", MessageContent.Text(mentionMessageText))
+                )
             }
+            .arrange()
+
+        getNotifications().test {
+            val actual = awaitItem()
+            val expected = listOf(notificationMessageText(authorName = otherUserName(otherUserId()), text = mentionMessageText))
+
+            assertEquals(1, actual.size)
+            assertEquals(expected, actual[0].messages)
+            verify(arrange.conversationRepository)
+                .suspendFunction(arrange.conversationRepository::updateConversationNotificationDate)
+                .with(any(), any())
+                .wasInvoked(exactly = once)
+
+            awaitComplete()
         }
     }
 
     @Test
     fun givenMutedConversation_whenNewMessageCome_thenNoNotificationsAndNotificationDateUpdated() = runTest {
         val (arrange, getNotifications) = Arrangement()
-            .withSelfUserId()
-            .withSelfUser()
+            .withSelfUserId(MY_ID)
+            .withSelfUser(selfUserWithStatus())
             .withConversationsForNotifications(listOf(entityConversation(mutedStatus = MutedConversationStatus.AllMuted)))
             .withMessagesByConversationAfterDate { conversationId ->
                 listOf(
@@ -285,7 +283,7 @@ class GetNotificationsUseCaseTest {
     fun givenConversationWithOnlyMentionMuteStatus_whenNewMessageCome_thenNotificationsWithMentionComes(): TestResult = runTest {
         val mentionMessageText = "@handle message with Mention"
         val (arrange, getNotifications) = Arrangement()
-            .withSelfUserId()
+            .withSelfUserId(MY_ID)
             .withSelfUser(selfUserWithStatus())
             .withConversationsForNotifications(listOf(entityConversation(mutedStatus = MutedConversationStatus.OnlyMentionsAllowed)))
             .withMessagesByConversationAfterDate { conversationId ->
@@ -315,9 +313,9 @@ class GetNotificationsUseCaseTest {
 
     @Test
     fun givenConversationWithMessageListIncludingNotAllowedMessages_thenNotificationListWithoutTheseMessages() = runTest {
-        val (arrange, getNotifications) = Arrangement()
-            .withSelfUserId()
-            .withSelfUser()
+        val (_, getNotifications) = Arrangement()
+            .withSelfUserId(MY_ID)
+            .withSelfUser(selfUserWithStatus())
             .withKnownUser()
             .withConversationsForNotifications(listOf(entityConversation()))
             .withMessagesByConversationAfterDate { conversationId ->
@@ -335,9 +333,7 @@ class GetNotificationsUseCaseTest {
             assertTrue(actual.size == 1)
             assertEquals(
                 actual[0].messages,
-                listOf(
-                    notificationMessageText(authorName = otherUserName(otherUserId()), text = "test message 0")
-                )
+                listOf(notificationMessageText(authorName = otherUserName(otherUserId()), text = "test message 0"))
             )
             awaitComplete()
         }
