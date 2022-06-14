@@ -2,6 +2,7 @@ package com.wire.kalium.logic.data.call
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.callingLogger
+import com.wire.kalium.logic.data.id.toConversationId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
@@ -83,9 +84,10 @@ internal class CallDataSource(
 
     override fun updateCallStatusById(conversationId: String, status: CallStatus) {
         val callProfile = _callProfile.value
-        callProfile.calls[conversationId]?.let { call ->
+        val modifiedConversationId = conversationId.toConversationId().toString()
+        callProfile.calls[modifiedConversationId]?.let { call ->
             val updatedCalls = callProfile.calls.toMutableMap().apply {
-                this[conversationId] = call.copy(
+                this[modifiedConversationId] = call.copy(
                     status = status
                 )
             }

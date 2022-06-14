@@ -18,7 +18,7 @@ class AddAuthenticatedUserUseCase(
     }
 
     operator fun invoke(authSession: AuthSession, replace: Boolean = false): Result =
-        sessionRepository.doesSessionExist(authSession.userId).fold(
+        sessionRepository.doesSessionExist(authSession.tokens.userId).fold(
             {
                 Result.Failure.Generic(it)
             }, {
@@ -31,18 +31,18 @@ class AddAuthenticatedUserUseCase(
 
     private fun storeUser(authSession: AuthSession): Result {
         sessionRepository.storeSession(authSession)
-        sessionRepository.updateCurrentSession(authSession.userId)
-        return Result.Success(authSession.userId)
+        sessionRepository.updateCurrentSession(authSession.tokens.userId)
+        return Result.Success(authSession.tokens.userId)
     }
 
     private fun onUserExist(newSession: AuthSession, replace: Boolean): Result =
         when (replace) {
             true -> {
-                sessionRepository.userSession(newSession.userId).fold(
+                sessionRepository.userSession(newSession.tokens.userId).fold(
                     // in case of the new session have a different server configurations the new session should not be added
                     { Result.Failure.Generic(it) }, { oldSession ->
-                        if (oldSession.serverConfig == newSession.serverConfig) {
-                            storeUser(newSession)
+                        if (oldSession.serverLinks == newSession.serverLinks) {
+                            storeUser(newSession.copy(serverLinks = oldSession.serverLinks))
                         } else Result.Failure.UserAlreadyExists
                     }
                 )
