@@ -21,11 +21,11 @@ const val VALUE_DOMAIN_SEPARATOR = "@"
 
 typealias ConversationId = QualifiedID
 
-fun String.toConversationId(): ConversationId {
+fun String.toConversationId(fallbackDomain: String = "wire.com"): ConversationId {
     val (value, domain) = if (contains(VALUE_DOMAIN_SEPARATOR)) {
         split(VALUE_DOMAIN_SEPARATOR).let { Pair(it.first(), it.last()) }
     } else {
-        Pair(this@toConversationId, "")
+        Pair(this@toConversationId, fallbackDomain)
     }
 
     return ConversationId(
