@@ -14,6 +14,7 @@ import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.keypackage.KeyPackageApi
+import com.wire.kalium.network.api.keypackage.KeyPackageCountDTO
 import com.wire.kalium.network.api.keypackage.KeyPackageDTO
 import io.ktor.util.encodeBase64
 
@@ -23,7 +24,7 @@ interface KeyPackageRepository {
 
     suspend fun uploadNewKeyPackages(clientId: ClientId, amount: Int = 100): Either<CoreFailure, Unit>
 
-    suspend fun getAvailableKeyPackageCount(clientId: ClientId): Either<NetworkFailure, Int>
+    suspend fun getAvailableKeyPackageCount(clientId: ClientId): Either<NetworkFailure, KeyPackageCountDTO>
 
 }
 
@@ -56,7 +57,7 @@ class KeyPackageDataSource(
             }
         }
 
-    override suspend fun getAvailableKeyPackageCount(clientId: ClientId): Either<NetworkFailure, Int> =
+    override suspend fun getAvailableKeyPackageCount(clientId: ClientId): Either<NetworkFailure, KeyPackageCountDTO> =
         wrapApiRequest {
             keyPackageApi.getAvailableKeyPackageCount(clientId.value)
         }
