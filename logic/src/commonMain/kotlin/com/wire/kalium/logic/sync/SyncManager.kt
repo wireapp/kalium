@@ -135,7 +135,7 @@ internal class SyncManagerImpl(
     }
 
     private suspend fun startProcessing() {
-        offlineEventBuffer.clearBuffer()
+        offlineEventBuffer.clear()
         eventProcessingScope.launch(kaliumDispatcher.io) {
             gatherEvents()
         }
@@ -184,14 +184,14 @@ internal class SyncManagerImpl(
     private suspend fun onWebSocketEventReceived(webSocketEvent: WebSocketEvent.BinaryPayloadReceived<Event>) {
         kaliumLogger.i("SYNC: Websocket Received binary payload")
         val event = webSocketEvent.payload
-        if (offlineEventBuffer.isEventPresentInBuffer(event)) {
+        if (offlineEventBuffer.contains(event)) {
             if (offlineEventBuffer.clearBufferIfLastEventEquals(event)) {
                 // Really live
                 kaliumLogger.d("SYNC: Removed most recent event from offlineEventBuffer: '${event.id}'")
             } else {
                 // Really live
                 kaliumLogger.d("SYNC: Removing event from offlineEventBuffer: ${event.id}")
-                offlineEventBuffer.removeEventFromBuffer(event)
+                offlineEventBuffer.remove(event)
             }
             kaliumLogger.d("SYNC: Skipping emit of event from WebSocket because already emitted as offline event ${event.id}")
         } else {
@@ -212,7 +212,7 @@ internal class SyncManagerImpl(
             }
             .collect {
                 kaliumLogger.i("SYNC: Collecting offline event: ${it.id}")
-                offlineEventBuffer.addToBuffer(it)
+                offlineEventBuffer.add(it)
                 processingEventFlow.emit(it)
             }
         kaliumLogger.i("SYNC: Offline events collection finished")
