@@ -45,7 +45,7 @@ import kotlinx.serialization.json.Json
 interface ConnectionRepository {
     suspend fun fetchSelfUserConnections(): Either<CoreFailure, Unit>
     suspend fun sendUserConnection(userId: UserId): Either<CoreFailure, Unit>
-    suspend fun updateConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, Unit>
+    suspend fun updateConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, Connection>
     suspend fun getConnections(): Either<StorageFailure, Flow<List<Connection>>>
     suspend fun insertConnectionFromEvent(event: Event.User.NewConnection): Either<CoreFailure, Unit>
     suspend fun observeConnectionList(): Flow<List<Connection>>
@@ -101,7 +101,7 @@ internal class ConnectionDataSource(
         }.map { }
     }
 
-    override suspend fun updateConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, Unit> {
+    override suspend fun updateConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, Connection> {
         val isValidConnectionState = isValidConnectionState(connectionState)
         val newConnectionStatus = connectionStatusMapper.toApiModel(connectionState)
         if (!isValidConnectionState || newConnectionStatus == null) {
@@ -110,10 +110,12 @@ internal class ConnectionDataSource(
 
         return wrapApiRequest {
             connectionApi.updateConnection(idMapper.toApiModel(userId), newConnectionStatus)
-        }.map { connection ->
-            val connectionSent = connection.copy(status = newConnectionStatus)
-            updateUserConnectionStatus(listOf(connectionSent))
-            persistConnection(connectionMapper.fromApiToModel(connection))
+        }.map { connectionDTO ->
+            val connectionStatus = connectionDTO.copy(status = newConnectionStatus)
+            val connectionModel = connectionMapper.fromApiToModel(connectionDTO)
+            updateUserConnectionStatus(listOf(connectionStatus))
+            persistConnection(connectionModel)
+            connectionModel
         }
     }
 
