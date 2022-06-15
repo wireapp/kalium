@@ -46,6 +46,17 @@ class PendingEventsBufferTest {
     }
 
     @Test
+    fun givenAnAddedEvent_whenRemovingIt_thenShouldNoLongerContainThatEvent() = runTest {
+        val event = TestEvent.memberJoin("testEvent")
+        eventsBuffer.add(event)
+
+        eventsBuffer.remove(event)
+
+        assertFalse { eventsBuffer.contains(event) }
+    }
+
+
+    @Test
     fun givenAnEventThatWasNotAdded_whenRemovingIt_thenShouldReturnFalse() = runTest {
         val event = TestEvent.memberJoin("testEvent")
 
