@@ -110,7 +110,7 @@ class PendingEventsBufferTest {
         eventsBuffer.add(event1)
         eventsBuffer.add(event2)
 
-        val result = eventsBuffer.clearBufferIfLastEventEquals(event2)
+        val result = eventsBuffer.clearBufferIfLastEventEquals(event1)
 
         assertFalse(result)
     }
@@ -122,7 +122,7 @@ class PendingEventsBufferTest {
         eventsBuffer.add(event1)
         eventsBuffer.add(event2)
 
-        eventsBuffer.clearBufferIfLastEventEquals(event2)
+        eventsBuffer.clearBufferIfLastEventEquals(event1)
 
         assertTrue { eventsBuffer.contains(event1) }
         assertTrue { eventsBuffer.contains(event2) }
