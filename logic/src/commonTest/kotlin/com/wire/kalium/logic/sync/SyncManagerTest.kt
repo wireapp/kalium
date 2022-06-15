@@ -280,44 +280,45 @@ class SyncManagerTest {
     }
 
     @Test
-    fun givenSlowSyncCompletedAndWebSocketOpened_whenCallingOnSlowSyncCompleted_thenShouldFetchPendingEvents() = runTest(TestKaliumDispatcher.default) {
-        //Given
-        syncRepository.updateSyncState { SyncState.SlowSync }
+    fun givenSlowSyncCompletedAndWebSocketOpened_whenCallingOnSlowSyncCompleted_thenShouldFetchPendingEvents() =
+        runTest(TestKaliumDispatcher.default) {
+            //Given
+            syncRepository.updateSyncState { SyncState.SlowSync }
 
-        given(eventRepository)
-            .suspendFunction(eventRepository::pendingEvents)
-            .whenInvoked()
-            .thenReturn(emptyFlow())
+            given(eventRepository)
+                .suspendFunction(eventRepository::pendingEvents)
+                .whenInvoked()
+                .thenReturn(emptyFlow())
 
-        given(eventRepository)
-            .suspendFunction(eventRepository::liveEvents)
-            .whenInvoked()
-            .thenReturn(Either.Right(flowOf(WebSocketEvent.Open())))
+            given(eventRepository)
+                .suspendFunction(eventRepository::liveEvents)
+                .whenInvoked()
+                .thenReturn(Either.Right(flowOf(WebSocketEvent.Open())))
 
-        given(eventRepository)
-            .suspendFunction(eventRepository::lastEventId)
-            .whenInvoked()
-            .thenReturn(Either.Right("lastProcessedId"))
+            given(eventRepository)
+                .suspendFunction(eventRepository::lastEventId)
+                .whenInvoked()
+                .thenReturn(Either.Right("lastProcessedId"))
 
-        syncRepository.syncState.test {
-            assertIs<SyncState.SlowSync>(awaitItem())
+            syncRepository.syncState.test {
+                assertIs<SyncState.SlowSync>(awaitItem())
 
-            //When
-            syncManager.onSlowSyncComplete()
-            advanceUntilIdle()
+                //When
+                syncManager.onSlowSyncComplete()
+                advanceUntilIdle()
+
+                //Then
+                assertIs<SyncState.GatheringPendingEvents>(awaitItem())
+
+                // A failure happens when live events close the flow
+                cancelAndIgnoreRemainingEvents()
+            }
 
             //Then
-            assertIs<SyncState.GatheringPendingEvents>(awaitItem())
-
-            // A failure happens when live events close the flow
-            cancelAndIgnoreRemainingEvents()
+            verify(eventRepository)
+                .suspendFunction(eventRepository::pendingEvents)
+                .wasInvoked(exactly = once)
         }
-
-        //Then
-        verify(eventRepository)
-            .suspendFunction(eventRepository::pendingEvents)
-            .wasInvoked(exactly = once)
-    }
 
     @Test
     fun givenSlowSyncCompletedAndAPendingEvent_whenSyncing_thenTheLastProcessedEventIdIsUpdated() = runTest(TestKaliumDispatcher.default) {

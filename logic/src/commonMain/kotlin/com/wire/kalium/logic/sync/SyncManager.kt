@@ -95,10 +95,12 @@ internal class SyncManagerImpl(
                 kaliumLogger.i("Sync job was cancelled")
                 syncRepository.updateSyncState { SyncState.Waiting }
             }
+
             is KaliumSyncException -> {
                 kaliumLogger.i("SyncException during events processing", throwable)
                 syncRepository.updateSyncState { SyncState.Failed(throwable.coreFailureCause) }
             }
+
             else -> {
                 kaliumLogger.i("Sync job failed due to unknown reason", throwable)
                 syncRepository.updateSyncState { SyncState.Failed(CoreFailure.Unknown(throwable)) }
@@ -158,18 +160,11 @@ internal class SyncManagerImpl(
         }
     }
 
-
-    private suspend fun handleWebsocketEvent(webSocketEvent: WebSocketEvent<Event>) {
-        when (webSocketEvent) {
-            is WebSocketEvent.Open -> onWebSocketOpen()
-            is WebSocketEvent.BinaryPayloadReceived -> onWebSocketEventReceived(webSocketEvent)
-            is WebSocketEvent.Close -> throwOnWebSocketClosed(webSocketEvent)
-            is WebSocketEvent.NonBinaryPayloadReceived -> onUnsupportedWebSocketPayloadReceived()
-        }
-    }
-
-    private fun onUnsupportedWebSocketPayloadReceived() {
-        kaliumLogger.w("Non binary event received on Websocket")
+    private suspend fun handleWebsocketEvent(webSocketEvent: WebSocketEvent<Event>) = when (webSocketEvent) {
+        is WebSocketEvent.Open -> onWebSocketOpen()
+        is WebSocketEvent.BinaryPayloadReceived -> onWebSocketEventReceived(webSocketEvent)
+        is WebSocketEvent.Close -> throwOnWebSocketClosed(webSocketEvent)
+        is WebSocketEvent.NonBinaryPayloadReceived -> kaliumLogger.w("Non binary event received on Websocket")
     }
 
     private fun throwOnWebSocketClosed(webSocketEvent: WebSocketEvent.Close<Event>): Nothing =
@@ -256,10 +251,6 @@ internal class SyncManagerImpl(
 
                 else -> it
             }
-        }
-
-        if (syncState == SyncState.SlowSync) {
-            workScheduler.enqueueImmediateWork(SlowSyncWorker::class, SlowSyncWorker.name)
         }
     }
 
