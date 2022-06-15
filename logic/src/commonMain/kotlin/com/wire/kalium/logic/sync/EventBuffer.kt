@@ -4,7 +4,7 @@ import com.wire.kalium.logic.data.event.Event
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-class EventBuffer {
+internal class EventBuffer {
     private val events = mutableListOf<Event>()
     private val mutex = Mutex()
 
