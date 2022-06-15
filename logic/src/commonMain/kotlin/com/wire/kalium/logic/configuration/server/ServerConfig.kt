@@ -3,7 +3,9 @@ package com.wire.kalium.logic.configuration.server
 import com.wire.kalium.network.tools.ApiVersionDTO
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.persistence.model.ServerConfigEntity
+import io.ktor.http.URLBuilder
 import io.ktor.http.Url
+import io.ktor.http.appendPathSegments
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -29,7 +31,23 @@ data class ServerConfig(
         @SerialName("teamsUrl") val teams: String,
         @SerialName("websiteUrl") val website: String,
         @SerialName("title") val title: String
-    )
+    ) {
+        val forgotPassword: String
+            get() = URLBuilder(Url(accounts)).apply {
+                appendPathSegments(FORGOT_PASSWORD_PATH)
+            }.buildString()
+
+        val pricing: String
+            get() = URLBuilder(urlString = website).apply {
+                appendPathSegments(PRICING_PATH)
+            }.buildString()
+
+        val tos: String
+            get() = URLBuilder(urlString = website).apply {
+                appendPathSegments(TOS_PATH)
+            }.buildString()
+    }
+
     @Serializable
     data class MetaData(
         @SerialName("federation") val federation: Boolean,
@@ -60,6 +78,10 @@ data class ServerConfig(
             title = "staging"
         )
         val DEFAULT = PRODUCTION
+
+        private const val FORGOT_PASSWORD_PATH = "forgot"
+        private const val PRICING_PATH = "pricing"
+        private const val TOS_PATH = "legal"
     }
 }
 
