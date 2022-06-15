@@ -16,7 +16,7 @@ class ServerConfigTest {
 
     @Test
     fun whenCreatingForgotPasswordUrl_thenItsCorrect() {
-        val expected =  serverConfig.accounts + "/forgot"
+        val expected =  serverConfig.accounts + "forgot"
         serverConfig.forgotPassword.also { actual ->
             assertEquals(expected, actual)
         }
@@ -24,7 +24,7 @@ class ServerConfigTest {
 
     @Test
     fun whenTOSUrl_thenItsCorrect() {
-        val expected =  serverConfig.website + "/pricing"
+        val expected =  serverConfig.website + "pricing"
         serverConfig.pricing.also { actual ->
             assertEquals(expected, actual)
         }
@@ -32,7 +32,7 @@ class ServerConfigTest {
 
     @Test
     fun whenPricingUrl_thenItsCorrect() {
-        val expected =  serverConfig.website + "/legal"
+        val expected =  serverConfig.website + "legal"
         serverConfig.tos.also { actual ->
             assertEquals(expected, actual)
         }

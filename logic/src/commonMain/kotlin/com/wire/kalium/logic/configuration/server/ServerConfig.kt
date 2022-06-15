@@ -5,7 +5,6 @@ import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import io.ktor.http.URLBuilder
 import io.ktor.http.Url
-import io.ktor.http.appendPathSegments
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -33,18 +32,27 @@ data class ServerConfig(
         @SerialName("title") val title: String
     ) {
         val forgotPassword: String
-            get() = URLBuilder(Url(accounts)).apply {
-                appendPathSegments(FORGOT_PASSWORD_PATH)
+            get() = URLBuilder().apply {
+                val url = Url(accounts)
+                host = url.host
+                protocol = url.protocol
+                pathSegments = url.pathSegments + FORGOT_PASSWORD_PATH
             }.buildString()
 
         val pricing: String
-            get() = URLBuilder(urlString = website).apply {
-                appendPathSegments(PRICING_PATH)
+            get() = URLBuilder().apply {
+                val url = Url(website)
+                host = url.host
+                protocol = url.protocol
+                pathSegments = url.pathSegments + PRICING_PATH
             }.buildString()
 
         val tos: String
-            get() = URLBuilder(urlString = website).apply {
-                appendPathSegments(TOS_PATH)
+            get() = URLBuilder().apply {
+                val url = Url(website)
+                host = url.host
+                protocol = url.protocol
+                pathSegments = url.pathSegments + TOS_PATH
             }.buildString()
     }
 
