@@ -343,6 +343,6 @@ abstract class UserSessionScopeCommon(
 
     val calls: CallsScope get() = CallsScope(callManager, callRepository, flowManagerService, mediaManagerService, syncManager)
 
-    val connection: ConnectionScope get() = ConnectionScope(connectionRepository)
+    val connection: ConnectionScope get() = ConnectionScope(connectionRepository, conversationRepository)
 
 }
