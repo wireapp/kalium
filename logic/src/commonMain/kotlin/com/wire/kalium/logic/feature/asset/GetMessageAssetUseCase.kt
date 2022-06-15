@@ -55,10 +55,10 @@ internal class GetMessageAssetUseCaseImpl(
                 assetKeyDomain = assetDTO.assetKeyDomain,
                 assetToken = assetDTO.assetToken
             ).fold({
-                kaliumLogger.e("There was an error downloading asset with id => $assetDTO.assetKey")
+                kaliumLogger.e("There was an error downloading asset with id => ${assetDTO.assetKey}")
                 MessageAssetResult.Failure(it)
             }, { encodedAssetPath ->
-                val decryptedAssetPath = kaliumFileSystem.createAssetPath(assetDTO.assetKey)
+                val decryptedAssetPath = kaliumFileSystem.tempFilePath("${assetDTO.assetKey}_decrypted")
                 decryptDataWithAES256(encodedAssetPath, decryptedAssetPath, assetDTO.encryptionKey, kaliumFileSystem)
                 MessageAssetResult.Success(decryptedAssetPath, assetDTO.assetSize)
             })

@@ -12,9 +12,9 @@ expect class KaliumFileSystem constructor(dataStoragePaths: DataStoragePaths) : 
 
     /**
      * Creates a persistent path on the internal storage folder of the file system if it didn't exist before and returns it if successful
-     * @param assetPathString the asset path string
+     * @param assetName the asset path string
      */
-    fun createAssetPath(assetPathString: String): Path
+    fun createEncryptedAssetPath(assetName: String): Path
 
     /**
      * Reads the data of the given path as a byte array

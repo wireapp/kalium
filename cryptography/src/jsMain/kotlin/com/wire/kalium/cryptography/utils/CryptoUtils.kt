@@ -7,11 +7,11 @@ actual fun calcMd5(dataPath: Path, kaliumFileSystem: FileSystem): String {
     TODO("Not yet implemented")
 }
 
-actual fun calcSHA256(dataPath: Path): ByteArray {
+actual fun calcSHA256(dataPath: Path, kaliumFileSystem: FileSystem): ByteArray {
     TODO("Not yet implemented")
 }
 
-actual fun encryptDataWithAES256(unencryptedDataPath: Path, key: AES256Key, encryptedDataPath: Path, kaliumFileSystem: FileSystem): Boolean {
+actual fun encryptDataWithAES256(unencryptedDataPath: Path, key: AES256Key, encryptedDataPath: Path, kaliumFileSystem: FileSystem): Long {
     TODO("Not yet implemented")
 }
 

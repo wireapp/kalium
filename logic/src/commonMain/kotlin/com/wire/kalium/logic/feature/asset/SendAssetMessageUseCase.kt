@@ -8,7 +8,6 @@ import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.EncryptionFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
-import com.wire.kalium.logic.data.asset.DataStoragePaths
 import com.wire.kalium.logic.data.asset.FileAsset
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.asset.UploadedAssetId
@@ -30,7 +29,6 @@ import com.wire.kalium.logic.util.fileExtension
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 import okio.Path
-import okio.Path.Companion.toPath
 
 fun interface SendAssetMessageUseCase {
     /**
@@ -45,7 +43,6 @@ fun interface SendAssetMessageUseCase {
     suspend operator fun invoke(
         conversationId: ConversationId,
         assetDataPath: Path,
-        assetDataSize: Long,
         assetName: String,
         assetMimeType: String,
     ): SendAssetMessageResult
@@ -63,29 +60,32 @@ internal class SendAssetMessageUseCaseImpl(
     override suspend fun invoke(
         conversationId: ConversationId,
         assetDataPath: Path,
-        assetDataSize: Long,
         assetName: String,
         assetMimeType: String
     ): SendAssetMessageResult {
         // Encrypt the asset data with the provided otr key
         val otrKey = generateRandomAES256Key()
-        val encryptedDataPath = kaliumFileSystem.tempFilePath("temp_encrypted.aes")
-        val encryptionSucceeded = encryptDataWithAES256(assetDataPath, otrKey, encryptedDataPath, kaliumFileSystem)
+
+        // Temporary folder to host the encrypted data until we have the asset key returned by the backend after successful upload
+        val tempEncryptedDataPath = kaliumFileSystem.tempFilePath("temp_encrypted.aes")
+
+        val encryptedDataSize = encryptDataWithAES256(assetDataPath, otrKey, tempEncryptedDataPath, kaliumFileSystem)
+        val encryptionSucceeded = encryptedDataSize > 0L
 
         return if (encryptionSucceeded) {
             // Calculate the SHA of the encrypted data
-            val sha256 = calcSHA256(encryptedDataPath)
+            val sha256 = calcSHA256(tempEncryptedDataPath, kaliumFileSystem)
 
             // Upload the asset encrypted data and force the mimeType to be a File
             assetDataSource.uploadAndPersistPrivateAsset(
                 FileAsset(fileExtension = assetName.fileExtension()),
-                encryptedDataPath,
-                assetDataSize
+                tempEncryptedDataPath,
+                encryptedDataSize
             ).flatMap { assetId ->
                 // Try to send the Asset Message
                 prepareAndSendAssetMessage(
                     conversationId,
-                    assetDataSize,
+                    encryptedDataSize,
                     assetName,
                     assetMimeType,
                     sha256,
@@ -98,7 +98,6 @@ internal class SendAssetMessageUseCaseImpl(
                 kaliumLogger.e("Something went wrong when sending the Asset Message")
                 SendAssetMessageResult.Failure(it)
             }, {
-                // TODO remove the temp path for large assets?
                 SendAssetMessageResult.Success
             })
         } else {

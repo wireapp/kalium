@@ -52,7 +52,7 @@ actual class CoreLogic(
             val rootProteusPath = "$rootAccountPath/proteus"
             val rootStoragePath = "$rootAccountPath/storage"
             val rootFileSystemPath = AssetsStorageFolder(rootStoragePath)
-            val rootCachePath = CacheFolder("$rootAccountPath/cache")
+            val rootCachePath = CacheFolder("cache/$rootAccountPath")
             val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath)
             val networkContainer = AuthenticatedNetworkContainer(SessionManagerImpl(sessionRepository, userId))
 

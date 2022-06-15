@@ -9,6 +9,7 @@ import okio.Path.Companion.toPath
 import okio.Sink
 import okio.Source
 import okio.buffer
+import kotlin.io.use
 
 actual class KaliumFileSystem actual constructor(private val dataStoragePaths: DataStoragePaths) : FileSystem() {
     override fun appendingSink(file: Path, mustExist: Boolean): Sink = SYSTEM.appendingSink(file, mustExist)
@@ -40,18 +41,21 @@ actual class KaliumFileSystem actual constructor(private val dataStoragePaths: D
 
     /**
      * Creates a temporary path if it didn't exist before and returns it if successful
-     * @param pathString a predefined temp path string. If not provided the temporary folder will be created with a default path
+     * @param pathString a predefined temp path string. If not provided the temporary folder will be created with a default path name
      */
     actual fun tempFilePath(pathString: String?): Path {
-        val filePath = pathString ?: "temp_file_path"
-        return "${dataStoragePaths.cachePath.value}/$filePath".toPath()
+        val filePathName = pathString ?: "temp_file_path"
+        val filePath = "${dataStoragePaths.cachePath.value}/$filePathName".toPath()
+        if (!exists(filePath)) createDirectories(filePath)
+
+        return filePath
     }
 
     /**
      * Creates a persistent path on the internal storage folder of the file system if it didn't exist before and returns it if successful
-     * @param assetPathString the asset path string
+     * @param assetName the asset path string
      */
-    actual fun createAssetPath(assetPathString: String): Path = "${dataStoragePaths.assetStoragePath.value}/$assetPathString".toPath()
+    actual fun createEncryptedAssetPath(assetName: String): Path = "${dataStoragePaths.assetStoragePath.value}/$assetName".toPath()
 
     /**
      * Reads the data of the given path as a byte array

@@ -7,12 +7,12 @@ import java.security.MessageDigest
 
 @Throws(IOException::class)
 internal fun calculateFileChecksum(digest: MessageDigest, file: File): ByteArray {
-    //Get file input stream for reading the file content
+    // Get file input stream for reading the file content
     val fis = FileInputStream(file)
 
     // Create byte array to read data in chunks
-    val byteArray = ByteArray(1024)
-    var bytesCount = 0
+    val byteArray = ByteArray(8 * 1024)
+    var bytesCount: Int
 
     // Read file data and update in message digest
     while (fis.read(byteArray).also { bytesCount = it } != -1) {

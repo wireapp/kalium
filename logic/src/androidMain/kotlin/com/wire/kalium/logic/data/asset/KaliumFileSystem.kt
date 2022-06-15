@@ -42,9 +42,9 @@ actual class KaliumFileSystem actual constructor(private val dataStoragePaths: D
 
     /**
      * Creates a persistent path on the internal storage folder of the file system if it didn't exist before and returns it if successful
-     * @param assetPathString the asset path string
+     * @param assetName the asset path string
      */
-    actual fun createAssetPath(assetPathString: String): Path = "${dataStoragePaths.assetStoragePath.value}/$assetPathString".toPath()
+    actual fun createEncryptedAssetPath(assetName: String): Path = "${dataStoragePaths.assetStoragePath.value}/$assetName".toPath()
 
     /**
      * Reads the data of the given path as a byte array

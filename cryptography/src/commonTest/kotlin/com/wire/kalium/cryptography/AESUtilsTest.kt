@@ -21,7 +21,7 @@ class AESUtilsTest {
     fun givenRawByteArray_whenEncryptedAndDecryptedWithAES256_returnsExpectedOriginalByteArray() {
         // Given
         val testMessage = "Hello Crypto World"
-        val inputData = PlainData(testMessage.toByteArray())
+        val inputData = testMessage.toByteArray()
         val randomAES256Key = generateRandomAES256Key()
         val fakeFileSystem = FakeFileSystem()
         val encryptedDataPath = "encrypted_data_path.aes".toPath()

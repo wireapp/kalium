@@ -6,7 +6,7 @@ import kotlin.jvm.JvmInline
 
 expect fun calcMd5(dataPath: Path, kaliumFileSystem: FileSystem): String
 
-expect fun calcSHA256(dataPath: Path): ByteArray
+expect fun calcSHA256(dataPath: Path, kaliumFileSystem: FileSystem): ByteArray
 
 /**
  * Method used to encrypt an array of bytes using the AES256 encryption algorithm on the given [encryptedDataPath]
@@ -14,14 +14,14 @@ expect fun calcSHA256(dataPath: Path): ByteArray
  * @param key the symmetric secret [AES256Key] that will be used for the encryption
  * @param encryptedDataPath the path where the encrypted data will be saved
  * @param kaliumFileSystem the file system used to store the encrypted data
- * @return true if the encryption succeeded false otherwise
+ * @return the size of the encrypted data if the encryption succeeded and 0 otherwise
  */
 expect fun encryptDataWithAES256(
     unencryptedDataPath: Path,
     key: AES256Key = generateRandomAES256Key(),
     encryptedDataPath: Path,
     kaliumFileSystem: FileSystem
-): Boolean
+): Long
 
 /**
  * Method used to decrypt an array of bytes using the AES256 encryption algorithm

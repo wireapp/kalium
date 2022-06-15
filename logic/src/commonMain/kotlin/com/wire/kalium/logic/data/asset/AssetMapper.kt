@@ -30,13 +30,13 @@ interface AssetMapper {
     fun fromDownloadStatusEntityToLogicModel(downloadStatus: MessageEntity.DownloadStatus?): Message.DownloadStatus
 }
 
-class AssetMapperImpl() : AssetMapper {
+class AssetMapperImpl : AssetMapper {
     override fun toMetadataApiModel(uploadAssetMetadata: UploadAssetData, kaliumFileSystem: KaliumFileSystem): AssetMetadataRequest {
         return AssetMetadataRequest(
             uploadAssetMetadata.assetType.mimeType,
             uploadAssetMetadata.isPublic,
             AssetRetentionType.valueOf(uploadAssetMetadata.retentionType.name),
-            calcMd5(uploadAssetMetadata.dataPath, kaliumFileSystem)
+            calcMd5(uploadAssetMetadata.tempDataPath, kaliumFileSystem)
         )
     }
 
@@ -48,7 +48,7 @@ class AssetMapperImpl() : AssetMapper {
             key = uploadedAssetResponse.key,
             domain = uploadedAssetResponse.domain,
             mimeType = uploadAssetData.assetType.mimeType,
-            dataPath = uploadAssetData.dataPath.name,
+            dataPath = uploadAssetData.tempDataPath.name,
             dataSize = uploadAssetData.dataSize,
             downloadedDate = Clock.System.now().toEpochMilliseconds()
         )

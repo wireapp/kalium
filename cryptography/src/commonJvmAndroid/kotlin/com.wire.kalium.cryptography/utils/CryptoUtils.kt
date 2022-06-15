@@ -9,10 +9,11 @@ actual fun calcMd5(dataPath: Path, kaliumFileSystem: FileSystem): String {
     val md = MessageDigest.getInstance("MD5")
 //    md.update(bytes, 0, it.size)
     val hash = calculateFileChecksum(md, dataPath.toFile())
+
     return hash.encodeBase64()
 }
 
-actual fun calcSHA256(dataPath: Path): ByteArray {
+actual fun calcSHA256(dataPath: Path, kaliumFileSystem: FileSystem): ByteArray {
     val md = MessageDigest.getInstance("SHA-256")
     return calculateFileChecksum(md, dataPath.toFile())
 }

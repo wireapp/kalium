@@ -26,7 +26,7 @@ actual fun calcMd5(dataPath: Path, kaliumFileSystem: FileSystem): String {
     return toData(digestData.asByteArray()).base64Encoding()
 }
 
-actual fun calcSHA256(dataPath: Path): ByteArray {
+actual fun calcSHA256(dataPath: Path, kaliumFileSystem: FileSystem): ByteArray {
     TODO("Not yet implemented")
 }
 
@@ -34,7 +34,7 @@ private fun toData(data: ByteArray): NSData = memScoped {
     NSData.create(bytes = allocArrayOf(data), length = data.size.toULong())
 }
 
-actual fun encryptDataWithAES256(unencryptedDataPath: Path, key: AES256Key, encryptedDataPath: Path, kaliumFileSystem: FileSystem): Boolean {
+actual fun encryptDataWithAES256(unencryptedDataPath: Path, key: AES256Key, encryptedDataPath: Path, kaliumFileSystem: FileSystem): Long {
     TODO("Not yet implemented")
 }
 

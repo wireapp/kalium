@@ -14,8 +14,9 @@ import kotlin.io.use
 
 internal class AESEncrypt {
 
-    internal fun encrypt(assetDataPath: Path, key: AES256Key, outputPath: Path, kaliumFileSystem: FileSystem): Boolean {
-        return try {
+    internal fun encrypt(assetDataPath: Path, key: AES256Key, outputPath: Path, kaliumFileSystem: FileSystem): Long {
+        var encryptedDataSize = 0L
+        try {
             // Fetch AES256 Algorithm
             val cipher = Cipher.getInstance(KEY_ALGORITHM_CONFIGURATION)
 
@@ -30,13 +31,12 @@ internal class AESEncrypt {
             // Encrypt and write the data to given outputPath
             val cipherSink = kaliumFileSystem.sink(outputPath).cipherSink(cipher)
             cipherSink.buffer().use { sink ->
-                sink.writeAll(kaliumFileSystem.source(assetDataPath))
+                encryptedDataSize = sink.writeAll(kaliumFileSystem.source(assetDataPath))
             }
-            true
         } catch (e: Exception) {
             kaliumLogger.e("There was an error while encrypting the asset:\n $e}")
-            false
         }
+        return encryptedDataSize
     }
 
     internal fun generateRandomAES256Key(): AES256Key {
@@ -65,7 +65,8 @@ internal class AESDecrypt(private val secretKey: AES256Key) {
             val cipherSource = source.cipherSource(cipher)
             cipherSource.buffer().use { bufferedSource ->
                 kaliumFileSystem.write(outputPath) {
-                    write(bufferedSource.readByteArray())
+                    val size = write(bufferedSource.readByteArray())
+                    kaliumLogger.d("WROTE $size bytes")
                 }
             }
             true

@@ -14,7 +14,6 @@ import com.wire.kalium.network.api.asset.AssetApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import kotlinx.coroutines.flow.firstOrNull
-import okio.FileSystem
 import okio.Path
 import okio.Path.Companion.toPath
 
@@ -96,14 +95,18 @@ internal class AssetDataSource(
     private suspend fun uploadAndPersistAsset(uploadAssetData: UploadAssetData): Either<CoreFailure, UploadedAssetId> =
         assetMapper.toMetadataApiModel(uploadAssetData, kaliumFileSystem).let { metaData ->
             wrapApiRequest {
-                val tempOutputPath = kaliumFileSystem.tempFilePath("temp_output")
-                val outputSink = kaliumFileSystem.sink(tempOutputPath)
-                val dataSource = kaliumFileSystem.source(uploadAssetData.dataPath)
+                val dataSource = kaliumFileSystem.source(uploadAssetData.tempDataPath)
 
                 // we should also consider for avatar images, the compression for preview vs complete picture
-                assetApi.uploadAsset(metaData, outputSink, dataSource, uploadAssetData.dataSize)
+                assetApi.uploadAsset(metaData, dataSource, uploadAssetData.dataSize)
             }
         }.flatMap { assetResponse ->
+            // After successful upload, we persist the asset to a non-temporary path
+            val persistentAssetDataPath = kaliumFileSystem.createEncryptedAssetPath(assetName = assetResponse.key)
+            val encryptedAssetSource = kaliumFileSystem.source(uploadAssetData.tempDataPath)
+            kaliumFileSystem.writeData(persistentAssetDataPath, encryptedAssetSource)
+            kaliumFileSystem.delete(uploadAssetData.tempDataPath)
+
             assetMapper.fromUploadedAssetToDaoModel(uploadAssetData, assetResponse).let { assetEntity ->
                 wrapStorageRequest { assetDao.insertAsset(assetEntity) }
             }.map { assetMapper.fromApiUploadResponseToDomainModel(assetResponse) }

@@ -3,20 +3,23 @@ package com.wire.kalium.network.api.asset
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
-import io.ktor.client.request.*
-import io.ktor.http.*
+import io.ktor.client.request.get
+import io.ktor.client.request.header
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.content.OutgoingContent
+import io.ktor.http.contentType
+import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.charsets.Charsets.UTF_8
-import io.ktor.utils.io.core.*
-import okio.Sink
+import io.ktor.utils.io.core.toByteArray
 import okio.Source
 import okio.buffer
-import okio.use
 
 interface AssetApi {
     suspend fun downloadAsset(assetKey: String, assetKeyDomain: String, assetToken: String?): NetworkResponse<Source>
     suspend fun uploadAsset(
         metadata: AssetMetadataRequest,
-        tempOutputSink: Sink,
         encryptedDataSource: Source,
         encryptedDataSize: Long
     ): NetworkResponse<AssetResponse>
@@ -43,29 +46,33 @@ class AssetApiImpl internal constructor(
 
     /** Uploads an already encrypted asset
      * @param metadata the metadata associated to the asset that wants to be uploaded
-     * @param tempOutputSink the temporary sink that will be used to stream the encrypted data to the backend
      * @param encryptedDataSource the source of the encrypted data to be uploaded
      * @param encryptedDataSize the size in bytes of the asset to be uploaded
      */
     override suspend fun uploadAsset(
         metadata: AssetMetadataRequest,
-        tempOutputSink: Sink,
         encryptedDataSource: Source,
         encryptedDataSize: Long
     ): NetworkResponse<AssetResponse> =
         wrapKaliumResponse {
             httpClient.post(PATH_PUBLIC_ASSETS) {
                 contentType(ContentType.MultiPart.Mixed)
-                setBody(provideAssetRequestBody(metadata, tempOutputSink, encryptedDataSource, encryptedDataSize))
+                setBody(StreamAssetContent(metadata, encryptedDataSize, encryptedDataSource))
             }
         }
 
-    private fun provideAssetRequestBody(
-        metadata: AssetMetadataRequest,
-        tempOutputSink: Sink,
-        encryptedDataSource: Source,
-        encryptedDataSize: Long,
-    ): Sink {
+    private companion object {
+        const val PATH_PUBLIC_ASSETS = "/assets/v3"
+        const val HEADER_ASSET_TOKEN = "Asset-Token"
+    }
+}
+
+class StreamAssetContent(
+    private val metadata: AssetMetadataRequest,
+    private val encryptedDataSize: Long,
+    private val fileContentStream: Source
+) : OutgoingContent.WriteChannelContent() {
+    private val openingData: ByteArray by lazy {
         val body = StringBuilder()
 
         // Part 1
@@ -90,22 +97,25 @@ class AssetApiImpl internal constructor(
             .append(metadata.md5)
             .append("\r\n\r\n")
 
-        val bodyArray = body.toString().toByteArray(UTF_8)
-        val closingArray = "\r\n--frontier--\r\n".toByteArray(UTF_8)
-
-        tempOutputSink.buffer().use { sink ->
-            // Merge all sections on the request
-            sink.write(bodyArray)
-            encryptedDataSource.use { source ->
-                sink.writeAll(source)
-            }
-            sink.write(closingArray)
-        }
-        return tempOutputSink
+        body.toString().toByteArray(UTF_8)
     }
 
-    private companion object {
-        const val PATH_PUBLIC_ASSETS = "/assets/v3"
-        const val HEADER_ASSET_TOKEN = "Asset-Token"
+    private val closingArray = "\r\n--frontier--\r\n".toByteArray(UTF_8)
+
+    override suspend fun writeTo(channel: ByteWriteChannel) {
+        channel.writeFully(openingData, 0, openingData.size)
+
+        val stream = fileContentStream.buffer()
+        while (true) {
+            val byteArray = stream.readByteArray()
+            if (byteArray.isEmpty()) {
+                break
+            } else {
+                channel.writeFully(byteArray, 0, byteArray.size)
+                channel.flush()
+            }
+        }
+
+        channel.writeFully(closingArray, 0, closingArray.size)
     }
 }

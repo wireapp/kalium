@@ -9,7 +9,7 @@ data class UploadedAssetId(val key: String, val assetToken: String? = null)
  * For example, rules that apply for an eternal/public asset
  */
 data class UploadAssetData(
-    val dataPath: Path,
+    val tempDataPath: Path,
     val dataSize: Long,
     val assetType: AssetType,
     val isPublic: Boolean,
