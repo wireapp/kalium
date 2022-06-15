@@ -126,7 +126,7 @@ class SearchKnownUserUseCaseTest {
 
         given(searchUserRepository)
             .suspendFunction(searchUserRepository::searchKnownUsersByNameOrHandleOrEmail)
-            .whenInvokedWith(eq(searchQuery))
+            .whenInvokedWith(eq("someSearchQuery"))
             .thenReturn(
                 UserSearchResult(
                     listOf(
@@ -159,7 +159,7 @@ class SearchKnownUserUseCaseTest {
 
         verify(searchUserRepository)
             .suspendFunction(searchUserRepository::searchKnownUsersByNameOrHandleOrEmail)
-            .with(eq(searchQuery))
+            .with(eq("someSearchQuery"))
             .wasInvoked()
     }
 
