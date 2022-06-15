@@ -26,7 +26,7 @@ fun interface CloseCallHandler : Callback {
         conversationId: String,
         messageTime: Uint32_t,
         userId: String,
-        clientId: String,
+        clientId: String?,
         arg: Pointer?
     )
 }
