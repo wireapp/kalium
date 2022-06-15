@@ -158,7 +158,7 @@ class CallMapperTest {
                 domain = "dummyDomain"
             ),
             clientId = "dummyClientId",
-            muted = false,
+            isMuted = false,
             isSpeaking = false
         )
     }
