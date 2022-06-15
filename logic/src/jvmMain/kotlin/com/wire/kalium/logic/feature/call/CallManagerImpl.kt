@@ -14,7 +14,7 @@ actual class CallManagerImpl : CallManager {
         kaliumLogger.w("CallManager initialized for JVM but not supported yet.")
     }
 
-    override suspend fun onCallingMessageReceived(message: Message, content: MessageContent.Calling) {
+    override suspend fun onCallingMessageReceived(message: Message.Regular, content: MessageContent.Calling) {
         kaliumLogger.w("onCallingMessageReceived for JVM but not supported yet.")
     }
 

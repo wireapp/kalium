@@ -12,6 +12,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.network.api.conversation.ConversationMembers
+import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.configure
 import io.mockative.eq
@@ -19,6 +20,7 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
@@ -33,6 +35,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
+@OptIn(ConfigurationApi::class, ExperimentalCoroutinesApi::class)
 class SyncManagerTest {
 
     private val workScheduler = FakeWorkScheduler()
@@ -284,8 +287,8 @@ class SyncManagerTest {
             eventId,
             TestConversation.ID,
             TestUser.USER_ID,
-            ConversationMembers(listOf(), listOf()),
-            "from"
+            listOf(),
+            "2022-03-30T15:36:00.000Z"
         )
 
         given(eventRepository)
@@ -317,8 +320,8 @@ class SyncManagerTest {
             eventId,
             TestConversation.ID,
             TestUser.USER_ID,
-            ConversationMembers(listOf(), listOf()),
-            "from"
+            listOf(),
+            "2022-03-30T15:36:00.000Z"
         )
         given(eventRepository)
             .suspendFunction(eventRepository::pendingEvents)
@@ -346,9 +349,11 @@ class SyncManagerTest {
         //Given
         val eventId = "eventId"
         val event = Event.Conversation.MemberJoin(
-            eventId, TestConversation.ID, TestUser.USER_ID, ConversationMembers(
-                listOf(), listOf()
-            ), "from"
+            eventId,
+            TestConversation.ID,
+            TestUser.USER_ID,
+            listOf(),
+            "2022-03-30T15:36:00.000Z"
         )
         val liveEventsChannel = Channel<Event>()
         given(eventRepository)
@@ -378,9 +383,11 @@ class SyncManagerTest {
         //Given
         val eventId = "eventId"
         val event = Event.Conversation.MemberJoin(
-            eventId, TestConversation.ID, TestUser.USER_ID, ConversationMembers(
-                listOf(), listOf()
-            ), "from"
+            eventId,
+            TestConversation.ID,
+            TestUser.USER_ID,
+            listOf(),
+            "2022-03-30T15:36:00.000Z"
         )
         val liveEventsChannel = Channel<Event>()
         given(eventRepository)

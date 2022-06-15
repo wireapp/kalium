@@ -9,6 +9,10 @@ import com.wire.kalium.persistence.Connection
 import com.wire.kalium.persistence.Conversation
 import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
+import com.wire.kalium.persistence.MessageAssetContent
+import com.wire.kalium.persistence.MessageMemberChangeContent
+import com.wire.kalium.persistence.MessageTextContent
+import com.wire.kalium.persistence.MessageUnknownContent
 import com.wire.kalium.persistence.User
 import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.ConnectionDAO
@@ -19,6 +23,7 @@ import com.wire.kalium.persistence.dao.ConversationDAOImpl
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.MetadataDAOImpl
 import com.wire.kalium.persistence.dao.QualifiedIDAdapter
+import com.wire.kalium.persistence.dao.QualifiedIDListAdapter
 import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.TeamDAOImpl
 import com.wire.kalium.persistence.dao.UserDAO
@@ -73,17 +78,33 @@ actual class UserDatabaseProvider(private val storePath: File) {
                 conversation_idAdapter = QualifiedIDAdapter(),
                 sender_user_idAdapter = QualifiedIDAdapter(),
                 statusAdapter = EnumColumnAdapter(),
-                asset_download_statusAdapter = EnumColumnAdapter(),
-                asset_image_widthAdapter = IntColumnAdapter,
-                asset_image_heightAdapter = IntColumnAdapter,
                 content_typeAdapter = ContentTypeAdapter(),
-                visibilityAdapter = EnumColumnAdapter()
+                visibilityAdapter = EnumColumnAdapter(),
+            ),
+            MessageAssetContent.Adapter(
+                conversation_idAdapter = QualifiedIDAdapter(),
+                asset_widthAdapter = IntColumnAdapter,
+                asset_heightAdapter = IntColumnAdapter,
+                asset_download_statusAdapter = EnumColumnAdapter(),
+            ),
+            MessageMemberChangeContent.Adapter(
+                conversation_idAdapter = QualifiedIDAdapter(),
+                member_change_listAdapter = QualifiedIDListAdapter(),
+                member_change_typeAdapter = EnumColumnAdapter()
+            ),
+            MessageTextContent.Adapter(
+                conversation_idAdapter = QualifiedIDAdapter()
+            ),
+            MessageUnknownContent.Adapter(
+                conversation_idAdapter = QualifiedIDAdapter()
             ),
             User.Adapter(
                 qualified_idAdapter = QualifiedIDAdapter(),
                 accent_idAdapter = IntColumnAdapter,
                 connection_statusAdapter = EnumColumnAdapter(),
                 user_availability_statusAdapter = EnumColumnAdapter(),
+                preview_asset_idAdapter = QualifiedIDAdapter(),
+                complete_asset_idAdapter = QualifiedIDAdapter(),
             )
         )
     }

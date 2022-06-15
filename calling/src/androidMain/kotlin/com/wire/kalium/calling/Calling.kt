@@ -3,6 +3,7 @@ package com.wire.kalium.calling
 import com.sun.jna.Library
 import com.sun.jna.Native
 import com.sun.jna.Pointer
+import com.wire.kalium.calling.callbacks.ActiveSpeakersHandler
 import com.wire.kalium.calling.callbacks.AnsweredCallHandler
 import com.wire.kalium.calling.callbacks.CallConfigRequestHandler
 import com.wire.kalium.calling.callbacks.ClientsRequestHandler
@@ -125,6 +126,12 @@ interface Calling : Library {
         inst: Handle,
         convId: String,
         clientsJson: String
+    )
+
+    @Suppress("FunctionNaming")
+    fun wcall_set_active_speaker_handler(
+        inst: Handle,
+        activeSpeakersHandler: ActiveSpeakersHandler
     )
 
     companion object {

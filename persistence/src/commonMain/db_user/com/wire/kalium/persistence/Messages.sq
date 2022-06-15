@@ -1,40 +1,83 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
+import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
 import com.wire.kalium.persistence.dao.message.MessageEntity;
 import kotlin.Int;
+import kotlin.collections.List;
 
 CREATE TABLE Message (
       id TEXT NOT NULL,
-
-      -- Text message field
-      text_body TEXT,
-
-      -- Asset message fields
-      asset_mime_type TEXT,
-      asset_size INTEGER,
-      asset_name TEXT,
-      asset_image_width INTEGER AS Int,
-      asset_image_height INTEGER AS Int,
-      asset_otr_key BLOB,
-      asset_sha256 BLOB,
-      asset_id TEXT,
-      asset_token TEXT,
-      asset_domain TEXT,
-      asset_encryption_algorithm TEXT,
-      asset_download_status TEXT AS MessageEntity.DownloadStatus,
-
-      -- Base message fields
       content_type TEXT AS ContentType NOT NULL,
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
       date TEXT NOT NULL,
       sender_user_id TEXT AS QualifiedIDEntity NOT NULL,
-      sender_client_id TEXT NOT NULL,
+      sender_client_id TEXT,
       status TEXT AS MessageEntity.Status NOT NULL,
-      last_edit_timeStamp TEXT ,
+      last_edit_timestamp TEXT ,
       visibility TEXT AS MessageEntity.Visibility NOT NULL DEFAULT 'visible',
+
       FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id),
       FOREIGN KEY (sender_user_id) REFERENCES User(qualified_id),
       PRIMARY KEY (id, conversation_id)
+);
+
+CREATE TABLE MessageTextContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      text_body TEXT,
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE,
+      PRIMARY KEY (message_id, conversation_id)
+);
+
+CREATE TABLE MessageAssetContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      asset_size INTEGER NOT NULL,
+      asset_name TEXT,
+      asset_mime_type TEXT NOT NULL,
+      asset_download_status TEXT AS MessageEntity.DownloadStatus,
+
+      -- remote data fields
+      asset_otr_key BLOB NOT NULL,
+      asset_sha256 BLOB NOT NULL,
+      asset_id TEXT NOT NULL,
+      asset_token TEXT,
+      asset_domain TEXT,
+      asset_encryption_algorithm TEXT,
+
+      -- metadata fields
+      asset_width INTEGER AS Int,
+      asset_height INTEGER AS Int,
+      asset_duration_ms INTEGER,
+      asset_normalized_loudness BLOB,
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE,
+      PRIMARY KEY (message_id, conversation_id)
+);
+
+CREATE TABLE MessageMemberChangeContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      member_change_list TEXT AS List<QualifiedIDEntity> NOT NULL,
+      member_change_type TEXT AS MemberChangeType NOT NULL,
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE,
+      PRIMARY KEY (message_id, conversation_id)
+);
+
+CREATE TABLE MessageUnknownContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      unknown_type_name TEXT,
+      unknown_encoded_data BLOB,
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE,
+      PRIMARY KEY (message_id, conversation_id)
 );
 
 deleteAllMessages:
@@ -46,45 +89,78 @@ DELETE FROM Message WHERE  id = ? AND conversation_id = ?;
 deleteMessageById:
 DELETE FROM Message WHERE  id = ?;
 
-markMessageAsDeleted:
-UPDATE Message
-SET visibility = 'DELETED', text_body = NULL
-WHERE id = ? AND conversation_id = ?;
+markMessageAsDeleted {
+   UPDATE Message
+   SET visibility = 'DELETED'
+   WHERE id = :message_id AND conversation_id = :conversation_id;
+
+   DELETE FROM MessageTextContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
+   DELETE FROM MessageAssetContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
+   DELETE FROM MessageMemberChangeContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
+   DELETE FROM MessageUnknownContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
+
+   INSERT INTO MessageTextContent(message_id, conversation_id, text_body) VALUES(:message_id, :conversation_id, NULL);
+}
 
 markMessageAsEdited:
 UPDATE Message
-SET last_edit_timeStamp = ?
+SET last_edit_timestamp = ?
 WHERE id = ? AND conversation_id = ?;
 
 insertMessage:
-INSERT INTO Message(id, text_body, asset_mime_type, asset_size, asset_name, asset_image_width, asset_image_height, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, asset_download_status, content_type, conversation_id, date, sender_user_id, sender_client_id, visibility, status)
-VALUES(?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO Message(id, content_type, conversation_id, date, sender_user_id, sender_client_id, status, visibility)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(id, conversation_id) DO UPDATE SET
 id = excluded.id,
-text_body = excluded.text_body,
-asset_mime_type = excluded.asset_mime_type,
+content_type = excluded.content_type,
+date = excluded.date,
+sender_user_id = excluded.sender_user_id,
+sender_client_id = excluded.sender_client_id,
+status = excluded.status,
+visibility = excluded.visibility;
+
+insertMessageTextContent:
+INSERT INTO MessageTextContent(message_id, conversation_id, text_body)
+VALUES(?, ?, ?)
+ON CONFLICT(message_id, conversation_id) DO UPDATE SET
+message_id = excluded.message_id,
+text_body = excluded.text_body;
+
+insertMessageAssetContent:
+INSERT INTO MessageAssetContent(message_id, conversation_id, asset_size, asset_name, asset_mime_type, asset_download_status, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, asset_width, asset_height, asset_duration_ms, asset_normalized_loudness)
+VALUES(?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT(message_id, conversation_id) DO UPDATE SET
+message_id = excluded.message_id,
 asset_size = excluded.asset_size,
 asset_name = excluded.asset_name,
-asset_image_width = excluded.asset_image_width,
-asset_image_height = excluded.asset_image_height,
+asset_mime_type = excluded.asset_mime_type,
+asset_download_status = excluded.asset_download_status,
 asset_otr_key = excluded.asset_otr_key,
 asset_sha256 = excluded.asset_sha256,
 asset_id = excluded.asset_id,
 asset_token = excluded.asset_token,
 asset_domain = excluded.asset_domain,
 asset_encryption_algorithm = excluded.asset_encryption_algorithm,
-content_type = excluded.content_type,
-text_body = excluded.text_body,
-date = excluded.date,
-sender_user_id = excluded.sender_user_id,
-sender_client_id = excluded.sender_client_id,
-visibility = excluded.visibility,
-status = excluded.status;
+asset_width = excluded.asset_width,
+asset_height = excluded.asset_height,
+asset_duration_ms = excluded.asset_duration_ms,
+asset_normalized_loudness = excluded.asset_normalized_loudness;
 
-updateMessages:
-UPDATE Message
-SET text_body = ?, asset_mime_type = ?, asset_size = ?, asset_name = ?, asset_image_width = ?, asset_image_height = ?, asset_otr_key = ?, asset_sha256 = ?, asset_id = ?, asset_token = ?, asset_domain = ?, asset_encryption_algorithm = ?, content_type = ?, date = ?, sender_user_id = ?, sender_client_id = ?, visibility = ?, status = ?
-WHERE id = ? AND conversation_id = ?;
+insertMemberChangeMessage:
+INSERT INTO MessageMemberChangeContent(message_id, conversation_id, member_change_list, member_change_type)
+VALUES(?, ?, ?, ?)
+ON CONFLICT(message_id, conversation_id) DO UPDATE SET
+message_id = excluded.message_id,
+member_change_list = excluded.member_change_list,
+member_change_type = excluded.member_change_type;
+
+insertMessageUnknownContent:
+INSERT INTO MessageUnknownContent(message_id, conversation_id, unknown_type_name, unknown_encoded_data)
+VALUES(?, ?, ?, ?)
+ON CONFLICT(message_id, conversation_id) DO UPDATE SET
+message_id = excluded.message_id,
+unknown_type_name = excluded.unknown_type_name,
+unknown_encoded_data = excluded.unknown_encoded_data;
 
 updateMessageStatus:
 UPDATE Message
@@ -92,9 +168,9 @@ SET status = ?
 WHERE id = ? AND conversation_id = ?;
 
 updateAssetDownloadStatus:
-UPDATE Message
+UPDATE MessageAssetContent
 SET asset_download_status = ?
-WHERE id = ? AND conversation_id = ?;
+WHERE message_id = ? AND conversation_id = ?;
 
 updateMessageDate:
 UPDATE Message
@@ -106,10 +182,10 @@ UPDATE Message
 SET date = strftime('%Y-%m-%dT%H:%M:%fZ', date, '+' || ROUND(CAST(? AS REAL)/1000, 3) || ' seconds')
 WHERE conversation_id = ? AND status = ?;
 
-updatMessageTextContent:
-UPDATE Message
+updateMessageTextContent:
+UPDATE MessageTextContent
 SET text_body = ?
-WHERE id = ? AND conversation_id = ?;
+WHERE message_id = ? AND conversation_id = ?;
 
 updateMessageId:
 UPDATE Message
@@ -122,11 +198,23 @@ SELECT * FROM Message ORDER BY Datetime(date) DESC LIMIT ? OFFSET ?;
 selectById:
 SELECT * FROM Message WHERE id = ? AND conversation_id = ?;
 
-selectByConversationId:
-SELECT * FROM Message WHERE conversation_id = ? ORDER BY Datetime(date) DESC LIMIT ? OFFSET ?;
+selectByConversationIdAndVisibility:
+SELECT * FROM Message WHERE conversation_id = ? AND visibility IN ? ORDER BY Datetime(date) DESC LIMIT ? OFFSET ?;
 
-selectMessagesByConversationIdAfterDate:
-SELECT * FROM Message WHERE conversation_id = ? AND Datetime(date) > Datetime(?) ORDER BY Datetime(date) DESC;
+selectMessagesByConversationIdAndVisibilityAfterDate:
+SELECT * FROM Message WHERE conversation_id = ? AND visibility IN ? AND Datetime(date) > Datetime(?) ORDER BY Datetime(date) DESC;
 
 selectMessagesFromUserByStatus:
 SELECT * FROM Message WHERE sender_user_id = ? AND status = ?;
+
+selectMessageTextContent:
+SELECT * FROM MessageTextContent WHERE message_id = ? AND conversation_id = ?;
+
+selectMessageAssetContent:
+SELECT * FROM MessageAssetContent WHERE message_id = ? AND conversation_id = ?;
+
+selectMessageMemberChangeContent:
+SELECT * FROM MessageMemberChangeContent WHERE message_id = ? AND conversation_id = ?;
+
+selectMessageUnknownContent:
+SELECT * FROM MessageUnknownContent WHERE message_id = ? AND conversation_id = ?;

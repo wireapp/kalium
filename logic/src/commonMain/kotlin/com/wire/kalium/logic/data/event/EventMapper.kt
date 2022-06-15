@@ -3,6 +3,8 @@ package com.wire.kalium.logic.data.event
 import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.logic.data.connection.ConnectionMapper
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Member
+import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.network.api.notification.EventContentDTO
@@ -12,6 +14,7 @@ import io.ktor.utils.io.core.toByteArray
 
 class EventMapper(
     private val idMapper: IdMapper,
+    private val memberMapper: MemberMapper,
     private val connectionMapper: ConnectionMapper
 ) {
 
@@ -93,8 +96,8 @@ class EventMapper(
         id,
         idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
         idMapper.fromApiModel(eventContentDTO.qualifiedFrom),
-        members = eventContentDTO.members,
-        from = eventContentDTO.from
+        eventContentDTO.members.users.map { memberMapper.fromApiModel(it) },
+        eventContentDTO.time
     )
 
     private fun memberLeave(
@@ -104,7 +107,7 @@ class EventMapper(
         id,
         idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
         idMapper.fromApiModel(eventContentDTO.qualifiedFrom),
-        members = eventContentDTO.members,
-        from = eventContentDTO.from
+        eventContentDTO.members.qualifiedUserIds.map { Member(idMapper.fromApiModel(it)) },
+        eventContentDTO.time
     )
 }

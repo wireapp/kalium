@@ -22,4 +22,5 @@ actual class GlobalCallManager {
     ): CallManager = CallManagerImpl()
 
     actual fun getFlowManager(): FlowManagerService = FlowManagerServiceImpl()
+    actual fun getMediaManager(): MediaManagerService = MediaManagerServiceImpl()
 }
