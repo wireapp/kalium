@@ -67,6 +67,7 @@ interface SyncManager {
     fun onSlowSyncFailure(cause: CoreFailure): SyncState
 }
 
+@Suppress("TooManyFunctions") //Can't take them out right now. Maybe we can extract an `EventProcessor` on a future PR
 internal class SyncManagerImpl(
     private val userSessionWorkScheduler: UserSessionWorkScheduler,
     private val eventRepository: EventRepository,
@@ -130,10 +131,10 @@ internal class SyncManagerImpl(
         syncRepository.updateSyncState { SyncState.GatheringPendingEvents }
 
         processingJob?.cancel(null)
-        processingJob = eventProcessingScope.launch { startProcessing() }
+        processingJob = eventProcessingScope.launch { gatherAndProcessEvents() }
     }
 
-    private suspend fun startProcessing() {
+    private suspend fun gatherAndProcessEvents() {
         offlineEventBuffer.clear()
         eventProcessingScope.launch(kaliumDispatcher.io) {
             gatherEvents()
