@@ -1,6 +1,9 @@
 package com.wire.kalium.logic.util
 
+import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.Instant
+import kotlinx.datetime.minus
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.until
 
@@ -13,12 +16,30 @@ interface TimeParser {
      *
      */
     fun calculateMillisDifference(time1: String, time2: String): Long
+
+    /**
+     * @return time stamp that is smaller than given one for @param[millis] milliseconds
+     */
+    fun dateMinusMilliseconds(date: String, millis: Long): String
+
+    /**
+     * @return current time stamp
+     */
+    fun currentTimeStamp(): String
 }
 
 class TimeParserImpl : TimeParser {
 
     override fun calculateMillisDifference(time1: String, time2: String): Long {
         return time1.toInstant().until(time2.toInstant(), DateTimeUnit.MILLISECOND)
+    }
+
+    override fun dateMinusMilliseconds(date: String, millis: Long): String {
+        return Instant.parse(date).minus(millis, DateTimeUnit.MILLISECOND).toString()
+    }
+
+    override fun currentTimeStamp(): String {
+        return Clock.System.now().toString()
     }
 
 }
