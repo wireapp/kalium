@@ -51,6 +51,7 @@ interface ConnectionRepository {
     suspend fun observeConnectionList(): Flow<List<Connection>>
 }
 
+@Suppress("LongParameterList")
 internal class ConnectionDataSource(
     private val conversationDAO: ConversationDAO,
     private val connectionDAO: ConnectionDAO,

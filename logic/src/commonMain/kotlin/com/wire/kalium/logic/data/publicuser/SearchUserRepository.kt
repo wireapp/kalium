@@ -37,6 +37,7 @@ interface SearchUserRepository {
     ): Either<NetworkFailure, UserSearchResult>
 }
 
+@Suppress("LongParameterList")
 class SearchUserRepositoryImpl(
     private val userDAO: UserDAO,
     private val metadataDAO: MetadataDAO,
