@@ -163,8 +163,6 @@ internal class SyncManagerImpl(
             is WebSocketEvent.Open -> {
                 kaliumLogger.i("SYNC: Websocket Open")
 
-                delay(5000)
-
                 eventRepository
                     .pendingEvents()
                     .mapNotNull { offlineEventOrFailure ->
