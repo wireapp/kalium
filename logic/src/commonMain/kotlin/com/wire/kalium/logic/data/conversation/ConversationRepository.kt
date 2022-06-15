@@ -46,6 +46,7 @@ interface ConversationRepository {
     suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>>
     suspend fun observeConversationList(): Flow<List<Conversation>>
     suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<ConversationDetails>
+    suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun getConversationDetails(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation>>
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
     suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, ProtocolInfo>
@@ -176,6 +177,15 @@ class ConversationDataSource(
             .onlyRight()
             .map(conversationMapper::fromDaoModel)
             .flatMapLatest(::getConversationDetailsFlow)
+
+    override suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit> {
+        return wrapApiRequest {
+            conversationApi.fetchConversationDetails(idMapper.toApiModel(conversationID))
+        }.flatMap {
+            val selfUserTeamId = userRepository.getSelfUser().first().team
+            persistConversations(listOf(it), selfUserTeamId)
+        }
+    }
 
     private suspend fun getConversationDetailsFlow(conversation: Conversation): Flow<ConversationDetails> =
         when (conversation.type) {
