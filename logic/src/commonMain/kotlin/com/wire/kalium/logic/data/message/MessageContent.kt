@@ -12,6 +12,7 @@ sealed class MessageContent {
     data class Text(val value: String) : Client()
     data class Calling(val value: String) : Client()
     data class Asset(val value: AssetContent) : Client()
+    data class RestrictedAsset(val mimeType: String) : Client()
     data class DeleteMessage(val messageId: String) : Client()
     data class TextEdited(val editMessageId :String, val newContent : String) : Client()
     data class DeleteForMe(

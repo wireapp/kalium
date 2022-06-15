@@ -107,6 +107,9 @@ abstract class UserSessionScopeCommon(
     private val globalCallManager: GlobalCallManager,
     private val globalPreferences: KaliumPreferences
 ) {
+    private val userConfigStorage: UserConfigStorage get() = UserConfigStorageImpl(globalPreferences)
+
+    private val userConfigRepository: UserConfigRepository get() = UserConfigDataSource(userConfigStorage)
 
     private val encryptedSettingsHolder: EncryptedSettingsHolder = authenticatedDataSourceSet.encryptedSettingsHolder
     private val userPreferencesSettings = authenticatedDataSourceSet.kaliumPreferencesSettings
@@ -281,7 +284,8 @@ abstract class UserSessionScopeCommon(
             userRepository,
             protoContentMapper,
             callManager,
-            messageTextEditHandler
+            messageTextEditHandler,
+            userConfigRepository
         )
     }
 
@@ -352,9 +356,6 @@ abstract class UserSessionScopeCommon(
         )
     private val featureConfigRepository: FeatureConfigRepository
         get() = FeatureConfigDataSource(featureConfigApi = authenticatedDataSourceSet.authenticatedNetworkContainer.featureConfigApi)
-    private val userConfigStorage: UserConfigStorage get() = UserConfigStorageImpl(globalPreferences)
-
-    private val userConfigRepository: UserConfigRepository get() = UserConfigDataSource(userConfigStorage)
 
     val getAndSaveFileSharingStatus: GetAndSaveFileSharingStatusUseCase
         get() = GetFileSharingStatusUseCaseImpl(

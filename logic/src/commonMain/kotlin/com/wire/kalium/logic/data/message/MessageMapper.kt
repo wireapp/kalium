@@ -166,6 +166,7 @@ class MessageMapperImpl(
         is MessageEntityContent.Asset -> MessageContent.Asset(
             MapperProvider.assetMapper().fromAssetEntityToAssetContent(this)
         )
+        is
         is MessageEntityContent.Unknown -> MessageContent.Unknown(this.encodedData)
     }
 
