@@ -102,4 +102,29 @@ class PendingEventsBufferTest {
         assertFalse { eventsBuffer.contains(event1) }
         assertFalse { eventsBuffer.contains(event2) }
     }
+
+    @Test
+    fun givenMultipleAddedEvents_whenClearingIfItsLastOneWithOlderEvent_thenShouldReturnFalse() = runTest {
+        val event1 = TestEvent.memberJoin("test1")
+        val event2 = TestEvent.memberJoin("test2")
+        eventsBuffer.add(event1)
+        eventsBuffer.add(event2)
+
+        val result = eventsBuffer.clearBufferIfLastEventEquals(event2)
+
+        assertFalse(result)
+    }
+
+    @Test
+    fun givenMultipleAddedEvents_whenClearingIfItsLastOneWithOlderEvent_thenAllEventsShouldBePresent() = runTest {
+        val event1 = TestEvent.memberJoin("test1")
+        val event2 = TestEvent.memberJoin("test2")
+        eventsBuffer.add(event1)
+        eventsBuffer.add(event2)
+
+        eventsBuffer.clearBufferIfLastEventEquals(event2)
+
+        assertTrue { eventsBuffer.contains(event1) }
+        assertTrue { eventsBuffer.contains(event2) }
+    }
 }
