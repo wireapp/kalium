@@ -42,14 +42,13 @@ class MLSKeyPackageCountUseCaseTest {
     fun givenClientIdIsNotRegistered_ThenReturnGenericError() = runTest {
 
         val clientFetchError = CoreFailure.MissingClientRegistration
-        val mlsKeyPackageCountError = MLSKeyPackageCountResult.Failure.Generic(clientFetchError)
         given(clientRepository).function(clientRepository::currentClientId).whenInvoked()
             .then { Either.Left(clientFetchError) }
 
         val actual = keyPackageCountUseCase()
 
         verify(keyPackageRepository).coroutine { getAvailableKeyPackageCount(TestClient.CLIENT_ID) }.wasNotInvoked()
-        assertIs<MLSKeyPackageCountResult.Failure.Generic>(actual)
+        assertIs<MLSKeyPackageCountResult.Failure.FetchClientIdFailure>(actual)
         assertEquals(actual.genericFailure, clientFetchError)
     }
 
@@ -84,8 +83,8 @@ class MLSKeyPackageCountUseCaseTest {
         verify(keyPackageRepository).coroutine {
             getAvailableKeyPackageCount(TestClient.CLIENT_ID)
         }.wasInvoked(once)
-        assertIs<MLSKeyPackageCountResult.Failure.Generic>(actual)
-        assertEquals(actual.genericFailure, networkFailure)
+        assertIs<MLSKeyPackageCountResult.Failure.NetworkCallFailure>(actual)
+        assertEquals(actual.networkFailure, networkFailure)
     }
 
     companion object {
