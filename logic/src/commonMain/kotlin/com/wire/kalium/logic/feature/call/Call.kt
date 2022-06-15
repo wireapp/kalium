@@ -8,7 +8,9 @@ enum class CallStatus {
     INCOMING,
     MISSED,
     ANSWERED,
-    ESTABLISHED
+    ESTABLISHED,
+    ONGOING,
+    CLOSED
 }
 
 data class Call(

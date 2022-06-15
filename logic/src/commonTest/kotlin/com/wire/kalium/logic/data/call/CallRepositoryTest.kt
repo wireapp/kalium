@@ -168,20 +168,6 @@ class CallRepositoryTest {
     }
 
     @Test
-    fun givenAConversationId_whenRemoveCallByIdIsCalled_thenRemoveThatCallFromTheFlow() = runTest {
-        callRepository.updateCallProfileFlow(CallProfile(mapOfCallProfiles))
-
-        callRepository.removeCallById(startedCall.conversationId.toString())
-
-        val calls = callRepository.callsFlow()
-        assertEquals(mapOfCallProfiles.size - 1, calls.first().size)
-        val removedItem = calls.first().find {
-            it.conversationId == startedCall.conversationId
-        }
-        assertNull(removedItem)
-    }
-
-    @Test
     fun givenNoIncomingCallsInTheFlow_whenGetIncomingCallsIsCalled_thenReturnAnEmptyListInTheFlow() = runTest {
         val calls = callRepository.incomingCallsFlow()
 
