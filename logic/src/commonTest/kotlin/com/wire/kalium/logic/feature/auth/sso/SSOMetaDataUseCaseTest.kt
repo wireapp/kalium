@@ -4,7 +4,6 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
-import com.wire.kalium.logic.util.stubs.newServerConfig
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.given
@@ -32,8 +31,8 @@ class SSOMetaDataUseCaseTest {
     fun givenApiReturnsGenericError_whenRequestingMetaData_thenReturnGenericFailure() =
         runTest {
             val expected = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
-            given(ssoLoginRepository).coroutine { metaData(TEST_SERVER_CONFIG) }.then { Either.Left(expected) }
-            val result = ssoMetaDataUseCase(TEST_SERVER_CONFIG)
+            given(ssoLoginRepository).coroutine { metaData() }.then { Either.Left(expected) }
+            val result = ssoMetaDataUseCase()
             assertIs<SSOMetaDataResult.Failure.Generic>(result)
             assertEquals(expected, result.genericFailure)
         }
@@ -41,13 +40,12 @@ class SSOMetaDataUseCaseTest {
     @Test
     fun givenApiReturnsSuccess_whenRequestingMetaData_thenReturnSuccess() =
         runTest {
-            given(ssoLoginRepository).coroutine { metaData(TEST_SERVER_CONFIG) }.then { Either.Right(TEST_RESPONSE) }
-            val result = ssoMetaDataUseCase(TEST_SERVER_CONFIG)
+            given(ssoLoginRepository).coroutine { metaData() }.then { Either.Right(TEST_RESPONSE) }
+            val result = ssoMetaDataUseCase()
             assertEquals(result, SSOMetaDataResult.Success(TEST_RESPONSE))
         }
 
     private companion object {
         const val TEST_RESPONSE = "wire/response"
-        val TEST_SERVER_CONFIG = newServerConfig(1)
     }
 }

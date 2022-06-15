@@ -1,11 +1,12 @@
 package com.wire.kalium.logic.data.register
 
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.configuration.ServerConfig
+import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapper
@@ -57,17 +58,15 @@ class RegisterAccountRepositoryTest {
     fun givenApiRequestSuccess_whenRequestingActivationCodeForAnEmail_thenSuccessIsPropagated() = runTest {
         val expected = Unit
         val email = "user@domain.de"
-        given(registerApi)
-            .coroutine { requestActivationCode(RegisterApi.RequestActivationCodeParam.Email(email), TEST_API_HOST) }
+        given(registerApi).coroutine { requestActivationCode(RegisterApi.RequestActivationCodeParam.Email(email)) }
             .then { NetworkResponse.Success(expected, mapOf(), 200) }
 
-        val actual = registerAccountRepository.requestEmailActivationCode(email, TEST_API_HOST)
+        val actual = registerAccountRepository.requestEmailActivationCode(email)
 
         assertIs<Either.Right<Unit>>(actual)
         assertEquals(expected, actual.value)
 
-        verify(registerApi)
-            .coroutine { requestActivationCode(RegisterApi.RequestActivationCodeParam.Email(email), TEST_API_HOST) }
+        verify(registerApi).coroutine { requestActivationCode(RegisterApi.RequestActivationCodeParam.Email(email)) }
             .wasInvoked(exactly = once)
     }
 
@@ -75,16 +74,14 @@ class RegisterAccountRepositoryTest {
     fun givenApiRequestFail_whenRequestingActivationCodeForAnEmail_thenNetworkFailureIsPropagated() = runTest {
         val expected = TestNetworkException.generic
         val email = "user@domain.de"
-        given(registerApi)
-            .coroutine { requestActivationCode(RegisterApi.RequestActivationCodeParam.Email(email), TEST_API_HOST) }
+        given(registerApi).coroutine { requestActivationCode(RegisterApi.RequestActivationCodeParam.Email(email)) }
             .then { NetworkResponse.Error(expected) }
 
-        val actual = registerAccountRepository.requestEmailActivationCode(email, TEST_API_HOST)
+        val actual = registerAccountRepository.requestEmailActivationCode(email)
 
         assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(actual)
         assertEquals(expected, actual.value.kaliumException)
-        verify(registerApi)
-            .coroutine { requestActivationCode(RegisterApi.RequestActivationCodeParam.Email(email), TEST_API_HOST) }
+        verify(registerApi).coroutine { requestActivationCode(RegisterApi.RequestActivationCodeParam.Email(email)) }
             .wasInvoked(exactly = once)
     }
 
@@ -94,18 +91,15 @@ class RegisterAccountRepositoryTest {
         val expected = Unit
         val email = "user@domain.de"
         val code = "123456"
-        given(registerApi)
-            .coroutine { activate(RegisterApi.ActivationParam.Email(email, code), TEST_API_HOST) }
+        given(registerApi).coroutine { activate(RegisterApi.ActivationParam.Email(email, code)) }
             .then { NetworkResponse.Success(expected, mapOf(), 200) }
 
-        val actual = registerAccountRepository.verifyActivationCode(email, code, TEST_API_HOST)
+        val actual = registerAccountRepository.verifyActivationCode(email, code)
 
         assertIs<Either.Right<Unit>>(actual)
         assertEquals(expected, actual.value)
 
-        verify(registerApi)
-            .coroutine { activate(RegisterApi.ActivationParam.Email(email, code), TEST_API_HOST) }
-            .wasInvoked(exactly = once)
+        verify(registerApi).coroutine { activate(RegisterApi.ActivationParam.Email(email, code)) }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -113,15 +107,14 @@ class RegisterAccountRepositoryTest {
         val expected = TestNetworkException.generic
         val email = "user@domain.de"
         val code = "123456"
-        given(registerApi).coroutine { activate(RegisterApi.ActivationParam.Email(email, code), TEST_API_HOST) }
-            .then { NetworkResponse.Error(expected) }
+        given(registerApi).coroutine { activate(RegisterApi.ActivationParam.Email(email, code)) }.then { NetworkResponse.Error(expected) }
 
-        val actual = registerAccountRepository.verifyActivationCode(email, code, TEST_API_HOST)
+        val actual = registerAccountRepository.verifyActivationCode(email, code)
 
         assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(actual)
         assertEquals(expected, actual.value.kaliumException)
 
-        verify(registerApi).coroutine { activate(RegisterApi.ActivationParam.Email(email, code), TEST_API_HOST) }.wasInvoked(exactly = once)
+        verify(registerApi).coroutine { activate(RegisterApi.ActivationParam.Email(email, code)) }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -141,41 +134,35 @@ class RegisterAccountRepositoryTest {
                 accentId = accentId,
                 team = teamId,
                 connectionStatus = ConnectionState.ACCEPTED,
-                previewPicture = assets.getPreviewAssetOrNull()?.key,
-                completePicture = assets.getCompleteAssetOrNull()?.key,
+                previewPicture = UserAssetId("value1","domain"),
+                completePicture = UserAssetId("value2","domain"),
                 availabilityStatus = UserAvailabilityStatus.NONE
             )
         }
-        val authSession = with(SESSION) { AuthSession(UserId(userId.value, userId.domain), accessToken, refreshToken, tokenType, serverConfig) }
-        val expected = Pair(selfUser, authSession)
+        val authSession = with(SESSION) {
+            AuthSession(
+                AuthSession.Tokens(UserId(userId.value, userId.domain), accessToken, refreshToken, tokenType), serverConfig.links
+            )
+        }
+        val expected = Pair(selfUser, authSession.tokens)
 
-        given(registerApi)
-            .coroutine {
-                register(
-                    RegisterApi.RegisterParam.PersonalAccount(email, code, name, password), serverConfig.apiBaseUrl
-                )
-            }.then { NetworkResponse.Success(Pair(TEST_USER, SESSION), mapOf(), 200) }
-        given(userMapper)
-            .invocation { fromDtoToSelfUser(TEST_USER) }
-            .then { selfUser }
-        given(sessionMapper)
-            .invocation { fromSessionDTO(SESSION, serverConfig) }
-            .then { authSession }
+        given(registerApi).coroutine {
+            register(
+                RegisterApi.RegisterParam.PersonalAccount(email, code, name, password)
+            )
+        }.then { NetworkResponse.Success(Pair(TEST_USER, SESSION), mapOf(), 200) }
+        given(userMapper).invocation { fromDtoToSelfUser(TEST_USER) }.then { selfUser }
+        given(sessionMapper).invocation { fromSessionDTO(SESSION) }.then { authSession.tokens }
 
-        val actual = registerAccountRepository.registerPersonalAccountWithEmail(email, code, name, password, serverConfig)
+        val actual = registerAccountRepository.registerPersonalAccountWithEmail(email, code, name, password)
 
-        assertIs<Either.Right<Pair<SelfUser, AuthSession>>>(actual)
+        assertIs<Either.Right<Pair<SelfUser, AuthSession.Tokens>>>(actual)
         assertEquals(expected, actual.value)
 
-        verify(registerApi)
-            .coroutine { register(RegisterApi.RegisterParam.PersonalAccount(email, code, name, password), serverConfig.apiBaseUrl) }
+        verify(registerApi).coroutine { register(RegisterApi.RegisterParam.PersonalAccount(email, code, name, password)) }
             .wasInvoked(exactly = once)
-        verify(sessionMapper)
-            .invocation { fromSessionDTO(SESSION, serverConfig) }
-            .wasInvoked(exactly = once)
-        verify(userMapper)
-            .invocation { fromDtoToSelfUser(TEST_USER) }
-            .wasInvoked(exactly = once)
+        verify(sessionMapper).function(sessionMapper::fromSessionDTO).with(any()).wasInvoked(exactly = once)
+        verify(userMapper).invocation { fromDtoToSelfUser(TEST_USER) }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -197,41 +184,40 @@ class RegisterAccountRepositoryTest {
                 accentId = accentId,
                 team = teamId,
                 connectionStatus = ConnectionState.ACCEPTED,
-                previewPicture = assets.getPreviewAssetOrNull()?.key,
-                completePicture = assets.getCompleteAssetOrNull()?.key,
+                previewPicture = UserAssetId("value1","domain"),
+                completePicture = UserAssetId("value2","domain"),
                 availabilityStatus = UserAvailabilityStatus.NONE
             )
         }
-        val authSession = with(SESSION) { AuthSession(UserId(userId.value, userId.domain), accessToken, refreshToken, tokenType, serverConfig) }
-        val expected = Pair(selfUser, authSession)
+        val authSession =
+            with(SESSION) {
+                AuthSession(
+                    AuthSession.Tokens(UserId(userId.value, userId.domain), accessToken, refreshToken, tokenType),
+                    serverConfig.links
+                )
+            }
+        val expected = Pair(selfUser, authSession.tokens)
 
-        given(registerApi)
-            .coroutine {
-                register(RegisterApi.RegisterParam.TeamAccount(email, code, name, password, teamName, teamIcon), serverConfig.apiBaseUrl)
-            }.then { NetworkResponse.Success(Pair(TEST_USER, SESSION), mapOf(), 200) }
-        given(userMapper)
-            .invocation { fromDtoToSelfUser(TEST_USER) }
-            .then { selfUser }
+        given(registerApi).coroutine {
+            register(RegisterApi.RegisterParam.TeamAccount(email, code, name, password, teamName, teamIcon))
+        }.then { NetworkResponse.Success(Pair(TEST_USER, SESSION), mapOf(), 200) }
+        given(userMapper).invocation { fromDtoToSelfUser(TEST_USER) }.then { selfUser }
         given(sessionMapper)
-            .invocation { fromSessionDTO(SESSION, serverConfig) }
-            .then { authSession }
+            .invocation { fromSessionDTO(SESSION) }
+            .then { authSession.tokens }
 
-        val actual = registerAccountRepository.registerTeamWithEmail(email, code, name, password, teamName, teamIcon, serverConfig)
+        val actual = registerAccountRepository.registerTeamWithEmail(email, code, name, password, teamName, teamIcon)
 
-        assertIs<Either.Right<Pair<SelfUser, AuthSession>>>(actual)
+        assertIs<Either.Right<Pair<SelfUser, AuthSession.Tokens>>>(actual)
         assertEquals(expected, actual.value)
 
-        verify(registerApi)
-            .coroutine {
-                register(RegisterApi.RegisterParam.TeamAccount(email, code, name, password, teamName, teamIcon), serverConfig.apiBaseUrl)
-            }
-            .wasInvoked(exactly = once)
-        verify(sessionMapper)
-            .invocation { fromSessionDTO(SESSION, serverConfig) }
-            .wasInvoked(exactly = once)
-        verify(userMapper)
-            .invocation { fromDtoToSelfUser(TEST_USER) }
-            .wasInvoked(exactly = once)
+        verify(registerApi).coroutine {
+            register(RegisterApi.RegisterParam.TeamAccount(email, code, name, password, teamName, teamIcon))
+        }.wasInvoked(exactly = once)
+        verify(sessionMapper).invocation {
+            fromSessionDTO(SESSION)
+        }.wasInvoked(exactly = once)
+        verify(userMapper).invocation { fromDtoToSelfUser(TEST_USER) }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -242,34 +228,27 @@ class RegisterAccountRepositoryTest {
         val name = NAME
         val expected = TestNetworkException.generic
 
-        given(registerApi)
-            .coroutine {
-                register(
-                    RegisterApi.RegisterParam.PersonalAccount(email, code, name, password), TEST_SERVER_CONFIG.apiBaseUrl
-                )
-            }.then { NetworkResponse.Error(expected) }
+        given(registerApi).coroutine {
+            register(
+                RegisterApi.RegisterParam.PersonalAccount(email, code, name, password)
+            )
+        }.then { NetworkResponse.Error(expected) }
 
-        val actual = registerAccountRepository.registerPersonalAccountWithEmail(email, code, name, password, TEST_SERVER_CONFIG)
+        val actual = registerAccountRepository.registerPersonalAccountWithEmail(email, code, name, password)
 
         assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(actual)
         assertEquals(expected, actual.value.kaliumException)
 
         verify(registerApi).coroutine {
             register(
-                RegisterApi.RegisterParam.PersonalAccount(email, code, name, password),
-                TEST_SERVER_CONFIG.apiBaseUrl
+                RegisterApi.RegisterParam.PersonalAccount(email, code, name, password)
             )
         }.wasInvoked(exactly = once)
         verify(sessionMapper)
             .function(sessionMapper::fromSessionDTO)
-            .with(any(), any())
-            .wasNotInvoked()
-
-
-        verify(userMapper)
-            .function(userMapper::fromDtoToSelfUser)
             .with(any())
             .wasNotInvoked()
+        verify(userMapper).function(userMapper::fromDtoToSelfUser).with(any()).wasNotInvoked()
 
     }
 

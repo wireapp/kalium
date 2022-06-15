@@ -1,10 +1,11 @@
 package com.wire.kalium.logic.feature.session
 
-import com.wire.kalium.logic.configuration.ServerConfig
+import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.stubs.newServerConfig
 import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.classOf
@@ -18,10 +19,9 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
+@OptIn(ExperimentalCoroutinesApi::class, ConfigurationApi::class)
 class SaveSessionUseCaseTest {
 
-    @OptIn(ConfigurationApi::class)
     @Mock
     val sessionRepository = configure(mock(classOf<SessionRepository>())) { stubsUnitByDefault = true }
     lateinit var saveSessionUseCase: SaveSessionUseCase
@@ -40,23 +40,16 @@ class SaveSessionUseCaseTest {
     }
 
     private companion object {
-        val TEST_SERVER_CONFIG: ServerConfig = ServerConfig(
-            id = "config-1",
-            apiBaseUrl = "apiBaseUrl.com",
-            accountsBaseUrl = "accountsUrl.com",
-            webSocketBaseUrl = "webSocketUrl.com",
-            blackListUrl = "blackListUrl.com",
-            teamsUrl = "teamsUrl.com",
-            websiteUrl = "websiteUrl.com",
-            title = "Test Title"
-        )
+        val TEST_SERVER_CONFIG: ServerConfig = newServerConfig(1)
         val TEST_AUTH_SESSION =
             AuthSession(
-                userId = UserId("user_id", "domain.de"),
-                accessToken = "access_token",
-                refreshToken = "refresh_token",
-                tokenType = "token_type",
-                TEST_SERVER_CONFIG
+                AuthSession.Tokens(
+                    userId = UserId("user_id", "domain.de"),
+                    accessToken = "access_token",
+                    refreshToken = "refresh_token",
+                    tokenType = "token_type"
+                ),
+                TEST_SERVER_CONFIG.links
             )
     }
 }

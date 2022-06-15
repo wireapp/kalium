@@ -106,6 +106,6 @@ fun KaliumException.InvalidRequestError.isUserCreationRestricted(): Boolean {
     return errorResponse.label == USER_CREATION_RESTRICTED
 }
 
-fun KaliumException.InvalidRequestError.isTooMAnyMembers(): Boolean {
+fun KaliumException.InvalidRequestError.isTooManyMembers(): Boolean {
     return errorResponse.label == TOO_MANY_MEMBERS
 }

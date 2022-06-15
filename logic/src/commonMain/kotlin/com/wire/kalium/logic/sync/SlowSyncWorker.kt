@@ -9,8 +9,8 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 
 class SlowSyncWorker(
-    userSessionScope: UserSessionScope
-) : UserSessionWorker(userSessionScope) {
+    private val userSessionScope: UserSessionScope
+) : DefaultWorker {
 
     override suspend fun doWork(): Result {
 

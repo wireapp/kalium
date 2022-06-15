@@ -2,19 +2,23 @@ package com.wire.kalium.api.tools.json.api.keypackage
 
 import com.wire.kalium.api.tools.json.ValidJsonProvider
 import com.wire.kalium.network.api.keypackage.ClaimedKeyPackageList
+import com.wire.kalium.network.api.keypackage.KeyPackageCountDTO
 import com.wire.kalium.network.api.keypackage.KeyPackageDTO
-import com.wire.kalium.network.api.prekey.PreKeyDTO
 
 object KeyPackageJson {
 
     val valid = ValidJsonProvider(
-        ClaimedKeyPackageList(listOf(
-            KeyPackageDTO("defkrr8e7grgsoufhg8",
-            "wire.com",
-            "keyPackage",
-            "keyPackageRef",
-            "fdf23116-42a5-472c-8316-e10655f5d11e")
-        ))
+        ClaimedKeyPackageList(
+            listOf(
+                KeyPackageDTO(
+                    "defkrr8e7grgsoufhg8",
+                    "wire.com",
+                    "keyPackage",
+                    "keyPackageRef",
+                    "fdf23116-42a5-472c-8316-e10655f5d11e"
+                )
+            )
+        )
     ) {
         """
         |{
@@ -29,5 +33,12 @@ object KeyPackageJson {
         |  ]
         |}
         """.trimMargin()
+    }
+
+    fun keyPackageCountJson(count: Int) = ValidJsonProvider(
+        KeyPackageCountDTO(count)
+
+    ) {
+        """{"count":${it.count}}""".trimMargin()
     }
 }

@@ -1,6 +1,6 @@
 package com.wire.kalium.logic.data.auth.login
 
-import com.wire.kalium.logic.data.session.SessionMapper
+import com.wire.kalium.logic.util.stubs.newTestServer
 import com.wire.kalium.network.api.user.login.LoginApi
 import io.mockative.Mock
 import io.mockative.classOf
@@ -15,15 +15,14 @@ class LoginRepositoryTest {
     @Mock
     val loginApi = mock(classOf<LoginApi>())
 
-    @Mock
-    val sessionMapper: SessionMapper = mock(classOf<SessionMapper>())
+    val testServer = newTestServer(1)
 
     private lateinit var loginRepository: LoginRepository
 
 
     @BeforeTest
     fun setup() {
-        loginRepository = LoginRepositoryImpl(loginApi, CLIENT_LABEL, sessionMapper)
+        loginRepository = LoginRepositoryImpl(loginApi, CLIENT_LABEL)
     }
 
     @Test
