@@ -123,6 +123,7 @@ class MessageScope(
         get() = GetNotificationsUseCaseImpl(
             messageRepository,
             userRepository,
-            conversationRepository
+            conversationRepository,
+            timeParser
         )
 }

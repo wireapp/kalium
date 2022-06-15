@@ -18,7 +18,7 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
 
     override suspend fun fetchConversationsIds(pagingState: String?): NetworkResponse<ConversationPagingResponse> =
         wrapKaliumResponse {
-            httpClient.post("$PATH_CONVERSATIONS$PATH_LIST_IDS") {
+            httpClient.post("$PATH_CONVERSATIONS/$PATH_LIST_IDS") {
                 setBody(
                     buildJsonObject {
                         pagingState?.let {
@@ -31,7 +31,7 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
 
     override suspend fun fetchConversationsListDetails(conversationsIds: List<ConversationId>): NetworkResponse<ConversationResponseDTO> =
         wrapKaliumResponse {
-            httpClient.post("$PATH_CONVERSATIONS$PATH_CONVERSATIONS_LIST$PATH_V2") {
+            httpClient.post("$PATH_CONVERSATIONS/$PATH_CONVERSATIONS_LIST/$PATH_V2") {
                 setBody(ConversationsDetailsRequest(conversationsIds = conversationsIds))
             }
         }
@@ -67,7 +67,7 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
 
     override suspend fun createOne2OneConversation(createConversationRequest: CreateConversationRequest): NetworkResponse<ConversationResponse> =
         wrapKaliumResponse {
-            httpClient.post("$PATH_CONVERSATIONS$PATH_ONE_2_ONE") {
+            httpClient.post("$PATH_CONVERSATIONS/$PATH_ONE_2_ONE") {
                 setBody(createConversationRequest)
             }
         }
@@ -80,7 +80,7 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
         conversationId: ConversationId
     ): NetworkResponse<AddParticipantResponse> {
         val response =
-            httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}$PATH_MEMBERS$PATH_V2") {
+            httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_MEMBERS/$PATH_V2") {
                 setBody(addParticipantRequest)
             }
 
@@ -95,19 +95,19 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
         memberUpdateRequest: MemberUpdateDTO,
         conversationId: ConversationId,
     ): NetworkResponse<Unit> = wrapKaliumResponse {
-        httpClient.put("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}$PATH_SELF") {
+        httpClient.put("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_SELF") {
             setBody(memberUpdateRequest)
         }
     }
 
     private companion object {
-        const val PATH_CONVERSATIONS = "/conversations"
-        const val PATH_SELF = "/self"
-        const val PATH_MEMBERS = "/members"
-        const val PATH_ONE_2_ONE = "/one2one"
-        const val PATH_V2 = "/v2"
-        const val PATH_CONVERSATIONS_LIST = "/list"
-        const val PATH_LIST_IDS = "/list-ids"
+        const val PATH_CONVERSATIONS = "conversations"
+        const val PATH_SELF = "self"
+        const val PATH_MEMBERS = "members"
+        const val PATH_ONE_2_ONE = "one2one"
+        const val PATH_V2 = "v2"
+        const val PATH_CONVERSATIONS_LIST = "list"
+        const val PATH_LIST_IDS = "list-ids"
 
         const val QUERY_KEY_START = "start"
         const val QUERY_KEY_SIZE = "size"

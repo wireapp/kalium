@@ -3,6 +3,9 @@ package com.wire.kalium.network.api.configuration
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+/**
+ * data class representing the remote server config json
+ */
 @Serializable
 internal data class ServerConfigResponse(
     @SerialName("endpoints") val endpoints: EndPoints,
@@ -10,7 +13,7 @@ internal data class ServerConfigResponse(
 )
 
 @Serializable
-data class EndPoints(
+internal data class EndPoints(
     @SerialName("backendURL") val apiBaseUrl: String,
     @SerialName("backendWSURL") val webSocketBaseUrl: String,
     @SerialName("blackListURL") val blackListUrl: String,

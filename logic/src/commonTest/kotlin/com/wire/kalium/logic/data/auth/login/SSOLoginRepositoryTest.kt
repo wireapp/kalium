@@ -7,7 +7,6 @@ import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.network.api.user.login.SSOLoginApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
-import io.ktor.http.Url
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.given
@@ -26,7 +25,7 @@ class SSOLoginRepositoryTest {
 
     @Mock
     val ssoLoginApi = mock(classOf<SSOLoginApi>())
-    private lateinit var ssoLoginRepository : SSOLoginRepository
+    private lateinit var ssoLoginRepository: SSOLoginRepository
 
     @BeforeTest
     fun setup() {
@@ -36,76 +35,76 @@ class SSOLoginRepositoryTest {
     @Test
     fun givenApiRequestSuccess_whenInitiatingWithoutRedirects_thenSuccessIsPropagated() =
         givenApiRequestSuccess_whenMakingRequest_thenSuccessIsPropagated(
-            { initiate(SSOLoginApi.InitiateParam.WithoutRedirect(TEST_CODE), Url(TEST_SERVER_CONFIG.apiBaseUrl)) } ,
+            { initiate(SSOLoginApi.InitiateParam.WithoutRedirect(TEST_CODE)) },
             "wire/response",
-            { ssoLoginRepository.initiate(TEST_CODE, TEST_SERVER_CONFIG) }
+            { ssoLoginRepository.initiate(TEST_CODE) }
         )
 
     @Test
     fun givenApiRequestSuccess_whenInitiatingWithRedirects_thenSuccessIsPropagated() =
         givenApiRequestSuccess_whenMakingRequest_thenSuccessIsPropagated(
-            { initiate(SSOLoginApi.InitiateParam.WithRedirect(TEST_SUCCESS, TEST_ERROR, TEST_CODE), Url(TEST_SERVER_CONFIG.apiBaseUrl)) } ,
+            { initiate(SSOLoginApi.InitiateParam.WithRedirect(TEST_SUCCESS, TEST_ERROR, TEST_CODE)) },
             "wire/response",
-            { ssoLoginRepository.initiate(TEST_CODE, TEST_SUCCESS, TEST_ERROR, TEST_SERVER_CONFIG) }
+            { ssoLoginRepository.initiate(TEST_CODE, TEST_SUCCESS, TEST_ERROR) }
         )
 
     @Test
     fun givenApiRequestFail_whenInitiating_thenNetworkFailureIsPropagated() =
         givenApiRequestFail_whenMakingRequest_thenNetworkFailureIsPropagated(
-            { initiate(SSOLoginApi.InitiateParam.WithoutRedirect(TEST_CODE), Url(TEST_SERVER_CONFIG.apiBaseUrl)) } ,
+            { initiate(SSOLoginApi.InitiateParam.WithoutRedirect(TEST_CODE)) },
             expected = TestNetworkException.generic,
-            { ssoLoginRepository.initiate(TEST_CODE, TEST_SERVER_CONFIG) }
+            { ssoLoginRepository.initiate(TEST_CODE) }
         )
 
     @Test
     fun givenApiRequestSuccess_whenFinalizing_thenSuccessIsPropagated() =
         givenApiRequestSuccess_whenMakingRequest_thenSuccessIsPropagated(
-            apiCoroutineBlock = { finalize(TEST_COOKIE, Url(TEST_SERVER_CONFIG.apiBaseUrl)) },
+            apiCoroutineBlock = { finalize(TEST_COOKIE) },
             expected = "wire/response",
-            repositoryCoroutineBlock = { finalize(TEST_COOKIE, TEST_SERVER_CONFIG) }
+            repositoryCoroutineBlock = { finalize(TEST_COOKIE) }
         )
 
     @Test
     fun givenApiRequestFail_whenFinalizing_thenNetworkFailureIsPropagated() =
         givenApiRequestFail_whenMakingRequest_thenNetworkFailureIsPropagated(
-            apiCoroutineBlock = { finalize(TEST_COOKIE, Url(TEST_SERVER_CONFIG.apiBaseUrl)) },
+            apiCoroutineBlock = { finalize(TEST_COOKIE) },
             expected = TestNetworkException.generic,
-            repositoryCoroutineBlock = { finalize(TEST_COOKIE, TEST_SERVER_CONFIG) }
+            repositoryCoroutineBlock = { finalize(TEST_COOKIE) }
         )
 
     @Test
     fun givenApiRequestSuccess_whenRequestingMetaData_thenSuccessIsPropagated() =
         givenApiRequestSuccess_whenMakingRequest_thenSuccessIsPropagated(
-            apiCoroutineBlock = { metaData(Url(TEST_SERVER_CONFIG.apiBaseUrl)) },
+            apiCoroutineBlock = { metaData() },
             expected = "wire/response",
-            repositoryCoroutineBlock = { metaData(TEST_SERVER_CONFIG) }
+            repositoryCoroutineBlock = { metaData() }
         )
 
     @Test
     fun givenApiRequestFail_whenRequestingMetaData_thenNetworkFailureIsPropagated() =
         givenApiRequestFail_whenMakingRequest_thenNetworkFailureIsPropagated(
-            apiCoroutineBlock = { metaData(Url(TEST_SERVER_CONFIG.apiBaseUrl)) },
+            apiCoroutineBlock = { metaData() },
             expected = TestNetworkException.generic,
-            repositoryCoroutineBlock = { metaData(TEST_SERVER_CONFIG) }
+            repositoryCoroutineBlock = { metaData() }
         )
 
     @Test
     fun givenApiRequestSuccess_whenRequestingSettings_thenSuccessIsPropagated() =
         givenApiRequestSuccess_whenMakingRequest_thenSuccessIsPropagated(
-            apiCoroutineBlock = { settings(Url(TEST_SERVER_CONFIG.apiBaseUrl)) },
+            apiCoroutineBlock = { settings() },
             expected = true,
-            repositoryCoroutineBlock = { settings(TEST_SERVER_CONFIG) }
+            repositoryCoroutineBlock = { settings() }
         )
 
     @Test
     fun givenApiRequestFail_whenRequestingSettings_thenNetworkFailureIsPropagated() =
         givenApiRequestFail_whenMakingRequest_thenNetworkFailureIsPropagated(
-            apiCoroutineBlock = { settings(Url(TEST_SERVER_CONFIG.apiBaseUrl)) },
+            apiCoroutineBlock = { settings() },
             expected = TestNetworkException.generic,
-            repositoryCoroutineBlock = { settings(TEST_SERVER_CONFIG) }
+            repositoryCoroutineBlock = { settings() }
         )
 
-    private fun <T: Any> givenApiRequestSuccess_whenMakingRequest_thenSuccessIsPropagated(
+    private fun <T : Any> givenApiRequestSuccess_whenMakingRequest_thenSuccessIsPropagated(
         apiCoroutineBlock: suspend SSOLoginApi.() -> NetworkResponse<T>,
         expected: T,
         repositoryCoroutineBlock: suspend SSOLoginRepository.() -> Either<NetworkFailure, T>
@@ -117,7 +116,7 @@ class SSOLoginRepositoryTest {
         verify(ssoLoginApi).coroutine { apiCoroutineBlock(this) }.wasInvoked(exactly = once)
     }
 
-    private fun <T: Any> givenApiRequestFail_whenMakingRequest_thenNetworkFailureIsPropagated(
+    private fun <T : Any> givenApiRequestFail_whenMakingRequest_thenNetworkFailureIsPropagated(
         apiCoroutineBlock: suspend SSOLoginApi.() -> NetworkResponse<T>,
         expected: KaliumException,
         repositoryCoroutineBlock: suspend SSOLoginRepository.() -> Either<NetworkFailure, T>

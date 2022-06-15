@@ -24,18 +24,18 @@ internal class OnClientsRequest(
 
     override fun onClientsRequest(inst: Handle, conversationId: String, arg: Pointer?) {
         callingScope.launch {
-            callingLogger.d("OnClientsRequest() -> Retrieving recipients")
+            callingLogger.d("OnClientsRequest() -> Retrieving recipients $conversationId")
             val conversationRecipients =
                 conversationRepository.getConversationRecipients(conversationId = conversationId.toConversationId())
 
-            callingLogger.d("OnClientsRequest() -> Mapping recipients")
             conversationRecipients.map { recipients ->
+                callingLogger.d("OnClientsRequest() -> Mapping ${recipients.size} recipients")
                 recipients
-                    .filter { it.member.id.toString() != selfUserId }
+                    .filter { it.member.id.value != selfUserId }
                     .flatMap { recipient ->
                         recipient.clients.map { clientId ->
                             CallClient(
-                                userId = recipient.member.id.toString(),
+                                userId = recipient.member.id.value,
                                 clientId = clientId.value
                             )
                         }

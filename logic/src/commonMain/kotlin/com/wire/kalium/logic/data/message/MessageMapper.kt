@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Video
+import com.wire.kalium.logic.data.notification.LocalNotificationCommentType
 import com.wire.kalium.logic.data.notification.LocalNotificationMessage
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
 import com.wire.kalium.logic.di.MapperProvider
@@ -103,7 +104,13 @@ class MessageMapperImpl(
         when (val content = message.content) {
             is MessageContent.Text -> LocalNotificationMessage.Text(author, message.date, content.value)
             // TODO(notifications): Handle other message types
-            else -> LocalNotificationMessage.Text(author, message.date, "Something not a text")
+            is MessageContent.Asset -> {
+                val type = if (content.value.metadata is Image) LocalNotificationCommentType.PICTURE
+                else LocalNotificationCommentType.FILE
+
+                LocalNotificationMessage.Comment(author, message.date, type)
+            }
+            else -> LocalNotificationMessage.Comment(author, message.date, LocalNotificationCommentType.NOT_SUPPORTED_YET)
         }
 
     @Suppress("ComplexMethod")
@@ -133,6 +140,7 @@ class MessageMapperImpl(
                 assetOtrKey = remoteData.otrKey,
                 assetSha256Key = remoteData.sha256,
                 assetId = remoteData.assetId,
+                assetDomain = remoteData.assetDomain,
                 assetToken = remoteData.assetToken,
                 assetEncryptionAlgorithm = remoteData.encryptionAlgorithm?.name,
                 assetWidth = assetWidth,

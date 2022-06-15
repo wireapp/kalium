@@ -4,7 +4,7 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.logic.configuration.ServerConfig
+import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.feature.register.RegisterParam
 import com.wire.kalium.logic.feature.register.RegisterResult
 import com.wire.kalium.logic.feature.register.RequestActivationCodeResult
@@ -19,7 +19,7 @@ class RegisterAccountApp : CliktCommand() {
     private val environment: String? by option(help = "Choose backend environment: can be production or staging")
     private val coreLogic = CoreLogic("Kalium CLI", ".proteus", kaliumConfigs = KaliumConfigs())
 
-    private val serverConfig: ServerConfig by lazy {
+    private val serverConfig: ServerConfig.Links by lazy {
         if (environment == "production") {
             ServerConfig.PRODUCTION
         } else {
@@ -51,18 +51,18 @@ class RegisterAccountApp : CliktCommand() {
         }
     }
 
-    private suspend fun requestCode() = coreLogic.authenticationScope {
-        register.requestActivationCode(email, serverConfig)
+    private suspend fun requestCode() = coreLogic.authenticationScope(serverConfig) {
+        register.requestActivationCode(email)
     }
 
-    private suspend fun activate() = coreLogic.authenticationScope {
+    private suspend fun activate() = coreLogic.authenticationScope(serverConfig) {
         val reader = Scanner(System.`in`)
         echo("Enter the activation code: ")
         code = reader.nextInt()
-        register.activate(email, code.toString(), serverConfig)
+        register.activate(email, code.toString())
     }
 
-    private suspend fun register() = coreLogic.authenticationScope {
+    private suspend fun register() = coreLogic.authenticationScope(serverConfig) {
         val reader = Scanner(System.`in`)
         echo("Enter the activation code: ")
         code = reader.nextInt()
@@ -73,7 +73,7 @@ class RegisterAccountApp : CliktCommand() {
             emailActivationCode = code.toString(),
             password = "@Password123"
         )
-        register.register(param, serverConfig)
+        register.register(param)
     }
 
 

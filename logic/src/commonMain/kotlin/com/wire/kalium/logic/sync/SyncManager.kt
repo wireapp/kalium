@@ -16,6 +16,7 @@ import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
@@ -62,7 +63,7 @@ interface SyncManager {
 }
 
 class SyncManagerImpl(
-    private val workScheduler: WorkScheduler,
+    private val userSessionWorkScheduler: UserSessionWorkScheduler,
     private val eventRepository: EventRepository,
     private val syncRepository: SyncRepository,
     private val conversationEventReceiver: ConversationEventReceiver,
@@ -74,6 +75,7 @@ class SyncManagerImpl(
      * A dispatcher with limited parallelism of 1.
      * This means using this dispatcher only a single coroutine will be processed at a time.
      */
+    @OptIn(ExperimentalCoroutinesApi::class)
     private val eventProcessingDispatcher = kaliumDispatcher.default.limitedParallelism(1)
 
     /**
@@ -204,7 +206,7 @@ class SyncManagerImpl(
         }
 
         if (syncState == SyncState.SlowSync) {
-            workScheduler.enqueueImmediateWork(SlowSyncWorker::class, SlowSyncWorker.name)
+            userSessionWorkScheduler.enqueueImmediateWork(SlowSyncWorker::class, SlowSyncWorker.name)
         }
     }
 

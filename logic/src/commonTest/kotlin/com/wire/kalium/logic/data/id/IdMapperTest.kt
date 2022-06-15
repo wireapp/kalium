@@ -2,9 +2,9 @@ package com.wire.kalium.logic.data.id
 
 import com.wire.kalium.network.api.user.client.DeviceTypeDTO
 import com.wire.kalium.network.api.user.client.SimpleClientResponse
+import com.wire.kalium.protobuf.messages.QualifiedConversationId
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import com.wire.kalium.protobuf.messages.QualifiedConversationId
 
 class IdMapperTest {
 
@@ -59,5 +59,24 @@ class IdMapperTest {
         assertEquals(qualifiedConversationId.domain, conversationId.domain)
     }
 
+    @Test
+    fun givenPairOfValueAndDomain_whenMappingToQualifiedAssetId_thenShouldReturnACorrectAssetId() {
+        val (value, domain) = Pair("Test", "Test")
+
+        val qualifiedAssetID = idMapper.toQualifiedAssetId(value, domain)
+
+        assertEquals(qualifiedAssetID.value, value)
+        assertEquals(qualifiedAssetID.domain, domain)
+    }
+
+    @Test
+    fun givenPairOfValueAndDomain_whenMappingToQualifiedAssetId_thenShouldReturnACorrectAssetIdEntity() {
+        val (value, domain) = Pair("Test", "Test")
+
+        val qualifiedIDEntity = idMapper.toQualifiedAssetIdEntity(value, domain)
+
+        assertEquals(qualifiedIDEntity.value, value)
+        assertEquals(qualifiedIDEntity.domain, domain)
+    }
 
 }
