@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.asset
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.functional.Either
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
@@ -30,7 +31,7 @@ class GetPublicAssetUseCaseTest {
 
     @Test
     fun givenACallToGetAPublicAsset_whenEverythingGoesWell_thenShouldReturnsASuccessResultWithData() = runTest {
-        val assetKey = "some_key"
+        val assetKey = UserAssetId("value1", "domain")
         val expectedData = "A".toByteArray()
 
         given(assetRepository)
@@ -51,7 +52,7 @@ class GetPublicAssetUseCaseTest {
 
     @Test
     fun givenACallToGetAPublicAsset_whenEverythingThereIsAnError_thenShouldReturnsAFailureResult() = runTest {
-        val assetKey = "some_key"
+        val assetKey = UserAssetId("value1", "domain")
 
         given(assetRepository)
             .suspendFunction(assetRepository::downloadPublicAsset)

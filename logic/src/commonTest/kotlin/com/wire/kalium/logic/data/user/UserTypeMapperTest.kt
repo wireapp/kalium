@@ -86,8 +86,8 @@ class UserTypeMapperTest {
             accentId = 0,
             teamId = team,
             connectionStatus = ConnectionState.ACCEPTED,
-            previewPicture = "testPreviewPicture",
-            completePicture = "testCompletePicture",
+            previewPicture = UserAssetId("value1","domain"),
+            completePicture = UserAssetId("value2","domain"),
             availabilityStatus = UserAvailabilityStatus.NONE
         )
     }
@@ -105,8 +105,8 @@ class UserTypeMapperTest {
             accentId = 0,
             team = team,
             connectionStatus = ConnectionState.ACCEPTED,
-            previewPicture = "testPreviewPicture",
-            completePicture = "testCompletePicture",
+            previewPicture = UserAssetId("value1","domain"),
+            completePicture = UserAssetId("value2","domain"),
             availabilityStatus = UserAvailabilityStatus.NONE,
         )
     }

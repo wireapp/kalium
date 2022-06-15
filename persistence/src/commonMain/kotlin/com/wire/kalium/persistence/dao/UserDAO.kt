@@ -57,7 +57,7 @@ enum class UserTypeEntity {
     GUEST;
 }
 
-internal typealias UserAssetIdEntity = String
+internal typealias UserAssetIdEntity = QualifiedIDEntity
 
 interface UserDAO {
     /**
@@ -66,7 +66,8 @@ interface UserDAO {
     suspend fun insertUser(user: UserEntity)
 
     /**
-     * This will update all columns, except [ConnectionState] or insert a new record with default value [ConnectionState.NOT_CONNECTED]
+     * This will update all columns, except [ConnectionEntity.State] or insert a new record with default value
+     * [ConnectionEntity.State.NOT_CONNECTED]
      *
      * An upsert operation is a one that tries to update a record and if fails (not rows affected by change) inserts instead.
      * In this case as the transaction can be executed many times, we need to take care for not deleting old data.

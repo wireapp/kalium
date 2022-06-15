@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.call
 
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.util.shouldSucceed
@@ -136,7 +137,7 @@ class CallRepositoryTest {
 
     @Test
     fun givenAConversationIdThatExistsInTheFlow_whenUpdateIsMutedByIdIsCalled_thenUpdateCallStatusInTheFlow() = runTest {
-        val expectedValue= true
+        val expectedValue = true
         callRepository.updateCallProfileFlow(CallProfile(mapOfCallProfiles))
 
         callRepository.updateIsMutedById(startedCall.conversationId.toString(), expectedValue)
@@ -156,7 +157,7 @@ class CallRepositoryTest {
 
     @Test
     fun givenAConversationIdThatExistsInTheFlow_whenUpdateIsCameraOnByIdIsCalled_thenUpdateCallStatusInTheFlow() = runTest {
-        val expectedValue= true
+        val expectedValue = true
         callRepository.updateCallProfileFlow(CallProfile(mapOfCallProfiles))
 
         callRepository.updateIsCameraOnById(startedCall.conversationId.toString(), expectedValue)
@@ -213,6 +214,81 @@ class CallRepositoryTest {
         assertEquals(2, calls.first().size)
         assertEquals(calls.first()[0], establishedCall)
         assertEquals(calls.first()[1], answeredCall)
+    }
+
+    @Test
+    fun givenNewCallParticipants_whenUpdatingParticipants_thenCallProfileIsUpdated() = runTest {
+        callRepository.updateCallProfileFlow(
+            CallProfile(
+                mapOf(establishedCall.conversationId.toString() to establishedCall)
+            )
+        )
+
+        val expectedParticipants = listOf(
+            Participant(
+                id = QualifiedID(
+                    value = "value1",
+                    domain = "domain1"
+                ),
+                clientId = "clientid",
+                muted = true
+            )
+        )
+
+        val calls = callRepository.callsFlow()
+
+        callRepository.updateCallParticipants(
+            conversationId = establishedCall.conversationId.toString(),
+            participants = expectedParticipants
+        )
+
+        assertEquals(expectedParticipants, calls.first()[0].participants)
+    }
+
+    @Test
+    fun givenActiveSpeakers_whenUpdatingActiveSpeakers_thenCallProfileIsUpdated() = runTest {
+        callRepository.updateCallProfileFlow(
+            CallProfile(
+                mapOf(establishedCall.conversationId.toString() to establishedCall)
+            )
+        )
+
+        val calls = callRepository.callsFlow()
+
+        val participants = listOf(
+            Participant(
+                id = QualifiedID(
+                    value = "value1",
+                    domain = "domain1"
+                ),
+                clientId = "clientid",
+                muted = false,
+                isSpeaking = false
+            )
+        )
+
+        callRepository.updateCallParticipants(
+            conversationId = establishedCall.conversationId.toString(),
+            participants = participants
+        )
+
+        val expectedActiveSpeakers = CallActiveSpeakers(
+            activeSpeakers = listOf(
+                CallActiveSpeaker(
+                    userId = "value1@domain1",
+                    clientId = "clientid",
+                    audioLevel = 1,
+                    audioLevelNow = 1
+                )
+            )
+        )
+
+        callRepository.updateParticipantsActiveSpeaker(
+            conversationId = establishedCall.conversationId.toString(),
+            activeSpeakers = expectedActiveSpeakers
+        )
+
+        assertEquals(true, calls.first()[0].participants.first().isSpeaking)
     }
 
     private fun provideCall(id: ConversationId, status: CallStatus) = Call(

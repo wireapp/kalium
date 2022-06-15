@@ -71,8 +71,10 @@ internal class UserMapperImpl(
             accentId = accentId,
             teamId = teamId,
             connectionStatus = ConnectionState.NOT_CONNECTED,
-            previewPicture = assets.getPreviewAssetOrNull()?.key,
-            completePicture = assets.getCompleteAssetOrNull()?.key,
+            previewPicture = assets.getPreviewAssetOrNull()
+                ?.let { idMapper.toQualifiedAssetId(it.key, id.domain) }, // assume the same domain as the userId
+            completePicture = assets.getCompleteAssetOrNull()
+                ?.let { idMapper.toQualifiedAssetId(it.key, id.domain) }, // assume the same domain as the userId
             availabilityStatus = UserAvailabilityStatus.NONE
         )
     }
@@ -89,8 +91,12 @@ internal class UserMapperImpl(
             phone = null,
             accentId = userProfileDTO.accentId,
             team = userProfileDTO.teamId,
-            previewAssetId = userProfileDTO.assets.getPreviewAssetOrNull()?.key,
-            completeAssetId = userProfileDTO.assets.getCompleteAssetOrNull()?.key,
+            previewAssetId = userProfileDTO.assets.getPreviewAssetOrNull()?.let {
+                idMapper.toQualifiedAssetIdEntity(it.key, userProfileDTO.id.domain)
+            },
+            completeAssetId = userProfileDTO.assets.getCompleteAssetOrNull()?.let {
+                idMapper.toQualifiedAssetIdEntity(it.key, userProfileDTO.id.domain)
+            },
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
             userTypEntity = userTypeEntity ?: UserTypeEntity.INTERNAL
         )
@@ -105,8 +111,8 @@ internal class UserMapperImpl(
         userEntity.accentId,
         userEntity.team,
         connectionStateMapper.fromDaoConnectionStateToUser(connectionState = userEntity.connectionStatus),
-        userEntity.previewAssetId,
-        userEntity.completeAssetId,
+        userEntity.previewAssetId?.let { idMapper.fromDaoModel(it) },
+        userEntity.completeAssetId?.let { idMapper.fromDaoModel(it) },
         availabilityStatusMapper.fromDaoAvailabilityStatusToModel(userEntity.availabilityStatus)
     )
 
@@ -141,8 +147,10 @@ internal class UserMapperImpl(
             accentId = updateRequest.accentId ?: user.accentId,
             team = user.teamId,
             connectionStatus = connectionStateMapper.fromUserConnectionStateToDao(connectionState = user.connectionStatus),
-            previewAssetId = updateRequest.assets?.getPreviewAssetOrNull()?.key,
-            completeAssetId = updateRequest.assets?.getCompleteAssetOrNull()?.key,
+            previewAssetId = updateRequest.assets.getPreviewAssetOrNull()
+                ?.let { idMapper.toQualifiedAssetIdEntity(it.key, user.id.domain) },
+            completeAssetId = updateRequest.assets.getCompleteAssetOrNull()
+                ?.let { idMapper.toQualifiedAssetIdEntity(it.key, user.id.domain) },
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
             userTypEntity = UserTypeEntity.INTERNAL
         )
@@ -157,8 +165,8 @@ internal class UserMapperImpl(
             phone = phone,
             accentId = accentId,
             team = teamId,
-            previewAssetId = assets.getPreviewAssetOrNull()?.key,
-            completeAssetId = assets.getCompleteAssetOrNull()?.key,
+            previewAssetId = assets.getPreviewAssetOrNull()?.let { idMapper.toQualifiedAssetIdEntity(it.key, id.domain) },
+            completeAssetId = assets.getCompleteAssetOrNull()?.let { idMapper.toQualifiedAssetIdEntity(it.key, id.domain) },
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
             userTypEntity = UserTypeEntity.INTERNAL
         )

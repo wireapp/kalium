@@ -21,8 +21,8 @@ object TestUser {
         accentId = 0,
         teamId = "teamId",
         connectionStatus = ConnectionState.ACCEPTED,
-        previewPicture = UserAssetId(),
-        completePicture = UserAssetId(),
+        previewPicture = UserAssetId("value1", "domain"),
+        completePicture = UserAssetId("value2", "domain"),
         availabilityStatus = UserAvailabilityStatus.NONE
     )
 
@@ -35,8 +35,8 @@ object TestUser {
         accentId = 0,
         team = "otherTeamId",
         connectionStatus = ConnectionState.ACCEPTED,
-        previewPicture = UserAssetId(),
-        completePicture = UserAssetId(),
+        previewPicture = UserAssetId("value1", "domain"),
+        completePicture = UserAssetId("value2", "domain"),
         availabilityStatus = UserAvailabilityStatus.NONE
     )
 }

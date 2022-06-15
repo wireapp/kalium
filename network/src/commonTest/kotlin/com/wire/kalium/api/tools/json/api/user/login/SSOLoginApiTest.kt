@@ -1,6 +1,7 @@
 package com.wire.kalium.api.tools.json.api.user.login
 
 import com.wire.kalium.api.ApiTest
+import com.wire.kalium.api.TEST_BACKEND
 import com.wire.kalium.network.api.user.login.SSOLoginApi
 import com.wire.kalium.network.api.user.login.SSOLoginApiImpl
 import com.wire.kalium.network.utils.NetworkResponse
@@ -32,10 +33,11 @@ class SSOLoginApiTest : ApiTest {
             }
         )
         val ssoApi: SSOLoginApi = SSOLoginApiImpl(networkClient)
-        val actual = ssoApi.initiate(param, TEST_HOST)
+        val actual = ssoApi.initiate(param)
 
         assertIs<NetworkResponse.Success<String>>(actual)
-        assertEquals("${TEST_HOST.protocolWithAuthority}$expectedPath", actual.value)
+        assertEquals(expectedPath, Url(actual.value).encodedPathAndQuery)
+        assertEquals("${TEST_BACKEND.links.api.protocolWithAuthority}$expectedPath", actual.value)
     }
 
     @Test
@@ -52,10 +54,11 @@ class SSOLoginApiTest : ApiTest {
             }
         )
         val ssoApi: SSOLoginApi = SSOLoginApiImpl(networkClient)
-        val actual = ssoApi.initiate(param, TEST_HOST)
+        val actual = ssoApi.initiate(param)
 
         assertIs<NetworkResponse.Success<String>>(actual)
-        assertEquals("${TEST_HOST.protocolWithAuthority}$expectedPathAndQuery", actual.value)
+        assertEquals(expectedPathAndQuery, Url(actual.value).encodedPathAndQuery)
+        assertEquals("${TEST_BACKEND.links.api.protocolWithAuthority}$expectedPathAndQuery", actual.value)
     }
 
     @Test
@@ -71,7 +74,7 @@ class SSOLoginApiTest : ApiTest {
             }
         )
         val ssoApi: SSOLoginApi = SSOLoginApiImpl(networkClient)
-        val actual = ssoApi.finalize(cookie, TEST_HOST)
+        val actual = ssoApi.finalize(cookie)
 
         assertIs<NetworkResponse.Success<String>>(actual)
     }
@@ -80,8 +83,6 @@ class SSOLoginApiTest : ApiTest {
     private companion object {
         const val PATH_SSO_INITIATE = "/sso/initiate-login"
         const val PATH_SSO_FINALIZE = "/sso/finalize-login"
-
-        val TEST_HOST = Url("""https://test-https.wire.com""")
     }
 
 }
