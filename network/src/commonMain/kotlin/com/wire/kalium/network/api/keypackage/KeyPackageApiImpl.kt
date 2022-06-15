@@ -28,7 +28,7 @@ class KeyPackageApiImpl internal constructor(private val authenticatedNetworkCli
             }
         }
 
-    override suspend fun getAvailableKeyPackageCount(clientId: String): NetworkResponse<Int> =
+    override suspend fun getAvailableKeyPackageCount(clientId: String): NetworkResponse<KeyPackageCountDTO> =
         wrapKaliumResponse { httpClient.get("$PATH_KEY_PACKAGES/$PATH_SELF/$clientId/$PATH_COUNT") }
 
     private companion object {

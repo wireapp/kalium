@@ -16,7 +16,7 @@ class KeyPackageApiTest: ApiTest {
     @Test
     fun givenAValidClientId_whenCallingGetAvailableKeyPackageCountEndpoint_theRequestShouldBeConfiguredCorrectly() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(
-            KEY_PACKAGE_COUNT.toString(),
+            KeyPackageJson.keyPackageCountJson(KEY_PACKAGE_COUNT).rawJson,
             statusCode = HttpStatusCode.OK,
             assertion = {
                 assertGet()
@@ -27,7 +27,7 @@ class KeyPackageApiTest: ApiTest {
 
         val response = keyPackageApi.getAvailableKeyPackageCount(VALID_CLIENT_ID)
         assertTrue(response.isSuccessful())
-        assertEquals(response.value, KEY_PACKAGE_COUNT)
+        assertEquals(response.value.count, KEY_PACKAGE_COUNT)
     }
 
     @Test
