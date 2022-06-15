@@ -40,10 +40,11 @@ internal class SearchUsersUseCaseImpl(
             maxResultSize = maxResultSize
         ).fold({
             if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
-                if (it.kaliumException.errorResponse.code == HttpStatusCode.BadRequest.value)
-                    return Result.Failure.InvalidRequest
-                if (it.kaliumException.errorResponse.code == HttpStatusCode.NotFound.value)
-                    return Result.Failure.InvalidQuery
+                return when (it.kaliumException.errorResponse.code) {
+                    HttpStatusCode.BadRequest.value -> Result.Failure.InvalidRequest
+                    HttpStatusCode.NotFound.value -> Result.Failure.InvalidQuery
+                    else -> Result.Failure.Generic(it)
+                }
             }
             Result.Failure.Generic(it)
         }, {
