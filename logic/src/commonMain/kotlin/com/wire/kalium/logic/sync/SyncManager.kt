@@ -118,7 +118,6 @@ internal class SyncManagerImpl(
     private val eventProcessingScope = CoroutineScope(processingSupervisorJob + eventProcessingDispatcher + coroutineExceptionHandler)
     private var processingJob: Job? = null
 
-    // Do not access this variable directly of I will cut off your hands
     private val offlineEventBuffer = PendingEventsBuffer()
 
     private var processingEventFlow = MutableSharedFlow<Event>()
