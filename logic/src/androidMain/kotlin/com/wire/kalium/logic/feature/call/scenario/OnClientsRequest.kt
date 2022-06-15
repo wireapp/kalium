@@ -6,6 +6,7 @@ import com.wire.kalium.calling.callbacks.ClientsRequestHandler
 import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallClient
+import com.wire.kalium.logic.data.call.CallClientList
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.toConversationId
 import com.wire.kalium.logic.functional.map
@@ -13,8 +14,6 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 
 internal class OnClientsRequest(
     private val calling: Calling,
@@ -25,26 +24,28 @@ internal class OnClientsRequest(
 
     override fun onClientsRequest(inst: Handle, conversationId: String, arg: Pointer?) {
         callingScope.launch {
-            callingLogger.d("OnClientsRequest() -> Retrieving recipients")
+            callingLogger.d("OnClientsRequest() -> Retrieving recipients $conversationId")
             val conversationRecipients =
                 conversationRepository.getConversationRecipients(conversationId = conversationId.toConversationId())
 
-            callingLogger.d("OnClientsRequest() -> Mapping recipients")
             conversationRecipients.map { recipients ->
+                callingLogger.d("OnClientsRequest() -> Mapping ${recipients.size} recipients")
                 recipients
-                    .filter { it.member.id.toString() != selfUserId }
+                    .filter { it.member.id.value != selfUserId }
                     .flatMap { recipient ->
                         recipient.clients.map { clientId ->
                             CallClient(
-                                userId = recipient.member.id.toString(),
+                                userId = recipient.member.id.value,
                                 clientId = clientId.value
                             )
                         }
                     }
+            }.map {
+                CallClientList(it)
             }.onSuccess { avsClients ->
                 callingLogger.d("OnClientsRequest() -> Sending recipients")
                 // TODO: use a json serializer and not recreate everytime it is used
-                val callClients = Json.encodeToString(avsClients)
+                val callClients = avsClients.toJsonString()
                 calling.wcall_set_clients_for_conv(
                     inst = inst,
                     convId = conversationId,

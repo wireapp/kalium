@@ -28,6 +28,8 @@ interface ClientApi {
     suspend fun updateClient(updateClientRequest: UpdateClientRequest, clientID: String): NetworkResponse<Unit>
 
     suspend fun registerToken(body: PushTokenBody): NetworkResponse<Unit>
+
+    suspend fun deregisterToken(pid: String): NetworkResponse<Unit>
 }
 
 
@@ -83,6 +85,9 @@ class ClientApiImpl internal constructor(private val authenticatedNetworkClient:
         }
     }
 
+    override suspend fun deregisterToken(pid: String): NetworkResponse<Unit> = wrapKaliumResponse {
+        httpClient.delete("$PUSH_TOKEN/$pid")
+    }
     private companion object {
         const val PATH_USERS = "users"
         const val PATH_CLIENTS = "clients"
