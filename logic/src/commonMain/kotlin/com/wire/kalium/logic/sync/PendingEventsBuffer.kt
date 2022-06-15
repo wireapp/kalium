@@ -17,14 +17,14 @@ internal class PendingEventsBuffer {
     /**
      * Adds an [event] to the end of this storage.
      */
-    suspend fun addToBuffer(event: Event) = mutex.withLock {
+    suspend fun add(event: Event) = mutex.withLock {
         events.add(event)
     }
 
     /**
      * @return True if the [event] is present in this storage. False otherwise
      */
-    suspend fun isEventPresentInBuffer(event: Event): Boolean = mutex.withLock {
+    suspend fun contains(event: Event): Boolean = mutex.withLock {
         events.contains(event)
     }
 
@@ -32,7 +32,7 @@ internal class PendingEventsBuffer {
      * Removes the [event] from this storage if present.
      * @return True if [event] was in this storage and was removed. False otherwise.
      */
-    suspend fun removeEventFromBuffer(event: Event) = mutex.withLock {
+    suspend fun remove(event: Event) = mutex.withLock {
         events.remove(event)
     }
 
@@ -53,7 +53,7 @@ internal class PendingEventsBuffer {
     /**
      * Clears the storage, removes every previously added [Event].
      */
-    suspend fun clearBuffer() = mutex.withLock {
+    suspend fun clear() = mutex.withLock {
         events.clear()
     }
 }

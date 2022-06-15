@@ -17,40 +17,50 @@ class PendingEventsBufferTest {
     }
 
     @Test
-    fun givenAnAddedEvent_whenCheckingIfPresent_thenShouldReturnTrue() = runTest {
+    fun givenAnAddedEvent_whenCheckingIfContains_thenShouldReturnTrue() = runTest {
         val event = TestEvent.memberJoin("testEvent")
-        eventsBuffer.addToBuffer(event)
+        eventsBuffer.add(event)
 
-        val result = eventsBuffer.isEventPresentInBuffer(event)
+        val result = eventsBuffer.contains(event)
 
         assertTrue(result)
     }
 
     @Test
-    fun givenAnEventThatWasNotAdded_whenCheckingIfPresent_thenShouldReturnFalse() = runTest {
+    fun givenAnEventThatWasNotAdded_whenCheckingIfContains_thenShouldReturnFalse() = runTest {
         val event = TestEvent.memberJoin("testEvent")
 
-        val result = eventsBuffer.isEventPresentInBuffer(event)
+        val result = eventsBuffer.contains(event)
 
         assertFalse(result)
     }
 
-
     @Test
     fun givenAnAddedEvent_whenRemovingIt_thenShouldReturnTrue() = runTest {
         val event = TestEvent.memberJoin("testEvent")
-        eventsBuffer.addToBuffer(event)
+        eventsBuffer.add(event)
 
-        val result = eventsBuffer.removeEventFromBuffer(event)
+        val result = eventsBuffer.remove(event)
 
         assertTrue(result)
     }
+
+    @Test
+    fun givenAnAddedEvent_whenRemovingIt_thenShouldNoLongerContainThatEvent() = runTest {
+        val event = TestEvent.memberJoin("testEvent")
+        eventsBuffer.add(event)
+
+        eventsBuffer.remove(event)
+
+        assertFalse { eventsBuffer.contains(event) }
+    }
+
 
     @Test
     fun givenAnEventThatWasNotAdded_whenRemovingIt_thenShouldReturnFalse() = runTest {
         val event = TestEvent.memberJoin("testEvent")
 
-        val result = eventsBuffer.removeEventFromBuffer(event)
+        val result = eventsBuffer.remove(event)
 
         assertFalse(result)
     }
@@ -59,8 +69,8 @@ class PendingEventsBufferTest {
     fun givenMultipleAddedEvents_whenClearingIfItsLastOneWithLastEvent_thenShouldReturnTrue() = runTest {
         val event1 = TestEvent.memberJoin("test1")
         val event2 = TestEvent.memberJoin("test2")
-        eventsBuffer.addToBuffer(event1)
-        eventsBuffer.addToBuffer(event2)
+        eventsBuffer.add(event1)
+        eventsBuffer.add(event2)
 
         val result = eventsBuffer.clearBufferIfLastEventEquals(event2)
 
@@ -71,25 +81,50 @@ class PendingEventsBufferTest {
     fun givenMultipleAddedEvents_whenClearingIfItsLastOneWithLastEvent_thenNoEventsShouldBePresent() = runTest {
         val event1 = TestEvent.memberJoin("test1")
         val event2 = TestEvent.memberJoin("test2")
-        eventsBuffer.addToBuffer(event1)
-        eventsBuffer.addToBuffer(event2)
+        eventsBuffer.add(event1)
+        eventsBuffer.add(event2)
 
         eventsBuffer.clearBufferIfLastEventEquals(event2)
 
-        assertFalse { eventsBuffer.isEventPresentInBuffer(event1) }
-        assertFalse { eventsBuffer.isEventPresentInBuffer(event2) }
+        assertFalse { eventsBuffer.contains(event1) }
+        assertFalse { eventsBuffer.contains(event2) }
     }
 
     @Test
     fun givenInsertedEvents_whenClearingBuffer_thenNoEventShouldBePresent() = runTest {
         val event1 = TestEvent.memberJoin("test1")
         val event2 = TestEvent.memberJoin("test2")
-        eventsBuffer.addToBuffer(event1)
-        eventsBuffer.addToBuffer(event2)
+        eventsBuffer.add(event1)
+        eventsBuffer.add(event2)
 
-        eventsBuffer.clearBuffer()
+        eventsBuffer.clear()
 
-        assertFalse { eventsBuffer.isEventPresentInBuffer(event1) }
-        assertFalse { eventsBuffer.isEventPresentInBuffer(event2) }
+        assertFalse { eventsBuffer.contains(event1) }
+        assertFalse { eventsBuffer.contains(event2) }
+    }
+
+    @Test
+    fun givenMultipleAddedEvents_whenClearingIfItsLastOneWithOlderEvent_thenShouldReturnFalse() = runTest {
+        val event1 = TestEvent.memberJoin("test1")
+        val event2 = TestEvent.memberJoin("test2")
+        eventsBuffer.add(event1)
+        eventsBuffer.add(event2)
+
+        val result = eventsBuffer.clearBufferIfLastEventEquals(event1)
+
+        assertFalse(result)
+    }
+
+    @Test
+    fun givenMultipleAddedEvents_whenClearingIfItsLastOneWithOlderEvent_thenAllEventsShouldBePresent() = runTest {
+        val event1 = TestEvent.memberJoin("test1")
+        val event2 = TestEvent.memberJoin("test2")
+        eventsBuffer.add(event1)
+        eventsBuffer.add(event2)
+
+        eventsBuffer.clearBufferIfLastEventEquals(event1)
+
+        assertTrue { eventsBuffer.contains(event1) }
+        assertTrue { eventsBuffer.contains(event2) }
     }
 }
