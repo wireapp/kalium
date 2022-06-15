@@ -2,10 +2,14 @@ package com.wire.kalium.logic.feature.connection
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.connection.ConnectionRepository
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
@@ -21,11 +25,14 @@ class AcceptConnectionRequestUseCaseTest {
     @Mock
     private val connectionRepository: ConnectionRepository = mock(ConnectionRepository::class)
 
+    @Mock
+    private val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
+
     lateinit var acceptConnectionRequestUseCase: AcceptConnectionRequestUseCase
 
     @BeforeTest
     fun setUp() {
-        acceptConnectionRequestUseCase = AcceptConnectionRequestUseCaseImpl(connectionRepository)
+        acceptConnectionRequestUseCase = AcceptConnectionRequestUseCaseImpl(connectionRepository, conversationRepository)
     }
 
     @Test
@@ -34,6 +41,16 @@ class AcceptConnectionRequestUseCaseTest {
         given(connectionRepository)
             .suspendFunction(connectionRepository::updateConnectionStatus)
             .whenInvokedWith(eq(userId), eq(ConnectionState.ACCEPTED))
+            .thenReturn(Either.Right(connection))
+
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::fetchConversation)
+            .whenInvokedWith(eq(conversationId))
+            .thenReturn(Either.Right(Unit))
+
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::updateConversationModifiedDate)
+            .whenInvokedWith(eq(conversationId), any())
             .thenReturn(Either.Right(Unit))
 
         // when
@@ -68,5 +85,16 @@ class AcceptConnectionRequestUseCaseTest {
 
     private companion object {
         val userId = UserId("some_user", "some_domain")
+        val conversationId = ConversationId("someId", "someDomain")
+        val connection = Connection(
+            "someId",
+            "from",
+            "lastUpdate",
+            conversationId,
+            conversationId,
+            ConnectionState.ACCEPTED,
+            "toId",
+            null
+        )
     }
 }

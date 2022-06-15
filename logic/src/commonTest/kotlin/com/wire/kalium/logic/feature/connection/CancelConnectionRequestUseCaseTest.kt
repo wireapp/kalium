@@ -2,6 +2,8 @@ package com.wire.kalium.logic.feature.connection
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.connection.ConnectionRepository
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
@@ -34,7 +36,7 @@ class CancelConnectionRequestUseCaseTest {
         given(connectionRepository)
             .suspendFunction(connectionRepository::updateConnectionStatus)
             .whenInvokedWith(eq(userId), eq(ConnectionState.CANCELLED))
-            .thenReturn(Either.Right(Unit))
+            .thenReturn(Either.Right(connection))
 
         // when
         val resultOk = cancelConnectionRequestUseCase(userId)
@@ -68,5 +70,15 @@ class CancelConnectionRequestUseCaseTest {
 
     private companion object {
         val userId = UserId("some_user", "some_domain")
+        val connection = Connection(
+            "someId",
+            "from",
+            "lastUpdate",
+            ConversationId("someId", "someDomain"),
+            ConversationId("someId", "someDomain"),
+            ConnectionState.CANCELLED,
+            "toId",
+            null
+        )
     }
 }
