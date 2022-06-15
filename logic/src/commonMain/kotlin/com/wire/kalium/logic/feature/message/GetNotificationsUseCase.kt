@@ -56,7 +56,7 @@ class GetNotificationsUseCaseImpl(
         // Fetching the list of Conversations that have messages to notify user about
         // And SelfUser
         return conversationRepository.getConversationsForNotifications()
-            .combine(userRepository.getSelfUser())
+            .combine(userRepository.observeSelfUser())
             .flatMapLatest { (conversations, selfUser) ->
                 if (selfUser.availabilityStatus == UserAvailabilityStatus.AWAY) {
                     // We need to update notifiedData,
