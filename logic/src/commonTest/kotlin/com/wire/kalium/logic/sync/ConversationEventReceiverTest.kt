@@ -28,6 +28,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.handler.MessageTextEditHandler
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.protobuf.encodeToByteArray
+import com.wire.kalium.protobuf.messages.External
 import com.wire.kalium.protobuf.messages.GenericMessage
 import com.wire.kalium.protobuf.messages.Text
 import io.ktor.utils.io.core.toByteArray
@@ -53,7 +54,7 @@ class ConversationEventReceiverTest {
             .withUpdateConversationNotificationDateReturning(Either.Right(Unit))
             .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
             .withProteusClientDecryptingByteArray(decryptedData = byteArrayOf())
-            .withProtoContentMapperReturning(any(), ProtoContent.Readable("uuid", MessageContent.Unknown))
+            .withProtoContentMapperReturning(any(), ProtoContent.Readable("uuid", MessageContent.Unknown()))
             .arrange()
 
         val encodedEncryptedContent = Base64.encodeToBase64("Hello".encodeToByteArray())
@@ -82,6 +83,7 @@ class ConversationEventReceiverTest {
             encryptionAlgorithm = null
         )
         val plainTextContent = "Hello!"
+
         val protobufExternalContent = GenericMessage(content = GenericMessage.Content.Text(Text(plainTextContent)))
         val encryptedProtobufExternalContent = encryptDataWithAES256(PlainData(protobufExternalContent.encodeToByteArray()), aesKey)
         val decryptedExternalContent = MessageContent.Text(plainTextContent)
@@ -140,9 +142,9 @@ class ConversationEventReceiverTest {
             conversationRepository,
             mlsConversationRepository,
             userRepository,
-            protoContentMapper,
             lazyOf(callManager),
-            MessageTextEditHandler(messageRepository)
+            MessageTextEditHandler(messageRepository),
+            protoContentMapper = protoContentMapper
         )
 
         fun withProteusClientDecryptingByteArray(decryptedData: ByteArray) = apply {

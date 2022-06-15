@@ -8,14 +8,9 @@ import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.cryptography.utils.decryptDataWithAES256
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.ProteusFailure
-import com.wire.kalium.cryptography.utils.AES256Key
-import com.wire.kalium.cryptography.utils.EncryptedData
-import com.wire.kalium.cryptography.utils.decryptDataWithAES256
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
@@ -26,14 +21,11 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContent
-import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.call.CallManager
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
@@ -73,30 +65,30 @@ class ConversationEventReceiverImpl(
         }
     }
 
-    private suspend fun handleProtoContent(
+    private suspend fun handleContent(
         conversationId: ConversationId,
         timestampIso: String,
         senderUserId: UserId,
         senderClientId: ClientId,
-        protoContent: ProtoContent
+        content: ProtoContent.Readable
     ) {
-        when (protoContent.messageContent) {
+        when (content.messageContent) {
             is MessageContent.Regular -> {
-                val visibility = when (protoContent.messageContent) {
+                val visibility = when (content.messageContent) {
                     is MessageContent.DeleteMessage -> Message.Visibility.HIDDEN
                     is MessageContent.TextEdited -> Message.Visibility.HIDDEN
                     is MessageContent.DeleteForMe -> Message.Visibility.HIDDEN
                     MessageContent.Empty -> Message.Visibility.HIDDEN
                     is MessageContent.Unknown ->
-                        if(protoContent.messageContent.hidden) Message.Visibility.HIDDEN
+                        if(content.messageContent.hidden) Message.Visibility.HIDDEN
                         else Message.Visibility.VISIBLE
                     is MessageContent.Text -> Message.Visibility.VISIBLE
                     is MessageContent.Calling -> Message.Visibility.VISIBLE
                     is MessageContent.Asset -> Message.Visibility.VISIBLE
                 }
                 val message = Message.Regular(
-                    id = protoContent.messageUid,
-                    content = protoContent.messageContent,
+                    id = content.messageUid,
+                    content = content.messageContent,
                     conversationId = conversationId,
                     date = timestampIso,
                     senderUserId = senderUserId,
@@ -108,7 +100,7 @@ class ConversationEventReceiverImpl(
                 processMessage(message)
             }
             is MessageContent.Signaling -> {
-                processSignaling(protoContent.messageContent)
+                processSignaling(content.messageContent)
             }
         }
     }
@@ -126,13 +118,13 @@ class ConversationEventReceiverImpl(
                     is ProteusFailure -> kaliumLogger.e("$TAG - ProteusFailure when processing message: $it", it.proteusException)
                     else -> kaliumLogger.e("Failure when processing message: $it")
                 }
-            }.onSuccess { plainMessageBlob ->
-                handleProtoContent(
+            }.onSuccess { readableContent ->
+                handleContent(
                     conversationId = event.conversationId,
                     timestampIso = event.timestampIso,
                     senderUserId = event.senderUserId,
                     senderClientId = event.senderClientId,
-                    protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)
+                    content = readableContent
                 )
             }
     }
@@ -246,12 +238,12 @@ class ConversationEventReceiverImpl(
                 if (protoContent !is ProtoContent.Readable) {
                     throw KaliumSyncException("MLS message with external content", CoreFailure.Unknown(null))
                 }
-                handleProtoContent(
+                handleContent(
                     conversationId = event.conversationId,
                     timestampIso = event.timestampIso,
                     senderUserId = event.senderUserId,
                     senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
-                    protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)
+                    content = protoContent
                 )
             }
 

@@ -51,7 +51,6 @@ class ProtoContentMapperImpl(
         val genericMessage = GenericMessage.decodeFromByteArray(encodedContent.data)
 
         kaliumLogger.d("Received message $genericMessage")
-        val typeName = genericMessage.content?.value?.let { it as? pbandk.Message }?.descriptor?.name
         val protobufModel = genericMessage.content
 
         return if (protobufModel is GenericMessage.Content.External) {
@@ -59,12 +58,14 @@ class ProtoContentMapperImpl(
             val algorithm = encryptionAlgorithmMapper.fromProtobufModel(external.encryption)
             ProtoContent.ExternalMessageInstructions(genericMessage.messageId, external.otrKey.array, external.sha256?.array, algorithm)
         } else {
-            ProtoContent.Readable(genericMessage.messageId, getReadableContent(genericMessage))
+            ProtoContent.Readable(genericMessage.messageId, getReadableContent(genericMessage, encodedContent))
         }
     }
 
     @Suppress("ComplexMethod")
-    private fun getReadableContent(genericMessage: GenericMessage): MessageContent {
+    private fun getReadableContent(genericMessage: GenericMessage, encodedContent: PlainMessageBlob): MessageContent.FromProto {
+        val typeName = genericMessage.content?.value?.let { it as? pbandk.Message }?.descriptor?.name
+
         val readableContent = when (val protoContent = genericMessage.content) {
             is GenericMessage.Content.Text -> MessageContent.Text(protoContent.value.content)
             is GenericMessage.Content.Asset -> {
