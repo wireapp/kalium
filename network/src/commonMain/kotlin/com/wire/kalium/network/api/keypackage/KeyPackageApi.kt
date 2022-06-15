@@ -42,7 +42,7 @@ interface KeyPackageApi {
      *
      * @return unclaimed key package count
      */
-    suspend fun getAvailableKeyPackageCount(clientId: String): NetworkResponse<Int>
+    suspend fun getAvailableKeyPackageCount(clientId: String): NetworkResponse<KeyPackageCountDTO>
 }
 
 typealias KeyPackage = String
