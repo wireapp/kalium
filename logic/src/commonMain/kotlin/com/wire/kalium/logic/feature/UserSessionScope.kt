@@ -254,6 +254,10 @@ abstract class UserSessionScopeCommon(
         globalCallManager.getFlowManager()
     }
 
+    private val mediaManagerService by lazy {
+        globalCallManager.getMediaManager()
+    }
+
     private val messageTextEditHandler = MessageTextEditHandler(messageRepository)
 
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
@@ -337,8 +341,8 @@ abstract class UserSessionScopeCommon(
 
     val team: TeamScope get() = TeamScope(userRepository, teamRepository, syncManager)
 
-    val calls: CallsScope get() = CallsScope(callManager, callRepository, flowManagerService, syncManager)
+    val calls: CallsScope get() = CallsScope(callManager, callRepository, flowManagerService, mediaManagerService, syncManager)
 
-    val connection: ConnectionScope get() = ConnectionScope(connectionRepository)
+    val connection: ConnectionScope get() = ConnectionScope(connectionRepository, conversationRepository)
 
 }
