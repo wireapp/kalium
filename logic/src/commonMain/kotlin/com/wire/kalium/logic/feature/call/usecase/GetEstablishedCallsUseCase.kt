@@ -5,12 +5,12 @@ import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.sync.SyncManager
 import kotlinx.coroutines.flow.Flow
 
-class GetOngoingCallUseCase(
+class GetEstablishedCallsUseCase(
     private val callRepository: CallRepository,
     private val syncManager: SyncManager
 ) {
     operator fun invoke(): Flow<List<Call>> {
         syncManager.startSyncIfIdle()
-        return callRepository.ongoingCallsFlow()
+        return callRepository.establishedCallsFlow()
     }
 }

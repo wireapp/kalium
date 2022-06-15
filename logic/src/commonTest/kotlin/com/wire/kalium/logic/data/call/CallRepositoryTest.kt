@@ -192,10 +192,10 @@ class CallRepositoryTest {
     }
 
     @Test
-    fun givenSomeOngoingCallsInTheFlow_whenGetOngoingCallIsCalled_thenReturnTheListOfOngoingCallsInTheFlow() = runTest {
+    fun givenSomeEstablishedCallsInTheFlow_whenGetEstablishedCallIsCalled_thenReturnTheListOfOngoingCallsInTheFlow() = runTest {
         callRepository.updateCallProfileFlow(CallProfile(mapOfCallProfiles))
 
-        val calls = callRepository.ongoingCallsFlow()
+        val calls = callRepository.establishedCallsFlow()
 
         assertEquals(2, calls.first().size)
         assertEquals(calls.first()[0], establishedCall)

@@ -22,6 +22,7 @@ interface CallRepository {
     fun callsFlow(): Flow<List<Call>>
     fun incomingCallsFlow(): Flow<List<Call>>
     fun ongoingCallsFlow(): Flow<List<Call>>
+    fun establishedCallsFlow(): Flow<List<Call>>
     fun createCall(call: Call)
     fun updateCallStatusById(conversationId: String, status: CallStatus)
     fun updateIsMutedById(conversationId: String, isMuted: Boolean)
@@ -61,7 +62,15 @@ internal class CallDataSource(
         }
     }
 
-        override fun ongoingCallsFlow(): Flow<List<Call>> = allCalls.map {
+    override fun ongoingCallsFlow(): Flow<List<Call>> = allCalls.map {
+        it.calls.values.filter { call ->
+            call.status in listOf(
+                CallStatus.ONGOING
+            )
+        }
+    }
+
+    override fun establishedCallsFlow(): Flow<List<Call>> = allCalls.map {
         it.calls.values.filter { call ->
             call.status in listOf(
                 CallStatus.ESTABLISHED,
