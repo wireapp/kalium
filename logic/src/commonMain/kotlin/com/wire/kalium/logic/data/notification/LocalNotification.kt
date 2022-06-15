@@ -25,5 +25,5 @@ sealed class LocalNotificationMessage(open val author: LocalNotificationMessageA
 data class LocalNotificationMessageAuthor(val name: String, val imageUri: String?)
 
 enum class LocalNotificationCommentType {
-    PICTURE, FILE, REACTION
+    PICTURE, FILE, REACTION, NOT_SUPPORTED_YET
 }

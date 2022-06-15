@@ -6,7 +6,7 @@ import com.russhwolf.settings.Settings
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
-import com.wire.kalium.persistence.model.PersistenceSession
+import com.wire.kalium.persistence.model.AuthSessionEntity
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import com.wire.kalium.persistence.utils.stubs.newServerConfig
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -38,36 +38,36 @@ class SessionDAOTest {
 
     @Test
     fun givenASession_WhenCallingAddSession_ThenTheSessionCanBeStoredLocally() = runTest {
-        val persistenceSession =
-            PersistenceSession(
+        val authSessionEntity =
+            AuthSessionEntity(
                 QualifiedIDEntity("user_id_1", "user_domain_1"),
                 "JWT",
                 Random.nextBytes(32).decodeToString(),
                 Random.nextBytes(32).decodeToString(),
-                TEST_SERVER_CONFIG
+                TEST_SERVER_CONFIG.links
             )
-        val sessionsMap = mapOf(persistenceSession.userId to persistenceSession)
-        sessionStorage.addSession(persistenceSession)
+        val sessionsMap = mapOf(authSessionEntity.userId to authSessionEntity)
+        sessionStorage.addSession(authSessionEntity)
 
         assertEquals(sessionsMap, sessionStorage.allSessions())
     }
 
     @Test
     fun givenAnExistingSession_WhenCallingDeleteSession_ThenItWillBeRemoved() = runTest {
-        val session1 = PersistenceSession(
+        val session1 = AuthSessionEntity(
             QualifiedIDEntity("user_id_1", "user_domain_1"),
             "JWT",
             Random.nextBytes(32).decodeToString(),
             Random.nextBytes(32).decodeToString(),
-            TEST_SERVER_CONFIG
+            TEST_SERVER_CONFIG.links
         )
         val sessionToDelete =
-            PersistenceSession(
+            AuthSessionEntity(
                 QualifiedIDEntity("user_id_2", "user_domain_2"),
                 "JWT",
                 Random.nextBytes(32).decodeToString(),
                 Random.nextBytes(32).decodeToString(),
-                TEST_SERVER_CONFIG
+                TEST_SERVER_CONFIG.links
             )
 
         val sessionsMapExpectedValue =
@@ -93,21 +93,21 @@ class SessionDAOTest {
             assertNull(awaitItem())
         }
         val session1 =
-            PersistenceSession(
+            AuthSessionEntity(
                 QualifiedIDEntity("user_id_1", "user_domain_1"),
                 "Bearer",
                 Random.nextBytes(32).decodeToString(),
                 Random.nextBytes(32).decodeToString(),
-                TEST_SERVER_CONFIG
+                TEST_SERVER_CONFIG.links
             )
 
         val session2 =
-            PersistenceSession(
+            AuthSessionEntity(
                 QualifiedIDEntity("user_id_2", "user_domain_2"),
                 "Bearer",
                 Random.nextBytes(32).decodeToString(),
                 Random.nextBytes(32).decodeToString(),
-                TEST_SERVER_CONFIG
+                TEST_SERVER_CONFIG.links
             )
 
         sessionStorage.addSession(session1)

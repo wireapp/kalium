@@ -1,11 +1,9 @@
 package com.wire.kalium.logic.feature.register
 
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.configuration.ServerConfig
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
-import com.wire.kalium.logic.util.stubs.newServerConfig
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.given
@@ -34,59 +32,56 @@ class VerifyActivationCodeUseCaseTest {
     @Test
     fun givenRepositoryCallIsSuccessful_thenSaucesIsPropagated() = runTest {
         val email = TEST_EMAIL
-        val serverConfig = TEST_SERVER_CONFIG
         val code = TEST_CODE
         given(registerAccountRepository)
-            .coroutine { verifyActivationCode(email, code, serverConfig.apiBaseUrl) }
+            .coroutine { verifyActivationCode(email, code) }
             .then { Either.Right(Unit) }
 
-        val actual = verifyActivationCodeUseCase(email, code, serverConfig)
+        val actual = verifyActivationCodeUseCase(email, code)
 
         assertIs<VerifyActivationCodeResult.Success>(actual)
 
         verify(registerAccountRepository)
-            .coroutine { verifyActivationCode(email, code, serverConfig.apiBaseUrl) }
+            .coroutine { verifyActivationCode(email, code) }
             .wasInvoked(exactly = once)
     }
 
     @Test
     fun givenRepositoryCallFailWithInvalidCode_thenInvalidCodeIsPropagated() = runTest {
         val email = TEST_EMAIL
-        val serverConfig = TEST_SERVER_CONFIG
         val code = TEST_CODE
         val expected = NetworkFailure.ServerMiscommunication(TestNetworkException.invalidCode)
 
         given(registerAccountRepository)
-            .coroutine { verifyActivationCode(email, code, serverConfig.apiBaseUrl) }
+            .coroutine { verifyActivationCode(email, code) }
             .then { Either.Left(expected) }
 
-        val actual = verifyActivationCodeUseCase(email, code, serverConfig)
+        val actual = verifyActivationCodeUseCase(email, code)
 
         assertIs<VerifyActivationCodeResult.Failure.InvalidCode>(actual)
 
         verify(registerAccountRepository)
-            .coroutine { verifyActivationCode(email, code, serverConfig.apiBaseUrl) }
+            .coroutine { verifyActivationCode(email, code) }
             .wasInvoked(exactly = once)
     }
 
     @Test
     fun givenRepositoryCallFail_thenErrorIsPropagated() = runTest {
         val email = TEST_EMAIL
-        val serverConfig = TEST_SERVER_CONFIG
         val code = TEST_CODE
         val expected = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
 
         given(registerAccountRepository)
-            .coroutine { verifyActivationCode(email, code, serverConfig.apiBaseUrl) }
+            .coroutine { verifyActivationCode(email, code) }
             .then { Either.Left(expected) }
 
-        val actual = verifyActivationCodeUseCase(email, code, serverConfig)
+        val actual = verifyActivationCodeUseCase(email, code)
 
         assertIs<VerifyActivationCodeResult.Failure.Generic>(actual)
         assertEquals(expected, actual.failure)
 
         verify(registerAccountRepository)
-            .coroutine { verifyActivationCode(email, code, serverConfig.apiBaseUrl) }
+            .coroutine { verifyActivationCode(email, code) }
             .wasInvoked(exactly = once)
     }
 
@@ -94,8 +89,6 @@ class VerifyActivationCodeUseCaseTest {
     private companion object {
         const val TEST_EMAIL = """user@domain.com"""
         const val TEST_CODE = "123456"
-        val TEST_SERVER_CONFIG: ServerConfig = newServerConfig(1)
-
     }
 
 }

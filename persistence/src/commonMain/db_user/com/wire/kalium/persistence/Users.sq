@@ -12,8 +12,8 @@ CREATE TABLE User (
     accent_id INTEGER AS Int NOT NULL DEFAULT 0,
     team TEXT,
     connection_status TEXT AS ConnectionEntity.State NOT NULL DEFAULT 'NOT_CONNECTED',
-    preview_asset_id TEXT,
-    complete_asset_id TEXT,
+    preview_asset_id TEXT AS QualifiedIDEntity,
+    complete_asset_id TEXT AS QualifiedIDEntity,
     user_availability_status TEXT AS UserAvailabilityStatusEntity NOT NULL DEFAULT 'NONE'
 );
 

@@ -8,6 +8,7 @@ import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Video
 import com.wire.kalium.logic.data.message.AssetContent.RemoteData.EncryptionAlgorithm.AES_CBC
 import com.wire.kalium.logic.data.message.AssetContent.RemoteData.EncryptionAlgorithm.AES_GCM
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.network.api.AssetId
 import com.wire.kalium.network.api.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.asset.AssetResponse
 import com.wire.kalium.network.api.model.AssetRetentionType
@@ -22,7 +23,7 @@ interface AssetMapper {
     fun toMetadataApiModel(uploadAssetMetadata: UploadAssetData): AssetMetadataRequest
     fun fromApiUploadResponseToDomainModel(asset: AssetResponse): UploadedAssetId
     fun fromUploadedAssetToDaoModel(uploadAssetData: UploadAssetData, uploadedAssetResponse: AssetResponse): AssetEntity
-    fun fromUserAssetToDaoModel(assetKey: String, data: ByteArray): AssetEntity
+    fun fromUserAssetToDaoModel(assetId: AssetId, data: ByteArray): AssetEntity
     fun fromAssetEntityToAssetContent(assetContentEntity: MessageEntityContent.Asset): AssetContent
     fun fromProtoAssetMessageToAssetContent(protoAssetMessage: Asset): AssetContent
     fun fromDownloadStatusToDaoModel(downloadStatus: Message.DownloadStatus): MessageEntity.DownloadStatus
@@ -40,7 +41,7 @@ class AssetMapperImpl : AssetMapper {
     }
 
     override fun fromApiUploadResponseToDomainModel(asset: AssetResponse) =
-        UploadedAssetId(asset.key, assetToken = asset.token)
+        UploadedAssetId(key = asset.key, domain = asset.domain, assetToken = asset.token)
 
     override fun fromUploadedAssetToDaoModel(uploadAssetData: UploadAssetData, uploadedAssetResponse: AssetResponse): AssetEntity {
         return AssetEntity(
@@ -52,10 +53,10 @@ class AssetMapperImpl : AssetMapper {
         )
     }
 
-    override fun fromUserAssetToDaoModel(assetKey: String, data: ByteArray): AssetEntity {
+    override fun fromUserAssetToDaoModel(assetId: AssetId, data: ByteArray): AssetEntity {
         return AssetEntity(
-            key = assetKey,
-            domain = "", // is it possible to know this on contacts sync avatars ?
+            key = assetId.value,
+            domain = assetId.domain,
             mimeType = ImageAsset.JPEG.name,
             rawData = data,
             downloadedDate = Clock.System.now().toEpochMilliseconds()

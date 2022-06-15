@@ -28,7 +28,6 @@ import com.wire.kalium.logic.data.logout.LogoutDataSource
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.message.MessageDataSource
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.prekey.PreKeyDataSource
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteDataSource
@@ -84,7 +83,6 @@ import com.wire.kalium.persistence.event.EventInfoStorage
 import com.wire.kalium.persistence.event.EventInfoStorageImpl
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
-import com.wire.kalium.util.KaliumDispatcherImpl
 
 expect class UserSessionScope : UserSessionScopeCommon
 
@@ -200,13 +198,13 @@ abstract class UserSessionScopeCommon(
         get() = SessionEstablisherImpl(authenticatedDataSourceSet.proteusClient, preKeyRepository)
 
     private val messageEnvelopeCreator: MessageEnvelopeCreator
-        get() = MessageEnvelopeCreatorImpl(authenticatedDataSourceSet.proteusClient, protoContentMapper)
+        get() = MessageEnvelopeCreatorImpl(authenticatedDataSourceSet.proteusClient)
 
     private val mlsMessageCreator: MLSMessageCreator
-        get() = MLSMessageCreatorImpl(mlsClientProvider, protoContentMapper)
+        get() = MLSMessageCreatorImpl(mlsClientProvider)
 
     private val messageSendingScheduler: MessageSendingScheduler
-        get() = authenticatedDataSourceSet.workScheduler
+        get() = authenticatedDataSourceSet.userSessionWorkScheduler
 
     // TODO(optimization) code duplication, can't we get the MessageSender from the message scope?
     private val messageSender: MessageSender
@@ -229,12 +227,11 @@ abstract class UserSessionScopeCommon(
 
     val syncManager: SyncManager by lazy {
         SyncManagerImpl(
-            authenticatedDataSourceSet.workScheduler,
+            authenticatedDataSourceSet.userSessionWorkScheduler,
             eventRepository,
             syncRepository,
             conversationEventReceiver,
-            userEventReceiver,
-            KaliumDispatcherImpl
+            userEventReceiver
         )
     }
 
@@ -262,7 +259,6 @@ abstract class UserSessionScopeCommon(
 
     private val messageTextEditHandler = MessageTextEditHandler(messageRepository)
 
-    protected abstract val protoContentMapper: ProtoContentMapper
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiverImpl(
             authenticatedDataSourceSet.proteusClient,
@@ -270,7 +266,6 @@ abstract class UserSessionScopeCommon(
             conversationRepository,
             mlsConversationRepository,
             userRepository,
-            protoContentMapper,
             callManager,
             messageTextEditHandler
         )
@@ -339,7 +334,8 @@ abstract class UserSessionScopeCommon(
             userId,
             authenticatedDataSourceSet,
             clientRepository,
-            mlsClientProvider
+            mlsClientProvider,
+            client.deregisterNativePushToken
         )
 
     val team: TeamScope get() = TeamScope(userRepository, teamRepository, syncManager)

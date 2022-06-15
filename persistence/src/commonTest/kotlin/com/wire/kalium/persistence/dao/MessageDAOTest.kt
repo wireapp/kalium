@@ -221,18 +221,23 @@ class MessageDAOTest : BaseDatabaseTest() {
         val conversationInQuestion = conversationEntity1
         val otherConversation = conversationEntity2
 
+        val visibilityInQuestion = MessageEntity.Visibility.VISIBLE
+        val otherVisibility = MessageEntity.Visibility.HIDDEN
+
         val expectedMessages = listOf(
             newMessageEntity(
                 "1",
                 conversationId = conversationInQuestion.id,
                 senderUserId = userEntity1.id,
-                status = MessageEntity.Status.PENDING
+                status = MessageEntity.Status.PENDING,
+                visibility = visibilityInQuestion
             ),
             newMessageEntity(
                 "2",
                 conversationId = conversationInQuestion.id,
                 senderUserId = userEntity1.id,
-                status = MessageEntity.Status.PENDING
+                status = MessageEntity.Status.PENDING,
+                visibility = visibilityInQuestion
             )
         )
 
@@ -242,19 +247,30 @@ class MessageDAOTest : BaseDatabaseTest() {
                 // different conversation
                 conversationId = otherConversation.id,
                 senderUserId = userEntity1.id,
-                status = MessageEntity.Status.READ
+                status = MessageEntity.Status.READ,
+                visibility = visibilityInQuestion
             ),
             newMessageEntity(
                 "4",
                 // different conversation
                 conversationId = otherConversation.id,
                 senderUserId = userEntity1.id,
-                status = MessageEntity.Status.PENDING
+                status = MessageEntity.Status.PENDING,
+                visibility = visibilityInQuestion
+            ),
+            newMessageEntity(
+                "5",
+                // different conversation
+                conversationId = conversationInQuestion.id,
+                senderUserId = userEntity1.id,
+                status = MessageEntity.Status.PENDING,
+                visibility = otherVisibility
             )
         )
 
         messageDAO.insertMessages(allMessages)
-        val result = messageDAO.getMessagesByConversation(conversationInQuestion.id, 10, 0)
+        val result =
+            messageDAO.getMessagesByConversationAndVisibility(conversationInQuestion.id, 10, 0, listOf(visibilityInQuestion))
         assertContentEquals(expectedMessages, result.first())
     }
 
@@ -288,7 +304,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         )
 
         messageDAO.insertMessages(allMessages)
-        val result = messageDAO.getMessagesByConversationAfterDate(conversationInQuestion.id, dateInQuestion)
+        val result = messageDAO.getMessagesByConversationAndVisibilityAfterDate(conversationInQuestion.id, dateInQuestion)
         assertContentEquals(expectedMessages, result.first())
     }
 

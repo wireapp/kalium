@@ -19,5 +19,5 @@ interface MessageSendingScheduler {
      *  If the implementation is unable to schedule (due to platform limitations for example),
      *  it's OK to just don't do anything, ideally logging a warning about the lack of implementation.
      */
-    suspend fun scheduleSendingOfPendingMessages()
+    fun scheduleSendingOfPendingMessages()
 }

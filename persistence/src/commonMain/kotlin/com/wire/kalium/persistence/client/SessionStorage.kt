@@ -3,7 +3,7 @@ package com.wire.kalium.persistence.client
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
-import com.wire.kalium.persistence.model.PersistenceSession
+import com.wire.kalium.persistence.model.AuthSessionEntity
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -17,7 +17,7 @@ interface SessionStorage {
     /**
      * store a session locally
      */
-    fun addSession(persistenceSession: PersistenceSession)
+    fun addSession(authSessionEntity: AuthSessionEntity)
 
     /**
      * delete a session from the local storage
@@ -27,12 +27,12 @@ interface SessionStorage {
     /**
      * returns the current active user session
      */
-    fun currentSession(): PersistenceSession?
+    fun currentSession(): AuthSessionEntity?
 
     /**
      * returns the Flow of current active user session
      */
-    fun currentSessionFlow(): Flow<PersistenceSession?>
+    fun currentSessionFlow(): Flow<AuthSessionEntity?>
 
     /**
      * changes the current active user session
@@ -42,12 +42,12 @@ interface SessionStorage {
     /**
      * return all stored session as a userId to session map
      */
-    fun allSessions(): Map<UserIDEntity, PersistenceSession>?
+    fun allSessions(): Map<UserIDEntity, AuthSessionEntity>?
 
     /**
      * return stored session associated with a userId
      */
-    fun userSession(userId: UserIDEntity): PersistenceSession?
+    fun userSession(userId: UserIDEntity): AuthSessionEntity?
 
     /**
      * returns true if there is any session saved and false otherwise
@@ -61,13 +61,13 @@ class SessionStorageImpl(
 
     private val sessionsUpdatedFlow = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
-    override fun addSession(persistenceSession: PersistenceSession) =
+    override fun addSession(authSessionEntity: AuthSessionEntity) =
         allSessions()?.let { sessionMap ->
             val temp = sessionMap.toMutableMap()
-            temp[persistenceSession.userId] = persistenceSession
+            temp[authSessionEntity.userId] = authSessionEntity
             saveAllSessions(SessionsMap(temp))
         } ?: run {
-            val sessions = mapOf(persistenceSession.userId to persistenceSession)
+            val sessions = mapOf(authSessionEntity.userId to authSessionEntity)
             saveAllSessions(SessionsMap(sessions))
         }.also { sessionsUpdatedFlow.tryEmit(Unit) }
 
@@ -91,14 +91,14 @@ class SessionStorageImpl(
         }
 
 
-    override fun currentSession(): PersistenceSession? =
+    override fun currentSession(): AuthSessionEntity? =
         kaliumPreferences.getSerializable(CURRENT_SESSION_KEY, UserIDEntity.serializer())?.let { userId ->
             allSessions()?.let { sessionMap ->
                 sessionMap[userId]
             }
         }
 
-    override fun currentSessionFlow(): Flow<PersistenceSession?> = sessionsUpdatedFlow
+    override fun currentSessionFlow(): Flow<AuthSessionEntity?> = sessionsUpdatedFlow
         .map { currentSession() }
         .onStart { emit(currentSession()) }
         .distinctUntilChanged()
@@ -107,10 +107,10 @@ class SessionStorageImpl(
         kaliumPreferences.putSerializable(CURRENT_SESSION_KEY, userId, UserIDEntity.serializer())
             .also { sessionsUpdatedFlow.tryEmit(Unit) }
 
-    override fun allSessions(): Map<UserIDEntity, PersistenceSession>? =
+    override fun allSessions(): Map<UserIDEntity, AuthSessionEntity>? =
         kaliumPreferences.getSerializable(SESSIONS_KEY, SessionsMap.serializer())?.s?.ifEmpty { null }
 
-    override fun userSession(userId: UserIDEntity): PersistenceSession? =
+    override fun userSession(userId: UserIDEntity): AuthSessionEntity? =
         allSessions()?.let { sessionMap ->
             sessionMap[userId]
         }
@@ -134,4 +134,4 @@ class SessionStorageImpl(
 // At runtime an object of 'SessionsMap' contains just 'Map<String, PersistenceSession>'
 @Serializable
 @JvmInline
-private value class SessionsMap(val s: Map<UserIDEntity, PersistenceSession>)
+private value class SessionsMap(val s: Map<UserIDEntity, AuthSessionEntity>)

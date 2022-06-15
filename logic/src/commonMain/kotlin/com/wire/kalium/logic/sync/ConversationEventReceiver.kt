@@ -15,6 +15,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PlainMessageBlob
+import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -39,12 +40,12 @@ class ConversationEventReceiverImpl(
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val userRepository: UserRepository,
-    private val protoContentMapper: ProtoContentMapper,
     private val callManagerImpl: Lazy<CallManager>,
     private val editTextHandler: MessageTextEditHandler,
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper(),
-) : ConversationEventReceiver {
+    private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper()
+    ) : ConversationEventReceiver {
 
     override suspend fun onEvent(event: Event.Conversation) {
         when (event) {
@@ -57,6 +58,46 @@ class ConversationEventReceiverImpl(
         }
     }
 
+    private suspend fun handleProtoContent(
+        conversationId: ConversationId,
+        timestampIso: String,
+        senderUserId: UserId,
+        senderClientId: ClientId,
+        protoContent: ProtoContent
+    ) {
+        when (protoContent.messageContent) {
+            is MessageContent.Regular -> {
+                val visibility = when (protoContent.messageContent) {
+                    is MessageContent.DeleteMessage -> Message.Visibility.HIDDEN
+                    is MessageContent.TextEdited -> Message.Visibility.HIDDEN
+                    is MessageContent.DeleteForMe -> Message.Visibility.HIDDEN
+                    MessageContent.Empty -> Message.Visibility.HIDDEN
+                    is MessageContent.Unknown ->
+                        if(protoContent.messageContent.hidden) Message.Visibility.HIDDEN
+                        else Message.Visibility.VISIBLE
+                    is MessageContent.Text -> Message.Visibility.VISIBLE
+                    is MessageContent.Calling -> Message.Visibility.VISIBLE
+                    is MessageContent.Asset -> Message.Visibility.VISIBLE
+                }
+                val message = Message.Regular(
+                    id = protoContent.messageUid,
+                    content = protoContent.messageContent,
+                    conversationId = conversationId,
+                    date = timestampIso,
+                    senderUserId = senderUserId,
+                    senderClientId = senderClientId,
+                    status = Message.Status.SENT,
+                    editStatus = Message.EditStatus.NotEdited,
+                    visibility = visibility
+                )
+                processMessage(message)
+            }
+            is MessageContent.Signaling -> {
+                processSignaling(protoContent.messageContent)
+            }
+        }
+    }
+
     private suspend fun handleNewMessage(event: Event.Conversation.NewMessage) {
         val decodedContentBytes = Base64.decodeFromBase64(event.content.toByteArray())
         val cryptoSessionId =
@@ -66,23 +107,17 @@ class ConversationEventReceiverImpl(
                 // TODO(important): Insert a failed message into the database to notify user that encryption is kaputt
                 kaliumLogger.e("$TAG - failure on proteus message: ${it.proteusException.stackTraceToString()}")
             }.onSuccess { plainMessageBlob ->
-                val protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)
-                val message = Message.Client(
-                    id = protoContent.messageUid,
-                    content = protoContent.messageContent,
+                handleProtoContent(
                     conversationId = event.conversationId,
-                    date = event.timestampIso,
+                    timestampIso = event.timestampIso,
                     senderUserId = event.senderUserId,
                     senderClientId = event.senderClientId,
-                    status = Message.Status.SENT,
-                    editStatus = Message.EditStatus.NotEdited,
+                    protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)
                 )
-
-                processMessage(message)
             }
     }
 
-    private fun updateAssetMessage(persistedMessage: Message.Client, newMessageRemoteData: AssetContent.RemoteData): Message? =
+    private fun updateAssetMessage(persistedMessage: Message.Regular, newMessageRemoteData: AssetContent.RemoteData): Message? =
         // The message was previously received with just metadata info, so let's update it with the raw data info
         if (persistedMessage.content is MessageContent.Asset) {
             persistedMessage.copy(
@@ -115,13 +150,14 @@ class ConversationEventReceiverImpl(
             idMapper.toDaoModel(event.conversationId)
         )
         .onSuccess {
-            val message = Message.Server(
+            val message = Message.System(
                 id = event.id,
                 content = MessageContent.MemberChange.Added(members = event.members),
                 conversationId = event.conversationId,
                 date = event.timestampIso,
                 senderUserId = event.addedBy,
-                status = Message.Status.SENT
+                status = Message.Status.SENT,
+                visibility = Message.Visibility.VISIBLE
             )
             processMessage(message)
         }
@@ -133,13 +169,14 @@ class ConversationEventReceiverImpl(
             idMapper.toDaoModel(event.conversationId)
         )
         .onSuccess {
-            val message = Message.Server(
+            val message = Message.System(
                 id = event.id,
                 content = MessageContent.MemberChange.Removed(members = event.members),
                 conversationId = event.conversationId,
                 date = event.timestampIso,
                 senderUserId = event.removedBy,
-                status = Message.Status.SENT
+                status = Message.Status.SENT,
+                visibility = Message.Visibility.VISIBLE
             )
             processMessage(message)
         }
@@ -157,27 +194,32 @@ class ConversationEventReceiverImpl(
                 kaliumLogger.e("$TAG - failure on MLS message: $it")
             }.onSuccess { mlsMessage ->
                 val plainMessageBlob = mlsMessage?.let { PlainMessageBlob(it) } ?: return@onSuccess
-                val protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)
-                val message = Message.Client(
-                    id = protoContent.messageUid,
-                    content = protoContent.messageContent,
+
+                handleProtoContent(
                     conversationId = event.conversationId,
-                    date = event.timestampIso,
+                    timestampIso = event.timestampIso,
                     senderUserId = event.senderUserId,
                     senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
-                    status = Message.Status.SENT,
-                    editStatus = Message.EditStatus.NotEdited,
+                    protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)
                 )
-                processMessage(message)
             }
 
+    private fun processSignaling(signaling: MessageContent.Signaling) {
+        when (signaling) {
+            MessageContent.Ignored -> {
+                kaliumLogger.i(message = "Ignored Signaling Message received: $signaling")
+            }
+        }
+    }
+
+    // TODO(qol): split this function so it's easier to maintain
     @Suppress("ComplexMethod", "LongMethod")
     private suspend fun processMessage(message: Message) {
         kaliumLogger.i(message = "Message received: $message")
 
         val isMyMessage = userRepository.getSelfUserId() == message.senderUserId
         when (message) {
-            is Message.Client -> when (message.content) {
+            is Message.Regular -> when (message.content) {
                 is MessageContent.Text -> messageRepository.persistMessage(message)
                 is MessageContent.Asset -> {
                     messageRepository.getMessageById(message.conversationId, message.id)
@@ -188,7 +230,7 @@ class ConversationEventReceiverImpl(
                         .onSuccess { persistedMessage ->
                             // Check the second asset message is from the same original sender
                             if (isSenderVerified(persistedMessage.id, persistedMessage.conversationId, message.senderUserId)
-                                && persistedMessage is Message.Client && persistedMessage.content is MessageContent.Asset
+                                && persistedMessage is Message.Regular && persistedMessage.content is MessageContent.Asset
                             ) {
                                 // The asset message received contains the asset decryption keys,
                                 // so update the preview message persisted previously
@@ -229,15 +271,15 @@ class ConversationEventReceiverImpl(
                         content = message.content
                     )
                 }
-                is MessageContent.TextEdited -> editTextHandler.handle(message,message.content)
+                is MessageContent.TextEdited -> editTextHandler.handle(message, message.content)
                 is MessageContent.Unknown -> {
                     kaliumLogger.i(message = "Unknown Message received: $message")
                     messageRepository.persistMessage(message)
                 }
                 MessageContent.Empty -> TODO()
             }
-            is Message.Server -> when (message.content) {
-                is MessageContent.MemberChange ->  {
+            is Message.System -> when (message.content) {
+                is MessageContent.MemberChange -> {
                     kaliumLogger.i(message = "System MemberChange Message received: $message")
                     messageRepository.persistMessage(message)
                 }
