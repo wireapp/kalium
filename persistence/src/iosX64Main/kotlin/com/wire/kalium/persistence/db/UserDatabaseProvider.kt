@@ -87,6 +87,8 @@ actual class UserDatabaseProvider(userId: UserIDEntity, passphrase: String) {
                 accent_idAdapter = IntColumnAdapter,
                 connection_statusAdapter = EnumColumnAdapter(),
                 user_availability_statusAdapter = EnumColumnAdapter(),
+                preview_asset_idAdapter = QualifiedIDAdapter(),
+                complete_asset_idAdapter = QualifiedIDAdapter()
             )
         )
         driver.execute(null, "PRAGMA foreign_keys=ON", 0)

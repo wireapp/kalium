@@ -102,8 +102,8 @@ internal inline fun <T : Any, U : Any> NetworkResponse<T>.mapSuccess(mapping: ((
         this
     }
 
-internal suspend fun <T : Any, R : Any> NetworkResponse<T>.flatMap(
-    fn: suspend (NetworkResponse.Success<T>) -> NetworkResponse<R>
+internal inline fun <T : Any, R : Any> NetworkResponse<T>.flatMap(
+    fn: (NetworkResponse.Success<T>) -> NetworkResponse<R>
 ): NetworkResponse<R> =
     if (isSuccessful()) {
         fn(this)

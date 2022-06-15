@@ -10,7 +10,6 @@ import com.wire.kalium.network.utils.CustomErrors
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap
 import com.wire.kalium.network.utils.mapSuccess
-import com.wire.kalium.network.utils.setUrl
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.header
 import io.ktor.client.request.post
@@ -107,15 +106,15 @@ interface RegisterApi {
     }
 
     suspend fun register(
-        param: RegisterParam, apiBaseUrl: String
+        param: RegisterParam
     ): NetworkResponse<Pair<UserDTO, SessionDTO>>
 
     suspend fun requestActivationCode(
-        param: RequestActivationCodeParam, apiBaseUrl: String
+        param: RequestActivationCodeParam
     ): NetworkResponse<Unit>
 
     suspend fun activate(
-        param: ActivationParam, apiBaseUrl: String
+        param: ActivationParam
     ): NetworkResponse<Unit>
 }
 
@@ -126,23 +125,21 @@ class RegisterApiImpl internal constructor(
 
     private val httpClient get() = unauthenticatedNetworkClient.httpClient
 
-    private suspend fun getToken(refreshToken: String, apiBaseUrl: String): NetworkResponse<AccessTokenDTO> = wrapKaliumResponse {
-        httpClient.post {
-            setUrl(apiBaseUrl, PATH_ACCESS)
+    private suspend fun getToken(refreshToken: String): NetworkResponse<AccessTokenDTO> = wrapKaliumResponse {
+        httpClient.post(PATH_ACCESS) {
             header(HttpHeaders.Cookie, "${RefreshTokenProperties.COOKIE_NAME}=$refreshToken")
         }
     }
 
     override suspend fun register(
-        param: RegisterApi.RegisterParam, apiBaseUrl: String
+        param: RegisterApi.RegisterParam
     ): NetworkResponse<Pair<UserDTO, SessionDTO>> = wrapKaliumResponse<UserDTO> {
-        httpClient.post {
-            setUrl(apiBaseUrl, REGISTER_PATH)
+        httpClient.post(REGISTER_PATH) {
             setBody(param.toBody())
         }
     }.flatMap { registerResponse ->
         registerResponse.cookies[RefreshTokenProperties.COOKIE_NAME]?.let { refreshToken ->
-            getToken(refreshToken, apiBaseUrl).mapSuccess { accessTokenDTO ->
+            getToken(refreshToken).mapSuccess { accessTokenDTO ->
                 Pair(
                     registerResponse.value,
                     SessionDTO(registerResponse.value.id, accessTokenDTO.tokenType, accessTokenDTO.value, refreshToken)
@@ -154,17 +151,15 @@ class RegisterApiImpl internal constructor(
     }
 
     override suspend fun requestActivationCode(
-        param: RegisterApi.RequestActivationCodeParam, apiBaseUrl: String
+        param: RegisterApi.RequestActivationCodeParam
     ): NetworkResponse<Unit> = wrapKaliumResponse {
-        httpClient.post {
-            setUrl(apiBaseUrl, ACTIVATE_PATH, SEND_PATH)
+        httpClient.post("$ACTIVATE_PATH/$SEND_PATH") {
             setBody(param.toBody())
         }
     }
 
-    override suspend fun activate(param: RegisterApi.ActivationParam, apiBaseUrl: String): NetworkResponse<Unit> = wrapKaliumResponse {
-        httpClient.post {
-            setUrl(apiBaseUrl, ACTIVATE_PATH)
+    override suspend fun activate(param: RegisterApi.ActivationParam): NetworkResponse<Unit> = wrapKaliumResponse {
+        httpClient.post(ACTIVATE_PATH) {
             setBody(param.toBody())
         }
     }

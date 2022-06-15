@@ -101,7 +101,7 @@ internal class SendImageMessageUseCaseImpl(
         val generatedMessageUuid = uuid4().toString()
 
         return clientRepository.currentClientId().flatMap { currentClientId ->
-            val message = Message.Client(
+            val message = Message.Regular(
                 id = generatedMessageUuid,
                 content = MessageContent.Asset(
                     provideAssetMessageContent(
@@ -149,7 +149,7 @@ internal class SendImageMessageUseCaseImpl(
                 sha256 = sha256,
                 assetId = assetId.key,
                 encryptionAlgorithm = AssetContent.RemoteData.EncryptionAlgorithm.AES_CBC,
-                assetDomain = null,  // TODO(assets): fill in the assetDomain, it's returned by the BE when uploading an asset.
+                assetDomain = assetId.domain,
                 assetToken = assetId.assetToken
             ),
             // Asset is already in our local storage and therefore accessible but until we don't save it to external storage the asset

@@ -53,7 +53,7 @@ class ObserveConversationListDetailsUseCaseTest {
             .thenReturn(flowOf(conversations))
 
         given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationDetailsById)
+            .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(anything())
             .thenReturn(flowOf())
 
@@ -75,7 +75,7 @@ class ObserveConversationListDetailsUseCaseTest {
             .thenReturn(flowOf(conversations))
 
         given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationDetailsById)
+            .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(anything())
             .thenReturn(flowOf())
 
@@ -97,7 +97,7 @@ class ObserveConversationListDetailsUseCaseTest {
             .thenReturn(flowOf(conversations))
 
         given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationDetailsById)
+            .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(anything())
             .thenReturn(flowOf())
 
@@ -105,7 +105,7 @@ class ObserveConversationListDetailsUseCaseTest {
 
         conversations.forEach { conversation ->
             verify(conversationRepository)
-                .suspendFunction(conversationRepository::getConversationDetailsById)
+                .suspendFunction(conversationRepository::observeConversationDetailsById)
                 .with(eq(conversation.id))
                 .wasInvoked(exactly = once)
         }
@@ -143,12 +143,12 @@ class ObserveConversationListDetailsUseCaseTest {
             .thenReturn(flowOf(conversations))
 
         given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationDetailsById)
+            .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(eq(groupConversation.id))
             .thenReturn(groupConversationUpdates.asFlow())
 
         given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationDetailsById)
+            .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(eq(oneOnOneConversation.id))
             .thenReturn(oneOnOneConversationDetailsUpdates.asFlow())
 
@@ -179,12 +179,12 @@ class ObserveConversationListDetailsUseCaseTest {
             .thenReturn(conversationListUpdates.consumeAsFlow())
 
         given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationDetailsById)
+            .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(eq(groupConversation.id))
             .thenReturn(flowOf(groupConversationDetails))
 
         given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationDetailsById)
+            .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(eq(selfConversation.id))
             .thenReturn(flowOf(selfConversationDetails))
 

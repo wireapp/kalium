@@ -2,7 +2,6 @@ package com.wire.kalium.logic.feature.call
 
 import android.content.Context
 import com.sun.jna.Pointer
-import com.waz.media.manager.MediaManager
 import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.ENVIRONMENT_DEFAULT
 import com.wire.kalium.calling.callbacks.LogHandler
@@ -20,11 +19,9 @@ actual class GlobalCallManager(
     private val appContext: Context
 ) {
 
-    private lateinit var mediaManager: MediaManager
     private val callManagerHolder = hashMapOf<QualifiedID, CallManager>()
 
     private val calling by lazy {
-        initiateMediaManager()
         Calling.INSTANCE.apply {
             wcall_init(env = ENVIRONMENT_DEFAULT)
             wcall_set_log_handler(
@@ -63,9 +60,7 @@ actual class GlobalCallManager(
 
     actual fun getFlowManager(): FlowManagerService = FlowManagerServiceImpl(appContext, Dispatchers.Default)
 
-    private fun initiateMediaManager() {
-        mediaManager = MediaManager.getInstance(appContext)
-    }
+    actual fun getMediaManager(): MediaManagerService = MediaManagerServiceImpl(appContext)
 }
 
 object LogHandlerImpl : LogHandler {

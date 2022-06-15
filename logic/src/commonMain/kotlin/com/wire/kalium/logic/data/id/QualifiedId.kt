@@ -22,11 +22,11 @@ val FEDERATION_REGEX = Regex("[^@.]+@[^@.]+\\.[^@]+")
 
 typealias ConversationId = QualifiedID
 
-fun String.toConversationId(): ConversationId {
+fun String.toConversationId(fallbackDomain: String = "wire.com"): ConversationId {
     val (value, domain) = if (contains(VALUE_DOMAIN_SEPARATOR)) {
         split(VALUE_DOMAIN_SEPARATOR).let { Pair(it.first(), it.last()) }
     } else {
-        Pair(this@toConversationId, "")
+        Pair(this@toConversationId, fallbackDomain)
     }
 
     return ConversationId(
@@ -37,6 +37,7 @@ fun String.toConversationId(): ConversationId {
 
 fun String.parseIntoQualifiedID(): QualifiedID {
     val components = split("@")
-    if (components.size < 2) throw IllegalStateException("The string trying to parse is not a valid one")
-    return QualifiedID(value = components.first(), domain = components.last())
+    return if (components.size < 2) QualifiedID(value = components.first(), domain = "")
+    else
+        QualifiedID(value = components.first(), domain = components.last())
 }

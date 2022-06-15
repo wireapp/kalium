@@ -25,6 +25,7 @@ interface ClientRepository {
     suspend fun clientInfo(clientId: ClientId /* = com.wire.kalium.logic.data.id.PlainId */): Either<NetworkFailure, Client>
     suspend fun saveNewClients(userId: UserId, clients: List<ClientId>): Either<CoreFailure, Unit>
     suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit>
+    suspend fun deregisterToken(token: String): Either<NetworkFailure, Unit>
 }
 
 class ClientDataSource(
@@ -70,5 +71,5 @@ class ClientDataSource(
         }
 
     override suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit> = clientRemoteRepository.registerToken(body)
-
+    override suspend fun deregisterToken(token: String): Either<NetworkFailure, Unit> = clientRemoteRepository.deregisterToken(token)
 }

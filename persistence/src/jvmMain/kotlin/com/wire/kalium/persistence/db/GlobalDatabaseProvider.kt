@@ -1,8 +1,10 @@
 package com.wire.kalium.persistence.db
 
+import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.wire.kalium.persistence.GlobalDatabase
+import com.wire.kalium.persistence.ServerConfiguration
 import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAO
 import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAOImpl
 import com.wire.kalium.persistence.util.FileNameUtil
@@ -30,7 +32,12 @@ actual class GlobalDatabaseProvider(private val storePath: File) {
             GlobalDatabase.Schema.create(driver)
         }
 
-        database = GlobalDatabase(driver)
+        database = GlobalDatabase(
+            driver,
+            ServerConfiguration.Adapter(
+                commonApiVersionAdapter = IntColumnAdapter
+            )
+        )
     }
 
     actual val serverConfigurationDAO: ServerConfigurationDAO

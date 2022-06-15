@@ -23,4 +23,5 @@ expect class GlobalCallManager {
     ): CallManager
 
     fun getFlowManager(): FlowManagerService
+    fun getMediaManager(): MediaManagerService
 }
