@@ -86,7 +86,7 @@ class SearchUserRepositoryImpl(
                     userType = userTypeMapper.fromOtherUserTeamAndDomain(
                         otherUserDomain = userProfileDTO.id.domain,
                         selfUserTeamId = getSelfUser().teamId,
-                        otherUserTeamID = userProfileDTO.teamId
+                        otherUserTeamId = userProfileDTO.teamId
                     )
                 )
             })

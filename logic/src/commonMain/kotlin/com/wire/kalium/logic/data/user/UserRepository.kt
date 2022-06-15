@@ -111,8 +111,8 @@ class UserDataSource(
                             userProfileDTO = userProfileDTO,
                             userTypeEntity = userTypeEntityTypeMapper.fromOtherUserTeamAndDomain(
                                 otherUserDomain = userProfileDTO.id.domain,
-                                selfUserTeamId = getSelfUser().teamId,
-                                otherUserTeamID = userProfileDTO.teamId
+                                selfUserTeamId = getSelfUser()?.teamId,
+                                otherUserTeamId = userProfileDTO.teamId
                             )
                         )
                     }
@@ -143,8 +143,8 @@ class UserDataSource(
             }
     }
 
-    override suspend fun getSelfUser(): SelfUser =
-        observeSelfUser().firstOrNull() ?: throw IllegalStateException()
+    override suspend fun getSelfUser(): SelfUser? =
+        observeSelfUser().firstOrNull()
 
     override suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit> = wrapApiRequest {
         selfApi.changeHandle(ChangeHandleRequest(handle))
@@ -172,7 +172,7 @@ class UserDataSource(
                 userType = userTypeMapper.fromOtherUserTeamAndDomain(
                     otherUserDomain = userProfile.id.domain,
                     selfUserTeamId = getSelfUser().teamId,
-                    otherUserTeamID = userProfile.teamId
+                    otherUserTeamId = userProfile.teamId
                 )
             )
         }

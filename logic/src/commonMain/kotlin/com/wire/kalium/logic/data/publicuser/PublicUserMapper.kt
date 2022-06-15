@@ -26,6 +26,8 @@ interface PublicUserMapper {
         userType: UserType
     ): OtherUser
 
+    //TODO:I think we are making too complicated parsers,
+    // maybe a good solution will be fetching self user when we are saving other users to db?
     fun fromUserApiToEntityWithConnectionStateAndUserTypeEntity(
         userDetailResponse: UserProfileDTO,
         connectionState: ConnectionEntity.State,

@@ -1,20 +1,7 @@
 package com.wire.kalium.logic.data.user.type
 
 import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.data.user.SelfUser
-import com.wire.kalium.logic.data.user.UserDataSource
-import com.wire.kalium.logic.data.user.UserMapper
-import com.wire.kalium.persistence.dao.MetadataDAO
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserTypeEntity
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.flatMapMerge
-import kotlinx.coroutines.flow.map
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.json.Json
 
 abstract class DomainUserTypeMapper(
     userTypeConverter: UserTypeConverter<UserType>
@@ -43,15 +30,15 @@ abstract class UserTypeMapper<T>(
     fun fromOtherUserTeamAndDomain(
         otherUserDomain: String,
         selfUserTeamId: String?,
-        otherUserTeamID: String?
+        otherUserTeamId: String?
     ): T {
         if (isUsingWireCloudBackEnd(otherUserDomain)) {
-            if (areNotInTheSameTeam(otherUserTeamID, selfUserTeamId)) {
+            if (areNotInTheSameTeam(otherUserTeamId, selfUserTeamId)) {
                 //delegate
                 return guest
             }
         } else {
-            if (areNotInTheSameTeam(otherUserTeamID, selfUserTeamId)) {
+            if (areNotInTheSameTeam(otherUserTeamId, selfUserTeamId)) {
                 //delegate
                 return federated
             }
