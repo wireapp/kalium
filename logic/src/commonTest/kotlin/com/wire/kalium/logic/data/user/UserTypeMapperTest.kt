@@ -84,7 +84,7 @@ class UserTypeMapperTest {
             email = "testEmail",
             phone = "testPhone",
             accentId = 0,
-            team = team,
+            teamId = team,
             connectionStatus = ConnectionState.ACCEPTED,
             previewPicture = "testPreviewPicture",
             completePicture = "testCompletePicture",

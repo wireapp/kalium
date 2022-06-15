@@ -31,8 +31,7 @@ class UserMapper {
 }
 
 class UserDAOImpl(
-    private val userQueries: UsersQueries,
-    private val metadataQueries: MetadataQueries
+    private val userQueries: UsersQueries
 ) : UserDAO {
 
     val mapper = UserMapper()
@@ -148,10 +147,6 @@ class UserDAOImpl(
 
     override suspend fun updateUserAvailabilityStatus(qualifiedID: QualifiedIDEntity, status: UserAvailabilityStatusEntity) {
         userQueries.updateUserAvailabilityStatus(status, qualifiedID)
-    }
-
-    override suspend fun getSelfUser(): UserEntity {
-        metadataDAO.valueByKey(SELF_USER_ID_KEY).filterNotNull().flatMapMerge { encodedValue -
     }
 
     override suspend fun getAllUsersByConnectionStatus(connectionState: ConnectionEntity.State): List<UserEntity> =

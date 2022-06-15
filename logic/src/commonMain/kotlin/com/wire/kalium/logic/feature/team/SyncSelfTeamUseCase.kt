@@ -19,7 +19,7 @@ internal class SyncSelfTeamUseCaseImpl(
     override suspend fun invoke(): Either<CoreFailure, Unit> {
         val user = userRepository.observeSelfUser().first()
 
-        return user.team?.let { teamId ->
+        return user.teamId?.let { teamId ->
             teamRepository.fetchTeamById(teamId = teamId)
             teamRepository.fetchMembersByTeamId(
                 teamId = teamId,

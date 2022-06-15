@@ -60,11 +60,11 @@ internal object MapperProvider {
     fun messageMapper(): MessageMapper = MessageMapperImpl(idMapper(), memberMapper())
     fun memberMapper(): MemberMapper = MemberMapperImpl(idMapper())
     fun conversationMapper(): ConversationMapper = ConversationMapperImpl(idMapper(), ConversationStatusMapperImpl())
-    fun publicUserMapper(userDao: UserDAO, metaDao: MetadataDAO): PublicUserMapper = PublicUserMapperImpl(userDao, metaDao, idMapper())
+    fun publicUserMapper(): PublicUserMapper = PublicUserMapperImpl(idMapper())
     fun sendMessageFailureMapper(): SendMessageFailureMapper = SendMessageFailureMapperImpl()
     fun assetMapper(): AssetMapper = AssetMapperImpl()
-    fun eventMapper(userDao: UserDAO, metaDao: MetadataDAO): EventMapper =
-        EventMapper(idMapper(), memberMapper(), connectionMapper(userDao, metaDao))
+    fun eventMapper(): EventMapper =
+        EventMapper(idMapper(), memberMapper(), connectionMapper())
 
     fun preyKeyMapper(): PreKeyMapper = PreKeyMapperImpl()
     fun preKeyListMapper(): PreKeyListMapper = PreKeyListMapper(preyKeyMapper())
@@ -74,19 +74,10 @@ internal object MapperProvider {
     fun callMapper(): CallMapper = CallMapper()
     fun connectionStatusMapper(): ConnectionStatusMapper = ConnectionStatusMapperImpl()
     fun localNotificationMessageMapper(): LocalNotificationMessageMapper = LocalNotificationMessageMapperImpl()
-    fun connectionMapper(
-        userDao: UserDAO,
-        metaDao: MetadataDAO
-    ): ConnectionMapper = ConnectionMapperImpl(idMapper(), connectionStatusMapper(), publicUserMapper(userDao, metaDao))
+    fun connectionMapper(): ConnectionMapper = ConnectionMapperImpl(idMapper(), connectionStatusMapper(), publicUserMapper())
 
-    fun userTypeEntityMapper(userDao: UserDAO, metaDao: MetadataDAO): UserEntityTypeMapper =
-        UserEntityTypeMapperImpl(userDao, metaDao, userMapper())
+    fun userTypeEntityMapper(): UserEntityTypeMapper = UserEntityTypeMapperImpl()
 
-    fun userTypeMapper(userDao: UserDAO, metaDao: MetadataDAO): DomainUserTypeMapper =
-        DomainUserTypeMapperImpl(
-            userDao,
-            metaDao,
-            userMapper()
-        )
+    fun userTypeMapper(): DomainUserTypeMapper = DomainUserTypeMapperImpl()
 
 }

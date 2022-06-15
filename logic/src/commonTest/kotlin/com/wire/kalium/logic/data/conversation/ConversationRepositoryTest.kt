@@ -323,7 +323,7 @@ class ConversationRepositoryTest {
     @Test
     fun givenSelfUserDoesNotBelongToATeam_whenCallingCreateGroupConversation_thenConversationIsCreatedAtBackendAndPersisted() = runTest {
 
-        val selfUserWithoutTeam = TestUser.SELF.copy(team = null)
+        val selfUserWithoutTeam = TestUser.SELF.copy(teamId = null)
 
         given(conversationApi)
             .suspendFunction(conversationApi::createNewConversation)

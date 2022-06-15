@@ -36,9 +36,7 @@ class EventDataSource(
     private val notificationApi: NotificationApi,
     private val eventInfoStorage: EventInfoStorage,
     private val clientRepository: ClientRepository,
-    private val metaDao: MetadataDAO,
-    private val userDao : UserDAO,
-    private val eventMapper: EventMapper = MapperProvider.eventMapper(userDao,metaDao)
+    private val eventMapper: EventMapper = MapperProvider.eventMapper()
 ) : EventRepository {
 
     // TODO(edge-case): handle Missing notification response (notify user that some messages are missing)

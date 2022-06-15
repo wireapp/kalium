@@ -60,7 +60,7 @@ data class SelfUser(
     val email: String?,
     val phone: String?,
     val accentId: Int,
-    val team: String?,
+    val teamId: String?,
     val connectionStatus: ConnectionState,
     val previewPicture: UserAssetId?,
     val completePicture: UserAssetId?,

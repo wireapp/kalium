@@ -1,8 +1,6 @@
 package com.wire.kalium.logic.data.publicuser
 
-import com.wire.kalium.logic.data.conversation.UserType
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.ConnectionState
@@ -10,14 +8,13 @@ import com.wire.kalium.logic.data.user.ConnectionStateMapper
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
+import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.model.getPreviewAssetOrNull
 import com.wire.kalium.network.api.user.details.UserProfileDTO
 import com.wire.kalium.persistence.dao.ConnectionEntity
-import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
-import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 
@@ -35,17 +32,13 @@ interface PublicUserMapper {
         // UserProfileDTO has no info about userType, we need to pass it explicitly
         userTypeEntity: UserTypeEntity
     ): UserEntity
-
-//    fun fromUserDetailResponses(userDetailResponse: List<UserProfileDTO>): List<OtherUser>
 }
 
 class PublicUserMapperImpl(
-    private val userDAO: UserDAO,
-    private val metadataDAO: MetadataDAO,
     private val idMapper: IdMapper,
     private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
     private val connectionStateMapper: ConnectionStateMapper = MapperProvider.connectionStateMapper(),
-    private val domainUserTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper(userDAO,metadataDAO)
+    private val domainUserTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper()
 ) : PublicUserMapper {
 
     override fun fromDaoModelToPublicUser(userEntity: UserEntity) = OtherUser(
@@ -97,9 +90,5 @@ class PublicUserMapperImpl(
         availabilityStatus = UserAvailabilityStatusEntity.NONE,
         userTypEntity = userTypeEntity
     )
-
-//    override fun fromUserDetailResponses(userDetailResponse: List<UserProfileDTO>) =
-//        userDetailResponse.map { fromUserDetailResponseWithUsertype(it) }
-
 
 }

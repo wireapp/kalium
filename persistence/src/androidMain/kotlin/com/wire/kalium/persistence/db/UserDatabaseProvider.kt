@@ -109,12 +109,13 @@ actual class UserDatabaseProvider(private val context: Context, userId: UserIDEn
                 accent_idAdapter = IntColumnAdapter,
                 connection_statusAdapter = EnumColumnAdapter(),
                 user_availability_statusAdapter = EnumColumnAdapter(),
+                user_typeAdapter = EnumColumnAdapter()
             )
         )
     }
 
     actual val userDAO: UserDAO
-        get() = UserDAOImpl(database.usersQueries, database.metadataQueries)
+        get() = UserDAOImpl(database.usersQueries)
 
     actual val connectionDAO: ConnectionDAO
         get() = ConnectionDAOImpl(database.connectionsQueries)

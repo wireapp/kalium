@@ -225,7 +225,7 @@ class RegisterAccountUseCaseTest {
             email = TEST_PRIVATE_ACCOUNT_PARAM.email,
             phone = null,
             accentId = 3,
-            team = null,
+            teamId = null,
             connectionStatus = ConnectionState.ACCEPTED,
             previewPicture = null,
             completePicture = null,

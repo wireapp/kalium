@@ -87,7 +87,7 @@ class ConversationDataSource(
 
     override suspend fun fetchConversations(): Either<CoreFailure, Unit> {
         kaliumLogger.d("Fetching conversations")
-        val selfUserTeamId = userRepository.observeSelfUser().first().team
+        val selfUserTeamId = userRepository.observeSelfUser().first().teamId
 
         return fetchAllConversationsFromAPI().onFailure { networkFailure ->
             val throwable = (networkFailure as? NetworkFailure.ServerMiscommunication)?.rootCause
@@ -99,7 +99,7 @@ class ConversationDataSource(
     }
 
     override suspend fun insertConversationFromEvent(event: Event.Conversation.NewConversation): Either<CoreFailure, Unit> {
-        val selfUserTeamId = userRepository.observeSelfUser().first().team
+        val selfUserTeamId = userRepository.observeSelfUser().first().teamId
         return persistConversations(listOf(event.conversation), selfUserTeamId)
     }
 
@@ -265,10 +265,10 @@ class ConversationDataSource(
     }.flatMap { selfUser ->
         wrapApiRequest {
             conversationApi.createNewConversation(
-                conversationMapper.toApiModel(name, members, selfUser.team, options)
+                conversationMapper.toApiModel(name, members, selfUser.teamId, options)
             )
         }.flatMap { conversationResponse ->
-            val teamId = selfUser.team?.let { TeamId(it) }
+            val teamId = selfUser.teamId?.let { TeamId(it) }
             val conversationEntity = conversationMapper.fromApiModelToDaoModel(
                 conversationResponse,
                 mlsGroupState = ConversationEntity.GroupState.PENDING,

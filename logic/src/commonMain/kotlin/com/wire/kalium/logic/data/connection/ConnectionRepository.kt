@@ -61,9 +61,9 @@ internal class ConnectionDataSource(
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val connectionStatusMapper: ConnectionStatusMapper = MapperProvider.connectionStatusMapper(),
-    private val connectionMapper: ConnectionMapper = MapperProvider.connectionMapper(userDAO, metadataDAO),
-    private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(userDAO, metadataDAO),
-    private val userTypeEntityTypeMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper(userDAO, metadataDAO)
+    private val connectionMapper: ConnectionMapper = MapperProvider.connectionMapper(),
+    private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(),
+    private val userTypeEntityTypeMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper()
 ) : ConnectionRepository {
 
     override suspend fun fetchSelfUserConnections(): Either<CoreFailure, Unit> {
@@ -157,7 +157,7 @@ internal class ConnectionDataSource(
                     connectionState = connectionStatusMapper.toDaoModel(state = connection.status),
                     userTypeEntity = userTypeEntityTypeMapper.fromOtherUserTeamAndDomain(
                         otherUserDomain = userProfileDTO.id.domain,
-                        selfUserTeamId = getSelfUser().team,
+                        selfUserTeamId = getSelfUser().teamId,
                         otherUserTeamID = userProfileDTO.teamId
                     )
                 )
@@ -167,8 +167,9 @@ internal class ConnectionDataSource(
         }
     }
 
-    //TODO: code duplication here for getting self user, what would be best ?
-    // creating SelfUserDao, to UserEntity corresponding to SelfUser ?
+    //TODO: code duplication here for getting self user, the same is done inside
+    // UserRepository, what would be best ?
+    // creating SelfUserDao managing the UserEntity corresponding to SelfUser ?
     private suspend fun getSelfUser(): SelfUser {
         return metadataDAO.valueByKey(UserDataSource.SELF_USER_ID_KEY)
             .filterNotNull()

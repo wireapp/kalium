@@ -65,7 +65,7 @@ abstract class UserTypeMapper<T>(
         domain.contains(QualifiedID.WIRE_PRODUCTION_DOMAIN)
 
     // if either self user has no team or other user,
-// does not make sense to compare them and we return false as of they are not on the same team
+    // does not make sense to compare them and we return false as of they are not on the same team
     private fun areNotInTheSameTeam(otherUserTeamId: String?, selfUserTeamId: String?): Boolean =
         !(otherUserTeamId != null && selfUserTeamId != null) || (otherUserTeamId != selfUserTeamId)
 }

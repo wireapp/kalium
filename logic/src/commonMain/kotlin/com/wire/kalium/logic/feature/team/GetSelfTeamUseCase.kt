@@ -19,8 +19,8 @@ class GetSelfTeamUseCase(
         syncManager.startSyncIfIdle()
         return userRepository.observeSelfUser()
             .flatMapLatest {
-                if (it.team != null) teamRepository.getTeam(it.team)
-                else flow { emit(it.team) }
+                if (it.teamId != null) teamRepository.getTeam(it.teamId)
+                else flow { emit(it.teamId) }
             }
     }
 }

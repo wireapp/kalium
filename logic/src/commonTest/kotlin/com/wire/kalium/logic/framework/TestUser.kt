@@ -19,7 +19,7 @@ object TestUser {
         email = "email",
         phone = "phone",
         accentId = 0,
-        team = "teamId",
+        teamId = "teamId",
         connectionStatus = ConnectionState.ACCEPTED,
         previewPicture = UserAssetId(),
         completePicture = UserAssetId(),
