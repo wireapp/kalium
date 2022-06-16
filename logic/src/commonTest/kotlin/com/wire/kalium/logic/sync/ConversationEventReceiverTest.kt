@@ -55,6 +55,7 @@ class ConversationEventReceiverTest {
             .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
             .withProteusClientDecryptingByteArray(decryptedData = byteArrayOf())
             .withProtoContentMapperReturning(any(), ProtoContent.Readable("uuid", MessageContent.Unknown()))
+            .withRepositoryPersistingMessageDateReturning(Either.Right(Unit))
             .arrange()
 
         val encodedEncryptedContent = Base64.encodeToBase64("Hello".encodeToByteArray())
