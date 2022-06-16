@@ -12,7 +12,8 @@ data class CallClient(
 
 @Serializable
 data class CallClientList(
-    val clients: List<CallClient>
+    @SerialName("clients") val clients: List<CallClient>
 ) {
+    //TODO(optimization): Use a shared Json instance instead of creating one every time.
     fun toJsonString(): String = Json { isLenient = true }.encodeToString(serializer(), this)
 }
