@@ -58,9 +58,14 @@ actual class GlobalCallManager(
         }
     }
 
-    actual fun getFlowManager(): FlowManagerService = FlowManagerServiceImpl(appContext, Dispatchers.Default)
+    // Initialize it eagerly, so it's already initialized when `calling` is initialized
+    private val flowManager = FlowManagerServiceImpl(appContext, Dispatchers.Default)
 
-    actual fun getMediaManager(): MediaManagerService = MediaManagerServiceImpl(appContext)
+    actual fun getFlowManager(): FlowManagerService = flowManager
+
+    // Initialize it eagerly, so it's already initialized when `calling` is initialized
+    private val mediaManager = MediaManagerServiceImpl(appContext)
+    actual fun getMediaManager(): MediaManagerService = mediaManager
 }
 
 object LogHandlerImpl : LogHandler {
