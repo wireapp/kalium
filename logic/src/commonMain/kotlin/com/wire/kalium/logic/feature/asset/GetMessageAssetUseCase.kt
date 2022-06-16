@@ -44,10 +44,6 @@ internal class GetMessageAssetUseCaseImpl(
                         DownloadAssetMessageMetadata(assetId, assetDomain, assetToken, otrKey)
                     }
                 }
-                is MessageContent.RestrictedAsset -> {
-                    kaliumLogger.e("File sharing not allowed from the team management")
-                    return@fold MessageAssetResult.RestrictedAsset(mimeType = content.mimeType)
-                }
                 // This should never happen
                 else -> return@fold MessageAssetResult.Failure(
                     CoreFailure.Unknown(IllegalStateException("The message associated to this id, was not an asset message"))
@@ -70,5 +66,4 @@ internal class GetMessageAssetUseCaseImpl(
 sealed class MessageAssetResult {
     class Success(val decodedAsset: ByteArray) : MessageAssetResult()
     class Failure(val coreFailure: CoreFailure) : MessageAssetResult()
-    class RestrictedAsset(val mimeType: String) : MessageAssetResult()
 }

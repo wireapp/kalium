@@ -1,7 +1,10 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
-import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
-import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
 import com.wire.kalium.persistence.dao.message.MessageEntity;
+import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
+import com.wire.kalium.persistence.dao.message.MessageEntity.DownloadStatus;
+import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
+import com.wire.kalium.persistence.dao.message.MessageEntity.Status;
+import com.wire.kalium.persistence.dao.message.MessageEntity.Visibility;
 import kotlin.Int;
 import kotlin.collections.List;
 
@@ -26,6 +29,16 @@ CREATE TABLE MessageTextContent (
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
 
       text_body TEXT,
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE,
+      PRIMARY KEY (message_id, conversation_id)
+);
+
+CREATE TABLE MessageRestrictedAssetContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      asset_mime_type TEXT NOT NULL,
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
@@ -98,6 +111,7 @@ markMessageAsDeleted {
    DELETE FROM MessageAssetContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
    DELETE FROM MessageMemberChangeContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
    DELETE FROM MessageUnknownContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
+   DELETE FROM MessageRestrictedAssetContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
 
    INSERT INTO MessageTextContent(message_id, conversation_id, text_body) VALUES(:message_id, :conversation_id, NULL);
 }
@@ -125,6 +139,13 @@ VALUES(?, ?, ?)
 ON CONFLICT(message_id, conversation_id) DO UPDATE SET
 message_id = excluded.message_id,
 text_body = excluded.text_body;
+
+insertMessageRestrictedAssetContent:
+INSERT INTO MessageRestrictedAssetContent(message_id, conversation_id, asset_mime_type)
+VALUES(?, ?, ?)
+ON CONFLICT(message_id, conversation_id) DO UPDATE SET
+message_id = excluded.message_id,
+asset_mime_type = excluded.asset_mime_type;
 
 insertMessageAssetContent:
 INSERT INTO MessageAssetContent(message_id, conversation_id, asset_size, asset_name, asset_mime_type, asset_download_status, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, asset_width, asset_height, asset_duration_ms, asset_normalized_loudness)
@@ -209,6 +230,9 @@ SELECT * FROM Message WHERE sender_user_id = ? AND status = ?;
 
 selectMessageTextContent:
 SELECT * FROM MessageTextContent WHERE message_id = ? AND conversation_id = ?;
+
+selectMessageRestrictedAssetContent:
+SELECT * FROM MessageRestrictedAssetContent WHERE message_id = ? AND conversation_id = ?;
 
 selectMessageAssetContent:
 SELECT * FROM MessageAssetContent WHERE message_id = ? AND conversation_id = ?;

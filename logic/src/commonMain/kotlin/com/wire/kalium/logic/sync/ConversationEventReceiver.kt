@@ -245,9 +245,8 @@ class ConversationEventReceiverImpl(
                                     }
                                 }
                         } else {
-                            messageRepository.persistMessage(
-                                message.copy(content = MessageContent.RestrictedAsset(message.content.value.mimeType))
-                            )
+                            val newMessage = message.copy(content = MessageContent.RestrictedAsset(message.content.value.mimeType))
+                            messageRepository.persistMessage(newMessage)
                         }
                     }
                 }
