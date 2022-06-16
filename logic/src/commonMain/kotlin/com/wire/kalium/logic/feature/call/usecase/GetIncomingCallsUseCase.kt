@@ -41,12 +41,12 @@ internal class GetIncomingCallsUseCaseImpl(
     override suspend operator fun invoke(): Flow<List<Call>> {
         syncManager.startSyncIfIdle()
 
-        return observeIncomingCallsIfUserNotAway()
+        return observeIncomingCallsIfUserStatusAllows()
             .onlyCallsInNotMutedConversations()
             .distinctUntilChanged()
     }
 
-    private suspend fun observeIncomingCallsIfUserNotAway(): Flow<List<Call>> =
+    private suspend fun observeIncomingCallsIfUserStatusAllows(): Flow<List<Call>> =
         userRepository.getSelfUser()
             .flatMapLatest {
                 //if user is AWAY we don't show any IncomingCalls
