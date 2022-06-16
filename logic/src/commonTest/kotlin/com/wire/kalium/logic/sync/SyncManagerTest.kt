@@ -11,7 +11,7 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import com.wire.kalium.network.api.conversation.ConversationMembers
+import com.wire.kalium.network.api.notification.WebSocketEvent
 import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.configure
@@ -105,7 +105,7 @@ class SyncManagerTest {
             assertTrue(waitJob.isActive)
 
             // Sync completes
-            syncRepository.updateSyncState { SyncState.ProcessingPendingEvents }
+            syncRepository.updateSyncState { SyncState.GatheringPendingEvents }
             waitJob.join()
 
             // Stops suspending
@@ -128,7 +128,7 @@ class SyncManagerTest {
             assertTrue(waitJob.isActive)
 
             // Sync completes
-            syncRepository.updateSyncState { SyncState.ProcessingPendingEvents }
+            syncRepository.updateSyncState { SyncState.GatheringPendingEvents }
             waitJob.join()
 
             // Stops suspending
@@ -204,8 +204,8 @@ class SyncManagerTest {
     }
 
     @Test
-    fun givenSyncStatusIsProcessingPendingEvents_whenStartingSync_thenShouldNotCallScheduler() = runTest(TestKaliumDispatcher.default) {
-        syncRepository.updateSyncState { SyncState.ProcessingPendingEvents }
+    fun givenSyncStatusIsGatheringPendingEvents_whenStartingSync_thenShouldNotCallScheduler() = runTest(TestKaliumDispatcher.default) {
+        syncRepository.updateSyncState { SyncState.GatheringPendingEvents }
 
         syncManager.startSyncIfIdle()
 
@@ -214,7 +214,7 @@ class SyncManagerTest {
 
     @Test
     fun givenSyncStatusIsSlowSync_whenStartingSync_thenShouldNotCallScheduler() = runTest(TestKaliumDispatcher.default) {
-        syncRepository.updateSyncState { SyncState.ProcessingPendingEvents }
+        syncRepository.updateSyncState { SyncState.SlowSync }
 
         syncManager.startSyncIfIdle()
 
@@ -240,7 +240,7 @@ class SyncManagerTest {
     }
 
     @Test
-    fun givenSlowSyncCompleted_whenCallingOnSlowSyncCompleted_thenShouldStartProcessingEvents() = runTest(TestKaliumDispatcher.default) {
+    fun givenSlowSyncCompleted_whenCallingOnSlowSyncCompleted_thenShouldStartGatheringEvents() = runTest(TestKaliumDispatcher.default) {
         //Given
         syncRepository.updateSyncState { SyncState.SlowSync }
 
@@ -248,6 +248,11 @@ class SyncManagerTest {
             .suspendFunction(eventRepository::pendingEvents)
             .whenInvoked()
             .thenReturn(emptyFlow())
+
+        given(eventRepository)
+            .suspendFunction(eventRepository::lastEventId)
+            .whenInvoked()
+            .thenReturn(Either.Right("lastProcessedEventId"))
 
         given(eventRepository)
             .suspendFunction(eventRepository::liveEvents)
@@ -262,8 +267,7 @@ class SyncManagerTest {
             advanceUntilIdle()
 
             //Then
-            assertIs<SyncState.ProcessingPendingEvents>(awaitItem())
-            assertIs<SyncState.Live>(awaitItem())
+            assertIs<SyncState.GatheringPendingEvents>(awaitItem())
 
             // A failure happens when live events close the flow
             cancelAndIgnoreRemainingEvents()
@@ -271,13 +275,50 @@ class SyncManagerTest {
 
         //Then
         verify(eventRepository)
-            .suspendFunction(eventRepository::pendingEvents)
-            .wasInvoked(exactly = once)
-
-        verify(eventRepository)
             .suspendFunction(eventRepository::liveEvents)
             .wasInvoked(exactly = once)
     }
+
+    @Test
+    fun givenSlowSyncCompletedAndWebSocketOpened_whenCallingOnSlowSyncCompleted_thenShouldFetchPendingEvents() =
+        runTest(TestKaliumDispatcher.default) {
+            //Given
+            syncRepository.updateSyncState { SyncState.SlowSync }
+
+            given(eventRepository)
+                .suspendFunction(eventRepository::pendingEvents)
+                .whenInvoked()
+                .thenReturn(emptyFlow())
+
+            given(eventRepository)
+                .suspendFunction(eventRepository::liveEvents)
+                .whenInvoked()
+                .thenReturn(Either.Right(flowOf(WebSocketEvent.Open())))
+
+            given(eventRepository)
+                .suspendFunction(eventRepository::lastEventId)
+                .whenInvoked()
+                .thenReturn(Either.Right("lastProcessedId"))
+
+            syncRepository.syncState.test {
+                assertIs<SyncState.SlowSync>(awaitItem())
+
+                //When
+                syncManager.onSlowSyncComplete()
+                advanceUntilIdle()
+
+                //Then
+                assertIs<SyncState.GatheringPendingEvents>(awaitItem())
+
+                // A failure happens when live events close the flow
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            //Then
+            verify(eventRepository)
+                .suspendFunction(eventRepository::pendingEvents)
+                .wasInvoked(exactly = once)
+        }
 
     @Test
     fun givenSlowSyncCompletedAndAPendingEvent_whenSyncing_thenTheLastProcessedEventIdIsUpdated() = runTest(TestKaliumDispatcher.default) {
@@ -292,6 +333,11 @@ class SyncManagerTest {
         )
 
         given(eventRepository)
+            .suspendFunction(eventRepository::lastEventId)
+            .whenInvoked()
+            .thenReturn(Either.Right("lastProcessedId"))
+
+        given(eventRepository)
             .suspendFunction(eventRepository::pendingEvents)
             .whenInvoked()
             .thenReturn(flowOf(Either.Right(event)))
@@ -299,7 +345,7 @@ class SyncManagerTest {
         given(eventRepository)
             .suspendFunction(eventRepository::liveEvents)
             .whenInvoked()
-            .thenReturn(Either.Right(emptyFlow()))
+            .thenReturn(Either.Right(flowOf(WebSocketEvent.Open())))
 
         //When
         syncManager.onSlowSyncComplete()
@@ -324,6 +370,11 @@ class SyncManagerTest {
             "2022-03-30T15:36:00.000Z"
         )
         given(eventRepository)
+            .suspendFunction(eventRepository::lastEventId)
+            .whenInvoked()
+            .thenReturn(Either.Right("lastProcessedId"))
+
+        given(eventRepository)
             .suspendFunction(eventRepository::pendingEvents)
             .whenInvoked()
             .thenReturn(flowOf(Either.Right(event)))
@@ -331,7 +382,7 @@ class SyncManagerTest {
         given(eventRepository)
             .suspendFunction(eventRepository::liveEvents)
             .whenInvoked()
-            .thenReturn(Either.Right(emptyFlow()))
+            .thenReturn(Either.Right(flowOf(WebSocketEvent.Open())))
 
         //When
         syncManager.onSlowSyncComplete()
@@ -355,11 +406,17 @@ class SyncManagerTest {
             listOf(),
             "2022-03-30T15:36:00.000Z"
         )
-        val liveEventsChannel = Channel<Event>()
+        val liveEventsChannel = Channel<WebSocketEvent<Event>>()
+
+        given(eventRepository)
+            .suspendFunction(eventRepository::lastEventId)
+            .whenInvoked()
+            .thenReturn(Either.Right("lastProcessedId"))
+
         given(eventRepository)
             .suspendFunction(eventRepository::pendingEvents)
             .whenInvoked()
-            .thenReturn(flowOf(Either.Right(event)))
+            .thenReturn(emptyFlow())
 
         given(eventRepository)
             .suspendFunction(eventRepository::liveEvents)
@@ -368,9 +425,13 @@ class SyncManagerTest {
 
         //When
         syncManager.onSlowSyncComplete()
+
+        liveEventsChannel.send(WebSocketEvent.Open())
+        liveEventsChannel.send(WebSocketEvent.BinaryPayloadReceived(event))
+
+        //Wait processing
         advanceUntilIdle()
 
-        liveEventsChannel.send(event)
         //Then
         verify(eventRepository)
             .suspendFunction(eventRepository::updateLastProcessedEventId)
@@ -389,7 +450,60 @@ class SyncManagerTest {
             listOf(),
             "2022-03-30T15:36:00.000Z"
         )
-        val liveEventsChannel = Channel<Event>()
+        val liveEventsChannel = Channel<WebSocketEvent<Event>>()
+
+        given(eventRepository)
+            .suspendFunction(eventRepository::lastEventId)
+            .whenInvoked()
+            .thenReturn(Either.Right("lastProcessedId"))
+
+        given(eventRepository)
+            .suspendFunction(eventRepository::pendingEvents)
+            .whenInvoked()
+            .thenReturn(emptyFlow())
+
+        given(eventRepository)
+            .suspendFunction(eventRepository::liveEvents)
+            .whenInvoked()
+            .then {
+                Either.Right(liveEventsChannel.receiveAsFlow())
+            }
+
+        //When
+        syncManager.onSlowSyncComplete()
+        advanceUntilIdle()
+
+        liveEventsChannel.send(WebSocketEvent.Open())
+        liveEventsChannel.send(WebSocketEvent.BinaryPayloadReceived(event))
+
+        //Wait processing
+        advanceUntilIdle()
+
+        //Then
+        verify(conversationEventReceiver)
+            .suspendFunction(conversationEventReceiver::onEvent)
+            .with(eq(event))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAnEventIsInBothOnPendingAndLiveSources_whenSyncing_theEventReceiverIsCalledOnce() = runTest(TestKaliumDispatcher.default) {
+        //Given
+        val eventId = "eventId"
+        val event = Event.Conversation.MemberJoin(
+            eventId,
+            TestConversation.ID,
+            TestUser.USER_ID,
+            listOf(),
+            "2022-03-30T15:36:00.000Z"
+        )
+        val liveEventsChannel = Channel<WebSocketEvent<Event>>()
+
+        given(eventRepository)
+            .suspendFunction(eventRepository::lastEventId)
+            .whenInvoked()
+            .thenReturn(Either.Right("lastProcessedId"))
+
         given(eventRepository)
             .suspendFunction(eventRepository::pendingEvents)
             .whenInvoked()
@@ -406,7 +520,11 @@ class SyncManagerTest {
         syncManager.onSlowSyncComplete()
         advanceUntilIdle()
 
-        liveEventsChannel.send(event)
+        liveEventsChannel.send(WebSocketEvent.Open())
+        liveEventsChannel.send(WebSocketEvent.BinaryPayloadReceived(event))
+
+        //Wait processing
+        advanceUntilIdle()
 
         //Then
         verify(conversationEventReceiver)

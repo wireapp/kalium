@@ -24,5 +24,4 @@ class NotificationTokenDataSource(
     override fun getNotificationToken(): Either<StorageFailure, NotificationToken> = wrapStorageRequest { tokenStorage.getToken() }.map {
         with(it) { NotificationToken(token, transport) }
     }
-
 }
