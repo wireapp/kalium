@@ -1,8 +1,9 @@
 package com.wire.kalium.logic.util
 
-import android.util.Base64
+import io.ktor.util.decodeBase64Bytes
+import io.ktor.util.encodeBase64
 
 actual object Base64 {
-    actual fun encodeToBase64(originalString: ByteArray): ByteArray = Base64.encode(originalString, Base64.NO_WRAP)
-    actual fun decodeFromBase64(encoded: ByteArray): ByteArray = Base64.decode(encoded, Base64.NO_WRAP)
+    actual fun encodeToBase64(originalString: ByteArray): ByteArray = originalString.encodeBase64().toByteArray()
+    actual fun decodeFromBase64(encoded: ByteArray): ByteArray = encoded.decodeToString().decodeBase64Bytes()
 }
