@@ -19,6 +19,7 @@ import com.wire.kalium.logic.feature.call.usecase.UnMuteCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.UpdateVideoStateUseCase
 import com.wire.kalium.logic.sync.SyncManager
 
+@Suppress("LongParameterList")
 class CallsScope(
     private val callManager: Lazy<CallManager>,
     private val callRepository: CallRepository,
