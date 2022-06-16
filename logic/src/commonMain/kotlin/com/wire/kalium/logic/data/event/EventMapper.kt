@@ -1,18 +1,22 @@
 package com.wire.kalium.logic.data.event
 
+import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.logic.data.connection.ConnectionMapper
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.network.api.notification.EventContentDTO
 import com.wire.kalium.network.api.notification.EventResponse
+import io.ktor.utils.io.charsets.Charsets
+import io.ktor.utils.io.core.toByteArray
 
 class EventMapper(
     private val idMapper: IdMapper,
     private val memberMapper: MemberMapper,
-    private  val connectionMapper: ConnectionMapper
-    ) {
+    private val connectionMapper: ConnectionMapper
+) {
 
     fun fromDTO(eventResponse: EventResponse): List<Event> {
         // TODO(edge-case): Multiple payloads in the same event have the same ID, is this an issue when marking lastProcessedEventId?
@@ -31,8 +35,9 @@ class EventMapper(
         } ?: listOf()
     }
 
-    private fun welcomeMessage(id: String,
-                               eventContentDTO: EventContentDTO.Conversation.MLSWelcomeDTO
+    private fun welcomeMessage(
+        id: String,
+        eventContentDTO: EventContentDTO.Conversation.MLSWelcomeDTO
     ) = Event.Conversation.MLSWelcome(
         id,
         idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
@@ -49,8 +54,12 @@ class EventMapper(
         idMapper.fromApiModel(eventContentDTO.qualifiedFrom),
         ClientId(eventContentDTO.data.sender),
         eventContentDTO.time,
-        eventContentDTO.data.text
+        eventContentDTO.data.text,
+        eventContentDTO.data.encryptedExternalData?.let {
+            EncryptedData(Base64.decodeFromBase64(it.toByteArray(Charsets.UTF_8)))
+        }
     )
+
     private fun newMLSMessage(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.NewMLSMessageDTO

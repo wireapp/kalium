@@ -7,5 +7,6 @@ import kotlinx.serialization.Serializable
 data class MessageEventData(
     @SerialName("text") val text: String,
     @SerialName("sender") val sender: String,
-    @SerialName("recipient") val recipient: String
+    @SerialName("recipient") val recipient: String,
+    @SerialName("data") val encryptedExternalData: String? = null
 )
