@@ -6,7 +6,10 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.notification.NotificationApi
 import com.wire.kalium.network.api.notification.NotificationResponse
 import com.wire.kalium.network.api.notification.WebSocketEvent
@@ -45,34 +48,31 @@ class EventDataSource(
     // TODO(edge-case): handle Missing notification response (notify user that some messages are missing)
 
     override suspend fun pendingEvents(): Flow<Either<CoreFailure, Event>> =
-        clientRepository.currentClientId().fold(
-            { flowOf(Either.Left(it)) },
-            { clientId -> pendingEventsFlow(clientId) }
-        )
+        clientRepository.currentClientId().fold({ flowOf(Either.Left(it)) }, { clientId -> pendingEventsFlow(clientId) })
 
-    override suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<Event>>> = clientRepository.currentClientId().map { liveEventsFlow(clientId) }
+    override suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<Event>>> =
+        clientRepository.currentClientId().map { clientId -> liveEventsFlow(clientId) }
 
     private suspend fun liveEventsFlow(clientId: ClientId): Flow<WebSocketEvent<Event>> =
-        notificationApi.listenToLiveEvents(clientId.value)
-            .map { webSocketEvent ->
-                when (webSocketEvent) {
-                    is WebSocketEvent.Open -> {
-                        flowOf(WebSocketEvent.Open())
-                    }
-                    is WebSocketEvent.NonBinaryPayloadReceived -> {
-                        flowOf(WebSocketEvent.NonBinaryPayloadReceived<Event>(webSocketEvent.payload))
-                    }
-                    is WebSocketEvent.Close -> {
-                        flowOf(WebSocketEvent.Close(webSocketEvent.cause))
-                    }
-                    is WebSocketEvent.BinaryPayloadReceived -> {
-                        eventMapper
-                            .fromDTO(webSocketEvent.payload)
-                            .asFlow()
-                            .map { WebSocketEvent.BinaryPayloadReceived(it) }
-                    }
+        notificationApi.listenToLiveEvents(clientId.value).map { webSocketEvent ->
+            when (webSocketEvent) {
+                is WebSocketEvent.Open -> {
+                    flowOf(WebSocketEvent.Open())
                 }
-            }.flattenConcat()
+
+                is WebSocketEvent.NonBinaryPayloadReceived -> {
+                    flowOf(WebSocketEvent.NonBinaryPayloadReceived<Event>(webSocketEvent.payload))
+                }
+
+                is WebSocketEvent.Close -> {
+                    flowOf(WebSocketEvent.Close(webSocketEvent.cause))
+                }
+
+                is WebSocketEvent.BinaryPayloadReceived -> {
+                    eventMapper.fromDTO(webSocketEvent.payload).asFlow().map { WebSocketEvent.BinaryPayloadReceived(it) }
+                }
+            }
+        }.flattenConcat()
 
     private suspend fun pendingEventsFlow(
         clientId: ClientId
@@ -101,26 +101,23 @@ class EventDataSource(
         }
     }
 
-    override suspend fun lastEventId(): Either<CoreFailure, String> =
-        eventInfoStorage.lastProcessedId?.let {
-            Either.Right(it)
-        } ?: run {
-            clientRepository.currentClientId().flatMap { clientId ->
-                wrapApiRequest { notificationApi.lastNotification(clientId.value) }.map { it.id }
-            }
+    override suspend fun lastEventId(): Either<CoreFailure, String> = eventInfoStorage.lastProcessedId?.let {
+        Either.Right(it)
+    } ?: run {
+        clientRepository.currentClientId().flatMap { clientId ->
+            wrapApiRequest { notificationApi.lastNotification(clientId.value) }.map { it.id }
         }
+    }
 
     override suspend fun updateLastProcessedEventId(eventId: String) {
         eventInfoStorage.lastProcessedId = eventId
     }
 
     private suspend fun getNextPendingEventsPage(
-        lastFetchedNotificationId: String?,
-        clientId: ClientId
-    ): NetworkResponse<NotificationResponse> =
-        lastFetchedNotificationId?.let {
-            notificationApi.notificationsByBatch(NOTIFICATIONS_QUERY_SIZE, clientId.value, it)
-        } ?: notificationApi.getAllNotifications(NOTIFICATIONS_QUERY_SIZE, clientId.value)
+        lastFetchedNotificationId: String?, clientId: ClientId
+    ): NetworkResponse<NotificationResponse> = lastFetchedNotificationId?.let {
+        notificationApi.notificationsByBatch(NOTIFICATIONS_QUERY_SIZE, clientId.value, it)
+    } ?: notificationApi.getAllNotifications(NOTIFICATIONS_QUERY_SIZE, clientId.value)
 
     private companion object {
         const val NOTIFICATIONS_QUERY_SIZE = 100
