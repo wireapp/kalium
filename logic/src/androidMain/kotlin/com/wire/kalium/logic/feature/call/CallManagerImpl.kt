@@ -101,7 +101,7 @@ actual class CallManagerImpl(
             //TODO(refactor): inject all of these CallbackHandlers in class constructor
             sendHandler = OnSendOTR(deferredHandle, calling, selfUserId, selfClientId, messageSender, scope).keepingStrongReference(),
             sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, scope).keepingStrongReference(),
-            incomingCallHandler = OnIncomingCall(callRepository, callMapper).keepingStrongReference(),
+            incomingCallHandler = OnIncomingCall(callRepository, callMapper, scope).keepingStrongReference(),
             missedCallHandler = OnMissedCall(callRepository).keepingStrongReference(),
             answeredCallHandler = OnAnsweredCall(callRepository).keepingStrongReference(),
             establishedCallHandler = OnEstablishedCall(callRepository).keepingStrongReference(),
@@ -161,13 +161,11 @@ actual class CallManagerImpl(
         val shouldMute = conversationType == ConversationType.Conference
         val isCameraOn = callType == CallType.VIDEO
         callRepository.createCall(
-            call = Call(
-                conversationId = conversationId,
-                status = CallStatus.STARTED,
-                isMuted = shouldMute,
-                isCameraOn = isCameraOn,
-                callerId = userId.await().toString()
-            )
+            conversationId = conversationId,
+            status = CallStatus.STARTED,
+            isMuted = shouldMute,
+            isCameraOn = isCameraOn,
+            callerId = userId.await().toString()
         )
 
         withCalling {
@@ -205,6 +203,7 @@ actual class CallManagerImpl(
     override suspend fun rejectCall(conversationId: ConversationId) = withCalling {
         callingLogger.d("$TAG -> rejecting call for conversation = $conversationId..")
         wcall_reject(inst = deferredHandle.await(), conversationId = conversationId.value)
+        callRepository.removeCallById(conversationId.toString())
         callingLogger.d("$TAG - wcall_reject() called -> call for conversation = $conversationId rejected")
     }
 
