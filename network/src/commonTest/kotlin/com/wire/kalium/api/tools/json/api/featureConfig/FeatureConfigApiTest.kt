@@ -84,7 +84,7 @@ class FeatureConfigApiTest : ApiTest {
     }
 
     companion object {
-        const val FEATURE_CONFIG = "/feature-config/"
+        const val FEATURE_CONFIG = "feature-configs"
         const val FILE_SHARING = "$FEATURE_CONFIG/fileSharing"
     }
 }

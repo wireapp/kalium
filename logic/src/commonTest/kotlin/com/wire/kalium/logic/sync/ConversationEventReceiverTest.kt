@@ -10,6 +10,7 @@ import com.wire.kalium.cryptography.utils.encryptDataWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.event.Event
@@ -135,6 +136,9 @@ class ConversationEventReceiverTest {
         val protoContentMapper = mock(classOf<ProtoContentMapper>())
 
         @Mock
+        val userConfigRepository = mock(classOf<UserConfigRepository>())
+
+        @Mock
         private val callManager = mock(classOf<CallManager>())
 
         private val conversationEventReceiver: ConversationEventReceiver = ConversationEventReceiverImpl(
@@ -145,7 +149,8 @@ class ConversationEventReceiverTest {
             userRepository,
             lazyOf(callManager),
             MessageTextEditHandler(messageRepository),
-            protoContentMapper = protoContentMapper
+            protoContentMapper = protoContentMapper,
+            userConfigRepository = userConfigRepository
         )
 
         fun withProteusClientDecryptingByteArray(decryptedData: ByteArray) = apply {
