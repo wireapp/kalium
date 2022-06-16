@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.UserTypeMapper
 import com.wire.kalium.logic.sync.SyncManager
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
@@ -19,6 +20,7 @@ class ObserveMemberDetailsByIdsUseCase(
     private val userTypeMapper: UserTypeMapper,
 ) {
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     suspend operator fun invoke(userIdList: List<UserId>): Flow<List<MemberDetails>> {
         syncManager.startSyncIfIdle()
         val selfDetailsFlow = userRepository.getSelfUser()
@@ -29,16 +31,18 @@ class ObserveMemberDetailsByIdsUseCase(
                 if (it == selfUser.id) {
                     selfDetailsFlow.map(MemberDetails::Self)
                 } else {
-                    userRepository.getKnownUser(it).filterNotNull().map { otherUser ->
-                        MemberDetails.Other(
-                            otherUser = otherUser,
-                            userType = userTypeMapper.fromOtherUserAndSelfUser(otherUser, selfUser)
-                        )
+                    userRepository.getKnownUser(it).map {
+                        it?.let { otherUser ->
+                            MemberDetails.Other(
+                                otherUser = otherUser,
+                                userType = userTypeMapper.fromOtherUserAndSelfUser(otherUser, selfUser)
+                            )
+                        }
                     }
                 }
             }
         }.flatMapLatest { detailsFlows ->
-            combine(detailsFlows) { it.toList() }
+            combine(detailsFlows) { it.toList().filterNotNull() }
         }
     }
 }
