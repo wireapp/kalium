@@ -4,6 +4,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.featureConfig.FileSharingModel
+import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNoTeam
@@ -12,20 +13,26 @@ import com.wire.kalium.network.exceptions.isNoTeam
  * This use case is to get the file sharing status of the team management settings from the server and
  * save it in the local storage (in Android case is shared preference)
  */
-interface GetAndSaveFileSharingStatusUseCase {
+interface GetRemoteFileSharingStatusAndPersistUseCase {
     suspend operator fun invoke(): GetFileSharingStatusResult
 }
 
 class GetFileSharingStatusUseCaseImpl(
     private val userConfigRepository: UserConfigRepository,
-    private val featureConfigRepository: FeatureConfigRepository
-) : GetAndSaveFileSharingStatusUseCase {
+    private val featureConfigRepository: FeatureConfigRepository,
+    private val isFileSharingEnabledUseCase: IsFileSharingEnabledUseCase
+) : GetRemoteFileSharingStatusAndPersistUseCase {
     override suspend operator fun invoke(): GetFileSharingStatusResult =
         featureConfigRepository.getFileSharingFeatureConfig().fold({
             mapFileSharingFailure(it)
         }, {
-            userConfigRepository.setFileSharingStatus(it.status.lowercase() == ENABLED)
-            GetFileSharingStatusResult.Success(it)
+            val status: Boolean = it.status.lowercase() == ENABLED
+            if (status == isFileSharingEnabledUseCase.invoke()) {
+                GetFileSharingStatusResult.Success(it, false)
+            } else {
+                userConfigRepository.setFileSharingStatus(status)
+                GetFileSharingStatusResult.Success(it, true)
+            }
         })
 
 
@@ -51,7 +58,7 @@ class GetFileSharingStatusUseCaseImpl(
 }
 
 sealed class GetFileSharingStatusResult {
-    class Success(val fileSharingModel: FileSharingModel) : GetFileSharingStatusResult()
+    class Success(val fileSharingModel: FileSharingModel, val isStatusChanged: Boolean) : GetFileSharingStatusResult()
     sealed class Failure : GetFileSharingStatusResult() {
         object OperationDenied : Failure()
         object NoTeam : Failure()

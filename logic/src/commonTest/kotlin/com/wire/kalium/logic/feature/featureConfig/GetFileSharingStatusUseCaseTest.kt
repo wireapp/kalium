@@ -4,6 +4,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.featureConfig.FileSharingModel
+import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.exceptions.KaliumException
@@ -26,8 +27,9 @@ class GetFileSharingStatusUseCaseTest {
     @Test
     fun givenASuccessfulRepositoryResponse_whenInvokingTheUseCase_thenSuccessResultIsReturned() = runTest {
         // Given
+        val fileSharingModel = FileSharingModel("locked", "enabled")
         val (arrangement, getFileSharingStatusUseCase) = Arrangement()
-            .withSuccessfulResponse()
+            .withSuccessfulResponse(fileSharingModel)
             .arrange()
 
         // When
@@ -35,7 +37,7 @@ class GetFileSharingStatusUseCaseTest {
 
         // Then
         assertTrue(actual is GetFileSharingStatusResult.Success)
-        assertEquals(arrangement.fileSharingModel, actual.fileSharingModel)
+        assertEquals(fileSharingModel, actual.fileSharingModel)
 
         verify(arrangement.featureConfigRepository)
             .suspendFunction(arrangement.featureConfigRepository::getFileSharingFeatureConfig)
@@ -84,7 +86,6 @@ class GetFileSharingStatusUseCaseTest {
 
 
     private class Arrangement {
-        val fileSharingModel = FileSharingModel("locked", "enabled")
         val operationDeniedFailure = GetFileSharingStatusResult.Failure.OperationDenied
         val noTeamFailure = GetFileSharingStatusResult.Failure.NoTeam
 
@@ -94,11 +95,17 @@ class GetFileSharingStatusUseCaseTest {
         @Mock
         val userConfigRepository = mock(classOf<UserConfigRepository>())
 
+        @Mock
+        val isFileSharingEnabledUseCase = mock(classOf<IsFileSharingEnabledUseCase>())
 
         val getFileSharingStatusUseCase =
-            GetFileSharingStatusUseCaseImpl(userConfigRepository, featureConfigRepository)
+            GetFileSharingStatusUseCaseImpl(userConfigRepository, featureConfigRepository, isFileSharingEnabledUseCase)
 
-        fun withSuccessfulResponse(): Arrangement {
+        fun withSuccessfulResponse(expectedFileSharingModel: FileSharingModel): Arrangement {
+            given(isFileSharingEnabledUseCase)
+                .function(isFileSharingEnabledUseCase::invoke)
+                .whenInvoked().thenReturn(true)
+
             given(userConfigRepository)
                 .function(userConfigRepository::setFileSharingStatus)
                 .whenInvokedWith(any())
@@ -106,7 +113,7 @@ class GetFileSharingStatusUseCaseTest {
 
             given(featureConfigRepository)
                 .suspendFunction(featureConfigRepository::getFileSharingFeatureConfig).whenInvoked()
-                .thenReturn(Either.Right(fileSharingModel))
+                .thenReturn(Either.Right(expectedFileSharingModel))
             return this
         }
 

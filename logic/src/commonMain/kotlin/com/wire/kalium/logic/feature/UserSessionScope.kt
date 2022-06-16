@@ -52,7 +52,7 @@ import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
-import com.wire.kalium.logic.feature.featureConfig.GetAndSaveFileSharingStatusUseCase
+import com.wire.kalium.logic.feature.featureConfig.GetRemoteFileSharingStatusAndPersistUseCase
 import com.wire.kalium.logic.feature.featureConfig.GetFileSharingStatusUseCaseImpl
 import com.wire.kalium.logic.feature.message.MLSMessageCreator
 import com.wire.kalium.logic.feature.message.MLSMessageCreatorImpl
@@ -359,13 +359,14 @@ abstract class UserSessionScopeCommon(
         )
     private val featureConfigRepository: FeatureConfigRepository
         get() = FeatureConfigDataSource(featureConfigApi = authenticatedDataSourceSet.authenticatedNetworkContainer.featureConfigApi)
+    val isFileSharingEnabled: IsFileSharingEnabledUseCase get() = IsFileSharingEnabledUseCaseImpl(userConfigRepository)
 
-    val getAndSaveFileSharingStatus: GetAndSaveFileSharingStatusUseCase
+    val getRemoteFileSharingStatusAndPersistUseCase: GetRemoteFileSharingStatusAndPersistUseCase
         get() = GetFileSharingStatusUseCaseImpl(
             userConfigRepository,
-            featureConfigRepository
+            featureConfigRepository,
+            isFileSharingEnabled
         )
-    val isFileSharingEnabled: IsFileSharingEnabledUseCase get() = IsFileSharingEnabledUseCaseImpl(userConfigRepository)
 
     val team: TeamScope get() = TeamScope(userRepository, teamRepository, syncManager)
 
