@@ -6,8 +6,8 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
@@ -18,6 +18,7 @@ import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.functional.onlyRight
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
@@ -29,16 +30,13 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import com.wire.kalium.network.api.ConversationId as RemoteConversationId
 import com.wire.kalium.persistence.dao.Member as MemberEntity
 
 interface ConversationRepository {
@@ -47,15 +45,17 @@ interface ConversationRepository {
     suspend fun insertConversationFromEvent(event: Event.Conversation.NewConversation): Either<CoreFailure, Unit>
     suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>>
     suspend fun observeConversationList(): Flow<List<Conversation>>
-    suspend fun getConversationDetailsById(conversationID: ConversationId): Flow<ConversationDetails>
+    suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<ConversationDetails>
+    suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun getConversationDetails(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation>>
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
     suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, ProtocolInfo>
     suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Member>>
     suspend fun persistMember(member: MemberEntity, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun persistMembers(members: List<MemberEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
-    suspend fun deleteMember(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity): Either<CoreFailure, Unit>
-    suspend fun getOneToOneConversationDetailsByUserId(otherUserId: UserId): Either<CoreFailure, ConversationDetails.OneOne?>
+    suspend fun deleteMember(userID: QualifiedIDEntity, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
+    suspend fun deleteMembers(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
+    suspend fun getOneToOneConversationDetailsByUserId(otherUserId: UserId): Either<CoreFailure, ConversationDetails.OneOne>
     suspend fun createGroupConversation(
         name: String? = null,
         members: List<Member>,
@@ -106,20 +106,29 @@ class ConversationDataSource(
 
     private suspend fun fetchAllConversationsFromAPI(): Either<NetworkFailure, List<ConversationResponse>> {
         var hasMore = true
-        val allConversations = mutableListOf<ConversationResponse>()
+        var lastPagingState: String? = null
         var latestResult: Either<NetworkFailure, Unit> = Either.Right(Unit)
+        val allConversationsIds = mutableSetOf<RemoteConversationId>()
+
         while (hasMore && latestResult.isRight()) {
             latestResult = wrapApiRequest {
-                val lastConversationIdValue = allConversations.lastOrNull()?.id?.value
-                kaliumLogger.v("Fetching conversation page starting with id $lastConversationIdValue")
-                conversationApi.conversationsByBatch(lastConversationIdValue, 100)
+                kaliumLogger.v("Fetching conversation page starting with pagingState $lastPagingState")
+                conversationApi.fetchConversationsIds(pagingState = lastPagingState)
             }.onSuccess {
-                allConversations += it.conversations
+                allConversationsIds += it.conversationsIds
+                lastPagingState = it.pagingState
                 hasMore = it.hasMore
-            }.map { }
+            }.onFailure {
+                Either.Left(it)
+            }.map {
+
+            }
         }
-        return latestResult.map {
-            allConversations
+
+        return wrapApiRequest {
+            conversationApi.fetchConversationsListDetails(allConversationsIds.toList())
+        }.map {
+            it.conversationsFound
         }
     }
 
@@ -162,11 +171,21 @@ class ConversationDataSource(
     /**
      * Gets a flow that allows observing of
      */
-    override suspend fun getConversationDetailsById(conversationID: ConversationId): Flow<ConversationDetails> =
-        conversationDAO.getConversationByQualifiedID(idMapper.toDaoModel(conversationID))
-            .filterNotNull()
+    override suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<ConversationDetails> =
+        conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationID))
+            .wrapStorageRequest()
+            .onlyRight()
             .map(conversationMapper::fromDaoModel)
             .flatMapLatest(::getConversationDetailsFlow)
+
+    override suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit> {
+        return wrapApiRequest {
+            conversationApi.fetchConversationDetails(idMapper.toApiModel(conversationID))
+        }.flatMap {
+            val selfUserTeamId = userRepository.getSelfUser().first().team
+            persistConversations(listOf(it), selfUserTeamId)
+        }
+    }
 
     private suspend fun getConversationDetailsFlow(conversation: Conversation): Flow<ConversationDetails> =
         when (conversation.type) {
@@ -213,14 +232,14 @@ class ConversationDataSource(
     @Deprecated("This doesn't return conversation details", ReplaceWith("getConversationDetailsById"))
     override suspend fun getConversationDetails(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation>> =
         wrapStorageRequest {
-            conversationDAO.getConversationByQualifiedID(idMapper.toDaoModel(conversationId))
+            conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationId))
                 .filterNotNull()
                 .map(conversationMapper::fromDaoModel)
         }
 
     override suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, ProtocolInfo> =
         wrapStorageRequest {
-            conversationDAO.getConversationByQualifiedID(idMapper.toDaoModel(conversationId)).first()?.protocolInfo
+            conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationId)).first()?.protocolInfo
         }
 
     override suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Member>> =
@@ -241,8 +260,11 @@ class ConversationDataSource(
     override suspend fun persistMembers(members: List<MemberEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit> =
         wrapStorageRequest { conversationDAO.insertMembers(members, conversationID) }
 
-    override suspend fun deleteMember(conversationID: QualifiedIDEntity, userID: QualifiedIDEntity): Either<CoreFailure, Unit> =
-        wrapStorageRequest { conversationDAO.deleteMemberByQualifiedID(conversationID, userID) }
+    override suspend fun deleteMember(userID: QualifiedIDEntity, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit> =
+        wrapStorageRequest { conversationDAO.deleteMemberByQualifiedID(userID, conversationID) }
+
+    override suspend fun deleteMembers(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit> =
+        wrapStorageRequest { conversationDAO.deleteMembersByQualifiedID(userIDList, conversationID) }
 
     override suspend fun createGroupConversation(
         name: String?,
@@ -328,15 +350,19 @@ class ConversationDataSource(
                 wrapApiRequest { clientApi.listClientsOfUsers(it) }.map { memberMapper.fromMapOfClientsResponseToRecipients(it) }
             }
 
-    //TODO(optimization): this needs some kind of optimization, we could directly get the conversation by otherUserId and
-    //                    not to get all the conversation first and filter them to look for the id, this could be done on DAO level
-    override suspend fun getOneToOneConversationDetailsByUserId(otherUserId: UserId): Either<StorageFailure, ConversationDetails.OneOne?> {
+    override suspend fun getOneToOneConversationDetailsByUserId(otherUserId: UserId): Either<StorageFailure, ConversationDetails.OneOne> {
         return wrapStorageRequest {
-            observeConversationList()
-                .flatMapMerge { it.asFlow() }
-                .flatMapMerge { getConversationDetailsById(it.id) }
-                .filterIsInstance<ConversationDetails.OneOne>()
-                .firstOrNull { otherUserId == it.otherUser.id }
+            conversationDAO.getAllConversationWithOtherUser(idMapper.toDaoModel(otherUserId))
+                .firstOrNull { it.type == ConversationEntity.Type.ONE_ON_ONE }
+                ?.let { conversationEntity ->
+                    conversationMapper.fromDaoModel(conversationEntity)
+                }?.let { conversation ->
+                    userRepository.getKnownUser(otherUserId).first()?.let { otherUser ->
+                        val selfUser = userRepository.getSelfUser().first()
+
+                        conversationMapper.toConversationDetailsOneToOne(conversation, otherUser, selfUser)
+                    }
+                }
         }
     }
 

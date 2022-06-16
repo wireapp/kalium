@@ -71,9 +71,9 @@ class ConnectionMapperTest {
 
         val statusMapper = MapperProvider.connectionStatusMapper()
 
-        val userMapper = MapperProvider.userMapper()
+        val publicUserMapper = MapperProvider.publicUserMapper()
 
-        val mapper = ConnectionMapperImpl(idMapper, statusMapper, userMapper)
+        val mapper = ConnectionMapperImpl(idMapper, statusMapper, publicUserMapper)
 
         val stubConnectionResponse = ConnectionDTO(
             "someId",

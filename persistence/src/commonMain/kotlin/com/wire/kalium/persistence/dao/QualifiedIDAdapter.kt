@@ -14,3 +14,16 @@ class QualifiedIDAdapter: ColumnAdapter<QualifiedIDEntity, String> {
     }
 
 }
+
+class QualifiedIDListAdapter : ColumnAdapter<List<QualifiedIDEntity>, String> {
+
+    override fun decode(databaseValue: String): List<QualifiedIDEntity> =
+        if (databaseValue.isEmpty()) listOf()
+        else databaseValue.split(",").map { itemDatabaseValue ->
+            val components = itemDatabaseValue.split("@")
+            QualifiedIDEntity(components.first(), components.last())
+        }
+
+    override fun encode(value: List<QualifiedIDEntity>): String =
+        value.joinToString(",") { "${it.value}@${it.domain}" }
+}

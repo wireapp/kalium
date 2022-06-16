@@ -15,6 +15,7 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.Status.SENT
+import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import io.mockative.Mock
 import io.mockative.anything
 import io.mockative.configure
@@ -72,20 +73,20 @@ class MessageRepositoryTest {
             .then { mappedId }
 
         given(messageDAO)
-            .suspendFunction(messageDAO::getMessagesByConversation)
-            .whenInvokedWith(anything(), anything(), anything())
-            .then { _, _, _ -> flowOf(listOf()) }
+            .suspendFunction(messageDAO::getMessagesByConversationAndVisibility)
+            .whenInvokedWith(anything(), anything(), anything(), anything())
+            .then { _, _, _, _ -> flowOf(listOf()) }
 
         given(messageMapper)
             .function(messageMapper::fromEntityToMessage)
             .whenInvokedWith(anything())
             .then { TEST_MESSAGE }
 
-        messageRepository.getMessagesForConversation(TEST_CONVERSATION_ID, 0, 0).collect()
+        messageRepository.getMessagesByConversationIdAndVisibility(TEST_CONVERSATION_ID, 0, 0).collect()
 
         verify(messageDAO)
-            .suspendFunction(messageDAO::getMessagesByConversation)
-            .with(eq(mappedId), anything(), anything())
+            .suspendFunction(messageDAO::getMessagesByConversationAndVisibility)
+            .with(eq(mappedId), anything(), anything(), anything())
             .wasInvoked(exactly = once)
     }
 
@@ -99,16 +100,16 @@ class MessageRepositoryTest {
             .then { mappedMessage }
 
         given(messageDAO)
-            .suspendFunction(messageDAO::getMessagesByConversation)
-            .whenInvokedWith(anything(), anything(), anything())
-            .then { _, _, _ -> flowOf(listOf(entity)) }
+            .suspendFunction(messageDAO::getMessagesByConversationAndVisibility)
+            .whenInvokedWith(anything(), anything(), anything(), anything())
+            .then { _, _, _, _ -> flowOf(listOf(entity)) }
 
         given(idMapper)
             .function(idMapper::toDaoModel)
             .whenInvokedWith(anything())
             .then { TEST_QUALIFIED_ID_ENTITY }
 
-        val messageList = messageRepository.getMessagesForConversation(TEST_CONVERSATION_ID, 0, 0)
+        val messageList = messageRepository.getMessagesByConversationIdAndVisibility(TEST_CONVERSATION_ID, 0, 0)
             .first()
         assertEquals(listOf(mappedMessage), messageList)
 
@@ -174,9 +175,9 @@ class MessageRepositoryTest {
         val TEST_QUALIFIED_ID_ENTITY = PersistenceQualifiedId("value", "domain")
         val TEST_NETWORK_QUALIFIED_ID_ENTITY = NetworkQualifiedId("value", "domain")
         val TEST_MESSAGE_ENTITY =
-            MessageEntity(
+            MessageEntity.Regular(
                 id = "uid",
-                content = MessageEntity.MessageEntityContent.TextMessageContent("content"),
+                content = MessageEntityContent.Text("content"),
                 conversationId = TEST_QUALIFIED_ID_ENTITY,
                 date = "date",
                 senderUserId = TEST_QUALIFIED_ID_ENTITY,
@@ -189,9 +190,15 @@ class MessageRepositoryTest {
         val TEST_USER_ID = UserId("userId", "domain")
         val TEST_CONTENT = MessageContent.Text("Ciao!")
         val TEST_DATETIME = "2022-04-21T20:56:22.393Z"
-        val TEST_MESSAGE = Message(
-            "uid", TEST_CONTENT, TEST_CONVERSATION_ID, TEST_DATETIME, TEST_USER_ID, TEST_CLIENT_ID,
-            Message.Status.SENT, Message.EditStatus.NotEdited
+        val TEST_MESSAGE = Message.Regular(
+            id = "uid",
+            content = TEST_CONTENT,
+            conversationId = TEST_CONVERSATION_ID,
+            date = TEST_DATETIME,
+            senderUserId = TEST_USER_ID,
+            senderClientId = TEST_CLIENT_ID,
+            status = Message.Status.SENT,
+            editStatus = Message.EditStatus.NotEdited
         )
     }
 }

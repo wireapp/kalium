@@ -27,15 +27,15 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenConversation_ThenConversationCanBeInserted() = runTest {
         conversationDAO.insertConversation(conversationEntity1)
-        val result = conversationDAO.getConversationByQualifiedID(conversationEntity1.id).first()
+        val result = conversationDAO.observeGetConversationByQualifiedID(conversationEntity1.id).first()
         assertEquals(conversationEntity1, result)
     }
 
     @Test
     fun givenListOfConversations_ThenMultipleConversationsCanBeInsertedAtOnce() = runTest {
         conversationDAO.insertConversations(listOf(conversationEntity1, conversationEntity2))
-        val result1 = conversationDAO.getConversationByQualifiedID(conversationEntity1.id).first()
-        val result2 = conversationDAO.getConversationByQualifiedID(conversationEntity2.id).first()
+        val result1 = conversationDAO.observeGetConversationByQualifiedID(conversationEntity1.id).first()
+        val result2 = conversationDAO.observeGetConversationByQualifiedID(conversationEntity2.id).first()
         assertEquals(conversationEntity1, result1)
         assertEquals(conversationEntity2, result2)
     }
@@ -44,7 +44,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     fun givenExistingConversation_ThenConversationCanBeDeleted() = runTest {
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.deleteConversationByQualifiedID(conversationEntity1.id)
-        val result = conversationDAO.getConversationByQualifiedID(conversationEntity1.id).first()
+        val result = conversationDAO.observeGetConversationByQualifiedID(conversationEntity1.id).first()
         assertNull(result)
     }
 
@@ -53,7 +53,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity1)
         val updatedConversation1Entity = conversationEntity1.copy(name = "Updated conversation1")
         conversationDAO.updateConversation(updatedConversation1Entity)
-        val result = conversationDAO.getConversationByQualifiedID(conversationEntity1.id).first()
+        val result = conversationDAO.observeGetConversationByQualifiedID(conversationEntity1.id).first()
         assertEquals(updatedConversation1Entity, result)
     }
 
@@ -73,7 +73,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,
             (conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
         )
-        val result = conversationDAO.getConversationByQualifiedID(conversationEntity2.id).first()
+        val result = conversationDAO.observeGetConversationByQualifiedID(conversationEntity2.id).first()
         assertEquals(
             (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState, ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE
         )
@@ -84,7 +84,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity1)
         val updatedConversation1Entity = conversationEntity1.copy(name = "Updated conversation1")
         conversationDAO.insertConversation(updatedConversation1Entity)
-        val result = conversationDAO.getConversationByQualifiedID(conversationEntity1.id).first()
+        val result = conversationDAO.observeGetConversationByQualifiedID(conversationEntity1.id).first()
         assertEquals(updatedConversation1Entity, result)
     }
 
@@ -152,31 +152,54 @@ class ConversationDAOTest : BaseDatabaseTest() {
             mutedStatusTimestamp = 1649702788L
         )
 
-        val result = conversationDAO.getConversationByQualifiedID(conversationEntity2.id).first()
+        val result = conversationDAO.observeGetConversationByQualifiedID(conversationEntity2.id).first()
 
         assertEquals(ConversationEntity.MutedStatus.ONLY_MENTIONS_ALLOWED, result?.mutedStatus)
     }
 
     @Test
     fun givenMultipleConversations_whenGettingConversationsForNotifications_thenOnlyUnnotifiedConversationsAreReturned() = runTest {
+
+        // GIVEN
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.insertConversation(conversationEntity2)
-        conversationDAO.updateConversationNotificationDate(QualifiedIDEntity("2", "wire.com"), "2022-03-30T15:36:10.000Z")
+        conversationDAO.insertConversation(conversationEntity3)
+
+        // WHEN
+        // Updating the last notified date to later than last modified
+        conversationDAO
+            .updateConversationNotificationDate(
+                QualifiedIDEntity("2", "wire.com"),
+                "2022-03-30T15:37:10.000Z"
+            )
 
         val result = conversationDAO.getConversationsForNotifications().first()
 
-        assertEquals(listOf(conversationEntity1), result)
+        // THEN
+        // only conversation one should be selected for notifications
+        assertEquals(listOf(conversationEntity1, conversationEntity3), result)
     }
 
     @Test
     fun givenMultipleConversations_whenGettingConversations_thenOrderIsCorrect() = runTest {
+        // GIVEN
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.insertConversation(conversationEntity2)
+        conversationDAO.insertConversation(conversationEntity3)
+
+        // WHEN
+        // Updating the last notified date to later than last modified
+        conversationDAO
+            .updateConversationNotificationDate(
+                QualifiedIDEntity("2", "wire.com"),
+                "2022-03-30T15:37:10.000Z"
+            )
 
         val result = conversationDAO.getConversationsForNotifications().first()
-
+        // THEN
+        // The order of the conversations is not affected
         assertEquals(conversationEntity1, result.first())
-        assertEquals(conversationEntity2, result[1])
+        assertEquals(conversationEntity3, result[1])
 
     }
 
@@ -235,7 +258,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(convStored)
         conversationDAO.insertConversation(convAfterSync)
 
-        val actual = conversationDAO.getConversationByQualifiedID(convAfterSync.id).first()
+        val actual = conversationDAO.observeGetConversationByQualifiedID(convAfterSync.id).first()
         assertEquals(expected, actual)
     }
 
@@ -253,7 +276,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             teamId,
             ConversationEntity.ProtocolInfo.Proteus,
             lastNotificationDate = null,
-            lastModifiedDate = "2022-03-30T15:36:00.000Z"
+            lastModifiedDate = "2022-03-30T15:36:00.000Z",
+            mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED
         )
         val conversationEntity2 = ConversationEntity(
             QualifiedIDEntity("2", "wire.com"),
@@ -262,7 +286,21 @@ class ConversationDAOTest : BaseDatabaseTest() {
             null,
             ConversationEntity.ProtocolInfo.MLS("group2", ConversationEntity.GroupState.ESTABLISHED),
             lastNotificationDate = null,
-            lastModifiedDate = "2021-03-30T15:36:00.000Z"
+            lastModifiedDate = "2021-03-30T15:36:00.000Z",
+            mutedStatus = ConversationEntity.MutedStatus.ALL_MUTED
+        )
+
+        val conversationEntity3 = ConversationEntity(
+            QualifiedIDEntity("3", "wire.com"),
+            "conversation3",
+            ConversationEntity.Type.GROUP,
+            null,
+            ConversationEntity.ProtocolInfo.MLS("group3", ConversationEntity.GroupState.ESTABLISHED),
+            // This conversation was modified after the last time the user was notified about it
+            lastNotificationDate = "2021-03-30T15:30:00.000Z",
+            lastModifiedDate = "2021-03-30T15:36:00.000Z",
+            // and it's status is set to be only notified if there is a mention for the user
+            mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_ALLOWED
         )
 
         val member1 = Member(user1.id)

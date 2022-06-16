@@ -5,6 +5,8 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.UserAssetId
+import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
@@ -52,7 +54,7 @@ class UploadUserAvatarUseCaseTest {
         val actual = uploadUserAvatarUseCase("A".encodeToByteArray())
 
         assertEquals(UploadAvatarResult.Success::class, actual::class)
-        assertEquals("some_key", (actual as UploadAvatarResult.Success).userAssetId)
+        assertEquals("value2", (actual as UploadAvatarResult.Success).userAssetId.value)
 
         verify(assetRepository)
             .suspendFunction(assetRepository::uploadAndPersistPublicAsset)
@@ -98,7 +100,8 @@ class UploadUserAvatarUseCaseTest {
         1,
         null,
         ConnectionState.ACCEPTED,
-        "some_key",
-        "some_key"
+        UserAssetId("value1", "domain"),
+        UserAssetId("value2", "domain"),
+        UserAvailabilityStatus.NONE
     )
 }

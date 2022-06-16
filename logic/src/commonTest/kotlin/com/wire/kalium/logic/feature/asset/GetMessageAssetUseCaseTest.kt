@@ -12,6 +12,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
@@ -101,7 +102,7 @@ class GetMessageAssetUseCaseTest {
         val someAssetToken = "==some-asset-token"
 
         private val mockedMessage by lazy {
-            Message(
+            Message.Regular(
                 id = msgId,
                 content = MessageContent.Asset(
                     AssetContent(
@@ -115,7 +116,7 @@ class GetMessageAssetUseCaseTest {
                             assetId = someAssetId,
                             assetToken = someAssetToken,
                             assetDomain = "some-asset-domain.com",
-                            encryptionAlgorithm = AssetContent.RemoteData.EncryptionAlgorithm.AES_GCM
+                            encryptionAlgorithm = MessageEncryptionAlgorithm.AES_GCM
                         ),
                         downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
                     )

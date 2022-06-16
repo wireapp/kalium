@@ -5,6 +5,7 @@ import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -41,6 +42,9 @@ class CallManagerTest {
     @Mock
     private val clientRepository = mock(classOf<ClientRepository>())
 
+    @Mock
+    private val conversationRepository = mock(classOf<ConversationRepository>())
+
     private val dispatcher = TestKaliumDispatcher
 
     private lateinit var callManagerImpl: CallManagerImpl
@@ -52,6 +56,7 @@ class CallManagerTest {
             callRepository = callRepository,
             userRepository = userRepository,
             clientRepository = clientRepository,
+            conversationRepository = conversationRepository,
             messageSender = messageSender,
             kaliumDispatchers = dispatcher
         )
@@ -88,7 +93,7 @@ class CallManagerTest {
         val CLIENT_ID = ClientId(value = "clientId")
         val USER_ID = UserId(value = "userId", domain = "domainId")
         val CALL_CONTENT = MessageContent.Calling(value = "content")
-        val CALL_MESSAGE = Message(
+        val CALL_MESSAGE = Message.Regular(
             id = "id",
             content = CALL_CONTENT,
             conversationId = ConversationId(value = "value", domain = "domain"),

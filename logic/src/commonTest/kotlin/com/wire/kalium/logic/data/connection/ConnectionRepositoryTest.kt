@@ -136,11 +136,13 @@ class ConnectionRepositoryTest {
         // given
         val userId = NetworkUserId("user_id", "domain_id")
         val (arrangement, connectionRepository) = Arrangement().arrange()
-        arrangement.withSuccessfulUpdateConnectionStatusResponse(userId)
+        arrangement
+            .withSuccessfulUpdateConnectionStatusResponse(userId)
+            .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
 
         // when
         val result = connectionRepository.updateConnectionStatus(UserId(userId.value, userId.domain), ConnectionState.ACCEPTED)
-        result.shouldSucceed()
+        result.shouldSucceed{ arrangement.stubConnectionOne }
 
         // then
         verify(arrangement.connectionApi)
@@ -164,7 +166,7 @@ class ConnectionRepositoryTest {
         val result = connectionRepository.updateConnectionStatus(UserId(userId.value, userId.domain), ConnectionState.NOT_CONNECTED)
 
         // then
-        result.shouldFail()
+        result.shouldFail{}
         verify(arrangement.connectionApi)
             .suspendFunction(arrangement.connectionApi::updateConnection)
             .with(eq(userId), eq(ConnectionStateDTO.ACCEPTED))
@@ -186,7 +188,7 @@ class ConnectionRepositoryTest {
         val result = connectionRepository.updateConnectionStatus(UserId(userId.value, userId.domain), ConnectionState.ACCEPTED)
 
         // then
-        result.shouldFail()
+        result.shouldFail{}
         verify(arrangement.connectionApi)
             .suspendFunction(arrangement.connectionApi::updateConnection)
             .with(eq(userId), eq(ConnectionStateDTO.ACCEPTED))
@@ -209,7 +211,7 @@ class ConnectionRepositoryTest {
         val result = connectionRepository.updateConnectionStatus(UserId(userId.value, userId.domain), ConnectionState.PENDING)
 
         // then
-        result.shouldFail()
+        result.shouldFail{}
         verify(arrangement.connectionApi)
             .suspendFunction(arrangement.connectionApi::updateConnection)
             .with(eq(userId), eq(ConnectionStateDTO.PENDING))

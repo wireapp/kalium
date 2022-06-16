@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.feature.notification_token
+package com.wire.kalium.logic.feature.notificationToken
 
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository

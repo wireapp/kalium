@@ -1,6 +1,6 @@
 package com.wire.kalium.logic.network
 
-import com.wire.kalium.logic.configuration.ServerConfigMapper
+import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.session.SessionRepository
@@ -19,10 +19,10 @@ class SessionManagerImpl(
     private val sessionMapper: SessionMapper = MapperProvider.sessionMapper(),
     private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
 ) : SessionManager {
-    override fun session(): Pair<SessionDTO, ServerConfigDTO> = sessionRepository.userSession(userId).fold({
+    override fun session(): Pair<SessionDTO, ServerConfigDTO.Links> = sessionRepository.userSession(userId).fold({
         TODO("IMPORTANT! Not yet implemented")
     }, { session ->
-        Pair(sessionMapper.toSessionDTO(session), serverConfigMapper.toDTO(session.serverConfig))
+        Pair(sessionMapper.toSessionDTO(session), serverConfigMapper.toDTO(session.serverLinks))
     })
 
     override fun updateSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO =
@@ -30,11 +30,13 @@ class SessionManagerImpl(
             TODO("IMPORTANT! Not yet implemented")
         }, { authSession ->
             AuthSession(
-                authSession.userId,
-                newAccessTokenDTO.value,
-                newRefreshTokenDTO?.value ?: authSession.refreshToken,
-                newAccessTokenDTO.tokenType,
-                authSession.serverConfig
+                AuthSession.Tokens(
+                    authSession.tokens.userId,
+                    newAccessTokenDTO.value,
+                    newRefreshTokenDTO?.value ?: authSession.tokens.refreshToken,
+                    newAccessTokenDTO.tokenType,
+                ),
+                authSession.serverLinks
             ).let {
                 sessionRepository.storeSession(it)
                 sessionMapper.toSessionDTO(it)

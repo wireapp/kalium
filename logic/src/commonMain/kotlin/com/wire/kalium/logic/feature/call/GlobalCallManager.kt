@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.call
 import com.wire.kalium.logic.data.call.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
@@ -16,9 +17,11 @@ expect class GlobalCallManager {
         callRepository: CallRepository,
         userRepository: UserRepository,
         clientRepository: ClientRepository,
+        conversationRepository: ConversationRepository,
         messageSender: MessageSender,
         callMapper: CallMapper = MapperProvider.callMapper()
     ): CallManager
 
     fun getFlowManager(): FlowManagerService
+    fun getMediaManager(): MediaManagerService
 }

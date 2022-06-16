@@ -5,31 +5,37 @@ import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Video
-import com.wire.kalium.logic.data.message.AssetContent.RemoteData.EncryptionAlgorithm.AES_CBC
-import com.wire.kalium.logic.data.message.AssetContent.RemoteData.EncryptionAlgorithm.AES_GCM
+import com.wire.kalium.logic.data.message.EncryptionAlgorithmMapper
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm.AES_CBC
+import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm.AES_GCM
+import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.network.api.AssetId
 import com.wire.kalium.network.api.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.asset.AssetResponse
 import com.wire.kalium.network.api.model.AssetRetentionType
 import com.wire.kalium.persistence.dao.asset.AssetEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
-import com.wire.kalium.persistence.dao.message.MessageEntity.MessageEntityContent.AssetMessageContent
+import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.protobuf.messages.Asset
-import com.wire.kalium.protobuf.messages.EncryptionAlgorithm
 import kotlinx.datetime.Clock
+import pbandk.ByteArr
 
 interface AssetMapper {
     fun toMetadataApiModel(uploadAssetMetadata: UploadAssetData): AssetMetadataRequest
     fun fromApiUploadResponseToDomainModel(asset: AssetResponse): UploadedAssetId
     fun fromUploadedAssetToDaoModel(uploadAssetData: UploadAssetData, uploadedAssetResponse: AssetResponse): AssetEntity
-    fun fromUserAssetToDaoModel(assetKey: String, data: ByteArray): AssetEntity
-    fun fromAssetEntityToAssetContent(assetContentEntity: AssetMessageContent): AssetContent
+    fun fromUserAssetToDaoModel(assetId: AssetId, data: ByteArray): AssetEntity
+    fun fromAssetEntityToAssetContent(assetContentEntity: MessageEntityContent.Asset): AssetContent
     fun fromProtoAssetMessageToAssetContent(protoAssetMessage: Asset): AssetContent
+    fun fromAssetContentToProtoAssetMessage(assetContent: AssetContent): Asset
     fun fromDownloadStatusToDaoModel(downloadStatus: Message.DownloadStatus): MessageEntity.DownloadStatus
     fun fromDownloadStatusEntityToLogicModel(downloadStatus: MessageEntity.DownloadStatus?): Message.DownloadStatus
 }
 
-class AssetMapperImpl : AssetMapper {
+class AssetMapperImpl(
+    private val encryptionAlgorithmMapper: EncryptionAlgorithmMapper = MapperProvider.encryptionAlgorithmMapper()
+) : AssetMapper {
     override fun toMetadataApiModel(uploadAssetMetadata: UploadAssetData): AssetMetadataRequest {
         return AssetMetadataRequest(
             uploadAssetMetadata.mimeType.name,
@@ -40,7 +46,7 @@ class AssetMapperImpl : AssetMapper {
     }
 
     override fun fromApiUploadResponseToDomainModel(asset: AssetResponse) =
-        UploadedAssetId(asset.key, assetToken = asset.token)
+        UploadedAssetId(key = asset.key, domain = asset.domain, assetToken = asset.token)
 
     override fun fromUploadedAssetToDaoModel(uploadAssetData: UploadAssetData, uploadedAssetResponse: AssetResponse): AssetEntity {
         return AssetEntity(
@@ -52,17 +58,17 @@ class AssetMapperImpl : AssetMapper {
         )
     }
 
-    override fun fromUserAssetToDaoModel(assetKey: String, data: ByteArray): AssetEntity {
+    override fun fromUserAssetToDaoModel(assetId: AssetId, data: ByteArray): AssetEntity {
         return AssetEntity(
-            key = assetKey,
-            domain = "", // is it possible to know this on contacts sync avatars ?
+            key = assetId.value,
+            domain = assetId.domain,
             mimeType = ImageAsset.JPEG.name,
             rawData = data,
             downloadedDate = Clock.System.now().toEpochMilliseconds()
         )
     }
 
-    override fun fromAssetEntityToAssetContent(assetContentEntity: AssetMessageContent): AssetContent {
+    override fun fromAssetEntityToAssetContent(assetContentEntity: MessageEntityContent.Asset): AssetContent {
         with(assetContentEntity) {
             return AssetContent(
                 mimeType = assetMimeType,
@@ -86,21 +92,24 @@ class AssetMapperImpl : AssetMapper {
         }
     }
 
-    private fun getAssetContentMetadata(assetMimeType: String, assetContentEntity: AssetMessageContent): AssetContent.AssetMetadata? =
+    private fun getAssetContentMetadata(
+        assetMimeType: String,
+        assetContentEntity: MessageEntityContent.Asset
+    ): AssetContent.AssetMetadata? =
         with(assetContentEntity) {
             when {
                 assetMimeType.contains("image/") -> Image(
-                    width = assetImageWidth ?: 0,
-                    height = assetImageHeight ?: 0
+                    width = assetWidth ?: 0,
+                    height = assetHeight ?: 0
                 )
                 assetMimeType.contains("video/") -> Video(
-                    width = assetVideoWidth,
-                    height = assetVideoHeight,
-                    durationMs = assetVideoDurationMs
+                    width = assetWidth,
+                    height = assetHeight,
+                    durationMs = assetDurationMs
                 )
                 assetMimeType.contains("audio/") -> Audio(
-                    durationMs = assetAudioDurationMs,
-                    normalizedLoudness = assetAudioNormalizedLoudness
+                    durationMs = assetDurationMs,
+                    normalizedLoudness = assetNormalizedLoudness
                 )
                 else -> null
             }
@@ -136,11 +145,7 @@ class AssetMapperImpl : AssetMapper {
                                     assetId = assetId ?: "",
                                     assetDomain = assetDomain,
                                     assetToken = assetToken,
-                                    encryptionAlgorithm = when (encryption) {
-                                        EncryptionAlgorithm.AES_CBC -> AES_CBC
-                                        EncryptionAlgorithm.AES_GCM -> AES_GCM
-                                        else -> null
-                                    }
+                                    encryptionAlgorithm = encryptionAlgorithmMapper.fromProtobufModel(encryption)
                                 )
                             }
                         }
@@ -150,6 +155,35 @@ class AssetMapperImpl : AssetMapper {
                 downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
             )
         }
+    }
+
+    override fun fromAssetContentToProtoAssetMessage(assetContent: AssetContent): Asset = with(assetContent) {
+        Asset(
+            original = Asset.Original(
+                mimeType = mimeType,
+                size = sizeInBytes,
+                name = name,
+                metaData = when (metadata) {
+                    is Image -> Asset.Original.MetaData.Image(
+                        Asset.ImageMetaData(
+                            width = metadata.width,
+                            height = metadata.height,
+                        )
+                    )
+                    else -> null
+                }
+            ),
+            status = Asset.Status.Uploaded(
+                uploaded = Asset.RemoteData(
+                    otrKey = ByteArr(remoteData.otrKey),
+                    sha256 = ByteArr(remoteData.sha256),
+                    assetId = remoteData.assetId,
+                    assetToken = remoteData.assetToken,
+                    assetDomain = remoteData.assetDomain,
+                    encryption = encryptionAlgorithmMapper.toProtoBufModel(remoteData.encryptionAlgorithm)
+                )
+            ),
+        )
     }
 
     override fun fromDownloadStatusToDaoModel(downloadStatus: Message.DownloadStatus): MessageEntity.DownloadStatus {

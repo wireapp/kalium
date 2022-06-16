@@ -8,7 +8,7 @@ import com.github.ajalt.clikt.parameters.options.prompt
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.CoreLogger
 import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.logic.configuration.ServerConfig
+import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.conversation.Member
@@ -18,22 +18,23 @@ import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.client.DeleteClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientResult
+import com.wire.kalium.logic.feature.client.RegisterClientUseCase.RegisterClientParam
 import com.wire.kalium.logic.feature.client.SelfClientsResult
 import com.wire.kalium.logic.feature.conversation.GetConversationsUseCase
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.logic.feature.session.GetAllSessionsResult
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import com.wire.kalium.logic.feature.client.RegisterClientUseCase.RegisterClientParam
 
-private val coreLogic = CoreLogic("Kalium CLI", "${CLIApplication.HOME_DIRECTORY}/.kalium/accounts")
+private val coreLogic = CoreLogic("Kalium CLI", "${CLIApplication.HOME_DIRECTORY}/.kalium/accounts", kaliumConfigs = KaliumConfigs())
 
-suspend fun restoreSession(): AuthSession? {
-    return coreLogic.authenticationScope {
+fun restoreSession(): AuthSession? {
+    return coreLogic.globalScope {
         when (val currentSessionResult = session.currentSession()) {
             is CurrentSessionResult.Success -> currentSessionResult.authSession
             else -> null
@@ -41,13 +42,13 @@ suspend fun restoreSession(): AuthSession? {
     }
 }
 
-class DeleteClientCommand: CliktCommand(name = "delete-client") {
+class DeleteClientCommand : CliktCommand(name = "delete-client") {
 
     private val password: String by option(help = "Account password").prompt("password", promptSuffix = ": ", hideInput = true)
 
     override fun run() = runBlocking {
         val authSession = restoreSession() ?: throw PrintMessage("no active session")
-        val userSession = coreLogic.getSessionScope(authSession.userId)
+        val userSession = coreLogic.getSessionScope(authSession.tokens.userId)
 
         val selfClientsResult = userSession.client.selfClients()
 
@@ -60,7 +61,8 @@ class DeleteClientCommand: CliktCommand(name = "delete-client") {
         }
 
         val clientIndex = prompt("Enter client index", promptSuffix = ": ")?.toInt() ?: throw PrintMessage("Index must be an integer")
-        val deleteClientResult =  userSession.client.deleteClient(DeleteClientParam(password, selfClientsResult.clients[clientIndex].id))
+        val deleteClientResult =
+            userSession.client.deleteClient(DeleteClientParam(password, selfClientsResult.clients[clientIndex].clientId))
 
         when (deleteClientResult) {
             is DeleteClientResult.Failure.Generic -> throw PrintMessage("Delete client failed: ${deleteClientResult.genericFailure}")
@@ -76,7 +78,7 @@ class CreateGroupCommand : CliktCommand(name = "create-group") {
 
     override fun run() = runBlocking {
         val authSession = restoreSession() ?: throw PrintMessage("no active session")
-        val userSession = coreLogic.getSessionScope(authSession.userId)
+        val userSession = coreLogic.getSessionScope(authSession.tokens.userId)
 
         val users = userSession.users.getAllKnownUsers()
 
@@ -101,13 +103,13 @@ class CreateGroupCommand : CliktCommand(name = "create-group") {
 
 }
 
-class LoginCommand: CliktCommand(name = "login") {
+class LoginCommand : CliktCommand(name = "login") {
 
     private val email: String by option(help = "Account email").prompt("email", promptSuffix = ": ")
     private val password: String by option(help = "Account password").prompt("password", promptSuffix = ": ", hideInput = true)
     private val environment: String? by option(help = "Choose backend environment: can be production or staging")
 
-    private val serverConfig: ServerConfig by lazy {
+    private val serverConfig: ServerConfig.Links by lazy {
         if (environment == "production") {
             ServerConfig.PRODUCTION
         } else {
@@ -116,32 +118,36 @@ class LoginCommand: CliktCommand(name = "login") {
     }
 
     override fun run() = runBlocking {
-        val authSession = coreLogic.authenticationScope {
-            val loginResult = login(email, password, true, serverConfig)
-            if (loginResult !is AuthenticationResult.Success) {
-                throw PrintMessage("Login failed, check your credentials")
+        val loginResult = coreLogic.authenticationScope(serverConfig) {
+            login(email, password, true).let {
+                if (it !is AuthenticationResult.Success) {
+                    throw PrintMessage("Login failed, check your credentials")
+                } else {
+                    it.userSession
+                }
             }
+        }
 
+        val userId = coreLogic.globalScope {
             val allSessionsResult = this.session.allSessions()
             if (allSessionsResult !is GetAllSessionsResult.Success) {
                 throw PrintMessage("Failed retrieve existing sessions")
             }
 
-            if (allSessionsResult.sessions.map { it.userId }.contains(loginResult.userSession.userId)) {
-                this.session.updateCurrentSession(loginResult.userSession.userId)
+            if (allSessionsResult.sessions.map { it.tokens.userId }.contains(loginResult.tokens.userId)) {
+                this.session.updateCurrentSession(loginResult.tokens.userId)
             } else {
-                val addAccountResult = addAuthenticatedAccount(loginResult.userSession, true)
+                val addAccountResult = addAuthenticatedAccount(loginResult, true)
                 if (addAccountResult !is AddAuthenticatedUserUseCase.Result.Success) {
                     throw PrintMessage("Failed to save session")
                 }
             }
-
-            loginResult.userSession
+            loginResult.tokens.userId
         }
 
-        coreLogic.sessionScope(authSession.userId) {
+        coreLogic.sessionScope(userId) {
             if (client.needsToRegisterClient()) {
-                when (client.register(RegisterClientParam.ClientWithoutToken(password, emptyList()))) {
+                when (client.register(RegisterClientParam(password, emptyList()))) {
                     is RegisterClientResult.Failure -> throw PrintMessage("Client registration failed")
                     is RegisterClientResult.Success -> echo("Login successful")
                 }
@@ -150,11 +156,11 @@ class LoginCommand: CliktCommand(name = "login") {
     }
 }
 
-class ListenGroupCommand: CliktCommand(name = "listen-group") {
+class ListenGroupCommand : CliktCommand(name = "listen-group") {
 
     override fun run() = runBlocking {
         val authSession = restoreSession() ?: throw PrintMessage("no active session")
-        val userSession = coreLogic.getSessionScope(authSession.userId)
+        val userSession = coreLogic.getSessionScope(authSession.tokens.userId)
         val conversations = userSession.conversations.getConversations().let {
             when (it) {
                 is GetConversationsUseCase.Result.Success -> it.convFlow.first()
@@ -167,7 +173,8 @@ class ListenGroupCommand: CliktCommand(name = "listen-group") {
             echo("$index) ${conversation.id.value}  Name: ${conversation.name}")
         }
 
-        val conversationIndex = prompt("Enter conversation index", promptSuffix = ": ")?.toInt() ?: throw PrintMessage("Index must be an integer")
+        val conversationIndex =
+            prompt("Enter conversation index", promptSuffix = ": ")?.toInt() ?: throw PrintMessage("Index must be an integer")
         val conversationID = conversations[conversationIndex].id
 
         GlobalScope.launch(Dispatchers.Default) {
@@ -179,7 +186,7 @@ class ListenGroupCommand: CliktCommand(name = "listen-group") {
                 for (message in it) {
                     when (val content = message.content) {
                         is MessageContent.Text -> echo("> ${content.value}")
-                        MessageContent.Unknown -> { /* do nothing */ }
+                        is MessageContent.Unknown -> { /* do nothing */ }
                     }
                 }
             }

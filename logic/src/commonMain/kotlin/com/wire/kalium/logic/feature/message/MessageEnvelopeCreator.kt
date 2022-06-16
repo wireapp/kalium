@@ -23,23 +23,23 @@ interface MessageEnvelopeCreator {
 
     suspend fun createOutgoingEnvelope(
         recipients: List<Recipient>,
-        message: Message
+        message: Message.Regular
     ): Either<CoreFailure, MessageEnvelope>
 
 }
 
 class MessageEnvelopeCreatorImpl(
     private val proteusClient: ProteusClient,
-    private val protoContentMapper: ProtoContentMapper,
+    private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : MessageEnvelopeCreator {
 
     override suspend fun createOutgoingEnvelope(
         recipients: List<Recipient>,
-        message: Message
+        message: Message.Regular
     ): Either<CoreFailure, MessageEnvelope> {
         val senderClientId = message.senderClientId
-        val content = protoContentMapper.encodeToProtobuf(ProtoContent(message.id, message.content))
+        val content = protoContentMapper.encodeToProtobuf(ProtoContent.Readable(message.id, message.content))
 
         return recipients.foldToEitherWhileRight(mutableListOf<RecipientEntry>()) { recipient, recipientAccumulator ->
             recipient.clients.foldToEitherWhileRight(mutableListOf<ClientPayload>()) { client, clientAccumulator ->

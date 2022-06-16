@@ -14,7 +14,7 @@ import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.auth.providers.bearer
 
 interface SessionManager {
-    fun session(): Pair<SessionDTO, ServerConfigDTO>
+    fun session(): Pair<SessionDTO, ServerConfigDTO.Links>
     fun updateSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO
     fun onSessionExpired()
 }

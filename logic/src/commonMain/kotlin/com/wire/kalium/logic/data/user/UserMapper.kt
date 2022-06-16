@@ -1,7 +1,6 @@
 package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.TeamId
 import com.wire.kalium.network.api.model.AssetSizeDTO
@@ -15,6 +14,7 @@ import com.wire.kalium.network.api.user.details.UserProfileDTO
 import com.wire.kalium.network.api.user.self.UserUpdateRequest
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity as UserIdEntity
 
@@ -23,7 +23,6 @@ interface UserMapper {
     fun fromApiModelToDaoModel(userProfileDTO: UserProfileDTO): UserEntity
     fun fromApiModelToDaoModel(userDTO: UserDTO): UserEntity
     fun fromDaoModelToSelfUser(userEntity: UserEntity): SelfUser
-    fun fromDaoModelToOtherUser(userEntity: UserEntity): OtherUser
 
     /**
      * Maps the user data to be updated. if the parameters [newName] [newAccent] [newAssetId] are nulls,
@@ -39,12 +38,13 @@ interface UserMapper {
         teamMemberDTO: TeamsApi.TeamMemberDTO,
         userDomain: String
     ): UserEntity
-
-    fun fromDaoConnectionStateToUser(connectionState: ConnectionEntity.State): ConnectionState
-    fun fromUserConnectionStateToDao(connectionState: ConnectionState): ConnectionEntity.State
 }
 
-internal class UserMapperImpl(private val idMapper: IdMapper = MapperProvider.idMapper()) : UserMapper {
+internal class UserMapperImpl(
+    private val idMapper: IdMapper = MapperProvider.idMapper(),
+    private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
+    private val connectionStateMapper: ConnectionStateMapper = MapperProvider.connectionStateMapper()
+) : UserMapper {
 
     override fun fromDtoToSelfUser(userDTO: UserDTO): SelfUser = with(userDTO) {
         SelfUser(
@@ -56,8 +56,11 @@ internal class UserMapperImpl(private val idMapper: IdMapper = MapperProvider.id
             accentId = accentId,
             team = teamId,
             connectionStatus = ConnectionState.NOT_CONNECTED,
-            previewPicture = assets.getPreviewAssetOrNull()?.key,
-            completePicture = assets.getCompleteAssetOrNull()?.key
+            previewPicture = assets.getPreviewAssetOrNull()
+                ?.let { idMapper.toQualifiedAssetId(it.key, id.domain) }, // assume the same domain as the userId
+            completePicture = assets.getCompleteAssetOrNull()
+                ?.let { idMapper.toQualifiedAssetId(it.key, id.domain) }, // assume the same domain as the userId
+            availabilityStatus = UserAvailabilityStatus.NONE
         )
     }
 
@@ -70,8 +73,13 @@ internal class UserMapperImpl(private val idMapper: IdMapper = MapperProvider.id
             phone = null,
             accentId = userProfileDTO.accentId,
             team = userProfileDTO.teamId,
-            previewAssetId = userProfileDTO.assets.getPreviewAssetOrNull()?.key,
-            completeAssetId = userProfileDTO.assets.getCompleteAssetOrNull()?.key
+            previewAssetId = userProfileDTO.assets.getPreviewAssetOrNull()?.let {
+                idMapper.toQualifiedAssetIdEntity(it.key, userProfileDTO.id.domain)
+            },
+            completeAssetId = userProfileDTO.assets.getCompleteAssetOrNull()?.let {
+                idMapper.toQualifiedAssetIdEntity(it.key, userProfileDTO.id.domain)
+            },
+            availabilityStatus = UserAvailabilityStatusEntity.NONE
         )
     }
 
@@ -83,22 +91,10 @@ internal class UserMapperImpl(private val idMapper: IdMapper = MapperProvider.id
         userEntity.phone,
         userEntity.accentId,
         userEntity.team,
-        fromDaoConnectionStateToUser(connectionState = userEntity.connectionStatus),
-        userEntity.previewAssetId,
-        userEntity.completeAssetId
-    )
-
-    override fun fromDaoModelToOtherUser(userEntity: UserEntity) = OtherUser(
-        idMapper.fromDaoModel(userEntity.id),
-        userEntity.name,
-        userEntity.handle,
-        userEntity.email,
-        userEntity.phone,
-        userEntity.accentId,
-        userEntity.team,
-        fromDaoConnectionStateToUser(connectionState = userEntity.connectionStatus),
-        userEntity.previewAssetId,
-        userEntity.completeAssetId
+        connectionStateMapper.fromDaoConnectionStateToUser(connectionState = userEntity.connectionStatus),
+        userEntity.previewAssetId?.let { idMapper.fromDaoModel(it) },
+        userEntity.completeAssetId?.let { idMapper.fromDaoModel(it) },
+        availabilityStatusMapper.fromDaoAvailabilityStatusToModel(userEntity.availabilityStatus)
     )
 
     override fun fromModelToUpdateApiModel(
@@ -125,9 +121,12 @@ internal class UserMapperImpl(private val idMapper: IdMapper = MapperProvider.id
             phone = user.phone,
             accentId = updateRequest.accentId ?: user.accentId,
             team = user.team,
-            connectionStatus = fromUserConnectionStateToDao(connectionState = user.connectionStatus),
-            previewAssetId = updateRequest.assets?.getPreviewAssetOrNull()?.key,
-            completeAssetId = updateRequest.assets?.getCompleteAssetOrNull()?.key
+            connectionStatus = connectionStateMapper.fromUserConnectionStateToDao(connectionState = user.connectionStatus),
+            previewAssetId = updateRequest.assets.getPreviewAssetOrNull()
+                ?.let { idMapper.toQualifiedAssetIdEntity(it.key, user.id.domain) },
+            completeAssetId = updateRequest.assets.getCompleteAssetOrNull()
+                ?.let { idMapper.toQualifiedAssetIdEntity(it.key, user.id.domain) },
+            availabilityStatus = UserAvailabilityStatusEntity.NONE
         )
     }
 
@@ -140,8 +139,9 @@ internal class UserMapperImpl(private val idMapper: IdMapper = MapperProvider.id
             phone = phone,
             accentId = accentId,
             team = teamId,
-            previewAssetId = assets.getPreviewAssetOrNull()?.key,
-            completeAssetId = assets.getCompleteAssetOrNull()?.key
+            previewAssetId = assets.getPreviewAssetOrNull()?.let { idMapper.toQualifiedAssetIdEntity(it.key, id.domain) },
+            completeAssetId = assets.getCompleteAssetOrNull()?.let { idMapper.toQualifiedAssetIdEntity(it.key, id.domain) },
+            availabilityStatus = UserAvailabilityStatusEntity.NONE
         )
     }
 
@@ -168,30 +168,7 @@ internal class UserMapperImpl(private val idMapper: IdMapper = MapperProvider.id
             team = teamId,
             connectionStatus = ConnectionEntity.State.ACCEPTED,
             previewAssetId = null,
-            completeAssetId = null
+            completeAssetId = null,
+            availabilityStatus = UserAvailabilityStatusEntity.NONE
         )
-
-    override fun fromDaoConnectionStateToUser(connectionState: ConnectionEntity.State): ConnectionState =
-        when (connectionState) {
-            ConnectionEntity.State.NOT_CONNECTED -> ConnectionState.NOT_CONNECTED
-            ConnectionEntity.State.PENDING -> ConnectionState.PENDING
-            ConnectionEntity.State.SENT -> ConnectionState.SENT
-            ConnectionEntity.State.BLOCKED -> ConnectionState.BLOCKED
-            ConnectionEntity.State.IGNORED -> ConnectionState.IGNORED
-            ConnectionEntity.State.CANCELLED -> ConnectionState.CANCELLED
-            ConnectionEntity.State.MISSING_LEGALHOLD_CONSENT -> ConnectionState.MISSING_LEGALHOLD_CONSENT
-            ConnectionEntity.State.ACCEPTED -> ConnectionState.ACCEPTED
-        }
-
-    override fun fromUserConnectionStateToDao(connectionState: ConnectionState): ConnectionEntity.State =
-        when (connectionState) {
-            ConnectionState.NOT_CONNECTED -> ConnectionEntity.State.NOT_CONNECTED
-            ConnectionState.PENDING -> ConnectionEntity.State.PENDING
-            ConnectionState.SENT -> ConnectionEntity.State.SENT
-            ConnectionState.BLOCKED -> ConnectionEntity.State.BLOCKED
-            ConnectionState.IGNORED -> ConnectionEntity.State.IGNORED
-            ConnectionState.CANCELLED -> ConnectionEntity.State.CANCELLED
-            ConnectionState.MISSING_LEGALHOLD_CONSENT -> ConnectionEntity.State.MISSING_LEGALHOLD_CONSENT
-            ConnectionState.ACCEPTED -> ConnectionEntity.State.ACCEPTED
-        }
 }

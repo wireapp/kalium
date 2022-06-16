@@ -13,13 +13,16 @@ import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.call.scenario.OnActiveSpeakers
 import com.wire.kalium.logic.feature.call.scenario.OnAnsweredCall
+import com.wire.kalium.logic.feature.call.scenario.OnClientsRequest
 import com.wire.kalium.logic.feature.call.scenario.OnCloseCall
 import com.wire.kalium.logic.feature.call.scenario.OnConfigRequest
 import com.wire.kalium.logic.feature.call.scenario.OnEstablishedCall
@@ -38,19 +41,19 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 actual class CallManagerImpl(
     private val calling: Calling,
     private val callRepository: CallRepository,
     private val userRepository: UserRepository,
     private val clientRepository: ClientRepository,
+    private val conversationRepository: ConversationRepository,
     private val messageSender: MessageSender,
     kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl,
     private val callMapper: CallMapper = MapperProvider.callMapper()
@@ -81,7 +84,7 @@ actual class CallManagerImpl(
     }
 
     private fun startHandleAsync() = scope.async(start = CoroutineStart.LAZY) {
-        val selfUserId = userId.await().toString()
+        val selfUserId = userId.await().value
         val selfClientId = clientId.await().value
 
         val waitInitializationJob = Job()
@@ -98,7 +101,7 @@ actual class CallManagerImpl(
             //TODO(refactor): inject all of these CallbackHandlers in class constructor
             sendHandler = OnSendOTR(deferredHandle, calling, selfUserId, selfClientId, messageSender, scope).keepingStrongReference(),
             sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, scope).keepingStrongReference(),
-            incomingCallHandler = OnIncomingCall(callRepository).keepingStrongReference(),
+            incomingCallHandler = OnIncomingCall(callRepository, callMapper, scope).keepingStrongReference(),
             missedCallHandler = OnMissedCall(callRepository).keepingStrongReference(),
             answeredCallHandler = OnAnsweredCall(callRepository).keepingStrongReference(),
             establishedCallHandler = OnEstablishedCall(callRepository).keepingStrongReference(),
@@ -125,7 +128,7 @@ actual class CallManagerImpl(
         return calling.action(handle)
     }
 
-    override suspend fun onCallingMessageReceived(message: Message, content: MessageContent.Calling) =
+    override suspend fun onCallingMessageReceived(message: Message.Regular, content: MessageContent.Calling) =
         withCalling {
             callingLogger.i("$TAG - onCallingMessageReceived called")
             val msg = content.value.toByteArray()
@@ -139,8 +142,8 @@ actual class CallManagerImpl(
                 len = msg.size,
                 curr_time = Uint32_t(value = currTime / 1000),
                 msg_time = Uint32_t(value = msgTime / 1000),
-                convId = message.conversationId.toString(),
-                userId = message.senderUserId.toString(),
+                convId = message.conversationId.value,
+                userId = message.senderUserId.value,
                 clientId = message.senderClientId.value
             )
             callingLogger.i("$TAG - wcall_recv_msg() called")
@@ -153,12 +156,16 @@ actual class CallManagerImpl(
         isAudioCbr: Boolean
     ) {
         callingLogger.d("$TAG -> starting call for conversation = $conversationId..")
+
+        //TODO move call creation to the usecase since this one will run only for Android
+        val shouldMute = conversationType == ConversationType.Conference
+        val isCameraOn = callType == CallType.VIDEO
         callRepository.createCall(
-            call = Call(
-                conversationId = conversationId,
-                status = CallStatus.STARTED,
-                callerId = userId.await().toString()
-            )
+            conversationId = conversationId,
+            status = CallStatus.STARTED,
+            isMuted = shouldMute,
+            isCameraOn = isCameraOn,
+            callerId = userId.await().toString()
         )
 
         withCalling {
@@ -166,7 +173,7 @@ actual class CallManagerImpl(
             val avsConversationType = callMapper.toConversationTypeCalling(conversationType)
             wcall_start(
                 deferredHandle.await(),
-                conversationId.toString(),
+                conversationId.value,
                 avsCallType.avsValue,
                 avsConversationType.avsValue,
                 isAudioCbr.toInt()
@@ -180,7 +187,7 @@ actual class CallManagerImpl(
         callingLogger.d("$TAG -> answering call for conversation = $conversationId..")
         wcall_answer(
             inst = deferredHandle.await(),
-            conversationId = conversationId.toString(),
+            conversationId = conversationId.value,
             callType = CallTypeCalling.AUDIO.avsValue,
             cbrEnabled = false
         )
@@ -189,13 +196,14 @@ actual class CallManagerImpl(
 
     override suspend fun endCall(conversationId: ConversationId) = withCalling {
         callingLogger.d("$TAG -> ending Call for conversation = $conversationId..")
-        wcall_end(inst = deferredHandle.await(), conversationId = conversationId.toString())
+        wcall_end(inst = deferredHandle.await(), conversationId = conversationId.value)
         callingLogger.d("$TAG - wcall_end() called -> call for conversation = $conversationId ended")
     }
 
     override suspend fun rejectCall(conversationId: ConversationId) = withCalling {
         callingLogger.d("$TAG -> rejecting call for conversation = $conversationId..")
-        wcall_reject(inst = deferredHandle.await(), conversationId = conversationId.toString())
+        wcall_reject(inst = deferredHandle.await(), conversationId = conversationId.value)
+        callRepository.removeCallById(conversationId.toString())
         callingLogger.d("$TAG - wcall_reject() called -> call for conversation = $conversationId rejected")
     }
 
@@ -206,12 +214,15 @@ actual class CallManagerImpl(
         callingLogger.d("$TAG - wcall_set_mute() called")
     }
 
+    /**
+     * This method should NOT be called while the call is still incoming or outgoing and not established yet.
+     */
     override suspend fun updateVideoState(conversationId: ConversationId, videoState: VideoState) {
         withCalling {
             callingLogger.d("$TAG -> changing video state to ${videoState.name}..")
             scope.launch {
                 val videoStateCalling = callMapper.toVideoStateCalling(videoState)
-                wcall_set_video_send_state(deferredHandle.await(), conversationId.toString(), videoStateCalling.avsValue)
+                wcall_set_video_send_state(deferredHandle.await(), conversationId.value, videoStateCalling.avsValue)
                 callingLogger.d("$TAG -> wcall_set_video_send_state called..")
             }
         }
@@ -222,7 +233,13 @@ actual class CallManagerImpl(
      * Will start the handlers for: ParticipantsChanged, NetworkQuality, ClientsRequest and ActiveSpeaker
      */
     private fun onCallingReady() {
-        // Participants
+        initParticipantsHandler()
+        initNetworkHandler()
+        initClientsHandler()
+        initActiveSpeakersHandler()
+    }
+
+    private fun initParticipantsHandler() {
         scope.launch {
             withCalling {
                 val onParticipantListChanged = OnParticipantListChanged(
@@ -240,8 +257,9 @@ actual class CallManagerImpl(
                 callingLogger.d("$TAG - wcall_set_participant_changed_handler() called")
             }
         }
+    }
 
-        // Network Quality
+    private fun initNetworkHandler() {
         scope.launch {
             withCalling {
                 val onNetworkQualityChanged = OnNetworkQualityChanged()
@@ -256,9 +274,45 @@ actual class CallManagerImpl(
                 callingLogger.d("$TAG - wcall_set_network_quality_handler() called")
             }
         }
+    }
 
-        // TODO(calling): Clients Request handler
-        // TODO(calling): Active Speakers handler
+    private fun initClientsHandler() {
+        scope.launch {
+            withCalling {
+                val selfUserId = userId.await().value
+
+                val onClientsRequest = OnClientsRequest(
+                    calling = calling,
+                    selfUserId = selfUserId,
+                    conversationRepository = conversationRepository,
+                    callingScope = scope
+                ).keepingStrongReference()
+
+                wcall_set_req_clients_handler(
+                    inst = deferredHandle.await(),
+                    wcall_req_clients_h = onClientsRequest
+                )
+
+                callingLogger.d("$TAG - wcall_set_req_clients_handler() called")
+            }
+        }
+    }
+
+    private fun initActiveSpeakersHandler() {
+        scope.launch {
+            withCalling {
+                val activeSpeakersHandler = OnActiveSpeakers(
+                    callRepository = callRepository
+                ).keepingStrongReference()
+
+                wcall_set_active_speaker_handler(
+                    inst = deferredHandle.await(),
+                    activeSpeakersHandler = activeSpeakersHandler
+                )
+
+                callingLogger.d("$TAG - wcall_set_req_clients_handler() called")
+            }
+        }
     }
 
     companion object {

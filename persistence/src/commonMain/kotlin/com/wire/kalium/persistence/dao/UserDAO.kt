@@ -12,6 +12,10 @@ data class QualifiedIDEntity(
 typealias UserIDEntity = QualifiedIDEntity
 typealias ConversationIDEntity = QualifiedIDEntity
 
+enum class UserAvailabilityStatusEntity {
+    NONE, AVAILABLE, BUSY, AWAY
+}
+
 data class UserEntity(
     val id: QualifiedIDEntity,
     val name: String?,
@@ -22,10 +26,13 @@ data class UserEntity(
     val team: String?,
     val connectionStatus: ConnectionEntity.State = ConnectionEntity.State.NOT_CONNECTED,
     val previewAssetId: UserAssetIdEntity?,
-    val completeAssetId: UserAssetIdEntity?
+    val completeAssetId: UserAssetIdEntity?,
+    // for now availabilityStatus is stored only locally and ignored for API models,
+    // later, when API start supporting it, it should be added into API model too
+    val availabilityStatus: UserAvailabilityStatusEntity
 )
 
-internal typealias UserAssetIdEntity = String
+internal typealias UserAssetIdEntity = QualifiedIDEntity
 
 interface UserDAO {
     /**
@@ -34,7 +41,8 @@ interface UserDAO {
     suspend fun insertUser(user: UserEntity)
 
     /**
-     * This will update all columns, except [ConnectionState] or insert a new record with default value [ConnectionState.NOT_CONNECTED]
+     * This will update all columns, except [ConnectionEntity.State] or insert a new record with default value
+     * [ConnectionEntity.State.NOT_CONNECTED]
      *
      * An upsert operation is a one that tries to update a record and if fails (not rows affected by change) inserts instead.
      * In this case as the transaction can be executed many times, we need to take care for not deleting old data.
@@ -72,8 +80,9 @@ interface UserDAO {
     suspend fun getUserByHandleAndConnectionState(
         handle: String,
         connectionState: ConnectionEntity.State
-    ) : List<UserEntity>
+    ): List<UserEntity>
 
     suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity)
     suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String)
+    suspend fun updateUserAvailabilityStatus(qualifiedID: QualifiedIDEntity, status: UserAvailabilityStatusEntity)
 }

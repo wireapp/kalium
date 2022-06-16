@@ -63,9 +63,19 @@ allprojects {
 subprojects {
     this.tasks.withType<Test> {
         if (name != "jvmTest" && name != "jsTest") {
-            the<kotlinx.kover.api.KoverTaskExtension>().isDisabled = true
+            the<kotlinx.kover.api.KoverTaskExtension>().apply {
+                isDisabled = true
+            }
+        } else {
+            the<kotlinx.kover.api.KoverTaskExtension>().apply {
+                includes = listOf("com.wire.kalium.*")
+            }
         }
     }
+}
+
+kover {
+    coverageEngine.set(kotlinx.kover.api.CoverageEngine.JACOCO)
 }
 
 rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin> {

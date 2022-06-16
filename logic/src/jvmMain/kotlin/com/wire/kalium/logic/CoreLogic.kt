@@ -8,8 +8,12 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.UserSessionScopeProvider
 import com.wire.kalium.logic.di.UserSessionScopeProviderImpl
 import com.wire.kalium.logic.feature.UserSessionScope
+import com.wire.kalium.logic.feature.auth.ServerMetaDataManagerImpl
 import com.wire.kalium.logic.feature.call.GlobalCallManager
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.network.SessionManagerImpl
+import com.wire.kalium.logic.sync.GlobalWorkScheduler
+import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import com.wire.kalium.logic.sync.WorkSchedulerImpl
 import com.wire.kalium.network.AuthenticatedNetworkContainer
 import com.wire.kalium.persistence.client.SessionStorageImpl
@@ -25,32 +29,37 @@ import java.io.File
 actual class CoreLogic(
     clientLabel: String,
     rootPath: String,
-    private val userSessionScopeProvider: UserSessionScopeProvider = UserSessionScopeProviderImpl
+    private val userSessionScopeProvider: UserSessionScopeProvider = UserSessionScopeProviderImpl,
+    kaliumConfigs: KaliumConfigs
 ) : CoreLogicCommon(
-    clientLabel = clientLabel, rootPath = rootPath
+    clientLabel = clientLabel, rootPath = rootPath, kaliumConfigs = kaliumConfigs
 ) {
     override fun getSessionRepo(): SessionRepository {
-        val sessionStorage = SessionStorageImpl(globalPreferences)
+        // TODO: make lazier
+        val sessionStorage = SessionStorageImpl(globalPreferences.value)
         return SessionDataSource(sessionStorage)
     }
 
-    override val globalPreferences: KaliumPreferences by lazy {
+    override val globalPreferences: Lazy<KaliumPreferences> = lazy {
         KaliumPreferencesSettings(EncryptedSettingsHolder(SettingOptions.AppSettings).encryptedSettings)
     }
 
-    override val globalDatabase: GlobalDatabaseProvider by lazy { GlobalDatabaseProvider(File("$rootPath/global-storage")) }
+    override val globalDatabase: Lazy<GlobalDatabaseProvider> = lazy { GlobalDatabaseProvider(File("$rootPath/global-storage")) }
 
     override fun getSessionScope(userId: UserId): UserSessionScope {
         return userSessionScopeProvider.get(userId) ?: run {
             val rootAccountPath = "$rootPath/${userId.domain}/${userId.value}"
             val rootProteusPath = "$rootAccountPath/proteus"
             val rootStoragePath = "$rootAccountPath/storage"
-            val networkContainer = AuthenticatedNetworkContainer(SessionManagerImpl(sessionRepository, userId))
+            val networkContainer = AuthenticatedNetworkContainer(
+                SessionManagerImpl(sessionRepository, userId),
+                ServerMetaDataManagerImpl(getGlobalScope().serverConfigRepository)
+            )
 
             val proteusClient: ProteusClient = ProteusClientImpl(rootProteusPath)
             runBlocking { proteusClient.open() }
 
-            val workScheduler = WorkSchedulerImpl(this, userId)
+            val userSessionWorkScheduler: UserSessionWorkScheduler = WorkSchedulerImpl.UserSession(this, userId)
             val encryptedSettingsHolder = EncryptedSettingsHolder(SettingOptions.UserSettings(idMapper.toDaoModel(userId)))
             val userPreferencesSettings = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
             val userDatabase = UserDatabaseProvider(File(rootStoragePath))
@@ -59,7 +68,7 @@ actual class CoreLogic(
                 rootAccountPath,
                 networkContainer,
                 proteusClient,
-                workScheduler,
+                userSessionWorkScheduler,
                 userDatabase,
                 userPreferencesSettings,
                 encryptedSettingsHolder
@@ -69,7 +78,8 @@ actual class CoreLogic(
                 userDataSource,
                 sessionRepository,
                 globalCallManager,
-                globalPreferences
+                // TODO: make lazier
+                globalPreferences.value
             ).also {
                 userSessionScopeProvider.add(userId, it)
             }
@@ -77,5 +87,6 @@ actual class CoreLogic(
     }
 
     override val globalCallManager: GlobalCallManager = GlobalCallManager()
+    override val globalWorkScheduler: GlobalWorkScheduler = WorkSchedulerImpl.Global(this)
 
 }

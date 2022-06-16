@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.call
 
 import app.cash.turbine.test
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.usecase.GetAllCallsUseCase
 import com.wire.kalium.logic.sync.SyncManager
@@ -57,12 +58,24 @@ class GetAllCallsUseCaseTest {
         private val call1 = Call(
             ConversationId("first", "domain"),
             CallStatus.STARTED,
-            "caller-id"
+            true,
+            false,
+            "caller-id",
+            "ONE_ON_ONE Name",
+            Conversation.Type.ONE_ON_ONE,
+            "otherUsername",
+            "team1"
         )
         private val call2 = Call(
             ConversationId("second", "domain"),
             CallStatus.INCOMING,
-            "caller-id"
+            true,
+            false,
+            "caller-id",
+            "ONE_ON_ONE Name",
+            Conversation.Type.ONE_ON_ONE,
+            "otherUsername2",
+            "team2"
         )
     }
 

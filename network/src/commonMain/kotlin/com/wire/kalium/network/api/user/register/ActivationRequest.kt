@@ -1,7 +1,6 @@
 package com.wire.kalium.network.api.user.register
 
 
-import com.wire.kalium.network.api.AssetId
 import com.wire.kalium.network.api.AssetKey
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -40,7 +39,7 @@ internal data class NewBindingTeamDTO(
     @SerialName("currency")
     val currency: String?,
     @SerialName("icon")
-    val iconAssetId: AssetId,
+    val iconAssetId: String, // todo(assets): temp fix, we should replace with [AssetId] once domain avb on server config (api-version pr)
     @SerialName("icon_key")
     val iconKey: AssetKey?,
     @SerialName("name")

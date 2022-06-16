@@ -31,9 +31,11 @@ class CallMapperTest {
     fun whenMappingToConversationTypeCalling_withConversationType_thenReturnConversationTypeCalling() = runTest {
         val oneOnOneMap = callMapper.toConversationTypeCalling(conversationType = ConversationType.OneOnOne)
         val conferenceMap = callMapper.toConversationTypeCalling(conversationType = ConversationType.Conference)
+        val unknown = callMapper.toConversationTypeCalling(conversationType = ConversationType.Unknown)
 
         assertEquals(ConversationTypeCalling.OneOnOne, oneOnOneMap)
         assertEquals(ConversationTypeCalling.Conference, conferenceMap)
+        assertEquals(ConversationTypeCalling.Unknown, unknown)
     }
 
     @Test
@@ -59,10 +61,10 @@ class CallMapperTest {
 
         val expectedParticipant = Participant(
             id = QualifiedID(
-                value = "userid",
-                domain = "domain"
+                value = "dummyId",
+                domain = "dummyDomain"
             ),
-            clientId = "clientid",
+            clientId = "dummyClientId",
             muted = false
         )
 
@@ -76,20 +78,88 @@ class CallMapperTest {
         )
 
         val expectedCallClient = CallClient(
-            userId = "userid@domain",
-            clientId = "clientid"
+            userId = "dummyId@dummyDomain",
+            clientId = "dummyClientId"
         )
 
         assertEquals(expectedCallClient, callClientMap)
     }
 
+    @Test
+    fun given0AsAConversationTypeInputValue_whenMappingToConversationType_ThenReturnOneOnOneType() {
+        val expected = ConversationType.OneOnOne
+
+        val actual = callMapper.fromIntToConversationType(0)
+
+        assertEquals(expected, actual)
+    }
+
+    @Test
+    fun given2AsAConversationTypeInputValue_whenMappingToConversationType_ThenReturnConferenceType() {
+        val expected = ConversationType.Conference
+
+        val actual = callMapper.fromIntToConversationType(2)
+
+        assertEquals(expected, actual)
+    }
+
+    @Test
+    fun givenADifferentAConversationTypeInputValue_whenMappingToConversationType_ThenReturnConferenceType() {
+        val expected = ConversationType.Unknown
+
+        val actual = callMapper.fromIntToConversationType(4)
+
+        assertEquals(expected, actual)
+    }
+
+    @Test
+    fun givenCallActiveSpeakers_whenMappingToParticipantsActiveSpeaker_thenReturnParticipantsActiveSpeaker() = runTest {
+        val dummyParticipantWithDifferentClientId = DUMMY_PARTICIPANT.copy(
+            clientId = "anotherClientId"
+        )
+
+        val callActiveSpeakerMap = callMapper.activeSpeakerMapper.mapParticipantsActiveSpeaker(
+            participants = listOf(
+                DUMMY_PARTICIPANT,
+                dummyParticipantWithDifferentClientId
+            ),
+            activeSpeakers = CallActiveSpeakers(
+                activeSpeakers = listOf(DUMMY_CALL_ACTIVE_SPEAKER)
+            )
+        )
+
+        val expectedParticipantsActiveSpeaker = listOf(
+            DUMMY_PARTICIPANT.copy(
+                isSpeaking = true
+            ),
+            dummyParticipantWithDifferentClientId
+        )
+
+        assertEquals(expectedParticipantsActiveSpeaker, callActiveSpeakerMap)
+    }
+
     private companion object {
         private val DUMMY_CALL_MEMBER = CallMember(
-            userid = "userid@domain",
-            clientid = "clientid",
+            userid = "dummyId@dummyDomain",
+            clientid = "dummyClientId",
             aestab = 0,
             vrecv = 0,
             muted = 0
+        )
+        private val DUMMY_CALL_ACTIVE_SPEAKER = CallActiveSpeaker(
+            userId = "dummyId@dummyDomain",
+            clientId = "dummyClientId",
+            audioLevel = 1,
+            audioLevelNow = 1
+        )
+        private val DUMMY_PARTICIPANT = Participant(
+            id = QualifiedID(
+                value = "dummyId",
+                domain = "dummyDomain"
+            ),
+            clientId = "dummyClientId",
+            muted = false,
+            isSpeaking = false
         )
     }
 

@@ -8,12 +8,12 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 
 interface CallManager {
-    suspend fun onCallingMessageReceived(message: Message, content: MessageContent.Calling)
+    suspend fun onCallingMessageReceived(message: Message.Regular, content: MessageContent.Calling)
     suspend fun startCall(
         conversationId: ConversationId,
         callType: CallType,
         conversationType: ConversationType,
-        isAudioCbr: Boolean = false
+        isAudioCbr: Boolean
     ) //TODO(calling): Audio CBR
 
     suspend fun answerCall(conversationId: ConversationId)

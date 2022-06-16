@@ -15,6 +15,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.message.MessageSender
@@ -104,7 +105,7 @@ internal class SendAssetMessageUseCaseImpl(
         // Create a unique message ID
         val generatedMessageUuid = uuid4().toString()
 
-        val message = Message(
+        val message = Message.Regular(
             id = generatedMessageUuid,
             content = MessageContent.Asset(
                 provideAssetMessageContent(
@@ -147,8 +148,8 @@ private fun provideAssetMessageContent(
         otrKey = otrKey.data,
         sha256 = sha256,
         assetId = assetId.key,
-        encryptionAlgorithm = AssetContent.RemoteData.EncryptionAlgorithm.AES_CBC,
-        assetDomain = null,  // TODO(assets): fill in the assetDomain, it's returned by the BE when uploading an asset.
+        encryptionAlgorithm = MessageEncryptionAlgorithm.AES_CBC,
+        assetDomain = assetId.domain,
         assetToken = assetId.assetToken
     ),
     // Asset is already in our local storage and therefore accessible but until we don't save it to external storage the asset

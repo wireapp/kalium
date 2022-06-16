@@ -9,8 +9,12 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.UserSessionScopeProvider
 import com.wire.kalium.logic.di.UserSessionScopeProviderImpl
 import com.wire.kalium.logic.feature.UserSessionScope
+import com.wire.kalium.logic.feature.auth.ServerMetaDataManagerImpl
 import com.wire.kalium.logic.feature.call.GlobalCallManager
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.network.SessionManagerImpl
+import com.wire.kalium.logic.sync.GlobalWorkScheduler
+import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import com.wire.kalium.logic.sync.WorkSchedulerImpl
 import com.wire.kalium.network.AuthenticatedNetworkContainer
 import com.wire.kalium.persistence.client.SessionStorage
@@ -31,30 +35,33 @@ actual class CoreLogic(
     private val appContext: Context,
     clientLabel: String,
     rootPath: String,
-    private val userSessionScopeProvider: UserSessionScopeProvider = UserSessionScopeProviderImpl
-) : CoreLogicCommon(clientLabel, rootPath) {
+    private val userSessionScopeProvider: UserSessionScopeProvider = UserSessionScopeProviderImpl,
+    kaliumConfigs: KaliumConfigs
+) : CoreLogicCommon(clientLabel, rootPath, kaliumConfigs = kaliumConfigs) {
 
     override fun getSessionRepo(): SessionRepository {
-        val sessionStorage: SessionStorage = SessionStorageImpl(globalPreferences)
+        val sessionStorage: SessionStorage = SessionStorageImpl(globalPreferences.value)
         return SessionDataSource(sessionStorage)
     }
 
-    override val globalPreferences: KaliumPreferences by lazy {
+    override val globalPreferences: Lazy<KaliumPreferences> = lazy {
         KaliumPreferencesSettings(EncryptedSettingsHolder(appContext, SettingOptions.AppSettings).encryptedSettings)
     }
 
-    override val globalDatabase: GlobalDatabaseProvider by lazy { GlobalDatabaseProvider(appContext, globalPreferences) }
+    override val globalDatabase: Lazy<GlobalDatabaseProvider> = lazy { GlobalDatabaseProvider(appContext, globalPreferences.value) }
 
     override fun getSessionScope(userId: UserId): UserSessionScope {
         return userSessionScopeProvider.get(userId) ?: run {
             val rootAccountPath = "$rootPath/${userId.domain}/${userId.value}"
             val rootProteusPath = "$rootAccountPath/proteus"
-            val networkContainer = AuthenticatedNetworkContainer(SessionManagerImpl(sessionRepository, userId))
+            val networkContainer = AuthenticatedNetworkContainer(
+                SessionManagerImpl(sessionRepository, userId),
+                ServerMetaDataManagerImpl(getGlobalScope().serverConfigRepository)
+            )
             val proteusClient: ProteusClient = ProteusClientImpl(rootProteusPath)
             runBlocking { proteusClient.open() }
 
-            val workScheduler = WorkSchedulerImpl(appContext, userId)
-
+            val userSessionWorkScheduler: UserSessionWorkScheduler = WorkSchedulerImpl.UserSession(appContext, userId)
             val userIDEntity = idMapper.toDaoModel(userId)
             val encryptedSettingsHolder =
                 EncryptedSettingsHolder(appContext, SettingOptions.UserSettings(userIDEntity))
@@ -64,7 +71,7 @@ actual class CoreLogic(
                 rootAccountPath,
                 networkContainer,
                 proteusClient,
-                workScheduler,
+                userSessionWorkScheduler,
                 userDatabaseProvider,
                 userPreferencesSettings,
                 encryptedSettingsHolder
@@ -75,7 +82,7 @@ actual class CoreLogic(
                 userDataSource,
                 sessionRepository,
                 globalCallManager,
-                globalPreferences
+                globalPreferences.value
             ).also {
                 userSessionScopeProvider.add(userId, it)
             }
@@ -83,6 +90,10 @@ actual class CoreLogic(
     }
 
     override val globalCallManager: GlobalCallManager = GlobalCallManager(
+        appContext = appContext
+    )
+
+    override val globalWorkScheduler: GlobalWorkScheduler = WorkSchedulerImpl.Global(
         appContext = appContext
     )
 }

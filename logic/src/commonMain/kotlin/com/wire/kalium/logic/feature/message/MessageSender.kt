@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -59,7 +60,12 @@ interface MessageSender {
      * @param message that will be sent
      * @see [sendPendingMessage]
      */
-    suspend fun sendMessage(message: Message): Either<CoreFailure, Unit>
+    suspend fun sendMessage(message: Message.Regular): Either<CoreFailure, Unit>
+
+    /**
+     * Attemps to send the given Client Discovery [Message] to suitable recipients.
+     */
+    suspend fun sendClientDiscoveryMessage(message: Message.Regular): Either<CoreFailure, String>
 }
 
 class MessageSenderImpl(
@@ -77,7 +83,8 @@ class MessageSenderImpl(
     override suspend fun sendPendingMessage(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit> {
         syncManager.waitUntilLive()
         return messageRepository.getMessageById(conversationId, messageUuid).flatMap { message ->
-            sendMessage(message)
+            if (message is Message.Regular) sendMessage(message)
+            else Either.Left(StorageFailure.Generic(IllegalArgumentException("Client cannot send server messages")))
         }.onFailure {
             kaliumLogger.i("Failed to send message. Failure = $it")
             if (it is NetworkFailure.NoNetworkConnection) {
@@ -89,21 +96,26 @@ class MessageSenderImpl(
         }
     }
 
-    override suspend fun sendMessage(message: Message): Either<CoreFailure, Unit> = attemptToSend(message).flatMap { messageRemoteTime ->
-        messageRepository.updateMessageDate(message.conversationId, message.id, messageRemoteTime)
-            .map { messageRemoteTime }
-    }.flatMap { messageRemoteTime ->
-        messageRepository.updateMessageStatus(MessageEntity.Status.SENT, message.conversationId, message.id)
-            .map { messageRemoteTime }
-    }.flatMap { messageRemoteTime ->
-        // this should make sure that pending messages are ordered correctly after one of them is sent
-        messageRepository.updatePendingMessagesAddMillisToDate(
-            message.conversationId,
-            timeParser.calculateMillisDifference(message.date, messageRemoteTime)
-        )
-    }
+    override suspend fun sendMessage(message: Message.Regular): Either<CoreFailure, Unit> = attemptToSend(message)
+        .flatMap { messageRemoteTime ->
+            messageRepository.updateMessageDate(message.conversationId, message.id, messageRemoteTime)
+                .map { messageRemoteTime }
+        }
+        .flatMap { messageRemoteTime ->
+            messageRepository.updateMessageStatus(MessageEntity.Status.SENT, message.conversationId, message.id)
+                .map { messageRemoteTime }
+        }
+        .flatMap { messageRemoteTime ->
+            // this should make sure that pending messages are ordered correctly after one of them is sent
+            messageRepository.updatePendingMessagesAddMillisToDate(
+                message.conversationId,
+                timeParser.calculateMillisDifference(message.date, messageRemoteTime)
+            )
+        }
 
-    private suspend fun attemptToSend(message: Message): Either<CoreFailure, String> =
+    override suspend fun sendClientDiscoveryMessage(message: Message.Regular): Either<CoreFailure, String> = attemptToSend(message)
+
+    private suspend fun attemptToSend(message: Message.Regular): Either<CoreFailure, String> =
         conversationRepository.getConversationProtocolInfo(message.conversationId).flatMap { protocolInfo ->
             when (protocolInfo) {
                 is ConversationEntity.ProtocolInfo.MLS -> {
@@ -116,7 +128,7 @@ class MessageSenderImpl(
             }
         }
 
-    private suspend fun attemptToSendWithProteus(message: Message): Either<CoreFailure, String> {
+    private suspend fun attemptToSendWithProteus(message: Message.Regular): Either<CoreFailure, String> {
         val conversationId = message.conversationId
         return conversationRepository.getConversationRecipients(conversationId).flatMap { recipients ->
             sessionEstablisher.prepareRecipientsForNewOutgoingMessage(recipients).map { recipients }
@@ -127,31 +139,27 @@ class MessageSenderImpl(
         }
     }
 
-    private suspend fun attemptToSendWithMLS(
-        groupId: String,
-        message: Message
-    ): Either<CoreFailure, String> = mlsMessageCreator.createOutgoingMLSMessage(groupId, message).flatMap { mlsMessage ->
-        // TODO(mls): handle mls-stale-message
-        messageRepository.sendMLSMessage(message.conversationId, mlsMessage).map {
-            message.date //TODO(mls): return actual server time from the response
+    private suspend fun attemptToSendWithMLS(groupId: String, message: Message.Regular): Either<CoreFailure, String> =
+        mlsMessageCreator.createOutgoingMLSMessage(groupId, message).flatMap { mlsMessage ->
+            // TODO(mls): handle mls-stale-message
+            messageRepository.sendMLSMessage(message.conversationId, mlsMessage).map {
+                message.date //TODO(mls): return actual server time from the response
+            }
         }
-    }
 
     /**
      * Attempts to send a Proteus envelope
      * Will handle the failure and retry in case of [ProteusSendMessageFailure].
      */
-    private suspend fun trySendingProteusEnvelope(
-        envelope: MessageEnvelope,
-        message: Message,
-    ): Either<CoreFailure, String> = messageRepository.sendEnvelope(message.conversationId, envelope).fold({
-        when (it) {
-            is ProteusSendMessageFailure -> messageSendFailureHandler.handleClientsHaveChangedFailure(it).flatMap {
-                attemptToSend(message)
+    private suspend fun trySendingProteusEnvelope(envelope: MessageEnvelope, message: Message.Regular): Either<CoreFailure, String> =
+        messageRepository.sendEnvelope(message.conversationId, envelope).fold({
+            when (it) {
+                is ProteusSendMessageFailure -> messageSendFailureHandler.handleClientsHaveChangedFailure(it).flatMap {
+                    attemptToSend(message)
+                }
+                else -> Either.Left(it)
             }
-            else -> Either.Left(it)
-        }
-    }, {
-        Either.Right(it)
-    })
+        }, {
+            Either.Right(it)
+        })
 }
