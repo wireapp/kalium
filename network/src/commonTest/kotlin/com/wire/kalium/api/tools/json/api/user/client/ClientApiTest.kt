@@ -72,7 +72,7 @@ class ClientApiTest : ApiTest {
     fun givenAValidDeleteClientRequest_whenCallingDeleteClientEndpoint_theRequestShouldBeConfiguredCorrectly() =
         runTest {
             val password = "password"
-            val httpClient = mockAuthenticatedHttpClient(
+            val httpClient = mockAuthenticatedNetworkClient(
                 "",
                 statusCode = HttpStatusCode.OK,
                 assertion = {
