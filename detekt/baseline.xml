@@ -25,11 +25,6 @@
     <ID>EmptyDefaultConstructor:ServerConfigurationDAO.kt$ServerConfigMapper$()</ID>
     <ID>EmptyDefaultConstructor:ValidateSSOCodeUseCase.kt$ValidateSSOCodeUseCaseImpl$()</ID>
     <ID>EmptyKtFile:SessionLocalRepository.kt$.SessionLocalRepository.kt</ID>
-    <ID>EnforceSerializableFields:AuthSession.kt$AuthSession</ID>
-    <ID>EnforceSerializableFields:CallClient.kt$CallClient</ID>
-    <ID>EnforceSerializableFields:CallClient.kt$CallClientList</ID>
-    <ID>EnforceSerializableFields:CallParticipants.kt$CallMember</ID>
-    <ID>EnforceSerializableFields:CallParticipants.kt$CallParticipants</ID>
     <ID>FunctionNaming:CallManagerTest.kt$CallManagerTest$@Test fun givenCallManager_whenCallingMessageIsReceived_then_wcall_recv_msg_IsCalled()</ID>
     <ID>FunctionNaming:Calling.kt$Calling$fun wcall_answer(inst: Handle, conversationId: String, callType: Int, cbrEnabled: Boolean)</ID>
     <ID>FunctionNaming:Calling.kt$Calling$fun wcall_config_update(inst: Handle, error: Int, jsonString: String)</ID>
@@ -39,7 +34,6 @@
     <ID>FunctionNaming:Calling.kt$Calling$fun wcall_library_version(): String</ID>
     <ID>FunctionNaming:Calling.kt$Calling$fun wcall_recv_msg( inst: Handle, msg: ByteArray, len: Int, curr_time: Uint32_t, msg_time: Uint32_t, convId: String, userId: String, clientId: String ): Int</ID>
     <ID>FunctionNaming:Calling.kt$Calling$fun wcall_reject(inst: Handle, conversationId: String)</ID>
-    <ID>FunctionNaming:Calling.kt$Calling$fun wcall_request_video_streams( inst: Handle, convId: String, mode: Int, json: String )</ID>
     <ID>FunctionNaming:Calling.kt$Calling$fun wcall_resp( inst: Handle, status: Int, reason: String, arg: Pointer? ): Int</ID>
     <ID>FunctionNaming:Calling.kt$Calling$fun wcall_set_log_handler(logHandler: LogHandler, arg: Pointer?)</ID>
     <ID>FunctionNaming:Calling.kt$Calling$fun wcall_set_mute(inst: Handle, muted: Int)</ID>
@@ -86,7 +80,7 @@
     <ID>LongParameterList:Calling.kt$Calling$( inst: Handle, msg: ByteArray, len: Int, curr_time: Uint32_t, msg_time: Uint32_t, convId: String, userId: String, clientId: String )</ID>
     <ID>LongParameterList:Calling.kt$Calling$( userId: String, clientId: String, readyHandler: ReadyHandler, sendHandler: SendHandler, sftRequestHandler: SFTRequestHandler, incomingCallHandler: IncomingCallHandler, missedCallHandler: MissedCallHandler, answeredCallHandler: AnsweredCallHandler, establishedCallHandler: EstablishedCallHandler, closeCallHandler: CloseCallHandler, metricsHandler: MetricsHandler, callConfigRequestHandler: CallConfigRequestHandler, constantBitRateStateChangeHandler: ConstantBitRateStateChangeHandler, videoReceiveStateHandler: VideoReceiveStateHandler, arg: Pointer? )</ID>
     <ID>LongParameterList:CloseCallHandler.kt$CloseCallHandler$( reason: Int, conversationId: String, messageTime: Uint32_t, userId: String, clientId: String, arg: Pointer? )</ID>
-    <ID>LongParameterList:ConversationEventReceiver.kt$ConversationEventReceiver$( private val proteusClient: ProteusClient, private val messageRepository: MessageRepository, private val conversationRepository: ConversationRepository, private val mlsConversationRepository: MLSConversationRepository, private val userRepository: UserRepository, private val protoContentMapper: ProtoContentMapper, private val callManagerImpl: CallManager, private val memberMapper: MemberMapper = MapperProvider.memberMapper(), private val idMapper: IdMapper = MapperProvider.idMapper() )</ID>
+    <ID>LongParameterList:ConnectionRepository.kt$ConnectionDataSource$( private val conversationDAO: ConversationDAO, private val connectionDAO: ConnectionDAO, private val connectionApi: ConnectionApi, private val userDetailsApi: UserDetailsApi, private val userDAO: UserDAO, private val idMapper: IdMapper = MapperProvider.idMapper(), private val connectionStatusMapper: ConnectionStatusMapper = MapperProvider.connectionStatusMapper(), private val connectionMapper: ConnectionMapper = MapperProvider.connectionMapper(), private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(), )</ID>
     <ID>LongParameterList:ConversationRepository.kt$ConversationDataSource$( private val userRepository: UserRepository, private val mlsConversationRepository: MLSConversationRepository, private val conversationDAO: ConversationDAO, private val conversationApi: ConversationApi, private val clientApi: ClientApi, private val idMapper: IdMapper = MapperProvider.idMapper(), private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(), private val memberMapper: MemberMapper = MapperProvider.memberMapper(), private val conversationStatusMapper: ConversationStatusMapper = MapperProvider.conversationStatusMapper() )</ID>
     <ID>LongParameterList:GlobalCallManager.kt$GlobalCallManager$( userId: QualifiedID, callRepository: CallRepository, userRepository: UserRepository, clientRepository: ClientRepository, callMapper: CallMapper, messageSender: MessageSender )</ID>
     <ID>LongParameterList:IncomingCallHandler.kt$IncomingCallHandler$( conversationId: String, messageTime: Uint32_t, userId: String, clientId: String, isVideoCall: Boolean, shouldRing: Boolean, conversationType: Int, arg: Pointer? )</ID>
@@ -100,7 +94,7 @@
     <ID>LongParameterList:SendHandler.kt$SendHandler$( context: Pointer?, conversationId: String, userIdSelf: String, clientIdSelf: String, userIdDestination: String?, clientIdDestination: String?, data: Pointer?, length: Size_t, isTransient: Boolean, arg: Pointer? )</ID>
     <ID>LongParameterList:ServerConfigurationDAO.kt$ServerConfigurationDAO$( id: String, apiBaseUrl: String, accountBaseUrl: String, webSocketBaseUrl: String, blackListUrl: String, teamsUrl: String, websiteUrl: String, title: String )</ID>
     <ID>LongParameterList:UserRepository.kt$UserDataSource$( private val userDAO: UserDAO, private val metadataDAO: MetadataDAO, private val selfApi: SelfApi, private val userDetailsApi: UserDetailsApi, private val assetRepository: AssetRepository, private val idMapper: IdMapper = MapperProvider.idMapper(), private val userMapper: UserMapper = MapperProvider.userMapper(), private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper() )</ID>
-    <ID>LongParameterList:UserStubs.kt$( id: String = "test", name: String = "testName", handle: String = "testHandle", email: String = "testEmail@wire.com", phone: String = "testPhone", accentId: Int = 1, team: String = "testTeam", connectionStatus: UserEntity.ConnectionState = UserEntity.ConnectionState.ACCEPTED, previewAssetId: String = "previewAssetId", completeAssetId: String = "completeAssetId", )</ID>
+    <ID>LongParameterList:UserStubs.kt$( id: String = "test", name: String = "testName", handle: String = "testHandle", email: String = "testEmail@wire.com", phone: String = "testPhone", accentId: Int = 1, team: String = "testTeam", connectionStatus: ConnectionEntity.State = ConnectionEntity.State.ACCEPTED, previewAssetId: String = "previewAssetId", completeAssetId: String = "completeAssetId", )</ID>
     <ID>MagicNumber:AESUtils.kt$AESDecrypt$16</ID>
     <ID>MagicNumber:AESUtils.kt$AESEncrypt$256</ID>
     <ID>MagicNumber:CLIUtils.kt$CLIUtils$1024</ID>
@@ -249,7 +243,6 @@
     <ID>MaxLineLength:TestCredentials.kt$accessToken = "eyJhbGciOiJIUzI1AnwarInR5cCI6IkpXVCJ9.eyJsb2dnZWRJbkFzIjoiYWRtaW4iLCJpYXQiOjE0MjI3Nzk2Mz69.gzSraSYS8EXBxLN_oWnFSRgCzcmJmMjLiuyu5CSpyHI"</ID>
     <ID>MaxLineLength:TestCredentials.kt$refreshToken = "a123bGciOiJIUzI1NiIsInR5cCI6IkpX2fr9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6Ik420G4gRG9lIiwiYWRtaW4iOnRydWV9.TJVA95OrM7E2cBab30RMHrHDcEfxjoYZgeFONFh7HgQ"</ID>
     <ID>MaxLineLength:UserDTO.kt$NewUserDTO$@SerialName("label") val label: String?</ID>
-    <ID>MaxLineLength:UserSessionScope.kt$UserSessionScopeCommon$private val preKeyRemoteRepository: PreKeyRemoteRepository get() = PreKeyRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi)</ID>
     <ID>MaxLineLength:ValidateUserHandleUseCaseTest.kt$ValidateUserHandleUseCaseTest$fun</ID>
     <ID>MaxLineLength:WrapApiRequestTest.kt$WrapApiRequestTest$val expected = NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "have you tried turning it off and on again?", "server_crash")))</ID>
     <ID>MaxLineLength:messages.kt$1 -> items = (items ?: pbandk.ListWithSize.Builder()).apply { this += _fieldValue as Sequence&lt;com.wire.kalium.protobuf.messages.Composite.Item> }</ID>
@@ -490,16 +483,13 @@
     <ID>ObjectPropertyNaming:Decoder.module_@wireapp_cbor.kt$Decoder.Companion$var _check_overflow: Any</ID>
     <ID>PackageNaming:EncryptedSettingsHolder.kt$package com.wire.kalium.persistence.kmm_settings</ID>
     <ID>PackageNaming:KaliumPreferences.kt$package com.wire.kalium.persistence.kmm_settings</ID>
-    <ID>PackageNaming:SaveNotificationTokenUseCase.kt$package com.wire.kalium.logic.feature.notification_token</ID>
+    <ID>PackageNaming:SaveNotificationTokenUseCase.kt$package com.wire.kalium.logic.feature.notificationToken</ID>
     <ID>PackageNaming:ServerConfigurationDAO.kt$package com.wire.kalium.persistence.dao_kalium_db</ID>
-    <ID>ReturnCount:ConversationMapper.kt$ConversationMapperImpl$private fun determineOneToOneUserType(otherUser: OtherUser, selfUser: SelfUser): UserType</ID>
     <ID>ReturnCount:NetworkUtils.kt$internal fun String.splitSetCookieHeader(): List&lt;String></ID>
-    <ID>ReturnCount:WorkScheduler.kt$WrapperWorker$override suspend fun doWork(): Result</ID>
     <ID>TooGenericExceptionCaught:CoreFailure.kt$e: Exception</ID>
     <ID>TooGenericExceptionCaught:NetworkUtils.kt$e: Exception</ID>
     <ID>TooGenericExceptionCaught:ProteusClientImpl.kt$ProteusClientImpl$e: Exception</ID>
     <ID>TooGenericExceptionThrown:MainActivity.kt$MainActivity$throw RuntimeException( "There was an error on the login :(" + "Check the credentials and the internet connection and try again" )</ID>
-    <ID>TooGenericExceptionThrown:WorkScheduler.kt$WrapperWorkerFactory$throw RuntimeException("No user id was specified")</ID>
     <ID>TooManyFunctions:Calling.kt$Calling : Library</ID>
     <ID>TooManyFunctions:ConversationDAO.kt$ConversationDAO</ID>
     <ID>TooManyFunctions:ConversationDAOImpl.kt$ConversationDAOImpl : ConversationDAO</ID>

@@ -1,5 +1,6 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
-import com.wire.kalium.persistence.dao.UserEntity.ConnectionState;
+import com.wire.kalium.persistence.dao.ConnectionEntity;
+import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity;
 import kotlin.Int;
 
 CREATE TABLE User (
@@ -10,9 +11,10 @@ CREATE TABLE User (
     phone TEXT,
     accent_id INTEGER AS Int NOT NULL DEFAULT 0,
     team TEXT,
-    connection_status TEXT AS ConnectionState NOT NULL DEFAULT 'NOT_CONNECTED',
-    preview_asset_id TEXT,
-    complete_asset_id TEXT
+    connection_status TEXT AS ConnectionEntity.State NOT NULL DEFAULT 'NOT_CONNECTED',
+    preview_asset_id TEXT AS QualifiedIDEntity,
+    complete_asset_id TEXT AS QualifiedIDEntity,
+    user_availability_status TEXT AS UserAvailabilityStatusEntity NOT NULL DEFAULT 'NONE'
 );
 
 deleteAllUsers:
@@ -22,14 +24,34 @@ deleteUser:
 DELETE FROM User WHERE qualified_id = ?;
 
 insertUser:
-INSERT OR REPLACE INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT(qualified_id) DO UPDATE SET
+name = excluded.name,
+handle = excluded.handle,
+email = excluded.email,
+phone = excluded.phone,
+accent_id = excluded.accent_id,
+team = excluded.team,
+connection_status = excluded.connection_status,
+preview_asset_id = excluded.preview_asset_id,
+complete_asset_id = excluded.complete_asset_id;
+
+updateUser:
+UPDATE User
+SET name = ?, handle = ?, email = ?, phone = ?, accent_id = ?, team = ?, preview_asset_id = ?, complete_asset_id = ?
+WHERE qualified_id = ?;
+
+updateTeamMemberUser:
+UPDATE User
+SET team = ?, connection_status = ?
+WHERE qualified_id = ?;
 
 insertOrIgnoreUserId:
 INSERT OR IGNORE INTO User(qualified_id)
 VALUES(?);
 
-updateUser:
+updateSelfUser:
 UPDATE User
 SET name = ?, handle = ?, email = ?, accent_id = ?, preview_asset_id = ?, complete_asset_id = ?
 WHERE qualified_id = ?;
@@ -67,3 +89,6 @@ UPDATE User SET handle = ? WHERE qualified_id = ?;
 
 selectChanges:
 SELECT changes();
+
+updateUserAvailabilityStatus:
+UPDATE User SET user_availability_status = ? WHERE qualified_id = ?;

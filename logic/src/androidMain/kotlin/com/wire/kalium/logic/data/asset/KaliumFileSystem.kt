@@ -67,8 +67,6 @@ actual class KaliumFileSystem actual constructor(private val dataStoragePaths: D
             while (dataSource.read(buffer, 8192L).also { byteCount = it } != -1L) {
                 sink.write(buffer, byteCount)
             }
-//            sink.flush()
-//            dataSource.close()
         }
         return byteCount
     }

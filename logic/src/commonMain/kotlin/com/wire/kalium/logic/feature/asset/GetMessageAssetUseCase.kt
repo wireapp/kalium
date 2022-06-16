@@ -8,6 +8,7 @@ import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import okio.Path
@@ -39,10 +40,17 @@ internal class GetMessageAssetUseCaseImpl(
             kaliumLogger.e("There was an error retrieving the asset message $messageId")
             MessageAssetResult.Failure(it)
         }, { message ->
-            val assetDTO = when (val content = message.content) {
+            val assetMetadata = when (val content = message.content) {
                 is MessageContent.Asset -> {
                     with(content.value.remoteData) {
-                        AssetDTO(content.value.name ?: "", content.value.sizeInBytes, assetId, assetDomain, assetToken, AES256Key(otrKey))
+                        DownloadAssetMessageMetadata(
+                            content.value.name ?: "",
+                            content.value.sizeInBytes,
+                            assetId,
+                            assetDomain,
+                            assetToken,
+                            AES256Key(otrKey)
+                        )
                     }
                 }
                 // This should never happen
@@ -51,16 +59,15 @@ internal class GetMessageAssetUseCaseImpl(
                 )
             }
             assetDataSource.downloadPrivateAsset(
-                assetKey = assetDTO.assetKey,
-                assetKeyDomain = assetDTO.assetKeyDomain,
-                assetToken = assetDTO.assetToken
+                assetId = AssetId(assetMetadata.assetKey, assetMetadata.assetKeyDomain.orEmpty()),
+                assetToken = assetMetadata.assetToken
             ).fold({
-                kaliumLogger.e("There was an error downloading asset with id => ${assetDTO.assetKey}")
+                kaliumLogger.e("There was an error downloading asset with id => ${assetMetadata.assetKey}")
                 MessageAssetResult.Failure(it)
             }, { encodedAssetPath ->
-                val decryptedAssetPath = kaliumFileSystem.tempFilePath("${assetDTO.assetKey}_decrypted")
-                decryptDataWithAES256(encodedAssetPath, decryptedAssetPath, assetDTO.encryptionKey, kaliumFileSystem)
-                MessageAssetResult.Success(decryptedAssetPath, assetDTO.assetSize)
+                val decryptedAssetPath = kaliumFileSystem.tempFilePath("${assetMetadata.assetKey}_decrypted")
+                decryptDataWithAES256(encodedAssetPath, decryptedAssetPath, assetMetadata.encryptionKey, kaliumFileSystem)
+                MessageAssetResult.Success(decryptedAssetPath, assetMetadata.assetSize)
             })
         })
 }

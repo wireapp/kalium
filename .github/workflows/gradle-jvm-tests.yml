@@ -3,6 +3,9 @@ name: "JVM & JS Tests"
 on:
   pull_request:
     types: [ opened, synchronize ] # Don't rerun on `edited` to save time
+  push:
+    branches: # Runs on develop to have the coverage diff on every PR
+        - 'develop'
 
 jobs:
   gradle-run-tests:
@@ -10,13 +13,13 @@ jobs:
     container: wirebot/cryptobox:1.1.1
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
       - name: Test with Gradle
         run: |
-          ./gradlew jvmTest -Djava.library.path=$LD_LIBRARY_PATH
+          ./gradlew jvmTest koverMergedXmlReport -Djava.library.path=$LD_LIBRARY_PATH
           ./gradlew jsTest
 
       - name: Install Pip for test result publishing
@@ -28,6 +31,17 @@ jobs:
         with:
           files: |
             **/build/test-results/**/*.xml
+
+      - name: Upload Test Report
+        uses: codecov/codecov-action@v2
+        with:
+            files: "build/reports/kover/report.xml"
+
+      - name: Archive Kover report
+        uses: actions/upload-artifact@v3
+        with:
+            name: kover-report
+            path: build/reports/kover/report.xml
 
       - name: Cleanup Gradle Cache
         # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.

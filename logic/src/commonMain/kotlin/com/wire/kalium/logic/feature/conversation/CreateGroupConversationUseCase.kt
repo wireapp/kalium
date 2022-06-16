@@ -13,7 +13,7 @@ class CreateGroupConversationUseCase(
     private val syncManager: SyncManager
 ) {
     suspend operator fun invoke(name: String, members: List<Member>, options: ConversationOptions): Either<CoreFailure, Conversation> {
-        syncManager.waitForSlowSyncToComplete()
+        syncManager.waitUntilLive()
         return conversationRepository.createGroupConversation(name, members, options)
     }
 }

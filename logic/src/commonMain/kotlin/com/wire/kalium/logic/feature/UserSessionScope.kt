@@ -10,7 +10,6 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.DataStoragePaths
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.call.CallDataSource
-import com.wire.kalium.logic.data.call.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientDataSource
 import com.wire.kalium.logic.data.client.ClientRepository
@@ -33,7 +32,6 @@ import com.wire.kalium.logic.data.logout.LogoutDataSource
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.message.MessageDataSource
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.prekey.PreKeyDataSource
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteDataSource
@@ -41,6 +39,8 @@ import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepositoryImpl
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.sync.InMemorySyncRepository
+import com.wire.kalium.logic.data.sync.SyncRepository
 import com.wire.kalium.logic.data.team.TeamDataSource
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserDataSource
@@ -67,9 +67,15 @@ import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.team.TeamScope
 import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.sync.ConversationEventReceiver
+import com.wire.kalium.logic.sync.ConversationEventReceiverImpl
 import com.wire.kalium.logic.sync.ListenToEventsUseCase
+import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.SyncManagerImpl
 import com.wire.kalium.logic.sync.SyncPendingEventsUseCase
+import com.wire.kalium.logic.sync.UserEventReceiver
+import com.wire.kalium.logic.sync.UserEventReceiverImpl
+import com.wire.kalium.logic.sync.handler.MessageTextEditHandler
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.TimeParserImpl
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
@@ -152,7 +158,10 @@ abstract class UserSessionScopeCommon(
     private val connectionRepository: ConnectionRepository
         get() = ConnectionDataSource(
             userDatabaseProvider.conversationDAO,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.connectionApi
+            userDatabaseProvider.connectionDAO,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.connectionApi,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
+            userDatabaseProvider.userDAO
         )
 
     private val publicUserRepository: SearchUserRepository
@@ -164,7 +173,10 @@ abstract class UserSessionScopeCommon(
 
     private val callRepository: CallRepository by lazy {
         CallDataSource(
-            callApi = authenticatedDataSourceSet.authenticatedNetworkContainer.callApi
+            callApi = authenticatedDataSourceSet.authenticatedNetworkContainer.callApi,
+            conversationRepository = conversationRepository,
+            userRepository = userRepository,
+            teamRepository = teamRepository
         )
     }
 
@@ -189,13 +201,13 @@ abstract class UserSessionScopeCommon(
         get() = SessionEstablisherImpl(authenticatedDataSourceSet.proteusClient, preKeyRepository)
 
     private val messageEnvelopeCreator: MessageEnvelopeCreator
-        get() = MessageEnvelopeCreatorImpl(authenticatedDataSourceSet.proteusClient, protoContentMapper)
+        get() = MessageEnvelopeCreatorImpl(authenticatedDataSourceSet.proteusClient)
 
     private val mlsMessageCreator: MLSMessageCreator
-        get() = MLSMessageCreatorImpl(mlsClientProvider, protoContentMapper)
+        get() = MLSMessageCreatorImpl(mlsClientProvider)
 
     private val messageSendingScheduler: MessageSendingScheduler
-        get() = authenticatedDataSourceSet.workScheduler
+        get() = authenticatedDataSourceSet.userSessionWorkScheduler
 
     // TODO(optimization) code duplication, can't we get the MessageSender from the message scope?
     private val messageSender: MessageSender
@@ -218,7 +230,17 @@ abstract class UserSessionScopeCommon(
             kaliumFileSystem = kaliumFileSystem
         )
 
-    val syncManager: SyncManager get() = authenticatedDataSourceSet.syncManager
+    private val syncRepository: SyncRepository by lazy { InMemorySyncRepository() }
+
+    val syncManager: SyncManager by lazy {
+        SyncManagerImpl(
+            authenticatedDataSourceSet.userSessionWorkScheduler,
+            eventRepository,
+            syncRepository,
+            conversationEventReceiver,
+            userEventReceiver
+        )
+    }
 
     private val timeParser: TimeParser = TimeParserImpl()
 
@@ -227,16 +249,13 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.authenticatedNetworkContainer.notificationApi, eventInfoStorage, clientRepository
         )
 
-    private val callMapper: CallMapper
-        get() = CallMapper()
-
     private val callManager: Lazy<CallManager> = lazy {
         globalCallManager.getCallManagerForClient(
             userId = userId,
             callRepository = callRepository,
             userRepository = userRepository,
             clientRepository = clientRepository,
-            callMapper = callMapper,
+            conversationRepository = conversationRepository,
             messageSender = messageSender
         )
     }
@@ -245,19 +264,31 @@ abstract class UserSessionScopeCommon(
         globalCallManager.getFlowManager()
     }
 
-    protected abstract val protoContentMapper: ProtoContentMapper
-    private val conversationEventReceiver: ConversationEventReceiver
-        get() = ConversationEventReceiver(
+    private val mediaManagerService by lazy {
+        globalCallManager.getMediaManager()
+    }
+
+    private val messageTextEditHandler = MessageTextEditHandler(messageRepository)
+
+    private val conversationEventReceiver: ConversationEventReceiver by lazy {
+        ConversationEventReceiverImpl(
             authenticatedDataSourceSet.proteusClient,
             messageRepository,
             conversationRepository,
             mlsConversationRepository,
             userRepository,
-            protoContentMapper,
-            callManager
+            callManager,
+            messageTextEditHandler
+        )
+    }
+
+    private val userEventReceiver: UserEventReceiver
+        get() = UserEventReceiverImpl(
+            connectionRepository,
         )
 
-    private val preKeyRemoteRepository: PreKeyRemoteRepository get() = PreKeyRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi)
+    private val preKeyRemoteRepository: PreKeyRemoteRepository
+        get() = PreKeyRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi)
     private val preKeyRepository: PreKeyRepository
         get() = PreKeyDataSource(
             preKeyRemoteRepository, authenticatedDataSourceSet.proteusClient
@@ -272,9 +303,11 @@ abstract class UserSessionScopeCommon(
 
     private val logoutRepository: LogoutRepository = LogoutDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi)
     val listenToEvents: ListenToEventsUseCase
-        get() = ListenToEventsUseCase(syncManager, eventRepository, conversationEventReceiver)
+        get() = ListenToEventsUseCase(syncManager)
     val syncPendingEvents: SyncPendingEventsUseCase
-        get() = SyncPendingEventsUseCase(syncManager, eventRepository, conversationEventReceiver)
+        get() = SyncPendingEventsUseCase(syncManager)
+    val observeSyncState: ObserveSyncStateUseCase
+        get() = ObserveSyncStateUseCase(syncRepository)
     val client: ClientScope
         get() = ClientScope(
             clientRepository,
@@ -283,7 +316,13 @@ abstract class UserSessionScopeCommon(
             mlsClientProvider,
             notificationTokenRepository
         )
-    val conversations: ConversationScope get() = ConversationScope(conversationRepository, userRepository, syncManager)
+    val conversations: ConversationScope
+        get() = ConversationScope(
+            conversationRepository,
+            connectionRepository,
+            userRepository,
+            syncManager
+        )
     val messages: MessageScope
         get() = MessageScope(
             messageRepository,
@@ -299,7 +338,7 @@ abstract class UserSessionScopeCommon(
             timeParser,
             kaliumFileSystem
         )
-    val users: UserScope get() = UserScope(userRepository, publicUserRepository, syncManager, assetRepository)
+    val users: UserScope get() = UserScope(userRepository, publicUserRepository, syncManager, assetRepository, teamRepository)
     val logout: LogoutUseCase
         get() = LogoutUseCase(
             logoutRepository,
@@ -307,14 +346,22 @@ abstract class UserSessionScopeCommon(
             userId,
             authenticatedDataSourceSet,
             clientRepository,
-            mlsClientProvider
+            mlsClientProvider,
+            client.deregisterNativePushToken
         )
 
     val team: TeamScope get() = TeamScope(userRepository, teamRepository, syncManager)
 
-    val calls: CallsScope get() = CallsScope(callManager, callRepository, flowManagerService, syncManager)
+    val calls: CallsScope
+        get() = CallsScope(
+            callManager,
+            callRepository,
+            flowManagerService,
+            mediaManagerService,
+            syncManager
+        )
 
-    val connection: ConnectionScope get() = ConnectionScope(connectionRepository)
+    val connection: ConnectionScope get() = ConnectionScope(connectionRepository, conversationRepository)
 
     val kaliumFileSystem: KaliumFileSystem = KaliumFileSystem(dataStoragePaths)
 }

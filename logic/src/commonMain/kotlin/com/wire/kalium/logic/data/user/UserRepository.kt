@@ -18,6 +18,7 @@ import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.network.api.user.details.qualifiedIds
 import com.wire.kalium.network.api.user.self.ChangeHandleRequest
 import com.wire.kalium.network.api.user.self.SelfApi
+import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
@@ -45,8 +46,10 @@ interface UserRepository {
     suspend fun getAllContacts(): List<OtherUser>
     suspend fun getKnownUser(userId: UserId): Flow<OtherUser?>
     suspend fun fetchUserInfo(userId: UserId): Either<CoreFailure, OtherUser>
+    suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus)
 }
 
+@Suppress("LongParameterList", "TooManyFunctions")
 class UserDataSource(
     private val userDAO: UserDAO,
     private val metadataDAO: MetadataDAO,
@@ -55,7 +58,8 @@ class UserDataSource(
     private val assetRepository: AssetRepository,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
-    private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper()
+    private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(),
+    private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper()
 ) : UserRepository {
 
     override suspend fun getSelfUserId(): QualifiedID {
@@ -69,14 +73,20 @@ class UserDataSource(
     }
 
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
-        .map { userMapper.fromApiModelToDaoModel(it).copy(connectionStatus = UserEntity.ConnectionState.ACCEPTED) }
+        .map { userMapper.fromApiModelToDaoModel(it).copy(connectionStatus = ConnectionEntity.State.ACCEPTED) }
         .flatMap { userEntity ->
-            assetRepository.downloadUsersPictureAssets(listOf(userEntity.previewAssetId, userEntity.completeAssetId))
+            assetRepository.downloadUsersPictureAssets(getQualifiedUserAssetId(userEntity))
             userDAO.insertUser(userEntity)
             metadataDAO.insertValue(Json.encodeToString(userEntity.id), SELF_USER_ID_KEY)
             Either.Right(Unit)
         }
 
+    private fun getQualifiedUserAssetId(userEntity: UserEntity): List<UserAssetId?> {
+        return mutableListOf<UserAssetId?>().also {
+            it.add(userEntity.previewAssetId?.let { asset -> idMapper.fromDaoModel(asset) })
+            it.add(userEntity.completeAssetId?.let { asset -> idMapper.fromDaoModel(asset) })
+        }
+    }
 
     override suspend fun fetchKnownUsers(): Either<CoreFailure, Unit> {
         val ids = userDAO.getAllUsers().first().map { userEntry ->
@@ -90,7 +100,7 @@ class UserDataSource(
             userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(ids.map(idMapper::toApiModel)))
         }.flatMap {
             wrapStorageRequest {
-                userDAO.insertUsers(it.map(userMapper::fromApiModelToDaoModel))
+                userDAO.upsertUsers(it.map(userMapper::fromApiModelToDaoModel))
             }
         }
 
@@ -112,7 +122,7 @@ class UserDataSource(
             .map { userMapper.fromUpdateRequestToDaoModel(user, updateRequest) }
             .flatMap { userEntity ->
                 wrapStorageRequest {
-                    userDAO.updateUser(userEntity)
+                    userDAO.updateSelfUser(userEntity)
                 }.map { userMapper.fromDaoModelToSelfUser(userEntity) }
             }
     }
@@ -127,7 +137,7 @@ class UserDataSource(
     override suspend fun getAllContacts(): List<OtherUser> {
         val selfUserId = _getSelfUserId()
 
-        return userDAO.getAllUsersByConnectionStatus(connectionState = UserEntity.ConnectionState.ACCEPTED)
+        return userDAO.getAllUsersByConnectionStatus(connectionState = ConnectionEntity.State.ACCEPTED)
             .filter { it.id != selfUserId }
             .map { userEntity -> publicUserMapper.fromDaoModelToPublicUser(userEntity) }
     }
@@ -140,6 +150,10 @@ class UserDataSource(
         wrapApiRequest { userDetailsApi.getUserInfo(idMapper.toApiModel(userId)) }.map { userProfile ->
             publicUserMapper.fromUserDetailResponse(userProfile)
         }
+
+    override suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus) {
+        userDAO.updateUserAvailabilityStatus(_getSelfUserId(), availabilityStatusMapper.fromModelAvailabilityStatusToDao(status))
+    }
 
     companion object {
         const val SELF_USER_ID_KEY = "selfUserID"

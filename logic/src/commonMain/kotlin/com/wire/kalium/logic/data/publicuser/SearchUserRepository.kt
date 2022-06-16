@@ -12,10 +12,8 @@ import com.wire.kalium.network.api.contact.search.UserSearchRequest
 import com.wire.kalium.network.api.user.details.ListUserRequest
 import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.network.api.user.details.qualifiedIds
+import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.UserDAO
-import com.wire.kalium.persistence.dao.UserEntity
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 
 interface SearchUserRepository {
     suspend fun searchKnownUsersByNameOrHandleOrEmail(searchQuery: String): UserSearchResult
@@ -38,7 +36,7 @@ class SearchUserRepositoryImpl(
         UserSearchResult(
             result = userDAO.getUserByNameOrHandleOrEmailAndConnectionState(
                 searchQuery = searchQuery,
-                connectionState = UserEntity.ConnectionState.ACCEPTED
+                connectionState = ConnectionEntity.State.ACCEPTED
             ).map(publicUserMapper::fromDaoModelToPublicUser)
         )
 
@@ -46,7 +44,7 @@ class SearchUserRepositoryImpl(
         UserSearchResult(
             result = userDAO.getUserByHandleAndConnectionState(
                 handle = handle,
-                connectionState = UserEntity.ConnectionState.ACCEPTED
+                connectionState = ConnectionEntity.State.ACCEPTED
             ).map(publicUserMapper::fromDaoModelToPublicUser)
         )
 

@@ -4,6 +4,7 @@ import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAssetId
+import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 
@@ -20,8 +21,9 @@ object TestUser {
         accentId = 0,
         team = "teamId",
         connectionStatus = ConnectionState.ACCEPTED,
-        previewPicture = UserAssetId(),
-        completePicture = UserAssetId()
+        previewPicture = UserAssetId("value1", "domain"),
+        completePicture = UserAssetId("value2", "domain"),
+        availabilityStatus = UserAvailabilityStatus.NONE
     )
 
     val OTHER = OtherUser(
@@ -33,7 +35,8 @@ object TestUser {
         accentId = 0,
         team = "otherTeamId",
         connectionStatus = ConnectionState.ACCEPTED,
-        previewPicture = UserAssetId(),
-        completePicture = UserAssetId()
+        previewPicture = UserAssetId("value1", "domain"),
+        completePicture = UserAssetId("value2", "domain"),
+        availabilityStatus = UserAvailabilityStatus.NONE
     )
 }

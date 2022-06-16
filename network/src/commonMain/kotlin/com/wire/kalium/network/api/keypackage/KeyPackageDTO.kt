@@ -27,4 +27,9 @@ data class KeyPackageDTO(
     val keyPackageRef: KeyPackageRef,
     @SerialName("user")
     val userId: String
-    )
+)
+
+@Serializable
+data class KeyPackageCountDTO(
+    @SerialName("count") val count: Int
+)

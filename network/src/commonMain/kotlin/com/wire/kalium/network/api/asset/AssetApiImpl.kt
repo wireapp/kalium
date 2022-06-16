@@ -1,6 +1,7 @@
 package com.wire.kalium.network.api.asset
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.api.AssetId
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.get
@@ -17,7 +18,7 @@ import okio.Source
 import okio.buffer
 
 interface AssetApi {
-    suspend fun downloadAsset(assetKey: String, assetKeyDomain: String, assetToken: String?): NetworkResponse<Source>
+    suspend fun downloadAsset(assetId: AssetId, assetToken: String?): NetworkResponse<Source>
     suspend fun uploadAsset(
         metadata: AssetMetadataRequest,
         encryptedDataSource: Source,
@@ -32,17 +33,28 @@ class AssetApiImpl internal constructor(
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
     /**
-     * Downloads an asset
-     * @param assetKey the asset identifier
-     * @param assetKeyDomain the domain of the asset identifier
+     * Downloads an asset, this will try to consume api v4 (federated aware endpoint)
+     * @param assetId the asset identifier
      * @param assetToken the asset token, can be null in case of public assets
+     * @return a [NetworkResponse] with a reference to an open Okio [Source] object from which one will be able to stream the data
      */
-    override suspend fun downloadAsset(assetKey: String, assetKeyDomain: String, assetToken: String?): NetworkResponse<Source> =
-        wrapKaliumResponse {
-            httpClient.get("$PATH_PUBLIC_ASSETS/$assetKeyDomain/$assetKey") {
-                assetToken?.let { header(HEADER_ASSET_TOKEN, it) }
-            }
+    override suspend fun downloadAsset(assetId: AssetId, assetToken: String?): NetworkResponse<Source> = wrapKaliumResponse {
+        httpClient.get(buildAssetsPath(assetId)) {
+            assetToken?.let { header(HEADER_ASSET_TOKEN, it) }
         }
+    }
+
+    /**
+     * Build path for assets endpoint download.
+     * The case for using V3 is a fallback and should not happen.
+     *
+     * TODO(assets): once API v2 is alive, this should be changed/merged.
+     * https://github.com/wireapp/wire-server/blob/dfe207073b54a63372898a75f670e972dd482118/changelog.d/1-api-changes/api-versioning
+     */
+    private fun buildAssetsPath(assetId: AssetId): String {
+        return if (assetId.domain.isNotBlank()) "$PATH_PUBLIC_ASSETS_V4/${assetId.domain}/${assetId.value}"
+        else "$PATH_PUBLIC_ASSETS_V3/${assetId.value}"
+    }
 
     /** Uploads an already encrypted asset
      * @param metadata the metadata associated to the asset that wants to be uploaded
@@ -55,14 +67,15 @@ class AssetApiImpl internal constructor(
         encryptedDataSize: Long
     ): NetworkResponse<AssetResponse> =
         wrapKaliumResponse {
-            httpClient.post(PATH_PUBLIC_ASSETS) {
+            httpClient.post(PATH_PUBLIC_ASSETS_V3) {
                 contentType(ContentType.MultiPart.Mixed)
                 setBody(StreamAssetContent(metadata, encryptedDataSize, encryptedDataSource))
             }
         }
 
     private companion object {
-        const val PATH_PUBLIC_ASSETS = "/assets/v3"
+        const val PATH_PUBLIC_ASSETS_V3 = "assets/v3"
+        const val PATH_PUBLIC_ASSETS_V4 = "assets/v4"
         const val HEADER_ASSET_TOKEN = "Asset-Token"
     }
 }

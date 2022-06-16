@@ -10,6 +10,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
@@ -21,15 +22,19 @@ import com.wire.kalium.network.api.message.MessagePriority
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Clock
 
+@Suppress("TooManyFunctions")
 interface MessageRepository {
-    suspend fun getMessagesForConversation(conversationId: ConversationId, limit: Int, offset: Int): Flow<List<Message>>
     suspend fun persistMessage(message: Message): Either<CoreFailure, Unit>
     suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun markMessageAsDeleted(messageUuid: String, conversationId: ConversationId): Either<StorageFailure, Unit>
+    suspend fun markMessageAsEdited(messageUuid: String, conversationId: ConversationId, timeStamp: String): Either<StorageFailure, Unit>
     suspend fun updateMessageStatus(
         messageStatus: MessageEntity.Status,
         conversationId: ConversationId,
@@ -45,7 +50,17 @@ interface MessageRepository {
     suspend fun updateMessageDate(conversationId: ConversationId, messageUuid: String, date: String): Either<CoreFailure, Unit>
     suspend fun updatePendingMessagesAddMillisToDate(conversationId: ConversationId, millis: Long): Either<CoreFailure, Unit>
     suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message>
-    suspend fun getMessagesByConversationAfterDate(conversationId: ConversationId, date: String): Flow<List<Message>>
+    suspend fun getMessagesByConversationIdAndVisibility(
+        conversationId: ConversationId,
+        limit: Int,
+        offset: Int,
+        visibility: List<Message.Visibility> = Message.Visibility.values().toList()
+    ): Flow<List<Message>>
+    suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
+        conversationId: ConversationId,
+        date: String,
+        visibility: List<Message.Visibility> = Message.Visibility.values().toList()
+    ): Flow<List<Message>>
 
     /**
      * Send a Proteus [MessageEnvelope] to the given [conversationId].
@@ -58,9 +73,22 @@ interface MessageRepository {
     suspend fun sendMLSMessage(conversationId: ConversationId, message: MLSMessageApi.Message): Either<CoreFailure, Unit>
 
     suspend fun getAllPendingMessagesFromUser(senderUserId: UserId): Either<CoreFailure, List<Message>>
+
+    suspend fun updateTextMessageContent(
+        conversationId: ConversationId,
+        messageId: String,
+        newTextContent: String
+    ): Either<CoreFailure, Unit>
+
+    suspend fun updateMessageId(
+        conversationId: ConversationId,
+        oldMessageId: String,
+        newMessageId: String
+    ): Either<CoreFailure, Unit>
 }
 
-@Suppress("LongParameterList")
+//TODO: suppress TooManyFunctions for now, something we need to fix in the future
+@Suppress("LongParameterList", "TooManyFunctions")
 class MessageDataSource(
     private val messageApi: MessageApi,
     private val mlsMessageApi: MLSMessageApi,
@@ -71,11 +99,18 @@ class MessageDataSource(
     private val sendMessageFailureMapper: SendMessageFailureMapper = MapperProvider.sendMessageFailureMapper()
 ) : MessageRepository {
 
-    override suspend fun getMessagesForConversation(conversationId: ConversationId, limit: Int, offset: Int): Flow<List<Message>> {
-        return messageDAO.getMessagesByConversation(idMapper.toDaoModel(conversationId), limit, offset).map { messageList ->
-            messageList.map(messageMapper::fromEntityToMessage)
-        }
-    }
+    override suspend fun getMessagesByConversationIdAndVisibility(
+        conversationId: ConversationId,
+        limit: Int,
+        offset: Int,
+        visibility: List<Message.Visibility>
+    ): Flow<List<Message>> =
+        messageDAO.getMessagesByConversationAndVisibility(
+            idMapper.toDaoModel(conversationId),
+            limit,
+            offset,
+            visibility.map { it.toEntityVisibility() }
+        ).map { messagelist -> messagelist.map(messageMapper::fromEntityToMessage) }
 
     override suspend fun persistMessage(message: Message): Either<CoreFailure, Unit> = wrapStorageRequest {
         messageDAO.insertMessage(messageMapper.fromMessageToEntity(message))
@@ -91,6 +126,14 @@ class MessageDataSource(
             messageDAO.markMessageAsDeleted(id = messageUuid, conversationsId = idMapper.toDaoModel(conversationId))
         }
 
+    override suspend fun markMessageAsEdited(
+        messageUuid: String,
+        conversationId: ConversationId,
+        timeStamp: String
+    ) = wrapStorageRequest {
+        messageDAO.markAsEdited(timeStamp, idMapper.toDaoModel(conversationId), messageUuid)
+    }
+
     override suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message> =
         wrapStorageRequest {
             messageDAO.getMessageById(messageUuid, idMapper.toDaoModel(conversationId))
@@ -103,11 +146,15 @@ class MessageDataSource(
             Either.Left(it)
         }
 
-    override suspend fun getMessagesByConversationAfterDate(conversationId: ConversationId, date: String): Flow<List<Message>> {
-        return messageDAO.getMessagesByConversationAfterDate(idMapper.toDaoModel(conversationId), date).map { messageList ->
-            messageList.map(messageMapper::fromEntityToMessage)
-        }
-    }
+    override suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
+        conversationId: ConversationId,
+        date: String,
+        visibility: List<Message.Visibility>
+    ): Flow<List<Message>> = messageDAO.getMessagesByConversationAndVisibilityAfterDate(
+        idMapper.toDaoModel(conversationId),
+        date,
+        visibility.map { it.toEntityVisibility() }
+    ).map { messageList -> messageList.map(messageMapper::fromEntityToMessage) }
 
     override suspend fun updateMessageStatus(messageStatus: MessageEntity.Status, conversationId: ConversationId, messageUuid: String) =
         wrapStorageRequest {
@@ -175,4 +222,36 @@ class MessageDataSource(
         messageDAO.getAllPendingMessagesFromUser(idMapper.toDaoModel(senderUserId))
             .map(messageMapper::fromEntityToMessage)
     }
+
+    override suspend fun updateMessageId(
+        conversationId: ConversationId,
+        oldMessageId: String,
+        newMessageId: String
+    ): Either<CoreFailure, Unit> =
+        wrapStorageRequest {
+            messageDAO.updateMessageId(idMapper.toDaoModel(conversationId), oldMessageId, newMessageId)
+        }
+
+    override suspend fun updateTextMessageContent(
+        conversationId: ConversationId,
+        messageId: String,
+        newTextContent: String
+    ): Either<CoreFailure, Unit> {
+        val messageToUpdate = getMessageById(conversationId, messageId)
+
+        return messageToUpdate.flatMap { message ->
+            wrapStorageRequest {
+                if (message.content is MessageContent.Text) {
+                    messageDAO.updateTextMessageContent(
+                        idMapper.toDaoModel(conversationId),
+                        messageId,
+                        MessageEntityContent.Text(newTextContent)
+                    )
+                } else {
+                    throw IllegalStateException("Text message can only be updated on message having TextMessageContent set as content")
+                }
+            }
+        }
+    }
 }
+

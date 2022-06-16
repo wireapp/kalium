@@ -9,7 +9,6 @@ import okio.Path.Companion.toPath
 import okio.Sink
 import okio.Source
 import okio.buffer
-import kotlin.io.use
 
 actual class KaliumFileSystem actual constructor(private val dataStoragePaths: DataStoragePaths) : FileSystem() {
     override fun appendingSink(file: Path, mustExist: Boolean): Sink = SYSTEM.appendingSink(file, mustExist)
@@ -72,14 +71,12 @@ actual class KaliumFileSystem actual constructor(private val dataStoragePaths: D
      * @return the number of bytes written
      */
     actual fun writeData(outputPath: Path, dataSource: Source): Long {
-        var byteCount = 0L
+        var byteCount: Long
         sink(outputPath).use { sink ->
             val buffer = Buffer()
             while (dataSource.read(buffer, 8192L).also { byteCount = it } != -1L) {
                 sink.write(buffer, byteCount)
             }
-//            sink.flush()
-//            sink.close()
         }
         return byteCount
     }

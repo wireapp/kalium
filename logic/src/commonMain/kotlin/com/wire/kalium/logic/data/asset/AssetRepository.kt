@@ -1,7 +1,8 @@
 package com.wire.kalium.logic.data.asset
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
@@ -11,11 +12,11 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.asset.AssetApi
-import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import kotlinx.coroutines.flow.firstOrNull
 import okio.Path
 import okio.Path.Companion.toPath
+import com.wire.kalium.network.api.AssetId as NetworkAssetId
 
 interface AssetRepository {
     /**
@@ -45,22 +46,21 @@ interface AssetRepository {
 
     /**
      * Method used to download and persist to local memory a public asset
-     * @param assetKey the asset identifier
-     * @return [Either] a [CoreFailure] if anything went wrong, or the path to the decoded asset
+     * @param assetId the asset identifier
+     * @return [Either] a [CoreFailure] if anything went wrong, or the [Path] of the decoded asset
      */
-    suspend fun downloadPublicAsset(assetKey: String): Either<CoreFailure, Path>
+    suspend fun downloadPublicAsset(assetId: AssetId): Either<CoreFailure, Path>
 
     /**
      * Method used to download and persist to local memory a private asset
-     * @param assetKey the asset identifier
-     * @param assetKeyDomain the domain of the asset identifier allowing federated asset handling
+     * @param assetId the asset identifier
      * @param assetToken the asset token used to provide an extra layer of asset/user authentication
-     * @return [Either] a [CoreFailure] if anything went wrong, or the path to the encoded asset
+     * @return [Either] a [CoreFailure] if anything went wrong, or the [Path] to the encoded asset
      */
-    suspend fun downloadPrivateAsset(assetKey: String, assetKeyDomain: String?, assetToken: String?): Either<CoreFailure, Path>
+    suspend fun downloadPrivateAsset(assetId: AssetId, assetToken: String?): Either<CoreFailure, Path>
 
     /**
-     * Method used to download the list of avatar pictures of the current logged in user
+     * Method used to download the list of avatar pictures of the current authenticated user
      * @param assetIdList list of the assets' id that wants to be downloaded
      * @return [Either] a [CoreFailure] if anything went wrong, or Unit if operation was successful
      */
@@ -71,7 +71,8 @@ internal class AssetDataSource(
     private val assetApi: AssetApi,
     private val assetDao: AssetDAO,
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
-    private val kaliumFileSystem: KaliumFileSystem
+    private val kaliumFileSystem: KaliumFileSystem,
+    private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : AssetRepository {
 
     override suspend fun uploadAndPersistPublicAsset(
@@ -112,60 +113,34 @@ internal class AssetDataSource(
             }.map { assetMapper.fromApiUploadResponseToDomainModel(assetResponse) }
         }
 
-    override suspend fun downloadPublicAsset(assetKey: String): Either<CoreFailure, Path> =
-        downloadAsset(assetKey = assetKey, assetKeyDomain = null, assetToken = null)
+    override suspend fun downloadPublicAsset(assetId: AssetId): Either<CoreFailure, Path> =
+        downloadAsset(assetId = idMapper.toApiModel(assetId), assetToken = null)
 
-    override suspend fun downloadPrivateAsset(
-        assetKey: String,
-        assetKeyDomain: String?,
-        assetToken: String?
-    ): Either<CoreFailure, Path> = downloadAsset(assetKey, assetKeyDomain, assetToken)
+    override suspend fun downloadPrivateAsset(assetId: AssetId, assetToken: String?): Either<CoreFailure, Path> =
+        downloadAsset(assetId = idMapper.toApiModel(assetId), assetToken = assetToken)
 
-    private suspend fun downloadAsset(
-        assetKey: String,
-        assetKeyDomain: String?,
-        assetToken: String?
-    ): Either<CoreFailure, Path> {
-        return if (assetKeyDomain == null) {
-            Either.Left(
-                NetworkFailure.ServerMiscommunication(
-                    KaliumException.GenericError(
-                        IllegalStateException("The asset Key Domain can't be null")
-                    )
-                )
-            )
-        } else
-            wrapStorageRequest { assetDao.getAssetByKey(assetKey).firstOrNull() }.fold({
-                wrapApiRequest {
-                    assetApi.downloadAsset(assetKey, assetKeyDomain, assetToken?.ifEmpty { null })
-                }.flatMap { assetDataSource ->
-                    val assetDataPath = assetKey.toPath()
-                    val mustCreate = !kaliumFileSystem.exists(assetDataPath)
-                    var assetDataSize = 0L
+    private suspend fun downloadAsset(assetId: NetworkAssetId, assetToken: String?): Either<CoreFailure, Path> =
+        wrapStorageRequest { assetDao.getAssetByKey(assetId.value).firstOrNull() }.fold({
+            wrapApiRequest {
+                // Backend sends asset messages with empty asset tokens
+                assetApi.downloadAsset(assetId, assetToken?.ifEmpty { null })
+            }.flatMap { assetDataSource ->
+                val assetDataPath = assetId.value.toPath()
+                val mustCreate = !kaliumFileSystem.exists(assetDataPath)
+                var assetDataSize = 0L
 
-                    kaliumFileSystem.write(assetKey.toPath(), mustCreate) {
-                        assetDataSize = writeAll(assetDataSource)
-                    }
-
-                    wrapStorageRequest {
-                        assetDao.insertAsset(
-                            assetMapper.fromUserAssetToDaoModel(
-                                assetKey,
-                                assetKeyDomain,
-                                assetDataPath,
-                                assetDataSize
-                            )
-                        )
-                    }
-                        .map { assetDataSource }
-                    Either.Right(assetKey.toPath())
+                kaliumFileSystem.write(assetDataPath, mustCreate) {
+                    assetDataSize = writeAll(assetDataSource)
                 }
-            }, { Either.Right(assetKey.toPath()) })
-    }
+                wrapStorageRequest { assetDao.insertAsset(assetMapper.fromUserAssetToDaoModel(assetId, assetDataPath, assetDataSize)) }
+                    .map { assetDataSource }
+                Either.Right(assetDataPath)
+            }
+        }, { Either.Right(it.dataPath.toPath()) })
 
     override suspend fun downloadUsersPictureAssets(assetIdList: List<UserAssetId?>): Either<CoreFailure, Unit> {
-        assetIdList.filterNotNull().forEach {
-            downloadPublicAsset(it)
+        assetIdList.filterNotNull().forEach { userAssetId ->
+            downloadPublicAsset(idMapper.toQualifiedAssetId(userAssetId.value, userAssetId.domain))
         }
         return Either.Right(Unit)
     }

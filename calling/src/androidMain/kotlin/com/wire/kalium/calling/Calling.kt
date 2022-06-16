@@ -3,8 +3,10 @@ package com.wire.kalium.calling
 import com.sun.jna.Library
 import com.sun.jna.Native
 import com.sun.jna.Pointer
+import com.wire.kalium.calling.callbacks.ActiveSpeakersHandler
 import com.wire.kalium.calling.callbacks.AnsweredCallHandler
 import com.wire.kalium.calling.callbacks.CallConfigRequestHandler
+import com.wire.kalium.calling.callbacks.ClientsRequestHandler
 import com.wire.kalium.calling.callbacks.CloseCallHandler
 import com.wire.kalium.calling.callbacks.ConstantBitRateStateChangeHandler
 import com.wire.kalium.calling.callbacks.EstablishedCallHandler
@@ -112,6 +114,25 @@ interface Calling : Library {
 
     @Suppress("FunctionNaming")
     fun wcall_set_video_send_state(inst: Handle, conversationId: String, state: Int)
+
+    @Suppress("FunctionNaming", "FunctionParameterNaming")
+    fun wcall_set_req_clients_handler(
+        inst: Handle,
+        wcall_req_clients_h: ClientsRequestHandler
+    )
+
+    @Suppress("FunctionNaming")
+    fun wcall_set_clients_for_conv(
+        inst: Handle,
+        convId: String,
+        clientsJson: String
+    )
+
+    @Suppress("FunctionNaming")
+    fun wcall_set_active_speaker_handler(
+        inst: Handle,
+        activeSpeakersHandler: ActiveSpeakersHandler
+    )
 
     companion object {
         val INSTANCE by lazy { Native.load("avs", Calling::class.java)!! }

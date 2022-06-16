@@ -32,7 +32,7 @@ class MarkMessagesAsNotifiedUseCaseTest {
     }
 
     @Test
-    fun `when Mark is called with conversationId null, then all conversations are marked as Notified`() = runTest {
+    fun givenMarkIsCalledWithConversationIdNull_whenInvokingTheUseCase_thenAllConversationsAreMarkedAsNotified() = runTest {
         given(conversationRepository).coroutine { updateAllConversationsNotificationDate(DATE) }.then { Either.Right(Unit) }
 
         val result = markMessagesAsNotifiedUseCase(null, DATE)
@@ -50,7 +50,7 @@ class MarkMessagesAsNotifiedUseCaseTest {
     }
 
     @Test
-    fun `when Mark is called with some conversationId, then specific conversation is marked as Notified`() = runTest {
+    fun givenMarkIsCalledWithSomeConversationId_whenInvokingTheUseCase_thenSpecificConversationIsMarkedAsNotified() = runTest {
         given(conversationRepository).coroutine { updateAllConversationsNotificationDate(DATE) }.then { Either.Right(Unit) }
         given(conversationRepository)
             .suspendFunction(conversationRepository::updateConversationNotificationDate)
@@ -73,7 +73,7 @@ class MarkMessagesAsNotifiedUseCaseTest {
     }
 
     @Test
-    fun `when Marking propagate Error, then Failure is returned`() = runTest {
+    fun givenMarkingPropagateError_whenInvokingTheUseCase_thenFailureIsReturned() = runTest {
         val failure = StorageFailure.DataNotFound
         given(conversationRepository).coroutine { updateAllConversationsNotificationDate(DATE) }.then { Either.Right(Unit) }
         given(conversationRepository)
@@ -87,7 +87,7 @@ class MarkMessagesAsNotifiedUseCaseTest {
     }
 
     @Test
-    fun `when Marking propagate Error, then Failure is returned 2`() = runTest {
+    fun givenMarkingPropagateError_whenInvokingTheUseCase_thenFailureIsReturned2() = runTest {
         val failure = StorageFailure.DataNotFound
         given(conversationRepository).coroutine { updateAllConversationsNotificationDate(DATE) }.then { Either.Left(failure) }
         given(conversationRepository)

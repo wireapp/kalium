@@ -12,6 +12,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncManager
 import io.mockative.Mock
 import io.mockative.anything
+import io.mockative.configure
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
@@ -33,7 +34,7 @@ class ObserveConversationListDetailsUseCaseTest {
     private val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
 
     @Mock
-    private val syncManager: SyncManager = mock(SyncManager::class)
+    private val syncManager: SyncManager = configure(mock(SyncManager::class)) { stubsUnitByDefault = true }
 
     private lateinit var observeConversationsUseCase: ObserveConversationListDetailsUseCase
 
@@ -46,18 +47,13 @@ class ObserveConversationListDetailsUseCaseTest {
     fun givenSomeConversations_whenObservingDetailsList_thenObserveConversationListShouldBeCalled() = runTest {
         val conversations = listOf(TestConversation.SELF, TestConversation.GROUP)
 
-        given(syncManager)
-            .suspendFunction(syncManager::waitForSlowSyncToComplete)
-            .whenInvoked()
-            .thenReturn(Unit)
-
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationList)
             .whenInvoked()
             .thenReturn(flowOf(conversations))
 
         given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationDetailsById)
+            .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(anything())
             .thenReturn(flowOf())
 
@@ -73,25 +69,20 @@ class ObserveConversationListDetailsUseCaseTest {
     fun givenSomeConversations_whenObservingDetailsList_thenSyncManagerShouldBeCalled() = runTest {
         val conversations = listOf(TestConversation.SELF, TestConversation.GROUP)
 
-        given(syncManager)
-            .suspendFunction(syncManager::waitForSlowSyncToComplete)
-            .whenInvoked()
-            .thenReturn(Unit)
-
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationList)
             .whenInvoked()
             .thenReturn(flowOf(conversations))
 
         given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationDetailsById)
+            .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(anything())
             .thenReturn(flowOf())
 
         observeConversationsUseCase().collect()
 
         verify(syncManager)
-            .suspendFunction(syncManager::waitForSlowSyncToComplete)
+            .function(syncManager::startSyncIfIdle)
             .wasInvoked(exactly = once)
 
     }
@@ -100,18 +91,13 @@ class ObserveConversationListDetailsUseCaseTest {
     fun givenSomeConversations_whenObservingDetailsList_thenObserveConversationDetailsShouldBeCalledForEachID() = runTest {
         val conversations = listOf(TestConversation.SELF, TestConversation.GROUP)
 
-        given(syncManager)
-            .suspendFunction(syncManager::waitForSlowSyncToComplete)
-            .whenInvoked()
-            .thenReturn(Unit)
-
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationList)
             .whenInvoked()
             .thenReturn(flowOf(conversations))
 
         given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationDetailsById)
+            .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(anything())
             .thenReturn(flowOf())
 
@@ -119,7 +105,7 @@ class ObserveConversationListDetailsUseCaseTest {
 
         conversations.forEach { conversation ->
             verify(conversationRepository)
-                .suspendFunction(conversationRepository::getConversationDetailsById)
+                .suspendFunction(conversationRepository::observeConversationDetailsById)
                 .with(eq(conversation.id))
                 .wasInvoked(exactly = once)
         }
@@ -151,23 +137,18 @@ class ObserveConversationListDetailsUseCaseTest {
             secondOneOnOneDetails
         )
 
-        given(syncManager)
-            .suspendFunction(syncManager::waitForSlowSyncToComplete)
-            .whenInvoked()
-            .thenReturn(Unit)
-
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationList)
             .whenInvoked()
             .thenReturn(flowOf(conversations))
 
         given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationDetailsById)
+            .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(eq(groupConversation.id))
             .thenReturn(groupConversationUpdates.asFlow())
 
         given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationDetailsById)
+            .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(eq(oneOnOneConversation.id))
             .thenReturn(oneOnOneConversationDetailsUpdates.asFlow())
 
@@ -192,23 +173,18 @@ class ObserveConversationListDetailsUseCaseTest {
         val conversationListUpdates = Channel<List<Conversation>>(Channel.UNLIMITED)
         conversationListUpdates.send(firstConversationsList)
 
-        given(syncManager)
-            .suspendFunction(syncManager::waitForSlowSyncToComplete)
-            .whenInvoked()
-            .thenReturn(Unit)
-
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationList)
             .whenInvoked()
             .thenReturn(conversationListUpdates.consumeAsFlow())
 
         given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationDetailsById)
+            .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(eq(groupConversation.id))
             .thenReturn(flowOf(groupConversationDetails))
 
         given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationDetailsById)
+            .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(eq(selfConversation.id))
             .thenReturn(flowOf(selfConversationDetails))
 

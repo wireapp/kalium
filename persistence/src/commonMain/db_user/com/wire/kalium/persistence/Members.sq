@@ -3,7 +3,9 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 CREATE TABLE Member (
     user TEXT AS QualifiedIDEntity NOT NULL,
     conversation TEXT AS QualifiedIDEntity NOT NULL,
-    CONSTRAINT member_conv PRIMARY KEY (user, conversation) ON CONFLICT IGNORE
+    CONSTRAINT member_conv PRIMARY KEY (user, conversation) ON CONFLICT IGNORE,
+    FOREIGN KEY (conversation) REFERENCES Conversation(qualified_id)  ON DELETE CASCADE,
+    FOREIGN KEY (user) REFERENCES User(qualified_id) ON DELETE CASCADE
 );
 
 insertMember:
@@ -15,3 +17,8 @@ DELETE FROM Member WHERE conversation = ? AND user = ?;
 
 selectAllMembersByConversation:
 SELECT * FROM Member WHERE conversation = ?;
+
+selectAllConversationsByMember:
+SELECT * FROM Member WHERE user = ?;
+
+

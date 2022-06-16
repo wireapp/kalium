@@ -5,7 +5,6 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.sync.SyncManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 
@@ -15,10 +14,10 @@ class ObserveConversationListDetailsUseCase(
 ) {
 
     suspend operator fun invoke(): Flow<List<ConversationDetails>> {
-        syncManager.waitForSlowSyncToComplete()
+        syncManager.startSyncIfIdle()
         return conversationRepository.observeConversationList().map { conversations ->
             conversations.map { conversation ->
-                conversationRepository.getConversationDetailsById(conversation.id)
+                conversationRepository.observeConversationDetailsById(conversation.id)
             }
         }.flatMapLatest { flowsOfDetails ->
             combine(flowsOfDetails) { latestValues -> latestValues.asList() }

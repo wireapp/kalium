@@ -2,7 +2,11 @@ package com.wire.kalium.logic.data.asset
 
 import okio.Path
 
-data class UploadedAssetId(val key: String, val assetToken: String? = null)
+data class UploadedAssetId(
+    val key: String,
+    val domain: String? = null,
+    val assetToken: String? = null
+)
 
 /**
  * On creation of this model, the use case should "calculate" the logic.

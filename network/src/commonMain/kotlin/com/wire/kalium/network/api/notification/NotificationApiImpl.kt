@@ -2,6 +2,7 @@ package com.wire.kalium.network.api.notification
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.AuthenticatedWebSocketClient
+import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.utils.NetworkResponse
@@ -21,7 +22,7 @@ import kotlinx.serialization.decodeFromString
 class NotificationApiImpl internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient,
     private val authenticatedWebSocketClient: AuthenticatedWebSocketClient,
-    private val serverConfigDTO: ServerConfigDTO
+    private val serverLinks: ServerConfigDTO.Links
 ) : NotificationApi {
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
@@ -70,7 +71,8 @@ class NotificationApiImpl internal constructor(
         .webSocketSession(
             method = HttpMethod.Get
         ) {
-            setWSSUrl(serverConfigDTO.webSocketBaseUrl, PATH_AWAIT)
+            // TODO: setWSSUrl can be removed ?
+            setWSSUrl(serverLinks.webSocket, PATH_AWAIT)
             parameter(CLIENT_QUERY_KEY, clientId)
         }.incoming
         .consumeAsFlow()
@@ -80,6 +82,7 @@ class NotificationApiImpl internal constructor(
                 is Frame.Binary -> {
                     // assuming here the byteArray is an ASCII character set
                     val jsonString = io.ktor.utils.io.core.String(frame.data)
+                    kaliumLogger.v("Binary frame content: '$jsonString'")
                     val event = KtxSerializer.json.decodeFromString<EventResponse>(jsonString)
                     event
                 }

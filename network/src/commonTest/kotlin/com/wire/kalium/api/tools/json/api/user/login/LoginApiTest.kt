@@ -33,7 +33,6 @@ class LoginApiTest : ApiTest {
                 assertQueryExist(QUERY_PERSIST)
                 assertHttps()
                 assertJson()
-                assertHostEqual(TEST_HOST)
             },
             headers = mapOf("set-cookie" to "zuid=$refreshToken")
         )
@@ -45,7 +44,6 @@ class LoginApiTest : ApiTest {
                 assertGet()
                 assertHttps()
                 assertJson()
-                assertHostEqual(TEST_HOST)
             }
         )
         val networkClient = mockUnauthenticatedNetworkClient(
@@ -61,7 +59,7 @@ class LoginApiTest : ApiTest {
         }
         val loginApi: LoginApi = LoginApiImpl(networkClient)
 
-        val response = loginApi.login(LOGIN_WITH_EMAIL_REQUEST.serializableData, false, TEST_HOST)
+        val response = loginApi.login(LOGIN_WITH_EMAIL_REQUEST.serializableData, false)
         assertTrue(response.isSuccessful(), message = response.toString())
         assertEquals(expected, response.value)
     }
@@ -74,7 +72,7 @@ class LoginApiTest : ApiTest {
         )
         val loginApi: LoginApi = LoginApiImpl(networkClient)
 
-        val errorResponse = loginApi.login(LOGIN_WITH_EMAIL_REQUEST.serializableData, false, TEST_HOST)
+        val errorResponse = loginApi.login(LOGIN_WITH_EMAIL_REQUEST.serializableData, false)
         assertFalse(errorResponse.isSuccessful())
         assertTrue(errorResponse.kException is KaliumException.InvalidRequestError)
         assertEquals((errorResponse.kException as KaliumException.InvalidRequestError).errorResponse, ERROR_RESPONSE)
@@ -98,7 +96,7 @@ class LoginApiTest : ApiTest {
         )
         val loginApi: LoginApi = LoginApiImpl(networkClient)
 
-        val errorResponse = loginApi.login(LOGIN_WITH_EMAIL_REQUEST.serializableData, false, TEST_HOST)
+        val errorResponse = loginApi.login(LOGIN_WITH_EMAIL_REQUEST.serializableData, false)
         assertFalse(errorResponse.isSuccessful())
         assertTrue(errorResponse.kException is KaliumException.InvalidRequestError)
         assertEquals((errorResponse.kException as KaliumException.InvalidRequestError).errorResponse, ERROR_RESPONSE)
@@ -140,6 +138,5 @@ class LoginApiTest : ApiTest {
         const val QUERY_PERSIST = "persist"
         const val PATH_LOGIN = "/login"
         const val PATH_SELF = "/self"
-        const val TEST_HOST = """https://test-https.wire.com"""
     }
 }

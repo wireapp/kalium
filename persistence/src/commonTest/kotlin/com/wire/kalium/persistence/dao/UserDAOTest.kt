@@ -37,7 +37,7 @@ class UserDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenListOfUsers_ThenMultipleUsersCanBeInsertedAtOnce() = runTest {
-        db.userDAO.insertUsers(listOf(user1, user2, user3))
+        db.userDAO.upsertUsers(listOf(user1, user2, user3))
         val result1 = db.userDAO.getUserByQualifiedID(user1.id).first()
         val result2 = db.userDAO.getUserByQualifiedID(user2.id).first()
         val result3 = db.userDAO.getUserByQualifiedID(user3.id).first()
@@ -58,10 +58,19 @@ class UserDAOTest : BaseDatabaseTest() {
     fun givenExistingUser_ThenUserCanBeUpdated() = runTest {
         db.userDAO.insertUser(user1)
         val updatedUser1 = UserEntity(
-            user1.id, "John Doe", "johndoe", "email1", "phone1", 1, "team",
-            UserEntity.ConnectionState.ACCEPTED, UserAssetIdEntity(), UserAssetIdEntity()
+            user1.id,
+            "John Doe",
+            "johndoe",
+            "email1",
+            "phone1",
+            1,
+            "team",
+            ConnectionEntity.State.ACCEPTED,
+            UserAssetIdEntity("asset1", "domain"),
+            UserAssetIdEntity("asset1", "domain"),
+            UserAvailabilityStatusEntity.NONE
         )
-        db.userDAO.updateUser(updatedUser1)
+        db.userDAO.updateSelfUser(updatedUser1)
         val result = db.userDAO.getUserByQualifiedID(user1.id).first()
         assertEquals(result, updatedUser1)
     }
@@ -70,14 +79,23 @@ class UserDAOTest : BaseDatabaseTest() {
     fun givenListOfUsers_ThenUserCanBeQueriedByName() = runTest {
         db.userDAO.insertUser(user1)
         val updatedUser1 = UserEntity(
-            user1.id, "John Doe", "johndoe", "email1", "phone1", 1, "team",
-            UserEntity.ConnectionState.ACCEPTED, UserAssetIdEntity(), UserAssetIdEntity()
+            user1.id,
+            "John Doe",
+            "johndoe",
+            "email1",
+            "phone1",
+            1,
+            "team",
+            ConnectionEntity.State.ACCEPTED,
+            UserAssetIdEntity("asset1", "domain"),
+            UserAssetIdEntity("asset2", "domain"),
+            UserAvailabilityStatusEntity.NONE
         )
 
         val result = db.userDAO.getUserByQualifiedID(user1.id)
         assertEquals(user1, result.first())
 
-        db.userDAO.updateUser(updatedUser1)
+        db.userDAO.updateSelfUser(updatedUser1)
         assertEquals(updatedUser1, result.first())
     }
 
@@ -86,13 +104,13 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.insertUser(user1)
         val updatedUser1 = UserEntity(
             user1.id, "John Doe", "johndoe", "email1", "phone1", 1, "team",
-            UserEntity.ConnectionState.ACCEPTED, null, null
+            ConnectionEntity.State.ACCEPTED, null, null, UserAvailabilityStatusEntity.NONE
         )
 
         val result = db.userDAO.getUserByQualifiedID(user1.id)
         assertEquals(user1, result.first())
 
-        db.userDAO.updateUser(updatedUser1)
+        db.userDAO.updateSelfUser(updatedUser1)
         assertEquals(updatedUser1, result.first())
     }
 
@@ -102,10 +120,10 @@ class UserDAOTest : BaseDatabaseTest() {
         val user1 = USER_ENTITY_1
         val user2 = USER_ENTITY_2.copy(email = "uniqueEmailForUser2")
         val user3 = USER_ENTITY_3
-        db.userDAO.insertUsers(listOf(user1, user2, user3))
+        db.userDAO.upsertUsers(listOf(user1, user2, user3))
         //when
         val searchResult =
-            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(user2.email!!, UserEntity.ConnectionState.ACCEPTED)
+            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(user2.email!!, ConnectionEntity.State.ACCEPTED)
         //then
         assertEquals(searchResult, listOf(user2))
     }
@@ -117,10 +135,10 @@ class UserDAOTest : BaseDatabaseTest() {
             val user1 = USER_ENTITY_1
             val user2 = USER_ENTITY_3
             val user3 = USER_ENTITY_3.copy(handle = "uniqueHandlForUser3")
-            db.userDAO.insertUsers(listOf(user1, user2, user3))
+            db.userDAO.upsertUsers(listOf(user1, user2, user3))
             //when
             val searchResult =
-                db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(user3.handle!!, UserEntity.ConnectionState.ACCEPTED)
+                db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(user3.handle!!, ConnectionEntity.State.ACCEPTED)
             //then
             assertEquals(searchResult, listOf(user3))
         }
@@ -132,10 +150,10 @@ class UserDAOTest : BaseDatabaseTest() {
         val user1 = USER_ENTITY_1.copy(name = "uniqueNameFor User1")
         val user2 = USER_ENTITY_2
         val user3 = USER_ENTITY_3
-        db.userDAO.insertUsers(listOf(user1, user2, user3))
+        db.userDAO.upsertUsers(listOf(user1, user2, user3))
         //when
         val searchResult =
-            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(user1.name!!, UserEntity.ConnectionState.ACCEPTED)
+            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(user1.name!!, ConnectionEntity.State.ACCEPTED)
         //then
         assertEquals(searchResult, listOf(user1))
     }
@@ -160,8 +178,10 @@ class UserDAOTest : BaseDatabaseTest() {
                     phone = "testPhone4",
                     accentId = 4,
                     team = "testTeam4",
-                    UserEntity.ConnectionState.ACCEPTED,
-                    null, null
+                    ConnectionEntity.State.ACCEPTED,
+                    null,
+                    null,
+                    UserAvailabilityStatusEntity.NONE
                 ),
                 UserEntity(
                     id = QualifiedIDEntity("5", "wire.com"),
@@ -171,16 +191,18 @@ class UserDAOTest : BaseDatabaseTest() {
                     phone = "testPhone5",
                     accentId = 5,
                     team = "testTeam5",
-                    UserEntity.ConnectionState.ACCEPTED,
-                    null, null
+                    ConnectionEntity.State.ACCEPTED,
+                    null,
+                    null,
+                    UserAvailabilityStatusEntity.NONE
                 )
             )
             val mockUsers = commonEmailUsers + notCommonEmailUsers
 
-            db.userDAO.insertUsers(mockUsers)
+            db.userDAO.upsertUsers(mockUsers)
             //when
             val searchResult =
-                db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(commonEmailPrefix, UserEntity.ConnectionState.ACCEPTED)
+                db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(commonEmailPrefix, ConnectionEntity.State.ACCEPTED)
             //then
             assertEquals(searchResult, commonEmailUsers)
         }
@@ -190,12 +212,12 @@ class UserDAOTest : BaseDatabaseTest() {
     fun givenAExistingUsers_WhenQueriedWithNonExistingEmail_ThenReturnNoResults() = runTest {
         //given
         val mockUsers = listOf(USER_ENTITY_1, USER_ENTITY_2, USER_ENTITY_3)
-        db.userDAO.insertUsers(mockUsers)
+        db.userDAO.upsertUsers(mockUsers)
 
         val nonExistingEmailQuery = "doesnotexist@wire.com"
         //when
         val searchResult =
-            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(nonExistingEmailQuery, UserEntity.ConnectionState.ACCEPTED)
+            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(nonExistingEmailQuery, ConnectionEntity.State.ACCEPTED)
         //then
         assertTrue { searchResult.isEmpty() }
     }
@@ -206,10 +228,10 @@ class UserDAOTest : BaseDatabaseTest() {
         val commonEmailPrefix = "commonEmail"
 
         val mockUsers = listOf(USER_ENTITY_1, USER_ENTITY_2, USER_ENTITY_3)
-        db.userDAO.insertUsers(mockUsers)
+        db.userDAO.upsertUsers(mockUsers)
         //when
         val searchResult =
-            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(commonEmailPrefix, UserEntity.ConnectionState.ACCEPTED)
+            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(commonEmailPrefix, ConnectionEntity.State.ACCEPTED)
         //then
         searchResult.forEach { userEntity ->
             assertContains(userEntity.email!!, commonEmailPrefix)
@@ -222,10 +244,10 @@ class UserDAOTest : BaseDatabaseTest() {
         val commonHandlePrefix = "commonHandle"
 
         val mockUsers = listOf(USER_ENTITY_1, USER_ENTITY_2, USER_ENTITY_3)
-        db.userDAO.insertUsers(mockUsers)
+        db.userDAO.upsertUsers(mockUsers)
         //when
         val searchResult =
-            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(commonHandlePrefix, UserEntity.ConnectionState.ACCEPTED)
+            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(commonHandlePrefix, ConnectionEntity.State.ACCEPTED)
         //then
         searchResult.forEach { userEntity ->
             assertContains(userEntity.handle!!, commonHandlePrefix)
@@ -238,10 +260,10 @@ class UserDAOTest : BaseDatabaseTest() {
         val commonNamePrefix = "commonName"
 
         val mockUsers = listOf(USER_ENTITY_1, USER_ENTITY_2, USER_ENTITY_3)
-        db.userDAO.insertUsers(mockUsers)
+        db.userDAO.upsertUsers(mockUsers)
         //when
         val searchResult =
-            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(commonNamePrefix, UserEntity.ConnectionState.ACCEPTED)
+            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(commonNamePrefix, ConnectionEntity.State.ACCEPTED)
         //then
         searchResult.forEach { userEntity ->
             assertContains(userEntity.name!!, commonNamePrefix)
@@ -259,10 +281,10 @@ class UserDAOTest : BaseDatabaseTest() {
                 USER_ENTITY_2.copy(handle = commonPrefix + "u2"),
                 USER_ENTITY_3.copy(email = commonPrefix + "u3")
             )
-            db.userDAO.insertUsers(mockUsers)
+            db.userDAO.upsertUsers(mockUsers)
             //when
             val searchResult =
-                db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(commonPrefix, UserEntity.ConnectionState.ACCEPTED)
+                db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(commonPrefix, ConnectionEntity.State.ACCEPTED)
             //then
             assertEquals(mockUsers, searchResult)
         }
@@ -278,13 +300,13 @@ class UserDAOTest : BaseDatabaseTest() {
             USER_ENTITY_3.copy(email = commonPrefix + "u3")
         )
 
-        db.userDAO.insertUsers(mockUsers)
+        db.userDAO.upsertUsers(mockUsers)
         //when
         val searchResult =
-            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(commonPrefix, UserEntity.ConnectionState.ACCEPTED)
+            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(commonPrefix, ConnectionEntity.State.ACCEPTED)
         //then
         searchResult.forEach { userEntity ->
-            assertEquals(UserEntity.ConnectionState.ACCEPTED, userEntity.connectionStatus)
+            assertEquals(ConnectionEntity.State.ACCEPTED, userEntity.connectionStatus)
         }
     }
 
@@ -296,18 +318,18 @@ class UserDAOTest : BaseDatabaseTest() {
         val mockUsers = listOf(
             USER_ENTITY_1.copy(name = commonPrefix + "u1"),
             USER_ENTITY_2.copy(handle = commonPrefix + "u2"),
-            USER_ENTITY_3.copy(email = commonPrefix + "u3", connectionStatus = UserEntity.ConnectionState.NOT_CONNECTED),
-            USER_ENTITY_4.copy(email = commonPrefix + "u4", connectionStatus = UserEntity.ConnectionState.NOT_CONNECTED)
+            USER_ENTITY_3.copy(email = commonPrefix + "u3", connectionStatus = ConnectionEntity.State.NOT_CONNECTED),
+            USER_ENTITY_4.copy(email = commonPrefix + "u4", connectionStatus = ConnectionEntity.State.NOT_CONNECTED)
         )
 
-        db.userDAO.insertUsers(mockUsers)
+        db.userDAO.upsertUsers(mockUsers)
         //when
         val searchResult =
-            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(commonPrefix, UserEntity.ConnectionState.ACCEPTED)
+            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(commonPrefix, ConnectionEntity.State.ACCEPTED)
         //then
         assertTrue(searchResult.size == 2)
         searchResult.forEach { userEntity ->
-            assertEquals(UserEntity.ConnectionState.ACCEPTED, userEntity.connectionStatus)
+            assertEquals(ConnectionEntity.State.ACCEPTED, userEntity.connectionStatus)
         }
     }
 
@@ -320,15 +342,15 @@ class UserDAOTest : BaseDatabaseTest() {
 
         val mockUsers = listOf(
             USER_ENTITY_1.copy(name = commonPrefix + "u1"),
-            USER_ENTITY_2.copy(handle = commonPrefix + "u2", connectionStatus = UserEntity.ConnectionState.NOT_CONNECTED),
-            USER_ENTITY_3.copy(name = commonPrefix + "u3", connectionStatus = UserEntity.ConnectionState.NOT_CONNECTED),
-            USER_ENTITY_4.copy(email = commonPrefix + "u4", connectionStatus = UserEntity.ConnectionState.NOT_CONNECTED)
+            USER_ENTITY_2.copy(handle = commonPrefix + "u2", connectionStatus = ConnectionEntity.State.NOT_CONNECTED),
+            USER_ENTITY_3.copy(name = commonPrefix + "u3", connectionStatus = ConnectionEntity.State.NOT_CONNECTED),
+            USER_ENTITY_4.copy(email = commonPrefix + "u4", connectionStatus = ConnectionEntity.State.NOT_CONNECTED)
         )
 
-        db.userDAO.insertUsers(mockUsers)
+        db.userDAO.upsertUsers(mockUsers)
         //when
         val searchResult =
-            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(commonPrefix, UserEntity.ConnectionState.ACCEPTED)
+            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionState(commonPrefix, ConnectionEntity.State.ACCEPTED)
         //then
         assertEquals(expectedResult, searchResult)
     }
@@ -342,15 +364,15 @@ class UserDAOTest : BaseDatabaseTest() {
 
         val mockUsers = listOf(
             USER_ENTITY_1.copy(handle = "@someHandle"),
-            USER_ENTITY_2.copy(connectionStatus = UserEntity.ConnectionState.NOT_CONNECTED),
-            USER_ENTITY_3.copy(connectionStatus = UserEntity.ConnectionState.NOT_CONNECTED),
+            USER_ENTITY_2.copy(connectionStatus = ConnectionEntity.State.NOT_CONNECTED),
+            USER_ENTITY_3.copy(connectionStatus = ConnectionEntity.State.NOT_CONNECTED),
             USER_ENTITY_4.copy(handle = "@someHandle1")
         )
 
-        db.userDAO.insertUsers(mockUsers)
+        db.userDAO.upsertUsers(mockUsers)
 
         //when
-        val searchResult = db.userDAO.getUserByHandleAndConnectionState("some", UserEntity.ConnectionState.ACCEPTED)
+        val searchResult = db.userDAO.getUserByHandleAndConnectionState("some", ConnectionEntity.State.ACCEPTED)
 
         //then
         assertEquals(expectedResult, searchResult)
@@ -361,11 +383,11 @@ class UserDAOTest : BaseDatabaseTest() {
         //given
         val newNameA = "new user naming a"
         val newNameB = "new user naming b"
-        db.userDAO.insertUsers(listOf(user1, user3))
+        db.userDAO.upsertUsers(listOf(user1, user3))
         //when
         val updatedUser1 = user1.copy(name = newNameA)
         val updatedUser3 = user3.copy(name = newNameB)
-        db.userDAO.updateUsers(listOf(updatedUser1, updatedUser3))
+        db.userDAO.upsertUsers(listOf(updatedUser1, updatedUser3))
         //then
         val updated1 = db.userDAO.getUserByQualifiedID(updatedUser1.id)
         val updated3 = db.userDAO.getUserByQualifiedID(updatedUser3.id)
@@ -380,7 +402,7 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.insertUser(user1)
         //when
         val updatedUser1 = user1.copy(name = newNameA)
-        db.userDAO.updateUsers(listOf(updatedUser1, user2))
+        db.userDAO.upsertUsers(listOf(updatedUser1, user2))
         //then
         val updated1 = db.userDAO.getUserByQualifiedID(updatedUser1.id)
         val inserted2 = db.userDAO.getUserByQualifiedID(user2.id)
@@ -388,6 +410,37 @@ class UserDAOTest : BaseDatabaseTest() {
         assertNotNull(inserted2)
     }
 
+
+    @Test
+    fun givenAExistingUsers_whenUpsertingTeamMembers_ThenResultsOneUpdatedAnotherInserted() = runTest {
+        //given
+        val newTeamId = "new user team id"
+        db.userDAO.insertUser(user1)
+        //when
+        val updatedUser1 = user1.copy(team = newTeamId)
+        db.userDAO.upsertTeamMembers(listOf(updatedUser1, user2))
+        //then
+        val updated1 = db.userDAO.getUserByQualifiedID(updatedUser1.id)
+        val inserted2 = db.userDAO.getUserByQualifiedID(user2.id)
+        assertEquals(newTeamId, updated1.first()?.team)
+        assertNotNull(inserted2)
+    }
+
+    @Test
+    fun givenAExistingUsers_whenUpsertingUsers_ThenResultsOneUpdatedAnotherInsertedWithNoConnectionStatusOverride() = runTest {
+        //given
+        val newTeamId = "new team id"
+        db.userDAO.insertUser(user1.copy(connectionStatus = ConnectionEntity.State.ACCEPTED))
+        //when
+        val updatedUser1 = user1.copy(team = newTeamId)
+        db.userDAO.upsertUsers(listOf(updatedUser1, user2))
+        //then
+        val updated1 = db.userDAO.getUserByQualifiedID(updatedUser1.id)
+        val inserted2 = db.userDAO.getUserByQualifiedID(user2.id)
+        assertEquals(newTeamId, updated1.first()?.team)
+        assertEquals(ConnectionEntity.State.ACCEPTED, updated1.first()?.connectionStatus)
+        assertNotNull(inserted2)
+    }
 
     private companion object {
         val USER_ENTITY_1 = newUserEntity(QualifiedIDEntity("1", "wire.com"))

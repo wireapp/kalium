@@ -18,6 +18,15 @@ class CallMapper {
         return when (conversationType) {
             ConversationType.OneOnOne -> ConversationTypeCalling.OneOnOne
             ConversationType.Conference -> ConversationTypeCalling.Conference
+            else -> ConversationTypeCalling.Unknown
+        }
+    }
+
+    fun fromIntToConversationType(conversationType: Int): ConversationType {
+        return when (conversationType) {
+            0 -> ConversationType.OneOnOne
+            2 -> ConversationType.Conference
+            else -> ConversationType.Unknown
         }
     }
 
@@ -32,6 +41,7 @@ class CallMapper {
     }
 
     val participantMapper = ParticipantMapper()
+    val activeSpeakerMapper = ActiveSpeakerMapper()
 
     inner class ParticipantMapper {
 
@@ -55,10 +65,25 @@ class CallMapper {
                 clientId = clientid
             )
         }
+    }
 
-        private val DOMAIN_SEPARATOR = "@"
+    inner class ActiveSpeakerMapper {
+        fun mapParticipantsActiveSpeaker(
+            participants: List<Participant>,
+            activeSpeakers: CallActiveSpeakers
+        ) : List<Participant> = participants.map { participant ->
+            participant.copy(
+                isSpeaking = activeSpeakers.activeSpeakers.any {
+                    it.userId == participant.id.toString() && it.clientId == participant.clientId
+                }
+            )
+        }
+    }
 
-        private fun String.removeDomain() = if (contains(DOMAIN_SEPARATOR)) split(DOMAIN_SEPARATOR).first() else ""
+    private companion object {
+        private const val DOMAIN_SEPARATOR = "@"
+
+        private fun String.removeDomain() = if (contains(DOMAIN_SEPARATOR)) split(DOMAIN_SEPARATOR).first() else this
 
         private fun String.getDomain() = if (contains(DOMAIN_SEPARATOR)) split(DOMAIN_SEPARATOR).last() else ""
     }

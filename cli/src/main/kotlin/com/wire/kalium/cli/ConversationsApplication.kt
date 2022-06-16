@@ -6,14 +6,12 @@ import com.github.ajalt.clikt.parameters.options.required
 import com.wire.kalium.cli.CLIUtils.getResource
 import com.wire.kalium.cryptography.utils.calcMd5
 import com.wire.kalium.logger.KaliumLogLevel
-import com.wire.kalium.logic.configuration.ServerConfig
-import com.wire.kalium.logic.configuration.ServerConfigMapper
-import com.wire.kalium.logic.configuration.ServerConfigMapperImpl
-import com.wire.kalium.logic.data.asset.DataStoragePaths
-import com.wire.kalium.logic.data.id.AssetsStorageFolder
-import com.wire.kalium.logic.data.id.CacheFolder
+import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.configuration.server.ServerConfigMapper
+import com.wire.kalium.logic.configuration.server.ServerConfigMapperImpl
 import com.wire.kalium.network.AuthenticatedNetworkContainer
 import com.wire.kalium.network.NetworkLogger
+import com.wire.kalium.network.ServerMetaDataManager
 import com.wire.kalium.network.UnauthenticatedNetworkContainer
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.asset.AssetMetadataRequest
@@ -21,6 +19,7 @@ import com.wire.kalium.network.api.model.AccessTokenDTO
 import com.wire.kalium.network.api.model.AssetRetentionType
 import com.wire.kalium.network.api.model.RefreshTokenDTO
 import com.wire.kalium.network.api.user.login.LoginApi
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.utils.isSuccessful
@@ -28,11 +27,11 @@ import kotlinx.coroutines.runBlocking
 import okio.Path.Companion.toPath
 
 class InMemorySessionManager(
-    private val serverConfigDTO: ServerConfigDTO,
+    private val serverConfigDTO: ServerConfigDTO.Links,
     private var session: SessionDTO
 ) : SessionManager {
 
-    override fun session(): Pair<SessionDTO, ServerConfigDTO> = Pair(session, serverConfigDTO)
+    override fun session(): Pair<SessionDTO, ServerConfigDTO.Links> = Pair(session, serverConfigDTO)
 
     override fun updateSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO =
         SessionDTO(
@@ -47,6 +46,20 @@ class InMemorySessionManager(
     }
 }
 
+class InMemoryServerMetaDataManager : ServerMetaDataManager {
+
+    private var serverConfigDTO: ServerConfigDTO? = null
+
+    override fun getLocalMetaData(backendLinks: ServerConfigDTO.Links): ServerConfigDTO? {
+        return serverConfigDTO
+    }
+
+    override fun storeServerConfig(links: ServerConfigDTO.Links, metaData: ServerConfigDTO.MetaData): ServerConfigDTO {
+        serverConfigDTO = ServerConfigDTO(id = "id", links, metaData)
+        return serverConfigDTO!!
+    }
+}
+
 class ConversationsApplication : CliktCommand() {
 
     private val email: String by option(help = "wire account email").required()
@@ -58,29 +71,30 @@ class ConversationsApplication : CliktCommand() {
     override fun run(): Unit = runBlocking {
         NetworkLogger.setLoggingLevel(level = KaliumLogLevel.DEBUG)
 
-        val serverConfigMapper: ServerConfigMapper = ServerConfigMapperImpl()
-        val serverConfigDTO: ServerConfigDTO = serverConfigMapper.toDTO(ServerConfig.DEFAULT)
-        val loginContainer = UnauthenticatedNetworkContainer()
+        val serverConfigMapper: ServerConfigMapper = ServerConfigMapperImpl(ApiVersionMapperImpl())
+        val serverConfigDTO: ServerConfigDTO.Links = serverConfigMapper.toDTO(ServerConfig.DEFAULT)
+        val loginContainer = UnauthenticatedNetworkContainer(serverConfigDTO, InMemoryServerMetaDataManager())
 
         val loginResult = loginContainer.loginApi.login(
-            LoginApi.LoginParam.LoginWithEmail(email = email, password = password, label = "ktor"),
-            false,
-            serverConfigDTO.apiBaseUrl.toString()
+            LoginApi.LoginParam.LoginWithEmail(email = email, password = password, label = "ktor"), false
         )
 
         if (!loginResult.isSuccessful()) {
+            loginResult.kException as KaliumException.GenericError
+            loginResult.kException.cause?.printStackTrace()
             println("There was an error on the login :( check the credentials and the internet connection and try again please")
         } else {
             val sessionData = loginResult.value
-            val networkModule = AuthenticatedNetworkContainer(InMemorySessionManager(serverConfigDTO, sessionData))
-            val conversationsResponse = networkModule.conversationApi.conversationsByBatch(null, 100)
+            val networkModule =
+                AuthenticatedNetworkContainer(InMemorySessionManager(serverConfigDTO, sessionData), InMemoryServerMetaDataManager())
+            val conversationsResponse = networkModule.conversationApi.fetchConversationsIds(null)
 
             if (!conversationsResponse.isSuccessful()) {
                 println("There was an error loading the conversations :( check the internet connection and try again please")
             } else {
                 println("Your conversations:")
-                conversationsResponse.value.conversations.forEach {
-                    println("ID:${it.id}, Name: ${it.name}")
+                conversationsResponse.value.conversationsIds.forEach {
+                    println("ID:${it.value}, Name: ${it.domain}")
                 }
             }
             uploadTestAsset(networkModule)

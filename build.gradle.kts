@@ -36,6 +36,7 @@ repositories {
 plugins {
     val dokkaVersion = "1.6.10"
     id("org.jetbrains.dokka") version "$dokkaVersion"
+    id("org.jetbrains.kotlinx.kover") version "0.5.1"
 }
 
 dependencies {
@@ -57,6 +58,24 @@ allprojects {
         maven(url = "https://oss.sonatype.org/content/repositories/snapshots")
         maven(url = "https://raw.githubusercontent.com/wireapp/wire-maven/main/releases")
     }
+}
+
+subprojects {
+    this.tasks.withType<Test> {
+        if (name != "jvmTest" && name != "jsTest") {
+            the<kotlinx.kover.api.KoverTaskExtension>().apply {
+                isDisabled = true
+            }
+        } else {
+            the<kotlinx.kover.api.KoverTaskExtension>().apply {
+                includes = listOf("com.wire.kalium.*")
+            }
+        }
+    }
+}
+
+kover {
+    coverageEngine.set(kotlinx.kover.api.CoverageEngine.JACOCO)
 }
 
 rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin> {
