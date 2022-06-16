@@ -40,7 +40,8 @@ import io.ktor.utils.io.core.toByteArray
 interface ConversationEventReceiver : EventReceiver<Event.Conversation>
 
 // Suppressed as it's an old issue
-@Suppress("LongParameterList")
+//TODO(refactor): Create a `MessageEventReceiver` to offload some logic from here
+@Suppress("LongParameterList", "TooManyFunctions")
 class ConversationEventReceiverImpl(
     private val proteusClient: ProteusClient,
     private val messageRepository: MessageRepository,
