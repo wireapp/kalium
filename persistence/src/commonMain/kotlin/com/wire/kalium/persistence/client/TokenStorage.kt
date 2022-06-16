@@ -1,6 +1,7 @@
 package com.wire.kalium.persistence.client
 
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 interface TokenStorage {
@@ -18,7 +19,10 @@ interface TokenStorage {
 }
 
 @Serializable
-data class NotificationTokenEntity(val token: String, val transport: String)
+data class NotificationTokenEntity(
+    @SerialName("token") val token: String,
+    @SerialName("transport") val transport: String
+)
 
 
 class TokenStorageImpl(private val kaliumPreferences: KaliumPreferences) : TokenStorage {
