@@ -50,10 +50,7 @@ class EventDataSource(
             { clientId -> pendingEventsFlow(clientId) }
         )
 
-    override suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<Event>>> = clientRepository.currentClientId().fold(
-        { Either.Left(it) },
-        { clientId -> Either.Right(liveEventsFlow(clientId)) }
-    )
+    override suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<Event>>> = clientRepository.currentClientId().map { liveEventsFlow(clientId) }
 
     private suspend fun liveEventsFlow(clientId: ClientId): Flow<WebSocketEvent<Event>> =
         notificationApi.listenToLiveEvents(clientId.value)
@@ -108,17 +105,9 @@ class EventDataSource(
         eventInfoStorage.lastProcessedId?.let {
             Either.Right(it)
         } ?: run {
-            clientRepository.currentClientId().fold(
-                { Either.Left(it) },
-                { clientId ->
-                    val lastNotificationResult = notificationApi.lastNotification(clientId.value)
-                    if (lastNotificationResult.isSuccessful()) {
-                        Either.Right(lastNotificationResult.value.id)
-                    } else {
-                        Either.Left(NetworkFailure.ServerMiscommunication(lastNotificationResult.kException))
-                    }
-                }
-            )
+            clientRepository.currentClientId().flatMap { clientId ->
+                wrapApiRequest { notificationApi.lastNotification(clientId.value) }.map { it.id }
+            }
         }
 
     override suspend fun updateLastProcessedEventId(eventId: String) {
