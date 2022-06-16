@@ -18,7 +18,6 @@ sealed class MessageContent {
     data class DeleteMessage(val messageId: String) : Regular()
     data class TextEdited(val editMessageId: String, val newContent: String) : Regular()
     data class RestrictedAsset(val mimeType: String) : Regular()
-
     data class DeleteForMe(
         val messageId: String,
         val conversationId: String,

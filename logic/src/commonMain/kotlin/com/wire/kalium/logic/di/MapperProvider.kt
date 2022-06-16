@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.location.LocationMapper
+import com.wire.kalium.logic.data.message.EncryptionAlgorithmMapper
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessageMapperImpl
 import com.wire.kalium.logic.data.message.ProtoContentMapper
@@ -62,6 +63,7 @@ internal object MapperProvider {
     fun publicUserMapper(): PublicUserMapper = PublicUserMapperImpl(idMapper())
     fun sendMessageFailureMapper(): SendMessageFailureMapper = SendMessageFailureMapperImpl()
     fun assetMapper(): AssetMapper = AssetMapperImpl()
+    fun encryptionAlgorithmMapper(): EncryptionAlgorithmMapper = EncryptionAlgorithmMapper()
     fun eventMapper(): EventMapper = EventMapper(idMapper(), memberMapper(), connectionMapper())
     fun preyKeyMapper(): PreKeyMapper = PreKeyMapperImpl()
     fun preKeyListMapper(): PreKeyListMapper = PreKeyListMapper(preyKeyMapper())

@@ -3,7 +3,7 @@ package com.wire.kalium.logic.data.notification
 import com.wire.kalium.logic.data.id.ConversationId
 
 /**
- * Kalium local data classes that contains all the necessary data for displaying Notifications,
+ * Kalium local data classes that contains all the necessary data for displaying Message Notifications,
  * and suppose to be mapped (in platform side) into platform-specific objects to show the notification
  */
 data class LocalNotificationConversation(
