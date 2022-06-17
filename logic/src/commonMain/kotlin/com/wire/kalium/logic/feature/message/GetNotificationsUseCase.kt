@@ -158,7 +158,7 @@ class GetNotificationsUseCaseImpl(
         val newNotificationDate = if (eligibleMessages.isEmpty()) {
             messages.maxOf { it.date }
         } else {
-            timeParser.dateMinusMilliseconds(eligibleMessages.minOf { it.date }, 1L)
+            timeParser.dateMinusMilliseconds(eligibleMessages.minOf { it.date }, 100L)
         }
 
         conversation.lastNotificationDate.let {
