@@ -129,28 +129,32 @@ actual class CallManagerImpl(
         return calling.action(handle)
     }
 
-    override suspend fun onCallingMessageReceived(message: Message.Regular, content: MessageContent.Calling) = withCalling {
-        callingLogger.i("$TAG - onCallingMessageReceived called")
-        val msg = content.value.toByteArray()
+    override suspend fun onCallingMessageReceived(message: Message.Regular, content: MessageContent.Calling) =
+        withCalling {
+            callingLogger.i("$TAG - onCallingMessageReceived called")
+            val msg = content.value.toByteArray()
 
-        val currTime = System.currentTimeMillis()
-        val msgTime = message.date.toTimeInMillis()
+            val currTime = System.currentTimeMillis()
+            val msgTime = message.date.toTimeInMillis()
 
-        wcall_recv_msg(
-            inst = deferredHandle.await(),
-            msg = msg,
-            len = msg.size,
-            curr_time = Uint32_t(value = currTime / 1000),
-            msg_time = Uint32_t(value = msgTime / 1000),
-            convId = message.conversationId.value,
-            userId = message.senderUserId.value,
-            clientId = message.senderClientId.value
-        )
-        callingLogger.i("$TAG - wcall_recv_msg() called")
-    }
+            wcall_recv_msg(
+                inst = deferredHandle.await(),
+                msg = msg,
+                len = msg.size,
+                curr_time = Uint32_t(value = currTime / 1000),
+                msg_time = Uint32_t(value = msgTime / 1000),
+                convId = message.conversationId.value,
+                userId = message.senderUserId.value,
+                clientId = message.senderClientId.value
+            )
+            callingLogger.i("$TAG - wcall_recv_msg() called")
+        }
 
     override suspend fun startCall(
-        conversationId: ConversationId, callType: CallType, conversationType: ConversationType, isAudioCbr: Boolean
+        conversationId: ConversationId,
+        callType: CallType,
+        conversationType: ConversationType,
+        isAudioCbr: Boolean
     ) {
         callingLogger.d("$TAG -> starting call for conversation = $conversationId..")
 
@@ -169,7 +173,11 @@ actual class CallManagerImpl(
             val avsCallType = callMapper.toCallTypeCalling(callType)
             val avsConversationType = callMapper.toConversationTypeCalling(conversationType)
             wcall_start(
-                deferredHandle.await(), conversationId.value, avsCallType.avsValue, avsConversationType.avsValue, isAudioCbr.toInt()
+                deferredHandle.await(),
+                conversationId.value,
+                avsCallType.avsValue,
+                avsConversationType.avsValue,
+                isAudioCbr.toInt()
             )
 
             callingLogger.d("$TAG - wcall_start() called -> Call for conversation = $conversationId started")
@@ -243,7 +251,9 @@ actual class CallManagerImpl(
                 ).keepingStrongReference()
 
                 wcall_set_participant_changed_handler(
-                    inst = deferredHandle.await(), wcall_participant_changed_h = onParticipantListChanged, arg = null
+                    inst = deferredHandle.await(),
+                    wcall_participant_changed_h = onParticipantListChanged,
+                    arg = null
                 )
                 callingLogger.d("$TAG - wcall_set_participant_changed_handler() called")
             }
@@ -253,7 +263,8 @@ actual class CallManagerImpl(
     private fun initNetworkHandler() {
         scope.launch {
             withCalling {
-                val onNetworkQualityChanged = OnNetworkQualityChanged().keepingStrongReference()
+                val onNetworkQualityChanged = OnNetworkQualityChanged()
+                    .keepingStrongReference()
 
                 wcall_set_network_quality_handler(
                     inst = deferredHandle.await(),
@@ -272,11 +283,15 @@ actual class CallManagerImpl(
                 val selfUserId = userId.await().value
 
                 val onClientsRequest = OnClientsRequest(
-                    calling = calling, selfUserId = selfUserId, conversationRepository = conversationRepository, callingScope = scope
+                    calling = calling,
+                    selfUserId = selfUserId,
+                    conversationRepository = conversationRepository,
+                    callingScope = scope
                 ).keepingStrongReference()
 
                 wcall_set_req_clients_handler(
-                    inst = deferredHandle.await(), wcall_req_clients_h = onClientsRequest
+                    inst = deferredHandle.await(),
+                    wcall_req_clients_h = onClientsRequest
                 )
 
                 callingLogger.d("$TAG - wcall_set_req_clients_handler() called")
@@ -292,7 +307,8 @@ actual class CallManagerImpl(
                 ).keepingStrongReference()
 
                 wcall_set_active_speaker_handler(
-                    inst = deferredHandle.await(), activeSpeakersHandler = activeSpeakersHandler
+                    inst = deferredHandle.await(),
+                    activeSpeakersHandler = activeSpeakersHandler
                 )
 
                 callingLogger.d("$TAG - wcall_set_req_clients_handler() called")
