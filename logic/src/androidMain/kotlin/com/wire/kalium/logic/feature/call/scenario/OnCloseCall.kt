@@ -11,10 +11,18 @@ import com.wire.kalium.logic.data.id.toConversationId
 import com.wire.kalium.logic.feature.call.CallStatus
 
 //TODO(testing): create unit test
+@Suppress("LongParameterList")
 class OnCloseCall(
     private val callRepository: CallRepository
 ) : CloseCallHandler {
-    override fun onClosedCall(reason: Int, conversationId: String, messageTime: Uint32_t, userId: String, clientId: String?, arg: Pointer?) {
+    override fun onClosedCall(
+        reason: Int,
+        conversationId: String,
+        messageTime: Uint32_t,
+        userId: String,
+        clientId: String?,
+        arg: Pointer?
+    ) {
         callingLogger.i("OnCloseCall -> ConversationId $conversationId from user $userId , CLOSED for reason: $reason")
 
         val avsReason = CallClosedReason.fromInt(value = reason)
