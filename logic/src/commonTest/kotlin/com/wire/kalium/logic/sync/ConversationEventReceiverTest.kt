@@ -26,6 +26,7 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.handler.MessageTextEditHandler
+import com.wire.kalium.logic.test_util.wasInTheLastSecond
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.GenericMessage
@@ -157,11 +158,7 @@ class ConversationEventReceiverTest {
 
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::updateConversationModifiedDate)
-            .with(eq(event.conversationId), matching {
-                val instant = it.toInstant()
-                val difference = Clock.System.now() - instant
-                difference < 1.seconds
-            })
+            .with(eq(event.conversationId), matching { it.toInstant().wasInTheLastSecond })
             .wasInvoked(exactly = once)
     }
 
