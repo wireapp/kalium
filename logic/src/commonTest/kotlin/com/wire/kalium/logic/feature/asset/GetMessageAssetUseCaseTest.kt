@@ -146,7 +146,7 @@ class GetMessageAssetUseCaseTest {
                 .whenInvokedWith(any(), any())
                 .thenReturn(Either.Right(mockedMessage))
             given(assetDataSource)
-                .suspendFunction(assetDataSource::downloadPrivateAsset)
+                .suspendFunction(assetDataSource::fetchPrivateDecodedAsset)
                 .whenInvokedWith(eq(secretKey), any(), any())
                 .thenReturn(Either.Right(encodedPath))
             return this
@@ -169,7 +169,7 @@ class GetMessageAssetUseCaseTest {
                 .whenInvokedWith(any(), any())
                 .thenReturn(Either.Right(mockedMessage))
             given(assetDataSource)
-                .suspendFunction(assetDataSource::downloadPrivateAsset)
+                .suspendFunction(assetDataSource::fetchPrivateDecodedAsset)
                 .whenInvokedWith(any(), any(), any())
                 .thenReturn(Either.Left(noNetworkConnection))
             return this

@@ -3,6 +3,7 @@ package com.wire.kalium.cryptography.utils
 import com.wire.kalium.cryptography.kaliumLogger
 import okio.FileSystem
 import okio.Path
+import okio.Source
 import okio.buffer
 import okio.cipherSink
 import okio.cipherSource
@@ -10,10 +11,8 @@ import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
-import kotlin.io.use
 
 internal class AESEncrypt {
-
     internal fun encrypt(assetDataPath: Path, key: AES256Key, outputPath: Path, kaliumFileSystem: FileSystem): Long {
         var encryptedDataSize = 0L
         try {
@@ -48,9 +47,9 @@ internal class AESEncrypt {
 }
 
 internal class AESDecrypt(private val secretKey: AES256Key) {
-
-    internal fun decrypt(encryptedDataPath: Path, outputPath: Path, kaliumFileSystem: FileSystem): Boolean {
-        return try {
+    internal fun decrypt(encryptedDataSource: Source, outputPath: Path, kaliumFileSystem: FileSystem): Long {
+        var size = -1L
+        try {
             // Fetch AES256 Algorithm
             val cipher = Cipher.getInstance(KEY_ALGORITHM_CONFIGURATION)
 
@@ -61,19 +60,19 @@ internal class AESDecrypt(private val secretKey: AES256Key) {
             cipher.init(Cipher.DECRYPT_MODE, symmetricAESKey, IvParameterSpec(ByteArray(16)))
 
             // Decrypt and write the data to given outputPath
-            val source = kaliumFileSystem.source(encryptedDataPath)
-            val cipherSource = source.cipherSource(cipher)
+            val cipherSource = encryptedDataSource.cipherSource(cipher)
             cipherSource.buffer().use { bufferedSource ->
                 kaliumFileSystem.write(outputPath) {
-                    val size = write(bufferedSource.readByteArray())
+                    val data = bufferedSource.readByteArray()
+                    size = data.size.toLong()
+                    write(data)
                     kaliumLogger.d("WROTE $size bytes")
                 }
             }
-            true
         } catch (e: Exception) {
             kaliumLogger.e("There was an error while decrypting the asset:\n $e}")
-            false
         }
+        return size
     }
 }
 

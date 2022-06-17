@@ -1,6 +1,9 @@
 package com.wire.kalium.logic.data.asset
 
+import com.wire.kalium.cryptography.utils.AES256Key
+import com.wire.kalium.cryptography.utils.decryptDataWithAES256
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.EncryptionFailure
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.UserAssetId
@@ -52,12 +55,13 @@ interface AssetRepository {
     suspend fun downloadPublicAsset(assetId: AssetId): Either<CoreFailure, Path>
 
     /**
-     * Method used to download and persist to local memory a private asset
+     * Method used to fetch the [Path] of a decoded private asset
      * @param assetId the asset identifier
      * @param assetToken the asset token used to provide an extra layer of asset/user authentication
-     * @return [Either] a [CoreFailure] if anything went wrong, or the [Path] to the encoded asset
+     * @param encryptionKey the asset encryption key used to decrypt an extra layer of asset/user authentication
+     * @return [Either] a [CoreFailure] if anything went wrong, or the [Path] to the decoded asset
      */
-    suspend fun downloadPrivateAsset(assetId: AssetId, assetToken: String?): Either<CoreFailure, Path>
+    suspend fun fetchPrivateDecodedAsset(assetId: AssetId, assetToken: String?, encryptionKey: AES256Key): Either<CoreFailure, Path>
 
     /**
      * Method used to download the list of avatar pictures of the current authenticated user
@@ -102,41 +106,57 @@ internal class AssetDataSource(
                 assetApi.uploadAsset(metaData, dataSource, uploadAssetData.dataSize)
             }
         }.flatMap { assetResponse ->
-            // After successful upload, we persist the asset to a non-temporary path
-            val persistentAssetDataPath = kaliumFileSystem.createEncryptedAssetPath(assetName = assetResponse.key)
+            // After successful upload, we persist the asset to a persistent path
+            val persistentAssetDataPath = kaliumFileSystem.providePersistentAssetPath(assetName = assetResponse.key)
             val encryptedAssetSource = kaliumFileSystem.source(uploadAssetData.tempDataPath)
+
+            // After successful upload we write the data now to a persistent path and delete the temporary one
             kaliumFileSystem.writeData(persistentAssetDataPath, encryptedAssetSource)
             kaliumFileSystem.delete(uploadAssetData.tempDataPath)
 
-            assetMapper.fromUploadedAssetToDaoModel(uploadAssetData, assetResponse).let { assetEntity ->
+            // We need to update the asset path with the persistent one
+            val persistedAssetData = uploadAssetData.copy(tempDataPath = persistentAssetDataPath)
+
+
+            assetMapper.fromUploadedAssetToDaoModel(persistedAssetData, assetResponse).let { assetEntity ->
                 wrapStorageRequest { assetDao.insertAsset(assetEntity) }
             }.map { assetMapper.fromApiUploadResponseToDomainModel(assetResponse) }
         }
 
     override suspend fun downloadPublicAsset(assetId: AssetId): Either<CoreFailure, Path> =
-        downloadAsset(assetId = idMapper.toApiModel(assetId), assetToken = null)
+        fetchOrDownloadDecodedAsset(assetId = idMapper.toApiModel(assetId), assetToken = null)
 
-    override suspend fun downloadPrivateAsset(assetId: AssetId, assetToken: String?): Either<CoreFailure, Path> =
-        downloadAsset(assetId = idMapper.toApiModel(assetId), assetToken = assetToken)
+    override suspend fun fetchPrivateDecodedAsset(assetId: AssetId, assetToken: String?, encryptionKey: AES256Key): Either<CoreFailure, Path> =
+        fetchOrDownloadDecodedAsset(assetId = idMapper.toApiModel(assetId), assetToken = assetToken, encryptionKey = encryptionKey)
 
-    private suspend fun downloadAsset(assetId: NetworkAssetId, assetToken: String?): Either<CoreFailure, Path> =
+    private suspend fun fetchOrDownloadDecodedAsset(
+        assetId: NetworkAssetId,
+        assetToken: String?,
+        encryptionKey: AES256Key? = null
+    ): Either<CoreFailure, Path> =
         wrapStorageRequest { assetDao.getAssetByKey(assetId.value).firstOrNull() }.fold({
             wrapApiRequest {
                 // Backend sends asset messages with empty asset tokens
                 assetApi.downloadAsset(assetId, assetToken?.ifEmpty { null })
             }.flatMap { assetDataSource ->
-                val assetDataPath = assetId.value.toPath()
-                val mustCreate = !kaliumFileSystem.exists(assetDataPath)
-                var assetDataSize = 0L
+                // Decrypt and persist decoded asset
+                val decodedAssetPath = kaliumFileSystem.providePersistentAssetPath(assetId.value)
 
-                kaliumFileSystem.write(assetDataPath, mustCreate) {
-                    assetDataSize = writeAll(assetDataSource)
-                }
-                wrapStorageRequest { assetDao.insertAsset(assetMapper.fromUserAssetToDaoModel(assetId, assetDataPath, assetDataSize)) }
+                // Public assets are stored already decrypted on the backend, hence no decryption is needed
+                val assetDataSize = if (encryptionKey != null)
+                    decryptDataWithAES256(assetDataSource, decodedAssetPath, encryptionKey, kaliumFileSystem)
+                else
+                    kaliumFileSystem.writeData(decodedAssetPath, assetDataSource)
+
+                if (assetDataSize == -1L)
+                    Either.Left(EncryptionFailure())
+                wrapStorageRequest { assetDao.insertAsset(assetMapper.fromUserAssetToDaoModel(assetId, decodedAssetPath, assetDataSize)) }
                     .map { assetDataSource }
-                Either.Right(assetDataPath)
+                Either.Right(decodedAssetPath)
             }
-        }, { Either.Right(it.dataPath.toPath()) })
+        }, {
+            Either.Right(it.dataPath.toPath())
+        })
 
     override suspend fun downloadUsersPictureAssets(assetIdList: List<UserAssetId?>): Either<CoreFailure, Unit> {
         assetIdList.filterNotNull().forEach { userAssetId ->

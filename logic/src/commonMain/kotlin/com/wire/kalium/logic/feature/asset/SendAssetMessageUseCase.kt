@@ -74,8 +74,8 @@ internal class SendAssetMessageUseCaseImpl(
 
         return if (encryptionSucceeded) {
             // Calculate the SHA of the encrypted data
-            val sha256 = calcSHA256(tempEncryptedDataPath, kaliumFileSystem)
-
+            val sha256 =
+                calcSHA256(tempEncryptedDataPath, kaliumFileSystem) ?: run { return SendAssetMessageResult.Failure(EncryptionFailure()) }
             // Upload the asset encrypted data and force the mimeType to be a File
             assetDataSource.uploadAndPersistPrivateAsset(
                 FileAsset(fileExtension = assetName.fileExtension()),

@@ -29,8 +29,7 @@ interface GetMessageAssetUseCase {
 
 internal class GetMessageAssetUseCaseImpl(
     private val assetDataSource: AssetRepository,
-    private val messageRepository: MessageRepository,
-    private val kaliumFileSystem: KaliumFileSystem
+    private val messageRepository: MessageRepository
 ) : GetMessageAssetUseCase {
     override suspend fun invoke(
         conversationId: ConversationId,
@@ -58,16 +57,15 @@ internal class GetMessageAssetUseCaseImpl(
                     CoreFailure.Unknown(IllegalStateException("The message associated to this id, was not an asset message"))
                 )
             }
-            assetDataSource.downloadPrivateAsset(
+            assetDataSource.fetchPrivateDecodedAsset(
                 assetId = AssetId(assetMetadata.assetKey, assetMetadata.assetKeyDomain.orEmpty()),
-                assetToken = assetMetadata.assetToken
+                assetToken = assetMetadata.assetToken,
+                encryptionKey = assetMetadata.encryptionKey
             ).fold({
                 kaliumLogger.e("There was an error downloading asset with id => ${assetMetadata.assetKey}")
                 MessageAssetResult.Failure(it)
             }, { encodedAssetPath ->
-                val decryptedAssetPath = kaliumFileSystem.tempFilePath("${assetMetadata.assetKey}_decrypted")
-                decryptDataWithAES256(encodedAssetPath, decryptedAssetPath, assetMetadata.encryptionKey, kaliumFileSystem)
-                MessageAssetResult.Success(decryptedAssetPath, assetMetadata.assetSize)
+                MessageAssetResult.Success(encodedAssetPath, assetMetadata.assetSize)
             })
         })
 }

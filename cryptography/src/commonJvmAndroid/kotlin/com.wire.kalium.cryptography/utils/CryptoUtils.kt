@@ -1,27 +1,45 @@
 package com.wire.kalium.cryptography.utils
 
-import io.ktor.util.*
+import com.wire.kalium.cryptography.kaliumLogger
+import io.ktor.util.encodeBase64
 import okio.FileSystem
+import okio.HashingSink
 import okio.Path
-import java.security.MessageDigest
+import okio.Source
+import okio.blackholeSink
+import okio.buffer
+import kotlin.io.use
 
-actual fun calcMd5(dataPath: Path, kaliumFileSystem: FileSystem): String {
-    val md = MessageDigest.getInstance("MD5")
-//    md.update(bytes, 0, it.size)
-    val hash = calculateFileChecksum(md, dataPath.toFile())
+actual fun calcMd5(dataPath: Path, kaliumFileSystem: FileSystem): String? =
+    try {
+        kaliumFileSystem.source(dataPath).buffer().use { source ->
+            HashingSink.md5(blackholeSink()).use { sink ->
+                source.readAll(sink)
+                sink.hash.toByteArray().encodeBase64()
+            }
+        }
+    } catch (e: Exception) {
+        kaliumLogger.e("There was an error while calculating the md5")
+        null
+    }
 
-    return hash.encodeBase64()
-}
-
-actual fun calcSHA256(dataPath: Path, kaliumFileSystem: FileSystem): ByteArray {
-    val md = MessageDigest.getInstance("SHA-256")
-    return calculateFileChecksum(md, dataPath.toFile())
-}
+actual fun calcSHA256(dataPath: Path, kaliumFileSystem: FileSystem): ByteArray? =
+    try {
+        kaliumFileSystem.source(dataPath).buffer().use { source ->
+            HashingSink.sha256(blackholeSink()).use { sink ->
+                source.readAll(sink)
+                sink.hash.toByteArray()
+            }
+        }
+    } catch (e: Exception) {
+        kaliumLogger.e("There was an error while calculating the SHA256")
+        null
+    }
 
 actual fun encryptDataWithAES256(unencryptedDataPath: Path, key: AES256Key, encryptedDataPath: Path, kaliumFileSystem: FileSystem) =
     AESEncrypt().encrypt(unencryptedDataPath, key, encryptedDataPath, kaliumFileSystem)
 
-actual fun decryptDataWithAES256(encryptedDataPath: Path, decryptedDataPath: Path, secretKey: AES256Key, kaliumFileSystem: FileSystem) =
-    AESDecrypt(secretKey).decrypt(encryptedDataPath, decryptedDataPath, kaliumFileSystem)
+actual fun decryptDataWithAES256(encryptedDataSource: Source, decryptedDataPath: Path, secretKey: AES256Key, kaliumFileSystem: FileSystem) =
+    AESDecrypt(secretKey).decrypt(encryptedDataSource, decryptedDataPath, kaliumFileSystem)
 
 actual fun generateRandomAES256Key(): AES256Key = AESEncrypt().generateRandomAES256Key()

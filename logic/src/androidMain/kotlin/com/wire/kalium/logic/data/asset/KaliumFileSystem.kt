@@ -1,9 +1,22 @@
 package com.wire.kalium.logic.data.asset
 
-import okio.*
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
+import okio.FileHandle
+import okio.FileMetadata
+import okio.FileSystem
+import okio.Path
 import okio.Path.Companion.toPath
+import okio.Sink
+import okio.Source
+import okio.buffer
+import okio.use
 
-actual class KaliumFileSystem actual constructor(private val dataStoragePaths: DataStoragePaths) : FileSystem() {
+actual class KaliumFileSystem actual constructor(
+    private val dataStoragePaths: DataStoragePaths,
+    private val dispatcher: KaliumDispatcher
+) : FileSystem() {
     override fun appendingSink(file: Path, mustExist: Boolean): Sink = SYSTEM.appendingSink(file, mustExist)
 
     override fun atomicMove(source: Path, target: Path) = SYSTEM.atomicMove(source, target)
@@ -44,15 +57,17 @@ actual class KaliumFileSystem actual constructor(private val dataStoragePaths: D
      * Creates a persistent path on the internal storage folder of the file system if it didn't exist before and returns it if successful
      * @param assetName the asset path string
      */
-    actual fun createEncryptedAssetPath(assetName: String): Path = "${dataStoragePaths.assetStoragePath.value}/$assetName".toPath()
+    actual fun providePersistentAssetPath(assetName: String): Path = "${dataStoragePaths.assetStoragePath.value}/$assetName".toPath()
 
     /**
      * Reads the data of the given path as a byte array
      * @param inputPath the path pointing to the stored data
      */
-    actual fun readByteArray(inputPath: Path): ByteArray = source(inputPath).use {
-        it.buffer().use { bufferedFileSource ->
-            bufferedFileSource.readByteArray()
+    actual suspend fun readByteArray(inputPath: Path): ByteArray = source(inputPath).use {
+        withContext(dispatcher.io) {
+            it.buffer().use { bufferedFileSource ->
+                bufferedFileSource.readByteArray()
+            }
         }
     }
 
@@ -60,12 +75,13 @@ actual class KaliumFileSystem actual constructor(private val dataStoragePaths: D
      * Writes the data contained on [dataSource] into the provided [outputPath]
      * @return the number of bytes written
      */
-    actual fun writeData(outputPath: Path, dataSource: Source): Long {
+    actual suspend fun writeData(outputPath: Path, dataSource: Source): Long {
         var byteCount = 0L
-        sink(outputPath).use { sink ->
-            val buffer = Buffer()
-            while (dataSource.read(buffer, 8192L).also { byteCount = it } != -1L) {
-                sink.write(buffer, byteCount)
+        withContext(dispatcher.io) {
+            sink(outputPath).use { sink ->
+                sink.buffer().use { bufferedFileSink ->
+                    byteCount = bufferedFileSink.writeAll(dataSource)
+                }
             }
         }
         return byteCount

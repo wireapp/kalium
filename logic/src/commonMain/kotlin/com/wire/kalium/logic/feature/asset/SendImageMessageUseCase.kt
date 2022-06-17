@@ -8,7 +8,6 @@ import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.EncryptionFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
-import com.wire.kalium.logic.data.asset.DataStoragePaths
 import com.wire.kalium.logic.data.asset.ImageAsset
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.asset.UploadedAssetId
@@ -27,10 +26,11 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.logic.util.fileExtensionToAssetType
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import okio.Path
-import okio.Path.Companion.toPath
 
 fun interface SendImageMessageUseCase {
     /**
@@ -67,19 +67,21 @@ internal class SendImageMessageUseCaseImpl(
         imageName: String,
         imgWidth: Int,
         imgHeight: Int
-    ): SendImageMessageResult {
+    ): SendImageMessageResult = withContext(KaliumDispatcherImpl.io) {
         // Encrypt the asset data with the provided otr key
         val otrKey = generateRandomAES256Key()
         val encryptedDataPath = kaliumFileSystem.tempFilePath("temp_encrypted.aes")
+        if (kaliumFileSystem.exists(encryptedDataPath)) kaliumFileSystem.delete(encryptedDataPath)
         val encryptedDataSize = encryptDataWithAES256(imageDataPath, otrKey, encryptedDataPath, kaliumFileSystem)
         val encryptedDataSucceeded = encryptedDataSize > 0L
 
-        return if (encryptedDataSucceeded) {
+        return@withContext if (encryptedDataSucceeded) {
             // Calculate the SHA of the encrypted data
             val sha256 = calcSHA256(encryptedDataPath, kaliumFileSystem)
+                    ?: run { return@withContext SendImageMessageResult.Failure(EncryptionFailure()) }
 
             // Upload the asset encrypted data
-            return assetDataSource.uploadAndPersistPublicAsset(
+            return@withContext assetDataSource.uploadAndPersistPrivateAsset(
                 imageName.fileExtension().fileExtensionToAssetType(),
                 encryptedDataPath,
                 encryptedDataSize

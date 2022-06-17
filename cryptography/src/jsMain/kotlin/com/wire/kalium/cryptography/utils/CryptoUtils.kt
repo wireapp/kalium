@@ -2,6 +2,7 @@ package com.wire.kalium.cryptography.utils
 
 import okio.FileSystem
 import okio.Path
+import okio.Source
 
 actual fun calcMd5(dataPath: Path, kaliumFileSystem: FileSystem): String {
     TODO("Not yet implemented")
@@ -16,11 +17,11 @@ actual fun encryptDataWithAES256(unencryptedDataPath: Path, key: AES256Key, encr
 }
 
 actual fun decryptDataWithAES256(
-    encryptedDataPath: Path,
+    encryptedDataSource: Source,
     decryptedDataPath: Path,
     secretKey: AES256Key,
     kaliumFileSystem: FileSystem
-): Boolean {
+): Long {
     TODO("Not yet implemented")
 }
 

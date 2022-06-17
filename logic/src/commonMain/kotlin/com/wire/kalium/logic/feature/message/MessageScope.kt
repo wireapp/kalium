@@ -95,8 +95,7 @@ class MessageScope(
     val getAssetMessage: GetMessageAssetUseCase
         get() = GetMessageAssetUseCaseImpl(
             assetRepository,
-            messageRepository,
-            kaliumFileSystem
+            messageRepository
         )
 
     val getRecentMessages: GetRecentMessagesUseCase get() = GetRecentMessagesUseCase(messageRepository)
