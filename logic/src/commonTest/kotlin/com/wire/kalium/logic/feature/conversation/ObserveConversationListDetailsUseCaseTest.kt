@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.conversation
 
 import app.cash.turbine.test
+import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -34,13 +35,16 @@ class ObserveConversationListDetailsUseCaseTest {
     private val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
 
     @Mock
+    private val callRepository: CallRepository = mock(CallRepository::class)
+
+    @Mock
     private val syncManager: SyncManager = configure(mock(SyncManager::class)) { stubsUnitByDefault = true }
 
     private lateinit var observeConversationsUseCase: ObserveConversationListDetailsUseCase
 
     @BeforeTest
     fun setup() {
-        observeConversationsUseCase = ObserveConversationListDetailsUseCase(conversationRepository, syncManager)
+        observeConversationsUseCase = ObserveConversationListDetailsUseCase(conversationRepository, syncManager, callRepository)
     }
 
     @Test
