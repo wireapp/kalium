@@ -6,7 +6,6 @@ import com.wire.kalium.logic.feature.call.usecase.GetAllCallsUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetEstablishedCallsUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetIncomingCallsUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetIncomingCallsUseCaseImpl
-import com.wire.kalium.logic.feature.call.usecase.GetOngoingCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveSpeakerUseCase
 import com.wire.kalium.logic.feature.call.usecase.RejectCallUseCase
@@ -28,12 +27,6 @@ class CallsScope(
 
     val allCalls: GetAllCallsUseCase
         get() = GetAllCallsUseCase(
-            callRepository = callRepository,
-            syncManager = syncManager
-        )
-
-    val onGoingCall: GetOngoingCallUseCase
-        get() = GetOngoingCallUseCase(
             callRepository = callRepository,
             syncManager = syncManager
         )
