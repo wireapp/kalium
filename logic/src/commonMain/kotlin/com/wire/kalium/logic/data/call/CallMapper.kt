@@ -52,7 +52,7 @@ class CallMapper {
                     domain = userId.getDomain()
                 ),
                 clientId = clientId,
-                isMuted = isMuted == 1
+                isMuted = muted == 1
             )
         }
 

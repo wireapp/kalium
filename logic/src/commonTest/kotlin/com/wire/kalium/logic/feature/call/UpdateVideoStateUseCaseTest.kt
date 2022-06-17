@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.call
 
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.VideoState
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.usecase.UpdateVideoStateUseCase
 import io.mockative.Mock
@@ -45,7 +46,11 @@ class UpdateVideoStateUseCaseTest {
             CallStatus.ESTABLISHED,
             isMuted = true,
             isCameraOn = true,
-            callerId = "caller-id"
+            callerId = "caller-id",
+            conversationName = "",
+            Conversation.Type.ONE_ON_ONE,
+            null,
+            null
         )
         given(callManager)
             .suspendFunction(callManager::updateVideoState)
@@ -82,7 +87,11 @@ class UpdateVideoStateUseCaseTest {
             CallStatus.STARTED,
             isMuted = true,
             isCameraOn = true,
-            callerId = "caller-id"
+            callerId = "caller-id",
+            "ONE_ON_ONE Name",
+            Conversation.Type.ONE_ON_ONE,
+            null,
+            null
         )
 
         given(callRepository)
@@ -115,7 +124,11 @@ class UpdateVideoStateUseCaseTest {
             CallStatus.MISSED,
             isMuted = true,
             isCameraOn = true,
-            callerId = "caller-id"
+            callerId = "caller-id",
+            "ONE_ON_ONE Name",
+            Conversation.Type.ONE_ON_ONE,
+            null,
+            null
         )
         given(callRepository)
             .function(callRepository::callsFlow)

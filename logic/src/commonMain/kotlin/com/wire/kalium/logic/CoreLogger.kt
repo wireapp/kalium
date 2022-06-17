@@ -21,7 +21,7 @@ object CoreLogger {
         callingLogger = KaliumLogger(
             config = KaliumLogger.Config(
                 severity = level,
-                tag = "calling"
+                tag = "Calling"
             ), logWriter = logWriter
         )
 
