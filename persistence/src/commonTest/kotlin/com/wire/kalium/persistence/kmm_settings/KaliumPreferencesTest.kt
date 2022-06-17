@@ -2,6 +2,7 @@ package com.wire.kalium.persistence.kmm_settings
 
 import com.russhwolf.settings.MockSettings
 import com.russhwolf.settings.Settings
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.jvm.JvmInline
 import kotlin.test.BeforeTest
@@ -48,7 +49,7 @@ class KaliumPreferencesTest {
         kaliumPreferences.putSerializable(KEY1, testValue, TestValueClass.serializer())
 
         assertEquals(kaliumPreferences.getSerializable(KEY1, TestValueClass.serializer()), testValue)
-        assertEquals(kaliumPreferences.getSerializable(KEY1, TestValueClass.serializer())?.s, TEST_LIST)
+        assertEquals(kaliumPreferences.getSerializable(KEY1, TestValueClass.serializer())?.values, TEST_LIST)
     }
 
 
@@ -60,4 +61,6 @@ class KaliumPreferencesTest {
 
 @Serializable
 @JvmInline
-private value class TestValueClass(val s: List<String>)
+private value class TestValueClass(
+    @SerialName("s") val values: List<String>
+)

@@ -34,11 +34,10 @@ import kotlinx.coroutines.flow.map
 interface ConnectionRepository {
     suspend fun fetchSelfUserConnections(): Either<CoreFailure, Unit>
     suspend fun sendUserConnection(userId: UserId): Either<CoreFailure, Unit>
-    suspend fun updateConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, Unit>
+    suspend fun updateConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, Connection>
     suspend fun getConnections(): Either<StorageFailure, Flow<List<Connection>>>
     suspend fun insertConnectionFromEvent(event: Event.User.NewConnection): Either<CoreFailure, Unit>
     suspend fun observeConnectionList(): Flow<List<Connection>>
-
 }
 
 internal class ConnectionDataSource(
@@ -63,7 +62,7 @@ internal class ConnectionDataSource(
                 kaliumLogger.v("Fetching connections page starting with pagingState $lastPagingState")
                 connectionApi.fetchSelfUserConnections(pagingState = lastPagingState)
             }.onSuccess {
-                it.connections.forEach {connectionDTO ->
+                it.connections.forEach { connectionDTO ->
                     persistConnection(connectionMapper.fromApiToModel(connectionDTO))
                 }
                 updateUserConnectionStatus(connections = it.connections)
@@ -84,10 +83,10 @@ internal class ConnectionDataSource(
             val connectionSent = connection.copy(status = ConnectionStateDTO.SENT)
             updateUserConnectionStatus(listOf(connectionSent))
             persistConnection(connectionMapper.fromApiToModel(connection))
-        }.map{ }
+        }.map { }
     }
 
-    override suspend fun updateConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, Unit> {
+    override suspend fun updateConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, Connection> {
         val isValidConnectionState = isValidConnectionState(connectionState)
         val newConnectionStatus = connectionStatusMapper.toApiModel(connectionState)
         if (!isValidConnectionState || newConnectionStatus == null) {
@@ -96,10 +95,12 @@ internal class ConnectionDataSource(
 
         return wrapApiRequest {
             connectionApi.updateConnection(idMapper.toApiModel(userId), newConnectionStatus)
-        }.map { connection ->
-            val connectionSent = connection.copy(status = newConnectionStatus)
-            updateUserConnectionStatus(listOf(connectionSent))
-            persistConnection(connectionMapper.fromApiToModel(connection))
+        }.map { connectionDTO ->
+            val connectionStatus = connectionDTO.copy(status = newConnectionStatus)
+            val connectionModel = connectionMapper.fromApiToModel(connectionDTO)
+            updateUserConnectionStatus(listOf(connectionStatus))
+            persistConnection(connectionModel)
+            connectionModel
         }
     }
 
@@ -111,7 +112,6 @@ internal class ConnectionDataSource(
         ConnectionState.IGNORED, ConnectionState.CANCELLED, ConnectionState.ACCEPTED -> true
         else -> false
     }
-
 
     override suspend fun getConnections(): Either<StorageFailure, Flow<List<Connection>>> = wrapStorageRequest {
         observeConnectionList()
@@ -134,13 +134,14 @@ internal class ConnectionDataSource(
     ) = wrapStorageRequest {
         connectionDAO.insertConnection(connectionMapper.modelToDao(connection))
     }.flatMap {
-        // This can fail? but the connection will be there and get synced in worst case in next SlowSync
+        // This can fail, but the connection will be there and get synced in worst case scenario in next SlowSync
         wrapApiRequest {
             userDetailsApi.getUserInfo(idMapper.toApiModel(connection.qualifiedToId))
         }.flatMap {
             wrapStorageRequest {
                 val userEntity = publicUserMapper.fromUserApiToEntity(it, connectionStatusMapper.toDaoModel(connection.status))
                 userDAO.insertUser(userEntity)
+                connectionDAO.updateConnectionLastUpdatedTime(connection.lastUpdate, connection.toId)
             }
         }
     }

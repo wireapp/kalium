@@ -15,7 +15,7 @@ sealed class MessageContent {
     data class Calling(val value: String) : Regular()
     data class Asset(val value: AssetContent) : Regular()
     data class DeleteMessage(val messageId: String) : Regular()
-    data class TextEdited(val editMessageId :String, val newContent : String) : Regular()
+    data class TextEdited(val editMessageId: String, val newContent: String) : Regular()
     data class DeleteForMe(
         val messageId: String,
         val conversationId: String,
