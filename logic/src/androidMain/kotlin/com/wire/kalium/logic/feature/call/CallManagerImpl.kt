@@ -123,15 +123,13 @@ actual class CallManagerImpl(
         waitInitializationJob.join()
         handle
     }
-}
 
-private suspend fun <T> withCalling(action: suspend Calling.(handle: Handle) -> T): T {
-    val handle = deferredHandle.await()
-    return calling.action(handle)
-}
+    private suspend fun <T> withCalling(action: suspend Calling.(handle: Handle) -> T): T {
+        val handle = deferredHandle.await()
+        return calling.action(handle)
+    }
 
-override suspend fun onCallingMessageReceived(message: Message.Regular, content: MessageContent.Calling) =
-    withCalling {
+    override suspend fun onCallingMessageReceived(message: Message.Regular, content: MessageContent.Calling) = withCalling {
         callingLogger.i("$TAG - onCallingMessageReceived called")
         val msg = content.value.toByteArray()
 
@@ -151,175 +149,160 @@ override suspend fun onCallingMessageReceived(message: Message.Regular, content:
         callingLogger.i("$TAG - wcall_recv_msg() called")
     }
 
-override suspend fun startCall(
-    conversationId: ConversationId,
-    callType: CallType,
-    conversationType: ConversationType,
-    isAudioCbr: Boolean
-) {
-    callingLogger.d("$TAG -> starting call for conversation = $conversationId..")
+    override suspend fun startCall(
+        conversationId: ConversationId, callType: CallType, conversationType: ConversationType, isAudioCbr: Boolean
+    ) {
+        callingLogger.d("$TAG -> starting call for conversation = $conversationId..")
 
-    //TODO move call creation to the usecase since this one will run only for Android
-    val shouldMute = conversationType == ConversationType.Conference
-    val isCameraOn = callType == CallType.VIDEO
-    callRepository.createCall(
-        conversationId = conversationId,
-        status = CallStatus.STARTED,
-        isMuted = shouldMute,
-        isCameraOn = isCameraOn,
-        callerId = userId.await().toString()
-    )
-
-    withCalling {
-        val avsCallType = callMapper.toCallTypeCalling(callType)
-        val avsConversationType = callMapper.toConversationTypeCalling(conversationType)
-        wcall_start(
-            deferredHandle.await(),
-            conversationId.value,
-            avsCallType.avsValue,
-            avsConversationType.avsValue,
-            isAudioCbr.toInt()
+        //TODO move call creation to the usecase since this one will run only for Android
+        val shouldMute = conversationType == ConversationType.Conference
+        val isCameraOn = callType == CallType.VIDEO
+        callRepository.createCall(
+            conversationId = conversationId,
+            status = CallStatus.STARTED,
+            isMuted = shouldMute,
+            isCameraOn = isCameraOn,
+            callerId = userId.await().toString()
         )
 
-        callingLogger.d("$TAG - wcall_start() called -> Call for conversation = $conversationId started")
+        withCalling {
+            val avsCallType = callMapper.toCallTypeCalling(callType)
+            val avsConversationType = callMapper.toConversationTypeCalling(conversationType)
+            wcall_start(
+                deferredHandle.await(), conversationId.value, avsCallType.avsValue, avsConversationType.avsValue, isAudioCbr.toInt()
+            )
+
+            callingLogger.d("$TAG - wcall_start() called -> Call for conversation = $conversationId started")
+        }
     }
-}
 
-override suspend fun answerCall(conversationId: ConversationId) = withCalling {
-    callingLogger.d("$TAG -> answering call for conversation = $conversationId..")
-    wcall_answer(
-        inst = deferredHandle.await(),
-        conversationId = conversationId.value,
-        callType = CallTypeCalling.AUDIO.avsValue,
-        cbrEnabled = false
-    )
-    callingLogger.d("$TAG - wcall_answer() called -> Incoming call for conversation = $conversationId answered")
-}
+    override suspend fun answerCall(conversationId: ConversationId) = withCalling {
+        callingLogger.d("$TAG -> answering call for conversation = $conversationId..")
+        wcall_answer(
+            inst = deferredHandle.await(),
+            conversationId = conversationId.value,
+            callType = CallTypeCalling.AUDIO.avsValue,
+            cbrEnabled = false
+        )
+        callingLogger.d("$TAG - wcall_answer() called -> Incoming call for conversation = $conversationId answered")
+    }
 
-override suspend fun endCall(conversationId: ConversationId) = withCalling {
-    callingLogger.d("$TAG -> ending Call for conversation = $conversationId..")
-    wcall_end(inst = deferredHandle.await(), conversationId = conversationId.value)
-    callingLogger.d("$TAG - wcall_end() called -> call for conversation = $conversationId ended")
-}
+    override suspend fun endCall(conversationId: ConversationId) = withCalling {
+        callingLogger.d("$TAG -> ending Call for conversation = $conversationId..")
+        wcall_end(inst = deferredHandle.await(), conversationId = conversationId.value)
+        callingLogger.d("$TAG - wcall_end() called -> call for conversation = $conversationId ended")
+    }
 
-override suspend fun rejectCall(conversationId: ConversationId) = withCalling {
-    callingLogger.d("$TAG -> rejecting call for conversation = $conversationId..")
-    wcall_reject(inst = deferredHandle.await(), conversationId = conversationId.value)
-    callRepository.removeCallById(conversationId.toString())
-    callingLogger.d("$TAG - wcall_reject() called -> call for conversation = $conversationId rejected")
-}
+    override suspend fun rejectCall(conversationId: ConversationId) = withCalling {
+        callingLogger.d("$TAG -> rejecting call for conversation = $conversationId..")
+        wcall_reject(inst = deferredHandle.await(), conversationId = conversationId.value)
+        callRepository.removeCallById(conversationId.toString())
+        callingLogger.d("$TAG - wcall_reject() called -> call for conversation = $conversationId rejected")
+    }
 
-override suspend fun muteCall(shouldMute: Boolean) = withCalling {
-    val logString = if (shouldMute) "muting" else "un-muting"
-    callingLogger.d("$TAG -> $logString call..")
-    wcall_set_mute(deferredHandle.await(), muted = shouldMute.toInt())
-    callingLogger.d("$TAG - wcall_set_mute() called")
-}
+    override suspend fun muteCall(shouldMute: Boolean) = withCalling {
+        val logString = if (shouldMute) "muting" else "un-muting"
+        callingLogger.d("$TAG -> $logString call..")
+        wcall_set_mute(deferredHandle.await(), muted = shouldMute.toInt())
+        callingLogger.d("$TAG - wcall_set_mute() called")
+    }
 
-/**
- * This method should NOT be called while the call is still incoming or outgoing and not established yet.
- */
-override suspend fun updateVideoState(conversationId: ConversationId, videoState: VideoState) {
-    withCalling {
-        callingLogger.d("$TAG -> changing video state to ${videoState.name}..")
+    /**
+     * This method should NOT be called while the call is still incoming or outgoing and not established yet.
+     */
+    override suspend fun updateVideoState(conversationId: ConversationId, videoState: VideoState) {
+        withCalling {
+            callingLogger.d("$TAG -> changing video state to ${videoState.name}..")
+            scope.launch {
+                val videoStateCalling = callMapper.toVideoStateCalling(videoState)
+                wcall_set_video_send_state(deferredHandle.await(), conversationId.value, videoStateCalling.avsValue)
+                callingLogger.d("$TAG -> wcall_set_video_send_state called..")
+            }
+        }
+    }
+
+    /**
+     * onCallingReady
+     * Will start the handlers for: ParticipantsChanged, NetworkQuality, ClientsRequest and ActiveSpeaker
+     */
+    private fun onCallingReady() {
+        initParticipantsHandler()
+        initNetworkHandler()
+        initClientsHandler()
+        initActiveSpeakersHandler()
+    }
+
+    private fun initParticipantsHandler() {
         scope.launch {
-            val videoStateCalling = callMapper.toVideoStateCalling(videoState)
-            wcall_set_video_send_state(deferredHandle.await(), conversationId.value, videoStateCalling.avsValue)
-            callingLogger.d("$TAG -> wcall_set_video_send_state called..")
+            withCalling {
+                val onParticipantListChanged = OnParticipantListChanged(
+                    handle = deferredHandle.await(),
+                    calling = calling,
+                    callRepository = callRepository,
+                    participantMapper = callMapper.participantMapper
+                ).keepingStrongReference()
+
+                wcall_set_participant_changed_handler(
+                    inst = deferredHandle.await(), wcall_participant_changed_h = onParticipantListChanged, arg = null
+                )
+                callingLogger.d("$TAG - wcall_set_participant_changed_handler() called")
+            }
         }
     }
-}
 
-/**
- * onCallingReady
- * Will start the handlers for: ParticipantsChanged, NetworkQuality, ClientsRequest and ActiveSpeaker
- */
-private fun onCallingReady() {
-    initParticipantsHandler()
-    initNetworkHandler()
-    initClientsHandler()
-    initActiveSpeakersHandler()
-}
+    private fun initNetworkHandler() {
+        scope.launch {
+            withCalling {
+                val onNetworkQualityChanged = OnNetworkQualityChanged().keepingStrongReference()
 
-private fun initParticipantsHandler() {
-    scope.launch {
-        withCalling {
-            val onParticipantListChanged = OnParticipantListChanged(
-                handle = deferredHandle.await(),
-                calling = calling,
-                callRepository = callRepository,
-                participantMapper = callMapper.participantMapper
-            ).keepingStrongReference()
-
-            wcall_set_participant_changed_handler(
-                inst = deferredHandle.await(),
-                wcall_participant_changed_h = onParticipantListChanged,
-                arg = null
-            )
-            callingLogger.d("$TAG - wcall_set_participant_changed_handler() called")
+                wcall_set_network_quality_handler(
+                    inst = deferredHandle.await(),
+                    wcall_network_quality_h = onNetworkQualityChanged,
+                    intervalInSeconds = NETWORK_QUALITY_INTERVAL_SECONDS,
+                    arg = null
+                )
+                callingLogger.d("$TAG - wcall_set_network_quality_handler() called")
+            }
         }
     }
-}
 
-private fun initNetworkHandler() {
-    scope.launch {
-        withCalling {
-            val onNetworkQualityChanged = OnNetworkQualityChanged()
-                .keepingStrongReference()
+    private fun initClientsHandler() {
+        scope.launch {
+            withCalling {
+                val selfUserId = userId.await().value
 
-            wcall_set_network_quality_handler(
-                inst = deferredHandle.await(),
-                wcall_network_quality_h = onNetworkQualityChanged,
-                intervalInSeconds = NETWORK_QUALITY_INTERVAL_SECONDS,
-                arg = null
-            )
-            callingLogger.d("$TAG - wcall_set_network_quality_handler() called")
+                val onClientsRequest = OnClientsRequest(
+                    calling = calling, selfUserId = selfUserId, conversationRepository = conversationRepository, callingScope = scope
+                ).keepingStrongReference()
+
+                wcall_set_req_clients_handler(
+                    inst = deferredHandle.await(), wcall_req_clients_h = onClientsRequest
+                )
+
+                callingLogger.d("$TAG - wcall_set_req_clients_handler() called")
+            }
         }
     }
-}
 
-private fun initClientsHandler() {
-    scope.launch {
-        withCalling {
-            val selfUserId = userId.await().value
+    private fun initActiveSpeakersHandler() {
+        scope.launch {
+            withCalling {
+                val activeSpeakersHandler = OnActiveSpeakers(
+                    callRepository = callRepository
+                ).keepingStrongReference()
 
-            val onClientsRequest = OnClientsRequest(
-                calling = calling,
-                selfUserId = selfUserId,
-                conversationRepository = conversationRepository,
-                callingScope = scope
-            ).keepingStrongReference()
+                wcall_set_active_speaker_handler(
+                    inst = deferredHandle.await(), activeSpeakersHandler = activeSpeakersHandler
+                )
 
-            wcall_set_req_clients_handler(
-                inst = deferredHandle.await(),
-                wcall_req_clients_h = onClientsRequest
-            )
-
-            callingLogger.d("$TAG - wcall_set_req_clients_handler() called")
+                callingLogger.d("$TAG - wcall_set_req_clients_handler() called")
+            }
         }
     }
-}
 
-private fun initActiveSpeakersHandler() {
-    scope.launch {
-        withCalling {
-            val activeSpeakersHandler = OnActiveSpeakers(
-                callRepository = callRepository
-            ).keepingStrongReference()
-
-            wcall_set_active_speaker_handler(
-                inst = deferredHandle.await(),
-                activeSpeakersHandler = activeSpeakersHandler
-            )
-
-            callingLogger.d("$TAG - wcall_set_req_clients_handler() called")
-        }
+    companion object {
+        const val TAG = "CallManager"
+        const val NETWORK_QUALITY_INTERVAL_SECONDS = 5
+        const val UTF8_ENCODING = "UTF-8"
     }
-}
-
-companion object {
-    const val TAG = "CallManager"
-    const val NETWORK_QUALITY_INTERVAL_SECONDS = 5
-    const val UTF8_ENCODING = "UTF-8"
-}
 }
