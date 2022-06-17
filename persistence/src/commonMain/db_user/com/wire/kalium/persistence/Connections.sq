@@ -16,19 +16,14 @@ deleteAllConnections:
 DELETE FROM Connection;
 
 deleteConnection:
-DELETE FROM Connection WHERE from_id = ?;
+DELETE FROM Connection WHERE to_id = ?;
 
 insertConnection:
 INSERT OR REPLACE INTO Connection(from_id, conversation_id, qualified_conversation, to_id, last_update, qualified_to, status)
 VALUES(?, ?, ?, ?, ?, ?, ?);
 
-updateConnection:
-UPDATE Connection
-SET conversation_id = ?, qualified_conversation = ?, to_id = ?, last_update = ?, qualified_to = ?, status = ?
-WHERE from_id = ?;
-
-updateConnectionStatus:
-UPDATE Connection SET status = ? WHERE from_id = ?;
+updateConnectionLastUpdated:
+UPDATE Connection SET last_update = ? WHERE to_id = ?;
 
 selectConnectionRequests:
 SELECT * FROM Connection WHERE status = 'SENT' OR status = 'PENDING';
