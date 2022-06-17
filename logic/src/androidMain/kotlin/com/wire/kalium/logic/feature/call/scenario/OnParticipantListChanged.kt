@@ -44,7 +44,7 @@ class OnParticipantListChanged(
                     participants.add(updatedParticipant)
                 }
 
-                clients.add(participantMapper.fromCallMemberToCallClient(member = member))
+                clients.add(participantMapper.fromCallMemberToCallClient(member))
             }
 
             callRepository.updateCallParticipants(
