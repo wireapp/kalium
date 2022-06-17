@@ -34,8 +34,8 @@ class OnParticipantListChanged(
 
         val participantsChange = Json.decodeFromString<CallParticipants>(data)
         callingScope.launch {
-            for (member in participantsChange.members) {
-                val participant = participantMapper.fromCallMemberToParticipant(member = member)
+            participantsChange.members.map { member ->
+                val participant = participantMapper.fromCallMemberToParticipant(member)
                 userRepository.fetchUserInfo(member.userId.toConversationId()).map {
                     val updatedParticipant = participant.copy(
                         name = it.name!!,
@@ -44,7 +44,7 @@ class OnParticipantListChanged(
                     participants.add(updatedParticipant)
                 }
 
-                clients.add(participantMapper.fromCallMemberToCallClient(member = member))
+                clients.add(participantMapper.fromCallMemberToCallClient(member))
             }
 
             callRepository.updateCallParticipants(
