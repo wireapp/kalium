@@ -20,6 +20,7 @@ import com.wire.kalium.calling.types.Uint32_t
  * REASON_NOONE_JOINED       = 12
  * REASON_EVERYONE_LEFT      = 13
  */
+@Suppress("LongParameterList")
 fun interface CloseCallHandler : Callback {
     fun onClosedCall(
         reason: Int,

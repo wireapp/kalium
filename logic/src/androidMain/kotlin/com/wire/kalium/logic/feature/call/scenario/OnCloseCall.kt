@@ -15,7 +15,7 @@ class OnCloseCall(
     private val callRepository: CallRepository
 ) : CloseCallHandler {
     override fun onClosedCall(reason: Int, conversationId: String, messageTime: Uint32_t, userId: String, clientId: String?, arg: Pointer?) {
-        callingLogger.i("OnCloseCall -> call for conversation $conversationId from user $userId closed at $messageTime for reason: $reason")
+        callingLogger.i("OnCloseCall -> ConversationId $conversationId from user $userId , CLOSED for reason: $reason")
 
         val avsReason = CallClosedReason.fromInt(value = reason)
         val callStatus = if (avsReason === STILL_ONGOING) CallStatus.ONGOING else CallStatus.CLOSED
