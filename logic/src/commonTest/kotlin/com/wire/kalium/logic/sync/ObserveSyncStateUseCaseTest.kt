@@ -23,7 +23,7 @@ class ObserveSyncStateUseCaseTest {
 
     @Test
     fun givenSyncStateInitialStateAndNoUpdates_whenObservingSyncState_thenTheFlowEmitsOnlyInitialState() = runTest {
-        val initialState = SyncState.ProcessingPendingEvents
+        val initialState = SyncState.GatheringPendingEvents
         syncRepository.updateSyncState { initialState }
 
         observeSyncState().test {
@@ -34,7 +34,7 @@ class ObserveSyncStateUseCaseTest {
 
     @Test
     fun givenSyncStateInitialStateAndUpdatesAfterCollecting_whenObservingSyncState_thenTheFlowEmitsAllValues() = runTest {
-        val initialState = SyncState.ProcessingPendingEvents
+        val initialState = SyncState.GatheringPendingEvents
         syncRepository.updateSyncState { initialState }
 
         observeSyncState().test {

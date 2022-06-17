@@ -14,9 +14,17 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.http.HttpMethod
 import io.ktor.websocket.Frame
+import kotlinx.coroutines.channels.consume
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.consumeAsFlow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 
 class NotificationApiImpl internal constructor(
@@ -66,32 +74,46 @@ class NotificationApiImpl internal constructor(
         }
     }
 
-    override suspend fun listenToLiveEvents(clientId: String): Flow<EventResponse> = authenticatedWebSocketClient
-        .createDisposableHttpClient()
-        .webSocketSession(
-            method = HttpMethod.Get
-        ) {
-            // TODO: setWSSUrl can be removed ?
+    override suspend fun listenToLiveEvents(clientId: String): Flow<WebSocketEvent<EventResponse>> = flow {
+
+        val session = authenticatedWebSocketClient
+            .createDisposableHttpClient()
+            .webSocketSession(
+                method = HttpMethod.Get
+            ) {
+                // TODO: setWSSUrl can be removed ?
             setWSSUrl(serverLinks.webSocket, PATH_AWAIT)
-            parameter(CLIENT_QUERY_KEY, clientId)
-        }.incoming
-        .consumeAsFlow()
-        .mapNotNull { frame ->
-            println("###### Received Frame: $frame ######")
-            when (frame) {
-                is Frame.Binary -> {
-                    // assuming here the byteArray is an ASCII character set
-                    val jsonString = io.ktor.utils.io.core.String(frame.data)
-                    kaliumLogger.v("Binary frame content: '$jsonString'")
-                    val event = KtxSerializer.json.decodeFromString<EventResponse>(jsonString)
-                    event
-                }
-                else -> {
-                    println("###### Websocket frame not handled: $frame ######")
-                    null
+                parameter(CLIENT_QUERY_KEY, clientId)
+            }
+
+        kaliumLogger.i("Websocket open")
+
+        emit(WebSocketEvent.Open())
+
+        session
+            .incoming
+            .consumeAsFlow()
+            .onCompletion {
+                kaliumLogger.w("Websocket Closed", it)
+                emit(WebSocketEvent.Close(it))
+            }
+            .collect { frame ->
+                kaliumLogger.v("Websocket Received Frame: $frame")
+                when (frame) {
+                    is Frame.Binary -> {
+                        // assuming here the byteArray is an ASCII character set
+                        val jsonString = io.ktor.utils.io.core.String(frame.data)
+                        kaliumLogger.v("Binary frame content: '$jsonString'")
+                        val event = KtxSerializer.json.decodeFromString<EventResponse>(jsonString)
+                        emit(WebSocketEvent.BinaryPayloadReceived(event))
+                    }
+                    else -> {
+                        kaliumLogger.v("Websocket frame not handled: $frame")
+                        emit(WebSocketEvent.NonBinaryPayloadReceived(frame.data))
+                    }
                 }
             }
-        }
+    }
 
     private companion object {
         const val PATH_AWAIT = "await"

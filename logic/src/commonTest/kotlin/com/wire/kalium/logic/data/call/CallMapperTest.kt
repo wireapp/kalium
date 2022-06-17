@@ -140,8 +140,8 @@ class CallMapperTest {
 
     private companion object {
         private val DUMMY_CALL_MEMBER = CallMember(
-            userid = "dummyId@dummyDomain",
-            clientid = "dummyClientId",
+            userId = "dummyId@dummyDomain",
+            clientId = "dummyClientId",
             aestab = 0,
             vrecv = 0,
             muted = 0
