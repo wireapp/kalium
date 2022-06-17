@@ -1,6 +1,8 @@
 package com.wire.kalium.logic.feature.call
 
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.usecase.EndCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetAllCallsUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetEstablishedCallsUseCase
@@ -17,9 +19,12 @@ import com.wire.kalium.logic.feature.call.usecase.UnMuteCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.UpdateVideoStateUseCase
 import com.wire.kalium.logic.sync.SyncManager
 
+@Suppress("LongParameterList")
 class CallsScope(
     private val callManager: Lazy<CallManager>,
     private val callRepository: CallRepository,
+    private val conversationRepository: ConversationRepository,
+    private val userRepository: UserRepository,
     private val flowManagerService: FlowManagerService,
     private val mediaManagerService: MediaManagerService,
     private val syncManager: SyncManager
@@ -40,7 +45,9 @@ class CallsScope(
     val getIncomingCalls: GetIncomingCallsUseCase
         get() = GetIncomingCallsUseCaseImpl(
             callRepository = callRepository,
-            syncManager = syncManager
+            syncManager = syncManager,
+            conversationRepository = conversationRepository,
+            userRepository = userRepository
         )
 
     val startCall: StartCallUseCase get() = StartCallUseCase(callManager)

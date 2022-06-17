@@ -83,7 +83,7 @@ actual class CallManagerImpl(
         }
     }
 
-    private fun startHandleAsync() = scope.async(start = CoroutineStart.LAZY) {
+    private fun startHandleAsync(): Deferred<Handle> = scope.async(start = CoroutineStart.LAZY) {
         val selfUserId = userId.await().value
         val selfClientId = clientId.await().value
 
@@ -101,7 +101,7 @@ actual class CallManagerImpl(
             //TODO(refactor): inject all of these CallbackHandlers in class constructor
             sendHandler = OnSendOTR(deferredHandle, calling, selfUserId, selfClientId, messageSender, scope).keepingStrongReference(),
             sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, scope).keepingStrongReference(),
-            incomingCallHandler = OnIncomingCall(callRepository, callMapper).keepingStrongReference(),
+            incomingCallHandler = OnIncomingCall(callRepository, callMapper, scope).keepingStrongReference(),
             missedCallHandler = OnMissedCall(callRepository).keepingStrongReference(),
             answeredCallHandler = OnAnsweredCall(callRepository).keepingStrongReference(),
             establishedCallHandler = OnEstablishedCall(callRepository).keepingStrongReference(),
@@ -119,6 +119,7 @@ actual class CallManagerImpl(
             arg = null
         )
         callingLogger.d("$TAG - wcall_create() called")
+        // TODO(edge-case): Add a timeout. Perhaps make some functions (like onCallingMessageReceived) return Eithers.
         waitInitializationJob.join()
         handle
     }
@@ -161,13 +162,11 @@ actual class CallManagerImpl(
         val shouldMute = conversationType == ConversationType.Conference
         val isCameraOn = callType == CallType.VIDEO
         callRepository.createCall(
-            call = Call(
-                conversationId = conversationId,
-                status = CallStatus.STARTED,
-                isMuted = shouldMute,
-                isCameraOn = isCameraOn,
-                callerId = userId.await().toString()
-            )
+            conversationId = conversationId,
+            status = CallStatus.STARTED,
+            isMuted = shouldMute,
+            isCameraOn = isCameraOn,
+            callerId = userId.await().toString()
         )
 
         withCalling {
@@ -205,6 +204,7 @@ actual class CallManagerImpl(
     override suspend fun rejectCall(conversationId: ConversationId) = withCalling {
         callingLogger.d("$TAG -> rejecting call for conversation = $conversationId..")
         wcall_reject(inst = deferredHandle.await(), conversationId = conversationId.value)
+        callRepository.removeCallById(conversationId.toString())
         callingLogger.d("$TAG - wcall_reject() called -> call for conversation = $conversationId rejected")
     }
 

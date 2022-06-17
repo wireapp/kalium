@@ -1,19 +1,33 @@
 package com.wire.kalium.logic.data.call
 
+import app.cash.turbine.test
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationDetails
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.LegalHoldStatus
+import com.wire.kalium.logic.data.team.TeamRepository
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
+import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.call.CallApi
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.util.reflect.instanceOf
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
+import io.mockative.once
 import io.mockative.oneOf
+import io.mockative.verify
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -26,6 +40,15 @@ class CallRepositoryTest {
     @Mock
     private val callApi = mock(classOf<CallApi>())
 
+    @Mock
+    private val conversationRepository = mock(classOf<ConversationRepository>())
+
+    @Mock
+    private val userRepository = mock(classOf<UserRepository>())
+
+    @Mock
+    private val teamRepository = mock(classOf<TeamRepository>())
+
     private lateinit var mapOfCallProfiles: Map<String, Call>
     private lateinit var startedCall: Call
     private lateinit var answeredCall: Call
@@ -37,7 +60,10 @@ class CallRepositoryTest {
     @BeforeTest
     fun setUp() {
         callRepository = CallDataSource(
-            callApi = callApi
+            callApi = callApi,
+            conversationRepository = conversationRepository,
+            userRepository = userRepository,
+            teamRepository = teamRepository
         )
         startedCall = provideCall(sharedConversationId, CallStatus.STARTED)
         answeredCall = provideCall(conversationIdAnsweredCall, CallStatus.ANSWERED)
@@ -70,7 +96,9 @@ class CallRepositoryTest {
     fun givenEmptyListOfCalls_whenGetAllCallsIsCalled_thenReturnAnEmptyListOfCalls() = runTest {
         val calls = callRepository.callsFlow()
 
-        assertEquals(0, calls.first().size)
+        calls.test {
+            assertEquals(0, awaitItem().size)
+        }
     }
 
     @Test
@@ -79,32 +107,91 @@ class CallRepositoryTest {
 
         val calls = callRepository.callsFlow()
 
-        assertEquals(mapOfCallProfiles.size, calls.first().size)
-        assertTrue(calls.first()[0].instanceOf(Call::class))
+        calls.test {
+            val list = awaitItem()
+            assertEquals(mapOfCallProfiles.size, list.size)
+            assertTrue(list[0].instanceOf(Call::class))
+        }
     }
 
     @Test
-    fun givenACallObject_whenCreateCallCalled_thenAddThatCallToTheFlow() = runTest {
+    fun givenACallData_whenCreateCallCalled_thenAddThatCallToTheFlow() = runTest {
+        given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(ConversationDetails.Group(TestConversation.ONE_ON_ONE, LegalHoldStatus.ENABLED)))
+        given(userRepository).suspendFunction(userRepository::getKnownUser)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(TestUser.OTHER))
+        given(teamRepository).suspendFunction(teamRepository::getTeam)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(Team("team1", "team_1")))
         callRepository.updateCallProfileFlow(CallProfile(mapOf(startedCall.conversationId.toString() to startedCall)))
 
-        callRepository.createCall(answeredCall)
+        callRepository.createCall(conversationIdAnsweredCall, CallStatus.ANSWERED, "caller_id", false, false)
 
         val calls = callRepository.callsFlow()
-        assertEquals(2, calls.first().size)
-        assertEquals(calls.first()[0], startedCall)
-        assertEquals(calls.first()[1], answeredCall)
+
+        calls.test {
+            val list = awaitItem()
+            assertEquals(2, list.size)
+            assertEquals(list[0], startedCall)
+            assertEquals(list[1], answeredCall)
+
+            verify(conversationRepository)
+                .suspendFunction(conversationRepository::observeConversationDetailsById)
+                .with(any())
+                .wasInvoked(exactly = once)
+
+            verify(userRepository)
+                .suspendFunction(userRepository::getKnownUser)
+                .with(any())
+                .wasInvoked(exactly = once)
+
+            verify(teamRepository)
+                .suspendFunction(teamRepository::getTeam)
+                .with(any())
+                .wasInvoked(exactly = once)
+        }
     }
 
     @Test
-    fun givenACallObjectWithSameConversationIdAsAnotherOneInTheFlow_whenCreateCallCalled_thenReplaceTheCurrent() = runTest {
+    fun givenACallDataWithSameConversationIdAsAnotherOneInTheFlow_whenCreateCallCalled_thenReplaceTheCurrent() = runTest {
+        given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(ConversationDetails.Group(TestConversation.ONE_ON_ONE, LegalHoldStatus.ENABLED)))
+        given(userRepository).suspendFunction(userRepository::getKnownUser)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(TestUser.OTHER))
+        given(teamRepository).suspendFunction(teamRepository::getTeam)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(Team("team1", "team_1")))
+
         val incomingCall2 = provideCall(sharedConversationId, CallStatus.INCOMING)
         callRepository.updateCallProfileFlow(CallProfile(mapOfCallProfiles))
 
-        callRepository.createCall(incomingCall2)
+        callRepository.createCall(sharedConversationId, CallStatus.INCOMING, "caller_id", false, false)
 
         val calls = callRepository.callsFlow()
-        assertEquals(mapOfCallProfiles.size, calls.first().size)
-        assertEquals(calls.first()[0], incomingCall2)
+        calls.test {
+            val list = awaitItem()
+            assertEquals(mapOfCallProfiles.size, list.size)
+            assertEquals(list[0], incomingCall2)
+
+            verify(conversationRepository)
+                .suspendFunction(conversationRepository::observeConversationDetailsById)
+                .with(any())
+                .wasInvoked(exactly = once)
+
+            verify(userRepository)
+                .suspendFunction(userRepository::getKnownUser)
+                .with(any())
+                .wasInvoked(exactly = once)
+
+            verify(teamRepository)
+                .suspendFunction(teamRepository::getTeam)
+                .with(any())
+                .wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -112,7 +199,10 @@ class CallRepositoryTest {
         callRepository.updateCallStatusById(randomConversationIdString, CallStatus.INCOMING)
 
         val calls = callRepository.callsFlow()
-        assertEquals(0, calls.first().size)
+        calls.test {
+            val list = awaitItem()
+            assertEquals(0, list.size)
+        }
     }
 
     @Test
@@ -122,8 +212,11 @@ class CallRepositoryTest {
         callRepository.updateCallStatusById(startedCall.conversationId.toString(), CallStatus.ESTABLISHED)
 
         val calls = callRepository.callsFlow()
-        assertEquals(mapOfCallProfiles.size, calls.first().size)
-        assertEquals(calls.first()[0].status, CallStatus.ESTABLISHED)
+        calls.test {
+            val list = awaitItem()
+            assertEquals(mapOfCallProfiles.size, list.size)
+            assertEquals(list[0].status, CallStatus.ESTABLISHED)
+        }
     }
 
 
@@ -280,11 +373,15 @@ class CallRepositoryTest {
     private fun provideCall(id: ConversationId, status: CallStatus) = Call(
         conversationId = id,
         status = status,
+        callerId = "caller_id",
+        participants = listOf(),
         isMuted = false,
         isCameraOn = false,
-        callerId = "caller-id",
-        participants = listOf(),
-        maxParticipants = 0
+        maxParticipants = 0,
+        conversationName = "ONE_ON_ONE Name",
+        conversationType = Conversation.Type.ONE_ON_ONE,
+        callerName = "otherUsername",
+        callerTeamName = "team_1"
     )
 
     private companion object {
