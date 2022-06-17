@@ -126,7 +126,7 @@ class RegisterClientUseCaseTest {
             .whenInvokedWith(anything())
             .then { Either.Left(wrongPasswordFailure) }
 
-        val result = registerClient(RegisterClientUseCase.RegisterClientParam.ClientWithoutToken(TEST_PASSWORD, TEST_CAPABILITIES))
+        val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
         assertIs<RegisterClientResult.Failure.InvalidCredentials>(result)
 
