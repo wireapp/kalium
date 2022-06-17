@@ -7,6 +7,7 @@ import com.wire.kalium.calling.callbacks.CloseCallHandler
 import com.wire.kalium.calling.types.Uint32_t
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.id.toConversationId
 import com.wire.kalium.logic.feature.call.CallStatus
 
 //TODO(testing): create unit test
@@ -20,7 +21,7 @@ class OnCloseCall(
         val callStatus = if (avsReason === STILL_ONGOING) CallStatus.ONGOING else CallStatus.CLOSED
 
         callRepository.updateCallStatusById(
-            conversationId = conversationId,
+            conversationId = conversationId.toConversationId().toString(),
             status = callStatus
         )
 
