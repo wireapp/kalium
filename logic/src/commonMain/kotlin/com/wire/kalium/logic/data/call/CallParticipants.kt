@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.call
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+@Suppress("EnforceSerializableFields")
 @Serializable
 data class CallParticipants(
     @SerialName("convid")
@@ -10,6 +11,7 @@ data class CallParticipants(
     val members: List<CallMember>
 )
 
+@Suppress("EnforceSerializableFields")
 @Serializable
 data class CallMember(
     @SerialName("userid")
