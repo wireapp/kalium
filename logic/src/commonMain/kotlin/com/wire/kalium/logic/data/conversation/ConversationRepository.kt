@@ -184,7 +184,7 @@ class ConversationDataSource(
         return wrapApiRequest {
             conversationApi.fetchConversationDetails(idMapper.toApiModel(conversationID))
         }.flatMap {
-            val selfUserTeamId = userRepository.getSelfUser().first().team
+            val selfUserTeamId = userRepository.getSelfUser()?.teamId
             persistConversations(listOf(it), selfUserTeamId)
         }
     }

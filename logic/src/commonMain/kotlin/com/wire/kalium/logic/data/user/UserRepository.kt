@@ -43,7 +43,7 @@ interface UserRepository {
     suspend fun observeSelfUser(): Flow<SelfUser>
     suspend fun getSelfUserId(): QualifiedID
     suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, SelfUser>
-    suspend fun getSelfUser(): SelfUser
+    suspend fun getSelfUser(): SelfUser?
     suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit>
     suspend fun updateLocalSelfUserHandle(handle: String)
     suspend fun getAllContacts(): List<OtherUser>
@@ -171,7 +171,7 @@ class UserDataSource(
                 userDetailResponse = userProfile,
                 userType = userTypeMapper.fromOtherUserTeamAndDomain(
                     otherUserDomain = userProfile.id.domain,
-                    selfUserTeamId = getSelfUser().teamId,
+                    selfUserTeamId = getSelfUser()?.teamId,
                     otherUserTeamId = userProfile.teamId
                 )
             )
