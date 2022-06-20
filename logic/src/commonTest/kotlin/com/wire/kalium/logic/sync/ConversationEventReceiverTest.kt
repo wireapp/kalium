@@ -47,10 +47,8 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
 import kotlinx.datetime.toInstant
 import kotlin.test.Test
-import kotlin.time.Duration.Companion.seconds
 
 class ConversationEventReceiverTest {
 
@@ -167,7 +165,7 @@ class ConversationEventReceiverTest {
     }
 
     @Test
-    fun givenMemberJoinEvent_whenHandlingIt_thenShouldFetchConversation() = runTest {
+    fun givenMemberJoinEvent_whenHandlingIt_thenShouldFetchConversationIfUnknown() = runTest {
         val newMembers = listOf(Member(TestUser.USER_ID))
         val event = TestEvent.memberJoin(members = newMembers)
 
@@ -176,14 +174,14 @@ class ConversationEventReceiverTest {
             .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
             .withUpdateConversationNotificationDateReturning(Either.Right(Unit))
             .withRepositoryPersistingMessageDateReturning(Either.Right(Unit))
-            .withFetchConversationSucceeding()
+            .withFetchConversationIfUnknownSucceeding()
             .withPersistMembersSucceeding()
             .arrange()
 
         eventReceiver.onEvent(event)
 
         verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::fetchConversation)
+            .suspendFunction(arrangement.conversationRepository::fetchConversationIfUnknown)
             .with(eq(event.conversationId))
             .wasInvoked(exactly = once)
     }
@@ -198,7 +196,7 @@ class ConversationEventReceiverTest {
             .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
             .withUpdateConversationNotificationDateReturning(Either.Right(Unit))
             .withRepositoryPersistingMessageDateReturning(Either.Right(Unit))
-            .withFetchConversationSucceeding()
+            .withFetchConversationIfUnknownSucceeding()
             .withPersistMembersSucceeding()
             .arrange()
 
@@ -220,7 +218,7 @@ class ConversationEventReceiverTest {
             .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
             .withUpdateConversationNotificationDateReturning(Either.Right(Unit))
             .withRepositoryPersistingMessageDateReturning(Either.Right(Unit))
-            .withFetchConversationFailing(NetworkFailure.NoNetworkConnection(null))
+            .withFetchConversationIfUnknownFailing(NetworkFailure.NoNetworkConnection(null))
             .withPersistMembersSucceeding()
             .arrange()
 
@@ -241,7 +239,7 @@ class ConversationEventReceiverTest {
             .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
             .withUpdateConversationNotificationDateReturning(Either.Right(Unit))
             .withRepositoryPersistingMessageDateReturning(Either.Right(Unit))
-            .withFetchConversationFailing(NetworkFailure.NoNetworkConnection(null))
+            .withFetchConversationIfUnknownFailing(NetworkFailure.NoNetworkConnection(null))
             .withPersistMembersSucceeding()
             .arrange()
 
@@ -337,16 +335,16 @@ class ConversationEventReceiverTest {
                 .thenReturn(result)
         }
 
-        fun withFetchConversationSucceeding() = apply {
+        fun withFetchConversationIfUnknownSucceeding() = apply {
             given(conversationRepository)
-                .suspendFunction(conversationRepository::fetchConversation)
+                .suspendFunction(conversationRepository::fetchConversationIfUnknown)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun withFetchConversationFailing(coreFailure: CoreFailure) = apply {
+        fun withFetchConversationIfUnknownFailing(coreFailure: CoreFailure) = apply {
             given(conversationRepository)
-                .suspendFunction(conversationRepository::fetchConversation)
+                .suspendFunction(conversationRepository::fetchConversationIfUnknown)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Left(coreFailure))
         }
