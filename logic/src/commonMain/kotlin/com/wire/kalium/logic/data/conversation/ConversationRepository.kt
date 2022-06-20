@@ -101,6 +101,8 @@ class ConversationDataSource(
         }
     }
 
+    //TODO: Vitor: he UseCase could observeSelfUser and update the flow.
+    // But the Repository is too smart, does it by itself, and doesn't let the UseCase handle this.
     override suspend fun insertConversationFromEvent(event: Event.Conversation.NewConversation): Either<CoreFailure, Unit> {
         val selfUserTeamId = userRepository.observeSelfUser().first().teamId
         return persistConversations(listOf(event.conversation), selfUserTeamId)

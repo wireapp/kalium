@@ -145,6 +145,8 @@ internal class ConnectionDataSource(
     override suspend fun insertConnectionFromEvent(event: Event.User.NewConnection): Either<CoreFailure, Unit> =
         persistConnection(event.connection)
 
+    //TODO: Vitor : Instead of duplicating, we could pass selfUser.teamId from the UseCases to this function.
+    // This way, the UseCases can tie the different Repos together, calling these functions.
     private suspend fun persistConnection(
         connection: Connection,
     ) = wrapStorageRequest {

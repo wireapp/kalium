@@ -63,7 +63,7 @@ class UserDataSource(
     private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(),
     private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
-    private val userTypeEntityTypeMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper(),
+    private val userTypeEntityMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper(),
     private val userTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper()
 ) : UserRepository {
 
@@ -109,7 +109,7 @@ class UserDataSource(
                     it.map { userProfileDTO ->
                         userMapper.fromApiModelWithUserTypeEntityToDaoModel(
                             userProfileDTO = userProfileDTO,
-                            userTypeEntity = userTypeEntityTypeMapper.fromOtherUserTeamAndDomain(
+                            userTypeEntity = userTypeEntityMapper.fromOtherUserTeamAndDomain(
                                 otherUserDomain = userProfileDTO.id.domain,
                                 selfUserTeamId = getSelfUser()?.teamId,
                                 otherUserTeamId = userProfileDTO.teamId
