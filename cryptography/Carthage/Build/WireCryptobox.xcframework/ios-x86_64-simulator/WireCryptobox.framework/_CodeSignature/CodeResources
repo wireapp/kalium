@@ -6,7 +6,7 @@
 	<dict>
 		<key>Headers/WireCryptobox-Swift.h</key>
 		<data>
-		6Gg5CI3ginxw56D9Tthc/L81KO8=
+		MEny1rnxmLjpYjWLVd6dbSTfFz0=
 		</data>
 		<key>Headers/WireCryptobox.h</key>
 		<data>
@@ -254,19 +254,19 @@
 		</data>
 		<key>Info.plist</key>
 		<data>
-		Za9Rvg/7aAH29XUZ4XJ53Usvxjs=
+		wiLs5DCVwnvVKHgPuBcfWiFywAE=
 		</data>
 		<key>Modules/WireCryptobox.swiftmodule/Project/x86_64-apple-ios-simulator.swiftsourceinfo</key>
 		<data>
-		EKjezuFFxLs7BDXs7Cq6YECmvo0=
+		NxD92mUCLmkoW9oaZeCxH8jeeog=
 		</data>
 		<key>Modules/WireCryptobox.swiftmodule/x86_64-apple-ios-simulator.swiftdoc</key>
 		<data>
-		elSWWEVzHF1ZAnyhWciVUQceaSw=
+		3FfQCTazwQPzU3JHQat+qDIt1+4=
 		</data>
 		<key>Modules/WireCryptobox.swiftmodule/x86_64-apple-ios-simulator.swiftmodule</key>
 		<data>
-		wUpcRU9btilfRQ3lC7Eh5mwdzVA=
+		2KcoRznjVWFZV4kWMGu9EWQWrvY=
 		</data>
 		<key>Modules/module.modulemap</key>
 		<data>
@@ -279,7 +279,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			lLe38eecfZL9E0q8swBdsgRBgV84xN8PeDB5tJSHs88=
+			pkzRTCw34bwwvR60jvH/tdGUmr1qMZuuUtWGRy5FOFw=
 			</data>
 		</dict>
 		<key>Headers/WireCryptobox.h</key>
@@ -713,21 +713,21 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			uoUyRVtV4oRu+2dFVLpbrlqwB1BFf9Eno8oCGFPXnE0=
+			KAFn3O1445fO/kgJTlnrQet9qm2Ulq4hYvIyFwQNw9c=
 			</data>
 		</dict>
 		<key>Modules/WireCryptobox.swiftmodule/x86_64-apple-ios-simulator.swiftdoc</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			wv7YLDgcR05yTkwwN8I6bli9xvb0Sr6+uPfAA9v+vM0=
+			Q28LTuBN0bdyZKNCKNvWy3mTA6B3fPgDNvDZ6/rmcbY=
 			</data>
 		</dict>
 		<key>Modules/WireCryptobox.swiftmodule/x86_64-apple-ios-simulator.swiftmodule</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			q85lkjc48Qh9Pi0ZcBtG8yZyLgBbxadizhz7XB6cSaw=
+			cb+WNCN3I1MlbEyxnLkzCcbOW0SHtM6+jOjgd1ptPsA=
 			</data>
 		</dict>
 		<key>Modules/module.modulemap</key>
