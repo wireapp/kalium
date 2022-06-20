@@ -155,6 +155,7 @@ class SearchUserRepositoryTest {
             .suspendFunction(userDetailsApi::getMultipleUsers)
             .whenInvokedWith(any())
             .then { TestNetworkResponseError.genericError() }
+
         //when
         val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
 
@@ -174,6 +175,7 @@ class SearchUserRepositoryTest {
             .suspendFunction(userDetailsApi::getMultipleUsers)
             .whenInvokedWith(any())
             .then { TestNetworkResponseError.genericError() }
+
         //when
         searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
 
