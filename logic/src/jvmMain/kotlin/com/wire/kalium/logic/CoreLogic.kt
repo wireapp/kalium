@@ -62,7 +62,7 @@ actual class CoreLogic(
             val userSessionWorkScheduler: UserSessionWorkScheduler = WorkSchedulerImpl.UserSession(this, userId)
             val encryptedSettingsHolder = EncryptedSettingsHolder(SettingOptions.UserSettings(idMapper.toDaoModel(userId)))
             val userPreferencesSettings = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
-            val userDatabase = UserDatabaseProvider(File(rootStoragePath))
+            val userDatabase = UserDatabaseProvider(File(rootStoragePath), TODO())
 
             val userDataSource = AuthenticatedDataSourceSet(
                 rootAccountPath,
