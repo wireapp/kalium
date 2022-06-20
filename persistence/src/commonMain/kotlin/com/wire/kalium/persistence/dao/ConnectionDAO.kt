@@ -2,7 +2,7 @@ package com.wire.kalium.persistence.dao
 
 import kotlinx.coroutines.flow.Flow
 
-data class ConnectionEntity (
+data class ConnectionEntity(
     val conversationId: String,
     val from: String,
     val lastUpdate: String,
@@ -43,5 +43,5 @@ interface ConnectionDAO {
     suspend fun getConnectionRequests(): Flow<List<ConnectionEntity>>
     suspend fun insertConnection(connectionEntity: ConnectionEntity)
     suspend fun insertConnections(users: List<ConnectionEntity>)
-
+    suspend fun updateConnectionLastUpdatedTime(lastUpdate: String, id: String)
 }

@@ -26,9 +26,9 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.handler.MessageTextEditHandler
+import com.wire.kalium.logic.test_util.wasInTheLastSecond
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.protobuf.encodeToByteArray
-import com.wire.kalium.protobuf.messages.External
 import com.wire.kalium.protobuf.messages.GenericMessage
 import com.wire.kalium.protobuf.messages.Text
 import io.ktor.utils.io.core.toByteArray
@@ -43,7 +43,10 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Clock
+import kotlinx.datetime.toInstant
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.seconds
 
 class ConversationEventReceiverTest {
 
@@ -115,6 +118,50 @@ class ConversationEventReceiverTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenNewConversationEvent_whenHandlingIt_thenInsertConversationFromEventShouldBeCalled() = runTest {
+        val event = Event.Conversation.NewConversation(
+            id = "eventId",
+            conversationId = TestConversation.ID,
+            timestampIso = "timestamp",
+            conversation = TestConversation.CONVERSATION_RESPONSE
+        )
+
+        val (arrangement, eventReceiver) = Arrangement()
+            .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
+            .withInsertConversationFromEventReturning(Either.Right(Unit))
+            .arrange()
+
+        eventReceiver.onEvent(event)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::insertConversationFromEvent)
+            .with(eq(event))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenNewConversationEvent_whenHandlingIt_thenConversationLastModifiedShouldBeUpdated() = runTest {
+        val event = Event.Conversation.NewConversation(
+            id = "eventId",
+            conversationId = TestConversation.ID,
+            timestampIso = "timestamp",
+            conversation = TestConversation.CONVERSATION_RESPONSE
+        )
+
+        val (arrangement, eventReceiver) = Arrangement()
+            .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
+            .withInsertConversationFromEventReturning(Either.Right(Unit))
+            .arrange()
+
+        eventReceiver.onEvent(event)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::updateConversationModifiedDate)
+            .with(eq(event.conversationId), matching { it.toInstant().wasInTheLastSecond })
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
         @Mock
         val proteusClient = mock(classOf<ProteusClient>())
@@ -123,7 +170,7 @@ class ConversationEventReceiverTest {
         val messageRepository = mock(classOf<MessageRepository>())
 
         @Mock
-        private val conversationRepository = mock(classOf<ConversationRepository>())
+        val conversationRepository = mock(classOf<ConversationRepository>())
 
         @Mock
         private val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
@@ -187,6 +234,13 @@ class ConversationEventReceiverTest {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::updateConversationModifiedDate)
                 .whenInvokedWith(any(), any())
+                .thenReturn(result)
+        }
+
+        fun withInsertConversationFromEventReturning(result: Either<StorageFailure, Unit>) = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::insertConversationFromEvent)
+                .whenInvokedWith(any())
                 .thenReturn(result)
         }
 

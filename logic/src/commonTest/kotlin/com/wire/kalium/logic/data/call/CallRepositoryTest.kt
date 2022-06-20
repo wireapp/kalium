@@ -324,7 +324,7 @@ class CallRepositoryTest {
                     domain = "domain1"
                 ),
                 clientId = "clientid",
-                muted = true
+                isMuted = true
             )
         )
 
@@ -355,7 +355,7 @@ class CallRepositoryTest {
                     domain = "domain1"
                 ),
                 clientId = "clientid",
-                muted = false,
+                isMuted = false,
                 isSpeaking = false
             )
         )
