@@ -188,8 +188,11 @@ class ConversationEventReceiverImpl(
         }.onFailure { kaliumLogger.e("$TAG - failure on new conversation event: $it") }
 
     private suspend fun handleMemberJoin(event: Event.Conversation.MemberJoin) =
+        // Attempt to fetch conversation details, as this might be an unknown conversation
         conversationRepository.fetchConversation(event.conversationId).run {
-            // Attempt to fetch. Even if unable to fetch, at least add the member
+            onSuccess { kaliumLogger.v("Succeeded fetching conversation details on MemberJoin Event: $event") }
+            onFailure { kaliumLogger.w("Failure fetching conversation details on MemberJoin Event: $event") }
+            // Even if unable to fetch conversation details, at least attempt adding the member
             conversationRepository.persistMembers(event.members, event.conversationId)
         }.onSuccess {
             val message = Message.System(
