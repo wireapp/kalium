@@ -167,6 +167,50 @@ class ConversationEventReceiverTest {
     }
 
     @Test
+    fun givenNewConversationEvent_whenHandlingIt_thenInsertConversationFromEventShouldBeCalled() = runTest {
+        val event = Event.Conversation.NewConversation(
+            id = "eventId",
+            conversationId = TestConversation.ID,
+            timestampIso = "timestamp",
+            conversation = TestConversation.CONVERSATION_RESPONSE
+        )
+
+        val (arrangement, eventReceiver) = Arrangement()
+            .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
+            .withInsertConversationFromEventReturning(Either.Right(Unit))
+            .arrange()
+
+        eventReceiver.onEvent(event)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::insertConversationFromEvent)
+            .with(eq(event))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenNewConversationEvent_whenHandlingIt_thenConversationLastModifiedShouldBeUpdated() = runTest {
+        val event = Event.Conversation.NewConversation(
+            id = "eventId",
+            conversationId = TestConversation.ID,
+            timestampIso = "timestamp",
+            conversation = TestConversation.CONVERSATION_RESPONSE
+        )
+
+        val (arrangement, eventReceiver) = Arrangement()
+            .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
+            .withInsertConversationFromEventReturning(Either.Right(Unit))
+            .arrange()
+
+        eventReceiver.onEvent(event)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::updateConversationModifiedDate)
+            .with(eq(event.conversationId), matching { it.toInstant().wasInTheLastSecond })
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
     fun givenMemberJoinEvent_whenHandlingIt_thenShouldFetchConversation() = runTest {
         val newMembers = listOf(Member(TestUser.USER_ID))
         val event = TestEvent.memberJoin(members = newMembers)
@@ -327,6 +371,13 @@ class ConversationEventReceiverTest {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::updateConversationModifiedDate)
                 .whenInvokedWith(any(), any())
+                .thenReturn(result)
+        }
+
+        fun withInsertConversationFromEventReturning(result: Either<StorageFailure, Unit>) = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::insertConversationFromEvent)
+                .whenInvokedWith(any())
                 .thenReturn(result)
         }
 

@@ -16,11 +16,11 @@ import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.functional.combine
 import com.wire.kalium.logic.functional.flatMapFromIterable
+import com.wire.kalium.logic.util.TimeParser
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
-import com.wire.kalium.logic.functional.combine
-import com.wire.kalium.logic.util.TimeParser
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.flowOf
@@ -158,9 +158,12 @@ class GetNotificationsUseCaseImpl(
         val newNotificationDate = if (eligibleMessages.isEmpty()) {
             messages.maxOf { it.date }
         } else {
-            timeParser.dateMinusMilliseconds(eligibleMessages.minOf { it.date }, 1L)
+            timeParser.dateMinusMilliseconds(eligibleMessages.minOf { it.date }, NOTIFICATION_DATE_OFFSET)
         }
 
+        //TODO here is the place to improve:
+        // update NotificationDate for all needed Conversations in one, instead of doing it one by one
+        // that makes conversationRepository.getConversationsForNotifications() emits new value after each DB update
         conversation.lastNotificationDate.let {
             if (it == null || timeParser.calculateMillisDifference(it, newNotificationDate) > 0)
                 conversationRepository.updateConversationNotificationDate(conversation.id, newNotificationDate)
@@ -232,5 +235,6 @@ class GetNotificationsUseCaseImpl(
     companion object {
         private const val DEFAULT_MESSAGE_LIMIT = 100
         private const val DEFAULT_MESSAGE_OFFSET = 0
+        private const val NOTIFICATION_DATE_OFFSET = 1000L
     }
 }
