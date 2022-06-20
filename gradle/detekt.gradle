@@ -8,6 +8,7 @@ detekt {
     input = files("$projectDir")
     // a way of suppressing issues before introducing detekt
     baseline = file("$projectDir/detekt/baseline.xml")
+    autoCorrect = project.getProperties().getOrDefault("detektAutofix", false)
 
     reports {
         html.enabled = true // observe findings in your browser with structure and code snippets
@@ -19,5 +20,6 @@ detekt {
 dependencies {
     // Can't add using the full version "Dependencies.Detekt.detektCli" (xml error on sync)
     detekt "io.gitlab.arturbosch.detekt:detekt-cli:$Versions.detekt"
+    detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:$Versions.detekt"
     detekt project(path: ":detekt-rules")
 }
