@@ -37,17 +37,16 @@ import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.util.FileNameUtil
 import net.sqlcipher.database.SupportFactory
 
-actual class UserDatabaseProvider(private val context: Context, userId: UserIDEntity, kaliumPreferences: KaliumPreferences) {
+actual class UserDatabaseProvider(private val context: Context, userId: UserIDEntity, passphrase: ByteArray) {
     private val dbName = FileNameUtil.userDBName(userId)
     private val driver: AndroidSqliteDriver
     private val database: UserDatabase
 
     init {
-        val supportFactory = SupportFactory(DBUtil.getOrGenerateSecretKey(kaliumPreferences, DATABASE_SECRET_KEY).toByteArray())
+        val supportFactory = SupportFactory(passphrase)
 
         val onConnectCallback = object : AndroidSqliteDriver.Callback(UserDatabase.Schema) {
             override fun onOpen(db: SupportSQLiteDatabase) {
@@ -141,9 +140,4 @@ actual class UserDatabaseProvider(private val context: Context, userId: UserIDEn
 
     actual fun nuke(): Boolean = DBUtil.deleteDB(driver, context, dbName)
 
-    companion object {
-        // FIXME(IMPORTANT): The same key is used to enc/dec all user DBs
-        //                   Pain in the ass to migrate after release
-        private const val DATABASE_SECRET_KEY = "user-db-secret"
-    }
 }

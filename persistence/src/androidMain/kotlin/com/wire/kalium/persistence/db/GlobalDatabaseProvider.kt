@@ -13,14 +13,14 @@ import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.util.FileNameUtil
 import net.sqlcipher.database.SupportFactory
 
-actual class GlobalDatabaseProvider(private val context: Context, kaliumPreferences: KaliumPreferences) {
+actual class GlobalDatabaseProvider(private val context: Context, passphrase: ByteArray) {
     private val dbName = FileNameUtil.globalDBName()
     private val driver: AndroidSqliteDriver
     private val database: GlobalDatabase
 
 
     init {
-        val supportFactory = SupportFactory(DBUtil.getOrGenerateSecretKey(kaliumPreferences, DATABASE_SECRET_KEY).toByteArray())
+        val supportFactory = SupportFactory(passphrase)
 
         val onConnectCallback = object : AndroidSqliteDriver.Callback(GlobalDatabase.Schema) {
             override fun onOpen(db: SupportSQLiteDatabase) {
@@ -46,10 +46,4 @@ actual class GlobalDatabaseProvider(private val context: Context, kaliumPreferen
         get() = ServerConfigurationDAOImpl(database.serverConfigurationQueries)
 
     actual fun nuke(): Boolean = DBUtil.deleteDB(driver, context, dbName)
-
-    companion object {
-        private const val DATABASE_SECRET_KEY = "global-db-secret"
-    }
-
-
 }

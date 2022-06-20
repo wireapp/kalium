@@ -28,21 +28,23 @@ import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.TeamDAOImpl
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserDAOImpl
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetDAOImpl
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
+import com.wire.kalium.persistence.util.FileNameUtil
 import java.io.File
 import java.util.Properties
 
-actual class UserDatabaseProvider(private val storePath: File) {
+actual class UserDatabaseProvider(private val storePath: File, private val userId: UserIDEntity) {
 
     private val database: UserDatabase
 
     init {
-        val databasePath = storePath.resolve(DATABASE_NAME)
+        val databasePath = storePath.resolve(FileNameUtil.userDBName(userId))
         val databaseExists = databasePath.exists()
 
         // Make sure all intermediate directories exist
@@ -73,7 +75,8 @@ actual class UserDatabaseProvider(private val storePath: File) {
             ),
             Member.Adapter(
                 userAdapter = QualifiedIDAdapter(),
-                conversationAdapter = QualifiedIDAdapter()),
+                conversationAdapter = QualifiedIDAdapter()
+            ),
             Message.Adapter(
                 conversation_idAdapter = QualifiedIDAdapter(),
                 sender_user_idAdapter = QualifiedIDAdapter(),
@@ -134,11 +137,6 @@ actual class UserDatabaseProvider(private val storePath: File) {
         get() = TeamDAOImpl(database.teamsQueries)
 
     actual fun nuke(): Boolean {
-        return storePath.resolve(DATABASE_NAME).delete()
-    }
-
-    private companion object {
-        // FIXME: user id/domain as the db name
-        const val DATABASE_NAME = "main.db"
+        return storePath.resolve(FileNameUtil.userDBName(userId)).delete()
     }
 }
