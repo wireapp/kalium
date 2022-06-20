@@ -51,6 +51,11 @@ class ObserveConversationListDetailsUseCaseTest {
     fun givenSomeConversations_whenObservingDetailsList_thenObserveConversationListShouldBeCalled() = runTest {
         val conversations = listOf(TestConversation.SELF, TestConversation.GROUP)
 
+        given(callRepository)
+            .function(callRepository::ongoingCallsFlow)
+            .whenInvoked()
+            .thenReturn(flowOf(listOf()))
+
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationList)
             .whenInvoked()
@@ -73,6 +78,11 @@ class ObserveConversationListDetailsUseCaseTest {
     fun givenSomeConversations_whenObservingDetailsList_thenSyncManagerShouldBeCalled() = runTest {
         val conversations = listOf(TestConversation.SELF, TestConversation.GROUP)
 
+        given(callRepository)
+            .function(callRepository::ongoingCallsFlow)
+            .whenInvoked()
+            .thenReturn(flowOf(listOf()))
+
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationList)
             .whenInvoked()
@@ -94,6 +104,11 @@ class ObserveConversationListDetailsUseCaseTest {
     @Test
     fun givenSomeConversations_whenObservingDetailsList_thenObserveConversationDetailsShouldBeCalledForEachID() = runTest {
         val conversations = listOf(TestConversation.SELF, TestConversation.GROUP)
+
+        given(callRepository)
+            .function(callRepository::ongoingCallsFlow)
+            .whenInvoked()
+            .thenReturn(flowOf(listOf()))
 
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationList)
@@ -136,10 +151,13 @@ class ObserveConversationListDetailsUseCaseTest {
             LegalHoldStatus.DISABLED,
             UserType.INTERNAL,
         )
-        val oneOnOneConversationDetailsUpdates = listOf(
-            firstOneOnOneDetails,
-            secondOneOnOneDetails
-        )
+
+        val oneOnOneDetailsChannel = Channel<ConversationDetails.OneOne>(Channel.UNLIMITED)
+
+        given(callRepository)
+            .function(callRepository::ongoingCallsFlow)
+            .whenInvoked()
+            .thenReturn(flowOf(listOf()))
 
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationList)
@@ -154,11 +172,16 @@ class ObserveConversationListDetailsUseCaseTest {
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(eq(oneOnOneConversation.id))
-            .thenReturn(oneOnOneConversationDetailsUpdates.asFlow())
+            .thenReturn(oneOnOneDetailsChannel.consumeAsFlow())
 
         observeConversationsUseCase().test {
+            oneOnOneDetailsChannel.send(firstOneOnOneDetails)
             assertContentEquals(groupConversationUpdates + firstOneOnOneDetails, awaitItem())
+
+            oneOnOneDetailsChannel.send(secondOneOnOneDetails)
             assertContentEquals(groupConversationUpdates + secondOneOnOneDetails, awaitItem())
+
+            oneOnOneDetailsChannel.close()
             awaitComplete()
         }
     }
@@ -176,6 +199,11 @@ class ObserveConversationListDetailsUseCaseTest {
         val secondConversationsList = firstConversationsList + selfConversation
         val conversationListUpdates = Channel<List<Conversation>>(Channel.UNLIMITED)
         conversationListUpdates.send(firstConversationsList)
+
+        given(callRepository)
+            .function(callRepository::ongoingCallsFlow)
+            .whenInvoked()
+            .thenReturn(flowOf(listOf()))
 
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationList)
