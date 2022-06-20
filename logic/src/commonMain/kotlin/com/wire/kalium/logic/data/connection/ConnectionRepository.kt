@@ -151,10 +151,14 @@ internal class ConnectionDataSource(
     ) {
         wrapStorageRequest {
             connections.forEach { connection ->
+                val qualifiedConversationId = idMapper.fromApiToDao(connection.qualifiedConversationId)
+                // If the conversation doesn't exists, we skip it, since the backend doesn't know this conv (probably status = CANCELLED)
+                conversationDAO.observeGetConversationByQualifiedID(qualifiedConversationId).first() ?: return
+
                 conversationDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
                     userId = idMapper.fromApiToDao(connection.qualifiedToId),
                     status = connectionStatusMapper.fromApiToDao(state = connection.status),
-                    conversationID = idMapper.fromApiToDao(connection.qualifiedConversationId)
+                    conversationID = qualifiedConversationId
                 )
             }
         }
