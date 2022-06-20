@@ -76,4 +76,3 @@ internal class GetIncomingCallsUseCaseImpl(
                 }
         }
 }
-
