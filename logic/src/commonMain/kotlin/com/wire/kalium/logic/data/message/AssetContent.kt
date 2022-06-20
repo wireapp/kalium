@@ -41,9 +41,8 @@ data class AssetContent(
         val assetId: String,
         val assetToken: String?,
         val assetDomain: String?,
-        val encryptionAlgorithm: EncryptionAlgorithm?
+        val encryptionAlgorithm: MessageEncryptionAlgorithm?
     ) {
-        enum class EncryptionAlgorithm { AES_CBC, AES_GCM }
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true

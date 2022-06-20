@@ -2,23 +2,30 @@ package com.wire.kalium.logic.feature.conversation
 
 import app.cash.turbine.test
 import com.wire.kalium.logic.data.conversation.MemberDetails
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncManager
+import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.anything
 import io.mockative.configure
+import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
+import kotlin.test.assertEquals
 
+@OptIn(ExperimentalCoroutinesApi::class, ConfigurationApi::class)
 class ObserveMemberDetailsByIdsUseCaseTest {
 
     @Mock
@@ -104,6 +111,34 @@ class ObserveMemberDetailsByIdsUseCaseTest {
         observeMemberDetailsByIds(userIds).test {
             assertContentEquals(listOf(MemberDetails.Other(firstOtherUser)), awaitItem())
             assertContentEquals(listOf(MemberDetails.Other(secondOtherUser)), awaitItem())
+            awaitComplete()
+        }
+    }
+
+    @Test
+    fun givenUserIsNotKnown_whenObservingMembers_thenDoNotBlockTheFlowWaitingForItsData() = runTest {
+        val knownUser = TestUser.OTHER
+        val notKnownUserId = UserId("not-known-user-id", "domain")
+        val userIds = listOf(knownUser.id, notKnownUserId)
+
+        given(userRepository)
+            .suspendFunction(userRepository::getSelfUser)
+            .whenInvoked()
+            .thenReturn((TestUser.SELF))
+
+        given(userRepository)
+            .suspendFunction(userRepository::getKnownUser)
+            .whenInvokedWith(eq(knownUser.id))
+            .thenReturn(flowOf(knownUser))
+        given(userRepository)
+            .suspendFunction(userRepository::getKnownUser)
+            .whenInvokedWith(eq(notKnownUserId))
+            .thenReturn(flowOf(null))
+
+        observeMemberDetailsByIds(userIds).test {
+            val list = awaitItem()
+            assertEquals(list.size, 1) // second one is just not returned, we don't have its data and don't want to block the flow
+            assertContentEquals(listOf(MemberDetails.Other(knownUser)), list)
             awaitComplete()
         }
     }

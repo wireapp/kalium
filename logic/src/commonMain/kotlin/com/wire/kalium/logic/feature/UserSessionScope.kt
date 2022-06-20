@@ -170,7 +170,10 @@ abstract class UserSessionScopeCommon(
 
     private val callRepository: CallRepository by lazy {
         CallDataSource(
-            callApi = authenticatedDataSourceSet.authenticatedNetworkContainer.callApi
+            callApi = authenticatedDataSourceSet.authenticatedNetworkContainer.callApi,
+            conversationRepository = conversationRepository,
+            userRepository = userRepository,
+            teamRepository = teamRepository
         )
     }
 
@@ -343,7 +346,16 @@ abstract class UserSessionScopeCommon(
 
     val team: TeamScope get() = TeamScope(userRepository, teamRepository, syncManager)
 
-    val calls: CallsScope get() = CallsScope(callManager, callRepository, flowManagerService, mediaManagerService, syncManager)
+    val calls: CallsScope
+        get() = CallsScope(
+            callManager,
+            callRepository,
+            conversationRepository,
+            userRepository,
+            flowManagerService,
+            mediaManagerService,
+            syncManager
+        )
 
     val connection: ConnectionScope get() = ConnectionScope(connectionRepository, conversationRepository)
 

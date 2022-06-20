@@ -2,10 +2,10 @@ package com.wire.kalium.persistence.dao
 
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
+import com.wire.kalium.persistence.Connection as SQLDelightConnection
 import com.wire.kalium.persistence.ConnectionsQueries
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import com.wire.kalium.persistence.Connection as SQLDelightConnection
 
 private class ConnectionMapper {
     fun toModel(state: SQLDelightConnection): ConnectionEntity = ConnectionEntity(
@@ -56,5 +56,9 @@ class ConnectionDAOImpl(private val connectionsQueries: ConnectionsQueries) : Co
                 )
             }
         }
+    }
+
+    override suspend fun updateConnectionLastUpdatedTime(lastUpdate: String, id: String) {
+        connectionsQueries.updateConnectionLastUpdated(lastUpdate, id)
     }
 }

@@ -5,9 +5,11 @@ import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Video
-import com.wire.kalium.logic.data.message.AssetContent.RemoteData.EncryptionAlgorithm.AES_CBC
-import com.wire.kalium.logic.data.message.AssetContent.RemoteData.EncryptionAlgorithm.AES_GCM
+import com.wire.kalium.logic.data.message.EncryptionAlgorithmMapper
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm.AES_CBC
+import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm.AES_GCM
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.AssetId
 import com.wire.kalium.network.api.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.asset.AssetResponse
@@ -16,8 +18,8 @@ import com.wire.kalium.persistence.dao.asset.AssetEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.protobuf.messages.Asset
-import com.wire.kalium.protobuf.messages.EncryptionAlgorithm
 import kotlinx.datetime.Clock
+import pbandk.ByteArr
 
 interface AssetMapper {
     fun toMetadataApiModel(uploadAssetMetadata: UploadAssetData): AssetMetadataRequest
@@ -26,11 +28,14 @@ interface AssetMapper {
     fun fromUserAssetToDaoModel(assetId: AssetId, data: ByteArray): AssetEntity
     fun fromAssetEntityToAssetContent(assetContentEntity: MessageEntityContent.Asset): AssetContent
     fun fromProtoAssetMessageToAssetContent(protoAssetMessage: Asset): AssetContent
+    fun fromAssetContentToProtoAssetMessage(assetContent: AssetContent): Asset
     fun fromDownloadStatusToDaoModel(downloadStatus: Message.DownloadStatus): MessageEntity.DownloadStatus
     fun fromDownloadStatusEntityToLogicModel(downloadStatus: MessageEntity.DownloadStatus?): Message.DownloadStatus
 }
 
-class AssetMapperImpl : AssetMapper {
+class AssetMapperImpl(
+    private val encryptionAlgorithmMapper: EncryptionAlgorithmMapper = MapperProvider.encryptionAlgorithmMapper()
+) : AssetMapper {
     override fun toMetadataApiModel(uploadAssetMetadata: UploadAssetData): AssetMetadataRequest {
         return AssetMetadataRequest(
             uploadAssetMetadata.mimeType.name,
@@ -140,11 +145,7 @@ class AssetMapperImpl : AssetMapper {
                                     assetId = assetId ?: "",
                                     assetDomain = assetDomain,
                                     assetToken = assetToken,
-                                    encryptionAlgorithm = when (encryption) {
-                                        EncryptionAlgorithm.AES_CBC -> AES_CBC
-                                        EncryptionAlgorithm.AES_GCM -> AES_GCM
-                                        else -> null
-                                    }
+                                    encryptionAlgorithm = encryptionAlgorithmMapper.fromProtobufModel(encryption)
                                 )
                             }
                         }
@@ -154,6 +155,35 @@ class AssetMapperImpl : AssetMapper {
                 downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
             )
         }
+    }
+
+    override fun fromAssetContentToProtoAssetMessage(assetContent: AssetContent): Asset = with(assetContent) {
+        Asset(
+            original = Asset.Original(
+                mimeType = mimeType,
+                size = sizeInBytes,
+                name = name,
+                metaData = when (metadata) {
+                    is Image -> Asset.Original.MetaData.Image(
+                        Asset.ImageMetaData(
+                            width = metadata.width,
+                            height = metadata.height,
+                        )
+                    )
+                    else -> null
+                }
+            ),
+            status = Asset.Status.Uploaded(
+                uploaded = Asset.RemoteData(
+                    otrKey = ByteArr(remoteData.otrKey),
+                    sha256 = ByteArr(remoteData.sha256),
+                    assetId = remoteData.assetId,
+                    assetToken = remoteData.assetToken,
+                    assetDomain = remoteData.assetDomain,
+                    encryption = encryptionAlgorithmMapper.toProtoBufModel(remoteData.encryptionAlgorithm)
+                )
+            ),
+        )
     }
 
     override fun fromDownloadStatusToDaoModel(downloadStatus: Message.DownloadStatus): MessageEntity.DownloadStatus {

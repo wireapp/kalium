@@ -65,7 +65,7 @@ class CallMapperTest {
                 domain = "dummyDomain"
             ),
             clientId = "dummyClientId",
-            muted = false
+            isMuted = false
         )
 
         assertEquals(expectedParticipant, participantMap)
@@ -140,11 +140,11 @@ class CallMapperTest {
 
     private companion object {
         private val DUMMY_CALL_MEMBER = CallMember(
-            userid = "dummyId@dummyDomain",
-            clientid = "dummyClientId",
+            userId = "dummyId@dummyDomain",
+            clientId = "dummyClientId",
             aestab = 0,
             vrecv = 0,
-            muted = 0
+            isMuted = 0
         )
         private val DUMMY_CALL_ACTIVE_SPEAKER = CallActiveSpeaker(
             userId = "dummyId@dummyDomain",
@@ -158,7 +158,7 @@ class CallMapperTest {
                 domain = "dummyDomain"
             ),
             clientId = "dummyClientId",
-            muted = false,
+            isMuted = false,
             isSpeaking = false
         )
     }

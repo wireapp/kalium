@@ -128,7 +128,6 @@ internal class ConnectionDataSource(
         else -> false
     }
 
-
     override suspend fun getConnections(): Either<StorageFailure, Flow<List<Connection>>> = wrapStorageRequest {
         observeConnectionList()
     }
@@ -152,7 +151,7 @@ internal class ConnectionDataSource(
     ) = wrapStorageRequest {
         connectionDAO.insertConnection(connectionMapper.modelToDao(connection))
     }.flatMap {
-        // This can fail? but the connection will be there and get synced in worst case in next SlowSync
+        // This can fail, but the connection will be there and get synced in worst case scenario in next SlowSync
         wrapApiRequest {
             userDetailsApi.getUserInfo(idMapper.toApiModel(connection.qualifiedToId))
         }.flatMap { userProfileDTO ->
@@ -168,6 +167,7 @@ internal class ConnectionDataSource(
                 )
 
                 userDAO.insertUser(userEntity)
+                connectionDAO.updateConnectionLastUpdatedTime(connection.lastUpdate, connection.toId)
             }
         }
     }
