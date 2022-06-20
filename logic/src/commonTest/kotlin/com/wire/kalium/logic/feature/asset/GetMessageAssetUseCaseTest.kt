@@ -12,6 +12,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
@@ -116,7 +117,7 @@ class GetMessageAssetUseCaseTest {
                             assetId = someAssetId,
                             assetToken = someAssetToken,
                             assetDomain = "some-asset-domain.com",
-                            encryptionAlgorithm = AssetContent.RemoteData.EncryptionAlgorithm.AES_GCM
+                            encryptionAlgorithm = MessageEncryptionAlgorithm.AES_GCM
                         ),
                         downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
                     )

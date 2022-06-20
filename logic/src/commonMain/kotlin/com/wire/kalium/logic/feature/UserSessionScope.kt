@@ -356,6 +356,8 @@ abstract class UserSessionScopeCommon(
         get() = CallsScope(
             callManager,
             callRepository,
+            conversationRepository,
+            userRepository,
             flowManagerService,
             mediaManagerService,
             syncManager

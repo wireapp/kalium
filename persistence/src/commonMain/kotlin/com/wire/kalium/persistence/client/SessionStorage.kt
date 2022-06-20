@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.jvm.JvmInline
 
@@ -108,7 +109,7 @@ class SessionStorageImpl(
             .also { sessionsUpdatedFlow.tryEmit(Unit) }
 
     override fun allSessions(): Map<UserIDEntity, AuthSessionEntity>? =
-        kaliumPreferences.getSerializable(SESSIONS_KEY, SessionsMap.serializer())?.s?.ifEmpty { null }
+        kaliumPreferences.getSerializable(SESSIONS_KEY, SessionsMap.serializer())?.sessions?.ifEmpty { null }
 
     override fun userSession(userId: UserIDEntity): AuthSessionEntity? =
         allSessions()?.let { sessionMap ->
@@ -134,4 +135,4 @@ class SessionStorageImpl(
 // At runtime an object of 'SessionsMap' contains just 'Map<String, PersistenceSession>'
 @Serializable
 @JvmInline
-private value class SessionsMap(val s: Map<UserIDEntity, AuthSessionEntity>)
+private value class SessionsMap(@SerialName("s") val sessions: Map<UserIDEntity, AuthSessionEntity>)
