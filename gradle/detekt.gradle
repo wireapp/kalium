@@ -8,7 +8,7 @@ detekt {
     input = files("$projectDir")
     // a way of suppressing issues before introducing detekt
     baseline = file("$projectDir/detekt/baseline.xml")
-    autoCorrect = project.getProperties().getOrDefault("detektAutofix", false)
+    autoCorrect = ProjectExtensionsKt.getLocalProperty("detektAutofix", false, project)
 
     reports {
         html.enabled = true // observe findings in your browser with structure and code snippets
