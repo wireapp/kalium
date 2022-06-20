@@ -8,6 +8,7 @@ import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.cryptography.utils.decryptDataWithAES256
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.ProteusFailure
+import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
@@ -53,7 +54,8 @@ class ConversationEventReceiverImpl(
     private val editTextHandler: MessageTextEditHandler,
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper(),
-    private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper()
+    private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(),
+    private val kaliumFileSystem: KaliumFileSystem
 ) : ConversationEventReceiver {
 
     override suspend fun onEvent(event: Event.Conversation) {
@@ -131,7 +133,7 @@ class ConversationEventReceiverImpl(
             }
     }
 
-    private fun getReadableMessageContent(
+    private suspend fun getReadableMessageContent(
         plainMessageBlob: PlainMessageBlob,
         event: Event.Conversation.NewMessage
     ) = when (val protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)) {
@@ -145,11 +147,25 @@ class ConversationEventReceiverImpl(
         }
     }
 
-    private fun solveExternalContentForProteusMessage(
+    private suspend fun solveExternalContentForProteusMessage(
         externalInstructions: ProtoContent.ExternalMessageInstructions,
         externalData: EncryptedData
     ): Either<CoreFailure, ProtoContent.Readable> = wrapCryptoRequest {
-        PlainMessageBlob(decryptDataWithAES256(externalData, AES256Key(externalInstructions.otrKey)).data)
+        // In order to decrypt the message, we need to provide the data as an Okio data path, so we write the data into a temp path, decrypt
+        // it into another temp file and then read it finally. Lastly we delete the used temp files to free some space
+        val tempEncryptedPath = kaliumFileSystem.tempFilePath("temp_encrypted_file")
+        val tempDecryptedPath = kaliumFileSystem.tempFilePath("temp_decrypted_path")
+        kaliumFileSystem.write(tempEncryptedPath) {
+            write(externalData.data)
+        }
+        val dataSource = kaliumFileSystem.source(tempEncryptedPath)
+        decryptDataWithAES256(dataSource, tempDecryptedPath, AES256Key(externalInstructions.otrKey), kaliumFileSystem)
+        val decryptedData = kaliumFileSystem.readByteArray(tempDecryptedPath)
+
+        PlainMessageBlob(decryptedData).also {
+            kaliumFileSystem.delete(tempEncryptedPath)
+            kaliumFileSystem.delete(tempDecryptedPath)
+        }
     }.map(protoContentMapper::decodeFromProtobuf).flatMap { decodedProtobuf ->
         if (decodedProtobuf !is ProtoContent.Readable) {
             val rootCause = IllegalArgumentException("матрёшка! External message can't contain another external message inside!")

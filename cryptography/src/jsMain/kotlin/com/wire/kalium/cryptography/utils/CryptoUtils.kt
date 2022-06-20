@@ -4,11 +4,11 @@ import okio.FileSystem
 import okio.Path
 import okio.Source
 
-actual fun calcMd5(dataPath: Path, kaliumFileSystem: FileSystem): String {
+actual fun calcMd5(dataPath: Path, kaliumFileSystem: FileSystem): String? {
     TODO("Not yet implemented")
 }
 
-actual fun calcSHA256(dataPath: Path, kaliumFileSystem: FileSystem): ByteArray {
+actual fun calcSHA256(dataPath: Path, kaliumFileSystem: FileSystem): ByteArray? {
     TODO("Not yet implemented")
 }
 

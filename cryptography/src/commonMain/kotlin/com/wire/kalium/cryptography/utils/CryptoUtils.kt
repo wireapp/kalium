@@ -25,7 +25,7 @@ expect fun encryptDataWithAES256(
 ): Long
 
 /**
- * Method used to decrypt an array of bytes using the AES256 encryption algorithm
+ * Method used to decrypt some binary data using the AES256 encryption algorithm
  * @param encryptedDataSource the [Source] of the encrypted data that needs to be decrypted
  * @param decryptedDataPath the encrypted data that needs to be decrypted
  * @param secretKey the key used for the decryption
@@ -47,3 +47,9 @@ expect fun generateRandomAES256Key(): AES256Key
 
 @JvmInline
 value class AES256Key(val data: ByteArray)
+
+@JvmInline
+value class EncryptedData(val data: ByteArray)
+
+@JvmInline
+value class PlainData(val data: ByteArray)

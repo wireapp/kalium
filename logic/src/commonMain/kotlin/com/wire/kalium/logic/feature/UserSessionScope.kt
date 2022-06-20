@@ -278,7 +278,8 @@ abstract class UserSessionScopeCommon(
             mlsConversationRepository,
             userRepository,
             callManager,
-            messageTextEditHandler
+            messageTextEditHandler,
+            kaliumFileSystem = kaliumFileSystem
         )
     }
 

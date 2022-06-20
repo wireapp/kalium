@@ -77,5 +77,5 @@ sealed class Event(open val id: String) {
         ) : User(id)
     }
 
-    data class Unknown(override val id: String): Event(id)
+    data class Unknown(override val id: String) : Event(id)
 }
