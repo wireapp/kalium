@@ -4,7 +4,6 @@ import app.cash.turbine.test
 import com.wire.kalium.logic.data.conversation.MemberDetails
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncManager
 import io.mockative.ConfigurationApi
@@ -130,6 +129,7 @@ class ObserveMemberDetailsByIdsUseCaseTest {
             .suspendFunction(userRepository::getKnownUser)
             .whenInvokedWith(eq(knownUser.id))
             .thenReturn(flowOf(knownUser))
+
         given(userRepository)
             .suspendFunction(userRepository::getKnownUser)
             .whenInvokedWith(eq(notKnownUserId))
