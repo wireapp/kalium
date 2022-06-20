@@ -326,9 +326,8 @@ class SearchUserRepositoryTest {
         }
 
     private companion object {
-        val TEST_QUERY = "testQuery"
-        val TEST_DOMAIN = "testDomain"
-
+        const val TEST_QUERY = "testQuery"
+        const val TEST_DOMAIN = "testDomain"
 
         val CONTACTS = buildList {
             for (i in 1..5) {
