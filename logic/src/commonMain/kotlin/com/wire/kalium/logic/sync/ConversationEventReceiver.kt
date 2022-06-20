@@ -9,8 +9,8 @@ import com.wire.kalium.cryptography.utils.decryptDataWithAES256
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
@@ -36,6 +36,7 @@ import com.wire.kalium.logic.sync.handler.MessageTextEditHandler
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.logic.wrapCryptoRequest
 import io.ktor.utils.io.core.toByteArray
+import kotlinx.datetime.Clock
 
 interface ConversationEventReceiver : EventReceiver<Event.Conversation>
 
@@ -53,7 +54,7 @@ class ConversationEventReceiverImpl(
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper()
-    ) : ConversationEventReceiver {
+) : ConversationEventReceiver {
 
     override suspend fun onEvent(event: Event.Conversation) {
         when (event) {
@@ -81,7 +82,7 @@ class ConversationEventReceiverImpl(
                     is MessageContent.DeleteForMe -> Message.Visibility.HIDDEN
                     MessageContent.Empty -> Message.Visibility.HIDDEN
                     is MessageContent.Unknown ->
-                        if(content.messageContent.hidden) Message.Visibility.HIDDEN
+                        if (content.messageContent.hidden) Message.Visibility.HIDDEN
                         else Message.Visibility.VISIBLE
                     is MessageContent.Text -> Message.Visibility.VISIBLE
                     is MessageContent.Calling -> Message.Visibility.VISIBLE
@@ -182,8 +183,9 @@ class ConversationEventReceiverImpl(
     }
 
     private suspend fun handleNewConversation(event: Event.Conversation.NewConversation) =
-        conversationRepository.insertConversationFromEvent(event)
-            .onFailure { kaliumLogger.e("$TAG - failure on new conversation event: $it") }
+        conversationRepository.insertConversationFromEvent(event).flatMap {
+            conversationRepository.updateConversationModifiedDate(event.conversationId, Clock.System.now().toString())
+        }.onFailure { kaliumLogger.e("$TAG - failure on new conversation event: $it") }
 
     private suspend fun handleMemberJoin(event: Event.Conversation.MemberJoin) = conversationRepository
         .persistMembers(
@@ -264,16 +266,16 @@ class ConversationEventReceiverImpl(
         val isMyMessage = userRepository.getSelfUserId() == message.senderUserId
         when (message) {
             is Message.Regular -> when (val content = message.content) {
-            is MessageContent.Text -> messageRepository.persistMessage(message)
-            is MessageContent.Asset -> {
-                messageRepository.getMessageById(message.conversationId, message.id)
-                    .onFailure {
-                        // No asset message was received previously, so just persist the preview asset message
-                        messageRepository.persistMessage(message)
-                    }
-                    .onSuccess { persistedMessage ->
-                        // Check the second asset message is from the same original sender
-                        if (isSenderVerified(persistedMessage.id, persistedMessage.conversationId, message.senderUserId)
+                is MessageContent.Text -> messageRepository.persistMessage(message)
+                is MessageContent.Asset -> {
+                    messageRepository.getMessageById(message.conversationId, message.id)
+                        .onFailure {
+                            // No asset message was received previously, so just persist the preview asset message
+                            messageRepository.persistMessage(message)
+                        }
+                        .onSuccess { persistedMessage ->
+                            // Check the second asset message is from the same original sender
+                            if (isSenderVerified(persistedMessage.id, persistedMessage.conversationId, message.senderUserId)
                                 && persistedMessage is Message.Regular && persistedMessage.content is MessageContent.Asset
                             ) {
                                 // The asset message received contains the asset decryption keys,
@@ -313,9 +315,9 @@ class ConversationEventReceiverImpl(
                     callManagerImpl.value.onCallingMessageReceived(
                         message = message,
                         content = content
-                )
-            }
-            is MessageContent.TextEdited -> editTextHandler.handle(message, content)
+                    )
+                }
+                is MessageContent.TextEdited -> editTextHandler.handle(message, content)
                 is MessageContent.Unknown -> {
                     kaliumLogger.i(message = "Unknown Message received: $message")
                     messageRepository.persistMessage(message)
