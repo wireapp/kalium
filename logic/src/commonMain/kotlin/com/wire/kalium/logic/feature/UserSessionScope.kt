@@ -361,7 +361,7 @@ abstract class UserSessionScopeCommon(
         get() = FeatureConfigDataSource(featureConfigApi = authenticatedDataSourceSet.authenticatedNetworkContainer.featureConfigApi)
     val isFileSharingEnabled: IsFileSharingEnabledUseCase get() = IsFileSharingEnabledUseCaseImpl(userConfigRepository)
 
-    val getRemoteFileSharingStatusAndPersistUseCase: GetRemoteFileSharingStatusAndPersistUseCase
+    val getRemoteFileSharingStatusAndPersist: GetRemoteFileSharingStatusAndPersistUseCase
         get() = GetFileSharingStatusUseCaseImpl(
             userConfigRepository,
             featureConfigRepository,
