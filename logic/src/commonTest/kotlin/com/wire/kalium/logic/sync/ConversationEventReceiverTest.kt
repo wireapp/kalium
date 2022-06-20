@@ -204,7 +204,6 @@ class ConversationEventReceiverTest {
 
         eventReceiver.onEvent(event)
 
-        //FIXME: Expects entity instead of models
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::persistMembers)
             .with(eq(newMembers), eq(event.conversationId))
@@ -227,7 +226,6 @@ class ConversationEventReceiverTest {
 
         eventReceiver.onEvent(event)
 
-        //FIXME: Expects entity instead of models
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::persistMembers)
             .with(eq(newMembers), eq(event.conversationId))

@@ -190,10 +190,7 @@ class ConversationEventReceiverImpl(
     private suspend fun handleMemberJoin(event: Event.Conversation.MemberJoin) =
         conversationRepository.fetchConversation(event.conversationId).run {
             // Attempt to fetch. Even if unable to fetch, at least add the member
-            conversationRepository.persistMembers(
-                event.members.map { memberMapper.toDaoModel(it) },
-                idMapper.toDaoModel(event.conversationId)
-            )
+            conversationRepository.persistMembers(event.members, event.conversationId)
         }.onSuccess {
             val message = Message.System(
                 id = event.id,
