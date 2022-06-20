@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
+import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.feature.publicuser.Result
 import com.wire.kalium.logic.feature.publicuser.SearchUserDirectoryUseCase
 import com.wire.kalium.logic.feature.publicuser.SearchUserDirectoryUseCaseImpl
@@ -91,7 +92,8 @@ class SearchUserDirectoryUseCaseTest {
                         connectionStatus = ConnectionState.ACCEPTED,
                         previewPicture = null,
                         completePicture = null,
-                        availabilityStatus = UserAvailabilityStatus.NONE
+                        availabilityStatus = UserAvailabilityStatus.NONE,
+                        userType =  UserType.EXTERNAL
                     )
                 }
             }

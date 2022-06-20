@@ -30,16 +30,13 @@ class ConversationMapperTest {
     val idMapper = mock(classOf<IdMapper>())
 
     @Mock
-    val userTypeMapper = mock(classOf<UserTypeMapper>())
-
-    @Mock
     val conversationStatusMapper = mock(classOf<ConversationStatusMapper>())
 
     private lateinit var conversationMapper: ConversationMapper
 
     @BeforeTest
     fun setup() {
-        conversationMapper = ConversationMapperImpl(idMapper, conversationStatusMapper, userTypeMapper)
+        conversationMapper = ConversationMapperImpl(idMapper, conversationStatusMapper)
     }
 
     @Test

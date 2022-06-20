@@ -18,6 +18,7 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.ConversationDAO
+import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
 import io.mockative.Mock
@@ -238,12 +239,16 @@ class ConnectionRepositoryTest {
         @Mock
         val userDAO = mock(classOf<UserDAO>())
 
+        @Mock
+        val metaDAO = mock(classOf<MetadataDAO>())
+
         val connectionRepository = ConnectionDataSource(
             conversationDAO = conversationDAO,
             connectionApi = connectionApi,
             connectionDAO = connectionDAO,
             userDetailsApi = userDetailsApi,
-            userDAO = userDAO
+            userDAO = userDAO,
+            metadataDAO =metaDAO
         )
 
         val stubConnectionOne = ConnectionDTO(

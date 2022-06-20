@@ -2,9 +2,7 @@ package com.wire.kalium.logic.feature.conversation
 
 import app.cash.turbine.test
 import com.wire.kalium.logic.data.conversation.MemberDetails
-import com.wire.kalium.logic.data.conversation.UserType
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.user.type.UserTypeMapper
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncManager
 import io.mockative.Mock
@@ -27,9 +25,6 @@ class ObserveMemberDetailsByIdsUseCaseTest {
     private val userRepository = mock(UserRepository::class)
 
     @Mock
-    private val userTypeMapper = mock(UserTypeMapper::class)
-
-    @Mock
     private val syncManager = configure(mock(SyncManager::class)) {
         stubsUnitByDefault = true
     }
@@ -41,7 +36,6 @@ class ObserveMemberDetailsByIdsUseCaseTest {
         observeMemberDetailsByIds = ObserveMemberDetailsByIdsUseCase(
             userRepository,
             syncManager,
-            userTypeMapper
         )
     }
 
@@ -107,14 +101,9 @@ class ObserveMemberDetailsByIdsUseCaseTest {
             .whenInvokedWith(anything())
             .thenReturn(otherUserUpdates.asFlow())
 
-        given(userTypeMapper)
-            .function(userTypeMapper::fromOtherUserAndSelfUser)
-            .whenInvokedWith(anything(),anything())
-            .thenReturn(UserType.GUEST)
-
         observeMemberDetailsByIds(userIds).test {
-            assertContentEquals(listOf(MemberDetails.Other(firstOtherUser, UserType.GUEST)), awaitItem())
-            assertContentEquals(listOf(MemberDetails.Other(secondOtherUser, UserType.GUEST)), awaitItem())
+            assertContentEquals(listOf(MemberDetails.Other(firstOtherUser)), awaitItem())
+            assertContentEquals(listOf(MemberDetails.Other(secondOtherUser)), awaitItem())
             awaitComplete()
         }
     }

@@ -382,7 +382,7 @@ class GetNotificationsUseCaseTest {
             given(userRepository)
                 .suspendFunction(userRepository::getSelfUser)
                 .whenInvoked()
-                .then { flowOf(user) }
+                .then { user }
 
             return this
         }
