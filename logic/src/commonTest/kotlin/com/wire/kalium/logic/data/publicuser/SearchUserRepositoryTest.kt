@@ -357,26 +357,6 @@ class SearchUserRepositoryTest {
             userType = UserType.FEDERATED
         )
 
-        val PUBLIC_USERS = buildList {
-            for (i in 1..5) {
-                add(
-                    OtherUser(
-                        id = com.wire.kalium.logic.data.user.UserId(value = "value$i", domain = "domain$i"),
-                        name = "name$i",
-                        handle = "handle$i",
-                        email = "email$i",
-                        phone = "phone$i",
-                        accentId = i,
-                        team = "team$i",
-                        previewPicture = null,
-                        completePicture = null,
-                        availabilityStatus = UserAvailabilityStatus.NONE,
-                        userType = UserType.EXTERNAL
-                    )
-                )
-            }
-        }
-
         val CONTACT_SEARCH_RESPONSE = UserSearchResponse(
             documents = CONTACTS,
             found = CONTACTS.size,
