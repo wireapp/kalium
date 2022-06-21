@@ -9,6 +9,13 @@ import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
 
 
+@Deprecated(
+    "only network and non federated search",
+    replaceWith = ReplaceWith(
+        "com.wire.kalium.logic.feature.publicuser.SearchUsersUseCase",
+        "com.wire.kalium.logic.feature.publicuser.SearchUsersUseCase"
+    )
+)
 interface SearchUserDirectoryUseCase {
     suspend operator fun invoke(
         searchQuery: String,
@@ -17,6 +24,13 @@ interface SearchUserDirectoryUseCase {
     ): Result
 }
 
+@Deprecated(
+    "only network and non federated search",
+    replaceWith = ReplaceWith(
+        "com.wire.kalium.logic.feature.publicuser.SearchUsersUseCaseImpl",
+        "com.wire.kalium.logic.feature.publicuser.SearchUsersUseCaseImpl"
+    )
+)
 internal class SearchUserDirectoryUseCaseImpl(
     private val searchUserRepository: SearchUserRepository
 ) : SearchUserDirectoryUseCase {
