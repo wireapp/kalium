@@ -21,6 +21,8 @@ import com.wire.kalium.logic.data.conversation.MLSConversationDataSource
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.event.EventDataSource
 import com.wire.kalium.logic.data.event.EventRepository
+import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.keypackage.KeyPackageDataSource
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
@@ -96,6 +98,8 @@ abstract class UserSessionScopeCommon(
 
     private val encryptedSettingsHolder: EncryptedSettingsHolder = authenticatedDataSourceSet.encryptedSettingsHolder
     private val userPreferencesSettings = authenticatedDataSourceSet.kaliumPreferencesSettings
+    private val idMapper: IdMapper
+        get() = IdMapperImpl()
     private val eventInfoStorage: EventInfoStorage
         get() = EventInfoStorageImpl(userPreferencesSettings)
 
@@ -314,7 +318,9 @@ abstract class UserSessionScopeCommon(
             conversationRepository,
             connectionRepository,
             userRepository,
-            syncManager
+            syncManager,
+            mlsConversationRepository,
+            idMapper
         )
     val messages: MessageScope
         get() = MessageScope(

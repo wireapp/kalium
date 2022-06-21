@@ -2,6 +2,8 @@ package com.wire.kalium.logic.data.id
 
 import com.wire.kalium.cryptography.CryptoQualifiedID
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Member
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.user.client.SimpleClientResponse
 import com.wire.kalium.protobuf.messages.QualifiedConversationId
 
@@ -21,6 +23,8 @@ interface IdMapper {
     fun toProtoModel(conversationId: ConversationId): QualifiedConversationId
     fun toQualifiedAssetId(value: String, domain: String = ""): QualifiedID
     fun toQualifiedAssetIdEntity(value: String, domain: String = ""): PersistenceQualifiedId
+    fun toMember(userId: UserId): Member
+    fun toUserId(member: Member): UserId
 }
 
 internal class IdMapperImpl : IdMapper {
@@ -55,4 +59,6 @@ internal class IdMapperImpl : IdMapper {
     override fun toQualifiedAssetId(value: String, domain: String) = QualifiedID(value, domain)
 
     override fun toQualifiedAssetIdEntity(value: String, domain: String) = PersistenceQualifiedId(value, domain)
+    override fun toMember(userId: UserId): Member = Member(id = userId)
+    override fun toUserId(member: Member): UserId = member.id
 }
