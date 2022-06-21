@@ -30,7 +30,7 @@ CREATE TABLE MessageTextContent (
 
       text_body TEXT,
 
-      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE,
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
 );
 
@@ -67,7 +67,7 @@ CREATE TABLE MessageAssetContent (
       asset_duration_ms INTEGER,
       asset_normalized_loudness BLOB,
 
-      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE,
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
 );
 
@@ -78,7 +78,7 @@ CREATE TABLE MessageMemberChangeContent (
       member_change_list TEXT AS List<QualifiedIDEntity> NOT NULL,
       member_change_type TEXT AS MemberChangeType NOT NULL,
 
-      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE,
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
 );
 
@@ -89,7 +89,7 @@ CREATE TABLE MessageUnknownContent (
       unknown_type_name TEXT,
       unknown_encoded_data BLOB,
 
-      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE,
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
 );
 
