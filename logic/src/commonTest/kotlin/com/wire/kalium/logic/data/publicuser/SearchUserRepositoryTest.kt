@@ -262,7 +262,6 @@ class SearchUserRepositoryTest {
         val TEST_QUERY = "testQuery"
         val TEST_DOMAIN = "testDomain"
 
-
         val CONTACTS = buildList {
             for (i in 1..5) {
                 add(
