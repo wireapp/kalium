@@ -316,6 +316,7 @@ abstract class UserSessionScopeCommon(
             conversationRepository,
             connectionRepository,
             userRepository,
+            callRepository,
             syncManager
         )
     val messages: MessageScope
