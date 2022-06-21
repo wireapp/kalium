@@ -4,6 +4,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.notification.NotificationToken
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.api.user.pushToken.PushTokenBody
@@ -20,7 +21,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-@ExperimentalCoroutinesApi
+@OptIn(ExperimentalCoroutinesApi::class)
 class PushTokenUseCaseTest {
 
     @Mock
@@ -48,7 +49,7 @@ class PushTokenUseCaseTest {
 
         val actual = pushTokenUseCase(
             senderId = "7239",
-            clientId = "cliId"
+            clientId = ClientId("cliId")
         )
 
         assertIs<RegisterTokenResult.Success>(actual)
@@ -69,7 +70,7 @@ class PushTokenUseCaseTest {
 
         val actual = pushTokenUseCase(
             senderId = "7239",
-            clientId = "cliId"
+            clientId = ClientId("cliId")
         )
 
         assertIs<RegisterTokenResult.Failure.AppNotFound>(actual)
@@ -89,7 +90,7 @@ class PushTokenUseCaseTest {
 
         val actual = pushTokenUseCase(
             senderId = "7239",
-            clientId = "cliId"
+            clientId = ClientId("cliId")
         )
 
         assertIs<RegisterTokenResult.Failure.Generic>(actual)
