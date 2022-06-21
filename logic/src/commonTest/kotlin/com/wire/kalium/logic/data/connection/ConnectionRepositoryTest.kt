@@ -67,8 +67,8 @@ class ConnectionRepositoryTest {
         val (arrangement, connectionRepository) = Arrangement().arrange()
         arrangement
             .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
+            .withNotFoundGetConversationError()
             .withSuccessfulGetConversationById(arrangement.stubConversationID1)
-            .withNotFoundGetConversationById(arrangement.stubConversationID2)
 
         //when
         val result = connectionRepository.fetchSelfUserConnections()
@@ -77,7 +77,7 @@ class ConnectionRepositoryTest {
         verify(arrangement.conversationDAO)
             .suspendFunction(arrangement.conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
             .with(any(), any(), any())
-            .wasInvoked(exactly = once)
+            .wasInvoked(exactly = twice)
 
         // Verifies that when fetching connections, it succeeded
         result.shouldSucceed()
@@ -336,11 +336,11 @@ class ConnectionRepositoryTest {
             return this
         }
 
-        fun withNotFoundGetConversationById(conversationId: QualifiedIDEntity): Arrangement {
+        fun withNotFoundGetConversationError(): Arrangement {
             given(conversationDAO)
-                .suspendFunction(conversationDAO::observeGetConversationByQualifiedID)
-                .whenInvokedWith(eq(conversationId))
-                .then { flowOf(null) }
+                .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
+                .whenInvokedWith(any(), any(), any())
+                .thenThrow(Exception("error"))
 
             return this
         }
