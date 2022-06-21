@@ -10,7 +10,6 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.id.toConversationId
 import com.wire.kalium.logic.feature.call.CallStatus
 
-//TODO(testing): create unit test
 @Suppress("LongParameterList")
 class OnCloseCall(
     private val callRepository: CallRepository
