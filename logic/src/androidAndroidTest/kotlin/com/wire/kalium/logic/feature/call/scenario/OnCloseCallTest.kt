@@ -33,6 +33,7 @@ class OnCloseCallTest {
         )
     }
 
+    @Suppress("FunctionNaming")
     @Test
     fun givenAConversationWithAnOngoingCall_whenClosingTheCallAndTheCallIsStillOngoing_thenVerifyTheStatusIsOngoing() = runTest {
         // given
@@ -53,6 +54,7 @@ class OnCloseCallTest {
             .wasInvoked(once)
     }
 
+    @Suppress("FunctionNaming")
     @Test
     fun givenAConversationWithoutAnOngoingCall_whenClosingTheCallAndTheCallIsNotOngoing_thenVerifyTheStatusIsClosed() = runTest {
         // given
