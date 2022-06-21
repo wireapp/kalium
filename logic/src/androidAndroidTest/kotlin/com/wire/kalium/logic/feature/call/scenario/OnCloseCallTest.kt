@@ -49,7 +49,7 @@ class OnCloseCallTest {
         // then
         verify(callRepository)
             .function(callRepository::updateCallStatusById)
-            .with(eq("conversationId@domainId"), eq(CallStatus.ONGOING))
+            .with(eq("conversationId@domainId"), eq(CallStatus.STILL_ONGOING))
             .wasInvoked(once)
     }
 

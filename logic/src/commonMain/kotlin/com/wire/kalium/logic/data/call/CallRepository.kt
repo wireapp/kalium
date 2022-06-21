@@ -75,7 +75,7 @@ internal class CallDataSource(
     override fun ongoingCallsFlow(): Flow<List<Call>> = allCalls.map {
         it.calls.values.filter { call ->
             call.status in listOf(
-                CallStatus.ONGOING
+                CallStatus.STILL_ONGOING
             )
         }
     }

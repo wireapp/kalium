@@ -10,7 +10,7 @@ enum class CallStatus {
     MISSED,
     ANSWERED,
     ESTABLISHED,
-    ONGOING,
+    STILL_ONGOING,
     CLOSED
 }
 

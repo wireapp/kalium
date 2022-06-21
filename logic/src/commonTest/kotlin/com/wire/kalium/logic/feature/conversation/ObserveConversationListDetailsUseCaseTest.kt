@@ -241,7 +241,7 @@ class ObserveConversationListDetailsUseCaseTest {
 
         val ongoingCall = Call(
             conversationId = groupConversation.id,
-            status = CallStatus.ONGOING,
+            status = CallStatus.STILL_ONGOING,
             isMuted = false,
             isCameraOn = false,
             callerId = "anotherUserId",

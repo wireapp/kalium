@@ -25,7 +25,7 @@ class OnCloseCall(
         callingLogger.i("OnCloseCall -> ConversationId $conversationId from user $userId , CLOSED for reason: $reason")
 
         val avsReason = CallClosedReason.fromInt(value = reason)
-        val callStatus = if (avsReason === STILL_ONGOING) CallStatus.ONGOING else CallStatus.CLOSED
+        val callStatus = if (avsReason === STILL_ONGOING) CallStatus.STILL_ONGOING else CallStatus.CLOSED
 
         callRepository.updateCallStatusById(
             conversationId = conversationId.toConversationId().toString(),
