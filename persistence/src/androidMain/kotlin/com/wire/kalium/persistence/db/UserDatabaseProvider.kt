@@ -39,13 +39,13 @@ import com.wire.kalium.persistence.dao.message.MessageDAOImpl
 import com.wire.kalium.persistence.util.FileNameUtil
 import net.sqlcipher.database.SupportFactory
 
-actual class UserDatabaseProvider(private val context: Context, userId: UserIDEntity, passphrase: ByteArray) {
+actual class UserDatabaseProvider(private val context: Context, userId: UserIDEntity, passphrase: UserDBSecret) {
     private val dbName = FileNameUtil.userDBName(userId)
     private val driver: AndroidSqliteDriver
     private val database: UserDatabase
 
     init {
-        val supportFactory = SupportFactory(passphrase)
+        val supportFactory = SupportFactory(passphrase.value)
 
         val onConnectCallback = object : AndroidSqliteDriver.Callback(UserDatabase.Schema) {
             override fun onOpen(db: SupportSQLiteDatabase) {

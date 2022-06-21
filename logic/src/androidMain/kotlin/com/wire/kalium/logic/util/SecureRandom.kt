@@ -2,7 +2,7 @@ package com.wire.kalium.logic.util
 
 import android.os.Build
 
-internal actual class SecureRandom actual constructor() {
+actual class SecureRandom actual constructor() {
 
     private val random
         get() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

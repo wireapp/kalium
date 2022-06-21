@@ -11,14 +11,14 @@ import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAOImpl
 import com.wire.kalium.persistence.util.FileNameUtil
 import net.sqlcipher.database.SupportFactory
 
-actual class GlobalDatabaseProvider(private val context: Context, passphrase: ByteArray) {
+actual class GlobalDatabaseProvider(private val context: Context, passphrase: GlobalDatabaseSecret) {
     private val dbName = FileNameUtil.globalDBName()
     private val driver: AndroidSqliteDriver
     private val database: GlobalDatabase
 
 
     init {
-        val supportFactory = SupportFactory(passphrase)
+        val supportFactory = SupportFactory(passphrase.value)
 
         val onConnectCallback = object : AndroidSqliteDriver.Callback(GlobalDatabase.Schema) {
             override fun onOpen(db: SupportSQLiteDatabase) {
