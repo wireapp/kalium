@@ -189,7 +189,7 @@ class ObserveConversationListDetailsUseCaseTest {
         }
     }
 
-
+    @Suppress("FunctionNaming")
     @Test
     fun givenAConversationIsAddedToTheList_whenObservingDetailsList_thenTheUpdateIsPropagatedThroughTheFlow() = runTest {
         val groupConversation = TestConversation.GROUP
@@ -234,6 +234,7 @@ class ObserveConversationListDetailsUseCaseTest {
         }
     }
 
+    @Suppress("FunctionNaming")
     @Test
     fun givenAnOngoingCall_whenFetchingConversationDetails_thenTheConversationShouldHaveAnOngoingCall() = runTest {
         val groupConversation = TestConversation.GROUP
