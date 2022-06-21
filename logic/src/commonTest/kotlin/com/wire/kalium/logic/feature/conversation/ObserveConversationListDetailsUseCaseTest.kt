@@ -8,6 +8,8 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.LegalHoldStatus
 import com.wire.kalium.logic.data.conversation.UserType
 import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.feature.call.Call
+import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncManager
@@ -28,6 +30,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
+import kotlin.test.assertEquals
 
 class ObserveConversationListDetailsUseCaseTest {
 
@@ -228,6 +231,78 @@ class ObserveConversationListDetailsUseCaseTest {
 
             conversationListUpdates.close()
             awaitComplete()
+        }
+    }
+
+    @Test
+    fun givenAnOngoingCall_whenFetchingConversationDetails_thenTheConversationShouldHaveAnOngoingCall() = runTest {
+        val groupConversation = TestConversation.GROUP
+        val groupConversationDetails = ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED)
+
+        val ongoingCall = Call(
+            conversationId = groupConversation.id,
+            status = CallStatus.ONGOING,
+            isMuted = false,
+            isCameraOn = false,
+            callerId = "anotherUserId",
+            conversationName = groupConversation.name,
+            conversationType = Conversation.Type.GROUP,
+            callerName = "otherUserName",
+            callerTeamName = null
+        )
+
+        val firstConversationsList = listOf(groupConversation)
+
+        val conversationListUpdates = Channel<List<Conversation>>(Channel.UNLIMITED)
+        conversationListUpdates.send(firstConversationsList)
+
+        given(callRepository)
+            .function(callRepository::ongoingCallsFlow)
+            .whenInvoked()
+            .thenReturn(flowOf(listOf(ongoingCall)))
+
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::observeConversationList)
+            .whenInvoked()
+            .thenReturn(conversationListUpdates.consumeAsFlow())
+
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::observeConversationDetailsById)
+            .whenInvokedWith(eq(groupConversation.id))
+            .thenReturn(flowOf(groupConversationDetails))
+
+        observeConversationsUseCase().test {
+            assertEquals(true, (awaitItem()[0] as ConversationDetails.Group).hasOngoingCall)
+        }
+    }
+
+    @Test
+    fun givenAConversationWithoutAnOngoingCall_whenFetchingConversationDetails_thenTheConversationShouldNotHaveAnOngoingCall() = runTest {
+        val groupConversation = TestConversation.GROUP
+        val groupConversationDetails = ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED)
+
+        val firstConversationsList = listOf(groupConversation)
+
+        val conversationListUpdates = Channel<List<Conversation>>(Channel.UNLIMITED)
+        conversationListUpdates.send(firstConversationsList)
+
+        given(callRepository)
+            .function(callRepository::ongoingCallsFlow)
+            .whenInvoked()
+            .thenReturn(flowOf(listOf()))
+
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::observeConversationList)
+            .whenInvoked()
+            .thenReturn(conversationListUpdates.consumeAsFlow())
+
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::observeConversationDetailsById)
+            .whenInvokedWith(eq(groupConversation.id))
+            .thenReturn(flowOf(groupConversationDetails))
+
+        observeConversationsUseCase().test {
+            assertEquals(false, (awaitItem()[0] as ConversationDetails.Group).hasOngoingCall)
         }
     }
 }
