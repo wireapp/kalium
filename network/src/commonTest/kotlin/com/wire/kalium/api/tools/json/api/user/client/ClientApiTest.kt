@@ -69,6 +69,25 @@ class ClientApiTest : ApiTest {
         }
 
     @Test
+    fun givenAValidDeleteClientRequest_whenCallingDeleteClientEndpoint_theRequestShouldBeConfiguredCorrectly() =
+        runTest {
+            val password = "password"
+            val httpClient = mockAuthenticatedNetworkClient(
+                "",
+                statusCode = HttpStatusCode.OK,
+                assertion = {
+                    assertDelete()
+                    assertJson()
+                    assertNoQueryParams()
+                    assertPathEqual("$PATH_CLIENTS/$VALID_CLIENT_ID")
+                }
+            )
+            val clientApi: ClientApi = ClientApiImpl(httpClient)
+            val response = clientApi.deleteClient(password, VALID_CLIENT_ID)
+            assertTrue(response.isSuccessful())
+        }
+
+    @Test
     fun givenAValidRequest_whenRegisteredValidToken_theTokenRegisteredSuccessfully() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(
             RegisterTokenJson.registerTokenResponse, statusCode = HttpStatusCode.Created, assertion = {

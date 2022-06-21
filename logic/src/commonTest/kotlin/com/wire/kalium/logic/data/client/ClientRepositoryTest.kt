@@ -231,7 +231,7 @@ class ClientRepositoryTest {
         val expected = Either.Right(
             listOf(
                 Client(
-                    clientId = PlainId(value = "client_id_1"),
+                    id = PlainId(value = "client_id_1"),
                     type = ClientType.Permanent,
                     registrationTime = "31.08.1966",
                     location = null,
@@ -242,7 +242,7 @@ class ClientRepositoryTest {
                     model = "Mac ox"
                 ),
                 Client(
-                    clientId = PlainId(value = "client_id_1"),
+                    id = PlainId(value = "client_id_1"),
                     type = ClientType.Permanent,
                     registrationTime = "01.06.2022",
                     location = null,

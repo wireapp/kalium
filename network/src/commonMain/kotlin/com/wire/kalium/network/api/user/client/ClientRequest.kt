@@ -81,8 +81,8 @@ data class ListClientsOfUsersRequest(
 )
 
 @Serializable
-data class PasswordRequest(
-    @SerialName("password") val password: String
+internal data class PasswordRequest(
+    @SerialName("password") val password: String?
 )
 
 @Serializable
