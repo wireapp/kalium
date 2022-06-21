@@ -8,9 +8,7 @@ import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.feature.publicuser.SearchKnownUsersUseCase
 import com.wire.kalium.logic.feature.publicuser.SearchKnownUsersUseCaseImpl
-import io.ktor.client.plugins.convertLongTimeoutToLongWithInfiniteAsZero
 import io.mockative.Mock
-import io.mockative.Times
 import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.eq
@@ -118,6 +116,50 @@ class SearchKnownUserUseCaseTest {
         verify(searchUserRepository)
             .suspendFunction(searchUserRepository::searchKnownUsersByNameOrHandleOrEmail)
             .with(eq(searchQuery))
+            .wasInvoked()
+    }
+
+    @Test
+    fun givenFederatedInput_whenSearchingUsers_thenSearchByNameOrHandleOrEmail() = runTest {
+        //given
+        val searchQuery = "someSearchQuery@wire.com"
+
+        given(searchUserRepository)
+            .suspendFunction(searchUserRepository::searchKnownUsersByNameOrHandleOrEmail)
+            .whenInvokedWith(eq("someSearchQuery"))
+            .thenReturn(
+                UserSearchResult(
+                    listOf(
+                        OtherUser(
+                            id = QualifiedID(
+                                value = "someSearchQuery",
+                                domain = "wire.com",
+                            ),
+                            name = null,
+                            handle = null,
+                            email = null,
+                            phone = null,
+                            accentId = 0,
+                            team = null,
+                            connectionStatus = ConnectionState.ACCEPTED,
+                            previewPicture = null,
+                            completePicture = null,
+                            availabilityStatus = UserAvailabilityStatus.NONE
+                        )
+                    )
+                )
+            )
+        //when
+        searchKnownUsersUseCase(searchQuery)
+        //then
+        verify(searchUserRepository)
+            .suspendFunction(searchUserRepository::searchKnownUsersByHandle)
+            .with(anything())
+            .wasNotInvoked()
+
+        verify(searchUserRepository)
+            .suspendFunction(searchUserRepository::searchKnownUsersByNameOrHandleOrEmail)
+            .with(eq("someSearchQuery"))
             .wasInvoked()
     }
 

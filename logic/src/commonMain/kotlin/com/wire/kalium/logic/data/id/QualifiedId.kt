@@ -18,6 +18,7 @@ data class QualifiedID(
 }
 
 const val VALUE_DOMAIN_SEPARATOR = "@"
+val FEDERATION_REGEX = """[^@.]+@[^@.]+\.[^@]+""".toRegex()
 
 typealias ConversationId = QualifiedID
 

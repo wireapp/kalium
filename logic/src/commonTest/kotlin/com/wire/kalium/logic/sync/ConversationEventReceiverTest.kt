@@ -9,11 +9,14 @@ import com.wire.kalium.cryptography.utils.PlainData
 import com.wire.kalium.cryptography.utils.encryptDataWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PlainMessageBlob
@@ -24,6 +27,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.handler.MessageTextEditHandler
@@ -44,10 +48,8 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
 import kotlinx.datetime.toInstant
 import kotlin.test.Test
-import kotlin.time.Duration.Companion.seconds
 
 class ConversationEventReceiverTest {
 
@@ -163,6 +165,95 @@ class ConversationEventReceiverTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenMemberJoinEvent_whenHandlingIt_thenShouldFetchConversationIfUnknown() = runTest {
+        val newMembers = listOf(Member(TestUser.USER_ID))
+        val event = TestEvent.memberJoin(members = newMembers)
+
+        val (arrangement, eventReceiver) = Arrangement()
+            .withSelfUserIdReturning(TestUser.USER_ID)
+            .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
+            .withUpdateConversationNotificationDateReturning(Either.Right(Unit))
+            .withRepositoryPersistingMessageDateReturning(Either.Right(Unit))
+            .withFetchConversationIfUnknownSucceeding()
+            .withPersistMembersSucceeding()
+            .arrange()
+
+        eventReceiver.onEvent(event)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::fetchConversationIfUnknown)
+            .with(eq(event.conversationId))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenMemberJoinEvent_whenHandlingIt_thenShouldPersistMembers() = runTest {
+        val newMembers = listOf(Member(TestUser.USER_ID))
+        val event = TestEvent.memberJoin(members = newMembers)
+
+        val (arrangement, eventReceiver) = Arrangement()
+            .withSelfUserIdReturning(TestUser.USER_ID)
+            .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
+            .withUpdateConversationNotificationDateReturning(Either.Right(Unit))
+            .withRepositoryPersistingMessageDateReturning(Either.Right(Unit))
+            .withFetchConversationIfUnknownSucceeding()
+            .withPersistMembersSucceeding()
+            .arrange()
+
+        eventReceiver.onEvent(event)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::persistMembers)
+            .with(eq(newMembers), eq(event.conversationId))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenMemberJoinEventAndFetchConversationFails_whenHandlingIt_thenShouldAttemptPersistingMembersAnyway() = runTest {
+        val newMembers = listOf(Member(TestUser.USER_ID))
+        val event = TestEvent.memberJoin(members = newMembers)
+
+        val (arrangement, eventReceiver) = Arrangement()
+            .withSelfUserIdReturning(TestUser.USER_ID)
+            .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
+            .withUpdateConversationNotificationDateReturning(Either.Right(Unit))
+            .withRepositoryPersistingMessageDateReturning(Either.Right(Unit))
+            .withFetchConversationIfUnknownFailing(NetworkFailure.NoNetworkConnection(null))
+            .withPersistMembersSucceeding()
+            .arrange()
+
+        eventReceiver.onEvent(event)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::persistMembers)
+            .with(eq(newMembers), eq(event.conversationId))
+            .wasInvoked(exactly = once)
+    }
+    @Test
+    fun givenMemberJoinEvent_whenHandlingIt_thenShouldPersistSystemMessage() = runTest {
+        val newMembers = listOf(Member(TestUser.USER_ID))
+        val event = TestEvent.memberJoin(members = newMembers)
+
+        val (arrangement, eventReceiver) = Arrangement()
+            .withSelfUserIdReturning(TestUser.USER_ID)
+            .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
+            .withUpdateConversationNotificationDateReturning(Either.Right(Unit))
+            .withRepositoryPersistingMessageDateReturning(Either.Right(Unit))
+            .withFetchConversationIfUnknownFailing(NetworkFailure.NoNetworkConnection(null))
+            .withPersistMembersSucceeding()
+            .arrange()
+
+        eventReceiver.onEvent(event)
+
+        verify(arrangement.messageRepository)
+            .suspendFunction(arrangement.messageRepository::persistMessage)
+            .with(matching {
+                it is Message.System && it.content is MessageContent.MemberChange
+            })
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
         @Mock
         val proteusClient = mock(classOf<ProteusClient>())
@@ -247,6 +338,27 @@ class ConversationEventReceiverTest {
                 .suspendFunction(conversationRepository::insertConversationFromEvent)
                 .whenInvokedWith(any())
                 .thenReturn(result)
+        }
+
+        fun withFetchConversationIfUnknownSucceeding() = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::fetchConversationIfUnknown)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
+        }
+
+        fun withFetchConversationIfUnknownFailing(coreFailure: CoreFailure) = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::fetchConversationIfUnknown)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Left(coreFailure))
+        }
+
+        fun withPersistMembersSucceeding() = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::persistMembers)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Either.Right(Unit))
         }
 
         fun newMessageEvent(
