@@ -147,7 +147,8 @@ class SearchKnownUserUseCaseTest {
                             connectionStatus = ConnectionState.ACCEPTED,
                             previewPicture = null,
                             completePicture = null,
-                            availabilityStatus = UserAvailabilityStatus.NONE
+                            availabilityStatus = UserAvailabilityStatus.NONE,
+                            userType = UserType.FEDERATED
                         )
                     )
                 )

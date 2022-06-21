@@ -510,7 +510,7 @@ class ConversationRepositoryTest {
             .thenReturn(null)
 
         given(userRepository)
-            .coroutine { userRepository.getSelfUser() }
+            .coroutine { userRepository.observeSelfUser() }
             .then { flowOf(TestUser.SELF) }
 
         given(conversationApi)
@@ -536,7 +536,7 @@ class ConversationRepositoryTest {
             .thenReturn(null)
 
         given(userRepository)
-            .coroutine { userRepository.getSelfUser() }
+            .coroutine { userRepository.observeSelfUser() }
             .then { flowOf(TestUser.SELF) }
 
         given(conversationApi)
