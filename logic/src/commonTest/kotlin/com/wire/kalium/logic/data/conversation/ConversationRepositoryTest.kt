@@ -473,6 +473,81 @@ class ConversationRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenAConversationExists_whenFetchingConversationIfUnknown_thenShouldNotFetchFromApi() = runTest {
+        val conversationId = TestConversation.ID
+        given(conversationDAO)
+            .suspendFunction(conversationDAO::getConversationByQualifiedID)
+            .whenInvokedWith(any())
+            .thenReturn(TestConversation.ENTITY)
+
+        conversationRepository.fetchConversationIfUnknown(conversationId)
+
+        verify(conversationApi)
+            .suspendFunction(conversationApi::fetchConversationDetails)
+            .with(eq(ConversationId(value = conversationId.value, domain = conversationId.domain)))
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenAConversationExists_whenFetchingConversationIfUnknown_thenShouldSucceed() = runTest {
+        val conversationId = TestConversation.ID
+        given(conversationDAO)
+            .suspendFunction(conversationDAO::getConversationByQualifiedID)
+            .whenInvokedWith(any())
+            .thenReturn(TestConversation.ENTITY)
+
+        conversationRepository.fetchConversationIfUnknown(conversationId)
+            .shouldSucceed()
+    }
+
+    @Test
+    fun givenAConversationDoesNotExist_whenFetchingConversationIfUnknown_thenShouldFetchFromAPI() = runTest {
+        val conversationId = TestConversation.ID
+        given(conversationDAO)
+            .suspendFunction(conversationDAO::getConversationByQualifiedID)
+            .whenInvokedWith(any())
+            .thenReturn(null)
+
+        given(userRepository)
+            .coroutine { userRepository.getSelfUser() }
+            .then { flowOf(TestUser.SELF) }
+
+        given(conversationApi)
+            .suspendFunction(conversationApi::fetchConversationDetails)
+            .whenInvokedWith(eq(ConversationId(value = conversationId.value, domain = conversationId.domain)))
+            .thenReturn(NetworkResponse.Success(TestConversation.CONVERSATION_RESPONSE, mapOf(), HttpStatusCode.OK.value))
+
+        conversationRepository.fetchConversationIfUnknown(conversationId)
+            .shouldSucceed()
+
+        verify(conversationApi)
+            .suspendFunction(conversationApi::fetchConversationDetails)
+            .with(eq(ConversationId(value = conversationId.value, domain = conversationId.domain)))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAConversationDoesNotExistAndAPISucceeds_whenFetchingConversationIfUnknown_thenShouldSucceed() = runTest {
+        val conversationId = TestConversation.ID
+        given(conversationDAO)
+            .suspendFunction(conversationDAO::getConversationByQualifiedID)
+            .whenInvokedWith(any())
+            .thenReturn(null)
+
+        given(userRepository)
+            .coroutine { userRepository.getSelfUser() }
+            .then { flowOf(TestUser.SELF) }
+
+        given(conversationApi)
+            .suspendFunction(conversationApi::fetchConversationDetails)
+            .whenInvokedWith(eq(ConversationId(value = conversationId.value, domain = conversationId.domain)))
+            .thenReturn(NetworkResponse.Success(TestConversation.CONVERSATION_RESPONSE, mapOf(), HttpStatusCode.OK.value))
+
+        conversationRepository.fetchConversationIfUnknown(conversationId)
+            .shouldSucceed()
+    }
+
 
     companion object {
         const val GROUP_NAME = "Group Name"

@@ -190,12 +190,14 @@ class ConversationEventReceiverImpl(
             conversationRepository.updateConversationModifiedDate(event.conversationId, Clock.System.now().toString())
         }.onFailure { kaliumLogger.e("$TAG - failure on new conversation event: $it") }
 
-    private suspend fun handleMemberJoin(event: Event.Conversation.MemberJoin) = conversationRepository
-        .persistMembers(
-            event.members.map { memberMapper.toDaoModel(it) },
-            idMapper.toDaoModel(event.conversationId)
-        )
-        .onSuccess {
+    private suspend fun handleMemberJoin(event: Event.Conversation.MemberJoin) =
+        // Attempt to fetch conversation details if needed, as this might be an unknown conversation
+        conversationRepository.fetchConversationIfUnknown(event.conversationId).run {
+            onSuccess { kaliumLogger.v("Succeeded fetching conversation details on MemberJoin Event: $event") }
+            onFailure { kaliumLogger.w("Failure fetching conversation details on MemberJoin Event: $event") }
+            // Even if unable to fetch conversation details, at least attempt adding the member
+            conversationRepository.persistMembers(event.members, event.conversationId)
+        }.onSuccess {
             val message = Message.System(
                 id = event.id,
                 content = MessageContent.MemberChange.Added(members = event.members),
@@ -205,9 +207,8 @@ class ConversationEventReceiverImpl(
                 status = Message.Status.SENT,
                 visibility = Message.Visibility.VISIBLE
             )
-            processMessage(message)
-        }
-        .onFailure { kaliumLogger.e("$TAG - failure on member join event: $it") }
+            processMessage(message) //TODO(exception-handling): processMessage exceptions are not caught
+        }.onFailure { kaliumLogger.e("$TAG - failure on member join event: $it") }
 
     private suspend fun handleMemberLeave(event: Event.Conversation.MemberLeave) = conversationRepository
         .deleteMembers(
