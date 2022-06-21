@@ -16,6 +16,7 @@ import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.sync.GlobalWorkScheduler
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import com.wire.kalium.logic.sync.WorkSchedulerImpl
+import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.network.AuthenticatedNetworkContainer
 import com.wire.kalium.persistence.client.SessionStorage
 import com.wire.kalium.persistence.client.SessionStorageImpl
@@ -48,7 +49,8 @@ actual class CoreLogic(
         KaliumPreferencesSettings(EncryptedSettingsHolder(appContext, SettingOptions.AppSettings).encryptedSettings)
     }
 
-    override val globalDatabase: Lazy<GlobalDatabaseProvider> = lazy { GlobalDatabaseProvider(appContext, TODO()) }
+    override val globalDatabase: Lazy<GlobalDatabaseProvider> =
+        lazy { GlobalDatabaseProvider(appContext, SecurityHelper(globalPreferences.value).globalDBSecret()) }
 
     override fun getSessionScope(userId: UserId): UserSessionScope {
         return userSessionScopeProvider.get(userId) ?: run {
@@ -66,7 +68,12 @@ actual class CoreLogic(
             val encryptedSettingsHolder =
                 EncryptedSettingsHolder(appContext, SettingOptions.UserSettings(userIDEntity))
             val userPreferencesSettings = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
-            val userDatabaseProvider = UserDatabaseProvider(appContext, userIDEntity, TODO())
+            val userDatabaseProvider =
+                UserDatabaseProvider(
+                    appContext,
+                    userIDEntity,
+                    SecurityHelper(globalPreferences.value).userDBSecret(userId)
+                )
             val userDataSource = AuthenticatedDataSourceSet(
                 rootAccountPath,
                 networkContainer,

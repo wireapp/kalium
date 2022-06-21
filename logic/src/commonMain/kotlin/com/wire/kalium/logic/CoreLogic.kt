@@ -21,7 +21,7 @@ abstract class CoreLogicCommon(
     protected val clientLabel: String,
     protected val rootPath: String,
     protected val kaliumConfigs: KaliumConfigs,
-    protected val idMapper: IdMapper = MapperProvider.idMapper(),
+    protected val idMapper: IdMapper = MapperProvider.idMapper()
 ) {
 
     val sessionRepository: SessionRepository by lazy {
