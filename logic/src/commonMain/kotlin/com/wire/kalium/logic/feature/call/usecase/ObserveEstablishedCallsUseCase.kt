@@ -5,7 +5,7 @@ import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.sync.SyncManager
 import kotlinx.coroutines.flow.Flow
 
-class GetEstablishedCallsUseCase(
+class ObserveEstablishedCallsUseCase(
     private val callRepository: CallRepository,
     private val syncManager: SyncManager
 ) {
