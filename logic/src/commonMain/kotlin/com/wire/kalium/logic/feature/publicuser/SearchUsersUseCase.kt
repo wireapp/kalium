@@ -51,8 +51,6 @@ internal class SearchUsersUseCaseImpl(
             Result.Success(it)
         })
     }
-
-
 }
 
 
