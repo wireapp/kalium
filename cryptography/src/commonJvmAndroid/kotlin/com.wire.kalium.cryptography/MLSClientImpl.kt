@@ -12,14 +12,14 @@ import java.time.Duration
 @OptIn(ExperimentalUnsignedTypes::class)
 actual class MLSClientImpl actual constructor(
     private val rootDir: String,
-    databaseKey: String,
+    databaseKey: MlsDBSecret,
     clientId: CryptoQualifiedClientId) : MLSClient {
 
     private val coreCrypto: CoreCrypto
     private val keyRotationDuration: Duration = Duration.ofDays(30)
 
     init {
-        coreCrypto = CoreCrypto(rootDir, databaseKey, clientId.toString())
+        coreCrypto = CoreCrypto(rootDir, databaseKey.value, clientId.toString())
     }
 
     override fun clearLocalFiles(): Boolean {

@@ -1,5 +1,7 @@
 package com.wire.kalium.cryptography
 
+import kotlin.jvm.JvmInline
+
 typealias WelcomeMessage = ByteArray
 typealias HandshakeMessage = ByteArray
 typealias ApplicationMessage = ByteArray
@@ -110,4 +112,7 @@ interface MLSClient {
         members: List<CryptoQualifiedClientId>): HandshakeMessage?
 }
 
-expect class MLSClientImpl(rootDir: String, databaseKey: String, clientId: CryptoQualifiedClientId): MLSClient
+@JvmInline
+value class MlsDBSecret(val value: String)
+
+expect class MLSClientImpl(rootDir: String, databaseKey: MlsDBSecret, clientId: CryptoQualifiedClientId): MLSClient
