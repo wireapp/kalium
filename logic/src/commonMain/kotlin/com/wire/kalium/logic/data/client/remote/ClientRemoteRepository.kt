@@ -18,7 +18,7 @@ import com.wire.kalium.network.api.user.pushToken.PushTokenBody
 
 interface ClientRemoteRepository {
     suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client>
-    suspend fun registerMLSClient(clientId: ClientId, publicKey: String) : Either<NetworkFailure, Unit>
+    suspend fun registerMLSClient(clientId: ClientId, publicKey: String): Either<NetworkFailure, Unit>
     suspend fun deleteClient(param: DeleteClientParam): Either<NetworkFailure, Unit>
     suspend fun fetchClientInfo(clientId: ClientId): Either<NetworkFailure, Client>
     suspend fun fetchSelfUserClients(): Either<NetworkFailure, List<Client>>
