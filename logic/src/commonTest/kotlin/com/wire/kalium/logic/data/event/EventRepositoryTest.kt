@@ -2,14 +2,13 @@ package com.wire.kalium.logic.data.event
 
 import app.cash.turbine.test
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.conversation.MemberMapperImpl
 import com.wire.kalium.logic.data.connection.ConnectionMapperImpl
 import com.wire.kalium.logic.data.connection.ConnectionStatusMapperImpl
+import com.wire.kalium.logic.data.conversation.MemberMapperImpl
 import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.publicuser.PublicUserMapperImpl
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapperImpl
 import com.wire.kalium.logic.data.user.ConnectionStateMapperImpl
-import com.wire.kalium.logic.data.user.UserMapperImpl
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
@@ -26,14 +25,11 @@ import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
 import io.mockative.configure
-import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -105,5 +101,52 @@ class EventRepositoryTest {
             }
             awaitComplete()
         }
+    }
+
+    @Test
+    fun givenNoSavedLastProcessedId_whenGettingLastProcessedEventId_thenShouldAskFromAPI() = runTest {
+        given(eventInfoStorage)
+            .getter(eventInfoStorage::lastProcessedId)
+            .whenInvoked()
+            .thenReturn(null)
+
+        val pendingEventPayload = EventContentDTO.Conversation.NewMessageDTO(
+            TestConversation.NETWORK_ID,
+            UserId("value", "domain"),
+            "eventTime",
+            MessageEventData("text", "senderId", "recipient")
+        )
+        val pendingEvent = EventResponse("pendingEventId", listOf(pendingEventPayload))
+
+        val clientId = TestClient.CLIENT_ID
+        given(clientRepository)
+            .function(clientRepository::currentClientId)
+            .whenInvoked()
+            .thenReturn(Either.Right(clientId))
+
+        given(notificationApi)
+            .suspendFunction(notificationApi::lastNotification)
+            .whenInvokedWith(any())
+            .thenReturn(NetworkResponse.Success(pendingEvent, mapOf(), 200))
+
+        val result = eventRepository.lastEventId()
+        result.shouldSucceed { assertEquals(pendingEvent.id, it) }
+
+        verify(notificationApi)
+            .suspendFunction(notificationApi::lastNotification)
+            .with(any())
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenASavedLastProcessedId_whenGettingLastEventId_thenShouldReturnIt() = runTest {
+        val eventId = "dh817h2e"
+        given(eventInfoStorage)
+            .getter(eventInfoStorage::lastProcessedId)
+            .whenInvoked()
+            .thenReturn(eventId)
+
+        val result = eventRepository.lastEventId()
+        result.shouldSucceed { assertEquals(eventId, it) }
     }
 }

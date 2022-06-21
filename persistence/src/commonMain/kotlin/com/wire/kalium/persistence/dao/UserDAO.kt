@@ -1,12 +1,13 @@
 package com.wire.kalium.persistence.dao
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class QualifiedIDEntity(
-    val value: String,
-    val domain: String
+    @SerialName("value") val value: String,
+    @SerialName("domain") val domain: String
 )
 
 typealias UserIDEntity = QualifiedIDEntity
