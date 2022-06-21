@@ -3,17 +3,23 @@ package com.wire.kalium.logic.data.call
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+@Suppress("EnforceSerializableFields")
 @Serializable
 data class CallParticipants(
-    @SerialName("convid") val convId: String,
-    @SerialName("members") val members: List<CallMember>
+    @SerialName("convid")
+    val conversationId: String,
+    val members: List<CallMember>
 )
 
+@Suppress("EnforceSerializableFields")
 @Serializable
 data class CallMember(
-    @SerialName("userid") val userId: String,
-    @SerialName("clientid") val clientId: String,
-    @SerialName("aestab") val aestab: Int,
-    @SerialName("vrecv") val vrecv: Int,
-    @SerialName("muted") val muted: Int
+    @SerialName("userid")
+    val userId: String,
+    @SerialName("clientid")
+    val clientId: String,
+    val aestab: Int,
+    val vrecv: Int,
+    @SerialName("muted")
+    val isMuted: Int
 )

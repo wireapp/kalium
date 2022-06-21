@@ -147,6 +147,69 @@ class DeleteMessageUseCaseTest {
     }
 
 
+    @Test
+    fun givenAMessage_whenDeleting_thenStartSyncIsInvoked() = runTest {
+        //given
+        given(messageSender)
+            .suspendFunction(messageSender::sendMessage)
+            .whenInvokedWith(anything())
+            .thenReturn(Either.Right(Unit))
+        given(userRepository)
+            .suspendFunction(userRepository::getSelfUser)
+            .whenInvoked()
+            .thenReturn(flowOf(TestUser.SELF))
+        given(clientRepository)
+            .function(clientRepository::currentClientId)
+            .whenInvoked()
+            .then { Either.Right(SELF_CLIENT_ID) }
+        given(messageRepository)
+            .suspendFunction(messageRepository::deleteMessage)
+            .whenInvokedWith(anything(), anything())
+            .thenReturn(Either.Right(Unit))
+
+
+        //when
+        deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, true).shouldSucceed()
+
+        //then
+        verify(syncManager)
+            .function(syncManager::startSyncIfIdle)
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAMessage_whenDeleting_thenShouldNotWaitForAnyKindOfSyncState() = runTest {
+        //given
+        given(messageSender)
+            .suspendFunction(messageSender::sendMessage)
+            .whenInvokedWith(anything())
+            .thenReturn(Either.Right(Unit))
+        given(userRepository)
+            .suspendFunction(userRepository::getSelfUser)
+            .whenInvoked()
+            .thenReturn(flowOf(TestUser.SELF))
+        given(clientRepository)
+            .function(clientRepository::currentClientId)
+            .whenInvoked()
+            .then { Either.Right(SELF_CLIENT_ID) }
+        given(messageRepository)
+            .suspendFunction(messageRepository::deleteMessage)
+            .whenInvokedWith(anything(), anything())
+            .thenReturn(Either.Right(Unit))
+
+
+        //when
+        deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, true).shouldSucceed()
+
+        //then
+        verify(syncManager)
+            .suspendFunction(syncManager::waitUntilLive)
+            .wasNotInvoked()
+        verify(syncManager)
+            .suspendFunction(syncManager::waitUntilSlowSyncCompletion)
+            .wasNotInvoked()
+    }
+
     companion object {
         val TEST_CONVERSATION_ID = TestConversation.ID
         const val TEST_MESSAGE_UUID = "messageUuid"

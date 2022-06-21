@@ -83,7 +83,7 @@ actual class CallManagerImpl(
         }
     }
 
-    private fun startHandleAsync() = scope.async(start = CoroutineStart.LAZY) {
+    private fun startHandleAsync(): Deferred<Handle> = scope.async(start = CoroutineStart.LAZY) {
         val selfUserId = userId.await().value
         val selfClientId = clientId.await().value
 
@@ -119,6 +119,7 @@ actual class CallManagerImpl(
             arg = null
         )
         callingLogger.d("$TAG - wcall_create() called")
+        // TODO(edge-case): Add a timeout. Perhaps make some functions (like onCallingMessageReceived) return Eithers.
         waitInitializationJob.join()
         handle
     }
@@ -246,7 +247,9 @@ actual class CallManagerImpl(
                     handle = deferredHandle.await(),
                     calling = calling,
                     callRepository = callRepository,
-                    participantMapper = callMapper.participantMapper
+                    participantMapper = callMapper.participantMapper,
+                    userRepository = userRepository,
+                    callingScope = scope
                 ).keepingStrongReference()
 
                 wcall_set_participant_changed_handler(
