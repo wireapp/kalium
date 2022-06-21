@@ -82,7 +82,7 @@ class SearchKnownUserUseCaseTest {
 
         val (arrangement, searchKnownUsersUseCase) = Arrangement()
             .withSuccessFullSelfUserRetrieve()
-            .withSearchKnownUsersByNameOrHandleOrEmail(searchQuery)
+            .withSearchKnownUsersByNameOrHandleOrEmail()
             .arrange()
         //when
         searchKnownUsersUseCase(searchQuery)
