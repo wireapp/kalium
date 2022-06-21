@@ -29,7 +29,7 @@ object Versions {
     const val multiplatformSettings = "0.8.1"
     const val androidSecurity = "1.0.0"
     const val sqlDelight = "2.0.0-alpha01"
-    const val pbandk = "0.13.0"
+    const val pbandk = "0.14.1"
     const val turbine = "0.7.0"
     const val avs = "8.1.16"
     const val jna = "5.6.0@aar"
