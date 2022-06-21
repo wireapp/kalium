@@ -1,6 +1,6 @@
 package com.wire.kalium.logic.util
 
-actual class SecureRandom actual constructor() {
+internal actual class SecureRandom actual constructor() {
 
     private val random get() = java.security.SecureRandom.getInstanceStrong()
 

@@ -6,12 +6,12 @@ import com.wire.kalium.persistence.db.GlobalDatabaseSecret
 import com.wire.kalium.persistence.db.UserDBSecret
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 
-expect class SecureRandom constructor() {
+internal expect class SecureRandom constructor() {
     fun nextBytes(length: Int): ByteArray
     fun nextInt(bound: Int): Int
 }
 
-class SecurityHelper(private val kaliumPreferences: KaliumPreferences) {
+internal class SecurityHelper(private val kaliumPreferences: KaliumPreferences) {
 
     fun globalDBSecret(): GlobalDatabaseSecret =
         GlobalDatabaseSecret(getOrGeneratePassPhrase(GLOBAL_DB_PASSPHRASE_ALIAS).toPreservedByteArray)
