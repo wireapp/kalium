@@ -8,7 +8,6 @@ import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.wire.kalium.persistence.Client
 import com.wire.kalium.persistence.Connection
 import com.wire.kalium.persistence.Conversation
-import com.wire.kalium.persistence.DBUtil
 import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
@@ -91,7 +90,7 @@ actual class UserDatabaseProvider(private val context: Context, userId: UserIDEn
                 asset_widthAdapter = IntColumnAdapter,
                 asset_heightAdapter = IntColumnAdapter,
                 asset_download_statusAdapter = EnumColumnAdapter()
-                ),
+            ),
             MessageMemberChangeContent.Adapter(
                 conversation_idAdapter = QualifiedIDAdapter(),
                 member_change_listAdapter = QualifiedIDListAdapter(),
@@ -138,6 +137,9 @@ actual class UserDatabaseProvider(private val context: Context, userId: UserIDEn
     actual val teamDAO: TeamDAO
         get() = TeamDAOImpl(database.teamsQueries)
 
-    actual fun nuke(): Boolean = DBUtil.deleteDB(driver, context, dbName)
+    actual fun nuke(): Boolean {
+        driver.close()
+        return context.deleteDatabase(dbName)
+    }
 
 }

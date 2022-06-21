@@ -4,12 +4,10 @@ import android.content.Context
 import androidx.sqlite.db.SupportSQLiteDatabase
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
-import com.wire.kalium.persistence.DBUtil
 import com.wire.kalium.persistence.GlobalDatabase
 import com.wire.kalium.persistence.ServerConfiguration
 import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAO
 import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAOImpl
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.util.FileNameUtil
 import net.sqlcipher.database.SupportFactory
 
@@ -45,5 +43,8 @@ actual class GlobalDatabaseProvider(private val context: Context, passphrase: By
     actual val serverConfigurationDAO: ServerConfigurationDAO
         get() = ServerConfigurationDAOImpl(database.serverConfigurationQueries)
 
-    actual fun nuke(): Boolean = DBUtil.deleteDB(driver, context, dbName)
+    actual fun nuke(): Boolean {
+        driver.close()
+        return context.deleteDatabase(dbName)
+    }
 }
