@@ -510,8 +510,8 @@ class ConversationRepositoryTest {
             .thenReturn(null)
 
         given(userRepository)
-            .coroutine { userRepository.observeSelfUser() }
-            .then { flowOf(TestUser.SELF) }
+            .coroutine { userRepository.getSelfUser() }
+            .then { TestUser.SELF }
 
         given(conversationApi)
             .suspendFunction(conversationApi::fetchConversationDetails)
@@ -536,8 +536,8 @@ class ConversationRepositoryTest {
             .thenReturn(null)
 
         given(userRepository)
-            .coroutine { userRepository.observeSelfUser() }
-            .then { flowOf(TestUser.SELF) }
+            .coroutine { userRepository.getSelfUser() }
+            .then { TestUser.SELF }
 
         given(conversationApi)
             .suspendFunction(conversationApi::fetchConversationDetails)

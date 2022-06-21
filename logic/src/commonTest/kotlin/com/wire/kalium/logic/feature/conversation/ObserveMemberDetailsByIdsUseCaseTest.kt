@@ -121,9 +121,9 @@ class ObserveMemberDetailsByIdsUseCaseTest {
         val userIds = listOf(knownUser.id, notKnownUserId)
 
         given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+            .suspendFunction(userRepository::observeSelfUser)
             .whenInvoked()
-            .thenReturn((TestUser.SELF))
+            .thenReturn((flowOf(TestUser.SELF)))
 
         given(userRepository)
             .suspendFunction(userRepository::getKnownUser)
