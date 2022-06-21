@@ -210,15 +210,16 @@ class SyncManagerTest {
     }
 
     @Test
-    fun givenSyncStatusIsGatheringPendingEvents_whenStartingSync_thenShouldCallTheSlowSyncScheduler() = runTest(TestKaliumDispatcher.default) {
-        syncRepository.updateSyncState { SyncState.GatheringPendingEvents }
+    fun givenSyncStatusIsGatheringPendingEvents_whenStartingSync_thenShouldCallTheSlowSyncScheduler() =
+        runTest(TestKaliumDispatcher.default) {
+            syncRepository.updateSyncState { SyncState.GatheringPendingEvents }
 
-        syncManager.startSyncIfIdle()
+            syncManager.startSyncIfIdle()
 
-        verify(workScheduler)
-            .function(workScheduler::enqueueSlowSyncIfNeeded)
-            .wasInvoked(exactly = once)
-    }
+            verify(workScheduler)
+                .function(workScheduler::enqueueSlowSyncIfNeeded)
+                .wasInvoked(exactly = once)
+        }
 
     @Test
     fun givenSyncStatusIsSlowSync_whenStartingSync_thenShouldCallTheSlowSyncScheduler() = runTest(TestKaliumDispatcher.default) {
