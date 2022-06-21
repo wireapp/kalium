@@ -3,49 +3,49 @@ package com.wire.kalium.logic.sync
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.kaliumLogger
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.GlobalScope
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlin.reflect.KClass
 
+internal actual class GlobalWorkSchedulerImpl(
+    private val coreLogic: CoreLogic
+) : GlobalWorkScheduler {
 
-@OptIn(DelicateCoroutinesApi::class)
-actual sealed class WorkSchedulerImpl : WorkScheduler {
-
-    override fun enqueueImmediateWork(work: KClass<out DefaultWorker>, name: String) {
-        GlobalScope.launch {
-            val constructor = work.java.getDeclaredConstructor()
-            val worker = constructor.newInstance() as DefaultWorker
-            worker.doWork()
-        }
+    override fun schedulePeriodicApiVersionUpdate() {
+        kaliumLogger.w(
+            "Scheduling a periodic execution of checking the API version is not supported on JVM."
+        )
     }
+}
 
-    actual class Global(
-        private val coreLogic: CoreLogic
-    ) : WorkSchedulerImpl(), GlobalWorkScheduler {
+internal actual class UserSessionWorkSchedulerImpl(
+    private val coreLogic: CoreLogic,
+    override val userId: UserId,
+    private val kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
+) : UserSessionWorkScheduler {
 
-        override fun schedulePeriodicApiVersionUpdate() {
-            kaliumLogger.w(
-                "Scheduling a periodic execution of checking the API version is not supported on JVM."
-            )
-        }
-    }
+    private var slowSyncJob: Job? = null
+    private val scope = CoroutineScope(Dispatchers.Default.limitedParallelism(1))
+    override fun enqueueSlowSyncIfNeeded() {
+        scope.launch {
+            val isRunning = slowSyncJob?.isActive ?: false
 
-    actual class UserSession(
-        private val coreLogic: CoreLogic,
-        override val userId: UserId
-    ) : WorkSchedulerImpl(), UserSessionWorkScheduler {
+            if(!isRunning){
+                slowSyncJob
+            }
 
-        override fun scheduleSlowSync() {
-            GlobalScope.launch {
+            slowSyncJob = launch(Dispatchers.Main) {
                 SlowSyncWorker(coreLogic.getSessionScope(userId)).doWork()
             }
         }
+    }
 
-        override fun scheduleSendingOfPendingMessages() {
-            kaliumLogger.w(
-                "Scheduling of messages is not supported on JVM. Pending messages won't be scheduled for sending."
-            )
-        }
+    override fun scheduleSendingOfPendingMessages() {
+        kaliumLogger.w(
+            "Scheduling of messages is not supported on JVM. Pending messages won't be scheduled for sending."
+        )
     }
 }

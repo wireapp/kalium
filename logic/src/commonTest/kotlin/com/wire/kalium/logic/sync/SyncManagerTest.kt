@@ -30,7 +30,6 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
@@ -38,7 +37,10 @@ import kotlin.test.assertTrue
 @OptIn(ConfigurationApi::class, ExperimentalCoroutinesApi::class)
 class SyncManagerTest {
 
-    private val workScheduler = FakeWorkScheduler()
+    @Mock
+    private val workScheduler: UserSessionWorkScheduler = configure(mock(UserSessionWorkScheduler::class)) {
+        stubsUnitByDefault = true
+    }
 
     @Mock
     private val eventRepository: EventRepository = configure(mock(EventRepository::class)) { stubsUnitByDefault = true }
@@ -191,52 +193,64 @@ class SyncManagerTest {
         waitJob.join()
 
         //Then
-        assertEquals(1, workScheduler.enqueueImmediateWorkCallCount)
+        verify(workScheduler)
+            .function(workScheduler::enqueueSlowSyncIfNeeded)
+            .wasInvoked(exactly = once)
     }
 
     @Test
-    fun givenSyncStatusIsLive_whenStartingSync_thenShouldNotCallScheduler() = runTest(TestKaliumDispatcher.default) {
+    fun givenSyncStatusIsLive_whenStartingSync_thenShouldCallTheSlowSyncScheduler() = runTest(TestKaliumDispatcher.default) {
         syncRepository.updateSyncState { SyncState.Live }
 
         syncManager.startSyncIfIdle()
 
-        assertEquals(0, workScheduler.enqueueImmediateWorkCallCount)
+        verify(workScheduler)
+            .function(workScheduler::enqueueSlowSyncIfNeeded)
+            .wasInvoked(exactly = once)
     }
 
     @Test
-    fun givenSyncStatusIsGatheringPendingEvents_whenStartingSync_thenShouldNotCallScheduler() = runTest(TestKaliumDispatcher.default) {
+    fun givenSyncStatusIsGatheringPendingEvents_whenStartingSync_thenShouldCallTheSlowSyncScheduler() = runTest(TestKaliumDispatcher.default) {
         syncRepository.updateSyncState { SyncState.GatheringPendingEvents }
 
         syncManager.startSyncIfIdle()
 
-        assertEquals(0, workScheduler.enqueueImmediateWorkCallCount)
+        verify(workScheduler)
+            .function(workScheduler::enqueueSlowSyncIfNeeded)
+            .wasInvoked(exactly = once)
     }
 
     @Test
-    fun givenSyncStatusIsSlowSync_whenStartingSync_thenShouldNotCallScheduler() = runTest(TestKaliumDispatcher.default) {
+    fun givenSyncStatusIsSlowSync_whenStartingSync_thenShouldCallTheSlowSyncScheduler() = runTest(TestKaliumDispatcher.default) {
         syncRepository.updateSyncState { SyncState.SlowSync }
 
         syncManager.startSyncIfIdle()
 
-        assertEquals(0, workScheduler.enqueueImmediateWorkCallCount)
+        verify(workScheduler)
+            .function(workScheduler::enqueueSlowSyncIfNeeded)
+            .wasInvoked(exactly = once)
     }
 
     @Test
-    fun givenSyncIsFailed_whenStartingSync_thenShouldStartSyncCallingTheScheduler() = runTest(TestKaliumDispatcher.default) {
+    fun givenSyncIsFailed_whenStartingSync_thenShouldCallTheSlowSyncScheduler() = runTest(TestKaliumDispatcher.default) {
         syncRepository.updateSyncState { SyncState.Failed(NetworkFailure.NoNetworkConnection(null)) }
 
         syncManager.startSyncIfIdle()
 
-        assertEquals(1, workScheduler.enqueueImmediateWorkCallCount)
+        verify(workScheduler)
+            .function(workScheduler::enqueueSlowSyncIfNeeded)
+            .wasInvoked(exactly = once)
     }
 
     @Test
-    fun givenSyncIsWaiting_whenStartingSync_thenShouldStartSyncCallingTheScheduler() = runTest(TestKaliumDispatcher.default) {
+    fun givenSyncIsWaiting_whenStartingSync_thenShouldCallTheSlowSyncScheduler() = runTest(TestKaliumDispatcher.default) {
         syncRepository.updateSyncState { SyncState.Waiting }
 
         syncManager.startSyncIfIdle()
 
-        assertEquals(1, workScheduler.enqueueImmediateWorkCallCount)
+        verify(workScheduler)
+            .function(workScheduler::enqueueSlowSyncIfNeeded)
+            .wasInvoked(exactly = once)
     }
 
     @Test
