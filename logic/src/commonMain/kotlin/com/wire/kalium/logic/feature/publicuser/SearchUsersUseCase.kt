@@ -32,7 +32,7 @@ internal class SearchUsersUseCaseImpl(
         val qualifiedID = if (isFederatedSearch) {
             searchQuery.parseIntoQualifiedID()
         } else {
-            QualifiedID(searchQuery, userRepository.getSelfUser().id.domain)
+            QualifiedID(searchQuery, userRepository.observeSelfUser().first().id.domain)
         }
         return searchUserRepository.searchUserDirectory(
             searchQuery = qualifiedID.value,
