@@ -6,14 +6,15 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.isLeft
 import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
@@ -37,7 +38,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import com.wire.kalium.network.api.ConversationId as RemoteConversationId
-import com.wire.kalium.persistence.dao.Member as MemberEntity
 
 interface ConversationRepository {
     suspend fun getSelfConversationId(): ConversationId
@@ -47,12 +47,12 @@ interface ConversationRepository {
     suspend fun observeConversationList(): Flow<List<Conversation>>
     suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<ConversationDetails>
     suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit>
+    suspend fun fetchConversationIfUnknown(conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun getConversationDetails(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation>>
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
     suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, ProtocolInfo>
     suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Member>>
-    suspend fun persistMember(member: MemberEntity, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
-    suspend fun persistMembers(members: List<MemberEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
+    suspend fun persistMembers(members: List<Member>, conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun deleteMember(userID: QualifiedIDEntity, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun deleteMembers(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun getOneToOneConversationDetailsByUserId(otherUserId: UserId): Either<CoreFailure, ConversationDetails.OneOne>
@@ -187,6 +187,16 @@ class ConversationDataSource(
         }
     }
 
+    override suspend fun fetchConversationIfUnknown(conversationID: ConversationId): Either<CoreFailure, Unit> = wrapStorageRequest {
+        conversationDAO.getConversationByQualifiedID(QualifiedIDEntity(conversationID.value, conversationID.domain))
+    }.run {
+        if (isLeft()) {
+            fetchConversation(conversationID)
+        } else {
+            Either.Right(Unit)
+        }
+    }
+
     private suspend fun getConversationDetailsFlow(conversation: Conversation): Flow<ConversationDetails> =
         when (conversation.type) {
             Conversation.Type.SELF -> flowOf(ConversationDetails.Self(conversation))
@@ -211,6 +221,7 @@ class ConversationDataSource(
                             StorageFailure.DataNotFound -> {
                                 kaliumLogger.e("DataNotFound when fetching conversation members: $it")
                             }
+
                             is StorageFailure.Generic -> {
                                 kaliumLogger.e("Failure getting other 1:1 user for $conversation", it.rootCause)
                             }
@@ -254,11 +265,13 @@ class ConversationDataSource(
         conversationDAO.getAllMembers(idMapper.toDaoModel(conversationId)).first().map { idMapper.fromDaoModel(it.user) }
     }
 
-    override suspend fun persistMember(member: MemberEntity, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit> =
-        wrapStorageRequest { conversationDAO.insertMember(member, conversationID) }
-
-    override suspend fun persistMembers(members: List<MemberEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit> =
-        wrapStorageRequest { conversationDAO.insertMembers(members, conversationID) }
+    override suspend fun persistMembers(members: List<Member>, conversationID: ConversationId): Either<CoreFailure, Unit> =
+        wrapStorageRequest {
+            conversationDAO.insertMembers(
+                members.map(memberMapper::toDaoModel),
+                idMapper.toDaoModel(conversationID)
+            )
+        }
 
     override suspend fun deleteMember(userID: QualifiedIDEntity, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit> =
         wrapStorageRequest { conversationDAO.deleteMemberByQualifiedID(userID, conversationID) }
