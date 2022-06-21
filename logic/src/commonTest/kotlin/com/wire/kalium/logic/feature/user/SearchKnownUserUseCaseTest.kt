@@ -95,7 +95,7 @@ class SearchKnownUserUseCaseTest {
 
             verify(searchUserRepository)
                 .suspendFunction(searchUserRepository::searchKnownUsersByNameOrHandleOrEmail)
-                .with(eq("someSearchQuery"))
+                .with(eq(searchQuery))
                 .wasInvoked()
         }
     }
