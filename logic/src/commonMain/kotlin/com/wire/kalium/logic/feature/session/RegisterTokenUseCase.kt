@@ -4,6 +4,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.api.user.pushToken.PushTokenBody
 import com.wire.kalium.network.exceptions.KaliumException
@@ -11,20 +12,20 @@ import com.wire.kalium.network.exceptions.isInvalidCode
 import com.wire.kalium.network.exceptions.isNotFound
 
 interface RegisterTokenUseCase {
-    suspend operator fun invoke(senderId: String, clientId: String): RegisterTokenResult
+    suspend operator fun invoke(senderId: String, clientId: ClientId): RegisterTokenResult
 }
 
 class RegisterTokenUseCaseImpl(
     private val clientRemoteRepository: ClientRepository,
     private val notificationTokenRepository: NotificationTokenRepository
 ) : RegisterTokenUseCase {
-    override suspend operator fun invoke(senderId: String, clientId: String): RegisterTokenResult =
+    override suspend operator fun invoke(senderId: String, clientId: ClientId): RegisterTokenResult =
         notificationTokenRepository.getNotificationToken().fold({
             RegisterTokenResult.Failure.NotificationTokenNotFound(it)
         }, { notificationToken ->
             clientRemoteRepository.registerToken(
                 body = PushTokenBody(
-                    senderId = senderId, client = clientId, token = notificationToken.token, transport = notificationToken.transport
+                    senderId = senderId, client = clientId.value, token = notificationToken.token, transport = notificationToken.transport
                 )
             ).fold({ failure ->
                 RegisterTokenResult.Success

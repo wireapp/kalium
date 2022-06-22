@@ -1,24 +1,31 @@
 package com.wire.kalium.logic.feature.publicuser
 
+import com.wire.kalium.logic.data.id.FEDERATION_REGEX
+import com.wire.kalium.logic.data.id.parseIntoQualifiedID
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
-import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 
 interface SearchKnownUsersUseCase {
-    suspend operator fun invoke(searchQuery: String): UserSearchResult
+    suspend operator fun invoke(searchQuery: String): Result
 }
 
 internal class SearchKnownUsersUseCaseImpl(
     private val searchUserRepository: SearchUserRepository
 ) : SearchKnownUsersUseCase {
 
-    override suspend operator fun invoke(searchQuery: String): UserSearchResult {
+    override suspend operator fun invoke(searchQuery: String): Result {
         return if (isUserLookingForHandle(searchQuery)) {
-            searchUserRepository.searchKnownUsersByHandle(searchQuery)
+            Result.Success(searchUserRepository.searchKnownUsersByHandle(searchQuery))
         } else {
-            searchUserRepository.searchKnownUsersByNameOrHandleOrEmail(searchQuery)
+            Result.Success(
+                searchUserRepository.searchKnownUsersByNameOrHandleOrEmail(
+                    if (searchQuery.matches(FEDERATION_REGEX))
+                        searchQuery.parseIntoQualifiedID().value
+                    else searchQuery
+                )
+            )
         }
     }
 
-    private fun isUserLookingForHandle(searchQuery: String) = searchQuery.first() == '@'
+    private fun isUserLookingForHandle(searchQuery: String) = searchQuery.startsWith('@')
 
 }

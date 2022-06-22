@@ -1,25 +1,23 @@
 package com.wire.kalium.network.api.message
 
-import com.google.protobuf.ByteString
-import com.wire.messages.Otr
+import com.wire.kalium.protobuf.otr.UserId
+import pbandk.ByteArr
 import java.nio.ByteBuffer
 import java.util.UUID
 
 class OtrUserIdMapper {
 
-    fun toOtrUserId(userId: String): Otr.UserId {
+    fun toOtrUserId(userId: String): UserId {
         val bytes = ByteArray(USER_UID_BYTE_COUNT)
         val byteBuffer = ByteBuffer.wrap(bytes).asLongBuffer()
         val uuid = UUID.fromString(userId)
         byteBuffer.put(uuid.mostSignificantBits)
         byteBuffer.put(uuid.leastSignificantBits)
-        return Otr.UserId.newBuilder()
-            .setUuid(ByteString.copyFrom(bytes))
-            .build()
+        return UserId(uuid = (ByteArr(bytes)))
     }
 
-    fun fromOtrUserId(otrUserId: Otr.UserId): String {
-        val bytes = otrUserId.uuid.toByteArray()
+    fun fromOtrUserId(otrUserId: UserId): String {
+        val bytes = otrUserId.uuid.array
         val byteBuffer = ByteBuffer.wrap(bytes)
         return UUID(byteBuffer.long, byteBuffer.long).toString()
     }
