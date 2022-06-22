@@ -1,34 +1,38 @@
 package com.wire.kalium.network.api.message
 
-import com.wire.messages.Otr
+import com.wire.kalium.protobuf.otr.ClientMismatchStrategy
+import com.wire.kalium.protobuf.otr.QualifiedNewOtrMessage
+import com.wire.kalium.protobuf.otr.QualifiedUserEntry
+import com.wire.kalium.protobuf.otr.UserEntry
+import pbandk.encodeToByteArray
 
-class EnvelopeProtoMapperImpl: EnvelopeProtoMapper {
+class EnvelopeProtoMapperImpl : EnvelopeProtoMapper {
 
     private val otrClientEntryMapper = OtrClientEntryMapper()
     private val otrUserIdMapper = OtrUserIdMapper()
     private val otrClientIdMapper = OtrClientIdMapper()
 
     override fun encodeToProtobuf(envelopeParameters: MessageApi.Parameters.QualifiedDefaultParameters): ByteArray {
-
         val qualifiedEntries = envelopeParameters.recipients.entries.groupBy({ it.key.domain }) { userEntry ->
             val clientEntries = userEntry.value.entries.map(otrClientEntryMapper::toOtrClientEntry)
-            Otr.UserEntry.newBuilder()
-                .setUser(otrUserIdMapper.toOtrUserId(userEntry.key.value))
-                .addAllClients(clientEntries)
-                .build()
+            UserEntry(
+                user = otrUserIdMapper.toOtrUserId(userEntry.key.value),
+                clients = clientEntries
+            )
         }.entries.map { (domain, userEntries) ->
-            Otr.QualifiedUserEntry.newBuilder()
-                .setDomain(domain)
-                .addAllEntries(userEntries)
-                .build()
+            QualifiedUserEntry(
+                domain = domain,
+                entries = userEntries
+            )
         }
-        return Otr.QualifiedNewOtrMessage.newBuilder()
-            .addAllRecipients(qualifiedEntries)
-            .setSender(otrClientIdMapper.toOtrClientId(envelopeParameters.sender))
-            //TODO(messaging): Handle different report types, remote push, etc.
-            .setReportAll(Otr.ClientMismatchStrategy.ReportAll.newBuilder().build())
-            .build()
-            .toByteArray()
+        return QualifiedNewOtrMessage(
+            recipients = qualifiedEntries,
+            sender = otrClientIdMapper.toOtrClientId(envelopeParameters.sender),
+            //TODO(messaging): Handle different report types, etc.
+            clientMismatchStrategy = QualifiedNewOtrMessage.ClientMismatchStrategy.ReportAll(ClientMismatchStrategy.ReportAll()),
+            nativePush = envelopeParameters.nativePush,
+            transient = envelopeParameters.transient
+        ).encodeToByteArray()
     }
 }
 

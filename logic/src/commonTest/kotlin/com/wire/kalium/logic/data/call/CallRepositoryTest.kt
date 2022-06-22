@@ -261,20 +261,6 @@ class CallRepositoryTest {
     }
 
     @Test
-    fun givenAConversationId_whenRemoveCallByIdIsCalled_thenRemoveThatCallFromTheFlow() = runTest {
-        callRepository.updateCallProfileFlow(CallProfile(mapOfCallProfiles))
-
-        callRepository.removeCallById(startedCall.conversationId.toString())
-
-        val calls = callRepository.callsFlow()
-        assertEquals(mapOfCallProfiles.size - 1, calls.first().size)
-        val removedItem = calls.first().find {
-            it.conversationId == startedCall.conversationId
-        }
-        assertNull(removedItem)
-    }
-
-    @Test
     fun givenNoIncomingCallsInTheFlow_whenGetIncomingCallsIsCalled_thenReturnAnEmptyListInTheFlow() = runTest {
         val calls = callRepository.incomingCallsFlow()
 
@@ -299,10 +285,10 @@ class CallRepositoryTest {
     }
 
     @Test
-    fun givenSomeOngoingCallsInTheFlow_whenGetOngoingCallIsCalled_thenReturnTheListOfOngoingCallsInTheFlow() = runTest {
+    fun givenSomeEstablishedCallsInTheFlow_whenGetEstablishedCallIsCalled_thenReturnTheListOfOngoingCallsInTheFlow() = runTest {
         callRepository.updateCallProfileFlow(CallProfile(mapOfCallProfiles))
 
-        val calls = callRepository.ongoingCallsFlow()
+        val calls = callRepository.establishedCallsFlow()
 
         assertEquals(2, calls.first().size)
         assertEquals(calls.first()[0], establishedCall)
@@ -324,7 +310,7 @@ class CallRepositoryTest {
                     domain = "domain1"
                 ),
                 clientId = "clientid",
-                muted = true
+                isMuted = true
             )
         )
 
@@ -355,7 +341,7 @@ class CallRepositoryTest {
                     domain = "domain1"
                 ),
                 clientId = "clientid",
-                muted = false,
+                isMuted = false,
                 isSpeaking = false
             )
         )
