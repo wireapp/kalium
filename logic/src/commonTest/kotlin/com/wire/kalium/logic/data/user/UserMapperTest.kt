@@ -48,7 +48,7 @@ class UserMapperTest {
             previewAssetId = null,
             completeAssetId = null,
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userTypEntity = UserTypeEntity.EXTERNAL,
+            userTypEntity = UserTypeEntity.INTERNAL,
         )
 
         val result = userMapper.fromTeamMemberToDaoModel(

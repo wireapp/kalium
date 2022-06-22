@@ -35,9 +35,6 @@ class ObserveConversationMembersUseCaseTest {
     private val userRepository = mock(UserRepository::class)
 
     @Mock
-    private val userTypeMapper = mock(UserTypeMapper::class)
-
-    @Mock
     private val syncManager = configure(mock(SyncManager::class)) {
         stubsUnitByDefault = true
     }
