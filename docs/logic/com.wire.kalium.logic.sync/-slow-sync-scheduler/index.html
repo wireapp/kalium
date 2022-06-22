@@ -31,25 +31,25 @@ if(savedDarkMode === true){
             <h1 class="cover"><span>Slow</span><wbr><span>Sync</span><wbr><span><span>Scheduler</span></span></h1>
             <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
               <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark common-like" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/commonMain">common</button></div>
-<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="index.html">SlowSyncScheduler</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div><p class="paragraph">Responsible for <a href="schedule-slow-sync.html">scheduleSlowSync</a>.</p></div>            </div>
+<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="index.html">SlowSyncScheduler</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div><p class="paragraph">Responsible for <a href="enqueue-slow-sync-if-needed.html">enqueueSlowSyncIfNeeded</a>.</p></div>            </div>
           </div>
           <div class="tabbedcontent">
             <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="Functions">Functions</button><button class="section-tab" data-togglable="Inheritors">Inheritors</button></div>
             <div class="tabs-section-body">
               <h2 class="">Functions</h2>
-              <div class="table" data-togglable="Functions"><a data-name="335725565%2FFunctions%2F867774983" anchor-label="scheduleSlowSync" id="335725565%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+              <div class="table" data-togglable="Functions"><a data-name="25955988%2FFunctions%2F867774983" anchor-label="enqueueSlowSyncIfNeeded" id="25955988%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
                 <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
                   <div class="main-subrow keyValue ">
                     <div class=""><span class="inline-flex">
-                        <div><a href="schedule-slow-sync.html"><span>schedule</span><wbr><span>Slow</span><wbr><span><span>Sync</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="335725565%2FFunctions%2F867774983"></span>
+                        <div><a href="enqueue-slow-sync-if-needed.html"><span>enqueue</span><wbr><span>Slow</span><wbr><span>Sync</span><wbr><span>If</span><wbr><span><span>Needed</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="25955988%2FFunctions%2F867774983"></span>
                           <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                         </span></span></div>
                     <div>
                       <div class="title">
                         <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
                           <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark common-like" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/commonMain">common</button></div>
-<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword"></span><span class="token keyword">fun </span><a href="schedule-slow-sync.html"><span class="token function">scheduleSlowSync</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div><div class="brief "><p class="paragraph">Schedules an execution of <a href="../-slow-sync-worker/index.html">SlowSyncWorker</a>.</p></div></div>                        </div>
+<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword"></span><span class="token keyword">fun </span><a href="enqueue-slow-sync-if-needed.html"><span class="token function">enqueueSlowSyncIfNeeded</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div><div class="brief "><p class="paragraph">Schedules Slow Sync to be done in the background, in a "run and forget" way – free from client app observation. If already scheduled or running, no need to re-run it. On mobile clients for example, aims to start a job that will not be suspended by the user minimizing the app.</p></div></div>                        </div>
                       </div>
                     </div>
                   </div>
