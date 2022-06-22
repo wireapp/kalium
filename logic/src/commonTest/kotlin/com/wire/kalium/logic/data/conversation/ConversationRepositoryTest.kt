@@ -548,7 +548,6 @@ class ConversationRepositoryTest {
             .shouldSucceed()
     }
 
-
     companion object {
         const val GROUP_NAME = "Group Name"
 
@@ -594,22 +593,6 @@ class ConversationRepositoryTest {
             lastModifiedDate = "2022-03-30T15:36:00.000Z",
             lastNotificationDate = null
         )
-
-        val CONVERSATION_ENTITIES = listOf(
-            ConversationEntity(
-                id = QualifiedIDEntity(
-                    value = "testValue",
-                    domain = "testDomain",
-                ),
-                name = null,
-                type = ConversationEntity.Type.ONE_ON_ONE,
-                teamId = null,
-                protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
-                lastModifiedDate = "2022-03-30T15:36:00.000Z",
-                lastNotificationDate = null
-            )
-        )
-
     }
 
 }
