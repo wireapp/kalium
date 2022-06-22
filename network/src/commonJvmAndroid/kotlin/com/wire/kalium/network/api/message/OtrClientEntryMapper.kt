@@ -1,15 +1,13 @@
 package com.wire.kalium.network.api.message
 
-import com.google.protobuf.ByteString
-import com.wire.messages.Otr
-import java.nio.charset.Charset
+import com.wire.kalium.protobuf.otr.ClientEntry
+import pbandk.ByteArr
 
 class OtrClientEntryMapper {
 
     private val clientIdMapper = OtrClientIdMapper()
-
-    fun toOtrClientEntry(clientPayload: Map.Entry<String, ByteArray>): Otr.ClientEntry = Otr.ClientEntry.newBuilder()
-        .setClient(clientIdMapper.toOtrClientId(clientPayload.key))
-        .setText(ByteString.copyFrom(clientPayload.value))
-        .build()
+    fun toOtrClientEntry(clientPayload: Map.Entry<String, ByteArray>): ClientEntry = ClientEntry(
+        client = clientIdMapper.toOtrClientId(clientPayload.key),
+        text = ByteArr(clientPayload.value),
+    )
 }
