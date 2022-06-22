@@ -83,11 +83,6 @@ class WrapperWorkerFactory(private val coreLogic: CoreLogic) : WorkerFactory() {
                 createPendingMessageSenderWorker(workerParameters, userId, appContext)
             }
 
-            SlowSyncWorker::class.java.canonicalName -> {
-                require(userId != null) { "No user id specified" }
-                createSlowSyncWorker(workerParameters, userId, appContext)
-            }
-
             UpdateApiVersionsWorker::class.java.canonicalName -> {
                 createApiVersionCheckWorker(workerParameters, appContext)
             }
@@ -103,11 +98,6 @@ class WrapperWorkerFactory(private val coreLogic: CoreLogic) : WorkerFactory() {
         val worker = coreLogic.globalScope {
             UpdateApiVersionsWorker(updateApiVersions)
         }
-        return WrapperWorker(worker, appContext, workerParameters)
-    }
-
-    private fun createSlowSyncWorker(workerParameters: WorkerParameters, userId: UserId, appContext: Context): WrapperWorker {
-        val worker = SlowSyncWorker(coreLogic.getSessionScope(userId))
         return WrapperWorker(worker, appContext, workerParameters)
     }
 
