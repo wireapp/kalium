@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapper
+import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.ConversationId
@@ -49,7 +50,32 @@ class ConnectionRepositoryTest {
     fun givenConnections_whenFetchingConnections_thenConnectionsAreInsertedOrUpdatedIntoDatabase() = runTest {
         // given
         val (arrangement, connectionRepository) = Arrangement().arrange()
-        arrangement.withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
+        arrangement
+            .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
+            .withSuccessfulGetConversationById(arrangement.stubConversationID1)
+            .withSuccessfulGetConversationById(arrangement.stubConversationID2)
+
+        //when
+        val result = connectionRepository.fetchSelfUserConnections()
+
+        // then
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
+            .with(any(), any(), any())
+            .wasInvoked(exactly = twice)
+
+        // Verifies that when fetching connections, it succeeded
+        result.shouldSucceed()
+    }
+
+    @Test
+    fun givenConnections_whenFetchingConnections_thenConnectionsAreInsertedOrUpdatedIntoDatabaseOnlyIfConversationsAreFound() = runTest {
+        // given
+        val (arrangement, connectionRepository) = Arrangement().arrange()
+        arrangement
+            .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
+            .withNotFoundGetConversationError()
+            .withSuccessfulGetConversationById(arrangement.stubConversationID1)
 
         //when
         val result = connectionRepository.fetchSelfUserConnections()
@@ -71,6 +97,7 @@ class ConnectionRepositoryTest {
         val (arrangement, connectionRepository) = Arrangement().arrange()
         arrangement
             .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
+            .withSuccessfulGetConversationById(arrangement.stubConversationID1)
             .withSuccessfulCreateConnectionResponse(userId)
 
         // when
@@ -120,6 +147,7 @@ class ConnectionRepositoryTest {
         arrangement
             .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
             .withSuccessfulCreateConnectionResponse(userId)
+            .withSuccessfulGetConversationById(arrangement.stubConversationID1)
             .withErrorOnPersistingConnectionResponse(userId)
 
         // when
@@ -148,6 +176,7 @@ class ConnectionRepositoryTest {
         arrangement
             .withSuccessfulUpdateConnectionStatusResponse(userId)
             .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
+            .withSuccessfulGetConversationById(arrangement.stubConversationID1)
 
         // when
         val result = connectionRepository.updateConnectionStatus(UserId(userId.value, userId.domain), ConnectionState.ACCEPTED)
@@ -332,11 +361,32 @@ class ConnectionRepositoryTest {
             availabilityStatus = UserAvailabilityStatus.AVAILABLE,
         )
 
+        val stubConversationID1 = QualifiedIDEntity("conversationId1", "domain")
+        val stubConversationID2 = QualifiedIDEntity("conversationId2", "domain")
+
         fun withSuccessfulCreateConnectionResponse(userId: NetworkUserId): Arrangement {
             given(connectionApi)
                 .suspendFunction(connectionApi::createConnection)
                 .whenInvokedWith(eq(userId))
                 .then { NetworkResponse.Success(stubConnectionOne, mapOf(), 200) }
+
+            return this
+        }
+
+        fun withSuccessfulGetConversationById(conversationId: QualifiedIDEntity): Arrangement {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::observeGetConversationByQualifiedID)
+                .whenInvokedWith(eq(conversationId))
+                .then { flowOf(TestConversation.ENTITY) }
+
+            return this
+        }
+
+        fun withNotFoundGetConversationError(): Arrangement {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
+                .whenInvokedWith(any(), any(), any())
+                .thenThrow(Exception("error"))
 
             return this
         }

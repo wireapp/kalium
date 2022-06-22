@@ -190,13 +190,15 @@ internal class ConnectionDataSource(
     private suspend fun updateUserConnectionStatus(
         connections: List<ConnectionDTO>
     ) {
-        wrapStorageRequest {
-            connections.forEach { connection ->
+        connections.forEach { connection ->
+            wrapStorageRequest {
                 conversationDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
                     userId = idMapper.fromApiToDao(connection.qualifiedToId),
                     status = connectionStatusMapper.fromApiToDao(state = connection.status),
                     conversationID = idMapper.fromApiToDao(connection.qualifiedConversationId)
                 )
+            }.onFailure {
+                kaliumLogger.e("There was an error when trying to persist the connection: $connection")
             }
         }
     }
