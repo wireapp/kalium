@@ -26,6 +26,7 @@ import com.wire.kalium.network.api.user.connection.ConnectionStateDTO
 import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConversationDAO
+import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -127,7 +128,16 @@ internal class ConnectionDataSource(
     }
 
     override suspend fun insertConnectionFromEvent(event: Event.User.NewConnection): Either<CoreFailure, Unit> =
-        persistConnection(event.connection)
+        when (event.connection.status) {
+            ConnectionState.CANCELLED -> deleteCancelledConnection(idMapper.toDaoModel(event.connection.qualifiedConversationId))
+            ConnectionState.NOT_CONNECTED,
+            ConnectionState.PENDING,
+            ConnectionState.SENT,
+            ConnectionState.BLOCKED,
+            ConnectionState.IGNORED,
+            ConnectionState.MISSING_LEGALHOLD_CONSENT,
+            ConnectionState.ACCEPTED -> persistConnection(event.connection)
+        }
 
     private suspend fun persistConnection(
         connection: Connection,
@@ -154,12 +164,17 @@ internal class ConnectionDataSource(
                 ConnectionStateDTO.BLOCKED -> updateConversationMemberFromConnection(connection)
                 ConnectionStateDTO.IGNORED -> updateConversationMemberFromConnection(connection)
                 ConnectionStateDTO.CANCELLED -> {
-                    kaliumLogger.d("skipping cancelled request")
+                    kaliumLogger.d("cleaning cancelled request")
+                    deleteCancelledConnection(idMapper.fromApiToDao(connection.qualifiedConversationId))
                 }
                 ConnectionStateDTO.MISSING_LEGALHOLD_CONSENT -> updateConversationMemberFromConnection(connection)
                 ConnectionStateDTO.ACCEPTED -> updateConversationMemberFromConnection(connection)
             }
         }
+    }
+
+    private suspend fun deleteCancelledConnection(conversationId: ConversationIDEntity) = wrapStorageRequest {
+        conversationDAO.deleteConversationByQualifiedID(conversationId)
     }
 
     private suspend fun updateConversationMemberFromConnection(connectionDTO: ConnectionDTO) {

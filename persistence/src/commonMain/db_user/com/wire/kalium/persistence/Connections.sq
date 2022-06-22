@@ -5,11 +5,12 @@ import kotlin.Int;
 CREATE TABLE Connection (
     from_id TEXT NOT NULL,
     conversation_id TEXT NOT NULL,
-    qualified_conversation TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY,
+    qualified_conversation TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY ,
     to_id TEXT NOT NULL,
     last_update TEXT NOT NULL,
     qualified_to TEXT AS QualifiedIDEntity NOT NULL,
-    status TEXT AS ConnectionEntity.State NOT NULL DEFAULT 'NOT_CONNECTED'
+    status TEXT AS ConnectionEntity.State NOT NULL DEFAULT 'NOT_CONNECTED',
+    FOREIGN KEY (qualified_conversation) REFERENCES Conversation(qualified_id) ON DELETE CASCADE
 );
 
 deleteAllConnections:
