@@ -67,7 +67,6 @@ import com.wire.kalium.logic.sync.ConversationEventReceiverImpl
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.SyncManagerImpl
-import com.wire.kalium.logic.sync.WaitUntilLiveUseCase
 import com.wire.kalium.logic.sync.UserEventReceiver
 import com.wire.kalium.logic.sync.UserEventReceiverImpl
 import com.wire.kalium.logic.sync.handler.MessageTextEditHandler
@@ -294,8 +293,7 @@ abstract class UserSessionScopeCommon(
         )
 
     private val logoutRepository: LogoutRepository = LogoutDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi)
-    val waitUntilLive: WaitUntilLiveUseCase
-        get() = WaitUntilLiveUseCase(syncManager)
+
     val observeSyncState: ObserveSyncStateUseCase
         get() = ObserveSyncStateUseCase(syncRepository)
     val client: ClientScope
