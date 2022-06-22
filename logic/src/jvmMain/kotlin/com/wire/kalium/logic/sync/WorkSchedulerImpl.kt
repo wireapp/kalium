@@ -24,21 +24,23 @@ internal actual class GlobalWorkSchedulerImpl(
 internal actual class UserSessionWorkSchedulerImpl(
     private val coreLogic: CoreLogic,
     override val userId: UserId,
-    private val kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : UserSessionWorkScheduler {
 
     private var slowSyncJob: Job? = null
-    private val scope = CoroutineScope(Dispatchers.Default.limitedParallelism(1))
+    private val scope = CoroutineScope(kaliumDispatcher.default.limitedParallelism(1))
     override fun enqueueSlowSyncIfNeeded() {
+        kaliumLogger.v("SlowSync: Enqueueing if needed")
         scope.launch {
             val isRunning = slowSyncJob?.isActive ?: false
 
-            if(!isRunning){
-                slowSyncJob
-            }
-
-            slowSyncJob = launch(Dispatchers.Main) {
-                SlowSyncWorker(coreLogic.getSessionScope(userId)).doWork()
+            kaliumLogger.v("SlowSync: Job is running = $isRunning")
+            if (!isRunning) {
+                slowSyncJob = launch(Dispatchers.Main) {
+                    SlowSyncWorker(coreLogic.getSessionScope(userId)).doWork()
+                }
+            } else {
+                kaliumLogger.d("SlowSync not scheduled as it's already running")
             }
         }
     }
