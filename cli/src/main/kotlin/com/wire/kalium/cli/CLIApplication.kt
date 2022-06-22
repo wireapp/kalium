@@ -178,10 +178,6 @@ class ListenGroupCommand : CliktCommand(name = "listen-group") {
         val conversationID = conversations[conversationIndex].id
 
         GlobalScope.launch(Dispatchers.Default) {
-            userSession.listenToEvents()
-        }
-
-        GlobalScope.launch(Dispatchers.Default) {
             userSession.messages.getRecentMessages(conversationID, limit = 1).collect {
                 for (message in it) {
                     when (val content = message.content) {
