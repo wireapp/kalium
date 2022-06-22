@@ -12,6 +12,8 @@ class SlowSyncWorker(
     private val userSessionScope: UserSessionScope
 ) : DefaultWorker {
 
+    // Any exception here is really unexpected, and we should log and figure out where it came from
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun doWork(): Result {
         kaliumLogger.d("Sync: Starting SlowSync")
 
