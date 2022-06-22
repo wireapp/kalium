@@ -82,15 +82,19 @@ class ConversationEventReceiverTest {
     @Test
     fun givenNewMessageEventWithExternalContent_whenHandling_shouldPersistMessageWithDecryptedExternalMessage() = runTest {
         val aesKey = generateRandomAES256Key()
+        val messageUid = "uuid"
         val externalInstructions = ProtoContent.ExternalMessageInstructions(
-            "uuid",
+            messageUid,
             aesKey.data,
             sha256 = null,
             encryptionAlgorithm = null
         )
         val plainTextContent = "Hello!"
 
-        val protobufExternalContent = GenericMessage(content = GenericMessage.Content.Text(Text(plainTextContent)))
+        val protobufExternalContent = GenericMessage(
+            content = GenericMessage.Content.Text(Text(plainTextContent)),
+            messageId = messageUid
+        )
         val encryptedProtobufExternalContent = encryptDataWithAES256(PlainData(protobufExternalContent.encodeToByteArray()), aesKey)
         val decryptedExternalContent = MessageContent.Text(plainTextContent)
         val emptyArray = byteArrayOf()
@@ -104,7 +108,7 @@ class ConversationEventReceiverTest {
             .withProtoContentMapperReturning(matching { it.data.contentEquals(emptyArray) }, externalInstructions)
             .withProtoContentMapperReturning(
                 matching { it.data.contentEquals(protobufExternalContent.encodeToByteArray()) },
-                ProtoContent.Readable("uuid", decryptedExternalContent)
+                ProtoContent.Readable(messageUid, decryptedExternalContent)
             ).arrange()
 
         val messageEvent = arrangement.newMessageEvent(
@@ -229,6 +233,7 @@ class ConversationEventReceiverTest {
             .with(eq(newMembers), eq(event.conversationId))
             .wasInvoked(exactly = once)
     }
+
     @Test
     fun givenMemberJoinEvent_whenHandlingIt_thenShouldPersistSystemMessage() = runTest {
         val newMembers = listOf(Member(TestUser.USER_ID))

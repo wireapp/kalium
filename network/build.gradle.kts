@@ -39,6 +39,7 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
+                implementation(project(":protobuf"))
                 api(project(":logger"))
 
                 // coroutines
@@ -78,7 +79,6 @@ kotlin {
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(Dependencies.Ktor.okHttp)
-                implementation(Dependencies.Protobuf.wireJvmMessageProto)
             }
         }
         val jvmTest by getting
@@ -86,11 +86,6 @@ kotlin {
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(Dependencies.Ktor.okHttp)
-                implementation(Dependencies.Protobuf.wireJvmMessageProto) {
-                    // Don't use the runtime Protobuf included in wire. We can use Protobuf Lite instead
-                    exclude(module = "protobuf-java")
-                }
-                implementation(Dependencies.Protobuf.protobufLite)
             }
         }
         val androidTest by getting
