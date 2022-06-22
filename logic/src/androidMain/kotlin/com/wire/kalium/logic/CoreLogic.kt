@@ -16,8 +16,6 @@ import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.sync.GlobalWorkScheduler
 import com.wire.kalium.logic.sync.GlobalWorkSchedulerImpl
 import com.wire.kalium.logic.sync.UserSessionWorkSchedulerImpl
-import com.wire.kalium.logic.sync.UserSessionWorkScheduler
-import com.wire.kalium.logic.sync.WorkSchedulerImpl
 import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.network.AuthenticatedNetworkContainer
 import com.wire.kalium.persistence.client.SessionStorage
