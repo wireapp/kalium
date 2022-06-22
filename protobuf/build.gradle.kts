@@ -58,7 +58,7 @@ kotlin {
         val commonMain by getting {
             kotlin.srcDir(codegenProject.file("generated"))
             dependencies {
-                api("pro.streem.pbandk:pbandk-runtime:${Versions.pbandk}")
+                api(Dependencies.Protobuf.pbandkRuntime)
             }
         }
         val commonTest by getting {
