@@ -17,6 +17,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Build the CLI App
+        run: |
+          ./gradlew :cli:build -Djava.library.path=$LD_LIBRARY_PATH
+
       - name: Test with Gradle
         run: |
           ./gradlew jvmTest koverMergedXmlReport -Djava.library.path=$LD_LIBRARY_PATH
