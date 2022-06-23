@@ -9,7 +9,7 @@ class GetAllCallsUseCase(
     private val callRepository: CallRepository,
     private val syncManager: SyncManager
 ) {
-    suspend operator fun invoke(): Flow<List<Call>> {
+    operator fun invoke(): Flow<List<Call>> {
         syncManager.startSyncIfIdle()
         return callRepository.callsFlow()
     }
