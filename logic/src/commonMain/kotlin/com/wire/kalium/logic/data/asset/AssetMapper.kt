@@ -65,7 +65,7 @@ class AssetMapperImpl(
             key = assetId.value,
             domain = assetId.domain,
             mimeType = ImageAsset.JPEG.mimeType,
-            dataPath = dataPath.name,
+            dataPath = dataPath.toString(),
             dataSize = dataSize,
             downloadedDate = Clock.System.now().toEpochMilliseconds()
         )
