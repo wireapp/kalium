@@ -110,6 +110,8 @@ class MessageMapperImpl(
 
                 LocalNotificationMessage.Comment(author, message.date, type)
             }
+            is MessageContent.MissedCall ->
+                LocalNotificationMessage.Comment(author, message.date, LocalNotificationCommentType.MISSED_CALL)
             else -> LocalNotificationMessage.Comment(author, message.date, LocalNotificationCommentType.NOT_SUPPORTED_YET)
         }
 
@@ -163,6 +165,7 @@ class MessageMapperImpl(
                     MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.REMOVED)
             }
         }
+        is MessageContent.MissedCall -> MessageEntityContent.MissedCall
     }
 
     private fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean): MessageContent.Regular = when (this) {
@@ -181,6 +184,7 @@ class MessageMapperImpl(
                 MessageEntity.MemberChangeType.REMOVED -> MessageContent.MemberChange.Removed(memberList)
             }
         }
+        is MessageEntityContent.MissedCall -> MessageContent.MissedCall
     }
 }
 

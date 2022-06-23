@@ -102,10 +102,10 @@ actual class CallManagerImpl(
             sendHandler = OnSendOTR(deferredHandle, calling, selfUserId, selfClientId, messageSender, scope).keepingStrongReference(),
             sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, scope).keepingStrongReference(),
             incomingCallHandler = OnIncomingCall(callRepository, callMapper, scope).keepingStrongReference(),
-            missedCallHandler = OnMissedCall(callRepository).keepingStrongReference(),
-            answeredCallHandler = OnAnsweredCall(callRepository).keepingStrongReference(),
-            establishedCallHandler = OnEstablishedCall(callRepository).keepingStrongReference(),
-            closeCallHandler = OnCloseCall(callRepository).keepingStrongReference(),
+            missedCallHandler = OnMissedCall(callRepository, scope).keepingStrongReference(),
+            answeredCallHandler = OnAnsweredCall(callRepository, scope).keepingStrongReference(),
+            establishedCallHandler = OnEstablishedCall(callRepository, scope).keepingStrongReference(),
+            closeCallHandler = OnCloseCall(callRepository, scope).keepingStrongReference(),
             metricsHandler = { conversationId: String, metricsJson: String, arg: Pointer? ->
                 callingLogger.i("$TAG -> metricsHandler")
             }.keepingStrongReference(),

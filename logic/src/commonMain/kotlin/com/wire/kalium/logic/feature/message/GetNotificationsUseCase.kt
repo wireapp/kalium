@@ -201,6 +201,7 @@ class GetNotificationsUseCaseImpl(
 
                         containsSelfUserName or containsSelfHandle
                     }
+                    is MessageContent.MissedCall -> true
                     else -> false
                 }
             }
@@ -222,10 +223,11 @@ class GetNotificationsUseCaseImpl(
                 || selfUser.availabilityStatus == UserAvailabilityStatus.BUSY
 
     private fun isMessageContentSupportedInNotifications(message: Message): Boolean =
-        message.content !is MessageContent.Unknown
+        (message.content !is MessageContent.Unknown
                 && message.content !is MessageContent.System
                 && message.content !is MessageContent.DeleteMessage
-                && message.content !is MessageContent.DeleteForMe
+                && message.content !is MessageContent.DeleteForMe)
+                || message.content is MessageContent.MissedCall
 
     private fun shouldMessageBeVisibleAsNotification(message: Message) =
         message.visibility == Message.Visibility.VISIBLE

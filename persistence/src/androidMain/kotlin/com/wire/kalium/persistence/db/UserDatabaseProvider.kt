@@ -13,6 +13,7 @@ import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
 import com.wire.kalium.persistence.MessageMemberChangeContent
+import com.wire.kalium.persistence.MessageMissedCallContent
 import com.wire.kalium.persistence.MessageTextContent
 import com.wire.kalium.persistence.MessageUnknownContent
 import com.wire.kalium.persistence.User
@@ -97,6 +98,10 @@ actual class UserDatabaseProvider(private val context: Context, userId: UserIDEn
                 conversation_idAdapter = QualifiedIDAdapter(),
                 member_change_listAdapter = QualifiedIDListAdapter(),
                 member_change_typeAdapter = EnumColumnAdapter()
+            ),
+            MessageMissedCallContent.Adapter(
+                conversation_idAdapter = QualifiedIDAdapter(),
+                caller_idAdapter = QualifiedIDAdapter()
             ),
             MessageTextContent.Adapter(
                 conversation_idAdapter = QualifiedIDAdapter()

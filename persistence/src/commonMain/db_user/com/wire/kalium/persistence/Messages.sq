@@ -1,7 +1,7 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import com.wire.kalium.persistence.dao.message.MessageEntity;
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
 import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
-import com.wire.kalium.persistence.dao.message.MessageEntity;
 import kotlin.Int;
 import kotlin.collections.List;
 
@@ -75,6 +75,16 @@ CREATE TABLE MessageUnknownContent (
 
       unknown_type_name TEXT,
       unknown_encoded_data BLOB,
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (message_id, conversation_id)
+);
+
+CREATE TABLE MessageMissedCallContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      caller_id TEXT AS QualifiedIDEntity NOT NULL,
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
@@ -162,6 +172,12 @@ message_id = excluded.message_id,
 unknown_type_name = excluded.unknown_type_name,
 unknown_encoded_data = excluded.unknown_encoded_data;
 
+insertMissedCallMessage:
+INSERT INTO MessageMissedCallContent(message_id, conversation_id, caller_id)
+VALUES(?, ?, ?)
+ON CONFLICT(message_id, conversation_id) DO UPDATE SET
+caller_id = excluded.caller_id;
+
 updateMessageStatus:
 UPDATE Message
 SET status = ?
@@ -218,3 +234,6 @@ SELECT * FROM MessageMemberChangeContent WHERE message_id = ? AND conversation_i
 
 selectMessageUnknownContent:
 SELECT * FROM MessageUnknownContent WHERE message_id = ? AND conversation_id = ?;
+
+selectMessageMissedCallContent:
+SELECT * FROM MessageMissedCallContent WHERE message_id = ? AND conversation_id = ?;

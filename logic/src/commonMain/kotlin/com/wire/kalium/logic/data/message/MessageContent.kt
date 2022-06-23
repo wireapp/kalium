@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.conversation.Member
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.protobuf.messages.QualifiedConversationId
 
 sealed class MessageContent {
@@ -34,6 +35,8 @@ sealed class MessageContent {
         data class Added(override val members: List<Member>) : MemberChange(members)
         data class Removed(override val members: List<Member>) : MemberChange(members)
     }
+
+    object MissedCall: System()
 
     // we can add other types to be processed, but signaling ones shouldn't be persisted
     object Ignored : Signaling() // messages that aren't processed in any way
