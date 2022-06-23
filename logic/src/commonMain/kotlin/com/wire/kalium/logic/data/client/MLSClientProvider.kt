@@ -9,6 +9,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
@@ -24,24 +25,19 @@ class MLSClientProviderImpl(
     private val kaliumPreferences: KaliumPreferences
 ) : MLSClientProvider {
 
+
     override fun getMLSClient(clientId: ClientId?): Either<CoreFailure, MLSClient> {
-        val location = "$rootKeyStorePath/${userId.domain}/${userId.value}"
+        val currentClientId = clientId ?: clientRepository.currentClientId().fold({ return Either.Left(it) }, { it })
+
+        val location = "$rootKeyStorePath/${currentClientId.value}"
         val cryptoUserId = CryptoUserID(value = userId.value, domain = userId.domain)
 
-        val mlsClient = clientId?.let { it ->
-            Either.Right(mlsClient(cryptoUserId, it, location, SecurityHelper(kaliumPreferences).mlsDBSecret(userId)))
-        } ?: run {
-            clientRepository.currentClientId().map { currentClientId ->
-                mlsClient(
-                    cryptoUserId,
-                    currentClientId,
-                    location,
-                    SecurityHelper(kaliumPreferences).mlsDBSecret(this.userId)
-                )
-            }
-        }
+        val mlsClient =
+            Either.Right(mlsClient(cryptoUserId, currentClientId, location, SecurityHelper(kaliumPreferences).mlsDBSecret(userId)))
+
         return mlsClient
     }
+
 
     private fun mlsClient(userId: CryptoUserID, clientId: ClientId, location: String, passphrase: MlsDBSecret): MLSClient {
         return MLSClientImpl(
