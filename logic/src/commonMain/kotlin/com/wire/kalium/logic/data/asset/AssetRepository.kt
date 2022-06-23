@@ -138,8 +138,15 @@ internal class AssetDataSource(
             wrapApiRequest {
                 // Backend sends asset messages with empty asset tokens
                 assetApi.downloadAsset(assetId, assetToken?.ifEmpty { null })
-            }.flatMap { assetDataSource ->
-                // Decrypt and persist decoded asset
+            }.flatMap { assetData ->
+                // Copy byte array to temp file and provide it as source
+                val tempFile = kaliumFileSystem.tempFilePath()
+                kaliumFileSystem.write(tempFile) {
+                    write(assetData)
+                }
+                val assetDataSource = kaliumFileSystem.source(tempFile)
+
+                // Decrypt and persist decoded asset onto a persistent asset path
                 val decodedAssetPath = kaliumFileSystem.providePersistentAssetPath(assetId.value)
 
                 // Public assets are stored already decrypted on the backend, hence no decryption is needed
@@ -147,6 +154,9 @@ internal class AssetDataSource(
                     decryptDataWithAES256(assetDataSource, decodedAssetPath, encryptionKey, kaliumFileSystem)
                 else
                     kaliumFileSystem.writeData(decodedAssetPath, assetDataSource)
+
+                // Delete temp path now that the decoded asset has been persisted correctly
+                kaliumFileSystem.delete(tempFile)
 
                 if (assetDataSize == -1L)
                     Either.Left(EncryptionFailure())

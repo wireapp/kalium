@@ -4,8 +4,6 @@ import com.wire.kalium.logic.AuthenticatedDataSourceSet
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
 import com.wire.kalium.logic.data.asset.AssetDataSource
-import com.wire.kalium.logic.data.asset.AssetMapper
-import com.wire.kalium.logic.data.asset.AssetMapperImpl
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.DataStoragePaths
 import com.wire.kalium.logic.data.asset.KaliumFileSystem

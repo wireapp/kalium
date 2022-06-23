@@ -4,21 +4,24 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.AssetId
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
+import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.contentType
 import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.charsets.Charsets.UTF_8
 import io.ktor.utils.io.core.toByteArray
+import io.ktor.utils.io.readAvailable
 import okio.Source
 import okio.buffer
 
 interface AssetApi {
-    suspend fun downloadAsset(assetId: AssetId, assetToken: String?): NetworkResponse<Source>
+    suspend fun downloadAsset(assetId: AssetId, assetToken: String?): NetworkResponse<ByteArray>
     suspend fun uploadAsset(
         metadata: AssetMetadataRequest,
         encryptedDataSource: Source,
@@ -38,7 +41,7 @@ class AssetApiImpl internal constructor(
      * @param assetToken the asset token, can be null in case of public assets
      * @return a [NetworkResponse] with a reference to an open Okio [Source] object from which one will be able to stream the data
      */
-    override suspend fun downloadAsset(assetId: AssetId, assetToken: String?): NetworkResponse<Source> = wrapKaliumResponse {
+    override suspend fun downloadAsset(assetId: AssetId, assetToken: String?): NetworkResponse<ByteArray> = wrapKaliumResponse {
         httpClient.get(buildAssetsPath(assetId)) {
             assetToken?.let { header(HEADER_ASSET_TOKEN, it) }
         }
