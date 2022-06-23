@@ -11,6 +11,7 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -29,7 +30,8 @@ class OnCloseCallTest {
     @BeforeTest
     fun setUp() {
         onCloseCall = OnCloseCall(
-            callRepository = callRepository
+            callRepository = callRepository,
+            scope = TestScope()
         )
     }
 
@@ -49,7 +51,7 @@ class OnCloseCallTest {
 
         // then
         verify(callRepository)
-            .function(callRepository::updateCallStatusById)
+            .suspendFunction(callRepository::updateCallStatusById)
             .with(eq("conversationId@domainId"), eq(CallStatus.STILL_ONGOING))
             .wasInvoked(once)
     }
@@ -70,7 +72,7 @@ class OnCloseCallTest {
 
         // then
         verify(callRepository)
-            .function(callRepository::updateCallStatusById)
+            .suspendFunction(callRepository::updateCallStatusById)
             .with(eq("conversationId@domainId"), eq(CallStatus.CLOSED))
             .wasInvoked(once)
     }

@@ -44,6 +44,7 @@ interface CallRepository {
     fun updateParticipantsActiveSpeaker(conversationId: String, activeSpeakers: CallActiveSpeakers)
 }
 
+@Suppress("LongParameterList", "TooManyFunctions")
 internal class CallDataSource(
     private val callApi: CallApi,
     private val conversationRepository: ConversationRepository,
