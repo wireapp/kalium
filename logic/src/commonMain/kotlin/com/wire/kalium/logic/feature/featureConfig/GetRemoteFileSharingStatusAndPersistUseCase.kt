@@ -2,8 +2,8 @@ package com.wire.kalium.logic.feature.featureConfig
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.featureConfig.FeatureConfigModel
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
-import com.wire.kalium.logic.data.featureConfig.FileSharingModel
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
@@ -13,41 +13,47 @@ import com.wire.kalium.network.exceptions.isNoTeam
  * This use case is to get the file sharing status of the team management settings from the server and
  * save it in the local storage (in Android case is shared preference)
  */
-interface GetRemoteFileSharingStatusAndPersistUseCase {
-    suspend operator fun invoke(): GetFileSharingStatusResult
+interface GetRemoteFeatureConfigStatusAndPersistUseCase {
+    suspend operator fun invoke(): GetFeatureConfigStatusResult
 }
 
-class GetFileSharingStatusUseCaseImpl(
+class GetFeatureConfigStatusUseCaseImpl(
     private val userConfigRepository: UserConfigRepository,
     private val featureConfigRepository: FeatureConfigRepository,
     private val isFileSharingEnabledUseCase: IsFileSharingEnabledUseCase
-) : GetRemoteFileSharingStatusAndPersistUseCase {
-    override suspend operator fun invoke(): GetFileSharingStatusResult =
-        featureConfigRepository.getFileSharingFeatureConfig().fold({
-            mapFileSharingFailure(it)
+) : GetRemoteFeatureConfigStatusAndPersistUseCase {
+    override suspend operator fun invoke(): GetFeatureConfigStatusResult =
+        featureConfigRepository.getFeatureConfigs().fold({
+            mapFeatureConfigFailure(it)
         }, {
-            val status: Boolean = it.status.lowercase() == ENABLED
-            if (status == isFileSharingEnabledUseCase.invoke()) {
-                GetFileSharingStatusResult.Success(it, false)
-            } else {
-                userConfigRepository.setFileSharingStatus(status)
-                GetFileSharingStatusResult.Success(it, true)
-            }
+            checkFileSharingStatus(it)
+            // todo : handle other feature flags
         })
 
 
-    private fun mapFileSharingFailure(networkFailure: NetworkFailure): GetFileSharingStatusResult {
+    private fun checkFileSharingStatus(featureConfigModel: FeatureConfigModel): GetFeatureConfigStatusResult {
+        val status: Boolean = featureConfigModel.fileSharingModel.status.lowercase() == ENABLED
+        return if (status == isFileSharingEnabledUseCase()) {
+            GetFeatureConfigStatusResult.Success(featureConfigModel, false)
+        } else {
+            userConfigRepository.setFileSharingStatus(status)
+            GetFeatureConfigStatusResult.Success(featureConfigModel, true)
+        }
+    }
+
+
+    private fun mapFeatureConfigFailure(networkFailure: NetworkFailure): GetFeatureConfigStatusResult {
         return if (
             networkFailure is NetworkFailure.ServerMiscommunication &&
             networkFailure.kaliumException is KaliumException.InvalidRequestError
         ) {
             if (networkFailure.kaliumException.isNoTeam()) {
-                GetFileSharingStatusResult.Failure.NoTeam
+                GetFeatureConfigStatusResult.Failure.NoTeam
             } else {
-                GetFileSharingStatusResult.Failure.OperationDenied
+                GetFeatureConfigStatusResult.Failure.OperationDenied
             }
         } else {
-            GetFileSharingStatusResult.Failure.Generic(networkFailure)
+            GetFeatureConfigStatusResult.Failure.Generic(networkFailure)
         }
 
     }
@@ -57,9 +63,9 @@ class GetFileSharingStatusUseCaseImpl(
     }
 }
 
-sealed class GetFileSharingStatusResult {
-    class Success(val fileSharingModel: FileSharingModel, val isStatusChanged: Boolean) : GetFileSharingStatusResult()
-    sealed class Failure : GetFileSharingStatusResult() {
+sealed class GetFeatureConfigStatusResult {
+    class Success(val featureConfigModel: FeatureConfigModel, val isStatusChanged: Boolean) : GetFeatureConfigStatusResult()
+    sealed class Failure : GetFeatureConfigStatusResult() {
         object OperationDenied : Failure()
         object NoTeam : Failure()
         class Generic(val failure: NetworkFailure) : Failure()

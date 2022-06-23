@@ -15,7 +15,7 @@ class FeatureConfigApiTest : ApiTest {
     @Test
     fun givenValidRequest_WhenCallingTheFileSharingApi_SuccessResponseExpected() = runTest {
         // Given
-        val apiPath = FILE_SHARING
+        val apiPath = FEATURE_CONFIG
         val networkClient = mockAuthenticatedNetworkClient(
             responseBody = FeatureConfigJson.featureConfigResponseSerializerResponse.rawJson,
             statusCode = HttpStatusCode.OK,
@@ -29,7 +29,7 @@ class FeatureConfigApiTest : ApiTest {
 
         // When
         val assetApi: FeatureConfigApi = FeatureConfigApiImpl(networkClient)
-        val response = assetApi.fileSharingFeatureConfig()
+        val response = assetApi.featureConfigs()
 
         // Then
         assertTrue(response is NetworkResponse.Success)
@@ -38,7 +38,7 @@ class FeatureConfigApiTest : ApiTest {
     @Test
     fun givenInValidRequestWithInsufficientPermission_WhenCallingTheFileSharingApi_ErrorResponseExpected() = runTest {
         // Given
-        val apiPath = FILE_SHARING
+        val apiPath = FEATURE_CONFIG
         val networkClient = mockAuthenticatedNetworkClient(
             responseBody = FeatureConfigJson.insufficientPermissionsErrorResponse.rawJson,
             statusCode = HttpStatusCode.Forbidden,
@@ -52,7 +52,7 @@ class FeatureConfigApiTest : ApiTest {
 
         // When
         val assetApi: FeatureConfigApi = FeatureConfigApiImpl(networkClient)
-        val response = assetApi.fileSharingFeatureConfig()
+        val response = assetApi.featureConfigs()
 
         // Then
         assertTrue(response is NetworkResponse.Error)
@@ -62,7 +62,7 @@ class FeatureConfigApiTest : ApiTest {
     @Test
     fun givenInValidRequestWithNoTeam_WhenCallingTheFileSharingApi_ErrorResponseExpected() = runTest {
         // Given
-        val apiPath = FILE_SHARING
+        val apiPath = FEATURE_CONFIG
         val networkClient = mockAuthenticatedNetworkClient(
             responseBody = FeatureConfigJson.teamNotFoundErrorResponse.rawJson,
             statusCode = HttpStatusCode.NotFound,
@@ -76,7 +76,7 @@ class FeatureConfigApiTest : ApiTest {
 
         // When
         val assetApi: FeatureConfigApi = FeatureConfigApiImpl(networkClient)
-        val response = assetApi.fileSharingFeatureConfig()
+        val response = assetApi.featureConfigs()
 
         // Then
         assertTrue(response is NetworkResponse.Error)
@@ -85,6 +85,5 @@ class FeatureConfigApiTest : ApiTest {
 
     companion object {
         const val FEATURE_CONFIG = "feature-configs"
-        const val FILE_SHARING = "$FEATURE_CONFIG/fileSharing"
     }
 }

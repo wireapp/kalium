@@ -21,6 +21,7 @@ import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.MemberMapperImpl
 import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
+import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapperImpl
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.location.LocationMapper
@@ -73,6 +74,6 @@ internal object MapperProvider {
     fun protoContentMapper(): ProtoContentMapper = ProtoContentMapperImpl()
     fun callMapper(): CallMapper = CallMapper()
     fun connectionStatusMapper(): ConnectionStatusMapper = ConnectionStatusMapperImpl()
-    fun featureConfigMapper(): FeatureConfigMapper = FeatureConfigMapper()
+    fun featureConfigMapper(): FeatureConfigMapper = FeatureConfigMapperImpl()
     fun connectionMapper(): ConnectionMapper = ConnectionMapperImpl(idMapper(), connectionStatusMapper(), publicUserMapper())
 }

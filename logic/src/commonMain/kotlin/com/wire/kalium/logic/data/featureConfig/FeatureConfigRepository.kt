@@ -8,7 +8,7 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.featureConfigs.FeatureConfigApi
 
 interface FeatureConfigRepository {
-    suspend fun getFileSharingFeatureConfig(): Either<NetworkFailure, FileSharingModel>
+    suspend fun getFeatureConfigs(): Either<NetworkFailure, FeatureConfigModel>
 }
 
 class FeatureConfigDataSource(
@@ -16,9 +16,9 @@ class FeatureConfigDataSource(
     private val featureConfigMapper: FeatureConfigMapper = MapperProvider.featureConfigMapper()
 ) : FeatureConfigRepository {
 
-    override suspend fun getFileSharingFeatureConfig(): Either<NetworkFailure, FileSharingModel> = wrapApiRequest {
-        featureConfigApi.fileSharingFeatureConfig()
+    override suspend fun getFeatureConfigs(): Either<NetworkFailure, FeatureConfigModel> = wrapApiRequest {
+        featureConfigApi.featureConfigs()
     }.map { featureConfigResponse ->
-        featureConfigMapper.fromFileSharingDTO(featureConfigResponse)
+        featureConfigMapper.fromFeatureConfigsDTO(featureConfigResponse)
     }
 }

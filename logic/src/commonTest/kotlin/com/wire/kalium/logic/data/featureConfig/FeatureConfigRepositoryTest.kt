@@ -4,8 +4,15 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.network.api.featureConfigs.AppLock
+import com.wire.kalium.network.api.featureConfigs.AppLockConfig
+import com.wire.kalium.network.api.featureConfigs.ClassifiedDomains
+import com.wire.kalium.network.api.featureConfigs.ClassifiedDomainsConfig
+import com.wire.kalium.network.api.featureConfigs.ConfigsStatus
 import com.wire.kalium.network.api.featureConfigs.FeatureConfigApi
 import com.wire.kalium.network.api.featureConfigs.FeatureConfigResponse
+import com.wire.kalium.network.api.featureConfigs.SelfDeletingMessages
+import com.wire.kalium.network.api.featureConfigs.SelfDeletingMessagesConfig
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
@@ -22,59 +29,98 @@ import kotlin.test.Test
 class FeatureConfigRepositoryTest {
 
     @Test
-    fun whenFileSharingFeatureConfigSuccess_thenTheSuccessIsReturned() = runTest {
+    fun whenFeatureConfigSuccess_thenTheSuccessIsReturned() = runTest {
         // Given
-        val expectedSuccess = Either.Right(FileSharingModel(lockStatus = "locked", status = "enabled"))
+        val featureConfigModel = FeatureConfigModel(
+            AppLockModel(
+                AppLockConfigModel(true, 0),
+                "locked", "enabled"
+            ),
+            ClassifiedDomainsModel(
+                ClassifiedDomainsConfigModel(listOf()),
+                "locked", "enabled"
+            ),
+            ConfigsStatusModel("locked", "enabled"),
+            ConfigsStatusModel("locked", "enabled"),
+            ConfigsStatusModel("locked", "enabled"),
+            ConfigsStatusModel("locked", "enabled"),
+            ConfigsStatusModel("locked", "enabled"),
+            ConfigsStatusModel("locked", "enabled"),
+            SelfDeletingMessagesModel(
+                SelfDeletingMessagesConfigModel(0),
+                "locked", "enabled"
+            ),
+            ConfigsStatusModel("locked", "enabled"),
+            ConfigsStatusModel("locked", "enabled"),
+            ConfigsStatusModel("locked", "enabled")
+        )
+
+        val expectedSuccess = Either.Right(featureConfigModel)
         val (arrangement, featureConfigRepository) = Arrangement().withSuccessfulResponse().arrange()
 
         // When
-        val result = featureConfigRepository.getFileSharingFeatureConfig()
+        val result = featureConfigRepository.getFeatureConfigs()
 
         // Then
         result.shouldSucceed { expectedSuccess.value }
         verify(arrangement.featureConfigApi)
-            .suspendFunction(arrangement.featureConfigApi::fileSharingFeatureConfig)
+            .suspendFunction(arrangement.featureConfigApi::featureConfigs)
             .wasInvoked(once)
     }
 
     @Test
-    fun whenFileSharingFeatureConfigFailWithOperationDeniedError_thenTheErrorIsPropagated() = runTest {
+    fun whenFeatureConfigFailWithOperationDeniedError_thenTheErrorIsPropagated() = runTest {
         // Given
         val operationDeniedException = TestNetworkException.operationDenied
         val (arrangement, featureConfigRepository) = Arrangement()
             .withErrorResponse(operationDeniedException).arrange()
 
         // When
-        val result = featureConfigRepository.getFileSharingFeatureConfig()
+        val result = featureConfigRepository.getFeatureConfigs()
 
         // Then
         result.shouldFail { Either.Left(operationDeniedException).value }
 
         verify(arrangement.featureConfigApi)
-            .suspendFunction(arrangement.featureConfigApi::fileSharingFeatureConfig)
+            .suspendFunction(arrangement.featureConfigApi::featureConfigs)
             .wasInvoked(exactly = once)
     }
 
     @Test
-    fun whenFileSharingFeatureConfigFailWithNoTeamError_thenTheErrorIsPropagated() = runTest {
+    fun whenFeatureConfigFailWithNoTeamError_thenTheErrorIsPropagated() = runTest {
         // Given
         val noTeamException = TestNetworkException.noTeam
         val (arrangement, featureConfigRepository) = Arrangement()
             .withErrorResponse(noTeamException).arrange()
 
         // When
-        val result = featureConfigRepository.getFileSharingFeatureConfig()
+        val result = featureConfigRepository.getFeatureConfigs()
 
         // Then
         result.shouldFail { Either.Left(noTeamException).value }
 
         verify(arrangement.featureConfigApi)
-            .suspendFunction(arrangement.featureConfigApi::fileSharingFeatureConfig)
+            .suspendFunction(arrangement.featureConfigApi::featureConfigs)
             .wasInvoked(exactly = once)
     }
 
     private class Arrangement {
-        val featureConfigResponse = FeatureConfigResponse("locked", "enabled")
+        val featureConfigResponse = FeatureConfigResponse(
+            AppLock(
+                AppLockConfig(true, 0), "locked", "enabled"
+            ),
+            ClassifiedDomains(ClassifiedDomainsConfig(listOf()), "locked", "enabled"),
+            ConfigsStatus("locked", "enabled"),
+            ConfigsStatus("locked", "enabled"),
+            ConfigsStatus("locked", "enabled"),
+            ConfigsStatus("locked", "enabled"),
+            ConfigsStatus("locked", "enabled"),
+            ConfigsStatus("locked", "enabled"),
+            SelfDeletingMessages(SelfDeletingMessagesConfig(0), "locked", "enabled"),
+            ConfigsStatus("locked", "enabled"),
+            ConfigsStatus("locked", "enabled"),
+            ConfigsStatus("locked", "enabled")
+        )
 
         @Mock
         val featureConfigApi: FeatureConfigApi = mock(classOf<FeatureConfigApi>())
@@ -83,7 +129,7 @@ class FeatureConfigRepositoryTest {
 
         fun withSuccessfulResponse(): Arrangement {
             given(featureConfigApi)
-                .suspendFunction(featureConfigApi::fileSharingFeatureConfig).whenInvoked().then {
+                .suspendFunction(featureConfigApi::featureConfigs).whenInvoked().then {
                     NetworkResponse.Success(featureConfigResponse, mapOf(), 200)
                 }
             return this
@@ -91,7 +137,7 @@ class FeatureConfigRepositoryTest {
 
         fun withErrorResponse(kaliumException: KaliumException): Arrangement {
             given(featureConfigApi)
-                .suspendFunction(featureConfigApi::fileSharingFeatureConfig)
+                .suspendFunction(featureConfigApi::featureConfigs)
                 .whenInvoked()
                 .then {
                     NetworkResponse.Error(

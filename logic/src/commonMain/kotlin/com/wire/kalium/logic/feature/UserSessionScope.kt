@@ -52,8 +52,8 @@ import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
-import com.wire.kalium.logic.feature.featureConfig.GetRemoteFileSharingStatusAndPersistUseCase
-import com.wire.kalium.logic.feature.featureConfig.GetFileSharingStatusUseCaseImpl
+import com.wire.kalium.logic.feature.featureConfig.GetRemoteFeatureConfigStatusAndPersistUseCase
+import com.wire.kalium.logic.feature.featureConfig.GetFeatureConfigStatusUseCaseImpl
 import com.wire.kalium.logic.feature.message.MLSMessageCreator
 import com.wire.kalium.logic.feature.message.MLSMessageCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
@@ -69,8 +69,6 @@ import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.team.TeamScope
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCaseImpl
-import com.wire.kalium.logic.feature.user.IsLoggingEnabledUseCase
-import com.wire.kalium.logic.feature.user.IsLoggingEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.sync.ConversationEventReceiver
 import com.wire.kalium.logic.sync.ConversationEventReceiverImpl
@@ -362,8 +360,8 @@ abstract class UserSessionScopeCommon(
         get() = FeatureConfigDataSource(featureConfigApi = authenticatedDataSourceSet.authenticatedNetworkContainer.featureConfigApi)
     val isFileSharingEnabled: IsFileSharingEnabledUseCase get() = IsFileSharingEnabledUseCaseImpl(userConfigRepository)
 
-    val getRemoteFileSharingStatusAndPersist: GetRemoteFileSharingStatusAndPersistUseCase
-        get() = GetFileSharingStatusUseCaseImpl(
+    val getRemoteFeatureConfigsStatusAndPersist: GetRemoteFeatureConfigStatusAndPersistUseCase
+        get() = GetFeatureConfigStatusUseCaseImpl(
             userConfigRepository,
             featureConfigRepository,
             isFileSharingEnabled
