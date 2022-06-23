@@ -86,4 +86,5 @@ interface UserDAO {
     suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity)
     suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String)
     suspend fun updateUserAvailabilityStatus(qualifiedID: QualifiedIDEntity, status: UserAvailabilityStatusEntity)
+    suspend fun insertOrIgnoreUserWithConnectionStatus(qualifiedID: QualifiedIDEntity, connectionStatus: ConnectionEntity.State)
 }

@@ -143,6 +143,10 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
         queries.updateUserAvailabilityStatus(status, qualifiedID)
     }
 
+    override suspend fun insertOrIgnoreUserWithConnectionStatus(qualifiedID: QualifiedIDEntity, connectionStatus: ConnectionEntity.State) {
+        queries.insertOrIgnoreUserIdWithConnectionStatus(qualifiedID, connectionStatus)
+    }
+
     override suspend fun getAllUsersByConnectionStatus(connectionState: ConnectionEntity.State): List<UserEntity> =
         queries.selectAllUsersWithConnectionStatus(connectionState)
             .executeAsList()

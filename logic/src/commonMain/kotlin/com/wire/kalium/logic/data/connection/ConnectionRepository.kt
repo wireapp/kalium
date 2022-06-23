@@ -3,7 +3,9 @@ package com.wire.kalium.logic.data.connection
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.publicuser.PublicUserMapper
 import com.wire.kalium.logic.data.user.Connection
@@ -26,7 +28,6 @@ import com.wire.kalium.network.api.user.connection.ConnectionStateDTO
 import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConversationDAO
-import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -39,6 +40,7 @@ interface ConnectionRepository {
     suspend fun getConnections(): Either<StorageFailure, Flow<List<Connection>>>
     suspend fun insertConnectionFromEvent(event: Event.User.NewConnection): Either<CoreFailure, Unit>
     suspend fun observeConnectionList(): Flow<List<Connection>>
+    suspend fun observeConnectionListAsDetails(): Flow<List<ConversationDetails>>
 }
 
 internal class ConnectionDataSource(
@@ -63,10 +65,7 @@ internal class ConnectionDataSource(
                 kaliumLogger.v("Fetching connections page starting with pagingState $lastPagingState")
                 connectionApi.fetchSelfUserConnections(pagingState = lastPagingState)
             }.onSuccess {
-                it.connections.forEach { connectionDTO ->
-                    persistConnection(connectionMapper.fromApiToModel(connectionDTO))
-                }
-                updateUserConnectionStatus(connections = it.connections)
+                updateConnectionsFromSync(it.connections)
                 lastPagingState = it.pagingState
                 hasMore = it.hasMore
             }.onFailure {
@@ -77,12 +76,22 @@ internal class ConnectionDataSource(
         return latestResult
     }
 
+    // first insert connections table + users
+    // then update user status
+    // if the connection is other than pending/sent, insert members
+    private suspend fun updateConnectionsFromSync(connections: List<ConnectionDTO>) {
+        connections.forEach { connectionDTO ->
+            persistConnection(connectionMapper.fromApiToModel(connectionDTO))
+            updateUserConnectionStatus(connectionMapper.fromApiToModel(connectionDTO))
+        }
+    }
+
     override suspend fun sendUserConnection(userId: UserId): Either<CoreFailure, Unit> {
         return wrapApiRequest {
             connectionApi.createConnection(idMapper.toApiModel(userId))
         }.flatMap { connection ->
             val connectionSent = connection.copy(status = ConnectionStateDTO.SENT)
-            updateUserConnectionStatus(listOf(connectionSent))
+            updateUserConnectionStatus(connectionMapper.fromApiToModel(connectionSent))
             persistConnection(connectionMapper.fromApiToModel(connection))
         }.map { }
     }
@@ -99,7 +108,7 @@ internal class ConnectionDataSource(
         }.map { connectionDTO ->
             val connectionStatus = connectionDTO.copy(status = newConnectionStatus)
             val connectionModel = connectionMapper.fromApiToModel(connectionDTO)
-            updateUserConnectionStatus(listOf(connectionStatus))
+            updateUserConnectionStatus(connectionMapper.fromApiToModel(connectionStatus))
             persistConnection(connectionModel)
             connectionModel
         }
@@ -127,17 +136,17 @@ internal class ConnectionDataSource(
         }
     }
 
-    override suspend fun insertConnectionFromEvent(event: Event.User.NewConnection): Either<CoreFailure, Unit> =
-        when (event.connection.status) {
-            ConnectionState.CANCELLED -> deleteCancelledConnection(idMapper.toDaoModel(event.connection.qualifiedConversationId))
-            ConnectionState.NOT_CONNECTED,
-            ConnectionState.PENDING,
-            ConnectionState.SENT,
-            ConnectionState.BLOCKED,
-            ConnectionState.IGNORED,
-            ConnectionState.MISSING_LEGALHOLD_CONSENT,
-            ConnectionState.ACCEPTED -> persistConnection(event.connection)
+    override suspend fun observeConnectionListAsDetails(): Flow<List<ConversationDetails>> {
+        return connectionDAO.getConnectionRequests().map {
+            it.map { connection ->
+                val otherUser = userDAO.getUserByQualifiedID(connection.qualifiedToId)
+                connectionMapper.fromDaoToConnectionDetails(connection, otherUser.first())
+            }
         }
+    }
+
+    override suspend fun insertConnectionFromEvent(event: Event.User.NewConnection): Either<CoreFailure, Unit> =
+        updateUserConnectionStatus(event.connection)
 
     private suspend fun persistConnection(
         connection: Connection,
@@ -156,36 +165,35 @@ internal class ConnectionDataSource(
         }
     }
 
-    private suspend fun updateUserConnectionStatus(connections: List<ConnectionDTO>) {
-        connections.forEach { connection ->
-            when (connection.status) {
-                ConnectionStateDTO.PENDING -> updateConversationMemberFromConnection(connection)
-                ConnectionStateDTO.SENT -> updateConversationMemberFromConnection(connection)
-                ConnectionStateDTO.BLOCKED -> updateConversationMemberFromConnection(connection)
-                ConnectionStateDTO.IGNORED -> updateConversationMemberFromConnection(connection)
-                ConnectionStateDTO.CANCELLED -> {
-                    kaliumLogger.d("cleaning cancelled request")
-                    deleteCancelledConnection(idMapper.fromApiToDao(connection.qualifiedConversationId))
-                }
-                ConnectionStateDTO.MISSING_LEGALHOLD_CONSENT -> updateConversationMemberFromConnection(connection)
-                ConnectionStateDTO.ACCEPTED -> updateConversationMemberFromConnection(connection)
-            }
-        }
+    private suspend fun deleteCancelledConnection(conversationId: ConversationId) = wrapStorageRequest {
+        conversationDAO.deleteConversationByQualifiedID(idMapper.toDaoModel(conversationId))
     }
 
-    private suspend fun deleteCancelledConnection(conversationId: ConversationIDEntity) = wrapStorageRequest {
-        conversationDAO.deleteConversationByQualifiedID(conversationId)
-    }
-
-    private suspend fun updateConversationMemberFromConnection(connectionDTO: ConnectionDTO) {
+    private suspend fun updateConversationMemberFromConnection(connection: Connection) =
         wrapStorageRequest {
             conversationDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
-                userId = idMapper.fromApiToDao(connectionDTO.qualifiedToId),
-                status = connectionStatusMapper.fromApiToDao(state = connectionDTO.status),
-                conversationID = idMapper.fromApiToDao(connectionDTO.qualifiedConversationId)
+                userId = idMapper.toDaoModel(connection.qualifiedToId),
+                status = connectionStatusMapper.toDaoModel(connection.status),
+                conversationID = idMapper.toDaoModel(connection.qualifiedConversationId)
             )
         }.onFailure {
-            kaliumLogger.e("There was an error when trying to persist the connection: $connectionDTO")
+            kaliumLogger.e("There was an error when trying to persist the connection: $connection")
         }
-    }
+
+    /**
+     * This will update the connection status on user table and will insert members only
+     * if the [ConnectionDTO.status] is other than [ConnectionStateDTO.PENDING] or [ConnectionStateDTO.SENT]
+     */
+    private suspend fun updateUserConnectionStatus(connection: Connection): Either<CoreFailure, Unit> =
+        when (connection.status) {
+            ConnectionState.NOT_CONNECTED,
+            ConnectionState.PENDING,
+            ConnectionState.SENT -> persistConnection(connection)
+            ConnectionState.BLOCKED -> persistConnection(connection)
+            ConnectionState.IGNORED -> persistConnection(connection)
+            ConnectionState.CANCELLED -> deleteCancelledConnection(connection.qualifiedConversationId)
+            ConnectionState.MISSING_LEGALHOLD_CONSENT -> persistConnection(connection)
+            ConnectionState.ACCEPTED -> updateConversationMemberFromConnection(connection)
+        }
+
 }
