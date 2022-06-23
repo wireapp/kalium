@@ -146,19 +146,31 @@ internal class ConnectionDataSource(
         }
     }
 
-    private suspend fun updateUserConnectionStatus(
-        connections: List<ConnectionDTO>
-    ) {
+    private suspend fun updateUserConnectionStatus(connections: List<ConnectionDTO>) {
         connections.forEach { connection ->
-            wrapStorageRequest {
-                conversationDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
-                    userId = idMapper.fromApiToDao(connection.qualifiedToId),
-                    status = connectionStatusMapper.fromApiToDao(state = connection.status),
-                    conversationID = idMapper.fromApiToDao(connection.qualifiedConversationId)
-                )
-            }.onFailure {
-                kaliumLogger.e("There was an error when trying to persist the connection: $connection")
+            when (connection.status) {
+                ConnectionStateDTO.PENDING -> updateConversationMemberFromConnection(connection)
+                ConnectionStateDTO.SENT -> updateConversationMemberFromConnection(connection)
+                ConnectionStateDTO.BLOCKED -> updateConversationMemberFromConnection(connection)
+                ConnectionStateDTO.IGNORED -> updateConversationMemberFromConnection(connection)
+                ConnectionStateDTO.CANCELLED -> {
+                    kaliumLogger.d("skipping cancelled request")
+                }
+                ConnectionStateDTO.MISSING_LEGALHOLD_CONSENT -> updateConversationMemberFromConnection(connection)
+                ConnectionStateDTO.ACCEPTED -> updateConversationMemberFromConnection(connection)
             }
+        }
+    }
+
+    private suspend fun updateConversationMemberFromConnection(connectionDTO: ConnectionDTO) {
+        wrapStorageRequest {
+            conversationDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
+                userId = idMapper.fromApiToDao(connectionDTO.qualifiedToId),
+                status = connectionStatusMapper.fromApiToDao(state = connectionDTO.status),
+                conversationID = idMapper.fromApiToDao(connectionDTO.qualifiedConversationId)
+            )
+        }.onFailure {
+            kaliumLogger.e("There was an error when trying to persist the connection: $connectionDTO")
         }
     }
 }

@@ -72,11 +72,9 @@ import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.sync.ConversationEventReceiver
 import com.wire.kalium.logic.sync.ConversationEventReceiverImpl
-import com.wire.kalium.logic.sync.ListenToEventsUseCase
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.SyncManagerImpl
-import com.wire.kalium.logic.sync.SyncPendingEventsUseCase
 import com.wire.kalium.logic.sync.UserEventReceiver
 import com.wire.kalium.logic.sync.UserEventReceiverImpl
 import com.wire.kalium.logic.sync.handler.MessageTextEditHandler
@@ -309,10 +307,7 @@ abstract class UserSessionScopeCommon(
         )
 
     private val logoutRepository: LogoutRepository = LogoutDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi)
-    val listenToEvents: ListenToEventsUseCase
-        get() = ListenToEventsUseCase(syncManager)
-    val syncPendingEvents: SyncPendingEventsUseCase
-        get() = SyncPendingEventsUseCase(syncManager)
+
     val observeSyncState: ObserveSyncStateUseCase
         get() = ObserveSyncStateUseCase(syncRepository)
     val client: ClientScope
