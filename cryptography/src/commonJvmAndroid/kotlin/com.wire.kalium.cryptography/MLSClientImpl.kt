@@ -19,8 +19,6 @@ actual class MLSClientImpl actual constructor(
     private val keyRotationDuration: Duration = Duration.ofDays(30)
 
     init {
-        // Make sure all intermediate directories exists
-        File(rootDir).mkdirs()
         coreCrypto = CoreCrypto(rootDir, databaseKey.value, clientId.toString())
     }
 

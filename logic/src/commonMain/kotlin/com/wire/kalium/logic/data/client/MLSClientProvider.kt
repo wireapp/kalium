@@ -13,6 +13,7 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
+import com.wire.kalium.util.FileUtil
 
 interface MLSClientProvider {
     fun getMLSClient(clientId: ClientId? = null): Either<CoreFailure, MLSClient>
@@ -29,7 +30,10 @@ class MLSClientProviderImpl(
     override fun getMLSClient(clientId: ClientId?): Either<CoreFailure, MLSClient> {
         val currentClientId = clientId ?: clientRepository.currentClientId().fold({ return Either.Left(it) }, { it })
 
-        val location = "$rootKeyStorePath/${currentClientId.value}"
+        val location = "$rootKeyStorePath/${currentClientId.value}".also {
+            FileUtil.mkDirs(it)
+        }
+
         val cryptoUserId = CryptoUserID(value = userId.value, domain = userId.domain)
 
         val mlsClient =
