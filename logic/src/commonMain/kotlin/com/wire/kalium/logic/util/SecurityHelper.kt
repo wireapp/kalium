@@ -5,6 +5,8 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.db.GlobalDatabaseSecret
 import com.wire.kalium.persistence.db.UserDBSecret
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
+import io.ktor.util.decodeBase64Bytes
+import io.ktor.util.encodeBase64
 
 internal expect class SecureRandom constructor() {
     fun nextBytes(length: Int): ByteArray
@@ -40,10 +42,10 @@ internal class SecurityHelper(private val kaliumPreferences: KaliumPreferences) 
     }
 
     private val String.toPreservedByteArray: ByteArray
-        get() = Base64.decode(this)
+        get() = this.decodeBase64Bytes()
 
     private val ByteArray.toPreservedString: String
-        get() = Base64.encode(this)
+        get() = this.encodeBase64()
 
     private companion object {
         const val MAX_DATABASE_SECRET_LENGTH = 48
