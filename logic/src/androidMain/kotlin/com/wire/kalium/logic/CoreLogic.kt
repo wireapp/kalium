@@ -63,7 +63,7 @@ actual class CoreLogic(
             val proteusClient: ProteusClient = ProteusClientImpl(rootProteusPath)
             runBlocking { proteusClient.open() }
 
-            val userSessionWorkScheduler = UserSessionWorkSchedulerImpl(appContext, userId)
+            val userSessionWorkScheduler = UserSessionWorkSchedulerImpl(appContext, this, userId)
             val userIDEntity = idMapper.toDaoModel(userId)
             val encryptedSettingsHolder =
                 EncryptedSettingsHolder(appContext, SettingOptions.UserSettings(userIDEntity))

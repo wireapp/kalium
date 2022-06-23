@@ -24,7 +24,7 @@ internal actual class GlobalWorkSchedulerImpl(
 internal actual class UserSessionWorkSchedulerImpl(
     private val coreLogic: CoreLogic,
     override val userId: UserId,
-    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : UserSessionWorkScheduler {
 
     private var slowSyncJob: Job? = null
@@ -36,7 +36,7 @@ internal actual class UserSessionWorkSchedulerImpl(
 
             kaliumLogger.v("SlowSync: Job is running = $isRunning")
             if (!isRunning) {
-                slowSyncJob = launch(Dispatchers.Main) {
+                slowSyncJob = launch(kaliumDispatcher.default) {
                     SlowSyncWorker(coreLogic.getSessionScope(userId)).doWork()
                 }
             } else {
