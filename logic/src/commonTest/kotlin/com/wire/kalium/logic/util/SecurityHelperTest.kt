@@ -7,7 +7,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFails
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
