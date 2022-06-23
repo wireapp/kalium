@@ -16,7 +16,7 @@ deleteAllConnections:
 DELETE FROM Connection;
 
 deleteConnection:
-DELETE FROM Connection WHERE to_id = ?;
+DELETE FROM Connection WHERE qualified_conversation = ?;
 
 insertConnection:
 INSERT OR REPLACE INTO Connection(from_id, conversation_id, qualified_conversation, to_id, last_update, qualified_to, status)

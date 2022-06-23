@@ -166,7 +166,7 @@ internal class ConnectionDataSource(
     }
 
     private suspend fun deleteCancelledConnection(conversationId: ConversationId) = wrapStorageRequest {
-        conversationDAO.deleteConversationByQualifiedID(idMapper.toDaoModel(conversationId))
+        connectionDAO.deleteConnectionDataAndConversation(idMapper.toDaoModel(conversationId))
     }
 
     private suspend fun updateConversationMemberFromConnection(connection: Connection) =
@@ -195,5 +195,4 @@ internal class ConnectionDataSource(
             ConnectionState.MISSING_LEGALHOLD_CONSENT -> persistConnection(connection)
             ConnectionState.ACCEPTED -> updateConversationMemberFromConnection(connection)
         }
-
 }
