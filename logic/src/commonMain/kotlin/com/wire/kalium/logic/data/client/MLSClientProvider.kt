@@ -14,9 +14,7 @@ import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 
 interface MLSClientProvider {
-
     fun getMLSClient(clientId: ClientId? = null): Either<CoreFailure, MLSClient>
-
 }
 
 class MLSClientProviderImpl(
@@ -30,17 +28,13 @@ class MLSClientProviderImpl(
         val location = "$rootKeyStorePath/${userId.domain}/${userId.value}"
         val cryptoUserId = CryptoUserID(value = userId.value, domain = userId.domain)
 
-        // Make sure all intermediate directories exists
-        // TODO: use okio to make sure the dire is valid
-//        File(location).mkdirs()
-
-        val mlsClient = clientId?.let { clientId ->
-            Either.Right(mlsClient(cryptoUserId, clientId, location, SecurityHelper(kaliumPreferences).mlsDBSecret(userId)))
+        val mlsClient = clientId?.let { it ->
+            Either.Right(mlsClient(cryptoUserId, it, location, SecurityHelper(kaliumPreferences).mlsDBSecret(userId)))
         } ?: run {
-            clientRepository.currentClientId().map { clientId ->
+            clientRepository.currentClientId().map { currentClientId ->
                 mlsClient(
                     cryptoUserId,
-                    clientId,
+                    currentClientId,
                     location,
                     SecurityHelper(kaliumPreferences).mlsDBSecret(this.userId)
                 )
