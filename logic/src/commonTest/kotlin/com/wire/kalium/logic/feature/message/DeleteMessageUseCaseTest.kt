@@ -28,7 +28,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
-import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DeleteMessageUseCaseTest {
@@ -81,7 +80,7 @@ class DeleteMessageUseCaseTest {
             .whenInvoked()
             .then { Either.Right(SELF_CLIENT_ID) }
         given(messageRepository)
-            .suspendFunction(messageRepository::deleteMessage)
+            .suspendFunction(messageRepository::markMessageAsDeleted)
             .whenInvokedWith(anything(), anything())
             .thenReturn(Either.Right(Unit))
 
@@ -97,7 +96,7 @@ class DeleteMessageUseCaseTest {
             })
             .wasInvoked(exactly = once)
         verify(messageRepository)
-            .suspendFunction(messageRepository::deleteMessage)
+            .suspendFunction(messageRepository::markMessageAsDeleted)
             .with(eq(TEST_MESSAGE_UUID), eq(TEST_CONVERSATION_ID))
             .wasInvoked(exactly = once)
     }
@@ -119,7 +118,7 @@ class DeleteMessageUseCaseTest {
             .whenInvoked()
             .then { Either.Right(SELF_CLIENT_ID) }
         given(messageRepository)
-            .suspendFunction(messageRepository::deleteMessage)
+            .suspendFunction(messageRepository::markMessageAsDeleted)
             .whenInvokedWith(anything(), anything())
             .thenReturn(Either.Right(Unit))
 
@@ -140,7 +139,7 @@ class DeleteMessageUseCaseTest {
             .wasInvoked(exactly = once)
 
         verify(messageRepository)
-            .suspendFunction(messageRepository::deleteMessage)
+            .suspendFunction(messageRepository::markMessageAsDeleted)
             .with(eq(TEST_MESSAGE_UUID), eq(TEST_CONVERSATION_ID))
             .wasInvoked(exactly = once)
 
@@ -163,7 +162,7 @@ class DeleteMessageUseCaseTest {
             .whenInvoked()
             .then { Either.Right(SELF_CLIENT_ID) }
         given(messageRepository)
-            .suspendFunction(messageRepository::deleteMessage)
+            .suspendFunction(messageRepository::markMessageAsDeleted)
             .whenInvokedWith(anything(), anything())
             .thenReturn(Either.Right(Unit))
 
@@ -193,7 +192,7 @@ class DeleteMessageUseCaseTest {
             .whenInvoked()
             .then { Either.Right(SELF_CLIENT_ID) }
         given(messageRepository)
-            .suspendFunction(messageRepository::deleteMessage)
+            .suspendFunction(messageRepository::markMessageAsDeleted)
             .whenInvokedWith(anything(), anything())
             .thenReturn(Either.Right(Unit))
 
