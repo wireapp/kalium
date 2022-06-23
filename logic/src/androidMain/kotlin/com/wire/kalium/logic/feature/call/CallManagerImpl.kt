@@ -158,13 +158,11 @@ actual class CallManagerImpl(
     ) {
         callingLogger.d("$TAG -> starting call for conversation = $conversationId..")
 
-        //TODO move call creation to the usecase since this one will run only for Android
-        val shouldMute = conversationType == ConversationType.Conference
         val isCameraOn = callType == CallType.VIDEO
         callRepository.createCall(
             conversationId = conversationId,
             status = CallStatus.STARTED,
-            isMuted = shouldMute,
+            isMuted = false,
             isCameraOn = isCameraOn,
             callerId = userId.await().toString()
         )
