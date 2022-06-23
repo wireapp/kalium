@@ -1,9 +1,9 @@
 package com.wire.kalium.logger
 
-import co.touchlab.kermit.CommonWriter
 import co.touchlab.kermit.LogWriter
 import co.touchlab.kermit.Severity
 import co.touchlab.kermit.StaticConfig
+import co.touchlab.kermit.platformLogWriter
 import co.touchlab.kermit.Logger as KermitLogger
 
 /**
@@ -56,14 +56,14 @@ class KaliumLogger(config: Config, logWriter: LogWriter? = null) {
         kermitLogger = if (logWriter == null) {
             KermitLogger(
                 config = StaticConfig(
-                    minSeverity = config.severityLevel, listOf(CommonWriter())
+                    minSeverity = config.severityLevel, listOf(platformLogWriter())
                 ),
                 tag = config.tag
             )
         } else {
             KermitLogger(
                 config = StaticConfig(
-                    minSeverity = config.severityLevel, listOf(logWriter, CommonWriter())
+                    minSeverity = config.severityLevel, listOf(logWriter, platformLogWriter())
                 ),
                 tag = config.tag
             )
