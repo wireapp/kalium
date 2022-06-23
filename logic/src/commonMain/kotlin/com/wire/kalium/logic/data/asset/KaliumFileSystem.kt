@@ -22,6 +22,11 @@ expect class KaliumFileSystem constructor(dataStoragePaths: DataStoragePaths, di
     fun providePersistentAssetPath(assetName: String): Path
 
     /**
+     * Fetches the persistent [Path] of the current user's avatar in the [KaliumFileSystem]
+     */
+    fun selfUserAvatarPath(): Path
+
+    /**
      * Reads the data of the given path as a byte array
      * @param inputPath the path pointing to the stored data
      */
@@ -34,4 +39,5 @@ expect class KaliumFileSystem constructor(dataStoragePaths: DataStoragePaths, di
      * @return the number of bytes written
      */
     suspend fun writeData(outputPath: Path, dataSource: Source): Long
+
 }

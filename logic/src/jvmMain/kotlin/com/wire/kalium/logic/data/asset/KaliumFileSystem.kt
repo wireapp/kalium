@@ -86,4 +86,9 @@ actual class KaliumFileSystem actual constructor(
         }
         return byteCount
     }
+
+    /**
+     * Fetches the persistent [Path] of the current user's avatar in the [KaliumFileSystem]
+     */
+    actual fun selfUserAvatarPath(): Path = providePersistentAssetPath("self_user_avatar.jpg")
 }

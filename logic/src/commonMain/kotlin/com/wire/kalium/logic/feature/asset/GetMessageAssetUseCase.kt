@@ -64,8 +64,8 @@ internal class GetMessageAssetUseCaseImpl(
             ).fold({
                 kaliumLogger.e("There was an error downloading asset with id => ${assetMetadata.assetKey}")
                 MessageAssetResult.Failure(it)
-            }, { encodedAssetPath ->
-                MessageAssetResult.Success(encodedAssetPath, assetMetadata.assetSize)
+            }, { decodedAssetPath ->
+                MessageAssetResult.Success(decodedAssetPath, assetMetadata.assetSize)
             })
         })
 }
