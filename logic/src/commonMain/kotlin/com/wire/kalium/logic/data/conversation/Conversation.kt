@@ -22,6 +22,13 @@ data class Conversation(
     enum class Type { SELF, ONE_ON_ONE, GROUP, CONNECTION_PENDING }
 }
 
+sealed class ProtocolInfo {
+    object Proteus : ProtocolInfo()
+    data class MLS(val groupId: String, val groupState: GroupState) : ProtocolInfo()
+}
+
+enum class GroupState { PENDING, PENDING_WELCOME_MESSAGE, ESTABLISHED }
+
 sealed class ConversationDetails(open val conversation: Conversation) {
 
     data class Self(override val conversation: Conversation) : ConversationDetails(conversation)
