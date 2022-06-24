@@ -5,7 +5,6 @@ import com.wire.kalium.cryptography.utils.calcSHA256
 import com.wire.kalium.cryptography.utils.decryptDataWithAES256
 import com.wire.kalium.cryptography.utils.encryptDataWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
-import io.ktor.util.encodeBase64
 import io.ktor.utils.io.core.String
 import io.ktor.utils.io.core.toByteArray
 import okio.Path.Companion.toPath
@@ -63,7 +62,39 @@ class CryptoUtilsTest {
     @Test
     @IgnoreJS
     @IgnoreIOS
-    fun givenRawByteArray_whenEncryptedAndDecryptedWithAES256_returnsExpectedOriginalByteArray() {
+    fun givenSomeDummyFile_whenEncryptedAndDecryptedWithAES256_returnsExpectedOriginalFile() {
+        // Given
+        val input = readBinaryResource("dummy.pdf")
+        val randomAES256Key = generateRandomAES256Key()
+        val fakeFileSystem = FakeFileSystem()
+        val rootPath = "/Users/me".toPath()
+        fakeFileSystem.createDirectories(rootPath)
+
+        val tempPath = "$rootPath/temp_path".toPath()
+        val encryptedDataPath = "encrypted_data_path.aes".toPath()
+        val decryptedDataPath = "decrypted_data_path.txt".toPath()
+        fakeFileSystem.write(tempPath) {
+            write(input)
+        }
+
+        // When
+        encryptDataWithAES256(tempPath, randomAES256Key, encryptedDataPath, fakeFileSystem)
+        val decryptedDataSize =
+            decryptDataWithAES256(fakeFileSystem.source(encryptedDataPath), decryptedDataPath, randomAES256Key, fakeFileSystem)
+
+        val decryptedData = fakeFileSystem.read(decryptedDataPath) {
+            readByteArray()
+        }
+
+        // Then
+        assertEquals(decryptedDataSize, input.size.toLong())
+        assertTrue(input.contentEquals(decryptedData))
+    }
+
+    @Test
+    @IgnoreJS
+    @IgnoreIOS
+    fun givenDummyText_whenEncryptedAndDecryptedWithAES256_returnsOriginalText() {
         // Given
         val testMessage = "Hello Crypto World"
         val inputData = testMessage.toByteArray()
@@ -93,7 +124,6 @@ class CryptoUtilsTest {
         assertEquals(decryptedDataSize, inputData.size.toLong())
         assertEquals(decodedMessage, testMessage)
     }
-
 }
 
 private fun String.decodeHex(): ByteArray {

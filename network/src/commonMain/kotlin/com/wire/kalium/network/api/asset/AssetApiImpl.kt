@@ -13,12 +13,14 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.contentType
+import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.charsets.Charsets.UTF_8
 import io.ktor.utils.io.core.toByteArray
 import io.ktor.utils.io.readAvailable
 import okio.Source
 import okio.buffer
+import okio.use
 
 interface AssetApi {
     suspend fun downloadAsset(assetId: AssetId, assetToken: String?): NetworkResponse<ByteArray>
@@ -75,6 +77,40 @@ class AssetApiImpl internal constructor(
                 setBody(StreamAssetContent(metadata, encryptedDataSize, encryptedDataSource))
             }
         }
+
+    private fun provideDataBody(metadata: AssetMetadataRequest, encryptedDataSize: Long, encryptedDataSource: Source): ByteArray {
+        val body = StringBuilder()
+        val closingArray = "\r\n--frontier--\r\n".toByteArray(UTF_8)
+
+        // Part 1
+        val strMetadata = "{\"public\": ${metadata.public}, \"retention\": \"${metadata.retentionType.name.lowercase()}\"}"
+
+        body.append("--frontier\r\n")
+        body.append("Content-Type: application/json;charset=utf-8\r\n")
+        body.append("Content-Length: ")
+            .append(strMetadata.length)
+            .append("\r\n\r\n")
+        body.append(strMetadata)
+            .append("\r\n")
+
+        // Part 2
+        body.append("--frontier\r\n")
+        body.append("Content-Type: application/octet-stream")
+            .append("\r\n")
+        body.append("Content-Length: ")
+            .append(encryptedDataSize)
+            .append("\r\n")
+        body.append("Content-MD5: ")
+            .append(metadata.md5)
+            .append("\r\n\r\n")
+
+        val openingData = body.toString().toByteArray(UTF_8)
+        val encodedData = encryptedDataSource.buffer().use {
+            it.readByteArray()
+        }
+
+        return openingData + encodedData + closingArray
+    }
 
     private companion object {
         const val PATH_PUBLIC_ASSETS_V3 = "assets/v3"
