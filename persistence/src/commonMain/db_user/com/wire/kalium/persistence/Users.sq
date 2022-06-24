@@ -1,6 +1,7 @@
-import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.ConnectionEntity;
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity;
+import com.wire.kalium.persistence.dao.UserTypeEntity;
 import kotlin.Int;
 
 CREATE TABLE User (
@@ -14,7 +15,8 @@ CREATE TABLE User (
     connection_status TEXT AS ConnectionEntity.State NOT NULL DEFAULT 'NOT_CONNECTED',
     preview_asset_id TEXT AS QualifiedIDEntity,
     complete_asset_id TEXT AS QualifiedIDEntity,
-    user_availability_status TEXT AS UserAvailabilityStatusEntity NOT NULL DEFAULT 'NONE'
+    user_availability_status TEXT AS UserAvailabilityStatusEntity NOT NULL DEFAULT 'NONE',
+    user_type TEXT AS UserTypeEntity NOT NULL DEFAULT 'INTERNAL'
 );
 
 deleteAllUsers:
