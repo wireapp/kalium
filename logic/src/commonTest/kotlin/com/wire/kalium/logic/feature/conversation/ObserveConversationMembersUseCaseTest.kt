@@ -4,9 +4,8 @@ import app.cash.turbine.test
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.conversation.MemberDetails
-import com.wire.kalium.logic.data.conversation.UserType
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.user.UserTypeMapper
+import com.wire.kalium.logic.data.user.type.UserTypeMapper
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncManager
@@ -36,9 +35,6 @@ class ObserveConversationMembersUseCaseTest {
     private val userRepository = mock(UserRepository::class)
 
     @Mock
-    private val userTypeMapper = mock(UserTypeMapper::class)
-
-    @Mock
     private val syncManager = configure(mock(SyncManager::class)) {
         stubsUnitByDefault = true
     }
@@ -50,8 +46,7 @@ class ObserveConversationMembersUseCaseTest {
         observeConversationMembers = ObserveConversationMembersUseCase(
             conversationRepository,
             userRepository,
-            syncManager,
-            userTypeMapper
+            syncManager
         )
     }
 
@@ -60,7 +55,7 @@ class ObserveConversationMembersUseCaseTest {
         val conversationID = TestConversation.ID
 
         given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+            .suspendFunction(userRepository::observeSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
 
@@ -86,7 +81,7 @@ class ObserveConversationMembersUseCaseTest {
         val conversationID = TestConversation.ID
 
         given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+            .suspendFunction(userRepository::observeSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
 
@@ -119,7 +114,7 @@ class ObserveConversationMembersUseCaseTest {
         )
 
         given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+            .suspendFunction(userRepository::observeSelfUser)
             .whenInvoked()
             .thenReturn(selfUserUpdates.asFlow())
 
@@ -151,7 +146,7 @@ class ObserveConversationMembersUseCaseTest {
         )
 
         given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+            .suspendFunction(userRepository::observeSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
 
@@ -165,14 +160,9 @@ class ObserveConversationMembersUseCaseTest {
             .whenInvokedWith(anything())
             .thenReturn(flowOf(members))
 
-        given(userTypeMapper)
-            .function(userTypeMapper::fromOtherUserAndSelfUser)
-            .whenInvokedWith(anything(),anything())
-            .thenReturn(UserType.GUEST)
-
         observeConversationMembers(conversationID).test {
-            assertContentEquals(listOf(MemberDetails.Other(firstOtherUser, UserType.GUEST)), awaitItem())
-            assertContentEquals(listOf(MemberDetails.Other(secondOtherUser, UserType.GUEST)), awaitItem())
+            assertContentEquals(listOf(MemberDetails.Other(firstOtherUser)), awaitItem())
+            assertContentEquals(listOf(MemberDetails.Other(secondOtherUser)), awaitItem())
             awaitComplete()
         }
     }
@@ -185,7 +175,7 @@ class ObserveConversationMembersUseCaseTest {
         val membersListChannel = Channel<List<Member>>(Channel.UNLIMITED)
 
         given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+            .suspendFunction(userRepository::observeSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(selfUser))
 
@@ -199,17 +189,12 @@ class ObserveConversationMembersUseCaseTest {
             .whenInvokedWith(anything())
             .thenReturn(membersListChannel.consumeAsFlow())
 
-        given(userTypeMapper)
-            .function(userTypeMapper::fromOtherUserAndSelfUser)
-            .whenInvokedWith(anything(),anything())
-            .thenReturn(UserType.GUEST)
-
         observeConversationMembers(conversationID).test {
             membersListChannel.send(listOf(Member(otherUser.id)))
-            assertContentEquals(listOf(MemberDetails.Other(otherUser, UserType.GUEST)), awaitItem())
+            assertContentEquals(listOf(MemberDetails.Other(otherUser)), awaitItem())
 
             membersListChannel.send(listOf(Member(otherUser.id), Member(selfUser.id)))
-            assertContentEquals(listOf(MemberDetails.Other(otherUser, UserType.GUEST), MemberDetails.Self(selfUser)), awaitItem())
+            assertContentEquals(listOf(MemberDetails.Other(otherUser), MemberDetails.Self(selfUser)), awaitItem())
 
             membersListChannel.close()
             awaitComplete()

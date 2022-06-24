@@ -48,7 +48,8 @@ actual class CoreLogic(
         KaliumPreferencesSettings(EncryptedSettingsHolder(appContext, SettingOptions.AppSettings).encryptedSettings)
     }
 
-    override val globalDatabase: Lazy<GlobalDatabaseProvider> = lazy { GlobalDatabaseProvider(appContext, globalPreferences.value) }
+    override val globalDatabase: Lazy<GlobalDatabaseProvider> =
+        lazy { GlobalDatabaseProvider(appContext, globalPreferences.value, kaliumConfigs.shouldEncryptData) }
 
     override fun getSessionScope(userId: UserId): UserSessionScope {
         return userSessionScopeProvider.get(userId) ?: run {
@@ -66,7 +67,8 @@ actual class CoreLogic(
             val encryptedSettingsHolder =
                 EncryptedSettingsHolder(appContext, SettingOptions.UserSettings(userIDEntity))
             val userPreferencesSettings = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
-            val userDatabaseProvider = UserDatabaseProvider(appContext, userIDEntity, userPreferencesSettings)
+            val userDatabaseProvider =
+                UserDatabaseProvider(appContext, userIDEntity, userPreferencesSettings, kaliumConfigs.shouldEncryptData)
             val userDataSource = AuthenticatedDataSourceSet(
                 rootAccountPath,
                 networkContainer,
