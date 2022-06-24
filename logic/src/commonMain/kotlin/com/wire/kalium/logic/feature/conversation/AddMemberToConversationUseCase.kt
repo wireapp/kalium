@@ -28,7 +28,7 @@ class AddMemberToConversationUseCaseImpl(
             when (conversation.protocolInfo) {
                 is ProtocolInfo.Proteus -> conversationRepository.addMembers(members, conversationId).map {
                     when (it) {
-                        is AddParticipantResponse.ConversationUnchanged -> {}
+                        is AddParticipantResponse.ConversationUnchanged -> Unit
                         is AddParticipantResponse.UserAdded -> {
                             conversationRepository.persistMembers(members, conversationId)
                         }

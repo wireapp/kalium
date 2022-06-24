@@ -50,6 +50,33 @@ class AddMemberToConversationUseCaseTest {
     }
 
     @Test
+    fun givenMemberAndProteusConversation_WhenAddMemberFailed_ThenFunctionsInvokedCorrectly() = runTest {
+        val (arrangement, addMemberUseCase) = Arrangement()
+            .withConversationProtocolIs(Arrangement.proteusProtocolInfo)
+            .withPersistMembersSucceeding()
+            .withAddMemberToProteusGroupFailed()
+            .arrange()
+
+        addMemberUseCase(TestConversation.ID, listOf(TestConversation.MEMBER_TEST1))
+
+        //VERIFY PROTEUS INVOKED CORRECTLY
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::addMembers)
+            .with(eq(listOf(TestConversation.MEMBER_TEST1)), eq(TestConversation.ID))
+            .wasInvoked(exactly = once)
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::persistMembers)
+            .with(any(), any())
+            .wasNotInvoked()
+
+        //VERIFY MLS NOT INVOKED
+        verify(arrangement.mlsConversationRepository)
+            .suspendFunction(arrangement.mlsConversationRepository::addMemberToMLSGroup)
+            .with(any(), any())
+            .wasNotInvoked()
+    }
+
+    @Test
     fun givenMemberAndMLSConversation_WhenAddMemberIsSuccessful_ThenMemberIsAddedToDB() = runTest {
         val (arrangement, addMemberUseCase) = Arrangement()
             .withConversationProtocolIs(Arrangement.mlsProtocolInfo)
@@ -99,6 +126,13 @@ class AddMemberToConversationUseCaseTest {
                 .suspendFunction(conversationRepository::addMembers)
                 .whenInvokedWith(any(), any())
                 .thenReturn(Either.Right(addMemberToProteusGroupSuccessfulResponse))
+        }
+
+        fun withAddMemberToProteusGroupFailed() = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::addMembers)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Either.Right(AddParticipantResponse.ConversationUnchanged))
         }
 
         fun withAddMemberToMLSGroupSuccessful() = apply {
