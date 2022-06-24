@@ -150,7 +150,12 @@ class MessageMapperImpl(
             )
         }
         is MessageContent.Unknown -> MessageEntityContent.Unknown(this.typeName, this.encodedData)
-        else -> MessageEntityContent.Unknown()
+        is MessageContent.Calling -> MessageEntityContent.Unknown()
+        is MessageContent.DeleteMessage -> MessageEntityContent.Unknown()
+        is MessageContent.TextEdited -> MessageEntityContent.Unknown()
+        is MessageContent.RestrictedAsset -> MessageEntityContent.RestrictedAsset(this.mimeType)
+        is MessageContent.DeleteForMe -> MessageEntityContent.Unknown()
+        MessageContent.Empty -> MessageEntityContent.Unknown()
     }
 
     private fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System = when (this) {
@@ -170,6 +175,7 @@ class MessageMapperImpl(
         is MessageEntityContent.Asset -> MessageContent.Asset(
             MapperProvider.assetMapper().fromAssetEntityToAssetContent(this)
         )
+        is MessageEntityContent.RestrictedAsset -> MessageContent.RestrictedAsset(this.mimeType)
         is MessageEntityContent.Unknown -> MessageContent.Unknown(this.typeName, this.encodedData, hidden)
     }
 
