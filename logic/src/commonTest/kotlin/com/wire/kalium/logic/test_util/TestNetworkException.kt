@@ -53,7 +53,7 @@ object TestNetworkException {
     )
 
     val userCreationRestricted = KaliumException.InvalidRequestError(
-    ErrorResponse(403, "user creation restricted", "user-creation-restricted")
+        ErrorResponse(403, "user creation restricted", "user-creation-restricted")
     )
 
     val tooManyTeamMembers = KaliumException.InvalidRequestError(
@@ -64,12 +64,18 @@ object TestNetworkException {
         ErrorResponse(451, "domain blocked for registration", "domain-blocked-for-registration")
     )
 
+    val operationDenied = KaliumException.InvalidRequestError(
+        ErrorResponse(403, "Insufficient permissions", "operation-denied")
+    )
+
+    val noTeam = KaliumException.InvalidRequestError(
+        ErrorResponse(404, "Team not found", "no-team")
+    )
+
 }
 
-object TestNetworkResponseError{
-
-    fun <T : Any>genericError() : NetworkResponse<T> = NetworkResponse.Error(TestNetworkException.generic)
-
+object TestNetworkResponseError {
+    fun <T : Any> genericError(): NetworkResponse<T> = NetworkResponse.Error(TestNetworkException.generic)
 }
 
 fun serverMiscommunicationFailure(code: Int = HttpStatusCode.BadRequest.value, message: String = "", label: String = "") =

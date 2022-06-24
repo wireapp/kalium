@@ -47,7 +47,7 @@ internal class GetIncomingCallsUseCaseImpl(
     }
 
     private suspend fun observeIncomingCallsIfUserStatusAllows(): Flow<List<Call>> =
-        userRepository.getSelfUser()
+        userRepository.observeSelfUser()
             .flatMapLatest {
                 //if user is AWAY we don't show any IncomingCalls
                 if (it.availabilityStatus == UserAvailabilityStatus.AWAY) flowOf(listOf())

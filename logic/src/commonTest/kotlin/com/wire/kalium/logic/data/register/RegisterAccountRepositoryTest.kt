@@ -20,7 +20,6 @@ import com.wire.kalium.network.api.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.model.getPreviewAssetOrNull
 import com.wire.kalium.network.api.user.register.RegisterApi
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -132,7 +131,7 @@ class RegisterAccountRepositoryTest {
                 email = email,
                 phone = phone,
                 accentId = accentId,
-                team = teamId,
+                teamId = teamId,
                 connectionStatus = ConnectionState.ACCEPTED,
                 previewPicture = UserAssetId("value1","domain"),
                 completePicture = UserAssetId("value2","domain"),
@@ -182,7 +181,7 @@ class RegisterAccountRepositoryTest {
                 email = email,
                 phone = phone,
                 accentId = accentId,
-                team = teamId,
+                teamId = teamId,
                 connectionStatus = ConnectionState.ACCEPTED,
                 previewPicture = UserAssetId("value1","domain"),
                 completePicture = UserAssetId("value2","domain"),

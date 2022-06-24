@@ -8,11 +8,9 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import kotlinx.coroutines.flow.flowOf
-import kotlin.test.BeforeTest
 
 class GetUserInfoUseCaseTestArrangement {
 
@@ -38,7 +36,7 @@ class GetUserInfoUseCaseTestArrangement {
 
         if (!localUserPresent) {
             given(userRepository)
-                .suspendFunction(userRepository::fetchUserInfo)
+                .suspendFunction(userRepository::getUserInfo)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(TestUser.OTHER))
         }
@@ -53,7 +51,7 @@ class GetUserInfoUseCaseTestArrangement {
             .thenReturn(flowOf(null))
 
         given(userRepository)
-            .suspendFunction(userRepository::fetchUserInfo)
+            .suspendFunction(userRepository::getUserInfo)
             .whenInvokedWith(any())
             .thenReturn(
                 Either.Left(CoreFailure.Unknown(RuntimeException("some error")))
