@@ -37,7 +37,6 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
@@ -80,7 +79,7 @@ internal class ConnectionDataSource(
                 kaliumLogger.v("Fetching connections page starting with pagingState $lastPagingState")
                 connectionApi.fetchSelfUserConnections(pagingState = lastPagingState)
             }.onSuccess {
-                updateConnectionsFromSync(it.connections)
+                syncConnectionsStatuses(it.connections)
                 lastPagingState = it.pagingState
                 hasMore = it.hasMore
             }.onFailure {
@@ -91,9 +90,9 @@ internal class ConnectionDataSource(
         return latestResult
     }
 
-    private suspend fun updateConnectionsFromSync(connections: List<ConnectionDTO>) {
+    private suspend fun syncConnectionsStatuses(connections: List<ConnectionDTO>) {
         connections.forEach { connectionDTO ->
-            updateUserConnectionStatus(connectionMapper.fromApiToModel(connectionDTO))
+            handleUserConnectionStatusPersistence(connectionMapper.fromApiToModel(connectionDTO))
         }
     }
 
@@ -102,7 +101,7 @@ internal class ConnectionDataSource(
             connectionApi.createConnection(idMapper.toApiModel(userId))
         }.flatMap { connection ->
             val connectionSent = connection.copy(status = ConnectionStateDTO.SENT)
-            updateUserConnectionStatus(connectionMapper.fromApiToModel(connectionSent))
+            handleUserConnectionStatusPersistence(connectionMapper.fromApiToModel(connectionSent))
         }.map { }
     }
 
@@ -118,7 +117,7 @@ internal class ConnectionDataSource(
         }.map { connectionDTO ->
             val connectionStatus = connectionDTO.copy(status = newConnectionStatus)
             val connectionModel = connectionMapper.fromApiToModel(connectionDTO)
-            updateUserConnectionStatus(connectionMapper.fromApiToModel(connectionStatus))
+            handleUserConnectionStatusPersistence(connectionMapper.fromApiToModel(connectionStatus))
             persistConnection(connectionModel)
             connectionModel
         }
@@ -220,12 +219,11 @@ internal class ConnectionDataSource(
      * This will update the connection status on user table and will insert members only
      * if the [ConnectionDTO.status] is other than [ConnectionStateDTO.PENDING] or [ConnectionStateDTO.SENT]
      */
-    private suspend fun updateUserConnectionStatus(connection: Connection): Either<CoreFailure, Unit> =
+    private suspend fun handleUserConnectionStatusPersistence(connection: Connection): Either<CoreFailure, Unit> =
         when (connection.status) {
             ConnectionState.NOT_CONNECTED,
             ConnectionState.PENDING,
             ConnectionState.SENT -> persistConnection(connection)
-
             ConnectionState.BLOCKED -> persistConnection(connection)
             ConnectionState.IGNORED -> persistConnection(connection)
             ConnectionState.CANCELLED -> deleteCancelledConnection(connection.qualifiedConversationId)
