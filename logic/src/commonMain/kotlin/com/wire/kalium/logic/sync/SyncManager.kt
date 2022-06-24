@@ -125,8 +125,12 @@ internal class SyncManagerImpl(
 
     override fun onSlowSyncComplete() {
         // Processing already running, don't launch another
+        kaliumLogger.d("SyncManager.onSlowSyncComplete called")
         val isRunning = processingJob?.isActive ?: false
-        if (isRunning) return
+        if (isRunning) {
+            kaliumLogger.d("SyncManager.processingJob still active. Sync won't keep going")
+            return
+        }
 
         syncRepository.updateSyncState { SyncState.GatheringPendingEvents }
 

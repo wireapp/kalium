@@ -48,7 +48,7 @@ class DeleteMessageUseCase(
             )
             messageSender.sendMessage(message)
         }.flatMap {
-            messageRepository.deleteMessage(messageId, conversationId)
+            messageRepository.markMessageAsDeleted(messageId, conversationId)
         }.onFailure {
             kaliumLogger.w("delete message failure: $it")
             if (it is CoreFailure.Unknown) {

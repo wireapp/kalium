@@ -9,7 +9,15 @@ import androidx.work.OneTimeWorkRequest
 import androidx.work.OutOfQuotaPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
+import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
@@ -68,21 +76,28 @@ internal actual class GlobalWorkSchedulerImpl(
 
 internal actual class UserSessionWorkSchedulerImpl(
     private val appContext: Context,
-    override val userId: UserId
+    private val coreLogic: CoreLogic,
+    override val userId: UserId,
+    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : UserSessionWorkScheduler {
 
+    private var slowSyncJob: Job? = null
+    private val scope = CoroutineScope(kaliumDispatcher.default.limitedParallelism(1))
     override fun enqueueSlowSyncIfNeeded() {
-        val inputData = WrapperWorkerFactory.workData(SlowSyncWorker::class, userId)
+        kaliumLogger.v("SlowSync: Enqueueing if needed")
+        scope.launch {
+            val isRunning = slowSyncJob?.isActive ?: false
 
-        val request = OneTimeWorkRequest.Builder(workerClass)
-            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-            .setInputData(inputData).build()
-
-        WorkManager.getInstance(appContext).beginUniqueWork(
-            WORK_NAME_SLOW_SYNC,
-            ExistingWorkPolicy.KEEP, // If it's ongoing, let it be
-            request
-        ).enqueue()
+            kaliumLogger.v("SlowSync: Job is running = $isRunning")
+            if (!isRunning) {
+                slowSyncJob = launch(Dispatchers.Main) {
+                    SlowSyncWorker(coreLogic.getSessionScope(userId)).doWork()
+                }
+                kaliumLogger.d("SlowSync Started")
+            } else {
+                kaliumLogger.d("SlowSync not scheduled as it's already running")
+            }
+        }
     }
 
     override fun scheduleSendingOfPendingMessages() {
