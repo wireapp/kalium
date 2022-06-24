@@ -167,12 +167,14 @@ abstract class UserSessionScopeCommon(
             userDatabaseProvider.connectionDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.connectionApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
-            userDatabaseProvider.userDAO
+            userDatabaseProvider.userDAO,
+            userDatabaseProvider.metadataDAO
         )
 
     private val publicUserRepository: SearchUserRepository
         get() = SearchUserRepositoryImpl(
             userDatabaseProvider.userDAO,
+            userDatabaseProvider.metadataDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userSearchApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi
         )
