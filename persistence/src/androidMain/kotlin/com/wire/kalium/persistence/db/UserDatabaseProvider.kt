@@ -42,14 +42,17 @@ import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.util.FileNameUtil
 import net.sqlcipher.database.SupportFactory
 
-actual class UserDatabaseProvider(private val context: Context, userId: UserIDEntity, kaliumPreferences: KaliumPreferences) {
+actual class UserDatabaseProvider(
+    private val context: Context,
+    userId: UserIDEntity,
+    kaliumPreferences: KaliumPreferences,
+    encrypt: Boolean = true
+) {
     private val dbName = FileNameUtil.userDBName(userId)
     private val driver: AndroidSqliteDriver
     private val database: UserDatabase
 
     init {
-        val supportFactory = SupportFactory(DBUtil.getOrGenerateSecretKey(kaliumPreferences, DATABASE_SECRET_KEY).toByteArray())
-
         val onConnectCallback = object : AndroidSqliteDriver.Callback(UserDatabase.Schema) {
             override fun onOpen(db: SupportSQLiteDatabase) {
                 super.onOpen(db)
@@ -57,13 +60,22 @@ actual class UserDatabaseProvider(private val context: Context, userId: UserIDEn
             }
         }
 
-        driver = AndroidSqliteDriver(
-            schema = UserDatabase.Schema,
-            context = context,
-            name = dbName,
-            factory = supportFactory,
-            callback = onConnectCallback
-        )
+        driver = if (encrypt) {
+            AndroidSqliteDriver(
+                schema = UserDatabase.Schema,
+                context = context,
+                name = dbName,
+                factory = SupportFactory(DBUtil.getOrGenerateSecretKey(kaliumPreferences, DATABASE_SECRET_KEY).toByteArray()),
+                callback = onConnectCallback
+            )
+        } else {
+            AndroidSqliteDriver(
+                schema = UserDatabase.Schema,
+                context = context,
+                name = dbName,
+                callback = onConnectCallback
+            )
+        }
 
         database = UserDatabase(
             driver,
