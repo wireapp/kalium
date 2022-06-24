@@ -237,7 +237,7 @@ class ObserveConversationListDetailsUseCaseTest {
     @Suppress("FunctionNaming")
     @Test
     fun givenAnOngoingCall_whenFetchingConversationDetails_thenTheConversationShouldHaveAnOngoingCall() = runTest {
-        val groupConversation = TestConversation.GROUP
+        val groupConversation = TestConversation.GROUP()
         val groupConversationDetails = ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED)
 
         val ongoingCall = Call(
@@ -279,7 +279,7 @@ class ObserveConversationListDetailsUseCaseTest {
 
     @Test
     fun givenAConversationWithoutAnOngoingCall_whenFetchingConversationDetails_thenTheConversationShouldNotHaveAnOngoingCall() = runTest {
-        val groupConversation = TestConversation.GROUP
+        val groupConversation = TestConversation.GROUP()
         val groupConversationDetails = ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED)
 
         val firstConversationsList = listOf(groupConversation)
