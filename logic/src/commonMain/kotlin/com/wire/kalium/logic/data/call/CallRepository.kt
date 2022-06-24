@@ -179,10 +179,9 @@ internal class CallDataSource(
         callProfile[conversationId]?.let { call ->
             callingLogger.i("updateCallParticipants() - conversationId: $conversationId with size of: ${participants.size}")
 
-            val sortedParticipants = participants.sortedBy { it.name }
             val updatedCalls = callProfile.calls.toMutableMap().apply {
                 this[conversationId] = call.copy(
-                    participants = sortedParticipants,
+                    participants = participants,
                     maxParticipants = max(call.maxParticipants, participants.size + 1)
                 )
             }
@@ -203,11 +202,10 @@ internal class CallDataSource(
                 participants = call.participants,
                 activeSpeakers = activeSpeakers
             )
-            val sortedParticipants = updatedParticipants.sortedBy { it.name }
 
             val updatedCalls = callProfile.calls.toMutableMap().apply {
                 this[conversationId] = call.copy(
-                    participants = sortedParticipants,
+                    participants = updatedParticipants,
                     maxParticipants = max(call.maxParticipants, updatedParticipants.size + 1)
                 )
             }

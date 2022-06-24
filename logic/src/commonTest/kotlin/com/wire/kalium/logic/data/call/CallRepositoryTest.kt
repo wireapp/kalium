@@ -296,14 +296,23 @@ class CallRepositoryTest {
     }
 
     @Test
-    fun givenNewCallParticipants_whenUpdatingParticipants_thenCallProfileIsUpdatedWithAlphabeticallySortedParticipants() = runTest {
+    fun givenNewCallParticipants_whenUpdatingParticipants_thenCallProfileIsUpdated() = runTest {
         callRepository.updateCallProfileFlow(
             CallProfile(
                 mapOf(establishedCall.conversationId.toString() to establishedCall)
             )
         )
 
-        val expectedParticipants = listOf(participant1, participant2)
+        val expectedParticipants = listOf(
+            Participant(
+                id = QualifiedID(
+                    value = "value1",
+                    domain = "domain1"
+                ),
+                clientId = "clientid",
+                isMuted = true
+            )
+        )
 
         val calls = callRepository.callsFlow()
 
@@ -312,8 +321,7 @@ class CallRepositoryTest {
             participants = expectedParticipants
         )
 
-        assertEquals(expectedParticipants.size, calls.first().first().participants.size)
-        assertEquals(participant2, calls.first().first().participants.first())
+        assertEquals(expectedParticipants, calls.first()[0].participants)
     }
 
     @Test
@@ -326,18 +334,28 @@ class CallRepositoryTest {
 
         val calls = callRepository.callsFlow()
 
-        val expectedParticipants = listOf(participant1, participant2)
+        val participants = listOf(
+            Participant(
+                id = QualifiedID(
+                    value = "value1",
+                    domain = "domain1"
+                ),
+                clientId = "clientid",
+                isMuted = false,
+                isSpeaking = false
+            )
+        )
 
         callRepository.updateCallParticipants(
             conversationId = establishedCall.conversationId.toString(),
-            participants = expectedParticipants
+            participants = participants
         )
 
         val expectedActiveSpeakers = CallActiveSpeakers(
             activeSpeakers = listOf(
                 CallActiveSpeaker(
                     userId = "value1@domain1",
-                    clientId = "clientId1",
+                    clientId = "clientid",
                     audioLevel = 1,
                     audioLevelNow = 1
                 )
@@ -349,8 +367,7 @@ class CallRepositoryTest {
             activeSpeakers = expectedActiveSpeakers
         )
 
-        assertEquals(true, calls.first()[0].participants[1].isSpeaking)
-        assertEquals(participant2, calls.first()[0].participants.first())
+        assertEquals(true, calls.first()[0].participants.first().isSpeaking)
     }
 
     private fun provideCall(id: ConversationId, status: CallStatus) = Call(
@@ -374,23 +391,5 @@ class CallRepositoryTest {
         private val conversationIdAnsweredCall = ConversationId("value2", "domain2")
         private val conversationIdIncomingCall = ConversationId("value3", "domain3")
         private val conversationIdEstablishedCall = ConversationId("value4", "domain4")
-        private val participant1 = Participant(
-            id = QualifiedID(
-                value = "value1",
-                domain = "domain1"
-            ),
-            name = "Wire user",
-            clientId = "clientId1",
-            isMuted = true
-        )
-        private val participant2 = Participant(
-            id = QualifiedID(
-                value = "value2",
-                domain = "domain2"
-            ),
-            name = "A user",
-            clientId = "clientId2",
-            isMuted = true
-        )
     }
 }

@@ -4,7 +4,7 @@ import app.cash.turbine.test
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.feature.call.usecase.GetAllCallsUseCase
+import com.wire.kalium.logic.feature.call.usecase.GetAllCallsWithSortedParticipantsUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import io.mockative.Mock
 import io.mockative.classOf
@@ -16,21 +16,25 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class GetAllCallsUseCaseTest {
+class GetAllCallsWithSortedParticipantsUseCaseTest {
 
     @Mock
     private val callRepository = mock(classOf<CallRepository>())
 
     @Mock
+    private val participantsOrder = mock(classOf<ParticipantsOrder>())
+
+    @Mock
     private val syncManager = mock(classOf<SyncManager>())
 
-    private lateinit var getAllCallsUseCase: GetAllCallsUseCase
+    private lateinit var getAllCallsWithSortedParticipantsUseCase: GetAllCallsWithSortedParticipantsUseCase
 
     @BeforeTest
     fun setUp() {
-        getAllCallsUseCase = GetAllCallsUseCase(
-            callRepository = callRepository,
-            syncManager = syncManager
+        getAllCallsWithSortedParticipantsUseCase = GetAllCallsWithSortedParticipantsUseCase(
+            callRepository,
+            syncManager,
+            participantsOrder
         )
     }
 
@@ -45,7 +49,7 @@ class GetAllCallsUseCaseTest {
         given(callRepository).invocation { callsFlow() }
             .then { callsFlow }
 
-        val result = getAllCallsUseCase()
+        val result = getAllCallsWithSortedParticipantsUseCase()
 
         result.test {
             assertEquals(calls1, awaitItem())
