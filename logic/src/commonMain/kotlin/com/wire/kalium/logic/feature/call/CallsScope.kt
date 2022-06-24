@@ -77,5 +77,5 @@ class CallsScope(
 
     val observeSpeaker: ObserveSpeakerUseCase get() = ObserveSpeakerUseCase(mediaManagerService)
 
-    val participantsOrder: ParticipantsOrder get() = ParticipantsOrder()
+    val participantsOrder: ParticipantsOrder get() = ParticipantsOrderImpl()
 }

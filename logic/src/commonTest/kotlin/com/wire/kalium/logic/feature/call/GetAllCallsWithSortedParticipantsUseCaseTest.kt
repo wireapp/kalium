@@ -43,6 +43,12 @@ class GetAllCallsWithSortedParticipantsUseCaseTest {
         val calls1 = listOf(call1, call2)
         val calls2 = listOf(call2)
 
+        given(participantsOrder).invocation { reorderItems(calls1.first().participants) }
+            .thenReturn(calls1.first().participants)
+
+        given(participantsOrder).invocation { reorderItems(calls2.first().participants) }
+            .thenReturn(calls2.first().participants)
+
         val callsFlow = flowOf(calls1, calls2)
         given(syncManager).invocation { startSyncIfIdle() }
             .thenReturn(Unit)

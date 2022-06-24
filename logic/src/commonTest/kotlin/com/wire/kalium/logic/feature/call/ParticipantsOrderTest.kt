@@ -13,7 +13,7 @@ class ParticipantsOrderTest {
 
     @BeforeTest
     fun setup() {
-        participantsOrder = ParticipantsOrder()
+        participantsOrder = ParticipantsOrderImpl()
     }
 
     @Test
