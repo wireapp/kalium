@@ -150,7 +150,7 @@ class UserDAOImpl(
     }
 
     override suspend fun insertOrIgnoreUserWithConnectionStatus(qualifiedID: QualifiedIDEntity, connectionStatus: ConnectionEntity.State) {
-        queries.insertOrIgnoreUserIdWithConnectionStatus(qualifiedID, connectionStatus)
+        userQueries.insertOrIgnoreUserIdWithConnectionStatus(qualifiedID, connectionStatus)
     }
 
     override suspend fun getAllUsersByConnectionStatus(connectionState: ConnectionEntity.State): List<UserEntity> =
