@@ -32,7 +32,8 @@ class ObserveMemberDetailsByIdsUseCase(
                         it?.let { otherUser ->
                             MemberDetails.Other(
                                 otherUser = otherUser
-                        )}
+                            )
+                        }
                     }
                 }
             }

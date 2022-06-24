@@ -47,7 +47,8 @@ class UserDAOImpl(
             user.team,
             user.connectionStatus,
             user.previewAssetId,
-            user.completeAssetId
+            user.completeAssetId,
+            user.userTypEntity
         )
     }
 
@@ -67,7 +68,8 @@ class UserDAOImpl(
                         user.team,
                         user.connectionStatus,
                         user.previewAssetId,
-                        user.completeAssetId
+                        user.completeAssetId,
+                        user.userTypEntity
                     )
                 }
             }
@@ -86,7 +88,8 @@ class UserDAOImpl(
                     user.team,
                     user.previewAssetId,
                     user.completeAssetId,
-                    user.id
+                    user.id,
+                    user.userTypEntity
                 )
                 val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
                 if (recordDidNotExist) {
@@ -100,7 +103,8 @@ class UserDAOImpl(
                         user.team,
                         user.connectionStatus,
                         user.previewAssetId,
-                        user.completeAssetId
+                        user.completeAssetId,
+                        user.userTypEntity
                     )
                 }
             }
