@@ -59,7 +59,7 @@ actual class CoreLogic(
         return userSessionScopeProvider.get(userId) ?: run {
             val rootAccountPath = "$rootPath/${userId.domain}/${userId.value}"
             val rootProteusPath = "$rootAccountPath/proteus"
-            val rootFileSystemPath = AssetsStorageFolder("$rootAccountPath/assets_storage")
+            val rootFileSystemPath = AssetsStorageFolder("${appContext.filesDir}/${userId.domain}/${userId.value}")
             val rootCachePath = CacheFolder("${appContext.cacheDir}/${userId.domain}/${userId.value}")
             val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath)
             val networkContainer = AuthenticatedNetworkContainer(
