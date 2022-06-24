@@ -57,7 +57,7 @@ interface SyncManager {
     fun onSlowSyncFailure(cause: CoreFailure): SyncState
 }
 
-@Suppress("TooManyFunctions") //Can't take them out right now. Maybe we can extract an `EventProcessor` on a future PR
+@Suppress("TooManyFunctions", "LongParameterList") //Can't take them out right now. Maybe we can extract an `EventProcessor` on a future PR
 internal class SyncManagerImpl(
     private val userSessionWorkScheduler: UserSessionWorkScheduler,
     private val eventRepository: EventRepository,
