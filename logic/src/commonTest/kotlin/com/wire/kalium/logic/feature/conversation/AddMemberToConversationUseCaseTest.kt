@@ -1,15 +1,23 @@
 package com.wire.kalium.logic.feature.conversation
 
-import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.GroupState
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.ProtocolInfo
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.IdMapperImpl
+import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.network.api.conversation.AddParticipantResponse
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
+import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
+import io.mockative.once
+import io.mockative.verify
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
 class AddMemberToConversationUseCaseTest {
