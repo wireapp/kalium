@@ -45,7 +45,7 @@ class ObserveConversationListDetailsUseCaseTest {
 
     @Test
     fun givenSomeConversations_whenObservingDetailsList_thenObserveConversationListShouldBeCalled() = runTest {
-        val conversations = listOf(TestConversation.SELF, TestConversation.GROUP)
+        val conversations = listOf(TestConversation.SELF, TestConversation.GROUP())
 
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationList)
@@ -67,7 +67,7 @@ class ObserveConversationListDetailsUseCaseTest {
 
     @Test
     fun givenSomeConversations_whenObservingDetailsList_thenSyncManagerShouldBeCalled() = runTest {
-        val conversations = listOf(TestConversation.SELF, TestConversation.GROUP)
+        val conversations = listOf(TestConversation.SELF, TestConversation.GROUP())
 
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationList)
@@ -89,7 +89,7 @@ class ObserveConversationListDetailsUseCaseTest {
 
     @Test
     fun givenSomeConversations_whenObservingDetailsList_thenObserveConversationDetailsShouldBeCalledForEachID() = runTest {
-        val conversations = listOf(TestConversation.SELF, TestConversation.GROUP)
+        val conversations = listOf(TestConversation.SELF, TestConversation.GROUP())
 
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationList)
@@ -114,7 +114,7 @@ class ObserveConversationListDetailsUseCaseTest {
     @Test
     fun givenSomeConversationsDetailsAreUpdated_whenObservingDetailsList_thenTheUpdateIsPropagatedThroughTheFlow() = runTest {
         val oneOnOneConversation = TestConversation.ONE_ON_ONE
-        val groupConversation = TestConversation.GROUP
+        val groupConversation = TestConversation.GROUP()
         val conversations = listOf(groupConversation, oneOnOneConversation)
 
         val groupConversationUpdates = listOf(ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED))
@@ -162,7 +162,7 @@ class ObserveConversationListDetailsUseCaseTest {
 
     @Test
     fun givenAConversationIsAddedToTheList_whenObservingDetailsList_thenTheUpdateIsPropagatedThroughTheFlow() = runTest {
-        val groupConversation = TestConversation.GROUP
+        val groupConversation = TestConversation.GROUP()
         val groupConversationDetails = ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED)
 
         val selfConversation = TestConversation.SELF

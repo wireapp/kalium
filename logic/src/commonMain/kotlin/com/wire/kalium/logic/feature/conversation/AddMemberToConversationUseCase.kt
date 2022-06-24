@@ -3,13 +3,12 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.Member
+import com.wire.kalium.logic.data.conversation.ProtocolInfo
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.network.api.conversation.AddParticipantResponse
-import com.wire.kalium.persistence.dao.ConversationEntity
-import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo.Proteus
 
 interface AddMemberToConversationUseCase {
     suspend operator fun invoke(conversationId: ConversationId, members: List<Member>)
@@ -25,20 +24,19 @@ class AddMemberToConversationUseCaseImpl(
         val userIdsMembers = members.map {
             idMapper.toUserId(it)
         }
-        conversationRepository.getConversationProtocolInfo(conversationId).flatMap { protocolInfo ->
-            when (protocolInfo) {
-                is Proteus -> conversationRepository.addMembers(members, conversationId).map {
+        conversationRepository.getConversationDetailsById(conversationId).flatMap { conversation ->
+            when (conversation.protocolInfo) {
+                is ProtocolInfo.Proteus -> conversationRepository.addMembers(members, conversationId).map {
                     when (it) {
                         is AddParticipantResponse.ConversationUnchanged -> {}
                         is AddParticipantResponse.UserAdded -> {
-                            //persist the user in the db
                             conversationRepository.persistMembers(members, conversationId)
                         }
                     }
                 }
 
-                is ConversationEntity.ProtocolInfo.MLS -> {
-                    mlsConversationRepository.addMemberToMLSGroup("", userIdsMembers)
+                is ProtocolInfo.MLS -> {
+                    mlsConversationRepository.addMemberToMLSGroup(conversation.protocolInfo.groupId, userIdsMembers)
                 }
             }
         }

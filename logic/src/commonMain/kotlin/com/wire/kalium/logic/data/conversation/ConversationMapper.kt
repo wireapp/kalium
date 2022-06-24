@@ -33,6 +33,7 @@ internal class ConversationMapperImpl(
     private val idMapper: IdMapper,
     private val conversationStatusMapper: ConversationStatusMapper,
     private val userTypeMapper: UserTypeMapper,
+    private val protocolInfoMapper: ProtocolInfoMapper
 ) : ConversationMapper {
 
     override fun fromApiModelToDaoModel(
@@ -59,6 +60,7 @@ internal class ConversationMapperImpl(
         name = daoModel.name,
         type = daoModel.type.fromDaoModelToType(),
         teamId = daoModel.teamId?.let { TeamId(it) },
+        protocolInfo = protocolInfoMapper.fromEntity(daoModel.protocolInfo),
         mutedStatus = conversationStatusMapper.fromDaoModel(daoModel.mutedStatus),
         lastNotificationDate = daoModel.lastNotificationDate,
         lastModifiedDate = daoModel.lastModifiedDate
