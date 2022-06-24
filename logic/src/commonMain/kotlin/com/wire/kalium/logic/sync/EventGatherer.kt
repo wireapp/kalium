@@ -19,7 +19,20 @@ import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.mapNotNull
 
-interface EventGatherer {
+/**
+ * Responsible for fetching events from a remote source, orchestrating between events missed since
+ * the last time we gathered events and new events being received in real time.
+ */
+internal interface EventGatherer {
+
+    /**
+     * Fetches events from remote sources, handling websocket opening and duplication of events from multiple sources.
+     * - Opens Websocket
+     * - Fetches missed events since last time online
+     * - Emits missed events
+     * - Updates status to Online
+     * - Emits Websocket events as they come, omitting duplications.
+     */
     suspend fun gatherEvents(): Flow<Event>
 }
 
