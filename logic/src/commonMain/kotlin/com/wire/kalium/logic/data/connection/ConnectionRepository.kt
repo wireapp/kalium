@@ -37,9 +37,9 @@ interface ConnectionRepository {
     suspend fun fetchSelfUserConnections(): Either<CoreFailure, Unit>
     suspend fun sendUserConnection(userId: UserId): Either<CoreFailure, Unit>
     suspend fun updateConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, Connection>
-    suspend fun getConnections(): Either<StorageFailure, Flow<List<Connection>>>
+    suspend fun getConnections(): Either<StorageFailure, Flow<List<ConversationDetails>>>
     suspend fun insertConnectionFromEvent(event: Event.User.NewConnection): Either<CoreFailure, Unit>
-    suspend fun observeConnectionList(): Flow<List<Connection>>
+    suspend fun observeConnectionList(): Flow<List<ConversationDetails>>
     suspend fun observeConnectionListAsDetails(): Flow<List<ConversationDetails>>
 }
 
@@ -123,15 +123,15 @@ internal class ConnectionDataSource(
         else -> false
     }
 
-    override suspend fun getConnections(): Either<StorageFailure, Flow<List<Connection>>> = wrapStorageRequest {
+    override suspend fun getConnections(): Either<StorageFailure, Flow<List<ConversationDetails>>> = wrapStorageRequest {
         observeConnectionList()
     }
 
-    override suspend fun observeConnectionList(): Flow<List<Connection>> {
+    override suspend fun observeConnectionList(): Flow<List<ConversationDetails>> {
         return connectionDAO.getConnectionRequests().map {
             it.map { connection ->
                 val otherUser = userDAO.getUserByQualifiedID(connection.qualifiedToId)
-                connectionMapper.fromDaoToModel(connection, otherUser.first())
+                connectionMapper.fromDaoToConnectionDetails(connection, otherUser.first())
             }
         }
     }
