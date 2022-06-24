@@ -6,6 +6,7 @@ import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
+import com.wire.kalium.persistence.dao.UserTypeEntity
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.mock
@@ -46,7 +47,8 @@ class UserMapperTest {
             connectionStatus = ConnectionEntity.State.ACCEPTED,
             previewAssetId = null,
             completeAssetId = null,
-            availabilityStatus = UserAvailabilityStatusEntity.NONE
+            availabilityStatus = UserAvailabilityStatusEntity.NONE,
+            userTypEntity = UserTypeEntity.INTERNAL,
         )
 
         val result = userMapper.fromTeamMemberToDaoModel(

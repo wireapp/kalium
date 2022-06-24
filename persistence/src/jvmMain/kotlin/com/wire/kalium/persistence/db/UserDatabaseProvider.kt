@@ -11,6 +11,7 @@ import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
 import com.wire.kalium.persistence.MessageMemberChangeContent
+import com.wire.kalium.persistence.MessageRestrictedAssetContent
 import com.wire.kalium.persistence.MessageTextContent
 import com.wire.kalium.persistence.MessageUnknownContent
 import com.wire.kalium.persistence.User
@@ -92,6 +93,9 @@ actual class UserDatabaseProvider(private val storePath: File) {
                 member_change_listAdapter = QualifiedIDListAdapter(),
                 member_change_typeAdapter = EnumColumnAdapter()
             ),
+            MessageRestrictedAssetContent.Adapter(
+                conversation_idAdapter = QualifiedIDAdapter()
+            ),
             MessageTextContent.Adapter(
                 conversation_idAdapter = QualifiedIDAdapter()
             ),
@@ -103,6 +107,7 @@ actual class UserDatabaseProvider(private val storePath: File) {
                 accent_idAdapter = IntColumnAdapter,
                 connection_statusAdapter = EnumColumnAdapter(),
                 user_availability_statusAdapter = EnumColumnAdapter(),
+                user_typeAdapter = EnumColumnAdapter(),
                 preview_asset_idAdapter = QualifiedIDAdapter(),
                 complete_asset_idAdapter = QualifiedIDAdapter(),
             )

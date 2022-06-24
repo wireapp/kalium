@@ -68,7 +68,8 @@ class UserDAOTest : BaseDatabaseTest() {
             ConnectionEntity.State.ACCEPTED,
             UserAssetIdEntity("asset1", "domain"),
             UserAssetIdEntity("asset1", "domain"),
-            UserAvailabilityStatusEntity.NONE
+            UserAvailabilityStatusEntity.NONE,
+            UserTypeEntity.INTERNAL
         )
         db.userDAO.updateSelfUser(updatedUser1)
         val result = db.userDAO.getUserByQualifiedID(user1.id).first()
@@ -89,7 +90,8 @@ class UserDAOTest : BaseDatabaseTest() {
             ConnectionEntity.State.ACCEPTED,
             UserAssetIdEntity("asset1", "domain"),
             UserAssetIdEntity("asset2", "domain"),
-            UserAvailabilityStatusEntity.NONE
+            UserAvailabilityStatusEntity.NONE,
+            UserTypeEntity.INTERNAL
         )
 
         val result = db.userDAO.getUserByQualifiedID(user1.id)
@@ -103,8 +105,18 @@ class UserDAOTest : BaseDatabaseTest() {
     fun givenRetrievedUser_ThenUpdatesArePropagatedThroughFlow() = runTest {
         db.userDAO.insertUser(user1)
         val updatedUser1 = UserEntity(
-            user1.id, "John Doe", "johndoe", "email1", "phone1", 1, "team",
-            ConnectionEntity.State.ACCEPTED, null, null, UserAvailabilityStatusEntity.NONE
+            user1.id,
+            "John Doe",
+            "johndoe",
+            "email1",
+            "phone1",
+            1,
+            "team",
+            ConnectionEntity.State.ACCEPTED,
+            null,
+            null,
+            UserAvailabilityStatusEntity.NONE,
+            UserTypeEntity.INTERNAL
         )
 
         val result = db.userDAO.getUserByQualifiedID(user1.id)
@@ -181,7 +193,8 @@ class UserDAOTest : BaseDatabaseTest() {
                     ConnectionEntity.State.ACCEPTED,
                     null,
                     null,
-                    UserAvailabilityStatusEntity.NONE
+                    UserAvailabilityStatusEntity.NONE,
+                    UserTypeEntity.INTERNAL
                 ),
                 UserEntity(
                     id = QualifiedIDEntity("5", "wire.com"),
@@ -194,7 +207,8 @@ class UserDAOTest : BaseDatabaseTest() {
                     ConnectionEntity.State.ACCEPTED,
                     null,
                     null,
-                    UserAvailabilityStatusEntity.NONE
+                    UserAvailabilityStatusEntity.NONE,
+                    UserTypeEntity.INTERNAL
                 )
             )
             val mockUsers = commonEmailUsers + notCommonEmailUsers
