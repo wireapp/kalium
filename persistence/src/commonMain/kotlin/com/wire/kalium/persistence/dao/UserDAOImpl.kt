@@ -88,8 +88,8 @@ class UserDAOImpl(
                     user.team,
                     user.previewAssetId,
                     user.completeAssetId,
+                    user.userTypEntity,
                     user.id,
-                    user.userTypEntity
                 )
                 val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
                 if (recordDidNotExist) {
