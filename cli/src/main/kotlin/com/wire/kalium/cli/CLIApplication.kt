@@ -99,7 +99,7 @@ class DeleteClientCommand : CliktCommand(name = "delete-client") {
 
         val clientIndex = prompt("Enter client index", promptSuffix = ": ")?.toInt() ?: throw PrintMessage("Index must be an integer")
         val deleteClientResult =
-            userSession.client.deleteClient(DeleteClientParam(password, selfClientsResult.clients[clientIndex].clientId))
+            userSession.client.deleteClient(DeleteClientParam(password, selfClientsResult.clients[clientIndex].id))
 
         when (deleteClientResult) {
             is DeleteClientResult.Failure.Generic -> throw PrintMessage("Delete client failed: ${deleteClientResult.genericFailure}")
@@ -195,10 +195,6 @@ class ListenGroupCommand : CliktCommand(name = "listen-group") {
     override fun run() = runBlocking {
         val userSession = currentUserSession()
         val conversationID = selectConversation(userSession).id
-
-        GlobalScope.launch(Dispatchers.Default) {
-            userSession.listenToEvents()
-        }
 
         GlobalScope.launch(Dispatchers.Default) {
             userSession.messages.getRecentMessages(conversationID, limit = 1).collect {

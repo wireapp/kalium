@@ -36,7 +36,8 @@ sealed class ConversationDetails(open val conversation: Conversation) {
 
     data class Group(
         override val conversation: Conversation,
-        val legalHoldStatus: LegalHoldStatus
+        val legalHoldStatus: LegalHoldStatus,
+        val hasOngoingCall: Boolean = false
     ) : ConversationDetails(conversation)
 
     data class Connection(

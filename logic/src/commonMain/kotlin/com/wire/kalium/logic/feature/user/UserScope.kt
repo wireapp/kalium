@@ -16,6 +16,8 @@ import com.wire.kalium.logic.feature.publicuser.SearchKnownUsersUseCase
 import com.wire.kalium.logic.feature.publicuser.SearchKnownUsersUseCaseImpl
 import com.wire.kalium.logic.feature.publicuser.SearchUserDirectoryUseCase
 import com.wire.kalium.logic.feature.publicuser.SearchUserDirectoryUseCaseImpl
+import com.wire.kalium.logic.feature.publicuser.SearchUsersUseCase
+import com.wire.kalium.logic.feature.publicuser.SearchUsersUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 
 class UserScope(
@@ -30,6 +32,7 @@ class UserScope(
     val syncSelfUser: SyncSelfUserUseCase get() = SyncSelfUserUseCase(userRepository)
     val syncContacts: SyncContactsUseCase get() = SyncContactsUseCaseImpl(userRepository)
     val uploadUserAvatar: UploadUserAvatarUseCase get() = UploadUserAvatarUseCaseImpl(userRepository, assetRepository)
+    val searchUsers: SearchUsersUseCase get() = SearchUsersUseCaseImpl(userRepository, searchUserRepository)
     val searchKnownUsers: SearchKnownUsersUseCase get() = SearchKnownUsersUseCaseImpl(searchUserRepository)
     val getPublicAsset: GetAvatarAssetUseCase get() = GetAvatarAssetUseCaseImpl(assetRepository)
     val searchUserDirectory: SearchUserDirectoryUseCase get() = SearchUserDirectoryUseCaseImpl(searchUserRepository)

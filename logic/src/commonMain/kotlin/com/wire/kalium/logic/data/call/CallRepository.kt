@@ -29,9 +29,9 @@ interface CallRepository {
     fun callsFlow(): Flow<List<Call>>
     fun incomingCallsFlow(): Flow<List<Call>>
     fun ongoingCallsFlow(): Flow<List<Call>>
+    fun establishedCallsFlow(): Flow<List<Call>>
     suspend fun createCall(conversationId: ConversationId, status: CallStatus, callerId: String, isMuted: Boolean, isCameraOn: Boolean)
     fun updateCallStatusById(conversationId: String, status: CallStatus)
-    fun removeCallById(conversationId: String)
     fun updateIsMutedById(conversationId: String, isMuted: Boolean)
     fun updateIsCameraOnById(conversationId: String, isCameraOn: Boolean)
     fun updateCallParticipants(conversationId: String, participants: List<Participant>)
@@ -73,6 +73,14 @@ internal class CallDataSource(
     }
 
     override fun ongoingCallsFlow(): Flow<List<Call>> = allCalls.map {
+        it.calls.values.filter { call ->
+            call.status in listOf(
+                CallStatus.STILL_ONGOING
+            )
+        }
+    }
+
+    override fun establishedCallsFlow(): Flow<List<Call>> = allCalls.map {
         it.calls.values.filter { call ->
             call.status in listOf(
                 CallStatus.ESTABLISHED,
@@ -163,12 +171,6 @@ internal class CallDataSource(
                 calls = updatedCalls
             )
         }
-    }
-
-    override fun removeCallById(conversationId: String) {
-        val callProfile = _callProfile.value
-        val oldValues = callProfile.calls.filterKeys { it != conversationId }
-        _callProfile.value = CallProfile(oldValues)
     }
 
     override fun updateCallParticipants(conversationId: String, participants: List<Participant>) {

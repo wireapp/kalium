@@ -5,10 +5,12 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.usecase.EndCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetAllCallsUseCase
+import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallsUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetIncomingCallsUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetIncomingCallsUseCaseImpl
-import com.wire.kalium.logic.feature.call.usecase.GetOngoingCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCase
+import com.wire.kalium.logic.feature.call.usecase.ObserveOngoingCallsUseCase
+import com.wire.kalium.logic.feature.call.usecase.ObserveOngoingCallsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveSpeakerUseCase
 import com.wire.kalium.logic.feature.call.usecase.RejectCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.SetVideoPreviewUseCase
@@ -36,8 +38,8 @@ class CallsScope(
             syncManager = syncManager
         )
 
-    val onGoingCall: GetOngoingCallUseCase
-        get() = GetOngoingCallUseCase(
+    val establishedCall: ObserveEstablishedCallsUseCase
+        get() = ObserveEstablishedCallsUseCase(
             callRepository = callRepository,
             syncManager = syncManager
         )
@@ -48,6 +50,12 @@ class CallsScope(
             syncManager = syncManager,
             conversationRepository = conversationRepository,
             userRepository = userRepository
+        )
+
+    val observeOngoingCalls: ObserveOngoingCallsUseCase
+        get() = ObserveOngoingCallsUseCaseImpl(
+            callRepository = callRepository,
+            syncManager = syncManager
         )
 
     val startCall: StartCallUseCase get() = StartCallUseCase(callManager)
