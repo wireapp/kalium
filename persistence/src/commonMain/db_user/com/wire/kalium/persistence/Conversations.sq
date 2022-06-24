@@ -56,10 +56,10 @@ SET last_modified_date = ?
 WHERE qualified_id = ?;
 
 selectAllConversations:
-SELECT * FROM Conversation ORDER BY last_modified_date DESC ;
+SELECT * FROM Conversation WHERE type IS NOT 'CONNECTION_PENDING' ORDER BY last_modified_date DESC;
 
 selectByQualifiedId:
-SELECT * FROM Conversation WHERE qualified_id = ? AND type IS NOT 'CONNECTION_PENDING';
+SELECT * FROM Conversation WHERE qualified_id = ?;
 
 selectByGroupId:
 SELECT * FROM Conversation WHERE mls_group_id = ?;
