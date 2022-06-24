@@ -3,6 +3,8 @@ package com.wire.kalium.cli
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.PrintMessage
 import com.github.ajalt.clikt.core.subcommands
+import com.github.ajalt.clikt.output.TermUi.echo
+import com.github.ajalt.clikt.output.TermUi.prompt
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.prompt
 import com.wire.kalium.logger.KaliumLogLevel
@@ -10,9 +12,12 @@ import com.wire.kalium.logic.CoreLogger
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.client.DeleteClientParam
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.publicuser.model.OtherUser
+import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
@@ -42,15 +47,47 @@ fun restoreSession(): AuthSession? {
     }
 }
 
+fun currentUserSession(): UserSessionScope {
+    val authSession = restoreSession() ?: throw PrintMessage("no active session")
+    return coreLogic.getSessionScope(authSession.tokens.userId)
+}
+
+suspend fun selectConversation(userSession: UserSessionScope): Conversation {
+    val conversations = userSession.conversations.getConversations().let {
+        when (it) {
+            is GetConversationsUseCase.Result.Success -> it.convFlow.first()
+            is GetConversationsUseCase.Result.Failure -> throw PrintMessage("Failed to retrieve conversation: ${it.storageFailure}")
+            else -> throw PrintMessage("Failed to retrieve conversation: Unknown reason")
+        }
+    }
+
+    conversations.forEachIndexed { index, conversation ->
+        echo("$index) ${conversation.id.value}  Name: ${conversation.name}")
+    }
+
+    val selectedConversationIndex =
+        prompt("Enter conversation index", promptSuffix = ": ")?.toInt() ?: throw PrintMessage("Index must be an integer")
+    return conversations[selectedConversationIndex]
+}
+
+suspend fun selectConnection(userSession: UserSessionScope): OtherUser {
+    val connections = userSession.users.getAllKnownUsers()
+    connections.forEachIndexed { index, connection ->
+        echo("$index) ${connection.id.value}  Name: ${connection.name}")
+    }
+    val selectedConnectionIndex =
+        prompt("Enter connection index", promptSuffix = ": ")?.toInt() ?: throw PrintMessage("Index must be an integer")
+    return connections[selectedConnectionIndex]
+}
+
 class DeleteClientCommand : CliktCommand(name = "delete-client") {
 
     private val password: String by option(help = "Account password").prompt("password", promptSuffix = ": ", hideInput = true)
 
     override fun run() = runBlocking {
-        val authSession = restoreSession() ?: throw PrintMessage("no active session")
-        val userSession = coreLogic.getSessionScope(authSession.tokens.userId)
+        val userSession = currentUserSession()
 
-        val selfClientsResult = userSession.client.selfClients()
+        val selfClientsResult = currentUserSession().client.selfClients()
 
         if (selfClientsResult !is SelfClientsResult.Success) {
             throw PrintMessage("failed to retrieve self clients")
@@ -77,8 +114,7 @@ class CreateGroupCommand : CliktCommand(name = "create-group") {
     private val name: String by option(help = "Name of the group").prompt()
 
     override fun run() = runBlocking {
-        val authSession = restoreSession() ?: throw PrintMessage("no active session")
-        val userSession = coreLogic.getSessionScope(authSession.tokens.userId)
+        val userSession = currentUserSession()
 
         val users = userSession.users.getAllKnownUsers()
 
@@ -91,9 +127,7 @@ class CreateGroupCommand : CliktCommand(name = "create-group") {
         val members = userIndices.map { Member(users[it].id) }
 
         val result = userSession.conversations.createGroupConversation(
-            name,
-            members,
-            ConversationOptions(protocol = ConversationOptions.Protocol.MLS)
+            name, members, ConversationOptions(protocol = ConversationOptions.Protocol.MLS)
         )
         when (result) {
             is Either.Right -> echo("group created successfully")
@@ -159,23 +193,8 @@ class LoginCommand : CliktCommand(name = "login") {
 class ListenGroupCommand : CliktCommand(name = "listen-group") {
 
     override fun run() = runBlocking {
-        val authSession = restoreSession() ?: throw PrintMessage("no active session")
-        val userSession = coreLogic.getSessionScope(authSession.tokens.userId)
-        val conversations = userSession.conversations.getConversations().let {
-            when (it) {
-                is GetConversationsUseCase.Result.Success -> it.convFlow.first()
-                is GetConversationsUseCase.Result.Failure -> throw PrintMessage("Failed to retrieve conversation: ${it.storageFailure}")
-                else -> throw PrintMessage("Failed to retrieve conversation: Unknown reason")
-            }
-        }
-
-        conversations.forEachIndexed { index, conversation ->
-            echo("$index) ${conversation.id.value}  Name: ${conversation.name}")
-        }
-
-        val conversationIndex =
-            prompt("Enter conversation index", promptSuffix = ": ")?.toInt() ?: throw PrintMessage("Index must be an integer")
-        val conversationID = conversations[conversationIndex].id
+        val userSession = currentUserSession()
+        val conversationID = selectConversation(userSession).id
 
         GlobalScope.launch(Dispatchers.Default) {
             userSession.listenToEvents()
@@ -186,7 +205,8 @@ class ListenGroupCommand : CliktCommand(name = "listen-group") {
                 for (message in it) {
                     when (val content = message.content) {
                         is MessageContent.Text -> echo("> ${content.value}")
-                        is MessageContent.Unknown -> { /* do nothing */ }
+                        is MessageContent.Unknown -> { /* do nothing */
+                        }
                     }
                 }
             }
@@ -201,6 +221,18 @@ class ListenGroupCommand : CliktCommand(name = "listen-group") {
 
 }
 
+class AddMemberToGroupCommand : CliktCommand(name = "add-member") {
+    override fun run() = runBlocking {
+
+        val userSession = currentUserSession()
+
+        val selectedConversation = selectConversation(userSession)
+        val selectedConnection = selectConnection(userSession)
+
+        userSession.conversations.addMemberToConversationUseCase(selectedConversation.id, listOf(Member(id = selectedConnection.id)))
+    }
+}
+
 class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
 
     override fun run() = runBlocking {
@@ -213,6 +245,6 @@ class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
 
 }
 
-fun main(args: Array<String>) = CLIApplication()
-    .subcommands(LoginCommand(), CreateGroupCommand(), ListenGroupCommand(), DeleteClientCommand())
-    .main(args)
+fun main(args: Array<String>) = CLIApplication().subcommands(
+    LoginCommand(), CreateGroupCommand(), ListenGroupCommand(), DeleteClientCommand(), AddMemberToGroupCommand()
+).main(args)

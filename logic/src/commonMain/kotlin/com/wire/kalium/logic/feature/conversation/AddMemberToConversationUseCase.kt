@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.feature.conversation
 
-import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.Member
@@ -13,7 +12,7 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo.Proteus
 
 interface AddMemberToConversationUseCase {
-    suspend operator fun invoke(conversationId: ConversationId, clientId: ClientId, members: List<Member>)
+    suspend operator fun invoke(conversationId: ConversationId, members: List<Member>)
 }
 
 class AddMemberToConversationUseCaseImpl(
@@ -21,7 +20,7 @@ class AddMemberToConversationUseCaseImpl(
     private val mlsConversationRepository: MLSConversationRepository,
     private val idMapper: IdMapper
 ) : AddMemberToConversationUseCase {
-    override suspend fun invoke(conversationId: ConversationId, clientId: ClientId, members: List<Member>) {
+    override suspend fun invoke(conversationId: ConversationId, members: List<Member>) {
 
         val userIdsMembers = members.map {
             idMapper.toUserId(it)
