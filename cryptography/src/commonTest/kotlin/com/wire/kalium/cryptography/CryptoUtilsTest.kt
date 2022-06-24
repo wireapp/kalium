@@ -42,8 +42,8 @@ class CryptoUtilsTest {
         // Given
         val fileSystem = FakeFileSystem()
         val userHome = "/Users/me".toPath()
-        val inputPath = "$userHome/test-text.txt".toPath()
-        val input = "Hello World".toByteArray()
+        val inputPath = "$userHome/test-dummy.pdf".toPath()
+        val input = readBinaryResource("dummy.pdf")
         fileSystem.createDirectories(userHome)
         fileSystem.write(inputPath) {
             write(input)
@@ -54,7 +54,7 @@ class CryptoUtilsTest {
 
         // Then
         assertNotNull(digest)
-        assertEquals("YTU5MWE2ZDQwYmY0MjA0MDRhMDExNzMzY2ZiN2IxOTBkNjJjNjViZjBiY2RhMzJiNTdiMjc3ZDlhZDlmMTQ2ZQ==", digest.encodeBase64())
+        assertEquals("M2RmNzlkMzRhYmJjYTk5MzA4ZTc5Y2I5NDQ2MWMxODkzNTgyNjA0ZDY4MzI5YTQxZmQ0YmVjMTg4NWU2YWRiNA==", digest.encodeBase64())
     }
 
     @Test
@@ -90,4 +90,5 @@ class CryptoUtilsTest {
         assertEquals(decryptedDataSize, inputData.size.toLong())
         assertEquals(decodedMessage, testMessage)
     }
+
 }
