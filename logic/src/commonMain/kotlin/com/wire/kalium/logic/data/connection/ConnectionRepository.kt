@@ -91,12 +91,8 @@ internal class ConnectionDataSource(
         return latestResult
     }
 
-    // first insert connections table + users
-    // then update user status
-    // if the connection is other than pending/sent, insert members
     private suspend fun updateConnectionsFromSync(connections: List<ConnectionDTO>) {
         connections.forEach { connectionDTO ->
-            persistConnection(connectionMapper.fromApiToModel(connectionDTO))
             updateUserConnectionStatus(connectionMapper.fromApiToModel(connectionDTO))
         }
     }
@@ -107,7 +103,6 @@ internal class ConnectionDataSource(
         }.flatMap { connection ->
             val connectionSent = connection.copy(status = ConnectionStateDTO.SENT)
             updateUserConnectionStatus(connectionMapper.fromApiToModel(connectionSent))
-            persistConnection(connectionMapper.fromApiToModel(connection))
         }.map { }
     }
 
@@ -146,7 +141,7 @@ internal class ConnectionDataSource(
         return connectionDAO.getConnectionRequests().map {
             it.map { connection ->
                 val otherUser = userDAO.getUserByQualifiedID(connection.qualifiedToId)
-                connectionMapper.fromDaoToConnectionDetails(connection, otherUser.first())
+                connectionMapper.fromDaoToConnectionDetails(connection, otherUser.firstOrNull())
             }
         }
     }
@@ -155,7 +150,7 @@ internal class ConnectionDataSource(
         return connectionDAO.getConnectionRequests().map {
             it.map { connection ->
                 val otherUser = userDAO.getUserByQualifiedID(connection.qualifiedToId)
-                connectionMapper.fromDaoToConnectionDetails(connection, otherUser.first())
+                connectionMapper.fromDaoToConnectionDetails(connection, otherUser.firstOrNull())
             }
         }
     }
