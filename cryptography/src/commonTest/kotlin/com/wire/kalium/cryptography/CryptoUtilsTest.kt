@@ -13,6 +13,7 @@ import okio.fakefilesystem.FakeFileSystem
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class CryptoUtilsTest {
 
@@ -51,10 +52,12 @@ class CryptoUtilsTest {
 
         // When
         val digest = calcSHA256(inputPath, fileSystem)
+        val expectedValue = "3df79d34abbca99308e79cb94461c1893582604d68329a41fd4bec1885e6adb4".decodeHex()
+
 
         // Then
         assertNotNull(digest)
-        assertEquals("M2RmNzlkMzRhYmJjYTk5MzA4ZTc5Y2I5NDQ2MWMxODkzNTgyNjA0ZDY4MzI5YTQxZmQ0YmVjMTg4NWU2YWRiNA==", digest.encodeBase64())
+        assertTrue(digest.contentEquals(expectedValue))
     }
 
     @Test
@@ -91,4 +94,11 @@ class CryptoUtilsTest {
         assertEquals(decodedMessage, testMessage)
     }
 
+}
+
+private fun String.decodeHex(): ByteArray {
+    check(length % 2 == 0) { "Must have an even length" }
+    return chunked(2)
+        .map { it.toInt(16).toByte() }
+        .toByteArray()
 }
