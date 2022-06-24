@@ -96,6 +96,7 @@ com.wire.kalium.logic.data.client.remote
 com.wire.kalium.logic.data.connection
 com.wire.kalium.logic.data.conversation
 com.wire.kalium.logic.data.event
+com.wire.kalium.logic.data.featureConfig
 com.wire.kalium.logic.data.id
 com.wire.kalium.logic.data.keypackage
 com.wire.kalium.logic.data.location
@@ -124,6 +125,7 @@ com.wire.kalium.logic.feature.call.usecase
 com.wire.kalium.logic.feature.client
 com.wire.kalium.logic.feature.connection
 com.wire.kalium.logic.feature.conversation
+com.wire.kalium.logic.feature.featureConfig
 com.wire.kalium.logic.feature.keypackage
 com.wire.kalium.logic.feature.message
 com.wire.kalium.logic.feature.notificationToken
@@ -148,6 +150,7 @@ com.wire.kalium.network.api.call
 com.wire.kalium.network.api.configuration
 com.wire.kalium.network.api.contact.search
 com.wire.kalium.network.api.conversation
+com.wire.kalium.network.api.featureConfigs
 com.wire.kalium.network.api.keypackage
 com.wire.kalium.network.api.message
 com.wire.kalium.network.api.model
