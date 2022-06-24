@@ -201,18 +201,18 @@ class SyncManagerTest {
     }
 
     @Test
-    fun givenSyncStatusIsLive_whenStartingSync_thenShouldCallTheSlowSyncScheduler() = runTest(TestKaliumDispatcher.default) {
+    fun givenSyncStatusIsLive_whenStartingSync_thenShouldNotCallTheSlowSyncScheduler() = runTest(TestKaliumDispatcher.default) {
         syncRepository.updateSyncState { SyncState.Live }
 
         syncManager.startSyncIfIdle()
 
         verify(workScheduler)
             .function(workScheduler::enqueueSlowSyncIfNeeded)
-            .wasInvoked(exactly = once)
+            .wasNotInvoked()
     }
 
     @Test
-    fun givenSyncStatusIsGatheringPendingEvents_whenStartingSync_thenShouldCallTheSlowSyncScheduler() =
+    fun givenSyncStatusIsGatheringPendingEvents_whenStartingSync_thenShouldNotCallTheSlowSyncScheduler() =
         runTest(TestKaliumDispatcher.default) {
             syncRepository.updateSyncState { SyncState.GatheringPendingEvents }
 
@@ -220,18 +220,18 @@ class SyncManagerTest {
 
             verify(workScheduler)
                 .function(workScheduler::enqueueSlowSyncIfNeeded)
-                .wasInvoked(exactly = once)
+                .wasNotInvoked()
         }
 
     @Test
-    fun givenSyncStatusIsSlowSync_whenStartingSync_thenShouldCallTheSlowSyncScheduler() = runTest(TestKaliumDispatcher.default) {
+    fun givenSyncStatusIsSlowSync_whenStartingSync_thenShouldNotCallTheSlowSyncScheduler() = runTest(TestKaliumDispatcher.default) {
         syncRepository.updateSyncState { SyncState.SlowSync }
 
         syncManager.startSyncIfIdle()
 
         verify(workScheduler)
             .function(workScheduler::enqueueSlowSyncIfNeeded)
-            .wasInvoked(exactly = once)
+            .wasNotInvoked()
     }
 
     @Test

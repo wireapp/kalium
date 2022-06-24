@@ -155,13 +155,13 @@ internal class SyncManagerImpl(
         syncRepository.updateSyncState {
             when (it) {
                 SyncState.Waiting, is SyncState.Failed -> {
+                    userSessionWorkScheduler.enqueueSlowSyncIfNeeded()
                     SyncState.SlowSync
                 }
 
                 else -> it
             }
         }
-        userSessionWorkScheduler.enqueueSlowSyncIfNeeded()
     }
 
     override suspend fun isSlowSyncOngoing(): Boolean = syncRepository.syncState.first() == SyncState.SlowSync
