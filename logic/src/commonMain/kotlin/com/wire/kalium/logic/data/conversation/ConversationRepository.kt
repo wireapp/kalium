@@ -34,9 +34,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.takeWhile
 import com.wire.kalium.network.api.ConversationId as RemoteConversationId
 
 interface ConversationRepository {
@@ -214,7 +218,9 @@ class ConversationDataSource(
 
                 getConversationMembers(conversation.id)
                     .map { members ->
-                        members.firstOrNull { itemId -> itemId != selfUser.id }
+                        val member = members.firstOrNull { itemId -> itemId != selfUser.id }
+                        kaliumLogger.d(">>>>% member: ${members.size}")
+                        member
                     }
                     .fold({
                         when (it) {
@@ -229,8 +235,10 @@ class ConversationDataSource(
                         emptyFlow()
                     }, { otherUserIdOrNull ->
                         otherUserIdOrNull?.let {
+                            kaliumLogger.d("skip mapping null member: $it")
                             userRepository.getKnownUser(it)
                         } ?: run {
+                            kaliumLogger.d("skip mapping null member")
                             emptyFlow()
                         }
                     }).filterNotNull().map { otherUser ->

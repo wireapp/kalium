@@ -59,7 +59,7 @@ selectAllConversations:
 SELECT * FROM Conversation ORDER BY last_modified_date DESC ;
 
 selectByQualifiedId:
-SELECT * FROM Conversation WHERE qualified_id = ?;
+SELECT * FROM Conversation WHERE qualified_id = ? AND type IS NOT 'CONNECTION_PENDING';
 
 selectByGroupId:
 SELECT * FROM Conversation WHERE mls_group_id = ?;
