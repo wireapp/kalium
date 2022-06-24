@@ -64,6 +64,7 @@ internal class SyncManagerImpl(
     private val syncRepository: SyncRepository,
     private val conversationEventReceiver: ConversationEventReceiver,
     private val userEventReceiver: EventReceiver<Event.User>,
+    private val eventGatherer: EventGatherer,
     private val kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : SyncManager {
 
@@ -124,10 +125,8 @@ internal class SyncManagerImpl(
         processingJob = eventProcessingScope.launch { gatherAndProcessEvents() }
     }
 
-    private suspend fun gatherAndProcessEvents() {
-        EventGathererImpl(eventRepository, syncRepository).gatherEvents().collect {
-            processEvent(it)
-        }
+    private suspend fun gatherAndProcessEvents() = eventGatherer.gatherEvents().collect {
+        processEvent(it)
     }
 
     private suspend fun processEvent(event: Event) {
