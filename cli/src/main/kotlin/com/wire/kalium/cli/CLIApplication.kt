@@ -52,6 +52,7 @@ fun currentUserSession(): UserSessionScope {
     return coreLogic.getSessionScope(authSession.tokens.userId)
 }
 
+@Throws(PrintMessage::class)
 suspend fun selectConversation(userSession: UserSessionScope): Conversation {
     val conversations = userSession.conversations.getConversations().let {
         when (it) {
