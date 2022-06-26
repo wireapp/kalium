@@ -52,13 +52,11 @@ fun currentUserSession(): UserSessionScope {
     return coreLogic.getSessionScope(authSession.tokens.userId)
 }
 
-@Throws(PrintMessage::class)
 suspend fun selectConversation(userSession: UserSessionScope): Conversation {
     val conversations = userSession.conversations.getConversations().let {
         when (it) {
             is GetConversationsUseCase.Result.Success -> it.convFlow.first()
-            is GetConversationsUseCase.Result.Failure -> throw PrintMessage("Failed to retrieve conversation: ${it.storageFailure}")
-            else -> throw PrintMessage("Failed to retrieve conversation: Unknown reason")
+            else -> throw PrintMessage("Failed to retrieve conversation: $it")
         }
     }
 
