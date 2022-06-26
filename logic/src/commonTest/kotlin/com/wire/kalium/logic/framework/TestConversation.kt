@@ -6,8 +6,10 @@ import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.conversation.ProtocolInfo
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.QualifiedID
+import com.wire.kalium.network.api.conversation.AddParticipantResponse
 import com.wire.kalium.network.api.conversation.ConvProtocol
 import com.wire.kalium.network.api.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.conversation.ConversationResponse
@@ -69,6 +71,8 @@ object TestConversation {
     val MEMBER_TEST2 = Member(com.wire.kalium.logic.data.user.UserId("member2", "domainMember"))
     val NETWORK_USER_ID1 = com.wire.kalium.network.api.UserId(value = "member1", domain = "domainMember")
     val NETWORK_USER_ID2 = com.wire.kalium.network.api.UserId(value = "member2", domain = "domainMember")
+    val USER_ID1 = UserId(value = "member1", domain = "domainMember")
+
 
     val CONVERSATION_RESPONSE = ConversationResponse(
         "creator",
@@ -85,6 +89,14 @@ object TestConversation {
         ConvProtocol.PROTEUS,
         lastEventTime = "2022-03-30T15:36:00.000Z"
     )
+
+    val ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE =
+        AddParticipantResponse.UserAdded(
+            "",
+            qualifiedConversationId = NETWORK_ID,
+            fromUser = NETWORK_USER_ID1,
+            time = "2022-03-30T15:36:00.000Z"
+        )
 
     val ENTITY_ID = QualifiedIDEntity("valueConversation", "domainConversation")
     val ENTITY = ConversationEntity(

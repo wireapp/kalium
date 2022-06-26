@@ -10,6 +10,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.ConversationId
+import com.wire.kalium.network.api.conversation.AddParticipantResponse
 import com.wire.kalium.network.api.conversation.ConvProtocol
 import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.conversation.ConversationMembersResponse
@@ -549,6 +550,55 @@ class ConversationRepositoryTest {
             .shouldSucceed()
     }
 
+    @Test
+    fun givenAConversationAndAPISucceeds_whenAddingMembersToConversation_thenShouldSucceed() = runTest {
+        val conversationId = TestConversation.ID
+        given(conversationApi)
+            .suspendFunction(conversationApi::addParticipant)
+            .whenInvokedWith(any(), any())
+            .thenReturn(
+                NetworkResponse.Success(
+                    TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE,
+                    mapOf(),
+                    HttpStatusCode.OK.value
+                )
+            )
+        given(conversationDAO)
+            .suspendFunction(conversationDAO::insertMembers, fun2<List<Member>, QualifiedIDEntity>())
+            .whenInvokedWith(any(), any())
+            .thenDoNothing()
+
+        conversationRepository.addMembers(listOf(TestConversation.MEMBER_TEST1), conversationId)
+            .shouldSucceed()
+
+        verify(conversationDAO)
+            .suspendFunction(conversationDAO::insertMembers, fun2<List<Member>, QualifiedIDEntity>())
+            .with(anything(), anything())
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAConversationAndAPIFailed_whenAddingMembersToConversation_thenShouldNotSucceed() = runTest {
+        val conversationId = TestConversation.ID
+        given(conversationApi)
+            .suspendFunction(conversationApi::addParticipant)
+            .whenInvokedWith(any(), any())
+            .thenReturn(
+                NetworkResponse.Success(
+                    AddParticipantResponse.ConversationUnchanged,
+                    mapOf(),
+                    HttpStatusCode.NoContent.value
+                )
+            )
+
+        conversationRepository.addMembers(listOf(TestConversation.MEMBER_TEST1), conversationId)
+            .shouldSucceed()
+
+        verify(conversationDAO)
+            .suspendFunction(conversationDAO::insertMembers, fun2<List<Member>, QualifiedIDEntity>())
+            .with(any(), any())
+            .wasNotInvoked()
+    }
 
     companion object {
         const val GROUP_NAME = "Group Name"

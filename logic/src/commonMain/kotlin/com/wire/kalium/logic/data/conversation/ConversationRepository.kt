@@ -56,7 +56,7 @@ interface ConversationRepository {
     suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, ProtocolInfo>
     suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Member>>
     suspend fun persistMembers(members: List<Member>, conversationID: ConversationId): Either<CoreFailure, Unit>
-    suspend fun addMembers(members: List<Member>, conversationID: ConversationId): Either<NetworkFailure, AddParticipantResponse>
+    suspend fun addMembers(members: List<Member>, conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun deleteMember(userID: QualifiedIDEntity, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun deleteMembers(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun getOneToOneConversationDetailsByUserId(otherUserId: UserId): Either<CoreFailure, ConversationDetails.OneOne>
@@ -287,7 +287,7 @@ class ConversationDataSource(
     override suspend fun addMembers(
         members: List<Member>,
         conversationID: ConversationId
-    ): Either<NetworkFailure, AddParticipantResponse> =
+    ): Either<CoreFailure, Unit> =
         wrapApiRequest {
             val users = members.map {
                 idMapper.toApiModel(it.id)
@@ -296,6 +296,12 @@ class ConversationDataSource(
             conversationApi.addParticipant(
                 addParticipantRequest, idMapper.toApiModel(conversationID)
             )
+        }.map {
+            when (it) {
+                is AddParticipantResponse.ConversationUnchanged -> Unit
+                is AddParticipantResponse.UserAdded ->
+                    persistMembers(members, conversationID)
+            }
         }
 
     override suspend fun deleteMember(userID: QualifiedIDEntity, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit> =

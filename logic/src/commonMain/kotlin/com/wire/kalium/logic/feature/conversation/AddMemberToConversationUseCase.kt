@@ -26,18 +26,9 @@ class AddMemberToConversationUseCaseImpl(
         }
         conversationRepository.getConversationDetailsById(conversationId).flatMap { conversation ->
             when (conversation.protocolInfo) {
-                is ProtocolInfo.Proteus -> conversationRepository.addMembers(members, conversationId).map {
-                    when (it) {
-                        is AddParticipantResponse.ConversationUnchanged -> Unit
-                        is AddParticipantResponse.UserAdded -> {
-                            conversationRepository.persistMembers(members, conversationId)
-                        }
-                    }
-                }
-
-                is ProtocolInfo.MLS -> {
+                is ProtocolInfo.Proteus -> conversationRepository.addMembers(members, conversationId)
+                is ProtocolInfo.MLS ->
                     mlsConversationRepository.addMemberToMLSGroup(conversation.protocolInfo.groupId, userIdsMembers)
-                }
             }
         }
     }
