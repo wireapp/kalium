@@ -7,8 +7,6 @@ import com.wire.kalium.logic.data.conversation.ProtocolInfo
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.network.api.conversation.AddParticipantResponse
 
 interface AddMemberToConversationUseCase {
     suspend operator fun invoke(conversationId: ConversationId, members: List<Member>)
