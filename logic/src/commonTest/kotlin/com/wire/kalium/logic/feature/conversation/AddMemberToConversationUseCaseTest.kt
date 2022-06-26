@@ -20,7 +20,6 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
 class AddMemberToConversationUseCaseTest {
-
     @Test
     fun givenMemberAndProteusConversation_WhenAddMemberIsSuccessful_ThenMemberIsAddedToDB() = runTest {
         val (arrangement, addMemberUseCase) = Arrangement()
@@ -87,10 +86,6 @@ class AddMemberToConversationUseCaseTest {
             .wasNotInvoked()
     }
 
-    @Test
-    fun givenMemberAndConversation_WhenAddMemberIsFailed_ThenMemberNotAddedToDB() {
-    }
-
     private class Arrangement {
         @Mock
         val conversationRepository = mock(classOf<ConversationRepository>())
@@ -137,7 +132,7 @@ class AddMemberToConversationUseCaseTest {
         fun arrange() = this to addMemberUseCase
 
         companion object {
-            val mlsGroupId = "mlsGroupId"
+            const val mlsGroupId = "mlsGroupId"
             val proteusProtocolInfo = ProtocolInfo.Proteus
             val mlsProtocolInfo = ProtocolInfo.MLS(mlsGroupId, groupState = GroupState.ESTABLISHED)
 

@@ -10,6 +10,7 @@ import com.wire.kalium.protobuf.messages.QualifiedConversationId
 internal typealias NetworkQualifiedId = com.wire.kalium.network.api.QualifiedID
 internal typealias PersistenceQualifiedId = com.wire.kalium.persistence.dao.QualifiedIDEntity
 
+@Suppress("TooManyFunctions")
 interface IdMapper {
     fun fromApiModel(networkId: NetworkQualifiedId): QualifiedID
     fun fromSimpleClientResponse(clientResponse: SimpleClientResponse): ClientId

@@ -10,6 +10,7 @@ import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
 import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 
+@Suppress("LongParameterList")
 class ConversationScope(
     private val conversationRepository: ConversationRepository,
     private val connectionRepository: ConnectionRepository,
