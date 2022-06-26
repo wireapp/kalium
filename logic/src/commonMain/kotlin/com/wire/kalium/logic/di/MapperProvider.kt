@@ -21,6 +21,8 @@ import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.MemberMapperImpl
 import com.wire.kalium.logic.data.conversation.ProtocolInfoMapperImpl
 import com.wire.kalium.logic.data.event.EventMapper
+import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
+import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapperImpl
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.location.LocationMapper
@@ -31,6 +33,8 @@ import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.message.SendMessageFailureMapper
 import com.wire.kalium.logic.data.message.SendMessageFailureMapperImpl
+import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapper
+import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapperImpl
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.logic.data.prekey.PreKeyMapperImpl
 import com.wire.kalium.logic.data.prekey.remote.PreKeyListMapper
@@ -44,9 +48,12 @@ import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapperImpl
 import com.wire.kalium.logic.data.user.ConnectionStateMapper
 import com.wire.kalium.logic.data.user.ConnectionStateMapperImpl
+import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
+import com.wire.kalium.logic.data.user.type.UserEntityTypeMapperImpl
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.data.user.UserMapperImpl
-import com.wire.kalium.logic.data.user.UserTypeMapperImpl
+import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
+import com.wire.kalium.logic.data.user.type.DomainUserTypeMapperImpl
 
 internal object MapperProvider {
     fun apiVersionMapper(): ApiVersionMapper = ApiVersionMapperImpl()
@@ -60,13 +67,13 @@ internal object MapperProvider {
     fun messageMapper(): MessageMapper = MessageMapperImpl(idMapper(), memberMapper())
     fun memberMapper(): MemberMapper = MemberMapperImpl(idMapper())
     fun conversationMapper(): ConversationMapper =
-        ConversationMapperImpl(idMapper(), ConversationStatusMapperImpl(), UserTypeMapperImpl(), ProtocolInfoMapperImpl())
-
+        ConversationMapperImpl(idMapper(), ConversationStatusMapperImpl(), ProtocolInfoMapperImpl())
     fun publicUserMapper(): PublicUserMapper = PublicUserMapperImpl(idMapper())
     fun sendMessageFailureMapper(): SendMessageFailureMapper = SendMessageFailureMapperImpl()
     fun assetMapper(): AssetMapper = AssetMapperImpl()
     fun encryptionAlgorithmMapper(): EncryptionAlgorithmMapper = EncryptionAlgorithmMapper()
-    fun eventMapper(): EventMapper = EventMapper(idMapper(), memberMapper(), connectionMapper())
+    fun eventMapper(): EventMapper =
+        EventMapper(idMapper(), memberMapper(), connectionMapper())
     fun preyKeyMapper(): PreKeyMapper = PreKeyMapperImpl()
     fun preKeyListMapper(): PreKeyListMapper = PreKeyListMapper(preyKeyMapper())
     fun locationMapper(): LocationMapper = LocationMapper()
@@ -75,5 +82,9 @@ internal object MapperProvider {
     fun protoContentMapper(): ProtoContentMapper = ProtoContentMapperImpl()
     fun callMapper(): CallMapper = CallMapper()
     fun connectionStatusMapper(): ConnectionStatusMapper = ConnectionStatusMapperImpl()
+    fun featureConfigMapper(): FeatureConfigMapper = FeatureConfigMapperImpl()
+    fun localNotificationMessageMapper(): LocalNotificationMessageMapper = LocalNotificationMessageMapperImpl()
     fun connectionMapper(): ConnectionMapper = ConnectionMapperImpl(idMapper(), connectionStatusMapper(), publicUserMapper())
+    fun userTypeEntityMapper(): UserEntityTypeMapper = UserEntityTypeMapperImpl()
+    fun userTypeMapper(): DomainUserTypeMapper = DomainUserTypeMapperImpl()
 }

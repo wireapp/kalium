@@ -16,6 +16,7 @@ data class KaliumConfigs(
     val isSafeLoggingEnabled: Boolean = false,
     val enableBlacklist: Boolean = false,
     val fileRestrictionEnabled: Boolean = false,
+    val shouldEncryptData: Boolean = true,
     val customUrlScheme: String = "",
     val fileRestrictionList: String = "",
     val httpProxyPort: String = "",

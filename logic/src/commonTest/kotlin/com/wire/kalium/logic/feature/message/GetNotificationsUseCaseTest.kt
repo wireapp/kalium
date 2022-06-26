@@ -382,7 +382,7 @@ class GetNotificationsUseCaseTest {
 
         fun withSelfUser(user: SelfUser = selfUserWithStatus()): Arrangement {
             given(userRepository)
-                .suspendFunction(userRepository::getSelfUser)
+                .suspendFunction(userRepository::observeSelfUser)
                 .whenInvoked()
                 .then { flowOf(user) }
 

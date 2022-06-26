@@ -82,7 +82,7 @@ class ConversationRepositoryTest {
         val event = Event.Conversation.NewConversation("id", TestConversation.ID, "time", CONVERSATION_RESPONSE)
 
         given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+            .suspendFunction(userRepository::observeSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
 
@@ -108,7 +108,7 @@ class ConversationRepositoryTest {
         val protocolInfo = ConversationEntity.ProtocolInfo.MLS(groupId, ConversationEntity.GroupState.ESTABLISHED)
 
         given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+            .suspendFunction(userRepository::observeSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
 
@@ -152,7 +152,7 @@ class ConversationRepositoryTest {
                 }).thenReturn(NetworkResponse.Success(CONVERSATION_RESPONSE_DTO, emptyMap(), HttpStatusCode.OK.value))
 
             given(userRepository)
-                .suspendFunction(userRepository::getSelfUser)
+                .suspendFunction(userRepository::observeSelfUser)
                 .whenInvoked()
                 .thenReturn(flowOf(TestUser.SELF))
 
@@ -217,7 +217,7 @@ class ConversationRepositoryTest {
             .thenReturn(conversationEntityFlow)
 
         given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+            .suspendFunction(userRepository::observeSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
 
@@ -253,7 +253,7 @@ class ConversationRepositoryTest {
             .thenReturn(conversationEntityFlow)
 
         given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+            .suspendFunction(userRepository::observeSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
 
@@ -289,7 +289,7 @@ class ConversationRepositoryTest {
             .thenReturn(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201))
 
         given(userRepository)
-            .coroutine { userRepository.getSelfUser() }
+            .coroutine { userRepository.observeSelfUser() }
             .then { flowOf(TestUser.SELF) }
 
         given(conversationDAO)
@@ -325,7 +325,7 @@ class ConversationRepositoryTest {
     @Test
     fun givenSelfUserDoesNotBelongToATeam_whenCallingCreateGroupConversation_thenConversationIsCreatedAtBackendAndPersisted() = runTest {
 
-        val selfUserWithoutTeam = TestUser.SELF.copy(team = null)
+        val selfUserWithoutTeam = TestUser.SELF.copy(teamId = null)
 
         given(conversationApi)
             .suspendFunction(conversationApi::createNewConversation)
@@ -333,7 +333,7 @@ class ConversationRepositoryTest {
             .thenReturn(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201))
 
         given(userRepository)
-            .coroutine { userRepository.getSelfUser() }
+            .coroutine { userRepository.observeSelfUser() }
             .then { flowOf(selfUserWithoutTeam) }
 
         given(conversationDAO)
@@ -376,7 +376,7 @@ class ConversationRepositoryTest {
             .thenReturn(NetworkResponse.Success(conversationResponse, emptyMap(), 201))
 
         given(userRepository)
-            .coroutine { userRepository.getSelfUser() }
+            .coroutine { userRepository.observeSelfUser() }
             .then { flowOf(TestUser.SELF) }
 
         given(userRepository)
@@ -432,7 +432,7 @@ class ConversationRepositoryTest {
                 .then { listOf(CONVERSATION_ENTITY) }
 
             given(userRepository)
-                .coroutine { userRepository.getSelfUser() }
+                .coroutine { userRepository.observeSelfUser() }
                 .then { flowOf(TestUser.SELF) }
 
             given(userRepository)
@@ -513,7 +513,7 @@ class ConversationRepositoryTest {
 
         given(userRepository)
             .coroutine { userRepository.getSelfUser() }
-            .then { flowOf(TestUser.SELF) }
+            .then { TestUser.SELF }
 
         given(conversationApi)
             .suspendFunction(conversationApi::fetchConversationDetails)
@@ -539,7 +539,7 @@ class ConversationRepositoryTest {
 
         given(userRepository)
             .coroutine { userRepository.getSelfUser() }
-            .then { flowOf(TestUser.SELF) }
+            .then { TestUser.SELF }
 
         given(conversationApi)
             .suspendFunction(conversationApi::fetchConversationDetails)
@@ -645,22 +645,6 @@ class ConversationRepositoryTest {
             lastModifiedDate = "2022-03-30T15:36:00.000Z",
             lastNotificationDate = null
         )
-
-        val CONVERSATION_ENTITIES = listOf(
-            ConversationEntity(
-                id = QualifiedIDEntity(
-                    value = "testValue",
-                    domain = "testDomain",
-                ),
-                name = null,
-                type = ConversationEntity.Type.ONE_ON_ONE,
-                teamId = null,
-                protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
-                lastModifiedDate = "2022-03-30T15:36:00.000Z",
-                lastNotificationDate = null
-            )
-        )
-
     }
 
 }

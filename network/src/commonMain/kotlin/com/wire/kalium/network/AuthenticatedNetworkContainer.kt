@@ -8,6 +8,8 @@ import com.wire.kalium.network.api.contact.search.UserSearchApi
 import com.wire.kalium.network.api.contact.search.UserSearchApiImpl
 import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.conversation.ConversationApiImpl
+import com.wire.kalium.network.api.featureConfigs.FeatureConfigApi
+import com.wire.kalium.network.api.featureConfigs.FeatureConfigApiImpl
 import com.wire.kalium.network.api.keypackage.KeyPackageApi
 import com.wire.kalium.network.api.keypackage.KeyPackageApiImpl
 import com.wire.kalium.network.api.message.MLSMessageApi
@@ -78,5 +80,7 @@ class AuthenticatedNetworkContainer(
     val callApi: CallApi get() = CallApiImpl(networkClient)
 
     val connectionApi: ConnectionApi get() = ConnectionApiImpl(networkClient)
+
+    val featureConfigApi: FeatureConfigApi get() = FeatureConfigApiImpl(networkClient)
 
 }
