@@ -28,6 +28,7 @@ interface IdMapper {
     fun toUserId(member: Member): UserId
 }
 
+@Suppress("TooManyFunctions")
 internal class IdMapperImpl : IdMapper {
 
     override fun fromApiModel(networkId: NetworkQualifiedId) = QualifiedID(value = networkId.value, domain = networkId.domain)
