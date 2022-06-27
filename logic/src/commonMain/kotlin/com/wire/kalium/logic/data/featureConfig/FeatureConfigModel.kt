@@ -17,7 +17,6 @@ data class FeatureConfigModel(
 
 data class AppLockModel(
     val config: AppLockConfigModel,
-    val lockStatus: String,
     val status: String
 )
 
@@ -28,7 +27,6 @@ data class AppLockConfigModel(
 
 data class ClassifiedDomainsModel(
     val config: ClassifiedDomainsConfigModel,
-    val lockStatus: String,
     val status: String
 )
 
@@ -37,13 +35,11 @@ data class ClassifiedDomainsConfigModel(
 )
 
 data class ConfigsStatusModel(
-    val lockStatus: String,
     val status: String
 )
 
 data class SelfDeletingMessagesModel(
     val config: SelfDeletingMessagesConfigModel,
-    val lockStatus: String,
     val status: String
 )
 
