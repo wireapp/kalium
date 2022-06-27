@@ -25,7 +25,7 @@ class EnvelopeProtoMapperTest {
                 nativePush = true,
                 priority = MessagePriority.HIGH,
                 transient = false,
-                data = data,
+                externalBlob = data,
                 messageOption = MessageApi.QualifiedMessageOption.ReportAll
             )
         )
@@ -35,6 +35,6 @@ class EnvelopeProtoMapperTest {
     }
 
     private companion object{
-        val TEST_SENDER = "9AFBD180"
+        const val TEST_SENDER = "9AFBD180"
     }
 }
