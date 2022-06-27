@@ -4,7 +4,6 @@ import android.content.Context
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.ProteusClientImpl
 import com.wire.kalium.logic.data.asset.DataStoragePaths
-import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.id.AssetsStorageFolder
 import com.wire.kalium.logic.data.id.CacheFolder
 import com.wire.kalium.logic.data.session.SessionDataSource
@@ -53,7 +52,8 @@ actual class CoreLogic(
         KaliumPreferencesSettings(EncryptedSettingsHolder(appContext, SettingOptions.AppSettings).encryptedSettings)
     }
 
-    override val globalDatabase: Lazy<GlobalDatabaseProvider> = lazy { GlobalDatabaseProvider(appContext, globalPreferences.value) }
+    override val globalDatabase: Lazy<GlobalDatabaseProvider> =
+        lazy { GlobalDatabaseProvider(appContext, globalPreferences.value, kaliumConfigs.shouldEncryptData) }
 
     override fun getSessionScope(userId: UserId): UserSessionScope {
         return userSessionScopeProvider.get(userId) ?: run {
@@ -79,7 +79,8 @@ actual class CoreLogic(
                 userIDEntity,
                 userPreferencesSettings,
                 File(rootFileSystemPath.value),
-                File(rootCachePath.value)
+                File(rootCachePath.value),
+                kaliumConfigs.shouldEncryptData
             )
             val userDataSource = AuthenticatedDataSourceSet(
                 rootAccountPath,

@@ -13,6 +13,7 @@ import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
 import com.wire.kalium.persistence.MessageMemberChangeContent
+import com.wire.kalium.persistence.MessageRestrictedAssetContent
 import com.wire.kalium.persistence.MessageTextContent
 import com.wire.kalium.persistence.MessageUnknownContent
 import com.wire.kalium.persistence.User
@@ -47,15 +48,14 @@ actual class UserDatabaseProvider(
     userId: UserIDEntity,
     kaliumPreferences: KaliumPreferences,
     storePath: File,
-    cacheAssetPath: File
+    cacheAssetPath: File,
+    encrypt: Boolean = true
 ) {
     private val dbName = FileNameUtil.userDBName(userId)
     private val driver: AndroidSqliteDriver
     private val database: UserDatabase
 
     init {
-        val supportFactory = SupportFactory(DBUtil.getOrGenerateSecretKey(kaliumPreferences, DATABASE_SECRET_KEY).toByteArray())
-
         val onConnectCallback = object : AndroidSqliteDriver.Callback(UserDatabase.Schema) {
             override fun onOpen(db: SupportSQLiteDatabase) {
                 super.onOpen(db)
@@ -65,13 +65,22 @@ actual class UserDatabaseProvider(
         storePath.mkdirs()
         cacheAssetPath.mkdirs()
 
-        driver = AndroidSqliteDriver(
-            schema = UserDatabase.Schema,
-            context = context,
-            name = dbName,
-            factory = supportFactory,
-            callback = onConnectCallback
-        )
+        driver = if (encrypt) {
+            AndroidSqliteDriver(
+                schema = UserDatabase.Schema,
+                context = context,
+                name = dbName,
+                factory = SupportFactory(DBUtil.getOrGenerateSecretKey(kaliumPreferences, DATABASE_SECRET_KEY).toByteArray()),
+                callback = onConnectCallback
+            )
+        } else {
+            AndroidSqliteDriver(
+                schema = UserDatabase.Schema,
+                context = context,
+                name = dbName,
+                callback = onConnectCallback
+            )
+        }
 
         database = UserDatabase(
             driver,
@@ -101,11 +110,14 @@ actual class UserDatabaseProvider(
                 asset_widthAdapter = IntColumnAdapter,
                 asset_heightAdapter = IntColumnAdapter,
                 asset_download_statusAdapter = EnumColumnAdapter()
-                ),
+            ),
             MessageMemberChangeContent.Adapter(
                 conversation_idAdapter = QualifiedIDAdapter(),
                 member_change_listAdapter = QualifiedIDListAdapter(),
                 member_change_typeAdapter = EnumColumnAdapter()
+            ),
+            MessageRestrictedAssetContent.Adapter(
+                conversation_idAdapter = QualifiedIDAdapter()
             ),
             MessageTextContent.Adapter(
                 conversation_idAdapter = QualifiedIDAdapter()
@@ -119,7 +131,8 @@ actual class UserDatabaseProvider(
                 connection_statusAdapter = EnumColumnAdapter(),
                 user_availability_statusAdapter = EnumColumnAdapter(),
                 preview_asset_idAdapter = QualifiedIDAdapter(),
-                complete_asset_idAdapter = QualifiedIDAdapter()
+                complete_asset_idAdapter = QualifiedIDAdapter(),
+                user_typeAdapter = EnumColumnAdapter()
             )
         )
     }
