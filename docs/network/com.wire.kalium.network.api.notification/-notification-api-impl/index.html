@@ -31,11 +31,30 @@ if(savedDarkMode === true){
             <h1 class="cover"><span>Notification</span><wbr><span>Api</span><wbr><span><span>Impl</span></span></h1>
             <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
               <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark common-like" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":network:dokkaHtmlPartial/commonMain">common</button></div>
-<div class="content sourceset-depenent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="index.html">NotificationApiImpl</a> : <a href="../-notification-api/index.html">NotificationApi</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>            </div>
+<div class="content sourceset-depenent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="index.html">NotificationApiImpl</a><span class="token punctuation">(</span>authenticatedNetworkClient<span class="token operator">: </span><a href="../../com.wire.kalium.network/-authenticated-network-client/index.html">AuthenticatedNetworkClient</a><span class="token punctuation">, </span>authenticatedWebSocketClient<span class="token operator">: </span><a href="../../com.wire.kalium.network/-authenticated-web-socket-client/index.html">AuthenticatedWebSocketClient</a><span class="token punctuation">, </span>serverLinks<span class="token operator">: </span><a href="../../com.wire.kalium.network.tools/-server-config-d-t-o/-links/index.html">ServerConfigDTO.Links</a><span class="token punctuation">)</span> : <a href="../-notification-api/index.html">NotificationApi</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>            </div>
           </div>
           <div class="tabbedcontent">
-            <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="Functions">Functions</button></div>
+            <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="Types">Types</button><button class="section-tab" data-togglable="Functions">Functions</button><button class="section-tab" data-togglable="Properties">Properties</button></div>
             <div class="tabs-section-body">
+              <h2 class="">Types</h2>
+              <div class="table" data-togglable="Types"><a data-name="1275537197%2FClasslikes%2F-333076745" anchor-label="Companion" id="1275537197%2FClasslikes%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
+                <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex">
+                        <div><a href="-companion/index.html"><span><span>Companion</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1275537197%2FClasslikes%2F-333076745"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title">
+                        <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                          <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark common-like" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":network:dokkaHtmlPartial/commonMain">common</button></div>
+<div class="content sourceset-depenent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">private </span><span class="token keyword">object </span><a href="-companion/index.html">Companion</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
               <h2 class="">Functions</h2>
               <div class="table" data-togglable="Functions"><a data-name="1692338188%2FFunctions%2F-333076745" anchor-label="getAllNotifications" id="1692338188%2FFunctions%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
                 <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
@@ -101,6 +120,93 @@ if(savedDarkMode === true){
                         <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
                           <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark common-like" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":network:dokkaHtmlPartial/commonMain">common</button></div>
 <div class="content sourceset-depenent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="notifications-by-batch.html"><span class="token function">notificationsByBatch</span></a><span class="token punctuation">(</span>querySize<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token punctuation">, </span>queryClient<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span>querySince<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../com.wire.kalium.network.utils/-network-response/index.html">NetworkResponse</a><span class="token operator">&lt;</span><span class="token keyword"></span><a href="../-notification-response/index.html">NotificationResponse</a><span class="token operator">&gt;</span><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+<a data-name="-561452549%2FFunctions%2F-333076745" anchor-label="notificationsCall" id="-561452549%2FFunctions%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
+                <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex">
+                        <div><a href="notifications-call.html"><span>notifications</span><wbr><span><span>Call</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-561452549%2FFunctions%2F-333076745"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title">
+                        <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                          <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark common-like" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":network:dokkaHtmlPartial/commonMain">common</button></div>
+<div class="content sourceset-depenent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">private </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="notifications-call.html"><span class="token function">notificationsCall</span></a><span class="token punctuation">(</span>querySize<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html">Int</a><span class="token punctuation">, </span>queryClient<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span>querySince<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="token operator">?</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../com.wire.kalium.network.utils/-network-response/index.html">NetworkResponse</a><span class="token operator">&lt;</span><span class="token keyword"></span><a href="../-notification-response/index.html">NotificationResponse</a><span class="token operator">&gt;</span><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <h2 class="">Properties</h2>
+              <div class="table" data-togglable="Properties"><a data-name="1003297866%2FProperties%2F-333076745" anchor-label="authenticatedNetworkClient" id="1003297866%2FProperties%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
+                <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex">
+                        <div><a href="authenticated-network-client.html">authenticatedNetworkClient</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1003297866%2FProperties%2F-333076745"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title">
+                        <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted" data-togglable="Properties">
+                          <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark common-like" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":network:dokkaHtmlPartial/commonMain">common</button></div>
+<div class="content sourceset-depenent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><a data-name="1003297866%2FProperties%2F-333076745" anchor-label="authenticatedNetworkClient" id="1003297866%2FProperties%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword">private </span><span class="token keyword"></span><span class="token keyword">val </span><a href="authenticated-network-client.html">authenticatedNetworkClient</a><span class="token operator">: </span><a href="../../com.wire.kalium.network/-authenticated-network-client/index.html">AuthenticatedNetworkClient</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+<a data-name="1897303537%2FProperties%2F-333076745" anchor-label="authenticatedWebSocketClient" id="1897303537%2FProperties%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
+                <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex">
+                        <div><a href="authenticated-web-socket-client.html">authenticatedWebSocketClient</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1897303537%2FProperties%2F-333076745"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title">
+                        <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted" data-togglable="Properties">
+                          <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark common-like" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":network:dokkaHtmlPartial/commonMain">common</button></div>
+<div class="content sourceset-depenent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><a data-name="1897303537%2FProperties%2F-333076745" anchor-label="authenticatedWebSocketClient" id="1897303537%2FProperties%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword">private </span><span class="token keyword"></span><span class="token keyword">val </span><a href="authenticated-web-socket-client.html">authenticatedWebSocketClient</a><span class="token operator">: </span><a href="../../com.wire.kalium.network/-authenticated-web-socket-client/index.html">AuthenticatedWebSocketClient</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+<a data-name="2031840161%2FProperties%2F-333076745" anchor-label="httpClient" id="2031840161%2FProperties%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
+                <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex">
+                        <div><a href="http-client.html">httpClient</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2031840161%2FProperties%2F-333076745"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title">
+                        <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted" data-togglable="Properties">
+                          <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark common-like" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":network:dokkaHtmlPartial/commonMain">common</button></div>
+<div class="content sourceset-depenent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><a data-name="2031840161%2FProperties%2F-333076745" anchor-label="httpClient" id="2031840161%2FProperties%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword">private </span><span class="token keyword"></span><span class="token keyword">val </span><a href="http-client.html">httpClient</a><span class="token operator">: </span><span data-unresolved-link="io.ktor.client/HttpClient///PointingToDeclaration/">HttpClient</span><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+<a data-name="-1707870672%2FProperties%2F-333076745" anchor-label="serverLinks" id="-1707870672%2FProperties%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a>
+                <div class="table-row" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex">
+                        <div><a href="server-links.html">serverLinks</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1707870672%2FProperties%2F-333076745"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title">
+                        <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted" data-togglable="Properties">
+                          <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark common-like" data-filterable-current=":network:dokkaHtmlPartial/commonMain" data-filterable-set=":network:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":network:dokkaHtmlPartial/commonMain">common</button></div>
+<div class="content sourceset-depenent-content" data-active="" data-togglable=":network:dokkaHtmlPartial/commonMain"><a data-name="-1707870672%2FProperties%2F-333076745" anchor-label="serverLinks" id="-1707870672%2FProperties%2F-333076745" data-filterable-set=":network:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword">private </span><span class="token keyword"></span><span class="token keyword">val </span><a href="server-links.html">serverLinks</a><span class="token operator">: </span><a href="../../com.wire.kalium.network.tools/-server-config-d-t-o/-links/index.html">ServerConfigDTO.Links</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>                        </div>
                       </div>
                     </div>
                   </div>
