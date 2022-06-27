@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 
 object TestUser {
@@ -19,7 +20,7 @@ object TestUser {
         email = "email",
         phone = "phone",
         accentId = 0,
-        team = "teamId",
+        teamId = "teamId",
         connectionStatus = ConnectionState.ACCEPTED,
         previewPicture = UserAssetId("value1", "domain"),
         completePicture = UserAssetId("value2", "domain"),
@@ -37,6 +38,7 @@ object TestUser {
         connectionStatus = ConnectionState.ACCEPTED,
         previewPicture = UserAssetId("value1", "domain"),
         completePicture = UserAssetId("value2", "domain"),
-        availabilityStatus = UserAvailabilityStatus.NONE
+        availabilityStatus = UserAvailabilityStatus.NONE,
+        userType =  UserType.EXTERNAL
     )
 }

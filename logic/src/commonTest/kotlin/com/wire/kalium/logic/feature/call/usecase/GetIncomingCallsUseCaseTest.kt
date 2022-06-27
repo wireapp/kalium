@@ -197,7 +197,7 @@ class GetIncomingCallsUseCaseTest {
 
         fun withSelfUserStatus(status: UserAvailabilityStatus): Arrangement {
             given(userRepository)
-                .suspendFunction(userRepository::getSelfUser)
+                .suspendFunction(userRepository::observeSelfUser)
                 .whenInvoked()
                 .then { flowOf(selfUserWithStatus(status)) }
 

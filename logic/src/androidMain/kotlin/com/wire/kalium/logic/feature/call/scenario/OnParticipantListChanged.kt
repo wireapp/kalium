@@ -36,7 +36,7 @@ class OnParticipantListChanged(
         callingScope.launch {
             participantsChange.members.map { member ->
                 val participant = participantMapper.fromCallMemberToParticipant(member)
-                userRepository.fetchUserInfo(member.userId.toConversationId()).map {
+                userRepository.getUserInfo(member.userId.toConversationId()).map {
                     val updatedParticipant = participant.copy(
                         name = it.name!!,
                         avatarAssetId = it.completePicture

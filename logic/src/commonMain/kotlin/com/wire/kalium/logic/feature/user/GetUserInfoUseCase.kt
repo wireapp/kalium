@@ -47,7 +47,7 @@ internal class GetUserInfoUseCaseImpl(
             return if (localOtherUser != null) {
                 Either.Right(localOtherUser)
             } else {
-                userRepository.fetchUserInfo(userId)
+                userRepository.getUserInfo(userId)
             }
         }
     }
