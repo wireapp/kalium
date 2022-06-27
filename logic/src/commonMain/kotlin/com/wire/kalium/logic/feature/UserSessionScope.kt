@@ -72,6 +72,8 @@ import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.sync.ConversationEventReceiver
 import com.wire.kalium.logic.sync.ConversationEventReceiverImpl
+import com.wire.kalium.logic.sync.EventGatherer
+import com.wire.kalium.logic.sync.EventGathererImpl
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.SyncManagerImpl
@@ -167,12 +169,14 @@ abstract class UserSessionScopeCommon(
             userDatabaseProvider.connectionDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.connectionApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
-            userDatabaseProvider.userDAO
+            userDatabaseProvider.userDAO,
+            userDatabaseProvider.metadataDAO
         )
 
     private val publicUserRepository: SearchUserRepository
         get() = SearchUserRepositoryImpl(
             userDatabaseProvider.userDAO,
+            userDatabaseProvider.metadataDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userSearchApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi
         )
@@ -236,13 +240,16 @@ abstract class UserSessionScopeCommon(
 
     private val syncRepository: SyncRepository by lazy { InMemorySyncRepository() }
 
+    private val eventGatherer: EventGatherer get() = EventGathererImpl(eventRepository, syncRepository)
+
     val syncManager: SyncManager by lazy {
         SyncManagerImpl(
             authenticatedDataSourceSet.userSessionWorkScheduler,
             eventRepository,
             syncRepository,
             conversationEventReceiver,
-            userEventReceiver
+            userEventReceiver,
+            eventGatherer
         )
     }
 
