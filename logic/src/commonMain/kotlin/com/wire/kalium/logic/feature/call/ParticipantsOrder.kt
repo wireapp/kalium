@@ -13,7 +13,7 @@ class ParticipantsOrderImpl : ParticipantsOrder {
     override fun reorderItems(participants: List<Participant>): List<Participant> {
         return if (participants.isNotEmpty()) {
             val subParticipants = participants.subList(1, participants.size)
-            val sortedSubParticipants = subParticipants.sortedBy { it.name }
+            val sortedSubParticipants = subParticipants.sortedBy { it.name.uppercase() }
             listOf(participants.first()) + sortedSubParticipants
         } else participants
     }
