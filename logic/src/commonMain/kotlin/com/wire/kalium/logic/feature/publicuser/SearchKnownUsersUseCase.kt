@@ -36,7 +36,7 @@ internal class SearchKnownUsersUseCaseImpl(
 
     //TODO: we should think about the way to exclude the self user on TABLE level
     private suspend fun excludeSelfUser(searchResult: UserSearchResult): UserSearchResult {
-        val selfUser = userRepository.getSelfUser().firstOrNull()
+        val selfUser = userRepository.getSelfUser()
 
         return searchResult.copy(result = searchResult.result.filter { it.id != selfUser?.id })
     }
