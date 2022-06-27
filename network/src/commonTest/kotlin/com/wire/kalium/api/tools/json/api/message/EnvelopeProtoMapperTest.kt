@@ -25,7 +25,7 @@ class EnvelopeProtoMapperTest {
                 nativePush = true,
                 priority = MessagePriority.HIGH,
                 transient = false,
-                data = data,
+                externalBlob = data,
                 messageOption = MessageApi.QualifiedMessageOption.ReportAll
             )
         )
