@@ -74,7 +74,7 @@ interface MessageApi {
             val nativePush: Boolean,
             val priority: MessagePriority,
             val transient: Boolean,
-            val `data`: ByteArray? = null,
+            val data: ByteArray? = null,
             val messageOption: QualifiedMessageOption
         ) : Parameters()
     }
