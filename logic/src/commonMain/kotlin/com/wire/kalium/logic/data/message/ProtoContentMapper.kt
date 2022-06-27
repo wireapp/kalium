@@ -28,7 +28,6 @@ class ProtoContentMapperImpl(
         val (messageUid, messageContent) = protoContent
 
         val content = when (messageContent) {
-            //TODO maybe here
             is MessageContent.Text -> GenericMessage.Content.Text(Text(content = messageContent.value))
             is MessageContent.Calling -> GenericMessage.Content.Calling(Calling(content = messageContent.value))
             is MessageContent.Asset -> GenericMessage.Content.Asset(assetMapper.fromAssetContentToProtoAssetMessage(messageContent.value))

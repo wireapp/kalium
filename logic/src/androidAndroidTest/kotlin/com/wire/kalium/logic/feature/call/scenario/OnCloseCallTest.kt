@@ -12,6 +12,7 @@ import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -48,6 +49,7 @@ class OnCloseCallTest {
             clientId = "clientId",
             arg = null
         )
+        advanceUntilIdle()
 
         // then
         verify(callRepository)
@@ -69,6 +71,7 @@ class OnCloseCallTest {
             clientId = "clientId",
             arg = null
         )
+        advanceUntilIdle()
 
         // then
         verify(callRepository)

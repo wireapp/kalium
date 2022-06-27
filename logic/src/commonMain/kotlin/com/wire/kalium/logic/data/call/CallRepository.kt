@@ -112,8 +112,8 @@ internal class CallDataSource(
         // in OnIncomingCall we get callerId without a domain,
         // to cover that case and have a valid UserId we have that workaround
         val myId = userRepository.getSelfUserId()
-        val callerIdWitDomain = UserId(callerId.toUserId().value, myId.domain)
-        val caller = userRepository.getKnownUser(callerIdWitDomain).first()
+        val callerIdWithDomain = UserId(callerId.toUserId().value, myId.domain)
+        val caller = userRepository.getKnownUser(callerIdWithDomain).first()
 
         val team = caller?.team
             ?.let { teamId -> teamRepository.getTeam(teamId).first() }
@@ -125,7 +125,7 @@ internal class CallDataSource(
         val call = Call(
             conversationId = conversationId,
             status = status,
-            callerId = callerIdWitDomain.toString(),
+            callerId = callerIdWithDomain.toString(),
             conversationName = conversation.conversation.name,
             conversationType = conversation.conversation.type,
             callerName = caller?.name,
@@ -158,7 +158,7 @@ internal class CallDataSource(
                     status = status,
                     establishedTime = establishedTime
                 )
-                persistMissedCallMessageIfNeeded(status, modifiedConversationId, call)
+                persistMissedCallMessageIfNeeded(this[modifiedConversationId]!!)
             }
 
             _callProfile.value = callProfile.copy(
@@ -240,12 +240,8 @@ internal class CallDataSource(
         }
     }
 
-    private suspend fun MutableMap<String, Call>.persistMissedCallMessageIfNeeded(
-        status: CallStatus,
-        conversationId: String,
-        call: Call
-    ) {
-        if ((status == CallStatus.CLOSED && this[conversationId]?.establishedTime == null) || status == CallStatus.MISSED) {
+    private suspend fun persistMissedCallMessageIfNeeded(call: Call) {
+        if ((call.status == CallStatus.CLOSED && call.establishedTime == null) || call.status == CallStatus.MISSED) {
             messageRepository.persistMessage(
                 Message.System(
                     uuid4().toString(),
