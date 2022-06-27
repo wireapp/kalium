@@ -12,6 +12,7 @@ import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
 import com.wire.kalium.persistence.MessageMemberChangeContent
+import com.wire.kalium.persistence.MessageRestrictedAssetContent
 import com.wire.kalium.persistence.MessageTextContent
 import com.wire.kalium.persistence.MessageUnknownContent
 import com.wire.kalium.persistence.User
@@ -39,14 +40,17 @@ import com.wire.kalium.persistence.dao.message.MessageDAOImpl
 import com.wire.kalium.persistence.util.FileNameUtil
 import net.sqlcipher.database.SupportFactory
 
-actual class UserDatabaseProvider(private val context: Context, userId: UserIDEntity, passphrase: UserDBSecret) {
+actual class UserDatabaseProvider(
+    private val context: Context,
+    userId: UserIDEntity,
+    passphrase: UserDBSecret,
+    encrypt: Boolean = true
+) {
     private val dbName = FileNameUtil.userDBName(userId)
     private val driver: AndroidSqliteDriver
     private val database: UserDatabase
 
     init {
-        val supportFactory = SupportFactory(passphrase.value)
-
         val onConnectCallback = object : AndroidSqliteDriver.Callback(UserDatabase.Schema) {
             override fun onOpen(db: SupportSQLiteDatabase) {
                 super.onOpen(db)
@@ -54,13 +58,22 @@ actual class UserDatabaseProvider(private val context: Context, userId: UserIDEn
             }
         }
 
-        driver = AndroidSqliteDriver(
-            schema = UserDatabase.Schema,
-            context = context,
-            name = dbName,
-            factory = supportFactory,
-            callback = onConnectCallback
-        )
+        driver = if (encrypt) {
+            AndroidSqliteDriver(
+                schema = UserDatabase.Schema,
+                context = context,
+                name = dbName,
+                factory = SupportFactory(passphrase.value),
+                callback = onConnectCallback
+            )
+        } else {
+            AndroidSqliteDriver(
+                schema = UserDatabase.Schema,
+                context = context,
+                name = dbName,
+                callback = onConnectCallback
+            )
+        }
 
         database = UserDatabase(
             driver,
@@ -96,6 +109,9 @@ actual class UserDatabaseProvider(private val context: Context, userId: UserIDEn
                 member_change_listAdapter = QualifiedIDListAdapter(),
                 member_change_typeAdapter = EnumColumnAdapter()
             ),
+            MessageRestrictedAssetContent.Adapter(
+                conversation_idAdapter = QualifiedIDAdapter()
+            ),
             MessageTextContent.Adapter(
                 conversation_idAdapter = QualifiedIDAdapter()
             ),
@@ -108,7 +124,8 @@ actual class UserDatabaseProvider(private val context: Context, userId: UserIDEn
                 connection_statusAdapter = EnumColumnAdapter(),
                 user_availability_statusAdapter = EnumColumnAdapter(),
                 preview_asset_idAdapter = QualifiedIDAdapter(),
-                complete_asset_idAdapter = QualifiedIDAdapter()
+                complete_asset_idAdapter = QualifiedIDAdapter(),
+                user_typeAdapter = EnumColumnAdapter()
             )
         )
     }
@@ -141,5 +158,4 @@ actual class UserDatabaseProvider(private val context: Context, userId: UserIDEn
         driver.close()
         return context.deleteDatabase(dbName)
     }
-
 }

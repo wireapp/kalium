@@ -1,12 +1,8 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.data.publicuser.model.OtherUser
-import com.wire.kalium.logic.data.user.ConnectionState
-import com.wire.kalium.logic.data.user.SelfUser
-import com.wire.kalium.logic.data.user.UserTypeMapper
+import com.wire.kalium.logic.data.user.type.UserTypeMapper
 import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.conversation.ConvProtocol
@@ -34,16 +30,13 @@ class ConversationMapperTest {
     val idMapper = mock(classOf<IdMapper>())
 
     @Mock
-    val userTypeMapper = mock(classOf<UserTypeMapper>())
-
-    @Mock
     val conversationStatusMapper = mock(classOf<ConversationStatusMapper>())
 
     private lateinit var conversationMapper: ConversationMapper
 
     @BeforeTest
     fun setup() {
-        conversationMapper = ConversationMapperImpl(idMapper, conversationStatusMapper, userTypeMapper)
+        conversationMapper = ConversationMapperImpl(idMapper, conversationStatusMapper)
     }
 
     @Test
