@@ -111,7 +111,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             messages.forEach { insertInDB(it) }
         }
 
-    @Suppress("ComplexMethod")
+    @Suppress("ComplexMethod", "LongMethod")
     private fun insertInDB(message: MessageEntity) {
         queries.transaction {
             queries.insertMessage(

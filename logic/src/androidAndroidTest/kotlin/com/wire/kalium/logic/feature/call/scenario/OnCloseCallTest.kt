@@ -28,17 +28,19 @@ class OnCloseCallTest {
 
     private lateinit var onCloseCall: OnCloseCall
 
+    private val testScope = TestScope()
+
     @BeforeTest
     fun setUp() {
         onCloseCall = OnCloseCall(
             callRepository = callRepository,
-            scope = TestScope()
+            scope = testScope
         )
     }
 
     @Suppress("FunctionNaming")
     @Test
-    fun givenAConversationWithAnOngoingCall_whenClosingTheCallAndTheCallIsStillOngoing_thenVerifyTheStatusIsOngoing() = runTest {
+    fun givenAConversationWithAnOngoingCall_whenClosingTheCallAndTheCallIsStillOngoing_thenVerifyTheStatusIsOngoing() = testScope.runTest {
         // given
         // when
         onCloseCall.onClosedCall(
@@ -60,7 +62,7 @@ class OnCloseCallTest {
 
     @Suppress("FunctionNaming")
     @Test
-    fun givenAConversationWithoutAnOngoingCall_whenClosingTheCallAndTheCallIsNotOngoing_thenVerifyTheStatusIsClosed() = runTest {
+    fun givenAConversationWithoutAnOngoingCall_whenClosingTheCallAndTheCallIsNotOngoing_thenVerifyTheStatusIsClosed() = testScope.runTest {
         // given
         // when
         onCloseCall.onClosedCall(
