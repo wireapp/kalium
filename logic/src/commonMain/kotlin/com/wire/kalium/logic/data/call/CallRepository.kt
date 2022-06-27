@@ -111,16 +111,13 @@ internal class CallDataSource(
 
         // in OnIncomingCall we get callerId without a domain,
         // to cover that case and have a valid UserId we have that workaround
+        //TODO fix this callerId in OnIncomingCall once we support federation
         val myId = userRepository.getSelfUserId()
         val callerIdWithDomain = UserId(callerId.toUserId().value, myId.domain)
         val caller = userRepository.getKnownUser(callerIdWithDomain).first()
 
         val team = caller?.team
             ?.let { teamId -> teamRepository.getTeam(teamId).first() }
-
-        val establishedTime =
-            if (status == CallStatus.ESTABLISHED) timeParser.currentTimeStamp()
-            else null
 
         val call = Call(
             conversationId = conversationId,
@@ -132,7 +129,7 @@ internal class CallDataSource(
             callerTeamName = team?.name,
             isMuted = isMuted,
             isCameraOn = isCameraOn,
-            establishedTime = establishedTime
+            establishedTime = null
         )
 
         val callProfile = _callProfile.value

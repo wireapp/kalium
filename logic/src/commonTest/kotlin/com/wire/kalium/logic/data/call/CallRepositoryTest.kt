@@ -419,35 +419,6 @@ class CallRepositoryTest {
     }
 
     @Test
-    fun givenEmptyCallsList_whenCreateCallWithEstablishedStatus_thenCallEstablishedTimeIsSet() = runTest {
-        given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
-            .whenInvokedWith(any())
-            .thenReturn(flowOf(ConversationDetails.Group(TestConversation.ONE_ON_ONE, LegalHoldStatus.ENABLED)))
-        given(userRepository).suspendFunction(userRepository::getKnownUser)
-            .whenInvokedWith(any())
-            .thenReturn(flowOf(TestUser.OTHER))
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
-            .whenInvoked()
-            .thenReturn(TestUser.USER_ID)
-        given(teamRepository).suspendFunction(teamRepository::getTeam)
-            .whenInvokedWith(any())
-            .thenReturn(flowOf(Team("team1", "team_1")))
-        given(messageRepository).suspendFunction(messageRepository::persistMessage)
-            .whenInvokedWith(any())
-            .thenReturn(Either.Right(Unit))
-
-        val calls = callRepository.callsFlow()
-
-        callRepository.createCall(conversationIdIncomingCall, CallStatus.ESTABLISHED, "caller_id", false, false)
-
-        calls.test {
-            val list = awaitItem()
-            assertEquals(1, list.size)
-            assertTrue(list[0].establishedTime != null)
-        }
-    }
-
-    @Test
     fun givenCallWithoutEstablishedTime_whenUpdateStatusToClose_thenMissedCallAddedToDB() = runTest {
         given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(any())
@@ -472,6 +443,33 @@ class CallRepositoryTest {
             .suspendFunction(messageRepository::persistMessage)
             .with(any())
             .wasInvoked(exactly = once)
+    }
+    @Test
+    fun givenCallWithEstablishedTime_whenUpdateStatusToClose_thenMissedCallNotAddedToDB() = runTest {
+        given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(ConversationDetails.Group(TestConversation.ONE_ON_ONE, LegalHoldStatus.ENABLED)))
+        given(userRepository).suspendFunction(userRepository::getKnownUser)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(TestUser.OTHER))
+        given(userRepository).suspendFunction(userRepository::getSelfUserId)
+            .whenInvoked()
+            .thenReturn(TestUser.USER_ID)
+        given(teamRepository).suspendFunction(teamRepository::getTeam)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(Team("team1", "team_1")))
+        given(messageRepository).suspendFunction(messageRepository::persistMessage)
+            .whenInvokedWith(any())
+            .thenReturn(Either.Right(Unit))
+        callRepository.createCall(conversationIdIncomingCall, CallStatus.INCOMING, "caller_id", false, false)
+        callRepository.updateCallStatusById(conversationIdIncomingCall.toString(), CallStatus.ESTABLISHED)
+
+        callRepository.updateCallStatusById(conversationIdIncomingCall.toString(), CallStatus.CLOSED)
+
+        verify(messageRepository)
+            .suspendFunction(messageRepository::persistMessage)
+            .with(any())
+            .wasNotInvoked()
     }
 
     private fun provideCall(id: ConversationId, status: CallStatus) = Call(
