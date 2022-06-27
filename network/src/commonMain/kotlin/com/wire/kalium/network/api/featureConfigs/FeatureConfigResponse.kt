@@ -1,6 +1,5 @@
 package com.wire.kalium.network.api.featureConfigs
 
-
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -32,7 +31,6 @@ data class FeatureConfigResponse(
     val validateSAMLEmails: ConfigsStatus
 )
 
-
 @Serializable
 data class AppLock(
     @SerialName("config")
@@ -42,7 +40,6 @@ data class AppLock(
     @SerialName("status")
     val status: String
 )
-
 
 @Serializable
 data class AppLockConfig(
@@ -63,13 +60,11 @@ data class ClassifiedDomains(
     val status: String
 )
 
-
 @Serializable
 data class ClassifiedDomainsConfig(
     @SerialName("domains")
     val domains: List<String>
 )
-
 
 @Serializable
 data class ConfigsStatus(

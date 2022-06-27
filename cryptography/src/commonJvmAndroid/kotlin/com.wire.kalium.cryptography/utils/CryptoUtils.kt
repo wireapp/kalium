@@ -36,8 +36,8 @@ actual fun calcSHA256(dataPath: Path, kaliumFileSystem: FileSystem): ByteArray? 
         null
     }
 
-actual fun encryptDataWithAES256(unencryptedDataPath: Path, key: AES256Key, encryptedDataPath: Path, kaliumFileSystem: FileSystem) =
-    AESEncrypt().encrypt(unencryptedDataPath, key, encryptedDataPath, kaliumFileSystem)
+actual fun encryptDataWithAES256(rawDataPath: Path, key: AES256Key, encryptedDataPath: Path, kaliumFileSystem: FileSystem) =
+    AESEncrypt().encrypt(rawDataPath, key, encryptedDataPath, kaliumFileSystem)
 
 actual fun decryptDataWithAES256(encryptedDataSource: Source, decryptedDataPath: Path, secretKey: AES256Key, kaliumFileSystem: FileSystem) =
     AESDecrypt(secretKey).decrypt(encryptedDataSource, decryptedDataPath, kaliumFileSystem)

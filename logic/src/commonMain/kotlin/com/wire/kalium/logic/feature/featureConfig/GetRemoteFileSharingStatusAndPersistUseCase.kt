@@ -30,7 +30,6 @@ class GetFeatureConfigStatusUseCaseImpl(
             // todo : handle other feature flags
         })
 
-
     private fun checkFileSharingStatus(featureConfigModel: FeatureConfigModel): GetFeatureConfigStatusResult {
         val status: Boolean = featureConfigModel.fileSharingModel.status.lowercase() == ENABLED
         return if (status == isFileSharingEnabledUseCase()) {
@@ -40,7 +39,6 @@ class GetFeatureConfigStatusUseCaseImpl(
             GetFeatureConfigStatusResult.Success(featureConfigModel, true)
         }
     }
-
 
     private fun mapFeatureConfigFailure(networkFailure: NetworkFailure): GetFeatureConfigStatusResult {
         return if (

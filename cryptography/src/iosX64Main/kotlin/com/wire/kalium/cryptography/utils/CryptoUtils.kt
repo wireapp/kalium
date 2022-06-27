@@ -38,7 +38,7 @@ private fun toData(data: ByteArray): NSData = memScoped {
     NSData.create(bytes = allocArrayOf(data), length = data.size.toULong())
 }
 
-actual fun encryptDataWithAES256(unencryptedDataPath: Path, key: AES256Key, encryptedDataPath: Path, kaliumFileSystem: FileSystem): Long {
+actual fun encryptDataWithAES256(rawDataPath: Path, key: AES256Key, encryptedDataPath: Path, kaliumFileSystem: FileSystem): Long {
     TODO("Not yet implemented")
 }
 

@@ -5,7 +5,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.client.UserConfigStorage
 
-
 interface UserConfigRepository {
 
     fun persistEnableLogging(enabled: Boolean): Either<StorageFailure, Unit>
@@ -13,7 +12,6 @@ interface UserConfigRepository {
 
     fun setFileSharingStatus(enabled: Boolean): Either<StorageFailure, Unit>
     fun isFileSharingEnabled(): Either<StorageFailure, Boolean>
-
 }
 
 class UserConfigDataSource(

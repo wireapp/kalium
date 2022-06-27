@@ -6,7 +6,6 @@ interface FeatureConfigMapper {
     fun fromFeatureConfigsDTO(featureConfigResponse: FeatureConfigResponse): FeatureConfigModel
 }
 
-
 class FeatureConfigMapperImpl : FeatureConfigMapper {
     override fun fromFeatureConfigsDTO(featureConfigResponse: FeatureConfigResponse): FeatureConfigModel =
         with(featureConfigResponse) {
