@@ -20,7 +20,6 @@ object FeatureConfigJson {
             |      "enforceAppLock": true,
             |      "inactivityTimeoutSecs": 2147483647
             |    },
-            |    "lockStatus": "locked",
             |    "status": "enabled"
             |  },
             |  "classifiedDomains": {
@@ -29,50 +28,39 @@ object FeatureConfigJson {
             |        "example.com"
             |      ]
             |    },
-            |    "lockStatus": "locked",
             |    "status": "enabled"
             |  },
             |  "conferenceCalling": {
-            |    "lockStatus": "locked",
             |    "status": "enabled"
             |  },
             |  "conversationGuestLinks": {
-            |    "lockStatus": "locked",
             |    "status": "enabled"
             |  },
             |  "digitalSignatures": {
-            |    "lockStatus": "locked",
             |    "status": "enabled"
             |  },
             |  "fileSharing": {
-            |    "lockStatus": "locked",
             |    "status": "enabled"
             |  },
             |  "legalhold": {
-            |    "lockStatus": "locked",
             |    "status": "enabled"
             |  },
             |  "searchVisibility": {
-            |    "lockStatus": "locked",
             |    "status": "enabled"
             |  },
             |  "selfDeletingMessages": {
             |    "config": {
             |      "enforcedTimeoutSeconds": 2147483647
             |    },
-            |    "lockStatus": "locked",
             |    "status": "enabled"
             |  },
             |  "sndFactorPasswordChallenge": {
-            |    "lockStatus": "locked",
             |    "status": "enabled"
             |  },
             |  "sso": {
-            |    "lockStatus": "locked",
             |    "status": "enabled"
             |  },
             |  "validateSAMLemails": {
-            |    "lockStatus": "locked",
             |    "status": "enabled"
             |  }
             |}
@@ -82,19 +70,19 @@ object FeatureConfigJson {
     val featureConfigResponseSerializerResponse = ValidJsonProvider(
         FeatureConfigResponse(
             AppLock(
-                AppLockConfig(true, 0), "locked", "enabled"
+                AppLockConfig(true, 0),  "enabled"
             ),
-            ClassifiedDomains(ClassifiedDomainsConfig(listOf()), "locked", "enabled"),
-            ConfigsStatus("locked", "enabled"),
-            ConfigsStatus("locked", "enabled"),
-            ConfigsStatus("locked", "enabled"),
-            ConfigsStatus("locked", "enabled"),
-            ConfigsStatus("locked", "enabled"),
-            ConfigsStatus("locked", "enabled"),
-            SelfDeletingMessages(SelfDeletingMessagesConfig(0), "locked", "enabled"),
-            ConfigsStatus("locked", "enabled"),
-            ConfigsStatus("locked", "enabled"),
-            ConfigsStatus("locked", "enabled")
+            ClassifiedDomains(ClassifiedDomainsConfig(listOf()),  "enabled"),
+            ConfigsStatus( "enabled"),
+            ConfigsStatus( "enabled"),
+            ConfigsStatus( "enabled"),
+            ConfigsStatus( "enabled"),
+            ConfigsStatus( "enabled"),
+            ConfigsStatus( "enabled"),
+            SelfDeletingMessages(SelfDeletingMessagesConfig(0),  "enabled"),
+            ConfigsStatus( "enabled"),
+            ConfigsStatus( "enabled"),
+            ConfigsStatus( "enabled")
         ), featureConfigResponseSerializer
     )
 
