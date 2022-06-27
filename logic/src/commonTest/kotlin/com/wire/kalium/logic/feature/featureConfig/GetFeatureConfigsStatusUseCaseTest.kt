@@ -37,25 +37,25 @@ class GetFeatureConfigsStatusUseCaseTest {
         val fileSharingModel = FeatureConfigModel(
             AppLockModel(
                 AppLockConfigModel(true, 0),
-                "locked", "enabled"
+                 "enabled"
             ),
             ClassifiedDomainsModel(
                 ClassifiedDomainsConfigModel(listOf()),
-                "locked", "enabled"
+                 "enabled"
             ),
-            ConfigsStatusModel("locked", "enabled"),
-            ConfigsStatusModel("locked", "enabled"),
-            ConfigsStatusModel("locked", "enabled"),
-            ConfigsStatusModel("locked", "enabled"),
-            ConfigsStatusModel("locked", "enabled"),
-            ConfigsStatusModel("locked", "enabled"),
+            ConfigsStatusModel( "enabled"),
+            ConfigsStatusModel( "enabled"),
+            ConfigsStatusModel( "enabled"),
+            ConfigsStatusModel( "enabled"),
+            ConfigsStatusModel( "enabled"),
+            ConfigsStatusModel( "enabled"),
             SelfDeletingMessagesModel(
                 SelfDeletingMessagesConfigModel(0),
-                "locked", "enabled"
+                 "enabled"
             ),
-            ConfigsStatusModel("locked", "enabled"),
-            ConfigsStatusModel("locked", "enabled"),
-            ConfigsStatusModel("locked", "enabled")
+            ConfigsStatusModel( "enabled"),
+            ConfigsStatusModel( "enabled"),
+            ConfigsStatusModel( "enabled")
         )
 
         val (arrangement, getFileSharingStatusUseCase) = Arrangement()
