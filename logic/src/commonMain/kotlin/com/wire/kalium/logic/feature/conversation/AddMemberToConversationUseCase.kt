@@ -23,10 +23,10 @@ class AddMemberToConversationUseCaseImpl(
             idMapper.toUserId(it)
         }
         conversationRepository.getConversationDetailsById(conversationId).flatMap { conversation ->
-            when (conversation.protocolInfo) {
+            when (conversation.protocol) {
                 is ProtocolInfo.Proteus -> conversationRepository.addMembers(members, conversationId)
                 is ProtocolInfo.MLS ->
-                    mlsConversationRepository.addMemberToMLSGroup(conversation.protocolInfo.groupId, userIdsMembers)
+                    mlsConversationRepository.addMemberToMLSGroup(conversation.protocol.groupId, userIdsMembers)
             }
         }
     }

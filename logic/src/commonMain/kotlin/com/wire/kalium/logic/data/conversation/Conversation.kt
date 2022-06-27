@@ -15,7 +15,7 @@ data class Conversation(
     val name: String?,
     val type: Type,
     val teamId: TeamId?,
-    val protocolInfo: ProtocolInfo,
+    val protocol: ProtocolInfo,
     val mutedStatus: MutedConversationStatus,
     val lastNotificationDate: String?,
     val lastModifiedDate: String?
