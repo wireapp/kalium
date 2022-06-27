@@ -4,11 +4,13 @@ import app.cash.sqldelight.Query
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
+import com.wire.kalium.persistence.MessageRestrictedAssetContent
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.ASSET
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MEMBER_CHANGE
+import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.RESTRICTED_ASSET
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.TEXT
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.UNKNOWN
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MISSED_CALL
@@ -50,6 +52,9 @@ class MessageMapper {
     }
 
     fun toModel(content: SQLDelightMessageTextContent) = MessageEntityContent.Text(content.text_body ?: "")
+
+    fun toModel(content: MessageRestrictedAssetContent) = MessageEntityContent.RestrictedAsset(content.asset_mime_type)
+
 
     fun toModel(content: SQLDelightMessageAssetContent) = MessageEntityContent.Asset(
         assetSizeInBytes = content.asset_size,
@@ -124,6 +129,11 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
                     message_id = message.id,
                     conversation_id = message.conversationId,
                     text_body = content.messageBody
+                )
+                is MessageEntityContent.RestrictedAsset -> queries.insertMessageRestrictedAssetContent(
+                    message_id = message.id,
+                    conversation_id = message.conversationId,
+                    asset_mime_type = content.mimeType
                 )
                 is MessageEntityContent.Asset -> queries.insertMessageAssetContent(
                     message_id = message.id,
@@ -211,7 +221,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
         conversationId: QualifiedIDEntity,
         date: String,
         visibility: List<MessageEntity.Visibility>
-    ): Flow<List<MessageEntity>>  =
+    ): Flow<List<MessageEntity>> =
         queries.selectMessagesByConversationIdAndVisibilityAfterDate(conversationId, visibility, date)
             .asFlow()
             .mapToList()
@@ -236,6 +246,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
         is MessageEntityContent.MemberChange -> MEMBER_CHANGE
         is MessageEntityContent.MissedCall -> MISSED_CALL
         is MessageEntityContent.Unknown -> UNKNOWN
+        is MessageEntityContent.RestrictedAsset -> RESTRICTED_ASSET
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -250,6 +261,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
         MEMBER_CHANGE -> this.queryOneOrDefaultFlow(queries::selectMessageMemberChangeContent, mapper::toModel)
         MISSED_CALL -> this.queryOneOrDefaultFlow(queries::selectMessageMissedCallContent, mapper::toModel)
         UNKNOWN -> this.queryOneOrDefaultFlow(queries::selectMessageUnknownContent, mapper::toModel)
+        RESTRICTED_ASSET -> this.queryOneOrDefaultFlow(queries::selectMessageRestrictedAssetContent, mapper::toModel)
     }.map { mapper.toModel(this, it) }
 
     private fun SQLDelightMessage.toMessageEntity() = when (this.content_type) {
@@ -258,6 +270,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
         MEMBER_CHANGE -> this.queryOneOrDefault(queries::selectMessageMemberChangeContent, mapper::toModel)
         MISSED_CALL -> this.queryOneOrDefault(queries::selectMessageMissedCallContent, mapper::toModel)
         UNKNOWN -> this.queryOneOrDefault(queries::selectMessageUnknownContent, mapper::toModel)
+        RESTRICTED_ASSET -> this.queryOneOrDefault(queries::selectMessageRestrictedAssetContent, mapper::toModel)
     }.let { mapper.toModel(this, it) }
 
     private val defaultMessageEntityContent = MessageEntityContent.Text("")

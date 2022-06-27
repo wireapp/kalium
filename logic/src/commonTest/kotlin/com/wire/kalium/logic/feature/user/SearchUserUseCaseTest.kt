@@ -8,6 +8,7 @@ import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.feature.publicuser.Result
 import com.wire.kalium.logic.feature.publicuser.SearchUsersUseCase
 import com.wire.kalium.logic.feature.publicuser.SearchUsersUseCaseImpl
@@ -43,7 +44,7 @@ class SearchUserUseCaseTest {
         searchUsersUseCase = SearchUsersUseCaseImpl(userRepository, searchUserRepository)
 
         given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+            .suspendFunction(userRepository::observeSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
     }
@@ -118,7 +119,8 @@ class SearchUserUseCaseTest {
                         connectionStatus = ConnectionState.ACCEPTED,
                         previewPicture = null,
                         completePicture = null,
-                        availabilityStatus = UserAvailabilityStatus.NONE
+                        availabilityStatus = UserAvailabilityStatus.NONE,
+                        userType = UserType.FEDERATED
                     )
                 }
             }

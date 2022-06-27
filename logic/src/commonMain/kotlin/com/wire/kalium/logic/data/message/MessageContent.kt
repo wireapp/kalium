@@ -12,11 +12,13 @@ sealed class MessageContent {
     sealed class Signaling : FromProto()
 
     // client message content types
+
     data class Text(val value: String) : Regular()
     data class Calling(val value: String) : Regular()
     data class Asset(val value: AssetContent) : Regular()
     data class DeleteMessage(val messageId: String) : Regular()
     data class TextEdited(val editMessageId: String, val newContent: String) : Regular()
+    data class RestrictedAsset(val mimeType: String) : Regular()
     data class DeleteForMe(
         val messageId: String,
         val conversationId: String,
@@ -28,6 +30,7 @@ sealed class MessageContent {
         val encodedData: ByteArray? = null,
         val hidden: Boolean = false
     ) : Regular()
+
     object Empty : Regular()
 
     // server message content types
