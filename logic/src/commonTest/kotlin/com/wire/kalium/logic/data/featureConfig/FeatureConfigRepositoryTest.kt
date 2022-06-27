@@ -34,25 +34,25 @@ class FeatureConfigRepositoryTest {
         val featureConfigModel = FeatureConfigModel(
             AppLockModel(
                 AppLockConfigModel(true, 0),
-                "locked", "enabled"
+                 "enabled"
             ),
             ClassifiedDomainsModel(
                 ClassifiedDomainsConfigModel(listOf()),
-                "locked", "enabled"
+                 "enabled"
             ),
-            ConfigsStatusModel("locked", "enabled"),
-            ConfigsStatusModel("locked", "enabled"),
-            ConfigsStatusModel("locked", "enabled"),
-            ConfigsStatusModel("locked", "enabled"),
-            ConfigsStatusModel("locked", "enabled"),
-            ConfigsStatusModel("locked", "enabled"),
+            ConfigsStatusModel( "enabled"),
+            ConfigsStatusModel( "enabled"),
+            ConfigsStatusModel( "enabled"),
+            ConfigsStatusModel( "enabled"),
+            ConfigsStatusModel( "enabled"),
+            ConfigsStatusModel( "enabled"),
             SelfDeletingMessagesModel(
                 SelfDeletingMessagesConfigModel(0),
-                "locked", "enabled"
+                 "enabled"
             ),
-            ConfigsStatusModel("locked", "enabled"),
-            ConfigsStatusModel("locked", "enabled"),
-            ConfigsStatusModel("locked", "enabled")
+            ConfigsStatusModel( "enabled"),
+            ConfigsStatusModel( "enabled"),
+            ConfigsStatusModel( "enabled")
         )
 
         val expectedSuccess = Either.Right(featureConfigModel)
@@ -107,19 +107,19 @@ class FeatureConfigRepositoryTest {
     private class Arrangement {
         val featureConfigResponse = FeatureConfigResponse(
             AppLock(
-                AppLockConfig(true, 0), "locked", "enabled"
+                AppLockConfig(true, 0),  "enabled"
             ),
-            ClassifiedDomains(ClassifiedDomainsConfig(listOf()), "locked", "enabled"),
-            ConfigsStatus("locked", "enabled"),
-            ConfigsStatus("locked", "enabled"),
-            ConfigsStatus("locked", "enabled"),
-            ConfigsStatus("locked", "enabled"),
-            ConfigsStatus("locked", "enabled"),
-            ConfigsStatus("locked", "enabled"),
-            SelfDeletingMessages(SelfDeletingMessagesConfig(0), "locked", "enabled"),
-            ConfigsStatus("locked", "enabled"),
-            ConfigsStatus("locked", "enabled"),
-            ConfigsStatus("locked", "enabled")
+            ClassifiedDomains(ClassifiedDomainsConfig(listOf()),  "enabled"),
+            ConfigsStatus( "enabled"),
+            ConfigsStatus( "enabled"),
+            ConfigsStatus( "enabled"),
+            ConfigsStatus( "enabled"),
+            ConfigsStatus( "enabled"),
+            ConfigsStatus( "enabled"),
+            SelfDeletingMessages(SelfDeletingMessagesConfig(0),  "enabled"),
+            ConfigsStatus( "enabled"),
+            ConfigsStatus( "enabled"),
+            ConfigsStatus( "enabled")
         )
 
         @Mock
