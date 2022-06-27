@@ -35,6 +35,6 @@ class EnvelopeProtoMapperTest {
     }
 
     private companion object{
-        val TEST_SENDER = "9AFBD180"
+        const val TEST_SENDER = "9AFBD180"
     }
 }
