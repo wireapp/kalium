@@ -2,6 +2,7 @@ package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -46,7 +47,7 @@ interface UserRepository {
     suspend fun getSelfUser(): SelfUser?
     suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit>
     suspend fun updateLocalSelfUserHandle(handle: String)
-    suspend fun getAllContacts(): List<OtherUser>
+    suspend fun getAllContacts(): Either<StorageFailure, List<OtherUser>>
     suspend fun getKnownUser(userId: UserId): Flow<OtherUser?>
     suspend fun getUserInfo(userId: UserId): Either<CoreFailure, OtherUser>
     suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus)
@@ -153,12 +154,14 @@ class UserDataSource(
     override suspend fun updateLocalSelfUserHandle(handle: String) =
         userDAO.updateUserHandle(getSelfUserIDEntity(), handle)
 
-    override suspend fun getAllContacts(): List<OtherUser> {
-        val selfUserId = getSelfUserIDEntity()
+    override suspend fun getAllContacts(): Either<StorageFailure, List<OtherUser>> {
+        return wrapStorageRequest {
+            val selfUserId = getSelfUserIDEntity()
 
-        return userDAO.getAllUsersByConnectionStatus(connectionState = ConnectionEntity.State.ACCEPTED)
-            .filter { it.id != selfUserId }
-            .map { userEntity -> publicUserMapper.fromDaoModelToPublicUser(userEntity) }
+            userDAO.getAllUsersByConnectionStatus(connectionState = ConnectionEntity.State.ACCEPTED)
+                .filter { it.id != selfUserId }
+                .map { userEntity -> publicUserMapper.fromDaoModelToPublicUser(userEntity) }
+        }
     }
 
     override suspend fun getKnownUser(userId: UserId) =
