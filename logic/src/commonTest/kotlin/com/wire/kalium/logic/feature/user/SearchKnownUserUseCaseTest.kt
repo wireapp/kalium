@@ -123,7 +123,8 @@ class SearchKnownUserUseCaseTest {
             previewPicture = null,
             completePicture = null,
             availabilityStatus = UserAvailabilityStatus.NONE,
-        userType =  UserType.EXTERNAL)
+            userType = UserType.EXTERNAL
+        )
 
         val (_, searchKnownUsersUseCase) = Arrangement()
             .withSuccessFullSelfUserRetrieve(selfUserId)
@@ -158,7 +159,7 @@ class Arrangement {
             .suspendFunction(userRepository::getSelfUser)
             .whenInvoked()
             .thenReturn(
-                flowOf(selfUser)
+                selfUser
             )
 
         return this
@@ -215,8 +216,8 @@ class Arrangement {
                 previewPicture = null,
                 completePicture = null,
                 availabilityStatus = UserAvailabilityStatus.NONE,
-            userType = UserType.FEDERATED
-                        ),
+                userType = UserType.FEDERATED
+            ),
         )
 
         if (extraOtherUser != null) {
