@@ -126,7 +126,8 @@ actual class UserDatabaseProvider(
                 connection_statusAdapter = EnumColumnAdapter(),
                 user_availability_statusAdapter = EnumColumnAdapter(),
                 preview_asset_idAdapter = QualifiedIDAdapter(),
-                complete_asset_idAdapter = QualifiedIDAdapter()
+                complete_asset_idAdapter = QualifiedIDAdapter(),
+                user_typeAdapter = EnumColumnAdapter()
             )
         )
     }

@@ -3,8 +3,11 @@ package com.wire.kalium.persistence.dao
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
+import com.wire.kalium.persistence.MetadataQueries
 import com.wire.kalium.persistence.UsersQueries
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
 import com.wire.kalium.persistence.User as SQLDelightUser
 
@@ -21,17 +24,20 @@ class UserMapper {
             connectionStatus = user.connection_status,
             previewAssetId = user.preview_asset_id,
             completeAssetId = user.complete_asset_id,
-            availabilityStatus = user.user_availability_status
+            availabilityStatus = user.user_availability_status,
+            userTypEntity = user.user_type
         )
     }
 }
 
-class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
+class UserDAOImpl(
+    private val userQueries: UsersQueries
+) : UserDAO {
 
     val mapper = UserMapper()
 
     override suspend fun insertUser(user: UserEntity) {
-        queries.insertUser(
+        userQueries.insertUser(
             user.id,
             user.name,
             user.handle,
@@ -41,17 +47,18 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
             user.team,
             user.connectionStatus,
             user.previewAssetId,
-            user.completeAssetId
+            user.completeAssetId,
+            user.userTypEntity
         )
     }
 
     override suspend fun upsertTeamMembers(users: List<UserEntity>) {
-        queries.transaction {
+        userQueries.transaction {
             for (user: UserEntity in users) {
-                queries.updateTeamMemberUser(user.team, user.connectionStatus, user.id)
-                val recordDidNotExist = queries.selectChanges().executeAsOne() == 0L
+                userQueries.updateTeamMemberUser(user.team, user.connectionStatus, user.id)
+                val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
                 if (recordDidNotExist) {
-                    queries.insertUser(
+                    userQueries.insertUser(
                         user.id,
                         user.name,
                         user.handle,
@@ -61,7 +68,8 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
                         user.team,
                         user.connectionStatus,
                         user.previewAssetId,
-                        user.completeAssetId
+                        user.completeAssetId,
+                        user.userTypEntity
                     )
                 }
             }
@@ -69,9 +77,9 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
     }
 
     override suspend fun upsertUsers(users: List<UserEntity>) {
-        queries.transaction {
+        userQueries.transaction {
             for (user: UserEntity in users) {
-                queries.updateUser(
+                userQueries.updateUser(
                     user.name,
                     user.handle,
                     user.email,
@@ -80,11 +88,12 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
                     user.team,
                     user.previewAssetId,
                     user.completeAssetId,
-                    user.id
+                    user.userTypEntity,
+                    user.id,
                 )
-                val recordDidNotExist = queries.selectChanges().executeAsOne() == 0L
+                val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
                 if (recordDidNotExist) {
-                    queries.insertUser(
+                    userQueries.insertUser(
                         user.id,
                         user.name,
                         user.handle,
@@ -94,7 +103,8 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
                         user.team,
                         user.connectionStatus,
                         user.previewAssetId,
-                        user.completeAssetId
+                        user.completeAssetId,
+                        user.userTypEntity
                     )
                 }
             }
@@ -102,16 +112,16 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
     }
 
     override suspend fun updateSelfUser(user: UserEntity) {
-        queries.updateSelfUser(user.name, user.handle, user.email, user.accentId, user.previewAssetId, user.completeAssetId, user.id)
+        userQueries.updateSelfUser(user.name, user.handle, user.email, user.accentId, user.previewAssetId, user.completeAssetId, user.id)
     }
 
-    override suspend fun getAllUsers(): Flow<List<UserEntity>> = queries.selectAllUsers()
+    override suspend fun getAllUsers(): Flow<List<UserEntity>> = userQueries.selectAllUsers()
         .asFlow()
         .mapToList()
         .map { entryList -> entryList.map(mapper::toModel) }
 
     override suspend fun getUserByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserEntity?> {
-        return queries.selectByQualifiedId(qualifiedID)
+        return userQueries.selectByQualifiedId(qualifiedID)
             .asFlow()
             .mapToOneOrNull()
             .map { it?.let { mapper.toModel(it) } }
@@ -120,31 +130,31 @@ class UserDAOImpl(private val queries: UsersQueries) : UserDAO {
     override suspend fun getUserByNameOrHandleOrEmailAndConnectionState(
         searchQuery: String,
         connectionState: ConnectionEntity.State
-    ) = queries.selectByNameOrHandleOrEmailAndConnectionState(searchQuery, connectionState)
+    ) = userQueries.selectByNameOrHandleOrEmailAndConnectionState(searchQuery, connectionState)
         .executeAsList()
         .map(mapper::toModel)
 
     override suspend fun getUserByHandleAndConnectionState(
         handle: String,
         connectionState: ConnectionEntity.State
-    ) = queries.selectByHandleAndConnectionState(handle, connectionState)
+    ) = userQueries.selectByHandleAndConnectionState(handle, connectionState)
         .executeAsList()
         .map(mapper::toModel)
 
     override suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity) {
-        queries.deleteUser(qualifiedID)
+        userQueries.deleteUser(qualifiedID)
     }
 
     override suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String) {
-        queries.updateUserhandle(handle, qualifiedID)
+        userQueries.updateUserhandle(handle, qualifiedID)
     }
 
     override suspend fun updateUserAvailabilityStatus(qualifiedID: QualifiedIDEntity, status: UserAvailabilityStatusEntity) {
-        queries.updateUserAvailabilityStatus(status, qualifiedID)
+        userQueries.updateUserAvailabilityStatus(status, qualifiedID)
     }
 
     override suspend fun getAllUsersByConnectionStatus(connectionState: ConnectionEntity.State): List<UserEntity> =
-        queries.selectAllUsersWithConnectionStatus(connectionState)
+        userQueries.selectAllUsersWithConnectionStatus(connectionState)
             .executeAsList()
             .map(mapper::toModel)
 }

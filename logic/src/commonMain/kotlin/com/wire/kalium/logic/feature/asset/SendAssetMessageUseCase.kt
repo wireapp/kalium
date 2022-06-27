@@ -100,7 +100,7 @@ internal class SendAssetMessageUseCaseImpl(
         assetId: UploadedAssetId
     ): Either<CoreFailure, Unit> = clientRepository.currentClientId().flatMap { currentClientId ->
         // Get my current user
-        val selfUser = userRepository.getSelfUser().first()
+        val selfUser = userRepository.observeSelfUser().first()
 
         // Create a unique message ID
         val generatedMessageUuid = uuid4().toString()
