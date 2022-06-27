@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
+import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.feature.publicuser.SearchKnownUsersUseCase
 import com.wire.kalium.logic.feature.publicuser.SearchKnownUsersUseCaseImpl
 import io.mockative.Mock
@@ -121,8 +122,8 @@ class SearchKnownUserUseCaseTest {
             connectionStatus = ConnectionState.ACCEPTED,
             previewPicture = null,
             completePicture = null,
-            availabilityStatus = UserAvailabilityStatus.NONE
-        )
+            availabilityStatus = UserAvailabilityStatus.NONE,
+        userType =  UserType.EXTERNAL)
 
         val (_, searchKnownUsersUseCase) = Arrangement()
             .withSuccessFullSelfUserRetrieve(selfUserId)
@@ -184,7 +185,8 @@ class Arrangement {
                             connectionStatus = ConnectionState.ACCEPTED,
                             previewPicture = null,
                             completePicture = null,
-                            availabilityStatus = UserAvailabilityStatus.NONE
+                            availabilityStatus = UserAvailabilityStatus.NONE,
+                            userType = UserType.EXTERNAL
                         )
                     )
                 )
@@ -212,8 +214,9 @@ class Arrangement {
                 connectionStatus = ConnectionState.ACCEPTED,
                 previewPicture = null,
                 completePicture = null,
-                availabilityStatus = UserAvailabilityStatus.NONE
-            ),
+                availabilityStatus = UserAvailabilityStatus.NONE,
+            userType = UserType.FEDERATED
+                        ),
         )
 
         if (extraOtherUser != null) {
