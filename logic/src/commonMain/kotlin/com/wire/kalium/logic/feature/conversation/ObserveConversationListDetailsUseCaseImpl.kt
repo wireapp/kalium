@@ -9,13 +9,17 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 
-class ObserveConversationListDetailsUseCase(
+fun interface ObserveConversationListDetailsUseCase {
+    suspend operator fun invoke(): Flow<List<ConversationDetails>>
+}
+
+internal class ObserveConversationListDetailsUseCaseImpl(
     private val conversationRepository: ConversationRepository,
     private val syncManager: SyncManager,
     private val callRepository: CallRepository,
-) {
+) : ObserveConversationListDetailsUseCase {
 
-    suspend operator fun invoke(): Flow<List<ConversationDetails>> {
+    override suspend operator fun invoke(): Flow<List<ConversationDetails>> {
         syncManager.startSyncIfIdle()
 
         val conversationsFlow = conversationRepository.observeConversationList().map { conversations ->
@@ -32,6 +36,7 @@ class ObserveConversationListDetailsUseCase(
                     is ConversationDetails.Self,
                     is ConversationDetails.Connection,
                     is ConversationDetails.OneOne -> it
+
                     is ConversationDetails.Group -> it.copy(
                         hasOngoingCall = (it.conversation.id in calls.map { call -> call.conversationId })
                     )
