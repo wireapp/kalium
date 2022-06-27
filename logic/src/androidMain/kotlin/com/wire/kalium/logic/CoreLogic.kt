@@ -50,7 +50,13 @@ actual class CoreLogic(
     }
 
     override val globalDatabase: Lazy<GlobalDatabaseProvider> =
-        lazy { GlobalDatabaseProvider(appContext, globalPreferences.value, SecurityHelper(globalPreferences.value).globalDBSecret(), kaliumConfigs.shouldEncryptData) }
+        lazy {
+            GlobalDatabaseProvider(
+                appContext,
+                SecurityHelper(globalPreferences.value).globalDBSecret(),
+                kaliumConfigs.shouldEncryptData
+            )
+        }
 
     override fun getSessionScope(userId: UserId): UserSessionScope {
         return userSessionScopeProvider.get(userId) ?: run {

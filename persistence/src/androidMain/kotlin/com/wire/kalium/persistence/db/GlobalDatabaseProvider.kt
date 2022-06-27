@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.sqlite.db.SupportSQLiteDatabase
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
-import com.wire.kalium.persistence.DBUtil
 import com.wire.kalium.persistence.GlobalDatabase
 import com.wire.kalium.persistence.ServerConfiguration
 import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAO
@@ -30,7 +29,7 @@ actual class GlobalDatabaseProvider(private val context: Context, passphrase: Gl
                 schema = GlobalDatabase.Schema,
                 context = context,
                 name = dbName,
-                factory = SupportFactory(SupportFactory(passphrase.value)),
+                factory = SupportFactory(passphrase.value),
                 callback = onConnectCallback
             )
         } else {
