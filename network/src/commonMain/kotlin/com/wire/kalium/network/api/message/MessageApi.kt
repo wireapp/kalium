@@ -68,13 +68,13 @@ interface MessageApi {
          * @param priority message priority
          * @param transient
          */
-        data class QualifiedDefaultParameters(
+        class QualifiedDefaultParameters(
             val sender: String,
             val recipients: QualifiedUserToClientToEncMsgMap,
             val nativePush: Boolean,
             val priority: MessagePriority,
             val transient: Boolean,
-            val `data`: String? = null,
+            val `data`: ByteArray? = null,
             val messageOption: QualifiedMessageOption
         ) : Parameters()
     }

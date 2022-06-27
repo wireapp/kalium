@@ -4,6 +4,7 @@ import com.wire.kalium.protobuf.otr.ClientMismatchStrategy
 import com.wire.kalium.protobuf.otr.QualifiedNewOtrMessage
 import com.wire.kalium.protobuf.otr.QualifiedUserEntry
 import com.wire.kalium.protobuf.otr.UserEntry
+import pbandk.ByteArr
 import pbandk.encodeToByteArray
 
 class EnvelopeProtoMapperImpl : EnvelopeProtoMapper {
@@ -28,6 +29,7 @@ class EnvelopeProtoMapperImpl : EnvelopeProtoMapper {
         return QualifiedNewOtrMessage(
             recipients = qualifiedEntries,
             sender = otrClientIdMapper.toOtrClientId(envelopeParameters.sender),
+            blob = envelopeParameters.data?.let { ByteArr(it) },
             //TODO(messaging): Handle different report types, etc.
             clientMismatchStrategy = QualifiedNewOtrMessage.ClientMismatchStrategy.ReportAll(ClientMismatchStrategy.ReportAll()),
             nativePush = envelopeParameters.nativePush,
