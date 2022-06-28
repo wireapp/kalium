@@ -13,6 +13,7 @@ import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
  * This class is only for platform specific variables,
  * and it should only override functions/variables from UserSessionScopeCommon
  */
+@Suppress("LongParameterList")
 actual class UserSessionScope(
     private val applicationContext: Context,
     userId: UserId,
