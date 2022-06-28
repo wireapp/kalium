@@ -73,7 +73,6 @@ class GetAllContactsNotInTheConversationUseCaseTest {
         assertEquals(Arrangement.mockAllContacts, result.contactNotInTheConversation)
     }
 
-
     @Test
     fun givenAllContactsAreConversationMembers_WhenGettingContacstNotInTheConversation_ThenResultIsEmpty() = runTest {
         val allContacts = listOf(
@@ -245,7 +244,6 @@ class GetAllContactsNotInTheConversationUseCaseTest {
 
             return this
         }
-
 
         fun arrange() = this to GetAllContactsNotInTheConversationUseCase(conversationRepository, userRepository)
     }
