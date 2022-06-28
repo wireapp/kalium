@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.sync
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -18,6 +19,7 @@ class SlowSyncWorker(
         kaliumLogger.d("Sync: Starting SlowSync")
 
         val result = try{
+            userSessionScope.getRemoteFeatureConfigsStatusAndPersist
             userSessionScope.users.syncSelfUser()
                 .flatMap { userSessionScope.conversations.syncConversations() }
                 .flatMap { userSessionScope.connection.syncConnections() }

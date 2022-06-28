@@ -274,7 +274,7 @@ class ConversationEventReceiverImpl(
                 is MessageContent.Asset -> {
 
                     userConfigRepository.isFileSharingEnabled().onSuccess {
-                        if (it) {
+                        if (it.isFileSharingEnabled != null && it.isFileSharingEnabled) {
                             messageRepository.getMessageById(message.conversationId, message.id)
                                 .onFailure {
                                     // No asset message was received previously, so just persist the preview asset message

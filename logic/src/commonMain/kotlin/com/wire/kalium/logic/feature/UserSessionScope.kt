@@ -69,7 +69,10 @@ import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.team.TeamScope
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCaseImpl
+import com.wire.kalium.logic.feature.user.SetFileSharingStatusUseCase
+import com.wire.kalium.logic.feature.user.SetFileSharingStatusUseCaseImpl
 import com.wire.kalium.logic.feature.user.UserScope
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.ConversationEventReceiver
 import com.wire.kalium.logic.sync.ConversationEventReceiverImpl
 import com.wire.kalium.logic.sync.EventGatherer
@@ -101,7 +104,8 @@ abstract class UserSessionScopeCommon(
     private val authenticatedDataSourceSet: AuthenticatedDataSourceSet,
     private val sessionRepository: SessionRepository,
     private val globalCallManager: GlobalCallManager,
-    private val globalPreferences: KaliumPreferences
+    private val globalPreferences: KaliumPreferences,
+    private val kaliumConfigs: KaliumConfigs
 ) {
     private val userConfigStorage: UserConfigStorage get() = UserConfigStorageImpl(globalPreferences)
 
@@ -363,12 +367,14 @@ abstract class UserSessionScopeCommon(
     private val featureConfigRepository: FeatureConfigRepository
         get() = FeatureConfigDataSource(featureConfigApi = authenticatedDataSourceSet.authenticatedNetworkContainer.featureConfigApi)
     val isFileSharingEnabled: IsFileSharingEnabledUseCase get() = IsFileSharingEnabledUseCaseImpl(userConfigRepository)
+    val setFileSharingStatus: SetFileSharingStatusUseCase get() = SetFileSharingStatusUseCaseImpl(userConfigRepository)
 
-    val getRemoteFeatureConfigsStatusAndPersist: GetRemoteFeatureConfigStatusAndPersistUseCase
+    internal val getRemoteFeatureConfigsStatusAndPersist: GetRemoteFeatureConfigStatusAndPersistUseCase
         get() = GetFeatureConfigStatusUseCaseImpl(
             userConfigRepository,
             featureConfigRepository,
-            isFileSharingEnabled
+            isFileSharingEnabled,
+            kaliumConfigs
         )
 
     val team: TeamScope get() = TeamScope(userRepository, teamRepository, syncManager)

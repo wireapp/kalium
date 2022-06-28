@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.configuration.FileSharingEntity
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
@@ -11,27 +12,27 @@ import com.wire.kalium.logic.kaliumLogger
  */
 
 interface IsFileSharingEnabledUseCase {
-    operator fun invoke(): Boolean
+    operator fun invoke(): FileSharingEntity
 }
 
 class IsFileSharingEnabledUseCaseImpl(
     private val userConfigRepository: UserConfigRepository
 ) : IsFileSharingEnabledUseCase {
 
-    override operator fun invoke(): Boolean =
+    override operator fun invoke(): FileSharingEntity =
         userConfigRepository.isFileSharingEnabled().fold({
             when (it) {
                 StorageFailure.DataNotFound -> {
                     kaliumLogger.e("Data not found in IsFileSharingEnabledUseCase")
-                    false
+                    FileSharingEntity(null, null)
                 }
                 is StorageFailure.Generic -> {
                     kaliumLogger.e("Storage Error : ${it.rootCause} in IsFileSharingEnabledUseCase")
-                    false
+                    FileSharingEntity(null , null)
                 }
             }
         }, {
-            it
+            FileSharingEntity(it.isFileSharingEnabled, it.isStatusChanged)
         })
 }
 

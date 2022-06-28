@@ -39,10 +39,10 @@ class UserConfigStorageTest {
 
     @Test
     fun givenAFileSharingStatusValue_whenCAllPersistItSaveAndThenCanRestoreTheValueLocally() = runTest {
-        userConfigStorage.persistFileSharingStatus(true)
-        assertEquals(true, userConfigStorage.isFileSharingEnabled())
+        userConfigStorage.persistFileSharingStatus(true, null)
+        assertEquals(IsFileSharingEnabledEntity(true, null), userConfigStorage.isFileSharingEnabled())
 
-        userConfigStorage.persistFileSharingStatus(false)
-        assertEquals(false, userConfigStorage.isFileSharingEnabled())
+        userConfigStorage.persistFileSharingStatus(false, null)
+        assertEquals(IsFileSharingEnabledEntity(false, null), userConfigStorage.isFileSharingEnabled())
     }
 }

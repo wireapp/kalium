@@ -1,6 +1,8 @@
 package com.wire.kalium.persistence.client
 
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 interface UserConfigStorage {
 
@@ -15,17 +17,22 @@ interface UserConfigStorage {
     fun isLoggingEnables(): Boolean
 
     /**
-     * save flag from the file sharing api
+     * save flag from the file sharing api, and if the status changes
      */
-    fun persistFileSharingStatus(enabled: Boolean)
+    fun persistFileSharingStatus(status: Boolean, isStatusChanged: Boolean?)
 
     /**
-     * get the saved flag that been saved to know if the file sharing is enabled or not
+     * get the saved flag that been saved to know if the file sharing is enabled or not with the flag
+     * to know if there was a status change
      */
-    fun isFileSharingEnabled(): Boolean
-
+    fun isFileSharingEnabled(): IsFileSharingEnabledEntity?
 }
 
+@Serializable
+data class IsFileSharingEnabledEntity(
+    @SerialName("status") val status: Boolean,
+    @SerialName("isStatusChanged") val isStatusChanged: Boolean?
+)
 
 class UserConfigStorageImpl(private val kaliumPreferences: KaliumPreferences) : UserConfigStorage {
 
@@ -36,12 +43,17 @@ class UserConfigStorageImpl(private val kaliumPreferences: KaliumPreferences) : 
     override fun isLoggingEnables(): Boolean =
         kaliumPreferences.getBoolean(ENABLE_LOGGING)
 
-    override fun persistFileSharingStatus(enabled: Boolean) {
-        kaliumPreferences.putBoolean(FILE_SHARING, enabled)
+    override fun persistFileSharingStatus(status: Boolean, isStatusChanged: Boolean?) {
+        kaliumPreferences.putSerializable(
+            FILE_SHARING,
+            IsFileSharingEnabledEntity(status, isStatusChanged),
+            IsFileSharingEnabledEntity.serializer()
+        )
     }
 
-    override fun isFileSharingEnabled(): Boolean =
-        kaliumPreferences.getBoolean(FILE_SHARING)
+    override fun isFileSharingEnabled(): IsFileSharingEnabledEntity? =
+        kaliumPreferences.getSerializable(FILE_SHARING, IsFileSharingEnabledEntity.serializer())
+
 
     private companion object {
         const val ENABLE_LOGGING = "enable_logging"
