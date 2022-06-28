@@ -9,10 +9,13 @@ import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.id.toConversationId
 import com.wire.kalium.logic.feature.call.CallStatus
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 @Suppress("LongParameterList")
 class OnCloseCall(
-    private val callRepository: CallRepository
+    private val callRepository: CallRepository,
+    private val scope: CoroutineScope
 ) : CloseCallHandler {
     override fun onClosedCall(
         reason: Int,
@@ -27,10 +30,12 @@ class OnCloseCall(
         val avsReason = CallClosedReason.fromInt(value = reason)
         val callStatus = if (avsReason === STILL_ONGOING) CallStatus.STILL_ONGOING else CallStatus.CLOSED
 
-        callRepository.updateCallStatusById(
-            conversationId = conversationId.toConversationId().toString(),
-            status = callStatus
-        )
+        scope.launch {
+            callRepository.updateCallStatusById(
+                conversationId = conversationId.toConversationId().toString(),
+                status = callStatus
+            )
+        }
 
         callingLogger.i("OnCloseCall -> incoming call status for conversation $conversationId updated to $callStatus..")
     }
