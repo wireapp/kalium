@@ -117,7 +117,6 @@ internal class AssetDataSource(
             // We need to update the asset path with the persistent one
             val persistedAssetData = uploadAssetData.copy(tempDataPath = persistentAssetDataPath)
 
-
             assetMapper.fromUploadedAssetToDaoModel(persistedAssetData, assetResponse).let { assetEntity ->
                 wrapStorageRequest { assetDao.insertAsset(assetEntity) }
             }.map { assetMapper.fromApiUploadResponseToDomainModel(assetResponse) }

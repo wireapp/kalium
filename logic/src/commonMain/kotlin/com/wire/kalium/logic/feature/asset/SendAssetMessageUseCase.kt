@@ -29,6 +29,7 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.fileExtension
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
+import okio.FileSystem
 import okio.Path
 
 fun interface SendAssetMessageUseCase {
@@ -55,7 +56,8 @@ internal class SendAssetMessageUseCaseImpl(
     private val assetDataSource: AssetRepository,
     private val userRepository: UserRepository,
     private val messageSender: MessageSender,
-    private val kaliumFileSystem: KaliumFileSystem
+    private val kaliumFileSystem: FileSystem,
+    private val tempEncryptedPath: Path = (kaliumFileSystem as KaliumFileSystem).tempFilePath("temp_encrypted.aes")
 ) : SendAssetMessageUseCase {
 
     override suspend fun invoke(
@@ -68,7 +70,7 @@ internal class SendAssetMessageUseCaseImpl(
         val otrKey = generateRandomAES256Key()
 
         // Temporary folder to host the encrypted data until we have the asset key returned by the backend after successful upload
-        val tempEncryptedDataPath = kaliumFileSystem.tempFilePath("temp_encrypted.aes")
+        val tempEncryptedDataPath = tempEncryptedPath
 
         val encryptedDataSize = encryptDataWithAES256(assetDataPath, otrKey, tempEncryptedDataPath, kaliumFileSystem)
         val encryptionSucceeded = encryptedDataSize > 0L

@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
@@ -19,89 +20,142 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
-import kotlin.test.BeforeTest
+import okio.Path
+import okio.Path.Companion.toPath
+import okio.fakefilesystem.FakeFileSystem
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class UploadUserAvatarUseCaseTest {
 
-    @Mock
-    private val assetRepository = mock(classOf<AssetRepository>())
-
-    @Mock
-    private val userRepository = mock(classOf<UserRepository>())
-
-    private lateinit var uploadUserAvatarUseCase: UploadUserAvatarUseCase
-
-    @BeforeTest
-    fun setUp() {
-        uploadUserAvatarUseCase = UploadUserAvatarUseCaseImpl(userRepository, assetRepository)
-    }
-
     @Test
     fun givenValidParams_whenUploadingUserAvatar_thenShouldReturnsASuccessResult() = runTest {
         val expected = UploadedAssetId("some_key")
-        given(assetRepository)
-            .suspendFunction(assetRepository::uploadAndPersistPublicAsset)
-            .whenInvokedWith(any(), any())
-            .thenReturn(Either.Right(expected))
+        val avatarImage = "An Avatar Image (:".encodeToByteArray()
+        val avatarPath = "some-image-asset".toPath()
+        val (arrangement, uploadUserAvatar) = Arrangement()
+            .withPathStub(avatarPath)
+            .withStoredData(avatarImage, avatarPath)
+            .withSuccessfulUploadResponse(expected)
+            .arrange()
 
-        given(userRepository)
-            .suspendFunction(userRepository::updateSelfUser)
-            .whenInvokedWith(eq(null), eq(null), eq(expected.key))
-            .thenReturn(Either.Right(stubSelfUser()))
-
-        val actual = uploadUserAvatarUseCase("A".encodeToByteArray())
+        val actual = uploadUserAvatar(avatarPath, avatarImage.size.toLong())
 
         assertEquals(UploadAvatarResult.Success::class, actual::class)
         assertEquals("value2", (actual as UploadAvatarResult.Success).userAssetId.value)
 
-        verify(assetRepository)
-            .suspendFunction(assetRepository::uploadAndPersistPublicAsset)
-            .with(any(), any())
-            .wasInvoked(exactly = once)
+        with(arrangement) {
+            verify(assetRepository)
+                .suspendFunction(assetRepository::uploadAndPersistPublicAsset)
+                .with(any(), any(), any())
+                .wasInvoked(exactly = once)
 
-        verify(userRepository)
-            .suspendFunction(userRepository::updateSelfUser)
-            .with(eq(null), eq(null), eq(expected.key))
-            .wasInvoked(exactly = once)
+            verify(userRepository)
+                .suspendFunction(userRepository::updateSelfUser)
+                .with(eq(null), eq(null), eq(expected.key))
+                .wasInvoked(exactly = once)
+        }
     }
 
     @Test
     fun givenUploadAvatarIsInvoked_whenThereIsAnError_thenShouldCallReturnsAFailureResult() = runTest {
-        val expected = UploadedAssetId("some_key")
-        given(assetRepository)
-            .suspendFunction(assetRepository::uploadAndPersistPublicAsset)
-            .whenInvokedWith(any(), any())
-            .thenReturn(Either.Left(CoreFailure.Unknown(Throwable("an error"))))
+        val expectedError = CoreFailure.Unknown(Throwable("an error"))
+        val avatarImage = "An Avatar Image (:".encodeToByteArray()
+        val avatarPath = "some-image-asset".toPath()
+        val (arrangement, uploadUserAvatar) = Arrangement()
+            .withPathStub(avatarPath)
+            .withStoredData(avatarImage, avatarPath)
+            .withErrorResponse(expectedError)
+            .arrange()
 
-        val actual = uploadUserAvatarUseCase("A".encodeToByteArray())
+        val actual = uploadUserAvatar(avatarPath, avatarImage.size.toLong())
 
         assertEquals(UploadAvatarResult.Failure::class, actual::class)
         assertEquals(CoreFailure.Unknown::class, (actual as UploadAvatarResult.Failure).coreFailure::class)
 
-        verify(assetRepository)
-            .suspendFunction(assetRepository::uploadAndPersistPublicAsset)
-            .with(any(), any())
-            .wasInvoked(exactly = once)
+        with(arrangement) {
+            verify(assetRepository)
+                .suspendFunction(assetRepository::uploadAndPersistPublicAsset)
+                .with(any(), any(), any())
+                .wasInvoked(exactly = once)
 
-        verify(userRepository)
-            .suspendFunction(userRepository::updateSelfUser)
-            .with(eq(null), eq(null), eq(expected.key))
-            .wasNotInvoked()
+            verify(userRepository)
+                .suspendFunction(userRepository::updateSelfUser)
+                .with(eq(null), eq(null), any())
+                .wasNotInvoked()
+        }
     }
 
-    private fun stubSelfUser() = SelfUser(
-        UserId("some_id", "some_domain"),
-        "some_name",
-        "some_handle",
-        "some_email",
-        null,
-        1,
-        null,
-        ConnectionState.ACCEPTED,
-        UserAssetId("value1", "domain"),
-        UserAssetId("value2", "domain"),
-        UserAvailabilityStatus.NONE
-    )
+    private class Arrangement {
+
+        @Mock
+        val kaliumFileSystem = mock(classOf<KaliumFileSystem>())
+
+        @Mock
+        val assetRepository = mock(classOf<AssetRepository>())
+
+        @Mock
+        val userRepository = mock(classOf<UserRepository>())
+
+        private val uploadUserAvatarUseCase: UploadUserAvatarUseCase = UploadUserAvatarUseCaseImpl(userRepository, assetRepository)
+
+        var userHomePath = "/Users/me".toPath()
+
+        val fakeFileSystem = FakeFileSystem().also { it.createDirectories(userHomePath) }
+
+        private val dummySelfUser = SelfUser(
+            UserId("some_id", "some_domain"),
+            "some_name",
+            "some_handle",
+            "some_email",
+            null,
+            1,
+            null,
+            ConnectionState.ACCEPTED,
+            UserAssetId("value1", "domain"),
+            UserAssetId("value2", "domain"),
+            UserAvailabilityStatus.NONE
+        )
+
+        fun withStoredData(data: ByteArray, dataNamePath: Path): Arrangement {
+            val fullDataPath = "$userHomePath/$dataNamePath".toPath()
+            fakeFileSystem.write(fullDataPath) {
+                data
+            }
+            return this
+        }
+
+        fun withPathStub(tempDataPath: Path): Arrangement {
+            given(kaliumFileSystem)
+                .function(kaliumFileSystem::source)
+                .whenInvokedWith(eq(tempDataPath))
+                .thenInvoke {
+                    fakeFileSystem.source(tempDataPath)
+                }
+            return this
+        }
+
+        fun withSuccessfulUploadResponse(expectedResponse: UploadedAssetId): Arrangement {
+            given(assetRepository)
+                .suspendFunction(assetRepository::uploadAndPersistPublicAsset)
+                .whenInvokedWith(any(), any(), any())
+                .thenReturn(Either.Right(expectedResponse))
+
+            given(userRepository)
+                .suspendFunction(userRepository::updateSelfUser)
+                .whenInvokedWith(eq(null), eq(null), eq(expectedResponse.key))
+                .thenReturn(Either.Right(dummySelfUser))
+            return this
+        }
+
+        fun withErrorResponse(expectedError: CoreFailure): Arrangement {
+            given(assetRepository)
+                .suspendFunction(assetRepository::uploadAndPersistPublicAsset)
+                .whenInvokedWith(any(), any(), any())
+                .thenReturn(Either.Left(expectedError))
+            return this
+        }
+
+        fun arrange() = this to uploadUserAvatarUseCase
+    }
 }

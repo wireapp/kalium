@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.asset
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -32,6 +33,9 @@ import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import okio.Path
+import okio.Path.Companion.toPath
+import okio.fakefilesystem.FakeFileSystem
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -43,31 +47,35 @@ class SendImageUseCaseTest {
     fun givenAValidSendImageMessageRequest_whenSendingImageMessage_thenShouldReturnASuccessResult() = runTest {
         // Given
         val imageToSend = getMockedImage()
+        val assetPath = "some-image-asset".toPath()
         val conversationId = ConversationId("some-convo-id", "some-domain-id")
         val (_, sendImageUseCase) = Arrangement()
+            .withPathStub(assetPath)
+            .withStoredData(imageToSend, assetPath)
             .withSuccessfulResponse()
             .arrange()
 
         // When
-        val result = sendImageUseCase.invoke(conversationId, imageToSend, "temp_image.jpg", 1, 1)
+        val result = sendImageUseCase.invoke(conversationId, assetPath, "temp_image.jpg", 1, 1)
 
         // Then
         assertEquals(result, SendImageMessageResult.Success)
     }
 
-
     @Test
     fun givenAValidSendImageMessageRequest_whenThereIsAnAssetUploadError_thenShouldCallReturnsAFailureResult() = runTest {
         // Given
         val imageByteArray = getMockedImage()
+        val imagePath = "some-image-asset".toPath()
         val conversationId = ConversationId("some-convo-id", "some-domain-id")
         val unauthorizedException = TestNetworkException.missingAuth
         val (_, sendImageUseCase) = Arrangement()
+            .withStoredData(imageByteArray, imagePath)
             .withUploadAssetErrorResponse(unauthorizedException)
             .arrange()
 
         // When
-        val result = sendImageUseCase.invoke(conversationId, imageByteArray, "temp_image.jpg", 1, 1)
+        val result = sendImageUseCase.invoke(conversationId, imagePath, "temp_image.jpg", 1, 1)
 
         // Then
         assertTrue(result is SendImageMessageResult.Failure)
@@ -77,53 +85,58 @@ class SendImageUseCaseTest {
     }
 
     @Test
-    fun givenASuccessfulSendImageMessageRequest_whenCheckingTheMessageRepository_thenTheAssetIsPersisted() =
-        runTest {
-            // Given
-            val mockedImg = getMockedImage()
-            val conversationId = ConversationId("some-convo-id", "some-domain-id")
-            val (arrangement, sendImageUseCase) = Arrangement()
-                .withSuccessfulResponse()
-                .arrange()
+    fun givenASuccessfulSendImageMessageRequest_whenCheckingTheMessageRepository_thenTheAssetIsPersisted() = runTest {
+        // Given
+        val mockedImg = getMockedImage()
+        val imagePath = "some-image-asset".toPath()
+        val conversationId = ConversationId("some-convo-id", "some-domain-id")
+        val (arrangement, sendImageUseCase) = Arrangement()
+            .withStoredData(mockedImg, imagePath)
+            .withSuccessfulResponse()
+            .arrange()
 
-            // When
-            sendImageUseCase.invoke(conversationId, mockedImg, "temp_image.jpg", 1, 1)
+        // When
+        sendImageUseCase.invoke(conversationId, imagePath, "temp_image.jpg", 1, 1)
 
-            // Then
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::persistMessage)
-                .with(any())
-                .wasInvoked(exactly = once)
-            verify(arrangement.messageSender)
-                .suspendFunction(arrangement.messageSender::sendPendingMessage)
-                .with(eq(conversationId), any())
-                .wasInvoked(exactly = once)
-        }
+        // Then
+        verify(arrangement.messageRepository)
+            .suspendFunction(arrangement.messageRepository::persistMessage)
+            .with(any())
+            .wasInvoked(exactly = once)
+        verify(arrangement.messageSender)
+            .suspendFunction(arrangement.messageSender::sendPendingMessage)
+            .with(eq(conversationId), any())
+            .wasInvoked(exactly = once)
+    }
 
     @Test
-    fun givenASuccessfulSendImageMessageRequest_whenCheckingTheMessageRepository_thenTheAssetIsMarkedAsSavedInternally() =
-        runTest {
-            // Given
-            val mockedImg = getMockedImage()
-            val conversationId = ConversationId("some-convo-id", "some-domain-id")
-            val (arrangement, sendImageUseCase) = Arrangement()
-                .withSuccessfulResponse()
-                .arrange()
+    fun givenASuccessfulSendImageMessageRequest_whenCheckingTheMessageRepository_thenTheAssetIsMarkedAsSavedInternally() = runTest {
+        // Given
+        val mockedImg = getMockedImage()
+        val imagePath = "some-image-asset".toPath()
+        val conversationId = ConversationId("some-convo-id", "some-domain-id")
+        val (arrangement, sendImageUseCase) = Arrangement()
+            .withStoredData(mockedImg, imagePath)
+            .withSuccessfulResponse()
+            .arrange()
 
-            // When
-            sendImageUseCase.invoke(conversationId, mockedImg, "temp_image.jpg", 1, 1)
+        // When
+        sendImageUseCase.invoke(conversationId, imagePath, "temp_image.jpg", 1, 1)
 
-            // Then
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::persistMessage)
-                .with(matching {
-                    val content = it.content
-                    content is MessageContent.Asset && content.value.downloadStatus == Message.DownloadStatus.SAVED_INTERNALLY
-                })
-                .wasInvoked(exactly = once)
-        }
+        // Then
+        verify(arrangement.messageRepository)
+            .suspendFunction(arrangement.messageRepository::persistMessage)
+            .with(matching {
+                val content = it.content
+                content is MessageContent.Asset && content.value.downloadStatus == Message.DownloadStatus.SAVED_INTERNALLY
+            })
+            .wasInvoked(exactly = once)
+    }
 
     private class Arrangement {
+
+        @Mock
+        val kaliumFileSystem = mock(classOf<KaliumFileSystem>())
 
         @Mock
         val messageRepository = mock(classOf<MessageRepository>())
@@ -140,6 +153,10 @@ class SendImageUseCaseTest {
         @Mock
         val messageSender = mock(classOf<MessageSender>())
 
+        var userHomePath = "/Users/me".toPath()
+
+        val fakeFileSystem = FakeFileSystem().also { it.createDirectories(userHomePath) }
+
         val someAssetId = UploadedAssetId("some-asset-id", "some-asset-token")
 
         val someClientId = ClientId("some-client-id")
@@ -153,18 +170,42 @@ class SendImageUseCaseTest {
             1,
             null,
             ConnectionState.ACCEPTED,
-            UserAssetId("value1","domain"),
-            UserAssetId("value2","domain"),
+            UserAssetId("value1", "domain"),
+            UserAssetId("value2", "domain"),
             UserAvailabilityStatus.NONE
         )
 
-        val sendImageUseCase =
-            SendImageMessageUseCaseImpl(messageRepository, clientRepository, assetDataSource, userRepository, messageSender)
+        val sendImageUseCase = SendImageMessageUseCaseImpl(
+            messageRepository,
+            clientRepository,
+            assetDataSource,
+            userRepository,
+            messageSender,
+            kaliumFileSystem
+        )
+
+        fun withStoredData(data: ByteArray, dataNamePath: Path): Arrangement {
+            val fullDataPath = "$userHomePath/$dataNamePath".toPath()
+            fakeFileSystem.write(fullDataPath) {
+                data
+            }
+            return this
+        }
+
+        fun withPathStub(tempDataPath: Path): Arrangement {
+            given(kaliumFileSystem)
+                .function(kaliumFileSystem::source)
+                .whenInvokedWith(eq(tempDataPath))
+                .thenInvoke {
+                    fakeFileSystem.source(tempDataPath)
+                }
+            return this
+        }
 
         fun withSuccessfulResponse(): Arrangement {
             given(assetDataSource)
                 .suspendFunction(assetDataSource::uploadAndPersistPrivateAsset)
-                .whenInvokedWith(any(), any())
+                .whenInvokedWith(any(), any(), any())
                 .thenReturn(Either.Right(someAssetId))
             given(userRepository)
                 .suspendFunction(userRepository::observeSelfUser)
@@ -188,7 +229,7 @@ class SendImageUseCaseTest {
         fun withUploadAssetErrorResponse(exception: KaliumException): Arrangement {
             given(assetDataSource)
                 .suspendFunction(assetDataSource::uploadAndPersistPrivateAsset)
-                .whenInvokedWith(any(), any())
+                .whenInvokedWith(any(), any(), any())
                 .thenReturn(Either.Left(NetworkFailure.ServerMiscommunication(exception)))
             return this
         }

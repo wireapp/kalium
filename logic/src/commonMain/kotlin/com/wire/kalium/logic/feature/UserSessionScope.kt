@@ -104,7 +104,7 @@ abstract class UserSessionScopeCommon(
     private val sessionRepository: SessionRepository,
     private val globalCallManager: GlobalCallManager,
     private val globalPreferences: KaliumPreferences,
-    private val dataStoragePaths: DataStoragePaths
+    dataStoragePaths: DataStoragePaths
 ) {
     private val userConfigStorage: UserConfigStorage get() = UserConfigStorageImpl(globalPreferences)
 
