@@ -24,6 +24,7 @@ data class Call(
     val conversationType: Conversation.Type,
     val callerName: String?,
     val callerTeamName: String?,
+    val establishedTime: String? = null,
     val participants: List<Participant> = emptyList(),
     val maxParticipants: Int = 0 // Was used for tracking
 )
