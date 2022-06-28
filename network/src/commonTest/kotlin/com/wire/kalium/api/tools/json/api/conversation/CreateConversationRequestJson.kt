@@ -47,7 +47,7 @@ object CreateConversationRequestJson {
         |       "teamid": "${it.convTeamInfo?.teamId}"
         |   }
         |}
-        """.trimIndent()
+        """.trimMargin()
         }
 
 }
