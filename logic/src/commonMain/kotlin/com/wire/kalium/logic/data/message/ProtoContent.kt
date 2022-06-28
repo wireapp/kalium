@@ -9,16 +9,17 @@ import com.wire.kalium.protobuf.messages.GenericMessage
  *
  * It can be [ProtoContent] or [ExternalMessageInstructions].
  */
-sealed class ProtoContent {
+sealed interface ProtoContent {
+    val messageUid: String
 
     /**
      * Regular message, with readable content that can be simply used.
      * @see [ExternalMessageInstructions]
      */
     data class Readable(
-        val messageUid: String,
+        override val messageUid: String,
         val messageContent: MessageContent.FromProto
-    ) : ProtoContent()
+    ) : ProtoContent
 
     /**
      * The message doesn't contain an actual content,
@@ -33,9 +34,9 @@ sealed class ProtoContent {
      * @see [GenericMessage.Content.External]
      */
     class ExternalMessageInstructions(
-        val messageUid: String,
+        override val messageUid: String,
         val otrKey: ByteArray,
         val sha256: ByteArray?,
         val encryptionAlgorithm: MessageEncryptionAlgorithm?
-    ) : ProtoContent()
+    ) : ProtoContent
 }
