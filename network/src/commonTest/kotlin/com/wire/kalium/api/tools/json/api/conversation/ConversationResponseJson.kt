@@ -3,10 +3,9 @@ package com.wire.kalium.api.tools.json.api.conversation
 import com.wire.kalium.api.tools.json.ValidJsonProvider
 import com.wire.kalium.api.tools.json.model.QualifiedIDSamples
 import com.wire.kalium.network.api.conversation.ConvProtocol
+import com.wire.kalium.network.api.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.conversation.ConversationMembersResponse
-import com.wire.kalium.network.api.conversation.ConversationOtherMembersResponse
 import com.wire.kalium.network.api.conversation.ConversationResponse
-import com.wire.kalium.network.api.conversation.ConversationSelfMemberResponse
 import com.wire.kalium.network.api.conversation.MutedStatus
 
 object ConversationResponseJson {
@@ -21,18 +20,19 @@ object ConversationResponseJson {
         |       "others": [
         |           {
         |               "qualified_id": {
-        |                   "domain": "${it.members.otherMembers[0].userId.domain}",
-        |                   "id": "${it.members.otherMembers[0].userId.value}"
+        |                   "domain": "${it.members.otherMembers[0].id.domain}",
+        |                   "id": "${it.members.otherMembers[0].id.value}"
         |               }
         |           }
         |       ],
         |       "self": {
         |           "qualified_id": {
-        |               "domain": "${it.members.self.userId.domain}",
-        |               "id": "${it.members.self.userId.value}"
+        |               "domain": "${it.members.self.id.domain}",
+        |               "id": "${it.members.self.id.value}"
         |           },
-        |           "otr_muted_ref": "2022-04-11T14:15:48.044Z",
-        |           "otr_muted_status": 0
+        |           "conversation_role" : "${it.members.self.conversationRole}"
+        |           "otr_muted_ref": "${it.members.self.otrMutedRef}",
+        |           "otr_muted_status": ${it.members.self.otrMutedStatus}
         |       }
         |   },
         |   "message_timer": ${it.messageTimer},
@@ -53,10 +53,13 @@ object ConversationResponseJson {
         ConversationResponse(
             "fdf23116-42a5-472c-8316-e10655f5d11e",
             ConversationMembersResponse(
-                ConversationSelfMemberResponse(
-                    QualifiedIDSamples.one
+                ConversationMemberDTO.Self(
+                    QualifiedIDSamples.one,
+                    "wire_admin",
+                    otrMutedRef = "2022-04-11T14:15:48.044Z",
+                    otrMutedStatus = MutedStatus.fromOrdinal(0)
                 ),
-                listOf(ConversationOtherMembersResponse(null, QualifiedIDSamples.two))
+                listOf(ConversationMemberDTO.Other( id = QualifiedIDSamples.two, conversationRole = "wire_member"))
             ),
             "group name",
             QualifiedIDSamples.one,
