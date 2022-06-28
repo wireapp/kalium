@@ -10,6 +10,14 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.publicuser.PublicUserMapper
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.ConnectionState.ACCEPTED
+import com.wire.kalium.logic.data.user.ConnectionState.BLOCKED
+import com.wire.kalium.logic.data.user.ConnectionState.CANCELLED
+import com.wire.kalium.logic.data.user.ConnectionState.IGNORED
+import com.wire.kalium.logic.data.user.ConnectionState.MISSING_LEGALHOLD_CONSENT
+import com.wire.kalium.logic.data.user.ConnectionState.NOT_CONNECTED
+import com.wire.kalium.logic.data.user.ConnectionState.PENDING
+import com.wire.kalium.logic.data.user.ConnectionState.SENT
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserId
@@ -37,6 +45,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
@@ -128,7 +137,7 @@ internal class ConnectionDataSource(
      * [ConnectionState.CANCELLED] [ConnectionState.IGNORED] or [ConnectionState.ACCEPTED]
      */
     private fun isValidConnectionState(connectionState: ConnectionState): Boolean = when (connectionState) {
-        ConnectionState.IGNORED, ConnectionState.CANCELLED, ConnectionState.ACCEPTED -> true
+        IGNORED, CANCELLED, ACCEPTED -> true
         else -> false
     }
 
@@ -140,7 +149,7 @@ internal class ConnectionDataSource(
         return connectionDAO.getConnectionRequests().map {
             it.map { connection ->
                 val otherUser = userDAO.getUserByQualifiedID(connection.qualifiedToId)
-                connectionMapper.fromDaoToConnectionDetails(connection, otherUser.firstOrNull())
+                connectionMapper.fromDaoToConnectionDetails(connection, otherUser.first()!!)
             }
         }
     }
@@ -149,7 +158,7 @@ internal class ConnectionDataSource(
         return connectionDAO.getConnectionRequests().map {
             it.map { connection ->
                 val otherUser = userDAO.getUserByQualifiedID(connection.qualifiedToId)
-                connectionMapper.fromDaoToConnectionDetails(connection, otherUser.firstOrNull())
+                connectionMapper.fromDaoToConnectionDetails(connection, otherUser.first()!!)
             }
         }
     }
@@ -221,13 +230,8 @@ internal class ConnectionDataSource(
      */
     private suspend fun handleUserConnectionStatusPersistence(connection: Connection): Either<CoreFailure, Unit> =
         when (connection.status) {
-            ConnectionState.NOT_CONNECTED,
-            ConnectionState.PENDING,
-            ConnectionState.SENT -> persistConnection(connection)
-            ConnectionState.BLOCKED -> persistConnection(connection)
-            ConnectionState.IGNORED -> persistConnection(connection)
-            ConnectionState.CANCELLED -> deleteCancelledConnection(connection.qualifiedConversationId)
-            ConnectionState.MISSING_LEGALHOLD_CONSENT -> persistConnection(connection)
-            ConnectionState.ACCEPTED -> updateConversationMemberFromConnection(connection)
+            MISSING_LEGALHOLD_CONSENT, NOT_CONNECTED, PENDING, SENT, BLOCKED, IGNORED -> persistConnection(connection)
+            CANCELLED -> deleteCancelledConnection(connection.qualifiedConversationId)
+            ACCEPTED -> updateConversationMemberFromConnection(connection)
         }
 }

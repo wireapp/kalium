@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertFailsWith
 
 class ObserveConversationsAndConnectionsUseCaseTest {
 
@@ -62,5 +63,23 @@ class ObserveConversationsAndConnectionsUseCaseTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenSomeConversationsAndConnections_whenObservingDetailsListAndConnectionsAndFails_thenObserveConversationListShouldThrowError() =
+        runTest {
+            // given
+            given(observeConversationListDetailsUseCase)
+                .suspendFunction(observeConversationListDetailsUseCase::invoke)
+                .whenInvoked()
+                .thenReturn(flowOf(listOf(TestConversationDetails.CONVERSATION_ONE_ONE)))
+
+            given(observeConnectionListUseCase)
+                .suspendFunction(observeConnectionListUseCase::invoke)
+                .whenInvoked()
+                .then { throw RuntimeException("Some error in my flow!") }
+
+
+            // then
+            assertFailsWith<RuntimeException> { observeConversationsAndConnectionsUseCase().collect() }
+        }
 
 }
