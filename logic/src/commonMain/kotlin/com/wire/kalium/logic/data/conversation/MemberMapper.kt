@@ -24,18 +24,18 @@ internal class MemberMapperImpl(private val idMapper: IdMapper) : MemberMapper {
         Member(idMapper.fromApiModel(conversationMember.qualifiedId))
 
     override fun fromApiModel(conversationMembersResponse: ConversationMembersResponse): MembersInfo {
-        val self = Member(idMapper.fromApiModel(conversationMembersResponse.self.userId))
+        val self = Member(idMapper.fromApiModel(conversationMembersResponse.self.id))
         val others = conversationMembersResponse.otherMembers.map { member ->
-            Member(idMapper.fromApiModel(member.userId))
+            Member(idMapper.fromApiModel(member.id))
         }
         return MembersInfo(self, others)
     }
 
     override fun fromApiModelToDaoModel(conversationMembersResponse: ConversationMembersResponse): List<PersistedMember> {
         val otherMembers = conversationMembersResponse.otherMembers.map { member ->
-            PersistedMember(idMapper.fromApiToDao(member.userId))
+            PersistedMember(idMapper.fromApiToDao(member.id))
         }
-        val selfMember = PersistedMember(idMapper.fromApiToDao(conversationMembersResponse.self.userId))
+        val selfMember = PersistedMember(idMapper.fromApiToDao(conversationMembersResponse.self.id))
         return otherMembers + selfMember
     }
 
