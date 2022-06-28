@@ -54,6 +54,7 @@ interface MessageRepository {
         offset: Int,
         visibility: List<Message.Visibility> = Message.Visibility.values().toList()
     ): Flow<List<Message>>
+
     suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
         conversationId: ConversationId,
         date: String,
@@ -193,7 +194,8 @@ class MessageDataSource(
                 //TODO(messaging): Handle other MessageOptions, native push, transient and priorities
                 MessageApi.Parameters.QualifiedDefaultParameters(
                     envelope.senderClientId.value,
-                    recipientMap, true, MessagePriority.HIGH, false, null, MessageApi.QualifiedMessageOption.ReportAll
+                    recipientMap, true, MessagePriority.HIGH, false, envelope.dataBlob?.data,
+                    MessageApi.QualifiedMessageOption.ReportAll
                 ),
                 idMapper.toApiModel(conversationId),
             )
@@ -203,6 +205,7 @@ class MessageDataSource(
                         && networkFailure.rootCause is ProteusClientsChangedError -> {
                     sendMessageFailureMapper.fromDTO(networkFailure.rootCause as ProteusClientsChangedError)
                 }
+
                 else -> networkFailure
             }
             Either.Left(failure)
