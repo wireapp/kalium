@@ -199,7 +199,7 @@ class MessageRepositoryTest {
 
         verify(messageApi)
             .suspendFunction(messageApi::qualifiedSendMessage)
-            .with(matching { it.data!!.contentEquals(dataBlob.data) }, anything())
+            .with(matching { it.externalBlob!!.contentEquals(dataBlob.data) }, anything())
             .wasInvoked(exactly = once)
     }
 
