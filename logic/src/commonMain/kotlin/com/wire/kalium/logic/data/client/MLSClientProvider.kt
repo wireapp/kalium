@@ -26,11 +26,11 @@ class MLSClientProviderImpl(
     private val kaliumPreferences: KaliumPreferences
 ) : MLSClientProvider {
 
-
     override fun getMLSClient(clientId: ClientId?): Either<CoreFailure, MLSClient> {
         val currentClientId = clientId ?: clientRepository.currentClientId().fold({ return Either.Left(it) }, { it })
 
         val location = "$rootKeyStorePath/${currentClientId.value}".also {
+            // TODO: migrate to okio solution once assert refactor is merged
             FileUtil.mkDirs(it)
         }
 
@@ -41,7 +41,6 @@ class MLSClientProviderImpl(
 
         return mlsClient
     }
-
 
     private fun mlsClient(userId: CryptoUserID, clientId: ClientId, location: String, passphrase: MlsDBSecret): MLSClient {
         return MLSClientImpl(
