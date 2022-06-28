@@ -328,7 +328,6 @@ class SearchUserRepositoryTest {
     private companion object {
         const val TEST_QUERY = "testQuery"
         const val TEST_DOMAIN = "testDomain"
-
         val CONTACTS = buildList {
             for (i in 1..5) {
                 add(

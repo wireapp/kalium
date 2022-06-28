@@ -189,7 +189,9 @@ abstract class UserSessionScopeCommon(
             callApi = authenticatedDataSourceSet.authenticatedNetworkContainer.callApi,
             conversationRepository = conversationRepository,
             userRepository = userRepository,
-            teamRepository = teamRepository
+            teamRepository = teamRepository,
+            timeParser = timeParser,
+            messageRepository = messageRepository
         )
     }
 

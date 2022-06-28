@@ -35,8 +35,6 @@ data class FeatureConfigResponse(
 data class AppLock(
     @SerialName("config")
     val config: AppLockConfig,
-    @SerialName("lockStatus")
-    val lockStatus: String,
     @SerialName("status")
     val status: String
 )
@@ -54,8 +52,6 @@ data class AppLockConfig(
 data class ClassifiedDomains(
     @SerialName("config")
     val config: ClassifiedDomainsConfig,
-    @SerialName("lockStatus")
-    val lockStatus: String,
     @SerialName("status")
     val status: String
 )
@@ -68,8 +64,6 @@ data class ClassifiedDomainsConfig(
 
 @Serializable
 data class ConfigsStatus(
-    @SerialName("lockStatus")
-    val lockStatus: String,
     @SerialName("status")
     val status: String
 )
@@ -78,8 +72,6 @@ data class ConfigsStatus(
 data class SelfDeletingMessages(
     @SerialName("config")
     val config: SelfDeletingMessagesConfig,
-    @SerialName("lockStatus")
-    val lockStatus: String,
     @SerialName("status")
     val status: String
 )
