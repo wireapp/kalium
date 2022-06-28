@@ -13,6 +13,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MEMBER_
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.RESTRICTED_ASSET
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.TEXT
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.UNKNOWN
+import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MISSED_CALL
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -24,6 +25,7 @@ import com.wire.kalium.persistence.MessageAssetContent as SQLDelightMessageAsset
 import com.wire.kalium.persistence.MessageMemberChangeContent as SQLDelightMessageMemberChangeContent
 import com.wire.kalium.persistence.MessageTextContent as SQLDelightMessageTextContent
 import com.wire.kalium.persistence.MessageUnknownContent as SQLDelightMessageUnknownContent
+import com.wire.kalium.persistence.MessageMissedCallContent as SQLDelightMessageMissedCallContent
 
 class MessageMapper {
     fun toModel(msg: SQLDelightMessage, content: MessageEntityContent): MessageEntity = when (content) {
@@ -81,6 +83,8 @@ class MessageMapper {
         encodedData = content.unknown_encoded_data
     )
 
+    fun toModel(content: SQLDelightMessageMissedCallContent) = MessageEntityContent.MissedCall
+
     private fun mapEditStatus(lastEditTimestamp: String?) =
         lastEditTimestamp?.let { MessageEntity.EditStatus.Edited(it) }
             ?: MessageEntity.EditStatus.NotEdited
@@ -107,7 +111,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             messages.forEach { insertInDB(it) }
         }
 
-    @Suppress("ComplexMethod")
+    @Suppress("ComplexMethod", "LongMethod")
     private fun insertInDB(message: MessageEntity) {
         queries.transaction {
             queries.insertMessage(
@@ -160,6 +164,11 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
                     conversation_id = message.conversationId,
                     member_change_list = content.memberUserIdList,
                     member_change_type = content.memberChangeType
+                )
+                is MessageEntityContent.MissedCall -> queries.insertMissedCallMessage(
+                    message_id = message.id,
+                    conversation_id = message.conversationId,
+                    caller_id = message.senderUserId
                 )
             }
         }
@@ -235,6 +244,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
         is MessageEntityContent.Text -> TEXT
         is MessageEntityContent.Asset -> ASSET
         is MessageEntityContent.MemberChange -> MEMBER_CHANGE
+        is MessageEntityContent.MissedCall -> MISSED_CALL
         is MessageEntityContent.Unknown -> UNKNOWN
         is MessageEntityContent.RestrictedAsset -> RESTRICTED_ASSET
     }
@@ -249,6 +259,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
         TEXT -> this.queryOneOrDefaultFlow(queries::selectMessageTextContent, mapper::toModel)
         ASSET -> this.queryOneOrDefaultFlow(queries::selectMessageAssetContent, mapper::toModel)
         MEMBER_CHANGE -> this.queryOneOrDefaultFlow(queries::selectMessageMemberChangeContent, mapper::toModel)
+        MISSED_CALL -> this.queryOneOrDefaultFlow(queries::selectMessageMissedCallContent, mapper::toModel)
         UNKNOWN -> this.queryOneOrDefaultFlow(queries::selectMessageUnknownContent, mapper::toModel)
         RESTRICTED_ASSET -> this.queryOneOrDefaultFlow(queries::selectMessageRestrictedAssetContent, mapper::toModel)
     }.map { mapper.toModel(this, it) }
@@ -257,6 +268,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
         TEXT -> this.queryOneOrDefault(queries::selectMessageTextContent, mapper::toModel)
         ASSET -> this.queryOneOrDefault(queries::selectMessageAssetContent, mapper::toModel)
         MEMBER_CHANGE -> this.queryOneOrDefault(queries::selectMessageMemberChangeContent, mapper::toModel)
+        MISSED_CALL -> this.queryOneOrDefault(queries::selectMessageMissedCallContent, mapper::toModel)
         UNKNOWN -> this.queryOneOrDefault(queries::selectMessageUnknownContent, mapper::toModel)
         RESTRICTED_ASSET -> this.queryOneOrDefault(queries::selectMessageRestrictedAssetContent, mapper::toModel)
     }.let { mapper.toModel(this, it) }
