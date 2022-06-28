@@ -149,7 +149,7 @@ internal class ConnectionDataSource(
         return connectionDAO.getConnectionRequests().map {
             it.map { connection ->
                 val otherUser = userDAO.getUserByQualifiedID(connection.qualifiedToId)
-                connectionMapper.fromDaoToConnectionDetails(connection, otherUser.first()!!)
+                connectionMapper.fromDaoToConnectionDetails(connection, otherUser.firstOrNull())
             }
         }
     }
@@ -158,7 +158,7 @@ internal class ConnectionDataSource(
         return connectionDAO.getConnectionRequests().map {
             it.map { connection ->
                 val otherUser = userDAO.getUserByQualifiedID(connection.qualifiedToId)
-                connectionMapper.fromDaoToConnectionDetails(connection, otherUser.first()!!)
+                connectionMapper.fromDaoToConnectionDetails(connection, otherUser.firstOrNull())
             }
         }
     }
