@@ -213,6 +213,7 @@ com.wire.kalium.network.api.model
 com.wire.kalium.network.api.notification
 com.wire.kalium.network.api.notification.conversation
 com.wire.kalium.network.api.notification.user
+com.wire.kalium.network.api.pagination
 com.wire.kalium.network.api.prekey
 com.wire.kalium.network.api.teams
 com.wire.kalium.network.api.user
