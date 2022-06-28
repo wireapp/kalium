@@ -70,13 +70,7 @@ class ObserveConversationsAndConnectionsUseCaseTest {
             given(observeConversationListDetailsUseCase)
                 .suspendFunction(observeConversationListDetailsUseCase::invoke)
                 .whenInvoked()
-                .thenReturn(flowOf(listOf(TestConversationDetails.CONVERSATION_ONE_ONE)))
-
-            given(observeConnectionListUseCase)
-                .suspendFunction(observeConnectionListUseCase::invoke)
-                .whenInvoked()
                 .then { throw RuntimeException("Some error in my flow!") }
-
 
             // then
             assertFailsWith<RuntimeException> { observeConversationsAndConnectionsUseCase().collect() }
