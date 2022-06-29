@@ -263,11 +263,11 @@ class ConversationMembersExcludedSearchUseCaseTest {
 
         fun withFailingSearchUsers(
         ): Arrangement {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::getConversationMembers)
-                .whenInvokedWith(anything())
+            given(searchUsersUseCase)
+                .suspendFunction(searchUsersUseCase::invoke)
+                .whenInvokedWith(anything(), anything())
                 .thenReturn(
-                    Either.Left(StorageFailure.DataNotFound)
+                    Result.Failure.InvalidRequest
                 )
 
             return this
