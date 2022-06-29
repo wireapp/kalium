@@ -130,5 +130,5 @@ actual class UserDatabaseProvider(userId: UserIDEntity, passphrase: String) {
     }
 
     actual val connectionDAO: ConnectionDAO
-        get() = ConnectionDAOImpl(database.connectionsQueries)
+        get() = ConnectionDAOImpl(database.connectionsQueries, database.conversationsQueries)
 }
