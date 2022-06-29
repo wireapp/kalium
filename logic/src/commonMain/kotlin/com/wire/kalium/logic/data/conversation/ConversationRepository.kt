@@ -58,7 +58,7 @@ interface ConversationRepository {
     suspend fun getOneToOneConversationDetailsByUserId(otherUserId: UserId): Either<CoreFailure, ConversationDetails.OneOne>
     suspend fun createGroupConversation(
         name: String? = null,
-        members: List<Member>,
+        usersList: List<UserId>,
         options: ConversationOptions = ConversationOptions()
     ): Either<CoreFailure, Conversation>
 
@@ -285,14 +285,14 @@ class ConversationDataSource(
 
     override suspend fun createGroupConversation(
         name: String?,
-        members: List<Member>,
+        usersList: List<UserId>,
         options: ConversationOptions
     ): Either<CoreFailure, Conversation> = wrapStorageRequest {
         userRepository.observeSelfUser().first()
     }.flatMap { selfUser ->
         wrapApiRequest {
             conversationApi.createNewConversation(
-                conversationMapper.toApiModel(name, members, selfUser.teamId, options)
+                conversationMapper.toApiModel(name, usersList, selfUser.teamId, options)
             )
         }.flatMap { conversationResponse ->
             val teamId = selfUser.teamId?.let { TeamId(it) }
@@ -308,7 +308,7 @@ class ConversationDataSource(
             }.flatMap {
                 when (conversationEntity.protocolInfo) {
                     is ProtocolInfo.Proteus -> persistMembersFromConversationResponse(conversationResponse)
-                    is ProtocolInfo.MLS -> persistMembersFromConversationResponseMLS(conversationResponse, members)
+                    is ProtocolInfo.MLS -> persistMembersFromConversationResponseMLS(conversationResponse, TODO("the only valid source for conversation members is the server aka ConversationResponse"))
                 }
             }.flatMap {
                 when (conversationEntity.protocolInfo) {
