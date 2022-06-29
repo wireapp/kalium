@@ -62,7 +62,6 @@ sealed class Result {
         object InvalidQuery : Failure()
         object InvalidRequest : Failure()
         class Generic(val genericFailure: CoreFailure) : Failure()
-
     }
 }
 
