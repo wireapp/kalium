@@ -11,18 +11,18 @@ object ConnectionRequestsJson {
         """.trimIndent()
     }
 
-    val validPagingState = ValidJsonProvider(String) {
+    val validPagingState = ValidJsonProvider("PAGING_STATE_1234") {
         """
             {
-                "paging_state": "PAGING_STATE_1234"                            
+                "paging_state": "$it"
             }
         """.trimIndent()
     }
 
-    val validConnectionStatusUpdate = ValidJsonProvider(String) {
+    val validConnectionStatusUpdate = ValidJsonProvider("accepted") {
         """
             {
-                "status": "accepted"                            
+                "status": "$it"  
             }
         """.trimIndent()
     }
