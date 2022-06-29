@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.user
 
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -127,6 +128,36 @@ class ConversationMembersExcludedSearchUseCaseTest {
         assertTrue { result.userSearchResult.result.isEmpty() }
     }
 
+    @Test
+    fun givenUserSearchFails_WhenSearchForUser_ThenPropagateTheFailureCorrectly() = runTest {
+        //given
+        val (_, searchUsersNotPartOfConversation) = Arrangement()
+            .withFailingSearchUsers()
+            .withSuccessFullGetConversationMembers()
+            .arrange()
+
+        //when
+        val result = searchUsersNotPartOfConversation(ConversationId("someValue", "someDomain"), "someQuery")
+
+        //then
+        assertIs<Result.Failure>(result)
+    }
+
+    @Test
+    fun givenGetConversationMembersFails_WhenSearchForUser_ThenPropagateTheFailureCorrectly() = runTest {
+        //given
+        val (_, searchUsersNotPartOfConversation) = Arrangement()
+            .withFailingGetConversationMembers()
+            .withSuccessFullSearchUsers()
+            .arrange()
+
+        //when
+        val result = searchUsersNotPartOfConversation(ConversationId("someValue", "someDomain"), "someQuery")
+
+        //then
+        assertIs<Result.Failure>(result)
+    }
+
     private class Arrangement {
         companion object {
 
@@ -227,6 +258,29 @@ class ConversationMembersExcludedSearchUseCaseTest {
                     Either.Right(if (extraConversationMember != null) conversationMembers + extraConversationMember else conversationMembers)
                 )
 
+            return this
+        }
+
+        fun withFailingSearchUsers(
+        ): Arrangement {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::getConversationMembers)
+                .whenInvokedWith(anything())
+                .thenReturn(
+                    Either.Left(StorageFailure.DataNotFound)
+                )
+
+            return this
+        }
+
+        fun withFailingGetConversationMembers(
+        ): Arrangement {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::getConversationMembers)
+                .whenInvokedWith(anything())
+                .thenReturn(
+                    Either.Left(StorageFailure.DataNotFound)
+                )
             return this
         }
 
