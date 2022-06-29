@@ -21,7 +21,7 @@ class ConnectionApiTest : ApiTest {
             assertion = {
                 assertJson()
                 assertPost()
-                assertBodyContent(GET_CONNECTIONS_NO_PAGING_REQUEST.rawJson)
+                assertJsonBodyContent(GET_CONNECTIONS_NO_PAGING_REQUEST.rawJson)
                 assertPathEqual(PATH_CONNECTIONS)
             }
         )
@@ -38,13 +38,13 @@ class ConnectionApiTest : ApiTest {
             assertion = {
                 assertJson()
                 assertPost()
-                assertBodyContent(GET_CONNECTIONS_WITH_PAGING_REQUEST.rawJson)
+                assertJsonBodyContent(GET_CONNECTIONS_WITH_PAGING_REQUEST.rawJson)
                 assertPathEqual(PATH_CONNECTIONS)
             }
         )
 
         val connectionApi: ConnectionApi = ConnectionApiImpl(networkClient)
-        connectionApi.fetchSelfUserConnections(pagingState = null)
+        connectionApi.fetchSelfUserConnections(pagingState = GET_CONNECTIONS_WITH_PAGING_REQUEST.serializableData)
     }
 
     @Test
@@ -82,7 +82,7 @@ class ConnectionApiTest : ApiTest {
                     assertJson()
                     assertPut()
                     assertPathEqual("$PATH_CONNECTIONS_ENDPOINT/${userId.domain}/${userId.value}")
-                    assertBodyContent(GET_CONNECTION_STATUS_REQUEST.rawJson)
+                    assertJsonBodyContent(GET_CONNECTION_STATUS_REQUEST.rawJson)
                 }
             )
             val connectionApi = ConnectionApiImpl(httpClient)

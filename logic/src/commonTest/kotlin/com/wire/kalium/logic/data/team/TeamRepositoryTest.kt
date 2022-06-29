@@ -16,6 +16,7 @@ import com.wire.kalium.persistence.dao.TeamEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserEntity
+import com.wire.kalium.persistence.dao.UserTypeEntity
 import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.any
@@ -158,7 +159,8 @@ class TeamRepositoryTest {
             team = "teamId",
             previewAssetId = null,
             completeAssetId = null,
-            availabilityStatus = UserAvailabilityStatusEntity.NONE
+            availabilityStatus = UserAvailabilityStatusEntity.NONE,
+            userTypEntity = UserTypeEntity.EXTERNAL
         )
 
         given(userMapper)

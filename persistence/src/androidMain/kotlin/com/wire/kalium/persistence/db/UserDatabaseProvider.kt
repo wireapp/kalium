@@ -13,6 +13,8 @@ import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
 import com.wire.kalium.persistence.MessageMemberChangeContent
+import com.wire.kalium.persistence.MessageMissedCallContent
+import com.wire.kalium.persistence.MessageRestrictedAssetContent
 import com.wire.kalium.persistence.MessageTextContent
 import com.wire.kalium.persistence.MessageUnknownContent
 import com.wire.kalium.persistence.User
@@ -41,14 +43,17 @@ import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.util.FileNameUtil
 import net.sqlcipher.database.SupportFactory
 
-actual class UserDatabaseProvider(private val context: Context, userId: UserIDEntity, kaliumPreferences: KaliumPreferences) {
+actual class UserDatabaseProvider(
+    private val context: Context,
+    userId: UserIDEntity,
+    kaliumPreferences: KaliumPreferences,
+    encrypt: Boolean = true
+) {
     private val dbName = FileNameUtil.userDBName(userId)
     private val driver: AndroidSqliteDriver
     private val database: UserDatabase
 
     init {
-        val supportFactory = SupportFactory(DBUtil.getOrGenerateSecretKey(kaliumPreferences, DATABASE_SECRET_KEY).toByteArray())
-
         val onConnectCallback = object : AndroidSqliteDriver.Callback(UserDatabase.Schema) {
             override fun onOpen(db: SupportSQLiteDatabase) {
                 super.onOpen(db)
@@ -56,13 +61,22 @@ actual class UserDatabaseProvider(private val context: Context, userId: UserIDEn
             }
         }
 
-        driver = AndroidSqliteDriver(
-            schema = UserDatabase.Schema,
-            context = context,
-            name = dbName,
-            factory = supportFactory,
-            callback = onConnectCallback
-        )
+        driver = if (encrypt) {
+            AndroidSqliteDriver(
+                schema = UserDatabase.Schema,
+                context = context,
+                name = dbName,
+                factory = SupportFactory(DBUtil.getOrGenerateSecretKey(kaliumPreferences, DATABASE_SECRET_KEY).toByteArray()),
+                callback = onConnectCallback
+            )
+        } else {
+            AndroidSqliteDriver(
+                schema = UserDatabase.Schema,
+                context = context,
+                name = dbName,
+                callback = onConnectCallback
+            )
+        }
 
         database = UserDatabase(
             driver,
@@ -92,11 +106,18 @@ actual class UserDatabaseProvider(private val context: Context, userId: UserIDEn
                 asset_widthAdapter = IntColumnAdapter,
                 asset_heightAdapter = IntColumnAdapter,
                 asset_download_statusAdapter = EnumColumnAdapter()
-                ),
+            ),
             MessageMemberChangeContent.Adapter(
                 conversation_idAdapter = QualifiedIDAdapter(),
                 member_change_listAdapter = QualifiedIDListAdapter(),
                 member_change_typeAdapter = EnumColumnAdapter()
+            ),
+            MessageMissedCallContent.Adapter(
+                conversation_idAdapter = QualifiedIDAdapter(),
+                caller_idAdapter = QualifiedIDAdapter()
+            ),
+            MessageRestrictedAssetContent.Adapter(
+                conversation_idAdapter = QualifiedIDAdapter()
             ),
             MessageTextContent.Adapter(
                 conversation_idAdapter = QualifiedIDAdapter()
@@ -110,7 +131,8 @@ actual class UserDatabaseProvider(private val context: Context, userId: UserIDEn
                 connection_statusAdapter = EnumColumnAdapter(),
                 user_availability_statusAdapter = EnumColumnAdapter(),
                 preview_asset_idAdapter = QualifiedIDAdapter(),
-                complete_asset_idAdapter = QualifiedIDAdapter()
+                complete_asset_idAdapter = QualifiedIDAdapter(),
+                user_typeAdapter = EnumColumnAdapter()
             )
         )
     }
@@ -119,7 +141,7 @@ actual class UserDatabaseProvider(private val context: Context, userId: UserIDEn
         get() = UserDAOImpl(database.usersQueries)
 
     actual val connectionDAO: ConnectionDAO
-        get() = ConnectionDAOImpl(database.connectionsQueries)
+        get() = ConnectionDAOImpl(database.connectionsQueries, database.conversationsQueries)
 
     actual val conversationDAO: ConversationDAO
         get() = ConversationDAOImpl(database.conversationsQueries, database.usersQueries, database.membersQueries)

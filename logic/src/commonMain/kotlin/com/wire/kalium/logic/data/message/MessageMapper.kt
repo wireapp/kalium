@@ -110,6 +110,8 @@ class MessageMapperImpl(
 
                 LocalNotificationMessage.Comment(author, message.date, type)
             }
+            is MessageContent.MissedCall ->
+                LocalNotificationMessage.Comment(author, message.date, LocalNotificationCommentType.MISSED_CALL)
             else -> LocalNotificationMessage.Comment(author, message.date, LocalNotificationCommentType.NOT_SUPPORTED_YET)
         }
 
@@ -150,7 +152,12 @@ class MessageMapperImpl(
             )
         }
         is MessageContent.Unknown -> MessageEntityContent.Unknown(this.typeName, this.encodedData)
-        else -> MessageEntityContent.Unknown()
+        is MessageContent.Calling -> MessageEntityContent.Unknown()
+        is MessageContent.DeleteMessage -> MessageEntityContent.Unknown()
+        is MessageContent.TextEdited -> MessageEntityContent.Unknown()
+        is MessageContent.RestrictedAsset -> MessageEntityContent.RestrictedAsset(this.mimeType)
+        is MessageContent.DeleteForMe -> MessageEntityContent.Unknown()
+        MessageContent.Empty -> MessageEntityContent.Unknown()
     }
 
     private fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System = when (this) {
@@ -163,6 +170,7 @@ class MessageMapperImpl(
                     MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.REMOVED)
             }
         }
+        is MessageContent.MissedCall -> MessageEntityContent.MissedCall
     }
 
     private fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean): MessageContent.Regular = when (this) {
@@ -170,6 +178,7 @@ class MessageMapperImpl(
         is MessageEntityContent.Asset -> MessageContent.Asset(
             MapperProvider.assetMapper().fromAssetEntityToAssetContent(this)
         )
+        is MessageEntityContent.RestrictedAsset -> MessageContent.RestrictedAsset(this.mimeType)
         is MessageEntityContent.Unknown -> MessageContent.Unknown(this.typeName, this.encodedData, hidden)
     }
 
@@ -181,6 +190,7 @@ class MessageMapperImpl(
                 MessageEntity.MemberChangeType.REMOVED -> MessageContent.MemberChange.Removed(memberList)
             }
         }
+        is MessageEntityContent.MissedCall -> MessageContent.MissedCall
     }
 }
 

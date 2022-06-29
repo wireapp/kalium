@@ -11,6 +11,8 @@ import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
 import com.wire.kalium.persistence.MessageMemberChangeContent
+import com.wire.kalium.persistence.MessageMissedCallContent
+import com.wire.kalium.persistence.MessageRestrictedAssetContent
 import com.wire.kalium.persistence.MessageTextContent
 import com.wire.kalium.persistence.MessageUnknownContent
 import com.wire.kalium.persistence.User
@@ -71,9 +73,7 @@ actual class UserDatabaseProvider(private val storePath: File) {
                 protocolAdapter = EnumColumnAdapter(),
                 muted_statusAdapter = EnumColumnAdapter()
             ),
-            Member.Adapter(
-                userAdapter = QualifiedIDAdapter(),
-                conversationAdapter = QualifiedIDAdapter()),
+            Member.Adapter(userAdapter = QualifiedIDAdapter(), conversationAdapter = QualifiedIDAdapter()),
             Message.Adapter(
                 conversation_idAdapter = QualifiedIDAdapter(),
                 sender_user_idAdapter = QualifiedIDAdapter(),
@@ -85,12 +85,19 @@ actual class UserDatabaseProvider(private val storePath: File) {
                 conversation_idAdapter = QualifiedIDAdapter(),
                 asset_widthAdapter = IntColumnAdapter,
                 asset_heightAdapter = IntColumnAdapter,
-                asset_download_statusAdapter = EnumColumnAdapter(),
+                asset_download_statusAdapter = EnumColumnAdapter()
             ),
             MessageMemberChangeContent.Adapter(
                 conversation_idAdapter = QualifiedIDAdapter(),
                 member_change_listAdapter = QualifiedIDListAdapter(),
                 member_change_typeAdapter = EnumColumnAdapter()
+            ),
+            MessageMissedCallContent.Adapter(
+                conversation_idAdapter = QualifiedIDAdapter(),
+                caller_idAdapter = QualifiedIDAdapter()
+            ),
+            MessageRestrictedAssetContent.Adapter(
+                conversation_idAdapter = QualifiedIDAdapter()
             ),
             MessageTextContent.Adapter(
                 conversation_idAdapter = QualifiedIDAdapter()
@@ -105,6 +112,7 @@ actual class UserDatabaseProvider(private val storePath: File) {
                 user_availability_statusAdapter = EnumColumnAdapter(),
                 preview_asset_idAdapter = QualifiedIDAdapter(),
                 complete_asset_idAdapter = QualifiedIDAdapter(),
+                user_typeAdapter = EnumColumnAdapter()
             )
         )
     }
@@ -113,7 +121,7 @@ actual class UserDatabaseProvider(private val storePath: File) {
         get() = UserDAOImpl(database.usersQueries)
 
     actual val connectionDAO: ConnectionDAO
-        get() = ConnectionDAOImpl(database.connectionsQueries)
+        get() = ConnectionDAOImpl(database.connectionsQueries, database.conversationsQueries)
 
     actual val conversationDAO: ConversationDAO
         get() = ConversationDAOImpl(database.conversationsQueries, database.usersQueries, database.membersQueries)

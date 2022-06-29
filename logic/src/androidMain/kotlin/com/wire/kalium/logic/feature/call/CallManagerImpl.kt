@@ -78,7 +78,7 @@ actual class CallManagerImpl(
         })
     }
     private val userId: Deferred<UserId> = scope.async(start = CoroutineStart.LAZY) {
-        userRepository.getSelfUser().first().id.also {
+        userRepository.observeSelfUser().first().id.also {
             callingLogger.d("$TAG - userId $it")
         }
     }
@@ -102,10 +102,10 @@ actual class CallManagerImpl(
             sendHandler = OnSendOTR(deferredHandle, calling, selfUserId, selfClientId, messageSender, scope).keepingStrongReference(),
             sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, scope).keepingStrongReference(),
             incomingCallHandler = OnIncomingCall(callRepository, callMapper, scope).keepingStrongReference(),
-            missedCallHandler = OnMissedCall(callRepository).keepingStrongReference(),
-            answeredCallHandler = OnAnsweredCall(callRepository).keepingStrongReference(),
-            establishedCallHandler = OnEstablishedCall(callRepository).keepingStrongReference(),
-            closeCallHandler = OnCloseCall(callRepository).keepingStrongReference(),
+            missedCallHandler = OnMissedCall(callRepository, scope).keepingStrongReference(),
+            answeredCallHandler = OnAnsweredCall(callRepository, scope).keepingStrongReference(),
+            establishedCallHandler = OnEstablishedCall(callRepository, scope).keepingStrongReference(),
+            closeCallHandler = OnCloseCall(callRepository, scope).keepingStrongReference(),
             metricsHandler = { conversationId: String, metricsJson: String, arg: Pointer? ->
                 callingLogger.i("$TAG -> metricsHandler")
             }.keepingStrongReference(),
@@ -158,13 +158,11 @@ actual class CallManagerImpl(
     ) {
         callingLogger.d("$TAG -> starting call for conversation = $conversationId..")
 
-        //TODO move call creation to the usecase since this one will run only for Android
-        val shouldMute = conversationType == ConversationType.Conference
         val isCameraOn = callType == CallType.VIDEO
         callRepository.createCall(
             conversationId = conversationId,
             status = CallStatus.STARTED,
-            isMuted = shouldMute,
+            isMuted = false,
             isCameraOn = isCameraOn,
             callerId = userId.await().toString()
         )

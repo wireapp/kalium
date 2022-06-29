@@ -1,7 +1,9 @@
 package com.wire.kalium.network.api.model
 
 import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
+@Serializable
 enum class ConversationAccessRole {
     @SerialName("team_member")
     TEAM_MEMBER,

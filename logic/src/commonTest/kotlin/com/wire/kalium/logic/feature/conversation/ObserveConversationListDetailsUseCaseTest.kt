@@ -6,8 +6,8 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.LegalHoldStatus
-import com.wire.kalium.logic.data.conversation.UserType
 import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.framework.TestConversation
@@ -43,11 +43,11 @@ class ObserveConversationListDetailsUseCaseTest {
     @Mock
     private val syncManager: SyncManager = configure(mock(SyncManager::class)) { stubsUnitByDefault = true }
 
-    private lateinit var observeConversationsUseCase: ObserveConversationListDetailsUseCase
+    private lateinit var observeConversationsUseCase: ObserveConversationListDetailsUseCaseImpl
 
     @BeforeTest
     fun setup() {
-        observeConversationsUseCase = ObserveConversationListDetailsUseCase(conversationRepository, syncManager, callRepository)
+        observeConversationsUseCase = ObserveConversationListDetailsUseCaseImpl(conversationRepository, syncManager, callRepository)
     }
 
     @Test

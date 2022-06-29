@@ -92,7 +92,7 @@ class ClientApiTest : ApiTest {
         val networkClient = mockAuthenticatedNetworkClient(
             RegisterTokenJson.registerTokenResponse, statusCode = HttpStatusCode.Created, assertion = {
                 assertPost()
-                assertBodyContent(VALID_PUSH_TOKEN_REQUEST.rawJson)
+                assertJsonBodyContent(VALID_PUSH_TOKEN_REQUEST.rawJson)
             }
         )
         val clientApi = ClientApiImpl(networkClient)

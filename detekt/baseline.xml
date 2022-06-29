@@ -885,6 +885,7 @@
     <ID>TooManyFunctions:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox</ID>
     <ID>TooManyFunctions:Decoder.module_@wireapp_cbor.kt$Decoder</ID>
     <ID>TooManyFunctions:Encoder.module_@wireapp_cbor.kt$Encoder</ID>
+    <ID>TooManyFunctions:KaliumException.kt$com.wire.kalium.network.exceptions.KaliumException.kt</ID>
     <ID>TooManyFunctions:MapperProvider.kt$MapperProvider$MapperProvider</ID>
     <ID>TooManyFunctions:MessageDAO.kt$MessageDAO</ID>
     <ID>TooManyFunctions:MessageDAOImpl.kt$MessageDAOImpl : MessageDAO</ID>

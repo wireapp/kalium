@@ -9,7 +9,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.notification.LocalNotificationConversation
-import com.wire.kalium.logic.data.publicuser.PublicUserMapper
+import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapper
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
@@ -48,7 +48,7 @@ class GetNotificationsUseCaseImpl(
     private val conversationRepository: ConversationRepository,
     private val timeParser: TimeParser,
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(),
-    private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper()
+    private val localNotificationMessageMapper: LocalNotificationMessageMapper = MapperProvider.localNotificationMessageMapper()
 ) : GetNotificationsUseCase {
 
     @Suppress("LongMethod")
@@ -56,7 +56,7 @@ class GetNotificationsUseCaseImpl(
         // Fetching the list of Conversations that have messages to notify user about
         // And SelfUser
         return conversationRepository.getConversationsForNotifications()
-            .combine(userRepository.getSelfUser())
+            .combine(userRepository.observeSelfUser())
             .flatMapLatest { (conversations, selfUser) ->
                 if (selfUser.availabilityStatus == UserAvailabilityStatus.AWAY) {
                     // We need to update notifiedData,
@@ -146,7 +146,7 @@ class GetNotificationsUseCaseImpl(
         }
 
     private fun getNotificationMessageAuthor(authors: List<OtherUser?>, senderUserId: UserId) =
-        publicUserMapper.fromPublicUserToLocalNotificationMessageAuthor(authors.firstOrNull { it?.id == senderUserId })
+        localNotificationMessageMapper.fromPublicUserToLocalNotificationMessageAuthor(authors.firstOrNull { it?.id == senderUserId })
 
     private suspend fun updateConversationNotificationDateIfNeeded(
         eligibleMessages: List<Message>,
@@ -201,6 +201,7 @@ class GetNotificationsUseCaseImpl(
 
                         containsSelfUserName or containsSelfHandle
                     }
+                    is MessageContent.MissedCall -> true
                     else -> false
                 }
             }
@@ -222,10 +223,11 @@ class GetNotificationsUseCaseImpl(
                 || selfUser.availabilityStatus == UserAvailabilityStatus.BUSY
 
     private fun isMessageContentSupportedInNotifications(message: Message): Boolean =
-        message.content !is MessageContent.Unknown
+        (message.content !is MessageContent.Unknown
                 && message.content !is MessageContent.System
                 && message.content !is MessageContent.DeleteMessage
-                && message.content !is MessageContent.DeleteForMe
+                && message.content !is MessageContent.DeleteForMe)
+                || message.content is MessageContent.MissedCall
 
     private fun shouldMessageBeVisibleAsNotification(message: Message) =
         message.visibility == Message.Visibility.VISIBLE

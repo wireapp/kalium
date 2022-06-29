@@ -10,6 +10,8 @@ import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
 import com.wire.kalium.persistence.MessageMemberChangeContent
+import com.wire.kalium.persistence.MessageMissedCallContent
+import com.wire.kalium.persistence.MessageRestrictedAssetContent
 import com.wire.kalium.persistence.MessageTextContent
 import com.wire.kalium.persistence.MessageUnknownContent
 import com.wire.kalium.persistence.User
@@ -76,6 +78,13 @@ actual class UserDatabaseProvider(userId: UserIDEntity, passphrase: String) {
                 member_change_listAdapter = QualifiedIDListAdapter(),
                 member_change_typeAdapter = EnumColumnAdapter()
             ),
+            MessageMissedCallContent.Adapter(
+                conversation_idAdapter = QualifiedIDAdapter(),
+                caller_idAdapter = QualifiedIDAdapter()
+            ),
+            MessageRestrictedAssetContent.Adapter(
+                conversation_idAdapter = QualifiedIDAdapter()
+            ),
             MessageTextContent.Adapter(
                 conversation_idAdapter = QualifiedIDAdapter()
             ),
@@ -88,7 +97,8 @@ actual class UserDatabaseProvider(userId: UserIDEntity, passphrase: String) {
                 connection_statusAdapter = EnumColumnAdapter(),
                 user_availability_statusAdapter = EnumColumnAdapter(),
                 preview_asset_idAdapter = QualifiedIDAdapter(),
-                complete_asset_idAdapter = QualifiedIDAdapter()
+                complete_asset_idAdapter = QualifiedIDAdapter(),
+                user_typeAdapter = EnumColumnAdapter()
             )
         )
         driver.execute(null, "PRAGMA foreign_keys=ON", 0)
@@ -120,5 +130,5 @@ actual class UserDatabaseProvider(userId: UserIDEntity, passphrase: String) {
     }
 
     actual val connectionDAO: ConnectionDAO
-        get() = ConnectionDAOImpl(database.connectionsQueries)
+        get() = ConnectionDAOImpl(database.connectionsQueries, database.conversationsQueries)
 }
