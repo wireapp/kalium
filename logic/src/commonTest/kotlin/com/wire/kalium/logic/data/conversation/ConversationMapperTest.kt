@@ -157,7 +157,8 @@ class ConversationMapperTest {
                 otrMutedRef = "2022-04-11T20:24:57.237Z",
                 otrMutedStatus = MutedStatus.ALL_ALLOWED
             )
-        val OTHER_MEMBERS = listOf(ConversationMemberDTO.Other(service = null, id =  UserId("other1", "domain1"), conversationRole = "wire_admin"))
+        val OTHER_MEMBERS =
+            listOf(ConversationMemberDTO.Other(service = null, id = UserId("other1", "domain1"), conversationRole = "wire_admin"))
         val MEMBERS_RESPONSE = ConversationMembersResponse(SELF_MEMBER_RESPONSE, OTHER_MEMBERS)
         val CONVERSATION_RESPONSE = ConversationResponse(
             "creator",
