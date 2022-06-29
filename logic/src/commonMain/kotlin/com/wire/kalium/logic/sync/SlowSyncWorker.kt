@@ -19,7 +19,7 @@ class SlowSyncWorker(
         kaliumLogger.d("Sync: Starting SlowSync")
 
         val result = try{
-            userSessionScope.getRemoteFeatureConfigsStatusAndPersist
+            userSessionScope.getRemoteFeatureConfigsStatusAndPersist()
             userSessionScope.users.syncSelfUser()
                 .flatMap { userSessionScope.conversations.syncConversations() }
                 .flatMap { userSessionScope.connection.syncConnections() }
