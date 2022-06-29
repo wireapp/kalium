@@ -21,7 +21,7 @@ class ConversationApiTest : ApiTest {
                 assertJson()
                 assertPost()
                 assertPathEqual(PATH_CONVERSATIONS)
-                assertBodyContent(CREATE_CONVERSATION_REQUEST.rawJson)
+                assertJsonBodyContent(CREATE_CONVERSATION_REQUEST.rawJson)
             }
         )
         val conversationApi: ConversationApi = ConversationApiImpl(networkClient)
@@ -41,7 +41,7 @@ class ConversationApiTest : ApiTest {
                 assertJson()
                 assertPut()
                 assertPathEqual("$PATH_CONVERSATIONS/$domain/$conversationId$PATH_SELF")
-                assertBodyContent(MEMBER_UPDATE_REQUEST.rawJson)
+                assertJsonBodyContent(MEMBER_UPDATE_REQUEST.rawJson)
             }
         )
 
@@ -77,7 +77,7 @@ class ConversationApiTest : ApiTest {
             assertion = {
                 assertPost()
                 assertJson()
-                assertBodyContent(CREATE_CONVERSATION_IDS_REQUEST.rawJson)
+                assertJsonBodyContent(CREATE_CONVERSATION_IDS_REQUEST.rawJson)
                 assertPathEqual(PATH_CONVERSATIONS_LIST_V2)
             }
         )
