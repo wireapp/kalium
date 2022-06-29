@@ -297,8 +297,7 @@ abstract class UserSessionScopeCommon(
             userRepository,
             callManager,
             messageTextEditHandler,
-            userConfigRepository,
-            kaliumFileSystem = kaliumFileSystem,
+            userConfigRepository
         )
     }
 

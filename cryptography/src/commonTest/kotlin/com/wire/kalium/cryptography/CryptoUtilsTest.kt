@@ -1,9 +1,9 @@
 package com.wire.kalium.cryptography
 
-import com.wire.kalium.cryptography.utils.calcMd5
-import com.wire.kalium.cryptography.utils.calcSHA256
-import com.wire.kalium.cryptography.utils.decryptDataWithAES256
-import com.wire.kalium.cryptography.utils.encryptDataWithAES256
+import com.wire.kalium.cryptography.utils.calcFileMd5
+import com.wire.kalium.cryptography.utils.calcFileSHA256
+import com.wire.kalium.cryptography.utils.decryptFileWithAES256
+import com.wire.kalium.cryptography.utils.encryptFileWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import io.ktor.utils.io.core.String
 import io.ktor.utils.io.core.toByteArray
@@ -30,7 +30,7 @@ class CryptoUtilsTest {
         }
 
         // When
-        val digest = calcMd5(inputPath, fileSystem)
+        val digest = calcFileMd5(inputPath, fileSystem)
 
         // Then
         assertEquals("sQqNsWTgdUEFt6mb5y4/5Q==", digest)
@@ -50,7 +50,7 @@ class CryptoUtilsTest {
         }
 
         // When
-        val digest = calcSHA256(inputPath, fileSystem)
+        val digest = calcFileSHA256(inputPath, fileSystem)
         val expectedValue = "3df79d34abbca99308e79cb94461c1893582604d68329a41fd4bec1885e6adb4".decodeHex()
 
 
@@ -78,9 +78,9 @@ class CryptoUtilsTest {
         }
 
         // When
-        encryptDataWithAES256(tempPath, randomAES256Key, encryptedDataPath, fakeFileSystem)
+        encryptFileWithAES256(tempPath, randomAES256Key, encryptedDataPath, fakeFileSystem)
         val decryptedDataSize =
-            decryptDataWithAES256(fakeFileSystem.source(encryptedDataPath), decryptedDataPath, randomAES256Key, fakeFileSystem)
+            decryptFileWithAES256(fakeFileSystem.source(encryptedDataPath), decryptedDataPath, randomAES256Key, fakeFileSystem)
 
         val decryptedData = fakeFileSystem.read(decryptedDataPath) {
             readByteArray()
@@ -111,9 +111,9 @@ class CryptoUtilsTest {
         }
 
         // When
-        encryptDataWithAES256(tempPath, randomAES256Key, encryptedDataPath, fakeFileSystem)
+        encryptFileWithAES256(tempPath, randomAES256Key, encryptedDataPath, fakeFileSystem)
         val decryptedDataSize =
-            decryptDataWithAES256(fakeFileSystem.source(encryptedDataPath), decryptedDataPath, randomAES256Key, fakeFileSystem)
+            decryptFileWithAES256(fakeFileSystem.source(encryptedDataPath), decryptedDataPath, randomAES256Key, fakeFileSystem)
 
         val decryptedData = fakeFileSystem.read(decryptedDataPath) {
             readByteArray()

@@ -8,9 +8,22 @@ import okio.Path
 import okio.Source
 import okio.blackholeSink
 import okio.buffer
+import java.security.MessageDigest
 import kotlin.io.use
 
-actual fun calcMd5(dataPath: Path, kaliumFileSystem: FileSystem): String? =
+actual fun calcMd5(bytes: ByteArray): String = bytes.let {
+    val md = MessageDigest.getInstance("MD5")
+    md.update(bytes, 0, it.size)
+    val hash = md.digest()
+    return hash.encodeBase64()
+}
+
+actual fun calcSHA256(bytes: ByteArray): ByteArray {
+    val md = MessageDigest.getInstance("SHA-256")
+    return md.digest(bytes)
+}
+
+actual fun calcFileMd5(dataPath: Path, kaliumFileSystem: FileSystem): String? =
     try {
         kaliumFileSystem.source(dataPath).buffer().use { source ->
             HashingSink.md5(blackholeSink()).use { sink ->
@@ -23,7 +36,7 @@ actual fun calcMd5(dataPath: Path, kaliumFileSystem: FileSystem): String? =
         null
     }
 
-actual fun calcSHA256(dataPath: Path, kaliumFileSystem: FileSystem): ByteArray? =
+actual fun calcFileSHA256(dataPath: Path, kaliumFileSystem: FileSystem): ByteArray? =
     try {
         kaliumFileSystem.source(dataPath).buffer().use { source ->
             HashingSink.sha256(blackholeSink()).use { sink ->
@@ -36,10 +49,14 @@ actual fun calcSHA256(dataPath: Path, kaliumFileSystem: FileSystem): ByteArray? 
         null
     }
 
-actual fun encryptDataWithAES256(rawDataPath: Path, key: AES256Key, encryptedDataPath: Path, kaliumFileSystem: FileSystem) =
-    AESEncrypt().encrypt(rawDataPath, key, encryptedDataPath, kaliumFileSystem)
+actual fun encryptDataWithAES256(data: PlainData, key: AES256Key): EncryptedData = AESEncrypt().encryptData(data, key)
 
-actual fun decryptDataWithAES256(encryptedDataSource: Source, decryptedDataPath: Path, secretKey: AES256Key, kaliumFileSystem: FileSystem) =
-    AESDecrypt(secretKey).decrypt(encryptedDataSource, decryptedDataPath, kaliumFileSystem)
+actual fun encryptFileWithAES256(rawDataPath: Path, key: AES256Key, encryptedDataPath: Path, kaliumFileSystem: FileSystem) =
+    AESEncrypt().encryptFile(rawDataPath, key, encryptedDataPath, kaliumFileSystem)
+
+actual fun decryptDataWithAES256(data: EncryptedData, secretKey: AES256Key): PlainData = AESDecrypt(secretKey).decryptData(data)
+
+actual fun decryptFileWithAES256(encryptedDataSource: Source, decryptedDataPath: Path, secretKey: AES256Key, kaliumFileSystem: FileSystem) =
+    AESDecrypt(secretKey).decryptFile(encryptedDataSource, decryptedDataPath, kaliumFileSystem)
 
 actual fun generateRandomAES256Key(): AES256Key = AESEncrypt().generateRandomAES256Key()

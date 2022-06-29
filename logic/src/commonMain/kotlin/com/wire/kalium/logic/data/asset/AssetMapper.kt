@@ -1,6 +1,6 @@
 package com.wire.kalium.logic.data.asset
 
-import com.wire.kalium.cryptography.utils.calcMd5
+import com.wire.kalium.cryptography.utils.calcFileMd5
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
@@ -42,7 +42,7 @@ class AssetMapperImpl(
             uploadAssetMetadata.assetType.mimeType,
             uploadAssetMetadata.isPublic,
             AssetRetentionType.valueOf(uploadAssetMetadata.retentionType.name),
-            calcMd5(uploadAssetMetadata.tempDataPath, kaliumFileSystem) ?: ""
+            calcFileMd5(uploadAssetMetadata.tempDataPath, kaliumFileSystem) ?: ""
         )
     }
 

@@ -1,7 +1,7 @@
 package com.wire.kalium.logic.feature.asset
 
 import com.wire.kalium.cryptography.utils.AES256Key
-import com.wire.kalium.cryptography.utils.encryptDataWithAES256
+import com.wire.kalium.cryptography.utils.encryptFileWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
@@ -18,7 +18,6 @@ import com.wire.kalium.logic.functional.Either
 import io.mockative.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
-import okio.FileSystem
 import okio.Path
 import okio.Path.Companion.toPath
 import okio.fakefilesystem.FakeFileSystem
@@ -37,7 +36,7 @@ class GetMessageAssetUseCaseTest {
         val (fakeFileSystem, rootPath) = createFileSystem()
         val encryptedPath = "output_encrypted_path".toPath()
         val rawDataPath = copyDataToDummyPath(expectedDecodedAsset, rootPath, fakeFileSystem)
-        encryptDataWithAES256(rawDataPath, randomAES256Key, encryptedPath, fakeFileSystem)
+        encryptFileWithAES256(rawDataPath, randomAES256Key, encryptedPath, fakeFileSystem)
 
         val someConversationId = ConversationId("some-conversation-id", "some-domain.com")
         val someMessageId = "some-message-id"

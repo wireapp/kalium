@@ -4,7 +4,7 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.wire.kalium.cli.CLIUtils.getResource
-import com.wire.kalium.cryptography.utils.calcMd5
+import com.wire.kalium.cryptography.utils.calcFileMd5
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
@@ -112,7 +112,7 @@ class ConversationsApplication : CliktCommand() {
             write(imageBytes)
         }
         val uploadResult = networkModule.assetApi.uploadAsset(
-            AssetMetadataRequest("image/jpeg", true, AssetRetentionType.ETERNAL, calcMd5(imagePath, cliFileSystem)),
+            AssetMetadataRequest("image/jpeg", true, AssetRetentionType.ETERNAL, calcFileMd5(imagePath, cliFileSystem)),
             outputSink,
             cliFileSystem.source(imagePath),
             imageSize.toLong()

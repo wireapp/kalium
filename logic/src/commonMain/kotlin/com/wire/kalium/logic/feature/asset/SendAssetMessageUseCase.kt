@@ -2,8 +2,8 @@ package com.wire.kalium.logic.feature.asset
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.cryptography.utils.AES256Key
-import com.wire.kalium.cryptography.utils.calcSHA256
-import com.wire.kalium.cryptography.utils.encryptDataWithAES256
+import com.wire.kalium.cryptography.utils.calcFileSHA256
+import com.wire.kalium.cryptography.utils.encryptFileWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.EncryptionFailure
@@ -72,13 +72,13 @@ internal class SendAssetMessageUseCaseImpl(
         // Temporary folder to host the encrypted data until we have the asset key returned by the backend after successful upload
         val tempEncryptedDataPath = tempEncryptedPath
 
-        val encryptedDataSize = encryptDataWithAES256(assetDataPath, otrKey, tempEncryptedDataPath, kaliumFileSystem)
+        val encryptedDataSize = encryptFileWithAES256(assetDataPath, otrKey, tempEncryptedDataPath, kaliumFileSystem)
         val encryptionSucceeded = encryptedDataSize > 0L
 
         return if (encryptionSucceeded) {
             // Calculate the SHA of the encrypted data
             val sha256 =
-                calcSHA256(tempEncryptedDataPath, kaliumFileSystem) ?: run { return SendAssetMessageResult.Failure(EncryptionFailure()) }
+                calcFileSHA256(tempEncryptedDataPath, kaliumFileSystem) ?: run { return SendAssetMessageResult.Failure(EncryptionFailure()) }
             // Upload the asset encrypted data and force the mimeType to be a File
             assetDataSource.uploadAndPersistPrivateAsset(
                 FileAsset(fileExtension = assetName.fileExtension()),

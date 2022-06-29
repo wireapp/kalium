@@ -5,13 +5,13 @@ import com.wire.kalium.cryptography.CryptoSessionId
 import com.wire.kalium.cryptography.CryptoUserID
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.utils.EncryptedData
+import com.wire.kalium.cryptography.utils.PlainData
 import com.wire.kalium.cryptography.utils.encryptDataWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.Member
@@ -49,15 +49,9 @@ import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.toInstant
-import okio.Path.Companion.toPath
-import okio.fakefilesystem.FakeFileSystem
 import kotlin.test.Test
 
 class ConversationEventReceiverTest {
-
-    private var userHomePath = "/Users/me".toPath()
-
-    private val fakeFileSystem = FakeFileSystem().also { it.createDirectories(userHomePath) }
 
     @Test
     fun givenNewMessageEvent_whenHandling_shouldAskProteusClientForDecryption() = runTest {
@@ -102,16 +96,7 @@ class ConversationEventReceiverTest {
             content = GenericMessage.Content.Text(Text(plainTextContent)),
             messageId = messageUid
         )
-        val externalRawDataPath = "$userHomePath/dummy_raw_data_path".toPath()
-        val externalEncryptedDataPath = "$userHomePath/dummy_encrypted_data_path".toPath()
-        val storedExternalContent = fakeFileSystem.write(externalRawDataPath) {
-            write(protobufExternalContent.encodeToByteArray())
-        }
-        val encryptedProtobufExternalDataSize =
-            encryptDataWithAES256(externalRawDataPath, aesKey, externalEncryptedDataPath, fakeFileSystem)
-        val encryptedData = fakeFileSystem.read(externalEncryptedDataPath) {
-            readByteArray()
-        }
+        val encryptedProtobufExternalContent = encryptDataWithAES256(PlainData(protobufExternalContent.encodeToByteArray()), aesKey)
         val decryptedExternalContent = MessageContent.Text(plainTextContent)
         val emptyArray = byteArrayOf()
 
@@ -129,7 +114,7 @@ class ConversationEventReceiverTest {
 
         val messageEvent = arrangement.newMessageEvent(
             Base64.encodeToBase64("anything".encodeToByteArray()).decodeToString(),
-            encryptedExternalContent = EncryptedData(encryptedData)
+            encryptedExternalContent = encryptedProtobufExternalContent
         )
 
         eventReceiver.onEvent(messageEvent)
@@ -276,9 +261,6 @@ class ConversationEventReceiverTest {
 
     private class Arrangement {
         @Mock
-        val kaliumFileSystem = mock(classOf<KaliumFileSystem>())
-
-        @Mock
         val proteusClient = mock(classOf<ProteusClient>())
 
         @Mock
@@ -311,8 +293,7 @@ class ConversationEventReceiverTest {
             lazyOf(callManager),
             MessageTextEditHandler(messageRepository),
             protoContentMapper = protoContentMapper,
-            userConfigRepository = userConfigRepository,
-            kaliumFileSystem = kaliumFileSystem
+            userConfigRepository = userConfigRepository
         )
 
         fun withProteusClientDecryptingByteArray(decryptedData: ByteArray) = apply {

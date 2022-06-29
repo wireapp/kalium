@@ -13,7 +13,8 @@ import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
 internal class AESEncrypt {
-    internal fun encrypt(assetDataPath: Path, key: AES256Key, outputPath: Path, kaliumFileSystem: FileSystem): Long {
+
+    internal fun encryptFile(assetDataPath: Path, key: AES256Key, outputPath: Path, kaliumFileSystem: FileSystem): Long {
         var encryptedDataSize = 0L
         try {
             // Fetch AES256 Algorithm
@@ -38,6 +39,21 @@ internal class AESEncrypt {
         return encryptedDataSize
     }
 
+    internal fun encryptData(assetData: PlainData, key: AES256Key): EncryptedData {
+        // Fetch AES256 Algorithm
+        val cipher = Cipher.getInstance(KEY_ALGORITHM_CONFIGURATION)
+
+        // Parse Secret Key from our custom AES256Key model object
+        val symmetricAESKey = SecretKeySpec(key.data, 0, key.data.size, KEY_ALGORITHM)
+
+        // Do the encryption
+        cipher.init(Cipher.ENCRYPT_MODE, symmetricAESKey)
+        val cipherData = cipher.doFinal(assetData.data)
+
+        // We prefix the first 16 bytes of the final encoded array with the Initialization Vector
+        return EncryptedData(cipher.iv + cipherData)
+    }
+
     internal fun generateRandomAES256Key(): AES256Key {
         // AES256 Symmetric secret key generation
         val keygen = KeyGenerator.getInstance(KEY_ALGORITHM)
@@ -47,7 +63,8 @@ internal class AESEncrypt {
 }
 
 internal class AESDecrypt(private val secretKey: AES256Key) {
-    internal fun decrypt(encryptedDataSource: Source, outputPath: Path, kaliumFileSystem: FileSystem): Long {
+
+    internal fun decryptFile(encryptedDataSource: Source, outputPath: Path, kaliumFileSystem: FileSystem): Long {
         var size = -1L
         try {
             // Fetch AES256 Algorithm
@@ -73,6 +90,21 @@ internal class AESDecrypt(private val secretKey: AES256Key) {
             kaliumLogger.e("There was an error while decrypting the asset:\n $e}")
         }
         return size
+    }
+
+    internal fun decryptData(encryptedData: EncryptedData): PlainData {
+        // Fetch AES256 Algorithm
+        val cipher = Cipher.getInstance(KEY_ALGORITHM_CONFIGURATION)
+
+        // Parse Secret Key from our custom AES256Key model object
+        val symmetricAESKey = SecretKeySpec(secretKey.data, 0, secretKey.data.size, KEY_ALGORITHM)
+
+        // Do the decryption
+        cipher.init(Cipher.DECRYPT_MODE, symmetricAESKey, IvParameterSpec(ByteArray(16)))
+        val decryptedData = cipher.doFinal(encryptedData.data)
+
+        // We ignore the first 16 bytes as they are reserved for the Initialization Vector
+        return PlainData(decryptedData.copyOfRange(16, decryptedData.size))
     }
 }
 

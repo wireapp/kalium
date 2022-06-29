@@ -1,7 +1,7 @@
 package com.wire.kalium.logic.data.asset
 
 import com.wire.kalium.cryptography.utils.AES256Key
-import com.wire.kalium.cryptography.utils.decryptDataWithAES256
+import com.wire.kalium.cryptography.utils.decryptFileWithAES256
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.EncryptionFailure
 import com.wire.kalium.logic.data.id.IdMapper
@@ -150,7 +150,7 @@ internal class AssetDataSource(
 
                 // Public assets are stored already decrypted on the backend, hence no decryption is needed
                 val assetDataSize = if (encryptionKey != null)
-                    decryptDataWithAES256(assetDataSource, decodedAssetPath, encryptionKey, kaliumFileSystem)
+                    decryptFileWithAES256(assetDataSource, decodedAssetPath, encryptionKey, kaliumFileSystem)
                 else
                     kaliumFileSystem.writeData(decodedAssetPath, assetDataSource)
 

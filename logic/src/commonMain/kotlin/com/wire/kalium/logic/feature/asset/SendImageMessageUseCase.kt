@@ -2,8 +2,8 @@ package com.wire.kalium.logic.feature.asset
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.cryptography.utils.AES256Key
-import com.wire.kalium.cryptography.utils.calcSHA256
-import com.wire.kalium.cryptography.utils.encryptDataWithAES256
+import com.wire.kalium.cryptography.utils.calcFileSHA256
+import com.wire.kalium.cryptography.utils.encryptFileWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.EncryptionFailure
@@ -73,13 +73,14 @@ internal class SendImageMessageUseCaseImpl(
         val otrKey = generateRandomAES256Key()
         val encryptedDataPath = kaliumFileSystem.tempFilePath("temp_encrypted.aes")
         if (kaliumFileSystem.exists(encryptedDataPath)) kaliumFileSystem.delete(encryptedDataPath)
-        val encryptedDataSize = encryptDataWithAES256(imageDataPath, otrKey, encryptedDataPath, kaliumFileSystem)
+        val encryptedDataSize = encryptFileWithAES256(imageDataPath, otrKey, encryptedDataPath, kaliumFileSystem)
         val encryptedDataSucceeded = encryptedDataSize > 0L
 
         return@withContext if (encryptedDataSucceeded) {
             // Calculate the SHA of the encrypted data
-            val sha256 = calcSHA256(encryptedDataPath, kaliumFileSystem)
-                    ?: run { return@withContext SendImageMessageResult.Failure(EncryptionFailure()) }
+            val sha256 = calcFileSHA256(encryptedDataPath, kaliumFileSystem) ?: run {
+                return@withContext SendImageMessageResult.Failure(EncryptionFailure())
+            }
 
             // Upload the asset encrypted data
             return@withContext assetDataSource.uploadAndPersistPrivateAsset(
