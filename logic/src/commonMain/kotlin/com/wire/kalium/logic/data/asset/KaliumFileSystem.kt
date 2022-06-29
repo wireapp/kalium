@@ -10,6 +10,11 @@ expect class KaliumFileSystem constructor(dataStoragePaths: DataStoragePaths, di
     FileSystem {
 
     /**
+     * Provides the root of the cache path, used to store temporary files
+     */
+    val rootCachePath: Path
+
+    /**
      * Creates a temporary path if it didn't exist before and returns it if successful
      * @param pathString a predefined temp path string. If not provided the temporary folder will be created with a default path
      */

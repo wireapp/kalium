@@ -45,12 +45,17 @@ actual class KaliumFileSystem actual constructor(
         SYSTEM.openReadWrite(file, mustCreate, mustExist)
 
     /**
+     * Provides the root of the cache path, used to store temporary files
+     */
+    actual val rootCachePath: Path = dataStoragePaths.cachePath.value.toPath()
+
+    /**
      * Creates a temporary path if it didn't exist before and returns it if successful
      * @param pathString a predefined temp path string. If not provided the temporary folder will be created with a default path
      */
     actual fun tempFilePath(pathString: String?): Path {
         val filePath = pathString ?: "temp_file_path"
-        return "${dataStoragePaths.cachePath.value}/$filePath".toPath()
+        return "$rootCachePath/$filePath".toPath()
     }
 
     /**
