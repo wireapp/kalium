@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.feature.publicuser
+package com.wire.kalium.logic.feature.publicuser.search
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
@@ -12,8 +12,8 @@ import io.ktor.http.HttpStatusCode
 @Deprecated(
     "only network and non federated search",
     replaceWith = ReplaceWith(
-        "com.wire.kalium.logic.feature.publicuser.SearchUsersUseCase",
-        "com.wire.kalium.logic.feature.publicuser.SearchUsersUseCase"
+        "com.wire.kalium.logic.feature.publicuser.search.SearchUsersUseCase",
+        "com.wire.kalium.logic.feature.publicuser.search.SearchUsersUseCase"
     )
 )
 interface SearchUserDirectoryUseCase {
@@ -27,8 +27,8 @@ interface SearchUserDirectoryUseCase {
 @Deprecated(
     "only network and non federated search",
     replaceWith = ReplaceWith(
-        "com.wire.kalium.logic.feature.publicuser.SearchUsersUseCaseImpl",
-        "com.wire.kalium.logic.feature.publicuser.SearchUsersUseCaseImpl"
+        "com.wire.kalium.logic.feature.publicuser.search.SearchUsersUseCaseImpl",
+        "com.wire.kalium.logic.feature.publicuser.search.SearchUsersUseCaseImpl"
     )
 )
 internal class SearchUserDirectoryUseCaseImpl(

@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserRepository
@@ -12,12 +13,13 @@ import com.wire.kalium.logic.feature.publicuser.GetAllContactsUseCase
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsUseCaseImpl
 import com.wire.kalium.logic.feature.publicuser.GetKnownUserUseCase
 import com.wire.kalium.logic.feature.publicuser.GetKnownUserUseCaseImpl
-import com.wire.kalium.logic.feature.publicuser.SearchKnownUsersUseCase
-import com.wire.kalium.logic.feature.publicuser.SearchKnownUsersUseCaseImpl
-import com.wire.kalium.logic.feature.publicuser.SearchUserDirectoryUseCase
-import com.wire.kalium.logic.feature.publicuser.SearchUserDirectoryUseCaseImpl
-import com.wire.kalium.logic.feature.publicuser.SearchUsersUseCase
-import com.wire.kalium.logic.feature.publicuser.SearchUsersUseCaseImpl
+import com.wire.kalium.logic.feature.publicuser.search.ConversationMembersExcludedSearchUseCase
+import com.wire.kalium.logic.feature.publicuser.search.SearchKnownUsersUseCase
+import com.wire.kalium.logic.feature.publicuser.search.SearchKnownUsersUseCaseImpl
+import com.wire.kalium.logic.feature.publicuser.search.SearchUserDirectoryUseCase
+import com.wire.kalium.logic.feature.publicuser.search.SearchUserDirectoryUseCaseImpl
+import com.wire.kalium.logic.feature.publicuser.search.SearchUsersUseCase
+import com.wire.kalium.logic.feature.publicuser.search.SearchUsersUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 
 class UserScope(
@@ -25,7 +27,8 @@ class UserScope(
     private val searchUserRepository: SearchUserRepository,
     private val syncManager: SyncManager,
     private val assetRepository: AssetRepository,
-    private val teamRepository: TeamRepository
+    private val teamRepository: TeamRepository,
+    private val conversationRepository: ConversationRepository
 ) {
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
     val getSelfUser: GetSelfUserUseCase get() = GetSelfUserUseCase(userRepository, syncManager)
@@ -33,13 +36,23 @@ class UserScope(
     val syncContacts: SyncContactsUseCase get() = SyncContactsUseCaseImpl(userRepository)
     val uploadUserAvatar: UploadUserAvatarUseCase get() = UploadUserAvatarUseCaseImpl(userRepository, assetRepository)
     val searchUsers: SearchUsersUseCase get() = SearchUsersUseCaseImpl(userRepository, searchUserRepository)
-    val searchKnownUsers: SearchKnownUsersUseCase get() = SearchKnownUsersUseCaseImpl(searchUserRepository,userRepository)
+    val searchKnownUsers: SearchUsersUseCase get() = SearchKnownUsersUseCaseImpl(searchUserRepository, userRepository)
+    val searchKnownUsersNotPartOfConversationUseCase: ConversationMembersExcludedSearchUseCase
+        get() = ConversationMembersExcludedSearchUseCase(
+            searchKnownUsers,
+            conversationRepository
+        )
+    val searchUsersNotPartOfConversationUseCase: ConversationMembersExcludedSearchUseCase
+        get() = ConversationMembersExcludedSearchUseCase(
+            searchUsers,
+            conversationRepository
+        )
     val getPublicAsset: GetAvatarAssetUseCase get() = GetAvatarAssetUseCaseImpl(assetRepository)
     val searchUserDirectory: SearchUserDirectoryUseCase get() = SearchUserDirectoryUseCaseImpl(searchUserRepository)
     val setUserHandle: SetUserHandleUseCase get() = SetUserHandleUseCase(userRepository, validateUserHandleUseCase, syncManager)
     val getAllKnownUsers: GetAllContactsUseCase get() = GetAllContactsUseCaseImpl(userRepository)
     val getKnownUser: GetKnownUserUseCase get() = GetKnownUserUseCaseImpl(userRepository)
-    val getUserInfo: GetUserInfoUseCase get() = GetUserInfoUseCaseImpl(userRepository,teamRepository)
+    val getUserInfo: GetUserInfoUseCase get() = GetUserInfoUseCaseImpl(userRepository, teamRepository)
     val updateSelfAvailabilityStatus: UpdateSelfAvailabilityStatusUseCase
         get() =
             UpdateSelfAvailabilityStatusUseCase(userRepository, syncManager)

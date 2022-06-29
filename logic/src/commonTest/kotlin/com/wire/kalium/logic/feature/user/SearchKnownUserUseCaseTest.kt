@@ -6,8 +6,8 @@ import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.logic.feature.publicuser.SearchKnownUsersUseCase
-import com.wire.kalium.logic.feature.publicuser.SearchKnownUsersUseCaseImpl
+import com.wire.kalium.logic.feature.publicuser.search.SearchKnownUsersUseCase
+import com.wire.kalium.logic.feature.publicuser.search.SearchKnownUsersUseCaseImpl
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
@@ -21,9 +21,9 @@ import kotlin.test.Test
 import kotlin.test.assertIs
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.publicuser.Result
+import com.wire.kalium.logic.feature.publicuser.search.Result
+import com.wire.kalium.logic.feature.publicuser.search.SearchUsersUseCase
 import com.wire.kalium.logic.framework.TestUser
-import kotlinx.coroutines.flow.flowOf
 import kotlin.test.assertFalse
 
 class SearchKnownUserUseCaseTest {
@@ -236,7 +236,7 @@ class Arrangement {
         return this
     }
 
-    fun arrange(): Pair<Arrangement, SearchKnownUsersUseCase> {
+    fun arrange(): Pair<Arrangement, SearchUsersUseCase> {
         return this to SearchKnownUsersUseCaseImpl(searchUserRepository, userRepository)
     }
 }
