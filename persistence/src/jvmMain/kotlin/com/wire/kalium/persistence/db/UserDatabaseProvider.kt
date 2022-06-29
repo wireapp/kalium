@@ -121,7 +121,7 @@ actual class UserDatabaseProvider(private val storePath: File) {
         get() = UserDAOImpl(database.usersQueries)
 
     actual val connectionDAO: ConnectionDAO
-        get() = ConnectionDAOImpl(database.connectionsQueries)
+        get() = ConnectionDAOImpl(database.connectionsQueries, database.conversationsQueries)
 
     actual val conversationDAO: ConversationDAO
         get() = ConversationDAOImpl(database.conversationsQueries, database.usersQueries, database.membersQueries)
