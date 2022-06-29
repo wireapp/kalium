@@ -8,7 +8,11 @@ detekt {
     input = files("$projectDir")
     // a way of suppressing issues before introducing detekt
     baseline = file("$projectDir/detekt/baseline.xml")
-    autoCorrect = false
+
+    // dynamic prop to enable and disable autocorrect, enabled locally via local.properties file
+    def autoFixEnabled = ProjectExtensionsKt.getLocalProperty("detektAutofix", false, project)
+    autoCorrect = Boolean.getBoolean(autoFixEnabled)
+    println("> Detekt autoCorrect: " + autoCorrect)
 
     reports {
         html.enabled = true // observe findings in your browser with structure and code snippets
