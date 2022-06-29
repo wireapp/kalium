@@ -18,6 +18,7 @@ class SlowSyncWorker(
         kaliumLogger.d("Sync: Starting SlowSync")
 
         val result = try{
+            // todo : to move the feature configs call outside the sync
             userSessionScope.getRemoteFeatureConfigsStatusAndPersist()
             userSessionScope.users.syncSelfUser()
                 .flatMap { userSessionScope.conversations.syncConversations() }
