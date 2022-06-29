@@ -1,7 +1,6 @@
 package com.wire.kalium.logic.sync
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
