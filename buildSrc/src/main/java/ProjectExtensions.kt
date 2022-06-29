@@ -12,6 +12,7 @@ fun <T> Project.getLocalProperty(propertyName: String, defaultValue: T): T {
 /**
  * Util to obtain property declared on `$projectRoot/local.properties` file or default
  */
+@Suppress("UNCHECKED_CAST")
 internal fun <T> getLocalProperty(propertyName: String, defaultValue: T, project: Project): T {
     val localProperties = Properties().apply {
         val localPropertiesFile = project.rootProject.file("local.properties")
