@@ -29,7 +29,8 @@ data class ConversationEntity(
 }
 
 data class Member(
-    val user: QualifiedIDEntity
+    val user: QualifiedIDEntity,
+    val role: String
 )
 
 interface ConversationDAO {
@@ -57,10 +58,12 @@ interface ConversationDAO {
         status: ConnectionEntity.State,
         conversationID: QualifiedIDEntity
     )
+
     suspend fun updateConversationMutedStatus(
         conversationId: QualifiedIDEntity,
         mutedStatus: ConversationEntity.MutedStatus,
         mutedStatusTimestamp: Long
     )
+
     suspend fun getConversationsForNotifications(): Flow<List<ConversationEntity>>
 }

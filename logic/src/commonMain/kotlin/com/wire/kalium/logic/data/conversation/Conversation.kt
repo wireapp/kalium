@@ -61,7 +61,13 @@ sealed class ConversationDetails(open val conversation: Conversation) {
 
 class MembersInfo(val self: Member, val otherMembers: List<Member>)
 
-class Member(override val id: UserId) : User()
+class Member(override val id: UserId, val role: Role) : User() {
+    sealed class Role{
+        object Member: Role()
+        object Admin: Role()
+        data class Unknown(val name: String): Role()
+    }
+}
 
 sealed class MemberDetails {
     data class Self(val selfUser: SelfUser) : MemberDetails()
@@ -70,5 +76,4 @@ sealed class MemberDetails {
 
 typealias ClientId = PlainId
 
-data class Recipient(val member: Member, val clients: List<ClientId>)
-
+data class Recipient(val id: UserId, val clients: List<ClientId>)

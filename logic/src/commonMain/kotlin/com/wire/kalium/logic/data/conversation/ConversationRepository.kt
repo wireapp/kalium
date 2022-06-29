@@ -34,7 +34,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -353,7 +352,8 @@ class ConversationDataSource(
         return wrapStorageRequest {
             val conversationId = idMapper.fromApiToDao(conversationResponse.id)
             val selfUserId = userRepository.getSelfUserId()
-            val selfMember = Member(selfUserId)
+            // TODO(IMPORTANT!): having an initial value is not the correct approach, the app should only valid source for members role is the backend
+            val selfMember = Member(selfUserId, Member.Role.Admin)
             conversationDAO.insertMembers((members + selfMember).map(memberMapper::toDaoModel), conversationId)
         }
     }

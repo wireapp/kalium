@@ -3,14 +3,15 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 CREATE TABLE Member (
     user TEXT AS QualifiedIDEntity NOT NULL,
     conversation TEXT AS QualifiedIDEntity NOT NULL,
+    role TEXT NOT NULL,
     CONSTRAINT member_conv PRIMARY KEY (user, conversation) ON CONFLICT IGNORE,
     FOREIGN KEY (conversation) REFERENCES Conversation(qualified_id)  ON DELETE CASCADE,
     FOREIGN KEY (user) REFERENCES User(qualified_id) ON DELETE CASCADE
 );
 
 insertMember:
-INSERT OR IGNORE INTO Member(user, conversation)
-VALUES (?, ?);
+INSERT OR IGNORE INTO Member(user, conversation, role)
+VALUES (?, ?, ?);
 
 deleteMember:
 DELETE FROM Member WHERE conversation = ? AND user = ?;

@@ -36,7 +36,7 @@ private class ConversationMapper {
 
 class MemberMapper {
     fun toModel(member: SQLDelightMember): Member {
-        return Member(member.user)
+        return Member(member.user, member.role)
     }
 }
 
@@ -150,7 +150,7 @@ class ConversationDAOImpl(
     override suspend fun insertMember(member: Member, conversationID: QualifiedIDEntity) {
         memberQueries.transaction {
             userQueries.insertOrIgnoreUserId(member.user)
-            memberQueries.insertMember(member.user, conversationID)
+            memberQueries.insertMember(member.user, conversationID, TODO())
         }
     }
 
@@ -158,7 +158,7 @@ class ConversationDAOImpl(
         memberQueries.transaction {
             for (member: Member in memberList) {
                 userQueries.insertOrIgnoreUserId(member.user)
-                memberQueries.insertMember(member.user, conversationID)
+                memberQueries.insertMember(member.user, conversationID, TODO())
             }
         }
     }
@@ -174,7 +174,7 @@ class ConversationDAOImpl(
             if (recordDidNotExist) {
                 userQueries.insertOrIgnoreUserIdWithConnectionStatus(userId, status)
             }
-            memberQueries.insertMember(userId, conversationID)
+            memberQueries.insertMember(userId, conversationID, TODO())
         }
     }
 
