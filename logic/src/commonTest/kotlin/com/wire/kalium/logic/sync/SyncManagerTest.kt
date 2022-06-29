@@ -51,6 +51,11 @@ class SyncManagerTest {
     private val eventGatherer: EventGatherer = mock(EventGatherer::class)
 
     @Mock
+    private val featureConfigEventReceiver: FeatureConfigEventReceiver =
+        mock(FeatureConfigEventReceiver::class)
+
+
+    @Mock
     private val userEventReceiver: UserEventReceiver =
         configure(mock(UserEventReceiver::class)) { stubsUnitByDefault = true }
 
@@ -66,6 +71,7 @@ class SyncManagerTest {
             syncRepository,
             conversationEventReceiver,
             userEventReceiver,
+            featureConfigEventReceiver,
             eventGatherer,
             TestKaliumDispatcher
         )

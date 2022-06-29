@@ -3,6 +3,8 @@ package com.wire.kalium.logic.data.event
 import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Member
+import com.wire.kalium.logic.data.featureConfig.FeatureConfigName
+import com.wire.kalium.logic.data.featureConfig.FeatureConfigStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.UserId
@@ -67,6 +69,16 @@ sealed class Event(open val id: String) {
 
     }
 
+    sealed class FeatureConfig(
+        id: String,
+    ) : Event(id) {
+        data class FeatureConfigUpdated(
+            override val id: String,
+            val name: FeatureConfigName,
+            val status: FeatureConfigStatus,
+        ) : FeatureConfig(id)
+    }
+
     sealed class User(
         id: String,
     ) : Event(id) {
@@ -77,5 +89,5 @@ sealed class Event(open val id: String) {
         ) : User(id)
     }
 
-    data class Unknown(override val id: String): Event(id)
+    data class Unknown(override val id: String) : Event(id)
 }

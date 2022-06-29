@@ -5,6 +5,7 @@ import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.conversation.ConversationMembers
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.ConversationUsers
+import com.wire.kalium.network.api.featureConfigs.ConfigsStatus
 import com.wire.kalium.network.api.notification.conversation.MessageEventData
 import com.wire.kalium.network.api.notification.user.NewClientEventData
 import com.wire.kalium.network.api.user.connection.ConnectionDTO
@@ -83,6 +84,19 @@ sealed class EventContentDTO {
             val time: String,
             @SerialName("data") val message: String,
         ) : Conversation()
+
+
+    }
+
+
+    @Serializable
+    sealed class FeatureConfig : EventContentDTO() {
+        @Serializable
+        @SerialName("feature-config.update")
+        data class FeatureConfigUpdatedDTO(
+            @SerialName("name") val name: String,
+            @SerialName("data") val data: ConfigsStatus,
+        ) : FeatureConfig()
     }
 
     @Serializable

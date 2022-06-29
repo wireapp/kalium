@@ -75,6 +75,8 @@ import com.wire.kalium.logic.sync.ConversationEventReceiver
 import com.wire.kalium.logic.sync.ConversationEventReceiverImpl
 import com.wire.kalium.logic.sync.EventGatherer
 import com.wire.kalium.logic.sync.EventGathererImpl
+import com.wire.kalium.logic.sync.FeatureConfigEventReceiver
+import com.wire.kalium.logic.sync.FeatureConfigEventReceiverImpl
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.SyncManagerImpl
@@ -253,6 +255,7 @@ abstract class UserSessionScopeCommon(
             syncRepository,
             conversationEventReceiver,
             userEventReceiver,
+            featureConfigEventReceiver,
             eventGatherer
         )
     }
@@ -302,6 +305,9 @@ abstract class UserSessionScopeCommon(
         get() = UserEventReceiverImpl(
             connectionRepository,
         )
+
+    private val featureConfigEventReceiver: FeatureConfigEventReceiver
+        get() = FeatureConfigEventReceiverImpl(userConfigRepository)
 
     private val preKeyRemoteRepository: PreKeyRemoteRepository
         get() = PreKeyRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi)

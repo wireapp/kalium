@@ -64,6 +64,7 @@ internal class SyncManagerImpl(
     private val syncRepository: SyncRepository,
     private val conversationEventReceiver: ConversationEventReceiver,
     private val userEventReceiver: EventReceiver<Event.User>,
+    private val featureConfigEventReceiver: EventReceiver<Event.FeatureConfig>,
     private val eventGatherer: EventGatherer,
     private val kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : SyncManager {
@@ -134,6 +135,7 @@ internal class SyncManagerImpl(
         when (event) {
             is Event.Conversation -> conversationEventReceiver.onEvent(event)
             is Event.User -> userEventReceiver.onEvent(event)
+            is Event.FeatureConfig -> featureConfigEventReceiver.onEvent(event)
             is Event.Unknown -> kaliumLogger.i("Unhandled event id=${event.id}")
         }
         eventRepository.updateLastProcessedEventId(event.id)

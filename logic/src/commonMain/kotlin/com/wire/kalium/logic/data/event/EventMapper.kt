@@ -5,6 +5,8 @@ import com.wire.kalium.logic.data.connection.ConnectionMapper
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.conversation.MemberMapper
+import com.wire.kalium.logic.data.featureConfig.FeatureConfigName
+import com.wire.kalium.logic.data.featureConfig.FeatureConfigStatus
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.network.api.notification.EventContentDTO
@@ -30,6 +32,7 @@ class EventMapper(
                 is EventContentDTO.Conversation.MLSWelcomeDTO -> welcomeMessage(id, eventContentDTO)
                 is EventContentDTO.Conversation.NewMLSMessageDTO -> newMLSMessage(id, eventContentDTO)
                 is EventContentDTO.User.NewConnectionDTO -> connectionUpdate(id, eventContentDTO)
+                is EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO -> featureConfig(id, eventContentDTO)
                 is EventContentDTO.User.NewClientDTO, EventContentDTO.Unknown -> Event.Unknown(id)
             }
         } ?: listOf()
@@ -109,5 +112,13 @@ class EventMapper(
         idMapper.fromApiModel(eventContentDTO.qualifiedFrom),
         eventContentDTO.members.qualifiedUserIds.map { Member(idMapper.fromApiModel(it)) },
         eventContentDTO.time
+    )
+
+    private fun featureConfig(
+        id: String,
+        featureConfigUpdatedDTO: EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO
+    ) = Event.FeatureConfig.FeatureConfigUpdated(
+        id, FeatureConfigName.valueOf(featureConfigUpdatedDTO.name),
+        FeatureConfigStatus.valueOf(featureConfigUpdatedDTO.data.status)
     )
 }
