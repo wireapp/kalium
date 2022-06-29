@@ -31,7 +31,7 @@ object Versions {
     const val sqlDelight = "2.0.0-alpha01"
     const val pbandk = "0.14.1"
     const val turbine = "0.7.0"
-    const val avs = "8.1.16"
+    const val avs = "8.1.18"
     const val jna = "5.6.0@aar"
     const val mlsClient = "0.2.1"
     const val desugarJdk = "1.1.5"

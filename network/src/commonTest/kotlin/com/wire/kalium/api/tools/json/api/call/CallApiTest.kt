@@ -60,7 +60,7 @@ class CallApiTest : ApiTest {
                 assertJson()
                 assertPost()
                 assertPathEqual(sftConnectionURL)
-                assertBodyContent(sftConnectionData)
+                assertJsonBodyContent(sftConnectionData)
             }
         )
 
