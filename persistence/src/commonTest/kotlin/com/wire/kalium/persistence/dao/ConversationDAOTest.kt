@@ -117,7 +117,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     fun givenExistingConversation_ThenInsertedOrUpdatedMembersAreRetrieved() = runTest {
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
-            userId = member1.user,
+            member = member1,
             status = ConnectionEntity.State.ACCEPTED,
             conversationID = conversationEntity1.id
         )
@@ -133,7 +133,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         userDAO.insertUser(user1.copy(connectionStatus = ConnectionEntity.State.NOT_CONNECTED))
 
         conversationDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
-            userId = member1.user,
+            member = member1,
             status = ConnectionEntity.State.SENT,
             conversationID = conversationEntity1.id
         )
