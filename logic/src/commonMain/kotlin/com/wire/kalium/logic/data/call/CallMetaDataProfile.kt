@@ -1,17 +1,12 @@
 package com.wire.kalium.logic.data.call
 
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.feature.call.Call
-
-data class CallProfile(
-    val calls: Map<String, Call>
-) {
-    operator fun get(conversationId: String): Call? = calls[conversationId]
-}
 
 data class CallMetaDataProfile(
     val data: Map<String, CallMetaData>
-)
+) {
+    operator fun get(conversationId: String): CallMetaData? = data[conversationId]
+}
 
 data class CallMetaData(
     val isMuted: Boolean,
