@@ -14,7 +14,7 @@ object CreateConversationRequestJson {
     val valid = ValidJsonProvider(
         CreateConversationRequest(
         listOf(QualifiedIDSamples.one),
-        "group name",
+        name = "NameOfThisGroupConversation",
         listOf(ConversationAccess.PRIVATE),
         listOf(ConversationAccessRole.TEAM_MEMBER),
         ConvTeamInfo(false, "teamID"),
@@ -29,7 +29,7 @@ object CreateConversationRequestJson {
         |       "${it.access?.get(0)}"
         |   ],
         |   "access_role_v2": [
-        |       "${it.accessRole?.get(0)}}"
+        |       "${it.accessRole?.get(0)}"
         |   ],
         |   "conversation_role": "${it.conversationRole}",
         |   "message_timer": ${it.messageTimer},
@@ -43,11 +43,11 @@ object CreateConversationRequestJson {
         |   ],
         |   "receipt_mode": ${it.receiptMode?.value},
         |   "team": {
-        |       "managed": "false",
+        |       "managed": false,
         |       "teamid": "${it.convTeamInfo?.teamId}"
         |   }
         |}
-        """.trimIndent()
+        """.trimMargin()
         }
 
 }
