@@ -67,6 +67,8 @@ import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.team.TeamScope
+import com.wire.kalium.logic.feature.user.FileSharingStatusFlowUseCase
+import com.wire.kalium.logic.feature.user.FileSharingStatusFlowUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.UserScope
@@ -107,7 +109,8 @@ abstract class UserSessionScopeCommon(
     private val globalPreferences: KaliumPreferences,
     private val kaliumConfigs: KaliumConfigs
 ) {
-    private val userConfigStorage: UserConfigStorage get() = UserConfigStorageImpl(globalPreferences)
+    // we made this lazy so it will have a single instance for the storage
+    private val userConfigStorage: UserConfigStorage by lazy { UserConfigStorageImpl(globalPreferences) }
 
     private val userConfigRepository: UserConfigRepository get() = UserConfigDataSource(userConfigStorage)
 
@@ -307,7 +310,7 @@ abstract class UserSessionScopeCommon(
         )
 
     private val featureConfigEventReceiver: FeatureConfigEventReceiver
-        get() = FeatureConfigEventReceiverImpl(userConfigRepository)
+        get() = FeatureConfigEventReceiverImpl(userConfigRepository, kaliumConfigs)
 
     private val preKeyRemoteRepository: PreKeyRemoteRepository
         get() = PreKeyRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi)
@@ -371,6 +374,7 @@ abstract class UserSessionScopeCommon(
     private val featureConfigRepository: FeatureConfigRepository
         get() = FeatureConfigDataSource(featureConfigApi = authenticatedDataSourceSet.authenticatedNetworkContainer.featureConfigApi)
     val isFileSharingEnabled: IsFileSharingEnabledUseCase get() = IsFileSharingEnabledUseCaseImpl(userConfigRepository)
+    val isFileSharingEnabledFlow: FileSharingStatusFlowUseCase get() = FileSharingStatusFlowUseCaseImpl(userConfigRepository)
 
     internal val getRemoteFeatureConfigsStatusAndPersist: GetRemoteFeatureConfigStatusAndPersistUseCase
         get() = GetFeatureConfigStatusUseCaseImpl(

@@ -1,11 +1,11 @@
 package com.wire.kalium.logic.data.featureConfig
 
-
-enum class FeatureConfigStatus(val status: String) {
-    ENABLED("enabled"),
-    DISABLED("disabled")
+// we didn't follow name convention because Enum.valueOf() only checks the constant name
+enum class FeatureConfigStatus {
+    enabled,
+    disabled
 }
 
-enum class FeatureConfigName(val featureName: String) {
-    FILE_SHARING("fileSharing")
+enum class FeatureConfigName {
+    fileSharing
 }

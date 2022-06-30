@@ -1,12 +1,12 @@
 package com.wire.kalium.logic.configuration
 
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.configuration.notification.NotificationToken
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.client.UserConfigStorage
-import kotlinx.serialization.SerialName
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 data class FileSharingEntity(val isFileSharingEnabled: Boolean?, val isStatusChanged: Boolean?)
 
@@ -17,6 +17,7 @@ interface UserConfigRepository {
 
     fun setFileSharingStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit>
     fun isFileSharingEnabled(): Either<StorageFailure, FileSharingEntity>
+    fun isFileSharingEnabledFlow(): Flow<Either<StorageFailure, FileSharingEntity>>
 
 }
 
@@ -36,4 +37,17 @@ class UserConfigDataSource(
         wrapStorageRequest { userConfigStorage.isFileSharingEnabled() }.map {
             with(it) { FileSharingEntity(status, isStatusChanged) }
         }
+
+    override fun isFileSharingEnabledFlow(): Flow<Either<StorageFailure, FileSharingEntity>> =
+        userConfigStorage.isFileSharingEnabledFlow()
+            .wrapStorageRequest()
+            .map {
+                it.map { isFileSharingEnabledEntity ->
+                    FileSharingEntity(
+                        isFileSharingEnabledEntity.status,
+                        isFileSharingEnabledEntity.isStatusChanged
+                    )
+                }
+            }
+
 }
