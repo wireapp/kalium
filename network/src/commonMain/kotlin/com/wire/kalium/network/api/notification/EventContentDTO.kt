@@ -53,6 +53,7 @@ sealed class EventContentDTO {
             @SerialName("qualified_from") val qualifiedFrom: UserId,
             val time: String,
             @SerialName("data") val members: ConversationMembers,
+            @Deprecated("use qualifiedFrom", replaceWith = ReplaceWith("this.qualifiedFrom"))
             @SerialName("from") val from: String
         ) : Conversation()
 
