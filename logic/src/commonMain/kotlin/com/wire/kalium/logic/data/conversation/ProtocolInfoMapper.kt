@@ -13,7 +13,7 @@ class ProtocolInfoMapperImpl : ProtocolInfoMapper {
             is ConversationEntity.ProtocolInfo.Proteus -> ProtocolInfo.Proteus
             is ConversationEntity.ProtocolInfo.MLS -> ProtocolInfo.MLS(
                 protocolInfo.groupId,
-                GroupState.valueOf(protocolInfo.groupState.name)
+                ProtocolInfo.MLS.GroupState.valueOf(protocolInfo.groupState.name)
             )
         }
 

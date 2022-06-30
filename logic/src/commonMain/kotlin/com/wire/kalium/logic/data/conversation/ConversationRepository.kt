@@ -36,14 +36,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.takeWhile
 import com.wire.kalium.network.api.ConversationId as RemoteConversationId
 
 interface ConversationRepository {
@@ -56,7 +51,7 @@ interface ConversationRepository {
     suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun fetchConversationIfUnknown(conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun getConversationDetails(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation>>
-    suspend fun getConversationDetailsById(conversationId: ConversationId): Either<StorageFailure, Conversation>
+    suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation>
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
     suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, ProtocolInfo>
     suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Member>>
@@ -253,7 +248,7 @@ class ConversationDataSource(
         }
 
     //Deprecated notice, so we can use newer versions of Kalium on Reloaded without breaking things.
-    @Deprecated("This doesn't return conversation details", ReplaceWith("getConversationDetailsById"))
+    @Deprecated("This doesn't return conversation details", ReplaceWith("detailsById"))
     override suspend fun getConversationDetails(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation>> =
         wrapStorageRequest {
             conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationId))
@@ -261,7 +256,7 @@ class ConversationDataSource(
                 .map(conversationMapper::fromDaoModel)
         }
 
-    override suspend fun getConversationDetailsById(conversationId: ConversationId): Either<StorageFailure, Conversation> =
+    override suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation> =
         wrapStorageRequest {
             conversationDAO.getConversationByQualifiedID(idMapper.toDaoModel(conversationId))?.let {
                 conversationMapper.fromDaoModel(it)

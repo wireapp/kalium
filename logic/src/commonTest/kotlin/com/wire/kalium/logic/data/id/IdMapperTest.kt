@@ -1,7 +1,5 @@
 package com.wire.kalium.logic.data.id
 
-import com.wire.kalium.logic.data.conversation.Member
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.user.client.DeviceTypeDTO
 import com.wire.kalium.network.api.user.client.SimpleClientResponse
 import com.wire.kalium.protobuf.messages.QualifiedConversationId
@@ -79,26 +77,6 @@ class IdMapperTest {
 
         assertEquals(qualifiedIDEntity.value, value)
         assertEquals(qualifiedIDEntity.domain, domain)
-    }
-
-    @Test
-    fun givenUserID_whenMappingToMember_thenTheIDShouldBeMappedCorrectly() {
-        val userId = UserId("TestValue", "TestDomain")
-
-        val member = idMapper.toMember(userId)
-
-        assertEquals(userId.value, member.id.value)
-        assertEquals(userId.domain, member.id.domain)
-    }
-
-    @Test
-    fun givenMember_whenMappingToUserId_thenTheIDShouldBeMappedCorrectly() {
-        val member = Member(UserId("TestValue", "TestDomain"))
-
-        val userId = idMapper.toUserId(member)
-
-        assertEquals(member.id.value, userId.value)
-        assertEquals(member.id.domain, userId.domain)
     }
 
 }

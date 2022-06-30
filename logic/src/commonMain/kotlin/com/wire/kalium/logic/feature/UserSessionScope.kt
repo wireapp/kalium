@@ -25,8 +25,6 @@ import com.wire.kalium.logic.data.event.EventDataSource
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigDataSource
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
-import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.keypackage.KeyPackageDataSource
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
@@ -54,8 +52,8 @@ import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
-import com.wire.kalium.logic.feature.featureConfig.GetRemoteFeatureConfigStatusAndPersistUseCase
 import com.wire.kalium.logic.feature.featureConfig.GetFeatureConfigStatusUseCaseImpl
+import com.wire.kalium.logic.feature.featureConfig.GetRemoteFeatureConfigStatusAndPersistUseCase
 import com.wire.kalium.logic.feature.message.MLSMessageCreator
 import com.wire.kalium.logic.feature.message.MLSMessageCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
@@ -111,8 +109,6 @@ abstract class UserSessionScopeCommon(
 
     private val encryptedSettingsHolder: EncryptedSettingsHolder = authenticatedDataSourceSet.encryptedSettingsHolder
     private val userPreferencesSettings = authenticatedDataSourceSet.kaliumPreferencesSettings
-    private val idMapper: IdMapper
-        get() = IdMapperImpl()
     private val eventInfoStorage: EventInfoStorage
         get() = EventInfoStorageImpl(userPreferencesSettings)
 
@@ -338,8 +334,7 @@ abstract class UserSessionScopeCommon(
             userRepository,
             callRepository,
             syncManager,
-            mlsConversationRepository,
-            idMapper
+            mlsConversationRepository
         )
     val messages: MessageScope
         get() = MessageScope(

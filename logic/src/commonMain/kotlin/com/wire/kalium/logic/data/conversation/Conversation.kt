@@ -25,10 +25,10 @@ data class Conversation(
 
 sealed class ProtocolInfo {
     object Proteus : ProtocolInfo()
-    data class MLS(val groupId: String, val groupState: GroupState) : ProtocolInfo()
+    data class MLS(val groupId: String, val groupState: GroupState) : ProtocolInfo() {
+        enum class GroupState { PENDING, PENDING_WELCOME_MESSAGE, ESTABLISHED }
+    }
 }
-
-enum class GroupState { PENDING, PENDING_WELCOME_MESSAGE, ESTABLISHED }
 
 sealed class ConversationDetails(open val conversation: Conversation) {
 

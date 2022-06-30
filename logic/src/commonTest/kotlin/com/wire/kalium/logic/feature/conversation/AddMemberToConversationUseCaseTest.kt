@@ -4,8 +4,6 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.GroupState
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.ProtocolInfo
-import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -93,12 +91,9 @@ class AddMemberToConversationUseCaseTest {
         @Mock
         val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
 
-        val idMapper: IdMapper = IdMapperImpl()
-
         private val addMemberUseCase = AddMemberToConversationUseCaseImpl(
             conversationRepository,
-            mlsConversationRepository,
-            idMapper
+            mlsConversationRepository
         )
 
         fun withAddMemberToProteusGroupSuccessful() = apply {
@@ -124,7 +119,7 @@ class AddMemberToConversationUseCaseTest {
 
         fun withConversationProtocolIs(protocolInfo: ProtocolInfo) = apply {
             given(conversationRepository)
-                .suspendFunction(conversationRepository::getConversationDetailsById)
+                .suspendFunction(conversationRepository::detailsById)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(TestConversation.GROUP(protocolInfo)))
         }
