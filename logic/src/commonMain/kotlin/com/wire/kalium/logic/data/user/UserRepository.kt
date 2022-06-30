@@ -58,11 +58,11 @@ class UserDataSource(
 //    private val metadataDAO: MetadataDAO,
 //    private val selfApi: SelfApi,
     private val userDetailsApi: UserDetailsApi,
-    private val assetRepository: AssetRepository,
+//    private val assetRepository: AssetRepository,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(),
-    private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
+//    private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
     private val userTypeEntityMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper(),
     private val userTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper()
 ) : UserRepository {
