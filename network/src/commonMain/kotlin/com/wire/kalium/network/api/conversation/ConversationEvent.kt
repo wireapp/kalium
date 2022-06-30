@@ -12,6 +12,7 @@ data class ConversationMembers(
 
 @Serializable
 data class ConversationUsers(
+    @Deprecated("use qualifiedUserIds", replaceWith = ReplaceWith("this.qualifiedUserIds"))
     @SerialName("user_ids") val userIds: List<String>,
     @SerialName("qualified_user_ids") val qualifiedUserIds: List<UserId>
 )

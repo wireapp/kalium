@@ -308,7 +308,10 @@ class ConversationDataSource(
             }.flatMap {
                 when (conversationEntity.protocolInfo) {
                     is ProtocolInfo.Proteus -> persistMembersFromConversationResponse(conversationResponse)
-                    is ProtocolInfo.MLS -> persistMembersFromConversationResponseMLS(conversationResponse, TODO("the only valid source for conversation members is the server aka ConversationResponse"))
+                    is ProtocolInfo.MLS -> persistMembersFromConversationResponseMLS(
+                        conversationResponse,
+                        TODO("the only valid source for conversation members is the server aka ConversationResponse")
+                    )
                 }
             }.flatMap {
                 when (conversationEntity.protocolInfo) {
