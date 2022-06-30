@@ -3,10 +3,15 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.network.api.UserId
+import com.wire.kalium.network.api.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.conversation.ConversationMembersResponse
-import com.wire.kalium.network.api.conversation.ConversationOtherMembersResponse
-import com.wire.kalium.network.api.conversation.ConversationSelfMemberResponse
-import io.mockative.*
+import io.mockative.Mock
+import io.mockative.any
+import io.mockative.classOf
+import io.mockative.given
+import io.mockative.mock
+import io.mockative.once
+import io.mockative.verify
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -36,11 +41,11 @@ class MemberMapperTest {
         memberMapper.fromApiModel(membersResponse)
 
         verify(idMapper)
-            .invocation { idMapper.fromApiModel(SELF_MEMBER_RESPONSE.userId) }
+            .invocation { idMapper.fromApiModel(SELF_MEMBER_RESPONSE.id) }
             .wasInvoked(exactly = once)
 
         verify(idMapper)
-            .invocation { idMapper.fromApiModel(OTHER_MEMBER.userId) }
+            .invocation { idMapper.fromApiModel(OTHER_MEMBER.id) }
             .wasInvoked(exactly = once)
     }
 
@@ -92,8 +97,8 @@ class MemberMapperTest {
     }
 
     private companion object {
-        val SELF_MEMBER_RESPONSE = ConversationSelfMemberResponse(UserId("selfId", "selfDomain"))
-        val OTHER_MEMBER = ConversationOtherMembersResponse(null, UserId("other1", "domain1"))
+        val SELF_MEMBER_RESPONSE = ConversationMemberDTO.Self(UserId("selfId", "selfDomain"), "wire_admin")
+        val OTHER_MEMBER = ConversationMemberDTO.Other(id = UserId("other1", "domain1"), conversationRole = "wire_member", service = null)
         val MEMBERS_RESPONSE = ConversationMembersResponse(SELF_MEMBER_RESPONSE, listOf(OTHER_MEMBER))
     }
 }
