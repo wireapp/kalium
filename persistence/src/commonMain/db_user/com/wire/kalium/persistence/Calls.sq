@@ -1,0 +1,52 @@
+import com.wire.kalium.persistence.dao.ConversationEntity;
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import com.wire.kalium.persistence.dao.call.CallEntity;
+
+CREATE TABLE Call (
+    conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+    id TEXT NOT NULL,
+    status TEXT AS CallEntity.Status NOT NULL,
+    caller_id TEXT NOT NULL,
+    conversation_type TEXT AS ConversationEntity.Type NOT NULL,
+    created_at TEXT NOT NULL,
+
+    PRIMARY KEY (conversation_id, id)
+);
+
+insertCall:
+INSERT INTO Call(conversation_id, id, status, caller_id, conversation_type, created_at)
+VALUES (?, ?, ?, ?, ?, ?);
+
+selectAllCalls:
+SELECT * FROM Call;
+
+selectEstablishedCalls:
+SELECT * FROM Call WHERE status = 'ESTABLISHED' OR status = 'ANSWERED';
+
+selectOngoingCalls:
+SELECT * FROM Call WHERE status = 'STILL_ONGOING';
+
+selectIncomingCalls:
+SELECT * FROM Call WHERE status = 'INCOMING';
+
+isOngoingCall:
+SELECT * FROM Call WHERE status = 'ESTABLISHED' OR status = 'ANSWERED' OR status = 'STILL_ONGOING'
+AND conversation_id = ?;
+
+updateLastCallStatusByConversationId:
+UPDATE Call
+SET status = ?
+WHERE
+    conversation_id = ?
+    AND status != 'CLOSED'
+    AND status != 'MISSED'
+ORDER BY created_at DESC
+LIMIT 1;
+
+selectLastCallCallerIdByConversationId:
+SELECT caller_id
+FROM Call
+WHERE
+    conversation_id = ?
+ORDER BY created_at DESC
+LIMIT 1;

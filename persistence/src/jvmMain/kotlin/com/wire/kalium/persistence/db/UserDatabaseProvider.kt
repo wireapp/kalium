@@ -4,6 +4,7 @@ import app.cash.sqldelight.EnumColumnAdapter
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
+import com.wire.kalium.persistence.Call
 import com.wire.kalium.persistence.Client
 import com.wire.kalium.persistence.Connection
 import com.wire.kalium.persistence.Conversation
@@ -32,6 +33,8 @@ import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserDAOImpl
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetDAOImpl
+import com.wire.kalium.persistence.dao.call.CallDAO
+import com.wire.kalium.persistence.dao.call.CallDAOImpl
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageDAO
@@ -59,7 +62,12 @@ actual class UserDatabaseProvider(private val storePath: File) {
         }
 
         database = UserDatabase(
-            driver,
+            driver = driver,
+            Call.Adapter(
+                conversation_idAdapter = QualifiedIDAdapter(),
+                statusAdapter = EnumColumnAdapter(),
+                conversation_typeAdapter = EnumColumnAdapter()
+            ),
             Client.Adapter(user_idAdapter = QualifiedIDAdapter()),
             Connection.Adapter(
                 qualified_conversationAdapter = QualifiedIDAdapter(),
@@ -131,6 +139,9 @@ actual class UserDatabaseProvider(private val storePath: File) {
 
     actual val clientDAO: ClientDAO
         get() = ClientDAOImpl(database.clientsQueries)
+
+    actual val callDAO: CallDAO
+        get() = CallDAOImpl(database.callsQueries)
 
     actual val messageDAO: MessageDAO
         get() = MessageDAOImpl(database.messagesQueries)

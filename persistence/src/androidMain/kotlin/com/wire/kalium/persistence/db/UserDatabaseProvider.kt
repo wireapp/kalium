@@ -5,6 +5,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import app.cash.sqldelight.EnumColumnAdapter
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
+import com.wire.kalium.persistence.Call
 import com.wire.kalium.persistence.Client
 import com.wire.kalium.persistence.Connection
 import com.wire.kalium.persistence.Conversation
@@ -35,6 +36,8 @@ import com.wire.kalium.persistence.dao.UserDAOImpl
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetDAOImpl
+import com.wire.kalium.persistence.dao.call.CallDAO
+import com.wire.kalium.persistence.dao.call.CallDAOImpl
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageDAO
@@ -80,6 +83,11 @@ actual class UserDatabaseProvider(
 
         database = UserDatabase(
             driver,
+            Call.Adapter(
+                conversation_idAdapter = QualifiedIDAdapter(),
+                statusAdapter = EnumColumnAdapter(),
+                conversation_typeAdapter = EnumColumnAdapter()
+            ),
             Client.Adapter(user_idAdapter = QualifiedIDAdapter()),
             Connection.Adapter(
                 qualified_conversationAdapter = QualifiedIDAdapter(),
@@ -151,6 +159,9 @@ actual class UserDatabaseProvider(
 
     actual val clientDAO: ClientDAO
         get() = ClientDAOImpl(database.clientsQueries)
+
+    actual val callDAO: CallDAO
+        get() = CallDAOImpl(database.callsQueries)
 
     actual val messageDAO: MessageDAO
         get() = MessageDAOImpl(database.messagesQueries)
