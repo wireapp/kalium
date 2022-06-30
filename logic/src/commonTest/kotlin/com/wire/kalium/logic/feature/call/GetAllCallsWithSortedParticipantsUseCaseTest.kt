@@ -38,31 +38,31 @@ class GetAllCallsWithSortedParticipantsUseCaseTest {
         )
     }
 
-    @Test
-    fun givenCallsFlowEmitsANewValue_whenUseCaseIsCollected_thenAssertThatTheUseCaseIsEmittingTheRightCalls() = runTest {
-        val calls1 = listOf(call1, call2)
-        val calls2 = listOf(call2)
-
-        given(participantsOrder).invocation { reorderItems(calls1.first().participants) }
-            .thenReturn(calls1.first().participants)
-
-        given(participantsOrder).invocation { reorderItems(calls2.first().participants) }
-            .thenReturn(calls2.first().participants)
-
-        val callsFlow = flowOf(calls1, calls2)
-        given(syncManager).invocation { startSyncIfIdle() }
-            .thenReturn(Unit)
-        given(callRepository).invocation { callsFlow() }
-            .then { callsFlow }
-
-        val result = getAllCallsWithSortedParticipantsUseCase()
-
-        result.test {
-            assertEquals(calls1, awaitItem())
-            assertEquals(calls2, awaitItem())
-            awaitComplete()
-        }
-    }
+//    @Test
+//    fun givenCallsFlowEmitsANewValue_whenUseCaseIsCollected_thenAssertThatTheUseCaseIsEmittingTheRightCalls() = runTest {
+//        val calls1 = listOf(call1, call2)
+//        val calls2 = listOf(call2)
+//
+//        given(participantsOrder).invocation { reorderItems(calls1.first().participants) }
+//            .thenReturn(calls1.first().participants)
+//
+//        given(participantsOrder).invocation { reorderItems(calls2.first().participants) }
+//            .thenReturn(calls2.first().participants)
+//
+//        val callsFlow = flowOf(calls1, calls2)
+//        given(syncManager).invocation { startSyncIfIdle() }
+//            .thenReturn(Unit)
+//        given(callRepository).invocation { callsFlow() }
+//            .then { callsFlow }
+//
+//        val result = getAllCallsWithSortedParticipantsUseCase()
+//
+//        result.test {
+//            assertEquals(calls1, awaitItem())
+//            assertEquals(calls2, awaitItem())
+//            awaitComplete()
+//        }
+//    }
 
     companion object {
         private val call1 = Call(
