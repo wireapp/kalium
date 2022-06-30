@@ -37,19 +37,19 @@ import kotlinx.serialization.json.Json
 
 // TODO(testing): missing unit test
 interface UserRepository {
-    suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
+//    suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
     suspend fun fetchKnownUsers(): Either<CoreFailure, Unit>
     suspend fun fetchUsersByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
-    suspend fun observeSelfUser(): Flow<SelfUser>
-    suspend fun getSelfUserId(): QualifiedID
-    suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, SelfUser>
-    suspend fun getSelfUser(): SelfUser?
-    suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit>
-    suspend fun updateLocalSelfUserHandle(handle: String)
+//    suspend fun observeSelfUser(): Flow<SelfUser>
+//    suspend fun getSelfUserId(): QualifiedID
+//    suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, SelfUser>
+//    suspend fun getSelfUser(): SelfUser?
+//    suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit>
+//    suspend fun updateLocalSelfUserHandle(handle: String)
     suspend fun getAllContacts(): List<OtherUser>
     suspend fun getKnownUser(userId: UserId): Flow<OtherUser?>
     suspend fun getUserInfo(userId: UserId): Either<CoreFailure, OtherUser>
-    suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus)
+//    suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus)
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
