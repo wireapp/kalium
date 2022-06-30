@@ -38,10 +38,15 @@ UPDATE Call
 SET status = ?
 WHERE
     conversation_id = ?
-    AND status != 'CLOSED'
-    AND status != 'MISSED'
-ORDER BY created_at DESC
-LIMIT 1;
+    AND id IN (
+        SELECT id
+        FROM Call
+        WHERE
+            status != 'CLOSED'
+            AND status != 'MISSED'
+        ORDER BY created_at DESC
+        LIMIT 1
+    );
 
 selectLastCallCallerIdByConversationId:
 SELECT caller_id
