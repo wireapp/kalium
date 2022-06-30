@@ -12,7 +12,7 @@ class GetAllCallsWithSortedParticipantsUseCase(
     private val syncManager: SyncManager,
     private val participantsOrder: ParticipantsOrder
 ) {
-    operator fun invoke(): Flow<List<Call>> {
+    suspend operator fun invoke(): Flow<List<Call>> {
         syncManager.startSyncIfIdle()
         return callRepository.callsFlow().map { calls ->
             calls.map { call ->

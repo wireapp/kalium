@@ -9,7 +9,7 @@ class ObserveEstablishedCallsUseCase(
     private val callRepository: CallRepository,
     private val syncManager: SyncManager
 ) {
-    operator fun invoke(): Flow<List<Call>> {
+    suspend operator fun invoke(): Flow<List<Call>> {
         syncManager.startSyncIfIdle()
         return callRepository.establishedCallsFlow()
     }

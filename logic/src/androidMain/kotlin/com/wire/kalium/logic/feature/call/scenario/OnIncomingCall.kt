@@ -33,13 +33,15 @@ class OnIncomingCall(
         val conversationType = callMapper.fromIntToConversationType(conversationType)
         val isMuted = conversationType == ConversationType.Conference
         scope.launch {
-            callRepository.createCall(
-                conversationId = conversationId.toConversationId(),
-                status = CallStatus.INCOMING,
-                callerId = userId,
-                isMuted = isMuted,
-                isCameraOn = isVideoCall
-            )
+            if (callRepository.isNotOngoingCall(conversationId = conversationId)) {
+                callRepository.createCall(
+                    conversationId = conversationId.toConversationId(),
+                    status = CallStatus.INCOMING,
+                    callerId = userId,
+                    isMuted = isMuted,
+                    isCameraOn = isVideoCall
+                )
+            }
         callingLogger.i("OnIncomingCall -> incoming call for conversation $conversationId added to data flow")
         }
     }

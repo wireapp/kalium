@@ -184,6 +184,7 @@ abstract class UserSessionScopeCommon(
     private val callRepository: CallRepository by lazy {
         CallDataSource(
             callApi = authenticatedDataSourceSet.authenticatedNetworkContainer.callApi,
+            callDAO = userDatabaseProvider.callDAO,
             conversationRepository = conversationRepository,
             userRepository = userRepository,
             teamRepository = teamRepository,
