@@ -1,7 +1,6 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.GroupState
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.ProtocolInfo
 import com.wire.kalium.logic.framework.TestConversation
@@ -129,7 +128,7 @@ class AddMemberToConversationUseCaseTest {
         companion object {
             const val mlsGroupId = "mlsGroupId"
             val proteusProtocolInfo = ProtocolInfo.Proteus
-            val mlsProtocolInfo = ProtocolInfo.MLS(mlsGroupId, groupState = GroupState.ESTABLISHED)
+            val mlsProtocolInfo = ProtocolInfo.MLS(mlsGroupId, groupState = ProtocolInfo.MLS.GroupState.ESTABLISHED)
 
         }
     }
