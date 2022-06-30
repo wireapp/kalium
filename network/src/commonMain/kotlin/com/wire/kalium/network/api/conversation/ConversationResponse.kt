@@ -58,54 +58,51 @@ data class ConversationResponse(
 @Serializable
 data class ConversationMembersResponse(
     @SerialName("self")
-    val self: ConversationSelfMemberResponse,
+    val self: ConversationMemberDTO.Self,
 
     @SerialName("others")
-    val otherMembers: List<ConversationOtherMembersResponse>
+    val otherMembers: List<ConversationMemberDTO.Other>
 )
 
-@Serializable
-data class ConversationSelfMemberResponse(
-    @SerialName("qualified_id") override val userId: UserId,
-    @SerialName("otr_muted_ref") val otrMutedRef: String? = null,
-    @SerialName("otr_muted_status") @Serializable(with = MutedStatusSerializer::class) val otrMutedStatus: MutedStatus? = null
-    /*
+sealed class ConversationMemberDTO {
     // Role name, between 2 and 128 chars, 'wire_' prefix is reserved for roles designed
     // by Wire (i.e., no custom roles can have the same prefix)
-    @SerialName("conversation_role") val conversationRole: String? = null,
+    // in swagger conversation_role is an optional field but according to Akshay:
+    // Hmm, the field is optional when sending it to the server. The server will always send the field.
+    //(The server assumes admin when the field is missing, I don't have the context behind this decision)
+    abstract val conversationRole: String
+    abstract val id: UserId
+    abstract val service: ServiceReferenceDTO?
 
-    @SerialName("service") val service: ServiceReferenceResponse? = null,
+    @Serializable
+    data class Self(
+        @SerialName(ID_SERIAL_NAME) override val id: UserId,
+        @SerialName(CONV_ROLE_SERIAL_NAME) override val conversationRole: String,
+        @SerialName(SERVICE_SERIAL_NAME) override val service: ServiceReferenceDTO? = null,
+        @SerialName("hidden") val hidden: Boolean? = null,
+        @SerialName("hidden_ref") val hiddenRef: String? = null,
+        @SerialName("otr_archived") val otrArchived: Boolean? = null,
+        @SerialName("otr_archived_ref") val otrArchivedRef: String? = null,
+        @SerialName("otr_muted_ref") val otrMutedRef: String? = null,
+        @SerialName("otr_muted_status") @Serializable(with = MutedStatusSerializer::class) val otrMutedStatus: MutedStatus? = null
+    ) : ConversationMemberDTO()
 
-    //@SerialName("status") val status
-    //@SerialName("status_ref") val status
-    //@SerialName("status_time") val status
+    @Serializable
+    data class Other(
+        @SerialName(ID_SERIAL_NAME) override val id: UserId,
+        @SerialName(CONV_ROLE_SERIAL_NAME) override val conversationRole: String,
+        @SerialName(SERVICE_SERIAL_NAME) override val service: ServiceReferenceDTO? = null
+    ) : ConversationMemberDTO()
 
-    @SerialName("otr_muted_ref") val otrMutedReference: String? = null,
-    @SerialName("otr_muted_status") val otrMutedStatus: Int? = null,
-
-    @SerialName("hidden") val hidden: Boolean? = null,
-    @SerialName("hidden_ref") val hiddenReference: String? = null,
-
-    @SerialName("otr_archived") val otrArchived: Boolean? = null,
-    @SerialName("otr_archived_ref") val otrArchivedReference: String? = null,
-    */
-) : ConversationMemberResponse
-
-@Serializable
-data class ConversationOtherMembersResponse(
-    @SerialName("service")
-    val service: ServiceReferenceResponse? = null,
-
-    @SerialName("qualified_id")
-    override val userId: UserId,
-) : ConversationMemberResponse
-
-interface ConversationMemberResponse {
-    val userId: UserId
+    private companion object {
+        const val ID_SERIAL_NAME = "qualified_id"
+        const val CONV_ROLE_SERIAL_NAME = "conversation_role"
+        const val SERVICE_SERIAL_NAME = "service"
+    }
 }
 
 @Serializable
-data class ServiceReferenceResponse(
+data class ServiceReferenceDTO(
     @SerialName("id")
     val id: String,
 

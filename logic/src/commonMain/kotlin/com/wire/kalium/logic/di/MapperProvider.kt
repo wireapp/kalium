@@ -48,12 +48,12 @@ import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapperImpl
 import com.wire.kalium.logic.data.user.ConnectionStateMapper
 import com.wire.kalium.logic.data.user.ConnectionStateMapperImpl
-import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
-import com.wire.kalium.logic.data.user.type.UserEntityTypeMapperImpl
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.data.user.UserMapperImpl
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapperImpl
+import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
+import com.wire.kalium.logic.data.user.type.UserEntityTypeMapperImpl
 
 internal object MapperProvider {
     fun apiVersionMapper(): ApiVersionMapper = ApiVersionMapperImpl()
@@ -74,6 +74,7 @@ internal object MapperProvider {
     fun encryptionAlgorithmMapper(): EncryptionAlgorithmMapper = EncryptionAlgorithmMapper()
     fun eventMapper(): EventMapper =
         EventMapper(idMapper(), memberMapper(), connectionMapper())
+
     fun preyKeyMapper(): PreKeyMapper = PreKeyMapperImpl()
     fun preKeyListMapper(): PreKeyListMapper = PreKeyListMapper(preyKeyMapper())
     fun locationMapper(): LocationMapper = LocationMapper()
@@ -84,7 +85,7 @@ internal object MapperProvider {
     fun connectionStatusMapper(): ConnectionStatusMapper = ConnectionStatusMapperImpl()
     fun featureConfigMapper(): FeatureConfigMapper = FeatureConfigMapperImpl()
     fun localNotificationMessageMapper(): LocalNotificationMessageMapper = LocalNotificationMessageMapperImpl()
-    fun connectionMapper(): ConnectionMapper = ConnectionMapperImpl(idMapper(), connectionStatusMapper(), publicUserMapper())
+    fun connectionMapper(): ConnectionMapper = ConnectionMapperImpl()
     fun userTypeEntityMapper(): UserEntityTypeMapper = UserEntityTypeMapperImpl()
     fun userTypeMapper(): DomainUserTypeMapper = DomainUserTypeMapperImpl()
 }

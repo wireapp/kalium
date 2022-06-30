@@ -11,9 +11,9 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.QualifiedID
 import com.wire.kalium.network.api.conversation.AddParticipantResponse
 import com.wire.kalium.network.api.conversation.ConvProtocol
+import com.wire.kalium.network.api.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.conversation.ConversationResponse
-import com.wire.kalium.network.api.conversation.ConversationSelfMemberResponse
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 
@@ -77,7 +77,7 @@ object TestConversation {
     val CONVERSATION_RESPONSE = ConversationResponse(
         "creator",
         ConversationMembersResponse(
-            ConversationSelfMemberResponse(MapperProvider.idMapper().toApiModel(TestUser.SELF.id)),
+            ConversationMemberDTO.Self(MapperProvider.idMapper().toApiModel(TestUser.SELF.id), "wire_admin"),
             emptyList()
         ),
         ConversationRepositoryTest.GROUP_NAME,
