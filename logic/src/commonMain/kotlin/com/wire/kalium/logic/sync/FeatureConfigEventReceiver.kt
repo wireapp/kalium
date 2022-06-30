@@ -23,7 +23,7 @@ class FeatureConfigEventReceiverImpl(
         when (event.name) {
             FeatureConfigName.fileSharing -> {
                 if (kaliumConfigs.fileRestrictionEnabled) {
-                    userConfigRepository.setFileSharingStatus(true, null)
+                    userConfigRepository.setFileSharingStatus(false, null)
                 } else {
                     when (event.status) {
                         FeatureConfigStatus.enabled -> userConfigRepository.setFileSharingStatus(status = true, isStatusChanged = true)

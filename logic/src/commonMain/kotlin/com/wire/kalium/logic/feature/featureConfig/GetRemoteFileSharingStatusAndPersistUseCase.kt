@@ -36,7 +36,7 @@ internal class GetFeatureConfigStatusUseCaseImpl(
 
     private fun checkFileSharingStatus(featureConfigModel: FeatureConfigModel) {
         if (kaliumConfigs.fileRestrictionEnabled) {
-            userConfigRepository.setFileSharingStatus(true, null)
+            userConfigRepository.setFileSharingStatus(false, null)
         } else {
             val status: Boolean = featureConfigModel.fileSharingModel.status.lowercase() == ENABLED
             if (status == isFileSharingEnabledUseCase().isFileSharingEnabled) {
