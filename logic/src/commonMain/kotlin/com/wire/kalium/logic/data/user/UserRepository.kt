@@ -77,14 +77,14 @@ class UserDataSource(
 //            ?: run { throw IllegalStateException() }
 //    }
 
-    override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
-        .map { userMapper.fromApiModelWithUserTypeEntityToDaoModel(it).copy(connectionStatus = ConnectionEntity.State.ACCEPTED) }
-        .flatMap { userEntity ->
-            assetRepository.downloadUsersPictureAssets(getQualifiedUserAssetId(userEntity))
-            userDAO.insertUser(userEntity)
-            metadataDAO.insertValue(Json.encodeToString(userEntity.id), SELF_USER_ID_KEY)
-            Either.Right(Unit)
-        }
+//    override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
+//        .map { userMapper.fromApiModelWithUserTypeEntityToDaoModel(it).copy(connectionStatus = ConnectionEntity.State.ACCEPTED) }
+//        .flatMap { userEntity ->
+//            assetRepository.downloadUsersPictureAssets(getQualifiedUserAssetId(userEntity))
+//            userDAO.insertUser(userEntity)
+//            metadataDAO.insertValue(Json.encodeToString(userEntity.id), SELF_USER_ID_KEY)
+//            Either.Right(Unit)
+//        }
 
     private fun getQualifiedUserAssetId(userEntity: UserEntity): List<UserAssetId?> {
         return mutableListOf<UserAssetId?>().also {
@@ -129,29 +129,29 @@ class UserDataSource(
                 .map(userMapper::fromDaoModelToSelfUser)
         }
     }
+//
+//    // FIXME(refactor): user info can be updated with null, null and null
+//    override suspend fun updateSelfUser(newName: String?, newAccent: Int?, newAssetId: String?): Either<CoreFailure, SelfUser> {
+//        val user = observeSelfUser().firstOrNull() ?: return Either.Left(CoreFailure.Unknown(NullPointerException()))
+//        val updateRequest = userMapper.fromModelToUpdateApiModel(user, newName, newAccent, newAssetId)
+//        return wrapApiRequest { selfApi.updateSelf(updateRequest) }
+//            .map { userMapper.fromUpdateRequestToDaoModel(user, updateRequest) }
+//            .flatMap { userEntity ->
+//                wrapStorageRequest {
+//                    userDAO.updateSelfUser(userEntity)
+//                }.map { userMapper.fromDaoModelToSelfUser(userEntity) }
+//            }
+//    }
+//
+//    override suspend fun getSelfUser(): SelfUser? =
+//        observeSelfUser().firstOrNull()
 
-    // FIXME(refactor): user info can be updated with null, null and null
-    override suspend fun updateSelfUser(newName: String?, newAccent: Int?, newAssetId: String?): Either<CoreFailure, SelfUser> {
-        val user = observeSelfUser().firstOrNull() ?: return Either.Left(CoreFailure.Unknown(NullPointerException()))
-        val updateRequest = userMapper.fromModelToUpdateApiModel(user, newName, newAccent, newAssetId)
-        return wrapApiRequest { selfApi.updateSelf(updateRequest) }
-            .map { userMapper.fromUpdateRequestToDaoModel(user, updateRequest) }
-            .flatMap { userEntity ->
-                wrapStorageRequest {
-                    userDAO.updateSelfUser(userEntity)
-                }.map { userMapper.fromDaoModelToSelfUser(userEntity) }
-            }
-    }
+//    override suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit> = wrapApiRequest {
+//        selfApi.changeHandle(ChangeHandleRequest(handle))
+//    }
 
-    override suspend fun getSelfUser(): SelfUser? =
-        observeSelfUser().firstOrNull()
-
-    override suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit> = wrapApiRequest {
-        selfApi.changeHandle(ChangeHandleRequest(handle))
-    }
-
-    override suspend fun updateLocalSelfUserHandle(handle: String) =
-        userDAO.updateUserHandle(getSelfUserIDEntity(), handle)
+//    override suspend fun updateLocalSelfUserHandle(handle: String) =
+//        userDAO.updateUserHandle(getSelfUserIDEntity(), handle)
 
     override suspend fun getAllContacts(): List<OtherUser> {
         val selfUserId = getSelfUserIDEntity()
@@ -177,9 +177,9 @@ class UserDataSource(
             )
         }
 
-    override suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus) {
-        userDAO.updateUserAvailabilityStatus(getSelfUserIDEntity(), availabilityStatusMapper.fromModelAvailabilityStatusToDao(status))
-    }
+//    override suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus) {
+//        userDAO.updateUserAvailabilityStatus(getSelfUserIDEntity(), availabilityStatusMapper.fromModelAvailabilityStatusToDao(status))
+//    }
 
     companion object {
         const val SELF_USER_ID_KEY = "selfUserID"
