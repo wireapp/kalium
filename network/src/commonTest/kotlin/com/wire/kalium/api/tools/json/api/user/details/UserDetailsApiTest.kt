@@ -31,7 +31,7 @@ class UserDetailsApiTest : ApiTest {
                 assertJson()
                 assertNoQueryParams()
                 assertPathEqual(PATH_LIST_USERS)
-                assertBodyContent(expectedRequestBody)
+                assertJsonBodyContent(expectedRequestBody)
             }
         )
         val userDetailsApi: UserDetailsApi = UserDetailsApiImpl(networkClient)
@@ -47,7 +47,7 @@ class UserDetailsApiTest : ApiTest {
             ListUsersRequestJson.validIdsJsonProvider.rawJson,
             statusCode = HttpStatusCode.Created,
             assertion = {
-                assertBodyContent(expectedRequestBody)
+                assertJsonBodyContent(expectedRequestBody)
             }
         )
         val userDetailsApi: UserDetailsApi = UserDetailsApiImpl(networkClient)

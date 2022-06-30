@@ -43,11 +43,11 @@ class ObserveConversationListDetailsUseCaseTest {
     @Mock
     private val syncManager: SyncManager = configure(mock(SyncManager::class)) { stubsUnitByDefault = true }
 
-    private lateinit var observeConversationsUseCase: ObserveConversationListDetailsUseCase
+    private lateinit var observeConversationsUseCase: ObserveConversationListDetailsUseCaseImpl
 
     @BeforeTest
     fun setup() {
-        observeConversationsUseCase = ObserveConversationListDetailsUseCase(conversationRepository, syncManager, callRepository)
+        observeConversationsUseCase = ObserveConversationListDetailsUseCaseImpl(conversationRepository, syncManager, callRepository)
     }
 
 //    @Test
