@@ -303,7 +303,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_ALLOWED
         )
 
-        val member1 = Member(user1.id)
-        val member2 = Member(user2.id)
+        val member1 = Member(user1.id, Member.Role.Admin)
+        val member2 = Member(user2.id, Member.Role.Member)
     }
 }

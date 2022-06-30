@@ -500,7 +500,7 @@ class GetNotificationsUseCaseTest {
         ) =
             Message.System(
                 id = messageId,
-                content = MessageContent.MemberChange.Removed(listOf(Member(senderId))),
+                content = MessageContent.MemberChange.Removed(listOf(senderId)),
                 conversationId = conversationId,
                 date = "some_time",
                 senderUserId = senderId,

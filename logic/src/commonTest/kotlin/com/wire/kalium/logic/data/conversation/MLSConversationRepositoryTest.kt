@@ -178,7 +178,7 @@ class MLSConversationRepositoryTest {
 
     private companion object {
         val GROUP_ID = "groupId"
-        val MEMBERS = listOf(Member(TestUser.ENTITY_ID))
+        val MEMBERS = listOf(Member(TestUser.ENTITY_ID, TODO()))
         val KEY_PACKAGE = KeyPackageDTO(
             "client1",
             "wire.com",

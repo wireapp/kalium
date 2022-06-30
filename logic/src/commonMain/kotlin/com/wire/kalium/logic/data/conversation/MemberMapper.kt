@@ -60,9 +60,9 @@ internal class MemberMapperImpl(private val idMapper: IdMapper, private val role
 interface ConversationRoleMapper {
     fun toApi(role: Member.Role): String
     fun fromApi(roleDTO: String): Member.Role
-    fun fromDAO(roleEntity: String): Member.Role
-    fun toDAO(role: Member.Role): String
-    fun fromApiModelToDaoModel(roleDTO: String): String
+    fun fromDAO(roleEntity: PersistedMember.Role): Member.Role
+    fun toDAO(role: Member.Role): PersistedMember.Role
+    fun fromApiModelToDaoModel(roleDTO: String): PersistedMember.Role
 }
 
 
@@ -79,23 +79,22 @@ internal class ConversationRoleMapperImpl : ConversationRoleMapper {
         else -> Member.Role.Unknown(roleDTO)
     }
 
-    override fun fromDAO(roleEntity: String): Member.Role = when (roleEntity) {
-        ADMIN -> Member.Role.Admin
-        MEMBER -> Member.Role.Member
-        else -> Member.Role.Unknown(roleEntity)
+    override fun fromDAO(roleEntity: PersistedMember.Role): Member.Role = when (roleEntity) {
+        PersistedMember.Role.Admin -> Member.Role.Admin
+        PersistedMember.Role.Member -> Member.Role.Member
+        is PersistedMember.Role.Unknown -> Member.Role.Unknown(roleEntity.name)
     }
 
-    override fun toDAO(role: Member.Role): String = when (role) {
-        Member.Role.Admin -> ADMIN
-        Member.Role.Member -> MEMBER
-        is Member.Role.Unknown -> role.name
+    override fun toDAO(role: Member.Role): PersistedMember.Role = when (role) {
+        Member.Role.Admin -> PersistedMember.Role.Admin
+        Member.Role.Member -> PersistedMember.Role.Member
+        is Member.Role.Unknown -> PersistedMember.Role.Unknown(role.name)
     }
 
-    override fun fromApiModelToDaoModel(roleDTO: String): String = when (roleDTO) {
-        ADMIN -> ADMIN
-        MEMBER -> MEMBER
-        else -> roleDTO
-
+    override fun fromApiModelToDaoModel(roleDTO: String): PersistedMember.Role = when (roleDTO) {
+        ADMIN -> PersistedMember.Role.Admin
+        MEMBER -> PersistedMember.Role.Member
+        else -> PersistedMember.Role.Unknown(roleDTO)
     }
 
     private companion object {

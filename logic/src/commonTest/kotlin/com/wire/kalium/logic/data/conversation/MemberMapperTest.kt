@@ -22,11 +22,14 @@ class MemberMapperTest {
     @Mock
     val idMapper = mock(classOf<IdMapper>())
 
+    @Mock
+    private val roleMapper: ConversationRoleMapper = mock(ConversationRoleMapper::class)
+
     private lateinit var memberMapper: MemberMapper
 
     @BeforeTest
     fun setup() {
-        memberMapper = MemberMapperImpl(idMapper)
+        memberMapper = MemberMapperImpl(idMapper, roleMapper)
     }
 
     @Test

@@ -28,10 +28,17 @@ data class ConversationEntity(
     }
 }
 
+// TODO: rename to MemberEntity
 data class Member(
     val user: QualifiedIDEntity,
-    val role: String
-)
+    val role: Role
+) {
+    sealed class Role {
+        object Member : Role()
+        object Admin : Role()
+        data class Unknown(val name: String) : Role()
+    }
+}
 
 interface ConversationDAO {
     suspend fun getSelfConversationId(): QualifiedIDEntity
