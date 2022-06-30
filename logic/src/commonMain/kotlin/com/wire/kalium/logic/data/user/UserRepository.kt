@@ -55,8 +55,8 @@ interface UserRepository {
 @Suppress("LongParameterList", "TooManyFunctions")
 class UserDataSource(
     private val userDAO: UserDAO,
-    private val metadataDAO: MetadataDAO,
-    private val selfApi: SelfApi,
+//    private val metadataDAO: MetadataDAO,
+//    private val selfApi: SelfApi,
     private val userDetailsApi: UserDetailsApi,
     private val assetRepository: AssetRepository,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
@@ -67,15 +67,15 @@ class UserDataSource(
     private val userTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper()
 ) : UserRepository {
 
-    override suspend fun getSelfUserId(): QualifiedID {
-        return idMapper.fromDaoModel(getSelfUserIDEntity())
-    }
-
-    private suspend fun getSelfUserIDEntity(): QualifiedIDEntity {
-        val encodedValue = metadataDAO.valueByKey(SELF_USER_ID_KEY).firstOrNull()
-        return encodedValue?.let { Json.decodeFromString<QualifiedIDEntity>(it) }
-            ?: run { throw IllegalStateException() }
-    }
+//    override suspend fun getSelfUserId(): QualifiedID {
+//        return idMapper.fromDaoModel(getSelfUserIDEntity())
+//    }
+//
+//    private suspend fun getSelfUserIDEntity(): QualifiedIDEntity {
+//        val encodedValue = metadataDAO.valueByKey(SELF_USER_ID_KEY).firstOrNull()
+//        return encodedValue?.let { Json.decodeFromString<QualifiedIDEntity>(it) }
+//            ?: run { throw IllegalStateException() }
+//    }
 
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
         .map { userMapper.fromApiModelWithUserTypeEntityToDaoModel(it).copy(connectionStatus = ConnectionEntity.State.ACCEPTED) }
