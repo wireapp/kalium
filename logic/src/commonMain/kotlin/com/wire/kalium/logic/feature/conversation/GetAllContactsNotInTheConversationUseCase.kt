@@ -11,17 +11,12 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 
 class GetAllContactsNotInTheConversationUseCase(
-    private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository
 ) {
     suspend operator fun invoke(conversationId: QualifiedID) =
-        conversationRepository.getConversationMembers(conversationId).flatMap { conversationMembers ->
-            userRepository.getAllContacts()
-                .map { allContacts -> removeConversationMembersFromAllContacts(allContacts, conversationMembers) }
-        }.fold({ Result.Failure(it) }, { Result.Success(it) })
+        userRepository.getUsersNotPartOfTheConversation(conversationId)
+            .fold({ Result.Failure(it) }, { Result.Success(it) })
 
-    private fun removeConversationMembersFromAllContacts(allContacts: List<OtherUser>, conversationMembers: List<UserId>) =
-        allContacts.filter { conversationMember -> !conversationMembers.contains(conversationMember.id) }
 }
 
 sealed class Result {

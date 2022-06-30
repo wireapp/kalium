@@ -4,6 +4,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.publicuser.PublicUserMapper
@@ -51,6 +52,7 @@ interface UserRepository {
     suspend fun getKnownUser(userId: UserId): Flow<OtherUser?>
     suspend fun getUserInfo(userId: UserId): Either<CoreFailure, OtherUser>
     suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus)
+    suspend fun getUsersNotPartOfTheConversation(conversationId: ConversationId): Either<StorageFailure, List<OtherUser>>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -182,6 +184,13 @@ class UserDataSource(
 
     override suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus) {
         userDAO.updateUserAvailabilityStatus(getSelfUserIDEntity(), availabilityStatusMapper.fromModelAvailabilityStatusToDao(status))
+    }
+
+    override suspend fun getUsersNotPartOfTheConversation(conversationId: ConversationId): Either<StorageFailure, List<OtherUser>> {
+        return wrapStorageRequest {
+            userDAO.getUsersNotPartOfConversation(idMapper.toDaoModel(conversationId))
+                .map { publicUserMapper.fromDaoModelToPublicUser(it) }
+        }
     }
 
     companion object {

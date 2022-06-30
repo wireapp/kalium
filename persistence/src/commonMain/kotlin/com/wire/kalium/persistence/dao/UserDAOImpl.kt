@@ -153,6 +153,9 @@ class UserDAOImpl(
         userQueries.updateUserAvailabilityStatus(status, qualifiedID)
     }
 
+    override suspend fun getUsersNotPartOfConversation(conversationId: QualifiedIDEntity) =
+         userQueries.getUsersNotPartOfTheConversation(conversationId)
+
     override suspend fun getAllUsersByConnectionStatus(connectionState: ConnectionEntity.State): List<UserEntity> =
         userQueries.selectAllUsersWithConnectionStatus(connectionState)
             .executeAsList()
