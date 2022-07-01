@@ -1,11 +1,11 @@
 package com.wire.kalium.api.tools.json
 
-import com.wire.kalium.network.api.conversation.ServiceReferenceResponse
+import com.wire.kalium.network.api.conversation.ServiceReferenceDTO
 
 
-object ServiceReferenceResponseJson {
+object ServiceReferenceDTOJson {
     val valid = ValidJsonProvider(
-        ServiceReferenceResponse("ID", "provider")
+        ServiceReferenceDTO("ID", "provider")
     ) {
         """
         |{
