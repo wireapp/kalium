@@ -7,147 +7,50 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.any
+import io.mockative.anything
 import io.mockative.given
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class GetAllContactsNotInTheConversationUseCaseTest {
 
     @Test
-    fun givenAllContactsAndConversationMembers_whenGettingContacstNotInTheConversation_ThenResultDoesNotContaintTheConversationMembers() =
-        runTest {
-            val conversationMemberId = UserId("someCommonValue", "someCommonDomain")
-
-            val contactWithConversationMemberId = OtherUser(
-                id = conversationMemberId,
-                name = null,
-                handle = null,
-                email = null,
-                phone = null,
-                accentId = 0,
-                team = null,
-                connectionStatus = ConnectionState.ACCEPTED,
-                previewPicture = null,
-                completePicture = null,
-                availabilityStatus = UserAvailabilityStatus.AVAILABLE,
-                userType = UserType.INTERNAL
-            )
-
-            val (_, getAllContactsNotInTheConversation) = Arrangement()
-                .withSuccessFullGetAllContacts(
-                    allContacts = Arrangement.mockAllContacts,
-                    additionalContact = contactWithConversationMemberId
-                )
-                .withSuccessFullGetConversationMembers(
-                    conversationMembers = Arrangement.mockConversationMembers,
-                    additionalConversationMember = conversationMemberId
-                )
-                .arrange()
-
-            val result = getAllContactsNotInTheConversation(ConversationId("someId", "someDomain"))
-
-            assertIs<Result.Success>(result)
-            assertTrue(!result.contactNotInTheConversation.contains(contactWithConversationMemberId))
-        }
-
-    @Test
-    fun givenAllContactsAndConversationMembers_WhenGettingContacstNotInTheConversation_ThenResultContainsAllTheContact() = runTest {
+    fun givenSuccessFullResult_whenGettingUsersNotPartofTheConversation_ThenReturnTheResult() = runTest {
+        //given
         val (_, getAllContactsNotInTheConversation) = Arrangement()
-            .withSuccessFullGetAllContacts(allContacts = Arrangement.mockAllContacts)
-            .withSuccessFullGetConversationMembers(conversationMembers = Arrangement.mockConversationMembers)
+            .withSuccessFullGetUsersNotPartOfConversation()
             .arrange()
 
-        val result = getAllContactsNotInTheConversation(ConversationId("someId", "someDomain"))
+        //when
+        val result = getAllContactsNotInTheConversation(ConversationId("someValue", "someDomain"))
 
+        //then
         assertIs<Result.Success>(result)
-        assertEquals(Arrangement.mockAllContacts, result.contactNotInTheConversation)
+        assertTrue { result.contactNotInConversation == Arrangement.mockAllContacts }
     }
 
     @Test
-    fun givenAllContactsAreConversationMembers_WhenGettingContacstNotInTheConversation_ThenResultIsEmpty() = runTest {
-        val allContacts = listOf(
-            OtherUser(
-                id = UserId("user1Value", "user1Domain"),
-                name = null,
-                handle = null,
-                email = null,
-                phone = null,
-                accentId = 0,
-                team = null,
-                connectionStatus = ConnectionState.ACCEPTED,
-                previewPicture = null,
-                completePicture = null,
-                availabilityStatus = UserAvailabilityStatus.AVAILABLE,
-                userType = UserType.INTERNAL
-            ),
-            OtherUser(
-                id = UserId("user2Value", "user2Domain"),
-                name = null,
-                handle = null,
-                email = null,
-                phone = null,
-                accentId = 0,
-                team = null,
-                connectionStatus = ConnectionState.ACCEPTED,
-                previewPicture = null,
-                completePicture = null,
-                availabilityStatus = UserAvailabilityStatus.AVAILABLE,
-                userType = UserType.INTERNAL
-            )
-        )
-
-        val conversationMembers = listOf(
-            UserId("user1Value", "user1Domain"),
-            UserId("user2Value", "user2Domain")
-        )
-
+    fun givenFailure_whenGettingUsersNotPartofTheConversation_ThenReturnTheResult() = runTest {
+        //given
         val (_, getAllContactsNotInTheConversation) = Arrangement()
-            .withSuccessFullGetAllContacts(allContacts = allContacts)
-            .withSuccessFullGetConversationMembers(conversationMembers = conversationMembers)
+            .withFailureGetUsersNotPartOfConversation()
             .arrange()
 
-        val result = getAllContactsNotInTheConversation(ConversationId("someId", "someDomain"))
+        //when
+        val result = getAllContactsNotInTheConversation(ConversationId("someValue", "someDomain"))
 
-        assertIs<Result.Success>(result)
-        assertTrue(result.contactNotInTheConversation.isEmpty())
-    }
-
-    @Test
-    fun givenGettingAllContactsFails_whenGettingContatcstNotInTheConversation_PropagateTheFailureAsExpected() = runTest {
-        val (arrangement, getAllContactsNotInTheConversation) = Arrangement()
-            .withFailureGetAllContact()
-            .withSuccessFullGetConversationMembers()
-            .arrange()
-
-        val result = getAllContactsNotInTheConversation(ConversationId("someId", "someDomain"))
-
+        //then
         assertIs<Result.Failure>(result)
     }
 
-    @Test
-    fun givenAllContactsAndConversationMembers_WheGettingContact_ThenResultContainsAllTheContact() = runTest {
-        val (_, getAllContactsNotInTheConversation) = Arrangement()
-            .withSuccessFullGetAllContacts(allContacts = Arrangement.mockAllContacts)
-            .withSuccessFullGetConversationMembers(conversationMembers = Arrangement.mockConversationMembers)
-            .arrange()
-
-        val result = getAllContactsNotInTheConversation(ConversationId("someId", "someDomain"))
-
-        assertIs<Result.Success>(result)
-        assertEquals(Arrangement.mockAllContacts, result.contactNotInTheConversation)
-    }
-
-    private class Arrangement() {
+    private class Arrangement {
         companion object {
             val mockAllContacts = listOf(
                 OtherUser(
@@ -179,11 +82,6 @@ class GetAllContactsNotInTheConversationUseCaseTest {
                     userType = UserType.INTERNAL
                 )
             )
-
-            val mockConversationMembers = listOf(
-                UserId("someConversationMemberValue", "someConversationMemberDomain"),
-                UserId("someConversationMemberValue1", "someConversationMemberValue1")
-            )
         }
 
         @Mock
@@ -192,41 +90,22 @@ class GetAllContactsNotInTheConversationUseCaseTest {
         @Mock
         val userRepository = mock(UserRepository::class)
 
-        fun withSuccessFullGetConversationMembers(
-            conversationMembers: List<UserId> = emptyList(),
-            additionalConversationMember: UserId? = null
-        ): Arrangement {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::getConversationMembers)
-                .whenInvokedWith(any())
-                .thenReturn(
-                    Either.Right(
-                        if (additionalConversationMember == null) conversationMembers
-                        else conversationMembers + additionalConversationMember
-                    )
-                )
-
-            return this
-        }
-
-        fun withSuccessFullGetAllContacts(allContacts: List<OtherUser> = emptyList(), additionalContact: OtherUser? = null): Arrangement {
+        fun withSuccessFullGetUsersNotPartOfConversation(allContacts: List<OtherUser> = mockAllContacts): Arrangement {
             given(userRepository)
-                .suspendFunction(userRepository::getAllContacts)
-                .whenInvoked()
+                .suspendFunction(userRepository::getUsersNotPartOfTheConversation)
+                .whenInvokedWith(anything())
                 .thenReturn(
                     Either.Right(
-                        if (additionalContact == null)
-                            allContacts
-                        else allContacts + additionalContact
+                        allContacts
                     )
                 )
             return this
         }
 
-        fun withFailureGetAllContact(): Arrangement {
+        fun withFailureGetUsersNotPartOfConversation(): Arrangement {
             given(userRepository)
-                .suspendFunction(userRepository::getAllContacts)
-                .whenInvoked()
+                .suspendFunction(userRepository::getUsersNotPartOfTheConversation)
+                .whenInvokedWith(anything())
                 .thenReturn(
                     Either.Left(StorageFailure.DataNotFound)
                 )
@@ -234,18 +113,7 @@ class GetAllContactsNotInTheConversationUseCaseTest {
             return this
         }
 
-        fun withFailureGetConversationMembers(): Arrangement {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::getConversationMembers)
-                .whenInvokedWith(any())
-                .thenReturn(
-                    Either.Left(StorageFailure.DataNotFound)
-                )
-
-            return this
-        }
-
-        fun arrange() = this to GetAllContactsNotInTheConversationUseCase(conversationRepository, userRepository)
+        fun arrange() = this to GetAllContactsNotInConversationUseCase(userRepository)
     }
 
 }
