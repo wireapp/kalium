@@ -42,7 +42,7 @@ class AssetMapperImpl(
             uploadAssetMetadata.assetType.mimeType,
             uploadAssetMetadata.isPublic,
             AssetRetentionType.valueOf(uploadAssetMetadata.retentionType.name),
-            calcFileMd5(uploadAssetMetadata.tempDataPath, kaliumFileSystem) ?: ""
+            calcFileMd5(uploadAssetMetadata.tempEncryptedDataPath, kaliumFileSystem) ?: ""
         )
     }
 
@@ -54,7 +54,7 @@ class AssetMapperImpl(
             key = uploadedAssetResponse.key,
             domain = uploadedAssetResponse.domain,
             mimeType = uploadAssetData.assetType.mimeType,
-            dataPath = uploadAssetData.tempDataPath.toString(),
+            dataPath = uploadAssetData.tempEncryptedDataPath.toString(),
             dataSize = uploadAssetData.dataSize,
             downloadedDate = Clock.System.now().toEpochMilliseconds()
         )

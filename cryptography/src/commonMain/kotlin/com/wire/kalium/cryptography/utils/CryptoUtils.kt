@@ -89,6 +89,9 @@ expect fun decryptFileWithAES256(
 expect fun generateRandomAES256Key(): AES256Key
 
 @JvmInline
+value class SHA256Key(val data: ByteArray)
+
+@JvmInline
 value class AES256Key(val data: ByteArray)
 
 @JvmInline

@@ -2,15 +2,12 @@ package com.wire.kalium.logic.feature.asset
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.cryptography.utils.AES256Key
-import com.wire.kalium.cryptography.utils.calcFileSHA256
 import com.wire.kalium.cryptography.utils.encryptFileWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.EncryptionFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
-import com.wire.kalium.logic.data.asset.FileAsset
-import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.asset.UploadedAssetId
+import com.wire.kalium.logic.data.asset.isValidImage
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
@@ -27,6 +24,8 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.fileExtension
+import com.wire.kalium.logic.util.fileExtensionToAssetType
+import com.wire.kalium.logic.util.isGreaterThan
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 import okio.FileSystem
@@ -38,6 +37,7 @@ fun interface SendAssetMessageUseCase {
      *
      * @param conversationId the id of the conversation where the asset wants to be sent
      * @param assetDataPath the raw data of the asset to be uploaded to the backend and sent to the given conversation
+     * @param assetDataSize the size of the original asset file
      * @param assetName the name of the original asset file
      * @param assetMimeType the type of the asset file
      * @return an [Either] tuple containing a [CoreFailure] in case anything goes wrong and [Unit] in case everything succeeds
@@ -45,8 +45,11 @@ fun interface SendAssetMessageUseCase {
     suspend operator fun invoke(
         conversationId: ConversationId,
         assetDataPath: Path,
+        assetDataSize: Long,
         assetName: String,
         assetMimeType: String,
+        assetWidth: Int?,
+        assetHeight: Int?
     ): SendAssetMessageResult
 }
 
@@ -55,58 +58,50 @@ internal class SendAssetMessageUseCaseImpl(
     private val clientRepository: ClientRepository,
     private val assetDataSource: AssetRepository,
     private val userRepository: UserRepository,
-    private val messageSender: MessageSender,
-    private val kaliumFileSystem: FileSystem,
-    private val tempEncryptedPath: Path = (kaliumFileSystem as KaliumFileSystem).tempFilePath("temp_encrypted.aes")
+    private val messageSender: MessageSender
 ) : SendAssetMessageUseCase {
 
     override suspend fun invoke(
         conversationId: ConversationId,
         assetDataPath: Path,
+        assetDataSize: Long,
         assetName: String,
-        assetMimeType: String
+        assetMimeType: String,
+        assetWidth: Int?,
+        assetHeight: Int?
     ): SendAssetMessageResult {
-        // Encrypt the asset data with the provided otr key
+
+        // Generate the otr asymmetric key that will be used to encrypt the data
         val otrKey = generateRandomAES256Key()
 
-        // Temporary folder to host the encrypted data until we have the asset key returned by the backend after successful upload
-        val tempEncryptedDataPath = tempEncryptedPath
+        // Upload the asset encrypted data and force the mimeType to be a File
+        return assetDataSource.uploadAndPersistPrivateAsset(
+            assetName.fileExtension().fileExtensionToAssetType(),
+            assetDataPath,
+            assetDataSize,
+            otrKey
+        ).flatMap { (assetId, sha256) ->
 
-        val encryptedDataSize = encryptFileWithAES256(assetDataPath, otrKey, tempEncryptedDataPath, kaliumFileSystem)
-        val encryptionSucceeded = encryptedDataSize > 0L
-
-        return if (encryptionSucceeded) {
-            // Calculate the SHA of the encrypted data
-            val sha256 =
-                calcFileSHA256(tempEncryptedDataPath, kaliumFileSystem) ?: run { return SendAssetMessageResult.Failure(EncryptionFailure()) }
-            // Upload the asset encrypted data and force the mimeType to be a File
-            assetDataSource.uploadAndPersistPrivateAsset(
-                FileAsset(fileExtension = assetName.fileExtension()),
-                tempEncryptedDataPath,
-                encryptedDataSize
-            ).flatMap { assetId ->
-                // Try to send the Asset Message
-                prepareAndSendAssetMessage(
-                    conversationId,
-                    encryptedDataSize,
-                    assetName,
-                    assetMimeType,
-                    sha256,
-                    otrKey,
-                    assetId
-                ).flatMap {
-                    Either.Right(Unit)
-                }
-            }.fold({
-                kaliumLogger.e("Something went wrong when sending the Asset Message")
-                SendAssetMessageResult.Failure(it)
-            }, {
-                SendAssetMessageResult.Success
-            })
-        } else {
-            kaliumLogger.e("Something went wrong when encrypting the Asset Message")
-            SendAssetMessageResult.Failure(EncryptionFailure())
-        }
+            // Try to send the Asset Message
+            prepareAndSendAssetMessage(
+                conversationId,
+                assetDataSize,
+                assetName,
+                assetMimeType,
+                sha256.data,
+                otrKey,
+                assetId,
+                assetWidth,
+                assetHeight
+            ).flatMap {
+                Either.Right(Unit)
+            }
+        }.fold({
+            kaliumLogger.e("Something went wrong when sending the Asset Message")
+            SendAssetMessageResult.Failure(it)
+        }, {
+            SendAssetMessageResult.Success
+        })
     }
 
     @Suppress("LongParameterList")
@@ -117,7 +112,9 @@ internal class SendAssetMessageUseCaseImpl(
         assetMimeType: String,
         sha256: ByteArray,
         otrKey: AES256Key,
-        assetId: UploadedAssetId
+        assetId: UploadedAssetId,
+        assetWidth: Int?,
+        assetHeight: Int?
     ): Either<CoreFailure, Unit> = clientRepository.currentClientId().flatMap { currentClientId ->
         // Get my current user
         val selfUser = userRepository.observeSelfUser().first()
@@ -135,6 +132,8 @@ internal class SendAssetMessageUseCaseImpl(
                     sha256 = sha256,
                     otrKey = otrKey,
                     assetId = assetId,
+                    assetWidth = assetWidth,
+                    assetHeight = assetHeight,
                 )
             ),
             conversationId = conversationId,
@@ -160,10 +159,18 @@ private fun provideAssetMessageContent(
     otrKey: AES256Key,
     assetId: UploadedAssetId,
     mimeType: String,
+    assetWidth: Int?,
+    assetHeight: Int?
 ): AssetContent = AssetContent(
     sizeInBytes = dataSize,
     name = assetName,
     mimeType = mimeType,
+    metadata = when {
+        isValidImage(mimeType) && (assetHeight.isGreaterThan(0) && (assetWidth.isGreaterThan(0))) -> {
+            AssetContent.AssetMetadata.Image(assetWidth, assetHeight)
+        }
+        else -> null
+    },
     remoteData = AssetContent.RemoteData(
         otrKey = otrKey.data,
         sha256 = sha256,

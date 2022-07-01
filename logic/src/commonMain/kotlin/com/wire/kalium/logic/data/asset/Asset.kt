@@ -13,7 +13,7 @@ data class UploadedAssetId(
  * For example, rules that apply for an eternal/public asset
  */
 data class UploadAssetData(
-    val tempDataPath: Path,
+    val tempEncryptedDataPath: Path,
     val dataSize: Long,
     val assetType: AssetType,
     val isPublic: Boolean,
@@ -36,7 +36,7 @@ sealed class ImageAsset(override val mimeType: String) : AssetType(mimeType) {
     object PNG : ImageAsset(mimeType = "image/png")
 }
 
-fun isImage(mimeType: String): Boolean =
+fun isValidImage(mimeType: String): Boolean =
     when (mimeType) {
         "image/jpg" -> true
         "image/jpeg" -> true

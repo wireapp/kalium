@@ -3,6 +3,8 @@ package com.wire.kalium.logic.util
 import com.wire.kalium.logic.data.asset.AssetType
 import com.wire.kalium.logic.data.asset.FileAsset
 import com.wire.kalium.logic.data.asset.ImageAsset
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.contract
 
 internal fun Boolean.toInt() = if (this) 1 else 0
 
@@ -21,4 +23,14 @@ fun String.fileExtensionToAssetType(): AssetType = when (this) {
     ImageAsset.JPG.mimeType -> ImageAsset.JPG
     ImageAsset.PNG.mimeType -> ImageAsset.PNG
     else -> FileAsset("file/$this")
+}
+
+@OptIn(ExperimentalContracts::class)
+fun Int?.isGreaterThan(other: Int?): Boolean {
+    contract {
+        returns(true) implies (this@isGreaterThan != null)
+        returns(true) implies (other != null)
+    }
+
+    return this is Int && other is Int && this > other
 }

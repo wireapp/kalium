@@ -72,24 +72,13 @@ class MessageScope(
             messageSender
         )
 
-    val sendImageMessage: SendImageMessageUseCase
-        get() = SendImageMessageUseCaseImpl(
-            messageRepository,
-            clientRepository,
-            assetRepository,
-            userRepository,
-            messageSender,
-            kaliumFileSystem
-        )
-
     val sendAssetMessage: SendAssetMessageUseCase
         get() = SendAssetMessageUseCaseImpl(
             messageRepository,
             clientRepository,
             assetRepository,
             userRepository,
-            messageSender,
-            kaliumFileSystem
+            messageSender
         )
 
     val getAssetMessage: GetMessageAssetUseCase

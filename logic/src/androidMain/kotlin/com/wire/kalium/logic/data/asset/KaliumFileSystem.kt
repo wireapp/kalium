@@ -1,7 +1,6 @@
 package com.wire.kalium.logic.data.asset
 
 import com.wire.kalium.util.KaliumDispatcher
-import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 import okio.FileHandle
 import okio.FileMetadata
