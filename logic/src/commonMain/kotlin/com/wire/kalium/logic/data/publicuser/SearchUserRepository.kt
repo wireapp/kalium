@@ -124,8 +124,8 @@ class SearchUserRepositoryImpl(
 
     private suspend fun handleLocalSearchUsersOption(
         localSearchUserOptions: LocalSearchUserOptions,
-        excluded: suspend (searchQuery: String, conversationId: ConversationId) -> List<UserEntity>,
-        default: suspend (searchQuery: String) -> List<UserEntity>
+        excluded: suspend (conversationId: ConversationId) -> List<UserEntity>,
+        default: suspend () -> List<UserEntity>
     ): UserSearchResult {
         val result = when (val searchOptions = localSearchUserOptions.conversationExcluded) {
             ConversationMemberExcludedOptions.None -> default()
