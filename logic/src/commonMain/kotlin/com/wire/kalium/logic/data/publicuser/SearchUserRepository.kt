@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.publicuser
 
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserDataSource
@@ -17,6 +18,7 @@ import com.wire.kalium.network.api.user.details.ListUserRequest
 import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.network.api.user.details.qualifiedIds
 import com.wire.kalium.persistence.dao.ConnectionEntity
+import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
@@ -28,17 +30,42 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
 interface SearchUserRepository {
-    suspend fun searchKnownUsersByNameOrHandleOrEmail(searchQuery: String): UserSearchResult
-    suspend fun searchKnownUsersByHandle(handle: String): UserSearchResult
+
+    suspend fun searchKnownUsersByNameOrHandleOrEmail(
+        searchQuery: String,
+        searchUserOptions: SearchUserOptions = SearchUserOptions.Default
+    ): UserSearchResult
+
+    suspend fun searchKnownUsersByHandle(
+        handle: String,
+        searchUserOptions: SearchUserOptions = SearchUserOptions.Default
+    ): UserSearchResult
+
     suspend fun searchUserDirectory(
         searchQuery: String,
         domain: String,
-        maxResultSize: Int? = null
+        maxResultSize: Int? = null,
+        searchUserOptions: SearchUserOptions = SearchUserOptions.Default
     ): Either<NetworkFailure, UserSearchResult>
 
-    suspend fun searchKnownUsersNotPartOfConversationByNameOrHandleOrEmail(searchQuery: String): UserSearchResult
 }
 
+data class SearchUserOptions(
+    val conversationExcluded: ConversationMemberExcludedOptions,
+    val selfUserIncluded: Boolean
+) {
+    companion object {
+        val Default = SearchUserOptions(
+            conversationExcluded = ConversationMemberExcludedOptions.None,
+            selfUserIncluded = false
+        )
+    }
+}
+
+sealed class ConversationMemberExcludedOptions {
+    object None : ConversationMemberExcludedOptions()
+    data class ConversationExcluded(val conversationId: ConversationId) : ConversationMemberExcludedOptions()
+}
 
 @Suppress("LongParameterList")
 class SearchUserRepositoryImpl(
@@ -46,65 +73,71 @@ class SearchUserRepositoryImpl(
     private val metadataDAO: MetadataDAO,
     private val userSearchApi: UserSearchApi,
     private val userDetailsApi: UserDetailsApi,
+    private val conversationDAO: ConversationDAO,
     private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val userTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper()
 ) : SearchUserRepository {
 
-    override suspend fun searchKnownUsersByNameOrHandleOrEmail(searchQuery: String) =
-        UserSearchResult(
+    override suspend fun searchKnownUsersByNameOrHandleOrEmail(
+        searchQuery: String,
+        searchUserOptions: SearchUserOptions
+    ): UserSearchResult {
+        return UserSearchResult(
             result = userDAO.getUserByNameOrHandleOrEmailAndConnectionState(
                 searchQuery = searchQuery,
                 connectionState = ConnectionEntity.State.ACCEPTED
             ).map(publicUserMapper::fromDaoModelToPublicUser)
         )
+    }
 
-    override suspend fun searchKnownUsersByHandle(handle: String) =
+    override suspend fun searchKnownUsersByHandle(
+        handle: String,
+        searchUserOptions: SearchUserOptions
+    ): UserSearchResult {
         UserSearchResult(
             result = userDAO.getUserByHandleAndConnectionState(
                 handle = handle,
                 connectionState = ConnectionEntity.State.ACCEPTED
             ).map(publicUserMapper::fromDaoModelToPublicUser)
         )
+    }
 
-    //TODO: We can pass the selfUser.teamId as a parameter to this function,
-    // and the UseCase can figure it out by using the UserRepository(?).
     override suspend fun searchUserDirectory(
         searchQuery: String,
         domain: String,
-        maxResultSize: Int?
-    ): Either<NetworkFailure, UserSearchResult> = wrapApiRequest {
-        userSearchApi.search(
-            UserSearchRequest(
-                searchQuery = searchQuery,
-                domain = domain,
-                maxResultSize = maxResultSize
-            )
-        )
-    }.flatMap { contactResultValue ->
+        maxResultSize: Int?,
+        searchUserOptions: SearchUserOptions
+    ): Either<NetworkFailure, UserSearchResult> =
         wrapApiRequest {
-            userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(contactResultValue.documents.map { it.qualifiedID }))
-        }.map { userDetailsResponses ->
-            UserSearchResult(userDetailsResponses.map { userProfileDTO ->
-                publicUserMapper.fromUserDetailResponseWithUsertype(
-                    userDetailResponse = userProfileDTO,
-                    userType = userTypeMapper.fromOtherUserTeamAndDomain(
-                        otherUserDomain = userProfileDTO.id.domain,
-                        selfUserTeamId = getSelfUser().teamId,
-                        otherUserTeamId = userProfileDTO.teamId
-                    )
+            userSearchApi.search(
+                UserSearchRequest(
+                    searchQuery = searchQuery,
+                    domain = domain,
+                    maxResultSize = maxResultSize
                 )
-            })
-        }
-    }
+            )
+        }.flatMap { contactResultValue ->
+            //filter here
+            contactResultValue.documents.filter {
 
-    override suspend fun searchKnownUsersNotPartOfConversationByNameOrHandleOrEmail(searchQuery: String) =
-        UserSearchResult(
-            result = userDAO.getUserByNameOrHandleOrEmailAndConnectionState(
-                searchQuery = searchQuery,
-                connectionState = ConnectionEntity.State.ACCEPTED
-            ).map(publicUserMapper::fromDaoModelToPublicUser)
-        )
+            }
+
+            wrapApiRequest {
+                userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(contactResultValue.documents.map { it.qualifiedID }))
+            }.map { userDetailsResponses ->
+                UserSearchResult(userDetailsResponses.map { userProfileDTO ->
+                    publicUserMapper.fromUserDetailResponseWithUsertype(
+                        userDetailResponse = userProfileDTO,
+                        userType = userTypeMapper.fromOtherUserTeamAndDomain(
+                            otherUserDomain = userProfileDTO.id.domain,
+                            selfUserTeamId = getSelfUser().teamId,
+                            otherUserTeamId = userProfileDTO.teamId
+                        )
+                    )
+                })
+            }
+        }
 
     //TODO: code duplication here for getting self user, the same is done inside
     // UserRepository, what would be best ?
