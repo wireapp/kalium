@@ -35,6 +35,8 @@ interface SearchUserRepository {
         domain: String,
         maxResultSize: Int? = null
     ): Either<NetworkFailure, UserSearchResult>
+
+    suspend fun searchKnownUsersNotPartOfConversationByNameOrHandleOrEmail(searchQuery: String): UserSearchResult
 }
 
 @Suppress("LongParameterList")
@@ -94,6 +96,14 @@ class SearchUserRepositoryImpl(
             })
         }
     }
+
+    override suspend fun searchKnownUsersNotPartOfConversationByNameOrHandleOrEmail(searchQuery: String) =
+        UserSearchResult(
+            result = userDAO.getUserByNameOrHandleOrEmailAndConnectionState(
+                searchQuery = searchQuery,
+                connectionState = ConnectionEntity.State.ACCEPTED
+            ).map(publicUserMapper::fromDaoModelToPublicUser)
+        )
 
     //TODO: code duplication here for getting self user, the same is done inside
     // UserRepository, what would be best ?
