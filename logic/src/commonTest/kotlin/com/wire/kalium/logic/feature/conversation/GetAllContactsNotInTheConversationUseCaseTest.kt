@@ -92,7 +92,7 @@ class GetAllContactsNotInTheConversationUseCaseTest {
 
         fun withSuccessFullGetUsersNotPartOfConversation(allContacts: List<OtherUser> = mockAllContacts): Arrangement {
             given(userRepository)
-                .suspendFunction(userRepository::getUsersNotPartOfTheConversation)
+                .suspendFunction(userRepository::getAllContactsNotPartOfConversation)
                 .whenInvokedWith(anything())
                 .thenReturn(
                     Either.Right(
@@ -104,7 +104,7 @@ class GetAllContactsNotInTheConversationUseCaseTest {
 
         fun withFailureGetUsersNotPartOfConversation(): Arrangement {
             given(userRepository)
-                .suspendFunction(userRepository::getUsersNotPartOfTheConversation)
+                .suspendFunction(userRepository::getAllContactsNotPartOfConversation)
                 .whenInvokedWith(anything())
                 .thenReturn(
                     Either.Left(StorageFailure.DataNotFound)

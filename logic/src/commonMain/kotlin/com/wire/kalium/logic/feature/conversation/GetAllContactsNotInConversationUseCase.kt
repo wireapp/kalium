@@ -10,7 +10,8 @@ class GetAllContactsNotInConversationUseCase(
     private val userRepository: UserRepository
 ) {
     suspend operator fun invoke(conversationId: QualifiedID) =
-        userRepository.getUsersNotPartOfTheConversation(conversationId)
+        userRepository
+            .getContacts(conversationId)
             .fold({ Result.Failure(it) }, { Result.Success(it) })
 
 }

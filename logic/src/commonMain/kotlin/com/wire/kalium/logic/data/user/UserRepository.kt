@@ -48,11 +48,11 @@ interface UserRepository {
     suspend fun getSelfUser(): SelfUser?
     suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit>
     suspend fun updateLocalSelfUserHandle(handle: String)
-    suspend fun getAllContacts(): Either<StorageFailure, List<OtherUser>>
+    suspend fun getContacts(conversationMembersExcludedId: ConversationId? = null): Either<StorageFailure, List<OtherUser>>
     suspend fun getKnownUser(userId: UserId): Flow<OtherUser?>
     suspend fun getUserInfo(userId: UserId): Either<CoreFailure, OtherUser>
     suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus)
-    suspend fun getUsersNotPartOfTheConversation(conversationId: ConversationId): Either<StorageFailure, List<OtherUser>>
+    suspend fun getAllContactsNotPartOfConversation(conversationId: ConversationId): Either<StorageFailure, List<OtherUser>>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -156,13 +156,18 @@ class UserDataSource(
     override suspend fun updateLocalSelfUserHandle(handle: String) =
         userDAO.updateUserHandle(getSelfUserIDEntity(), handle)
 
-    override suspend fun getAllContacts(): Either<StorageFailure, List<OtherUser>> {
+    override suspend fun getContacts(conversationMembersExcludedId: ConversationId?): Either<StorageFailure, List<OtherUser>> {
         return wrapStorageRequest {
             val selfUserId = getSelfUserIDEntity()
 
-            userDAO.getAllUsersByConnectionStatus(connectionState = ConnectionEntity.State.ACCEPTED)
-                .filter { it.id != selfUserId }
+            conversationMembersExcludedId.let { conversationId ->
+                if (conversationId == null)
+                    userDAO.getAllUsersByConnectionStatus(connectionState = ConnectionEntity.State.ACCEPTED)
+                else
+                    userDAO.getUsersNotPartOfConversation(idMapper.toDaoModel(conversationId))
+            }.filter { it.id != selfUserId }
                 .map { userEntity -> publicUserMapper.fromDaoModelToPublicUser(userEntity) }
+
         }
     }
 
@@ -186,7 +191,7 @@ class UserDataSource(
         userDAO.updateUserAvailabilityStatus(getSelfUserIDEntity(), availabilityStatusMapper.fromModelAvailabilityStatusToDao(status))
     }
 
-    override suspend fun getUsersNotPartOfTheConversation(conversationId: ConversationId): Either<StorageFailure, List<OtherUser>> {
+    override suspend fun getAllContactsNotPartOfConversation(conversationId: ConversationId): Either<StorageFailure, List<OtherUser>> {
         return wrapStorageRequest {
             userDAO.getUsersNotPartOfConversation(idMapper.toDaoModel(conversationId))
                 .map { publicUserMapper.fromDaoModelToPublicUser(it) }

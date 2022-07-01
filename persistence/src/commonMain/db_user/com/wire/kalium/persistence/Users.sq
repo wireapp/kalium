@@ -97,4 +97,6 @@ updateUserAvailabilityStatus:
 UPDATE User SET user_availability_status = ? WHERE qualified_id = ?;
 
 getUsersNotPartOfTheConversation:
-SELECT * FROM User WHERE NOT EXISTS (SELECT user FROM Member WHERE conversation == ?);
+SELECT * FROM User
+ WHERE NOT EXISTS (SELECT user FROM Member WHERE conversation == ?)
+ AND connection_status = "ACCEPTED";
