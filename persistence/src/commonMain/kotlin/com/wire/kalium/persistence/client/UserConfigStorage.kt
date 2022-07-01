@@ -56,7 +56,7 @@ class UserConfigStorageImpl(private val kaliumPreferences: KaliumPreferences) : 
     }
 
     override fun isLoggingEnables(): Boolean =
-        kaliumPreferences.getBoolean(ENABLE_LOGGING)
+        kaliumPreferences.getBoolean(ENABLE_LOGGING, true)
 
     override fun persistFileSharingStatus(status: Boolean, isStatusChanged: Boolean?) {
         kaliumPreferences.putSerializable(

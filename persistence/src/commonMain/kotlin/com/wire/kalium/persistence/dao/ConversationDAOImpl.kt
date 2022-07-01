@@ -8,6 +8,7 @@ import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.UsersQueries
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import com.wire.kalium.persistence.Conversation as SQLDelightConversation
 import com.wire.kalium.persistence.Member as SQLDelightMember
@@ -24,6 +25,7 @@ private class ConversationMapper {
                     conversation.mls_group_id ?: "",
                     conversation.mls_group_state
                 )
+
                 ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
             },
             mutedStatus = conversation.muted_status,
@@ -143,6 +145,9 @@ class ConversationDAOImpl(
             .map { it?.let { conversationMapper.toModel(it) } }
     }
 
+    override suspend fun getConversationIdByGroupID(groupID: String) =
+        conversationQueries.getConversationIdByGroupId(groupID).executeAsOne()
+
     override suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity) {
         conversationQueries.deleteConversation(qualifiedID)
     }
@@ -160,6 +165,12 @@ class ConversationDAOImpl(
                 userQueries.insertOrIgnoreUserId(member.user)
                 memberQueries.insertMember(member.user, conversationID)
             }
+        }
+    }
+
+    override suspend fun insertMembers(memberList: List<Member>, groupId: String) {
+        getConversationByGroupID(groupId).firstOrNull()?.let {
+            insertMembers(memberList, it.id)
         }
     }
 
