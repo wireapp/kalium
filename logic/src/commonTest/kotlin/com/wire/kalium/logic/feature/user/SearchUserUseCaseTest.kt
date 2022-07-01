@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
@@ -37,16 +38,24 @@ class SearchUserUseCaseTest {
     @Mock
     private val userRepository = mock(classOf<UserRepository>())
 
+    @Mock
+    private val connectionRepository = mock(classOf<ConnectionRepository>())
+
     private lateinit var searchUsersUseCase: SearchUsersUseCase
 
     @BeforeTest
     fun setUp() {
-        searchUsersUseCase = SearchUsersUseCaseImpl(userRepository, searchUserRepository)
+        searchUsersUseCase = SearchUsersUseCaseImpl(userRepository, searchUserRepository, connectionRepository)
 
         given(userRepository)
             .suspendFunction(userRepository::observeSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
+
+        given(connectionRepository)
+            .suspendFunction(connectionRepository::getConnectionRequests)
+            .whenInvoked()
+            .thenReturn(listOf())
     }
 
     @Test
