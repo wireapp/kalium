@@ -22,6 +22,8 @@ class ConversationMembersExcludedSearchUseCase(
         else -> result
     }
 
+    // we need to exclude the conversation members from the search
+    // as the back-end does not have an API that can do it for us
     private suspend fun removeConversationMembersFromSearchResult(
         userSearchResult: UserSearchResult,
         conversationId: ConversationId

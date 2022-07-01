@@ -14,10 +14,10 @@ interface SearchKnownUsersUseCase {
 internal class SearchKnownUsersUseCaseImpl(
     private val searchUserRepository: SearchUserRepository,
     private val userRepository: UserRepository,
-) : SearchUsersUseCase {
+) : SearchKnownUsersUseCase {
 
     //TODO:handle failure
-    override suspend fun invoke(searchQuery: String, maxResultSize: Int?): Result {
+    override suspend fun invoke(searchQuery: String): Result {
         val searchResult = if (isUserLookingForHandle(searchQuery)) {
             searchUserRepository.searchKnownUsersByHandle(searchQuery)
         } else {
