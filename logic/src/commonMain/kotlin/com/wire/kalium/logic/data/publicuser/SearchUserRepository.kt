@@ -39,6 +39,7 @@ interface SearchUserRepository {
     suspend fun searchKnownUsersNotPartOfConversationByNameOrHandleOrEmail(searchQuery: String): UserSearchResult
 }
 
+
 @Suppress("LongParameterList")
 class SearchUserRepositoryImpl(
     private val userDAO: UserDAO,

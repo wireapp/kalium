@@ -18,6 +18,7 @@ internal class SearchKnownUsersUseCaseImpl(
 
     //TODO:handle failure
     override suspend fun invoke(searchQuery: String): Result {
+        // this logic needs to be reused
         val searchResult = if (isUserLookingForHandle(searchQuery)) {
             searchUserRepository.searchKnownUsersByHandle(searchQuery)
         } else {
