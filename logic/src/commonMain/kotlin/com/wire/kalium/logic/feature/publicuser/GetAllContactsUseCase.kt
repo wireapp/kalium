@@ -11,6 +11,6 @@ interface GetAllContactsUseCase {
 
 class GetAllContactsUseCaseImpl(private val userRepository: UserRepository) : GetAllContactsUseCase {
 
-    override suspend fun invoke(): Either<StorageFailure, List<OtherUser>> = userRepository.getContacts()
+    override suspend fun invoke(): Either<StorageFailure, List<OtherUser>> = userRepository.getKnownUsers()
 
 }

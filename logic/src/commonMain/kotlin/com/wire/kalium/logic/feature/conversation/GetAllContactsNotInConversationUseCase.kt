@@ -11,7 +11,7 @@ class GetAllContactsNotInConversationUseCase(
 ) {
     suspend operator fun invoke(conversationId: QualifiedID) =
         userRepository
-            .getContacts(conversationId)
+            .getKnownUsers(conversationId)
             .fold({ Result.Failure(it) }, { Result.Success(it) })
 
 }

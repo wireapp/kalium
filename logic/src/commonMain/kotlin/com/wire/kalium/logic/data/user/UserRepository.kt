@@ -48,7 +48,7 @@ interface UserRepository {
     suspend fun getSelfUser(): SelfUser?
     suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit>
     suspend fun updateLocalSelfUserHandle(handle: String)
-    suspend fun getContacts(conversationMembersExcludedId: ConversationId? = null): Either<StorageFailure, List<OtherUser>>
+    suspend fun getKnownUsers(conversationMembersExcludedId: ConversationId? = null): Either<StorageFailure, List<OtherUser>>
     suspend fun getKnownUser(userId: UserId): Flow<OtherUser?>
     suspend fun getUserInfo(userId: UserId): Either<CoreFailure, OtherUser>
     suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus)
@@ -156,7 +156,7 @@ class UserDataSource(
     override suspend fun updateLocalSelfUserHandle(handle: String) =
         userDAO.updateUserHandle(getSelfUserIDEntity(), handle)
 
-    override suspend fun getContacts(conversationMembersExcludedId: ConversationId?): Either<StorageFailure, List<OtherUser>> {
+    override suspend fun getKnownUsers(conversationMembersExcludedId: ConversationId?): Either<StorageFailure, List<OtherUser>> {
         return wrapStorageRequest {
             val selfUserId = getSelfUserIDEntity()
 
