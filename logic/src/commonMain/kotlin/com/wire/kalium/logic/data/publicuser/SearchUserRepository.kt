@@ -2,6 +2,7 @@ package com.wire.kalium.logic.data.publicuser
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserDataSource
@@ -87,7 +88,8 @@ class SearchUserRepositoryImpl(
     private val conversationDAO: ConversationDAO,
     private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
-    private val userTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper()
+    private val userTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper(),
+    private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : SearchUserRepository {
 
     override suspend fun searchKnownUsersByNameOrHandleOrEmail(
@@ -96,7 +98,12 @@ class SearchUserRepositoryImpl(
     ): UserSearchResult {
         return handleLocalSearchUsersOption(
             localSearchUserOptions,
-            excluded = { conversationId -> userDAO.getUsersNotInConversationByNameOrHandleOrEmail(conversationId, searchQuery) },
+            excluded = { conversationId ->
+                userDAO.getUsersNotInConversationByNameOrHandleOrEmail(
+                    conversationId = idMapper.toDaoModel(conversationId),
+                    searchQuery = searchQuery
+                )
+            },
             default = {
                 userDAO.getUserByNameOrHandleOrEmailAndConnectionState(
                     searchQuery = searchQuery,
@@ -112,7 +119,12 @@ class SearchUserRepositoryImpl(
     ): UserSearchResult {
         return handleLocalSearchUsersOption(
             localSearchUserOptions,
-            excluded = { conversationId -> userDAO.getUsersNotInConversationByHandle(conversationId, handle) },
+            excluded = { conversationId ->
+                userDAO.getUsersNotInConversationByHandle(
+                    conversationId = idMapper.toDaoModel(conversationId),
+                    handle = handle
+                )
+            },
             default = {
                 userDAO.getUserByHandleAndConnectionState(
                     handle = handle,
@@ -150,10 +162,14 @@ class SearchUserRepositoryImpl(
                 )
             )
         }.flatMap { contactResultValue ->
-
-            contactResultValue.documents.filter {
-
+            contactResultValue.documents.let { contactsDTOs ->
+                contactsDTOs.
             }
+
+//            conversationRepository.getConversationMembers(conversationId).map { conversationMembers ->
+//                userSearchResult.copy(
+//                    result = userSearchResult.result.filter { conversationMember -> !conversationMembers.contains(conversationMember.id) }
+//                )
 
             wrapApiRequest {
                 userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(contactResultValue.documents.map { it.qualifiedID }))
