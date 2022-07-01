@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.LegalHoldStatus
 import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
+import com.wire.kalium.logic.data.conversation.ProtocolInfo
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.user.ConnectionState
@@ -98,6 +99,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
             name = null,
             type = Conversation.Type.ONE_ON_ONE,
             teamId = null,
+            ProtocolInfo.Proteus,
             MutedConversationStatus.AllAllowed,
             null,
             null
