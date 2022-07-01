@@ -84,7 +84,7 @@ internal class CallDataSource(
 
     override fun incomingCallsFlow(): Flow<List<Call>> = allCalls.map {
         it.calls.values.filter { call ->
-            call.status == CallStatus.INCOMING && call.participants.isEmpty()
+            call.status == CallStatus.INCOMING
         }
     }
 
