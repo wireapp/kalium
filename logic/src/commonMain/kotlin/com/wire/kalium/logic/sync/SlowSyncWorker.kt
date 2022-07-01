@@ -19,7 +19,7 @@ class SlowSyncWorker(
 
         val result = try{
             // todo : to move the feature configs call outside the sync
-            userSessionScope.getRemoteFeatureConfigsStatusAndPersist()
+            userSessionScope.syncFeatureConfigsUseCase
             userSessionScope.users.syncSelfUser()
                 .flatMap { userSessionScope.conversations.syncConversations() }
                 .flatMap { userSessionScope.connection.syncConnections() }

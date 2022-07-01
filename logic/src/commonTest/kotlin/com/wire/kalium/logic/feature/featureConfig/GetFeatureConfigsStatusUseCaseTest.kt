@@ -1,7 +1,7 @@
 package com.wire.kalium.logic.feature.featureConfig
 
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.configuration.FileSharingEntity
+import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.AppLockConfigModel
 import com.wire.kalium.logic.data.featureConfig.AppLockModel
@@ -119,8 +119,8 @@ class GetFeatureConfigsStatusUseCaseTest {
         @Mock
         val isFileSharingEnabledUseCase = mock(classOf<IsFileSharingEnabledUseCase>())
 
-        val getFeatureConfigsStatusUseCase =
-            GetFeatureConfigStatusUseCaseImpl(
+        val syncFeatureConfigsUseCase =
+            SyncFeatureConfigsUseCaseImpl(
                 userConfigRepository, featureConfigRepository,
                 isFileSharingEnabledUseCase, kaliumConfigs
             )
@@ -130,7 +130,7 @@ class GetFeatureConfigsStatusUseCaseTest {
 
             given(isFileSharingEnabledUseCase)
                 .function(isFileSharingEnabledUseCase::invoke)
-                .whenInvoked().thenReturn(FileSharingEntity(true, null))
+                .whenInvoked().thenReturn(FileSharingStatus(true, null))
             given(userConfigRepository)
                 .function(userConfigRepository::setFileSharingStatus)
                 .whenInvokedWith(any(), any())
@@ -157,6 +157,6 @@ class GetFeatureConfigsStatusUseCaseTest {
             return this
         }
 
-        fun arrange() = this to getFeatureConfigsStatusUseCase
+        fun arrange() = this to syncFeatureConfigsUseCase
     }
 }

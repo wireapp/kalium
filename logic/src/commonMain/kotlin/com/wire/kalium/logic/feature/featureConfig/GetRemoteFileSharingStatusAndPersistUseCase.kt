@@ -15,16 +15,16 @@ import com.wire.kalium.network.exceptions.isNoTeam
  * This use case is to get the file sharing status of the team management settings from the server and
  * save it in the local storage (in Android case is shared preference)
  */
-internal interface GetRemoteFeatureConfigStatusAndPersistUseCase {
+internal interface SyncFeatureConfigsUseCase {
     suspend operator fun invoke()
 }
 
-internal class GetFeatureConfigStatusUseCaseImpl(
+internal class SyncFeatureConfigsUseCaseImpl(
     private val userConfigRepository: UserConfigRepository,
     private val featureConfigRepository: FeatureConfigRepository,
     private val isFileSharingEnabledUseCase: IsFileSharingEnabledUseCase,
     private val kaliumConfigs: KaliumConfigs
-) : GetRemoteFeatureConfigStatusAndPersistUseCase {
+) : SyncFeatureConfigsUseCase {
     override suspend operator fun invoke() {
         featureConfigRepository.getFeatureConfigs().fold({
             mapFeatureConfigFailure(it)

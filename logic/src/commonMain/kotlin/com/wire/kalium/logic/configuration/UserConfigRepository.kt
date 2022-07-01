@@ -8,7 +8,6 @@ import com.wire.kalium.persistence.client.UserConfigStorage
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-data class FileSharingEntity(val isFileSharingEnabled: Boolean?, val isStatusChanged: Boolean?)
 
 interface UserConfigRepository {
 
@@ -16,8 +15,8 @@ interface UserConfigRepository {
     fun isLoggingEnabled(): Either<StorageFailure, Boolean>
 
     fun setFileSharingStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit>
-    fun isFileSharingEnabled(): Either<StorageFailure, FileSharingEntity>
-    fun isFileSharingEnabledFlow(): Flow<Either<StorageFailure, FileSharingEntity>>
+    fun isFileSharingEnabled(): Either<StorageFailure, FileSharingStatus>
+    fun isFileSharingEnabledFlow(): Flow<Either<StorageFailure, FileSharingStatus>>
 
 }
 
@@ -33,17 +32,17 @@ class UserConfigDataSource(
     override fun setFileSharingStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigStorage.persistFileSharingStatus(status, isStatusChanged) }
 
-    override fun isFileSharingEnabled(): Either<StorageFailure, FileSharingEntity> =
+    override fun isFileSharingEnabled(): Either<StorageFailure, FileSharingStatus> =
         wrapStorageRequest { userConfigStorage.isFileSharingEnabled() }.map {
-            with(it) { FileSharingEntity(status, isStatusChanged) }
+            with(it) { FileSharingStatus(status, isStatusChanged) }
         }
 
-    override fun isFileSharingEnabledFlow(): Flow<Either<StorageFailure, FileSharingEntity>> =
+    override fun isFileSharingEnabledFlow(): Flow<Either<StorageFailure, FileSharingStatus>> =
         userConfigStorage.isFileSharingEnabledFlow()
             .wrapStorageRequest()
             .map {
                 it.map { isFileSharingEnabledEntity ->
-                    FileSharingEntity(
+                    FileSharingStatus(
                         isFileSharingEnabledEntity.status,
                         isFileSharingEnabledEntity.isStatusChanged
                     )

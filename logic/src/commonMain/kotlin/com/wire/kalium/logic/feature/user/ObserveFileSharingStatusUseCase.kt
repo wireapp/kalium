@@ -1,9 +1,10 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.configuration.FileSharingEntity
+import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -13,20 +14,22 @@ import kotlinx.coroutines.flow.map
  * so we can use it to show and hide things on the screen
  */
 
-interface FileSharingStatusFlowUseCase {
-    operator fun invoke(): Flow<FileSharingEntity>
+interface ObserveFileSharingStatusUseCase {
+    operator fun invoke(): Flow<FileSharingStatus>
 }
 
-class FileSharingStatusFlowUseCaseImpl(private val userConfigRepository: UserConfigRepository) : FileSharingStatusFlowUseCase {
-    override operator fun invoke(): Flow<FileSharingEntity> =
+class ObserveFileSharingStatusUseCaseImpl(private val userConfigRepository: UserConfigRepository) : ObserveFileSharingStatusUseCase {
+    override operator fun invoke(): Flow<FileSharingStatus> =
         userConfigRepository.isFileSharingEnabledFlow().map { fileSharingStatusFlow ->
             fileSharingStatusFlow.fold({
                 when (it) {
                     StorageFailure.DataNotFound -> {
-                        FileSharingEntity(null, null)
+                        kaliumLogger.e("Data not found in ObserveFileSharingStatusUseCase")
+                        FileSharingStatus(null, null)
                     }
                     is StorageFailure.Generic -> {
-                        FileSharingEntity(null, null)
+                        kaliumLogger.e("Storage Error : ${it.rootCause} in ObserveFileSharingStatusUseCase", it.rootCause)
+                        FileSharingStatus(null, null)
                     }
                 }
             }, {
