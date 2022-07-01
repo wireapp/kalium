@@ -2,14 +2,14 @@ package com.wire.kalium.logic.feature.publicuser.search
 
 import com.wire.kalium.logic.data.id.FEDERATION_REGEX
 import com.wire.kalium.logic.data.id.parseIntoQualifiedID
-import com.wire.kalium.logic.data.publicuser.SearchUserOptions
+import com.wire.kalium.logic.data.publicuser.LocalSearchUserOptions
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.UserRepository
 
 
 interface SearchKnownUsersUseCase {
-    suspend operator fun invoke(searchQuery: String, searchUserOptions: SearchUserOptions = SearchUserOptions.Default): Result
+    suspend operator fun invoke(searchQuery: String, localSearchUserOptions: LocalSearchUserOptions = LocalSearchUserOptions.Default): Result
 }
 
 internal class SearchKnownUsersUseCaseImpl(
@@ -18,18 +18,21 @@ internal class SearchKnownUsersUseCaseImpl(
 ) : SearchKnownUsersUseCase {
 
     //TODO:handle failure
-    override suspend fun invoke(searchQuery: String, searchUserOptions: SearchUserOptions): Result {
+    override suspend fun invoke(
+        searchQuery: String,
+        localSearchUserOptions: LocalSearchUserOptions
+    ): Result {
         val searchResult = if (isUserLookingForHandle(searchQuery)) {
             searchUserRepository.searchKnownUsersByHandle(
                 handle = searchQuery,
-                searchUserOptions = searchUserOptions
+                localSearchUserOptions = localSearchUserOptions
             )
         } else {
             searchUserRepository.searchKnownUsersByNameOrHandleOrEmail(
                 searchQuery = if (searchQuery.matches(FEDERATION_REGEX))
                     searchQuery.parseIntoQualifiedID().value
                 else searchQuery,
-                searchUserOptions = searchUserOptions
+                localSearchUserOptions = localSearchUserOptions
             )
         }
 
