@@ -141,7 +141,7 @@ class ConversationEventReceiverImpl(
     ) = when (val protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)) {
         is ProtoContent.Readable -> Either.Right(protoContent)
         is ProtoContent.ExternalMessageInstructions -> event.encryptedExternalContent?.let {
-            kaliumLogger.v("Solving external content '$protoContent', EncryptedData='$it'")
+            kaliumLogger.d("Solving external content '$protoContent', EncryptedData='$it'")
             solveExternalContentForProteusMessage(protoContent, event.encryptedExternalContent)
         } ?: run {
             val rootCause = IllegalArgumentException("Null external content when processing external message instructions.")
@@ -153,7 +153,9 @@ class ConversationEventReceiverImpl(
         externalInstructions: ProtoContent.ExternalMessageInstructions,
         externalData: EncryptedData
     ): Either<CoreFailure, ProtoContent.Readable> = wrapCryptoRequest {
-        PlainMessageBlob(decryptDataWithAES256(externalData, AES256Key(externalInstructions.otrKey)).data)
+        val decryptedExternalMessage = decryptDataWithAES256(externalData, AES256Key(externalInstructions.otrKey)).data
+        kaliumLogger.d("ExternalMessage - Decrypted external message content: '$decryptedExternalMessage'")
+        PlainMessageBlob(decryptedExternalMessage)
     }.map(protoContentMapper::decodeFromProtobuf).flatMap { decodedProtobuf ->
         if (decodedProtobuf !is ProtoContent.Readable) {
             val rootCause = IllegalArgumentException("матрёшка! External message can't contain another external message inside!")
