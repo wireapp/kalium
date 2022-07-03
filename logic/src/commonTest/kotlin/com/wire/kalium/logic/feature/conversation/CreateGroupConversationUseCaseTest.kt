@@ -33,7 +33,7 @@ class CreateGroupConversationUseCaseTest {
 
         val (arrangement, createGroupConversation) = Arrangement()
             .withUpdateConversationModifiedDateSucceeding()
-            .withCreateGroupConversationReturning(TestConversation.GROUP)
+            .withCreateGroupConversationReturning(TestConversation.GROUP())
             .arrange()
 
         createGroupConversation(name, members, conversationOptions)
@@ -52,7 +52,7 @@ class CreateGroupConversationUseCaseTest {
 
         val (arrangement, createGroupConversation) = Arrangement()
             .withUpdateConversationModifiedDateSucceeding()
-            .withCreateGroupConversationReturning(TestConversation.GROUP)
+            .withCreateGroupConversationReturning(TestConversation.GROUP())
             .arrange()
 
         createGroupConversation(name, members, conversationOptions)

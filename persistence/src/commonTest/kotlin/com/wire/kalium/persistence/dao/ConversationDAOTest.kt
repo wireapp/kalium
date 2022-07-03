@@ -67,6 +67,14 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenExistingMLSConversation_ThenConversationIdCanBeRetrievedByGroupID() = runTest {
+        conversationDAO.insertConversation(conversationEntity2)
+        val result =
+            conversationDAO.getConversationIdByGroupID((conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId)
+        assertEquals(conversationEntity2.id, result)
+    }
+
+    @Test
     fun givenExistingConversation_ThenConversationGroupStateCanBeUpdated() = runTest {
         conversationDAO.insertConversation(conversationEntity2)
         conversationDAO.updateConversationGroupState(
@@ -111,6 +119,17 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertMembers(listOf(member1, member2), conversationEntity1.id)
 
         assertEquals(setOf(member1, member2), conversationDAO.getAllMembers(conversationEntity1.id).first().toSet())
+    }
+
+    @Test
+    fun givenExistingMLSConversation_whenAddingMembersByGroupId_ThenAllMembersCanBeRetrieved() = runTest {
+        conversationDAO.insertConversation(conversationEntity2)
+        conversationDAO.insertMembers(
+            listOf(member1, member2),
+            (conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+        )
+
+        assertEquals(setOf(member1, member2), conversationDAO.getAllMembers(conversationEntity2.id).first().toSet())
     }
 
     @Test

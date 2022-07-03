@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
+import com.wire.kalium.logic.data.conversation.ProtocolInfo
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.AssetContent
@@ -436,6 +437,7 @@ class GetNotificationsUseCaseTest {
             "conversation_${number}",
             if (isOneOnOne) Conversation.Type.ONE_ON_ONE else Conversation.Type.GROUP,
             null,
+            ProtocolInfo.Proteus,
             mutedStatus,
             TIME_EARLIER,
             TIME_EARLIER

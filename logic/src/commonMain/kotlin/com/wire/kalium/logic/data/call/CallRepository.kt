@@ -36,7 +36,14 @@ interface CallRepository {
     fun incomingCallsFlow(): Flow<List<Call>>
     fun ongoingCallsFlow(): Flow<List<Call>>
     fun establishedCallsFlow(): Flow<List<Call>>
-    suspend fun createCall(conversationId: ConversationId, status: CallStatus, callerId: String, isMuted: Boolean, isCameraOn: Boolean)
+    suspend fun createCall(
+        conversationId: ConversationId,
+        status: CallStatus,
+        callerId: String,
+        isMuted: Boolean,
+        isCameraOn: Boolean
+    )
+
     suspend fun updateCallStatusById(conversationId: String, status: CallStatus)
     fun updateIsMutedById(conversationId: String, isMuted: Boolean)
     fun updateIsCameraOnById(conversationId: String, isCameraOn: Boolean)

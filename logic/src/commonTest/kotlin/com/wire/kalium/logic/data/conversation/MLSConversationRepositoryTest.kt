@@ -20,6 +20,7 @@ import io.mockative.anyInstanceOf
 import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.eq
+import io.mockative.fun2
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
@@ -178,6 +179,62 @@ class MLSConversationRepositoryTest {
             .with(anyInstanceOf(ByteArray::class))
             .wasInvoked(once)
     }
+
+    @Test
+    fun givenAnMLSConversationAndAPISucceeds_whenAddingMembersToConversation_thenShouldSucceed() = runTest {
+        given(keyPackageRepository)
+            .suspendFunction(keyPackageRepository::claimKeyPackages)
+            .whenInvokedWith(anything())
+            .then { Either.Right(listOf(KEY_PACKAGE)) }
+
+        given(mlsClientProvider)
+            .function(mlsClientProvider::getMLSClient)
+            .whenInvokedWith(anything())
+            .then { Either.Right(MLS_CLIENT) }
+
+        given(MLS_CLIENT)
+            .function(MLS_CLIENT::addMember)
+            .whenInvokedWith(anything(), anything())
+            .thenReturn(Pair(HANDSHAKE, WELCOME))
+
+        given(mlsMessageApi)
+            .suspendFunction(mlsMessageApi::sendWelcomeMessage)
+            .whenInvokedWith(anything())
+            .then { NetworkResponse.Success(Unit, emptyMap(), 201) }
+
+        given(mlsMessageApi)
+            .suspendFunction(mlsMessageApi::sendMessage)
+            .whenInvokedWith(anything())
+            .then { NetworkResponse.Success(Unit, emptyMap(), 201) }
+
+
+        given(conversationDAO)
+            .suspendFunction(conversationDAO::insertMembers, fun2<List<Member>, String>())
+            .whenInvokedWith(anything(), anything())
+            .thenDoNothing()
+
+
+        val result = mlsConversationRepository.addMemberToMLSGroup(GROUP_ID, listOf(TestConversation.USER_ID1))
+
+        result.shouldSucceed()
+
+        verify(MLS_CLIENT)
+            .function(MLS_CLIENT::addMember)
+            .with(eq(GROUP_ID), anything())
+            .wasInvoked(once)
+
+        verify(mlsMessageApi).coroutine { sendWelcomeMessage(MLSMessageApi.WelcomeMessage(WELCOME)) }
+            .wasInvoked(once)
+
+        verify(mlsMessageApi).coroutine { sendMessage(MLSMessageApi.Message(HANDSHAKE)) }
+            .wasInvoked(once)
+
+        verify(conversationDAO)
+            .suspendFunction(conversationDAO::insertMembers, fun2<List<Member>, String>())
+            .with(anything(), anything())
+            .wasInvoked(exactly = once)
+    }
+
 
     private companion object {
         val GROUP_ID = "groupId"

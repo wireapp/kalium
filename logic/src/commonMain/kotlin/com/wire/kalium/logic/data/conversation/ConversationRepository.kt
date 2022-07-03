@@ -23,6 +23,8 @@ import com.wire.kalium.logic.functional.onlyRight
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.network.api.conversation.AddParticipantRequest
+import com.wire.kalium.network.api.conversation.AddParticipantResponse
 import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.user.client.ClientApi
@@ -49,10 +51,12 @@ interface ConversationRepository {
     suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun fetchConversationIfUnknown(conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun getConversationDetails(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation>>
+    suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation>
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
     suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, ProtocolInfo>
     suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Member>>
     suspend fun persistMembers(members: List<Member>, conversationID: ConversationId): Either<CoreFailure, Unit>
+    suspend fun addMembers(members: List<Member>, conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun deleteMember(userID: QualifiedIDEntity, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun deleteMembers(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun getOneToOneConversationDetailsByUserId(otherUserId: UserId): Either<CoreFailure, ConversationDetails.OneOne>
@@ -228,11 +232,18 @@ class ConversationDataSource(
     }
 
     //Deprecated notice, so we can use newer versions of Kalium on Reloaded without breaking things.
-    @Deprecated("This doesn't return conversation details", ReplaceWith("getConversationDetailsById"))
+    @Deprecated("This doesn't return conversation details", ReplaceWith("detailsById"))
     override suspend fun getConversationDetails(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation>> =
         wrapStorageRequest {
             conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationId)).filterNotNull()
                 .map(conversationMapper::fromDaoModel)
+        }
+
+    override suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation> =
+        wrapStorageRequest {
+            conversationDAO.getConversationByQualifiedID(idMapper.toDaoModel(conversationId))?.let {
+                conversationMapper.fromDaoModel(it)
+            }
         }
 
     override suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, ProtocolInfo> =
@@ -257,6 +268,26 @@ class ConversationDataSource(
             conversationDAO.insertMembers(
                 members.map(memberMapper::toDaoModel), idMapper.toDaoModel(conversationID)
             )
+        }
+
+    override suspend fun addMembers(
+        members: List<Member>,
+        conversationID: ConversationId
+    ): Either<CoreFailure, Unit> =
+        wrapApiRequest {
+            val users = members.map {
+                idMapper.toApiModel(it.id)
+            }
+            val addParticipantRequest = AddParticipantRequest(users, DEFAULT_MEMBER_ROLE)
+            conversationApi.addParticipant(
+                addParticipantRequest, idMapper.toApiModel(conversationID)
+            )
+        }.map {
+            when (it) {
+                is AddParticipantResponse.ConversationUnchanged -> Unit
+                is AddParticipantResponse.UserAdded ->
+                    persistMembers(members, conversationID)
+            }
         }
 
     override suspend fun deleteMember(userID: QualifiedIDEntity, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit> =

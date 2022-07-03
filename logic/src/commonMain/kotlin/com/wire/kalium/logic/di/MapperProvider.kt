@@ -21,6 +21,7 @@ import com.wire.kalium.logic.data.conversation.ConversationStatusMapper
 import com.wire.kalium.logic.data.conversation.ConversationStatusMapperImpl
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.MemberMapperImpl
+import com.wire.kalium.logic.data.conversation.ProtocolInfoMapperImpl
 import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapperImpl
@@ -66,9 +67,10 @@ internal object MapperProvider {
     fun userMapper(): UserMapper = UserMapperImpl(idMapper())
     fun teamMapper(): TeamMapper = TeamMapperImpl()
     fun messageMapper(): MessageMapper = MessageMapperImpl(idMapper(), memberMapper())
+    fun memberMapper(): MemberMapper = MemberMapperImpl(idMapper())
+    fun conversationMapper(): ConversationMapper =
+        ConversationMapperImpl(idMapper(), ConversationStatusMapperImpl(), ProtocolInfoMapperImpl())
     fun conversationRoleMapper(): ConversationRoleMapper = ConversationRoleMapperImpl()
-    fun memberMapper(): MemberMapper = MemberMapperImpl(idMapper(), conversationRoleMapper())
-    fun conversationMapper(): ConversationMapper = ConversationMapperImpl(idMapper(), ConversationStatusMapperImpl())
     fun publicUserMapper(): PublicUserMapper = PublicUserMapperImpl(idMapper())
     fun sendMessageFailureMapper(): SendMessageFailureMapper = SendMessageFailureMapperImpl()
     fun assetMapper(): AssetMapper = AssetMapperImpl()
