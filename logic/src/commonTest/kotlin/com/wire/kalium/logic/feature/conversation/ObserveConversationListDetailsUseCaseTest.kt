@@ -43,16 +43,16 @@ class ObserveConversationListDetailsUseCaseTest {
     @Mock
     private val syncManager: SyncManager = configure(mock(SyncManager::class)) { stubsUnitByDefault = true }
 
-    private lateinit var observeConversationsUseCase: ObserveConversationListDetailsUseCase
+    private lateinit var observeConversationsUseCase: ObserveConversationListDetailsUseCaseImpl
 
     @BeforeTest
     fun setup() {
-        observeConversationsUseCase = ObserveConversationListDetailsUseCase(conversationRepository, syncManager, callRepository)
+        observeConversationsUseCase = ObserveConversationListDetailsUseCaseImpl(conversationRepository, syncManager, callRepository)
     }
 
     @Test
     fun givenSomeConversations_whenObservingDetailsList_thenObserveConversationListShouldBeCalled() = runTest {
-        val conversations = listOf(TestConversation.SELF, TestConversation.GROUP)
+        val conversations = listOf(TestConversation.SELF, TestConversation.GROUP())
 
         given(callRepository)
             .function(callRepository::ongoingCallsFlow)
@@ -79,7 +79,7 @@ class ObserveConversationListDetailsUseCaseTest {
 
     @Test
     fun givenSomeConversations_whenObservingDetailsList_thenSyncManagerShouldBeCalled() = runTest {
-        val conversations = listOf(TestConversation.SELF, TestConversation.GROUP)
+        val conversations = listOf(TestConversation.SELF, TestConversation.GROUP())
 
         given(callRepository)
             .function(callRepository::ongoingCallsFlow)
@@ -106,7 +106,7 @@ class ObserveConversationListDetailsUseCaseTest {
 
     @Test
     fun givenSomeConversations_whenObservingDetailsList_thenObserveConversationDetailsShouldBeCalledForEachID() = runTest {
-        val conversations = listOf(TestConversation.SELF, TestConversation.GROUP)
+        val conversations = listOf(TestConversation.SELF, TestConversation.GROUP())
 
         given(callRepository)
             .function(callRepository::ongoingCallsFlow)
@@ -136,7 +136,7 @@ class ObserveConversationListDetailsUseCaseTest {
     @Test
     fun givenSomeConversationsDetailsAreUpdated_whenObservingDetailsList_thenTheUpdateIsPropagatedThroughTheFlow() = runTest {
         val oneOnOneConversation = TestConversation.ONE_ON_ONE
-        val groupConversation = TestConversation.GROUP
+        val groupConversation = TestConversation.GROUP()
         val conversations = listOf(groupConversation, oneOnOneConversation)
 
         val groupConversationUpdates = listOf(ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED))
@@ -192,7 +192,7 @@ class ObserveConversationListDetailsUseCaseTest {
     @Suppress("FunctionNaming")
     @Test
     fun givenAConversationIsAddedToTheList_whenObservingDetailsList_thenTheUpdateIsPropagatedThroughTheFlow() = runTest {
-        val groupConversation = TestConversation.GROUP
+        val groupConversation = TestConversation.GROUP()
         val groupConversationDetails = ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED)
 
         val selfConversation = TestConversation.SELF
@@ -237,7 +237,7 @@ class ObserveConversationListDetailsUseCaseTest {
     @Suppress("FunctionNaming")
     @Test
     fun givenAnOngoingCall_whenFetchingConversationDetails_thenTheConversationShouldHaveAnOngoingCall() = runTest {
-        val groupConversation = TestConversation.GROUP
+        val groupConversation = TestConversation.GROUP()
         val groupConversationDetails = ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED)
 
         val ongoingCall = Call(
@@ -279,7 +279,7 @@ class ObserveConversationListDetailsUseCaseTest {
 
     @Test
     fun givenAConversationWithoutAnOngoingCall_whenFetchingConversationDetails_thenTheConversationShouldNotHaveAnOngoingCall() = runTest {
-        val groupConversation = TestConversation.GROUP
+        val groupConversation = TestConversation.GROUP()
         val groupConversationDetails = ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED)
 
         val firstConversationsList = listOf(groupConversation)

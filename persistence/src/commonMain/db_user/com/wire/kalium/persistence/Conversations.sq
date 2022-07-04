@@ -56,13 +56,16 @@ SET last_modified_date = ?
 WHERE qualified_id = ?;
 
 selectAllConversations:
-SELECT * FROM Conversation ORDER BY last_modified_date DESC ;
+SELECT * FROM Conversation WHERE type IS NOT 'CONNECTION_PENDING' ORDER BY last_modified_date DESC;
 
 selectByQualifiedId:
 SELECT * FROM Conversation WHERE qualified_id = ?;
 
 selectByGroupId:
 SELECT * FROM Conversation WHERE mls_group_id = ?;
+
+getConversationIdByGroupId:
+SELECT qualified_id FROM Conversation WHERE mls_group_id = ?;
 
 selectConversationsWithUnnotifiedMessages:
 SELECT * FROM Conversation WHERE muted_status != 'ALL_MUTED' AND (last_notified_message_date ISNULL OR DateTime(last_modified_date) > DateTime(last_notified_message_date));

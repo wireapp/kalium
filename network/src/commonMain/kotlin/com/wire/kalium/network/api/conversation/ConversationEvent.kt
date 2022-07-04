@@ -5,15 +5,9 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class ConversationMember(
-    @SerialName("conversation_role") val conversationRole: String?, // Role name, between 2 and 128 chars, 'wire_' prefix is reserved for roles designed by Wire (i.e., no custom roles can have the same prefix)
-    @SerialName("qualified_id") val qualifiedId: UserId
-)
-
-@Serializable
 data class ConversationMembers(
     @SerialName("user_ids") val userIds: List<String>, // Role name, between 2 and 128 chars, 'wire_' prefix is reserved for roles designed by Wire (i.e., no custom roles can have the same prefix)
-    @SerialName("users") val users: List<ConversationMember>
+    @SerialName("users") val users: List<ConversationMemberDTO.Other>
 )
 
 @Serializable

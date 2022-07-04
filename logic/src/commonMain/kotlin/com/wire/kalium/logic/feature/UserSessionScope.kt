@@ -52,8 +52,8 @@ import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
-import com.wire.kalium.logic.feature.featureConfig.GetRemoteFeatureConfigStatusAndPersistUseCase
 import com.wire.kalium.logic.feature.featureConfig.GetFeatureConfigStatusUseCaseImpl
+import com.wire.kalium.logic.feature.featureConfig.GetRemoteFeatureConfigStatusAndPersistUseCase
 import com.wire.kalium.logic.feature.message.MLSMessageCreator
 import com.wire.kalium.logic.feature.message.MLSMessageCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
@@ -333,7 +333,8 @@ abstract class UserSessionScopeCommon(
             connectionRepository,
             userRepository,
             callRepository,
-            syncManager
+            syncManager,
+            mlsConversationRepository
         )
     val messages: MessageScope
         get() = MessageScope(
