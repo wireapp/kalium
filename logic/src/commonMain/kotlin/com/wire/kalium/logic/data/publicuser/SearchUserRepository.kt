@@ -13,6 +13,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.network.api.contact.search.ContactDTO
 import com.wire.kalium.network.api.contact.search.UserSearchApi
 import com.wire.kalium.network.api.contact.search.UserSearchRequest
 import com.wire.kalium.network.api.user.details.ListUserRequest
@@ -47,7 +48,7 @@ interface SearchUserRepository {
         searchQuery: String,
         domain: String,
         maxResultSize: Int? = null,
-        searchUsersOptions: SearchUsersOptions = SearchUsersOptions.Default
+        filter : (ContactDTO) -> Boolean
     ): Either<NetworkFailure, UserSearchResult>
 
 }
@@ -126,7 +127,7 @@ class SearchUserRepositoryImpl(
         searchQuery: String,
         domain: String,
         maxResultSize: Int?,
-        searchUsersOptions: SearchUsersOptions
+        filter : (ContactDTO) -> Boolean
     ): Either<NetworkFailure, UserSearchResult> =
         wrapApiRequest {
             userSearchApi.search(
@@ -137,9 +138,9 @@ class SearchUserRepositoryImpl(
                 )
             )
         }.flatMap { contactResultValue ->
-            contactResultValue.documents.let { contactsDTOs ->
-                contactsDTOs.
-            }
+           val test =  contactResultValue.documents.let { contactsDTOs ->
+               contactsDTOs.map { it }
+           }
 
 //            conversationRepository.getConversationMembers(conversationId).map { conversationMembers ->
 //                userSearchResult.copy(
@@ -147,7 +148,7 @@ class SearchUserRepositoryImpl(
 //                )
 
             wrapApiRequest {
-                userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(contactResultValue.documents.map { it.qualifiedID }))
+                userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(test.map { it.qualifiedID }))
             }.map { userDetailsResponses ->
                 UserSearchResult(userDetailsResponses.map { userProfileDTO ->
                     publicUserMapper.fromUserDetailResponseWithUsertype(
