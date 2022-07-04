@@ -362,7 +362,8 @@ class ConversationDataSource(
         return wrapStorageRequest {
             val conversationId = idMapper.fromApiToDao(conversationResponse.id)
             val selfUserId = userRepository.getSelfUserId()
-            // TODO(IMPORTANT!): having an initial value is not the correct approach, the app should only valid source for members role is the backend
+            // TODO(IMPORTANT!): having an initial value is not the correct approach, the
+            //  only valid source for members role is the backend
             val selfMember = Member(selfUserId, Member.Role.Admin)
             conversationDAO.insertMembers((members + selfMember).map(memberMapper::toDaoModel), conversationId)
         }

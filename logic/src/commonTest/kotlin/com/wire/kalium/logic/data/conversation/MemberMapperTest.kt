@@ -97,10 +97,11 @@ class MemberMapperTest {
         assertTrue(result.otherMembers.isEmpty())
     }
 
-    @Test @Suppress("MagicNumber")
+    @Test
+    @Suppress("MagicNumber")
     fun givenAMembersResponseWithMultipleOthers_whenMappingFromApiModel_shouldReturnMultipleOthers() {
         val others = MEMBERS_RESPONSE.otherMembers.toMutableList()
-        repeat(42){
+        repeat(42) {
             others.add(others.first())
         }
         val membersResponse = MEMBERS_RESPONSE.copy(otherMembers = others)
@@ -119,7 +120,8 @@ class MemberMapperTest {
         val SELF_MEMBER_RESPONSE = ConversationMemberDTO.Self(UserIdDTO("selfId", "selfDomain"), "wire_admin")
         val SELF_MEMBER = Member(UserId("selfId", "selfDomain"), Member.Role.Admin)
 
-        val OTHER_MEMBER_RESPONSE = ConversationMemberDTO.Other(id = UserIdDTO("other1", "domain1"), conversationRole = "wire_member", service = null)
+        val OTHER_MEMBER_RESPONSE =
+            ConversationMemberDTO.Other(id = UserIdDTO("other1", "domain1"), conversationRole = "wire_member", service = null)
         val OTHER_MEMBER = Member(id = UserId("other1", "domain1"), role = Member.Role.Member)
 
 
