@@ -17,6 +17,6 @@ class GetAllContactsNotInConversationUseCase(
 }
 
 sealed class Result {
-    data class Success(val contactNotInConversation: List<OtherUser>) : Result()
+    data class Success(val contactsNotInConversation: List<OtherUser>) : Result()
     data class Failure(val storageFailure: StorageFailure) : Result()
 }

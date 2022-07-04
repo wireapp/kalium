@@ -33,7 +33,7 @@ class GetAllContactsNotInTheConversationUseCaseTest {
 
         //then
         assertIs<Result.Success>(result)
-        assertTrue { result.contactNotInConversation == Arrangement.mockAllContacts }
+        assertTrue { result.contactsNotInConversation == Arrangement.mockAllContacts }
     }
 
     @Test
