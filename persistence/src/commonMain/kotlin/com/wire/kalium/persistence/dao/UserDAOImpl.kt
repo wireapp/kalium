@@ -3,11 +3,8 @@ package com.wire.kalium.persistence.dao
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
-import com.wire.kalium.persistence.MetadataQueries
 import com.wire.kalium.persistence.UsersQueries
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
 import com.wire.kalium.persistence.User as SQLDelightUser
 
@@ -156,13 +153,15 @@ class UserDAOImpl(
     override suspend fun getUsersNotInConversationByNameOrHandleOrEmail(
         conversationId: QualifiedIDEntity,
         searchQuery: String
-    ): List<UserEntity> {
-        userQueries.getUsersNotInConversationByNameOrHandleOrEmail(conversationId,searchQuery)
-    }
+    ): List<UserEntity> =
+        userQueries.getUsersNotInConversationByNameOrHandleOrEmail(conversationId, searchQuery)
+            .executeAsList()
+            .map(mapper::toModel)
 
-    override suspend fun getUsersNotInConversationByHandle(conversationId: QualifiedIDEntity, handle: String): List<UserEntity> {
-        userQueries.getUsersNotInConversationByHandle(conversationId,handle)
-    }
+    override suspend fun getUsersNotInConversationByHandle(conversationId: QualifiedIDEntity, handle: String): List<UserEntity> =
+        userQueries.getUsersNotInConversationByHandle(conversationId, handle)
+            .executeAsList()
+            .map(mapper::toModel)
 
     override suspend fun insertOrIgnoreUserWithConnectionStatus(qualifiedID: QualifiedIDEntity, connectionStatus: ConnectionEntity.State) {
         userQueries.insertOrIgnoreUserIdWithConnectionStatus(qualifiedID, connectionStatus)
