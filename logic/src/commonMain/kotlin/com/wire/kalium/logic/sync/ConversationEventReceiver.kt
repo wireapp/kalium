@@ -194,15 +194,16 @@ class ConversationEventReceiverImpl(
 
     private suspend fun handleMemberJoin(event: Event.Conversation.MemberJoin) =
         // Attempt to fetch conversation details if needed, as this might be an unknown conversation
-        conversationRepository.fetchConversationIfUnknown(event.conversationId).run {
+        conversationRepository.fetchConversationIfUnknown(event.conversationId)
+            .flatMap {
+                // fetch required unknown users that haven't been persisted during slow sync, e.g. from another team
+                userRepository.fetchUsersIfUnknownByIds(event.members.map { it.id }.toSet())
+            }
+            .run {
             onSuccess { kaliumLogger.v("Succeeded fetching conversation details on MemberJoin Event: $event") }
             onFailure { kaliumLogger.w("Failure fetching conversation details on MemberJoin Event: $event") }
             // Even if unable to fetch conversation details, at least attempt adding the member
             conversationRepository.persistMembers(event.members, event.conversationId)
-                .flatMap {
-                    // fetch all unknown users that haven't been persisted during slow sync, e.g. from another team
-                    userRepository.fetchUsersIfUnknownByIds(event.members.map { it.id }.toSet())
-                }
         }.onSuccess {
             val message = Message.System(
                 id = event.id,
@@ -222,7 +223,7 @@ class ConversationEventReceiverImpl(
             idMapper.toDaoModel(event.conversationId)
         )
         .flatMap {
-            // fetch all unknown users that haven't been persisted during slow sync, e.g. from another team
+            // fetch required unknown users that haven't been persisted during slow sync, e.g. from another team
             userRepository.fetchUsersIfUnknownByIds(event.members.map { it.id }.toSet())
         }
         .onSuccess {
