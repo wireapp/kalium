@@ -573,7 +573,7 @@ class ConversationRepositoryTest {
             .whenInvokedWith(any(), any())
             .thenDoNothing()
 
-        conversationRepository.addMembers(listOf(TestConversation.MEMBER_TEST1), conversationId)
+        conversationRepository.addMembers(listOf(TestConversation.USER_1), conversationId)
             .shouldSucceed()
 
         verify(conversationDAO)
@@ -596,7 +596,7 @@ class ConversationRepositoryTest {
                 )
             )
 
-        conversationRepository.addMembers(listOf(TestConversation.MEMBER_TEST1), conversationId)
+        conversationRepository.addMembers(listOf(TestConversation.USER_1), conversationId)
             .shouldSucceed()
 
         verify(conversationDAO)
