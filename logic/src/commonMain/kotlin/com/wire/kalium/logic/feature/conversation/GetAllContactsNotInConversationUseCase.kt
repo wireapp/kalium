@@ -12,7 +12,7 @@ class GetAllContactsNotInConversationUseCase(
     suspend operator fun invoke(conversationId: QualifiedID) =
         userRepository
             .getAllKnownUsersNotInConversation(conversationId)
-            .fold({ Result.Failure(it) }, { Result.Success(it) })
+            .fold(Result::Failure, Result::Success)
 
 }
 
