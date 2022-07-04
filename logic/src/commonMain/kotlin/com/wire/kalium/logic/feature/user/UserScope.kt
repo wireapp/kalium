@@ -44,6 +44,6 @@ class UserScope(
     val updateSelfAvailabilityStatus: UpdateSelfAvailabilityStatusUseCase
         get() =
             UpdateSelfAvailabilityStatusUseCase(userRepository, syncManager)
-    val getContactsNotPartOfConversation: GetAllContactsNotInConversationUseCase
+    val getAllContactsNotPartOfConversation: GetAllContactsNotInConversationUseCase
         get() = GetAllContactsNotInConversationUseCase(userRepository)
 }
