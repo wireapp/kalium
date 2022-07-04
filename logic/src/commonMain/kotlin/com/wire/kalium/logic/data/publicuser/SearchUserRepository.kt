@@ -64,6 +64,7 @@ class SearchUserRepositoryImpl(
             ).map(publicUserMapper::fromDaoModelToPublicUser)
         )
 
+
     //TODO: We can pass the selfUser.teamId as a parameter to this function,
     // and the UseCase can figure it out by using the UserRepository(?).
     override suspend fun searchUserDirectory(
