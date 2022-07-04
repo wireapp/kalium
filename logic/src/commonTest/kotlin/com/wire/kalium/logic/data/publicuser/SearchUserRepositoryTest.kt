@@ -22,6 +22,7 @@ import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.network.api.user.details.UserProfileDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConnectionEntity
+import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
@@ -54,6 +55,9 @@ class SearchUserRepositoryTest {
     private val userDetailsApi: UserDetailsApi = mock(classOf<UserDetailsApi>())
 
     @Mock
+    private val conversationDao: ConversationDAO = mock(classOf<ConversationDAO>())
+
+    @Mock
     private val publicUserMapper: PublicUserMapper = mock(classOf<PublicUserMapper>())
 
     @Mock
@@ -74,6 +78,7 @@ class SearchUserRepositoryTest {
             metadataDAO,
             userSearchApi,
             userDetailsApi,
+            conversationDao,
             publicUserMapper,
             userMapper,
             domainUserTypeMapper

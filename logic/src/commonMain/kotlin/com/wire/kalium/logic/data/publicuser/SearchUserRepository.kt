@@ -48,7 +48,7 @@ interface SearchUserRepository {
         searchQuery: String,
         domain: String,
         maxResultSize: Int? = null,
-        searchUsersOptions: SearchUsersOptions
+        searchUsersOptions: SearchUsersOptions = SearchUsersOptions.Default
     ): Either<NetworkFailure, UserSearchResult>
 
 }
@@ -137,10 +137,12 @@ class SearchUserRepositoryImpl(
             ).firstOrNull()
 
             searchUserDirectory(searchQuery, domain, maxResultSize) { contactDTO ->
-                conversationMembers?.map { it.user.value }?.contains(contactDTO.id) ?: false
+                conversationMembers?.map { idMapper.fromDaoModel(it.user) }
+                    ?.contains(idMapper.fromApiModel(contactDTO.qualifiedID))
+                    ?: false
             }
         } else {
-            searchUserDirectory(searchQuery, domain, maxResultSize)
+            searchUserDirectory(searchQuery, domain, maxResultSize, null)
         }
     }
 
