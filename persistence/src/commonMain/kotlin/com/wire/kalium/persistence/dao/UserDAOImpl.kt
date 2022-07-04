@@ -6,8 +6,6 @@ import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.MetadataQueries
 import com.wire.kalium.persistence.UsersQueries
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
 import com.wire.kalium.persistence.User as SQLDelightUser
 
@@ -153,8 +151,10 @@ class UserDAOImpl(
         userQueries.updateUserAvailabilityStatus(status, qualifiedID)
     }
 
-    override suspend fun getUsersNotInConversation(conversationId: QualifiedIDEntity) =
+    override suspend fun getUsersNotInConversation(conversationId: QualifiedIDEntity) : List<UserEntity> =
         userQueries.getUsersNotPartOfTheConversation(conversationId)
+            .executeAsList()
+            .map(mapper::toModel)
 
     override suspend fun insertOrIgnoreUserWithConnectionStatus(qualifiedID: QualifiedIDEntity, connectionStatus: ConnectionEntity.State) {
         userQueries.insertOrIgnoreUserIdWithConnectionStatus(qualifiedID, connectionStatus)
