@@ -48,7 +48,7 @@ interface SearchUserRepository {
         searchQuery: String,
         domain: String,
         maxResultSize: Int? = null,
-        filter : (ContactDTO) -> Boolean
+        searchUsersOptions: SearchUsersOptions
     ): Either<NetworkFailure, UserSearchResult>
 
 }
@@ -127,7 +127,28 @@ class SearchUserRepositoryImpl(
         searchQuery: String,
         domain: String,
         maxResultSize: Int?,
-        filter : (ContactDTO) -> Boolean
+        searchUsersOptions: SearchUsersOptions
+    ): Either<NetworkFailure, UserSearchResult> {
+        val excludedConversationOption = searchUsersOptions.conversationExcluded
+
+        return if (excludedConversationOption is ConversationMemberExcludedOptions.ConversationExcluded) {
+            val conversationMembers = conversationDAO.getAllMembers(
+                idMapper.toDaoModel(excludedConversationOption.conversationId)
+            ).firstOrNull()
+
+            searchUserDirectory(searchQuery, domain, maxResultSize) { contactDTO ->
+                conversationMembers?.map { it.user.value }?.contains(contactDTO.id) ?: false
+            }
+        } else {
+            searchUserDirectory(searchQuery, domain, maxResultSize)
+        }
+    }
+
+    private suspend fun searchUserDirectory(
+        searchQuery: String,
+        domain: String,
+        maxResultSize: Int?,
+        filter: ((ContactDTO) -> Boolean)? = null
     ): Either<NetworkFailure, UserSearchResult> =
         wrapApiRequest {
             userSearchApi.search(
@@ -137,18 +158,17 @@ class SearchUserRepositoryImpl(
                     maxResultSize = maxResultSize
                 )
             )
-        }.flatMap { contactResultValue ->
-           val test =  contactResultValue.documents.let { contactsDTOs ->
-               contactsDTOs.map { it }
-           }
-
-//            conversationRepository.getConversationMembers(conversationId).map { conversationMembers ->
-//                userSearchResult.copy(
-//                    result = userSearchResult.result.filter { conversationMember -> !conversationMembers.contains(conversationMember.id) }
-//                )
+        }.flatMap { contactResultValues ->
+            val filteredContactResultValues = contactResultValues.documents.let { contactsDTOs ->
+                if (filter != null) {
+                    contactsDTOs.filter(filter)
+                } else {
+                    contactsDTOs
+                }
+            }
 
             wrapApiRequest {
-                userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(test.map { it.qualifiedID }))
+                userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(filteredContactResultValues.map { it.qualifiedID }))
             }.map { userDetailsResponses ->
                 UserSearchResult(userDetailsResponses.map { userProfileDTO ->
                     publicUserMapper.fromUserDetailResponseWithUsertype(
