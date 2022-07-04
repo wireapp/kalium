@@ -6,12 +6,12 @@ import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.fold
 
-class GetAllContactsNotInConversationUseCase(
+class GetContactsNotInConversationUseCase(
     private val userRepository: UserRepository
 ) {
     suspend operator fun invoke(conversationId: QualifiedID) =
         userRepository
-            .getKnownUsers(conversationId)
+            .getKnownUsersNotInConversation(conversationId)
             .fold({ Result.Failure(it) }, { Result.Success(it) })
 
 }

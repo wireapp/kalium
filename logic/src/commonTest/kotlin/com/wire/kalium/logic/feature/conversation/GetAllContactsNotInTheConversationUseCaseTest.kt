@@ -113,7 +113,7 @@ class GetAllContactsNotInTheConversationUseCaseTest {
             return this
         }
 
-        fun arrange() = this to GetAllContactsNotInConversationUseCase(userRepository)
+        fun arrange() = this to GetContactsNotInConversationUseCase(userRepository)
     }
 
 }
