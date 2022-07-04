@@ -1,8 +1,12 @@
 package com.wire.kalium.cryptography
 
+import com.wire.kalium.cryptography.utils.EncryptedData
+import com.wire.kalium.cryptography.utils.PlainData
 import com.wire.kalium.cryptography.utils.calcFileMd5
 import com.wire.kalium.cryptography.utils.calcFileSHA256
+import com.wire.kalium.cryptography.utils.decryptDataWithAES256
 import com.wire.kalium.cryptography.utils.decryptFileWithAES256
+import com.wire.kalium.cryptography.utils.encryptDataWithAES256
 import com.wire.kalium.cryptography.utils.encryptFileWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import io.ktor.utils.io.core.String
@@ -86,8 +90,77 @@ class CryptoUtilsTest {
         }
 
         // Then
+        assertTrue(input.size % 16 == 0)
         assertEquals(decryptedDataSize, input.size.toLong())
         assertTrue(input.contentEquals(decryptedData))
+    }
+
+    @Test
+    @IgnoreJS
+    @IgnoreIOS
+    fun givenSomeDummyFile_whenEncryptedAsDataAndDecryptedWithAES256AsAFile_returnsExpectedOriginalFileContent() {
+        // Given
+        val input = readBinaryResource("dummy.zip")
+        val randomAES256Key = generateRandomAES256Key()
+        val fakeFileSystem = FakeFileSystem()
+        val rootPath = "/Users/me".toPath()
+        fakeFileSystem.createDirectories(rootPath)
+
+        val encryptedDataPath = "encrypted_data_path.aes".toPath()
+        val decryptedDataPath = "decrypted_data_path.zip".toPath()
+
+        // When
+        val encryptedData = encryptDataWithAES256(PlainData(input), randomAES256Key)
+        val encryptedDataSize = encryptedData.data.size
+
+        fakeFileSystem.write(encryptedDataPath) {
+            write(encryptedData.data)
+        }
+
+        val decryptedDataSize =
+            decryptFileWithAES256(fakeFileSystem.source(encryptedDataPath), decryptedDataPath, randomAES256Key, fakeFileSystem)
+
+        val decryptedData = fakeFileSystem.read(decryptedDataPath) {
+            readByteArray()
+        }
+
+        // Then
+        assertTrue(encryptedDataSize % 16 == 0)
+        assertEquals(decryptedData.size, input.size)
+        assertEquals(decryptedDataSize, input.size.toLong())
+        assertTrue(input.contentEquals(decryptedData))
+    }
+
+    @Test
+    @IgnoreJS
+    @IgnoreIOS
+    fun givenSomeDummyFile_whenEncryptedAsAFileAndDecryptedWithAES256AsData_returnsExpectedOriginalFileContent() {
+        // Given
+        val input = readBinaryResource("dummy.pdf")
+        val randomAES256Key = generateRandomAES256Key()
+        val fakeFileSystem = FakeFileSystem()
+        val rootPath = "/Users/me".toPath()
+        fakeFileSystem.createDirectories(rootPath)
+
+        val tempPath = "$rootPath/temp_path".toPath()
+        val encryptedDataPath = "encrypted_data_path.aes".toPath()
+        val decryptedDataPath = "decrypted_data_path.pdf".toPath()
+        fakeFileSystem.write(tempPath) {
+            write(input)
+        }
+
+        // When
+        encryptFileWithAES256(tempPath, randomAES256Key, encryptedDataPath, fakeFileSystem)
+
+        val encryptedData = fakeFileSystem.read(encryptedDataPath) {
+            readByteArray()
+        }
+        val decryptedData = decryptDataWithAES256(EncryptedData(encryptedData), randomAES256Key)
+
+        // Then
+        assertTrue(input.size % 16 == 0)
+        assertEquals(decryptedData.data.size, input.size)
+        assertTrue(input.contentEquals(decryptedData.data))
     }
 
     @Test

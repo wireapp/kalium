@@ -43,12 +43,12 @@ interface AssetRepository {
      * Method used to upload the encrypted data and persist to local memory the already decoded asset
      * @param mimeType type of the asset to be uploaded
      * @param assetDataPath the path of the encrypted data to be uploaded
+     * @param assetDataPath the [AES256Key] that will be used to encrypt the data living in [assetDataPath]
      * @return [Either] a [CoreFailure] if anything went wrong, or the [UploadedAssetId] of the asset if successful
      */
     suspend fun uploadAndPersistPrivateAsset(
         mimeType: AssetType,
         assetDataPath: Path,
-        assetDataSize: Long,
         otrKey: AES256Key
     ): Either<CoreFailure, Pair<UploadedAssetId, SHA256Key>>
 
@@ -96,7 +96,6 @@ internal class AssetDataSource(
     override suspend fun uploadAndPersistPrivateAsset(
         mimeType: AssetType,
         assetDataPath: Path,
-        assetDataSize: Long,
         otrKey: AES256Key
     ): Either<CoreFailure, Pair<UploadedAssetId, SHA256Key>> {
 
@@ -111,7 +110,7 @@ internal class AssetDataSource(
         val encryptionSucceeded = (encryptedDataSize > 0L && sha256 != null)
 
         return if (encryptionSucceeded) {
-            val uploadAssetData = UploadAssetData(tempEncryptedDataPath, assetDataSize, mimeType, false, RetentionType.PERSISTENT)
+            val uploadAssetData = UploadAssetData(tempEncryptedDataPath, encryptedDataSize, mimeType, false, RetentionType.PERSISTENT)
             uploadAndPersistAsset(uploadAssetData, assetDataPath).map { it to SHA256Key(sha256!!) }
         } else {
             kaliumLogger.e("Something went wrong when encrypting the Asset Message")

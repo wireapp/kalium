@@ -72,11 +72,10 @@ internal class SendAssetMessageUseCaseImpl(
         // Generate the otr asymmetric key that will be used to encrypt the data
         val otrKey = generateRandomAES256Key()
 
-        // Upload the asset encrypted data and force the mimeType to be a File
+        // The assetDataSource will encrypt the data with the provided otrKey and upload it if successful
         return assetDataSource.uploadAndPersistPrivateAsset(
             assetName.fileExtension().fileExtensionToAssetType(),
             assetDataPath,
-            assetDataSize,
             otrKey
         ).flatMap { (assetId, sha256) ->
 
