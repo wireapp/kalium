@@ -40,6 +40,7 @@ interface UserRepository {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
     suspend fun fetchKnownUsers(): Either<CoreFailure, Unit>
     suspend fun fetchUsersByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
+    suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun observeSelfUser(): Flow<SelfUser>
     suspend fun getSelfUserId(): QualifiedID
     suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, SelfUser>
@@ -48,6 +49,7 @@ interface UserRepository {
     suspend fun updateLocalSelfUserHandle(handle: String)
     suspend fun getAllContacts(): List<OtherUser>
     suspend fun getKnownUser(userId: UserId): Flow<OtherUser?>
+    suspend fun getKnownUsers(userIdList: List<UserId>): Flow<List<OtherUser>>
     suspend fun getUserInfo(userId: UserId): Either<CoreFailure, OtherUser>
     suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus)
 }
@@ -78,7 +80,7 @@ class UserDataSource(
     }
 
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
-        .map { userMapper.fromApiModelWithUserTypeEntityToDaoModel(it).copy(connectionStatus = ConnectionEntity.State.ACCEPTED) }
+        .map { userMapper.fromApiSelfModelToDaoModel(it).copy(connectionStatus = ConnectionEntity.State.ACCEPTED) }
         .flatMap { userEntity ->
             assetRepository.downloadUsersPictureAssets(getQualifiedUserAssetId(userEntity))
             userDAO.insertUser(userEntity)
@@ -119,6 +121,14 @@ class UserDataSource(
                 )
             }
         }
+
+    override suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit> {
+        val qualifiedIDList = ids.map(idMapper::toDaoModel)
+        val knownUsers = userDAO.getUsersByQualifiedIDList(ids.map(idMapper::toDaoModel)).first()
+        val missingIds = qualifiedIDList.filterNot { knownUsers.any { userEntity -> userEntity.id == it } }
+        return if (missingIds.isEmpty()) Either.Right(Unit)
+        else fetchUsersByIds(missingIds.map { idMapper.fromDaoModel(it) }.toSet())
+    }
 
     override suspend fun observeSelfUser(): Flow<SelfUser> {
         // TODO: handle storage error
@@ -164,6 +174,10 @@ class UserDataSource(
     override suspend fun getKnownUser(userId: UserId) =
         userDAO.getUserByQualifiedID(qualifiedID = idMapper.toDaoModel(userId))
             .map { userEntity -> userEntity?.let { publicUserMapper.fromDaoModelToPublicUser(userEntity) } }
+
+    override suspend fun getKnownUsers(userIdList: List<UserId>) =
+        userDAO.getUsersByQualifiedIDList(qualifiedIDList = userIdList.map { idMapper.toDaoModel(it) })
+            .map { it.map { userEntity -> publicUserMapper.fromDaoModelToPublicUser(userEntity) } }
 
     override suspend fun getUserInfo(userId: UserId): Either<CoreFailure, OtherUser> =
         wrapApiRequest { userDetailsApi.getUserInfo(idMapper.toApiModel(userId)) }.map { userProfile ->
