@@ -47,6 +47,7 @@ interface UserRepository {
     suspend fun updateLocalSelfUserHandle(handle: String)
     suspend fun getAllContacts(): List<OtherUser>
     suspend fun getKnownUser(userId: UserId): Flow<OtherUser?>
+    suspend fun observeUserInfo(userId: UserId): Flow<User?>
     suspend fun getUserInfo(userId: UserId): Either<CoreFailure, OtherUser>
     suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus)
 }
@@ -160,9 +161,20 @@ class UserDataSource(
             .map { userEntity -> publicUserMapper.fromDaoModelToPublicUser(userEntity) }
     }
 
-    override suspend fun getKnownUser(userId: UserId) =
+    override suspend fun getKnownUser(userId: UserId): Flow<OtherUser?> =
         userDAO.getUserByQualifiedID(qualifiedID = idMapper.toDaoModel(userId))
             .map { userEntity -> userEntity?.let { publicUserMapper.fromDaoModelToPublicUser(userEntity) } }
+
+    override suspend fun observeUserInfo(userId: UserId): Flow<User?> =
+        userDAO.getUserByQualifiedID(qualifiedID = idMapper.toDaoModel(userId))
+            .map { userEntity ->
+                if (userId == getSelfUserId()) {
+                    userEntity?.let { userMapper.fromDaoModelToSelfUser(userEntity) }
+                } else {
+                    userEntity?.let { publicUserMapper.fromDaoModelToPublicUser(userEntity) }
+                }
+            }
+
 
     override suspend fun getUserInfo(userId: UserId): Either<CoreFailure, OtherUser> =
         wrapApiRequest { userDetailsApi.getUserInfo(idMapper.toApiModel(userId)) }.map { userProfile ->

@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.register
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
@@ -131,7 +132,7 @@ class RegisterAccountRepositoryTest {
                 email = email,
                 phone = phone,
                 accentId = accentId,
-                teamId = teamId,
+                teamId = teamId?.let { TeamId(it) },
                 connectionStatus = ConnectionState.ACCEPTED,
                 previewPicture = UserAssetId("value1","domain"),
                 completePicture = UserAssetId("value2","domain"),
@@ -181,7 +182,7 @@ class RegisterAccountRepositoryTest {
                 email = email,
                 phone = phone,
                 accentId = accentId,
-                teamId = teamId,
+                teamId = teamId?.let { TeamId(it) },
                 connectionStatus = ConnectionState.ACCEPTED,
                 previewPicture = UserAssetId("value1","domain"),
                 completePicture = UserAssetId("value2","domain"),

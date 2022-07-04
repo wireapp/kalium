@@ -8,7 +8,7 @@ import com.wire.kalium.logic.data.user.type.UserType
 
 typealias UserId = QualifiedID
 
-abstract class User {
+sealed class User {
     abstract val id: UserId
     abstract val name: String?
     abstract val handle: String?

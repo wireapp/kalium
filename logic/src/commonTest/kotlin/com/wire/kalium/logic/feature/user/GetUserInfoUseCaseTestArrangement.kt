@@ -30,7 +30,7 @@ class GetUserInfoUseCaseTestArrangement {
             .thenReturn(
                 flowOf(
                     if (!localUserPresent) null
-                    else if (hasTeam) TestUser.OTHER else TestUser.OTHER.copy(team = null)
+                    else if (hasTeam) TestUser.OTHER else TestUser.OTHER.copy(teamId = null)
                 )
             )
 

@@ -107,7 +107,7 @@ class GetUserInfoUseCaseTest {
         val result = useCase(userId)
 
         // then
-        assertEquals(OTHER.copy(team = null), (result as GetUserInfoResult.Success).otherUser)
+        assertEquals(OTHER.copy(teamId = null), (result as GetUserInfoResult.Success).otherUser)
 
         with(arrangement) {
             verify(userRepository)

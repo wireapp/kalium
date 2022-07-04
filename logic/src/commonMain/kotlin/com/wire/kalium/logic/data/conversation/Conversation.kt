@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 
@@ -70,18 +71,15 @@ sealed class ConversationDetails(open val conversation: Conversation) {
 
 class MembersInfo(val self: Member, val otherMembers: List<Member>)
 
-class Member(val id: UserId, val role: Role){
-    sealed class Role{
-        object Member: Role()
-        object Admin: Role()
-        data class Unknown(val name: String): Role()
+data class Member(val id: UserId, val role: Role) {
+    sealed class Role {
+        object Member : Role()
+        object Admin : Role()
+        data class Unknown(val name: String) : Role()
     }
 }
 
-sealed class MemberDetails {
-    data class Self(val selfUser: SelfUser) : MemberDetails()
-    data class Other(val otherUser: OtherUser) : MemberDetails()
-}
+data class MemberDetails(val user: User, val role: Member.Role)
 
 typealias ClientId = PlainId
 
