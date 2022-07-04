@@ -1,10 +1,11 @@
 package com.wire.kalium.logic.data.publicuser
 
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.publicuser.model.OtherUser
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.ConnectionStateMapper
+import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
@@ -50,7 +51,7 @@ class PublicUserMapperImpl(
         email = userEntity.email,
         phone = userEntity.phone,
         accentId = userEntity.accentId,
-        team = userEntity.team,
+        teamId = userEntity.team?.let { TeamId(it) },
         connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionState = userEntity.connectionStatus),
         previewPicture = userEntity.previewAssetId?.let { idMapper.fromDaoModel(it) },
         completePicture = userEntity.completeAssetId?.let { idMapper.fromDaoModel(it) },
@@ -66,7 +67,7 @@ class PublicUserMapperImpl(
         name = userDetailResponse.name,
         handle = userDetailResponse.handle,
         accentId = userDetailResponse.accentId,
-        team = userDetailResponse.teamId,
+        teamId = userDetailResponse.teamId?.let { TeamId(it) },
         connectionStatus = ConnectionState.NOT_CONNECTED,
         previewPicture = userDetailResponse.assets.getPreviewAssetOrNull()
             ?.let { idMapper.toQualifiedAssetId(it.key, userDetailResponse.id.domain) },

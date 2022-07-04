@@ -1,9 +1,10 @@
 package com.wire.kalium.logic.data.publicuser
 
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.data.publicuser.model.OtherUser
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserMapper
@@ -12,7 +13,6 @@ import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.network.api.QualifiedID
-import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.contact.search.ContactDTO
 import com.wire.kalium.network.api.contact.search.SearchPolicyDTO
 import com.wire.kalium.network.api.contact.search.UserSearchApi
@@ -336,7 +336,7 @@ class SearchUserRepositoryTest {
                         handle = "handle$i",
                         id = "id$i",
                         name = "name$i",
-                        qualifiedID = UserId(value = "value$i", domain = "domain$i"),
+                        qualifiedID = com.wire.kalium.network.api.UserId(value = "value$i", domain = "domain$i"),
                         team = "team$i"
                     )
                 )
@@ -350,7 +350,7 @@ class SearchUserRepositoryTest {
             email = "email",
             phone = "phone",
             accentId = 1,
-            team = "team",
+            teamId = TeamId("team"),
             previewPicture = null,
             completePicture = null,
             availabilityStatus = UserAvailabilityStatus.NONE,

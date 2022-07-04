@@ -6,7 +6,6 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.publicuser.PublicUserMapper
-import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
@@ -111,7 +110,7 @@ class UserDataSource(
                             userProfileDTO = userProfileDTO,
                             userTypeEntity = userTypeEntityMapper.fromOtherUserTeamAndDomain(
                                 otherUserDomain = userProfileDTO.id.domain,
-                                selfUserTeamId = getSelfUser()?.teamId,
+                                selfUserTeamId = getSelfUser()?.teamId?.value,
                                 otherUserTeamId = userProfileDTO.teamId
                             )
                         )
@@ -171,7 +170,7 @@ class UserDataSource(
                 userDetailResponse = userProfile,
                 userType = userTypeMapper.fromOtherUserTeamAndDomain(
                     otherUserDomain = userProfile.id.domain,
-                    selfUserTeamId = getSelfUser()?.teamId,
+                    selfUserTeamId = getSelfUser()?.teamId?.value,
                     otherUserTeamId = userProfile.teamId
                 )
             )

@@ -3,10 +3,9 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
-import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 
@@ -60,7 +59,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             id = conversationId,
             name = otherUser?.name,
             type = Conversation.Type.CONNECTION_PENDING,
-            teamId = otherUser?.team?.let { TeamId(it) },
+            teamId = otherUser?.teamId,
             protocolInfo,
             mutedStatus = MutedConversationStatus.AllAllowed,
             lastNotificationDate = null,
@@ -71,7 +70,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
 
 class MembersInfo(val self: Member, val otherMembers: List<Member>)
 
-class Member(override val id: UserId, val role: Role) : User() {
+class Member(val id: UserId, val role: Role){
     sealed class Role{
         object Member: Role()
         object Admin: Role()

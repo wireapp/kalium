@@ -1,8 +1,8 @@
 package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.network.api.TeamId
 import com.wire.kalium.network.api.model.AssetSizeDTO
 import com.wire.kalium.network.api.model.UserAssetDTO
 import com.wire.kalium.network.api.model.UserAssetTypeDTO
@@ -69,7 +69,7 @@ internal class UserMapperImpl(
             email = email,
             phone = phone,
             accentId = accentId,
-            teamId = teamId,
+            teamId = teamId?.let { TeamId(it) },
             connectionStatus = ConnectionState.NOT_CONNECTED,
             previewPicture = assets.getPreviewAssetOrNull()
                 ?.let { idMapper.toQualifiedAssetId(it.key, id.domain) }, // assume the same domain as the userId
@@ -109,7 +109,7 @@ internal class UserMapperImpl(
         userEntity.email,
         userEntity.phone,
         userEntity.accentId,
-        userEntity.team,
+        userEntity.team?.let { TeamId(it) },
         connectionStateMapper.fromDaoConnectionStateToUser(connectionState = userEntity.connectionStatus),
         userEntity.previewAssetId?.let { idMapper.fromDaoModel(it) },
         userEntity.completeAssetId?.let { idMapper.fromDaoModel(it) },
@@ -145,7 +145,7 @@ internal class UserMapperImpl(
             email = user.email,
             phone = user.phone,
             accentId = updateRequest.accentId ?: user.accentId,
-            team = user.teamId,
+            team = user.teamId?.value,
             connectionStatus = connectionStateMapper.fromUserConnectionStateToDao(connectionState = user.connectionStatus),
             previewAssetId = updateRequest.assets.getPreviewAssetOrNull()
                 ?.let { idMapper.toQualifiedAssetIdEntity(it.key, user.id.domain) },
@@ -192,7 +192,7 @@ internal class UserMapperImpl(
             email = null,
             phone = null,
             accentId = 1,
-            team = teamId,
+            team = teamId.value,
             connectionStatus = ConnectionEntity.State.ACCEPTED,
             previewAssetId = null,
             completeAssetId = null,

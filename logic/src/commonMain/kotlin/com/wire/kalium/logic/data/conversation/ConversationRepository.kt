@@ -97,7 +97,7 @@ class ConversationDataSource(
             kaliumLogger.e("Failed to fetch all conversations due to network error", throwable)
         }.flatMap { conversations ->
             kaliumLogger.d("Persisting fetched conversations into storage")
-            persistConversations(conversations, selfUserTeamId)
+            persistConversations(conversations, selfUserTeamId?.value)
         }
     }
 
@@ -105,7 +105,7 @@ class ConversationDataSource(
     // But the Repository is too smart, does it by itself, and doesn't let the UseCase handle this.
     override suspend fun insertConversationFromEvent(event: Event.Conversation.NewConversation): Either<CoreFailure, Unit> {
         val selfUserTeamId = userRepository.observeSelfUser().first().teamId
-        return persistConversations(listOf(event.conversation), selfUserTeamId)
+        return persistConversations(listOf(event.conversation), selfUserTeamId?.value)
     }
 
     private suspend fun fetchAllConversationsFromAPI(): Either<NetworkFailure, List<ConversationResponse>> {
@@ -181,7 +181,7 @@ class ConversationDataSource(
             conversationApi.fetchConversationDetails(idMapper.toApiModel(conversationID))
         }.flatMap {
             val selfUserTeamId = userRepository.getSelfUser()?.teamId
-            persistConversations(listOf(it), selfUserTeamId)
+            persistConversations(listOf(it), selfUserTeamId?.value)
         }
     }
 
@@ -305,10 +305,10 @@ class ConversationDataSource(
     }.flatMap { selfUser ->
         wrapApiRequest {
             conversationApi.createNewConversation(
-                conversationMapper.toApiModel(name, usersList, selfUser.teamId, options)
+                conversationMapper.toApiModel(name, usersList, selfUser.teamId?.value, options)
             )
         }.flatMap { conversationResponse ->
-            val teamId = selfUser.teamId?.let { TeamId(it) }
+            val teamId = selfUser.teamId
             val conversationEntity = conversationMapper.fromApiModelToDaoModel(
                 conversationResponse, mlsGroupState = ConversationEntity.GroupState.PENDING, teamId
             )
