@@ -2,7 +2,6 @@ package com.wire.kalium.logic.feature.asset
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.cryptography.utils.AES256Key
-import com.wire.kalium.cryptography.utils.encryptFileWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
@@ -28,7 +27,6 @@ import com.wire.kalium.logic.util.fileExtensionToAssetType
 import com.wire.kalium.logic.util.isGreaterThan
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
-import okio.FileSystem
 import okio.Path
 
 fun interface SendAssetMessageUseCase {

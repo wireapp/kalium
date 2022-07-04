@@ -53,7 +53,6 @@ class CryptoUtilsTest {
         val digest = calcFileSHA256(inputPath, fileSystem)
         val expectedValue = "3df79d34abbca99308e79cb94461c1893582604d68329a41fd4bec1885e6adb4".decodeHex()
 
-
         // Then
         assertNotNull(digest)
         assertTrue(digest.contentEquals(expectedValue))
@@ -72,7 +71,7 @@ class CryptoUtilsTest {
 
         val tempPath = "$rootPath/temp_path".toPath()
         val encryptedDataPath = "encrypted_data_path.aes".toPath()
-        val decryptedDataPath = "decrypted_data_path.txt".toPath()
+        val decryptedDataPath = "decrypted_data_path.pdf".toPath()
         fakeFileSystem.write(tempPath) {
             write(input)
         }
