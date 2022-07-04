@@ -52,7 +52,7 @@ interface UserRepository {
     suspend fun getKnownUser(userId: UserId): Flow<OtherUser?>
     suspend fun getUserInfo(userId: UserId): Either<CoreFailure, OtherUser>
     suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus)
-    suspend fun getKnownUsersNotInConversation(conversationId: ConversationId): Either<StorageFailure, List<OtherUser>>
+    suspend fun getAllKnownUsersNotInConversation(conversationId: ConversationId): Either<StorageFailure, List<OtherUser>>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -186,7 +186,7 @@ class UserDataSource(
         userDAO.updateUserAvailabilityStatus(getSelfUserIDEntity(), availabilityStatusMapper.fromModelAvailabilityStatusToDao(status))
     }
 
-    override suspend fun getKnownUsersNotInConversation(conversationId: ConversationId): Either<StorageFailure, List<OtherUser>> {
+    override suspend fun getAllKnownUsersNotInConversation(conversationId: ConversationId): Either<StorageFailure, List<OtherUser>> {
         return wrapStorageRequest {
             userDAO.getUsersNotInConversation(idMapper.toDaoModel(conversationId))
                 .map { publicUserMapper.fromDaoModelToPublicUser(it) }

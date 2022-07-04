@@ -8,7 +8,7 @@ import com.wire.kalium.logic.feature.asset.GetAvatarAssetUseCase
 import com.wire.kalium.logic.feature.asset.GetAvatarAssetUseCaseImpl
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
-import com.wire.kalium.logic.feature.conversation.GetContactsNotInConversationUseCase
+import com.wire.kalium.logic.feature.conversation.GetAllContactsNotInConversationUseCase
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsUseCase
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsUseCaseImpl
 import com.wire.kalium.logic.feature.publicuser.GetKnownUserUseCase
@@ -44,6 +44,6 @@ class UserScope(
     val updateSelfAvailabilityStatus: UpdateSelfAvailabilityStatusUseCase
         get() =
             UpdateSelfAvailabilityStatusUseCase(userRepository, syncManager)
-    val getContactsNotPartOfConversation: GetContactsNotInConversationUseCase
-        get() = GetContactsNotInConversationUseCase(userRepository)
+    val getContactsNotPartOfConversation: GetAllContactsNotInConversationUseCase
+        get() = GetAllContactsNotInConversationUseCase(userRepository)
 }
