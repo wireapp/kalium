@@ -28,6 +28,7 @@ class UserMapper {
     }
 }
 
+@Suppress("TooManyFunctions")
 class UserDAOImpl(
     private val userQueries: UsersQueries
 ) : UserDAO {

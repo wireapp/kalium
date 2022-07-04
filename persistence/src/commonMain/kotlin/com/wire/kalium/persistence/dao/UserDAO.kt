@@ -60,6 +60,7 @@ enum class UserTypeEntity {
 
 internal typealias UserAssetIdEntity = QualifiedIDEntity
 
+@Suppress("TooManyFunctions")
 interface UserDAO {
     /**
      * Inserts a new user into the local storage
