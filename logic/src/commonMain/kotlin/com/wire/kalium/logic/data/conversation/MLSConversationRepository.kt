@@ -27,7 +27,7 @@ interface MLSConversationRepository {
     suspend fun establishMLSGroupFromWelcome(welcomeEvent: Event.Conversation.MLSWelcome): Either<CoreFailure, Unit>
     suspend fun hasEstablishedMLSGroup(groupID: String): Either<CoreFailure, Boolean>
     suspend fun messageFromMLSMessage(messageEvent: Event.Conversation.NewMLSMessage): Either<CoreFailure, ByteArray?>
-    suspend fun addMemberToMLSGroup(groupID: String, members: List<UserId>): Either<CoreFailure, Unit>
+    suspend fun addMemberToMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit>
 }
 
 class MLSConversationDataSource(
@@ -80,9 +80,9 @@ class MLSConversationDataSource(
             establishMLSGroup(groupID, members)
         }
 
-    override suspend fun addMemberToMLSGroup(groupID: String, members: List<UserId>): Either<CoreFailure, Unit> =
+    override suspend fun addMemberToMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit> =
         //TODO: check for federated and non-federated members
-        keyPackageRepository.claimKeyPackages(members).flatMap { keyPackages ->
+        keyPackageRepository.claimKeyPackages(userIdList).flatMap { keyPackages ->
             mlsClientProvider.getMLSClient().flatMap { client ->
                 val clientKeyPackageList = keyPackages
                     .map {
@@ -100,8 +100,8 @@ class MLSConversationDataSource(
                         }
                     }.flatMap {
                         wrapStorageRequest {
-                            val list = members.map {
-                                com.wire.kalium.persistence.dao.Member(idMapper.toDaoModel(it))
+                            val list = userIdList.map {
+                                com.wire.kalium.persistence.dao.Member(idMapper.toDaoModel(it), TODO())
                             }
                             conversationDAO.insertMembers(list, groupID)
                         }

@@ -225,7 +225,7 @@ class AddMemberToGroupCommand : CliktCommand(name = "add-member") {
         val selectedConversation = selectConversation(userSession)
         val selectedConnection = selectConnection(userSession)
 
-        userSession.conversations.addMemberToConversationUseCase(selectedConversation.id, listOf(Member(id = selectedConnection.id)))
+        userSession.conversations.addMemberToConversationUseCase(selectedConversation.id, listOf(selectedConnection.id))
     }
 }
 

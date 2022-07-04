@@ -56,7 +56,7 @@ interface ConversationRepository {
     suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, ProtocolInfo>
     suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Member>>
     suspend fun persistMembers(members: List<Member>, conversationID: ConversationId): Either<CoreFailure, Unit>
-    suspend fun addMembers(members: List<Member>, conversationID: ConversationId): Either<CoreFailure, Unit>
+    suspend fun addMembers(userIdList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun deleteMember(userID: QualifiedIDEntity, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun deleteMembers(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun getOneToOneConversationDetailsByUserId(otherUserId: UserId): Either<CoreFailure, ConversationDetails.OneOne>
@@ -207,27 +207,27 @@ class ConversationDataSource(
             val selfUser = userRepository.observeSelfUser().first()
 
             getConversationMembers(conversation.id).map { members ->
-                    members.firstOrNull { itemId -> itemId != selfUser.id }
-                }.fold({
-                    when (it) {
-                        StorageFailure.DataNotFound -> {
-                            kaliumLogger.e("DataNotFound when fetching conversation members: $it")
-                        }
+                members.firstOrNull { itemId -> itemId != selfUser.id }
+            }.fold({
+                when (it) {
+                    StorageFailure.DataNotFound -> {
+                        kaliumLogger.e("DataNotFound when fetching conversation members: $it")
+                    }
 
-                        is StorageFailure.Generic -> {
-                            kaliumLogger.e("Failure getting other 1:1 user for $conversation", it.rootCause)
-                        }
+                    is StorageFailure.Generic -> {
+                        kaliumLogger.e("Failure getting other 1:1 user for $conversation", it.rootCause)
                     }
-                    emptyFlow()
-                }, { otherUserIdOrNull ->
-                    otherUserIdOrNull?.let {
-                        userRepository.getKnownUser(it)
-                    } ?: run {
-                        emptyFlow()
-                    }
-                }).filterNotNull().map { otherUser ->
-                    conversationMapper.toConversationDetailsOneToOne(conversation, otherUser, selfUser)
                 }
+                emptyFlow()
+            }, { otherUserIdOrNull ->
+                otherUserIdOrNull?.let {
+                    userRepository.getKnownUser(it)
+                } ?: run {
+                    emptyFlow()
+                }
+            }).filterNotNull().map { otherUser ->
+                conversationMapper.toConversationDetailsOneToOne(conversation, otherUser, selfUser)
+            }
         }
     }
 
@@ -270,13 +270,10 @@ class ConversationDataSource(
             )
         }
 
-    override suspend fun addMembers(
-        members: List<Member>,
-        conversationID: ConversationId
-    ): Either<CoreFailure, Unit> =
+    override suspend fun addMembers(userIdList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit> =
         wrapApiRequest {
-            val users = members.map {
-                idMapper.toApiModel(it.id)
+            val users = userIdList.map {
+                idMapper.toApiModel(it)
             }
             val addParticipantRequest = AddParticipantRequest(users, DEFAULT_MEMBER_ROLE)
             conversationApi.addParticipant(
@@ -285,8 +282,13 @@ class ConversationDataSource(
         }.map {
             when (it) {
                 is AddParticipantResponse.ConversationUnchanged -> Unit
-                is AddParticipantResponse.UserAdded ->
-                    persistMembers(members, conversationID)
+                // TODO: the server response with an event can we use event processor to handle it
+                is AddParticipantResponse.UserAdded -> userIdList.map { userId ->
+                    // TODO: mapping the user id list to members with a made up role is incorrect and a recipe for disaster
+                    Member(userId, Member.Role.Member)
+                }.let { membersList ->
+                    persistMembers(membersList, conversationID)
+                }
             }
         }
 
@@ -371,8 +373,8 @@ class ConversationDataSource(
      */
     override suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>> =
         getConversationMembers(conversationId).map { it.map(idMapper::toApiModel) }.flatMap {
-                wrapApiRequest { clientApi.listClientsOfUsers(it) }.map { memberMapper.fromMapOfClientsResponseToRecipients(it) }
-            }
+            wrapApiRequest { clientApi.listClientsOfUsers(it) }.map { memberMapper.fromMapOfClientsResponseToRecipients(it) }
+        }
 
     override suspend fun getOneToOneConversationDetailsByUserId(otherUserId: UserId): Either<StorageFailure, ConversationDetails.OneOne> {
         return wrapStorageRequest {

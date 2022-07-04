@@ -67,16 +67,16 @@ internal object MapperProvider {
     fun userMapper(): UserMapper = UserMapperImpl(idMapper())
     fun teamMapper(): TeamMapper = TeamMapperImpl()
     fun messageMapper(): MessageMapper = MessageMapperImpl(idMapper(), memberMapper())
-    fun memberMapper(): MemberMapper = MemberMapperImpl(idMapper())
+    fun memberMapper(): MemberMapper = MemberMapperImpl(idMapper(), conversationRoleMapper())
     fun conversationMapper(): ConversationMapper =
         ConversationMapperImpl(idMapper(), ConversationStatusMapperImpl(), ProtocolInfoMapperImpl())
+
     fun conversationRoleMapper(): ConversationRoleMapper = ConversationRoleMapperImpl()
     fun publicUserMapper(): PublicUserMapper = PublicUserMapperImpl(idMapper())
     fun sendMessageFailureMapper(): SendMessageFailureMapper = SendMessageFailureMapperImpl()
     fun assetMapper(): AssetMapper = AssetMapperImpl()
     fun encryptionAlgorithmMapper(): EncryptionAlgorithmMapper = EncryptionAlgorithmMapper()
-    fun eventMapper(): EventMapper =
-        EventMapper(idMapper(), memberMapper(), connectionMapper())
+    fun eventMapper(): EventMapper = EventMapper(idMapper(), memberMapper(), connectionMapper())
 
     fun preyKeyMapper(): PreKeyMapper = PreKeyMapperImpl()
     fun preKeyListMapper(): PreKeyListMapper = PreKeyListMapper(preyKeyMapper())
