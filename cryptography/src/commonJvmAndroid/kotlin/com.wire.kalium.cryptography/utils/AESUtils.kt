@@ -24,7 +24,7 @@ internal class AESEncrypt {
 
         // Parse Secret Key from our custom AES256Key model object
         val symmetricAESKey = SecretKeySpec(key.data, 0, key.data.size, KEY_ALGORITHM)
-            
+
         // Init the encryption
         cipher.init(Cipher.ENCRYPT_MODE, symmetricAESKey)
 
@@ -33,10 +33,6 @@ internal class AESEncrypt {
             cipheredSink.write(cipher.iv) // we append the IV to the beginning of the file data
             encryptedDataSize = cipheredSink.writeAll(kaliumFileSystem.source(assetDataPath))
             kaliumLogger.d("** The encrypted data size is => $encryptedDataSize")
-        }
-
-        kaliumFileSystem.read(outputPath) {
-            encryptedDataWithIVSize = readByteArray().size.toLong()
         }
 
         kaliumLogger.d("** The encrypted data with IV size is => ${sizeWithPaddingAndIV(encryptedDataSize)}")
