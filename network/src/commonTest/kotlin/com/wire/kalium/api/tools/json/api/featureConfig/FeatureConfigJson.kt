@@ -6,8 +6,9 @@ import com.wire.kalium.network.api.featureConfigs.AppLock
 import com.wire.kalium.network.api.featureConfigs.AppLockConfig
 import com.wire.kalium.network.api.featureConfigs.ClassifiedDomains
 import com.wire.kalium.network.api.featureConfigs.ClassifiedDomainsConfig
-import com.wire.kalium.network.api.featureConfigs.ConfigsStatus
+import com.wire.kalium.network.api.featureConfigs.ConfigsStatusDTO
 import com.wire.kalium.network.api.featureConfigs.FeatureConfigResponse
+import com.wire.kalium.network.api.featureConfigs.FeatureFlagStatusDTO
 import com.wire.kalium.network.api.featureConfigs.SelfDeletingMessages
 import com.wire.kalium.network.api.featureConfigs.SelfDeletingMessagesConfig
 
@@ -70,19 +71,19 @@ object FeatureConfigJson {
     val featureConfigResponseSerializerResponse = ValidJsonProvider(
         FeatureConfigResponse(
             AppLock(
-                AppLockConfig(true, 0),  "enabled"
+                AppLockConfig(true, 0), FeatureFlagStatusDTO.ENABLED
             ),
-            ClassifiedDomains(ClassifiedDomainsConfig(listOf()),  "enabled"),
-            ConfigsStatus( "enabled"),
-            ConfigsStatus( "enabled"),
-            ConfigsStatus( "enabled"),
-            ConfigsStatus( "enabled"),
-            ConfigsStatus( "enabled"),
-            ConfigsStatus( "enabled"),
-            SelfDeletingMessages(SelfDeletingMessagesConfig(0),  "enabled"),
-            ConfigsStatus( "enabled"),
-            ConfigsStatus( "enabled"),
-            ConfigsStatus( "enabled")
+            ClassifiedDomains(ClassifiedDomainsConfig(listOf()), FeatureFlagStatusDTO.ENABLED),
+            ConfigsStatusDTO(FeatureFlagStatusDTO.ENABLED),
+            ConfigsStatusDTO(FeatureFlagStatusDTO.ENABLED),
+            ConfigsStatusDTO(FeatureFlagStatusDTO.ENABLED),
+            ConfigsStatusDTO(FeatureFlagStatusDTO.ENABLED),
+            ConfigsStatusDTO(FeatureFlagStatusDTO.ENABLED),
+            ConfigsStatusDTO(FeatureFlagStatusDTO.ENABLED),
+            SelfDeletingMessages(SelfDeletingMessagesConfig(0), FeatureFlagStatusDTO.ENABLED),
+            ConfigsStatusDTO(FeatureFlagStatusDTO.ENABLED),
+            ConfigsStatusDTO(FeatureFlagStatusDTO.ENABLED),
+            ConfigsStatusDTO(FeatureFlagStatusDTO.ENABLED)
         ), featureConfigResponseSerializer
     )
 

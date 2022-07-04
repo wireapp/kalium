@@ -5,8 +5,6 @@ import com.wire.kalium.logic.data.connection.ConnectionMapper
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.conversation.MemberMapper
-import com.wire.kalium.logic.data.featureConfig.FeatureConfigName
-import com.wire.kalium.logic.data.featureConfig.FeatureConfigStatus
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.network.api.notification.EventContentDTO
@@ -118,7 +116,6 @@ class EventMapper(
         id: String,
         featureConfigUpdatedDTO: EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO
     ) = Event.FeatureConfig.FeatureConfigUpdated(
-        id, FeatureConfigName.valueOf(featureConfigUpdatedDTO.name),
-        FeatureConfigStatus.valueOf(featureConfigUpdatedDTO.data.status)
+        id, featureConfigUpdatedDTO.name.name, featureConfigUpdatedDTO.data.status.name
     )
 }

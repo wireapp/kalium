@@ -2,9 +2,10 @@ package com.wire.kalium.logic.sync
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.featureConfig.FeatureConfigName
-import com.wire.kalium.logic.data.featureConfig.FeatureConfigStatus
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.network.api.featureConfigs.FeatureFlagStatusDTO
+import com.wire.kalium.network.api.notification.EventContentDTO
+
 
 interface FeatureConfigEventReceiver : EventReceiver<Event.FeatureConfig>
 
@@ -21,13 +22,19 @@ class FeatureConfigEventReceiverImpl(
 
     private fun handleFeatureConfigEvent(event: Event.FeatureConfig.FeatureConfigUpdated) {
         when (event.name) {
-            FeatureConfigName.fileSharing -> {
+            EventContentDTO.FeatureConfig.FeatureConfigNameDTO.FILE_SHARING.name -> {
                 if (kaliumConfigs.fileRestrictionEnabled) {
                     userConfigRepository.setFileSharingStatus(false, null)
                 } else {
                     when (event.status) {
-                        FeatureConfigStatus.enabled -> userConfigRepository.setFileSharingStatus(status = true, isStatusChanged = true)
-                        FeatureConfigStatus.disabled -> userConfigRepository.setFileSharingStatus(status = false, isStatusChanged = true)
+                        FeatureFlagStatusDTO.ENABLED.name -> userConfigRepository.setFileSharingStatus(
+                            status = true,
+                            isStatusChanged = true
+                        )
+                        FeatureFlagStatusDTO.DISABLED.name -> userConfigRepository.setFileSharingStatus(
+                            status = false,
+                            isStatusChanged = true
+                        )
                     }
                 }
             }
