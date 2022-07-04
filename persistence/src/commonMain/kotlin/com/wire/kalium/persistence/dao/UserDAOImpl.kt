@@ -153,6 +153,17 @@ class UserDAOImpl(
         userQueries.updateUserAvailabilityStatus(status, qualifiedID)
     }
 
+    override suspend fun getUsersNotInConversationByNameOrHandleOrEmail(
+        conversationId: QualifiedIDEntity,
+        searchQuery: String
+    ): List<UserEntity> {
+        userQueries.getUsersNotInConversationByNameOrHandleOrEmail(conversationId,searchQuery)
+    }
+
+    override suspend fun getUsersNotInConversationByHandle(conversationId: QualifiedIDEntity, handle: String): List<UserEntity> {
+        userQueries.getUsersNotInConversationByHandle(conversationId,handle)
+    }
+
     override suspend fun insertOrIgnoreUserWithConnectionStatus(qualifiedID: QualifiedIDEntity, connectionStatus: ConnectionEntity.State) {
         userQueries.insertOrIgnoreUserIdWithConnectionStatus(qualifiedID, connectionStatus)
     }

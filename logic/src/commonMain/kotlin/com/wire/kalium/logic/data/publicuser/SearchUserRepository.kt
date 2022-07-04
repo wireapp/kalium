@@ -35,41 +35,29 @@ interface SearchUserRepository {
 
     suspend fun searchKnownUsersByNameOrHandleOrEmail(
         searchQuery: String,
-        localSearchUserOptions: LocalSearchUserOptions = LocalSearchUserOptions.Default
+        searchUsersOptions: SearchUsersOptions = SearchUsersOptions.Default
     ): UserSearchResult
 
     suspend fun searchKnownUsersByHandle(
         handle: String,
-        localSearchUserOptions: LocalSearchUserOptions = LocalSearchUserOptions.Default
+        searchUsersOptions: SearchUsersOptions = SearchUsersOptions.Default
     ): UserSearchResult
 
     suspend fun searchUserDirectory(
         searchQuery: String,
         domain: String,
         maxResultSize: Int? = null,
-        localSearchUserOptions: LocalSearchUserOptions = LocalSearchUserOptions.Default
+        searchUsersOptions: SearchUsersOptions = SearchUsersOptions.Default
     ): Either<NetworkFailure, UserSearchResult>
 
 }
 
-data class LocalSearchUserOptions(
+data class SearchUsersOptions(
     val conversationExcluded: ConversationMemberExcludedOptions,
 ) {
     companion object {
-        val Default = LocalSearchUserOptions(
+        val Default = SearchUsersOptions(
             conversationExcluded = ConversationMemberExcludedOptions.None,
-        )
-    }
-}
-
-data class RemoteSearchUserOptions(
-    val conversationExcluded: ConversationMemberExcludedOptions,
-    val selfUserIncluded: Boolean
-) {
-    companion object {
-        val Default = RemoteSearchUserOptions(
-            conversationExcluded = ConversationMemberExcludedOptions.None,
-            selfUserIncluded = false
         )
     }
 }
@@ -94,10 +82,10 @@ class SearchUserRepositoryImpl(
 
     override suspend fun searchKnownUsersByNameOrHandleOrEmail(
         searchQuery: String,
-        localSearchUserOptions: LocalSearchUserOptions
+        searchUsersOptions: SearchUsersOptions
     ): UserSearchResult {
-        return handleLocalSearchUsersOption(
-            localSearchUserOptions,
+        return handeSearchUsersOptions(
+            searchUsersOptions,
             excluded = { conversationId ->
                 userDAO.getUsersNotInConversationByNameOrHandleOrEmail(
                     conversationId = idMapper.toDaoModel(conversationId),
@@ -115,10 +103,10 @@ class SearchUserRepositoryImpl(
 
     override suspend fun searchKnownUsersByHandle(
         handle: String,
-        localSearchUserOptions: LocalSearchUserOptions
+        searchUsersOptions: SearchUsersOptions
     ): UserSearchResult {
-        return handleLocalSearchUsersOption(
-            localSearchUserOptions,
+        return handeSearchUsersOptions(
+            searchUsersOptions,
             excluded = { conversationId ->
                 userDAO.getUsersNotInConversationByHandle(
                     conversationId = idMapper.toDaoModel(conversationId),
@@ -134,24 +122,11 @@ class SearchUserRepositoryImpl(
         )
     }
 
-    private suspend fun handleLocalSearchUsersOption(
-        localSearchUserOptions: LocalSearchUserOptions,
-        excluded: suspend (conversationId: ConversationId) -> List<UserEntity>,
-        default: suspend () -> List<UserEntity>
-    ): UserSearchResult {
-        val result = when (val searchOptions = localSearchUserOptions.conversationExcluded) {
-            ConversationMemberExcludedOptions.None -> default()
-            is ConversationMemberExcludedOptions.ConversationExcluded -> excluded(searchOptions.conversationId)
-        }
-
-        return UserSearchResult(result.map(publicUserMapper::fromDaoModelToPublicUser))
-    }
-
     override suspend fun searchUserDirectory(
         searchQuery: String,
         domain: String,
         maxResultSize: Int?,
-        localSearchUserOptions: LocalSearchUserOptions
+        searchUsersOptions: SearchUsersOptions
     ): Either<NetworkFailure, UserSearchResult> =
         wrapApiRequest {
             userSearchApi.search(
@@ -200,6 +175,19 @@ class SearchUserRepositoryImpl(
                     .filterNotNull()
                     .map(userMapper::fromDaoModelToSelfUser)
             }.firstOrNull() ?: throw  IllegalStateException()
+    }
+
+    private suspend fun handeSearchUsersOptions(
+        localSearchUserOptions: SearchUsersOptions,
+        excluded: suspend (conversationId: ConversationId) -> List<UserEntity>,
+        default: suspend () -> List<UserEntity>
+    ): UserSearchResult {
+        val result = when (val searchOptions = localSearchUserOptions.conversationExcluded) {
+            ConversationMemberExcludedOptions.None -> default()
+            is ConversationMemberExcludedOptions.ConversationExcluded -> excluded(searchOptions.conversationId)
+        }
+
+        return UserSearchResult(result.map(publicUserMapper::fromDaoModelToPublicUser))
     }
 
 }
