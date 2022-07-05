@@ -266,15 +266,11 @@ class ConversationDataSource(
     }
 
     override suspend fun persistMembers(members: List<Member>, conversationID: ConversationId): Either<CoreFailure, Unit> =
-        userRepository.fetchUsersIfUnknownByIds(members.map { it.id }.toSet())
-            .flatMap {
-                wrapStorageRequest {
-                    conversationDAO.insertMembers(
-                        members.map(memberMapper::toDaoModel),
-                        idMapper.toDaoModel(conversationID)
-                    )
-                }
-            }
+        wrapStorageRequest {
+            conversationDAO.insertMembers(
+                members.map(memberMapper::toDaoModel), idMapper.toDaoModel(conversationID)
+            )
+        }
 
     override suspend fun addMembers(userIdList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit> =
         wrapApiRequest {
@@ -285,9 +281,9 @@ class ConversationDataSource(
             conversationApi.addParticipant(
                 addParticipantRequest, idMapper.toApiModel(conversationID)
             )
-        }.flatMap {
+        }.map {
             when (it) {
-                is AddParticipantResponse.ConversationUnchanged -> Either.Right(Unit)
+                is AddParticipantResponse.ConversationUnchanged -> Unit
                 // TODO: the server response with an event can we use event processor to handle it
                 is AddParticipantResponse.UserAdded -> userIdList.map { userId ->
                     // TODO: mapping the user id list to members with a made up role is incorrect and a recipe for disaster

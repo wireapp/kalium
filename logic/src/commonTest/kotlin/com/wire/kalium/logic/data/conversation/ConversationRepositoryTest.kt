@@ -572,10 +572,6 @@ class ConversationRepositoryTest {
             .suspendFunction(conversationDAO::insertMembers, fun2<List<Member>, QualifiedIDEntity>())
             .whenInvokedWith(any(), any())
             .thenDoNothing()
-        given(userRepository)
-            .suspendFunction(userRepository::fetchUsersIfUnknownByIds)
-            .whenInvokedWith(any())
-            .thenReturn(Either.Right(Unit))
 
         conversationRepository.addMembers(listOf(TestConversation.USER_1), conversationId)
             .shouldSucceed()
