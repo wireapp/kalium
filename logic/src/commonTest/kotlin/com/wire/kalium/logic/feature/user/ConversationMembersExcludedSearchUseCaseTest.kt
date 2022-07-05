@@ -255,7 +255,10 @@ class ConversationMembersExcludedSearchUseCaseTest {
                 .suspendFunction(conversationRepository::getConversationMembers)
                 .whenInvokedWith(anything())
                 .thenReturn(
-                    Either.Right(if (extraConversationMember != null) conversationMembers + extraConversationMember else conversationMembers)
+                    Either.Right(
+                        if (extraConversationMember != null) conversationMembers + extraConversationMember
+                        else conversationMembers
+                    )
                 )
 
             return this
