@@ -109,8 +109,6 @@ class ConversationsApplication : CliktCommand() {
         val imageBytes: ByteArray = getResource("moon1.jpg")
         val imageSize = imageBytes.size
         val imagePath = cliFileSystem.tempFilePath()
-        val tempOutputPath = "temp_output".toPath()
-        val outputSink = cliFileSystem.sink(tempOutputPath)
 
         cliFileSystem.write(imagePath) {
             write(imageBytes)
