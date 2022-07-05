@@ -5,16 +5,15 @@ import com.wire.kalium.network.api.model.ConversationAccessRole
 import com.wire.kalium.network.api.notification.EventContentDTO
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlin.jvm.JvmInline
 
 @Serializable
 data class ConversationAccessData(
-    @SerialName("access") val access: ConversationAccess,
-    @SerialName("access_role_v2") val accessRole: List<ConversationAccessRole>?
+    @SerialName("access") val access: Set<ConversationAccess>,
+    @SerialName("access_role_v2") val accessRole: Set<ConversationAccessRole>?
 )
+
 
 sealed class UpdateConversationAccessResponse {
     object AccessUnchanged: UpdateConversationAccessResponse()
-    @JvmInline
-    data class AccessUpdated(val event: EventContentDTO.Conversation): UpdateConversationAccessResponse()
+    data class AccessUpdated(val event: EventContentDTO.Conversation.AccessUpdate): UpdateConversationAccessResponse()
 }

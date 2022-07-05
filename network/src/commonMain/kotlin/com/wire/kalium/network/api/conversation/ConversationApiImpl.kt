@@ -5,8 +5,10 @@ import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.conversation.model.ConversationAccessData
 import com.wire.kalium.network.api.conversation.model.UpdateConversationAccessResponse
+import com.wire.kalium.network.api.notification.EventContentDTO
 import com.wire.kalium.network.api.pagination.PaginationRequest
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
@@ -102,7 +104,10 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
         }.let { httpResponse ->
             when (httpResponse.status) {
                 HttpStatusCode.NoContent -> NetworkResponse.Success(UpdateConversationAccessResponse.AccessUnchanged, httpResponse)
-                else -> wrapKaliumResponse<UpdateConversationAccessResponse.AccessUpdated> { httpResponse }
+                else -> wrapKaliumResponse<EventContentDTO.Conversation.AccessUpdate> { httpResponse }
+                    .mapSuccess {
+                        UpdateConversationAccessResponse.AccessUpdated(it)
+                    }
             }
         }
     }
