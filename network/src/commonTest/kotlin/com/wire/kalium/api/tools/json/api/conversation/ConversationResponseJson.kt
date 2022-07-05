@@ -9,6 +9,7 @@ import com.wire.kalium.network.api.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.MutedStatus
 import com.wire.kalium.network.api.conversation.ServiceReferenceDTO
+import com.wire.kalium.network.tools.KtxSerializer.json
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject
