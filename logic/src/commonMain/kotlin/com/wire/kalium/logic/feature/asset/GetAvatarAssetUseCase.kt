@@ -28,6 +28,6 @@ internal class GetAvatarAssetUseCaseImpl(private val assetDataSource: AssetRepos
 }
 
 sealed class PublicAssetResult {
-    class Success(val asset: Path) : PublicAssetResult()
+    class Success(val assetPath: Path) : PublicAssetResult()
     class Failure(val coreFailure: CoreFailure) : PublicAssetResult()
 }

@@ -44,7 +44,7 @@ interface AssetRepository {
      * @param mimeType type of the asset to be uploaded
      * @param assetDataPath the path of the encrypted data to be uploaded
      * @param assetDataPath the [AES256Key] that will be used to encrypt the data living in [assetDataPath]
-     * @return [Either] a [CoreFailure] if anything went wrong, or the [UploadedAssetId] of the asset if successful
+     * @return [Either] a [CoreFailure] if anything went wrong, or the [UploadedAssetId] of the newly created asset and the [SHA256Key] of the encrypted asset if successful
      */
     suspend fun uploadAndPersistPrivateAsset(
         mimeType: AssetType,

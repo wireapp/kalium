@@ -4,7 +4,6 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.functional.Either
-import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.eq
@@ -43,7 +42,7 @@ class GetPublicAssetUseCaseTest {
         val publicAsset = getPublicAsset(assetKey)
 
         assertEquals(PublicAssetResult.Success::class, publicAsset::class)
-        assertEquals(expectedPath, (publicAsset as PublicAssetResult.Success).asset)
+        assertEquals(expectedPath, (publicAsset as PublicAssetResult.Success).assetPath)
 
         verify(assetRepository)
             .suspendFunction(assetRepository::downloadPublicAsset)

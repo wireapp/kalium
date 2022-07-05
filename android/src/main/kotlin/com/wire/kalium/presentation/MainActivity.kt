@@ -56,7 +56,12 @@ class MainActivity : ComponentActivity() {
             val selfUser = session.users.getSelfUser().first()
 
             val avatarAsset = when (val publicAsset = session.users.getPublicAsset(selfUser.previewPicture!!)) {
-                is PublicAssetResult.Success -> publicAsset.asset
+                is PublicAssetResult.Success -> {
+                    // We read the avatar data stored in the assetPath
+                    session.kaliumFileSystem.read(publicAsset.assetPath) {
+                        readByteArray()
+                    }
+                }
                 else -> null
             }
 
