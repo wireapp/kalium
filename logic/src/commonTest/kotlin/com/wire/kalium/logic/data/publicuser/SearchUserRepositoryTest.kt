@@ -38,7 +38,6 @@ import io.mockative.Times
 import io.mockative.any
 import io.mockative.anything
 import io.mockative.classOf
-import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
@@ -49,7 +48,10 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
+
+//TODO: refactor to arrangement pattern
 class SearchUserRepositoryTest {
 
     @Mock
@@ -461,20 +463,31 @@ class SearchUserRepositoryTest {
                 .whenInvokedWith(any())
                 .then { NetworkResponse.Success(USER_RESPONSE, mapOf(), 200) }
 
-            given(publicUserMapper)
-                .function(publicUserMapper::fromUserDetailResponseWithUsertype)
-                .whenInvokedWith(any(), any())
-                .then { _, _ -> PUBLIC_USER }
-
             given(domainUserTypeMapper)
                 .function(domainUserTypeMapper::fromOtherUserTeamAndDomain)
                 .whenInvokedWith(any(), any(), any())
                 .then { _, _, _ -> UserType.FEDERATED }
 
+            given(userDAO).suspendFunction(userDAO::getUserByQualifiedID)
+                .whenInvokedWith(any())
+                .then { flowOf(USER_ENTITY) }
+
+            given(userMapper)
+                .function(userMapper::fromDaoModelToSelfUser)
+                .whenInvokedWith(any())
+                .then { SELF_USER }
+
+            given(publicUserMapper)
+                .function(publicUserMapper::fromUserDetailResponseWithUsertype)
+                .whenInvokedWith(any(), any())
+                .then { _, _ -> PUBLIC_USER }
+
+            val conversationMember = generateMember(QualifiedIDEntity("1", "someDomain"))
+
             given(conversationDao)
                 .suspendFunction(conversationDao::getAllMembers)
                 .whenInvokedWith(any())
-                .thenReturn(flowOf(listOf(generateMember(QualifiedIDEntity("1", "someDomain")))))
+                .thenReturn(flowOf(listOf(conversationMember)))
 
             //when
             val result = searchUserRepository.searchUserDirectory(
@@ -483,7 +496,10 @@ class SearchUserRepositoryTest {
                 100,
                 searchUsersOptions = SearchUsersOptions(
                     ConversationMemberExcludedOptions.ConversationExcluded(
-                        conversationId = ConversationId("someValue", "someDomain")
+                        conversationId = ConversationId(
+                            value = "someValue",
+                            domain = "someDomain"
+                        )
                     )
                 )
             )
