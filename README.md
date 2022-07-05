@@ -24,8 +24,11 @@ Note that the path needs to be adjusted for your machine.
 ##### Troubleshooting
 
 ###### Unknown host CPU architecture: arm64
+`This solution won't work! an alternative solution is to use OpenJDK, but that won't work either, so PLEASE DON'T WASTE MORE TIME on it till there is a permanent and working solution for M1 machines! Otherwise, please use x86-based machines to build and run the CLI app!`
 
-If you get `Unknown host CPU architecture: arm64` on Apple Silicon (M1 Mac), [follow this stack overflow answer](https://stackoverflow.com/questions/69541831/unknown-host-cpu-architecture-arm64-android-ndk-siliconm1-apple-macbook-pro).
+If you get `Unknown host CPU architecture: arm64` on Apple Silicon (M1 Mac)
+, [follow this stack overflow answer](https://stackoverflow.com/questions/69541831/unknown-host-cpu-architecture-arm64-android-ndk-siliconm1-apple-macbook-pro)
+.
 
 Change `/Users/<your-user>/Library/Android/sdk/ndk/<your-ndk-version-number>` to
 

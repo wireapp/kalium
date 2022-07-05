@@ -15,11 +15,19 @@ data class Conversation(
     val name: String?,
     val type: Type,
     val teamId: TeamId?,
+    val protocol: ProtocolInfo,
     val mutedStatus: MutedConversationStatus,
     val lastNotificationDate: String?,
     val lastModifiedDate: String?
 ) {
     enum class Type { SELF, ONE_ON_ONE, GROUP, CONNECTION_PENDING }
+}
+
+sealed class ProtocolInfo {
+    object Proteus : ProtocolInfo()
+    data class MLS(val groupId: String, val groupState: GroupState) : ProtocolInfo() {
+        enum class GroupState { PENDING, PENDING_WELCOME_MESSAGE, ESTABLISHED }
+    }
 }
 
 sealed class ConversationDetails(open val conversation: Conversation) {
@@ -46,12 +54,14 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val userType: UserType,
         val lastModifiedDate: String?,
         val connection: com.wire.kalium.logic.data.user.Connection,
+        val protocolInfo: ProtocolInfo
     ) : ConversationDetails(
         Conversation(
             id = conversationId,
             name = otherUser?.name,
             type = Conversation.Type.CONNECTION_PENDING,
             teamId = otherUser?.team?.let { TeamId(it) },
+            protocolInfo,
             mutedStatus = MutedConversationStatus.AllAllowed,
             lastNotificationDate = null,
             lastModifiedDate = lastModifiedDate,

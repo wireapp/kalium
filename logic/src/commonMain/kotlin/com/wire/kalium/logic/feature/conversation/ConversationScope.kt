@@ -3,17 +3,20 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
 import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 
+@Suppress("LongParameterList")
 class ConversationScope(
     private val conversationRepository: ConversationRepository,
     private val connectionRepository: ConnectionRepository,
     private val userRepository: UserRepository,
     private val callRepository: CallRepository,
-    private val syncManager: SyncManager
+    private val syncManager: SyncManager,
+    private val mlsConversationRepository: MLSConversationRepository
 ) {
     val getConversations: GetConversationsUseCase
         get() = GetConversationsUseCase(conversationRepository, syncManager)
@@ -41,6 +44,9 @@ class ConversationScope(
 
     val createGroupConversation: CreateGroupConversationUseCase
         get() = CreateGroupConversationUseCase(conversationRepository, syncManager)
+
+    val addMemberToConversationUseCase: AddMemberToConversationUseCase
+        get() = AddMemberToConversationUseCaseImpl(conversationRepository, mlsConversationRepository)
 
     val getOrCreateOneToOneConversationUseCase: GetOrCreateOneToOneConversationUseCase
         get() = GetOrCreateOneToOneConversationUseCase(conversationRepository)
