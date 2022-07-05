@@ -115,7 +115,8 @@ class GetOrCreateOneToOneConversationUseCaseTest {
             previewPicture = null,
             completePicture = null,
             availabilityStatus = UserAvailabilityStatus.NONE,
-            userType = UserType.EXTERNAL
+            userType = UserType.EXTERNAL,
+            connectionStatus = ConnectionState.NOT_CONNECTED
         )
         val CONVERSATION_DETAILS = ConversationDetails.OneOne(
             CONVERSATION,

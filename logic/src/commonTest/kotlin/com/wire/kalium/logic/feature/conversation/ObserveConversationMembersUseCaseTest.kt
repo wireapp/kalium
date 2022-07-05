@@ -195,9 +195,7 @@ class ObserveConversationMembersUseCaseTest {
             membersListChannel.send(listOf(Member(otherUser.id, Member.Role.Admin), Member(selfUser.id, Member.Role.Member)))
             assertContentEquals(
                 listOf(MemberDetails(otherUser, Member.Role.Admin), MemberDetails(selfUser, Member.Role.Member)),
-                awaitItem().also {
-                    kaliumLogger.d(it.toString())
-                }
+                awaitItem()
             )
 
             membersListChannel.close()

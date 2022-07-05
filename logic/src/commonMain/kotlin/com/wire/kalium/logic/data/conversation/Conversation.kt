@@ -69,7 +69,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
     )
 }
 
-class MembersInfo(val self: Member, val otherMembers: List<Member>)
+data class MembersInfo(val self: Member, val otherMembers: List<Member>)
 
 data class Member(val id: UserId, val role: Role) {
     sealed class Role {

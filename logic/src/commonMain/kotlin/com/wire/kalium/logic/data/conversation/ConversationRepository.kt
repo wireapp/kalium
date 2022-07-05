@@ -145,7 +145,8 @@ class ConversationDataSource(
         conversations: List<ConversationResponse>, selfUserTeamId: String?
     ) = wrapStorageRequest {
         val conversationEntities = conversations.map { conversationResponse ->
-            conversationMapper.fromApiModelToDaoModel(conversationResponse,
+            conversationMapper.fromApiModelToDaoModel(
+                conversationResponse,
                 mlsGroupState = conversationResponse.groupId?.let { mlsGroupState(it) },
                 selfUserTeamId?.let { TeamId(it) })
         }

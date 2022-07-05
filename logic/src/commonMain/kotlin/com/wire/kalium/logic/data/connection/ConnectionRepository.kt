@@ -3,7 +3,9 @@ package com.wire.kalium.logic.data.connection
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
@@ -46,6 +48,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
@@ -60,6 +63,7 @@ interface ConnectionRepository {
     suspend fun insertConnectionFromEvent(event: Event.User.NewConnection): Either<CoreFailure, Unit>
     suspend fun observeConnectionList(): Flow<List<ConversationDetails>>
     suspend fun observeConnectionListAsDetails(): Flow<List<ConversationDetails>>
+    suspend fun getConnectionRequests(): List<Connection>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -154,12 +158,20 @@ internal class ConnectionDataSource(
         }
     }
 
+
     override suspend fun observeConnectionListAsDetails(): Flow<List<ConversationDetails>> {
         return connectionDAO.getConnectionRequests().map {
             it.map { connection ->
                 val otherUser = userDAO.getUserByQualifiedID(connection.qualifiedToId)
                 connectionMapper.fromDaoToConnectionDetails(connection, otherUser.firstOrNull())
             }
+        }
+    }
+
+    override suspend fun getConnectionRequests(): List<Connection> {
+        return connectionDAO.getConnectionRequests().first().map { connection ->
+            val otherUser = userDAO.getUserByQualifiedID(connection.qualifiedToId)
+            connectionMapper.fromDaoToModel(connection, otherUser.firstOrNull())
         }
     }
 
