@@ -17,6 +17,7 @@ import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.feature.UserSessionScope
+import com.wire.kalium.logic.feature.asset.SendAssetMessageResult
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
@@ -156,8 +157,8 @@ class LoginCommand : CliktCommand(name = "login") {
     private val environment: String? by option(help = "Choose backend environment: can be production or staging")
 
     private val serverConfig: ServerConfig.Links by lazy {
-        if (environment == "production") {
-            ServerConfig.PRODUCTION
+        if (environment == "staging") {
+            ServerConfig.STAGING
         } else {
             ServerConfig.DEFAULT
         }
@@ -200,6 +201,21 @@ class LoginCommand : CliktCommand(name = "login") {
             }
         }
     }
+}
+
+class SendAssetCommand : CliktCommand(name = "send-asset") {
+
+    override fun run() = runBlocking {
+        val userSession = currentUserSession()
+        val conversationID = selectConversation(userSession).id
+        val message = prompt("message", promptSuffix = ": ") ?: throw PrintMessage("Invalid message")
+
+        when (userSession.messages.sendAssetMessage(conversationID, message.encodeToByteArray(), "test asset", "text/plain")) {
+            is SendAssetMessageResult.Failure -> throw PrintMessage("Asset message failed to send")
+            is SendAssetMessageResult.Success -> echo("Asset message was successfully sent")
+        }
+    }
+
 }
 
 class ListenGroupCommand : CliktCommand(name = "listen-group") {
@@ -254,5 +270,10 @@ class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
 }
 
 fun main(args: Array<String>) = CLIApplication().subcommands(
-    LoginCommand(), CreateGroupCommand(), ListenGroupCommand(), DeleteClientCommand(), AddMemberToGroupCommand()
+    LoginCommand(),
+    CreateGroupCommand(),
+    ListenGroupCommand(),
+    DeleteClientCommand(),
+    AddMemberToGroupCommand(),
+    SendAssetCommand()
 ).main(args)
