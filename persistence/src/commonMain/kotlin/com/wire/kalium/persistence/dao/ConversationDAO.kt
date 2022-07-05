@@ -28,9 +28,17 @@ data class ConversationEntity(
     }
 }
 
+// TODO: rename to MemberEntity
 data class Member(
-    val user: QualifiedIDEntity
-)
+    val user: QualifiedIDEntity,
+    val role: Role
+) {
+    sealed class Role {
+        object Member : Role()
+        object Admin : Role()
+        data class Unknown(val name: String) : Role()
+    }
+}
 
 interface ConversationDAO {
     suspend fun getSelfConversationId(): QualifiedIDEntity
@@ -55,14 +63,16 @@ interface ConversationDAO {
     suspend fun deleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity)
     suspend fun getAllMembers(qualifiedID: QualifiedIDEntity): Flow<List<Member>>
     suspend fun updateOrInsertOneOnOneMemberWithConnectionStatus(
-        userId: UserIDEntity,
+        member: Member,
         status: ConnectionEntity.State,
         conversationID: QualifiedIDEntity
     )
+
     suspend fun updateConversationMutedStatus(
         conversationId: QualifiedIDEntity,
         mutedStatus: ConversationEntity.MutedStatus,
         mutedStatusTimestamp: Long
     )
+
     suspend fun getConversationsForNotifications(): Flow<List<ConversationEntity>>
 }

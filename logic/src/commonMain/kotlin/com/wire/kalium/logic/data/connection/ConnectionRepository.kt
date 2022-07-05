@@ -3,7 +3,9 @@ package com.wire.kalium.logic.data.connection
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
@@ -40,6 +42,7 @@ import com.wire.kalium.network.api.user.connection.ConnectionStateDTO
 import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConversationDAO
+import com.wire.kalium.persistence.dao.Member
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
@@ -60,6 +63,7 @@ interface ConnectionRepository {
     suspend fun insertConnectionFromEvent(event: Event.User.NewConnection): Either<CoreFailure, Unit>
     suspend fun observeConnectionList(): Flow<List<ConversationDetails>>
     suspend fun observeConnectionListAsDetails(): Flow<List<ConversationDetails>>
+    suspend fun getConnectionRequests(): List<Connection>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -154,12 +158,20 @@ internal class ConnectionDataSource(
         }
     }
 
+
     override suspend fun observeConnectionListAsDetails(): Flow<List<ConversationDetails>> {
         return connectionDAO.getConnectionRequests().map {
             it.map { connection ->
                 val otherUser = userDAO.getUserByQualifiedID(connection.qualifiedToId)
                 connectionMapper.fromDaoToConnectionDetails(connection, otherUser.firstOrNull())
             }
+        }
+    }
+
+    override suspend fun getConnectionRequests(): List<Connection> {
+        return connectionDAO.getConnectionRequests().first().map { connection ->
+            val otherUser = userDAO.getUserByQualifiedID(connection.qualifiedToId)
+            connectionMapper.fromDaoToModel(connection, otherUser.firstOrNull())
         }
     }
 
@@ -216,7 +228,8 @@ internal class ConnectionDataSource(
     private suspend fun updateConversationMemberFromConnection(connection: Connection) =
         wrapStorageRequest {
             conversationDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
-                userId = idMapper.toDaoModel(connection.qualifiedToId),
+                // TODO(IMPORTANT!!!!!!): setting a default value for member role is incorrect and can lead to unexpected behaviour
+                member = Member(user = idMapper.toDaoModel(connection.qualifiedToId), Member.Role.Member),
                 status = connectionStatusMapper.toDaoModel(connection.status),
                 conversationID = idMapper.toDaoModel(connection.qualifiedConversationId)
             )

@@ -4,6 +4,7 @@ import app.cash.turbine.test
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionMapperImpl
 import com.wire.kalium.logic.data.connection.ConnectionStatusMapperImpl
+import com.wire.kalium.logic.data.conversation.ConversationRoleMapperImpl
 import com.wire.kalium.logic.data.conversation.MemberMapperImpl
 import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.publicuser.PublicUserMapperImpl
@@ -53,7 +54,7 @@ class EventRepositoryTest {
     private val eventMapper: EventMapper =
         EventMapper(
             IdMapperImpl(),
-            MemberMapperImpl(IdMapperImpl()),
+            MemberMapperImpl(IdMapperImpl(), ConversationRoleMapperImpl()),
             ConnectionMapperImpl(
                 IdMapperImpl(),
                 ConnectionStatusMapperImpl(),
