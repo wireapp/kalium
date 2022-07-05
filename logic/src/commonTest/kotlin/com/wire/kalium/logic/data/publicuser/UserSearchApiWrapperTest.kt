@@ -71,6 +71,61 @@ class UserSearchApiWrapperTest {
 
         assertIs<Either.Right<UserSearchResponse>>(result)
         assertTrue { result.value.documents == expectedResult }
+        assertTrue { result.value.found == expectedResult.size }
+    }
+
+    @Test
+    fun givenUserSearchIncludesOnlyContactMembers_WhenSearchingForUsers_ThenResultIsEmpty() = runTest {
+        val conversationMembers = listOf(
+            Member(
+                user = QualifiedIDEntity(
+                    "value1",
+                    "someDomain"
+                )
+            ),
+            Member(
+                user = QualifiedIDEntity(
+                    "value2",
+                    "someDomain"
+                )
+            ),
+            Member(
+                user = QualifiedIDEntity(
+                    "value3",
+                    "someDomain"
+                )
+            )
+        )
+
+        val searchResultUsers = listOf(
+            Arrangement.generateContactDTO(UserId("value1", "someDomain")),
+            Arrangement.generateContactDTO(UserId("value2", "someDomain")),
+            Arrangement.generateContactDTO(UserId("value3", "someDomain"))
+        )
+
+
+        val (_, userSearchApiWrapper) = Arrangement().withSuccessFullSearch(
+            conversationMembers,
+            searchResultUsers
+        ).arrange()
+
+        val result = userSearchApiWrapper.search(
+            "someQuery",
+            "someDomain",
+            null,
+            searchUsersOptions = SearchUsersOptions(
+                ConversationMemberExcludedOptions.ConversationExcluded(
+                    ConversationId(
+                        "someValue",
+                        "someDomain"
+                    )
+                )
+            )
+        )
+
+        assertIs<Either.Right<UserSearchResponse>>(result)
+        assertTrue { result.value.documents.isEmpty() }
+        assertTrue { result.value.found == 0 }
     }
 
     class Arrangement {

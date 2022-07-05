@@ -405,83 +405,9 @@ class SearchUserRepositoryTest {
             .wasInvoked(Times(1))
     }
 
-//    @Test
-//    fun givenASearchWithConversationExcludedOption_WhenSearchingUserDirectory_ThenSearchResultsDoNotContaintConverstaionMembers() =
-//        runTest {
-//            //given
-//            given(userSearchApiWrapper)
-//                .suspendFunction(userSearchApiWrapper::search)
-//                .whenInvokedWith(any(),any(),any(),any())
-//                .thenReturn(Either.Right(CONTACT_SEARCH_RESPONSE))
-//
-//            given(metadataDAO)
-//                .suspendFunction(metadataDAO::valueByKey)
-//                .whenInvokedWith(any())
-//                .then { flowOf(JSON_QUALIFIED_ID) }
-//
-//            given(userDetailsApi)
-//                .suspendFunction(userDetailsApi::getMultipleUsers)
-//                .whenInvokedWith(any())
-//                .then { NetworkResponse.Success(USER_RESPONSE, mapOf(), 200) }
-//
-//            given(domainUserTypeMapper)
-//                .function(domainUserTypeMapper::fromOtherUserTeamAndDomain)
-//                .whenInvokedWith(any(), any(), any())
-//                .then { _, _, _ -> UserType.FEDERATED }
-//
-//            given(userDAO).suspendFunction(userDAO::getUserByQualifiedID)
-//                .whenInvokedWith(any())
-//                .then { flowOf(USER_ENTITY) }
-//
-//            given(userMapper)
-//                .function(userMapper::fromDaoModelToSelfUser)
-//                .whenInvokedWith(any())
-//                .then { SELF_USER }
-//
-//            given(publicUserMapper)
-//                .function(publicUserMapper::fromUserDetailResponseWithUsertype)
-//                .whenInvokedWith(any(), any())
-//                .then { _, _ -> PUBLIC_USER }
-//
-//            val conversationMember = generateMember(QualifiedIDEntity("1", "someDomain"))
-//
-//            given(conversationDao)
-//                .suspendFunction(conversationDao::getAllMembers)
-//                .whenInvokedWith(any())
-//                .thenReturn(flowOf(listOf(conversationMember)))
-//
-//            //when
-//            val result = searchUserRepository.searchUserDirectory(
-//                "someQuery",
-//                "someDomain",
-//                100,
-//                searchUsersOptions = SearchUsersOptions(
-//                    ConversationMemberExcludedOptions.ConversationExcluded(
-//                        conversationId = ConversationId(
-//                            value = "someValue",
-//                            domain = "someDomain"
-//                        )
-//                    )
-//                )
-//            )
-//
-//            assertIs<Either.Right<UserSearchResult>>(result)
-//        }
-
     private companion object {
         const val TEST_QUERY = "testQuery"
         const val TEST_DOMAIN = "testDomain"
-
-        fun generateContactDTO(id: UserId): ContactDTO {
-            return ContactDTO(
-                accentId = 1,
-                handle = "handle",
-                id = "id",
-                name = "name",
-                qualifiedID = id,
-                team = "team"
-            )
-        }
 
         val CONTACTS = buildList {
             for (i in 1..5) {
@@ -512,28 +438,10 @@ class SearchUserRepositoryTest {
             userType = UserType.FEDERATED
         )
 
-        fun generateUserSearchResponse(contacts: List<ContactDTO>): UserSearchResponse {
-            return UserSearchResponse(
-                documents = contacts,
-                found = contacts.size,
-                returned = contacts.size,
-                searchPolicy = SearchPolicyDTO.FULL_SEARCH,
-                took = 100,
-            )
-        }
-
         val CONTACT_SEARCH_RESPONSE = UserSearchResponse(
             documents = CONTACTS,
             found = CONTACTS.size,
             returned = 5,
-            searchPolicy = SearchPolicyDTO.FULL_SEARCH,
-            took = 100,
-        )
-
-        val EMPTY_CONTACT_SEARCH_RESPONSE = UserSearchResponse(
-            documents = emptyList(),
-            found = 0,
-            returned = 0,
             searchPolicy = SearchPolicyDTO.FULL_SEARCH,
             took = 100,
         )
@@ -585,10 +493,6 @@ class SearchUserRepositoryTest {
             completePicture = null,
             availabilityStatus = UserAvailabilityStatus.AVAILABLE,
         )
-
-        fun generateMember(id: QualifiedIDEntity): Member {
-            return Member(id)
-        }
 
     }
 

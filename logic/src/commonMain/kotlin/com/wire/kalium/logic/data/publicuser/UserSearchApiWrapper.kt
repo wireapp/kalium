@@ -54,9 +54,15 @@ class UserSearchApiWrapperImpl(
                     )
                 )
             }.map { contactResponse ->
-                contactResponse.copy(documents = contactResponse.documents.filter { contactDTO ->
+                val filteredContactResponse = contactResponse.documents.filter { contactDTO ->
                     !(conversationMembersId?.contains(idMapper.fromApiModel(contactDTO.qualifiedID)) ?: false)
-                })
+                }
+
+                contactResponse.copy(
+                    documents = filteredContactResponse,
+                    found = filteredContactResponse.size,
+                    returned = filteredContactResponse.size
+                )
             }
         } else {
             wrapApiRequest {
