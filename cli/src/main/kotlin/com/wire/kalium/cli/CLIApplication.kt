@@ -25,6 +25,7 @@ import com.wire.kalium.logic.feature.client.RegisterClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase.RegisterClientParam
 import com.wire.kalium.logic.feature.client.SelfClientsResult
 import com.wire.kalium.logic.feature.conversation.GetConversationsUseCase
+import com.wire.kalium.logic.feature.publicuser.GetAllContactsResult
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.logic.feature.session.GetAllSessionsResult
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -69,7 +70,13 @@ suspend fun selectConversation(userSession: UserSessionScope): Conversation {
 }
 
 suspend fun selectConnection(userSession: UserSessionScope): OtherUser {
-    val connections = userSession.users.getAllKnownUsers()
+    val connections = userSession.users.getAllKnownUsers().let {
+        when (it) {
+            is GetAllContactsResult.Failure -> throw PrintMessage("Failed to retrieve connections: ${it.storageFailure}")
+            is GetAllContactsResult.Success -> it.allContacts
+        }
+    }
+
     connections.forEachIndexed { index, connection ->
         echo("$index) ${connection.id.value}  Name: ${connection.name}")
     }
@@ -114,7 +121,12 @@ class CreateGroupCommand : CliktCommand(name = "create-group") {
     override fun run() = runBlocking {
         val userSession = currentUserSession()
 
-        val users = userSession.users.getAllKnownUsers()
+        val users = userSession.users.getAllKnownUsers().let {
+            when (it) {
+                is GetAllContactsResult.Failure -> throw PrintMessage("Failed to retrieve connections: ${it.storageFailure}")
+                is GetAllContactsResult.Success -> it.allContacts
+            }
+        }
 
         users.forEachIndexed { index, user ->
             echo("$index) ${user.id.value}  Name: ${user.name}")
