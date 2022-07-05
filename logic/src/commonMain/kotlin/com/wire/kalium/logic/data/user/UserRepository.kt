@@ -174,6 +174,7 @@ class UserDataSource(
     override suspend fun observeUserInfo(userId: UserId): Flow<User?> =
         userDAO.getUserByQualifiedID(qualifiedID = idMapper.toDaoModel(userId))
             .map { userEntity ->
+                // TODO: cache SelfUserId so it's not fetched from DB every single time
                 if (userId == getSelfUserId()) {
                     userEntity?.let { userMapper.fromDaoModelToSelfUser(userEntity) }
                 } else {
