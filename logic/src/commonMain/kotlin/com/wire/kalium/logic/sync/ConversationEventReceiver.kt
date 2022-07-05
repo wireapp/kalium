@@ -221,7 +221,7 @@ class ConversationEventReceiverImpl(
         .flatMap {
             // fetch required unknown users that haven't been persisted during slow sync, e.g. from another team
             // and keep them to properly show this member-leave message
-            userRepository.fetchUsersIfUnknownByIds(event.members.map { it.id }.toSet())
+            userRepository.fetchUsersIfUnknownByIds(event.removedList.toSet())
         }
         .onSuccess {
             val message = Message.System(
