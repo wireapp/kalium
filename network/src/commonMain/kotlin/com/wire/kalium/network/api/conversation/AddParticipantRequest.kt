@@ -10,7 +10,7 @@ data class AddParticipantRequest (
     @SerialName("qualified_users")
     val users: List<UserId>,
     @SerialName("conversation_role")
-    val conversationRole: String
+    val conversationRole: String?
 )
 
 
