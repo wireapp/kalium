@@ -22,9 +22,9 @@ import com.wire.kalium.persistence.dao.UserTypeEntity
 
 object TestUser {
     val USER_ID = UserId("value", "domain")
-    val ENTITY_ID = QualifiedIDEntity("value", "domain")
-    val NETWORK_ID = com.wire.kalium.network.api.UserId(value = "value", domain = "domain")
-    const val JSON_QUALIFIED_ID = """{"value":"value" , "domain":"domain" }"""
+    val ENTITY_ID = QualifiedIDEntity("entityUserValue", "entityDomain")
+    val NETWORK_ID = com.wire.kalium.network.api.UserId(value = "networkValue", domain = "networkDomain")
+    const val JSON_QUALIFIED_ID = """{"value":"jsonValue" , "domain":"jsonDomain" }"""
 
     val SELF = SelfUser(
         USER_ID,
