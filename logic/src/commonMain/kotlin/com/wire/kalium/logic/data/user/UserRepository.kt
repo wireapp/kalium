@@ -52,7 +52,6 @@ interface UserRepository {
     suspend fun updateLocalSelfUserHandle(handle: String)
     suspend fun getAllKnownUsers(): Either<StorageFailure, List<OtherUser>>
     suspend fun getKnownUser(userId: UserId): Flow<OtherUser?>
-    suspend fun getKnownUsers(userIdList: List<UserId>): Flow<List<OtherUser>>
     suspend fun getUserInfo(userId: UserId): Either<CoreFailure, OtherUser>
     suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus)
     suspend fun getAllKnownUsersNotInConversation(conversationId: ConversationId): Either<StorageFailure, List<OtherUser>>
@@ -126,11 +125,12 @@ class UserDataSource(
             }
         }
 
-    override suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit> {
+    override suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit> = wrapStorageRequest {
         val qualifiedIDList = ids.map(idMapper::toDaoModel)
-        val knownUsers = userDAO.getUsersByQualifiedIDList(ids.map(idMapper::toDaoModel)).first()
-        val missingIds = qualifiedIDList.filterNot { knownUsers.any { userEntity -> userEntity.id == it } }
-        return if (missingIds.isEmpty()) Either.Right(Unit)
+        val knownUsers = userDAO.getUsersByQualifiedIDList(ids.map(idMapper::toDaoModel))
+        qualifiedIDList.filterNot { knownUsers.any { userEntity -> userEntity.id == it } }
+    }.flatMap { missingIds ->
+        if (missingIds.isEmpty()) Either.Right(Unit)
         else fetchUsersByIds(missingIds.map { idMapper.fromDaoModel(it) }.toSet())
     }
 
@@ -180,10 +180,6 @@ class UserDataSource(
     override suspend fun getKnownUser(userId: UserId) =
         userDAO.getUserByQualifiedID(qualifiedID = idMapper.toDaoModel(userId))
             .map { userEntity -> userEntity?.let { publicUserMapper.fromDaoModelToPublicUser(userEntity) } }
-
-    override suspend fun getKnownUsers(userIdList: List<UserId>) =
-        userDAO.getUsersByQualifiedIDList(qualifiedIDList = userIdList.map { idMapper.toDaoModel(it) })
-            .map { it.map { userEntity -> publicUserMapper.fromDaoModelToPublicUser(userEntity) } }
 
     override suspend fun getUserInfo(userId: UserId): Either<CoreFailure, OtherUser> =
         wrapApiRequest { userDetailsApi.getUserInfo(idMapper.toApiModel(userId)) }.map { userProfile ->

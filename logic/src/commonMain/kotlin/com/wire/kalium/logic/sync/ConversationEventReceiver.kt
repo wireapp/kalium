@@ -195,10 +195,6 @@ class ConversationEventReceiverImpl(
     private suspend fun handleMemberJoin(event: Event.Conversation.MemberJoin) =
         // Attempt to fetch conversation details if needed, as this might be an unknown conversation
         conversationRepository.fetchConversationIfUnknown(event.conversationId)
-            .flatMap {
-                // fetch required unknown users that haven't been persisted during slow sync, e.g. from another team
-                userRepository.fetchUsersIfUnknownByIds(event.members.map { it.id }.toSet())
-            }
             .run {
             onSuccess { kaliumLogger.v("Succeeded fetching conversation details on MemberJoin Event: $event") }
             onFailure { kaliumLogger.w("Failure fetching conversation details on MemberJoin Event: $event") }
@@ -224,6 +220,7 @@ class ConversationEventReceiverImpl(
         )
         .flatMap {
             // fetch required unknown users that haven't been persisted during slow sync, e.g. from another team
+            // and keep them to properly show this member-leave message
             userRepository.fetchUsersIfUnknownByIds(event.members.map { it.id }.toSet())
         }
         .onSuccess {

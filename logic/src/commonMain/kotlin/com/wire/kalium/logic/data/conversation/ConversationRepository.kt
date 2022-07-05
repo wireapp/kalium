@@ -283,12 +283,15 @@ class ConversationDataSource(
     }
 
     override suspend fun persistMembers(members: List<Member>, conversationID: ConversationId): Either<CoreFailure, Unit> =
-        wrapStorageRequest {
-            conversationDAO.insertMembers(
-                members.map(memberMapper::toDaoModel),
-                idMapper.toDaoModel(conversationID)
-            )
-        }
+        userRepository.fetchUsersIfUnknownByIds(members.map { it.id }.toSet())
+            .flatMap {
+                wrapStorageRequest {
+                    conversationDAO.insertMembers(
+                        members.map(memberMapper::toDaoModel),
+                        idMapper.toDaoModel(conversationID)
+                    )
+                }
+            }
 
     override suspend fun addMembers(
         members: List<Member>,
@@ -302,11 +305,10 @@ class ConversationDataSource(
             conversationApi.addParticipant(
                 addParticipantRequest, idMapper.toApiModel(conversationID)
             )
-        }.map {
+        }.flatMap {
             when (it) {
-                is AddParticipantResponse.ConversationUnchanged -> Unit
-                is AddParticipantResponse.UserAdded ->
-                    persistMembers(members, conversationID)
+                is AddParticipantResponse.ConversationUnchanged -> Either.Right(Unit)
+                is AddParticipantResponse.UserAdded -> persistMembers(members, conversationID)
             }
         }
 

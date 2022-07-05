@@ -461,7 +461,7 @@ class UserDAOTest : BaseDatabaseTest() {
         val users = listOf(user1, user2)
         val requestedIds = (users + user3).map { it.id }
         db.userDAO.upsertUsers(users)
-        val result = db.userDAO.getUsersByQualifiedIDList(requestedIds).first()
+        val result = db.userDAO.getUsersByQualifiedIDList(requestedIds)
         assertEquals(result, users)
         assertTrue(!result.contains(user3))
     }

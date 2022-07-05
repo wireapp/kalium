@@ -56,7 +56,7 @@ class UserRepositoryTest {
         given(arrangement.userDAO)
             .suspendFunction(arrangement.userDAO::getUsersByQualifiedIDList)
             .whenInvokedWith(any())
-            .thenReturn(flowOf(knownUserEntities))
+            .thenReturn(knownUserEntities)
 
         userRepository.fetchUsersIfUnknownByIds(requestedUserIds).shouldSucceed()
 
@@ -122,7 +122,7 @@ class UserRepositoryTest {
             given(userDAO)
                 .suspendFunction(userDAO::getUsersByQualifiedIDList)
                 .whenInvokedWith(any())
-                .thenReturn(flowOf(knownUserEntities))
+                .thenReturn(knownUserEntities)
             return this
         }
 
