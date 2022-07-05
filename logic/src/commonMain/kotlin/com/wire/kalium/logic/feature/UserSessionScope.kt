@@ -95,6 +95,7 @@ import com.wire.kalium.persistence.event.EventInfoStorage
 import com.wire.kalium.persistence.event.EventInfoStorageImpl
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
+import okio.Path.Companion.toPath
 
 expect class UserSessionScope : UserSessionScopeCommon
 
@@ -401,5 +402,11 @@ abstract class UserSessionScopeCommon(
 
     val connection: ConnectionScope get() = ConnectionScope(connectionRepository, conversationRepository)
 
-    val kaliumFileSystem: KaliumFileSystem = KaliumFileSystem(dataStoragePaths)
+    val kaliumFileSystem: KaliumFileSystem by lazy {
+        // Create the cache and asset storage directories
+        KaliumFileSystem(dataStoragePaths).also {
+            if (!it.exists(dataStoragePaths.cachePath.value.toPath())) it.createDirectory(dataStoragePaths.cachePath.value.toPath())
+            if (!it.exists(dataStoragePaths.assetStoragePath.value.toPath())) it.createDirectory(dataStoragePaths.assetStoragePath.value.toPath())
+        }
+    }
 }

@@ -95,5 +95,4 @@ actual class CoreLogic(
 
     override val globalCallManager: GlobalCallManager = GlobalCallManager()
     override val globalWorkScheduler: GlobalWorkScheduler = GlobalWorkSchedulerImpl(this)
-
 }
