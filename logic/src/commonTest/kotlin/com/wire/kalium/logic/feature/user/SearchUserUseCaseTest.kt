@@ -89,7 +89,7 @@ class SearchUserUseCaseTest {
 
         given(searchUserRepository)
             .suspendFunction(searchUserRepository::searchUserDirectory)
-            .whenInvokedWith(anything(), anything(), anything())
+            .whenInvokedWith(anything(), anything(), anything(),anything())
             .thenReturn(expected)
         //when
         val actual = searchUsersUseCase(TEST_QUERY)
