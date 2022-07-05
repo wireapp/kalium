@@ -43,6 +43,7 @@ interface UserRepository {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
     suspend fun fetchKnownUsers(): Either<CoreFailure, Unit>
     suspend fun fetchUsersByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
+    suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun observeSelfUser(): Flow<SelfUser>
     suspend fun getSelfUserId(): QualifiedID
     suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, SelfUser>
@@ -82,7 +83,7 @@ class UserDataSource(
     }
 
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
-        .map { userMapper.fromApiModelWithUserTypeEntityToDaoModel(it).copy(connectionStatus = ConnectionEntity.State.ACCEPTED) }
+        .map { userMapper.fromApiSelfModelToDaoModel(it).copy(connectionStatus = ConnectionEntity.State.ACCEPTED) }
         .flatMap { userEntity ->
             assetRepository.downloadUsersPictureAssets(getQualifiedUserAssetId(userEntity))
             userDAO.insertUser(userEntity)
@@ -123,6 +124,15 @@ class UserDataSource(
                 )
             }
         }
+
+    override suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit> = wrapStorageRequest {
+        val qualifiedIDList = ids.map(idMapper::toDaoModel)
+        val knownUsers = userDAO.getUsersByQualifiedIDList(ids.map(idMapper::toDaoModel))
+        qualifiedIDList.filterNot { knownUsers.any { userEntity -> userEntity.id == it } }
+    }.flatMap { missingIds ->
+        if (missingIds.isEmpty()) Either.Right(Unit)
+        else fetchUsersByIds(missingIds.map { idMapper.fromDaoModel(it) }.toSet())
+    }
 
     override suspend fun observeSelfUser(): Flow<SelfUser> {
         // TODO: handle storage error

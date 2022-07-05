@@ -120,10 +120,16 @@ class UserDAOImpl(
         .map { entryList -> entryList.map(mapper::toModel) }
 
     override suspend fun getUserByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserEntity?> {
-        return userQueries.selectByQualifiedId(qualifiedID)
+        return userQueries.selectByQualifiedId(listOf(qualifiedID))
             .asFlow()
             .mapToOneOrNull()
             .map { it?.let { mapper.toModel(it) } }
+    }
+
+    override suspend fun getUsersByQualifiedIDList(qualifiedIDList: List<QualifiedIDEntity>): List<UserEntity> {
+        return userQueries.selectByQualifiedId(qualifiedIDList)
+            .executeAsList()
+            .map { mapper.toModel(it) }
     }
 
     override suspend fun getUserByNameOrHandleOrEmailAndConnectionState(

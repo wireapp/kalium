@@ -183,6 +183,7 @@ class ConversationEventReceiverTest {
             .withRepositoryPersistingMessageDateReturning(Either.Right(Unit))
             .withFetchConversationIfUnknownSucceeding()
             .withPersistMembersSucceeding()
+            .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
             .arrange()
 
         eventReceiver.onEvent(event)
@@ -205,6 +206,7 @@ class ConversationEventReceiverTest {
             .withRepositoryPersistingMessageDateReturning(Either.Right(Unit))
             .withFetchConversationIfUnknownSucceeding()
             .withPersistMembersSucceeding()
+            .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
             .arrange()
 
         eventReceiver.onEvent(event)
@@ -366,6 +368,13 @@ class ConversationEventReceiverTest {
                 .suspendFunction(conversationRepository::persistMembers)
                 .whenInvokedWith(any(), any())
                 .thenReturn(Either.Right(Unit))
+        }
+
+        fun withFetchUsersIfUnknownByIdsReturning(result: Either<StorageFailure, Unit>) = apply {
+            given(userRepository)
+                .suspendFunction(userRepository::fetchUsersIfUnknownByIds)
+                .whenInvokedWith(any())
+                .thenReturn(result)
         }
 
         fun newMessageEvent(
