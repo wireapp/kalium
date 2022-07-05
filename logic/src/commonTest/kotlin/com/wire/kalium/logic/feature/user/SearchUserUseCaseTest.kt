@@ -95,7 +95,10 @@ class SearchUserUseCaseTest {
         val actual = searchUsersUseCase(TEST_QUERY)
         //then
         assertIs<Result.Success>(actual)
-        assertEquals(actual.userSearchResult.result.first { it.id == PENDING_CONNECTION.qualifiedToId }.connectionStatus, ConnectionState.PENDING)
+        assertEquals(
+            actual.userSearchResult.result.first { it.id == PENDING_CONNECTION.qualifiedToId }.connectionStatus,
+            ConnectionState.PENDING
+        )
     }
 
     @Test
