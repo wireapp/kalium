@@ -24,7 +24,7 @@ object TestUser {
     val USER_ID = UserId("value", "domain")
     val ENTITY_ID = QualifiedIDEntity("value", "domain")
     val NETWORK_ID = com.wire.kalium.network.api.UserId(value = "value", domain = "domain")
-    val JSON_QUALIFIED_ID = """{"value":"value" , "domain":"domain" }"""
+    const val JSON_QUALIFIED_ID = """{"value":"value" , "domain":"domain" }"""
 
     val SELF = SelfUser(
         USER_ID,
