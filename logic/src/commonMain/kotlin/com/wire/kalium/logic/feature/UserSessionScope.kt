@@ -39,6 +39,7 @@ import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepositoryImpl
 import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapper
+import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapperImpl
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.sync.InMemorySyncRepository
 import com.wire.kalium.logic.data.sync.SyncRepository
@@ -174,7 +175,7 @@ abstract class UserSessionScopeCommon(
             userDatabaseProvider.metadataDAO
         )
 
-    private val userSearchApiWrapper = UserSearchApiWrapper(
+    private val userSearchApiWrapper : UserSearchApiWrapper = UserSearchApiWrapperImpl(
         authenticatedDataSourceSet.authenticatedNetworkContainer.userSearchApi,
         userDatabaseProvider.conversationDAO,
     )
