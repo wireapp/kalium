@@ -218,7 +218,6 @@ class ListenGroupCommand : CliktCommand(name = "listen-group") {
                     }
                 }
             }
-
         }
 
         while (true) {
@@ -226,7 +225,6 @@ class ListenGroupCommand : CliktCommand(name = "listen-group") {
             userSession.messages.sendTextMessage(conversationID, message)
         }
     }
-
 }
 
 class AddMemberToGroupCommand : CliktCommand(name = "add-member") {

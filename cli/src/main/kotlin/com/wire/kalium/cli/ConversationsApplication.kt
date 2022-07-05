@@ -73,6 +73,9 @@ class ConversationsApplication : CliktCommand() {
     private val cliFileSystem = CliFileSystem(DataStoragePaths(assetsStoragePath, cachePath))
 
     override fun run(): Unit = runBlocking {
+        cliFileSystem.createDirectory(cachePath.value.toPath())
+        cliFileSystem.createDirectory(assetsStoragePath.value.toPath())
+
         NetworkLogger.setLoggingLevel(level = KaliumLogLevel.DEBUG)
 
         val serverConfigMapper: ServerConfigMapper = ServerConfigMapperImpl(ApiVersionMapperImpl())
