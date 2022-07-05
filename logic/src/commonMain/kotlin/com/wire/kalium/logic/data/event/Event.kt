@@ -75,6 +75,9 @@ sealed class Event(open val id: String) {
             override val id: String,
             val connection: Connection
         ) : User(id)
+
+        data class ClientRemove(override val id: String) : User(id)
+        data class UserDelete(override val id: String) : User(id)
     }
 
     data class Unknown(override val id: String): Event(id)

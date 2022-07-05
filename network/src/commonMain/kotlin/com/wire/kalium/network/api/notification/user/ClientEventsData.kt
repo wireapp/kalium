@@ -12,3 +12,8 @@ data class NewClientEventData(
     @SerialName("class") val deviceClass: String,
     @SerialName("label") val label: String?
 )
+
+@Serializable
+data class RemoveClientEventData(
+    @SerialName("id") val clientId: String
+)

@@ -16,6 +16,7 @@ internal object NetworkErrorLabel {
     const val HANDLE_EXISTS = "handle-exists"
     const val NO_TEAM = "no-team"
     const val OPERATION_DENIED = "operation-denied"
+    const val UNKNOWN_CLIENT = "unknown-client"
 
     object KaliumCustom {
         const val MISSING_REFRESH_TOKEN = "missing-refresh_token"

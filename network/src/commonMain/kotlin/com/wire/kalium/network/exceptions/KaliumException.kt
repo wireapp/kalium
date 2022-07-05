@@ -18,6 +18,7 @@ import com.wire.kalium.network.exceptions.NetworkErrorLabel.NO_TEAM
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.OPERATION_DENIED
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.TOO_MANY_CLIENTS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.TOO_MANY_MEMBERS
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.UNKNOWN_CLIENT
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.USER_CREATION_RESTRICTED
 import io.ktor.http.HttpStatusCode
 
@@ -58,6 +59,10 @@ data class ProteusClientsChangedError(
 
 fun KaliumException.InvalidRequestError.isInvalidCredentials(): Boolean {
     return errorResponse.label == INVALID_CREDENTIALS
+}
+
+fun KaliumException.InvalidRequestError.isUnknownClient(): Boolean {
+    return errorResponse.label == UNKNOWN_CLIENT
 }
 
 fun KaliumException.InvalidRequestError.isTooManyClients(): Boolean {

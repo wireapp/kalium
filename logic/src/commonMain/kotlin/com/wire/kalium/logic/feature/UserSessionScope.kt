@@ -299,6 +299,7 @@ abstract class UserSessionScopeCommon(
     private val userEventReceiver: UserEventReceiver
         get() = UserEventReceiverImpl(
             connectionRepository,
+            logout
         )
 
     private val preKeyRemoteRepository: PreKeyRemoteRepository

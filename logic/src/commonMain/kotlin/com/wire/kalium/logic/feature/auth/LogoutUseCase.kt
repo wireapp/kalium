@@ -23,12 +23,13 @@ class LogoutUseCase @Suppress("LongParameterList") constructor(
     private val deregisterTokenUseCase: DeregisterTokenUseCase,
     private val userSessionScopeProvider: UserSessionScopeProvider = UserSessionScopeProviderImpl
 ) {
-    suspend operator fun invoke() {
-        //TODO(important): deregister push notification token
+    suspend operator fun invoke(isHardLogOut: Boolean = true) {
         deregisterTokenUseCase()
         logoutRepository.logout()
+        if (isHardLogOut) {
+            clearUserStorage()
+        }
         clearCrypto()
-        clearUserStorage()
         clearUserSessionAndUpdateCurrent()
         clearInMemoryUserSession()
     }
@@ -50,10 +51,12 @@ class LogoutUseCase @Suppress("LongParameterList") constructor(
 
     private fun clearUserStorage() {
         authenticatedDataSourceSet.userDatabaseProvider.nuke()
+        //exclude clientId clear from this step
         authenticatedDataSourceSet.kaliumPreferencesSettings.nuke()
     }
 
     private fun clearCrypto() {
+        //clear clientId here
         authenticatedDataSourceSet.proteusClient.clearLocalFiles()
 
         clientRepository.currentClientId().let { clientID ->

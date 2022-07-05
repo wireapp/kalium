@@ -3,12 +3,14 @@ package com.wire.kalium.logic.data.event
 import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.logic.data.connection.ConnectionMapper
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.Base64
+import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.notification.EventContentDTO
 import com.wire.kalium.network.api.notification.EventResponse
+import com.wire.kalium.network.api.notification.user.RemoveClientEventData
 import io.ktor.utils.io.charsets.Charsets
 import io.ktor.utils.io.core.toByteArray
 
@@ -30,6 +32,8 @@ class EventMapper(
                 is EventContentDTO.Conversation.MLSWelcomeDTO -> welcomeMessage(id, eventContentDTO)
                 is EventContentDTO.Conversation.NewMLSMessageDTO -> newMLSMessage(id, eventContentDTO)
                 is EventContentDTO.User.NewConnectionDTO -> connectionUpdate(id, eventContentDTO)
+                is EventContentDTO.User.ClientRemoveDTO -> clientRemove(id, eventContentDTO.client)
+                is EventContentDTO.User.UserDeleteDTO -> userDelete(id, eventContentDTO.id)
                 is EventContentDTO.User.NewClientDTO, EventContentDTO.Unknown -> Event.Unknown(id)
             }
         } ?: listOf()
@@ -78,6 +82,16 @@ class EventMapper(
         id,
         connectionMapper.fromApiToModel(eventConnectionDTO.connection)
     )
+
+    private fun userDelete(id: String, userId: UserId): Event.User.UserDelete {
+        kaliumLogger.i("user deleted $userId")
+        return Event.User.UserDelete("")
+    }
+
+    private fun clientRemove(id: String, client: RemoveClientEventData): Event.User.ClientRemove {
+        kaliumLogger.i("client removed $client")
+        return Event.User.ClientRemove("")
+    }
 
     private fun newConversation(
         id: String,

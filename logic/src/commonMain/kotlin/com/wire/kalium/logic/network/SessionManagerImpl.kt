@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.auth.AuthSession
+import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.model.AccessTokenDTO
@@ -17,7 +18,8 @@ class SessionManagerImpl(
     private val sessionRepository: SessionRepository,
     private val userId: QualifiedID,
     private val sessionMapper: SessionMapper = MapperProvider.sessionMapper(),
-    private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
+    private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper(),
+    private val logout: LogoutUseCase
 ) : SessionManager {
     override fun session(): Pair<SessionDTO, ServerConfigDTO.Links> = sessionRepository.userSession(userId).fold({
         TODO("IMPORTANT! Not yet implemented")
@@ -43,7 +45,11 @@ class SessionManagerImpl(
             }
         })
 
-    override fun onSessionExpired() {
-        TODO("IMPORTANT! Not yet implemented")
+    override suspend fun onSessionExpired() {
+        logout(false)
+    }
+
+    override suspend fun onClientRemoved() {
+        logout(false)
     }
 }
