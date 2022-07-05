@@ -6,7 +6,6 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.network.api.contact.search.ContactDTO
 import com.wire.kalium.network.api.contact.search.UserSearchApi
 import com.wire.kalium.network.api.contact.search.UserSearchRequest
 import com.wire.kalium.network.api.contact.search.UserSearchResponse
@@ -42,9 +41,9 @@ class UserSearchApiWrapperImpl(
         val excludedConversationOption = searchUsersOptions.conversationExcluded
 
         return if (excludedConversationOption is ConversationMemberExcludedOptions.ConversationExcluded) {
-            val conversationMembers = conversationDAO.getAllMembers(
+            val conversationMembersId = conversationDAO.getAllMembers(
                 idMapper.toDaoModel(excludedConversationOption.conversationId)
-            ).firstOrNull()
+            ).firstOrNull()?.map { idMapper.fromDaoModel(it.user) }
 
             wrapApiRequest {
                 userSearchApi.search(
@@ -56,10 +55,7 @@ class UserSearchApiWrapperImpl(
                 )
             }.map { contactResponse ->
                 contactResponse.copy(documents = contactResponse.documents.filter { contactDTO ->
-                    conversationMembers
-                        ?.map { idMapper.fromDaoModel(it.user) }
-                        ?.contains(idMapper.fromApiModel(contactDTO.qualifiedID))
-                        ?: false
+                    !(conversationMembersId?.contains(idMapper.fromApiModel(contactDTO.qualifiedID)) ?: false)
                 })
             }
         } else {
