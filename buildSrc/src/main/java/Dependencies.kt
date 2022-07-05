@@ -8,15 +8,15 @@ object Versions {
     const val appCompat = "1.1.0"
     const val cliKt = "3.3.0"
     const val coroutines = "1.6.0-native-mt"
-    const val compose = "1.1.0-rc01"
-    const val composeCompiler = "1.1.0-rc02"
+    const val compose = "1.2.0"
+    const val composeCompiler = "1.2.0"
     const val cryptobox4j = "1.1.1"
     const val cryptoboxAndroid = "1.1.3"
     const val javaxCrypto = "1.1.0-alpha03"
     const val kover = "0.4.4"
     const val ktor = "2.0.0-beta-1"
     const val okio = "3.0.0"
-    const val okHttp = "4.9.3"
+    const val okHttp = "4.10.0"
     const val mockative = "1.1.4"
     const val androidWork = "2.7.1"
     const val androidTestRunner = "1.4.0"
@@ -24,9 +24,9 @@ object Versions {
     const val androidTestCore = "1.4.0"
     const val androidxArch = "2.1.0"
     const val benAsherUUID = "0.4.0"
-    const val ktxDateTime = "0.3.2"
-    const val ktxSerialization = "1.3.2"
-    const val multiplatformSettings = "0.8.1"
+    const val ktxDateTime = "0.4.0"
+    const val ktxSerialization = "1.3.3"
+    const val multiplatformSettings = "0.9"
     const val androidSecurity = "1.0.0"
     const val sqlDelight = "2.0.0-alpha01"
     const val pbandk = "0.14.1"
@@ -35,7 +35,7 @@ object Versions {
     const val jna = "5.6.0@aar"
     const val mlsClient = "0.2.1"
     const val desugarJdk = "1.1.5"
-    const val kermit = "1.0.0"
+    const val kermit = "1.1.3"
     const val detekt = "1.19.0"
 }
 
@@ -58,7 +58,7 @@ object Plugins {
         scope.kotlin("jvm")
 
     fun ksp(scope: PluginDependenciesSpec) =
-        scope.id("com.google.devtools.ksp").version("1.6.10-1.0.2")
+        scope.id("com.google.devtools.ksp").version("1.7.0-1.0.6")
 
     fun kover(scope: PluginDependenciesSpec) =
         scope.id("org.jetbrains.kotlinx.kover") version Versions.kover

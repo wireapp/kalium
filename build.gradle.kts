@@ -1,10 +1,10 @@
 import com.android.build.gradle.internal.tasks.factory.dependsOn
 
 buildscript {
-    val kotlinVersion = "1.6.10"
-    val dokkaVersion = "1.6.10"
+    val kotlinVersion = "1.7.0"
+    val dokkaVersion = "1.7.0"
     val sqlDelightVersion = "2.0.0-alpha01"
-    val protobufCodegenVersion = "0.8.18"
+    val protobufCodegenVersion = "0.8.19"
     val carthageVersion = "0.0.1"
     val detektVersion = "1.19.0"
 
@@ -33,14 +33,12 @@ repositories {
 }
 
 plugins {
-    val dokkaVersion = "1.6.10"
-    id("org.jetbrains.dokka") version "$dokkaVersion"
+    id("org.jetbrains.dokka") version "1.7.0"
     id("org.jetbrains.kotlinx.kover") version "0.5.1"
 }
 
 dependencies {
-    val dokkaVersion = "1.6.10"
-    dokkaHtmlPlugin("org.jetbrains.dokka:kotlin-as-java-plugin:$dokkaVersion")
+    dokkaHtmlPlugin("org.jetbrains.dokka:kotlin-as-java-plugin:1.7.0")
 }
 
 tasks.withType<Test> {
