@@ -203,7 +203,7 @@ class ConversationEventReceiverImpl(
         }.onSuccess {
             val message = Message.System(
                 id = event.id,
-                content = MessageContent.MemberChange.Added(members = event.members),
+                content = MessageContent.MemberChange.Added(members = event.members.map { it.id }),
                 conversationId = event.conversationId,
                 date = event.timestampIso,
                 senderUserId = event.addedBy,
@@ -215,7 +215,7 @@ class ConversationEventReceiverImpl(
 
     private suspend fun handleMemberLeave(event: Event.Conversation.MemberLeave) = conversationRepository
         .deleteMembers(
-            event.members.map { idMapper.toDaoModel(it.id) },
+            event.removedList.map { idMapper.toDaoModel(it) },
             idMapper.toDaoModel(event.conversationId)
         )
         .flatMap {
@@ -226,7 +226,7 @@ class ConversationEventReceiverImpl(
         .onSuccess {
             val message = Message.System(
                 id = event.id,
-                content = MessageContent.MemberChange.Removed(members = event.members),
+                content = MessageContent.MemberChange.Removed(members = event.removedList),
                 conversationId = event.conversationId,
                 date = event.timestampIso,
                 senderUserId = event.removedBy,

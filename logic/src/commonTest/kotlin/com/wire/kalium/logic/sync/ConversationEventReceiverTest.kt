@@ -47,10 +47,12 @@ import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.toInstant
 import kotlin.test.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ConversationEventReceiverTest {
 
     @Test
@@ -171,7 +173,7 @@ class ConversationEventReceiverTest {
 
     @Test
     fun givenMemberJoinEvent_whenHandlingIt_thenShouldFetchConversationIfUnknown() = runTest {
-        val newMembers = listOf(Member(TestUser.USER_ID))
+        val newMembers = listOf(Member(TestUser.USER_ID, Member.Role.Member))
         val event = TestEvent.memberJoin(members = newMembers)
 
         val (arrangement, eventReceiver) = Arrangement()
@@ -194,7 +196,7 @@ class ConversationEventReceiverTest {
 
     @Test
     fun givenMemberJoinEvent_whenHandlingIt_thenShouldPersistMembers() = runTest {
-        val newMembers = listOf(Member(TestUser.USER_ID))
+        val newMembers = listOf(Member(TestUser.USER_ID, Member.Role.Member))
         val event = TestEvent.memberJoin(members = newMembers)
 
         val (arrangement, eventReceiver) = Arrangement()
@@ -217,7 +219,7 @@ class ConversationEventReceiverTest {
 
     @Test
     fun givenMemberJoinEventAndFetchConversationFails_whenHandlingIt_thenShouldAttemptPersistingMembersAnyway() = runTest {
-        val newMembers = listOf(Member(TestUser.USER_ID))
+        val newMembers = listOf(Member(TestUser.USER_ID, Member.Role.Member))
         val event = TestEvent.memberJoin(members = newMembers)
 
         val (arrangement, eventReceiver) = Arrangement()
@@ -239,7 +241,7 @@ class ConversationEventReceiverTest {
 
     @Test
     fun givenMemberJoinEvent_whenHandlingIt_thenShouldPersistSystemMessage() = runTest {
-        val newMembers = listOf(Member(TestUser.USER_ID))
+        val newMembers = listOf(Member(TestUser.USER_ID, Member.Role.Admin))
         val event = TestEvent.memberJoin(members = newMembers)
 
         val (arrangement, eventReceiver) = Arrangement()

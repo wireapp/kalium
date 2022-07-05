@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.data.message
 
-import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.protobuf.messages.QualifiedConversationId
 
@@ -34,9 +33,10 @@ sealed class MessageContent {
     object Empty : Regular()
 
     // server message content types
-    sealed class MemberChange(open val members: List<Member>) : System() {
-        data class Added(override val members: List<Member>) : MemberChange(members)
-        data class Removed(override val members: List<Member>) : MemberChange(members)
+    // TODO: rename members to userList
+    sealed class MemberChange(open val members: List<UserId>) : System() {
+        data class Added(override val members: List<UserId>) : MemberChange(members)
+        data class Removed(override val members: List<UserId>) : MemberChange(members)
     }
 
     object MissedCall: System()

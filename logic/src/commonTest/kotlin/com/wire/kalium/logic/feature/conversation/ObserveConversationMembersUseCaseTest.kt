@@ -17,6 +17,7 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.consumeAsFlow
@@ -26,6 +27,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ObserveConversationMembersUseCaseTest {
 
     @Mock
@@ -110,7 +112,7 @@ class ObserveConversationMembersUseCaseTest {
         val secondSelfUser = firstSelfUser.copy(name = "Updated name")
         val selfUserUpdates = listOf(firstSelfUser, secondSelfUser)
         val members = listOf(
-            Member(firstSelfUser.id)
+            Member(firstSelfUser.id, Member.Role.Member)
         )
 
         given(userRepository)
@@ -142,7 +144,7 @@ class ObserveConversationMembersUseCaseTest {
         val secondOtherUser = firstOtherUser.copy(name = "Updated name")
         val otherUserUpdates = listOf(firstOtherUser, secondOtherUser)
         val members = listOf(
-            Member(firstOtherUser.id)
+            Member(firstOtherUser.id, Member.Role.Member)
         )
 
         given(userRepository)
@@ -190,10 +192,10 @@ class ObserveConversationMembersUseCaseTest {
             .thenReturn(membersListChannel.consumeAsFlow())
 
         observeConversationMembers(conversationID).test {
-            membersListChannel.send(listOf(Member(otherUser.id)))
+            membersListChannel.send(listOf(Member(otherUser.id, Member.Role.Member)))
             assertContentEquals(listOf(MemberDetails.Other(otherUser)), awaitItem())
 
-            membersListChannel.send(listOf(Member(otherUser.id), Member(selfUser.id)))
+            membersListChannel.send(listOf(Member(otherUser.id, Member.Role.Member), Member(selfUser.id, Member.Role.Admin)))
             assertContentEquals(listOf(MemberDetails.Other(otherUser), MemberDetails.Self(selfUser)), awaitItem())
 
             membersListChannel.close()
