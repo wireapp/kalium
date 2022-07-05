@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.publicuser
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
@@ -96,6 +97,8 @@ class SearchUserRepositoryTest {
         given(domainUserTypeMapper).invocation { internal }.then { UserType.INTERNAL }
 
         given(domainUserTypeMapper).invocation { external }.then { UserType.EXTERNAL }
+
+        given(idMapper).function(idMapper::toDaoModel).whenInvokedWith(anything()).then { PersistenceQualifiedId(it.value, it.domain) }
     }
 
     @Test
@@ -103,7 +106,7 @@ class SearchUserRepositoryTest {
         //given
         given(userSearchApiWrapper)
             .suspendFunction(userSearchApiWrapper::search)
-            .whenInvokedWith(any(),any(),any(),any())
+            .whenInvokedWith(anything(), anything(), anything(), anything())
             .thenReturn(Either.Left(TestNetworkResponseError.genericError()))
 
         //when
@@ -118,7 +121,7 @@ class SearchUserRepositoryTest {
         //given
         given(userSearchApiWrapper)
             .suspendFunction(userSearchApiWrapper::search)
-            .whenInvokedWith(any(),any(),any(),any())
+            .whenInvokedWith(anything(), anything(), anything(), anything())
             .thenReturn(Either.Left(TestNetworkResponseError.genericError()))
 
         //when
@@ -127,7 +130,7 @@ class SearchUserRepositoryTest {
         //then
         verify(userSearchApiWrapper)
             .suspendFunction(userSearchApiWrapper::search)
-            .with(any(),any(),any(),any())
+            .with(anything(), anything(), anything(), anything())
             .wasInvoked(exactly = once)
     }
 
@@ -136,7 +139,7 @@ class SearchUserRepositoryTest {
         //given
         given(userSearchApiWrapper)
             .suspendFunction(userSearchApiWrapper::search)
-            .whenInvokedWith(any(),any(),any(),any())
+            .whenInvokedWith(anything(), anything(), anything(), anything())
             .thenReturn(Either.Left(TestNetworkResponseError.genericError()))
 
         //when
@@ -158,7 +161,7 @@ class SearchUserRepositoryTest {
         //given
         given(userSearchApiWrapper)
             .suspendFunction(userSearchApiWrapper::search)
-            .whenInvokedWith(any(),any(),any(),any())
+            .whenInvokedWith(anything(), anything(), anything(), anything())
             .thenReturn(Either.Right(CONTACT_SEARCH_RESPONSE))
 
         given(userDetailsApi)
@@ -178,7 +181,7 @@ class SearchUserRepositoryTest {
         //given
         given(userSearchApiWrapper)
             .suspendFunction(userSearchApiWrapper::search)
-            .whenInvokedWith(any(),any(),any(),any())
+            .whenInvokedWith(anything(), anything(), anything(), anything())
             .thenReturn(Either.Right(CONTACT_SEARCH_RESPONSE))
 
         given(userDetailsApi)
@@ -202,7 +205,7 @@ class SearchUserRepositoryTest {
             //given
             given(userSearchApiWrapper)
                 .suspendFunction(userSearchApiWrapper::search)
-                .whenInvokedWith(any(),any(),any(),any())
+                .whenInvokedWith(anything(), anything(), anything(), anything())
                 .thenReturn(Either.Right(CONTACT_SEARCH_RESPONSE))
 
             given(userDetailsApi)
@@ -215,7 +218,7 @@ class SearchUserRepositoryTest {
             //then
             verify(userSearchApiWrapper)
                 .suspendFunction(userSearchApiWrapper::search)
-                .with(any(),any(),any(),any())
+                .with(anything(), anything(), anything(), anything())
                 .wasInvoked(exactly = once)
 
             verify(userDetailsApi)
@@ -229,7 +232,7 @@ class SearchUserRepositoryTest {
         //given
         given(userSearchApiWrapper)
             .suspendFunction(userSearchApiWrapper::search)
-            .whenInvokedWith(any(),any(),any(),any())
+            .whenInvokedWith(anything(), anything(), anything(), anything())
             .thenReturn(Either.Right(CONTACT_SEARCH_RESPONSE))
 
         given(userDetailsApi)
@@ -269,7 +272,7 @@ class SearchUserRepositoryTest {
             //given
             given(userSearchApiWrapper)
                 .suspendFunction(userSearchApiWrapper::search)
-                .whenInvokedWith(any(),any(),any(),any())
+                .whenInvokedWith(anything(), anything(), anything(), anything())
                 .thenReturn(Either.Right(CONTACT_SEARCH_RESPONSE))
 
             given(userDetailsApi)
@@ -317,7 +320,7 @@ class SearchUserRepositoryTest {
             //given
             given(userSearchApiWrapper)
                 .suspendFunction(userSearchApiWrapper::search)
-                .whenInvokedWith(any(),any(),any(),any())
+                .whenInvokedWith(anything(), anything(), anything(), anything())
                 .thenReturn(Either.Right(CONTACT_SEARCH_RESPONSE))
 
             given(userDetailsApi)

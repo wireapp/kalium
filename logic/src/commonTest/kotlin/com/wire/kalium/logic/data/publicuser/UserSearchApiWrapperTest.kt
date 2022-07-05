@@ -103,7 +103,6 @@ class UserSearchApiWrapperTest {
             Arrangement.generateContactDTO(UserId("value3", "someDomain"))
         )
 
-
         val (_, userSearchApiWrapper) = Arrangement().withSuccessFullSearch(
             conversationMembers,
             searchResultUsers
