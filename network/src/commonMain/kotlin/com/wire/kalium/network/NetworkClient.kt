@@ -97,7 +97,7 @@ internal fun provideBaseHttpClient(
 ) = HttpClient(engine) {
 
     if (NetworkLogger.isRequestLoggingEnabled) {
-        install(Logging) {
+        install(KaliumKtorCustomLogging) {
             logger = Logger.SIMPLE
             level = LogLevel.ALL
         }
