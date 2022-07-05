@@ -3,6 +3,8 @@ package com.wire.kalium.network.api.conversation
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.UserId
+import com.wire.kalium.network.api.conversation.model.ConversationAccessData
+import com.wire.kalium.network.api.conversation.model.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.pagination.PaginationRequest
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
@@ -11,6 +13,7 @@ import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
+import io.ktor.http.HttpStatusCode
 
 class ConversationApiImpl internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : ConversationApi {
 
@@ -36,9 +39,7 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
     override suspend fun removeConversationMember(userId: UserId, conversationId: ConversationId): NetworkResponse<Unit> =
         wrapKaliumResponse {
             httpClient.delete(
-                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}" +
-                        PATH_MEMBERS +
-                        "/${userId.domain}/${userId.value}"
+                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS/${userId.domain}/${userId.value}"
             )
         }
 
@@ -52,35 +53,34 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
     /**
      * returns 201 when a new conversation is created or 200 if the conversation already existed
      */
-    override suspend fun createNewConversation(createConversationRequest: CreateConversationRequest): NetworkResponse<ConversationResponse> =
-        wrapKaliumResponse {
-            httpClient.post(PATH_CONVERSATIONS) {
-                setBody(createConversationRequest)
-            }
+    override suspend fun createNewConversation(
+        createConversationRequest: CreateConversationRequest
+    ): NetworkResponse<ConversationResponse> = wrapKaliumResponse {
+        httpClient.post(PATH_CONVERSATIONS) {
+            setBody(createConversationRequest)
         }
+    }
 
-    override suspend fun createOne2OneConversation(createConversationRequest: CreateConversationRequest): NetworkResponse<ConversationResponse> =
-        wrapKaliumResponse {
-            httpClient.post("$PATH_CONVERSATIONS/$PATH_ONE_2_ONE") {
-                setBody(createConversationRequest)
-            }
+    override suspend fun createOne2OneConversation(
+        createConversationRequest: CreateConversationRequest
+    ): NetworkResponse<ConversationResponse> = wrapKaliumResponse {
+        httpClient.post("$PATH_CONVERSATIONS/$PATH_ONE_2_ONE") {
+            setBody(createConversationRequest)
         }
+    }
 
     /**
      * returns 200 conversation created or 204 conversation unchanged
      */
     override suspend fun addParticipant(
-        addParticipantRequest: AddParticipantRequest,
-        conversationId: ConversationId
+        addParticipantRequest: AddParticipantRequest, conversationId: ConversationId
     ): NetworkResponse<AddParticipantResponse> {
-        val response =
-            httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_MEMBERS/$PATH_V2") {
-                setBody(addParticipantRequest)
-            }
-
-        return when (response.status.value) {
-            200 -> wrapKaliumResponse<AddParticipantResponse.UserAdded> { response }
-            204 -> wrapKaliumResponse<AddParticipantResponse.ConversationUnchanged> { response }
+        val response = httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_MEMBERS/$PATH_V2") {
+            setBody(addParticipantRequest)
+        }
+        return when (response.status) {
+            HttpStatusCode.OK -> wrapKaliumResponse<AddParticipantResponse.UserAdded> { response }
+            HttpStatusCode.NoContent -> wrapKaliumResponse<AddParticipantResponse.ConversationUnchanged> { response }
             else -> wrapKaliumResponse { response }
         }
     }
@@ -91,6 +91,19 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
     ): NetworkResponse<Unit> = wrapKaliumResponse {
         httpClient.put("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_SELF") {
             setBody(memberUpdateRequest)
+        }
+    }
+
+    override suspend fun updateAccessRole(
+        conversationId: ConversationId, conversationAccessData: ConversationAccessData
+    ): NetworkResponse<UpdateConversationAccessResponse> {
+        return httpClient.put("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_ACCESS") {
+            setBody(conversationAccessData)
+        }.let { httpResponse ->
+            when (httpResponse.status) {
+                HttpStatusCode.NoContent -> NetworkResponse.Success(UpdateConversationAccessResponse.AccessUnchanged, httpResponse)
+                else -> wrapKaliumResponse<UpdateConversationAccessResponse.AccessUpdated> { httpResponse }
+            }
         }
     }
 
