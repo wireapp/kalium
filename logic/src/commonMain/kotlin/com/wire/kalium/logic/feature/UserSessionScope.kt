@@ -178,7 +178,8 @@ abstract class UserSessionScopeCommon(
             userDatabaseProvider.userDAO,
             userDatabaseProvider.metadataDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userSearchApi,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi
+            authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
+            userDatabaseProvider.conversationDAO,
         )
 
     private val callRepository: CallRepository by lazy {
@@ -349,7 +350,15 @@ abstract class UserSessionScopeCommon(
             messageSendingScheduler,
             timeParser
         )
-    val users: UserScope get() = UserScope(userRepository, publicUserRepository, syncManager, assetRepository, teamRepository,conversationRepository)
+    val users: UserScope
+        get() = UserScope(
+            userRepository,
+            publicUserRepository,
+            syncManager,
+            assetRepository,
+            teamRepository,
+            conversationRepository
+        )
     val logout: LogoutUseCase
         get() = LogoutUseCase(
             logoutRepository,

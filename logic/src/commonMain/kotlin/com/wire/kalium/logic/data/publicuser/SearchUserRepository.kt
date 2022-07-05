@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.publicuser
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserDataSource
@@ -65,7 +66,7 @@ data class SearchUsersOptions(
 
 sealed class ConversationMemberExcludedOptions {
     object None : ConversationMemberExcludedOptions()
-    data class ConversationExcluded(val conversationId: ConversationId) : ConversationMemberExcludedOptions()
+    data class ConversationExcluded(val conversationId: QualifiedID) : ConversationMemberExcludedOptions()
 }
 
 @Suppress("LongParameterList")
@@ -85,7 +86,7 @@ class SearchUserRepositoryImpl(
         searchQuery: String,
         searchUsersOptions: SearchUsersOptions
     ): UserSearchResult =
-         handeSearchUsersOptions(
+        handeSearchUsersOptions(
             searchUsersOptions,
             excluded = { conversationId ->
                 userDAO.getUsersNotInConversationByNameOrHandleOrEmail(
@@ -105,7 +106,7 @@ class SearchUserRepositoryImpl(
         handle: String,
         searchUsersOptions: SearchUsersOptions
     ): UserSearchResult =
-         handeSearchUsersOptions(
+        handeSearchUsersOptions(
             searchUsersOptions,
             excluded = { conversationId ->
                 userDAO.getUsersNotInConversationByHandle(

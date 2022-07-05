@@ -1,6 +1,10 @@
 package com.wire.kalium.logic.data.publicuser
 
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.PersistenceQualifiedId
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.ConnectionState
@@ -11,7 +15,6 @@ import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
-import com.wire.kalium.network.api.QualifiedID
 import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.contact.search.ContactDTO
 import com.wire.kalium.network.api.contact.search.SearchPolicyDTO
@@ -23,6 +26,7 @@ import com.wire.kalium.network.api.user.details.UserProfileDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.ConversationDAO
+import com.wire.kalium.persistence.dao.Member
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
@@ -30,8 +34,11 @@ import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import io.mockative.Mock
+import io.mockative.Times
 import io.mockative.any
+import io.mockative.anything
 import io.mockative.classOf
+import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
@@ -64,6 +71,9 @@ class SearchUserRepositoryTest {
     private val userMapper: UserMapper = mock(classOf<UserMapper>())
 
     @Mock
+    private val idMapper: IdMapper = mock(classOf<IdMapper>())
+
+    @Mock
     private val domainUserTypeMapper: DomainUserTypeMapper = mock(classOf<DomainUserTypeMapper>())
 
     @Mock
@@ -81,7 +91,8 @@ class SearchUserRepositoryTest {
             conversationDao,
             publicUserMapper,
             userMapper,
-            domainUserTypeMapper
+            domainUserTypeMapper,
+            idMapper
         )
 
         given(domainUserTypeMapper).invocation { federated }.then { UserType.FEDERATED }
@@ -91,6 +102,24 @@ class SearchUserRepositoryTest {
         given(domainUserTypeMapper).invocation { internal }.then { UserType.INTERNAL }
 
         given(domainUserTypeMapper).invocation { external }.then { UserType.EXTERNAL }
+
+        // we do not want to loose equality of the ID's
+        // therefore we are mocking that they all return their value and domain, but change the type
+        // when are converted
+        given(idMapper)
+            .function(idMapper::toDaoModel)
+            .whenInvokedWith(anything())
+            .then { PersistenceQualifiedId(it.value, it.domain) }
+
+        given(idMapper)
+            .function(idMapper::fromDaoModel)
+            .whenInvokedWith(anything())
+            .then { QualifiedID(it.value, it.domain) }
+
+        given(idMapper)
+            .function(idMapper::fromApiModel)
+            .whenInvokedWith(anything())
+            .then { QualifiedID(it.value, it.domain) }
     }
 
     @Test
@@ -330,9 +359,153 @@ class SearchUserRepositoryTest {
             assertEquals(expectedResult, actual.value)
         }
 
+    @Test
+    fun givenASearchWithConversationExcludedOption_WhenSearchingUsersByNameOrHandleOrEmail_ThenSearchForUsersNotInTheConversation() =
+        runTest {
+            //given
+            given(userDAO)
+                .suspendFunction(userDAO::getUsersNotInConversationByNameOrHandleOrEmail)
+                .whenInvokedWith(anything(), anything())
+                .then { _, _ -> listOf() }
+
+            given(userDAO)
+                .suspendFunction(userDAO::getUserByNameOrHandleOrEmailAndConnectionState)
+                .whenInvokedWith(anything(), anything())
+                .then { _, _ -> listOf() }
+
+            //when
+            searchUserRepository.searchKnownUsersByNameOrHandleOrEmail(
+                searchQuery = "someQuery",
+                searchUsersOptions = SearchUsersOptions(
+                    conversationExcluded = ConversationMemberExcludedOptions.ConversationExcluded(
+                        ConversationId("someValue", "someDomain")
+                    )
+                )
+            )
+
+            verify(userDAO)
+                .suspendFunction(userDAO::getUserByNameOrHandleOrEmailAndConnectionState)
+                .with(anything(), anything())
+                .wasNotInvoked()
+
+            verify(userDAO)
+                .suspendFunction(userDAO::getUsersNotInConversationByNameOrHandleOrEmail)
+                .with(anything(), anything())
+                .wasInvoked(Times(1))
+        }
+
+    @Test
+    fun givenASearchWithConversationExcludedOption_WhenSearchingUsersByHandle_ThenSearchForUsersNotInTheConversation() = runTest {
+        //given
+        given(userDAO)
+            .suspendFunction(userDAO::getUserByHandleAndConnectionState)
+            .whenInvokedWith(anything(), anything())
+            .then { _, _ -> listOf() }
+
+        given(userDAO)
+            .suspendFunction(userDAO::getUsersNotInConversationByHandle)
+            .whenInvokedWith(anything(), anything())
+            .then { _, _ -> listOf() }
+
+        //when
+        searchUserRepository.searchKnownUsersByHandle(
+            handle = "someQuery",
+            searchUsersOptions = SearchUsersOptions(
+                conversationExcluded = ConversationMemberExcludedOptions.ConversationExcluded(
+                    ConversationId("someValue", "someDomain")
+                )
+            )
+        )
+
+        //then
+        verify(userDAO)
+            .suspendFunction(userDAO::getUserByHandleAndConnectionState)
+            .with(anything(), anything())
+            .wasNotInvoked()
+
+        verify(userDAO)
+            .suspendFunction(userDAO::getUsersNotInConversationByHandle)
+            .with(anything(), anything())
+            .wasInvoked(Times(1))
+    }
+
+    @Test
+    fun givenASearchWithConversationExcludedOption_WhenSearchingUserDirectory_ThenSearchResultsDoNotContaintConverstaionMembers() =
+        runTest {
+            //given
+            given(userSearchApi)
+                .suspendFunction(userSearchApi::search)
+                .whenInvokedWith(anything())
+                .then {
+                    NetworkResponse.Success(
+                        value = generateUserSearchResponse(
+                            contacts = listOf(
+                                generateContactDTO(UserId("1", "someDomain")),
+                                generateContactDTO(UserId("2", "someDomain")),
+                                generateContactDTO(UserId("3", "someDomain")),
+                                generateContactDTO(UserId("4", "someDomain")),
+                            )
+                        ),
+                        headers = mapOf(),
+                        httpCode = 200
+                    )
+                }
+
+            given(metadataDAO)
+                .suspendFunction(metadataDAO::valueByKey)
+                .whenInvokedWith(any())
+                .then { flowOf(JSON_QUALIFIED_ID) }
+
+            given(userDetailsApi)
+                .suspendFunction(userDetailsApi::getMultipleUsers)
+                .whenInvokedWith(any())
+                .then { NetworkResponse.Success(USER_RESPONSE, mapOf(), 200) }
+
+            given(publicUserMapper)
+                .function(publicUserMapper::fromUserDetailResponseWithUsertype)
+                .whenInvokedWith(any(), any())
+                .then { _, _ -> PUBLIC_USER }
+
+            given(domainUserTypeMapper)
+                .function(domainUserTypeMapper::fromOtherUserTeamAndDomain)
+                .whenInvokedWith(any(), any(), any())
+                .then { _, _, _ -> UserType.FEDERATED }
+
+            given(conversationDao)
+                .suspendFunction(conversationDao::getAllMembers)
+                .whenInvokedWith(any())
+                .thenReturn(flowOf(listOf(generateMember(QualifiedIDEntity("1", "someDomain")))))
+
+            //when
+            val result = searchUserRepository.searchUserDirectory(
+                "someQuery",
+                "someDomain",
+                100,
+                searchUsersOptions = SearchUsersOptions(
+                    ConversationMemberExcludedOptions.ConversationExcluded(
+                        conversationId = ConversationId("someValue", "someDomain")
+                    )
+                )
+            )
+
+            assertIs<Either.Right<UserSearchResult>>(result)
+        }
+
     private companion object {
         const val TEST_QUERY = "testQuery"
         const val TEST_DOMAIN = "testDomain"
+
+        fun generateContactDTO(id: UserId): ContactDTO {
+            return ContactDTO(
+                accentId = 1,
+                handle = "handle",
+                id = "id",
+                name = "name",
+                qualifiedID = id,
+                team = "team"
+            )
+        }
+
         val CONTACTS = buildList {
             for (i in 1..5) {
                 add(
@@ -362,6 +535,16 @@ class SearchUserRepositoryTest {
             userType = UserType.FEDERATED
         )
 
+        fun generateUserSearchResponse(contacts: List<ContactDTO>): UserSearchResponse {
+            return UserSearchResponse(
+                documents = contacts,
+                found = contacts.size,
+                returned = contacts.size,
+                searchPolicy = SearchPolicyDTO.FULL_SEARCH,
+                took = 100,
+            )
+        }
+
         val CONTACT_SEARCH_RESPONSE = UserSearchResponse(
             documents = CONTACTS,
             found = CONTACTS.size,
@@ -382,7 +565,7 @@ class SearchUserRepositoryTest {
             UserProfileDTO(
                 accentId = 1,
                 handle = "handle",
-                id = QualifiedID(value = "value", domain = "domain"),
+                id = UserId(value = "value", domain = "domain"),
                 name = "name",
                 legalHoldStatus = LegalHoldStatusResponse.ENABLED,
                 teamId = "team",
@@ -413,7 +596,7 @@ class SearchUserRepositoryTest {
         )
 
         val SELF_USER = SelfUser(
-            id = com.wire.kalium.logic.data.id.QualifiedID("someValue", "someId"),
+            id = QualifiedID("someValue", "someId"),
             name = null,
             handle = null,
             email = null,
@@ -425,6 +608,10 @@ class SearchUserRepositoryTest {
             completePicture = null,
             availabilityStatus = UserAvailabilityStatus.AVAILABLE,
         )
+
+        fun generateMember(id: QualifiedIDEntity): Member {
+            return Member(id)
+        }
 
     }
 
