@@ -63,6 +63,7 @@ interface ConnectionRepository {
     suspend fun insertConnectionFromEvent(event: Event.User.NewConnection): Either<CoreFailure, Unit>
     suspend fun observeConnectionList(): Flow<List<ConversationDetails>>
     suspend fun observeConnectionListAsDetails(): Flow<List<ConversationDetails>>
+    suspend fun getConnectionRequests(): List<Connection>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -157,12 +158,20 @@ internal class ConnectionDataSource(
         }
     }
 
+
     override suspend fun observeConnectionListAsDetails(): Flow<List<ConversationDetails>> {
         return connectionDAO.getConnectionRequests().map {
             it.map { connection ->
                 val otherUser = userDAO.getUserByQualifiedID(connection.qualifiedToId)
                 connectionMapper.fromDaoToConnectionDetails(connection, otherUser.firstOrNull())
             }
+        }
+    }
+
+    override suspend fun getConnectionRequests(): List<Connection> {
+        return connectionDAO.getConnectionRequests().first().map { connection ->
+            val otherUser = userDAO.getUserByQualifiedID(connection.qualifiedToId)
+            connectionMapper.fromDaoToModel(connection, otherUser.firstOrNull())
         }
     }
 
