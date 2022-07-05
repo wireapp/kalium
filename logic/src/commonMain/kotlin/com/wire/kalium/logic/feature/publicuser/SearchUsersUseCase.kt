@@ -30,12 +30,7 @@ internal class SearchUsersUseCaseImpl(
         searchQuery: String,
         maxResultSize: Int?
     ): Result {
-        val isFederatedSearch = searchQuery.matches(FEDERATION_REGEX)
-        val qualifiedID = if (isFederatedSearch) {
-            searchQuery.parseIntoQualifiedID()
-        } else {
-            QualifiedID(searchQuery, userRepository.observeSelfUser().first().id.domain)
-        }
+        val qualifiedID = searchQuery.parseIntoQualifiedID()
         return searchUserRepository.searchUserDirectory(
             searchQuery = qualifiedID.value,
             domain = qualifiedID.domain,
