@@ -134,7 +134,7 @@ class SearchUserRepositoryImpl(
             searchUsersOptions
         ).flatMap {
             wrapApiRequest {
-                userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(it.map { it.qualifiedID }))
+                userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(it.documents.map { it.qualifiedID }))
             }.map { userDetailsResponses ->
                 UserSearchResult(userDetailsResponses.map { userProfileDTO ->
                     publicUserMapper.fromUserDetailResponseWithUsertype(

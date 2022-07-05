@@ -13,15 +13,27 @@ import com.wire.kalium.network.api.contact.search.UserSearchResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
 import kotlinx.coroutines.flow.firstOrNull
 
-class UserSearchApiWrapper(
+interface UserSearchApiWrapper {
+    /*
+    Back-end has not support to return user that are not part of the conversation,
+    therefore we need to filter those users ourself.
+    */
+    suspend fun search(
+        searchQuery: String,
+        domain: String,
+        maxResultSize: Int?,
+        searchUsersOptions: SearchUsersOptions
+    ): Either<NetworkFailure, UserSearchResponse>
+}
+
+class UserSearchApiWrapperImpl(
     private val userSearchApi: UserSearchApi,
     private val conversationDAO: ConversationDAO,
     private val idMapper: IdMapper = MapperProvider.idMapper()
-) {
+) : UserSearchApiWrapper {
 
 
-
-    suspend fun search(
+    override suspend fun search(
         searchQuery: String,
         domain: String,
         maxResultSize: Int?,
