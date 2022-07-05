@@ -11,12 +11,12 @@ import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.ContentNegotiation
-import io.ktor.client.plugins.compression.ContentEncoding
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.logging.SIMPLE
 import io.ktor.client.plugins.websocket.WebSockets
+import io.ktor.http.HttpHeaders.ContentEncoding
 import io.ktor.serialization.kotlinx.json.json
 
 /**
@@ -110,7 +110,7 @@ internal fun provideBaseHttpClient(
     }
 
     if (installCompression) {
-        install(ContentEncoding) { gzip(0.9f) }
+        install(ContentEncoding) { gzip(null) }
     }
 
     install(ContentNegotiation) {
