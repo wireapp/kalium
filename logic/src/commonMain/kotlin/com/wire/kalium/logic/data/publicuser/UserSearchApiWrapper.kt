@@ -38,42 +38,35 @@ class UserSearchApiWrapperImpl(
         maxResultSize: Int?,
         searchUsersOptions: SearchUsersOptions
     ): Either<NetworkFailure, UserSearchResponse> {
-        val excludedConversationOption = searchUsersOptions.conversationExcluded
 
-        return if (excludedConversationOption is ConversationMemberExcludedOptions.ConversationExcluded) {
+        val searchResponse = wrapApiRequest {
+            userSearchApi.search(
+                UserSearchRequest(
+                    searchQuery = searchQuery,
+                    domain = domain,
+                    maxResultSize = maxResultSize
+                )
+            )
+        }
+
+        return if (searchUsersOptions.conversationExcluded is ConversationMemberExcludedOptions.ConversationExcluded) {
             val conversationMembersId = conversationDAO.getAllMembers(
-                idMapper.toDaoModel(excludedConversationOption.conversationId)
+                qualifiedID = idMapper.toDaoModel(qualifiedID = searchUsersOptions.conversationExcluded.conversationId)
             ).firstOrNull()?.map { idMapper.fromDaoModel(it.user) }
 
-            wrapApiRequest {
-                userSearchApi.search(
-                    UserSearchRequest(
-                        searchQuery = searchQuery,
-                        domain = domain,
-                        maxResultSize = maxResultSize
-                    )
-                )
-            }.map { contactResponse ->
-                val filteredContactResponse = contactResponse.documents.filter { contactDTO ->
+            searchResponse.map {
+                val filteredContactResponse = it.documents.filter { contactDTO ->
                     !(conversationMembersId?.contains(idMapper.fromApiModel(contactDTO.qualifiedID)) ?: false)
                 }
 
-                contactResponse.copy(
+                it.copy(
                     documents = filteredContactResponse,
                     found = filteredContactResponse.size,
                     returned = filteredContactResponse.size
                 )
             }
         } else {
-            wrapApiRequest {
-                userSearchApi.search(
-                    UserSearchRequest(
-                        searchQuery = searchQuery,
-                        domain = domain,
-                        maxResultSize = maxResultSize
-                    )
-                )
-            }
+            searchResponse
         }
     }
 }
