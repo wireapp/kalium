@@ -84,8 +84,8 @@ class SearchUserRepositoryImpl(
     override suspend fun searchKnownUsersByNameOrHandleOrEmail(
         searchQuery: String,
         searchUsersOptions: SearchUsersOptions
-    ): UserSearchResult {
-        return handeSearchUsersOptions(
+    ): UserSearchResult =
+         handeSearchUsersOptions(
             searchUsersOptions,
             excluded = { conversationId ->
                 userDAO.getUsersNotInConversationByNameOrHandleOrEmail(
@@ -100,13 +100,12 @@ class SearchUserRepositoryImpl(
                 )
             }
         )
-    }
 
     override suspend fun searchKnownUsersByHandle(
         handle: String,
         searchUsersOptions: SearchUsersOptions
-    ): UserSearchResult {
-        return handeSearchUsersOptions(
+    ): UserSearchResult =
+         handeSearchUsersOptions(
             searchUsersOptions,
             excluded = { conversationId ->
                 userDAO.getUsersNotInConversationByHandle(
@@ -121,7 +120,6 @@ class SearchUserRepositoryImpl(
                 )
             }
         )
-    }
 
     override suspend fun searchUserDirectory(
         searchQuery: String,
