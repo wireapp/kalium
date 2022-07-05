@@ -73,7 +73,7 @@ selectAllUsersWithConnectionStatus:
 SELECT * FROM User WHERE connection_status = ?;
 
 selectByQualifiedId:
-SELECT * FROM User WHERE qualified_id = ?;
+SELECT * FROM User WHERE qualified_id IN ?;
 
 selectByNameOrHandleOrEmailAndConnectionState:
 SELECT * FROM User
@@ -109,3 +109,8 @@ SELECT * FROM User
 WHERE NOT EXISTS (SELECT user FROM Member WHERE conversation == :conversation_id)
 AND handle LIKE ('%' || :searchQuery || '%')
 AND connection_status = "ACCEPTED";
+
+getUsersNotPartOfTheConversation:
+SELECT * FROM User
+ WHERE NOT EXISTS (SELECT user FROM Member WHERE conversation == ?)
+ AND connection_status = "ACCEPTED";

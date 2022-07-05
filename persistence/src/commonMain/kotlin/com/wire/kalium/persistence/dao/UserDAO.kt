@@ -60,6 +60,7 @@ enum class UserTypeEntity {
 
 internal typealias UserAssetIdEntity = QualifiedIDEntity
 
+@Suppress("TooManyFunctions")
 interface UserDAO {
     /**
      * Inserts a new user into the local storage
@@ -98,6 +99,7 @@ interface UserDAO {
     suspend fun getAllUsers(): Flow<List<UserEntity>>
     suspend fun getAllUsersByConnectionStatus(connectionState: ConnectionEntity.State): List<UserEntity>
     suspend fun getUserByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserEntity?>
+    suspend fun getUsersByQualifiedIDList(qualifiedIDList: List<QualifiedIDEntity>): List<UserEntity>
     suspend fun getUserByNameOrHandleOrEmailAndConnectionState(
         searchQuery: String,
         connectionState: ConnectionEntity.State
@@ -111,6 +113,7 @@ interface UserDAO {
     suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity)
     suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String)
     suspend fun updateUserAvailabilityStatus(qualifiedID: QualifiedIDEntity, status: UserAvailabilityStatusEntity)
+    suspend fun getUsersNotInConversation(conversationId: QualifiedIDEntity) : List<UserEntity>
     suspend fun insertOrIgnoreUserWithConnectionStatus(qualifiedID: QualifiedIDEntity, connectionStatus: ConnectionEntity.State)
     suspend fun getUsersNotInConversationByNameOrHandleOrEmail(conversationId: QualifiedIDEntity, searchQuery: String) : List<UserEntity>
     suspend fun getUsersNotInConversationByHandle(conversationId: QualifiedIDEntity, handle: String) : List<UserEntity>

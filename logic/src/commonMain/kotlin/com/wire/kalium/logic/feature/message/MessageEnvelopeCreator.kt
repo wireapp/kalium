@@ -53,7 +53,7 @@ class MessageEnvelopeCreatorImpl(
 
         return recipients.foldToEitherWhileRight(mutableListOf<RecipientEntry>()) { recipient, recipientAccumulator ->
             recipient.clients.foldToEitherWhileRight(mutableListOf<ClientPayload>()) { client, clientAccumulator ->
-                val session = CryptoSessionId(idMapper.toCryptoQualifiedIDId(recipient.member.id), CryptoClientId(client.value))
+                val session = CryptoSessionId(idMapper.toCryptoQualifiedIDId(recipient.id), CryptoClientId(client.value))
 
                 wrapCryptoRequest { EncryptedMessageBlob(proteusClient.encrypt(encodedContent.data, session)) }
                     .map { encryptedContent ->
@@ -64,7 +64,7 @@ class MessageEnvelopeCreatorImpl(
                     }
             }.map { clientEntries ->
                 recipientAccumulator.also {
-                    it.add(RecipientEntry(recipient.member.id, clientEntries))
+                    it.add(RecipientEntry(recipient.id, clientEntries))
                 }
             }
         }.map { recipientEntries ->

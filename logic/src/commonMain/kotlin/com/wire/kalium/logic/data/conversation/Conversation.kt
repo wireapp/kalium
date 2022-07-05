@@ -15,11 +15,19 @@ data class Conversation(
     val name: String?,
     val type: Type,
     val teamId: TeamId?,
+    val protocol: ProtocolInfo,
     val mutedStatus: MutedConversationStatus,
     val lastNotificationDate: String?,
     val lastModifiedDate: String?
 ) {
     enum class Type { SELF, ONE_ON_ONE, GROUP, CONNECTION_PENDING }
+}
+
+sealed class ProtocolInfo {
+    object Proteus : ProtocolInfo()
+    data class MLS(val groupId: String, val groupState: GroupState) : ProtocolInfo() {
+        enum class GroupState { PENDING, PENDING_WELCOME_MESSAGE, ESTABLISHED }
+    }
 }
 
 sealed class ConversationDetails(open val conversation: Conversation) {
@@ -46,12 +54,14 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val userType: UserType,
         val lastModifiedDate: String?,
         val connection: com.wire.kalium.logic.data.user.Connection,
+        val protocolInfo: ProtocolInfo
     ) : ConversationDetails(
         Conversation(
             id = conversationId,
             name = otherUser?.name,
             type = Conversation.Type.CONNECTION_PENDING,
             teamId = otherUser?.team?.let { TeamId(it) },
+            protocolInfo,
             mutedStatus = MutedConversationStatus.AllAllowed,
             lastNotificationDate = null,
             lastModifiedDate = lastModifiedDate,
@@ -61,7 +71,13 @@ sealed class ConversationDetails(open val conversation: Conversation) {
 
 class MembersInfo(val self: Member, val otherMembers: List<Member>)
 
-class Member(override val id: UserId) : User()
+class Member(override val id: UserId, val role: Role) : User() {
+    sealed class Role{
+        object Member: Role()
+        object Admin: Role()
+        data class Unknown(val name: String): Role()
+    }
+}
 
 sealed class MemberDetails {
     data class Self(val selfUser: SelfUser) : MemberDetails()
@@ -70,5 +86,4 @@ sealed class MemberDetails {
 
 typealias ClientId = PlainId
 
-data class Recipient(val member: Member, val clients: List<ClientId>)
-
+data class Recipient(val id: UserId, val clients: List<ClientId>)

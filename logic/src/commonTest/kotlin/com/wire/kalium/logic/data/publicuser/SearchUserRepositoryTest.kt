@@ -438,7 +438,8 @@ class SearchUserRepositoryTest {
             previewPicture = null,
             completePicture = null,
             availabilityStatus = UserAvailabilityStatus.NONE,
-            userType = UserType.FEDERATED
+            userType = UserType.FEDERATED,
+            connectionStatus = ConnectionState.NOT_CONNECTED
         )
 
         val CONTACT_SEARCH_RESPONSE = UserSearchResponse(

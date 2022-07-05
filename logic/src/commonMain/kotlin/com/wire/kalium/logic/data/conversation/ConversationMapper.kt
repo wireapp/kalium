@@ -4,6 +4,7 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.conversation.ConvProtocol
 import com.wire.kalium.network.api.conversation.ConvTeamInfo
 import com.wire.kalium.network.api.conversation.ConversationResponse
@@ -24,13 +25,14 @@ interface ConversationMapper {
     fun toApiModel(access: ConversationOptions.Access): ConversationAccess
     fun toApiModel(accessRole: ConversationOptions.AccessRole): ConversationAccessRole
     fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol
-    fun toApiModel(name: String?, members: List<Member>, teamId: String?, options: ConversationOptions): CreateConversationRequest
+    fun toApiModel(name: String?, members: List<UserId>, teamId: String?, options: ConversationOptions): CreateConversationRequest
     fun toConversationDetailsOneToOne(conversation: Conversation, otherUser: OtherUser, selfUser: SelfUser): ConversationDetails.OneOne
 }
 
 internal class ConversationMapperImpl(
     private val idMapper: IdMapper,
-    private val conversationStatusMapper: ConversationStatusMapper
+    private val conversationStatusMapper: ConversationStatusMapper,
+    private val protocolInfoMapper: ProtocolInfoMapper
 ) : ConversationMapper {
 
     override fun fromApiModelToDaoModel(
@@ -57,14 +59,15 @@ internal class ConversationMapperImpl(
         name = daoModel.name,
         type = daoModel.type.fromDaoModelToType(),
         teamId = daoModel.teamId?.let { TeamId(it) },
+        protocol = protocolInfoMapper.fromEntity(daoModel.protocolInfo),
         mutedStatus = conversationStatusMapper.fromDaoModel(daoModel.mutedStatus),
         lastNotificationDate = daoModel.lastNotificationDate,
         lastModifiedDate = daoModel.lastModifiedDate
     )
 
-    override fun toApiModel(name: String?, members: List<Member>, teamId: String?, options: ConversationOptions) =
+    override fun toApiModel(name: String?, members: List<UserId>, teamId: String?, options: ConversationOptions) =
         CreateConversationRequest(qualifiedUsers = if (options.protocol == ConversationOptions.Protocol.PROTEUS) members.map {
-            idMapper.toApiModel(it.id)
+            idMapper.toApiModel(it)
         } else emptyList(),
             name = name,
             access = options.access?.toList()?.map { toApiModel(it) },
@@ -96,7 +99,7 @@ internal class ConversationMapperImpl(
         ConversationOptions.Access.LINK -> ConversationAccess.LINK
     }
 
-    override fun toApiModel(access: ConversationOptions.AccessRole): ConversationAccessRole = when (access) {
+    override fun toApiModel(accessRole: ConversationOptions.AccessRole): ConversationAccessRole = when (accessRole) {
         ConversationOptions.AccessRole.TEAM_MEMBER -> ConversationAccessRole.TEAM_MEMBER
         ConversationOptions.AccessRole.NON_TEAM_MEMBER -> ConversationAccessRole.NON_TEAM_MEMBER
         ConversationOptions.AccessRole.GUEST -> ConversationAccessRole.GUEST

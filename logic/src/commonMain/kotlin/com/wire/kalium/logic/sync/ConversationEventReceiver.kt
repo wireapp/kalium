@@ -140,7 +140,7 @@ class ConversationEventReceiverImpl(
     ) = when (val protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)) {
         is ProtoContent.Readable -> Either.Right(protoContent)
         is ProtoContent.ExternalMessageInstructions -> event.encryptedExternalContent?.let {
-            kaliumLogger.v("Solving external content '$protoContent', EncryptedData='$it'")
+            kaliumLogger.d("Solving external content '$protoContent', EncryptedData='$it'")
             solveExternalContentForProteusMessage(protoContent, event.encryptedExternalContent)
         } ?: run {
             val rootCause = IllegalArgumentException("Null external content when processing external message instructions.")
@@ -152,7 +152,9 @@ class ConversationEventReceiverImpl(
         externalInstructions: ProtoContent.ExternalMessageInstructions,
         externalData: EncryptedData
     ): Either<CoreFailure, ProtoContent.Readable> = wrapCryptoRequest {
-        PlainMessageBlob(decryptDataWithAES256(externalData, AES256Key(externalInstructions.otrKey)).data)
+        val decryptedExternalMessage = decryptDataWithAES256(externalData, AES256Key(externalInstructions.otrKey)).data
+        kaliumLogger.d("ExternalMessage - Decrypted external message content: '$decryptedExternalMessage'")
+        PlainMessageBlob(decryptedExternalMessage)
     }.map(protoContentMapper::decodeFromProtobuf).flatMap { decodedProtobuf ->
         if (decodedProtobuf !is ProtoContent.Readable) {
             val rootCause = IllegalArgumentException("матрёшка! External message can't contain another external message inside!")
@@ -192,7 +194,8 @@ class ConversationEventReceiverImpl(
 
     private suspend fun handleMemberJoin(event: Event.Conversation.MemberJoin) =
         // Attempt to fetch conversation details if needed, as this might be an unknown conversation
-        conversationRepository.fetchConversationIfUnknown(event.conversationId).run {
+        conversationRepository.fetchConversationIfUnknown(event.conversationId)
+            .run {
             onSuccess { kaliumLogger.v("Succeeded fetching conversation details on MemberJoin Event: $event") }
             onFailure { kaliumLogger.w("Failure fetching conversation details on MemberJoin Event: $event") }
             // Even if unable to fetch conversation details, at least attempt adding the member
@@ -200,7 +203,7 @@ class ConversationEventReceiverImpl(
         }.onSuccess {
             val message = Message.System(
                 id = event.id,
-                content = MessageContent.MemberChange.Added(members = event.members),
+                content = MessageContent.MemberChange.Added(members = event.members.map { it.id }),
                 conversationId = event.conversationId,
                 date = event.timestampIso,
                 senderUserId = event.addedBy,
@@ -212,13 +215,18 @@ class ConversationEventReceiverImpl(
 
     private suspend fun handleMemberLeave(event: Event.Conversation.MemberLeave) = conversationRepository
         .deleteMembers(
-            event.members.map { idMapper.toDaoModel(it.id) },
+            event.removedList.map { idMapper.toDaoModel(it) },
             idMapper.toDaoModel(event.conversationId)
         )
+        .flatMap {
+            // fetch required unknown users that haven't been persisted during slow sync, e.g. from another team
+            // and keep them to properly show this member-leave message
+            userRepository.fetchUsersIfUnknownByIds(event.removedList.toSet())
+        }
         .onSuccess {
             val message = Message.System(
                 id = event.id,
-                content = MessageContent.MemberChange.Removed(members = event.members),
+                content = MessageContent.MemberChange.Removed(members = event.removedList),
                 conversationId = event.conversationId,
                 date = event.timestampIso,
                 senderUserId = event.removedBy,

@@ -52,6 +52,7 @@ sealed class EventContentDTO {
             @SerialName("qualified_from") val qualifiedFrom: UserId,
             val time: String,
             @SerialName("data") val members: ConversationMembers,
+            @Deprecated("use qualifiedFrom", replaceWith = ReplaceWith("this.qualifiedFrom"))
             @SerialName("from") val from: String
         ) : Conversation()
 
@@ -62,6 +63,7 @@ sealed class EventContentDTO {
             val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
             val time: String,
+            // TODO: rename members to something else since the name is confusing (it's only userIDs)
             @SerialName("data") val members: ConversationUsers,
             @SerialName("from") val from: String
         ) : Conversation()

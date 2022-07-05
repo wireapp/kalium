@@ -456,6 +456,16 @@ class UserDAOTest : BaseDatabaseTest() {
         assertNotNull(inserted2)
     }
 
+    @Test
+    fun givenListOfUsers_WhenGettingListOfUsers_ThenMatchingUsersAreReturned() = runTest {
+        val users = listOf(user1, user2)
+        val requestedIds = (users + user3).map { it.id }
+        db.userDAO.upsertUsers(users)
+        val result = db.userDAO.getUsersByQualifiedIDList(requestedIds)
+        assertEquals(result, users)
+        assertTrue(!result.contains(user3))
+    }
+
     private companion object {
         val USER_ENTITY_1 = newUserEntity(QualifiedIDEntity("1", "wire.com"))
         val USER_ENTITY_2 = newUserEntity(QualifiedIDEntity("2", "wire.com"))

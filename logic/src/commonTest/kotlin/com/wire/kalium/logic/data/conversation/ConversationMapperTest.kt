@@ -2,14 +2,12 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.data.user.type.UserTypeMapper
 import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.conversation.ConvProtocol
+import com.wire.kalium.network.api.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.conversation.ConversationMembersResponse
-import com.wire.kalium.network.api.conversation.ConversationOtherMembersResponse
 import com.wire.kalium.network.api.conversation.ConversationResponse
-import com.wire.kalium.network.api.conversation.ConversationSelfMemberResponse
 import com.wire.kalium.network.api.conversation.MutedStatus
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -30,13 +28,16 @@ class ConversationMapperTest {
     val idMapper = mock(classOf<IdMapper>())
 
     @Mock
+    val protocolInfoMapper = mock(classOf<ProtocolInfoMapper>())
+
+    @Mock
     val conversationStatusMapper = mock(classOf<ConversationStatusMapper>())
 
     private lateinit var conversationMapper: ConversationMapper
 
     @BeforeTest
     fun setup() {
-        conversationMapper = ConversationMapperImpl(idMapper, conversationStatusMapper)
+        conversationMapper = ConversationMapperImpl(idMapper, conversationStatusMapper, protocolInfoMapper)
     }
 
     @Test
@@ -153,10 +154,14 @@ class ConversationMapperTest {
         val ORIGINAL_CONVERSATION_ID = ConversationId("original", "oDomain")
         val SELF_USER_TEAM_ID = TeamId("teamID")
         val SELF_MEMBER_RESPONSE =
-            ConversationSelfMemberResponse(
-                UserId("selfId", "selfDomain"), "2022-04-11T20:24:57.237Z", MutedStatus.ALL_ALLOWED
+            ConversationMemberDTO.Self(
+                id = UserId("selfId", "selfDomain"),
+                conversationRole = "wire_member",
+                otrMutedRef = "2022-04-11T20:24:57.237Z",
+                otrMutedStatus = MutedStatus.ALL_ALLOWED
             )
-        val OTHER_MEMBERS = listOf(ConversationOtherMembersResponse(null, UserId("other1", "domain1")))
+        val OTHER_MEMBERS =
+            listOf(ConversationMemberDTO.Other(service = null, id = UserId("other1", "domain1"), conversationRole = "wire_admin"))
         val MEMBERS_RESPONSE = ConversationMembersResponse(SELF_MEMBER_RESPONSE, OTHER_MEMBERS)
         val CONVERSATION_RESPONSE = ConversationResponse(
             "creator",

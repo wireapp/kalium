@@ -93,21 +93,21 @@ class EventMapper(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.MemberJoinDTO
     ) = Event.Conversation.MemberJoin(
-        id,
-        idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
-        idMapper.fromApiModel(eventContentDTO.qualifiedFrom),
-        eventContentDTO.members.users.map { memberMapper.fromApiModel(it) },
-        eventContentDTO.time
+        id = id,
+        conversationId = idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
+        addedBy = idMapper.fromApiModel(eventContentDTO.qualifiedFrom),
+        members = eventContentDTO.members.users.map {memberMapper.fromApiModel(it)},
+        timestampIso = eventContentDTO.time
     )
 
     private fun memberLeave(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.MemberLeaveDTO
     ) = Event.Conversation.MemberLeave(
-        id,
-        idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
-        idMapper.fromApiModel(eventContentDTO.qualifiedFrom),
-        eventContentDTO.members.qualifiedUserIds.map { Member(idMapper.fromApiModel(it)) },
-        eventContentDTO.time
+        id = id,
+        conversationId = idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
+        removedBy = idMapper.fromApiModel(eventContentDTO.qualifiedFrom),
+        removedList = eventContentDTO.members.qualifiedUserIds.map { idMapper.fromApiModel(it) },
+        timestampIso = eventContentDTO.time
     )
 }
