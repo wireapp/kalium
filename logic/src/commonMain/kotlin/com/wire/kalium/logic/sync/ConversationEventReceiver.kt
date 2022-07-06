@@ -194,29 +194,35 @@ class ConversationEventReceiverImpl(
 
     private suspend fun handleMemberJoin(event: Event.Conversation.MemberJoin) =
         // Attempt to fetch conversation details if needed, as this might be an unknown conversation
-        conversationRepository.fetchConversationIfUnknown(event.conversationId).run {
-            onSuccess { kaliumLogger.v("Succeeded fetching conversation details on MemberJoin Event: $event") }
-            onFailure { kaliumLogger.w("Failure fetching conversation details on MemberJoin Event: $event") }
-            // Even if unable to fetch conversation details, at least attempt adding the member
-            conversationRepository.persistMembers(event.members, event.conversationId)
-        }.onSuccess {
-            val message = Message.System(
-                id = event.id,
-                content = MessageContent.MemberChange.Added(members = event.members.map { it.id }),
-                conversationId = event.conversationId,
-                date = event.timestampIso,
-                senderUserId = event.addedBy,
-                status = Message.Status.SENT,
-                visibility = Message.Visibility.VISIBLE
-            )
-            processMessage(message) //TODO(exception-handling): processMessage exceptions are not caught
-        }.onFailure { kaliumLogger.e("$TAG - failure on member join event: $it") }
+        conversationRepository.fetchConversationIfUnknown(event.conversationId)
+            .run {
+                onSuccess { kaliumLogger.v("Succeeded fetching conversation details on MemberJoin Event: $event") }
+                onFailure { kaliumLogger.w("Failure fetching conversation details on MemberJoin Event: $event") }
+                // Even if unable to fetch conversation details, at least attempt adding the member
+                conversationRepository.persistMembers(event.members, event.conversationId)
+            }.onSuccess {
+                val message = Message.System(
+                    id = event.id,
+                    content = MessageContent.MemberChange.Added(members = event.members.map { it.id }),
+                    conversationId = event.conversationId,
+                    date = event.timestampIso,
+                    senderUserId = event.addedBy,
+                    status = Message.Status.SENT,
+                    visibility = Message.Visibility.VISIBLE
+                )
+                processMessage(message) //TODO(exception-handling): processMessage exceptions are not caught
+            }.onFailure { kaliumLogger.e("$TAG - failure on member join event: $it") }
 
     private suspend fun handleMemberLeave(event: Event.Conversation.MemberLeave) = conversationRepository
         .deleteMembers(
             event.removedList.map { idMapper.toDaoModel(it) },
             idMapper.toDaoModel(event.conversationId)
         )
+        .flatMap {
+            // fetch required unknown users that haven't been persisted during slow sync, e.g. from another team
+            // and keep them to properly show this member-leave message
+            userRepository.fetchUsersIfUnknownByIds(event.removedList.toSet())
+        }
         .onSuccess {
             val message = Message.System(
                 id = event.id,

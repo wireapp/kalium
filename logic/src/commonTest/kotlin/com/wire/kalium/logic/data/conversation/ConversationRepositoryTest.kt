@@ -580,6 +580,11 @@ class ConversationRepositoryTest {
             .suspendFunction(conversationDAO::insertMembers, fun2<List<Member>, QualifiedIDEntity>())
             .with(anything(), anything())
             .wasInvoked(exactly = once)
+
+        given(userRepository)
+            .suspendFunction(userRepository::fetchUsersIfUnknownByIds)
+            .whenInvokedWith(any())
+            .thenReturn(Either.Right(Unit))
     }
 
     @Test
