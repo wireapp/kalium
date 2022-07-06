@@ -9,13 +9,8 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.sync.SyncManager
 import kotlinx.datetime.Clock
-
-sealed class CreateMLSConversationFailure : CoreFailure.FeatureFailure() {
-    object MissingClientId : CreateMLSConversationFailure()
-}
 
 class CreateGroupConversationUseCase(
     private val conversationRepository: ConversationRepository,
@@ -24,21 +19,12 @@ class CreateGroupConversationUseCase(
 ) {
     suspend operator fun invoke(name: String, userIdList: List<UserId>, options: ConversationOptions): Either<CoreFailure, Conversation> {
         syncManager.waitUntilLive()
-        if (options.protocol == ConversationOptions.Protocol.MLS) {
-            return clientRepository.currentClientId().flatMap { clientId ->
-                conversationRepository.createGroupConversation(name, userIdList, options.copy(creatorClient = clientId.value))
-                    .flatMap { conversation ->
-                        conversationRepository.updateConversationModifiedDate(conversation.id, Clock.System.now().toString())
-                            .map { conversation }
-                    }
-            }.onFailure {
-                return Either.Left(CreateMLSConversationFailure.MissingClientId)
-            }
-        } else
-            return conversationRepository.createGroupConversation(name, userIdList, options)
+        return clientRepository.currentClientId().flatMap { clientId ->
+            conversationRepository.createGroupConversation(name, userIdList, options.copy(creatorClient = clientId.value))
                 .flatMap { conversation ->
                     conversationRepository.updateConversationModifiedDate(conversation.id, Clock.System.now().toString())
                         .map { conversation }
                 }
+        }
     }
 }

@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.feature.conversation
 
-import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -11,7 +10,6 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.test_util.wasInTheLastSecond
-import com.wire.kalium.logic.util.shouldFail
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.configure
@@ -24,7 +22,6 @@ import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.toInstant
 import kotlin.test.Test
-import kotlin.test.assertIs
 
 class CreateGroupConversationUseCaseTest {
 
@@ -32,33 +29,12 @@ class CreateGroupConversationUseCaseTest {
     @Test
     fun givenNameMembersAndOptions_whenCreatingGroupConversation_thenRepositoryCreateGroupShouldBeCalled() = runTest {
         val name = "Conv Name"
-        val clientId = "ClientId"
         val members = listOf(TestUser.USER_ID, TestUser.OTHER.id)
-        val conversationOptions = ConversationOptions(protocol = ConversationOptions.Protocol.MLS, creatorClient = clientId)
+        val conversationOptions = ConversationOptions(protocol = ConversationOptions.Protocol.MLS)
 
         val (arrangement, createGroupConversation) = Arrangement()
             .withUpdateConversationModifiedDateSucceeding()
-            .withCurrentClientIdReturning(clientId)
-            .withCreateGroupConversationReturning(TestConversation.GROUP())
-            .arrange()
-
-        createGroupConversation(name, members, conversationOptions)
-
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::createGroupConversation)
-            .with(eq(name), eq(members), eq(conversationOptions))
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenNameMembersAndOptions_whenCreatingAProteusGroupConversation_thenRepositoryCreateGroupShouldBeCalled() = runTest {
-        val name = "Conv Name"
-        val clientId = "ClientId"
-        val members = listOf(TestUser.USER_ID, TestUser.OTHER.id)
-        val conversationOptions = ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
-
-        val (arrangement, createGroupConversation) = Arrangement()
-            .withUpdateConversationModifiedDateSucceeding()
+            .withCurrentClientIdReturning("")
             .withCreateGroupConversationReturning(TestConversation.GROUP())
             .arrange()
 
@@ -73,13 +49,12 @@ class CreateGroupConversationUseCaseTest {
     @Test
     fun givenNameMembersAndOptions_whenCreatingGroupConversation_thenConversationModifiedDateIsUpdated() = runTest {
         val name = "Conv Name"
-        val clientId = "ClientId"
         val members = listOf(TestUser.USER_ID, TestUser.OTHER.id)
-        val conversationOptions = ConversationOptions(protocol = ConversationOptions.Protocol.MLS, creatorClient = clientId)
+        val conversationOptions = ConversationOptions(protocol = ConversationOptions.Protocol.MLS)
 
         val (arrangement, createGroupConversation) = Arrangement()
             .withUpdateConversationModifiedDateSucceeding()
-            .withCurrentClientIdReturning(clientId)
+            .withCurrentClientIdReturning("")
             .withCreateGroupConversationReturning(TestConversation.GROUP())
             .arrange()
 
@@ -89,28 +64,6 @@ class CreateGroupConversationUseCaseTest {
             .suspendFunction(arrangement.conversationRepository::updateConversationModifiedDate)
             .with(any(), matching { it.toInstant().wasInTheLastSecond })
             .wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenNameMembersAndOptions_whenCreatingGroupConversationAndGettingCurrentIdFails_thenReturnMissingClientIdError() = runTest {
-        val name = "Conv Name"
-        val members = listOf(TestUser.USER_ID, TestUser.OTHER.id)
-        val conversationOptions = ConversationOptions(protocol = ConversationOptions.Protocol.MLS)
-
-        val (arrangement, createGroupConversation) = Arrangement()
-            .withUpdateConversationModifiedDateSucceeding()
-            .withCurrentClientIdReturning(null)
-            .withCreateGroupConversationReturning(TestConversation.GROUP())
-            .arrange()
-
-        createGroupConversation(name, members, conversationOptions).shouldFail { error ->
-            assertIs<CreateMLSConversationFailure.MissingClientId>(error)
-        }
-
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::createGroupConversation)
-            .with(any(), any(), any())
-            .wasNotInvoked()
     }
 
     private class Arrangement {
@@ -137,11 +90,11 @@ class CreateGroupConversationUseCaseTest {
                 .thenReturn(Either.Right(conversation))
         }
 
-        fun withCurrentClientIdReturning(clientId: String?) = apply {
+        fun withCurrentClientIdReturning(clientId: String) = apply {
             given(clientRepository)
-                .function(clientRepository::currentClientId)
+                .suspendFunction(clientRepository::currentClientId)
                 .whenInvoked()
-                .thenReturn(if (clientId == null) Either.Left(StorageFailure.DataNotFound) else Either.Right(ClientId(clientId)))
+                .thenReturn(Either.Right(ClientId(clientId)))
         }
 
 
