@@ -38,7 +38,7 @@ data class CreateConversationRequest(
     val conversationRole: String?,
     @SerialName("protocol")
     val protocol: ConvProtocol?,
-    //Only needed for MLS conversations
+    // Only needed for MLS conversations
     @SerialName("creator_client")
     val creatorClient: String?
 )
