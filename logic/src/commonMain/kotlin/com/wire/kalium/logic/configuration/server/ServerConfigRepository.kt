@@ -9,7 +9,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.configuration.ServerConfigApi
@@ -141,7 +140,6 @@ internal class ServerConfigDataSource(
     override suspend fun fetchApiVersionAndStore(links: ServerConfig.Links): Either<CoreFailure, ServerConfig> =
         wrapApiRequest { versionApi.fetchApiVersion(Url(links.api)) }
             .flatMap { metaData ->
-                kaliumLogger.d(">>% storing configs..")
                 storeConfig(links, serverConfigMapper.fromDTO(metaData))
             }
 
