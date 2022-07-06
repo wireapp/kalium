@@ -97,7 +97,6 @@ class CreateGroupConversationUseCaseTest {
                 .thenReturn(Either.Right(ClientId(clientId)))
         }
 
-
         fun withUpdateConversationModifiedDateSucceeding() = apply {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::updateConversationModifiedDate)
