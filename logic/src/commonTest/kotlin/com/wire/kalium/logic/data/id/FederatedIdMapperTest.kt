@@ -24,7 +24,7 @@ class FederatedIdMapperTest {
 
     @BeforeTest
     fun setUp() {
-        federatedIdMapper = FederatedIdMapper(kaliumPreferences)
+        federatedIdMapper = FederatedIdMapperImpl(kaliumPreferences)
 
         given(kaliumPreferences)
             .invocation { getString(CURRENT_DOMAIN) }
