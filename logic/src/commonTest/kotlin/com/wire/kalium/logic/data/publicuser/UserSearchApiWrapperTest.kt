@@ -35,7 +35,8 @@ class UserSearchApiWrapperTest {
                 user = QualifiedIDEntity(
                     "value1",
                     "someDomain"
-                )
+                ),
+                role = Member.Role.Member
             )
         )
 
