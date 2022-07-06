@@ -10,3 +10,6 @@ ON CONFLICT(key) DO UPDATE SET stringValue = excluded.stringValue;
 
 selectValueByKey:
 SELECT stringValue FROM Metadata WHERE key = ?;
+
+deleteValue:
+DELETE FROM Metadata WHERE key = ?;

@@ -3,6 +3,7 @@ package com.wire.kalium.persistence.dao
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -10,6 +11,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
 
     private val user1 = newUserEntity(id = "1")
@@ -17,7 +19,7 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
 
     private val conversationEntity1 = newConversationEntity()
 
-    private val member1 = Member(user1.id)
+    private val member1 = Member(user1.id, Member.Role.Admin)
 
     private lateinit var conversationDAO: ConversationDAO
     private lateinit var userDAO: UserDAO
@@ -50,13 +52,11 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
         val conversationId = QualifiedIDEntity(value = "someValue", domain = "someDomain")
 
         createTestConversation(
-            conversationId,
-            listOf(
+            conversationId, listOf(
                 Member(
                     user = QualifiedIDEntity(
-                        "3",
-                        "someDomain"
-                    )
+                        "3", "someDomain"
+                    ), role = Member.Role.Admin
                 )
             )
         )
@@ -73,13 +73,12 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
         val conversationId = QualifiedIDEntity(value = "someValue", domain = "someDomain")
 
         createTestConversation(
-            conversationId,
-            listOf(
+            conversationId, listOf(
                 Member(
-                    user = user1.id
+                    user = user1.id, role = Member.Role.Admin
                 ),
                 Member(
-                    user = user2.id
+                    user = user2.id, role = Member.Role.Member
                 ),
             )
         )
@@ -96,8 +95,7 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
         val conversationId = QualifiedIDEntity(value = "someValue", domain = "someDomain")
 
         createTestConversation(
-            conversationId,
-            emptyList()
+            conversationId, emptyList()
         )
 
         val result = userDAO.getUsersNotInConversation(conversationId)
@@ -111,8 +109,7 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
         )
 
         conversationDAO.insertMembers(
-            memberList = members,
-            conversationID = conversationIDEntity
+            memberList = members, conversationID = conversationIDEntity
         )
     }
 }

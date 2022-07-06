@@ -28,7 +28,7 @@ class CreateGroupConversationUseCaseTest {
     @Test
     fun givenNameMembersAndOptions_whenCreatingGroupConversation_thenRepositoryCreateGroupShouldBeCalled() = runTest {
         val name = "Conv Name"
-        val members = listOf(Member(TestUser.USER_ID), Member(TestUser.OTHER.id))
+        val members = listOf(TestUser.USER_ID, TestUser.OTHER.id)
         val conversationOptions = ConversationOptions(protocol = ConversationOptions.Protocol.MLS)
 
         val (arrangement, createGroupConversation) = Arrangement()
@@ -47,7 +47,7 @@ class CreateGroupConversationUseCaseTest {
     @Test
     fun givenNameMembersAndOptions_whenCreatingGroupConversation_thenConversationModifiedDateIsUpdated() = runTest {
         val name = "Conv Name"
-        val members = listOf(Member(TestUser.USER_ID), Member(TestUser.OTHER.id))
+        val members = listOf(TestUser.USER_ID, TestUser.OTHER.id)
         val conversationOptions = ConversationOptions(protocol = ConversationOptions.Protocol.MLS)
 
         val (arrangement, createGroupConversation) = Arrangement()

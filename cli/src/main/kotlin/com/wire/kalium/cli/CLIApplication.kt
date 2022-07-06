@@ -14,7 +14,6 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationOptions
-import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.feature.UserSessionScope
@@ -135,10 +134,12 @@ class CreateGroupCommand : CliktCommand(name = "create-group") {
 
         val userIndicesRaw = prompt("Enter user indexes", promptSuffix = ": ")
         val userIndices = userIndicesRaw?.split("\\s".toRegex())?.map(String::toInt) ?: emptyList()
-        val members = userIndices.map { Member(users[it].id) }
+        val userToAddList = userIndices.map { users[it].id }
 
         val result = userSession.conversations.createGroupConversation(
-            name, members, ConversationOptions(protocol = ConversationOptions.Protocol.MLS)
+            name,
+            userToAddList,
+            ConversationOptions(protocol = ConversationOptions.Protocol.MLS)
         )
         when (result) {
             is Either.Right -> echo("group created successfully")
@@ -236,7 +237,7 @@ class AddMemberToGroupCommand : CliktCommand(name = "add-member") {
         val selectedConversation = selectConversation(userSession)
         val selectedConnection = selectConnection(userSession)
 
-        userSession.conversations.addMemberToConversationUseCase(selectedConversation.id, listOf(Member(id = selectedConnection.id)))
+        userSession.conversations.addMemberToConversationUseCase(selectedConversation.id, listOf(selectedConnection.id))
     }
 }
 

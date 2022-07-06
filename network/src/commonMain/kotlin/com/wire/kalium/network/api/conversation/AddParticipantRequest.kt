@@ -15,6 +15,7 @@ data class AddParticipantRequest (
 
 
 sealed class AddParticipantResponse {
+    // TODO: the server response with an event aka, UserAdded model is inaccurate
     object ConversationUnchanged: AddParticipantResponse()
 
     @Serializable
