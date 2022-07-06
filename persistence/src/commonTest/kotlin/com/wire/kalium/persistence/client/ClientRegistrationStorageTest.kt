@@ -16,6 +16,7 @@ class ClientRegistrationStorageTest: BaseDatabaseTest() {
 
     @BeforeTest
     fun setup(){
+        deleteDatabase()
         val database = createDatabase()
         clientRegistrationStorage = ClientRegistrationStorageImpl(database.metadataDAO)
     }
