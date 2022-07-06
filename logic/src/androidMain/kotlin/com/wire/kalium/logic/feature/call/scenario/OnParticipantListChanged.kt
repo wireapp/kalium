@@ -59,7 +59,7 @@ class OnParticipantListChanged(
             }
 
             callRepository.updateCallParticipants(
-                conversationId = remoteConversationIdString.toConversationId().toString(), // todo: map it to qualified with def. domain?
+                conversationId = remoteConversationIdString.toConversationId().toString(),
                 participants = participants
             )
         }

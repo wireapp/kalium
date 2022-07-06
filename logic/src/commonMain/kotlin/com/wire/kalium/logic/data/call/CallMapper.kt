@@ -57,7 +57,6 @@ class CallMapper {
         }
 
         fun fromCallMemberToCallClient(member: CallMember): CallClient = with(member) {
-            // todo: map id value depending on federation flag
             CallClient(
                 userId = QualifiedID(
                     value = userId.removeDomain(),
