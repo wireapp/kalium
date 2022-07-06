@@ -117,7 +117,7 @@ class ClientRepositoryTest {
         clientRepository.persistClientId(clientId)
 
         verify(clientRegistrationStorage)
-            .setter(clientRegistrationStorage::registeredClientId)
+            .suspendFunction(clientRegistrationStorage::setRegisteredClientId)
             .with(eq(clientRepository))
     }
 
@@ -125,7 +125,7 @@ class ClientRepositoryTest {
     fun givenAClientIdIsStored_whenGettingRegisteredClientId_thenTheStoredValueShouldBeReturned() = runTest {
         val clientId = CLIENT_ID
         given(clientRegistrationStorage)
-            .getter(clientRegistrationStorage::registeredClientId)
+            .suspendFunction(clientRegistrationStorage::getRegisteredClientId)
             .whenInvoked()
             .then { clientId.value }
 
@@ -139,7 +139,7 @@ class ClientRepositoryTest {
     @Test
     fun givenNoClientIdIsStored_whenGettingRegisteredClientId_thenShouldFailWithMissingRegistration() = runTest {
         given(clientRegistrationStorage)
-            .getter(clientRegistrationStorage::registeredClientId)
+            .suspendFunction(clientRegistrationStorage::getRegisteredClientId)
             .whenInvoked()
             .then { null }
 
