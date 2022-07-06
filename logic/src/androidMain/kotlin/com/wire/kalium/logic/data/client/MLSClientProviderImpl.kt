@@ -21,7 +21,7 @@ actual class MLSClientProviderImpl actual constructor(
     private val kaliumPreferences: KaliumPreferences
 ) : MLSClientProvider {
 
-    override fun getMLSClient(clientId: ClientId?): Either<CoreFailure, MLSClient> {
+    override suspend fun getMLSClient(clientId: ClientId?): Either<CoreFailure, MLSClient> {
         val location = "$rootKeyStorePath/${userId.domain}/${userId.value}"
         val cryptoUserId = CryptoUserID(value = userId.value, domain = userId.domain)
 

@@ -34,7 +34,8 @@ class NeedsToRegisterClientUseCaseTest {
     @Test
     fun givenClientIdIsRegistered_thenReturnFalse() = runTest {
         given(clientRepository)
-            .invocation { clientRepository.currentClientId() }
+            .suspendFunction(clientRepository::currentClientId)
+            .whenInvoked()
             .then { Either.Right(CLIENT_ID) }
 
         val actual = needsToRegisterClientUseCase.invoke()
@@ -44,7 +45,8 @@ class NeedsToRegisterClientUseCaseTest {
     @Test
     fun givenClientIdIsNotRegistered_thenReturnTrue() = runTest {
         given(clientRepository)
-            .invocation { clientRepository.currentClientId() }
+            .suspendFunction(clientRepository::currentClientId)
+            .whenInvoked()
             .then { Either.Left(CoreFailure.MissingClientRegistration) }
 
         val actual = needsToRegisterClientUseCase.invoke()
