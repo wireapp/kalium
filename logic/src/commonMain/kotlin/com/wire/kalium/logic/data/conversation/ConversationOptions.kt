@@ -4,7 +4,8 @@ data class ConversationOptions(
     val access: Set<Access>? = null,
     val accessRole: Set<AccessRole>? = null,
     val readReceiptsEnabled: Boolean = false,
-    val protocol: Protocol = Protocol.PROTEUS
+    val protocol: Protocol = Protocol.PROTEUS,
+    val creatorClient: String? = null
 ) {
     enum class Protocol {
         PROTEUS, MLS

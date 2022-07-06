@@ -370,8 +370,9 @@ class ConversationDataSource(
             val selfUserId = userRepository.getSelfUserId()
             // TODO(IMPORTANT!): having an initial value is not the correct approach, the
             //  only valid source for members role is the backend
+            val membersWithRole = members.map { member -> Member(member.id, Member.Role.Member) }
             val selfMember = Member(selfUserId, Member.Role.Admin)
-            conversationDAO.insertMembers((members + selfMember).map(memberMapper::toDaoModel), conversationId)
+            conversationDAO.insertMembers((membersWithRole + selfMember).map(memberMapper::toDaoModel), conversationId)
         }
     }
 
