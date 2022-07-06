@@ -218,7 +218,7 @@ exceptions:
 formatting:
     active: true
     android: false
-    excludes: [ '**/*Test/**', '**/build/**', '**/protobuf-codegen/**', '**/cryptography/externals/**']
+    excludes: [ '**/build/**', '**/protobuf-codegen/**', '**/cryptography/externals/**']
     AnnotationOnSeparateLine:
         active: false
         autoCorrect: true
@@ -248,13 +248,13 @@ formatting:
         active: true
         maxLineLength: 140
     ModifierOrdering:
-        active: true
+        active: false
         autoCorrect: true
     MultiLineIfElse:
-        active: true
+        active: false
         autoCorrect: true
     NoBlankLineBeforeRbrace:
-        active: true
+        active: false
         autoCorrect: true
     NoConsecutiveBlankLines:
         active: true
@@ -269,7 +269,7 @@ formatting:
         active: true
         autoCorrect: true
     NoLineBreakBeforeAssignment:
-        active: true
+        active: false
         autoCorrect: true
     NoMultipleSpaces:
         active: true
