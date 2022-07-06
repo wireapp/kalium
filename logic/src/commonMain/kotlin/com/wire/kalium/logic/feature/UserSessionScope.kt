@@ -77,10 +77,10 @@ import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.SyncManagerImpl
 import com.wire.kalium.logic.sync.UserEventReceiverImpl
-import com.wire.kalium.logic.sync.event.ConversationEventReceiver
+import com.wire.kalium.logic.sync.ConversationEventReceiver
 import com.wire.kalium.logic.sync.event.EventProcessor
 import com.wire.kalium.logic.sync.event.EventProcessorImpl
-import com.wire.kalium.logic.sync.event.UserEventReceiver
+import com.wire.kalium.logic.sync.UserEventReceiver
 import com.wire.kalium.logic.sync.handler.MessageTextEditHandler
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.TimeParserImpl

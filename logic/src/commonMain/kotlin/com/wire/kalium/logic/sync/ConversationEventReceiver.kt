@@ -33,12 +33,13 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.sync.event.ConversationEventReceiver
 import com.wire.kalium.logic.sync.handler.MessageTextEditHandler
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.logic.wrapCryptoRequest
 import io.ktor.utils.io.core.toByteArray
 import kotlinx.datetime.Clock
+
+interface ConversationEventReceiver : EventReceiver<Event.Conversation>
 
 // Suppressed as it's an old issue
 //TODO(refactor): Create a `MessageEventReceiver` to offload some logic from here
