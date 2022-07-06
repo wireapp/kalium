@@ -19,15 +19,15 @@ class EventProcessorTest {
 
     @Test
     fun givenAEvent_whenSyncing_thenTheLastProcessedEventIdIsUpdated() = runTest(TestKaliumDispatcher.default) {
-        //Given
+        // Given
         val event = TestEvent.memberJoin()
 
         val (arrangement, eventProcessor) = Arrangement().arrange()
 
-        //When
+        // When
         eventProcessor.processEvent(event)
 
-        //Then
+        // Then
         verify(arrangement.eventRepository)
             .suspendFunction(arrangement.eventRepository::updateLastProcessedEventId)
             .with(eq(event.id))
@@ -36,15 +36,15 @@ class EventProcessorTest {
 
     @Test
     fun givenAConversationEvent_whenSyncing_thenTheConversationHandlerIsCalled() = runTest(TestKaliumDispatcher.default) {
-        //Given
+        // Given
         val event = TestEvent.memberJoin()
 
         val (arrangement, eventProcessor) = Arrangement().arrange()
 
-        //When
+        // When
         eventProcessor.processEvent(event)
 
-        //Then
+        // Then
         verify(arrangement.conversationEventReceiver)
             .suspendFunction(arrangement.conversationEventReceiver::onEvent)
             .with(eq(event))
@@ -53,15 +53,15 @@ class EventProcessorTest {
 
     @Test
     fun givenAUserEvent_whenSyncing_thenTheUserEventHandlerIsCalled() = runTest(TestKaliumDispatcher.default) {
-        //Given
+        // Given
         val event = TestEvent.newConnection()
 
         val (arrangement, eventProcessor) = Arrangement().arrange()
 
-        //When
+        // When
         eventProcessor.processEvent(event)
 
-        //Then
+        // Then
         verify(arrangement.userEventReceiver)
             .suspendFunction(arrangement.userEventReceiver::onEvent)
             .with(eq(event))
