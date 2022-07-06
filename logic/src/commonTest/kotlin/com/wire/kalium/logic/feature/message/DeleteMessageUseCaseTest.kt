@@ -76,7 +76,7 @@ class DeleteMessageUseCaseTest {
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
         given(clientRepository)
-            .function(clientRepository::currentClientId)
+            .suspendFunction(clientRepository::currentClientId)
             .whenInvoked()
             .then { Either.Right(SELF_CLIENT_ID) }
         given(messageRepository)
@@ -114,7 +114,7 @@ class DeleteMessageUseCaseTest {
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
         given(clientRepository)
-            .function(clientRepository::currentClientId)
+            .suspendFunction(clientRepository::currentClientId)
             .whenInvoked()
             .then { Either.Right(SELF_CLIENT_ID) }
         given(messageRepository)
@@ -158,7 +158,7 @@ class DeleteMessageUseCaseTest {
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
         given(clientRepository)
-            .function(clientRepository::currentClientId)
+            .suspendFunction(clientRepository::currentClientId)
             .whenInvoked()
             .then { Either.Right(SELF_CLIENT_ID) }
         given(messageRepository)
@@ -188,7 +188,7 @@ class DeleteMessageUseCaseTest {
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
         given(clientRepository)
-            .function(clientRepository::currentClientId)
+            .suspendFunction(clientRepository::currentClientId)
             .whenInvoked()
             .then { Either.Right(SELF_CLIENT_ID) }
         given(messageRepository)
