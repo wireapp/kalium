@@ -370,6 +370,7 @@ class ConversationDataSource(
             val selfUserId = userRepository.getSelfUserId()
             // TODO(IMPORTANT!): having an initial value is not the correct approach, the
             //  only valid source for members role is the backend
+            //  ---> at the moment the backend doesn't tell us anything about the member role! till then we are setting them as Member
             val membersWithRole = users.map { userId -> Member(userId, Member.Role.Member) }
             val selfMember = Member(selfUserId, Member.Role.Admin)
             conversationDAO.insertMembers((membersWithRole + selfMember).map(memberMapper::toDaoModel), conversationId)
