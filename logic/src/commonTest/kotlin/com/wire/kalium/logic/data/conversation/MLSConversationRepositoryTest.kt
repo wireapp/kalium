@@ -80,7 +80,7 @@ class MLSConversationRepositoryTest {
             .then { Either.Right(listOf(KEY_PACKAGE)) }
 
         given(mlsClientProvider)
-            .function(mlsClientProvider::getMLSClient)
+            .suspendFunction(mlsClientProvider::getMLSClient)
             .whenInvokedWith(anything())
             .then { Either.Right(MLS_CLIENT) }
 
@@ -123,7 +123,7 @@ class MLSConversationRepositoryTest {
     @Test
     fun givenExistingConversation_whenCallingEstablishMLSGroupFromWelcome_ThenGroupIsCreatedAndGroupStateIsUpdated() = runTest {
         given(mlsClientProvider)
-            .function(mlsClientProvider::getMLSClient)
+            .suspendFunction(mlsClientProvider::getMLSClient)
             .whenInvokedWith(anything())
             .then { Either.Right(MLS_CLIENT) }
 
@@ -158,7 +158,7 @@ class MLSConversationRepositoryTest {
     @Test
     fun givenNonExistingConversation_whenCallingEstablishMLSGroupFromWelcome_ThenGroupIsCreatedButConversationIsNotInserted() = runTest {
         given(mlsClientProvider)
-            .function(mlsClientProvider::getMLSClient)
+            .suspendFunction(mlsClientProvider::getMLSClient)
             .whenInvokedWith(anything())
             .then { Either.Right(MLS_CLIENT) }
 
@@ -188,7 +188,7 @@ class MLSConversationRepositoryTest {
             .then { Either.Right(listOf(KEY_PACKAGE)) }
 
         given(mlsClientProvider)
-            .function(mlsClientProvider::getMLSClient)
+            .suspendFunction(mlsClientProvider::getMLSClient)
             .whenInvokedWith(anything())
             .then { Either.Right(MLS_CLIENT) }
 

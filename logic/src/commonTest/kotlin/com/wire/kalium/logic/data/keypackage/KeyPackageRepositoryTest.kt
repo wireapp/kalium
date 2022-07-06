@@ -51,7 +51,7 @@ class KeyPackageRepositoryTest {
 
     @Test
     fun givenExistingClient_whenUploadingKeyPackages_thenKeyPackagesShouldBeGeneratedAndPassedToApi() = runTest {
-        given(mlsClientProvider).function(mlsClientProvider::getMLSClient).whenInvokedWith(eq(SELF_CLIENT_ID))
+        given(mlsClientProvider).suspendFunction(mlsClientProvider::getMLSClient).whenInvokedWith(eq(SELF_CLIENT_ID))
             .then { Either.Right(MLS_CLIENT) }
 
         given(MLS_CLIENT).function(MLS_CLIENT::generateKeyPackages).whenInvokedWith(eq(1)).then { KEY_PACKAGES }
@@ -82,7 +82,7 @@ class KeyPackageRepositoryTest {
             .whenInvokedWith(eq(KeyPackageApi.Param.SkipOwnClient(MapperProvider.idMapper().toApiModel(USER_ID), SELF_CLIENT_ID.value)))
             .thenReturn(NetworkResponse.Success(CLAIMED_KEY_PACKAGES, mapOf(), 200))
 
-        given(clientRepository).function(clientRepository::currentClientId).whenInvoked().then { Either.Right(SELF_CLIENT_ID) }
+        given(clientRepository).suspendFunction(clientRepository::currentClientId).whenInvoked().then { Either.Right(SELF_CLIENT_ID) }
 
         val result = keyPackageRepository.claimKeyPackages(listOf(USER_ID))
 

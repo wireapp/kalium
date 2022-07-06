@@ -9,7 +9,7 @@ import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 
 interface MLSClientProvider {
 
-    fun getMLSClient(clientId: ClientId? = null): Either<CoreFailure, MLSClient>
+    suspend fun getMLSClient(clientId: ClientId? = null): Either<CoreFailure, MLSClient>
 
 }
 
