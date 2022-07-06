@@ -40,7 +40,7 @@ class MLSMessageCreatorTest {
     fun givenMessage_whenCreatingMLSMessage_thenMLSClientShouldBeUsedToEncryptProtobufContent() = runTest {
         val encryptedData = byteArrayOf()
         given(mlsClientProvider)
-            .function(mlsClientProvider::getMLSClient)
+            .suspendFunction(mlsClientProvider::getMLSClient)
             .whenInvokedWith(anything())
             .then { Either.Right(MLS_CLIENT)}
 

@@ -73,7 +73,7 @@ selectAllUsersWithConnectionStatus:
 SELECT * FROM User WHERE connection_status = ?;
 
 selectByQualifiedId:
-SELECT * FROM User WHERE qualified_id = ?;
+SELECT * FROM User WHERE qualified_id IN ?;
 
 selectByNameOrHandleOrEmailAndConnectionState:
 SELECT * FROM User
