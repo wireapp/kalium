@@ -341,7 +341,8 @@ abstract class UserSessionScopeCommon(
             userRepository,
             callRepository,
             syncManager,
-            mlsConversationRepository
+            mlsConversationRepository,
+            clientRepository
         )
     val messages: MessageScope
         get() = MessageScope(

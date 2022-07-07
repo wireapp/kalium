@@ -18,6 +18,7 @@ import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.message.MLSMessageApi
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
+import com.wire.kalium.persistence.dao.Member
 import io.ktor.util.decodeBase64Bytes
 import kotlinx.coroutines.flow.first
 
@@ -101,7 +102,7 @@ class MLSConversationDataSource(
                     }.flatMap {
                         wrapStorageRequest {
                             val list = userIdList.map {
-                                com.wire.kalium.persistence.dao.Member(idMapper.toDaoModel(it), TODO())
+                                Member(idMapper.toDaoModel(it), Member.Role.Member)
                             }
                             conversationDAO.insertMembers(list, groupID)
                         }
