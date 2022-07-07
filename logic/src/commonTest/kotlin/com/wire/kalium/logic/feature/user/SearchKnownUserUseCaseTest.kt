@@ -212,116 +212,116 @@ class SearchKnownUserUseCaseTest {
             .wasInvoked(exactly = once)
     }
 
-}
+    private class Arrangement {
 
-internal class Arrangement {
+        @Mock
+        val searchUserRepository = mock(classOf<SearchUserRepository>())
 
-    @Mock
-    val searchUserRepository = mock(classOf<SearchUserRepository>())
+        @Mock
+        val userRepository = mock(classOf<UserRepository>())
 
-    @Mock
-    val userRepository = mock(classOf<UserRepository>())
-
-    fun withSuccessFullSelfUserRetrieve(
-        id: QualifiedID = QualifiedID(
-            value = "selfUser",
-            domain = "wire.com",
-        )
-    ): Arrangement {
-        val selfUser = TestUser.SELF.copy(id = id)
-
-        given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
-            .whenInvoked()
-            .thenReturn(
-                selfUser
+        fun withSuccessFullSelfUserRetrieve(
+            id: QualifiedID = QualifiedID(
+                value = "selfUser",
+                domain = "wire.com",
             )
+        ): Arrangement {
+            val selfUser = TestUser.SELF.copy(id = id)
 
-        return this
-    }
+            given(userRepository)
+                .suspendFunction(userRepository::getSelfUser)
+                .whenInvoked()
+                .thenReturn(
+                    selfUser
+                )
 
-    fun withSearchByHandle(
-        searchQuery: String? = null,
-        searchUsersOptions: SearchUsersOptions? = null
-    ): Arrangement {
-        given(searchUserRepository)
-            .suspendFunction(searchUserRepository::searchKnownUsersByHandle)
-            .whenInvokedWith(
-                if (searchQuery == null) any() else eq(searchQuery),
-                if (searchUsersOptions == null) any() else eq(searchUsersOptions)
-            )
-            .thenReturn(
-                UserSearchResult(
-                    listOf(
-                        OtherUser(
-                            id = QualifiedID(
-                                value = "someValue",
-                                domain = "someDomain",
-                            ),
-                            name = null,
-                            handle = null,
-                            email = null,
-                            phone = null,
-                            accentId = 0,
-                            team = null,
-                            connectionStatus = ConnectionState.ACCEPTED,
-                            previewPicture = null,
-                            completePicture = null,
-                            availabilityStatus = UserAvailabilityStatus.NONE,
-                            userType = UserType.EXTERNAL
+            return this
+        }
+
+        fun withSearchByHandle(
+            searchQuery: String? = null,
+            searchUsersOptions: SearchUsersOptions? = null
+        ): Arrangement {
+            given(searchUserRepository)
+                .suspendFunction(searchUserRepository::searchKnownUsersByHandle)
+                .whenInvokedWith(
+                    if (searchQuery == null) any() else eq(searchQuery),
+                    if (searchUsersOptions == null) any() else eq(searchUsersOptions)
+                )
+                .thenReturn(
+                    UserSearchResult(
+                        listOf(
+                            OtherUser(
+                                id = QualifiedID(
+                                    value = "someValue",
+                                    domain = "someDomain",
+                                ),
+                                name = null,
+                                handle = null,
+                                email = null,
+                                phone = null,
+                                accentId = 0,
+                                team = null,
+                                connectionStatus = ConnectionState.ACCEPTED,
+                                previewPicture = null,
+                                completePicture = null,
+                                availabilityStatus = UserAvailabilityStatus.NONE,
+                                userType = UserType.EXTERNAL
+                            )
                         )
                     )
                 )
-            )
 
-        return this
-    }
-
-    fun withSearchKnownUsersByNameOrHandleOrEmail(
-        searchQuery: String? = null,
-        extraOtherUser: OtherUser? = null,
-        searchUsersOptions: SearchUsersOptions? = null
-    ): Arrangement {
-        val otherUsers = listOf(
-            OtherUser(
-                id = QualifiedID(
-                    value = "someSearchQuery",
-                    domain = "wire.com",
-                ),
-                name = null,
-                handle = null,
-                email = null,
-                phone = null,
-                accentId = 0,
-                team = null,
-                connectionStatus = ConnectionState.ACCEPTED,
-                previewPicture = null,
-                completePicture = null,
-                availabilityStatus = UserAvailabilityStatus.NONE,
-                userType = UserType.FEDERATED
-            )
-        )
-
-        if (extraOtherUser != null) {
-            otherUsers.plus(extraOtherUser)
+            return this
         }
 
-        given(searchUserRepository)
-            .suspendFunction(searchUserRepository::searchKnownUsersByNameOrHandleOrEmail)
-            .whenInvokedWith(
-                if (searchQuery == null) any() else eq(searchQuery),
-                if (searchUsersOptions == null) any() else eq(searchUsersOptions)
-            )
-            .thenReturn(
-                UserSearchResult(
-                    otherUsers
+        fun withSearchKnownUsersByNameOrHandleOrEmail(
+            searchQuery: String? = null,
+            extraOtherUser: OtherUser? = null,
+            searchUsersOptions: SearchUsersOptions? = null
+        ): Arrangement {
+            val otherUsers = listOf(
+                OtherUser(
+                    id = QualifiedID(
+                        value = "someSearchQuery",
+                        domain = "wire.com",
+                    ),
+                    name = null,
+                    handle = null,
+                    email = null,
+                    phone = null,
+                    accentId = 0,
+                    team = null,
+                    connectionStatus = ConnectionState.ACCEPTED,
+                    previewPicture = null,
+                    completePicture = null,
+                    availabilityStatus = UserAvailabilityStatus.NONE,
+                    userType = UserType.FEDERATED
                 )
             )
 
-        return this
-    }
+            if (extraOtherUser != null) {
+                otherUsers.plus(extraOtherUser)
+            }
 
-    fun arrange(): Pair<Arrangement, SearchKnownUsersUseCase> {
-        return this to SearchKnownUsersUseCaseImpl(searchUserRepository, userRepository)
+            given(searchUserRepository)
+                .suspendFunction(searchUserRepository::searchKnownUsersByNameOrHandleOrEmail)
+                .whenInvokedWith(
+                    if (searchQuery == null) any() else eq(searchQuery),
+                    if (searchUsersOptions == null) any() else eq(searchUsersOptions)
+                )
+                .thenReturn(
+                    UserSearchResult(
+                        otherUsers
+                    )
+                )
+
+            return this
+        }
+
+        fun arrange(): Pair<Arrangement, SearchKnownUsersUseCase> {
+            return this to SearchKnownUsersUseCaseImpl(searchUserRepository, userRepository)
+        }
     }
 }
+

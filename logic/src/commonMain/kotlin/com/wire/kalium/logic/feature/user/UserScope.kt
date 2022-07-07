@@ -22,7 +22,7 @@ import com.wire.kalium.logic.feature.publicuser.search.SearchUsersUseCase
 import com.wire.kalium.logic.feature.publicuser.search.SearchUsersUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 
-class UserScope(
+class UserScope internal constructor(
     private val userRepository: UserRepository,
     private val searchUserRepository: SearchUserRepository,
     private val syncManager: SyncManager,
