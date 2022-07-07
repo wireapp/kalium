@@ -24,7 +24,7 @@ internal interface UserSearchApiWrapper {
     ): Either<NetworkFailure, UserSearchResponse>
 }
 
-class UserSearchApiWrapperImpl(
+internal class UserSearchApiWrapperImpl(
     private val userSearchApi: UserSearchApi,
     private val conversationDAO: ConversationDAO,
     private val idMapper: IdMapper = MapperProvider.idMapper()
