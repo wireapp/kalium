@@ -27,7 +27,7 @@ data class ConversationResponse(
     val type: Type,
 
     @SerialName("message_timer")
-    val messageTimer: Int?,
+    val messageTimer: Long?,
 
     @SerialName("team")
     val teamId: TeamId?,
