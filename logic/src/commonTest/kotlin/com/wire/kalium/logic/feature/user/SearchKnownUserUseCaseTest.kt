@@ -143,7 +143,7 @@ class SearchKnownUserUseCaseTest {
     @Test
     fun givenSearchingForHandleWithConversationExcluded_whenSearchingUsers_ThenPropagateTheSearchOption() = runTest {
         //given
-        val searchQuery = "someSearchQuery"
+        val searchQuery = "@someHandle"
 
         val searchUsersOptions = SearchUsersOptions(
             ConversationMemberExcludedOptions.ConversationExcluded(
