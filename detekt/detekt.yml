@@ -241,7 +241,7 @@ formatting:
         active: false
         autoCorrect: true
     Indentation:
-        active: true
+        active: false
         autoCorrect: true
         indentSize: 4
     MaximumLineLength:
