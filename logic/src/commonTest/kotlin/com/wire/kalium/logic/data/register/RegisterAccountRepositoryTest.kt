@@ -16,8 +16,6 @@ import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.model.UserDTO
-import com.wire.kalium.network.api.model.getCompleteAssetOrNull
-import com.wire.kalium.network.api.model.getPreviewAssetOrNull
 import com.wire.kalium.network.api.user.register.RegisterApi
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
@@ -140,10 +138,10 @@ class RegisterAccountRepositoryTest {
         }
         val authSession = with(SESSION) {
             AuthSession(
-                AuthSession.Tokens(UserId(userId.value, userId.domain), accessToken, refreshToken, tokenType), serverConfig.links
+                AuthSession.Session(UserId(userId.value, userId.domain), accessToken, refreshToken, tokenType), serverConfig.links
             )
         }
-        val expected = Pair(selfUser, authSession.tokens)
+        val expected = Pair(selfUser, authSession.session)
 
         given(registerApi).coroutine {
             register(
@@ -151,11 +149,11 @@ class RegisterAccountRepositoryTest {
             )
         }.then { NetworkResponse.Success(Pair(TEST_USER, SESSION), mapOf(), 200) }
         given(userMapper).invocation { fromDtoToSelfUser(TEST_USER) }.then { selfUser }
-        given(sessionMapper).invocation { fromSessionDTO(SESSION) }.then { authSession.tokens }
+        given(sessionMapper).invocation { fromSessionDTO(SESSION) }.then { authSession.session }
 
         val actual = registerAccountRepository.registerPersonalAccountWithEmail(email, code, name, password)
 
-        assertIs<Either.Right<Pair<SelfUser, AuthSession.Tokens>>>(actual)
+        assertIs<Either.Right<Pair<SelfUser, AuthSession.Session>>>(actual)
         assertEquals(expected, actual.value)
 
         verify(registerApi).coroutine { register(RegisterApi.RegisterParam.PersonalAccount(email, code, name, password)) }
@@ -191,11 +189,11 @@ class RegisterAccountRepositoryTest {
         val authSession =
             with(SESSION) {
                 AuthSession(
-                    AuthSession.Tokens(UserId(userId.value, userId.domain), accessToken, refreshToken, tokenType),
+                    AuthSession.Session(UserId(userId.value, userId.domain), accessToken, refreshToken, tokenType),
                     serverConfig.links
                 )
             }
-        val expected = Pair(selfUser, authSession.tokens)
+        val expected = Pair(selfUser, authSession.session)
 
         given(registerApi).coroutine {
             register(RegisterApi.RegisterParam.TeamAccount(email, code, name, password, teamName, teamIcon))
@@ -203,11 +201,11 @@ class RegisterAccountRepositoryTest {
         given(userMapper).invocation { fromDtoToSelfUser(TEST_USER) }.then { selfUser }
         given(sessionMapper)
             .invocation { fromSessionDTO(SESSION) }
-            .then { authSession.tokens }
+            .then { authSession.session }
 
         val actual = registerAccountRepository.registerTeamWithEmail(email, code, name, password, teamName, teamIcon)
 
-        assertIs<Either.Right<Pair<SelfUser, AuthSession.Tokens>>>(actual)
+        assertIs<Either.Right<Pair<SelfUser, AuthSession.Session>>>(actual)
         assertEquals(expected, actual.value)
 
         verify(registerApi).coroutine {

@@ -16,7 +16,7 @@ import io.ktor.client.plugins.auth.providers.bearer
 
 interface SessionManager {
     fun session(): Pair<SessionDTO, ServerConfigDTO.Links>
-    fun updateSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO
+    fun updateLoginSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO
     suspend fun onSessionExpired()
     suspend fun onClientRemoved()
 }
@@ -41,7 +41,7 @@ fun HttpClientConfig<*>.installAuth(sessionManager: SessionManager) {
                     is NetworkResponse.Success -> {
                         response.value.first.let { newAccessToken -> access = newAccessToken.value }
                         response.value.second?.let { newRefreshToken -> refresh = newRefreshToken.value }
-                        sessionManager.updateSession(response.value.first, response.value.second)
+                        sessionManager.updateLoginSession(response.value.first, response.value.second)
                         BearerTokens(access, refresh)
                     }
                     is NetworkResponse.Error -> {

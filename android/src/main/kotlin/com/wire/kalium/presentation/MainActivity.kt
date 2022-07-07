@@ -39,12 +39,13 @@ class MainActivity : ComponentActivity() {
 
     private fun loginAndFetchConversationList(coreLogic: CoreLogic) = lifecycleScope.launchWhenCreated {
         login(coreLogic, serverConfig)?.let {
-            val session = coreLogic.getSessionScope(it.tokens.userId)
+            val session = coreLogic.getSessionScope(it.session.userId)
             val conversations = session.conversations.getConversations().let { result ->
                 when (result) {
                     is GetConversationsUseCase.Result.Failure -> {
                         throw IOException()
                     }
+
                     is GetConversationsUseCase.Result.Success -> result.convFlow.first()
                 }
             }

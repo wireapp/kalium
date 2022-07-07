@@ -7,8 +7,8 @@ import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.persistence.model.AuthSessionEntity
 
 interface SessionMapper {
-    fun toSessionDTO(authSession: AuthSession.Tokens.Valid): SessionDTO
-    fun fromSessionDTO(sessionDTO: SessionDTO): AuthSession.Tokens.Valid
+    fun toSessionDTO(authSession: AuthSession.Session.LoggedIn): SessionDTO
+    fun fromSessionDTO(sessionDTO: SessionDTO): AuthSession.Session.LoggedIn
 
     fun fromPersistenceSession(authSessionEntity: AuthSessionEntity): AuthSession
     fun toPersistenceSession(authSession: AuthSession): AuthSessionEntity
@@ -19,18 +19,18 @@ internal class SessionMapperImpl(
     private val idMapper: IdMapper
 ) : SessionMapper {
 
-    override fun toSessionDTO(authSession: AuthSession.Tokens.Valid): SessionDTO = with(authSession) {
+    override fun toSessionDTO(authSession: AuthSession.Session.LoggedIn): SessionDTO = with(authSession) {
         SessionDTO(userId = idMapper.toApiModel(userId), tokenType = tokenType, accessToken = accessToken, refreshToken = refreshToken)
     }
 
-    override fun fromSessionDTO(sessionDTO: SessionDTO): AuthSession.Tokens.Valid = with(sessionDTO) {
-        AuthSession.Tokens.Valid(idMapper.fromApiModel(userId), accessToken, refreshToken, tokenType)
+    override fun fromSessionDTO(sessionDTO: SessionDTO): AuthSession.Session.LoggedIn = with(sessionDTO) {
+        AuthSession.Session.LoggedIn(idMapper.fromApiModel(userId), accessToken, refreshToken, tokenType)
     }
 
     override fun fromPersistenceSession(authSessionEntity: AuthSessionEntity): AuthSession =
         when (authSessionEntity) {
-            is AuthSessionEntity.ValidSession -> AuthSession(
-                AuthSession.Tokens.Valid(
+            is AuthSessionEntity.LoggedIn -> AuthSession(
+                AuthSession.Session.LoggedIn(
                     userId = idMapper.fromDaoModel(authSessionEntity.userId),
                     accessToken = authSessionEntity.accessToken,
                     refreshToken = authSessionEntity.refreshToken,
@@ -40,47 +40,47 @@ internal class SessionMapperImpl(
             )
 
             is AuthSessionEntity.RemovedClient -> AuthSession(
-                AuthSession.Tokens.RemovedClient(userId = idMapper.fromDaoModel(authSessionEntity.userId), false),
+                AuthSession.Session.RemovedClient(userId = idMapper.fromDaoModel(authSessionEntity.userId), false),
                 serverLinks = serverConfigMapper.fromEntity(authSessionEntity.serverLinks)
             )
 
             is AuthSessionEntity.SelfLogout -> AuthSession(
-                AuthSession.Tokens.SelfLogout(userId = idMapper.fromDaoModel(authSessionEntity.userId), true),
+                AuthSession.Session.SelfLogout(userId = idMapper.fromDaoModel(authSessionEntity.userId), true),
                 serverLinks = serverConfigMapper.fromEntity(authSessionEntity.serverLinks)
             )
 
             is AuthSessionEntity.UserDeleted -> AuthSession(
-                AuthSession.Tokens.UserDeleted(userId = idMapper.fromDaoModel(authSessionEntity.userId), false),
+                AuthSession.Session.UserDeleted(userId = idMapper.fromDaoModel(authSessionEntity.userId), false),
                 serverLinks = serverConfigMapper.fromEntity(authSessionEntity.serverLinks)
             )
         }
 
     override fun toPersistenceSession(authSession: AuthSession): AuthSessionEntity =
-        when (authSession.tokens) {
-            is AuthSession.Tokens.Valid -> AuthSessionEntity.ValidSession(
-                userId = idMapper.toDaoModel(authSession.tokens.userId),
-                accessToken = authSession.tokens.accessToken,
-                refreshToken = authSession.tokens.refreshToken,
-                tokenType = authSession.tokens.tokenType,
+        when (authSession.session) {
+            is AuthSession.Session.LoggedIn -> AuthSessionEntity.LoggedIn(
+                userId = idMapper.toDaoModel(authSession.session.userId),
+                accessToken = authSession.session.accessToken,
+                refreshToken = authSession.session.refreshToken,
+                tokenType = authSession.session.tokenType,
                 serverLinks = serverConfigMapper.toEntity(authSession.serverLinks)
             )
 
-            is AuthSession.Tokens.RemovedClient -> AuthSessionEntity.RemovedClient(
-                userId = idMapper.toDaoModel(authSession.tokens.userId),
+            is AuthSession.Session.RemovedClient -> AuthSessionEntity.RemovedClient(
+                userId = idMapper.toDaoModel(authSession.session.userId),
                 serverLinks = serverConfigMapper.toEntity(authSession.serverLinks),
-                hardLogout = authSession.tokens.hardLogout
+                hardLogout = authSession.session.hardLogout
             )
 
-            is AuthSession.Tokens.UserDeleted -> AuthSessionEntity.UserDeleted(
-                userId = idMapper.toDaoModel(authSession.tokens.userId),
+            is AuthSession.Session.UserDeleted -> AuthSessionEntity.UserDeleted(
+                userId = idMapper.toDaoModel(authSession.session.userId),
                 serverLinks = serverConfigMapper.toEntity(authSession.serverLinks),
-                hardLogout = authSession.tokens.hardLogout
+                hardLogout = authSession.session.hardLogout
             )
 
-            is AuthSession.Tokens.SelfLogout -> AuthSessionEntity.SelfLogout(
-                userId = idMapper.toDaoModel(authSession.tokens.userId),
+            is AuthSession.Session.SelfLogout -> AuthSessionEntity.SelfLogout(
+                userId = idMapper.toDaoModel(authSession.session.userId),
                 serverLinks = serverConfigMapper.toEntity(authSession.serverLinks),
-                hardLogout = authSession.tokens.hardLogout
+                hardLogout = authSession.session.hardLogout
             )
         }
 }

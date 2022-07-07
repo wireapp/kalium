@@ -30,38 +30,38 @@ data class ServerConfigEntity(
 }
 
 @Serializable
-sealed class AuthSessionEntity {
+sealed class AuthSessionEntity(open val userId: QualifiedIDEntity) {
     @Serializable
     @SerialName("authsession.valid")
-    data class ValidSession(
-        @SerialName("user_id") val userId: QualifiedIDEntity,
+    data class LoggedIn(
+        @SerialName("user_id") override val userId: QualifiedIDEntity,
         @SerialName("token_type") val tokenType: String,
         @SerialName("access_token") val accessToken: String,
         @SerialName("refresh_token") val refreshToken: String,
         @SerialName("wire_server") val serverLinks: ServerConfigEntity.Links
-    ) : AuthSessionEntity()
+    ) : AuthSessionEntity(userId)
 
     @Serializable
     @SerialName("authsession.removedclient")
     data class RemovedClient(
-        @SerialName("user_id") val userId: QualifiedIDEntity,
+        @SerialName("user_id") override val userId: QualifiedIDEntity,
         @SerialName("wire_server") val serverLinks: ServerConfigEntity.Links,
         @SerialName("hardLogout") val hardLogout: Boolean,
-    ) : AuthSessionEntity()
+    ) : AuthSessionEntity(userId)
 
     @Serializable
     @SerialName("authsession.userdeleted")
     data class UserDeleted(
-        @SerialName("user_id") val userId: QualifiedIDEntity,
+        @SerialName("user_id") override val userId: QualifiedIDEntity,
         @SerialName("wire_server") val serverLinks: ServerConfigEntity.Links,
         @SerialName("hardLogout") val hardLogout: Boolean,
-    ) : AuthSessionEntity()
+    ) : AuthSessionEntity(userId)
 
     @Serializable
     @SerialName("authsession.selflogout")
     data class SelfLogout(
-        @SerialName("user_id") val userId: QualifiedIDEntity,
+        @SerialName("user_id") override val userId: QualifiedIDEntity,
         @SerialName("wire_server") val serverLinks: ServerConfigEntity.Links,
         @SerialName("hardLogout") val hardLogout: Boolean,
-    ) : AuthSessionEntity()
+    ) : AuthSessionEntity(userId)
 }

@@ -54,7 +54,7 @@ internal class SessionDataSource(
             }
         }, { sessionsList ->
             sessionsList.forEach {
-                if ((it.tokens as AuthSession.Tokens.Valid).userId == userId) {
+                if (it.session.userId == userId) {
                     return@fold Either.Right(true)
                 }
             }

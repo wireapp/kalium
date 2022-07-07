@@ -48,7 +48,7 @@ class RegisterAccountUseCaseTest {
 
         given(registerAccountRepository).coroutine {
             registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password)
-        }.then { Either.Right(Pair(user, session.tokens)) }
+        }.then { Either.Right(Pair(user, session.session)) }
 
         val actual = registerAccountUseCase(param)
 
@@ -71,7 +71,7 @@ class RegisterAccountUseCaseTest {
             registerTeamWithEmail(
                 param.email, param.emailActivationCode, param.name, param.password, param.teamName, param.teamIcon
             )
-        }.then { Either.Right(Pair(user, session.tokens)) }
+        }.then { Either.Right(Pair(user, session.session)) }
 
         val actual = registerAccountUseCase(param)
 
@@ -97,7 +97,7 @@ class RegisterAccountUseCaseTest {
                 registerPersonalAccountWithEmail(
                     param.email, param.emailActivationCode, param.name, param.password
                 )
-            }.then { Either.Right(Pair(user, session.tokens)) }
+            }.then { Either.Right(Pair(user, session.session)) }
 
             val actual = registerAccountUseCase(param)
 
@@ -206,6 +206,6 @@ class RegisterAccountUseCaseTest {
             availabilityStatus = UserAvailabilityStatus.NONE
         )
         val TEST_AUTH_SESSION =
-            AuthSession(AuthSession.Tokens(TEST_SELF_USER.id, "access_token", "refresh_token", "token_type"), TEST_SERVER_CONFIG.links)
+            AuthSession(AuthSession.Session(TEST_SELF_USER.id, "access_token", "refresh_token", "token_type"), TEST_SERVER_CONFIG.links)
     }
 }

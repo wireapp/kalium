@@ -16,12 +16,12 @@ interface RegisterAccountRepository {
     suspend fun verifyActivationCode(email: String, code: String): Either<NetworkFailure, Unit>
     suspend fun registerPersonalAccountWithEmail(
         email: String, code: String, name: String, password: String
-    ): Either<NetworkFailure, Pair<SelfUser, AuthSession.Tokens>>
+    ): Either<NetworkFailure, Pair<SelfUser, AuthSession.Session.LoggedIn>>
 
     @Suppress("LongParameterList")
     suspend fun registerTeamWithEmail(
         email: String, code: String, name: String, password: String, teamName: String, teamIcon: String
-    ): Either<NetworkFailure, Pair<SelfUser, AuthSession.Tokens>>
+    ): Either<NetworkFailure, Pair<SelfUser, AuthSession.Session.LoggedIn>>
 }
 
 class RegisterAccountDataSource(
@@ -37,12 +37,12 @@ class RegisterAccountDataSource(
 
     override suspend fun registerPersonalAccountWithEmail(
         email: String, code: String, name: String, password: String
-    ): Either<NetworkFailure, Pair<SelfUser, AuthSession.Tokens>> =
+    ): Either<NetworkFailure, Pair<SelfUser, AuthSession.Session.LoggedIn>> =
         register(RegisterApi.RegisterParam.PersonalAccount(email, code, name, password))
 
     override suspend fun registerTeamWithEmail(
         email: String, code: String, name: String, password: String, teamName: String, teamIcon: String
-    ): Either<NetworkFailure, Pair<SelfUser, AuthSession.Tokens>> =
+    ): Either<NetworkFailure, Pair<SelfUser, AuthSession.Session.LoggedIn>> =
         register(RegisterApi.RegisterParam.TeamAccount(email, code, name, password, teamName, teamIcon))
 
     private suspend fun requestActivation(
@@ -52,7 +52,7 @@ class RegisterAccountDataSource(
     private suspend fun activateUser(param: RegisterApi.ActivationParam): Either<NetworkFailure, Unit> =
         wrapApiRequest { registerApi.activate(param) }
 
-    private suspend fun register(param: RegisterApi.RegisterParam): Either<NetworkFailure, Pair<SelfUser, AuthSession.Tokens>> =
+    private suspend fun register(param: RegisterApi.RegisterParam): Either<NetworkFailure, Pair<SelfUser, AuthSession.Session.LoggedIn>> =
         wrapApiRequest { registerApi.register(param) }.map {
             Pair(userMapper.fromDtoToSelfUser(it.first), sessionMapper.fromSessionDTO(it.second))
         }

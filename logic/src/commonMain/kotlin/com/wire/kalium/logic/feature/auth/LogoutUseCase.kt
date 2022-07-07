@@ -39,9 +39,6 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     }
 
     private fun clearInMemoryUserSession() {
-        userSessionScopeProvider.get(userId).let {
-            userSessionScopeProvider.add(use)
-        }
         userSessionScopeProvider.delete(userId)
     }
 
@@ -52,7 +49,7 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     private fun clearUserSessionAndUpdateCurrent() {
         sessionRepository.deleteSession(userId)
         sessionRepository.allSessions().onSuccess {
-            sessionRepository.updateCurrentSession(it.first().tokens.userId)
+            sessionRepository.updateCurrentSession(it.first().session.userId)
         }
     }
 

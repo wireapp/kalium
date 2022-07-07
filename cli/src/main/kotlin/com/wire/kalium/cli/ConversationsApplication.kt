@@ -33,7 +33,7 @@ class InMemorySessionManager(
 
     override fun session(): Pair<SessionDTO, ServerConfigDTO.Links> = Pair(session, serverConfigDTO)
 
-    override fun updateSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO =
+    override fun updateLoginSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO =
         SessionDTO(
             session.userId,
             newAccessTokenDTO.tokenType,
