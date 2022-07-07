@@ -16,10 +16,11 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
+    @Suppress("MagicNumber")
     override suspend fun fetchConversationsIds(pagingState: String?): NetworkResponse<ConversationPagingResponse> =
         wrapKaliumResponse {
             httpClient.post("$PATH_CONVERSATIONS/$PATH_LIST_IDS") {
-                setBody(PaginationRequest(pagingState = pagingState))
+                setBody(PaginationRequest(pagingState = pagingState, 200))
             }
         }
 

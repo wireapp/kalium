@@ -33,13 +33,14 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import com.wire.kalium.network.api.ConversationId as RemoteConversationId
+import kotlinx.coroutines.flow.onEach
 
 interface ConversationRepository {
     suspend fun getSelfConversationId(): ConversationId
@@ -78,6 +79,7 @@ interface ConversationRepository {
     suspend fun updateConversationModifiedDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
 }
 
+@Suppress("LongParameterList", "TooManyFunctions")
 class ConversationDataSource(
     private val userRepository: UserRepository,
     private val mlsConversationRepository: MLSConversationRepository,
@@ -90,54 +92,54 @@ class ConversationDataSource(
     private val conversationStatusMapper: ConversationStatusMapper = MapperProvider.conversationStatusMapper()
 ) : ConversationRepository {
 
-    //TODO:I would suggest preparing another suspend func getSelfUser to get nullable self user,
+    // TODO:I would suggest preparing another suspend func getSelfUser to get nullable self user,
     // this will help avoid some functions getting stuck when observeSelfUser will filter nullable values
     override suspend fun fetchConversations(): Either<CoreFailure, Unit> {
         kaliumLogger.d("Fetching conversations")
-        val selfUserTeamId = userRepository.observeSelfUser().first().teamId
-
-        return fetchAllConversationsFromAPI().onFailure { networkFailure ->
-            val throwable = (networkFailure as? NetworkFailure.ServerMiscommunication)?.rootCause
-            kaliumLogger.e("Failed to fetch all conversations due to network error", throwable)
-        }.flatMap { conversations ->
-            kaliumLogger.d("Persisting fetched conversations into storage")
-            persistConversations(conversations, selfUserTeamId)
-        }
+        return fetchAllConversationsFromAPI()
     }
 
-    //TODO: Vitor: he UseCase could observeSelfUser and update the flow.
+    // TODO: Vitor: he UseCase could observeSelfUser and update the flow.
     // But the Repository is too smart, does it by itself, and doesn't let the UseCase handle this.
     override suspend fun insertConversationFromEvent(event: Event.Conversation.NewConversation): Either<CoreFailure, Unit> {
         val selfUserTeamId = userRepository.observeSelfUser().first().teamId
         return persistConversations(listOf(event.conversation), selfUserTeamId)
     }
 
-    private suspend fun fetchAllConversationsFromAPI(): Either<NetworkFailure, List<ConversationResponse>> {
+    private suspend fun fetchAllConversationsFromAPI(): Either<NetworkFailure, Unit> {
+        val selfUserTeamId = userRepository.observeSelfUser().first().teamId
         var hasMore = true
         var lastPagingState: String? = null
         var latestResult: Either<NetworkFailure, Unit> = Either.Right(Unit)
-        val allConversationsIds = mutableSetOf<RemoteConversationId>()
 
         while (hasMore && latestResult.isRight()) {
             latestResult = wrapApiRequest {
                 kaliumLogger.v("Fetching conversation page starting with pagingState $lastPagingState")
                 conversationApi.fetchConversationsIds(pagingState = lastPagingState)
-            }.onSuccess {
-                allConversationsIds += it.conversationsIds
-                lastPagingState = it.pagingState
-                hasMore = it.hasMore
+            }.onSuccess { pagingResponse ->
+                wrapApiRequest {
+                    conversationApi.fetchConversationsListDetails(pagingResponse.conversationsIds.toList())
+                }.onSuccess { conversations ->
+                    if (conversations.conversationsFailed.isNotEmpty()) {
+                        kaliumLogger.d("Skipping ${conversations.conversationsFailed.size} conversations failed")
+                    }
+                    if (conversations.conversationsNotFound.isNotEmpty()) {
+                        kaliumLogger.d("Skipping ${conversations.conversationsNotFound.size} conversations not found")
+                    }
+                    persistConversations(conversations.conversationsFound, selfUserTeamId)
+                }.onFailure {
+                    kaliumLogger.e("Error fetching conversation details $it")
+                }
+
+                lastPagingState = pagingResponse.pagingState
+                hasMore = pagingResponse.hasMore
             }.onFailure {
+                kaliumLogger.e("Error fetching conversation ids $it")
                 Either.Left(it)
-            }.map {
-
-            }
+            }.map { }
         }
 
-        return wrapApiRequest {
-            conversationApi.fetchConversationsListDetails(allConversationsIds.toList())
-        }.map {
-            it.conversationsFound
-        }
+        return latestResult
     }
 
     private suspend fun persistConversations(
@@ -148,7 +150,8 @@ class ConversationDataSource(
             conversationMapper.fromApiModelToDaoModel(
                 conversationResponse,
                 mlsGroupState = conversationResponse.groupId?.let { mlsGroupState(it) },
-                selfUserTeamId?.let { TeamId(it) })
+                selfUserTeamId?.let { TeamId(it) }
+            )
         }
         conversationDAO.insertConversations(conversationEntities)
         conversations.forEach { conversationsResponse ->
