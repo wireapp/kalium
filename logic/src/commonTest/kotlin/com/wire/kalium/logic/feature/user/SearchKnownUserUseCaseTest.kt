@@ -1,7 +1,10 @@
 package com.wire.kalium.logic.feature.user
 
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.publicuser.ConversationMemberExcludedOptions
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
+import com.wire.kalium.logic.data.publicuser.SearchUsersOptions
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
@@ -23,6 +26,7 @@ import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.publicuser.search.Result
 import com.wire.kalium.logic.framework.TestUser
+import io.mockative.once
 import kotlin.test.assertFalse
 
 class SearchKnownUserUseCaseTest {
@@ -41,12 +45,12 @@ class SearchKnownUserUseCaseTest {
         //then
         verify(arrangement.searchUserRepository)
             .suspendFunction(arrangement.searchUserRepository::searchKnownUsersByHandle)
-            .with(eq(handleSearchQuery),anything())
+            .with(eq(handleSearchQuery), anything())
             .wasInvoked()
 
         verify(arrangement.searchUserRepository)
             .suspendFunction(arrangement.searchUserRepository::searchKnownUsersByNameOrHandleOrEmail)
-            .with(anything(),anything())
+            .with(anything(), anything())
             .wasNotInvoked()
     }
 
@@ -136,6 +140,66 @@ class SearchKnownUserUseCaseTest {
         assertFalse(result.userSearchResult.result.contains(otherUserContainingSelfUserId))
     }
 
+    @Test
+    fun givenSearchingForHandleWithConversationExcluded_whenSearchingUsers_ThenPropagateTheSearchOption() = runTest {
+        //given
+        val searchQuery = "someSearchQuery"
+
+        val searchUsersOptions = SearchUsersOptions(
+            ConversationMemberExcludedOptions.ConversationExcluded(
+                ConversationId("someValue", "someDomain")
+            )
+        )
+
+        val (arrangement, searchKnownUsersUseCase) = Arrangement()
+            .withSuccessFullSelfUserRetrieve()
+            .withSearchByHandle()
+            .arrange()
+
+        //when
+        val result = searchKnownUsersUseCase(
+            searchQuery = searchQuery,
+            searchUsersOptions = searchUsersOptions
+        )
+
+        //then
+        assertIs<Result.Success>(result)
+        verify(arrangement.searchUserRepository)
+            .suspendFunction(arrangement.searchUserRepository::searchKnownUsersByHandle)
+            .with(anything(), eq(searchUsersOptions))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenSearchingForNameOrHandleOrEmailWithConversationExcluded_whenSearchingUsers_ThenPropagateTheSearchOption() = runTest {
+        //given
+        val searchQuery = "someSearchQuery"
+
+        val searchUsersOptions = SearchUsersOptions(
+            ConversationMemberExcludedOptions.ConversationExcluded(
+                ConversationId("someValue", "someDomain")
+            )
+        )
+
+        val (arrangement, searchKnownUsersUseCase) = Arrangement()
+            .withSuccessFullSelfUserRetrieve()
+            .withSearchKnownUsersByNameOrHandleOrEmail()
+            .arrange()
+
+        //when
+        val result = searchKnownUsersUseCase(
+            searchQuery = searchQuery,
+            searchUsersOptions = searchUsersOptions
+        )
+
+        //then
+        assertIs<Result.Success>(result)
+        verify(arrangement.searchUserRepository)
+            .suspendFunction(arrangement.searchUserRepository::searchKnownUsersByNameOrHandleOrEmail)
+            .with(anything(), eq(searchUsersOptions))
+            .wasInvoked(exactly = once)
+    }
+
 }
 
 class Arrangement {
@@ -164,10 +228,15 @@ class Arrangement {
         return this
     }
 
-    fun withSearchByHandle(searchQuery: String? = null): Arrangement {
+    fun withSearchByHandle(
+        searchQuery: String? = null
+    ): Arrangement {
         given(searchUserRepository)
             .suspendFunction(searchUserRepository::searchKnownUsersByHandle)
-            .whenInvokedWith(if (searchQuery == null) any() else eq(searchQuery),anything())
+            .whenInvokedWith(
+                if (searchQuery == null) any() else eq(searchQuery),
+                any()
+            )
             .thenReturn(
                 UserSearchResult(
                     listOf(
@@ -216,7 +285,7 @@ class Arrangement {
                 completePicture = null,
                 availabilityStatus = UserAvailabilityStatus.NONE,
                 userType = UserType.FEDERATED
-            ),
+            )
         )
 
         if (extraOtherUser != null) {
@@ -225,7 +294,10 @@ class Arrangement {
 
         given(searchUserRepository)
             .suspendFunction(searchUserRepository::searchKnownUsersByNameOrHandleOrEmail)
-            .whenInvokedWith(if (searchQuery == null) any() else eq(searchQuery),anything())
+            .whenInvokedWith(
+                if (searchQuery == null) any() else eq(searchQuery),
+                any()
+            )
             .thenReturn(
                 UserSearchResult(
                     otherUsers
