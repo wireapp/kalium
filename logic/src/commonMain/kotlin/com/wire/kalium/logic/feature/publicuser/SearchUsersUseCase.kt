@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.publicuser
 
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.id.FEDERATION_REGEX
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.parseIntoQualifiedID
@@ -22,6 +23,7 @@ interface SearchUsersUseCase {
 internal class SearchUsersUseCaseImpl(
     private val userRepository: UserRepository,
     private val searchUserRepository: SearchUserRepository,
+    private val connectionRepository: ConnectionRepository,
 ) : SearchUsersUseCase {
 
     override suspend operator fun invoke(
@@ -47,8 +49,16 @@ internal class SearchUsersUseCaseImpl(
                 }
             }
             Result.Failure.Generic(it)
-        }, {
-            Result.Success(it)
+        }, { response ->
+            val connections = connectionRepository.getConnectionRequests()
+            val usersWithConnectionStatus = response.copy(result = response.result
+                .map { user ->
+                    user.copy(
+                        connectionStatus = connections.firstOrNull { user.id == it.qualifiedToId }?.status
+                            ?: user.connectionStatus
+                    )
+                })
+            Result.Success(usersWithConnectionStatus)
         })
     }
 }

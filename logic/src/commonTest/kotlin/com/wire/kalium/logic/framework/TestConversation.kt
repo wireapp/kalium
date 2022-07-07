@@ -67,8 +67,10 @@ object TestConversation {
 
 
     val NETWORK_ID = QualifiedID("valueConversation", "domainConversation")
-    val MEMBER_TEST1 = Member(com.wire.kalium.logic.data.user.UserId("member1", "domainMember"))
-    val MEMBER_TEST2 = Member(com.wire.kalium.logic.data.user.UserId("member2", "domainMember"))
+    val USER_1 = UserId("member1", "domainMember")
+    val MEMBER_TEST1 = Member(USER_1, Member.Role.Admin)
+    val USER_2 = UserId("member2", "domainMember")
+    val MEMBER_TEST2 = Member(USER_2, Member.Role.Member)
     val NETWORK_USER_ID1 = com.wire.kalium.network.api.UserId(value = "member1", domain = "domainMember")
     val NETWORK_USER_ID2 = com.wire.kalium.network.api.UserId(value = "member2", domain = "domainMember")
     val USER_ID1 = UserId(value = "member1", domain = "domainMember")

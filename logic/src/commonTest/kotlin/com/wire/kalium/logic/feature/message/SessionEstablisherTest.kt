@@ -8,7 +8,6 @@ import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.ProteusFailure
-import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.prekey.ClientPreKeyInfo
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
@@ -123,7 +122,7 @@ class SessionEstablisherTest {
 
         verify(preKeyRepository)
             .suspendFunction(preKeyRepository::preKeysOfClientsByQualifiedUsers)
-            .with(eq(mapOf(TEST_RECIPIENT_1.member.id to TEST_RECIPIENT_1.clients)))
+            .with(eq(mapOf(TEST_RECIPIENT_1.id to TEST_RECIPIENT_1.clients)))
             .wasInvoked(exactly = once)
     }
 
@@ -223,7 +222,7 @@ class SessionEstablisherTest {
     private companion object {
         val TEST_USER_ID_1 = TestUser.USER_ID
         val TEST_CLIENT_ID_1 = TestClient.CLIENT_ID
-        val TEST_RECIPIENT_1 = Recipient(Member(TestUser.USER_ID), listOf(TestClient.CLIENT_ID))
+        val TEST_RECIPIENT_1 = Recipient(TestUser.USER_ID, listOf(TestClient.CLIENT_ID))
         val NETWORK_ERROR = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
     }
 }

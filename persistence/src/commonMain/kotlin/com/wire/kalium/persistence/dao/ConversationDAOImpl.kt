@@ -38,7 +38,7 @@ private class ConversationMapper {
 
 class MemberMapper {
     fun toModel(member: SQLDelightMember): Member {
-        return Member(member.user)
+        return Member(member.user, member.role)
     }
 }
 
@@ -155,7 +155,7 @@ class ConversationDAOImpl(
     override suspend fun insertMember(member: Member, conversationID: QualifiedIDEntity) {
         memberQueries.transaction {
             userQueries.insertOrIgnoreUserId(member.user)
-            memberQueries.insertMember(member.user, conversationID)
+            memberQueries.insertMember(member.user, conversationID, member.role)
         }
     }
 
@@ -163,7 +163,7 @@ class ConversationDAOImpl(
         memberQueries.transaction {
             for (member: Member in memberList) {
                 userQueries.insertOrIgnoreUserId(member.user)
-                memberQueries.insertMember(member.user, conversationID)
+                memberQueries.insertMember(member.user, conversationID, member.role)
             }
         }
     }
@@ -175,17 +175,17 @@ class ConversationDAOImpl(
     }
 
     override suspend fun updateOrInsertOneOnOneMemberWithConnectionStatus(
-        userId: UserIDEntity,
+        member: Member,
         status: ConnectionEntity.State,
         conversationID: QualifiedIDEntity
     ) {
         memberQueries.transaction {
-            userQueries.updateUserConnectionStatus(status, userId)
+            userQueries.updateUserConnectionStatus(status, member.user)
             val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
             if (recordDidNotExist) {
-                userQueries.insertOrIgnoreUserIdWithConnectionStatus(userId, status)
+                userQueries.insertOrIgnoreUserIdWithConnectionStatus(member.user, status)
             }
-            memberQueries.insertMember(userId, conversationID)
+            memberQueries.insertMember(member.user, conversationID, member.role)
         }
     }
 

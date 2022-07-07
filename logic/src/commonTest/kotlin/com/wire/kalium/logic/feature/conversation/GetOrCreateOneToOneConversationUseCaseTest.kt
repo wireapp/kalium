@@ -86,13 +86,13 @@ class GetOrCreateOneToOneConversationUseCaseTest {
         assertIs<CreateConversationResult.Success>(result)
 
         verify(conversationRepository)
-            .coroutine { createGroupConversation(members = MEMBER) }
+            .coroutine { createGroupConversation(usersList = MEMBER) }
             .wasInvoked()
     }
 
     private companion object {
         val USER_ID = UserId(value = "userId", domain = "domainId")
-        val MEMBER = listOf(Member(USER_ID))
+        val MEMBER = listOf(USER_ID)
         val CONVERSATION_ID = ConversationId(value = "userId", domain = "domainId")
         val CONVERSATION = Conversation(
             id = CONVERSATION_ID,
@@ -116,7 +116,8 @@ class GetOrCreateOneToOneConversationUseCaseTest {
             previewPicture = null,
             completePicture = null,
             availabilityStatus = UserAvailabilityStatus.NONE,
-            userType = UserType.EXTERNAL
+            userType = UserType.EXTERNAL,
+            connectionStatus = ConnectionState.NOT_CONNECTED
         )
         val CONVERSATION_DETAILS = ConversationDetails.OneOne(
             CONVERSATION,

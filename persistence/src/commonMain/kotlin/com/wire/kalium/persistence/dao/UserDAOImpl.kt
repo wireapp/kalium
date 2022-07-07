@@ -6,8 +6,6 @@ import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.MetadataQueries
 import com.wire.kalium.persistence.UsersQueries
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
 import com.wire.kalium.persistence.User as SQLDelightUser
 
@@ -30,6 +28,7 @@ class UserMapper {
     }
 }
 
+@Suppress("TooManyFunctions")
 class UserDAOImpl(
     private val userQueries: UsersQueries
 ) : UserDAO {
@@ -121,10 +120,16 @@ class UserDAOImpl(
         .map { entryList -> entryList.map(mapper::toModel) }
 
     override suspend fun getUserByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserEntity?> {
-        return userQueries.selectByQualifiedId(qualifiedID)
+        return userQueries.selectByQualifiedId(listOf(qualifiedID))
             .asFlow()
             .mapToOneOrNull()
             .map { it?.let { mapper.toModel(it) } }
+    }
+
+    override suspend fun getUsersByQualifiedIDList(qualifiedIDList: List<QualifiedIDEntity>): List<UserEntity> {
+        return userQueries.selectByQualifiedId(qualifiedIDList)
+            .executeAsList()
+            .map { mapper.toModel(it) }
     }
 
     override suspend fun getUserByNameOrHandleOrEmailAndConnectionState(
@@ -152,6 +157,11 @@ class UserDAOImpl(
     override suspend fun updateUserAvailabilityStatus(qualifiedID: QualifiedIDEntity, status: UserAvailabilityStatusEntity) {
         userQueries.updateUserAvailabilityStatus(status, qualifiedID)
     }
+
+    override suspend fun getUsersNotInConversation(conversationId: QualifiedIDEntity) : List<UserEntity> =
+        userQueries.getUsersNotPartOfTheConversation(conversationId)
+            .executeAsList()
+            .map(mapper::toModel)
 
     override suspend fun insertOrIgnoreUserWithConnectionStatus(qualifiedID: QualifiedIDEntity, connectionStatus: ConnectionEntity.State) {
         userQueries.insertOrIgnoreUserIdWithConnectionStatus(qualifiedID, connectionStatus)

@@ -203,7 +203,7 @@ abstract class UserSessionScopeCommon(
         )
 
     private val clientRegistrationStorage: ClientRegistrationStorage
-        get() = ClientRegistrationStorageImpl(userPreferencesSettings)
+        get() = ClientRegistrationStorageImpl(userDatabaseProvider.metadataDAO)
 
     private val clientRepository: ClientRepository
         get() = ClientDataSource(clientRemoteRepository, clientRegistrationStorage, userDatabaseProvider.clientDAO)
@@ -334,7 +334,8 @@ abstract class UserSessionScopeCommon(
             userRepository,
             callRepository,
             syncManager,
-            mlsConversationRepository
+            mlsConversationRepository,
+            clientRepository
         )
     val messages: MessageScope
         get() = MessageScope(
@@ -350,7 +351,15 @@ abstract class UserSessionScopeCommon(
             messageSendingScheduler,
             timeParser
         )
-    val users: UserScope get() = UserScope(userRepository, publicUserRepository, syncManager, assetRepository, teamRepository)
+    val users: UserScope
+        get() = UserScope(
+            userRepository,
+            publicUserRepository,
+            syncManager,
+            assetRepository,
+            teamRepository,
+            connectionRepository
+        )
     val logout: LogoutUseCase
         get() = LogoutUseCase(
             logoutRepository,

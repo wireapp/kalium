@@ -15,7 +15,7 @@ data class OtherUser(
     val phone: String? = null,
     val accentId: Int,
     val team: String?,
-    val connectionStatus: ConnectionState = ConnectionState.NOT_CONNECTED,
+    val connectionStatus: ConnectionState,
     val previewPicture: UserAssetId?,
     val completePicture: UserAssetId?,
     val availabilityStatus: UserAvailabilityStatus,
