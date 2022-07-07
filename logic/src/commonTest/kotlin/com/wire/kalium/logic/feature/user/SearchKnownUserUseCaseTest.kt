@@ -153,7 +153,10 @@ class SearchKnownUserUseCaseTest {
 
         val (arrangement, searchKnownUsersUseCase) = Arrangement()
             .withSuccessFullSelfUserRetrieve()
-            .withSearchByHandle(searchUsersOptions = searchUsersOptions)
+            .withSearchByHandle(
+                searchQuery = searchQuery,
+                searchUsersOptions = searchUsersOptions
+            )
             .arrange()
 
         //when
@@ -183,7 +186,10 @@ class SearchKnownUserUseCaseTest {
 
         val (arrangement, searchKnownUsersUseCase) = Arrangement()
             .withSuccessFullSelfUserRetrieve()
-            .withSearchKnownUsersByNameOrHandleOrEmail(searchUsersOptions = searchUsersOptions)
+            .withSearchKnownUsersByNameOrHandleOrEmail(
+                searchQuery = searchQuery,
+                searchUsersOptions = searchUsersOptions
+            )
             .arrange()
 
         //when
@@ -236,7 +242,7 @@ class Arrangement {
             .suspendFunction(searchUserRepository::searchKnownUsersByHandle)
             .whenInvokedWith(
                 if (searchQuery == null) any() else eq(searchQuery),
-                if(searchUsersOptions == null) any() else eq(searchUsersOptions)
+                if (searchUsersOptions == null) any() else eq(searchUsersOptions)
             )
             .thenReturn(
                 UserSearchResult(
@@ -298,7 +304,7 @@ class Arrangement {
             .suspendFunction(searchUserRepository::searchKnownUsersByNameOrHandleOrEmail)
             .whenInvokedWith(
                 if (searchQuery == null) any() else eq(searchQuery),
-                if(searchUsersOptions == null) any() else eq(searchUsersOptions)
+                if (searchUsersOptions == null) any() else eq(searchUsersOptions)
             )
             .thenReturn(
                 UserSearchResult(
