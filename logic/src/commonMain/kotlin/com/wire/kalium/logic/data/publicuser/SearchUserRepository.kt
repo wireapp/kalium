@@ -33,7 +33,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
-interface SearchUserRepository {
+internal interface SearchUserRepository {
 
     suspend fun searchKnownUsersByNameOrHandleOrEmail(
         searchQuery: String,
@@ -70,7 +70,7 @@ sealed class ConversationMemberExcludedOptions {
 }
 
 @Suppress("LongParameterList")
-class SearchUserRepositoryImpl(
+internal class SearchUserRepositoryImpl(
     private val userDAO: UserDAO,
     private val metadataDAO: MetadataDAO,
     private val userDetailsApi: UserDetailsApi,

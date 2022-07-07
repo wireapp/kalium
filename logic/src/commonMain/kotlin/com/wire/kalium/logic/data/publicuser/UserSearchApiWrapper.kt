@@ -12,7 +12,7 @@ import com.wire.kalium.network.api.contact.search.UserSearchResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
 import kotlinx.coroutines.flow.firstOrNull
 
-interface UserSearchApiWrapper {
+internal interface UserSearchApiWrapper {
     /*
      * Searches for users that match given the [searchQuery] using the API.
      * Depending on the [searchUsersOptions], the members of a conversation can be excluded.
@@ -25,7 +25,7 @@ interface UserSearchApiWrapper {
     ): Either<NetworkFailure, UserSearchResponse>
 }
 
-class UserSearchApiWrapperImpl(
+internal class UserSearchApiWrapperImpl(
     private val userSearchApi: UserSearchApi,
     private val conversationDAO: ConversationDAO,
     private val idMapper: IdMapper = MapperProvider.idMapper()
