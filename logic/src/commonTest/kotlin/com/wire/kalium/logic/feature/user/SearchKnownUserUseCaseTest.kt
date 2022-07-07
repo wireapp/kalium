@@ -214,7 +214,7 @@ class SearchKnownUserUseCaseTest {
 
 }
 
-class Arrangement {
+internal class Arrangement {
 
     @Mock
     val searchUserRepository = mock(classOf<SearchUserRepository>())
