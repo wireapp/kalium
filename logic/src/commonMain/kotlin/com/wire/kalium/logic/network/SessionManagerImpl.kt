@@ -6,7 +6,6 @@ import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.auth.AuthSession
-import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.model.AccessTokenDTO
@@ -18,13 +17,12 @@ class SessionManagerImpl(
     private val sessionRepository: SessionRepository,
     private val userId: QualifiedID,
     private val sessionMapper: SessionMapper = MapperProvider.sessionMapper(),
-    private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper(),
-    private val logout: LogoutUseCase
+    private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
 ) : SessionManager {
     override fun session(): Pair<SessionDTO, ServerConfigDTO.Links> = sessionRepository.userSession(userId).fold({
         TODO("IMPORTANT! Not yet implemented")
     }, { session ->
-        Pair(sessionMapper.toSessionDTO(session), serverConfigMapper.toDTO(session.serverLinks))
+        Pair(sessionMapper.toSessionDTO(session.tokens as AuthSession.Tokens.Valid), serverConfigMapper.toDTO(session.serverLinks))
     })
 
     override fun updateSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO =
@@ -32,8 +30,8 @@ class SessionManagerImpl(
             TODO("IMPORTANT! Not yet implemented")
         }, { authSession ->
             AuthSession(
-                AuthSession.Tokens(
-                    authSession.tokens.userId,
+                AuthSession.Tokens.Valid(
+                    (authSession.tokens as AuthSession.Tokens.Valid).userId,
                     newAccessTokenDTO.value,
                     newRefreshTokenDTO?.value ?: authSession.tokens.refreshToken,
                     newAccessTokenDTO.tokenType,
@@ -41,15 +39,15 @@ class SessionManagerImpl(
                 authSession.serverLinks
             ).let {
                 sessionRepository.storeSession(it)
-                sessionMapper.toSessionDTO(it)
+                sessionMapper.toSessionDTO((it.tokens as AuthSession.Tokens.Valid))
             }
         })
 
     override suspend fun onSessionExpired() {
-        logout(false)
+        //logout(false)
     }
 
     override suspend fun onClientRemoved() {
-        logout(false)
+        //logout(false)
     }
 }

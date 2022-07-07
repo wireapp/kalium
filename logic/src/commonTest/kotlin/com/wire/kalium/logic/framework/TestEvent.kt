@@ -12,4 +12,7 @@ object TestEvent {
         members,
         "2022-03-30T15:36:00.000Z"
     )
+
+    fun clientRemove(clientId: String) = Event.User.ClientRemove(clientId)
+    fun userDelete(userId: String) = Event.User.UserDelete(userId)
 }

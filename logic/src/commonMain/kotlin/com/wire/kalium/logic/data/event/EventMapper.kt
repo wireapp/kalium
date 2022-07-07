@@ -89,8 +89,7 @@ class EventMapper(
     }
 
     private fun clientRemove(id: String, client: RemoveClientEventData): Event.User.ClientRemove {
-        kaliumLogger.i("client removed $client")
-        return Event.User.ClientRemove("")
+        return Event.User.ClientRemove(client.clientId)
     }
 
     private fun newConversation(

@@ -13,7 +13,11 @@ import com.wire.kalium.logic.functional.isLeft
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 
-class LogoutUseCase @Suppress("LongParameterList") constructor(
+interface LogoutUseCase {
+    suspend operator fun invoke(isHardLogout: Boolean = false)
+}
+
+class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     private val logoutRepository: LogoutRepository,
     private val sessionRepository: SessionRepository,
     private val userId: QualifiedID,
@@ -22,19 +26,22 @@ class LogoutUseCase @Suppress("LongParameterList") constructor(
     private val mlsClientProvider: MLSClientProvider,
     private val deregisterTokenUseCase: DeregisterTokenUseCase,
     private val userSessionScopeProvider: UserSessionScopeProvider = UserSessionScopeProviderImpl
-) {
-    suspend operator fun invoke(isHardLogOut: Boolean = true) {
+) : LogoutUseCase {
+    override suspend operator fun invoke(isHardLogout: Boolean) {
         deregisterTokenUseCase()
         logoutRepository.logout()
-        if (isHardLogOut) {
+        clearCrypto()
+        if (isHardLogout) {
             clearUserStorage()
         }
-        clearCrypto()
         clearUserSessionAndUpdateCurrent()
         clearInMemoryUserSession()
     }
 
     private fun clearInMemoryUserSession() {
+        userSessionScopeProvider.get(userId).let {
+            userSessionScopeProvider.add(use)
+        }
         userSessionScopeProvider.delete(userId)
     }
 

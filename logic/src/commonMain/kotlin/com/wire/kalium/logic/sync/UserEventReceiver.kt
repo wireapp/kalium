@@ -1,8 +1,10 @@
 package com.wire.kalium.logic.sync
 
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 
@@ -11,6 +13,7 @@ interface UserEventReceiver : EventReceiver<Event.User>
 class UserEventReceiverImpl(
     private val connectionRepository: ConnectionRepository,
     private val logoutUseCase: LogoutUseCase,
+    private val clientRepository: ClientRepository
 ) : UserEventReceiver {
 
     override suspend fun onEvent(event: Event.User) {
@@ -26,7 +29,10 @@ class UserEventReceiverImpl(
             .onFailure { kaliumLogger.e("$TAG - failure on new connection event: $it") }
 
     private suspend fun handleClientRemove(event: Event.User.ClientRemove) {
-        logoutUseCase.invoke(false)
+        clientRepository.currentClientId().map { currentClientId ->
+            if (currentClientId.value == event.id)
+                logoutUseCase.invoke(false)
+        }
     }
 
     private suspend fun handleUserDelete(event: Event.User.UserDelete) {

@@ -31,14 +31,14 @@ class AddAuthenticatedUserUseCase(
 
     private fun storeUser(authSession: AuthSession): Result {
         sessionRepository.storeSession(authSession)
-        sessionRepository.updateCurrentSession(authSession.tokens.userId)
+        sessionRepository.updateCurrentSession((authSession.tokens as AuthSession.Tokens.Valid).userId)
         return Result.Success(authSession.tokens.userId)
     }
 
     private fun onUserExist(newSession: AuthSession, replace: Boolean): Result =
         when (replace) {
             true -> {
-                sessionRepository.userSession(newSession.tokens.userId).fold(
+                sessionRepository.userSession((newSession.tokens as AuthSession.Tokens.Valid).userId).fold(
                     // in case of the new session have a different server configurations the new session should not be added
                     { Result.Failure.Generic(it) }, { oldSession ->
                         if (oldSession.serverLinks == newSession.serverLinks) {

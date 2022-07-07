@@ -22,6 +22,7 @@ interface SessionRepository {
     fun userSession(userId: UserId): Either<StorageFailure, AuthSession>
     fun doesSessionExist(userId: UserId): Either<StorageFailure, Boolean>
     fun updateCurrentSession(userId: UserId): Either<StorageFailure, Unit>
+    fun updateCurrentSession(userId: UserId, newSession: AuthSession): Either<StorageFailure, Unit>
     fun currentSession(): Either<StorageFailure, AuthSession>
     fun currentSessionFlow(): Flow<Either<StorageFailure, AuthSession>>
     fun deleteSession(userId: UserId): Either<StorageFailure, Unit>
@@ -53,7 +54,7 @@ internal class SessionDataSource(
             }
         }, { sessionsList ->
             sessionsList.forEach {
-                if (it.tokens.userId == userId) {
+                if ((it.tokens as AuthSession.Tokens.Valid).userId == userId) {
                     return@fold Either.Right(true)
                 }
             }
@@ -64,6 +65,11 @@ internal class SessionDataSource(
         idMapper.toDaoModel(userId).let { userIdEntity ->
             wrapStorageRequest { sessionStorage.setCurrentSession(userIdEntity) }
         }
+
+    override fun updateCurrentSession(userId: UserId, newSession: AuthSession): Either<StorageFailure, Unit> {
+        TODO("Not yet implemented")
+        //update with logout Session
+    }
 
     override fun currentSession(): Either<StorageFailure, AuthSession> =
         wrapStorageRequest { sessionStorage.currentSession() }.map { sessionMapper.fromPersistenceSession(it) }
