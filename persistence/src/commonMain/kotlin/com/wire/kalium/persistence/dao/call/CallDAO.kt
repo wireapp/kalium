@@ -4,8 +4,6 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.coroutines.flow.Flow
 
-
-
 data class CallEntity(
     val conversationId: QualifiedIDEntity,
     val id: String,
@@ -33,4 +31,5 @@ interface CallDAO {
     suspend fun isOngoingCall(conversationId: QualifiedIDEntity): Boolean
     suspend fun updateLastCallStatusByConversationId(status: CallEntity.Status, conversationId: QualifiedIDEntity)
     suspend fun getCallerIdByConversationId(conversationId: QualifiedIDEntity): String
+    suspend fun getCallStatusByConversationId(conversationId: QualifiedIDEntity): CallEntity.Status?
 }

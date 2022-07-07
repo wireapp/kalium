@@ -7,9 +7,9 @@ import com.wire.kalium.persistence.CallsQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import com.wire.kalium.persistence.Call as SQLDelightCall
 
 internal class CallMapper {
@@ -77,10 +77,17 @@ internal class CallDAOImpl(private val callsQueries: CallsQueries) : CallDAO {
     }
 
     override suspend fun getCallerIdByConversationId(conversationId: QualifiedIDEntity): String =
-        callsQueries.selectLastCallCallerIdByConversationId(conversationId)
+        callsQueries.selectLastCallByConversationId(conversationId)
             .asFlow()
             .mapToOne()
-            .map { it }
+            .map { it.caller_id }
             .first()
+
+    override suspend fun getCallStatusByConversationId(conversationId: QualifiedIDEntity): CallEntity.Status? =
+        callsQueries.selectLastCallByConversationId(conversationId)
+            .asFlow()
+            .mapToOne()
+            .map { mapper.toModel(dbEntry = it).status }
+            .firstOrNull()
 }
 

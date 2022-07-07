@@ -48,8 +48,8 @@ WHERE
         LIMIT 1
     );
 
-selectLastCallCallerIdByConversationId:
-SELECT caller_id
+selectLastCallByConversationId:
+SELECT *
 FROM Call
 WHERE
     conversation_id = ?
