@@ -77,7 +77,7 @@ internal class ConversationMapperImpl(
             receiptMode = if (options.readReceiptsEnabled) ReceiptMode.ENABLED else ReceiptMode.DISABLED,
             conversationRole = ConversationDataSource.DEFAULT_MEMBER_ROLE,
             protocol = toApiModel(options.protocol),
-            creatorClient = options.creatorClient
+            creatorClient = options.creatorClientId
         )
 
     override fun toConversationDetailsOneToOne(

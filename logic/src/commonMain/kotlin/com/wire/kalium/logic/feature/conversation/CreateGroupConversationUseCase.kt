@@ -20,7 +20,7 @@ class CreateGroupConversationUseCase(
     suspend operator fun invoke(name: String, userIdList: List<UserId>, options: ConversationOptions): Either<CoreFailure, Conversation> {
         syncManager.waitUntilLive()
         return clientRepository.currentClientId().flatMap { clientId ->
-            conversationRepository.createGroupConversation(name, userIdList, options.copy(creatorClient = clientId.value))
+            conversationRepository.createGroupConversation(name, userIdList, options.copy(creatorClientId = clientId.value))
                 .flatMap { conversation ->
                     conversationRepository.updateConversationModifiedDate(conversation.id, Clock.System.now().toString())
                         .map { conversation }
