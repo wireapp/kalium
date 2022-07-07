@@ -181,7 +181,6 @@ class UserSearchApiWrapperTest {
             return this
         }
 
-
         fun arrange() = this to UserSearchApiWrapperImpl(userSearchApi, conversationDAO)
 
         companion object {
