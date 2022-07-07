@@ -21,6 +21,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.call.CallApi
+import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.call.CallDAO
 import com.wire.kalium.persistence.dao.call.CallEntity
 import kotlinx.coroutines.flow.Flow
@@ -33,6 +34,7 @@ interface CallRepository {
     suspend fun getCallConfigResponse(limit: Int?): Either<CoreFailure, String>
     suspend fun connectToSFT(url: String, data: String): Either<CoreFailure, ByteArray>
     fun updateCallMetadataProfileFlow(callMetadataProfile: CallMetaDataProfile)
+    fun getCallMetadataProfile(): CallMetaDataProfile
     suspend fun callsFlow(): Flow<List<Call>>
     suspend fun incomingCallsFlow(): Flow<List<Call>>
     suspend fun ongoingCallsFlow(): Flow<List<Call>>
@@ -68,10 +70,11 @@ internal class CallDataSource(
         callApi.connectToSFT(url = url, data = data)
     }
 
-    // TODO: THIS WILL BREAK TESTS
     override fun updateCallMetadataProfileFlow(callMetadataProfile: CallMetaDataProfile) {
         _callMetadataProfile.value = callMetadataProfile
     }
+
+    override fun getCallMetadataProfile(): CallMetaDataProfile = _callMetadataProfile.value
 
     override suspend fun callsFlow(): Flow<List<Call>> = callDAO
         .getCalls()
@@ -140,10 +143,73 @@ internal class CallDataSource(
             establishedTime = null
         )
 
-        // Save into database
-        callDAO.insertCall(call = callEntity)
+        val isCallInCurrentSession = _callMetadataProfile.value.data.containsKey(conversationId.toString())
+        val lastCallStatus = callDAO.getCallStatusByConversationId(conversationId = callEntity.conversationId)
+        val isGroupCall = callEntity.conversationType == ConversationEntity.Type.GROUP
+        val activeCallStatus = listOf(
+            CallEntity.Status.ESTABLISHED,
+            CallEntity.Status.ANSWERED,
+            CallEntity.Status.STILL_ONGOING
+        )
 
-        // Save into metadata
+        if (status == CallStatus.INCOMING) {
+            if (isGroupCall && isCallInCurrentSession.not()) { // GROUP + NOT IN CURRENT SESSION
+                if (lastCallStatus in activeCallStatus) { // LAST CALL IS ACTIVE
+                    // Save into metadata
+                    updateCallMetadata(
+                        conversationId = conversationId,
+                        metadata = metadata
+                    )
+
+                    // Update database
+                    updateCallStatusById(
+                        conversationId = conversationId.toString(),
+                        status = CallStatus.STILL_ONGOING
+                    )
+                } else { // LAST CALL IS NOT ACTIVE
+                    // Save into database
+                    callDAO.insertCall(call = callEntity)
+
+                    // Save into metadata
+                    updateCallMetadata(
+                        conversationId = conversationId,
+                        metadata = metadata
+                    )
+                }
+            } else if (isGroupCall.not() && isCallInCurrentSession.not()) { // ONE ON ONE + NOT IN CURRENT SESSION
+                if (lastCallStatus in activeCallStatus) { // LAST CALL IS ACTIVE
+                    // Save into metadata
+                    updateCallMetadata(
+                        conversationId = conversationId,
+                        metadata = metadata
+                    )
+                } else { // LAST CALL NOT ACTIVE
+                    // Save into database
+                    callDAO.insertCall(call = callEntity)
+
+                    // Save into metadata
+                    updateCallMetadata(
+                        conversationId = conversationId,
+                        metadata = metadata
+                    )
+                }
+            }
+        } else if (status == CallStatus.STARTED) {
+            // Save into database
+            callDAO.insertCall(call = callEntity)
+
+            // Save into metadata
+            updateCallMetadata(
+                conversationId = conversationId,
+                metadata = metadata
+            )
+        }
+    }
+
+    private fun updateCallMetadata(
+        conversationId: ConversationId,
+        metadata: CallMetaData
+    ) {
         val callMetadataProfile = _callMetadataProfile.value
         val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
             this[conversationId.toString()] = metadata
