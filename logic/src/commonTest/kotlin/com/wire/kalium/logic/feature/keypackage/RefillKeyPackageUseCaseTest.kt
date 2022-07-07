@@ -14,19 +14,21 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class RefillKeyPackageUseCaseTest {
 
     @Mock
     private val keyPackageRepository = mock(classOf<KeyPackageRepository>())
 
     @Mock
-    private val clientRepository: ClientRepository = mock(classOf())
+    private val clientRepository: ClientRepository = mock(classOf<ClientRepository>())
 
     private lateinit var refillKeyPackageUseCase: RefillKeyPackagesUseCase
 
@@ -39,12 +41,16 @@ class RefillKeyPackageUseCaseTest {
 
     @Test
     fun givenKeyPackageCountIs50PercentBelowLimit_ThenRequestToRefillKeyPackageIsPerformed() = runTest {
-        val keyPackageCount = (KEY_PACKAGE_LIMIT * 0.5 - 1).toInt()
+        val keyPackageCount = (KEY_PACKAGE_LIMIT * KEY_PACKAGE_THRESHOLD - 1).toInt()
 
-        given(clientRepository).suspendFunction(clientRepository::currentClientId).whenInvoked().then { Either.Right(TestClient.CLIENT_ID) }
-        given(keyPackageRepository).suspendFunction(keyPackageRepository::getAvailableKeyPackageCount).whenInvokedWith(anything())
+        given(clientRepository).suspendFunction(clientRepository::currentClientId)
+            .whenInvoked()
+            .then { Either.Right(TestClient.CLIENT_ID) }
+        given(keyPackageRepository).suspendFunction(keyPackageRepository::getAvailableKeyPackageCount)
+            .whenInvokedWith(anything())
             .then { Either.Right(KeyPackageCountDTO(keyPackageCount)) }
-        given(keyPackageRepository).suspendFunction(keyPackageRepository::uploadNewKeyPackages).whenInvokedWith(eq(TestClient.CLIENT_ID), anything())
+        given(keyPackageRepository).suspendFunction(keyPackageRepository::uploadNewKeyPackages)
+            .whenInvokedWith(eq(TestClient.CLIENT_ID), anything())
             .thenReturn(Either.Right(Unit))
 
         val actual = refillKeyPackageUseCase()
@@ -58,10 +64,13 @@ class RefillKeyPackageUseCaseTest {
 
     @Test
     fun givenKeyPackageCount50PercentAboveLimit_ThenNoRequestToRefillKeyPackagesIsPerformed() = runTest {
-        val keyPackageCount = (KEY_PACKAGE_LIMIT * 0.5).toInt()
+        val keyPackageCount = (KEY_PACKAGE_LIMIT * KEY_PACKAGE_THRESHOLD).toInt()
 
-        given(clientRepository).suspendFunction(clientRepository::currentClientId).whenInvoked().then { Either.Right(TestClient.CLIENT_ID) }
-        given(keyPackageRepository).suspendFunction(keyPackageRepository::getAvailableKeyPackageCount).whenInvokedWith(anything())
+        given(clientRepository).suspendFunction(clientRepository::currentClientId)
+            .whenInvoked()
+            .then { Either.Right(TestClient.CLIENT_ID) }
+        given(keyPackageRepository).suspendFunction(keyPackageRepository::getAvailableKeyPackageCount)
+            .whenInvokedWith(anything())
             .then { Either.Right(KeyPackageCountDTO(keyPackageCount)) }
 
         val actual = refillKeyPackageUseCase()
@@ -73,8 +82,11 @@ class RefillKeyPackageUseCaseTest {
     fun givenErrorIsEncountered_ThenFailureIsPropagated() = runTest {
         val networkFailure = NetworkFailure.NoNetworkConnection(null)
 
-        given(clientRepository).suspendFunction(clientRepository::currentClientId).whenInvoked().then { Either.Right(TestClient.CLIENT_ID) }
-        given(keyPackageRepository).suspendFunction(keyPackageRepository::getAvailableKeyPackageCount).whenInvokedWith(anything())
+        given(clientRepository).suspendFunction(clientRepository::currentClientId)
+            .whenInvoked()
+            .then { Either.Right(TestClient.CLIENT_ID) }
+        given(keyPackageRepository).suspendFunction(keyPackageRepository::getAvailableKeyPackageCount)
+            .whenInvokedWith(anything())
             .then { Either.Left(networkFailure) }
 
         val actual = refillKeyPackageUseCase()

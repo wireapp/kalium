@@ -21,6 +21,7 @@ interface RefillKeyPackagesUseCase {
 }
 
 internal const val KEY_PACKAGE_LIMIT = 100
+internal const val KEY_PACKAGE_THRESHOLD = 0.5
 
 class RefillKeyPackagesUseCaseImpl(
     private val keyPackageRepository: KeyPackageRepository,
@@ -31,7 +32,7 @@ class RefillKeyPackagesUseCaseImpl(
         clientRepository.currentClientId().flatMap { selfClientId ->
             keyPackageRepository.getAvailableKeyPackageCount(selfClientId)
                 .flatMap { count ->
-                    if (count.count < (KEY_PACKAGE_LIMIT * 0.5)) {
+                    if (needsRefill(count.count)) {
                         keyPackageRepository.uploadNewKeyPackages(selfClientId, amount = KEY_PACKAGE_LIMIT - count.count).flatMap {
                             Either.Right(Unit)
                         }
@@ -44,4 +45,8 @@ class RefillKeyPackagesUseCaseImpl(
         }, {
             RefillKeyPackagesResult.Success
         })
+
+    private fun needsRefill(keyPackageCount: Int): Boolean {
+        return keyPackageCount < (KEY_PACKAGE_LIMIT * KEY_PACKAGE_THRESHOLD)
+    }
 }
