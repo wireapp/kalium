@@ -405,7 +405,7 @@ class SearchUserRepositoryTest {
         verify(userDAO)
             .suspendFunction(userDAO::getUsersNotInConversationByHandle)
             .with(anything(), anything())
-            .wasInvoked(Times(1))
+            .wasInvoked(exactly = once)
     }
 
     private companion object {
