@@ -194,7 +194,8 @@ class ConversationEventReceiverImpl(
 
     private suspend fun handleMemberJoin(event: Event.Conversation.MemberJoin) =
         // Attempt to fetch conversation details if needed, as this might be an unknown conversation
-        conversationRepository.fetchConversationIfUnknown(event.conversationId).run {
+        conversationRepository.fetchConversationIfUnknown(event.conversationId)
+            .run {
             onSuccess { kaliumLogger.v("Succeeded fetching conversation details on MemberJoin Event: $event") }
             onFailure { kaliumLogger.w("Failure fetching conversation details on MemberJoin Event: $event") }
             // Even if unable to fetch conversation details, at least attempt adding the member
@@ -217,6 +218,11 @@ class ConversationEventReceiverImpl(
             event.removedList.map { idMapper.toDaoModel(it) },
             idMapper.toDaoModel(event.conversationId)
         )
+        .flatMap {
+            // fetch required unknown users that haven't been persisted during slow sync, e.g. from another team
+            // and keep them to properly show this member-leave message
+            userRepository.fetchUsersIfUnknownByIds(event.removedList.toSet())
+        }
         .onSuccess {
             val message = Message.System(
                 id = event.id,
