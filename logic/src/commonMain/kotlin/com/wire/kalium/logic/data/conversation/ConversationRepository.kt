@@ -326,7 +326,7 @@ class ConversationDataSource(
                 when (conversationEntity.protocolInfo) {
                     is ProtocolInfo.Proteus -> persistMembersFromConversationResponse(conversationResponse)
                     is ProtocolInfo.MLS -> persistMembersFromConversationResponseMLS(
-                        conversationResponse, TODO("the only valid source for conversation members is the server aka ConversationResponse")
+                        conversationResponse, usersList
                     )
                 }
             }.flatMap {
@@ -363,15 +363,17 @@ class ConversationDataSource(
      * the group, so we need to provide initial list of members separately.
      */
     private suspend fun persistMembersFromConversationResponseMLS(
-        conversationResponse: ConversationResponse, members: List<Member>
+        conversationResponse: ConversationResponse, users: List<UserId>
     ): Either<CoreFailure, Unit> {
         return wrapStorageRequest {
             val conversationId = idMapper.fromApiToDao(conversationResponse.id)
             val selfUserId = userRepository.getSelfUserId()
             // TODO(IMPORTANT!): having an initial value is not the correct approach, the
             //  only valid source for members role is the backend
+            //  ---> at the moment the backend doesn't tell us anything about the member role! till then we are setting them as Member
+            val membersWithRole = users.map { userId -> Member(userId, Member.Role.Member) }
             val selfMember = Member(selfUserId, Member.Role.Admin)
-            conversationDAO.insertMembers((members + selfMember).map(memberMapper::toDaoModel), conversationId)
+            conversationDAO.insertMembers((membersWithRole + selfMember).map(memberMapper::toDaoModel), conversationId)
         }
     }
 
