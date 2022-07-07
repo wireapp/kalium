@@ -56,6 +56,16 @@ object TestConversation {
         null
     )
 
+    fun group(convId: ConversationId) = Conversation(
+        convId,
+        "GROUP Name",
+        Conversation.Type.GROUP,
+        TestTeam.TEAM_ID,
+        MutedConversationStatus.AllAllowed,
+        null,
+        null
+    )
+
     val NETWORK_ID = QualifiedID("valueConversation", "domainConversation")
 
     val CONVERSATION_RESPONSE = ConversationResponse(
