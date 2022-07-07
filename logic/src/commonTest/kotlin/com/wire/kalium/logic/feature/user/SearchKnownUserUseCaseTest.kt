@@ -153,7 +153,7 @@ class SearchKnownUserUseCaseTest {
 
         val (arrangement, searchKnownUsersUseCase) = Arrangement()
             .withSuccessFullSelfUserRetrieve()
-            .withSearchByHandle()
+            .withSearchByHandle(searchUsersOptions = searchUsersOptions)
             .arrange()
 
         //when
@@ -183,7 +183,7 @@ class SearchKnownUserUseCaseTest {
 
         val (arrangement, searchKnownUsersUseCase) = Arrangement()
             .withSuccessFullSelfUserRetrieve()
-            .withSearchKnownUsersByNameOrHandleOrEmail()
+            .withSearchKnownUsersByNameOrHandleOrEmail(searchUsersOptions = searchUsersOptions)
             .arrange()
 
         //when
@@ -229,13 +229,14 @@ class Arrangement {
     }
 
     fun withSearchByHandle(
-        searchQuery: String? = null
+        searchQuery: String? = null,
+        searchUsersOptions: SearchUsersOptions? = null
     ): Arrangement {
         given(searchUserRepository)
             .suspendFunction(searchUserRepository::searchKnownUsersByHandle)
             .whenInvokedWith(
                 if (searchQuery == null) any() else eq(searchQuery),
-                any()
+                if(searchUsersOptions == null) any() else eq(searchUsersOptions)
             )
             .thenReturn(
                 UserSearchResult(
@@ -266,7 +267,8 @@ class Arrangement {
 
     fun withSearchKnownUsersByNameOrHandleOrEmail(
         searchQuery: String? = null,
-        extraOtherUser: OtherUser? = null
+        extraOtherUser: OtherUser? = null,
+        searchUsersOptions: SearchUsersOptions? = null
     ): Arrangement {
         val otherUsers = listOf(
             OtherUser(
@@ -296,7 +298,7 @@ class Arrangement {
             .suspendFunction(searchUserRepository::searchKnownUsersByNameOrHandleOrEmail)
             .whenInvokedWith(
                 if (searchQuery == null) any() else eq(searchQuery),
-                any()
+                if(searchUsersOptions == null) any() else eq(searchUsersOptions)
             )
             .thenReturn(
                 UserSearchResult(
