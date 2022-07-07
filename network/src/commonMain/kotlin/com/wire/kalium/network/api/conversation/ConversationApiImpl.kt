@@ -20,7 +20,8 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
     override suspend fun fetchConversationsIds(pagingState: String?): NetworkResponse<ConversationPagingResponse> =
         wrapKaliumResponse {
             httpClient.post("$PATH_CONVERSATIONS/$PATH_LIST_IDS") {
-                setBody(PaginationRequest(pagingState = pagingState, 200))
+                // fixme: adjust "size" value later on when server can handle the load
+                setBody(PaginationRequest(pagingState = pagingState, size = 200))
             }
         }
 
