@@ -210,7 +210,7 @@ abstract class UserSessionScopeCommon(
         )
 
     private val clientRegistrationStorage: ClientRegistrationStorage
-        get() = ClientRegistrationStorageImpl(userPreferencesSettings)
+        get() = ClientRegistrationStorageImpl(userDatabaseProvider.metadataDAO)
 
     private val clientRepository: ClientRepository
         get() = ClientDataSource(clientRemoteRepository, clientRegistrationStorage, userDatabaseProvider.clientDAO)

@@ -53,7 +53,7 @@ class LogoutUseCase @Suppress("LongParameterList") constructor(
         authenticatedDataSourceSet.kaliumPreferencesSettings.nuke()
     }
 
-    private fun clearCrypto() {
+    private suspend fun clearCrypto() {
         authenticatedDataSourceSet.proteusClient.clearLocalFiles()
 
         clientRepository.currentClientId().let { clientID ->

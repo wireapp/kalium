@@ -92,7 +92,7 @@ class EventRepositoryTest {
 
         val clientId = TestClient.CLIENT_ID
         given(clientRepository)
-            .function(clientRepository::currentClientId)
+            .suspendFunction(clientRepository::currentClientId)
             .whenInvoked()
             .thenReturn(Either.Right(clientId))
 
@@ -121,7 +121,7 @@ class EventRepositoryTest {
 
         val clientId = TestClient.CLIENT_ID
         given(clientRepository)
-            .function(clientRepository::currentClientId)
+            .suspendFunction(clientRepository::currentClientId)
             .whenInvoked()
             .thenReturn(Either.Right(clientId))
 
