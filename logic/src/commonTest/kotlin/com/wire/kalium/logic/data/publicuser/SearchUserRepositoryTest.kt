@@ -107,7 +107,7 @@ class SearchUserRepositoryTest {
         given(userSearchApiWrapper)
             .suspendFunction(userSearchApiWrapper::search)
             .whenInvokedWith(anything(), anything(), anything(), anything())
-            .thenReturn(Either.Left(TestNetworkResponseError.genericError()))
+            .thenReturn(Either.Left(TestNetworkResponseError.noNetworkConnection()))
 
         //when
         val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
@@ -122,7 +122,7 @@ class SearchUserRepositoryTest {
         given(userSearchApiWrapper)
             .suspendFunction(userSearchApiWrapper::search)
             .whenInvokedWith(anything(), anything(), anything(), anything())
-            .thenReturn(Either.Left(TestNetworkResponseError.genericError()))
+            .thenReturn(Either.Left(TestNetworkResponseError.noNetworkConnection()))
 
         //when
         searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
@@ -140,7 +140,7 @@ class SearchUserRepositoryTest {
         given(userSearchApiWrapper)
             .suspendFunction(userSearchApiWrapper::search)
             .whenInvokedWith(anything(), anything(), anything(), anything())
-            .thenReturn(Either.Left(TestNetworkResponseError.genericError()))
+            .thenReturn(Either.Left(TestNetworkResponseError.noNetworkConnection()))
 
         //when
         searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
