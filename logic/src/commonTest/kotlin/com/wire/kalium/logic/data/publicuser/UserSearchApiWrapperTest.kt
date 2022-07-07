@@ -130,7 +130,7 @@ class UserSearchApiWrapperTest {
         assertTrue { result.value.found == 0 }
     }
 
-    class Arrangement {
+  private class Arrangement {
 
         @Mock
         private val userSearchApi: UserSearchApi = mock(classOf<UserSearchApi>())
