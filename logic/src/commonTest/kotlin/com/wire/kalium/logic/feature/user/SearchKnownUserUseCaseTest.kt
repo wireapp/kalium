@@ -156,6 +156,9 @@ class SearchKnownUserUseCaseTest {
             .withSearchByHandle(
                 searchQuery = searchQuery,
                 searchUsersOptions = searchUsersOptions
+            ).withSearchKnownUsersByNameOrHandleOrEmail(
+                searchQuery = searchQuery,
+                searchUsersOptions = searchUsersOptions
             )
             .arrange()
 
@@ -187,6 +190,9 @@ class SearchKnownUserUseCaseTest {
         val (arrangement, searchKnownUsersUseCase) = Arrangement()
             .withSuccessFullSelfUserRetrieve()
             .withSearchKnownUsersByNameOrHandleOrEmail(
+                searchQuery = searchQuery,
+                searchUsersOptions = searchUsersOptions
+            ).withSearchByHandle(
                 searchQuery = searchQuery,
                 searchUsersOptions = searchUsersOptions
             )
