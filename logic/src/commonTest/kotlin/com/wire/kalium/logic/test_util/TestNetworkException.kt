@@ -75,7 +75,7 @@ object TestNetworkException {
 }
 
 object TestNetworkResponseError {
-    fun genericError(): NetworkFailure = NetworkFailure.NoNetworkConnection(null)
+    fun noNetworkConnection(): NetworkFailure = NetworkFailure.NoNetworkConnection(null)
     fun <T : Any> genericResponseError(): NetworkResponse<T> = NetworkResponse.Error(TestNetworkException.generic)
 }
 
