@@ -241,14 +241,14 @@ formatting:
         active: false
         autoCorrect: true
     Indentation:
-        active: false
+        active: true
         autoCorrect: true
         indentSize: 4
     MaximumLineLength:
         active: true
         maxLineLength: 140
     ModifierOrdering:
-        active: false
+        active: true
         autoCorrect: true
     MultiLineIfElse:
         active: false
