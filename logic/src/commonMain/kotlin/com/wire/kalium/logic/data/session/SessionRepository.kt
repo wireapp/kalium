@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.session
 
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
@@ -22,7 +23,7 @@ interface SessionRepository {
     fun userSession(userId: UserId): Either<StorageFailure, AuthSession>
     fun doesSessionExist(userId: UserId): Either<StorageFailure, Boolean>
     fun updateCurrentSession(userId: UserId): Either<StorageFailure, Unit>
-    fun updateCurrentSession(userId: UserId, newSession: AuthSession): Either<StorageFailure, Unit>
+    fun logoutSession(newSession: AuthSession.Session): Either<StorageFailure, Unit>
     fun currentSession(): Either<StorageFailure, AuthSession>
     fun currentSessionFlow(): Flow<Either<StorageFailure, AuthSession>>
     fun deleteSession(userId: UserId): Either<StorageFailure, Unit>
@@ -66,10 +67,9 @@ internal class SessionDataSource(
             wrapStorageRequest { sessionStorage.setCurrentSession(userIdEntity) }
         }
 
-    override fun updateCurrentSession(userId: UserId, newSession: AuthSession): Either<StorageFailure, Unit> {
-        TODO("Not yet implemented")
-        //update with logout Session
-    }
+    override fun logoutSession(authSession: AuthSession.Session): Either<StorageFailure, Unit> =
+        wrapStorageRequest { sessionStorage.addSession(sessionMapper.toPersistenceSession(AuthSession(authSession, ServerConfig.DEFAULT))) }
+
 
     override fun currentSession(): Either<StorageFailure, AuthSession> =
         wrapStorageRequest { sessionStorage.currentSession() }.map { sessionMapper.fromPersistenceSession(it) }
