@@ -27,7 +27,7 @@ data class CreateConversationRequest(
     @SerialName("team")
     val convTeamInfo: ConvTeamInfo?,
     @SerialName("message_timer")
-    val messageTimer: Int?, // Per-conversation message time
+    val messageTimer: Long?, // Per-conversation message time
     // Receipt mode, controls if read receipts are enabled for the conversation.
     // Any positive value is interpreted as enabled.
     @SerialName("receipt_mode")
