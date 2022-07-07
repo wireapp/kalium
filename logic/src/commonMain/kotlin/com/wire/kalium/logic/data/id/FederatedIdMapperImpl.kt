@@ -20,7 +20,7 @@ interface FederatedIdMapper {
 class FederatedIdMapperImpl(private val kaliumPreferences: KaliumPreferences) : FederatedIdMapper {
 
     private fun isFederationEnabled() = kaliumPreferences.getBoolean(FEDERATION_ENABLED, false)
-    private fun getCurrentDomain() = kaliumPreferences.getString(CURRENT_DOMAIN) ?: "wire.com"
+    private fun getCurrentDomain() = kaliumPreferences.getString(CURRENT_DOMAIN) ?: DEFAULT_DOMAIN
 
     override fun parseToFederatedId(qualifiedID: QualifiedID): String {
         kaliumLogger.d(
@@ -43,5 +43,9 @@ class FederatedIdMapperImpl(private val kaliumPreferences: KaliumPreferences) : 
         } else {
             parsedQualifiedID.value
         }
+    }
+
+    companion object {
+        const val DEFAULT_DOMAIN = "wire.com"
     }
 }

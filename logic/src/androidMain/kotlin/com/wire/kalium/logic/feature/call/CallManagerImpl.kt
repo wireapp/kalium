@@ -86,13 +86,13 @@ actual class CallManagerImpl(
     }
 
     private fun startHandleAsync(): Deferred<Handle> = scope.async(start = CoroutineStart.LAZY) {
-        val selfUserId = userId.await()
+        val selfUserId = federatedIdMapper.parseToFederatedId(userId.await())
         val selfClientId = clientId.await().value
 
         val waitInitializationJob = Job()
 
         val handle = calling.wcall_create(
-            userId = federatedIdMapper.parseToFederatedId(selfUserId),
+            userId = selfUserId,
             clientId = selfClientId,
             readyHandler = { version: Int, arg: Pointer? ->
                 callingLogger.i("$TAG -> readyHandler")
@@ -104,7 +104,7 @@ actual class CallManagerImpl(
             sendHandler = OnSendOTR(
                 deferredHandle,
                 calling,
-                federatedIdMapper.parseToFederatedId(selfUserId),
+                selfUserId,
                 selfClientId,
                 messageSender,
                 scope
@@ -173,7 +173,7 @@ actual class CallManagerImpl(
             status = CallStatus.STARTED,
             isMuted = false,
             isCameraOn = isCameraOn,
-            callerId = userId.await().toString()
+            callerId = federatedIdMapper.parseToFederatedId(userId.await())
         )
 
         withCalling {
