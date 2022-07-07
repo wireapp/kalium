@@ -14,10 +14,9 @@ import kotlinx.coroutines.flow.firstOrNull
 
 interface UserSearchApiWrapper {
     /*
-    Back-end has not support to return user that are not part of the conversation,
-    therefore we need to filter those users ourself.
-    */
-    suspend fun search(
+     * Searches for users that match given the [searchQuery] using the API.
+     * Depending on the [searchUsersOptions], the members of a conversation can be excluded.
+     */
         searchQuery: String,
         domain: String,
         maxResultSize: Int?,
