@@ -16,32 +16,35 @@ class UserEntityTypeMapperTest {
         val result = userTypeMapper.fromOtherUserTeamAndDomain(
             "someDomain",
             "someTeamId",
-            "someTeamId"
-        )
+            "someTeamId",
+            "someDomain"
+            )
         //then
         assertEquals(UserTypeEntity.INTERNAL, result)
     }
 
     @Test
-    fun givenCommonNotWireDomainAndDifferentTeam_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsFederated() {
+    fun givenCommonNotTheSameDomainAndDifferentTeam_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsFederated() {
         //given
         val result = userTypeMapper.fromOtherUserTeamAndDomain(
-            "someDomain",
+            "domainB",
             "teamA",
-            "teamB"
-        )
+            "teamB",
+            "domainA"
+            )
         //then
         assertEquals(UserTypeEntity.FEDERATED, result)
     }
 
     @Test
-    fun givenUsingWireDomainAndDifferentTeam_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsGuest() {
+    fun givenUsingSameDomainAndDifferentTeam_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsGuest() {
         //when
         val result = userTypeMapper.fromOtherUserTeamAndDomain(
-            "testDomain.wire.com",
+            "testDomain",
             "teamA",
-            "teamB"
-        )
+            "teamB",
+            "testDomain"
+            )
         //then
         assertEquals(UserTypeEntity.GUEST, result)
     }

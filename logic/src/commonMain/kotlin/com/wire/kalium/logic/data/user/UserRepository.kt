@@ -110,14 +110,16 @@ class UserDataSource(
             userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(ids.map(idMapper::toApiModel)))
         }.flatMap {
             wrapStorageRequest {
+                val selfUser = getSelfUser()
                 userDAO.upsertUsers(
                     it.map { userProfileDTO ->
                         userMapper.fromApiModelWithUserTypeEntityToDaoModel(
                             userProfileDTO = userProfileDTO,
                             userTypeEntity = userTypeEntityMapper.fromOtherUserTeamAndDomain(
                                 otherUserDomain = userProfileDTO.id.domain,
-                                selfUserTeamId = getSelfUser()?.teamId,
-                                otherUserTeamId = userProfileDTO.teamId
+                                selfUserTeamId = selfUser?.teamId,
+                                otherUserTeamId = userProfileDTO.teamId,
+                                selfUserDomain = selfUser?.id?.domain
                             )
                         )
                     }
@@ -183,12 +185,14 @@ class UserDataSource(
 
     override suspend fun getUserInfo(userId: UserId): Either<CoreFailure, OtherUser> =
         wrapApiRequest { userDetailsApi.getUserInfo(idMapper.toApiModel(userId)) }.map { userProfile ->
+            val selfUser = getSelfUser()
             publicUserMapper.fromUserDetailResponseWithUsertype(
                 userDetailResponse = userProfile,
                 userType = userTypeMapper.fromOtherUserTeamAndDomain(
                     otherUserDomain = userProfile.id.domain,
-                    selfUserTeamId = getSelfUser()?.teamId,
-                    otherUserTeamId = userProfile.teamId
+                    selfUserTeamId = selfUser?.teamId,
+                    otherUserTeamId = userProfile.teamId,
+                    selfUserDomain = selfUser?.id?.domain
                 )
             )
         }
