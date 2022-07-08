@@ -329,7 +329,7 @@ class MessageSenderTest {
         val TEST_CORE_FAILURE = Either.Left(CoreFailure.Unknown(Throwable("an error")))
         val TEST_CONTACT_CLIENT_1 = ClientId("clientId1")
         val TEST_CONTACT_CLIENT_2 = ClientId("clientId2")
-        val TEST_MEMBER_1 = Member(UserId("value1", "domain1"))
+        val TEST_MEMBER_1 = UserId("value1", "domain1")
         val TEST_RECIPIENT_1 = Recipient(TEST_MEMBER_1, listOf(TEST_CONTACT_CLIENT_1, TEST_CONTACT_CLIENT_2))
     }
 

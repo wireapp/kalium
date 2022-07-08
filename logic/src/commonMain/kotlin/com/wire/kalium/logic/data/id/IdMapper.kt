@@ -3,11 +3,13 @@ package com.wire.kalium.logic.data.id
 import com.wire.kalium.cryptography.CryptoQualifiedID
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.network.api.user.client.SimpleClientResponse
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.protobuf.messages.QualifiedConversationId
 
 internal typealias NetworkQualifiedId = com.wire.kalium.network.api.QualifiedID
-internal typealias PersistenceQualifiedId = com.wire.kalium.persistence.dao.QualifiedIDEntity
+internal typealias PersistenceQualifiedId = QualifiedIDEntity
 
+@Suppress("TooManyFunctions")
 interface IdMapper {
     fun fromApiModel(networkId: NetworkQualifiedId): QualifiedID
     fun fromSimpleClientResponse(clientResponse: SimpleClientResponse): ClientId
@@ -23,6 +25,7 @@ interface IdMapper {
     fun toQualifiedAssetIdEntity(value: String, domain: String = ""): PersistenceQualifiedId
 }
 
+@Suppress("TooManyFunctions")
 internal class IdMapperImpl : IdMapper {
 
     override fun fromApiModel(networkId: NetworkQualifiedId) = QualifiedID(value = networkId.value, domain = networkId.domain)

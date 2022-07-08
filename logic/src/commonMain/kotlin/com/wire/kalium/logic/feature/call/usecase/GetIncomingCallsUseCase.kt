@@ -51,7 +51,9 @@ internal class GetIncomingCallsUseCaseImpl(
             .flatMapLatest {
                 //if user is AWAY we don't show any IncomingCalls
                 if (it.availabilityStatus == UserAvailabilityStatus.AWAY) flowOf(listOf())
-                else callRepository.incomingCallsFlow()
+                else callRepository.incomingCallsFlow().distinctUntilChanged {
+                        old, new -> old.firstOrNull()?.conversationId == new.firstOrNull()?.conversationId
+                }
             }
 
     private fun Flow<List<Call>>.onlyCallsInNotMutedConversations(): Flow<List<Call>> =
