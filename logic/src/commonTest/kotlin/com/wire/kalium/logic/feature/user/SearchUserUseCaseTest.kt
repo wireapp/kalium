@@ -12,7 +12,6 @@ import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.logic.feature.connection.AcceptConnectionRequestUseCaseTest
 import com.wire.kalium.logic.feature.publicuser.search.Result
 import com.wire.kalium.logic.feature.publicuser.search.SearchUsersUseCase
 import com.wire.kalium.logic.feature.publicuser.search.SearchUsersUseCaseImpl
@@ -124,7 +123,7 @@ class SearchUserUseCaseTest {
 
         given(searchUserRepository)
             .suspendFunction(searchUserRepository::searchUserDirectory)
-            .whenInvokedWith(eq("testQuery"), eq("domain"), anything(), anything())
+            .whenInvokedWith(eq("testQuery"), eq(""), anything(), anything())
             .thenReturn(expected)
         //when
         val actual = searchUsersUseCase(TEST_QUERY)
