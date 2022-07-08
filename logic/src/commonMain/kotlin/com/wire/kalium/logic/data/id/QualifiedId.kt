@@ -36,8 +36,11 @@ fun String.toConversationId(fallbackDomain: String = "wire.com"): ConversationId
 }
 
 fun String.parseIntoQualifiedID(): QualifiedID {
-    val components = split("@")
-    return if (components.size < 2) QualifiedID(value = components.first(), domain = "")
-    else
-        QualifiedID(value = components.first(), domain = components.last())
+    val components = split("@").filter { it.isNotBlank() }
+
+    return when {
+        components.isEmpty() -> QualifiedID(value = "", domain = "")
+        components.size == 1 -> QualifiedID(value = components.first(), domain = "")
+        else -> QualifiedID(value = components.first(), domain = components.last())
+    }
 }

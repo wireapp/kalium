@@ -4,6 +4,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -22,7 +23,8 @@ class GetUserInfoUseCaseTestArrangement {
 
     fun withSuccessfulUserRetrieve(
         localUserPresent: Boolean = true,
-        hasTeam: Boolean = true
+        hasTeam: Boolean = true,
+        userType: UserType = UserType.EXTERNAL
     ): GetUserInfoUseCaseTestArrangement {
         given(userRepository)
             .suspendFunction(userRepository::getKnownUser)
@@ -30,7 +32,7 @@ class GetUserInfoUseCaseTestArrangement {
             .thenReturn(
                 flowOf(
                     if (!localUserPresent) null
-                    else if (hasTeam) TestUser.OTHER else TestUser.OTHER.copy(team = null)
+                    else if (hasTeam) TestUser.OTHER.copy(userType = userType) else TestUser.OTHER.copy(team = null, userType = userType)
                 )
             )
 

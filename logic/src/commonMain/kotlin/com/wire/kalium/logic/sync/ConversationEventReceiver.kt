@@ -86,6 +86,7 @@ class ConversationEventReceiverImpl(
                     is MessageContent.Unknown ->
                         if (content.messageContent.hidden) Message.Visibility.HIDDEN
                         else Message.Visibility.VISIBLE
+
                     is MessageContent.Text -> Message.Visibility.VISIBLE
                     is MessageContent.Calling -> Message.Visibility.VISIBLE
                     is MessageContent.Asset -> Message.Visibility.VISIBLE
@@ -104,6 +105,7 @@ class ConversationEventReceiverImpl(
                 )
                 processMessage(message)
             }
+
             is MessageContent.Signaling -> {
                 processSignaling(content.messageContent)
             }
@@ -196,22 +198,22 @@ class ConversationEventReceiverImpl(
         // Attempt to fetch conversation details if needed, as this might be an unknown conversation
         conversationRepository.fetchConversationIfUnknown(event.conversationId)
             .run {
-            onSuccess { kaliumLogger.v("Succeeded fetching conversation details on MemberJoin Event: $event") }
-            onFailure { kaliumLogger.w("Failure fetching conversation details on MemberJoin Event: $event") }
-            // Even if unable to fetch conversation details, at least attempt adding the member
-            conversationRepository.persistMembers(event.members, event.conversationId)
-        }.onSuccess {
-            val message = Message.System(
-                id = event.id,
-                content = MessageContent.MemberChange.Added(members = event.members.map { it.id }),
-                conversationId = event.conversationId,
-                date = event.timestampIso,
-                senderUserId = event.addedBy,
-                status = Message.Status.SENT,
-                visibility = Message.Visibility.VISIBLE
-            )
-            processMessage(message) //TODO(exception-handling): processMessage exceptions are not caught
-        }.onFailure { kaliumLogger.e("$TAG - failure on member join event: $it") }
+                onSuccess { kaliumLogger.v("Succeeded fetching conversation details on MemberJoin Event: $event") }
+                onFailure { kaliumLogger.w("Failure fetching conversation details on MemberJoin Event: $event") }
+                // Even if unable to fetch conversation details, at least attempt adding the member
+                conversationRepository.persistMembers(event.members, event.conversationId)
+            }.onSuccess {
+                val message = Message.System(
+                    id = event.id,
+                    content = MessageContent.MemberChange.Added(members = event.members.map { it.id }),
+                    conversationId = event.conversationId,
+                    date = event.timestampIso,
+                    senderUserId = event.addedBy,
+                    status = Message.Status.SENT,
+                    visibility = Message.Visibility.VISIBLE
+                )
+                processMessage(message) //TODO(exception-handling): processMessage exceptions are not caught
+            }.onFailure { kaliumLogger.e("$TAG - failure on member join event: $it") }
 
     private suspend fun handleMemberLeave(event: Event.Conversation.MemberLeave) = conversationRepository
         .deleteMembers(
@@ -308,6 +310,7 @@ class ConversationEventReceiverImpl(
                         }
                     }
                 }
+
                 is MessageContent.DeleteMessage ->
                     if (isSenderVerified(content.messageId, message.conversationId, message.senderUserId))
                         messageRepository.markMessageAsDeleted(
@@ -315,6 +318,7 @@ class ConversationEventReceiverImpl(
                             conversationId = message.conversationId
                         )
                     else kaliumLogger.i(message = "Delete message sender is not verified: $message")
+
                 is MessageContent.DeleteForMe -> {
                     /*The conversationId comes with the hidden message[content] only carries the conversationId VALUE,
                     *  we need to get the DOMAIN from the self conversationId[here is the message.conversationId]*/
@@ -332,6 +336,7 @@ class ConversationEventReceiverImpl(
                         )
                     else kaliumLogger.i(message = "Delete message sender is not verified: $message")
                 }
+
                 is MessageContent.Calling -> {
                     kaliumLogger.d("$TAG - MessageContent.Calling")
                     callManagerImpl.value.onCallingMessageReceived(
@@ -339,13 +344,16 @@ class ConversationEventReceiverImpl(
                         content = content
                     )
                 }
+
                 is MessageContent.TextEdited -> editTextHandler.handle(message, content)
                 is MessageContent.Unknown -> {
                     kaliumLogger.i(message = "Unknown Message received: $message")
                     messageRepository.persistMessage(message)
                 }
+
                 MessageContent.Empty -> TODO()
             }
+
             is Message.System -> when (message.content) {
                 is MessageContent.MemberChange -> {
                     kaliumLogger.i(message = "System MemberChange Message received: $message")

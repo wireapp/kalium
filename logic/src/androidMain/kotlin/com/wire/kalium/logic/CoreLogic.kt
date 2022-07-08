@@ -3,6 +3,7 @@ package com.wire.kalium.logic
 import android.content.Context
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.ProteusClientImpl
+import com.wire.kalium.logic.data.id.FederatedIdMapperImpl
 import com.wire.kalium.logic.data.session.SessionDataSource
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -92,7 +93,8 @@ actual class CoreLogic(
     }
 
     override val globalCallManager: GlobalCallManager = GlobalCallManager(
-        appContext = appContext
+        appContext = appContext,
+        federatedIdMapper = FederatedIdMapperImpl(globalPreferences.value)
     )
 
     override val globalWorkScheduler: GlobalWorkScheduler = GlobalWorkSchedulerImpl(
