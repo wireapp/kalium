@@ -9,8 +9,23 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.consumeAsFlow
 
 internal interface LogoutRepository {
+
+    /**
+     * Listen to a logout event.
+     * The event caries a [LogoutReason].
+     */
     suspend fun observeLogout(): Flow<LogoutReason>
+
+    /**
+     * Propagates the logout event and [reason],
+     * listenable through [observeLogout]
+     */
     suspend fun onLogout(reason: LogoutReason)
+
+    /**
+     * Informs the backend about the logout,
+     * invalidating the current credentials.
+     */
     suspend fun logout(): Either<CoreFailure, Unit>
 }
 
