@@ -14,10 +14,10 @@ import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.configuration.ServerConfigApi
 import com.wire.kalium.network.api.versioning.VersionApi
 import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAO
+import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import io.ktor.http.Url
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-
 
 internal interface ServerConfigRepository {
     /**
@@ -75,13 +75,13 @@ internal class ServerConfigDataSource(
     private val api: ServerConfigApi,
     private val dao: ServerConfigurationDAO,
     private val versionApi: VersionApi,
+    private val kaliumPreferences: KaliumPreferences,
     private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
 ) : ServerConfigRepository {
 
     override suspend fun fetchRemoteConfig(serverConfigUrl: String): Either<NetworkFailure, ServerConfig.Links> = wrapApiRequest {
         api.fetchServerConfig(serverConfigUrl)
     }.map { serverConfigMapper.fromDTO(it) }
-
 
     override fun configList(): Either<StorageFailure, List<ServerConfig>> =
         wrapStorageRequest { dao.allConfig() }.map { it.map(serverConfigMapper::fromEntity) }
@@ -130,14 +130,18 @@ internal class ServerConfigDataSource(
             }
         }.flatMap { storedConfigId ->
             wrapStorageRequest { dao.configById(storedConfigId) }
-        }.map { serverConfigMapper.fromEntity(it) }
+        }.map {
+            serverConfigMapper.fromEntity(it)
+        }.also {
+            kaliumPreferences.putBoolean(FEDERATION_ENABLED, metadata.federation)
+            kaliumPreferences.putString(CURRENT_DOMAIN, metadata.domain)
+        }
 
     override suspend fun fetchApiVersionAndStore(links: ServerConfig.Links): Either<CoreFailure, ServerConfig> =
         wrapApiRequest { versionApi.fetchApiVersion(Url(links.api)) }
             .flatMap { metaData ->
                 storeConfig(links, serverConfigMapper.fromDTO(metaData))
             }
-
 
     override fun configById(id: String): Either<StorageFailure, ServerConfig> = wrapStorageRequest {
         dao.configById(id)
@@ -150,3 +154,6 @@ internal class ServerConfigDataSource(
         .flatMap { wrapApiRequest { versionApi.fetchApiVersion(Url(it.links.api)) } }
         .flatMap { wrapStorageRequest { dao.updateApiVersion(id, it.commonApiVersion.version) } }
 }
+
+const val FEDERATION_ENABLED = "federation_enabled"
+const val CURRENT_DOMAIN = "current_domain"

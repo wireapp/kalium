@@ -8,23 +8,30 @@ import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallClient
 import com.wire.kalium.logic.data.call.CallClientList
 import com.wire.kalium.logic.data.call.CallMapper
+import com.wire.kalium.logic.data.call.CallMember
 import com.wire.kalium.logic.data.call.CallParticipants
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.Participant
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.Member
+import com.wire.kalium.logic.data.id.parseIntoQualifiedID
 import com.wire.kalium.logic.data.id.toConversationId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.map
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
+@Suppress("LongParameterList")
 class OnParticipantListChanged(
     private val handle: Handle,
     private val calling: Calling,
     private val callRepository: CallRepository,
     private val participantMapper: CallMapper.ParticipantMapper,
     private val userRepository: UserRepository,
+    private val conversationRepository: ConversationRepository,
     private val callingScope: CoroutineScope
 ) : ParticipantChangedHandler {
 
@@ -34,9 +41,13 @@ class OnParticipantListChanged(
 
         val participantsChange = Json.decodeFromString<CallParticipants>(data)
         callingScope.launch {
+            val memberList: List<Member> = conversationRepository
+                .observeConversationMembers(remoteConversationIdString.parseIntoQualifiedID())
+                .first()
+
             participantsChange.members.map { member ->
                 val participant = participantMapper.fromCallMemberToParticipant(member)
-                userRepository.getUserInfo(member.userId.toConversationId()).map {
+                userRepository.getUserInfo(mapQualifiedMemberId(memberList, member)).map {
                     val updatedParticipant = participant.copy(
                         name = it.name!!,
                         avatarAssetId = it.completePicture
@@ -48,7 +59,6 @@ class OnParticipantListChanged(
             }
 
             callRepository.updateCallParticipants(
-                //TODO should be handled properly after supporting federated calls
                 conversationId = remoteConversationIdString.toConversationId().toString(),
                 participants = participants
             )
@@ -63,6 +73,9 @@ class OnParticipantListChanged(
 
         callingLogger.i("onParticipantsChanged() - Total Participants: ${participants.size} for $remoteConversationIdString")
     }
+
+    private fun mapQualifiedMemberId(memberList: List<Member>, member: CallMember) =
+        memberList.first { it.id.value == member.userId.parseIntoQualifiedID().value }.id
 
     private companion object {
         private const val DEFAULT_REQUEST_VIDEO_STREAMS_MODE = 0

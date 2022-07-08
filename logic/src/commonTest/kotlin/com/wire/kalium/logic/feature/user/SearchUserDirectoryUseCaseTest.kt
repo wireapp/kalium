@@ -8,13 +8,12 @@ import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.logic.feature.publicuser.Result
-import com.wire.kalium.logic.feature.publicuser.SearchUserDirectoryUseCase
-import com.wire.kalium.logic.feature.publicuser.SearchUserDirectoryUseCaseImpl
+import com.wire.kalium.logic.feature.publicuser.search.Result
+import com.wire.kalium.logic.feature.publicuser.search.SearchUserDirectoryUseCase
+import com.wire.kalium.logic.feature.publicuser.search.SearchUserDirectoryUseCaseImpl
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
-import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.anything
 import io.mockative.classOf
@@ -45,7 +44,7 @@ class SearchUserDirectoryUseCaseTest {
 
         given(searchUserRepository)
             .suspendFunction(searchUserRepository::searchUserDirectory)
-            .whenInvokedWith(anything(), anything(), anything())
+            .whenInvokedWith(anything(), anything(), anything(), anything())
             .thenReturn(expected)
         //when
         val actual = searchUserDirectoryUseCase(TEST_QUERY, TEST_DOMAIN)
@@ -61,7 +60,7 @@ class SearchUserDirectoryUseCaseTest {
 
         given(searchUserRepository)
             .suspendFunction(searchUserRepository::searchUserDirectory)
-            .whenInvokedWith(anything(), anything(), anything())
+            .whenInvokedWith(anything(), anything(), anything(), anything())
             .thenReturn(expected)
         //when
         val actual = searchUserDirectoryUseCase(TEST_QUERY, TEST_DOMAIN)
