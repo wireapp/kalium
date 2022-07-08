@@ -1162,7 +1162,7 @@ class CallRepositoryTest {
         private val randomConversationId = ConversationId("value", "domain")
 
         private val conversationId = ConversationId(value = "convId", domain = "domainId")
-        private val groupConversation = TestConversation.group(conversationId)
+        private val groupConversation = TestConversation.GROUP().copy(id = conversationId)
         private val oneOnOneConversation = TestConversation.one_on_one(conversationId)
         private val callerId = UserId(value = "callerId", domain = "domain")
 

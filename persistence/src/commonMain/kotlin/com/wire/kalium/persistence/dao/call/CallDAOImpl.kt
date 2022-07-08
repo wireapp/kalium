@@ -62,13 +62,6 @@ internal class CallDAOImpl(private val callsQueries: CallsQueries) : CallDAO {
             .mapToList()
             .map { calls -> calls.map(mapper::toModel) }
 
-    override suspend fun isOngoingCall(conversationId: QualifiedIDEntity): Boolean =
-        callsQueries.isOngoingCall(conversationId)
-            .asFlow()
-            .mapToList()
-            .map { it.isNotEmpty() }
-            .first()
-
     override suspend fun updateLastCallStatusByConversationId(status: CallEntity.Status, conversationId: QualifiedIDEntity) {
         callsQueries.updateLastCallStatusByConversationId(
             status,

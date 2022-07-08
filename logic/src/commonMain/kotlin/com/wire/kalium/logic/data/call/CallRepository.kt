@@ -41,7 +41,6 @@ interface CallRepository {
     suspend fun establishedCallsFlow(): Flow<List<Call>>
     suspend fun createCall(conversationId: ConversationId, status: CallStatus, callerId: String, isMuted: Boolean, isCameraOn: Boolean)
     suspend fun updateCallStatusById(conversationId: String, status: CallStatus)
-    suspend fun isNotOngoingCall(conversationId: String): Boolean
     fun updateIsMutedById(conversationId: String, isMuted: Boolean)
     fun updateIsCameraOnById(conversationId: String, isCameraOn: Boolean)
     fun updateCallParticipants(conversationId: String, participants: List<Participant>)
@@ -91,18 +90,6 @@ internal class CallDataSource(
     override suspend fun establishedCallsFlow(): Flow<List<Call>> = callDAO
         .getEstablishedCalls()
         .combineWithCallsMetadata()
-
-    override suspend fun isNotOngoingCall(conversationId: String): Boolean {
-        val modifiedConversationId = callMapper.fromConversationIdToQualifiedIDEntity(
-            conversationId = conversationId.toConversationId()
-        )
-
-        return callDAO
-            .isOngoingCall(
-                conversationId = modifiedConversationId
-            )
-            .not()
-    }
 
     override suspend fun createCall(
         conversationId: ConversationId,

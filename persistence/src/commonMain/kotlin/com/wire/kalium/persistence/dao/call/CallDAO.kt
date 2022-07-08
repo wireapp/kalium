@@ -28,7 +28,6 @@ interface CallDAO {
     suspend fun getIncomingCalls(): Flow<List<CallEntity>>
     suspend fun getEstablishedCalls(): Flow<List<CallEntity>>
     suspend fun getOngoingCalls(): Flow<List<CallEntity>>
-    suspend fun isOngoingCall(conversationId: QualifiedIDEntity): Boolean
     suspend fun updateLastCallStatusByConversationId(status: CallEntity.Status, conversationId: QualifiedIDEntity)
     suspend fun getCallerIdByConversationId(conversationId: QualifiedIDEntity): String
     suspend fun getCallStatusByConversationId(conversationId: QualifiedIDEntity): CallEntity.Status?
