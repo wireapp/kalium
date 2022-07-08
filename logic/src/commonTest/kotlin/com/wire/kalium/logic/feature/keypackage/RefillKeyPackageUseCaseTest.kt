@@ -16,7 +16,6 @@ import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -24,38 +23,19 @@ import kotlin.test.assertIs
 @OptIn(ExperimentalCoroutinesApi::class)
 class RefillKeyPackageUseCaseTest {
 
-    @Mock
-    private val keyPackageRepository = mock(classOf<KeyPackageRepository>())
-
-    @Mock
-    private val clientRepository: ClientRepository = mock(classOf<ClientRepository>())
-
-    private lateinit var refillKeyPackageUseCase: RefillKeyPackagesUseCase
-
-    @BeforeTest
-    fun setup() {
-        refillKeyPackageUseCase = RefillKeyPackagesUseCaseImpl(
-            keyPackageRepository, clientRepository
-        )
-    }
-
     @Test
     fun givenKeyPackageCountIs50PercentBelowLimit_ThenRequestToRefillKeyPackageIsPerformed() = runTest {
         val keyPackageCount = (KEY_PACKAGE_LIMIT * KEY_PACKAGE_THRESHOLD - 1).toInt()
 
-        given(clientRepository).suspendFunction(clientRepository::currentClientId)
-            .whenInvoked()
-            .then { Either.Right(TestClient.CLIENT_ID) }
-        given(keyPackageRepository).suspendFunction(keyPackageRepository::getAvailableKeyPackageCount)
-            .whenInvokedWith(anything())
-            .then { Either.Right(KeyPackageCountDTO(keyPackageCount)) }
-        given(keyPackageRepository).suspendFunction(keyPackageRepository::uploadNewKeyPackages)
-            .whenInvokedWith(eq(TestClient.CLIENT_ID), anything())
-            .thenReturn(Either.Right(Unit))
+        val (arrangement, refillKeyPackagesUseCase) = Arrangement()
+            .withExistingSelfClientId()
+            .withKeyPackageCount(keyPackageCount)
+            .withUploadKeyPackagesSuccessful()
+            .arrange()
 
-        val actual = refillKeyPackageUseCase()
+        val actual = refillKeyPackagesUseCase()
 
-        verify(keyPackageRepository).coroutine {
+        verify(arrangement.keyPackageRepository).coroutine {
             uploadNewKeyPackages(TestClient.CLIENT_ID, KEY_PACKAGE_LIMIT - keyPackageCount)
         }.wasInvoked(once)
 
@@ -66,14 +46,12 @@ class RefillKeyPackageUseCaseTest {
     fun givenKeyPackageCount50PercentAboveLimit_ThenNoRequestToRefillKeyPackagesIsPerformed() = runTest {
         val keyPackageCount = (KEY_PACKAGE_LIMIT * KEY_PACKAGE_THRESHOLD).toInt()
 
-        given(clientRepository).suspendFunction(clientRepository::currentClientId)
-            .whenInvoked()
-            .then { Either.Right(TestClient.CLIENT_ID) }
-        given(keyPackageRepository).suspendFunction(keyPackageRepository::getAvailableKeyPackageCount)
-            .whenInvokedWith(anything())
-            .then { Either.Right(KeyPackageCountDTO(keyPackageCount)) }
+        val (_, refillKeyPackagesUseCase) = Arrangement()
+            .withExistingSelfClientId()
+            .withKeyPackageCount(keyPackageCount)
+            .arrange()
 
-        val actual = refillKeyPackageUseCase()
+        val actual = refillKeyPackagesUseCase()
 
         assertIs<RefillKeyPackagesResult.Success>(actual)
     }
@@ -82,17 +60,54 @@ class RefillKeyPackageUseCaseTest {
     fun givenErrorIsEncountered_ThenFailureIsPropagated() = runTest {
         val networkFailure = NetworkFailure.NoNetworkConnection(null)
 
-        given(clientRepository).suspendFunction(clientRepository::currentClientId)
-            .whenInvoked()
-            .then { Either.Right(TestClient.CLIENT_ID) }
-        given(keyPackageRepository).suspendFunction(keyPackageRepository::getAvailableKeyPackageCount)
-            .whenInvokedWith(anything())
-            .then { Either.Left(networkFailure) }
+        val (_, refillKeyPackagesUseCase) = Arrangement()
+            .withExistingSelfClientId()
+            .withGetAvailableKeyPackagesFailing(networkFailure)
+            .arrange()
 
-        val actual = refillKeyPackageUseCase()
+        val actual = refillKeyPackagesUseCase()
 
         assertIs<RefillKeyPackagesResult.Failure>(actual)
         assertEquals(actual.failure, networkFailure)
+    }
+
+    private class Arrangement {
+        @Mock
+        val keyPackageRepository = mock(classOf<KeyPackageRepository>())
+
+        @Mock
+        val clientRepository: ClientRepository = mock(classOf<ClientRepository>())
+
+        private var refillKeyPackageUseCase = RefillKeyPackagesUseCaseImpl(
+            keyPackageRepository, clientRepository
+        )
+
+        fun withExistingSelfClientId() = apply {
+            given(clientRepository).suspendFunction(clientRepository::currentClientId)
+                .whenInvoked()
+                .then { Either.Right(TestClient.CLIENT_ID) }
+        }
+
+        fun withKeyPackageCount(count: Int) = apply {
+            given(keyPackageRepository).suspendFunction(keyPackageRepository::getAvailableKeyPackageCount)
+                .whenInvokedWith(anything())
+                .then { Either.Right(KeyPackageCountDTO(count)) }
+        }
+
+        fun withUploadKeyPackagesSuccessful() = apply {
+            given(keyPackageRepository).suspendFunction(keyPackageRepository::uploadNewKeyPackages)
+                .whenInvokedWith(eq(TestClient.CLIENT_ID), anything())
+                .thenReturn(Either.Right(Unit))
+        }
+
+        fun withGetAvailableKeyPackagesFailing(failure: NetworkFailure) = apply {
+            given(keyPackageRepository).suspendFunction(keyPackageRepository::getAvailableKeyPackageCount)
+                .whenInvokedWith(anything())
+                .then { Either.Left(failure) }
+        }
+
+        fun arrange() = this to refillKeyPackageUseCase
+
     }
 
 }
