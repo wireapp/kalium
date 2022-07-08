@@ -881,7 +881,7 @@
     <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.featureConfig.GetFeatureConfigsStatusUseCaseTest.kt:117</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.featureConfig.GetRemoteFileSharingStatusAndPersistUseCase.kt:33</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.featureConfig.GetRemoteFileSharingStatusAndPersistUseCase.kt:44</ID>
-    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCase.kt:30</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCase.kt:32</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseTest.kt:55</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseTest.kt:96</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.message.DeleteMessageUseCaseTest.kt:148</ID>
@@ -1074,6 +1074,8 @@
     <ID>NoUnusedImports:com.wire.kalium.logic.feature.conversation.AddMemberToConversationUseCase.kt:5</ID>
     <ID>NoUnusedImports:com.wire.kalium.logic.feature.conversation.GetOrCreateOneToOneConversationUseCaseTest.kt:8</ID>
     <ID>NoUnusedImports:com.wire.kalium.logic.feature.conversation.ObserveConversationMembersUseCaseTest.kt:8</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCase.kt:8</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCase.kt:9</ID>
     <ID>NoUnusedImports:com.wire.kalium.logic.feature.message.GetNotificationsUseCaseTest.kt:7</ID>
     <ID>NoUnusedImports:com.wire.kalium.logic.feature.message.GetRecentMessagesUseCase.kt:6</ID>
     <ID>NoUnusedImports:com.wire.kalium.logic.feature.message.MessageEnvelopeCreatorTest.kt:30</ID>
