@@ -1,6 +1,8 @@
 package com.wire.kalium.logic.data.user.type;
 
 enum class UserType {
+
+    /** Team member*/
     INTERNAL,
 
     // TODO(user-metadata): for now External will not be implemented
