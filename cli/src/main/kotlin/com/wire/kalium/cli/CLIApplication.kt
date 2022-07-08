@@ -25,6 +25,7 @@ import com.wire.kalium.logic.feature.client.RegisterClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase.RegisterClientParam
 import com.wire.kalium.logic.feature.client.SelfClientsResult
 import com.wire.kalium.logic.feature.conversation.GetConversationsUseCase
+import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsResult
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.logic.feature.session.GetAllSessionsResult
@@ -156,8 +157,8 @@ class LoginCommand : CliktCommand(name = "login") {
     private val environment: String? by option(help = "Choose backend environment: can be production or staging")
 
     private val serverConfig: ServerConfig.Links by lazy {
-        if (environment == "production") {
-            ServerConfig.PRODUCTION
+        if (environment == "staging") {
+            ServerConfig.STAGING
         } else {
             ServerConfig.DEFAULT
         }
@@ -241,6 +242,17 @@ class AddMemberToGroupCommand : CliktCommand(name = "add-member") {
     }
 }
 
+class RefillKeyPackagesCommand : CliktCommand(name = "refill-key-packages") {
+    override fun run() = runBlocking {
+        val userSession = currentUserSession()
+
+        when (val result = userSession.client.refillKeyPackages()) {
+            is RefillKeyPackagesResult.Success -> echo("key packages were refilled")
+            is RefillKeyPackagesResult.Failure -> throw PrintMessage("refill key packages failed: ${result.failure}")
+        }
+    }
+}
+
 class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
 
     override fun run() = runBlocking {
@@ -254,5 +266,10 @@ class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
 }
 
 fun main(args: Array<String>) = CLIApplication().subcommands(
-    LoginCommand(), CreateGroupCommand(), ListenGroupCommand(), DeleteClientCommand(), AddMemberToGroupCommand()
+    LoginCommand(),
+    CreateGroupCommand(),
+    ListenGroupCommand(),
+    DeleteClientCommand(),
+    AddMemberToGroupCommand(),
+    RefillKeyPackagesCommand()
 ).main(args)
