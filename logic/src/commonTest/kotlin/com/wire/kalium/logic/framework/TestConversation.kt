@@ -65,16 +65,6 @@ object TestConversation {
         null
     )
 
-    fun group(convId: ConversationId) = Conversation(
-        convId,
-        "GROUP Name",
-        Conversation.Type.GROUP,
-        TestTeam.TEAM_ID,
-        MutedConversationStatus.AllAllowed,
-        null,
-        null
-    )
-
     val NETWORK_ID = QualifiedID("valueConversation", "domainConversation")
     val USER_1 = UserId("member1", "domainMember")
     val MEMBER_TEST1 = Member(USER_1, Member.Role.Admin)
