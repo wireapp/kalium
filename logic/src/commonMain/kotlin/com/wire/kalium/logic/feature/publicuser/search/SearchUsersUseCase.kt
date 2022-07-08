@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.feature.publicuser
+package com.wire.kalium.logic.feature.publicuser.search
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.connection.ConnectionRepository
@@ -31,11 +31,13 @@ internal class SearchUsersUseCaseImpl(
         maxResultSize: Int?
     ): Result {
         val isFederatedSearch = searchQuery.matches(FEDERATION_REGEX)
+
         val qualifiedID = if (isFederatedSearch) {
             searchQuery.parseIntoQualifiedID()
         } else {
             QualifiedID(searchQuery, userRepository.observeSelfUser().first().id.domain)
         }
+
         return searchUserRepository.searchUserDirectory(
             searchQuery = qualifiedID.value,
             domain = qualifiedID.domain,
