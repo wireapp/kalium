@@ -96,6 +96,20 @@ SELECT changes();
 updateUserAvailabilityStatus:
 UPDATE User SET user_availability_status = ? WHERE qualified_id = ?;
 
+getUsersNotInConversationByNameOrHandleOrEmail:
+SELECT * FROM User
+WHERE NOT EXISTS (SELECT user FROM Member WHERE conversation == :conversation_id)
+AND  (name LIKE ('%' || :searchQuery || '%')
+OR  handle LIKE  ('%' || :searchQuery || '%')
+OR  email LIKE  ('%' || :searchQuery || '%'))
+AND connection_status = "ACCEPTED";
+
+getUsersNotInConversationByHandle:
+SELECT * FROM User
+WHERE NOT EXISTS (SELECT user FROM Member WHERE conversation == :conversation_id)
+AND handle LIKE ('%' || :searchQuery || '%')
+AND connection_status = "ACCEPTED";
+
 getUsersNotPartOfTheConversation:
 SELECT * FROM User
  WHERE NOT EXISTS (SELECT user FROM Member WHERE conversation == ?)

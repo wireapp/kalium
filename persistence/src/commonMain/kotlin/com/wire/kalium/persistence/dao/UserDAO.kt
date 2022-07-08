@@ -32,7 +32,7 @@ data class UserEntity(
     // later, when API start supporting it, it should be added into API model too
     val availabilityStatus: UserAvailabilityStatusEntity,
 
-    val userTypEntity : UserTypeEntity,
+    val userTypEntity: UserTypeEntity,
 )
 
 enum class UserTypeEntity {
@@ -115,4 +115,6 @@ interface UserDAO {
     suspend fun updateUserAvailabilityStatus(qualifiedID: QualifiedIDEntity, status: UserAvailabilityStatusEntity)
     suspend fun getUsersNotInConversation(conversationId: QualifiedIDEntity) : List<UserEntity>
     suspend fun insertOrIgnoreUserWithConnectionStatus(qualifiedID: QualifiedIDEntity, connectionStatus: ConnectionEntity.State)
+    suspend fun getUsersNotInConversationByNameOrHandleOrEmail(conversationId: QualifiedIDEntity, searchQuery: String) : List<UserEntity>
+    suspend fun getUsersNotInConversationByHandle(conversationId: QualifiedIDEntity, handle: String) : List<UserEntity>
 }
