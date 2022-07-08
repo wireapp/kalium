@@ -3,7 +3,15 @@ package com.wire.kalium.logic.data.call
 import com.wire.kalium.calling.CallTypeCalling
 import com.wire.kalium.calling.ConversationTypeCalling
 import com.wire.kalium.calling.VideoStateCalling
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.call.Call
+import com.wire.kalium.logic.feature.call.CallStatus
+import com.wire.kalium.persistence.dao.ConversationEntity
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.call.CallEntity
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -136,6 +144,190 @@ class CallMapperTest {
         )
 
         assertEquals(expectedParticipantsActiveSpeaker, callActiveSpeakerMap)
+    }
+
+    @Test
+    fun givenCallData_whenMappingToCallEntity_thenReturnCallEntity() = runTest {
+        // given
+        val conversationId = ConversationId(
+            value = "convId",
+            domain = "domainId"
+        )
+        val id = "abcd-1234"
+        val callerId = UserId(
+            value = "callerValue",
+            domain = "callerDomain"
+        )
+        val expectedCallEntity = CallEntity(
+            conversationId = QualifiedIDEntity(
+                value = conversationId.value,
+                domain = conversationId.domain
+            ),
+            id = id,
+            status = CallEntity.Status.ESTABLISHED,
+            callerId = callerId.toString(),
+            conversationType = ConversationEntity.Type.ONE_ON_ONE
+        )
+
+        // when
+        val result = callMapper.toCallEntity(
+            conversationId = conversationId,
+            id = id,
+            status = CallStatus.ESTABLISHED,
+            conversationType = Conversation.Type.ONE_ON_ONE,
+            callerId = callerId
+        )
+
+        // then
+        assertEquals(
+            expectedCallEntity,
+            result
+        )
+    }
+
+    @Test
+    fun givenCallEntityAndCallMetadata_whenMappingToCall_thenReturnCall() = runTest {
+        // given
+        val conversationId = ConversationId(
+            value = "convId",
+            domain = "domainId"
+        )
+        val id = "abcd-1234"
+        val callerId = "callerValue@callerDomain"
+        val callEntity = CallEntity(
+            conversationId = QualifiedIDEntity(
+                value = conversationId.value,
+                domain = conversationId.domain
+            ),
+            id = id,
+            status = CallEntity.Status.ESTABLISHED,
+            callerId = callerId,
+            conversationType = ConversationEntity.Type.ONE_ON_ONE
+        )
+        val callMetadata = CallMetaData(
+            isMuted = true,
+            isCameraOn = false,
+            conversationName = "conv name",
+            conversationType = Conversation.Type.ONE_ON_ONE,
+            callerName = "caller name",
+            callerTeamName = "caller team name",
+            establishedTime = null
+        )
+
+        val expectedCall = Call(
+            conversationId = conversationId,
+            status = CallStatus.ESTABLISHED,
+            isMuted = true,
+            isCameraOn = false,
+            callerId = callerId,
+            conversationName = "conv name",
+            conversationType = Conversation.Type.ONE_ON_ONE,
+            callerName = "caller name",
+            callerTeamName = "caller team name",
+            establishedTime = null,
+            participants = emptyList(),
+            maxParticipants = 0
+        )
+
+        // when
+        val result = callMapper.toCall(
+            callEntity = callEntity,
+            metadata = callMetadata
+        )
+
+        // then
+        assertEquals(
+            expectedCall,
+            result
+        )
+    }
+
+    @Test
+    fun givenACallStatusSTARTED_whenMappingToCallEntityStatus_thenReturnCorrectCallEntityStatus() = runTest {
+        val result = callMapper.toCallEntityStatus(callStatus = CallStatus.STARTED)
+
+        assertEquals(
+            CallEntity.Status.STARTED,
+            result
+        )
+    }
+
+    @Test
+    fun givenACallStatusINCOMING_whenMappingToCallEntityStatus_thenReturnCorrectCallEntityStatus() = runTest {
+        val result = callMapper.toCallEntityStatus(callStatus = CallStatus.INCOMING)
+
+        assertEquals(
+            CallEntity.Status.INCOMING,
+            result
+        )
+    }
+
+    @Test
+    fun givenACallStatusMISSED_whenMappingToCallEntityStatus_thenReturnCorrectCallEntityStatus() = runTest {
+        val result = callMapper.toCallEntityStatus(callStatus = CallStatus.MISSED)
+
+        assertEquals(
+            CallEntity.Status.MISSED,
+            result
+        )
+    }
+
+    @Test
+    fun givenACallStatusANSWERED_whenMappingToCallEntityStatus_thenReturnCorrectCallEntityStatus() = runTest {
+        val result = callMapper.toCallEntityStatus(callStatus = CallStatus.ANSWERED)
+
+        assertEquals(
+            CallEntity.Status.ANSWERED,
+            result
+        )
+    }
+
+    @Test
+    fun givenACallStatusESTABLISHED_whenMappingToCallEntityStatus_thenReturnCorrectCallEntityStatus() = runTest {
+        val result = callMapper.toCallEntityStatus(callStatus = CallStatus.ESTABLISHED)
+
+        assertEquals(
+            CallEntity.Status.ESTABLISHED,
+            result
+        )
+    }
+
+    @Test
+    fun givenACallStatusSTILL_ONGOING_whenMappingToCallEntityStatus_thenReturnCorrectCallEntityStatus() = runTest {
+        val result = callMapper.toCallEntityStatus(callStatus = CallStatus.STILL_ONGOING)
+
+        assertEquals(
+            CallEntity.Status.STILL_ONGOING,
+            result
+        )
+    }
+
+    @Test
+    fun givenACallStatusCLOSED_whenMappingToCallEntityStatus_thenReturnCorrectCallEntityStatus() = runTest {
+        val result = callMapper.toCallEntityStatus(callStatus = CallStatus.CLOSED)
+
+        assertEquals(
+            CallEntity.Status.CLOSED,
+            result
+        )
+    }
+
+    @Test
+    fun givenAConversationId_whenMappingToQualifiedIDEntity_thenReturnCorrectQualifiedIDEntity() = runTest {
+        val result = callMapper.fromConversationIdToQualifiedIDEntity(
+            conversationId = ConversationId(
+                value = "convId",
+                domain = "domainId"
+            )
+        )
+
+        assertEquals(
+            QualifiedIDEntity(
+                value = "convId",
+                domain = "domainId"
+            ),
+            result
+        )
     }
 
     private companion object {
