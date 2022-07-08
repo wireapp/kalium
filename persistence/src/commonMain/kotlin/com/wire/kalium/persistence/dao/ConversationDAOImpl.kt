@@ -202,7 +202,7 @@ class ConversationDAOImpl(
     }
 
     override suspend fun getAllMembers(qualifiedID: QualifiedIDEntity): Flow<List<Member>> {
-        return memberQueries.selectAllMembersByConversation(qualifiedID)
+        return memberQueries.selectAllMembersByConversation(qualifiedID.value)
             .asFlow()
             .mapToList()
             .map { it.map(memberMapper::toModel) }

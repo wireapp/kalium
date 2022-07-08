@@ -8,6 +8,7 @@ import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallClient
 import com.wire.kalium.logic.data.call.CallClientList
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.toConversationId
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
@@ -19,6 +20,7 @@ internal class OnClientsRequest(
     private val calling: Calling,
     private val selfUserId: String,
     private val conversationRepository: ConversationRepository,
+    private val federatedIdMapper: FederatedIdMapper,
     private val callingScope: CoroutineScope
 ) : ClientsRequestHandler {
 
@@ -35,7 +37,7 @@ internal class OnClientsRequest(
                     .flatMap { recipient ->
                         recipient.clients.map { clientId ->
                             CallClient(
-                                userId = recipient.id.value,
+                                userId = federatedIdMapper.parseToFederatedId(recipient.id),
                                 clientId = clientId.value
                             )
                         }
@@ -48,7 +50,7 @@ internal class OnClientsRequest(
                 val callClients = avsClients.toJsonString()
                 calling.wcall_set_clients_for_conv(
                     inst = inst,
-                    convId = conversationId,
+                    convId = federatedIdMapper.parseToFederatedId(conversationId),
                     clientsJson = callClients
                 )
                 callingLogger.d("OnClientsRequest() -> Success")
