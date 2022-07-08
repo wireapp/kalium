@@ -26,6 +26,9 @@ class LogoutUseCase @Suppress("LongParameterList") internal constructor(
     private val userSessionScopeProvider: UserSessionScopeProvider = UserSessionScopeProviderImpl
 ) {
 
+    // TODO(refactor): Maybe we can simplify by taking some of the responsibility away from here.
+    //                 Perhaps [UserSessionScope] (or another specialised class) can observe
+    //                 the [LogoutRepository.observeLogout] and invalidating everything in [CoreLogic] level.
     suspend operator fun invoke(reason: LogoutReason = LogoutReason.USER_INTENTION) {
         deregisterTokenUseCase()
         logoutRepository.logout()
