@@ -31,9 +31,9 @@ class RefillKeyPackagesUseCaseImpl(
 
         clientRepository.currentClientId().flatMap { selfClientId ->
             keyPackageRepository.getAvailableKeyPackageCount(selfClientId)
-                .flatMap { count ->
-                    if (needsRefill(count.count)) {
-                        keyPackageRepository.uploadNewKeyPackages(selfClientId, amount = KEY_PACKAGE_LIMIT - count.count).flatMap {
+                .flatMap {
+                    if (needsRefill(it.count)) {
+                        keyPackageRepository.uploadNewKeyPackages(selfClientId, amount = KEY_PACKAGE_LIMIT - it.count).flatMap {
                             Either.Right(Unit)
                         }
                     } else {
