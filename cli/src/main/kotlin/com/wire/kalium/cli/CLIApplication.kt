@@ -175,12 +175,12 @@ class LoginCommand : CliktCommand(name = "login") {
         }
 
         val userId = coreLogic.globalScope {
-            val allSessionsResult = this.session.allSessions()
-            if (allSessionsResult !is GetAllSessionsResult.Success) {
-                throw PrintMessage("Failed retrieve existing sessions")
+            val sessions = when (val result = this.session.allSessions()) {
+                is GetAllSessionsResult.Success -> result.sessions
+                is GetAllSessionsResult.Failure.NoSessionFound -> emptyList()
+                is GetAllSessionsResult.Failure.Generic -> throw PrintMessage("Failed retrieve existing sessions: ${result.genericFailure}")
             }
-
-            if (allSessionsResult.sessions.map { it.tokens.userId }.contains(loginResult.tokens.userId)) {
+            if (sessions.map { it.tokens.userId }.contains(loginResult.tokens.userId)) {
                 this.session.updateCurrentSession(loginResult.tokens.userId)
             } else {
                 val addAccountResult = addAuthenticatedAccount(loginResult, true)
