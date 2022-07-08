@@ -53,6 +53,10 @@ internal class GetUserInfoUseCaseImpl(
         }
     }
 
+    /**
+     * Users are allowed to fetch team details only if they are members of the same team
+     * @see [UserType]
+     */
     private suspend fun getOtherUserTeam(otherUser: OtherUser): Either<CoreFailure, Team?> {
         return if (otherUser.team != null && otherUser.userType == UserType.INTERNAL) {
             val localTeam = teamRepository.getTeam(otherUser.team).firstOrNull()
