@@ -301,8 +301,8 @@ class SearchUserRepositoryTest {
 
             given(domainUserTypeMapper)
                 .function(domainUserTypeMapper::fromOtherUserTeamAndDomain)
-                .whenInvokedWith(any(), any(), any())
-                .then { _, _, _ -> UserType.FEDERATED }
+                .whenInvokedWith(any(), any(), any(), any())
+                .then { _, _, _, _ -> UserType.FEDERATED }
 
             val expectedResult = UserSearchResult(
                 result = listOf(PUBLIC_USER)
@@ -327,6 +327,20 @@ class SearchUserRepositoryTest {
                 .suspendFunction(userDetailsApi::getMultipleUsers)
                 .whenInvokedWith(any())
                 .then { NetworkResponse.Success(emptyList(), mapOf(), 200) }
+
+            given(metadataDAO)
+                .suspendFunction(metadataDAO::valueByKey)
+                .whenInvokedWith(any())
+                .then { flowOf(JSON_QUALIFIED_ID) }
+
+            given(userDAO).suspendFunction(userDAO::getUserByQualifiedID)
+                .whenInvokedWith(any())
+                .then { flowOf(USER_ENTITY) }
+
+            given(userMapper)
+                .function(userMapper::fromDaoModelToSelfUser)
+                .whenInvokedWith(any())
+                .then { SELF_USER }
 
             val expectedResult = UserSearchResult(
                 result = emptyList()

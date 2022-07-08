@@ -56,23 +56,18 @@ interface UserTypeMapper<T> {
     fun fromOtherUserTeamAndDomain(
         otherUserDomain: String,
         selfUserTeamId: String?,
-        otherUserTeamId: String?
+        otherUserTeamId: String?,
+        selfUserDomain: String?
     ): T = when {
-        isUsingWireCloudBackEnd(otherUserDomain) && areNotInTheSameTeam(otherUserTeamId, selfUserTeamId) -> {
-            guest
-        }
-        areNotInTheSameTeam(otherUserTeamId, selfUserTeamId) -> {
-            federated
-        }
-        else -> internal
+        isFromDifferentBackEnd(otherUserDomain, selfUserDomain) -> federated
+        isFromTheSameTeam(otherUserTeamId, selfUserTeamId) -> internal
+        else -> guest
     }
 
-    private fun isUsingWireCloudBackEnd(domain: String): Boolean =
-        domain.contains(QualifiedID.WIRE_PRODUCTION_DOMAIN)
+    private fun isFromDifferentBackEnd(otherUserDomain: String, selfDomain: String?): Boolean =
+        !otherUserDomain.contains(selfDomain ?: QualifiedID.WIRE_PRODUCTION_DOMAIN)
 
-    // if either self user has no team or other user,
-    // does not make sense to compare them and we return false as of they are not on the same team
-    private fun areNotInTheSameTeam(otherUserTeamId: String?, selfUserTeamId: String?): Boolean =
-        !(otherUserTeamId != null && selfUserTeamId != null) || (otherUserTeamId != selfUserTeamId)
+    private fun isFromTheSameTeam(otherUserTeamId: String?, selfUserTeamId: String?): Boolean =
+        otherUserTeamId?.let { it == selfUserTeamId } ?: false
 
 }
