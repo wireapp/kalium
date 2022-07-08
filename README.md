@@ -82,5 +82,5 @@ or
 You can run locally in your terminal:
 
 ```
-./gradlew clean detekt"
+./gradlew clean detekt
 ```
