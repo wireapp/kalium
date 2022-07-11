@@ -63,7 +63,7 @@ internal class CallDataSource(
     private val callMapper: CallMapper = MapperProvider.callMapper()
 ) : CallRepository {
 
-    //TODO(question): to be saved somewhere ?
+    // TODO(question): to be saved somewhere?
     private val _callProfile = MutableStateFlow(CallProfile(calls = emptyMap()))
     private val allCalls = _callProfile.asStateFlow()
 
@@ -119,7 +119,7 @@ internal class CallDataSource(
 
         // in OnIncomingCall we get callerId without a domain,
         // to cover that case and have a valid UserId we have that workaround
-        //TODO fix this callerId in OnIncomingCall once we support federation
+        // TODO fix this callerId in OnIncomingCall once we support federation
         val myId = userRepository.getSelfUserId()
         val callerIdWithDomain = UserId(callerId.toUserId().value, myId.domain)
         val caller = userRepository.getKnownUser(callerIdWithDomain).first()

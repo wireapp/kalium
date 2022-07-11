@@ -241,5 +241,6 @@ class SendAssetMessageUseCaseTest {
     }
 
     private fun getMockedAsset(): ByteArray =
-        "some VERY long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long asset".toByteArray()
+        ("some VERY long long long long long long long long long long long long long long long long long long long long long long" +
+                " long long long long long long long long long long long long long long long long long asset").toByteArray()
 }

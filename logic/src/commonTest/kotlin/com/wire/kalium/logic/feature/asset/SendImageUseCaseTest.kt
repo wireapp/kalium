@@ -56,7 +56,6 @@ class SendImageUseCaseTest {
         assertEquals(result, SendImageMessageResult.Success)
     }
 
-
     @Test
     fun givenAValidSendImageMessageRequest_whenThereIsAnAssetUploadError_thenShouldCallReturnsAFailureResult() = runTest {
         // Given
@@ -192,8 +191,8 @@ class SendImageUseCaseTest {
             1,
             null,
             ConnectionState.ACCEPTED,
-            UserAssetId("value1","domain"),
-            UserAssetId("value2","domain"),
+            UserAssetId("value1", "domain"),
+            UserAssetId("value2", "domain"),
             UserAvailabilityStatus.NONE
         )
 
@@ -244,4 +243,3 @@ class SendImageUseCaseTest {
 
     private fun getMockedImage(): ByteArray = "some_image".toByteArray()
 }
-
