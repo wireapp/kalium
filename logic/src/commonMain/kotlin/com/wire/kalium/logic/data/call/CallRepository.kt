@@ -98,7 +98,7 @@ internal class CallDataSource(
         .combineWithCallsMetadata()
 
     // This needs to be reworked the logic into the useCases
-    @Suppress("LongMethod")
+    @Suppress("LongMethod", "NoConsecutiveBlankLines")
     override suspend fun createCall(
         conversationId: ConversationId,
         status: CallStatus,

@@ -48,6 +48,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
+@Suppress("LargeClass")
 @OptIn(ConfigurationApi::class, ExperimentalCoroutinesApi::class)
 class CallRepositoryTest {
 
@@ -1050,6 +1051,7 @@ class CallRepositoryTest {
         }
     }
 
+    @Suppress("LongMethod")
     @Test
     fun givenSomeCalls_whenRequestingCalls_thenReturnTheCalls() = runTest {
         // given
