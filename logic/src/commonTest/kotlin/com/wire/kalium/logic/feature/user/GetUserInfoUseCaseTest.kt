@@ -37,7 +37,7 @@ class GetUserInfoUseCaseTest {
                 .wasInvoked(once)
 
             verify(userRepository)
-                .suspendFunction(userRepository::getUserInfo)
+                .suspendFunction(userRepository::userById)
                 .with(eq(userId))
                 .wasInvoked(once)
         }
@@ -64,7 +64,7 @@ class GetUserInfoUseCaseTest {
                 .wasInvoked(once)
 
             verify(userRepository)
-                .suspendFunction(userRepository::getUserInfo)
+                .suspendFunction(userRepository::userById)
                 .with(eq(userId))
                 .wasNotInvoked()
         }
@@ -91,7 +91,7 @@ class GetUserInfoUseCaseTest {
                 .wasInvoked(once)
 
             verify(userRepository)
-                .suspendFunction(userRepository::getUserInfo)
+                .suspendFunction(userRepository::userById)
                 .with(eq(userId))
                 .wasInvoked(once)
         }
@@ -108,7 +108,7 @@ class GetUserInfoUseCaseTest {
         val result = useCase(userId)
 
         // then
-        assertEquals(OTHER.copy(team = null), (result as GetUserInfoResult.Success).otherUser)
+        assertEquals(OTHER.copy(teamId = null), (result as GetUserInfoResult.Success).otherUser)
 
         with(arrangement) {
             verify(userRepository)
@@ -176,7 +176,7 @@ class GetUserInfoUseCaseTest {
                     .wasInvoked(once)
 
                 verify(userRepository)
-                    .suspendFunction(userRepository::getUserInfo)
+                    .suspendFunction(userRepository::userById)
                     .with(any())
                     .wasInvoked(once)
 

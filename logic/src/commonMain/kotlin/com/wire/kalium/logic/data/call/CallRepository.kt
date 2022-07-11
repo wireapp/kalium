@@ -124,7 +124,7 @@ internal class CallDataSource(
         val callerIdWithDomain = UserId(callerId.toUserId().value, myId.domain)
         val caller = userRepository.getKnownUser(callerIdWithDomain).first()
 
-        val team = caller?.team
+        val team = caller?.teamId
             ?.let { teamId -> teamRepository.getTeam(teamId).first() }
 
         val call = Call(

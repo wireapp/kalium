@@ -1,7 +1,6 @@
 package com.wire.kalium.logic.feature.conversation
 
 import app.cash.turbine.test
-import com.wire.kalium.logic.data.conversation.MemberDetails
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestUser
@@ -74,18 +73,13 @@ class ObserveMemberDetailsByIdsUseCaseTest {
         val userIds = listOf(firstSelfUser.id)
 
         given(userRepository)
-            .suspendFunction(userRepository::observeSelfUser)
-            .whenInvoked()
+            .suspendFunction(userRepository::observeUser)
+            .whenInvokedWith(anything())
             .thenReturn(selfUserUpdates.asFlow())
 
-        given(userRepository)
-            .suspendFunction(userRepository::getKnownUser)
-            .whenInvokedWith(anything())
-            .thenReturn(flowOf())
-
         observeMemberDetailsByIds(userIds).test {
-            assertContentEquals(listOf(MemberDetails.Self(firstSelfUser)), awaitItem())
-            assertContentEquals(listOf(MemberDetails.Self(secondSelfUser)), awaitItem())
+            assertContentEquals(listOf(firstSelfUser), awaitItem())
+            assertContentEquals(listOf(secondSelfUser), awaitItem())
             awaitComplete()
         }
     }
@@ -98,18 +92,18 @@ class ObserveMemberDetailsByIdsUseCaseTest {
         val userIds = listOf(firstOtherUser.id)
 
         given(userRepository)
-            .suspendFunction(userRepository::observeSelfUser)
-            .whenInvoked()
+            .suspendFunction(userRepository::observeUser)
+            .whenInvokedWith(eq(TestUser.SELF.id))
             .thenReturn(flowOf(TestUser.SELF))
 
         given(userRepository)
-            .suspendFunction(userRepository::getKnownUser)
+            .suspendFunction(userRepository::observeUser)
             .whenInvokedWith(anything())
             .thenReturn(otherUserUpdates.asFlow())
 
         observeMemberDetailsByIds(userIds).test {
-            assertContentEquals(listOf(MemberDetails.Other(firstOtherUser)), awaitItem())
-            assertContentEquals(listOf(MemberDetails.Other(secondOtherUser)), awaitItem())
+            assertContentEquals(listOf(firstOtherUser), awaitItem())
+            assertContentEquals(listOf(secondOtherUser), awaitItem())
             awaitComplete()
         }
     }
@@ -121,24 +115,19 @@ class ObserveMemberDetailsByIdsUseCaseTest {
         val userIds = listOf(knownUser.id, notKnownUserId)
 
         given(userRepository)
-            .suspendFunction(userRepository::observeSelfUser)
-            .whenInvoked()
-            .thenReturn((flowOf(TestUser.SELF)))
-
-        given(userRepository)
-            .suspendFunction(userRepository::getKnownUser)
+            .suspendFunction(userRepository::observeUser)
             .whenInvokedWith(eq(knownUser.id))
-            .thenReturn(flowOf(knownUser))
+            .then { flowOf(knownUser) }
 
         given(userRepository)
-            .suspendFunction(userRepository::getKnownUser)
+            .suspendFunction(userRepository::observeUser)
             .whenInvokedWith(eq(notKnownUserId))
-            .thenReturn(flowOf(null))
+            .then { flowOf(null) }
 
         observeMemberDetailsByIds(userIds).test {
             val list = awaitItem()
             assertEquals(list.size, 1) // second one is just not returned, we don't have its data and don't want to block the flow
-            assertContentEquals(listOf(MemberDetails.Other(knownUser)), list)
+            assertContentEquals(listOf(knownUser), list)
             awaitComplete()
         }
     }

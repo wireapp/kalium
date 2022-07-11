@@ -2,16 +2,25 @@ package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.VALUE_DOMAIN_SEPARATOR
-import com.wire.kalium.logic.data.publicuser.model.OtherUser
+import com.wire.kalium.logic.data.user.type.UserType
 
 typealias UserId = QualifiedID
 
-abstract class User {
+sealed class User {
     abstract val id: UserId
+    abstract val name: String?
+    abstract val handle: String?
+    abstract val email: String?
+    abstract val phone: String?
+    abstract val accentId: Int
+    abstract val teamId: TeamId?
+    abstract val previewPicture: UserAssetId?
+    abstract val completePicture: UserAssetId?
 }
 
-//TODO we should extract ConnectionModel and ConnectionState to separate logic AR-1734
+// TODO we should extract ConnectionModel and ConnectionState to separate logic AR-1734
 data class Connection(
     val conversationId: String,
     val from: String,
@@ -55,15 +64,31 @@ enum class ConnectionState {
 
 data class SelfUser(
     override val id: UserId,
-    val name: String?,
-    val handle: String?,
-    val email: String?,
-    val phone: String?,
-    val accentId: Int,
-    val teamId: String?,
+    override val name: String?,
+    override val handle: String?,
+    override val email: String?,
+    override val phone: String?,
+    override val accentId: Int,
+    override val teamId: TeamId?,
+    // TODO: why does self user needs a ConnectionState
     val connectionStatus: ConnectionState,
-    val previewPicture: UserAssetId?,
-    val completePicture: UserAssetId?,
+    override val previewPicture: UserAssetId?,
+    override val completePicture: UserAssetId?,
+    val availabilityStatus: UserAvailabilityStatus
+) : User()
+
+data class OtherUser(
+    override val id: UserId,
+    override val name: String?,
+    override val handle: String?,
+    override val email: String? = null,
+    override val phone: String? = null,
+    override val accentId: Int,
+    override val teamId: TeamId?,
+    val connectionStatus: ConnectionState = ConnectionState.NOT_CONNECTED,
+    override val previewPicture: UserAssetId?,
+    override val completePicture: UserAssetId?,
+    val userType: UserType,
     val availabilityStatus: UserAvailabilityStatus
 ) : User()
 
