@@ -64,7 +64,12 @@ sealed class Event(open val id: String) {
             val timestampIso: String = Clock.System.now().toString()
         ) : Conversation(id, conversationId)
 
-
+        data class AccessUpdate(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val data: Conversation,
+            val qualifiedFrom: UserId,
+        ) : Conversation(id, conversationId)
     }
 
     sealed class User(
