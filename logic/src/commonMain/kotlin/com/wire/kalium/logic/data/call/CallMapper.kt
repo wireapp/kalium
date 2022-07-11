@@ -3,7 +3,15 @@ package com.wire.kalium.logic.data.call
 import com.wire.kalium.calling.CallTypeCalling
 import com.wire.kalium.calling.ConversationTypeCalling
 import com.wire.kalium.calling.VideoStateCalling
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.call.Call
+import com.wire.kalium.logic.feature.call.CallStatus
+import com.wire.kalium.persistence.dao.ConversationEntity
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.call.CallEntity
 
 class CallMapper {
 
@@ -40,6 +48,79 @@ class CallMapper {
         }
     }
 
+    fun toCallEntity(
+        conversationId: ConversationId,
+        id: String,
+        status: CallStatus,
+        conversationType: Conversation.Type,
+        callerId: UserId
+    ): CallEntity = CallEntity(
+        conversationId = QualifiedIDEntity(
+            value = conversationId.value,
+            domain = conversationId.domain
+        ),
+        id = id,
+        status = toCallEntityStatus(callStatus = status),
+        callerId = callerId.toString(),
+        conversationType = toConversationEntityType(conversationType = conversationType)
+    )
+
+    fun toCall(
+        callEntity: CallEntity,
+        metadata: CallMetaData?
+    ): Call = Call(
+        conversationId = ConversationId(
+            value = callEntity.conversationId.value,
+            domain = callEntity.conversationId.domain
+        ),
+        status = toCallStatus(callStatus = callEntity.status),
+        isMuted = metadata?.isMuted ?: true,
+        isCameraOn = metadata?.isCameraOn ?: false,
+        callerId = callEntity.callerId,
+        conversationName = metadata?.conversationName,
+        conversationType = toConversationType(conversationType = callEntity.conversationType),
+        callerName = metadata?.callerName,
+        callerTeamName = metadata?.callerTeamName,
+        establishedTime = metadata?.establishedTime,
+        participants = metadata?.participants ?: emptyList(),
+        maxParticipants = metadata?.maxParticipants ?: 0
+    )
+
+    private fun toConversationEntityType(conversationType: Conversation.Type): ConversationEntity.Type = when (conversationType) {
+        Conversation.Type.GROUP -> ConversationEntity.Type.GROUP
+        else -> ConversationEntity.Type.ONE_ON_ONE
+    }
+
+    private fun toConversationType(conversationType: ConversationEntity.Type): Conversation.Type = when (conversationType) {
+        ConversationEntity.Type.GROUP -> Conversation.Type.GROUP
+        else -> Conversation.Type.ONE_ON_ONE
+    }
+
+    fun toCallEntityStatus(callStatus: CallStatus): CallEntity.Status = when (callStatus) {
+        CallStatus.STARTED -> CallEntity.Status.STARTED
+        CallStatus.INCOMING -> CallEntity.Status.INCOMING
+        CallStatus.MISSED -> CallEntity.Status.MISSED
+        CallStatus.ANSWERED -> CallEntity.Status.ANSWERED
+        CallStatus.ESTABLISHED -> CallEntity.Status.ESTABLISHED
+        CallStatus.STILL_ONGOING -> CallEntity.Status.STILL_ONGOING
+        CallStatus.CLOSED -> CallEntity.Status.CLOSED
+    }
+
+    private fun toCallStatus(callStatus: CallEntity.Status): CallStatus = when (callStatus) {
+        CallEntity.Status.STARTED -> CallStatus.STARTED
+        CallEntity.Status.INCOMING -> CallStatus.INCOMING
+        CallEntity.Status.MISSED -> CallStatus.MISSED
+        CallEntity.Status.ANSWERED -> CallStatus.ANSWERED
+        CallEntity.Status.ESTABLISHED -> CallStatus.ESTABLISHED
+        CallEntity.Status.STILL_ONGOING -> CallStatus.STILL_ONGOING
+        CallEntity.Status.CLOSED -> CallStatus.CLOSED
+    }
+
+    fun fromConversationIdToQualifiedIDEntity(conversationId: ConversationId): QualifiedIDEntity = QualifiedIDEntity(
+        value = conversationId.value,
+        domain = conversationId.domain
+    )
+
     val participantMapper = ParticipantMapper()
     val activeSpeakerMapper = ActiveSpeakerMapper()
 
@@ -71,7 +152,7 @@ class CallMapper {
         fun mapParticipantsActiveSpeaker(
             participants: List<Participant>,
             activeSpeakers: CallActiveSpeakers
-        ) : List<Participant> = participants.map { participant ->
+        ): List<Participant> = participants.map { participant ->
             participant.copy(
                 isSpeaking = activeSpeakers.activeSpeakers.any {
                     it.userId == participant.id.toString() && it.clientId == participant.clientId
