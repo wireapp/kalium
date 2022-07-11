@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -123,10 +124,37 @@ class SendImageUseCaseTest {
                 .wasInvoked(exactly = once)
         }
 
+    @Test
+    fun givenASuccessfulSendImageMessageRequest_whenCheckingTheConversationRepository_thenConversationModifiedAndNotifiedDatesUpdated() =
+        runTest {
+            // Given
+            val mockedImg = getMockedImage()
+            val conversationId = ConversationId("some-convo-id", "some-domain-id")
+            val (arrangement, sendImageUseCase) = Arrangement()
+                .withSuccessfulResponse()
+                .arrange()
+
+            // When
+            sendImageUseCase.invoke(conversationId, mockedImg, "temp_image.jpg", 1, 1)
+
+            // Then
+            verify(arrangement.conversationRepository)
+                .suspendFunction(arrangement.conversationRepository::updateConversationModifiedDate)
+                .with(any(), any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.conversationRepository)
+                .suspendFunction(arrangement.conversationRepository::updateConversationNotificationDate)
+                .with(any(), any())
+                .wasInvoked(exactly = once)
+        }
+
     private class Arrangement {
 
         @Mock
         val messageRepository = mock(classOf<MessageRepository>())
+
+        @Mock
+        val conversationRepository = mock(classOf<ConversationRepository>())
 
         @Mock
         private val clientRepository = mock(classOf<ClientRepository>())
@@ -144,6 +172,17 @@ class SendImageUseCaseTest {
 
         val someClientId = ClientId("some-client-id")
 
+        init {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::updateConversationModifiedDate)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Either.Right(Unit))
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::updateConversationNotificationDate)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Either.Right(Unit))
+        }
+
         private fun fakeSelfUser() = SelfUser(
             UserId("some_id", "some_domain"),
             "some_name",
@@ -159,7 +198,14 @@ class SendImageUseCaseTest {
         )
 
         val sendImageUseCase =
-            SendImageMessageUseCaseImpl(messageRepository, clientRepository, assetDataSource, userRepository, messageSender)
+            SendImageMessageUseCaseImpl(
+                messageRepository,
+                conversationRepository,
+                clientRepository,
+                assetDataSource,
+                userRepository,
+                messageSender
+            )
 
         fun withSuccessfulResponse(): Arrangement {
             given(assetDataSource)

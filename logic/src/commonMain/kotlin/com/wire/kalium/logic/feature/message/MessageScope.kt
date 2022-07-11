@@ -71,6 +71,7 @@ class MessageScope(
     val sendTextMessage: SendTextMessageUseCase
         get() = SendTextMessageUseCase(
             messageRepository,
+            conversationRepository,
             userRepository,
             clientRepository,
             syncManager,
@@ -80,6 +81,7 @@ class MessageScope(
     val sendImageMessage: SendImageMessageUseCase
         get() = SendImageMessageUseCaseImpl(
             messageRepository,
+            conversationRepository,
             clientRepository,
             assetRepository,
             userRepository,
@@ -89,6 +91,7 @@ class MessageScope(
     val sendAssetMessage: SendAssetMessageUseCase
         get() = SendAssetMessageUseCaseImpl(
             messageRepository,
+            conversationRepository,
             clientRepository,
             assetRepository,
             userRepository,

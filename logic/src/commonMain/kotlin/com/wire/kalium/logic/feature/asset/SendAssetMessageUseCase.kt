@@ -11,6 +11,7 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.FileAsset
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
@@ -24,6 +25,7 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
@@ -48,6 +50,7 @@ fun interface SendAssetMessageUseCase {
 
 internal class SendAssetMessageUseCaseImpl(
     private val messageRepository: MessageRepository,
+    private val conversationRepository: ConversationRepository,
     private val clientRepository: ClientRepository,
     private val assetDataSource: AssetRepository,
     private val userRepository: UserRepository,
@@ -124,7 +127,12 @@ internal class SendAssetMessageUseCaseImpl(
             status = Message.Status.PENDING,
             editStatus = Message.EditStatus.NotEdited
         )
-        messageRepository.persistMessage(message).map { message }
+        messageRepository.persistMessage(message)
+            .map { message }
+            .onSuccess {
+                conversationRepository.updateConversationNotificationDate(message.conversationId, message.date)
+                conversationRepository.updateConversationModifiedDate(message.conversationId, message.date)
+            }
     }.flatMap { message ->
         messageSender.sendPendingMessage(conversationId, message.id)
     }.onFailure {

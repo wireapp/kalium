@@ -18,6 +18,7 @@ import com.wire.kalium.logic.data.user.toUserId
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.call.CallApi
@@ -246,17 +247,20 @@ internal class CallDataSource(
 
     private suspend fun persistMissedCallMessageIfNeeded(call: Call) {
         if ((call.status == CallStatus.CLOSED && call.establishedTime == null) || call.status == CallStatus.MISSED) {
-            messageRepository.persistMessage(
-                Message.System(
-                    uuid4().toString(),
-                    MessageContent.MissedCall,
-                    call.conversationId,
-                    timeParser.currentTimeStamp(),
-                    call.callerId.toUserId(),
-                    Message.Status.SENT,
-                    Message.Visibility.VISIBLE
-                )
+            val message = Message.System(
+                uuid4().toString(),
+                MessageContent.MissedCall,
+                call.conversationId,
+                timeParser.currentTimeStamp(),
+                call.callerId.toUserId(),
+                Message.Status.SENT,
+                Message.Visibility.VISIBLE
             )
+            messageRepository.persistMessage(message)
+                .onSuccess {
+                    conversationRepository.updateConversationNotificationDate(message.conversationId, message.date)
+                    conversationRepository.updateConversationModifiedDate(message.conversationId, message.date)
+                }
         }
     }
 }

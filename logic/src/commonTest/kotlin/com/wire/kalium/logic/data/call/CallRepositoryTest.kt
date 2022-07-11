@@ -423,6 +423,14 @@ class CallRepositoryTest {
         given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(any())
             .thenReturn(flowOf(ConversationDetails.Group(TestConversation.ONE_ON_ONE, LegalHoldStatus.ENABLED)))
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::updateConversationModifiedDate)
+            .whenInvokedWith(any(), any())
+            .thenReturn(Either.Right(Unit))
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::updateConversationNotificationDate)
+            .whenInvokedWith(any(), any())
+            .thenReturn(Either.Right(Unit))
         given(userRepository).suspendFunction(userRepository::getKnownUser)
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
@@ -442,6 +450,16 @@ class CallRepositoryTest {
         verify(messageRepository)
             .suspendFunction(messageRepository::persistMessage)
             .with(any())
+            .wasInvoked(exactly = once)
+
+        verify(conversationRepository)
+            .suspendFunction(conversationRepository::updateConversationNotificationDate)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
+
+        verify(conversationRepository)
+            .suspendFunction(conversationRepository::updateConversationModifiedDate)
+            .with(any(), any())
             .wasInvoked(exactly = once)
     }
     @Test
