@@ -84,9 +84,7 @@ class TeamRepositoryTest {
             .whenInvokedWith(oneOf("teamId"))
             .then { NetworkResponse.Success(value = teamDto, headers = mapOf(), httpCode = 200) }
 
-        val teamEntity = TeamEntity(
-            id = "teamId", name = "teamName"
-        )
+        val teamEntity = TeamEntity(id = "teamId", name = "teamName")
 
         given(teamMapper)
             .function(teamMapper::fromDtoToEntity)
@@ -108,10 +106,9 @@ class TeamRepositoryTest {
             .with(oneOf(teamEntity))
             .wasInvoked(exactly = once)
 
-
         // Verifies that when fetching team by id, it succeeded
-        result.shouldSucceed{ returnTeam ->
-            assertEquals(team,returnTeam)
+        result.shouldSucceed { returnTeam ->
+            assertEquals(team, returnTeam)
         }
     }
 
@@ -159,14 +156,13 @@ class TeamRepositoryTest {
             userTypEntity = UserTypeEntity.EXTERNAL
         )
 
-
         given(teamsApi)
             .suspendFunction(teamsApi::getTeamMembers)
             .whenInvokedWith(oneOf("teamId"), oneOf(null))
             .thenReturn(NetworkResponse.Success(value = teamMembersList, headers = mapOf(), httpCode = 200))
 
         given(userMapper)
-            .invocation { userMapper.fromTeamMemberToDaoModel(teamId = TeamId("teamId"), teamMember, "userDomain" ) }
+            .invocation { userMapper.fromTeamMemberToDaoModel(teamId = TeamId("teamId"), teamMember, "userDomain") }
             .then { mappedTeamMember }
 
         val result = teamRepository.fetchMembersByTeamId(teamId = TeamId("teamId"), userDomain = "userDomain")

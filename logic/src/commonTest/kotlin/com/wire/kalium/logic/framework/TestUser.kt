@@ -9,10 +9,8 @@ import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.network.api.model.AssetSizeDTO
-import com.wire.kalium.network.api.model.ServiceDTO
 import com.wire.kalium.network.api.model.UserAssetDTO
 import com.wire.kalium.network.api.model.UserAssetTypeDTO
-import com.wire.kalium.network.api.model.UserDTO
 import com.wire.kalium.network.api.user.LegalHoldStatusResponse
 import com.wire.kalium.network.api.user.details.UserProfileDTO
 import com.wire.kalium.persistence.dao.ConnectionEntity

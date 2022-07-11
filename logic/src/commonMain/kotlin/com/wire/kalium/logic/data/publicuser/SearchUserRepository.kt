@@ -147,7 +147,7 @@ internal class SearchUserRepositoryImpl(
             }
         }
 
-    //TODO: code duplication here for getting self user, the same is done inside
+    // TODO: code duplication here for getting self user, the same is done inside
     // UserRepository, what would be best ?
     // creating SelfUserDao managing the UserEntity corresponding to SelfUser ?
     private suspend fun getSelfUser(): SelfUser {
@@ -159,7 +159,7 @@ internal class SearchUserRepositoryImpl(
                 userDAO.getUserByQualifiedID(selfUserID)
                     .filterNotNull()
                     .map(userMapper::fromDaoModelToSelfUser)
-            }.firstOrNull() ?: throw  IllegalStateException()
+            }.firstOrNull() ?: throw IllegalStateException()
     }
 
     private suspend fun handeSearchUsersOptions(

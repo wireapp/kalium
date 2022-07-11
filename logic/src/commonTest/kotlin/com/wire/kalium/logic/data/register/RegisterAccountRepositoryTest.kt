@@ -17,8 +17,6 @@ import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.model.UserDTO
-import com.wire.kalium.network.api.model.getCompleteAssetOrNull
-import com.wire.kalium.network.api.model.getPreviewAssetOrNull
 import com.wire.kalium.network.api.user.register.RegisterApi
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
@@ -84,7 +82,6 @@ class RegisterAccountRepositoryTest {
         verify(registerApi).coroutine { requestActivationCode(RegisterApi.RequestActivationCodeParam.Email(email)) }
             .wasInvoked(exactly = once)
     }
-
 
     @Test
     fun givenApiRequestRequestSuccess_whenActivatingAnEmail_thenSuccessIsPropagated() = runTest {

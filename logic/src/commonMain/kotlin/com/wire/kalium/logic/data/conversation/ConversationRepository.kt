@@ -69,7 +69,9 @@ interface ConversationRepository {
     ): Either<CoreFailure, Conversation>
 
     suspend fun updateMutedStatus(
-        conversationId: ConversationId, mutedStatus: MutedConversationStatus, mutedStatusTimestamp: Long
+        conversationId: ConversationId,
+        mutedStatus: MutedConversationStatus,
+        mutedStatusTimestamp: Long
     ): Either<CoreFailure, Unit>
 
     suspend fun getConversationsForNotifications(): Flow<List<Conversation>>
@@ -141,9 +143,7 @@ class ConversationDataSource(
         return latestResult
     }
 
-    private suspend fun persistConversations(
-        conversations: List<ConversationResponse>, selfUserTeamId: String?
-    ) = wrapStorageRequest {
+    private suspend fun persistConversations(conversations: List<ConversationResponse>, selfUserTeamId: String?) = wrapStorageRequest {
         val conversationEntities = conversations.map { conversationResponse ->
             conversationMapper.fromApiModelToDaoModel(conversationResponse,
                 mlsGroupState = conversationResponse.groupId?.let { mlsGroupState(it) },
@@ -266,12 +266,12 @@ class ConversationDataSource(
 
     override suspend fun persistMembers(members: List<Member>, conversationID: ConversationId): Either<CoreFailure, Unit> =
         userRepository.fetchUsersIfUnknownByIds(members.map { it.id }.toSet()).flatMap {
-                wrapStorageRequest {
-                    conversationDAO.insertMembers(
-                        members.map(memberMapper::toDaoModel), idMapper.toDaoModel(conversationID)
-                    )
-                }
+            wrapStorageRequest {
+                conversationDAO.insertMembers(
+                    members.map(memberMapper::toDaoModel), idMapper.toDaoModel(conversationID)
+                )
             }
+        }
 
     override suspend fun addMembers(userIdList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit> = wrapApiRequest {
         val users = userIdList.map {
@@ -301,7 +301,9 @@ class ConversationDataSource(
         wrapStorageRequest { conversationDAO.deleteMembersByQualifiedID(userIDList, conversationID) }
 
     override suspend fun createGroupConversation(
-        name: String?, usersList: List<UserId>, options: ConversationOptions
+        name: String?,
+        usersList: List<UserId>,
+        options: ConversationOptions
     ): Either<CoreFailure, Conversation> = wrapStorageRequest {
         userRepository.observeSelfUser().first()
     }.flatMap { selfUser ->
@@ -360,7 +362,8 @@ class ConversationDataSource(
      * the group, so we need to provide initial list of members separately.
      */
     private suspend fun persistMembersFromConversationResponseMLS(
-        conversationResponse: ConversationResponse, users: List<UserId>
+        conversationResponse: ConversationResponse,
+        users: List<UserId>
     ): Either<CoreFailure, Unit> {
         return wrapStorageRequest {
             val conversationId = idMapper.fromApiToDao(conversationResponse.id)
@@ -401,7 +404,9 @@ class ConversationDataSource(
      * Updates the conversation muting options status and the timestamp of the applied change, both remotely and local
      */
     override suspend fun updateMutedStatus(
-        conversationId: ConversationId, mutedStatus: MutedConversationStatus, mutedStatusTimestamp: Long
+        conversationId: ConversationId,
+        mutedStatus: MutedConversationStatus,
+        mutedStatusTimestamp: Long
     ): Either<CoreFailure, Unit> = wrapApiRequest {
         conversationApi.updateConversationMemberState(
             memberUpdateRequest = conversationStatusMapper.toApiModel(mutedStatus, mutedStatusTimestamp),

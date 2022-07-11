@@ -195,7 +195,6 @@ class UserDataSource(
                 }
             }
 
-
     override suspend fun userById(userId: UserId): Either<CoreFailure, OtherUser> =
         wrapApiRequest { userDetailsApi.getUserInfo(idMapper.toApiModel(userId)) }.map { userProfile ->
             val selfUser = getSelfUser()
