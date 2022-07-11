@@ -65,9 +65,7 @@ interface ConversationRepository {
     suspend fun deleteMember(userID: QualifiedIDEntity, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun deleteMembers(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun getOneToOneConversationDetailsByUserId(otherUserId: UserId): Either<CoreFailure, ConversationDetails.OneOne>
-    suspend fun createGroupConversation(
-        name: String? = null, usersList: List<UserId>, options: ConversationOptions = ConversationOptions()
-    ): Either<CoreFailure, Conversation>
+    suspend fun createGroupConversation(param: CreateConversationParam): Either<CoreFailure, Conversation>
 
     suspend fun updateMutedStatus(
         conversationId: ConversationId, mutedStatus: MutedConversationStatus, mutedStatusTimestamp: Long
@@ -300,15 +298,11 @@ class ConversationDataSource(
     override suspend fun deleteMembers(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit> =
         wrapStorageRequest { conversationDAO.deleteMembersByQualifiedID(userIDList, conversationID) }
 
-    override suspend fun createGroupConversation(
-        name: String?, usersList: List<UserId>, options: ConversationOptions
-    ): Either<CoreFailure, Conversation> = wrapStorageRequest {
+    override suspend fun createGroupConversation(param: CreateConversationParam): Either<CoreFailure, Conversation> = wrapStorageRequest {
         userRepository.observeSelfUser().first()
     }.flatMap { selfUser ->
         wrapApiRequest {
-            conversationApi.createNewConversation(
-                conversationMapper.toApiModel(name, usersList, selfUser.teamId, options)
-            )
+            conversationApi.createNewConversation(conversationMapper.toApiModel(param))
         }.flatMap { conversationResponse ->
             val teamId = selfUser.teamId?.let { TeamId(it) }
             val conversationEntity = conversationMapper.fromApiModelToDaoModel(

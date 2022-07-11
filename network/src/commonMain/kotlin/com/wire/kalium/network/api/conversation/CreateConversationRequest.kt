@@ -13,7 +13,6 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
-
 @Serializable
 data class CreateConversationRequest(
     @SerialName("qualified_users")
@@ -73,6 +72,7 @@ enum class ConvProtocol {
 
 @Serializable
 data class ConvTeamInfo(
+    // TODO: delete managed
     @Deprecated("Not parsed any more")
     @SerialName("managed") val managed: Boolean,
     @SerialName("teamid") val teamId: TeamId
