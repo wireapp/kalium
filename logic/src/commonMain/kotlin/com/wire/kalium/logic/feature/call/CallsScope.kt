@@ -3,6 +3,8 @@ package com.wire.kalium.logic.feature.call
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.call.usecase.DeleteAllCallsUseCase
+import com.wire.kalium.logic.feature.call.usecase.DeleteAllCallsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.EndCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetAllCallsWithSortedParticipantsUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallsUseCase
@@ -78,4 +80,6 @@ class CallsScope(
     val observeSpeaker: ObserveSpeakerUseCase get() = ObserveSpeakerUseCase(mediaManagerService)
 
     val participantsOrder: ParticipantsOrder get() = ParticipantsOrderImpl()
+
+    val deleteAllCalls: DeleteAllCallsUseCase get() = DeleteAllCallsUseCaseImpl(callRepository)
 }
