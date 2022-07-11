@@ -1,7 +1,6 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.conversation.MemberDetails
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -10,7 +9,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 
@@ -25,7 +23,7 @@ class ObserveConversationMembersUseCase(
         syncManager.startSyncIfIdle()
         return conversationRepository.observeConversationMembers(conversationId).map { members ->
             members.map { member ->
-                userRepository.observeUserInfo(member.id).filterNotNull().map {
+                userRepository.userStream(member.id).filterNotNull().map {
                     MemberDetails(it, member.role)
                 }
             }

@@ -36,7 +36,7 @@ class GetUserInfoUseCaseTest {
                 .wasInvoked(once)
 
             verify(userRepository)
-                .suspendFunction(userRepository::getUserInfo)
+                .suspendFunction(userRepository::userById)
                 .with(eq(userId))
                 .wasInvoked(once)
         }
@@ -63,7 +63,7 @@ class GetUserInfoUseCaseTest {
                 .wasInvoked(once)
 
             verify(userRepository)
-                .suspendFunction(userRepository::getUserInfo)
+                .suspendFunction(userRepository::userById)
                 .with(eq(userId))
                 .wasNotInvoked()
         }
@@ -90,7 +90,7 @@ class GetUserInfoUseCaseTest {
                 .wasInvoked(once)
 
             verify(userRepository)
-                .suspendFunction(userRepository::getUserInfo)
+                .suspendFunction(userRepository::userById)
                 .with(eq(userId))
                 .wasInvoked(once)
         }
@@ -175,7 +175,7 @@ class GetUserInfoUseCaseTest {
                     .wasInvoked(once)
 
                 verify(userRepository)
-                    .suspendFunction(userRepository::getUserInfo)
+                    .suspendFunction(userRepository::userById)
                     .with(any())
                     .wasInvoked(once)
 

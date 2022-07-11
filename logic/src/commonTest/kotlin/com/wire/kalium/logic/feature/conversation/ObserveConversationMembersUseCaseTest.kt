@@ -4,15 +4,11 @@ import app.cash.turbine.test
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.conversation.MemberDetails
-import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.user.type.UserTypeMapper
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
 import io.mockative.Mock
-import io.mockative.any
 import io.mockative.anything
 import io.mockative.configure
 import io.mockative.eq
@@ -120,7 +116,7 @@ class ObserveConversationMembersUseCaseTest {
         )
 
         given(userRepository)
-            .suspendFunction(userRepository::observeUserInfo)
+            .suspendFunction(userRepository::userStream)
             .whenInvokedWith(eq(firstSelfUser.id))
             .thenReturn(selfUserUpdates.asFlow())
 
@@ -146,7 +142,7 @@ class ObserveConversationMembersUseCaseTest {
         )
 
         given(userRepository)
-            .suspendFunction(userRepository::observeUserInfo)
+            .suspendFunction(userRepository::userStream)
             .whenInvokedWith(eq(firstOtherUser.id))
             .thenReturn(flow {
                 emit(firstOtherUser)
@@ -173,12 +169,12 @@ class ObserveConversationMembersUseCaseTest {
         val membersListChannel = Channel<List<Member>>(Channel.UNLIMITED)
 
         given(userRepository)
-            .suspendFunction(userRepository::observeUserInfo)
+            .suspendFunction(userRepository::userStream)
             .whenInvokedWith(eq(TestUser.SELF.id))
             .thenReturn(flowOf(selfUser))
 
         given(userRepository)
-            .suspendFunction(userRepository::observeUserInfo)
+            .suspendFunction(userRepository::userStream)
             .whenInvokedWith(eq(otherUser.id))
             .thenReturn(flowOf(otherUser))
 

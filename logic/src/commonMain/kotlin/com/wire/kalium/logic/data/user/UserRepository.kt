@@ -50,8 +50,8 @@ interface UserRepository {
     suspend fun updateLocalSelfUserHandle(handle: String)
     suspend fun getAllKnownUsers(): Either<StorageFailure, List<OtherUser>>
     suspend fun getKnownUser(userId: UserId): Flow<OtherUser?>
-    suspend fun observeUserInfo(userId: UserId): Flow<User?>
-    suspend fun getUserInfo(userId: UserId): Either<CoreFailure, OtherUser>
+    suspend fun userStream(userId: UserId): Flow<User?>
+    suspend fun userById(userId: UserId): Either<CoreFailure, OtherUser>
     suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus)
     suspend fun getAllKnownUsersNotInConversation(conversationId: ConversationId): Either<StorageFailure, List<OtherUser>>
 }
@@ -171,7 +171,7 @@ class UserDataSource(
         userDAO.getUserByQualifiedID(qualifiedID = idMapper.toDaoModel(userId))
             .map { userEntity -> userEntity?.let { publicUserMapper.fromDaoModelToPublicUser(userEntity) } }
 
-    override suspend fun observeUserInfo(userId: UserId): Flow<User?> =
+    override suspend fun userStream(userId: UserId): Flow<User?> =
         userDAO.getUserByQualifiedID(qualifiedID = idMapper.toDaoModel(userId))
             .map { userEntity ->
                 // TODO: cache SelfUserId so it's not fetched from DB every single time
@@ -183,7 +183,7 @@ class UserDataSource(
             }
 
 
-    override suspend fun getUserInfo(userId: UserId): Either<CoreFailure, OtherUser> =
+    override suspend fun userById(userId: UserId): Either<CoreFailure, OtherUser> =
         wrapApiRequest { userDetailsApi.getUserInfo(idMapper.toApiModel(userId)) }.map { userProfile ->
             publicUserMapper.fromUserDetailResponseWithUsertype(
                 userDetailResponse = userProfile,

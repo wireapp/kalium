@@ -1,15 +1,12 @@
 package com.wire.kalium.logic.feature.conversation
 
 import app.cash.turbine.test
-import com.wire.kalium.logic.data.conversation.Member
-import com.wire.kalium.logic.data.conversation.MemberDetails
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncManager
 import io.mockative.ConfigurationApi
 import io.mockative.Mock
-import io.mockative.any
 import io.mockative.anything
 import io.mockative.configure
 import io.mockative.eq
@@ -76,7 +73,7 @@ class ObserveMemberDetailsByIdsUseCaseTest {
         val userIds = listOf(firstSelfUser.id)
 
         given(userRepository)
-            .suspendFunction(userRepository::observeUserInfo)
+            .suspendFunction(userRepository::userStream)
             .whenInvokedWith(anything())
             .thenReturn(selfUserUpdates.asFlow())
 
@@ -95,12 +92,12 @@ class ObserveMemberDetailsByIdsUseCaseTest {
         val userIds = listOf(firstOtherUser.id)
 
         given(userRepository)
-            .suspendFunction(userRepository::observeUserInfo)
+            .suspendFunction(userRepository::userStream)
             .whenInvokedWith(eq(TestUser.SELF.id))
             .thenReturn(flowOf(TestUser.SELF))
 
         given(userRepository)
-            .suspendFunction(userRepository::observeUserInfo)
+            .suspendFunction(userRepository::userStream)
             .whenInvokedWith(anything())
             .thenReturn(otherUserUpdates.asFlow())
 
@@ -118,12 +115,12 @@ class ObserveMemberDetailsByIdsUseCaseTest {
         val userIds = listOf(knownUser.id, notKnownUserId)
 
         given(userRepository)
-            .suspendFunction(userRepository::observeUserInfo)
+            .suspendFunction(userRepository::userStream)
             .whenInvokedWith(eq(knownUser.id))
             .then { flowOf(knownUser) }
 
         given(userRepository)
-            .suspendFunction(userRepository::observeUserInfo)
+            .suspendFunction(userRepository::userStream)
             .whenInvokedWith(eq(notKnownUserId))
             .then { flowOf(null) }
 
