@@ -15,7 +15,7 @@ import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.publicuser.model.OtherUser
+import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.auth.AuthSession
@@ -25,6 +25,7 @@ import com.wire.kalium.logic.feature.client.RegisterClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase.RegisterClientParam
 import com.wire.kalium.logic.feature.client.SelfClientsResult
 import com.wire.kalium.logic.feature.conversation.GetConversationsUseCase
+import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsResult
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.logic.feature.session.GetAllSessionsResult
@@ -156,8 +157,8 @@ class LoginCommand : CliktCommand(name = "login") {
     private val environment: String? by option(help = "Choose backend environment: can be production or staging")
 
     private val serverConfig: ServerConfig.Links by lazy {
-        if (environment == "production") {
-            ServerConfig.PRODUCTION
+        if (environment == "staging") {
+            ServerConfig.STAGING
         } else {
             ServerConfig.DEFAULT
         }
@@ -175,12 +176,12 @@ class LoginCommand : CliktCommand(name = "login") {
         }
 
         val userId = coreLogic.globalScope {
-            val allSessionsResult = this.session.allSessions()
-            if (allSessionsResult !is GetAllSessionsResult.Success) {
-                throw PrintMessage("Failed retrieve existing sessions")
+            val sessions = when (val result = this.session.allSessions()) {
+                is GetAllSessionsResult.Success -> result.sessions
+                is GetAllSessionsResult.Failure.NoSessionFound -> emptyList()
+                is GetAllSessionsResult.Failure.Generic -> throw PrintMessage("Failed retrieve existing sessions: ${result.genericFailure}")
             }
-
-            if (allSessionsResult.sessions.map { it.tokens.userId }.contains(loginResult.tokens.userId)) {
+            if (sessions.map { it.tokens.userId }.contains(loginResult.tokens.userId)) {
                 this.session.updateCurrentSession(loginResult.tokens.userId)
             } else {
                 val addAccountResult = addAuthenticatedAccount(loginResult, true)
@@ -239,6 +240,17 @@ class AddMemberToGroupCommand : CliktCommand(name = "add-member") {
     }
 }
 
+class RefillKeyPackagesCommand : CliktCommand(name = "refill-key-packages") {
+    override fun run() = runBlocking {
+        val userSession = currentUserSession()
+
+        when (val result = userSession.client.refillKeyPackages()) {
+            is RefillKeyPackagesResult.Success -> echo("key packages were refilled")
+            is RefillKeyPackagesResult.Failure -> throw PrintMessage("refill key packages failed: ${result.failure}")
+        }
+    }
+}
+
 class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
 
     override fun run() = runBlocking {
@@ -252,5 +264,10 @@ class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
 }
 
 fun main(args: Array<String>) = CLIApplication().subcommands(
-    LoginCommand(), CreateGroupCommand(), ListenGroupCommand(), DeleteClientCommand(), AddMemberToGroupCommand()
+    LoginCommand(),
+    CreateGroupCommand(),
+    ListenGroupCommand(),
+    DeleteClientCommand(),
+    AddMemberToGroupCommand(),
+    RefillKeyPackagesCommand()
 ).main(args)

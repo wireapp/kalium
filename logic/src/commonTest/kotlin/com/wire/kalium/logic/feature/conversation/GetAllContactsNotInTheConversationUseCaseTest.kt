@@ -4,8 +4,8 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
@@ -60,7 +60,7 @@ class GetAllContactsNotInTheConversationUseCaseTest {
                     email = null,
                     phone = null,
                     accentId = 0,
-                    team = null,
+                    teamId = null,
                     connectionStatus = ConnectionState.ACCEPTED,
                     previewPicture = null,
                     completePicture = null,
@@ -74,7 +74,7 @@ class GetAllContactsNotInTheConversationUseCaseTest {
                     email = null,
                     phone = null,
                     accentId = 0,
-                    team = null,
+                    teamId = null,
                     connectionStatus = ConnectionState.ACCEPTED,
                     previewPicture = null,
                     completePicture = null,

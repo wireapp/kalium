@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
@@ -16,7 +17,8 @@ class ConversationScope(
     private val userRepository: UserRepository,
     private val callRepository: CallRepository,
     private val syncManager: SyncManager,
-    private val mlsConversationRepository: MLSConversationRepository
+    private val mlsConversationRepository: MLSConversationRepository,
+    private val clientRepository: ClientRepository
 ) {
     val getConversations: GetConversationsUseCase
         get() = GetConversationsUseCase(conversationRepository, syncManager)
@@ -43,7 +45,7 @@ class ConversationScope(
         get() = SyncConversationsUseCase(conversationRepository)
 
     val createGroupConversation: CreateGroupConversationUseCase
-        get() = CreateGroupConversationUseCase(conversationRepository, syncManager)
+        get() = CreateGroupConversationUseCase(conversationRepository, syncManager, clientRepository)
 
     val addMemberToConversationUseCase: AddMemberToConversationUseCase
         get() = AddMemberToConversationUseCaseImpl(conversationRepository, mlsConversationRepository)

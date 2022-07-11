@@ -2,7 +2,7 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.data.publicuser.model.OtherUser
+import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.conversation.ConvProtocol
@@ -76,7 +76,8 @@ internal class ConversationMapperImpl(
             messageTimer = null,
             receiptMode = if (options.readReceiptsEnabled) ReceiptMode.ENABLED else ReceiptMode.DISABLED,
             conversationRole = ConversationDataSource.DEFAULT_MEMBER_ROLE,
-            protocol = toApiModel(options.protocol)
+            protocol = toApiModel(options.protocol),
+            creatorClient = options.creatorClientId
         )
 
     override fun toConversationDetailsOneToOne(
