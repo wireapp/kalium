@@ -53,7 +53,7 @@ object TestUser {
         previewPicture = UserAssetId("value1", "domain"),
         completePicture = UserAssetId("value2", "domain"),
         availabilityStatus = UserAvailabilityStatus.NONE,
-        userType =  UserType.EXTERNAL
+        userType = UserType.EXTERNAL
     )
 
     val ENTITY = UserEntity(

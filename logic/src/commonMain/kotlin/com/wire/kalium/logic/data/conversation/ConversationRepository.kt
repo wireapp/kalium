@@ -145,11 +145,9 @@ class ConversationDataSource(
         conversations: List<ConversationResponse>, selfUserTeamId: String?
     ) = wrapStorageRequest {
         val conversationEntities = conversations.map { conversationResponse ->
-            conversationMapper.fromApiModelToDaoModel(
-                conversationResponse,
+            conversationMapper.fromApiModelToDaoModel(conversationResponse,
                 mlsGroupState = conversationResponse.groupId?.let { mlsGroupState(it) },
-                selfUserTeamId?.let { TeamId(it) }
-            )
+                selfUserTeamId?.let { TeamId(it) })
         }
         conversationDAO.insertConversations(conversationEntities)
         conversations.forEach { conversationsResponse ->
@@ -206,7 +204,7 @@ class ConversationDataSource(
         Conversation.Type.SELF -> flowOf(ConversationDetails.Self(conversation))
         Conversation.Type.GROUP -> flowOf(
             ConversationDetails.Group(
-                conversation, LegalHoldStatus.DISABLED //TODO(user-metadata): get actual legal hold status
+                conversation, LegalHoldStatus.DISABLED // TODO(user-metadata): get actual legal hold status
             )
         )
         // TODO(connection-requests): Handle requests instead of filtering them out
@@ -238,7 +236,7 @@ class ConversationDataSource(
         }
     }
 
-    //Deprecated notice, so we can use newer versions of Kalium on Reloaded without breaking things.
+    // Deprecated notice, so we can use newer versions of Kalium on Reloaded without breaking things.
     @Deprecated("This doesn't return conversation details", ReplaceWith("detailsById"))
     override suspend fun getConversationDetails(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation>> =
         wrapStorageRequest {
@@ -246,12 +244,11 @@ class ConversationDataSource(
                 .map(conversationMapper::fromDaoModel)
         }
 
-    override suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation> =
-        wrapStorageRequest {
-            conversationDAO.getConversationByQualifiedID(idMapper.toDaoModel(conversationId))?.let {
-                conversationMapper.fromDaoModel(it)
-            }
+    override suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation> = wrapStorageRequest {
+        conversationDAO.getConversationByQualifiedID(idMapper.toDaoModel(conversationId))?.let {
+            conversationMapper.fromDaoModel(it)
         }
+    }
 
     override suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, ProtocolInfo> =
         wrapStorageRequest {
@@ -268,37 +265,34 @@ class ConversationDataSource(
     }
 
     override suspend fun persistMembers(members: List<Member>, conversationID: ConversationId): Either<CoreFailure, Unit> =
-        userRepository.fetchUsersIfUnknownByIds(members.map { it.id }.toSet())
-            .flatMap {
+        userRepository.fetchUsersIfUnknownByIds(members.map { it.id }.toSet()).flatMap {
                 wrapStorageRequest {
                     conversationDAO.insertMembers(
-                        members.map(memberMapper::toDaoModel),
-                        idMapper.toDaoModel(conversationID)
+                        members.map(memberMapper::toDaoModel), idMapper.toDaoModel(conversationID)
                     )
                 }
             }
 
-    override suspend fun addMembers(userIdList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit> =
-        wrapApiRequest {
-            val users = userIdList.map {
-                idMapper.toApiModel(it)
-            }
-            val addParticipantRequest = AddParticipantRequest(users, DEFAULT_MEMBER_ROLE)
-            conversationApi.addParticipant(
-                addParticipantRequest, idMapper.toApiModel(conversationID)
-            )
-        }.flatMap {
-            when (it) {
-                is AddParticipantResponse.ConversationUnchanged -> Either.Right(Unit)
-                // TODO: the server response with an event can we use event processor to handle it
-                is AddParticipantResponse.UserAdded -> userIdList.map { userId ->
-                    // TODO: mapping the user id list to members with a made up role is incorrect and a recipe for disaster
-                    Member(userId, Member.Role.Member)
-                }.let { membersList ->
-                    persistMembers(membersList, conversationID)
-                }
+    override suspend fun addMembers(userIdList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit> = wrapApiRequest {
+        val users = userIdList.map {
+            idMapper.toApiModel(it)
+        }
+        val addParticipantRequest = AddParticipantRequest(users, DEFAULT_MEMBER_ROLE)
+        conversationApi.addParticipant(
+            addParticipantRequest, idMapper.toApiModel(conversationID)
+        )
+    }.flatMap {
+        when (it) {
+            is AddParticipantResponse.ConversationUnchanged -> Either.Right(Unit)
+            // TODO: the server response with an event can we use event processor to handle it
+            is AddParticipantResponse.UserAdded -> userIdList.map { userId ->
+                // TODO: mapping the user id list to members with a made up role is incorrect and a recipe for disaster
+                Member(userId, Member.Role.Member)
+            }.let { membersList ->
+                persistMembers(membersList, conversationID)
             }
         }
+    }
 
     override suspend fun deleteMember(userID: QualifiedIDEntity, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit> =
         wrapStorageRequest { conversationDAO.deleteMemberByQualifiedID(userID, conversationID) }
@@ -334,7 +328,8 @@ class ConversationDataSource(
             }.flatMap {
                 when (conversationEntity.protocolInfo) {
                     is ProtocolInfo.Proteus -> Either.Right(conversation)
-                    is ProtocolInfo.MLS -> mlsConversationRepository.establishMLSGroup((conversationEntity.protocolInfo as ProtocolInfo.MLS).groupId)
+                    is ProtocolInfo.MLS -> mlsConversationRepository
+                        .establishMLSGroup((conversationEntity.protocolInfo as ProtocolInfo.MLS).groupId)
                         .flatMap { Either.Right(conversation) }
                 }
             }

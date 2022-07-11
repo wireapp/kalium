@@ -2,7 +2,6 @@ package com.wire.kalium.logic.data.notification
 
 import com.wire.kalium.logic.data.user.OtherUser
 
-
 interface LocalNotificationMessageMapper {
     fun fromPublicUserToLocalNotificationMessageAuthor(author: OtherUser?): LocalNotificationMessageAuthor
 }

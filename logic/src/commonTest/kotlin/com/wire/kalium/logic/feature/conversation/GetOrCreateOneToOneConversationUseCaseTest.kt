@@ -25,7 +25,6 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertIs
 
-
 class GetOrCreateOneToOneConversationUseCaseTest {
 
     @Mock
@@ -42,7 +41,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
 
     @Test
     fun givenConversationDoesNotExist_whenCallingTheUseCase_ThenDoNotCreateAConversationButReturnExisting() = runTest {
-        //given
+        // given
         given(conversationRepository)
             .suspendFunction(conversationRepository::getOneToOneConversationDetailsByUserId)
             .whenInvokedWith(anything())
@@ -52,9 +51,9 @@ class GetOrCreateOneToOneConversationUseCaseTest {
             .suspendFunction(conversationRepository::createGroupConversation)
             .whenInvokedWith(anything(), anything(), anything())
             .thenReturn(Either.Right(CONVERSATION))
-        //when
+        // when
         val result = getOrCreateOneToOneConversationUseCase.invoke(USER_ID)
-        //then
+        // then
         assertIs<CreateConversationResult.Success>(result)
 
         verify(conversationRepository)
@@ -70,7 +69,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
 
     @Test
     fun givenConversationExist_whenCallingTheUseCase_ThenCreateAConversationAndReturn() = runTest {
-        //given
+        // given
         given(conversationRepository)
             .coroutine { getOneToOneConversationDetailsByUserId(USER_ID) }
             .then { Either.Left(StorageFailure.DataNotFound) }
@@ -79,9 +78,9 @@ class GetOrCreateOneToOneConversationUseCaseTest {
             .suspendFunction(conversationRepository::createGroupConversation)
             .whenInvokedWith(anything(), anything(), anything())
             .thenReturn(Either.Right(CONVERSATION))
-        //when
+        // when
         val result = getOrCreateOneToOneConversationUseCase.invoke(USER_ID)
-        //then
+        // then
         assertIs<CreateConversationResult.Success>(result)
 
         verify(conversationRepository)
@@ -126,5 +125,4 @@ class GetOrCreateOneToOneConversationUseCaseTest {
             UserType.INTERNAL
         )
     }
-
 }

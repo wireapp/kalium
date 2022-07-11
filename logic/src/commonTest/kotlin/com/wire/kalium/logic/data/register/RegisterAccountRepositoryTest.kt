@@ -134,8 +134,8 @@ class RegisterAccountRepositoryTest {
                 accentId = accentId,
                 teamId = teamId?.let { TeamId(it) },
                 connectionStatus = ConnectionState.ACCEPTED,
-                previewPicture = UserAssetId("value1","domain"),
-                completePicture = UserAssetId("value2","domain"),
+                previewPicture = UserAssetId("value1", "domain"),
+                completePicture = UserAssetId("value2", "domain"),
                 availabilityStatus = UserAvailabilityStatus.NONE
             )
         }
@@ -184,8 +184,8 @@ class RegisterAccountRepositoryTest {
                 accentId = accentId,
                 teamId = teamId?.let { TeamId(it) },
                 connectionStatus = ConnectionState.ACCEPTED,
-                previewPicture = UserAssetId("value1","domain"),
-                completePicture = UserAssetId("value2","domain"),
+                previewPicture = UserAssetId("value1", "domain"),
+                completePicture = UserAssetId("value2", "domain"),
                 availabilityStatus = UserAvailabilityStatus.NONE
             )
         }

@@ -20,7 +20,7 @@ sealed class User {
     abstract val completePicture: UserAssetId?
 }
 
-//TODO we should extract ConnectionModel and ConnectionState to separate logic AR-1734
+// TODO we should extract ConnectionModel and ConnectionState to separate logic AR-1734
 data class Connection(
     val conversationId: String,
     val from: String,

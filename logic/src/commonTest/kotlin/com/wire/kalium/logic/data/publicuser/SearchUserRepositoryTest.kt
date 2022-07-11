@@ -48,8 +48,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-
-//TODO: refactor to arrangement pattern
+// TODO: refactor to arrangement pattern
 @OptIn(ExperimentalCoroutinesApi::class)
 class SearchUserRepositoryTest {
 
@@ -105,31 +104,31 @@ class SearchUserRepositoryTest {
 
     @Test
     fun givenContactSearchApiFailure_whenSearchPublicContact_resultIsFailure() = runTest {
-        //given
+        // given
         given(userSearchApiWrapper)
             .suspendFunction(userSearchApiWrapper::search)
             .whenInvokedWith(anything(), anything(), anything(), anything())
             .thenReturn(Either.Left(TestNetworkResponseError.noNetworkConnection()))
 
-        //when
+        // when
         val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
 
-        //then
+        // then
         assertIs<Either.Left<NetworkFailure>>(actual)
     }
 
     @Test
     fun givenContactSearchApiFailure_whenSearchPublicContact_thenOnlyContactSearchApiISInvoked() = runTest {
-        //given
+        // given
         given(userSearchApiWrapper)
             .suspendFunction(userSearchApiWrapper::search)
             .whenInvokedWith(anything(), anything(), anything(), anything())
             .thenReturn(Either.Left(TestNetworkResponseError.noNetworkConnection()))
 
-        //when
+        // when
         searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
 
-        //then
+        // then
         verify(userSearchApiWrapper)
             .suspendFunction(userSearchApiWrapper::search)
             .with(anything(), anything(), anything(), anything())
@@ -138,15 +137,15 @@ class SearchUserRepositoryTest {
 
     @Test
     fun givenContactSearchApiFailure_whenSearchPublicContact_thenUserDetailsApiAndPublicUserMapperIsNotInvoked() = runTest {
-        //given
+        // given
         given(userSearchApiWrapper)
             .suspendFunction(userSearchApiWrapper::search)
             .whenInvokedWith(anything(), anything(), anything(), anything())
             .thenReturn(Either.Left(TestNetworkResponseError.noNetworkConnection()))
 
-        //when
+        // when
         searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
-        //then
+        // then
         verify(userDetailsApi)
             .suspendFunction(userDetailsApi::getMultipleUsers)
             .with(any())
@@ -160,7 +159,7 @@ class SearchUserRepositoryTest {
 
     @Test
     fun givenContactSearchApiSuccessButuserDetailsApiFailure_whenSearchPublicContact_resultIsFailure() = runTest {
-        //given
+        // given
         given(userSearchApiWrapper)
             .suspendFunction(userSearchApiWrapper::search)
             .whenInvokedWith(anything(), anything(), anything(), anything())
@@ -171,16 +170,16 @@ class SearchUserRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(TestNetworkResponseError.genericResponseError())
 
-        //when
+        // when
         val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
 
-        //then
+        // then
         assertIs<Either.Left<NetworkFailure>>(actual)
     }
 
     @Test
     fun givenContactSearchApiSuccessButuserDetailsApiFailure_whenSearchPublicContact_ThenPublicUserMapperIsNotInvoked() = runTest {
-        //given
+        // given
         given(userSearchApiWrapper)
             .suspendFunction(userSearchApiWrapper::search)
             .whenInvokedWith(anything(), anything(), anything(), anything())
@@ -191,10 +190,10 @@ class SearchUserRepositoryTest {
             .whenInvokedWith(any())
             .then { TestNetworkResponseError.genericResponseError() }
 
-        //when
+        // when
         searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
 
-        //then
+        // then
         verify(publicUserMapper)
             .function(publicUserMapper::fromUserDetailResponseWithUsertype)
             .with(any(), any())
@@ -204,7 +203,7 @@ class SearchUserRepositoryTest {
     @Test
     fun givenContactSearchApiSuccessButUserDetailsApiFailure_whenSearchPublicContact_ThenContactSearchApiAndUserDetailsApiIsInvoked() =
         runTest {
-            //given
+            // given
             given(userSearchApiWrapper)
                 .suspendFunction(userSearchApiWrapper::search)
                 .whenInvokedWith(anything(), anything(), anything(), anything())
@@ -214,10 +213,10 @@ class SearchUserRepositoryTest {
                 .suspendFunction(userDetailsApi::getMultipleUsers)
                 .whenInvokedWith(any())
                 .then { TestNetworkResponseError.genericResponseError() }
-            //when
+            // when
             searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
 
-            //then
+            // then
             verify(userSearchApiWrapper)
                 .suspendFunction(userSearchApiWrapper::search)
                 .with(anything(), anything(), anything(), anything())
@@ -231,7 +230,7 @@ class SearchUserRepositoryTest {
 
     @Test
     fun givenContactSearchApiAndUserDetailsApiAndPublicUserApiReturnSuccess_WhenSearchPublicContact_ThenResultIsSuccess() = runTest {
-        //given
+        // given
         given(userSearchApiWrapper)
             .suspendFunction(userSearchApiWrapper::search)
             .whenInvokedWith(anything(), anything(), anything(), anything())
@@ -261,17 +260,17 @@ class SearchUserRepositoryTest {
             .whenInvokedWith(any())
             .then { SELF_USER }
 
-        //when
+        // when
         val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
 
-        //then
+        // then
         assertIs<Either.Right<UserSearchResult>>(actual)
     }
 
     @Test
     fun givenContactSearchApiAndUserDetailsApiAndPublicUserApiReturnSuccess_WhenSearchPublicContact_ThenResultIsEqualToExpectedValue() =
         runTest {
-            //given
+            // given
             given(userSearchApiWrapper)
                 .suspendFunction(userSearchApiWrapper::search)
                 .whenInvokedWith(anything(), anything(), anything(), anything())
@@ -309,7 +308,7 @@ class SearchUserRepositoryTest {
             val expectedResult = UserSearchResult(
                 result = listOf(PUBLIC_USER)
             )
-            //when
+            // when
             val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
 
             assertIs<Either.Right<UserSearchResult>>(actual)
@@ -319,7 +318,7 @@ class SearchUserRepositoryTest {
     @Test
     fun givenAValidUserSearchWithEmptyResults_WhenSearchingSomeText_ThenResultIsAnEmptyList() =
         runTest {
-            //given
+            // given
             given(userSearchApiWrapper)
                 .suspendFunction(userSearchApiWrapper::search)
                 .whenInvokedWith(anything(), anything(), anything(), anything())
@@ -347,7 +346,7 @@ class SearchUserRepositoryTest {
             val expectedResult = UserSearchResult(
                 result = emptyList()
             )
-            //when
+            // when
             val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
 
             assertIs<Either.Right<UserSearchResult>>(actual)
@@ -357,7 +356,7 @@ class SearchUserRepositoryTest {
     @Test
     fun givenASearchWithConversationExcludedOption_WhenSearchingUsersByNameOrHandleOrEmail_ThenSearchForUsersNotInTheConversation() =
         runTest {
-            //given
+            // given
             given(userDAO)
                 .suspendFunction(userDAO::getUsersNotInConversationByNameOrHandleOrEmail)
                 .whenInvokedWith(anything(), anything())
@@ -368,7 +367,7 @@ class SearchUserRepositoryTest {
                 .whenInvokedWith(anything(), anything())
                 .then { _, _ -> listOf() }
 
-            //when
+            // when
             searchUserRepository.searchKnownUsersByNameOrHandleOrEmail(
                 searchQuery = "someQuery",
                 searchUsersOptions = SearchUsersOptions(
@@ -391,7 +390,7 @@ class SearchUserRepositoryTest {
 
     @Test
     fun givenASearchWithConversationExcludedOption_WhenSearchingUsersByHandle_ThenSearchForUsersNotInTheConversation() = runTest {
-        //given
+        // given
         given(userDAO)
             .suspendFunction(userDAO::getUserByHandleAndConnectionState)
             .whenInvokedWith(anything(), anything())
@@ -402,7 +401,7 @@ class SearchUserRepositoryTest {
             .whenInvokedWith(anything(), anything())
             .then { _, _ -> listOf() }
 
-        //when
+        // when
         searchUserRepository.searchKnownUsersByHandle(
             handle = "someQuery",
             searchUsersOptions = SearchUsersOptions(
@@ -412,7 +411,7 @@ class SearchUserRepositoryTest {
             )
         )
 
-        //then
+        // then
         verify(userDAO)
             .suspendFunction(userDAO::getUserByHandleAndConnectionState)
             .with(anything(), anything())
