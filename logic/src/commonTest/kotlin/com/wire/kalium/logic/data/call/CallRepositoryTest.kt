@@ -110,7 +110,7 @@ class CallRepositoryTest {
 
     @Test
     fun givenAListOfCallProfiles_whenGetAllCallsIsCalled_thenReturnAListOfCalls() = runTest {
-        callRepository.updateCallProfileFlow(CallProfile(mapOfCallProfiles))
+        callRepository.updateCallProfileFlow(CallMetadataProfile(mapOfCallProfiles))
 
         val calls = callRepository.callsFlow()
 
@@ -135,7 +135,7 @@ class CallRepositoryTest {
         given(teamRepository).suspendFunction(teamRepository::getTeam)
             .whenInvokedWith(any())
             .thenReturn(flowOf(Team("team1", "team_1")))
-        callRepository.updateCallProfileFlow(CallProfile(mapOf(startedCall.conversationId.toString() to startedCall)))
+        callRepository.updateCallProfileFlow(CallMetadataProfile(mapOf(startedCall.conversationId.toString() to startedCall)))
 
         callRepository.createCall(conversationIdAnsweredCall, CallStatus.ANSWERED, "caller_id", false, false)
 
@@ -180,7 +180,7 @@ class CallRepositoryTest {
             .thenReturn(flowOf(Team("team1", "team_1")))
 
         val incomingCall2 = provideCall(sharedConversationId, CallStatus.INCOMING)
-        callRepository.updateCallProfileFlow(CallProfile(mapOfCallProfiles))
+        callRepository.updateCallProfileFlow(CallMetadataProfile(mapOfCallProfiles))
 
         callRepository.createCall(sharedConversationId, CallStatus.INCOMING, "caller_id", false, false)
 
@@ -220,7 +220,7 @@ class CallRepositoryTest {
 
     @Test
     fun givenAConversationIdThatExistsInTheFlow_whenUpdateCallStatusIsCalled_thenUpdateCallStatusInTheFlow() = runTest {
-        callRepository.updateCallProfileFlow(CallProfile(mapOfCallProfiles))
+        callRepository.updateCallProfileFlow(CallMetadataProfile(mapOfCallProfiles))
 
         callRepository.updateCallStatusById(startedCall.conversationId.toString(), CallStatus.ESTABLISHED)
 
@@ -244,7 +244,7 @@ class CallRepositoryTest {
     @Test
     fun givenAConversationIdThatExistsInTheFlow_whenUpdateIsMutedByIdIsCalled_thenUpdateCallStatusInTheFlow() = runTest {
         val expectedValue = true
-        callRepository.updateCallProfileFlow(CallProfile(mapOfCallProfiles))
+        callRepository.updateCallProfileFlow(CallMetadataProfile(mapOfCallProfiles))
 
         callRepository.updateIsMutedById(startedCall.conversationId.toString(), expectedValue)
 
@@ -264,7 +264,7 @@ class CallRepositoryTest {
     @Test
     fun givenAConversationIdThatExistsInTheFlow_whenUpdateIsCameraOnByIdIsCalled_thenUpdateCallStatusInTheFlow() = runTest {
         val expectedValue = true
-        callRepository.updateCallProfileFlow(CallProfile(mapOfCallProfiles))
+        callRepository.updateCallProfileFlow(CallMetadataProfile(mapOfCallProfiles))
 
         callRepository.updateIsCameraOnById(startedCall.conversationId.toString(), expectedValue)
 
@@ -282,7 +282,7 @@ class CallRepositoryTest {
 
     @Test
     fun givenSomeIncomingCallsInTheFlow_whenGetIncomingCallsIsCalled_thenReturnTheListOfIncomingCallsInTheFlow() = runTest {
-        callRepository.updateCallProfileFlow(CallProfile(mapOfCallProfiles))
+        callRepository.updateCallProfileFlow(CallMetadataProfile(mapOfCallProfiles))
 
         val calls = callRepository.incomingCallsFlow()
 
@@ -299,7 +299,7 @@ class CallRepositoryTest {
 
     @Test
     fun givenSomeEstablishedCallsInTheFlow_whenGetEstablishedCallIsCalled_thenReturnTheListOfOngoingCallsInTheFlow() = runTest {
-        callRepository.updateCallProfileFlow(CallProfile(mapOfCallProfiles))
+        callRepository.updateCallProfileFlow(CallMetadataProfile(mapOfCallProfiles))
 
         val calls = callRepository.establishedCallsFlow()
 
@@ -311,7 +311,7 @@ class CallRepositoryTest {
     @Test
     fun givenNewCallParticipants_whenUpdatingParticipants_thenCallProfileIsUpdated() = runTest {
         callRepository.updateCallProfileFlow(
-            CallProfile(
+            CallMetadataProfile(
                 mapOf(establishedCall.conversationId.toString() to establishedCall)
             )
         )
@@ -340,7 +340,7 @@ class CallRepositoryTest {
     @Test
     fun givenActiveSpeakers_whenUpdatingActiveSpeakers_thenCallProfileIsUpdated() = runTest {
         callRepository.updateCallProfileFlow(
-            CallProfile(
+            CallMetadataProfile(
                 mapOf(establishedCall.conversationId.toString() to establishedCall)
             )
         )

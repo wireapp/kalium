@@ -31,7 +31,7 @@ import kotlin.math.max
 interface CallRepository {
     suspend fun getCallConfigResponse(limit: Int?): Either<CoreFailure, String>
     suspend fun connectToSFT(url: String, data: String): Either<CoreFailure, ByteArray>
-    fun updateCallProfileFlow(callProfile: CallProfile)
+    fun updateCallProfileFlow(callProfile: CallMetadataProfile)
     fun callsFlow(): Flow<List<Call>>
     fun incomingCallsFlow(): Flow<List<Call>>
     fun ongoingCallsFlow(): Flow<List<Call>>
@@ -63,7 +63,7 @@ internal class CallDataSource(
 ) : CallRepository {
 
     //TODO(question): to be saved somewhere ?
-    private val _callProfile = MutableStateFlow(CallProfile(calls = emptyMap()))
+    private val _callProfile = MutableStateFlow(CallMetadataProfile(calls = emptyMap()))
     private val allCalls = _callProfile.asStateFlow()
 
     override suspend fun getCallConfigResponse(limit: Int?): Either<CoreFailure, String> = wrapApiRequest {
@@ -74,7 +74,7 @@ internal class CallDataSource(
         callApi.connectToSFT(url = url, data = data)
     }
 
-    override fun updateCallProfileFlow(callProfile: CallProfile) {
+    override fun updateCallProfileFlow(callProfile: CallMetadataProfile) {
         _callProfile.value = callProfile
     }
 
