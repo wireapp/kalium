@@ -1,9 +1,10 @@
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
@@ -28,11 +29,13 @@ class CreateGroupConversationUseCaseTest {
     @Test
     fun givenNameMembersAndOptions_whenCreatingGroupConversation_thenRepositoryCreateGroupShouldBeCalled() = runTest {
         val name = "Conv Name"
+        val creatorClientId = "ClientId"
         val members = listOf(TestUser.USER_ID, TestUser.OTHER.id)
-        val conversationOptions = ConversationOptions(protocol = ConversationOptions.Protocol.MLS)
+        val conversationOptions = ConversationOptions(protocol = ConversationOptions.Protocol.MLS, creatorClientId = creatorClientId)
 
         val (arrangement, createGroupConversation) = Arrangement()
             .withUpdateConversationModifiedDateSucceeding()
+            .withCurrentClientIdReturning(creatorClientId)
             .withCreateGroupConversationReturning(TestConversation.GROUP())
             .arrange()
 
@@ -47,11 +50,13 @@ class CreateGroupConversationUseCaseTest {
     @Test
     fun givenNameMembersAndOptions_whenCreatingGroupConversation_thenConversationModifiedDateIsUpdated() = runTest {
         val name = "Conv Name"
+        val creatorClientId = "ClientId"
         val members = listOf(TestUser.USER_ID, TestUser.OTHER.id)
-        val conversationOptions = ConversationOptions(protocol = ConversationOptions.Protocol.MLS)
+        val conversationOptions = ConversationOptions(protocol = ConversationOptions.Protocol.MLS, creatorClientId = creatorClientId)
 
         val (arrangement, createGroupConversation) = Arrangement()
             .withUpdateConversationModifiedDateSucceeding()
+            .withCurrentClientIdReturning(creatorClientId)
             .withCreateGroupConversationReturning(TestConversation.GROUP())
             .arrange()
 
@@ -69,12 +74,15 @@ class CreateGroupConversationUseCaseTest {
         val conversationRepository = mock(ConversationRepository::class)
 
         @Mock
+        val clientRepository = mock(ClientRepository::class)
+
+        @Mock
         val syncManager = configure(mock(SyncManager::class)) {
             stubsUnitByDefault = true
         }
 
         private val createGroupConversation = CreateGroupConversationUseCase(
-            conversationRepository, syncManager
+            conversationRepository, syncManager, clientRepository
         )
 
         fun withCreateGroupConversationReturning(conversation: Conversation) = apply {
@@ -82,6 +90,13 @@ class CreateGroupConversationUseCaseTest {
                 .suspendFunction(conversationRepository::createGroupConversation)
                 .whenInvokedWith(any(), any(), any())
                 .thenReturn(Either.Right(conversation))
+        }
+
+        fun withCurrentClientIdReturning(clientId: String) = apply {
+            given(clientRepository)
+                .suspendFunction(clientRepository::currentClientId)
+                .whenInvoked()
+                .thenReturn(Either.Right(ClientId(clientId)))
         }
 
         fun withUpdateConversationModifiedDateSucceeding() = apply {

@@ -65,3 +65,24 @@ or
 ./gradlew assemble
 java -jar cli/build/libs/cli.jar login
 ```
+
+#### Detekt rules
+
+We use and try to maintain our codestyle uniformed, so apart from having our checks in place in our
+CI. You can have live feedback using the IDE, here is how:
+
+1. IntelliJ -> Settings -> Plugins -> Marketplace -> Search and install "Detekt"
+2. Settings -> Tools -> Detekt -> set: (replace $PROJECT_ROOT accordingly to your machine)
+
+    - Configuration Files: $PROJECT_ROOT/detekt/detekt.yml
+    - Baseline File: $PROJECT_ROOT/detekt/baseline.yml (optional)
+    - Plugin Jars: $PROJECT_ROOT/detekt-rules/build/libs/detekt-rules.jar (this will add our custom
+      rules to provide live feedback)
+
+or
+
+You can run locally in your terminal:
+
+```
+./gradlew clean detekt
+```

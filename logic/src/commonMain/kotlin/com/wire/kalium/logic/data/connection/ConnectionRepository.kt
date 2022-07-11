@@ -190,13 +190,15 @@ internal class ConnectionDataSource(
             userDetailsApi.getUserInfo(idMapper.toApiModel(connection.qualifiedToId))
         }.flatMap { userProfileDTO ->
             wrapStorageRequest {
+                val selfUser = getSelfUser();
                 val userEntity = publicUserMapper.fromUserApiToEntityWithConnectionStateAndUserTypeEntity(
                     userDetailResponse = userProfileDTO,
                     connectionState = connectionStatusMapper.toDaoModel(state = connection.status),
                     userTypeEntity = userTypeEntityTypeMapper.fromOtherUserTeamAndDomain(
                         otherUserDomain = userProfileDTO.id.domain,
-                        selfUserTeamId = getSelfUser().teamId,
-                        otherUserTeamId = userProfileDTO.teamId
+                        selfUserTeamId = selfUser.teamId,
+                        otherUserTeamId = userProfileDTO.teamId,
+                        selfUserDomain = selfUser.id.domain
                     )
                 )
 
