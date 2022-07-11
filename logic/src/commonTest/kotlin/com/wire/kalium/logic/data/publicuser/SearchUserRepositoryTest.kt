@@ -5,9 +5,10 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.data.publicuser.model.OtherUser
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserMapper
@@ -15,7 +16,7 @@ import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
-import com.wire.kalium.network.api.UserId
+import com.wire.kalium.network.api.UserId as UserIdDTO
 import com.wire.kalium.network.api.contact.search.ContactDTO
 import com.wire.kalium.network.api.contact.search.SearchPolicyDTO
 import com.wire.kalium.network.api.contact.search.UserSearchResponse
@@ -24,7 +25,6 @@ import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.network.api.user.details.UserProfileDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConnectionEntity
-import com.wire.kalium.persistence.dao.Member
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
@@ -40,6 +40,7 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -47,8 +48,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-
-//TODO: refactor to arrangement pattern
+// TODO: refactor to arrangement pattern
+@OptIn(ExperimentalCoroutinesApi::class)
 class SearchUserRepositoryTest {
 
     @Mock
@@ -103,31 +104,31 @@ class SearchUserRepositoryTest {
 
     @Test
     fun givenContactSearchApiFailure_whenSearchPublicContact_resultIsFailure() = runTest {
-        //given
+        // given
         given(userSearchApiWrapper)
             .suspendFunction(userSearchApiWrapper::search)
             .whenInvokedWith(anything(), anything(), anything(), anything())
             .thenReturn(Either.Left(TestNetworkResponseError.noNetworkConnection()))
 
-        //when
+        // when
         val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
 
-        //then
+        // then
         assertIs<Either.Left<NetworkFailure>>(actual)
     }
 
     @Test
     fun givenContactSearchApiFailure_whenSearchPublicContact_thenOnlyContactSearchApiISInvoked() = runTest {
-        //given
+        // given
         given(userSearchApiWrapper)
             .suspendFunction(userSearchApiWrapper::search)
             .whenInvokedWith(anything(), anything(), anything(), anything())
             .thenReturn(Either.Left(TestNetworkResponseError.noNetworkConnection()))
 
-        //when
+        // when
         searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
 
-        //then
+        // then
         verify(userSearchApiWrapper)
             .suspendFunction(userSearchApiWrapper::search)
             .with(anything(), anything(), anything(), anything())
@@ -136,15 +137,15 @@ class SearchUserRepositoryTest {
 
     @Test
     fun givenContactSearchApiFailure_whenSearchPublicContact_thenUserDetailsApiAndPublicUserMapperIsNotInvoked() = runTest {
-        //given
+        // given
         given(userSearchApiWrapper)
             .suspendFunction(userSearchApiWrapper::search)
             .whenInvokedWith(anything(), anything(), anything(), anything())
             .thenReturn(Either.Left(TestNetworkResponseError.noNetworkConnection()))
 
-        //when
+        // when
         searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
-        //then
+        // then
         verify(userDetailsApi)
             .suspendFunction(userDetailsApi::getMultipleUsers)
             .with(any())
@@ -158,7 +159,7 @@ class SearchUserRepositoryTest {
 
     @Test
     fun givenContactSearchApiSuccessButuserDetailsApiFailure_whenSearchPublicContact_resultIsFailure() = runTest {
-        //given
+        // given
         given(userSearchApiWrapper)
             .suspendFunction(userSearchApiWrapper::search)
             .whenInvokedWith(anything(), anything(), anything(), anything())
@@ -169,16 +170,16 @@ class SearchUserRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(TestNetworkResponseError.genericResponseError())
 
-        //when
+        // when
         val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
 
-        //then
+        // then
         assertIs<Either.Left<NetworkFailure>>(actual)
     }
 
     @Test
     fun givenContactSearchApiSuccessButuserDetailsApiFailure_whenSearchPublicContact_ThenPublicUserMapperIsNotInvoked() = runTest {
-        //given
+        // given
         given(userSearchApiWrapper)
             .suspendFunction(userSearchApiWrapper::search)
             .whenInvokedWith(anything(), anything(), anything(), anything())
@@ -189,10 +190,10 @@ class SearchUserRepositoryTest {
             .whenInvokedWith(any())
             .then { TestNetworkResponseError.genericResponseError() }
 
-        //when
+        // when
         searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
 
-        //then
+        // then
         verify(publicUserMapper)
             .function(publicUserMapper::fromUserDetailResponseWithUsertype)
             .with(any(), any())
@@ -202,7 +203,7 @@ class SearchUserRepositoryTest {
     @Test
     fun givenContactSearchApiSuccessButUserDetailsApiFailure_whenSearchPublicContact_ThenContactSearchApiAndUserDetailsApiIsInvoked() =
         runTest {
-            //given
+            // given
             given(userSearchApiWrapper)
                 .suspendFunction(userSearchApiWrapper::search)
                 .whenInvokedWith(anything(), anything(), anything(), anything())
@@ -212,10 +213,10 @@ class SearchUserRepositoryTest {
                 .suspendFunction(userDetailsApi::getMultipleUsers)
                 .whenInvokedWith(any())
                 .then { TestNetworkResponseError.genericResponseError() }
-            //when
+            // when
             searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
 
-            //then
+            // then
             verify(userSearchApiWrapper)
                 .suspendFunction(userSearchApiWrapper::search)
                 .with(anything(), anything(), anything(), anything())
@@ -229,7 +230,7 @@ class SearchUserRepositoryTest {
 
     @Test
     fun givenContactSearchApiAndUserDetailsApiAndPublicUserApiReturnSuccess_WhenSearchPublicContact_ThenResultIsSuccess() = runTest {
-        //given
+        // given
         given(userSearchApiWrapper)
             .suspendFunction(userSearchApiWrapper::search)
             .whenInvokedWith(anything(), anything(), anything(), anything())
@@ -259,17 +260,17 @@ class SearchUserRepositoryTest {
             .whenInvokedWith(any())
             .then { SELF_USER }
 
-        //when
+        // when
         val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
 
-        //then
+        // then
         assertIs<Either.Right<UserSearchResult>>(actual)
     }
 
     @Test
     fun givenContactSearchApiAndUserDetailsApiAndPublicUserApiReturnSuccess_WhenSearchPublicContact_ThenResultIsEqualToExpectedValue() =
         runTest {
-            //given
+            // given
             given(userSearchApiWrapper)
                 .suspendFunction(userSearchApiWrapper::search)
                 .whenInvokedWith(anything(), anything(), anything(), anything())
@@ -307,7 +308,7 @@ class SearchUserRepositoryTest {
             val expectedResult = UserSearchResult(
                 result = listOf(PUBLIC_USER)
             )
-            //when
+            // when
             val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
 
             assertIs<Either.Right<UserSearchResult>>(actual)
@@ -317,7 +318,7 @@ class SearchUserRepositoryTest {
     @Test
     fun givenAValidUserSearchWithEmptyResults_WhenSearchingSomeText_ThenResultIsAnEmptyList() =
         runTest {
-            //given
+            // given
             given(userSearchApiWrapper)
                 .suspendFunction(userSearchApiWrapper::search)
                 .whenInvokedWith(anything(), anything(), anything(), anything())
@@ -345,7 +346,7 @@ class SearchUserRepositoryTest {
             val expectedResult = UserSearchResult(
                 result = emptyList()
             )
-            //when
+            // when
             val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
 
             assertIs<Either.Right<UserSearchResult>>(actual)
@@ -355,7 +356,7 @@ class SearchUserRepositoryTest {
     @Test
     fun givenASearchWithConversationExcludedOption_WhenSearchingUsersByNameOrHandleOrEmail_ThenSearchForUsersNotInTheConversation() =
         runTest {
-            //given
+            // given
             given(userDAO)
                 .suspendFunction(userDAO::getUsersNotInConversationByNameOrHandleOrEmail)
                 .whenInvokedWith(anything(), anything())
@@ -366,7 +367,7 @@ class SearchUserRepositoryTest {
                 .whenInvokedWith(anything(), anything())
                 .then { _, _ -> listOf() }
 
-            //when
+            // when
             searchUserRepository.searchKnownUsersByNameOrHandleOrEmail(
                 searchQuery = "someQuery",
                 searchUsersOptions = SearchUsersOptions(
@@ -389,7 +390,7 @@ class SearchUserRepositoryTest {
 
     @Test
     fun givenASearchWithConversationExcludedOption_WhenSearchingUsersByHandle_ThenSearchForUsersNotInTheConversation() = runTest {
-        //given
+        // given
         given(userDAO)
             .suspendFunction(userDAO::getUserByHandleAndConnectionState)
             .whenInvokedWith(anything(), anything())
@@ -400,7 +401,7 @@ class SearchUserRepositoryTest {
             .whenInvokedWith(anything(), anything())
             .then { _, _ -> listOf() }
 
-        //when
+        // when
         searchUserRepository.searchKnownUsersByHandle(
             handle = "someQuery",
             searchUsersOptions = SearchUsersOptions(
@@ -410,7 +411,7 @@ class SearchUserRepositoryTest {
             )
         )
 
-        //then
+        // then
         verify(userDAO)
             .suspendFunction(userDAO::getUserByHandleAndConnectionState)
             .with(anything(), anything())
@@ -434,7 +435,7 @@ class SearchUserRepositoryTest {
                         handle = "handle$i",
                         id = "id$i",
                         name = "name$i",
-                        qualifiedID = UserId(value = "value$i", domain = "domain$i"),
+                        qualifiedID = com.wire.kalium.network.api.UserId(value = "value$i", domain = "domain$i"),
                         team = "team$i"
                     )
                 )
@@ -448,7 +449,7 @@ class SearchUserRepositoryTest {
             email = "email",
             phone = "phone",
             accentId = 1,
-            team = "team",
+            teamId = TeamId("team"),
             previewPicture = null,
             completePicture = null,
             availabilityStatus = UserAvailabilityStatus.NONE,
@@ -468,7 +469,7 @@ class SearchUserRepositoryTest {
             UserProfileDTO(
                 accentId = 1,
                 handle = "handle",
-                id = UserId(value = "value", domain = "domain"),
+                id = UserIdDTO(value = "value", domain = "domain"),
                 name = "name",
                 legalHoldStatus = LegalHoldStatusResponse.ENABLED,
                 teamId = "team",

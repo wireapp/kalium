@@ -1,9 +1,9 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
+import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
@@ -48,7 +48,7 @@ internal class GetUserInfoUseCaseImpl(
             return if (localOtherUser != null) {
                 Either.Right(localOtherUser)
             } else {
-                userRepository.getUserInfo(userId)
+                userRepository.userById(userId)
             }
         }
     }
@@ -58,11 +58,11 @@ internal class GetUserInfoUseCaseImpl(
      * @see [UserType]
      */
     private suspend fun getOtherUserTeam(otherUser: OtherUser): Either<CoreFailure, Team?> {
-        return if (otherUser.team != null && otherUser.userType == UserType.INTERNAL) {
-            val localTeam = teamRepository.getTeam(otherUser.team).firstOrNull()
+        return if (otherUser.teamId != null && otherUser.userType == UserType.INTERNAL) {
+            val localTeam = teamRepository.getTeam(otherUser.teamId).firstOrNull()
 
             if (localTeam == null) {
-                teamRepository.fetchTeamById(otherUser.team)
+                teamRepository.fetchTeamById(otherUser.teamId)
             } else {
                 Either.Right(localTeam)
             }
